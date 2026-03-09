@@ -1,0 +1,10 @@
+__pycache__/
+*.pyc
+*.egg-info/
+dist/
+build/
+.venv/
+*.json
+!pyproject.toml
+.ruff_cache/
+.pytest_cache/
