@@ -56,6 +56,7 @@ class SimulationEngine:
     def run_scenario(self, scenario: Scenario) -> ScenarioResult:
         """Run a single chaos scenario."""
         chains: list[CascadeChain] = []
+        total_components = len(self.graph.components)
 
         # Handle traffic spike scenarios
         if scenario.traffic_multiplier > 1.0:
@@ -67,14 +68,26 @@ class SimulationEngine:
             chain = self.cascade_engine.simulate_fault(fault)
             chains.append(chain)
 
-        # Merge chains
+        # Merge chains with proper total_components context
         if chains:
-            merged = CascadeChain(trigger=scenario.name)
+            merged = CascadeChain(
+                trigger=scenario.name,
+                total_components=total_components,
+            )
+            # Use the minimum likelihood from all chains (compound failures
+            # are only as likely as the least likely sub-fault)
+            likelihoods = [c.likelihood for c in chains if c.effects]
+            if likelihoods:
+                merged.likelihood = min(likelihoods)
+
             for chain in chains:
                 merged.effects.extend(chain.effects)
             risk_score = merged.severity
         else:
-            merged = CascadeChain(trigger=scenario.name)
+            merged = CascadeChain(
+                trigger=scenario.name,
+                total_components=total_components,
+            )
             risk_score = 0.0
 
         return ScenarioResult(
@@ -86,7 +99,9 @@ class SimulationEngine:
     def run_all_defaults(self) -> SimulationReport:
         """Run all default scenarios."""
         component_ids = list(self.graph.components.keys())
-        scenarios = generate_default_scenarios(component_ids)
+        scenarios = generate_default_scenarios(
+            component_ids, components=self.graph.components
+        )
         return self.run_scenarios(scenarios)
 
     def run_scenarios(self, scenarios: list[Scenario]) -> SimulationReport:

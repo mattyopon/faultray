@@ -1,0 +1,161 @@
+{% extends "base.html" %}
+{% set active_page = "components" %}
+
+{% block title %}InfraSim - Components{% endblock %}
+{% block page_title %}Components{% endblock %}
+
+{% block content %}
+<div class="components-section">
+    <div class="card">
+        <div class="card-header">
+            <h3>All Components</h3>
+            <span class="badge badge-info">{{ components | length }} total</span>
+        </div>
+        <div class="card-body no-padding">
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>Name</th>
+                        <th>Type</th>
+                        <th>Host</th>
+                        <th>Replicas</th>
+                        <th>Utilization</th>
+                        <th>Health</th>
+                        <th>Details</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for comp in components %}
+                    <tr class="component-row" data-id="{{ comp.id }}">
+                        <td>
+                            <span class="comp-name">{{ comp.name }}</span>
+                            <span class="comp-id">{{ comp.id }}</span>
+                        </td>
+                        <td>
+                            <span class="type-badge type-{{ comp.type }}">{{ comp.type | replace("_", " ") | title }}</span>
+                        </td>
+                        <td class="mono">{{ comp.host }}:{{ comp.port }}</td>
+                        <td class="center">{{ comp.replicas }}</td>
+                        <td>
+                            <div class="utilization-bar-container">
+                                <div class="utilization-bar"
+                                     style="width: {{ comp.utilization }}%;"
+                                     data-util="{{ comp.utilization }}">
+                                </div>
+                                <span class="utilization-text">{{ comp.utilization }}%</span>
+                            </div>
+                        </td>
+                        <td>
+                            <span class="health-badge health-{{ comp.health }}">{{ comp.health }}</span>
+                        </td>
+                        <td>
+                            <button class="btn btn-xs btn-outline toggle-details" onclick="toggleDetails('{{ comp.id }}')">
+                                Expand
+                            </button>
+                        </td>
+                    </tr>
+                    <tr class="detail-row" id="detail-{{ comp.id }}" style="display:none;">
+                        <td colspan="7">
+                            <div class="detail-panel">
+                                <div class="detail-grid">
+                                    <div class="detail-section">
+                                        <h4>Resource Metrics</h4>
+                                        <div class="metric-list">
+                                            <div class="metric-item">
+                                                <span class="metric-label">CPU</span>
+                                                <div class="metric-bar-wrap">
+                                                    <div class="metric-bar" style="width: {{ comp.cpu_percent }}%;" data-val="{{ comp.cpu_percent }}"></div>
+                                                </div>
+                                                <span class="metric-val">{{ comp.cpu_percent }}%</span>
+                                            </div>
+                                            <div class="metric-item">
+                                                <span class="metric-label">Memory</span>
+                                                <div class="metric-bar-wrap">
+                                                    <div class="metric-bar" style="width: {{ comp.memory_percent }}%;" data-val="{{ comp.memory_percent }}"></div>
+                                                </div>
+                                                <span class="metric-val">{{ comp.memory_percent }}%</span>
+                                            </div>
+                                            <div class="metric-item">
+                                                <span class="metric-label">Disk</span>
+                                                <div class="metric-bar-wrap">
+                                                    <div class="metric-bar" style="width: {{ comp.disk_percent }}%;" data-val="{{ comp.disk_percent }}"></div>
+                                                </div>
+                                                <span class="metric-val">{{ comp.disk_percent }}%</span>
+                                            </div>
+                                            <div class="metric-item">
+                                                <span class="metric-label">Connections</span>
+                                                <span class="metric-val">{{ comp.network_connections }} / {{ comp.max_connections }}</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="detail-section">
+                                        <h4>Dependencies</h4>
+                                        {% if comp.dependencies %}
+                                        <div class="dep-list">
+                                            {% for dep in comp.dependencies %}
+                                            <span class="dep-tag dep-out">&#8594; {{ dep }}</span>
+                                            {% endfor %}
+                                        </div>
+                                        {% else %}
+                                        <span class="text-muted">None</span>
+                                        {% endif %}
+                                    </div>
+                                    <div class="detail-section">
+                                        <h4>Dependents</h4>
+                                        {% if comp.dependents %}
+                                        <div class="dep-list">
+                                            {% for dep in comp.dependents %}
+                                            <span class="dep-tag dep-in">&#8592; {{ dep }}</span>
+                                            {% endfor %}
+                                        </div>
+                                        {% else %}
+                                        <span class="text-muted">None (entry point)</span>
+                                        {% endif %}
+                                    </div>
+                                    <div class="detail-section">
+                                        <h4>Capacity</h4>
+                                        <div class="cap-info">
+                                            <span>Max Connections: {{ comp.max_connections }}</span>
+                                            <span>Max RPS: {{ comp.max_rps }}</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<script>
+function toggleDetails(id) {
+    const row = document.getElementById('detail-' + id);
+    const btn = row.previousElementSibling.querySelector('.toggle-details');
+    if (row.style.display === 'none') {
+        row.style.display = 'table-row';
+        btn.textContent = 'Collapse';
+    } else {
+        row.style.display = 'none';
+        btn.textContent = 'Expand';
+    }
+}
+
+// Color utilization bars
+document.querySelectorAll('.utilization-bar').forEach(bar => {
+    const val = parseFloat(bar.dataset.util);
+    if (val > 80) bar.style.background = '#e94560';
+    else if (val > 60) bar.style.background = '#f0a500';
+    else bar.style.background = '#00b894';
+});
+
+document.querySelectorAll('.metric-bar').forEach(bar => {
+    const val = parseFloat(bar.dataset.val);
+    if (val > 80) bar.style.background = '#e94560';
+    else if (val > 60) bar.style.background = '#f0a500';
+    else bar.style.background = '#00b894';
+});
+</script>
+{% endblock %}

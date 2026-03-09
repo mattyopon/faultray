@@ -1,0 +1,236 @@
+{% extends "base.html" %}
+{% set active_page = "simulation" %}
+
+{% block title %}InfraSim - Simulation{% endblock %}
+{% block page_title %}Chaos Simulation{% endblock %}
+
+{% block top_actions %}
+{% if has_data %}
+<button class="btn btn-sm btn-accent" id="runSimBtn" onclick="runSimulation()">
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/>
+    </svg>
+    Run Simulation
+</button>
+{% endif %}
+{% endblock %}
+
+{% block content %}
+<div id="simResults">
+{% if report %}
+    <!-- Summary Bar -->
+    <div class="sim-summary-bar">
+        <div class="sim-stat">
+            <span class="sim-stat-value score-text-{{ 'good' if report.resilience_score >= 80 else ('warning' if report.resilience_score >= 60 else 'critical') }}">
+                {{ report.resilience_score }}
+            </span>
+            <span class="sim-stat-label">Resilience Score</span>
+        </div>
+        <div class="sim-stat">
+            <span class="sim-stat-value">{{ report.total_scenarios }}</span>
+            <span class="sim-stat-label">Scenarios Tested</span>
+        </div>
+        <div class="sim-stat sim-stat-critical">
+            <span class="sim-stat-value">{{ report.critical_count }}</span>
+            <span class="sim-stat-label">Critical</span>
+        </div>
+        <div class="sim-stat sim-stat-warning">
+            <span class="sim-stat-value">{{ report.warning_count }}</span>
+            <span class="sim-stat-label">Warnings</span>
+        </div>
+        <div class="sim-stat sim-stat-passed">
+            <span class="sim-stat-value">{{ report.passed_count }}</span>
+            <span class="sim-stat-label">Passed</span>
+        </div>
+    </div>
+
+    <!-- Critical Findings -->
+    {% if report.critical | length > 0 %}
+    <div class="sim-section">
+        <h2 class="section-title section-critical">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/>
+                <line x1="12" y1="9" x2="12" y2="13"/>
+                <line x1="12" y1="17" x2="12.01" y2="17"/>
+            </svg>
+            Critical Findings ({{ report.critical | length }})
+        </h2>
+        {% for r in report.critical %}
+        <div class="result-card result-critical">
+            <div class="result-header">
+                <div class="result-title">
+                    <h4>{{ r.scenario_name }}</h4>
+                    <p>{{ r.scenario_description }}</p>
+                </div>
+                <div class="result-score">
+                    <span class="risk-score risk-critical">{{ r.risk_score }}</span>
+                    <span class="risk-label">Risk Score</span>
+                </div>
+            </div>
+            {% if r.cascade.effects | length > 0 %}
+            <div class="cascade-tree">
+                <div class="cascade-trigger">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/>
+                    </svg>
+                    {{ r.cascade.trigger }}
+                </div>
+                <div class="cascade-effects">
+                    {% for e in r.cascade.effects %}
+                    <div class="cascade-effect effect-{{ e.health }}">
+                        <div class="effect-timeline">
+                            {% if e.estimated_time_seconds > 0 %}
+                            <span class="effect-time">+{{ e.estimated_time_seconds }}s</span>
+                            {% else %}
+                            <span class="effect-time">T0</span>
+                            {% endif %}
+                        </div>
+                        <div class="effect-content">
+                            <span class="effect-name">{{ e.component_name }}</span>
+                            <span class="health-badge health-{{ e.health }}">{{ e.health }}</span>
+                            <p class="effect-reason">{{ e.reason }}</p>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+            {% endif %}
+        </div>
+        {% endfor %}
+    </div>
+    {% endif %}
+
+    <!-- Warnings -->
+    {% if report.warnings | length > 0 %}
+    <div class="sim-section">
+        <h2 class="section-title section-warning">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <circle cx="12" cy="12" r="10"/>
+                <line x1="12" y1="8" x2="12" y2="12"/>
+                <line x1="12" y1="16" x2="12.01" y2="16"/>
+            </svg>
+            Warnings ({{ report.warnings | length }})
+        </h2>
+        {% for r in report.warnings %}
+        <div class="result-card result-warning">
+            <div class="result-header">
+                <div class="result-title">
+                    <h4>{{ r.scenario_name }}</h4>
+                    <p>{{ r.scenario_description }}</p>
+                </div>
+                <div class="result-score">
+                    <span class="risk-score risk-warning">{{ r.risk_score }}</span>
+                    <span class="risk-label">Risk Score</span>
+                </div>
+            </div>
+            {% if r.cascade.effects | length > 0 %}
+            <div class="cascade-tree">
+                <div class="cascade-trigger">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/>
+                    </svg>
+                    {{ r.cascade.trigger }}
+                </div>
+                <div class="cascade-effects">
+                    {% for e in r.cascade.effects %}
+                    <div class="cascade-effect effect-{{ e.health }}">
+                        <div class="effect-timeline">
+                            {% if e.estimated_time_seconds > 0 %}
+                            <span class="effect-time">+{{ e.estimated_time_seconds }}s</span>
+                            {% else %}
+                            <span class="effect-time">T0</span>
+                            {% endif %}
+                        </div>
+                        <div class="effect-content">
+                            <span class="effect-name">{{ e.component_name }}</span>
+                            <span class="health-badge health-{{ e.health }}">{{ e.health }}</span>
+                            <p class="effect-reason">{{ e.reason }}</p>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+            {% endif %}
+        </div>
+        {% endfor %}
+    </div>
+    {% endif %}
+
+    <!-- Passed -->
+    {% if report.passed | length > 0 %}
+    <div class="sim-section">
+        <h2 class="section-title section-passed" onclick="togglePassed()" style="cursor: pointer;">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M22 11.08V12a10 10 0 11-5.93-9.14"/>
+                <polyline points="22 4 12 14.01 9 11.01"/>
+            </svg>
+            Passed ({{ report.passed | length }})
+            <span class="toggle-hint" id="passedToggle">Click to expand</span>
+        </h2>
+        <div id="passedSection" style="display: none;">
+            {% for r in report.passed %}
+            <div class="result-card result-passed">
+                <div class="result-header">
+                    <div class="result-title">
+                        <h4>{{ r.scenario_name }}</h4>
+                        <p>{{ r.scenario_description }}</p>
+                    </div>
+                    <div class="result-score">
+                        <span class="risk-score risk-passed">{{ r.risk_score }}</span>
+                        <span class="risk-label">Risk Score</span>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+    {% endif %}
+
+{% else %}
+    <div class="empty-inline sim-empty">
+        <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="#4a5568" stroke-width="1.5">
+            <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/>
+        </svg>
+        <h3>No Simulation Results</h3>
+        <p>Click "Run Simulation" to execute chaos scenarios against your infrastructure.</p>
+    </div>
+{% endif %}
+</div>
+
+<script>
+function togglePassed() {
+    const section = document.getElementById('passedSection');
+    const toggle = document.getElementById('passedToggle');
+    if (section.style.display === 'none') {
+        section.style.display = 'block';
+        toggle.textContent = 'Click to collapse';
+    } else {
+        section.style.display = 'none';
+        toggle.textContent = 'Click to expand';
+    }
+}
+
+function runSimulation() {
+    const btn = document.getElementById('runSimBtn');
+    btn.disabled = true;
+    btn.innerHTML = '<span class="spinner"></span> Running...';
+
+    fetch('/api/simulate', { method: 'POST' })
+        .then(r => r.json())
+        .then(data => {
+            if (data.error) {
+                alert(data.error);
+                btn.disabled = false;
+                btn.innerHTML = 'Run Simulation';
+                return;
+            }
+            window.location.reload();
+        })
+        .catch(err => {
+            alert('Simulation failed: ' + err);
+            btn.disabled = false;
+            btn.innerHTML = 'Run Simulation';
+        });
+}
+</script>
+{% endblock %}

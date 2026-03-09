@@ -1,0 +1,33 @@
+{% extends "base.html" %}
+{% set active_page = "graph" %}
+
+{% block title %}InfraSim - Dependency Graph{% endblock %}
+{% block page_title %}Dependency Graph{% endblock %}
+
+{% block head %}
+<script src="https://d3js.org/d3.v7.min.js"></script>
+{% endblock %}
+
+{% block content %}
+<div class="graph-container">
+    <div class="graph-toolbar">
+        <div class="graph-legend">
+            <span class="legend-item"><span class="legend-dot" style="background:#e94560;"></span>Load Balancer</span>
+            <span class="legend-item"><span class="legend-dot" style="background:#6c5ce7;"></span>App Server</span>
+            <span class="legend-item"><span class="legend-dot" style="background:#00b894;"></span>Database</span>
+            <span class="legend-item"><span class="legend-dot" style="background:#fdcb6e;"></span>Cache</span>
+            <span class="legend-item"><span class="legend-dot" style="background:#0984e3;"></span>Queue</span>
+            <span class="legend-item"><span class="legend-dot" style="background:#a0a0a0;"></span>Other</span>
+        </div>
+        <div class="graph-edge-legend">
+            <span class="legend-item"><span class="legend-line legend-solid"></span>Required</span>
+            <span class="legend-item"><span class="legend-line legend-dashed"></span>Optional</span>
+            <span class="legend-item"><span class="legend-line legend-dotted"></span>Async</span>
+        </div>
+    </div>
+    <div id="graphCanvas" class="graph-canvas"></div>
+    <div id="nodeTooltip" class="node-tooltip" style="display:none;"></div>
+</div>
+
+<script src="/static/graph.js"></script>
+{% endblock %}

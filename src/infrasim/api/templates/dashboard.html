@@ -1,0 +1,165 @@
+{% extends "base.html" %}
+{% set active_page = "dashboard" %}
+
+{% block title %}InfraSim - Dashboard{% endblock %}
+{% block page_title %}Dashboard{% endblock %}
+
+{% block top_actions %}
+{% if has_data %}
+<a href="/simulation/run" class="btn btn-sm btn-outline" id="runSimBtn" onclick="runSim(event)">Run Simulation</a>
+{% endif %}
+{% endblock %}
+
+{% block content %}
+<div class="dashboard-grid">
+    <!-- Resilience Score -->
+    <div class="card card-resilience">
+        <div class="card-header">
+            <h3>Resilience Score</h3>
+        </div>
+        <div class="card-body score-display">
+            {% set score = summary.resilience_score %}
+            {% if score >= 80 %}
+                {% set score_class = "score-good" %}
+            {% elif score >= 60 %}
+                {% set score_class = "score-warning" %}
+            {% else %}
+                {% set score_class = "score-critical" %}
+            {% endif %}
+            <div class="score-circle {{ score_class }}">
+                <svg viewBox="0 0 120 120" class="score-ring">
+                    <circle cx="60" cy="60" r="54" fill="none" stroke="#2d3748" stroke-width="8"/>
+                    <circle cx="60" cy="60" r="54" fill="none"
+                            stroke-width="8"
+                            stroke-dasharray="{{ 339.292 }}"
+                            stroke-dashoffset="{{ 339.292 - (339.292 * score / 100) }}"
+                            stroke-linecap="round"
+                            class="score-ring-progress"/>
+                </svg>
+                <div class="score-value">{{ score }}</div>
+                <div class="score-label">/ 100</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Component Summary -->
+    <div class="card">
+        <div class="card-header">
+            <h3>Infrastructure Overview</h3>
+        </div>
+        <div class="card-body">
+            <div class="stat-grid">
+                <div class="stat-item">
+                    <div class="stat-value">{{ summary.total_components }}</div>
+                    <div class="stat-label">Components</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-value">{{ summary.total_dependencies }}</div>
+                    <div class="stat-label">Dependencies</div>
+                </div>
+                {% for type_name, count in summary.component_types.items() %}
+                <div class="stat-item">
+                    <div class="stat-value">{{ count }}</div>
+                    <div class="stat-label">{{ type_name | replace("_", " ") | title }}</div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Findings Summary -->
+    {% if report %}
+    <div class="card">
+        <div class="card-header">
+            <h3>Simulation Summary</h3>
+        </div>
+        <div class="card-body">
+            <div class="stat-grid">
+                <div class="stat-item stat-critical">
+                    <div class="stat-value">{{ report.critical_count }}</div>
+                    <div class="stat-label">Critical</div>
+                </div>
+                <div class="stat-item stat-warning">
+                    <div class="stat-value">{{ report.warning_count }}</div>
+                    <div class="stat-label">Warnings</div>
+                </div>
+                <div class="stat-item stat-passed">
+                    <div class="stat-value">{{ report.passed_count }}</div>
+                    <div class="stat-label">Passed</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-value">{{ report.total_scenarios }}</div>
+                    <div class="stat-label">Total Scenarios</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Top Critical Findings -->
+    <div class="card card-wide">
+        <div class="card-header">
+            <h3>Top Critical Findings</h3>
+            <a href="/simulation" class="card-link">View All &rarr;</a>
+        </div>
+        <div class="card-body">
+            {% if report.critical | length > 0 %}
+            <div class="findings-list">
+                {% for finding in report.critical[:5] %}
+                <div class="finding-item finding-critical">
+                    <div class="finding-header">
+                        <span class="finding-name">{{ finding.scenario_name }}</span>
+                        <span class="badge badge-critical">Risk: {{ finding.risk_score }}</span>
+                    </div>
+                    <div class="finding-detail">
+                        {{ finding.scenario_description }}
+                    </div>
+                    {% if finding.cascade.effects | length > 0 %}
+                    <div class="cascade-mini">
+                        {% for effect in finding.cascade.effects[:3] %}
+                        <span class="cascade-tag cascade-{{ effect.health }}">
+                            {{ effect.component_name }}: {{ effect.health }}
+                        </span>
+                        {% endfor %}
+                        {% if finding.cascade.effects | length > 3 %}
+                        <span class="cascade-tag cascade-more">+{{ finding.cascade.effects | length - 3 }} more</span>
+                        {% endif %}
+                    </div>
+                    {% endif %}
+                </div>
+                {% endfor %}
+            </div>
+            {% else %}
+            <div class="empty-inline">
+                <p>No critical findings detected.</p>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+    {% else %}
+    <div class="card card-wide">
+        <div class="card-header">
+            <h3>Simulation Results</h3>
+        </div>
+        <div class="card-body">
+            <div class="empty-inline">
+                <p>No simulation has been run yet.</p>
+                <a href="/simulation" class="btn btn-sm btn-accent">Go to Simulation</a>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+</div>
+
+<script>
+function runSim(e) {
+    e.preventDefault();
+    const btn = document.getElementById('runSimBtn');
+    btn.textContent = 'Running...';
+    btn.style.pointerEvents = 'none';
+    fetch('/simulation/run')
+        .then(r => r.json())
+        .then(() => { window.location.reload(); })
+        .catch(() => { btn.textContent = 'Error'; });
+}
+</script>
+{% endblock %}

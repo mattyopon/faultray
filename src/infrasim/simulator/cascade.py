@@ -27,17 +27,67 @@ class CascadeChain:
 
     trigger: str
     effects: list[CascadeEffect] = field(default_factory=list)
+    total_components: int = 0
+    likelihood: float = 1.0  # 0.0 (unlikely) to 1.0 (certain/imminent)
 
     @property
     def severity(self) -> float:
-        """0.0 (no impact) to 10.0 (total system failure)."""
+        """0.0 (no impact) to 10.0 (total system failure).
+
+        Scoring rules:
+        - Base score from affected component health states
+        - Divided by TOTAL system components (not just affected)
+        - If only the target is affected (no cascade): max 3.0
+        - If cascade affects < 30% of components: max 6.0
+        - If cascade affects > 50% of components: can reach 10.0
+        - "degraded" only effects cap at 4.0
+        - Single WARN with no cascade: 1.0-2.0
+        - Likelihood factor reduces score for unlikely scenarios
+        """
         if not self.effects:
             return 0.0
+
         down = sum(1 for e in self.effects if e.health == HealthStatus.DOWN)
         degraded = sum(1 for e in self.effects if e.health == HealthStatus.DEGRADED)
         overloaded = sum(1 for e in self.effects if e.health == HealthStatus.OVERLOADED)
-        total = max(len(self.effects), 1)
-        return min(10.0, (down * 3 + degraded * 1.5 + overloaded * 0.5) / total * 10)
+
+        affected_count = len(self.effects)
+        total = max(self.total_components, affected_count, 1)
+
+        # Impact score: weighted average severity of affected components (0-1 scale)
+        # DOWN=1.0, OVERLOADED=0.5, DEGRADED=0.25
+        impact_score = (down * 1.0 + overloaded * 0.5 + degraded * 0.25) / affected_count
+
+        # Spread score: what fraction of the system is affected (0-1 scale)
+        spread_score = affected_count / total
+
+        # Combined: impact * spread, scaled to 0-10
+        # This ensures that a full system cascade of DOWN = 10.0,
+        # and a single degraded component in a 20-component system = very low
+        raw_score = impact_score * spread_score * 10.0
+
+        # Apply caps based on cascade spread
+        if affected_count <= 1:
+            # Only the target itself is affected - no cascade
+            if down > 0:
+                raw_score = min(raw_score, 3.0)
+            elif overloaded > 0:
+                raw_score = min(raw_score, 2.0)
+            else:
+                raw_score = min(raw_score, 1.5)
+        elif spread_score < 0.3:
+            # Minor cascade - less than 30% of components
+            raw_score = min(raw_score, 6.0)
+        # else: > 30% affected, score can go up to 10.0
+
+        # Cap degraded-only effects at 4.0
+        if down == 0 and overloaded == 0 and degraded > 0:
+            raw_score = min(raw_score, 4.0)
+
+        # Apply likelihood factor (reduces score for unlikely scenarios)
+        raw_score *= self.likelihood
+
+        return min(10.0, max(0.0, round(raw_score, 1)))
 
 
 class CascadeEngine:
@@ -48,7 +98,11 @@ class CascadeEngine:
 
     def simulate_fault(self, fault: Fault) -> CascadeChain:
         """Simulate a single fault and calculate cascade effects."""
-        chain = CascadeChain(trigger=f"{fault.fault_type.value} on {fault.target_component_id}")
+        total = len(self.graph.components)
+        chain = CascadeChain(
+            trigger=f"{fault.fault_type.value} on {fault.target_component_id}",
+            total_components=total,
+        )
         target = self.graph.get_component(fault.target_component_id)
         if not target:
             return chain
@@ -56,6 +110,9 @@ class CascadeEngine:
         # Apply direct effect on target
         direct_effect = self._apply_direct_effect(target, fault)
         chain.effects.append(direct_effect)
+
+        # Calculate likelihood based on current state vs fault scenario
+        chain.likelihood = self._calculate_likelihood(target, fault)
 
         # Propagate through dependency graph
         self._propagate(
@@ -71,7 +128,12 @@ class CascadeEngine:
 
     def simulate_traffic_spike(self, multiplier: float) -> CascadeChain:
         """Simulate a traffic spike across all components."""
-        chain = CascadeChain(trigger=f"Traffic spike {multiplier}x")
+        total = len(self.graph.components)
+        chain = CascadeChain(
+            trigger=f"Traffic spike {multiplier}x",
+            total_components=total,
+            likelihood=min(1.0, 0.3 + (multiplier - 1.0) * 0.1),  # Higher multiplier = less likely
+        )
 
         for comp in self.graph.components.values():
             current_util = comp.utilization()
@@ -105,7 +167,13 @@ class CascadeEngine:
         return chain
 
     def _apply_direct_effect(self, component: Component, fault: Fault) -> CascadeEffect:
-        """Calculate the direct effect of a fault on its target."""
+        """Calculate the direct effect of a fault on its target.
+
+        These are "what if" simulations - DISK_FULL means "what if the disk fills up",
+        not "check current disk usage". The direct effect is always the full failure
+        scenario. Likelihood (how close current state is to the failure) is tracked
+        separately.
+        """
         match fault.fault_type:
             case FaultType.COMPONENT_DOWN:
                 return CascadeEffect(
@@ -117,43 +185,24 @@ class CascadeEngine:
                 )
 
             case FaultType.CONNECTION_POOL_EXHAUSTION:
+                # "What if" scenario: pool IS exhausted - always DOWN
                 pool = component.capacity.connection_pool_size
-                current = component.metrics.network_connections
-                headroom = pool - current
-                if headroom < pool * 0.1:
-                    health = HealthStatus.DOWN
-                    reason = f"Pool exhausted: {current}/{pool} connections"
-                elif headroom < pool * 0.3:
-                    health = HealthStatus.OVERLOADED
-                    reason = f"Pool near limit: {current}/{pool} connections"
-                else:
-                    health = HealthStatus.DEGRADED
-                    reason = f"Pool stressed: {current}/{pool} connections"
                 return CascadeEffect(
                     component_id=component.id,
                     component_name=component.name,
-                    health=health,
-                    reason=reason,
-                    metrics_impact={"connections": current, "pool_size": pool},
+                    health=HealthStatus.DOWN,
+                    reason=f"Pool exhausted: {pool}/{pool} connections (simulated)",
+                    metrics_impact={"connections": pool, "pool_size": pool},
                 )
 
             case FaultType.DISK_FULL:
-                disk_pct = component.metrics.disk_percent
-                if disk_pct > 95:
-                    health = HealthStatus.DOWN
-                    reason = f"Disk full: {disk_pct:.1f}% used"
-                elif disk_pct > 85:
-                    health = HealthStatus.OVERLOADED
-                    reason = f"Disk nearly full: {disk_pct:.1f}% used"
-                else:
-                    health = HealthStatus.DEGRADED
-                    reason = f"Disk pressure: {disk_pct:.1f}% used"
+                # "What if" scenario: disk IS full - always DOWN
                 return CascadeEffect(
                     component_id=component.id,
                     component_name=component.name,
-                    health=health,
-                    reason=reason,
-                    metrics_impact={"disk_percent": disk_pct},
+                    health=HealthStatus.DOWN,
+                    reason=f"Disk full: 100% used (simulated, current: {component.metrics.disk_percent:.1f}%)",
+                    metrics_impact={"disk_percent": 100.0},
                 )
 
             case FaultType.CPU_SATURATION:
@@ -198,6 +247,71 @@ class CascadeEngine:
                     health=HealthStatus.OVERLOADED,
                     reason="Traffic spike on component",
                 )
+
+    def _calculate_likelihood(self, component: Component, fault: Fault) -> float:
+        """Calculate how likely this fault scenario is based on current state.
+
+        Returns a value from 0.2 (very unlikely) to 1.0 (imminent/already happening).
+        This reduces the risk score for scenarios that are far from actually occurring.
+        """
+        match fault.fault_type:
+            case FaultType.DISK_FULL:
+                disk_pct = component.metrics.disk_percent
+                if disk_pct > 90:
+                    return 1.0  # imminent
+                elif disk_pct > 75:
+                    return 0.7
+                elif disk_pct > 50:
+                    return 0.4
+                else:
+                    return 0.2  # unlikely
+
+            case FaultType.CONNECTION_POOL_EXHAUSTION:
+                pool = component.capacity.connection_pool_size
+                current = component.metrics.network_connections
+                if pool == 0:
+                    return 0.3
+                usage_ratio = current / pool
+                if usage_ratio > 0.9:
+                    return 1.0  # imminent
+                elif usage_ratio > 0.7:
+                    return 0.7
+                elif usage_ratio > 0.4:
+                    return 0.4
+                else:
+                    return 0.2  # unlikely
+
+            case FaultType.CPU_SATURATION:
+                cpu = component.metrics.cpu_percent
+                if cpu > 85:
+                    return 1.0
+                elif cpu > 60:
+                    return 0.6
+                else:
+                    return 0.3
+
+            case FaultType.MEMORY_EXHAUSTION:
+                mem = component.metrics.memory_percent
+                if mem > 85:
+                    return 1.0
+                elif mem > 60:
+                    return 0.6
+                else:
+                    return 0.3
+
+            case FaultType.COMPONENT_DOWN | FaultType.NETWORK_PARTITION:
+                # These are always plausible - hardware/network failures happen
+                return 0.8
+
+            case FaultType.LATENCY_SPIKE:
+                # Latency spikes are common
+                return 0.7
+
+            case FaultType.TRAFFIC_SPIKE:
+                return 0.5
+
+            case _:
+                return 0.5
 
     def _propagate(
         self,
