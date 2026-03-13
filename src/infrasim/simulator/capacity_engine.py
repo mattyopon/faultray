@@ -160,6 +160,11 @@ class CapacityPlanningEngine:
             Current error budget burn rate in minutes per day.  If ``None``,
             a conservative estimate is derived from component health states.
         """
+        if slo_target <= 0.0 or slo_target > 100.0:
+            raise ValueError(
+                f"slo_target must be between 0 (exclusive) and 100 (inclusive), got {slo_target}"
+            )
+
         forecasts = self._build_forecasts(monthly_growth_rate)
 
         if current_burn_rate is None:
@@ -555,6 +560,19 @@ class CapacityPlanningEngine:
                 f"this month. Monitor burn rate closely."
             )
 
+        # Right-sizing opportunities (scale-down recommendations)
+        over_provisioned = [
+            f for f in forecasts
+            if f.recommended_replicas_3m < f.current_replicas
+        ]
+        for fc in over_provisioned:
+            recommendations.append(
+                f"RIGHT-SIZE: {fc.component_id} ({fc.component_type}) is "
+                f"over-provisioned at {fc.current_utilization:.1f}% utilization. "
+                f"Consider scaling from {fc.current_replicas} to "
+                f"{fc.recommended_replicas_3m} replicas to reduce costs."
+            )
+
         # Bottleneck summary
         if bottleneck_ids:
             top = bottleneck_ids[:3]
@@ -589,7 +607,7 @@ class CapacityPlanningEngine:
             return 0.0
 
         increase_ratio = (total_recommended - total_current) / total_current
-        return round(max(0.0, increase_ratio * 100.0), 2)
+        return round(increase_ratio * 100.0, 2)
 
     @staticmethod
     def _build_summary(

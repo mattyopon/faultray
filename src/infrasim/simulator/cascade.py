@@ -474,6 +474,14 @@ class CascadeEngine:
                     reason="Traffic spike on component",
                 )
 
+            case _:
+                return CascadeEffect(
+                    component_id=component.id,
+                    component_name=component.name,
+                    health=HealthStatus.DEGRADED,
+                    reason=f"Unknown fault type: {fault.fault_type.value}",
+                )
+
     def _calculate_likelihood(self, component: Component, fault: Fault) -> float:
         """Calculate how likely this fault scenario is based on current state.
 

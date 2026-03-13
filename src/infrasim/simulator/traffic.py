@@ -201,7 +201,8 @@ class TrafficPattern(BaseModel):
             return 1.0 + (peak - 1.0) * (t / ramp_duration)
 
         # Sustain at peak with +/-20 % jitter.
-        jitter = _rng.uniform(-0.20, 0.20)
+        # Use t-derived seed for deterministic jitter without module-level state
+        jitter = (((t * 2654435761) & 0xFFFFFFFF) / 0xFFFFFFFF - 0.5) * 0.40
         return max(1.0, peak * (1.0 + jitter))
 
     def _ddos_slowloris(self, t: int) -> float:

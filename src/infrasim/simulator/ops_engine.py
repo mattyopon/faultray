@@ -252,6 +252,7 @@ class SLOTracker:
         # Per-component, per-metric violation tracking
         # Key: (component_id, metric), Value: list of (time_seconds, violated)
         self._violations: dict[tuple[str, str], list[tuple[int, bool]]] = {}
+        self._last_effective_health: dict[str, HealthStatus] = {}
 
     def _propagate_dependencies(
         self, comp_states: dict[str, _OpsComponentState]
@@ -348,6 +349,7 @@ class SLOTracker:
 
         # Use dependency-propagated effective health for counting
         effective_health = self._propagate_dependencies(comp_states)
+        self._last_effective_health = effective_health
 
         healthy = degraded = overloaded = down = 0
         for h in effective_health.values():
@@ -619,6 +621,11 @@ class OpsSimulationEngine:
             Full simulation results including events, SLI timeline,
             and error budget status.
         """
+        if scenario.duration_days <= 0:
+            raise ValueError(
+                f"duration_days must be positive, got {scenario.duration_days}"
+            )
+
         rng = random.Random(scenario.random_seed)
         total_seconds = scenario.duration_days * 86400
         step_seconds = self._time_unit_to_seconds(scenario.time_unit)
@@ -637,6 +644,8 @@ class OpsSimulationEngine:
 
         result = OpsSimulationResult(scenario=scenario)
         result.events = list(events)
+
+        all_events = list(events)  # mutable combined list
 
         # Pre-count event types
         result.total_deploys = sum(
@@ -675,12 +684,12 @@ class OpsSimulationEngine:
                 ops_states, t, step_seconds, scenario
             )
             degradation_events.extend(new_deg_events)
+            all_events.extend(new_deg_events)
             result.total_degradation_events += len(new_deg_events)
 
             # 3. Get active faults from scheduled events + degradation
             # events at this time
-            all_events_so_far = events + degradation_events
-            active_faults = self._get_active_faults(all_events_so_far, t)
+            active_faults = self._get_active_faults(all_events, t)
 
             # 4. Update component health and utilization
             for comp_id, state in ops_states.items():
@@ -697,7 +706,7 @@ class OpsSimulationEngine:
                     # Maintenance/deploy on multi-replica → DEGRADED (rolling update)
                     is_only_planned = all(
                         ev.event_type in (OpsEventType.MAINTENANCE, OpsEventType.DEPLOY, OpsEventType.CERT_RENEWAL)
-                        for ev in all_events_so_far
+                        for ev in all_events
                         if ev.target_component_id == comp_id
                         and ev.time_seconds <= t < ev.time_seconds + ev.duration_seconds
                     )
@@ -832,7 +841,7 @@ class OpsSimulationEngine:
             # and fault-overlap with this timestep to avoid overestimating
             # short faults (e.g. a 30-second deploy fault within a
             # 300-second timestep).
-            eff_health = tracker._propagate_dependencies(ops_states)
+            eff_health = tracker._last_effective_health
             down_count = 0
             component_overlap_total = 0.0
             for comp_id, state in ops_states.items():
@@ -841,7 +850,7 @@ class OpsSimulationEngine:
                     # Find the maximum overlap of any active event
                     # targeting this component with the current timestep.
                     max_overlap = 0.0
-                    for ev in all_events_so_far:
+                    for ev in all_events:
                         if ev.target_component_id != comp_id:
                             continue
                         ev_start = ev.time_seconds
@@ -1344,7 +1353,7 @@ class OpsSimulationEngine:
         return events
 
     @staticmethod
-    def _ops_utilization(comp: "InfraComponent") -> float:
+    def _ops_utilization(comp: Component) -> float:
         """Compute a representative utilization for ops simulation.
 
         Uses ``max()`` of all resource metrics, matching the

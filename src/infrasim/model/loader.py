@@ -102,13 +102,19 @@ def load_yaml(path: Path | str) -> InfraGraph:
         else:
             operational_profile = OperationalProfile()
 
+        replicas = entry.get("replicas", 1)
+        if not isinstance(replicas, int) or replicas < 1:
+            raise ValueError(
+                f"Component '{comp_id}': replicas must be a positive integer, got {replicas}"
+            )
+
         component = Component(
             id=comp_id,
             name=comp_name,
             type=comp_type,
             host=entry.get("host", ""),
             port=entry.get("port", 0),
-            replicas=entry.get("replicas", 1),
+            replicas=replicas,
             metrics=metrics,
             capacity=capacity,
             autoscaling=autoscaling,
@@ -154,10 +160,18 @@ def load_yaml(path: Path | str) -> InfraGraph:
             RetryStrategy(**entry["retry_strategy"]) if "retry_strategy" in entry else RetryStrategy()
         )
 
+        dep_type = entry.get("type", "requires")
+        valid_dep_types = ("requires", "optional", "async")
+        if dep_type not in valid_dep_types:
+            raise ValueError(
+                f"Dependency entry {idx}: invalid type '{dep_type}'. "
+                f"Valid types: {list(valid_dep_types)}"
+            )
+
         dep = Dependency(
             source_id=source_id,
             target_id=target_id,
-            dependency_type=entry.get("type", "requires"),
+            dependency_type=dep_type,
             protocol=entry.get("protocol", ""),
             port=entry.get("port", 0),
             latency_ms=entry.get("latency_ms", 0.0),
@@ -166,6 +180,16 @@ def load_yaml(path: Path | str) -> InfraGraph:
             retry_strategy=retry_strategy,
         )
         graph.add_dependency(dep)
+
+    # Validate no circular dependencies
+    import networkx as nx
+    if not nx.is_directed_acyclic_graph(graph._graph):
+        cycles = list(nx.simple_cycles(graph._graph))
+        cycle_str = " -> ".join(cycles[0] + [cycles[0][0]]) if cycles else "unknown"
+        raise ValueError(
+            f"Circular dependency detected: {cycle_str}. "
+            f"Infrastructure graph must be a DAG."
+        )
 
     return graph
 
