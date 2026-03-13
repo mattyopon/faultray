@@ -364,8 +364,9 @@ class CapacityPlanningEngine:
                 / TARGET_UTILIZATION
             )
 
-        The result is always at least ``current_replicas`` (never scales
-        down below the current count).
+        The result is always at least 1 (never recommends zero replicas).
+        If the component is over-provisioned, fewer replicas than the
+        current count may be recommended (right-sizing).
         """
         if current_util <= 0.0:
             return current_replicas
@@ -374,7 +375,7 @@ class CapacityPlanningEngine:
         needed = math.ceil(
             current_replicas * projected_load / TARGET_UTILIZATION_PERCENT
         )
-        return max(needed, current_replicas)
+        return max(1, needed)
 
     @staticmethod
     def _scaling_urgency(months_to_capacity: float) -> str:

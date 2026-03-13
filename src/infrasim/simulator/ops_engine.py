@@ -349,26 +349,16 @@ class SLOTracker:
         # Use dependency-propagated effective health for counting
         effective_health = self._propagate_dependencies(comp_states)
 
-        healthy = sum(
-            1
-            for h in effective_health.values()
-            if h == HealthStatus.HEALTHY
-        )
-        degraded = sum(
-            1
-            for h in effective_health.values()
-            if h == HealthStatus.DEGRADED
-        )
-        overloaded = sum(
-            1
-            for h in effective_health.values()
-            if h == HealthStatus.OVERLOADED
-        )
-        down = sum(
-            1
-            for h in effective_health.values()
-            if h == HealthStatus.DOWN
-        )
+        healthy = degraded = overloaded = down = 0
+        for h in effective_health.values():
+            if h == HealthStatus.HEALTHY:
+                healthy += 1
+            elif h == HealthStatus.DEGRADED:
+                degraded += 1
+            elif h == HealthStatus.OVERLOADED:
+                overloaded += 1
+            elif h == HealthStatus.DOWN:
+                down += 1
 
         # Availability: DOWN = 0%, OVERLOADED = 80% (20% error rate),
         # DEGRADED/HEALTHY = 100%.

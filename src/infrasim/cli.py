@@ -954,8 +954,8 @@ def whatif(
     if multi is not None:
         from infrasim.simulator.whatif_engine import MultiWhatIfScenario
 
-        if defaults or multi.lower() == "defaults":
-            # --multi with --defaults (or --multi defaults): run default combinations
+        if multi.lower() == "defaults":
+            # --multi defaults: run default combinations
             console.print(f"[cyan]Running default multi-parameter what-if analyses ({len(graph.components)} components)...[/]")
             multi_results = engine.run_default_multi_whatifs()
             for mresult in multi_results:
