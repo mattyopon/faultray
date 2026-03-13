@@ -17,83 +17,85 @@ components:
       max_connections: 10000
       max_rps: 50000
     metrics:
-      cpu_percent: 25
-      memory_percent: 30
-      disk_percent: 45
+      cpu_percent: 15
+      memory_percent: 20
+      disk_percent: 30
 
   - id: app-1
     name: "api-server-1"
     type: app_server
     host: app01
     port: 8080
-    replicas: 1
+    replicas: 3
     capacity:
-      max_connections: 500
-      connection_pool_size: 100
+      max_connections: 1000
+      connection_pool_size: 200
       timeout_seconds: 30
+      max_memory_mb: 4096
     metrics:
-      cpu_percent: 65
-      memory_percent: 70
-      disk_percent: 55
-      network_connections: 450
+      cpu_percent: 30
+      memory_percent: 33
+      disk_percent: 30
+      network_connections: 200
 
   - id: app-2
     name: "api-server-2"
     type: app_server
     host: app02
     port: 8080
-    replicas: 1
+    replicas: 3
     capacity:
-      max_connections: 500
-      connection_pool_size: 100
+      max_connections: 1000
+      connection_pool_size: 200
       timeout_seconds: 30
+      max_memory_mb: 4096
     metrics:
-      cpu_percent: 60
-      memory_percent: 68
-      disk_percent: 55
-      network_connections: 420
+      cpu_percent: 28
+      memory_percent: 30
+      disk_percent: 28
+      network_connections: 180
 
   - id: postgres
     name: "PostgreSQL (primary)"
     type: database
     host: db01
     port: 5432
-    replicas: 1
+    replicas: 2
     capacity:
-      max_connections: 100
+      max_connections: 200
       max_disk_gb: 500
     metrics:
-      cpu_percent: 45
-      memory_percent: 80
-      disk_percent: 72
-      network_connections: 90
+      cpu_percent: 25
+      memory_percent: 34
+      disk_percent: 32
+      network_connections: 40
 
   - id: redis
     name: "Redis (cache)"
     type: cache
     host: cache01
     port: 6379
-    replicas: 1
+    replicas: 2
     capacity:
       max_connections: 10000
     metrics:
-      cpu_percent: 15
-      memory_percent: 60
-      network_connections: 200
+      cpu_percent: 8
+      memory_percent: 28
+      network_connections: 100
 
   - id: rabbitmq
     name: "RabbitMQ"
     type: queue
     host: mq01
     port: 5672
-    replicas: 1
+    replicas: 2
     capacity:
       max_connections: 1000
     metrics:
-      cpu_percent: 20
-      memory_percent: 40
-      disk_percent: 35
-      network_connections: 50
+      cpu_percent: 10
+      memory_percent: 20
+      disk_percent: 15
+      network_connections: 25
 
 dependencies:
   - source: nginx

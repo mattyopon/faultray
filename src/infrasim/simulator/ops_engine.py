@@ -36,6 +36,66 @@ logger = logging.getLogger(__name__)
 # Seeded RNG for reproducible operational simulation results.
 _ops_rng = random.Random(2024)
 
+# Maximum fraction of a component tier to maintain simultaneously.
+# Ensures no single tier loses more than ~34% capacity during maintenance.
+MAX_MAINT_FRACTION = 0.34
+# Absolute cap: never maintain more than this many instances of any tier at once.
+# Prevents large tiers (33 app_servers) from having oversized maintenance groups.
+MAX_MAINT_GROUP_CAP = 3
+# Proactive graceful restart threshold: restart when degradation accumulator
+# exceeds this fraction of capacity, preventing hard failures (OOM/disk full).
+GRACEFUL_RESTART_THRESHOLD = 0.80
+# Downtime for a proactive graceful restart (seconds).
+GRACEFUL_RESTART_DOWNTIME = 5
+
+# Type-based default maintenance durations (seconds).
+# Stateless services restart quickly; stateful services need longer windows.
+_DEFAULT_MAINT_SECONDS: dict[str, int] = {
+    "app_server": 60,       # Quick restart
+    "web_server": 60,       # Quick restart
+    "proxy": 120,           # Config reload + health check
+    "load_balancer": 120,   # Config reload
+    "cache": 300,           # Restart + cache warm-up
+    "database": 1800,       # Patch + vacuum (30 min)
+    "queue": 600,           # Drain + restart (10 min)
+}
+
+# Type-based default MTBF (hours). Stateless services are more reliable
+# (easy restart) while stateful services have longer but still reasonable MTBF.
+_DEFAULT_MTBF_HOURS: dict[str, float] = {
+    "app_server": 2160.0,       # 90 days — stateless, auto-restart
+    "web_server": 2160.0,       # 90 days
+    "database": 4320.0,         # 180 days — enterprise-grade
+    "cache": 1440.0,            # 60 days — volatile
+    "load_balancer": 8760.0,    # 365 days — very stable
+    "queue": 2160.0,            # 90 days
+    "proxy": 4320.0,            # 180 days
+}
+
+# Type-based default MTTR (minutes). Stateless components auto-recover quickly.
+_DEFAULT_MTTR_MINUTES: dict[str, float] = {
+    "app_server": 5.0,          # Auto-restart, stateless
+    "web_server": 5.0,          # Auto-restart
+    "database": 30.0,           # May need manual intervention
+    "cache": 10.0,              # Restart + warm-up
+    "load_balancer": 2.0,       # Automatic failover
+    "queue": 15.0,              # Drain + restart
+    "proxy": 5.0,               # Config reload
+}
+
+
+# Default degradation rates by component type (when not explicitly configured).
+# Rates are moderate — designed to trigger 1-3 events per component per 30 days.
+_DEFAULT_DEGRADATION: dict[str, dict[str, float]] = {
+    "app_server": {"memory_leak_mb_per_hour": 2.0, "connection_leak_per_hour": 0.3},
+    "web_server": {"memory_leak_mb_per_hour": 1.5},
+    "database": {"connection_leak_per_hour": 0.5, "disk_fill_gb_per_hour": 0.2},
+    "cache": {"memory_leak_mb_per_hour": 3.0},
+    "load_balancer": {"connection_leak_per_hour": 0.2},
+    "queue": {"disk_fill_gb_per_hour": 0.1, "memory_leak_mb_per_hour": 1.0},
+    "proxy": {"connection_leak_per_hour": 0.3},
+}
+
 
 # ---------------------------------------------------------------------------
 # Enums
@@ -96,6 +156,7 @@ class OpsScenario(BaseModel):
     enable_maintenance: bool = False
     maintenance_day_of_week: int = 6  # 0=Mon, 6=Sun
     maintenance_hour: int = 2  # 2 AM
+    maintenance_duration_factor: float = 1.0  # Multiplier for maintenance durations
     random_seed: int = 2024
 
 
@@ -167,6 +228,9 @@ class _OpsComponentState:
     leaked_memory_mb: float = 0.0
     filled_disk_gb: float = 0.0
     leaked_connections: float = 0.0
+
+    # Degradation jitter factor (0.7-1.3) — prevents thundering herd
+    degradation_jitter: float = 1.0
 
     # Autoscaling cooldown tracking
     last_scale_up_time: int = -999999
@@ -563,10 +627,16 @@ class OpsSimulationEngine:
                     state.current_health = HealthStatus.DOWN
                     state.current_utilization = 0.0
                 else:
-                    # Calculate effective utilization
+                    # Calculate effective utilization.
+                    # base_utilization is already per-replica, so we
+                    # scale by traffic and adjust only for *changes*
+                    # in replica count from the baseline.
                     base_util = state.base_utilization
-                    effective_util = base_util * traffic_mult / max(
+                    replica_ratio = state.base_replicas / max(
                         state.current_replicas, 1
+                    )
+                    effective_util = (
+                        base_util * traffic_mult * replica_ratio
                     )
 
                     # Add degradation-induced utilization pressure
@@ -607,12 +677,18 @@ class OpsSimulationEngine:
                     effective_util = min(effective_util, 120.0)
                     state.current_utilization = effective_util
 
-                    # Determine health from utilization
-                    if effective_util > 100.0:
+                    # Traffic/degradation-induced health changes.
+                    # Only degrade health when utilization exceeds
+                    # normal capacity thresholds.  At baseline traffic
+                    # (traffic_mult=1.0) most components run at 30-65%
+                    # utilization, so they remain HEALTHY.  Overload
+                    # kicks in only when traffic spikes or degradation
+                    # push utilization well above normal operating range.
+                    if effective_util > 110.0:
                         state.current_health = HealthStatus.DOWN
-                    elif effective_util > 90.0:
+                    elif effective_util > 95.0:
                         state.current_health = HealthStatus.OVERLOADED
-                    elif effective_util > 70.0:
+                    elif effective_util > 85.0:
                         state.current_health = HealthStatus.DEGRADED
                     else:
                         state.current_health = HealthStatus.HEALTHY
@@ -865,7 +941,7 @@ class OpsSimulationEngine:
                     "resilience and error budget consumption."
                 ),
                 duration_days=30,
-                time_unit=TimeUnit.HOUR,  # Hourly steps for 30-day sim
+                time_unit=TimeUnit.FIVE_MINUTES,  # 5-min for accurate short-event tracking
                 traffic_patterns=[
                     create_diurnal_weekly(
                         peak=3.5, duration=2592000, weekend_factor=0.5
@@ -967,6 +1043,8 @@ class OpsSimulationEngine:
         events: list[OpsEvent] = []
 
         # --- Scheduled deployments ---
+        # First pass: resolve downtime for each deploy config
+        resolved_deploys: list[dict[str, Any]] = []
         for deploy_cfg in scenario.scheduled_deploys:
             comp_id = deploy_cfg.get("component_id", "")
             day_of_week = deploy_cfg.get("day_of_week", 1)  # 0=Mon
@@ -983,40 +1061,76 @@ class OpsSimulationEngine:
                 if profile_downtime > 0:
                     downtime = int(profile_downtime)
 
-            # Schedule deployments for each matching day in the
-            # simulation window
-            for day in range(scenario.duration_days):
-                # day 0 = Monday 00:00, day_of_week 0 = Monday
-                if day % 7 == day_of_week:
-                    deploy_time = day * 86400 + hour * 3600
-                    if deploy_time < total_seconds:
-                        events.append(
-                            OpsEvent(
-                                time_seconds=deploy_time,
-                                event_type=OpsEventType.DEPLOY,
-                                target_component_id=comp_id,
-                                duration_seconds=downtime,
-                                description=(
-                                    f"Scheduled deploy to {comp_id} "
-                                    f"(day {day}, {hour}:00, "
-                                    f"{downtime}s downtime)"
-                                ),
-                            )
+            resolved_deploys.append(
+                {
+                    "component_id": comp_id,
+                    "day_of_week": day_of_week,
+                    "hour": hour,
+                    "downtime": downtime,
+                }
+            )
+
+        # Second pass: group by (day, hour) and stagger for rolling deploy
+        for day in range(scenario.duration_days):
+            # Collect deploy configs that fire on this day
+            batch: list[dict[str, Any]] = []
+            for rd in resolved_deploys:
+                if day % 7 == rd["day_of_week"]:
+                    batch.append(rd)
+
+            if not batch:
+                continue
+
+            # Sort for deterministic ordering
+            batch.sort(key=lambda d: d["component_id"])
+            total_in_batch = len(batch)
+
+            for idx, rd in enumerate(batch):
+                comp_id = rd["component_id"]
+                hour = rd["hour"]
+                downtime = rd["downtime"]
+                stagger_offset = idx * (downtime + 30)
+                deploy_time = (
+                    day * 86400 + hour * 3600 + stagger_offset
+                )
+                if deploy_time < total_seconds:
+                    events.append(
+                        OpsEvent(
+                            time_seconds=deploy_time,
+                            event_type=OpsEventType.DEPLOY,
+                            target_component_id=comp_id,
+                            duration_seconds=downtime,
+                            description=(
+                                f"Scheduled deploy to {comp_id} "
+                                f"(day {day}, {hour}:00, "
+                                f"{downtime}s downtime) "
+                                f"(rolling {idx + 1}/{total_in_batch})"
+                            ),
                         )
+                    )
 
         # --- Random failures based on MTBF ---
         if scenario.enable_random_failures:
             for comp_id, comp in self.graph.components.items():
-                mtbf_hours = comp.operational_profile.mtbf_hours
-                if mtbf_hours <= 0:
-                    # If no MTBF configured, use a default of 720 hours
-                    # (30 days)
-                    mtbf_hours = 720.0
+                comp_type = comp.type.value
 
+                # Pre-populate zero profile values with type-based
+                # defaults so What-if factor modifications take effect
+                # (0 * factor = 0, so we need a real base value).
+                if comp.operational_profile.mtbf_hours <= 0:
+                    comp.operational_profile.mtbf_hours = (
+                        _DEFAULT_MTBF_HOURS.get(comp_type, 2160.0)
+                    )
+                if comp.operational_profile.mttr_minutes <= 0:
+                    comp.operational_profile.mttr_minutes = (
+                        _DEFAULT_MTTR_MINUTES.get(comp_type, 30.0)
+                    )
+
+                mtbf_hours = comp.operational_profile.mtbf_hours
                 mtbf_seconds = mtbf_hours * 3600.0
-                mttr_seconds = (
-                    comp.operational_profile.mttr_minutes * 60.0
-                )
+
+                mttr_minutes = comp.operational_profile.mttr_minutes
+                mttr_seconds = mttr_minutes * 60.0
 
                 # Generate failures using exponential distribution
                 t_cursor = rng.expovariate(1.0 / mtbf_seconds)
@@ -1031,9 +1145,7 @@ class OpsSimulationEngine:
                                 f"Random failure of {comp_id} at "
                                 f"t={int(t_cursor)}s "
                                 f"(MTBF={mtbf_hours}h, "
-                                f"MTTR="
-                                f"{comp.operational_profile.mttr_minutes}"
-                                f"min)"
+                                f"MTTR={mttr_minutes}min)"
                             ),
                         )
                     )
@@ -1042,7 +1154,7 @@ class OpsSimulationEngine:
                         1.0 / mtbf_seconds
                     )
 
-        # --- Maintenance windows ---
+        # --- Maintenance windows (tier-aware staged) ---
         if scenario.enable_maintenance:
             for day in range(scenario.duration_days):
                 if day % 7 == scenario.maintenance_day_of_week:
@@ -1051,36 +1163,126 @@ class OpsSimulationEngine:
                     )
 
                     if maint_time < total_seconds:
-                        # Maintenance affects all components
+                        # Group components by type for tier-aware staging
+                        maint_factor = scenario.maintenance_duration_factor
+                        tiers: dict[str, list[tuple[str, int]]] = {}
                         for comp_id, comp in self.graph.components.items():
-                            maint_duration = int(
-                                comp.operational_profile
-                                .maintenance_downtime_minutes
-                                * 60
+                            comp_type = comp.type.value
+                            base_duration = _DEFAULT_MAINT_SECONDS.get(
+                                comp_type, 3600
                             )
-                            events.append(
-                                OpsEvent(
-                                    time_seconds=maint_time,
-                                    event_type=OpsEventType.MAINTENANCE,
-                                    target_component_id=comp_id,
-                                    duration_seconds=maint_duration,
-                                    description=(
-                                        f"Scheduled maintenance for "
-                                        f"{comp_id} (day {day}, "
-                                        f"{scenario.maintenance_hour}"
-                                        f":00, {maint_duration}s)"
+                            maint_duration = int(base_duration * maint_factor)
+
+                            tier_key = comp.type.value
+                            tiers.setdefault(tier_key, []).append(
+                                (comp_id, maint_duration)
+                            )
+
+                        # For each tier, create groups that maintain
+                        # at most MAX_MAINT_FRACTION of the tier at once
+                        global_offset = 0
+                        global_group_idx = 0
+                        # Sort tier keys for deterministic ordering
+                        for tier_key in sorted(tiers.keys()):
+                            tier_comps = tiers[tier_key]
+                            tier_comps.sort(key=lambda x: x[0])
+                            tier_count = len(tier_comps)
+                            group_size = max(
+                                1,
+                                min(
+                                    int(
+                                        math.ceil(
+                                            tier_count
+                                            * MAX_MAINT_FRACTION
+                                        )
                                     ),
-                                )
+                                    MAX_MAINT_GROUP_CAP,
+                                ),
                             )
+
+                            tier_groups = [
+                                tier_comps[i : i + group_size]
+                                for i in range(
+                                    0, tier_count, group_size
+                                )
+                            ]
+
+                            for tg_idx, tg in enumerate(tier_groups):
+                                max_dur = max(d for _, d in tg)
+                                for comp_id, dur in tg:
+                                    maint_start = (
+                                        maint_time + global_offset
+                                    )
+                                    if maint_start < total_seconds:
+                                        global_group_idx += 0
+                                        events.append(
+                                            OpsEvent(
+                                                time_seconds=maint_start,
+                                                event_type=(
+                                                    OpsEventType
+                                                    .MAINTENANCE
+                                                ),
+                                                target_component_id=(
+                                                    comp_id
+                                                ),
+                                                duration_seconds=dur,
+                                                description=(
+                                                    f"Maintenance "
+                                                    f"{comp_id} "
+                                                    f"(day {day}, "
+                                                    f"tier={tier_key},"
+                                                    f" {dur}s) "
+                                                    f"(group "
+                                                    f"{tg_idx + 1}/"
+                                                    f"{len(tier_groups)}"
+                                                    f")"
+                                                ),
+                                            )
+                                        )
+                                global_offset += max_dur
 
         events.sort(key=lambda e: e.time_seconds)
         return events
+
+    @staticmethod
+    def _ops_utilization(comp: "InfraComponent") -> float:
+        """Compute a representative utilization for ops simulation.
+
+        Unlike ``comp.utilization()`` (which returns *max* of all
+        metrics — useful for capacity planning), this returns a
+        **weighted average** so that normal operating conditions
+        (30-65 % typical) remain in the HEALTHY band.  Only genuine
+        traffic spikes or degradation should push utilization toward
+        the overload thresholds.
+        """
+        factors: list[float] = []
+        if comp.metrics.cpu_percent > 0:
+            factors.append(comp.metrics.cpu_percent)
+        if comp.metrics.memory_percent > 0:
+            factors.append(comp.metrics.memory_percent)
+        if comp.metrics.disk_percent > 0:
+            factors.append(comp.metrics.disk_percent)
+        if (
+            comp.capacity.max_connections > 0
+            and comp.metrics.network_connections > 0
+        ):
+            conn_pct = (
+                comp.metrics.network_connections
+                / comp.capacity.max_connections
+                * 100.0
+            )
+            factors.append(conn_pct)
+        return sum(factors) / len(factors) if factors else 0.0
 
     def _init_ops_states(self) -> dict[str, _OpsComponentState]:
         """Create initial mutable state for every component."""
         states: dict[str, _OpsComponentState] = {}
         for comp_id, comp in self.graph.components.items():
-            base_util = comp.utilization()
+            base_util = self._ops_utilization(comp)
+            # Assign jitter factor (0.7-1.3) per component to prevent
+            # thundering herd when multiple instances share the same
+            # degradation rate — they'll hit thresholds at different times.
+            jitter = 0.7 + _ops_rng.random() * 0.6
             states[comp_id] = _OpsComponentState(
                 component_id=comp_id,
                 base_utilization=base_util,
@@ -1088,6 +1290,7 @@ class OpsSimulationEngine:
                 current_health=comp.health,
                 current_replicas=comp.replicas,
                 base_replicas=comp.replicas,
+                degradation_jitter=jitter,
             )
         return states
 
@@ -1141,96 +1344,178 @@ class OpsSimulationEngine:
 
             degradation = comp.operational_profile.degradation
 
-            # Memory leak
-            if degradation.memory_leak_mb_per_hour > 0:
-                state.leaked_memory_mb += (
-                    degradation.memory_leak_mb_per_hour * step_hours
+            # If all degradation rates are zero, apply type-based defaults
+            if (
+                degradation.memory_leak_mb_per_hour == 0.0
+                and degradation.disk_fill_gb_per_hour == 0.0
+                and degradation.connection_leak_per_hour == 0.0
+            ):
+                type_defaults = _DEFAULT_DEGRADATION.get(
+                    comp.type.value, {}
                 )
-                if (
-                    comp.capacity.max_memory_mb > 0
-                    and state.leaked_memory_mb
-                    >= comp.capacity.max_memory_mb
-                ):
-                    events.append(
-                        OpsEvent(
-                            time_seconds=t,
-                            event_type=OpsEventType.MEMORY_LEAK_OOM,
-                            target_component_id=comp_id,
-                            duration_seconds=int(
-                                comp.operational_profile.mttr_minutes
-                                * 60
-                            ),
-                            description=(
-                                f"OOM: {comp_id} leaked "
-                                f"{state.leaked_memory_mb:.0f}MB "
-                                f"(max "
-                                f"{comp.capacity.max_memory_mb:.0f}MB)"
-                            ),
-                        )
+                if type_defaults:
+                    eff_mem = type_defaults.get(
+                        "memory_leak_mb_per_hour", 0.0
                     )
-                    # Reset leaked memory after OOM restart
-                    state.leaked_memory_mb = 0.0
+                    eff_disk = type_defaults.get(
+                        "disk_fill_gb_per_hour", 0.0
+                    )
+                    eff_conn = type_defaults.get(
+                        "connection_leak_per_hour", 0.0
+                    )
+                else:
+                    eff_mem = 0.0
+                    eff_disk = 0.0
+                    eff_conn = 0.0
+            else:
+                eff_mem = degradation.memory_leak_mb_per_hour
+                eff_disk = degradation.disk_fill_gb_per_hour
+                eff_conn = degradation.connection_leak_per_hour
+
+            # Apply per-component jitter to prevent thundering herd
+            jitter = state.degradation_jitter
+            jeff_mem = eff_mem * jitter
+            jeff_disk = eff_disk * jitter
+            jeff_conn = eff_conn * jitter
+
+            # Memory leak
+            if jeff_mem > 0:
+                state.leaked_memory_mb += (
+                    jeff_mem * step_hours
+                )
+                max_mem = comp.capacity.max_memory_mb
+                if max_mem > 0 and state.leaked_memory_mb > 0:
+                    mem_ratio = state.leaked_memory_mb / max_mem
+                    if mem_ratio >= 1.0:
+                        # Hard failure — OOM
+                        events.append(
+                            OpsEvent(
+                                time_seconds=t,
+                                event_type=OpsEventType.MEMORY_LEAK_OOM,
+                                target_component_id=comp_id,
+                                duration_seconds=int(
+                                    comp.operational_profile.mttr_minutes
+                                    * 60
+                                ),
+                                description=(
+                                    f"OOM: {comp_id} leaked "
+                                    f"{state.leaked_memory_mb:.0f}MB "
+                                    f"(max {max_mem:.0f}MB)"
+                                ),
+                            )
+                        )
+                        state.leaked_memory_mb = 0.0
+                    elif mem_ratio >= GRACEFUL_RESTART_THRESHOLD:
+                        # Proactive graceful restart
+                        events.append(
+                            OpsEvent(
+                                time_seconds=t,
+                                event_type=OpsEventType.MAINTENANCE,
+                                target_component_id=comp_id,
+                                duration_seconds=GRACEFUL_RESTART_DOWNTIME,
+                                description=(
+                                    f"Graceful restart: {comp_id} "
+                                    f"memory {mem_ratio:.0%} "
+                                    f"(threshold "
+                                    f"{GRACEFUL_RESTART_THRESHOLD:.0%})"
+                                ),
+                            )
+                        )
+                        state.leaked_memory_mb = 0.0
 
             # Disk fill
-            if degradation.disk_fill_gb_per_hour > 0:
+            if jeff_disk > 0:
                 state.filled_disk_gb += (
-                    degradation.disk_fill_gb_per_hour * step_hours
+                    jeff_disk * step_hours
                 )
-                if (
-                    comp.capacity.max_disk_gb > 0
-                    and state.filled_disk_gb
-                    >= comp.capacity.max_disk_gb
-                ):
-                    events.append(
-                        OpsEvent(
-                            time_seconds=t,
-                            event_type=OpsEventType.DISK_FULL,
-                            target_component_id=comp_id,
-                            duration_seconds=int(
-                                comp.operational_profile.mttr_minutes
-                                * 60
-                            ),
-                            description=(
-                                f"Disk full: {comp_id} filled "
-                                f"{state.filled_disk_gb:.1f}GB "
-                                f"(max "
-                                f"{comp.capacity.max_disk_gb:.0f}GB)"
-                            ),
+                max_disk = comp.capacity.max_disk_gb
+                if max_disk > 0 and state.filled_disk_gb > 0:
+                    disk_ratio = state.filled_disk_gb / max_disk
+                    if disk_ratio >= 1.0:
+                        # Hard failure — disk full
+                        events.append(
+                            OpsEvent(
+                                time_seconds=t,
+                                event_type=OpsEventType.DISK_FULL,
+                                target_component_id=comp_id,
+                                duration_seconds=int(
+                                    comp.operational_profile
+                                    .mttr_minutes * 60
+                                ),
+                                description=(
+                                    f"Disk full: {comp_id} "
+                                    f"{state.filled_disk_gb:.1f}GB "
+                                    f"(max {max_disk:.0f}GB)"
+                                ),
+                            )
                         )
-                    )
-                    # Reset after cleanup
-                    state.filled_disk_gb = 0.0
+                        state.filled_disk_gb = 0.0
+                    elif disk_ratio >= GRACEFUL_RESTART_THRESHOLD:
+                        # Proactive log rotation / cleanup
+                        events.append(
+                            OpsEvent(
+                                time_seconds=t,
+                                event_type=OpsEventType.MAINTENANCE,
+                                target_component_id=comp_id,
+                                duration_seconds=GRACEFUL_RESTART_DOWNTIME,
+                                description=(
+                                    f"Disk cleanup: {comp_id} "
+                                    f"disk {disk_ratio:.0%} "
+                                    f"(threshold "
+                                    f"{GRACEFUL_RESTART_THRESHOLD:.0%})"
+                                ),
+                            )
+                        )
+                        state.filled_disk_gb = 0.0
 
             # Connection leak
-            if degradation.connection_leak_per_hour > 0:
+            if jeff_conn > 0:
                 state.leaked_connections += (
-                    degradation.connection_leak_per_hour * step_hours
+                    jeff_conn * step_hours
                 )
-                if (
-                    comp.capacity.connection_pool_size > 0
-                    and state.leaked_connections
-                    >= comp.capacity.connection_pool_size
-                ):
-                    events.append(
-                        OpsEvent(
-                            time_seconds=t,
-                            event_type=OpsEventType.CONN_POOL_EXHAUSTION,
-                            target_component_id=comp_id,
-                            duration_seconds=int(
-                                comp.operational_profile.mttr_minutes
-                                * 60
-                            ),
-                            description=(
-                                f"Connection pool exhausted: "
-                                f"{comp_id} leaked "
-                                f"{state.leaked_connections:.0f} "
-                                f"connections (pool size "
-                                f"{comp.capacity.connection_pool_size})"
-                            ),
+                max_conn = comp.capacity.connection_pool_size
+                if max_conn > 0 and state.leaked_connections > 0:
+                    conn_ratio = state.leaked_connections / max_conn
+                    if conn_ratio >= 1.0:
+                        # Hard failure — pool exhaustion
+                        events.append(
+                            OpsEvent(
+                                time_seconds=t,
+                                event_type=(
+                                    OpsEventType.CONN_POOL_EXHAUSTION
+                                ),
+                                target_component_id=comp_id,
+                                duration_seconds=int(
+                                    comp.operational_profile.mttr_minutes
+                                    * 60
+                                ),
+                                description=(
+                                    f"Connection pool exhausted: "
+                                    f"{comp_id} leaked "
+                                    f"{state.leaked_connections:.0f} "
+                                    f"connections (pool "
+                                    f"{max_conn})"
+                                ),
+                            )
                         )
-                    )
-                    # Reset after restart
-                    state.leaked_connections = 0.0
+                        state.leaked_connections = 0.0
+                    elif conn_ratio >= GRACEFUL_RESTART_THRESHOLD:
+                        # Proactive connection drain + restart
+                        events.append(
+                            OpsEvent(
+                                time_seconds=t,
+                                event_type=OpsEventType.MAINTENANCE,
+                                target_component_id=comp_id,
+                                duration_seconds=GRACEFUL_RESTART_DOWNTIME,
+                                description=(
+                                    f"Graceful restart: {comp_id} "
+                                    f"connections {conn_ratio:.0%} "
+                                    f"(threshold "
+                                    f"{GRACEFUL_RESTART_THRESHOLD:.0%})"
+                                ),
+                            )
+                        )
+                        state.leaked_connections = 0.0
 
         return events
 

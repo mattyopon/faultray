@@ -884,3 +884,298 @@ def feed_clear() -> None:
 
     clear_store()
     console.print(f"[green]Cleared {stats['scenario_count']} feed scenarios.[/]")
+
+
+# ---------------------------------------------------------------------------
+# What-if Analysis & Capacity Planning commands (v4.0)
+# ---------------------------------------------------------------------------
+
+
+def _load_graph_for_analysis(
+    model: Path,
+    yaml_file: Path | None,
+) -> InfraGraph:
+    """Load an InfraGraph from model JSON or YAML for analysis commands."""
+    if yaml_file is not None:
+        from infrasim.model.loader import load_yaml
+
+        if not yaml_file.exists():
+            console.print(f"[red]YAML file not found: {yaml_file}[/]")
+            raise typer.Exit(1)
+        return load_yaml(yaml_file)
+
+    if not model.exists():
+        console.print(f"[red]Model file not found: {model}[/]")
+        console.print("Run [cyan]infrasim scan[/] or [cyan]infrasim load[/] first.")
+        raise typer.Exit(1)
+
+    if str(model).endswith((".yaml", ".yml")):
+        from infrasim.model.loader import load_yaml
+
+        return load_yaml(model)
+
+    return InfraGraph.load(model)
+
+
+@app.command()
+def whatif(
+    model: Path = typer.Option(DEFAULT_MODEL_PATH, "--model", "-m", help="Path to model JSON"),
+    yaml_file: Path | None = typer.Option(None, "--yaml", help="Path to YAML (alternative to model)"),
+    parameter: str | None = typer.Option(
+        None, "--parameter", help="Parameter to sweep (mttr_factor, mtbf_factor, traffic_factor, replica_factor, maint_duration_factor)"
+    ),
+    values: str | None = typer.Option(None, "--values", help="Comma-separated values (e.g., '0.5,1.0,2.0')"),
+    defaults: bool = typer.Option(False, "--defaults", help="Run all 5 default what-if analyses"),
+    multi: str | None = typer.Option(
+        None, "--multi", help="Multi-parameter what-if (e.g., 'mttr_factor=2.0,traffic_factor=3.0')"
+    ),
+) -> None:
+    """Run what-if analysis by sweeping infrastructure parameters."""
+    try:
+        from infrasim.simulator.whatif_engine import WhatIfEngine
+    except ImportError:
+        console.print("[red]What-if engine not available. Install infrasim with what-if support.[/]")
+        raise typer.Exit(1)
+
+    graph = _load_graph_for_analysis(model, yaml_file)
+    engine = WhatIfEngine(graph)
+
+    if multi is not None:
+        from infrasim.simulator.whatif_engine import MultiWhatIfScenario
+
+        if defaults or multi.lower() == "defaults":
+            # --multi with --defaults (or --multi defaults): run default combinations
+            console.print(f"[cyan]Running default multi-parameter what-if analyses ({len(graph.components)} components)...[/]")
+            multi_results = engine.run_default_multi_whatifs()
+            for mresult in multi_results:
+                _print_multi_whatif_result(mresult, console)
+                console.print()
+        else:
+            # Parse "mttr_factor=2.0,traffic_factor=3.0" into dict
+            params: dict[str, float] = {}
+            for pair in multi.split(","):
+                pair = pair.strip()
+                if "=" not in pair:
+                    console.print(f"[red]Invalid parameter format: '{pair}'. Expected 'name=value'.[/]")
+                    raise typer.Exit(1)
+                key, val = pair.split("=", 1)
+                params[key.strip()] = float(val.strip())
+
+            console.print(f"[cyan]Running multi-parameter what-if: {params}...[/]")
+            scenario = MultiWhatIfScenario(
+                base_scenario=engine._create_default_base_scenario(),
+                parameters=params,
+                description=f"Custom multi what-if: {params}",
+            )
+            mresult = engine.run_multi_whatif(scenario)
+            _print_multi_whatif_result(mresult, console)
+    elif defaults:
+        console.print(f"[cyan]Running all default what-if analyses ({len(graph.components)} components)...[/]")
+        all_results = engine.run_default_whatifs()
+        for result in all_results:
+            _print_whatif_result(result, console)
+            console.print()
+    elif parameter and values:
+        from infrasim.simulator.whatif_engine import WhatIfScenario
+
+        parsed_values = [float(v.strip()) for v in values.split(",")]
+        console.print(f"[cyan]Running what-if analysis: {parameter} = {parsed_values}...[/]")
+        scenario = WhatIfScenario(
+            base_scenario=engine._create_default_base_scenario(),
+            parameter=parameter,
+            values=parsed_values,
+            description=f"Custom sweep: {parameter}",
+        )
+        result = engine.run_whatif(scenario)
+        _print_whatif_result(result, console)
+    else:
+        console.print("[red]Specify --defaults, --multi, or both --parameter and --values.[/]")
+        raise typer.Exit(1)
+
+
+def _print_whatif_result(result: object, con: Console) -> None:
+    """Print a single what-if analysis result using Rich formatting."""
+    from rich.panel import Panel
+    from rich.table import Table
+
+    param_name = getattr(result, "parameter", "Unknown")
+    values = getattr(result, "values", [])
+    avg_availabilities = getattr(result, "avg_availabilities", [])
+    min_availabilities = getattr(result, "min_availabilities", [])
+    total_failures = getattr(result, "total_failures", [])
+    slo_pass = getattr(result, "slo_pass", [])
+    breakpoint_val = getattr(result, "breakpoint_value", None)
+
+    display_name = param_name.replace("_", " ").title()
+
+    table = Table(show_header=True, header_style="bold")
+    table.add_column("Factor", justify="right", width=8)
+    table.add_column("Avg Avail", justify="right", width=10)
+    table.add_column("Min Avail", justify="right", width=10)
+    table.add_column("Failures", justify="right", width=10)
+    table.add_column("SLO", justify="center", width=6)
+
+    for i, value in enumerate(values):
+        avg_avail = avg_availabilities[i] if i < len(avg_availabilities) else 0.0
+        min_avail = min_availabilities[i] if i < len(min_availabilities) else 0.0
+        failures = total_failures[i] if i < len(total_failures) else 0
+        passed = slo_pass[i] if i < len(slo_pass) else True
+
+        slo_str = "[green]PASS[/]" if passed else "[red]FAIL[/]"
+        table.add_row(
+            f"{value:.2f}",
+            f"{avg_avail:.4f}%",
+            f"{min_avail:.2f}%",
+            str(failures),
+            slo_str,
+        )
+
+    con.print(Panel(
+        table,
+        title=f"[bold]What-if Analysis: {display_name}[/]",
+        subtitle=f"Breakpoint: factor {breakpoint_val:.2f}" if breakpoint_val is not None else None,
+    ))
+
+
+def _print_multi_whatif_result(result: object, con: Console) -> None:
+    """Print a multi-parameter what-if analysis result using Rich formatting."""
+    from rich.panel import Panel
+    from rich.table import Table
+
+    parameters = getattr(result, "parameters", {})
+    avg_avail = getattr(result, "avg_availability", 0.0)
+    min_avail = getattr(result, "min_availability", 0.0)
+    total_fail = getattr(result, "total_failures", 0)
+    downtime = getattr(result, "total_downtime_seconds", 0)
+    slo_passed = getattr(result, "slo_pass", True)
+    description = getattr(result, "summary", "").split("\n")[0] if getattr(result, "summary", "") else ""
+
+    # Title from description or parameters
+    if description.startswith("Analysis: "):
+        title = description[len("Analysis: "):]
+    else:
+        title = ", ".join(f"{k}={v}" for k, v in parameters.items())
+
+    table = Table(show_header=True, header_style="bold")
+    table.add_column("Parameter", width=24)
+    table.add_column("Value", justify="right", width=8)
+
+    for param, value in parameters.items():
+        table.add_row(param, f"{value:.2f}")
+
+    table.add_section()
+    table.add_row("Avg Availability", f"{avg_avail:.4f}%")
+    table.add_row("Min Availability", f"{min_avail:.2f}%")
+    table.add_row("Total Failures", str(total_fail))
+    table.add_row("Total Downtime (s)", str(downtime))
+
+    slo_str = "[green]PASS[/]" if slo_passed else "[red]FAIL[/]"
+    table.add_row("SLO (99.9%)", slo_str)
+
+    con.print(Panel(table, title=f"[bold]Multi What-if: {title}[/]"))
+
+
+@app.command()
+def capacity(
+    model: Path = typer.Option(DEFAULT_MODEL_PATH, "--model", "-m", help="Path to model JSON"),
+    yaml_file: Path | None = typer.Option(None, "--yaml", help="Path to YAML (alternative to model)"),
+    growth: float = typer.Option(0.10, "--growth", help="Monthly growth rate (default: 0.10 = 10%)"),
+    slo: float = typer.Option(99.9, "--slo", help="SLO target (default: 99.9)"),
+    simulate: bool = typer.Option(False, "--simulate", help="Run ops simulation to get actual burn rate"),
+) -> None:
+    """Run capacity planning analysis with growth forecasting."""
+    try:
+        from infrasim.simulator.capacity_engine import CapacityPlanningEngine
+    except ImportError:
+        console.print("[red]Capacity planning engine not available. Install infrasim with capacity support.[/]")
+        raise typer.Exit(1)
+
+    graph = _load_graph_for_analysis(model, yaml_file)
+
+    from rich.panel import Panel
+    from rich.table import Table
+
+    console.print(f"[cyan]Running capacity planning ({len(graph.components)} components, growth={growth:.0%}/mo, SLO={slo}%)...[/]")
+    engine = CapacityPlanningEngine(graph)
+
+    if simulate:
+        report = engine.forecast_with_simulation(
+            monthly_growth_rate=growth, slo_target=slo,
+        )
+    else:
+        report = engine.forecast(
+            monthly_growth_rate=growth, slo_target=slo,
+        )
+
+    # ---- Component Forecasts ----
+    forecasts = report.forecasts
+    if forecasts:
+        fc_table = Table(title="Component Forecasts", show_header=True)
+        fc_table.add_column("Component", style="cyan", width=20)
+        fc_table.add_column("Type", width=12)
+        fc_table.add_column("Util", justify="right", width=6)
+        fc_table.add_column("Mo\u219280%", justify="right", width=8)
+        fc_table.add_column("Now", justify="right", width=5)
+        fc_table.add_column("3mo", justify="right", width=5)
+        fc_table.add_column("6mo", justify="right", width=5)
+        fc_table.add_column("12mo", justify="right", width=5)
+        fc_table.add_column("Urgency", justify="center", width=10)
+
+        for fc in forecasts:
+            import math
+            months_str = f"{fc.months_to_capacity:.1f}" if math.isfinite(fc.months_to_capacity) else "\u221e"
+            if fc.scaling_urgency == "healthy":
+                urg_str = "[green]healthy[/]"
+            elif fc.scaling_urgency == "warning":
+                urg_str = "[yellow]warning[/]"
+            else:
+                urg_str = f"[red]{fc.scaling_urgency}[/]"
+
+            fc_table.add_row(
+                fc.component_id, fc.component_type,
+                f"{fc.current_utilization:.0f}%", months_str,
+                str(fc.current_replicas),
+                str(fc.recommended_replicas_3m),
+                str(fc.recommended_replicas_6m),
+                str(fc.recommended_replicas_12m),
+                urg_str,
+            )
+
+        console.print()
+        console.print(fc_table)
+
+    # ---- Error Budget Forecast ----
+    eb = report.error_budget
+    status_color = {"healthy": "green", "warning": "yellow", "critical": "red", "exhausted": "red"}.get(eb.status, "white")
+    days_str = f"{eb.days_to_exhaustion:.1f} days" if eb.days_to_exhaustion is not None else "N/A"
+
+    eb_text = (
+        f"SLO Target: {eb.slo_target}%\n"
+        f"Budget: {eb.budget_total_minutes:.1f} min | Consumed: {eb.budget_consumed_minutes:.1f} min ({eb.budget_consumed_percent:.1f}%)\n"
+        f"Burn Rate: {eb.burn_rate_per_day:.2f} min/day\n"
+        f"Projected Monthly: {eb.projected_monthly_consumption:.1f}%\n"
+        f"Days to Exhaustion: {days_str}\n"
+        f"Status: [{status_color}]{eb.status}[/]"
+    )
+    console.print()
+    console.print(Panel(eb_text, title="[bold]Error Budget Forecast[/]"))
+
+    # ---- Bottlenecks ----
+    bottlenecks = report.bottleneck_components
+    if bottlenecks:
+        console.print("\n[bold]Bottlenecks (first to hit capacity):[/]")
+        for i, comp_id in enumerate(bottlenecks[:10], 1):
+            console.print(f"  {i}. {comp_id}")
+
+    # ---- Recommendations ----
+    recommendations = report.scaling_recommendations
+    if recommendations:
+        console.print("\n[bold]Recommendations:[/]")
+        for rec in recommendations:
+            console.print(f"  \u2022 {rec}")
+
+    # ---- Cost ----
+    console.print(f"\n[bold]Estimated 3-month cost increase:[/] {report.estimated_monthly_cost_increase:.1f}%")
+
+    # ---- Summary ----
+    console.print(f"\n{report.summary}")
