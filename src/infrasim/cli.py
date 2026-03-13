@@ -174,6 +174,7 @@ def ops_sim(
     deploy_hour: int = typer.Option(14, "--deploy-hour", help="Deploy hour (0-23)"),
     no_random: bool = typer.Option(False, "--no-random-failures", help="Disable random failures"),
     no_degradation: bool = typer.Option(False, "--no-degradation", help="Disable degradation"),
+    no_maintenance: bool = typer.Option(False, "--no-maintenance", help="Disable maintenance windows"),
     defaults: bool = typer.Option(False, "--defaults", help="Run all default ops scenarios"),
 ) -> None:
     """Run long-running operational simulation with SLO tracking."""
@@ -299,6 +300,7 @@ def ops_sim(
             scheduled_deploys=scheduled_deploys,
             enable_random_failures=not no_random,
             enable_degradation=not no_degradation,
+            enable_maintenance=not no_maintenance,
         )
 
         console.print(
@@ -1003,6 +1005,7 @@ def _print_whatif_result(result: object, con: Console) -> None:
     avg_availabilities = getattr(result, "avg_availabilities", [])
     min_availabilities = getattr(result, "min_availabilities", [])
     total_failures = getattr(result, "total_failures", [])
+    total_downtimes = getattr(result, "total_downtimes", [])
     slo_pass = getattr(result, "slo_pass", [])
     breakpoint_val = getattr(result, "breakpoint_value", None)
 
@@ -1013,12 +1016,14 @@ def _print_whatif_result(result: object, con: Console) -> None:
     table.add_column("Avg Avail", justify="right", width=10)
     table.add_column("Min Avail", justify="right", width=10)
     table.add_column("Failures", justify="right", width=10)
+    table.add_column("Downtime(s)", justify="right", width=12)
     table.add_column("SLO", justify="center", width=6)
 
     for i, value in enumerate(values):
         avg_avail = avg_availabilities[i] if i < len(avg_availabilities) else 0.0
         min_avail = min_availabilities[i] if i < len(min_availabilities) else 0.0
         failures = total_failures[i] if i < len(total_failures) else 0
+        downtime = total_downtimes[i] if i < len(total_downtimes) else 0.0
         passed = slo_pass[i] if i < len(slo_pass) else True
 
         slo_str = "[green]PASS[/]" if passed else "[red]FAIL[/]"
@@ -1027,6 +1032,7 @@ def _print_whatif_result(result: object, con: Console) -> None:
             f"{avg_avail:.4f}%",
             f"{min_avail:.2f}%",
             str(failures),
+            f"{downtime:.1f}",
             slo_str,
         )
 

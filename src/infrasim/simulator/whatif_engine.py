@@ -98,7 +98,7 @@ class WhatIfResult(BaseModel):
     avg_availabilities: list[float]
     min_availabilities: list[float]
     total_failures: list[int]
-    total_downtimes: list[int]
+    total_downtimes: list[float]
     slo_pass: list[bool]
     breakpoint_value: float | None = None
     summary: str = ""
@@ -120,7 +120,7 @@ class MultiWhatIfResult(BaseModel):
     avg_availability: float
     min_availability: float
     total_failures: int
-    total_downtime_seconds: int
+    total_downtime_seconds: float
     slo_pass: bool
     summary: str = ""
 
@@ -181,7 +181,7 @@ class WhatIfEngine:
         avg_availabilities: list[float] = []
         min_availabilities: list[float] = []
         total_failures: list[int] = []
-        total_downtimes: list[int] = []
+        total_downtimes: list[float] = []
         slo_pass: list[bool] = []
 
         original_rng = ops_engine_mod._ops_rng
@@ -527,8 +527,18 @@ class WhatIfEngine:
             Modified graph with scaled MTTR and the original scenario.
         """
         graph = copy.deepcopy(self.graph)
+        total_seconds = base_scenario.duration_days * 86400
+        max_mtbf_hours = total_seconds / 3.0 / 3600.0
         for comp in graph.components.values():
-            # Pre-populate zero MTTR with type-based defaults
+            if comp.operational_profile.mtbf_hours <= 0:
+                comp.operational_profile.mtbf_hours = (
+                    ops_engine_mod._DEFAULT_MTBF_HOURS.get(
+                        comp.type.value, 2160.0
+                    )
+                )
+            comp.operational_profile.mtbf_hours = min(
+                comp.operational_profile.mtbf_hours, max_mtbf_hours
+            )
             if comp.operational_profile.mttr_minutes <= 0:
                 comp.operational_profile.mttr_minutes = (
                     ops_engine_mod._DEFAULT_MTTR_MINUTES.get(

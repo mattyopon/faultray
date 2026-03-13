@@ -393,23 +393,36 @@ class CapacityPlanningEngine:
         return "healthy"
 
     def _estimate_burn_rate(self, slo_target: float) -> float:
-        """Estimate error budget burn rate from current component states.
-
-        When no simulation result is available, we derive a conservative
-        estimate: each ``DEGRADED`` component contributes a small burn
-        and each ``DOWN`` component contributes a larger burn.
-        """
-        total_budget_minutes = (1.0 - slo_target / 100.0) * 30.0 * 24.0 * 60.0
-        if total_budget_minutes <= 0:
-            return 0.0
-
+        """Estimate daily error budget burn rate based on risk factors."""
         daily_burn = 0.0
         for comp in self.graph.components.values():
-            health = comp.health
-            if health.value == "degraded":
-                daily_burn += 0.5  # ~0.5 min/day per degraded component
-            elif health.value == "down":
-                daily_burn += 5.0  # ~5 min/day per down component
+            # Factor 1: Utilization risk
+            util = comp.utilization()
+            if util > 80.0:
+                daily_burn += 2.0
+            elif util > 60.0:
+                daily_burn += 0.5
+            elif util > 40.0:
+                daily_burn += 0.1
+
+            # Factor 2: MTBF/MTTR expected failure downtime
+            mtbf_h = comp.operational_profile.mtbf_hours
+            if mtbf_h <= 0:
+                mtbf_h = 2160.0  # default 90 days
+            mttr_min = comp.operational_profile.mttr_minutes
+            if mttr_min <= 0:
+                mttr_min = 30.0  # default 30 min
+            # Expected downtime per day = (24h / mtbf_hours) * mttr_minutes
+            daily_burn += (24.0 / mtbf_h) * mttr_min
+
+            # Factor 3: SPOF risk (single replica)
+            if comp.replicas <= 1:
+                daily_burn += 1.0
+
+        # Average across components
+        n = len(self.graph.components)
+        if n > 0:
+            daily_burn /= n
 
         return daily_burn
 
