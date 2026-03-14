@@ -12,7 +12,7 @@ import logging
 from dataclasses import dataclass, field
 from enum import Enum
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
 
 from infrasim.model.components import (
     AutoScalingConfig,
@@ -80,6 +80,13 @@ class DynamicScenario(BaseModel):
     traffic_pattern: TrafficPattern | None = None
     duration_seconds: int = 300
     time_step_seconds: int = 5
+
+    @field_validator('duration_seconds', 'time_step_seconds')
+    @classmethod
+    def validate_positive(cls, v: int) -> int:
+        if v <= 0:
+            raise ValueError(f"Duration/step must be > 0, got {v}")
+        return v
 
 
 @dataclass

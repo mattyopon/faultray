@@ -6,7 +6,7 @@ from enum import Enum
 from itertools import combinations
 from typing import TYPE_CHECKING
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
 
 if TYPE_CHECKING:
     from infrasim.simulator.traffic import TrafficPattern
@@ -42,6 +42,13 @@ class Scenario(BaseModel):
     faults: list[Fault]
     traffic_multiplier: float = 1.0  # 1.0 = normal, 2.0 = double traffic
 
+    @field_validator('traffic_multiplier')
+    @classmethod
+    def validate_multiplier(cls, v):
+        if v < 0:
+            raise ValueError(f"traffic_multiplier must be >= 0, got {v}")
+        return v
+
 
 class DynamicScenario(BaseModel):
     """A chaos scenario with time-varying traffic patterns."""
@@ -53,6 +60,13 @@ class DynamicScenario(BaseModel):
     traffic_pattern: TrafficPattern | None = None
     duration_seconds: int = 300
     time_step_seconds: int = 5
+
+    @field_validator('duration_seconds', 'time_step_seconds')
+    @classmethod
+    def validate_positive(cls, v):
+        if v <= 0:
+            raise ValueError(f"Duration/step must be > 0, got {v}")
+        return v
 
 
 def _categorize(components: dict | None, component_ids: list[str]) -> dict[str, list[str]]:

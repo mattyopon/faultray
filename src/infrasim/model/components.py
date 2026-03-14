@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from enum import Enum
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
 
 
 class ComponentType(str, Enum):
@@ -160,6 +160,13 @@ class Component(BaseModel):
     operational_profile: OperationalProfile = Field(default_factory=OperationalProfile)
     parameters: dict[str, float | int | str] = Field(default_factory=dict)
     tags: list[str] = Field(default_factory=list)
+
+    @field_validator('replicas')
+    @classmethod
+    def validate_replicas(cls, v):
+        if v < 1:
+            raise ValueError(f"replicas must be >= 1, got {v}")
+        return v
 
     def utilization(self) -> float:
         """Calculate overall utilization as a percentage (0-100)."""
