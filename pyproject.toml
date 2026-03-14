@@ -51,12 +51,19 @@ gcp = [
     "google-cloud-redis>=2.0",
     "google-cloud-storage>=2.0",
 ]
+azure = [
+    "azure-identity>=1.15",
+    "azure-mgmt-compute>=30.0",
+    "azure-mgmt-sql>=3.0",
+    "azure-mgmt-redis>=14.0",
+]
 k8s = [
     "kubernetes>=28.0",
 ]
 all-clouds = [
     "boto3>=1.28",
     "google-cloud-compute>=1.0",
+    "azure-identity>=1.15",
     "kubernetes>=28.0",
 ]
 dev = [

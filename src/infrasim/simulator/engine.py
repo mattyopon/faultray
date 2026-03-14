@@ -2,8 +2,11 @@
 
 from __future__ import annotations
 
+import json
 import logging
+import tempfile
 from dataclasses import dataclass, field
+from pathlib import Path
 
 from infrasim.model.graph import InfraGraph
 from infrasim.simulator.cascade import CascadeChain, CascadeEngine
@@ -13,6 +16,9 @@ logger = logging.getLogger(__name__)
 
 MAX_SCENARIOS = 2000
 
+# Checkpoint interval: save partial results every N scenarios
+_CHECKPOINT_INTERVAL = 100
+
 
 @dataclass
 class ScenarioResult:
@@ -21,6 +27,7 @@ class ScenarioResult:
     scenario: Scenario
     cascade: CascadeChain
     risk_score: float = 0.0
+    error: str | None = None
 
     @property
     def is_critical(self) -> bool:
@@ -63,7 +70,24 @@ class SimulationEngine:
         self._cache = cache  # Optional ResultCache instance
 
     def run_scenario(self, scenario: Scenario) -> ScenarioResult:
-        """Run a single chaos scenario."""
+        """Run a single chaos scenario with graceful error handling."""
+        try:
+            return self._execute_scenario(scenario)
+        except Exception as e:
+            logger.warning("Scenario %s failed: %s", scenario.id, e)
+            total_components = len(self.graph.components)
+            return ScenarioResult(
+                scenario=scenario,
+                cascade=CascadeChain(
+                    trigger=scenario.name,
+                    total_components=total_components,
+                ),
+                risk_score=0.0,
+                error=str(e),
+            )
+
+    def _execute_scenario(self, scenario: Scenario) -> ScenarioResult:
+        """Internal scenario execution logic."""
         chains: list[CascadeChain] = []
         total_components = len(self.graph.components)
 
@@ -216,9 +240,21 @@ class SimulationEngine:
             scenarios = scenarios[:limit]
 
         results = []
-        for scenario in scenarios:
+        checkpoint_path: Path | None = None
+        for idx, scenario in enumerate(scenarios):
             result = self.run_scenario(scenario)
             results.append(result)
+
+            # Checkpoint: save partial results every _CHECKPOINT_INTERVAL scenarios
+            if (idx + 1) % _CHECKPOINT_INTERVAL == 0:
+                checkpoint_path = self._save_checkpoint(results, idx + 1)
+
+        # Clean up checkpoint file on successful completion
+        if checkpoint_path and checkpoint_path.exists():
+            try:
+                checkpoint_path.unlink()
+            except OSError:
+                pass
 
         # Sort by risk score descending
         results.sort(key=lambda r: r.risk_score, reverse=True)
@@ -229,3 +265,32 @@ class SimulationEngine:
             total_generated=total_generated,
             was_truncated=was_truncated,
         )
+
+    @staticmethod
+    def _save_checkpoint(results: list[ScenarioResult], count: int) -> Path:
+        """Save partial simulation results to a temporary checkpoint file."""
+        checkpoint_dir = Path(tempfile.gettempdir()) / "chaosproof_checkpoints"
+        checkpoint_dir.mkdir(exist_ok=True)
+        checkpoint_path = checkpoint_dir / "simulation_checkpoint.json"
+
+        try:
+            data = {
+                "completed_scenarios": count,
+                "partial_results": [
+                    {
+                        "scenario_id": r.scenario.id,
+                        "scenario_name": r.scenario.name,
+                        "risk_score": r.risk_score,
+                        "error": r.error,
+                    }
+                    for r in results
+                ],
+            }
+            checkpoint_path.write_text(json.dumps(data, indent=2))
+            logger.debug(
+                "Checkpoint saved: %d scenarios to %s", count, checkpoint_path
+            )
+        except Exception as exc:
+            logger.debug("Failed to save checkpoint: %s", exc)
+
+        return checkpoint_path

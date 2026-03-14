@@ -22,6 +22,7 @@ import infrasim.cli.evaluate  # noqa: F401
 import infrasim.cli.feeds  # noqa: F401
 import infrasim.cli.ops  # noqa: F401
 import infrasim.cli.predictive  # noqa: F401
+import infrasim.cli.quickstart  # noqa: F401
 import infrasim.cli.simulate  # noqa: F401
 
 __all__ = ["app", "_print_dynamic_results"]

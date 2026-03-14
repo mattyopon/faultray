@@ -162,6 +162,13 @@ from infrasim.api.insurance_api import insurance_router
 
 app.include_router(insurance_router)
 
+# ---------------------------------------------------------------------------
+# Embeddable widget router
+# ---------------------------------------------------------------------------
+from infrasim.api.widget import widget_router
+
+app.include_router(widget_router)
+
 
 app.mount("/static", StaticFiles(directory=str(BASE_DIR / "static")), name="static")
 

@@ -28,10 +28,13 @@ def scan(
     ),
     aws: bool = typer.Option(False, "--aws", help="Scan AWS infrastructure via boto3"),
     gcp: bool = typer.Option(False, "--gcp", help="Scan GCP infrastructure via google-cloud libraries"),
+    azure: bool = typer.Option(False, "--azure", help="Scan Azure infrastructure via azure-mgmt libraries"),
     k8s: bool = typer.Option(False, "--k8s", help="Scan Kubernetes cluster via kubernetes client"),
     region: str = typer.Option("ap-northeast-1", "--region", help="AWS region (used with --aws)"),
     profile: str | None = typer.Option(None, "--profile", help="AWS profile name (used with --aws)"),
     project: str | None = typer.Option(None, "--project", help="GCP project ID (used with --gcp)"),
+    subscription: str | None = typer.Option(None, "--subscription", help="Azure subscription ID (used with --azure)"),
+    resource_group: str | None = typer.Option(None, "--resource-group", help="Azure resource group (used with --azure)"),
     context: str | None = typer.Option(None, "--context", help="Kubernetes context (used with --k8s)"),
     namespace: str | None = typer.Option(None, "--namespace", help="Kubernetes namespace (used with --k8s)"),
     save_yaml: Path | None = typer.Option(
@@ -69,6 +72,33 @@ def scan(
         console.print(f"[cyan]Scanning GCP infrastructure in project {project}...[/]")
         try:
             scanner = GCPScanner(project_id=project)
+            result = scanner.scan()
+        except RuntimeError as exc:
+            console.print(f"[red]{exc}[/]")
+            raise typer.Exit(1)
+
+        graph = result.graph
+        console.print(
+            f"[green]Discovered {result.components_found} components, "
+            f"{result.dependencies_inferred} dependencies "
+            f"in {result.scan_duration_seconds:.1f}s[/]"
+        )
+        if result.warnings:
+            for w in result.warnings:
+                console.print(f"[yellow]Warning: {w}[/]")
+    elif azure:
+        from infrasim.discovery.azure_scanner import AzureScanner
+
+        if not subscription:
+            console.print("[red]--subscription is required with --azure[/]")
+            raise typer.Exit(1)
+
+        console.print(f"[cyan]Scanning Azure infrastructure in subscription {subscription}...[/]")
+        try:
+            scanner = AzureScanner(
+                subscription_id=subscription,
+                resource_group=resource_group,
+            )
             result = scanner.scan()
         except RuntimeError as exc:
             console.print(f"[red]{exc}[/]")
