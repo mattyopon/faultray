@@ -203,6 +203,33 @@ def _run_evaluation(
     }
 
     # ------------------------------------------------------------------
+    # 6. 3-Layer Availability Limit Model
+    # ------------------------------------------------------------------
+    from infrasim.simulator.availability_model import compute_three_layer_model
+
+    three_layer = compute_three_layer_model(graph)
+    evaluation_data["availability_limits"] = {
+        "layer1_software": {
+            "nines": round(three_layer.layer1_software.nines, 2),
+            "availability_percent": round(three_layer.layer1_software.availability * 100, 6),
+            "annual_downtime_seconds": round(three_layer.layer1_software.annual_downtime_seconds, 0),
+            "description": three_layer.layer1_software.description,
+        },
+        "layer2_hardware": {
+            "nines": round(three_layer.layer2_hardware.nines, 2),
+            "availability_percent": round(three_layer.layer2_hardware.availability * 100, 6),
+            "annual_downtime_seconds": round(three_layer.layer2_hardware.annual_downtime_seconds, 0),
+            "description": three_layer.layer2_hardware.description,
+        },
+        "layer3_theoretical": {
+            "nines": round(three_layer.layer3_theoretical.nines, 2),
+            "availability_percent": round(three_layer.layer3_theoretical.availability * 100, 6),
+            "annual_downtime_seconds": round(three_layer.layer3_theoretical.annual_downtime_seconds, 0),
+            "description": three_layer.layer3_theoretical.description,
+        },
+    }
+
+    # ------------------------------------------------------------------
     # Determine overall verdict
     # ------------------------------------------------------------------
     if dyn_critical > 0 or static_critical > 0:
@@ -222,6 +249,7 @@ def _run_evaluation(
         "whatif_results": whatif_results,
         "cap_report": cap_report,
         "graph": graph,
+        "three_layer": three_layer,
     }
 
     return evaluation_data
@@ -613,7 +641,7 @@ def _print_rich_report(evaluation_data: dict, ops_days: int) -> None:
 
     # Header
     header_lines = (
-        f"  InfraSim Full Evaluation Report\n"
+        f"  ChaosProof Full Evaluation Report\n"
         f"  Model: {model_name}\n"
         f"  Components: {num_components}  |  Dependencies: {num_dependencies}"
     )
@@ -702,11 +730,40 @@ def _print_rich_report(evaluation_data: dict, ops_days: int) -> None:
         console.print(f"     Cost Change: 0.0%")
     console.print(f"     Bottlenecks: {bottleneck_count} components")
 
+    # 6. 3-Layer Availability Limits
+    limits = evaluation_data.get("availability_limits", {})
+    if limits:
+        console.print(f"\n  [bold]6. 3-Layer Availability Limits[/]")
+        for layer_key, label in [
+            ("layer1_software", "Layer 1 (Software)"),
+            ("layer2_hardware", "Layer 2 (Hardware)"),
+            ("layer3_theoretical", "Layer 3 (Theoretical)"),
+        ]:
+            layer = limits.get(layer_key, {})
+            nines = layer.get("nines", 0)
+            avail_pct = layer.get("availability_percent", 0)
+            dt = layer.get("annual_downtime_seconds", 0)
+            if nines >= 5:
+                color = "green"
+            elif nines >= 3:
+                color = "yellow"
+            else:
+                color = "red"
+            console.print(
+                f"     [{color}]{label:25s} {nines:.2f} nines "
+                f"({avail_pct:.4f}%) — {dt:.0f}s/year[/]"
+            )
+
     # Overall Assessment
+    l1_nines = limits.get("layer1_software", {}).get("nines", 0) if limits else 0
+    l2_nines = limits.get("layer2_hardware", {}).get("nines", 0) if limits else 0
+    l3_nines = limits.get("layer3_theoretical", {}).get("nines", 0) if limits else 0
     assessment_lines = (
         f"  Overall Assessment\n"
         f"  [dim]|[/] Architecture Score: [bold]{static_report.resilience_score:.0f}/100[/] (structural)\n"
         f"  [dim]|[/] Operational Score: [{avail_color}]{ops_avg_avail:.3f}%[/] availability\n"
+        f"  [dim]|[/] Availability Ceiling: [bold]{l3_nines:.2f} nines[/] (theoretical)\n"
+        f"  [dim]|[/] Practical Ceiling: [bold]{l1_nines:.2f} nines[/] (software limit)\n"
         f"  [dim]|[/] Dynamic Risks: "
         f"[red]{dyn_critical} CRITICAL[/], "
         f"[yellow]{dyn_warning} WARNING[/]\n"
@@ -748,7 +805,7 @@ def _export_html_report(
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<title>InfraSim Full Evaluation Report - {data.get('model', '')}</title>
+<title>ChaosProof Full Evaluation Report - {data.get('model', '')}</title>
 <style>
 body {{ font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
        margin: 2em auto; max-width: 900px; color: #333; }}
@@ -769,7 +826,7 @@ th {{ background: #f8f9fa; }}
 </style>
 </head>
 <body>
-<h1>InfraSim Full Evaluation Report</h1>
+<h1>ChaosProof Full Evaluation Report</h1>
 <p>Model: <strong>{data.get('model', '')}</strong> |
    Components: {data.get('components', 0)} |
    Dependencies: {data.get('dependencies', 0)}</p>
@@ -825,7 +882,7 @@ th {{ background: #f8f9fa; }}
 </ul>
 
 <hr>
-<p><em>Generated by InfraSim evaluate</em></p>
+<p><em>Generated by ChaosProof evaluate</em></p>
 </body>
 </html>"""
 

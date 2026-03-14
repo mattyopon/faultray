@@ -271,7 +271,7 @@ class TestPrintOpsResults:
         result = self._make_ops_result(sli_timeline=[])
         _print_ops_results(result, con)
         output = buf.getvalue()
-        assert "InfraSim Operational Simulation Report" in output
+        assert "Operational Simulation Report" in output
 
     def test_no_summary(self):
         from infrasim.cli.main import _print_ops_results
