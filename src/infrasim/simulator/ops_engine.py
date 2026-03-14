@@ -317,7 +317,9 @@ class SLOTracker:
                             changed = True
 
                 if has_optional_down:
-                    if effective[comp_id] == HealthStatus.HEALTHY:
+                    if effective[comp_id] in (
+                        HealthStatus.HEALTHY,
+                    ):
                         effective[comp_id] = HealthStatus.DEGRADED
                         changed = True
 
@@ -775,8 +777,8 @@ class OpsSimulationEngine:
                     state.current_utilization = effective_util
 
                     # Traffic/degradation-induced health changes.
-                    # Only degrade health when utilization exceeds
-                    # normal capacity thresholds.  At baseline traffic
+                    # Utilization thresholds: >95% triggers OVERLOADED,
+                    # >110% triggers DOWN.  At baseline traffic
                     # (traffic_mult=1.0) most components run at 30-65%
                     # utilization, so they remain HEALTHY.  Overload
                     # kicks in only when traffic spikes or degradation

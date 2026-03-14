@@ -195,6 +195,10 @@ def ops_sim(
         console.print("[red]--days must be between 1 and 30[/]")
         raise typer.Exit(1)
 
+    if diurnal_peak < 1.0:
+        console.print("[red]--diurnal-peak must be >= 1.0[/]")
+        raise typer.Exit(1)
+
     # Load model
     graph: InfraGraph
     slos: list[SLOTarget] = []

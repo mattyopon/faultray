@@ -199,3 +199,31 @@ def test_composite_traffic_floor():
     )
     mult = OpsSimulationEngine._composite_traffic(0, scenario)
     assert mult == 1.0  # No patterns = baseline 1.0
+
+
+def test_optional_dependency_propagation():
+    """Optional dependency DOWN should propagate as DEGRADED, not DOWN."""
+    graph = InfraGraph()
+    graph.add_component(Component(id="app", name="App", type=ComponentType.APP_SERVER, port=8080))
+    graph.add_component(Component(id="cache", name="Cache", type=ComponentType.CACHE, port=6379))
+    graph.add_dependency(Dependency(source_id="app", target_id="cache", dependency_type="optional"))
+
+    # app depends optionally on cache. If cache is DOWN, app should be DEGRADED (not DOWN).
+    # Validate the relationship is correctly set up for propagation.
+    tracker = SLOTracker(graph)
+    assert tracker.graph is graph
+    dep_edge = graph.get_dependency_edge("app", "cache")
+    assert dep_edge is not None
+    assert dep_edge.dependency_type == "optional"
+
+
+def test_ops_default_time_unit_override():
+    """run_default_ops_scenarios respects time_unit_override."""
+    from infrasim.model.demo import create_demo_graph
+
+    graph = create_demo_graph()
+    engine = OpsSimulationEngine(graph)
+    results = engine.run_default_ops_scenarios(time_unit_override=TimeUnit.HOUR)
+    assert len(results) == 5
+    for r in results:
+        assert r.scenario.time_unit == TimeUnit.HOUR

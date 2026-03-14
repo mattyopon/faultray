@@ -371,11 +371,8 @@ class DynamicSimulationEngine:
     ) -> dict[tuple[str, str], _CircuitBreakerDynamicState]:
         """Create mutable CB state for every dependency with circuit_breaker enabled."""
         cb_states: dict[tuple[str, str], _CircuitBreakerDynamicState] = {}
-        for edge in self.graph._graph.edges:
-            src, tgt = edge
-            dep: Dependency | None = self.graph.get_dependency_edge(src, tgt)
-            if dep is None:
-                continue
+        for dep in self.graph.all_dependency_edges():
+            src, tgt = dep.source_id, dep.target_id
             cfg: CircuitBreakerConfig = dep.circuit_breaker
             if not cfg.enabled:
                 continue

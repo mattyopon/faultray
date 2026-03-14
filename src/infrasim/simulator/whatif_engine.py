@@ -363,9 +363,16 @@ class WhatIfEngine:
             elif param == "replica_factor":
                 for comp in modified_graph.components.values():
                     original = comp.replicas
-                    new_replicas = max(1, round(original * value))
+                    unclamped = round(original * value)
+                    new_replicas = max(1, unclamped)
                     comp.replicas = new_replicas
-                    if original > 0 and new_replicas != original:
+                    # Only adjust metrics when replicas actually changed
+                    # and clamping did not prevent the reduction.
+                    if (
+                        original > 0
+                        and new_replicas != original
+                        and unclamped == new_replicas
+                    ):
                         load_ratio = original / new_replicas
                         comp.metrics.cpu_percent = min(
                             100.0, comp.metrics.cpu_percent * load_ratio
@@ -638,13 +645,19 @@ class WhatIfEngine:
         graph = copy.deepcopy(self.graph)
         for comp in graph.components.values():
             original = comp.replicas
-            new_replicas = max(1, round(original * factor))
+            unclamped = round(original * factor)
+            new_replicas = max(1, unclamped)
             comp.replicas = new_replicas
 
             # Scale metrics inversely: fewer replicas → higher per-instance
             # load.  This ensures the simulation reflects the actual impact
             # of reducing or increasing replica counts.
-            if original > 0 and new_replicas != original:
+            # Skip adjustment when clamping prevented the intended reduction.
+            if (
+                original > 0
+                and new_replicas != original
+                and unclamped == new_replicas
+            ):
                 load_ratio = original / new_replicas
                 comp.metrics.cpu_percent = min(
                     100.0, comp.metrics.cpu_percent * load_ratio
