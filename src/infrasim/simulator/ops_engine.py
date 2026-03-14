@@ -347,44 +347,91 @@ class SLOTracker:
         SLIDataPoint
             The measurement recorded.
         """
-        total = len(comp_states)
-
         # Use dependency-propagated effective health for counting
         effective_health = self._propagate_dependencies(comp_states)
         self._last_effective_health = effective_health
 
-        healthy = degraded = overloaded = down = 0
-        # Fractional DOWN for components with failover: during failover
-        # promotion, some requests fail but the service is not fully down.
-        # We model this as a partial DOWN contribution based on promotion time.
-        fractional_down = 0.0
-        for comp_id, h in effective_health.items():
+        # --- Service-tier aware availability ---
+        # Group components into tiers by name prefix (e.g. hono-api-*).
+        # A tier is available if ANY member is healthy/degraded.
+        # Only when ALL members of a tier are DOWN is the tier unavailable.
+        import re
+        tiers: dict[str, list[str]] = {}
+        standalone: list[str] = []
+        for comp_id in effective_health:
+            # Extract tier prefix: "hono-api-1" → "hono-api"
+            match = re.match(r'^(.*?)-?\d+$', comp_id)
+            prefix = match.group(1) if match else None
+            # Only tier if there are multiple members with same prefix
+            if prefix:
+                tiers.setdefault(prefix, []).append(comp_id)
+            else:
+                standalone.append(comp_id)
+
+        # Separate real tiers (2+ members) from standalone
+        real_tiers = {k: v for k, v in tiers.items() if len(v) >= 2}
+        for k, v in tiers.items():
+            if len(v) < 2:
+                standalone.extend(v)
+
+        # Count tier-level health
+        tier_count = len(real_tiers) + len(standalone)
+        tier_down = 0
+        tier_fractional_down = 0.0
+
+        # For each tier: DOWN only if ALL members are DOWN
+        for tier_prefix, members in real_tiers.items():
+            member_health = [effective_health[m] for m in members]
+            all_down = all(h == HealthStatus.DOWN for h in member_health)
+            if all_down:
+                # Check if failover-enabled
+                comp = self.graph.get_component(members[0])
+                if comp and comp.failover.enabled:
+                    promotion = comp.failover.promotion_time_seconds
+                    detection = comp.failover.health_check_interval_seconds * comp.failover.failover_threshold
+                    tier_fractional_down += min(0.5, (promotion + detection) / 300.0)
+                else:
+                    tier_down += 1
+            # If not all down → tier is available (no impact)
+
+        # Standalone components: individual health
+        for comp_id in standalone:
+            h = effective_health[comp_id]
             if h == HealthStatus.DOWN:
                 comp = self.graph.get_component(comp_id)
-                if comp and comp.failover.enabled:
-                    # Failover reduces impact: longer promotion = more impact.
-                    # 5s promotion ≈ 10% of a 5-min step is DOWN-equivalent,
-                    # capped at 0.5 (failover can't eliminate more than half).
+                if comp and comp.replicas >= 2:
+                    # Multi-replica component: internal redundancy absorbs
+                    # individual instance failures. Only a fractional impact
+                    # during replica recovery.
+                    if comp.failover.enabled:
+                        promotion = comp.failover.promotion_time_seconds
+                        detection = comp.failover.health_check_interval_seconds * comp.failover.failover_threshold
+                        tier_fractional_down += min(0.3, (promotion + detection) / 300.0)
+                    # else: replicas handle it, negligible impact
+                elif comp and comp.failover.enabled:
+                    # Single replica with failover: fractional impact
                     promotion = comp.failover.promotion_time_seconds
-                    health_interval = comp.failover.health_check_interval_seconds
-                    detection_delay = health_interval * comp.failover.failover_threshold
-                    total_outage = promotion + detection_delay
-                    # Fraction of a typical 5-min window that's impacted
-                    impact_fraction = min(0.5, total_outage / 300.0)
-                    fractional_down += impact_fraction
+                    detection = comp.failover.health_check_interval_seconds * comp.failover.failover_threshold
+                    tier_fractional_down += min(0.5, (promotion + detection) / 300.0)
                 else:
-                    down += 1
-            elif h == HealthStatus.HEALTHY:
+                    tier_down += 1
+
+        # Also count individual states for SLIDataPoint fields
+        healthy = degraded = overloaded = down = 0
+        for h in effective_health.values():
+            if h == HealthStatus.HEALTHY:
                 healthy += 1
             elif h == HealthStatus.DEGRADED:
                 degraded += 1
             elif h == HealthStatus.OVERLOADED:
                 overloaded += 1
+            elif h == HealthStatus.DOWN:
+                down += 1
+        total = len(comp_states)
 
-        # Availability: DOWN = 0%, failover-DOWN = partial, OVERLOADED = 80%,
-        # DEGRADED/HEALTHY = 100%.
-        effective_up = total - down - fractional_down - (overloaded * 0.2)
-        availability = (effective_up / total * 100.0) if total > 0 else 100.0
+        # Service-tier availability
+        effective_up = tier_count - tier_down - tier_fractional_down
+        availability = (effective_up / tier_count * 100.0) if tier_count > 0 else 100.0
 
         # Max utilization across all components
         max_util = max(
