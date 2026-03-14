@@ -297,7 +297,7 @@ class TestHTTPExceptionHandler:
 
         app.dependency_overrides[_optional_user] = _raise_http_exc
         try:
-            resp = client.get("/api/graph-data")
+            resp = client.get("/api/audit-logs")
             assert resp.status_code == 403
             data = resp.json()
             assert "error" in data
@@ -790,6 +790,7 @@ class TestOAuthRoutes:
             "email": "existing@example.com",
             "name": "Old Name",
             "api_key_hash": hash_api_key("old-key"),
+            "role": "viewer",
             "created_at": now,
         }])
 
@@ -871,10 +872,18 @@ class TestMultiTenantRuns:
             {"engine_type": "static", "risk_score": 60.0, "created_at": now},
         ])
 
-        # Override _optional_user dependency to return a user with team_id
-        from infrasim.api.server import _optional_user
-        mock_user = SimpleNamespace(id=1, team_id=team_id)
-        app.dependency_overrides[_optional_user] = lambda: mock_user
+        # Override the RBAC dependency for the /api/runs GET route
+        mock_user = SimpleNamespace(id=1, team_id=team_id, role="viewer")
+        dep_func = None
+        for route in app.routes:
+            if hasattr(route, "path") and route.path == "/api/runs" and "GET" in getattr(route, "methods", set()):
+                for dep in route.dependant.dependencies:
+                    dep_func = dep.call
+                    break
+                break
+
+        if dep_func is not None:
+            app.dependency_overrides[dep_func] = lambda: mock_user
         try:
             resp = db_client.get("/api/runs")
             assert resp.status_code == 200
@@ -893,7 +902,6 @@ class TestMultiTenantProjects:
     def test_list_projects_with_user_team_filter(self, db_client):
         """Cover lines 722-726: projects filtered by user's team."""
         from infrasim.api.auth import hash_api_key
-        from infrasim.api.server import _optional_user
 
         now = "2026-01-01T00:00:00"
         tids = _seed_sync(db_client._db_path, "teams", [{"name": "proj-team", "created_at": now}])
@@ -903,6 +911,7 @@ class TestMultiTenantProjects:
             "email": "team@example.com",
             "name": "Team User",
             "api_key_hash": hash_api_key("team-key"),
+            "role": "editor",
             "team_id": team_id,
             "created_at": now,
         }])
@@ -913,8 +922,24 @@ class TestMultiTenantProjects:
             {"name": "Other Proj", "created_at": now, "updated_at": now},
         ])
 
-        mock_user = SimpleNamespace(id=user_id, team_id=team_id)
-        app.dependency_overrides[_optional_user] = lambda: mock_user
+        # The /api/projects endpoint uses _require_permission("view_results"),
+        # which wraps require_permission and returns the user.  We need to
+        # override the actual dependency function attached to the route.
+        # Extract the dependency from the route so we can override it properly.
+        from infrasim.api.server import _require_permission
+        mock_user = SimpleNamespace(id=user_id, team_id=team_id, role="editor")
+
+        # Find the actual dependency function used by the /api/projects GET route
+        dep_func = None
+        for route in app.routes:
+            if hasattr(route, "path") and route.path == "/api/projects" and "GET" in getattr(route, "methods", set()):
+                for dep in route.dependant.dependencies:
+                    dep_func = dep.call
+                    break
+                break
+
+        if dep_func is not None:
+            app.dependency_overrides[dep_func] = lambda: mock_user
         try:
             resp = db_client.get("/api/projects")
             assert resp.status_code == 200

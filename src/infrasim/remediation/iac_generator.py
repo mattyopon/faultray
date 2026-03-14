@@ -705,6 +705,68 @@ class IaCGenerator:
             readme_content=readme,
         )
 
+    def dry_run(self, plan: RemediationPlan) -> str:
+        """Generate a human-readable diff preview of what would change.
+
+        Similar to ``terraform plan`` output.  Shows each file that would
+        be created with ``+`` prefixed lines, and a summary of resources
+        to add / change / destroy.
+
+        Args:
+            plan: the remediation plan to preview.
+
+        Returns:
+            A multi-line string suitable for printing to the terminal.
+        """
+        if not plan.files:
+            return "No changes. Infrastructure meets the target score."
+
+        lines: list[str] = []
+        adds = 0
+        changes = 0
+        destroys = 0
+
+        phase_titles = {
+            1: "Phase 1: Critical (SPOF Elimination)",
+            2: "Phase 2: Security Hardening",
+            3: "Phase 3: Disaster Recovery",
+        }
+
+        current_phase: int | None = None
+
+        for f in plan.files:
+            if f.phase != current_phase:
+                current_phase = f.phase
+                title = phase_titles.get(f.phase, f"Phase {f.phase}")
+                lines.append("")
+                lines.append(f"--- {title} ---")
+                lines.append("")
+
+            lines.append(f"# {f.description}")
+            lines.append(f"# File: {f.path}  (impact: +{f.impact_score_delta:.1f}, cost: ${f.monthly_cost:,.2f}/mo)")
+
+            for content_line in f.content.splitlines():
+                lines.append(f"+ {content_line}")
+
+            lines.append("")
+
+            # Count resources in content (heuristic)
+            resource_count = f.content.count("resource ")
+            resource_count += f.content.count("kind:")
+            adds += max(1, resource_count)
+
+        lines.append("------------------------------------------------------------------------")
+        lines.append(f"Plan: {adds} to add, {changes} to change, {destroys} to destroy.")
+        lines.append("")
+        lines.append(
+            f"Resilience score: {plan.expected_score_before:.1f} -> "
+            f"{plan.expected_score_after:.1f}  "
+            f"(+{plan.expected_score_after - plan.expected_score_before:.1f})"
+        )
+        lines.append(f"Estimated monthly cost: ${plan.total_monthly_cost:,.2f}")
+
+        return "\n".join(lines)
+
     def write_to_directory(self, plan: RemediationPlan, output_dir: Path) -> None:
         """Write all remediation files and README to *output_dir*.
 

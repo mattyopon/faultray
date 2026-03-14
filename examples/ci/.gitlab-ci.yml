@@ -1,0 +1,34 @@
+# GitLab CI template for ChaosProof chaos simulation
+# Copy this file to your repository root as .gitlab-ci.yml
+
+stages:
+  - test
+  - chaos
+
+chaosproof:
+  stage: chaos
+  image: python:3.12
+  before_script:
+    - pip install chaosproof
+  script:
+    - chaosproof simulate --model infra.yaml --json > results.json
+    - |
+      CRITICAL=$(python3 -c "
+      import json, sys
+      r = json.load(open('results.json'))
+      c = r.get('critical_count', len([x for x in r.get('results', []) if x.get('is_critical')]))
+      print(c)
+      sys.exit(1 if c > 0 else 0)
+      ")
+      echo "Critical findings: $CRITICAL"
+    - chaosproof simulate --model infra.yaml --baseline baseline.json || true
+  artifacts:
+    reports:
+      codequality: results.json
+    paths:
+      - results.json
+    when: always
+  allow_failure: false
+  rules:
+    - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
+    - if: '$CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH'

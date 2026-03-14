@@ -272,6 +272,23 @@ async def _optional_user(request: Request):
         return None
 
 
+def _require_permission(permission: str):
+    """Lazy wrapper around auth.require_permission (opt-in RBAC).
+
+    Falls back to allowing all access if the auth module cannot be loaded.
+    """
+    async def _dep(request: Request):
+        try:
+            from infrasim.api.auth import require_permission
+            checker = require_permission(permission)
+            return await checker(request)
+        except HTTPException:
+            raise
+        except Exception:
+            return None
+    return _dep
+
+
 # ---------------------------------------------------------------------------
 # HTML routes (public)
 # ---------------------------------------------------------------------------
@@ -384,7 +401,7 @@ async def analyze_page(request: Request):
 # ---------------------------------------------------------------------------
 
 @app.get("/api/analyze", response_class=JSONResponse)
-async def api_analyze(user=Depends(_optional_user)):
+async def api_analyze(user=Depends(_require_permission("view_results"))):
     """Run AI analysis and return JSON results."""
     global _last_report
     graph = get_graph()
@@ -430,7 +447,7 @@ async def simulation_run_get():
 
 
 @app.post("/api/simulate", response_class=JSONResponse)
-async def api_simulate(request: Request, user=Depends(_optional_user)):
+async def api_simulate(request: Request, user=Depends(_require_permission("run_simulation"))):
     """Run simulation and return JSON results (POST endpoint)."""
     global _last_report
     graph = get_graph()
@@ -469,7 +486,7 @@ async def api_simulate(request: Request, user=Depends(_optional_user)):
 
 
 @app.get("/api/graph-data", response_class=JSONResponse)
-async def api_graph_data(user=Depends(_optional_user)):
+async def api_graph_data(user=Depends(_require_permission("view_results"))):
     """Return graph data as nodes + edges for D3.js."""
     graph = get_graph()
     data = graph.to_dict()
@@ -529,7 +546,7 @@ async def list_runs(
     limit: int = 50,
     offset: int = 0,
     project_id: int | None = None,
-    user=Depends(_optional_user),
+    user=Depends(_require_permission("view_results")),
 ):
     """List past simulation runs (newest first).
 
@@ -591,7 +608,7 @@ async def list_runs(
 
 
 @app.get("/api/runs/{run_id}", response_class=JSONResponse)
-async def get_run(run_id: int, user=Depends(_optional_user)):
+async def get_run(run_id: int, user=Depends(_require_permission("view_results"))):
     """Get a specific simulation run by ID."""
     try:
         from infrasim.api.database import SimulationRunRow, get_session_factory
@@ -621,7 +638,7 @@ async def get_run(run_id: int, user=Depends(_optional_user)):
 
 
 @app.delete("/api/runs/{run_id}", response_class=JSONResponse)
-async def delete_run(run_id: int, request: Request, user=Depends(_optional_user)):
+async def delete_run(run_id: int, request: Request, user=Depends(_require_permission("run_simulation"))):
     """Delete a simulation run by ID."""
     try:
         from infrasim.api.database import SimulationRunRow, get_session_factory, log_audit
@@ -660,7 +677,7 @@ async def delete_run(run_id: int, request: Request, user=Depends(_optional_user)
 # ---------------------------------------------------------------------------
 
 @app.post("/api/projects", response_class=JSONResponse)
-async def create_project(request: Request, user=Depends(_optional_user)):
+async def create_project(request: Request, user=Depends(_require_permission("create_project"))):
     """Create a new project.
 
     Expects JSON body with ``name`` (required) and ``team_id`` (optional).
@@ -712,7 +729,7 @@ async def create_project(request: Request, user=Depends(_optional_user)):
 
 
 @app.get("/api/projects", response_class=JSONResponse)
-async def list_projects(user=Depends(_optional_user)):
+async def list_projects(user=Depends(_require_permission("view_results"))):
     """List projects visible to the current user.
 
     When auth is active and the user belongs to a team, only projects

@@ -57,6 +57,7 @@ class UserRow(Base):
     email: Mapped[str] = mapped_column(String(320), unique=True, nullable=False)
     name: Mapped[str] = mapped_column(String(255), nullable=False)
     api_key_hash: Mapped[str] = mapped_column(String(64), unique=True, nullable=False)
+    role: Mapped[str] = mapped_column(String(20), nullable=False, default="viewer")
     team_id: Mapped[int | None] = mapped_column(ForeignKey("teams.id"), nullable=True)
     created_at: Mapped[_dt.datetime] = mapped_column(
         DateTime, server_default=func.now(), nullable=False,

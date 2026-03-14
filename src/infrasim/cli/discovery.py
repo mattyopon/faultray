@@ -27,8 +27,13 @@ def scan(
         None, "--prometheus-url", help="Prometheus server URL (e.g. http://localhost:9090)"
     ),
     aws: bool = typer.Option(False, "--aws", help="Scan AWS infrastructure via boto3"),
+    gcp: bool = typer.Option(False, "--gcp", help="Scan GCP infrastructure via google-cloud libraries"),
+    k8s: bool = typer.Option(False, "--k8s", help="Scan Kubernetes cluster via kubernetes client"),
     region: str = typer.Option("ap-northeast-1", "--region", help="AWS region (used with --aws)"),
     profile: str | None = typer.Option(None, "--profile", help="AWS profile name (used with --aws)"),
+    project: str | None = typer.Option(None, "--project", help="GCP project ID (used with --gcp)"),
+    context: str | None = typer.Option(None, "--context", help="Kubernetes context (used with --k8s)"),
+    namespace: str | None = typer.Option(None, "--namespace", help="Kubernetes namespace (used with --k8s)"),
     save_yaml: Path | None = typer.Option(
         None, "--save-yaml", help="Export discovered model as YAML to this path"
     ),
@@ -40,6 +45,52 @@ def scan(
         console.print(f"[cyan]Scanning AWS infrastructure in {region}...[/]")
         try:
             scanner = AWSScanner(region=region, profile=profile)
+            result = scanner.scan()
+        except RuntimeError as exc:
+            console.print(f"[red]{exc}[/]")
+            raise typer.Exit(1)
+
+        graph = result.graph
+        console.print(
+            f"[green]Discovered {result.components_found} components, "
+            f"{result.dependencies_inferred} dependencies "
+            f"in {result.scan_duration_seconds:.1f}s[/]"
+        )
+        if result.warnings:
+            for w in result.warnings:
+                console.print(f"[yellow]Warning: {w}[/]")
+    elif gcp:
+        from infrasim.discovery.gcp_scanner import GCPScanner
+
+        if not project:
+            console.print("[red]--project is required with --gcp[/]")
+            raise typer.Exit(1)
+
+        console.print(f"[cyan]Scanning GCP infrastructure in project {project}...[/]")
+        try:
+            scanner = GCPScanner(project_id=project)
+            result = scanner.scan()
+        except RuntimeError as exc:
+            console.print(f"[red]{exc}[/]")
+            raise typer.Exit(1)
+
+        graph = result.graph
+        console.print(
+            f"[green]Discovered {result.components_found} components, "
+            f"{result.dependencies_inferred} dependencies "
+            f"in {result.scan_duration_seconds:.1f}s[/]"
+        )
+        if result.warnings:
+            for w in result.warnings:
+                console.print(f"[yellow]Warning: {w}[/]")
+    elif k8s:
+        from infrasim.discovery.k8s_scanner import K8sScanner
+
+        ctx_msg = f" (context: {context})" if context else ""
+        ns_msg = f" (namespace: {namespace})" if namespace else ""
+        console.print(f"[cyan]Scanning Kubernetes cluster{ctx_msg}{ns_msg}...[/]")
+        try:
+            scanner = K8sScanner(context=context, namespace=namespace)
             result = scanner.scan()
         except RuntimeError as exc:
             console.print(f"[red]{exc}[/]")
@@ -166,6 +217,70 @@ def tf_import(
     graph.save(output)
     console.print(f"\n[green]Model saved to {output}[/]")
     console.print(f"Run [cyan]infrasim simulate -m {output}[/] to analyze risks.")
+
+
+@app.command()
+def calibrate(
+    model: Path = typer.Option(DEFAULT_MODEL_PATH, "--model", "-m", help="Model file path"),
+    prometheus: str | None = typer.Option(None, "--prometheus", help="Prometheus URL (e.g. http://prometheus:9090)"),
+    cloudwatch: bool = typer.Option(False, "--cloudwatch", help="Calibrate from AWS CloudWatch metrics"),
+    region: str = typer.Option("ap-northeast-1", "--region", help="AWS region (used with --cloudwatch)"),
+    output: Path | None = typer.Option(None, "--output", "-o", help="Save calibrated model to this path"),
+    yaml_file: Path | None = typer.Option(None, "--yaml", "-y", help="YAML file with infrastructure definition"),
+) -> None:
+    """Calibrate simulation models using real-world metrics from Prometheus or CloudWatch."""
+    from rich.table import Table
+
+    from infrasim.cli.main import _load_graph_for_analysis
+    from infrasim.discovery.metric_calibrator import MetricCalibrator
+
+    graph = _load_graph_for_analysis(model, yaml_file)
+    calibrator = MetricCalibrator(graph)
+
+    if prometheus:
+        console.print(f"[cyan]Calibrating from Prometheus at {prometheus}...[/]")
+        results = calibrator.calibrate_from_prometheus(prometheus)
+    elif cloudwatch:
+        console.print(f"[cyan]Calibrating from CloudWatch in {region}...[/]")
+        results = calibrator.calibrate_from_cloudwatch(region)
+    else:
+        console.print("[red]Specify --prometheus URL or --cloudwatch[/]")
+        raise typer.Exit(1)
+
+    if not results:
+        console.print("[yellow]No calibration results (no matching components found).[/]")
+        return
+
+    table = Table(title="Calibration Results", show_header=True)
+    table.add_column("Component", style="cyan", width=20)
+    table.add_column("Metric", width=16)
+    table.add_column("Simulated", justify="right", width=10)
+    table.add_column("Actual", justify="right", width=10)
+    table.add_column("Deviation", justify="right", width=10)
+    table.add_column("Calibrated", justify="center", width=10)
+
+    calibrated_count = 0
+    for r in results:
+        cal_str = "[green]YES[/]" if r.calibrated else "[dim]no[/]"
+        dev_color = "red" if abs(r.deviation_percent) >= 20 else "yellow" if abs(r.deviation_percent) >= 10 else "green"
+        table.add_row(
+            r.component_id,
+            r.metric,
+            f"{r.simulated_value:.1f}%",
+            f"{r.actual_value:.1f}%",
+            f"[{dev_color}]{r.deviation_percent:+.1f}%[/]",
+            cal_str,
+        )
+        if r.calibrated:
+            calibrated_count += 1
+
+    console.print()
+    console.print(table)
+    console.print(f"\n[bold]{calibrated_count}[/] of {len(results)} metrics calibrated.")
+
+    save_path = output or model
+    graph.save(save_path)
+    console.print(f"[green]Calibrated model saved to {save_path}[/]")
 
 
 @app.command()

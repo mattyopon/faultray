@@ -1,0 +1,62 @@
+// Jenkinsfile template for ChaosProof chaos simulation
+// Copy this file to your repository root as Jenkinsfile (or include as a stage)
+
+pipeline {
+    agent {
+        docker {
+            image 'python:3.12'
+        }
+    }
+
+    environment {
+        INFRA_MODEL = 'infra.yaml'
+    }
+
+    stages {
+        stage('Install ChaosProof') {
+            steps {
+                sh 'pip install chaosproof'
+            }
+        }
+
+        stage('Run Chaos Simulation') {
+            steps {
+                sh '''
+                    chaosproof simulate --model ${INFRA_MODEL} --json > results.json
+                    cat results.json
+                '''
+            }
+        }
+
+        stage('Check Results') {
+            steps {
+                script {
+                    def results = readJSON file: 'results.json'
+                    def criticalCount = 0
+                    if (results.critical_count != null) {
+                        criticalCount = results.critical_count
+                    } else if (results.results != null) {
+                        criticalCount = results.results.count { it.is_critical }
+                    }
+                    echo "Resilience Score: ${results.resilience_score}"
+                    echo "Critical Findings: ${criticalCount}"
+                    if (criticalCount > 0) {
+                        error "ChaosProof found ${criticalCount} critical issue(s). Failing build."
+                    }
+                }
+            }
+        }
+    }
+
+    post {
+        always {
+            archiveArtifacts artifacts: 'results.json', allowEmptyArchive: true
+        }
+        failure {
+            echo 'ChaosProof simulation detected critical infrastructure issues.'
+        }
+        success {
+            echo 'ChaosProof simulation passed — no critical findings.'
+        }
+    }
+}

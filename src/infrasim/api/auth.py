@@ -1,9 +1,10 @@
-"""API key authentication for InfraSim."""
+"""API key authentication and RBAC for ChaosProof."""
 
 from __future__ import annotations
 
 import hashlib
 import secrets
+from enum import Enum
 from typing import Optional
 
 from fastapi import Depends, HTTPException, Request, status
@@ -11,6 +12,61 @@ from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from sqlalchemy import select
 
 from infrasim.api.database import UserRow, get_session_factory
+
+
+# ---------------------------------------------------------------------------
+# RBAC — Role-Based Access Control
+# ---------------------------------------------------------------------------
+
+class Role(str, Enum):
+    ADMIN = "admin"      # Full access
+    EDITOR = "editor"    # Run simulations, create projects
+    VIEWER = "viewer"    # Read-only access
+
+
+ROLE_PERMISSIONS: dict[Role, set[str]] = {
+    Role.ADMIN: {"*"},  # everything
+    Role.EDITOR: {
+        "view_dashboard", "run_simulation", "create_project",
+        "view_results", "export_results", "manage_own_projects",
+    },
+    Role.VIEWER: {
+        "view_dashboard", "view_results", "export_results",
+    },
+}
+
+
+def require_permission(permission: str):
+    """FastAPI dependency that checks user has required permission.
+
+    RBAC is **opt-in**: when no users exist in the database (backward-
+    compatible / no-auth mode), all permissions are granted.
+    """
+    async def check(request: Request):
+        user = await _resolve_user(request)
+        # No-auth mode: allow everything
+        if user is None:
+            return None
+        role = Role(getattr(user, "role", None) or "viewer")
+        allowed = ROLE_PERMISSIONS.get(role, set())
+        if "*" not in allowed and permission not in allowed:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail=f"Permission '{permission}' required",
+            )
+        return user
+    return check
+
+
+async def _resolve_user(request: Request) -> UserRow | None:
+    """Resolve user for permission checks, reusing get_current_user logic."""
+    try:
+        credentials = await _bearer_scheme(request)
+        return await get_current_user(request, credentials)
+    except HTTPException:
+        raise
+    except Exception:
+        return None
 
 # ---------------------------------------------------------------------------
 # Helpers

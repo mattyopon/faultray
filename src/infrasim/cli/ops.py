@@ -1057,6 +1057,7 @@ def fix(
     output: Path = typer.Option(Path("./remediation"), "--output", "-o", help="Output directory for IaC files"),
     target_score: float = typer.Option(90.0, "--target-score", "-t", help="Target resilience score (0-100)"),
     json_output: bool = typer.Option(False, "--json", help="Output plan as JSON instead of writing files"),
+    dry_run: bool = typer.Option(False, "--dry-run", help="Show diff preview without writing files"),
 ) -> None:
     """Generate IaC remediation code (Terraform/Kubernetes) to fix infrastructure issues."""
     import json as json_lib
@@ -1071,6 +1072,11 @@ def fix(
 
     generator = IaCGenerator(graph)
     plan = generator.generate(target_score=target_score)
+
+    if dry_run:
+        preview = generator.dry_run(plan)
+        console.print(preview)
+        return
 
     if json_output:
         console.print_json(data=plan.to_dict())
