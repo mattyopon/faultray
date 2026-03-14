@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "chaosproof"
-version = "1.0.0"
+version = "1.1.0"
 description = "ChaosProof — Zero-risk infrastructure chaos engineering. Prove your availability ceiling mathematically."
 readme = "README.md"
 license = {text = "MIT"}
