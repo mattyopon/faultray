@@ -1051,12 +1051,14 @@ class TestTfImport:
             ])
             assert result.exit_code == 0
 
-    def test_tf_import_dir_error(self, tmp_path):
+    def test_tf_import_dir_error_falls_back_to_hcl(self, tmp_path):
+        """When terraform show fails with --dir, falls back to HCL parsing."""
         with patch("infrasim.discovery.terraform.load_tf_state_cmd", side_effect=RuntimeError("terraform not found")):
             result = runner.invoke(app, [
                 "tf-import", "--dir", str(tmp_path),
             ])
-            assert result.exit_code != 0
+            assert result.exit_code == 0
+            assert "falling back to HCL" in result.output
 
     def test_tf_import_no_args(self, tmp_path):
         """When no --state or --dir, runs in current directory."""

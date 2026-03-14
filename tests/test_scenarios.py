@@ -1,7 +1,7 @@
 """Tests for scenario generation logic."""
 
-from infrasim.model.components import Component, ComponentType
-from infrasim.simulator.scenarios import generate_default_scenarios
+from infrasim.model.components import Capacity, Component, ComponentType
+from infrasim.simulator.scenarios import FaultType, generate_default_scenarios
 
 
 def _make_components(n: int) -> dict[str, Component]:
@@ -70,3 +70,52 @@ def test_no_rolling_restart_with_one_server():
     scenarios = generate_default_scenarios(ids, components=comps)
     sc = _find_scenario(scenarios, "rolling-restart-fail")
     assert sc is None, "Should not generate rolling restart for single server"
+
+
+def test_cascading_timeout_scenarios():
+    """Category 29: Components with timeout_seconds > 0 should generate cascading timeout scenarios."""
+    comps = {
+        "db-1": Component(
+            id="db-1", name="Database 1", type=ComponentType.DATABASE,
+            capacity=Capacity(timeout_seconds=60.0),
+        ),
+        "app-1": Component(
+            id="app-1", name="App Server 1", type=ComponentType.APP_SERVER,
+            capacity=Capacity(timeout_seconds=30.0),
+        ),
+    }
+    ids = list(comps.keys())
+    scenarios = generate_default_scenarios(ids, components=comps)
+
+    # Both components have timeout_seconds > 0, so both should get a cascading timeout scenario
+    sc_db = _find_scenario(scenarios, "cascading-timeout-db-1")
+    sc_app = _find_scenario(scenarios, "cascading-timeout-app-1")
+    assert sc_db is not None, "cascading-timeout-db-1 should be generated"
+    assert sc_app is not None, "cascading-timeout-app-1 should be generated"
+
+    # Verify the fault is a LATENCY_SPIKE with multiplier 20
+    assert len(sc_db.faults) == 1
+    assert sc_db.faults[0].fault_type == FaultType.LATENCY_SPIKE
+    assert sc_db.faults[0].parameters.get("multiplier") == 20
+
+
+def test_sustained_degradation_scenarios():
+    """Category 30: Each app_server should get a sustained degradation scenario."""
+    comps = _make_components(3)
+    ids = list(comps.keys())
+    scenarios = generate_default_scenarios(ids, components=comps)
+
+    for i in range(3):
+        sc = _find_scenario(scenarios, f"sustained-degradation-app-{i}")
+        assert sc is not None, f"sustained-degradation-app-{i} should be generated"
+        # Should have exactly 2 faults: CPU_SATURATION + MEMORY_EXHAUSTION
+        assert len(sc.faults) == 2, f"Expected 2 faults, got {len(sc.faults)}"
+        fault_types = {f.fault_type for f in sc.faults}
+        assert FaultType.CPU_SATURATION in fault_types
+        assert FaultType.MEMORY_EXHAUSTION in fault_types
+        # Check severities
+        for f in sc.faults:
+            if f.fault_type == FaultType.CPU_SATURATION:
+                assert f.severity == 0.8
+            elif f.fault_type == FaultType.MEMORY_EXHAUSTION:
+                assert f.severity == 0.7

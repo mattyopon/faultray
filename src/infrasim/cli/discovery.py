@@ -109,7 +109,7 @@ def tf_import(
     output: Path = typer.Option(DEFAULT_MODEL_PATH, "--output", "-o", help="Output model file path"),
 ) -> None:
     """Import infrastructure from Terraform state."""
-    from infrasim.discovery.terraform import load_tf_state_cmd, load_tf_state_file
+    from infrasim.discovery.terraform import load_hcl_directory, load_tf_state_cmd, load_tf_state_file
 
     if tf_state:
         console.print(f"[cyan]Importing from Terraform state file: {tf_state}...[/]")
@@ -118,9 +118,9 @@ def tf_import(
         console.print(f"[cyan]Running 'terraform show -json' in {tf_dir}...[/]")
         try:
             graph = load_tf_state_cmd(tf_dir)
-        except RuntimeError as exc:
-            console.print(f"[red]{exc}[/]")
-            raise typer.Exit(1)
+        except RuntimeError:
+            console.print("[yellow]terraform show failed, falling back to HCL file parsing...[/]")
+            graph = load_hcl_directory(tf_dir)
     else:
         console.print("[cyan]Running 'terraform show -json' in current directory...[/]")
         try:

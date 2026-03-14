@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import re
 import subprocess
 from pathlib import Path
 
@@ -199,6 +200,79 @@ def load_tf_plan_cmd(plan_file: Path | None = None, tf_dir: Path | None = None) 
 
     data = json.loads(result.stdout)
     return parse_tf_plan(data)
+
+
+def load_hcl_directory(tf_dir: Path) -> InfraGraph:
+    """Parse .tf files directly from a Terraform project directory.
+
+    Scans for resource blocks (aws_instance, aws_rds_cluster, etc.)
+    and maps them to InfraGraph components.  This provides a best-effort
+    import when no tfstate is available — only resource type and name are
+    extracted (attribute values are not deeply parsed from HCL).
+    """
+    graph = InfraGraph()
+
+    # HCL resource type to ComponentType mapping (subset most commonly used)
+    hcl_type_map: dict[str, ComponentType] = {
+        "aws_instance": ComponentType.APP_SERVER,
+        "aws_ecs_service": ComponentType.APP_SERVER,
+        "aws_rds_cluster": ComponentType.DATABASE,
+        "aws_rds_instance": ComponentType.DATABASE,
+        "aws_elasticache_cluster": ComponentType.CACHE,
+        "aws_lb": ComponentType.LOAD_BALANCER,
+        "aws_alb": ComponentType.LOAD_BALANCER,
+        "aws_sqs_queue": ComponentType.QUEUE,
+        "aws_s3_bucket": ComponentType.STORAGE,
+        "aws_route53_zone": ComponentType.DNS,
+    }
+
+    # Regex to match top-level resource blocks: resource "type" "name" { ... }
+    resource_re = re.compile(
+        r'resource\s+"([^"]+)"\s+"([^"]+)"\s*\{',
+    )
+
+    tf_files = sorted(tf_dir.glob("*.tf"))
+    resources: list[dict] = []
+
+    for tf_file in tf_files:
+        content = tf_file.read_text(encoding="utf-8", errors="replace")
+        for match in resource_re.finditer(content):
+            res_type = match.group(1)
+            res_name = match.group(2)
+
+            comp_type = hcl_type_map.get(res_type)
+            if comp_type is None:
+                # Also fall back to the broader TF_RESOURCE_MAP
+                comp_type = TF_RESOURCE_MAP.get(res_type)
+            if comp_type is None:
+                continue
+
+            address = f"{res_type}.{res_name}"
+            capacity = DEFAULT_CAPACITY.get(comp_type, Capacity())
+
+            comp = Component(
+                id=address,
+                name=res_name,
+                type=comp_type,
+                capacity=capacity,
+                parameters={
+                    "terraform_type": res_type,
+                    "terraform_address": address,
+                    "source": "hcl_parse",
+                },
+            )
+            graph.add_component(comp)
+            resources.append({
+                "type": res_type,
+                "name": res_name,
+                "address": address,
+                "values": {},
+            })
+
+    # Infer dependencies using the same heuristic as tfstate import
+    _infer_dependencies(graph, resources)
+
+    return graph
 
 
 # --- Internal helpers ---

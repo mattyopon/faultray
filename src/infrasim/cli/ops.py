@@ -618,3 +618,219 @@ def cost(
 
         console.print()
         console.print(table)
+
+
+@app.command()
+def compliance(
+    yaml_pos: Path | None = typer.Argument(None, help="YAML file path (positional)"),
+    model: Path = typer.Option(DEFAULT_MODEL_PATH, "--model", "-m", help="Model file path (JSON or YAML)"),
+    yaml_file: Path | None = typer.Option(None, "--yaml", "-y", help="YAML file with infrastructure definition"),
+    framework: str | None = typer.Option(None, "--framework", "-f", help="Framework to check: soc2, iso27001, pci_dss, nist_csf"),
+    all_frameworks: bool = typer.Option(False, "--all", help="Check all frameworks"),
+    json_output: bool = typer.Option(False, "--json", help="Output JSON summary"),
+) -> None:
+    """Check infrastructure compliance against regulatory frameworks."""
+    from rich.panel import Panel
+    from rich.table import Table
+
+    from infrasim.simulator.compliance_engine import ComplianceEngine
+
+    resolved_yaml = yaml_pos or yaml_file
+    graph = _load_graph_for_analysis(model, resolved_yaml)
+
+    engine = ComplianceEngine(graph)
+
+    valid_frameworks = {"soc2", "iso27001", "pci_dss", "nist_csf"}
+
+    if all_frameworks:
+        reports = engine.check_all()
+    elif framework:
+        if framework not in valid_frameworks:
+            console.print(f"[red]Unknown framework '{framework}'. Valid: {sorted(valid_frameworks)}[/]")
+            raise typer.Exit(1)
+        check_method = getattr(engine, f"check_{framework}")
+        reports = {framework: check_method()}
+    else:
+        console.print("[red]Specify --framework <name> or --all[/]")
+        raise typer.Exit(1)
+
+    if json_output:
+        import json as json_lib
+
+        data: dict = {}
+        for fw_name, report in reports.items():
+            data[fw_name] = {
+                "framework": report.framework,
+                "total_checks": report.total_checks,
+                "passed": report.passed,
+                "failed": report.failed,
+                "partial": report.partial,
+                "compliance_percent": report.compliance_percent,
+                "checks": [
+                    {
+                        "control_id": c.control_id,
+                        "description": c.description,
+                        "status": c.status,
+                        "evidence": c.evidence,
+                        "recommendation": c.recommendation,
+                    }
+                    for c in report.checks
+                ],
+            }
+        console.print_json(data=data)
+        return
+
+    for fw_name, report in reports.items():
+        # Framework summary
+        if report.compliance_percent >= 80:
+            pct_color = "green"
+        elif report.compliance_percent >= 50:
+            pct_color = "yellow"
+        else:
+            pct_color = "red"
+
+        summary_text = (
+            f"[bold]Framework:[/] {report.framework.upper()}\n"
+            f"[bold]Compliance:[/] [{pct_color}]{report.compliance_percent:.1f}%[/]\n"
+            f"[bold]Passed:[/] {report.passed}  "
+            f"[bold]Failed:[/] {report.failed}  "
+            f"[bold]Partial:[/] {report.partial}  "
+            f"[bold]Total:[/] {report.total_checks}"
+        )
+        console.print()
+        console.print(Panel(summary_text, title=f"[bold]Compliance: {report.framework.upper()}[/]", border_style=pct_color))
+
+        # Checks table
+        table = Table(show_header=True, header_style="bold")
+        table.add_column("Control", style="cyan", width=12)
+        table.add_column("Description", width=40)
+        table.add_column("Status", justify="center", width=8)
+        table.add_column("Evidence", width=40)
+        table.add_column("Recommendation", width=35)
+
+        for check in report.checks:
+            if check.status == "pass":
+                status_str = "[green]PASS[/]"
+            elif check.status == "fail":
+                status_str = "[red]FAIL[/]"
+            elif check.status == "partial":
+                status_str = "[yellow]PARTIAL[/]"
+            else:
+                status_str = "[dim]N/A[/]"
+
+            table.add_row(
+                check.control_id,
+                check.description,
+                status_str,
+                check.evidence[:60],
+                check.recommendation[:55] if check.recommendation else "",
+            )
+
+        console.print(table)
+
+
+@app.command()
+def dr(
+    yaml_pos: Path | None = typer.Argument(None, help="YAML file path (positional)"),
+    model: Path = typer.Option(DEFAULT_MODEL_PATH, "--model", "-m", help="Model file path (JSON or YAML)"),
+    yaml_file: Path | None = typer.Option(None, "--yaml", "-y", help="YAML file with infrastructure definition"),
+    scenario: str | None = typer.Option(None, "--scenario", "-s", help="Scenario: az-failure, region-failure, network-partition"),
+    az: str | None = typer.Option(None, "--az", help="Availability zone for az-failure scenario"),
+    region_name: str | None = typer.Option(None, "--region", "-r", help="Region for region-failure scenario"),
+    region_a: str | None = typer.Option(None, "--region-a", help="First region for network-partition"),
+    region_b: str | None = typer.Option(None, "--region-b", help="Second region for network-partition"),
+    all_scenarios: bool = typer.Option(False, "--all", help="Run all DR scenarios"),
+    json_output: bool = typer.Option(False, "--json", help="Output JSON summary"),
+) -> None:
+    """Simulate disaster recovery scenarios (AZ failure, region failure, network partition)."""
+    from rich.panel import Panel
+    from rich.table import Table
+
+    from infrasim.simulator.dr_engine import DREngine
+
+    resolved_yaml = yaml_pos or yaml_file
+    graph = _load_graph_for_analysis(model, resolved_yaml)
+
+    engine = DREngine(graph)
+    results: list = []
+
+    if all_scenarios:
+        results = engine.simulate_all()
+        if not results:
+            console.print("[yellow]No regions or AZs found in the infrastructure model. "
+                          "Add 'region' configuration to components.[/]")
+            return
+    elif scenario == "az-failure":
+        if not az:
+            console.print("[red]--az is required for az-failure scenario[/]")
+            raise typer.Exit(1)
+        results = [engine.simulate_az_failure(az)]
+    elif scenario == "region-failure":
+        if not region_name:
+            console.print("[red]--region is required for region-failure scenario[/]")
+            raise typer.Exit(1)
+        results = [engine.simulate_region_failure(region_name)]
+    elif scenario == "network-partition":
+        if not region_a or not region_b:
+            console.print("[red]--region-a and --region-b are required for network-partition scenario[/]")
+            raise typer.Exit(1)
+        results = [engine.simulate_network_partition(region_a, region_b)]
+    else:
+        console.print("[red]Specify --scenario <type> or --all[/]")
+        raise typer.Exit(1)
+
+    if json_output:
+        data = [
+            {
+                "scenario": r.scenario,
+                "affected_components": r.affected_components,
+                "surviving_components": r.surviving_components,
+                "rpo_met": r.rpo_met,
+                "rto_met": r.rto_met,
+                "estimated_data_loss_seconds": r.estimated_data_loss_seconds,
+                "estimated_recovery_seconds": r.estimated_recovery_seconds,
+                "availability_during_dr": r.availability_during_dr,
+            }
+            for r in results
+        ]
+        console.print_json(data={"dr_results": data})
+        return
+
+    for result in results:
+        # Color by availability
+        if result.availability_during_dr >= 80:
+            avail_color = "green"
+        elif result.availability_during_dr >= 50:
+            avail_color = "yellow"
+        else:
+            avail_color = "red"
+
+        rpo_str = "[green]MET[/]" if result.rpo_met else "[red]VIOLATED[/]"
+        rto_str = "[green]MET[/]" if result.rto_met else "[red]VIOLATED[/]"
+
+        summary_text = (
+            f"[bold]Scenario:[/] {result.scenario}\n"
+            f"[bold]Availability:[/] [{avail_color}]{result.availability_during_dr:.1f}%[/]\n"
+            f"[bold]Affected:[/] {len(result.affected_components)} components  "
+            f"[bold]Surviving:[/] {len(result.surviving_components)} components\n"
+            f"[bold]RPO:[/] {rpo_str}  "
+            f"[bold]RTO:[/] {rto_str}\n"
+            f"[bold]Est. Data Loss:[/] {result.estimated_data_loss_seconds:.0f}s  "
+            f"[bold]Est. Recovery:[/] {result.estimated_recovery_seconds:.0f}s"
+        )
+        console.print()
+        console.print(Panel(summary_text, title=f"[bold]DR Scenario: {result.scenario}[/]", border_style=avail_color))
+
+        if result.affected_components:
+            table = Table(title="Affected Components", show_header=True)
+            table.add_column("Component ID", style="red", width=30)
+            for cid in result.affected_components:
+                table.add_row(cid)
+            console.print(table)
+
+        if result.surviving_components:
+            table = Table(title="Surviving Components", show_header=True)
+            table.add_column("Component ID", style="green", width=30)
+            for cid in result.surviving_components:
+                table.add_row(cid)
+            console.print(table)

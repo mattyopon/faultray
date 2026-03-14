@@ -770,6 +770,48 @@ def _print_rich_report(evaluation_data: dict, ops_days: int) -> None:
                 f"({avail_pct:.4f}%) — {dt:.0f}s/year[/]"
             )
 
+    # 7. Resilience Score v2
+    graph = raw["graph"]
+    score_v2 = graph.resilience_score_v2()
+    console.print(f"\n  [bold]7. Resilience Score v2[/]")
+    v2_total = score_v2["score"]
+    if v2_total >= 80:
+        v2_color = "green"
+    elif v2_total >= 50:
+        v2_color = "yellow"
+    else:
+        v2_color = "red"
+    console.print(f"     Total: [{v2_color}][bold]{v2_total:.0f}/100[/bold][/]")
+
+    breakdown = score_v2.get("breakdown", {})
+    category_labels = {
+        "redundancy": "Redundancy",
+        "circuit_breaker_coverage": "Circuit Breakers",
+        "auto_recovery": "Auto Recovery",
+        "dependency_risk": "Dependency Risk",
+        "capacity_headroom": "Capacity Headroom",
+    }
+    for key, label in category_labels.items():
+        val = breakdown.get(key, 0.0)
+        max_val = 20.0
+        bar_len = int(val / max_val * 20)
+        bar = "\u2588" * bar_len + "\u2591" * (20 - bar_len)
+        if val >= 15:
+            bar_color = "green"
+        elif val >= 10:
+            bar_color = "yellow"
+        else:
+            bar_color = "red"
+        console.print(
+            f"     [{bar_color}]{label:20s} {bar} {val:.1f}/20[/]"
+        )
+
+    v2_recs = score_v2.get("recommendations", [])
+    if v2_recs:
+        console.print(f"     [bold]Top Recommendations:[/]")
+        for rec in v2_recs[:5]:
+            console.print(f"       - {rec}")
+
     # Overall Assessment
     l1_nines = limits.get("layer1_software", {}).get("nines", 0) if limits else 0
     l2_nines = limits.get("layer2_hardware", {}).get("nines", 0) if limits else 0

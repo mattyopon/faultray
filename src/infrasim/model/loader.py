@@ -19,6 +19,7 @@ from infrasim.model.components import (
     FailoverConfig,
     NetworkProfile,
     OperationalProfile,
+    RegionConfig,
     ResourceMetrics,
     RetryStrategy,
     RuntimeJitter,
@@ -120,6 +121,9 @@ def load_yaml(path: Path | str) -> InfraGraph:
         cost_profile = (
             CostProfile(**entry["cost_profile"]) if "cost_profile" in entry else CostProfile()
         )
+        region_config = (
+            RegionConfig(**entry["region"]) if "region" in entry else RegionConfig()
+        )
 
         component = Component(
             id=comp_id,
@@ -136,6 +140,7 @@ def load_yaml(path: Path | str) -> InfraGraph:
             singleflight=singleflight,
             slo_targets=slo_targets,
             cost_profile=cost_profile,
+            region=region_config,
             operational_profile=operational_profile,
             network=network,
             runtime_jitter=runtime_jitter,

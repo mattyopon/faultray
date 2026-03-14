@@ -123,6 +123,17 @@ class SingleflightConfig(BaseModel):
     coalesce_ratio: float = 0.8  # fraction of duplicate requests coalesced (0-1)
 
 
+class RegionConfig(BaseModel):
+    """Multi-region / DR configuration for a component."""
+
+    region: str = ""
+    availability_zone: str = ""
+    is_primary: bool = True
+    dr_target_region: str = ""
+    rpo_seconds: int = 0
+    rto_seconds: int = 0
+
+
 class ExternalSLAConfig(BaseModel):
     """External dependency SLA configuration.
 
@@ -199,6 +210,7 @@ class Component(BaseModel):
     external_sla: ExternalSLAConfig | None = None
     cost_profile: CostProfile = Field(default_factory=CostProfile)
     operational_profile: OperationalProfile = Field(default_factory=OperationalProfile)
+    region: RegionConfig = Field(default_factory=RegionConfig)
     network: NetworkProfile = Field(default_factory=NetworkProfile)
     runtime_jitter: RuntimeJitter = Field(default_factory=RuntimeJitter)
     parameters: dict[str, float | int | str] = Field(default_factory=dict)

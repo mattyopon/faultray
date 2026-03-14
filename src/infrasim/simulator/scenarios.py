@@ -653,7 +653,35 @@ def generate_default_scenarios(
         ))
 
     # =========================================================================
-    # CATEGORY 29: Failover testing
+    # CATEGORY 29: Cascading timeout scenarios
+    # =========================================================================
+    if components:
+        for comp_id, comp in components.items():
+            if comp.capacity.timeout_seconds > 0:
+                scenarios.append(Scenario(
+                    id=f"cascading-timeout-{comp_id}",
+                    name=f"Cascading timeout from {comp_id}",
+                    description=f"Slow {comp_id} causes upstream timeout cascades",
+                    faults=[Fault(target_component_id=comp_id, fault_type=FaultType.LATENCY_SPIKE,
+                                  parameters={"multiplier": 20})],
+                ))
+
+    # =========================================================================
+    # CATEGORY 30: Sustained resource degradation
+    # =========================================================================
+    for cid in app:
+        scenarios.append(Scenario(
+            id=f"sustained-degradation-{cid}",
+            name=f"Sustained degradation: {cid}",
+            description=f"Multiple resources stressed simultaneously on {cid}",
+            faults=[
+                Fault(target_component_id=cid, fault_type=FaultType.CPU_SATURATION, severity=0.8),
+                Fault(target_component_id=cid, fault_type=FaultType.MEMORY_EXHAUSTION, severity=0.7),
+            ],
+        ))
+
+    # =========================================================================
+    # CATEGORY 31: Failover testing
     # =========================================================================
     # If DB has replicas, test primary failure
     if components:
@@ -668,7 +696,7 @@ def generate_default_scenarios(
                 ))
 
     # =========================================================================
-    # CATEGORY 30: Black Friday / flash sale simulation
+    # CATEGORY 32: Black Friday / flash sale simulation
     # =========================================================================
     if component_ids:
         scenarios.append(Scenario(
