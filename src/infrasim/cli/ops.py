@@ -443,6 +443,102 @@ def capacity(
     console.print(f"\n{report.summary}")
 
 
+@app.command()
+def advise(
+    yaml_pos: Path | None = typer.Argument(None, help="YAML file path (positional)"),
+    model: Path = typer.Option(DEFAULT_MODEL_PATH, "--model", "-m", help="Model file path (JSON or YAML)"),
+    yaml_file: Path | None = typer.Option(None, "--yaml", "-y", help="YAML file with infrastructure definition"),
+    json_output: bool = typer.Option(False, "--json", help="Output JSON summary"),
+) -> None:
+    """Auto-recommend chaos tests based on infrastructure topology analysis."""
+    from rich.panel import Panel
+    from rich.table import Table
+
+    from infrasim.simulator.advisor_engine import ChaosAdvisorEngine
+
+    resolved_yaml = yaml_pos or yaml_file
+    graph = _load_graph_for_analysis(model, resolved_yaml)
+
+    engine = ChaosAdvisorEngine(graph)
+    report = engine.analyze()
+
+    if json_output:
+        import dataclasses
+        import json as json_lib
+
+        data = {
+            "total_recommendations": report.total_recommendations,
+            "critical_count": report.critical_count,
+            "coverage_score": report.coverage_score,
+            "topology_insights": report.topology_insights,
+            "recommendations": [
+                dataclasses.asdict(r) for r in report.recommendations
+            ],
+        }
+        console.print_json(data=data)
+        return
+
+    # Summary panel
+    if report.coverage_score >= 80:
+        score_color = "green"
+    elif report.coverage_score >= 50:
+        score_color = "yellow"
+    else:
+        score_color = "red"
+
+    summary_text = (
+        f"[bold]Recommendations:[/] {report.total_recommendations}\n"
+        f"[bold]Critical:[/] [red]{report.critical_count}[/]\n"
+        f"[bold]Coverage Score:[/] [{score_color}]{report.coverage_score:.1f}%[/]"
+    )
+    console.print()
+    console.print(Panel(summary_text, title="[bold]Chaos Advisor Report[/]", border_style="cyan"))
+
+    # Topology insights
+    insights = report.topology_insights
+    if insights:
+        insight_text = (
+            f"[bold]Nodes:[/] {insights.get('num_nodes', 0)}  "
+            f"[bold]Edges:[/] {insights.get('num_edges', 0)}  "
+            f"[bold]Density:[/] {insights.get('density', 0):.4f}\n"
+            f"[bold]Longest Path:[/] {' -> '.join(insights.get('longest_path', []))}\n"
+            f"[bold]Most Connected:[/] {insights.get('most_connected_component', 'N/A')} "
+            f"(degree: {insights.get('most_connected_degree', 0)})"
+        )
+        console.print(Panel(insight_text, title="[bold]Topology Insights[/]", border_style="dim"))
+
+    # Recommendations table
+    if report.recommendations:
+        table = Table(title="Recommended Chaos Tests", show_header=True)
+        table.add_column("#", justify="right", width=4)
+        table.add_column("Priority", justify="center", width=10)
+        table.add_column("Scenario", style="cyan", width=35)
+        table.add_column("Targets", width=20)
+        table.add_column("Blast", justify="right", width=6)
+        table.add_column("Reasoning", width=50)
+
+        priority_colors = {
+            "critical": "bold red",
+            "high": "red",
+            "medium": "yellow",
+            "low": "green",
+        }
+
+        for idx, rec in enumerate(report.recommendations, 1):
+            color = priority_colors.get(rec.priority, "white")
+            table.add_row(
+                str(idx),
+                f"[{color}]{rec.priority.upper()}[/]",
+                rec.scenario_name[:35],
+                ", ".join(rec.target_components)[:20],
+                str(rec.estimated_blast_radius),
+                rec.reasoning[:50] + ("..." if len(rec.reasoning) > 50 else ""),
+            )
+
+        console.print()
+        console.print(table)
+
+
 @app.command(name="monte-carlo")
 def monte_carlo_cmd(
     yaml_pos: Path | None = typer.Argument(None, help="YAML file path (positional)"),
@@ -834,3 +930,120 @@ def dr(
             for cid in result.surviving_components:
                 table.add_row(cid)
             console.print(table)
+
+
+@app.command()
+def security(
+    yaml_pos: Path | None = typer.Argument(None, help="YAML file path (positional)"),
+    model: Path = typer.Option(DEFAULT_MODEL_PATH, "--model", "-m", help="Model file path (JSON or YAML)"),
+    yaml_file: Path | None = typer.Option(None, "--yaml", "-y", help="YAML file with infrastructure definition"),
+    json_output: bool = typer.Option(False, "--json", help="Output JSON summary"),
+) -> None:
+    """Simulate security attacks and evaluate resilience."""
+    from rich.panel import Panel
+    from rich.table import Table
+
+    from infrasim.simulator.security_engine import SecurityResilienceEngine
+
+    resolved_yaml = yaml_pos or yaml_file
+    graph = _load_graph_for_analysis(model, resolved_yaml)
+
+    engine = SecurityResilienceEngine(graph)
+    report = engine.simulate_all_attacks()
+
+    if json_output:
+        data = {
+            "security_resilience_score": report.security_resilience_score,
+            "total_attacks_simulated": report.total_attacks_simulated,
+            "attacks_fully_mitigated": report.attacks_fully_mitigated,
+            "attacks_partially_mitigated": report.attacks_partially_mitigated,
+            "attacks_unmitigated": report.attacks_unmitigated,
+            "worst_case_blast_radius": report.worst_case_blast_radius,
+            "score_breakdown": report.score_breakdown,
+            "results": [
+                {
+                    "attack_type": r.attack_type.value,
+                    "entry_point": r.entry_point,
+                    "blast_radius": r.blast_radius,
+                    "defense_effectiveness": r.defense_effectiveness,
+                    "estimated_downtime_minutes": r.estimated_downtime_minutes,
+                    "data_at_risk": r.data_at_risk,
+                    "compromised_components": r.compromised_components,
+                    "mitigation_recommendations": r.mitigation_recommendations,
+                }
+                for r in report.results
+            ],
+        }
+        console.print_json(data=data)
+        return
+
+    # ---- Summary Panel ----
+    score = report.security_resilience_score
+    if score >= 80:
+        score_color = "green"
+    elif score >= 50:
+        score_color = "yellow"
+    else:
+        score_color = "red"
+
+    summary_text = (
+        f"[bold]Security Resilience Score:[/] [{score_color}]{score:.1f}/100[/]\n"
+        f"[bold]Attacks Simulated:[/] {report.total_attacks_simulated}\n"
+        f"[bold]Fully Mitigated:[/] [green]{report.attacks_fully_mitigated}[/]  "
+        f"[bold]Partially:[/] [yellow]{report.attacks_partially_mitigated}[/]  "
+        f"[bold]Unmitigated:[/] [red]{report.attacks_unmitigated}[/]\n"
+        f"[bold]Worst-Case Blast Radius:[/] {report.worst_case_blast_radius} component(s)"
+    )
+    console.print()
+    console.print(Panel(summary_text, title="[bold]Security Resilience Report[/]", border_style=score_color))
+
+    # ---- Score Breakdown ----
+    if report.score_breakdown:
+        bd_table = Table(title="Score Breakdown (each 0-20)", show_header=True)
+        bd_table.add_column("Category", style="cyan", width=20)
+        bd_table.add_column("Score", justify="right", width=8)
+        for cat, val in report.score_breakdown.items():
+            color = "green" if val >= 15 else ("yellow" if val >= 8 else "red")
+            bd_table.add_row(cat.replace("_", " ").title(), f"[{color}]{val:.1f}[/]")
+        console.print()
+        console.print(bd_table)
+
+    # ---- Attack Results Table ----
+    if report.results:
+        atk_table = Table(title="Attack Simulation Results", show_header=True)
+        atk_table.add_column("Attack", style="cyan", width=22)
+        atk_table.add_column("Entry Point", width=18)
+        atk_table.add_column("Blast", justify="right", width=6)
+        atk_table.add_column("Defense", justify="right", width=8)
+        atk_table.add_column("Downtime", justify="right", width=10)
+        atk_table.add_column("Data Risk", justify="center", width=9)
+
+        for r in report.results:
+            def_color = "green" if r.defense_effectiveness >= 0.8 else (
+                "yellow" if r.defense_effectiveness >= 0.3 else "red"
+            )
+            risk_str = "[red]YES[/]" if r.data_at_risk else "[green]no[/]"
+            atk_table.add_row(
+                r.attack_type.value,
+                r.entry_point[:18],
+                str(r.blast_radius),
+                f"[{def_color}]{r.defense_effectiveness:.0%}[/]",
+                f"{r.estimated_downtime_minutes:.0f}m",
+                risk_str,
+            )
+        console.print()
+        console.print(atk_table)
+
+    # ---- Top Recommendations ----
+    all_recs: list[str] = []
+    seen_recs: set[str] = set()
+    for r in report.results:
+        for rec in r.mitigation_recommendations:
+            if rec not in seen_recs:
+                seen_recs.add(rec)
+                all_recs.append(rec)
+
+    if all_recs:
+        console.print("\n[bold]Top Recommendations:[/]")
+        for i, rec in enumerate(all_recs[:10], 1):
+            console.print(f"  {i}. {rec}")

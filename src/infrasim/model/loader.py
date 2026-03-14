@@ -11,6 +11,7 @@ from infrasim.model.components import (
     CacheWarmingConfig,
     Capacity,
     CircuitBreakerConfig,
+    ComplianceTags,
     Component,
     ComponentType,
     CostProfile,
@@ -19,10 +20,12 @@ from infrasim.model.components import (
     FailoverConfig,
     NetworkProfile,
     OperationalProfile,
+    OperationalTeamConfig,
     RegionConfig,
     ResourceMetrics,
     RetryStrategy,
     RuntimeJitter,
+    SecurityProfile,
     SingleflightConfig,
     SLOTarget,
 )
@@ -124,6 +127,19 @@ def load_yaml(path: Path | str) -> InfraGraph:
         region_config = (
             RegionConfig(**entry["region"]) if "region" in entry else RegionConfig()
         )
+        security_profile = (
+            SecurityProfile(**entry["security"]) if "security" in entry else SecurityProfile()
+        )
+        compliance_tags = (
+            ComplianceTags(**entry["compliance_tags"])
+            if "compliance_tags" in entry
+            else ComplianceTags()
+        )
+        team_config = (
+            OperationalTeamConfig(**entry["team"])
+            if "team" in entry
+            else OperationalTeamConfig()
+        )
 
         component = Component(
             id=comp_id,
@@ -144,6 +160,9 @@ def load_yaml(path: Path | str) -> InfraGraph:
             operational_profile=operational_profile,
             network=network,
             runtime_jitter=runtime_jitter,
+            security=security_profile,
+            compliance_tags=compliance_tags,
+            team=team_config,
             parameters=entry.get("parameters", {}),
             tags=entry.get("tags", []),
         )

@@ -164,6 +164,52 @@ class CostProfile(BaseModel):
     sla_credit_percent: float = 0.0
     recovery_engineer_cost: float = 100.0
 
+    # Extended cost fields for executive summary ROI analysis
+    monthly_contract_value: float = 0.0
+    customer_ltv: float = 0.0
+    churn_rate_per_hour_outage: float = 0.001
+    recovery_team_size: int = 2
+    data_loss_cost_per_gb: float = 0.0
+
+
+class ComplianceTags(BaseModel):
+    """Compliance and data classification tags for regulatory assessment."""
+
+    data_classification: str = "internal"  # public/internal/confidential/restricted
+    pci_scope: bool = False
+    contains_pii: bool = False
+    contains_phi: bool = False
+    audit_logging: bool = False
+    change_management: bool = False
+
+
+class OperationalTeamConfig(BaseModel):
+    """Team operational readiness configuration."""
+
+    team_size: int = 3
+    oncall_coverage_hours: float = 24.0
+    timezone_coverage: int = 1
+    mean_acknowledge_time_minutes: float = 5.0
+    mean_diagnosis_time_minutes: float = 15.0
+    runbook_coverage_percent: float = 50.0
+    automation_percent: float = 20.0
+
+
+class SecurityProfile(BaseModel):
+    """Security configuration for blast radius and attack resilience analysis."""
+
+    encryption_at_rest: bool = False
+    encryption_in_transit: bool = False
+    waf_protected: bool = False
+    rate_limiting: bool = False
+    auth_required: bool = False
+    network_segmented: bool = False
+    backup_enabled: bool = False
+    backup_frequency_hours: float = 24.0
+    patch_sla_hours: float = 72.0
+    log_enabled: bool = False
+    ids_monitored: bool = False
+
 
 class DegradationConfig(BaseModel):
     """Gradual degradation model for a component."""
@@ -213,6 +259,9 @@ class Component(BaseModel):
     region: RegionConfig = Field(default_factory=RegionConfig)
     network: NetworkProfile = Field(default_factory=NetworkProfile)
     runtime_jitter: RuntimeJitter = Field(default_factory=RuntimeJitter)
+    security: SecurityProfile = Field(default_factory=SecurityProfile)
+    compliance_tags: ComplianceTags = Field(default_factory=ComplianceTags)
+    team: OperationalTeamConfig = Field(default_factory=OperationalTeamConfig)
     parameters: dict[str, float | int | str] = Field(default_factory=dict)
     tags: list[str] = Field(default_factory=list)
 

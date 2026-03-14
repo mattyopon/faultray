@@ -155,6 +155,14 @@ async def custom_http_exception_handler(request: Request, exc: HTTPException):
     )
 
 
+# ---------------------------------------------------------------------------
+# Insurance scoring router
+# ---------------------------------------------------------------------------
+from infrasim.api.insurance_api import insurance_router
+
+app.include_router(insurance_router)
+
+
 app.mount("/static", StaticFiles(directory=str(BASE_DIR / "static")), name="static")
 
 
