@@ -62,8 +62,8 @@ class FailoverConfig(BaseModel):
     """Failover/promotion configuration."""
 
     enabled: bool = False
-    promotion_time_seconds: int = 30  # time for replica to promote to primary
-    health_check_interval_seconds: int = 10
+    promotion_time_seconds: float = 30.0  # time for replica to promote to primary
+    health_check_interval_seconds: float = 10.0
     failover_threshold: int = 3  # consecutive failures before failover
 
 
