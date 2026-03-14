@@ -51,6 +51,10 @@
 
     svg.call(zoom);
 
+    // Expose zoom and svg globally for external controls
+    window._graphZoom = zoom;
+    window._graphSvg = svg;
+
     // Arrow marker definitions
     svg.append("defs")
         .selectAll("marker")

@@ -3,9 +3,19 @@
 
 {% block title %}InfraSim - Simulation{% endblock %}
 {% block page_title %}Chaos Simulation{% endblock %}
+{% block page_subtitle %}<span class="page-subtitle">Failure scenario testing &amp; cascade analysis</span>{% endblock %}
 
 {% block top_actions %}
 {% if has_data %}
+<div class="sim-filter-controls">
+    <select id="severityFilter" class="select-sm" onchange="filterResults()">
+        <option value="all">All Severities</option>
+        <option value="critical">Critical Only</option>
+        <option value="warning">Warnings Only</option>
+        <option value="passed">Passed Only</option>
+    </select>
+    <input type="text" id="searchInput" class="input-sm" placeholder="Search scenarios..." oninput="filterResults()">
+</div>
 <button class="btn btn-sm btn-accent" id="runSimBtn" onclick="runSimulation()">
     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
         <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/>
@@ -26,10 +36,12 @@
             </span>
             <span class="sim-stat-label">Resilience Score</span>
         </div>
+        <div class="sim-stat-divider"></div>
         <div class="sim-stat">
             <span class="sim-stat-value">{{ report.total_scenarios }}</span>
             <span class="sim-stat-label">Scenarios Tested</span>
         </div>
+        <div class="sim-stat-divider"></div>
         <div class="sim-stat sim-stat-critical">
             <span class="sim-stat-value">{{ report.critical_count }}</span>
             <span class="sim-stat-label">Critical</span>
@@ -46,7 +58,7 @@
 
     <!-- Critical Findings -->
     {% if report.critical | length > 0 %}
-    <div class="sim-section">
+    <div class="sim-section" data-severity="critical">
         <h2 class="section-title section-critical">
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                 <path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/>
@@ -56,24 +68,33 @@
             Critical Findings ({{ report.critical | length }})
         </h2>
         {% for r in report.critical %}
-        <div class="result-card result-critical">
-            <div class="result-header">
+        <div class="result-card result-critical" data-name="{{ r.scenario_name | lower }}">
+            <div class="result-header" onclick="toggleCascade(this)">
                 <div class="result-title">
                     <h4>{{ r.scenario_name }}</h4>
                     <p>{{ r.scenario_description }}</p>
                 </div>
-                <div class="result-score">
-                    <span class="risk-score risk-critical">{{ r.risk_score }}</span>
-                    <span class="risk-label">Risk Score</span>
+                <div class="result-meta">
+                    <div class="result-score">
+                        <span class="risk-score risk-critical">{{ r.risk_score }}</span>
+                        <span class="risk-label">Risk Score</span>
+                    </div>
+                    {% if r.cascade.effects | length > 0 %}
+                    <span class="cascade-count">{{ r.cascade.effects | length }} affected</span>
+                    {% endif %}
+                    <svg class="expand-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <polyline points="6 9 12 15 18 9"/>
+                    </svg>
                 </div>
             </div>
             {% if r.cascade.effects | length > 0 %}
-            <div class="cascade-tree">
+            <div class="cascade-tree" style="display: none;">
                 <div class="cascade-trigger">
                     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                         <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/>
                     </svg>
-                    {{ r.cascade.trigger }}
+                    Trigger: {{ r.cascade.trigger }}
+                    <span class="cascade-severity-badge">Severity: {{ r.cascade.severity }}</span>
                 </div>
                 <div class="cascade-effects">
                     {% for e in r.cascade.effects %}
@@ -89,6 +110,13 @@
                             <span class="effect-name">{{ e.component_name }}</span>
                             <span class="health-badge health-{{ e.health }}">{{ e.health }}</span>
                             <p class="effect-reason">{{ e.reason }}</p>
+                            {% if e.metrics_impact %}
+                            <div class="effect-metrics">
+                                {% for key, val in e.metrics_impact.items() %}
+                                <span class="metric-tag">{{ key }}: {{ val }}</span>
+                                {% endfor %}
+                            </div>
+                            {% endif %}
                         </div>
                     </div>
                     {% endfor %}
@@ -102,7 +130,7 @@
 
     <!-- Warnings -->
     {% if report.warnings | length > 0 %}
-    <div class="sim-section">
+    <div class="sim-section" data-severity="warning">
         <h2 class="section-title section-warning">
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                 <circle cx="12" cy="12" r="10"/>
@@ -112,24 +140,33 @@
             Warnings ({{ report.warnings | length }})
         </h2>
         {% for r in report.warnings %}
-        <div class="result-card result-warning">
-            <div class="result-header">
+        <div class="result-card result-warning" data-name="{{ r.scenario_name | lower }}">
+            <div class="result-header" onclick="toggleCascade(this)">
                 <div class="result-title">
                     <h4>{{ r.scenario_name }}</h4>
                     <p>{{ r.scenario_description }}</p>
                 </div>
-                <div class="result-score">
-                    <span class="risk-score risk-warning">{{ r.risk_score }}</span>
-                    <span class="risk-label">Risk Score</span>
+                <div class="result-meta">
+                    <div class="result-score">
+                        <span class="risk-score risk-warning">{{ r.risk_score }}</span>
+                        <span class="risk-label">Risk Score</span>
+                    </div>
+                    {% if r.cascade.effects | length > 0 %}
+                    <span class="cascade-count">{{ r.cascade.effects | length }} affected</span>
+                    {% endif %}
+                    <svg class="expand-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <polyline points="6 9 12 15 18 9"/>
+                    </svg>
                 </div>
             </div>
             {% if r.cascade.effects | length > 0 %}
-            <div class="cascade-tree">
+            <div class="cascade-tree" style="display: none;">
                 <div class="cascade-trigger">
                     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                         <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/>
                     </svg>
-                    {{ r.cascade.trigger }}
+                    Trigger: {{ r.cascade.trigger }}
+                    <span class="cascade-severity-badge">Severity: {{ r.cascade.severity }}</span>
                 </div>
                 <div class="cascade-effects">
                     {% for e in r.cascade.effects %}
@@ -158,7 +195,7 @@
 
     <!-- Passed -->
     {% if report.passed | length > 0 %}
-    <div class="sim-section">
+    <div class="sim-section" data-severity="passed">
         <h2 class="section-title section-passed" onclick="togglePassed()" style="cursor: pointer;">
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                 <path d="M22 11.08V12a10 10 0 11-5.93-9.14"/>
@@ -169,7 +206,7 @@
         </h2>
         <div id="passedSection" style="display: none;">
             {% for r in report.passed %}
-            <div class="result-card result-passed">
+            <div class="result-card result-passed" data-name="{{ r.scenario_name | lower }}">
                 <div class="result-header">
                     <div class="result-title">
                         <h4>{{ r.scenario_name }}</h4>
@@ -208,6 +245,43 @@ function togglePassed() {
         section.style.display = 'none';
         toggle.textContent = 'Click to expand';
     }
+}
+
+function toggleCascade(header) {
+    const card = header.closest('.result-card');
+    const tree = card.querySelector('.cascade-tree');
+    const icon = header.querySelector('.expand-icon');
+    if (!tree) return;
+    if (tree.style.display === 'none') {
+        tree.style.display = 'block';
+        icon.style.transform = 'rotate(180deg)';
+    } else {
+        tree.style.display = 'none';
+        icon.style.transform = 'rotate(0deg)';
+    }
+}
+
+function filterResults() {
+    const severity = document.getElementById('severityFilter').value;
+    const search = document.getElementById('searchInput').value.toLowerCase();
+
+    document.querySelectorAll('.sim-section').forEach(section => {
+        const sev = section.dataset.severity;
+        if (severity !== 'all' && sev !== severity) {
+            section.style.display = 'none';
+        } else {
+            section.style.display = '';
+        }
+    });
+
+    document.querySelectorAll('.result-card').forEach(card => {
+        const name = card.dataset.name || '';
+        if (search && !name.includes(search)) {
+            card.style.display = 'none';
+        } else {
+            card.style.display = '';
+        }
+    });
 }
 
 function runSimulation() {

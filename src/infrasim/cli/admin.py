@@ -56,8 +56,12 @@ def serve(
     model: Path = typer.Option(DEFAULT_MODEL_PATH, "--model", "-m", help="Model file path"),
     host: str = typer.Option("0.0.0.0", "--host", help="Bind host"),
     port: int = typer.Option(8080, "--port", "-p", help="Bind port"),
+    prometheus_url: str | None = typer.Option(None, "--prometheus-url", help="Prometheus URL for continuous monitoring"),
+    prometheus_interval: int = typer.Option(60, "--prometheus-interval", help="Prometheus polling interval in seconds"),
 ) -> None:
     """Launch web dashboard."""
+    import os
+
     import uvicorn
 
     from infrasim.api.server import set_graph
@@ -68,6 +72,15 @@ def serve(
         set_graph(graph)
     else:
         console.print("[yellow]No model file found. Visit /demo in the browser to load demo data.[/]")
+
+    # Pass Prometheus settings via env vars so the FastAPI lifespan can pick them up
+    if prometheus_url:
+        os.environ["INFRASIM_PROMETHEUS_URL"] = prometheus_url
+        os.environ["INFRASIM_PROMETHEUS_INTERVAL"] = str(prometheus_interval)
+        console.print(
+            f"[cyan]Prometheus monitoring enabled: {prometheus_url} "
+            f"(interval={prometheus_interval}s)[/]"
+        )
 
     console.print(f"[green]Starting InfraSim dashboard at http://{host}:{port}[/]")
     uvicorn.run("infrasim.api.server:app", host=host, port=port, log_level="info")

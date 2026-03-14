@@ -63,14 +63,33 @@ templates = Jinja2Templates(directory=str(BASE_DIR / "templates"))
 
 @asynccontextmanager
 async def lifespan(application: FastAPI):
-    """Initialise the database when the app starts."""
+    """Initialise the database and optional Prometheus monitor on startup."""
     from infrasim.api.database import init_db
     try:
         await init_db()
         logger.info("InfraSim database initialised.")
     except Exception:
         logger.warning("Database initialisation skipped (aiosqlite may not be installed).")
+
+    # Start Prometheus background monitor if configured
+    _prom_monitor = None
+    prom_url = os.environ.get("INFRASIM_PROMETHEUS_URL")
+    if prom_url:
+        try:
+            from infrasim.discovery.prometheus_monitor import PrometheusMonitor
+
+            interval = int(os.environ.get("INFRASIM_PROMETHEUS_INTERVAL", "60"))
+            _prom_monitor = PrometheusMonitor(prom_url, get_graph(), interval)
+            await _prom_monitor.start()
+            logger.info("Prometheus monitor started: %s (interval=%ds)", prom_url, interval)
+        except Exception:
+            logger.warning("Could not start Prometheus monitor.", exc_info=True)
+
     yield
+
+    # Shutdown Prometheus monitor
+    if _prom_monitor is not None:
+        await _prom_monitor.stop()
 
 
 app = FastAPI(
@@ -321,9 +340,66 @@ async def graph_page(request: Request):
     })
 
 
+@app.get("/analyze", response_class=HTMLResponse)
+async def analyze_page(request: Request):
+    """Run AI analysis and render the analyze page."""
+    global _last_report
+    graph = get_graph()
+    has_data = len(graph.components) > 0
+
+    analysis_data = None
+    if has_data:
+        # Run simulation if not already done
+        if _last_report is None:
+            engine = SimulationEngine(graph)
+            _last_report = engine.run_all_defaults()
+
+        # Run AI analysis
+        from infrasim.ai.analyzer import InfraSimAnalyzer
+        import dataclasses
+
+        analyzer = InfraSimAnalyzer()
+        ai_report = analyzer.analyze(graph, _last_report)
+
+        # Convert to template-friendly dict
+        analysis_data = dataclasses.asdict(ai_report)
+
+    return templates.TemplateResponse("analyze.html", {
+        "request": request,
+        "has_data": has_data,
+        "analysis": analysis_data,
+    })
+
+
 # ---------------------------------------------------------------------------
 # JSON API routes
 # ---------------------------------------------------------------------------
+
+@app.get("/api/analyze", response_class=JSONResponse)
+async def api_analyze(user=Depends(_optional_user)):
+    """Run AI analysis and return JSON results."""
+    global _last_report
+    graph = get_graph()
+    if not graph.components:
+        return JSONResponse(
+            {"error": "No infrastructure loaded. Visit /demo first."},
+            status_code=400,
+        )
+
+    # Run simulation if not already done
+    if _last_report is None:
+        engine = SimulationEngine(graph)
+        _last_report = engine.run_all_defaults()
+
+    from infrasim.ai.analyzer import InfraSimAnalyzer
+    import dataclasses
+
+    analyzer = InfraSimAnalyzer()
+    ai_report = analyzer.analyze(graph, _last_report)
+    report_dict = dataclasses.asdict(ai_report)
+
+    return JSONResponse(report_dict)
+
 
 @app.get("/simulation/run")
 async def simulation_run_get():
@@ -715,3 +791,93 @@ async def list_audit_logs(
     except Exception as exc:
         logger.debug("Could not list audit logs: %s", exc)
         return JSONResponse({"audit_logs": [], "count": 0, "note": "Database not available"})
+
+
+# ---------------------------------------------------------------------------
+# OAuth2 SSO routes (optional — only active when env vars are configured)
+# ---------------------------------------------------------------------------
+
+@app.get("/auth/login/{provider}")
+async def oauth_login(provider: str):
+    """Redirect to the OAuth provider's authorization page.
+
+    Only active when ``INFRASIM_OAUTH_{PROVIDER}_CLIENT_ID`` and
+    ``INFRASIM_OAUTH_{PROVIDER}_CLIENT_SECRET`` env vars are set.
+    """
+    from infrasim.api.oauth import OAuthConfig, generate_oauth_url
+
+    config = OAuthConfig.from_env(provider)
+    if config is None:
+        return JSONResponse(
+            {"error": f"OAuth provider '{provider}' is not configured"},
+            status_code=400,
+        )
+
+    url = generate_oauth_url(config)
+    from fastapi.responses import RedirectResponse
+
+    return RedirectResponse(url=url)
+
+
+@app.get("/auth/callback")
+async def oauth_callback(code: str = "", state: str = "", provider: str = "github"):
+    """Handle the OAuth callback, create or update the user, and return an API key.
+
+    The *provider* query parameter indicates which OAuth provider to use.
+    """
+    from infrasim.api.oauth import OAuthConfig, exchange_code_for_token, get_user_profile
+
+    config = OAuthConfig.from_env(provider)
+    if config is None:
+        return JSONResponse(
+            {"error": f"OAuth provider '{provider}' is not configured"},
+            status_code=400,
+        )
+
+    if not code:
+        return JSONResponse({"error": "Missing authorization code"}, status_code=400)
+
+    try:
+        access_token = await exchange_code_for_token(config, code)
+        profile = await get_user_profile(config, access_token)
+    except Exception as exc:
+        logger.warning("OAuth callback failed: %s", exc)
+        return JSONResponse({"error": f"OAuth exchange failed: {exc}"}, status_code=502)
+
+    # Create or update user in the database
+    try:
+        from infrasim.api.auth import generate_api_key, hash_api_key
+        from infrasim.api.database import UserRow, get_session_factory
+        from sqlalchemy import select
+
+        session_factory = get_session_factory()
+        async with session_factory() as session:
+            stmt = select(UserRow).where(UserRow.email == profile["email"])
+            result = await session.execute(stmt)
+            user = result.scalar_one_or_none()
+
+            api_key = generate_api_key()
+
+            if user is None:
+                user = UserRow(
+                    email=profile["email"],
+                    name=profile["name"],
+                    api_key_hash=hash_api_key(api_key),
+                )
+                session.add(user)
+            else:
+                # Rotate API key on each login
+                user.api_key_hash = hash_api_key(api_key)
+                user.name = profile["name"]
+
+            await session.commit()
+            await session.refresh(user)
+
+            return JSONResponse({
+                "message": "Login successful",
+                "user": {"id": user.id, "email": user.email, "name": user.name},
+                "api_key": api_key,
+            })
+    except Exception as exc:
+        logger.warning("OAuth user creation failed: %s", exc)
+        return JSONResponse({"error": f"User creation failed: {exc}"}, status_code=500)

@@ -22,6 +22,8 @@ from infrasim.cli.main import (
 def simulate(
     model: Path = typer.Option(DEFAULT_MODEL_PATH, "--model", "-m", help="Model file path"),
     html: Path | None = typer.Option(None, "--html", help="Export HTML report to this path"),
+    pdf: Path | None = typer.Option(None, "--pdf", help="Export print-ready HTML report (open in browser → Ctrl+P for PDF)"),
+    md: Path | None = typer.Option(None, "--md", help="Export Markdown report to this path"),
     dynamic: bool = typer.Option(False, "--dynamic", "-d", help="Run dynamic time-stepped simulation"),
     analyze_flag: bool = typer.Option(False, "--analyze", "-a", help="Run AI analysis after simulation"),
     plugins_dir: Path | None = typer.Option(None, "--plugins-dir", help="Directory of plugin .py files to load"),
@@ -74,6 +76,19 @@ def simulate(
 
         save_html_report(report, graph, html)
         console.print(f"\n[green]HTML report saved to {html}[/]")
+
+    if pdf:
+        from infrasim.reporter.pdf_report import save_pdf_ready_html
+
+        save_pdf_ready_html(report, graph, pdf)
+        console.print(f"\n[green]Print-ready HTML report saved to {pdf}[/]")
+        console.print("[dim]Open in a browser and press Ctrl+P to save as PDF.[/]")
+
+    if md:
+        from infrasim.reporter.pdf_report import export_markdown
+
+        export_markdown(report, graph, md)
+        console.print(f"\n[green]Markdown report saved to {md}[/]")
 
     # Webhook notifications
     if slack_webhook or pagerduty_key:

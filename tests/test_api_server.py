@@ -76,6 +76,41 @@ class TestDashboard:
         assert resp.status_code == 200
         assert "text/html" in resp.headers.get("content-type", "")
 
+    def test_analyze_page_no_data(self, client):
+        resp = client.get("/analyze")
+        assert resp.status_code == 200
+        assert "text/html" in resp.headers.get("content-type", "")
+
+    def test_analyze_page_with_demo(self, demo_client):
+        resp = demo_client.get("/analyze")
+        assert resp.status_code == 200
+        assert "text/html" in resp.headers.get("content-type", "")
+        assert "AI Analysis" in resp.text or "analyze" in resp.text.lower()
+
+
+# ---------------------------------------------------------------------------
+# Analyze API endpoint
+# ---------------------------------------------------------------------------
+
+class TestAnalyzeAPI:
+    def test_api_analyze_no_data(self, client):
+        resp = client.get("/api/analyze")
+        assert resp.status_code == 400
+        data = resp.json()
+        assert "error" in data
+
+    def test_api_analyze_with_demo(self, demo_client):
+        resp = demo_client.get("/api/analyze")
+        assert resp.status_code == 200
+        data = resp.json()
+        assert "summary" in data
+        assert "recommendations" in data
+        assert "estimated_current_nines" in data
+        assert "theoretical_max_nines" in data
+        assert "top_risks" in data
+        assert "availability_assessment" in data
+        assert "upgrade_path" in data
+
 
 # ---------------------------------------------------------------------------
 # Demo endpoint

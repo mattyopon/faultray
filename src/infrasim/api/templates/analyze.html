@@ -1,0 +1,186 @@
+{% extends "base.html" %}
+{% set active_page = "analyze" %}
+
+{% block title %}InfraSim - AI Analysis{% endblock %}
+{% block page_title %}AI Analysis{% endblock %}
+{% block page_subtitle %}<span class="page-subtitle">Intelligent risk assessment &amp; recommendations</span>{% endblock %}
+
+{% block top_actions %}
+{% if has_data %}
+<button class="btn btn-sm btn-accent" id="runAnalysisBtn" onclick="runAnalysis()">
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M21 16V8a2 2 0 00-1-1.73l-7-4a2 2 0 00-2 0l-7 4A2 2 0 003 8v8a2 2 0 001 1.73l7 4a2 2 0 002 0l7-4A2 2 0 0021 16z"/>
+    </svg>
+    Re-run Analysis
+</button>
+{% endif %}
+{% endblock %}
+
+{% block content %}
+{% if analysis %}
+<div class="analyze-layout">
+    <!-- Summary Panel -->
+    <div class="card card-wide">
+        <div class="card-header">
+            <h3>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align: -2px; margin-right: 6px;">
+                    <path d="M21 16V8a2 2 0 00-1-1.73l-7-4a2 2 0 00-2 0l-7 4A2 2 0 003 8v8a2 2 0 001 1.73l7 4a2 2 0 002 0l7-4A2 2 0 0021 16z"/>
+                </svg>
+                Assessment Summary
+            </h3>
+        </div>
+        <div class="card-body">
+            <div class="analysis-summary-text">{{ analysis.summary }}</div>
+
+            {% if analysis.top_risks | length > 0 %}
+            <div class="top-risks">
+                <h4>Top Risks</h4>
+                <ul class="risk-list">
+                    {% for risk in analysis.top_risks %}
+                    <li>
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--red)" stroke-width="2" style="flex-shrink:0;">
+                            <path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/>
+                            <line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/>
+                        </svg>
+                        <span>{{ risk }}</span>
+                    </li>
+                    {% endfor %}
+                </ul>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Availability Tier -->
+    <div class="card">
+        <div class="card-header">
+            <h3>Availability Tier</h3>
+        </div>
+        <div class="card-body">
+            <div class="nines-display">
+                <div class="nines-current">
+                    <div class="nines-value">{{ "%.1f" | format(analysis.estimated_current_nines) }}</div>
+                    <div class="nines-unit">nines</div>
+                </div>
+                <div class="nines-scale">
+                    {% set nines_pct = ((analysis.estimated_current_nines - 1.0) / 4.0 * 100) | int %}
+                    {% set max_pct = ((analysis.theoretical_max_nines - 1.0) / 4.0 * 100) | int %}
+                    <div class="nines-bar-bg">
+                        <div class="nines-bar-max" style="width: {{ [max_pct, 100] | min }}%;" title="Theoretical max: {{ '%.1f' | format(analysis.theoretical_max_nines) }} nines"></div>
+                        <div class="nines-bar-current" style="width: {{ [nines_pct, 100] | min }}%;"></div>
+                    </div>
+                    <div class="nines-ticks">
+                        <span class="nines-tick" style="left:0%;">1</span>
+                        <span class="nines-tick" style="left:25%;">2</span>
+                        <span class="nines-tick" style="left:50%;">3</span>
+                        <span class="nines-tick" style="left:75%;">4</span>
+                        <span class="nines-tick" style="left:100%;">5</span>
+                    </div>
+                    <div class="nines-labels">
+                        <span class="nines-label-item">
+                            <span class="nines-legend-dot nines-legend-current"></span> Current
+                        </span>
+                        <span class="nines-label-item">
+                            <span class="nines-legend-dot nines-legend-max"></span> Potential
+                        </span>
+                    </div>
+                </div>
+            </div>
+            <div class="nines-assessment">{{ analysis.availability_assessment }}</div>
+        </div>
+    </div>
+
+    <!-- Upgrade Path -->
+    <div class="card">
+        <div class="card-header">
+            <h3>Upgrade Path</h3>
+        </div>
+        <div class="card-body">
+            <div class="upgrade-path-text">{{ analysis.upgrade_path | replace('\n', '<br>') | safe }}</div>
+        </div>
+    </div>
+
+    <!-- Recommendations -->
+    <div class="card card-wide">
+        <div class="card-header">
+            <h3>Recommendations ({{ analysis.recommendations | length }})</h3>
+            <div class="rec-filter">
+                <button class="btn btn-xs btn-outline rec-filter-btn active" onclick="filterRecs('all', this)">All</button>
+                <button class="btn btn-xs btn-outline rec-filter-btn" onclick="filterRecs('critical', this)">Critical</button>
+                <button class="btn btn-xs btn-outline rec-filter-btn" onclick="filterRecs('high', this)">High</button>
+                <button class="btn btn-xs btn-outline rec-filter-btn" onclick="filterRecs('medium', this)">Medium</button>
+                <button class="btn btn-xs btn-outline rec-filter-btn" onclick="filterRecs('low', this)">Low</button>
+            </div>
+        </div>
+        <div class="card-body">
+            {% if analysis.recommendations | length > 0 %}
+            <div class="recommendations-grid">
+                {% for rec in analysis.recommendations %}
+                <div class="rec-card rec-{{ rec.severity }}" data-severity="{{ rec.severity }}">
+                    <div class="rec-header">
+                        <div class="rec-badges">
+                            <span class="badge badge-{{ rec.severity }}">{{ rec.severity | upper }}</span>
+                            <span class="badge badge-category">{{ rec.category }}</span>
+                        </div>
+                        <span class="rec-effort">Effort: {{ rec.effort }}</span>
+                    </div>
+                    <h4 class="rec-title">{{ rec.title }}</h4>
+                    <p class="rec-desc">{{ rec.description }}</p>
+                    <div class="rec-remediation">
+                        <h5>Remediation</h5>
+                        <p>{{ rec.remediation }}</p>
+                    </div>
+                    <div class="rec-impact">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/>
+                            <polyline points="17 6 23 6 23 12"/>
+                        </svg>
+                        Impact: {{ rec.estimated_impact }}
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+            {% else %}
+            <div class="empty-inline">
+                <p>No recommendations at this time. Your infrastructure is well-configured.</p>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+{% else %}
+    <div class="empty-inline sim-empty">
+        <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="#4a5568" stroke-width="1.5">
+            <path d="M21 16V8a2 2 0 00-1-1.73l-7-4a2 2 0 00-2 0l-7 4A2 2 0 003 8v8a2 2 0 001 1.73l7 4a2 2 0 002 0l7-4A2 2 0 0021 16z"/>
+        </svg>
+        <h3>No Analysis Available</h3>
+        <p>Run a simulation first, then come back to view AI-powered analysis and recommendations.</p>
+        <button class="btn btn-accent" onclick="runAnalysis()">Run Analysis Now</button>
+    </div>
+{% endif %}
+
+<script>
+function filterRecs(severity, btn) {
+    document.querySelectorAll('.rec-filter-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+
+    document.querySelectorAll('.rec-card').forEach(card => {
+        if (severity === 'all' || card.dataset.severity === severity) {
+            card.style.display = '';
+        } else {
+            card.style.display = 'none';
+        }
+    });
+}
+
+function runAnalysis() {
+    const btn = document.getElementById('runAnalysisBtn');
+    if (btn) {
+        btn.disabled = true;
+        btn.innerHTML = '<span class="spinner"></span> Analyzing...';
+    }
+    window.location.href = '/analyze';
+}
+</script>
+{% endblock %}

@@ -1,0 +1,9 @@
+services:
+  - type: web
+    name: infrasim-demo
+    runtime: docker
+    plan: free
+    healthCheckPath: /
+    envVars:
+      - key: PORT
+        value: 8000

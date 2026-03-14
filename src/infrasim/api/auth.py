@@ -54,6 +54,9 @@ def _is_public(path: str) -> bool:
     # Allow static file sub-paths
     if path.startswith("/static/"):
         return True
+    # Allow OAuth login/callback paths
+    if path.startswith("/auth/"):
+        return True
     return False
 
 
