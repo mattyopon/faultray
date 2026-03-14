@@ -39,6 +39,7 @@ class SimulationReport:
     resilience_score: float = 0.0
     total_generated: int = 0
     was_truncated: bool = False
+    engine_plugin_results: dict[str, dict] = field(default_factory=dict)
 
     @property
     def critical_findings(self) -> list[ScenarioResult]:
@@ -163,7 +164,30 @@ class SimulationEngine:
             except ImportError:
                 pass
 
-        return self.run_scenarios(scenarios, max_scenarios=max_scenarios)
+        report = self.run_scenarios(scenarios, max_scenarios=max_scenarios)
+
+        # Run registered engine plugins and merge their results
+        if include_plugins:
+            try:
+                from infrasim.plugins.registry import PluginRegistry
+
+                for plugin in PluginRegistry.get_engines():
+                    try:
+                        plugin_results = plugin.simulate(self.graph, scenarios)
+                        if plugin_results:
+                            report.engine_plugin_results[
+                                getattr(plugin, "name", "unknown")
+                            ] = plugin_results
+                    except Exception:
+                        logger.warning(
+                            "Engine plugin %s failed",
+                            getattr(plugin, "name", "unknown"),
+                            exc_info=True,
+                        )
+            except ImportError:
+                pass
+
+        return report
 
     def run_scenarios(
         self, scenarios: list[Scenario], max_scenarios: int = 0,

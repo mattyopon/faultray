@@ -123,6 +123,18 @@ class SingleflightConfig(BaseModel):
     coalesce_ratio: float = 0.8  # fraction of duplicate requests coalesced (0-1)
 
 
+class ExternalSLAConfig(BaseModel):
+    """External dependency SLA configuration.
+
+    Used for Layer 5 (External SLA Cascading) in the 5-Layer Availability Model.
+    When a component of type ``external_api`` or any component with an explicit
+    ``external_sla`` config is present, its provider SLA is multiplied into the
+    external-availability layer.
+    """
+
+    provider_sla: float = 99.9  # percentage, e.g., 99.9 = three nines
+
+
 class SLOTarget(BaseModel):
     """Service Level Objective definition."""
 
@@ -131,6 +143,15 @@ class SLOTarget(BaseModel):
     target: float = 99.9
     unit: str = "percent"  # percent | ms | ratio
     window_days: int = 30
+
+
+class CostProfile(BaseModel):
+    """Cost characteristics for business impact analysis."""
+
+    hourly_infra_cost: float = 0.0
+    revenue_per_minute: float = 0.0
+    sla_credit_percent: float = 0.0
+    recovery_engineer_cost: float = 100.0
 
 
 class DegradationConfig(BaseModel):
@@ -175,6 +196,8 @@ class Component(BaseModel):
     cache_warming: CacheWarmingConfig = Field(default_factory=CacheWarmingConfig)
     singleflight: SingleflightConfig = Field(default_factory=SingleflightConfig)
     slo_targets: list[SLOTarget] = Field(default_factory=list)
+    external_sla: ExternalSLAConfig | None = None
+    cost_profile: CostProfile = Field(default_factory=CostProfile)
     operational_profile: OperationalProfile = Field(default_factory=OperationalProfile)
     network: NetworkProfile = Field(default_factory=NetworkProfile)
     runtime_jitter: RuntimeJitter = Field(default_factory=RuntimeJitter)

@@ -203,29 +203,41 @@ def _run_evaluation(
     }
 
     # ------------------------------------------------------------------
-    # 6. 3-Layer Availability Limit Model
+    # 6. 5-Layer Availability Limit Model
     # ------------------------------------------------------------------
-    from infrasim.simulator.availability_model import compute_three_layer_model
+    from infrasim.simulator.availability_model import compute_five_layer_model
 
-    three_layer = compute_three_layer_model(graph)
+    five_layer = compute_five_layer_model(graph)
     evaluation_data["availability_limits"] = {
         "layer1_software": {
-            "nines": round(three_layer.layer1_software.nines, 2),
-            "availability_percent": round(three_layer.layer1_software.availability * 100, 6),
-            "annual_downtime_seconds": round(three_layer.layer1_software.annual_downtime_seconds, 0),
-            "description": three_layer.layer1_software.description,
+            "nines": round(five_layer.layer1_software.nines, 2),
+            "availability_percent": round(five_layer.layer1_software.availability * 100, 6),
+            "annual_downtime_seconds": round(five_layer.layer1_software.annual_downtime_seconds, 0),
+            "description": five_layer.layer1_software.description,
         },
         "layer2_hardware": {
-            "nines": round(three_layer.layer2_hardware.nines, 2),
-            "availability_percent": round(three_layer.layer2_hardware.availability * 100, 6),
-            "annual_downtime_seconds": round(three_layer.layer2_hardware.annual_downtime_seconds, 0),
-            "description": three_layer.layer2_hardware.description,
+            "nines": round(five_layer.layer2_hardware.nines, 2),
+            "availability_percent": round(five_layer.layer2_hardware.availability * 100, 6),
+            "annual_downtime_seconds": round(five_layer.layer2_hardware.annual_downtime_seconds, 0),
+            "description": five_layer.layer2_hardware.description,
         },
         "layer3_theoretical": {
-            "nines": round(three_layer.layer3_theoretical.nines, 2),
-            "availability_percent": round(three_layer.layer3_theoretical.availability * 100, 6),
-            "annual_downtime_seconds": round(three_layer.layer3_theoretical.annual_downtime_seconds, 0),
-            "description": three_layer.layer3_theoretical.description,
+            "nines": round(five_layer.layer3_theoretical.nines, 2),
+            "availability_percent": round(five_layer.layer3_theoretical.availability * 100, 6),
+            "annual_downtime_seconds": round(five_layer.layer3_theoretical.annual_downtime_seconds, 0),
+            "description": five_layer.layer3_theoretical.description,
+        },
+        "layer4_operational": {
+            "nines": round(five_layer.layer4_operational.nines, 2),
+            "availability_percent": round(five_layer.layer4_operational.availability * 100, 6),
+            "annual_downtime_seconds": round(five_layer.layer4_operational.annual_downtime_seconds, 0),
+            "description": five_layer.layer4_operational.description,
+        },
+        "layer5_external": {
+            "nines": round(five_layer.layer5_external.nines, 2),
+            "availability_percent": round(five_layer.layer5_external.availability * 100, 6),
+            "annual_downtime_seconds": round(five_layer.layer5_external.annual_downtime_seconds, 0),
+            "description": five_layer.layer5_external.description,
         },
     }
 
@@ -249,7 +261,7 @@ def _run_evaluation(
         "whatif_results": whatif_results,
         "cap_report": cap_report,
         "graph": graph,
-        "three_layer": three_layer,
+        "five_layer": five_layer,
     }
 
     return evaluation_data
@@ -730,16 +742,20 @@ def _print_rich_report(evaluation_data: dict, ops_days: int) -> None:
         console.print(f"     Cost Change: 0.0%")
     console.print(f"     Bottlenecks: {bottleneck_count} components")
 
-    # 6. 3-Layer Availability Limits
+    # 6. 5-Layer Availability Limits
     limits = evaluation_data.get("availability_limits", {})
     if limits:
-        console.print(f"\n  [bold]6. 3-Layer Availability Limits[/]")
+        console.print(f"\n  [bold]6. 5-Layer Availability Limits[/]")
         for layer_key, label in [
             ("layer1_software", "Layer 1 (Software)"),
             ("layer2_hardware", "Layer 2 (Hardware)"),
             ("layer3_theoretical", "Layer 3 (Theoretical)"),
+            ("layer4_operational", "Layer 4 (Operational)"),
+            ("layer5_external", "Layer 5 (External SLA)"),
         ]:
             layer = limits.get(layer_key, {})
+            if not layer:
+                continue
             nines = layer.get("nines", 0)
             avail_pct = layer.get("availability_percent", 0)
             dt = layer.get("annual_downtime_seconds", 0)

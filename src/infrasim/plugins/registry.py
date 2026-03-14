@@ -3,10 +3,13 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Protocol
+from typing import TYPE_CHECKING, Protocol
 import importlib.util
 import json
 import logging
+
+if TYPE_CHECKING:
+    from infrasim.model.graph import InfraGraph
 
 logger = logging.getLogger(__name__)
 
@@ -24,6 +27,25 @@ class AnalyzerPlugin(Protocol):
     def analyze(self, graph, report) -> dict: ...
 
 
+class EnginePlugin(Protocol):
+    """Custom simulation engine plugin."""
+    name: str
+    description: str
+    def simulate(self, graph: InfraGraph, scenarios: list) -> dict: ...
+
+
+class ReporterPlugin(Protocol):
+    """Custom report generation plugin."""
+    name: str
+    def generate(self, graph: InfraGraph, results: dict) -> str: ...
+
+
+class DiscoveryPlugin(Protocol):
+    """Custom infrastructure discovery plugin."""
+    name: str
+    def discover(self, config: dict) -> InfraGraph: ...
+
+
 class PluginRegistry:
     """Central registry for scenario and analyzer plugins.
 
@@ -34,6 +56,9 @@ class PluginRegistry:
 
     _scenario_plugins: list[ScenarioPlugin] = []
     _analyzer_plugins: list[AnalyzerPlugin] = []
+    _engine_plugins: list[EnginePlugin] = []
+    _reporter_plugins: list[ReporterPlugin] = []
+    _discovery_plugins: list[DiscoveryPlugin] = []
 
     @classmethod
     def register_scenario(cls, plugin: ScenarioPlugin):
@@ -42,6 +67,18 @@ class PluginRegistry:
     @classmethod
     def register_analyzer(cls, plugin: AnalyzerPlugin):
         cls._analyzer_plugins.append(plugin)
+
+    @classmethod
+    def register_engine(cls, plugin: EnginePlugin):
+        cls._engine_plugins.append(plugin)
+
+    @classmethod
+    def register_reporter(cls, plugin: ReporterPlugin):
+        cls._reporter_plugins.append(plugin)
+
+    @classmethod
+    def register_discovery(cls, plugin: DiscoveryPlugin):
+        cls._discovery_plugins.append(plugin)
 
     @classmethod
     def load_plugins_from_dir(cls, plugin_dir: Path):
@@ -72,6 +109,21 @@ class PluginRegistry:
         return list(cls._analyzer_plugins)
 
     @classmethod
+    def get_engines(cls) -> list[EnginePlugin]:
+        return list(cls._engine_plugins)
+
+    @classmethod
+    def get_reporters(cls) -> list[ReporterPlugin]:
+        return list(cls._reporter_plugins)
+
+    @classmethod
+    def get_discoveries(cls) -> list[DiscoveryPlugin]:
+        return list(cls._discovery_plugins)
+
+    @classmethod
     def clear(cls):
         cls._scenario_plugins.clear()
         cls._analyzer_plugins.clear()
+        cls._engine_plugins.clear()
+        cls._reporter_plugins.clear()
+        cls._discovery_plugins.clear()

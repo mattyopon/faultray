@@ -165,6 +165,167 @@ class InfraGraph:
 
         return max(0.0, min(100.0, score))
 
+    def resilience_score_v2(self) -> dict:
+        """Enhanced resilience score with detailed breakdown.
+
+        Returns dict with:
+        - score: float (0-100)
+        - breakdown: dict with per-category scores
+        - recommendations: list of improvement suggestions
+        """
+        if not self._components:
+            return {
+                "score": 0.0,
+                "breakdown": {
+                    "redundancy": 0.0,
+                    "circuit_breaker_coverage": 0.0,
+                    "auto_recovery": 0.0,
+                    "dependency_risk": 0.0,
+                    "capacity_headroom": 0.0,
+                },
+                "recommendations": [],
+            }
+
+        recommendations: list[str] = []
+
+        # --- 1. Redundancy Score (0-20) ---
+        redundancy_scores: list[float] = []
+        for comp in self._components.values():
+            if comp.replicas >= 2 and comp.failover.enabled:
+                # Active-Active: multiple replicas with failover
+                redundancy_scores.append(20.0)
+            elif comp.replicas >= 2 or comp.failover.enabled:
+                # Active-Standby: either replicas or failover but not both
+                redundancy_scores.append(15.0)
+            else:
+                # Single instance, no failover
+                redundancy_scores.append(5.0)
+                recommendations.append(
+                    f"Component '{comp.id}' has no redundancy (replicas=1, no failover). "
+                    "Consider adding replicas or enabling failover."
+                )
+        redundancy = sum(redundancy_scores) / len(redundancy_scores) if redundancy_scores else 0.0
+
+        # --- 2. Circuit Breaker Coverage (0-20) ---
+        all_edges = self.all_dependency_edges()
+        if all_edges:
+            cb_enabled_count = sum(
+                1 for edge in all_edges if edge.circuit_breaker.enabled
+            )
+            cb_ratio = cb_enabled_count / len(all_edges)
+            circuit_breaker_coverage = cb_ratio * 20.0
+            if cb_ratio < 1.0:
+                uncovered = len(all_edges) - cb_enabled_count
+                recommendations.append(
+                    f"{uncovered} of {len(all_edges)} dependency edges lack circuit breakers. "
+                    "Enable circuit breakers to prevent cascade failures."
+                )
+        else:
+            # No dependencies means no risk from missing circuit breakers
+            circuit_breaker_coverage = 20.0
+
+        # --- 3. Auto-Recovery Score (0-20) ---
+        recovery_scores: list[float] = []
+        for comp in self._components.values():
+            has_recovery = comp.autoscaling.enabled or comp.failover.enabled
+            recovery_scores.append(1.0 if has_recovery else 0.0)
+            if not has_recovery:
+                recommendations.append(
+                    f"Component '{comp.id}' has no auto-recovery (no autoscaling or failover). "
+                    "Enable autoscaling or failover for automatic recovery."
+                )
+        if recovery_scores:
+            recovery_ratio = sum(recovery_scores) / len(recovery_scores)
+            auto_recovery = recovery_ratio * 20.0
+        else:
+            auto_recovery = 0.0
+
+        # --- 4. Dependency Risk Score (0-20) ---
+        critical_paths = self.get_critical_paths()
+        if critical_paths:
+            max_depth = len(critical_paths[0])
+        else:
+            max_depth = 0
+
+        # Score based on inverse of max depth: depth 1 = 20, depth 10+ = 0
+        if max_depth <= 1:
+            depth_score = 20.0
+        elif max_depth >= 10:
+            depth_score = 0.0
+        else:
+            # Linear interpolation: depth 2 -> ~17.8, depth 5 -> ~11.1, depth 9 -> ~2.2
+            depth_score = max(0.0, 20.0 * (1.0 - (max_depth - 1) / 9.0))
+
+        # Penalize 'requires' dependencies without alternatives
+        requires_without_alt = 0
+        for comp in self._components.values():
+            deps = self.get_dependencies(comp.id)
+            for dep_comp in deps:
+                edge = self.get_dependency_edge(comp.id, dep_comp.id)
+                if edge and edge.dependency_type == "requires":
+                    # Check if the target has replicas or failover
+                    if dep_comp.replicas <= 1 and not dep_comp.failover.enabled:
+                        requires_without_alt += 1
+
+        if requires_without_alt > 0 and self._components:
+            alt_penalty = min(10.0, requires_without_alt * 2.0)
+            depth_score = max(0.0, depth_score - alt_penalty)
+            recommendations.append(
+                f"{requires_without_alt} 'requires' dependencies target components "
+                "without redundancy. Add replicas or failover to critical dependencies."
+            )
+
+        dependency_risk = depth_score
+
+        # --- 5. Capacity Headroom Score (0-20) ---
+        utilizations: list[float] = []
+        for comp in self._components.values():
+            utilizations.append(comp.utilization())
+
+        if utilizations:
+            avg_util = sum(utilizations) / len(utilizations)
+            # All < 50% = 20, all > 90% = 0, linear interpolation between
+            if avg_util <= 50.0:
+                capacity_headroom = 20.0
+            elif avg_util >= 90.0:
+                capacity_headroom = 0.0
+            else:
+                capacity_headroom = 20.0 * (1.0 - (avg_util - 50.0) / 40.0)
+
+            for comp in self._components.values():
+                util = comp.utilization()
+                if util > 80.0:
+                    recommendations.append(
+                        f"Component '{comp.id}' has high utilization ({util:.0f}%). "
+                        "Consider scaling up or enabling autoscaling."
+                    )
+        else:
+            capacity_headroom = 20.0
+
+        # --- Total Score ---
+        total_score = redundancy + circuit_breaker_coverage + auto_recovery + dependency_risk + capacity_headroom
+        total_score = max(0.0, min(100.0, total_score))
+
+        # Deduplicate recommendations
+        seen: set[str] = set()
+        unique_recommendations: list[str] = []
+        for rec in recommendations:
+            if rec not in seen:
+                seen.add(rec)
+                unique_recommendations.append(rec)
+
+        return {
+            "score": round(total_score, 1),
+            "breakdown": {
+                "redundancy": round(redundancy, 1),
+                "circuit_breaker_coverage": round(circuit_breaker_coverage, 1),
+                "auto_recovery": round(auto_recovery, 1),
+                "dependency_risk": round(dependency_risk, 1),
+                "capacity_headroom": round(capacity_headroom, 1),
+            },
+            "recommendations": unique_recommendations,
+        }
+
     def summary(self) -> dict:
         return {
             "total_components": len(self._components),

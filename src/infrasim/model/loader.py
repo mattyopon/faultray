@@ -13,6 +13,7 @@ from infrasim.model.components import (
     CircuitBreakerConfig,
     Component,
     ComponentType,
+    CostProfile,
     DegradationConfig,
     Dependency,
     FailoverConfig,
@@ -116,6 +117,9 @@ def load_yaml(path: Path | str) -> InfraGraph:
         runtime_jitter = (
             RuntimeJitter(**entry["runtime_jitter"]) if "runtime_jitter" in entry else RuntimeJitter()
         )
+        cost_profile = (
+            CostProfile(**entry["cost_profile"]) if "cost_profile" in entry else CostProfile()
+        )
 
         component = Component(
             id=comp_id,
@@ -131,6 +135,7 @@ def load_yaml(path: Path | str) -> InfraGraph:
             cache_warming=cache_warming,
             singleflight=singleflight,
             slo_targets=slo_targets,
+            cost_profile=cost_profile,
             operational_profile=operational_profile,
             network=network,
             runtime_jitter=runtime_jitter,

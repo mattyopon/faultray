@@ -1,6 +1,6 @@
-"""3-Layer Availability Limit Model — mathematical proof of availability ceiling.
+"""5-Layer Availability Limit Model — mathematical proof of availability ceiling.
 
-Provides three mathematically distinct availability limits:
+Provides five mathematically distinct availability limits:
 
 Layer 1 (Software Limit):
     The practical ceiling accounting for deployment downtime, human error,
@@ -15,6 +15,15 @@ Layer 3 (Theoretical Limit):
     The mathematical upper bound assuming perfect software AND accounting
     for irreducible physical noise: network packet loss, GC pauses, and
     kernel scheduling jitter. This is unreachable in practice.
+
+Layer 4 (Operational Limit):
+    Based on incident response time, team size, and on-call coverage.
+    Captures the human factor: how quickly incidents are detected and
+    resolved given the operational team's capabilities.
+
+Layer 5 (External SLA Cascading):
+    Product of all external dependency SLAs. If your system depends on
+    third-party services, your availability is capped by their combined SLA.
 """
 
 from __future__ import annotations
@@ -82,6 +91,40 @@ class ThreeLayerResult:
             f"  Layer 3 (Theoretical): {self.layer3_theoretical.nines:.2f} nines "
             f"({self.layer3_theoretical.availability * 100:.6f}%) "
             f"— {self.layer3_theoretical.annual_downtime_seconds:.0f}s/year",
+        ]
+        return "\n".join(lines)
+
+
+@dataclass
+class FiveLayerResult:
+    """Complete 5-Layer Availability Limit Model result."""
+
+    layer1_software: AvailabilityLayer
+    layer2_hardware: AvailabilityLayer
+    layer3_theoretical: AvailabilityLayer
+    layer4_operational: AvailabilityLayer
+    layer5_external: AvailabilityLayer
+
+    @property
+    def summary(self) -> str:
+        lines = [
+            "5-Layer Availability Limit Model",
+            "=" * 60,
+            f"  Layer 1 (Software):     {self.layer1_software.nines:.2f} nines "
+            f"({self.layer1_software.availability * 100:.6f}%) "
+            f"— {self.layer1_software.annual_downtime_seconds:.0f}s/year",
+            f"  Layer 2 (Hardware):     {self.layer2_hardware.nines:.2f} nines "
+            f"({self.layer2_hardware.availability * 100:.6f}%) "
+            f"— {self.layer2_hardware.annual_downtime_seconds:.0f}s/year",
+            f"  Layer 3 (Theoretical):  {self.layer3_theoretical.nines:.2f} nines "
+            f"({self.layer3_theoretical.availability * 100:.6f}%) "
+            f"— {self.layer3_theoretical.annual_downtime_seconds:.0f}s/year",
+            f"  Layer 4 (Operational):  {self.layer4_operational.nines:.2f} nines "
+            f"({self.layer4_operational.availability * 100:.6f}%) "
+            f"— {self.layer4_operational.annual_downtime_seconds:.0f}s/year",
+            f"  Layer 5 (External SLA): {self.layer5_external.nines:.2f} nines "
+            f"({self.layer5_external.availability * 100:.6f}%) "
+            f"— {self.layer5_external.annual_downtime_seconds:.0f}s/year",
         ]
         return "\n".join(lines)
 
@@ -281,4 +324,139 @@ def compute_three_layer_model(
         layer1_software=layer1,
         layer2_hardware=layer2,
         layer3_theoretical=layer3,
+    )
+
+
+def compute_five_layer_model(
+    graph: InfraGraph,
+    deploys_per_month: float = 8.0,
+    human_error_rate: float = 0.001,
+    config_drift_rate: float = 0.0005,
+    incidents_per_year: float = 12.0,
+    mean_response_minutes: float = 30.0,
+    oncall_coverage_percent: float = 100.0,
+) -> FiveLayerResult:
+    """Compute the 5-Layer Availability Limit Model for an infrastructure graph.
+
+    Extends the 3-Layer model with:
+
+    Layer 4 (Operational Limit):
+        ``operational_avail = 1 - (incident_rate * mean_response_time / 8760_hours)``
+        Adjusted by on-call coverage (24/7 = 100%, business hours only = 33%).
+
+    Layer 5 (External SLA Cascading):
+        ``external_avail = product(provider_sla[i])`` for each external-API
+        component or any component with an ``external_sla`` config.
+
+    Parameters
+    ----------
+    graph:
+        The infrastructure graph to analyze.
+    deploys_per_month:
+        Average number of deployments per month (Layer 1).
+    human_error_rate:
+        Probability of a human-caused incident per month (Layer 1).
+    config_drift_rate:
+        Probability of configuration drift causing degradation per month (Layer 1).
+    incidents_per_year:
+        Expected number of incidents per year (Layer 4).
+    mean_response_minutes:
+        Mean time from incident detection to resolution in minutes (Layer 4).
+    oncall_coverage_percent:
+        Percentage of time an on-call engineer is available.
+        100.0 = 24/7 coverage, 33.0 = business hours only (Layer 4).
+    """
+    # Reuse the 3-layer computation for layers 1-3
+    three_layer = compute_three_layer_model(
+        graph,
+        deploys_per_month=deploys_per_month,
+        human_error_rate=human_error_rate,
+        config_drift_rate=config_drift_rate,
+    )
+
+    if not graph.components:
+        empty_layer = AvailabilityLayer(
+            availability=0.0, nines=0.0,
+            annual_downtime_seconds=365.25 * 24 * 3600,
+            description="No components", details={},
+        )
+        return FiveLayerResult(
+            layer1_software=three_layer.layer1_software,
+            layer2_hardware=three_layer.layer2_hardware,
+            layer3_theoretical=three_layer.layer3_theoretical,
+            layer4_operational=empty_layer,
+            layer5_external=empty_layer,
+        )
+
+    # =====================================================================
+    # Layer 4: Operational Limit
+    # Formula: operational_avail = 1 - (incidents_per_year * mean_response_hours / 8760)
+    # Adjusted by on-call coverage: lower coverage means longer effective
+    # response time because incidents during uncovered hours wait until
+    # an engineer is available.
+    # =====================================================================
+    hours_per_year = 8760.0
+    mean_response_hours = mean_response_minutes / 60.0
+
+    # Coverage adjustment: if only 33% coverage, effective response time
+    # is inflated because incidents during uncovered periods accumulate.
+    coverage_fraction = max(0.01, min(1.0, oncall_coverage_percent / 100.0))
+    effective_response_hours = mean_response_hours / coverage_fraction
+
+    # Total downtime fraction from incident response
+    operational_unavail = (incidents_per_year * effective_response_hours) / hours_per_year
+    operational_avail = max(0.0, min(1.0, 1.0 - operational_unavail))
+
+    layer4 = AvailabilityLayer(
+        availability=operational_avail,
+        nines=_to_nines(operational_avail),
+        annual_downtime_seconds=_annual_downtime(operational_avail),
+        description="Operational limit: incident response + on-call coverage",
+        details={
+            "incidents_per_year": incidents_per_year,
+            "mean_response_minutes": mean_response_minutes,
+            "oncall_coverage_percent": oncall_coverage_percent,
+            "effective_response_hours": effective_response_hours,
+            "operational_unavail_fraction": operational_unavail,
+        },
+    )
+
+    # =====================================================================
+    # Layer 5: External SLA Cascading
+    # Product of all external dependency SLAs
+    # =====================================================================
+    external_sla_values: dict[str, float] = {}
+
+    for comp in graph.components.values():
+        # Include if component has explicit external_sla config
+        if comp.external_sla is not None:
+            sla_fraction = comp.external_sla.provider_sla / 100.0
+            external_sla_values[comp.id] = max(0.0, min(1.0, sla_fraction))
+        # Or if component type is external_api (default SLA = 99.9%)
+        elif comp.type.value == "external_api":
+            external_sla_values[comp.id] = 0.999  # default three nines
+
+    if external_sla_values:
+        external_avail = 1.0
+        for sla_val in external_sla_values.values():
+            external_avail *= sla_val
+        external_avail = max(0.0, min(1.0, external_avail))
+    else:
+        # No external dependencies — external SLA is perfect (1.0)
+        external_avail = 1.0
+
+    layer5 = AvailabilityLayer(
+        availability=external_avail,
+        nines=_to_nines(external_avail),
+        annual_downtime_seconds=_annual_downtime(external_avail),
+        description="External SLA cascading: product of provider SLAs",
+        details=external_sla_values if external_sla_values else {"no_external_deps": 1.0},
+    )
+
+    return FiveLayerResult(
+        layer1_software=three_layer.layer1_software,
+        layer2_hardware=three_layer.layer2_hardware,
+        layer3_theoretical=three_layer.layer3_theoretical,
+        layer4_operational=layer4,
+        layer5_external=layer5,
     )

@@ -441,3 +441,180 @@ def capacity(
 
     # ---- Summary ----
     console.print(f"\n{report.summary}")
+
+
+@app.command(name="monte-carlo")
+def monte_carlo_cmd(
+    yaml_pos: Path | None = typer.Argument(None, help="YAML file path (positional)"),
+    model: Path = typer.Option(DEFAULT_MODEL_PATH, "--model", "-m", help="Path to model JSON or YAML"),
+    yaml_file: Path | None = typer.Option(None, "--yaml", "-y", help="Path to YAML (alternative to model)"),
+    n_trials: int = typer.Option(10000, "-n", "--trials", help="Number of Monte Carlo trials"),
+    seed: int = typer.Option(42, "--seed", help="Random seed for reproducibility"),
+    json_output: bool = typer.Option(False, "--json", help="Output JSON summary"),
+) -> None:
+    """Run Monte Carlo availability simulation with stochastic MTBF/MTTR sampling."""
+    resolved_yaml = yaml_pos or yaml_file
+    graph = _load_graph_for_analysis(model, resolved_yaml)
+
+    from infrasim.simulator.monte_carlo import run_monte_carlo
+
+    if not json_output:
+        console.print(
+            f"[cyan]Running Monte Carlo simulation "
+            f"({len(graph.components)} components, {n_trials:,} trials, seed={seed})...[/]"
+        )
+
+    result = run_monte_carlo(graph, n_trials=n_trials, seed=seed)
+
+    if json_output:
+        import json as json_lib
+
+        data = {
+            "n_trials": result.n_trials,
+            "availability_p50": round(result.availability_p50 * 100, 6),
+            "availability_p95": round(result.availability_p95 * 100, 6),
+            "availability_p99": round(result.availability_p99 * 100, 6),
+            "availability_mean": round(result.availability_mean * 100, 6),
+            "availability_std": round(result.availability_std * 100, 6),
+            "annual_downtime_p50_seconds": round(result.annual_downtime_p50_seconds, 1),
+            "annual_downtime_p95_seconds": round(result.annual_downtime_p95_seconds, 1),
+            "confidence_interval_95_lower": round(result.confidence_interval_95[0] * 100, 6),
+            "confidence_interval_95_upper": round(result.confidence_interval_95[1] * 100, 6),
+        }
+        console.print_json(data=data)
+        return
+
+    from rich.panel import Panel
+    from rich.table import Table
+
+    # Main results table
+    table = Table(show_header=True, header_style="bold")
+    table.add_column("Metric", style="cyan", width=32)
+    table.add_column("Value", justify="right", width=20)
+
+    table.add_row("Trials", f"{result.n_trials:,}")
+    table.add_row("Mean Availability", f"{result.availability_mean * 100:.6f}%")
+    table.add_row("Std Deviation", f"{result.availability_std * 100:.6f}%")
+
+    table.add_section()
+    table.add_row("P50 (median)", f"{result.availability_p50 * 100:.6f}%")
+    table.add_row("P95", f"{result.availability_p95 * 100:.6f}%")
+    table.add_row("P99", f"{result.availability_p99 * 100:.6f}%")
+
+    table.add_section()
+    table.add_row("95% CI (lower)", f"{result.confidence_interval_95[0] * 100:.6f}%")
+    table.add_row("95% CI (upper)", f"{result.confidence_interval_95[1] * 100:.6f}%")
+
+    table.add_section()
+    dt_p50_min = result.annual_downtime_p50_seconds / 60.0
+    dt_p95_min = result.annual_downtime_p95_seconds / 60.0
+    table.add_row("Annual Downtime (P50)", f"{result.annual_downtime_p50_seconds:.1f}s ({dt_p50_min:.1f}m)")
+    table.add_row("Annual Downtime (P95)", f"{result.annual_downtime_p95_seconds:.1f}s ({dt_p95_min:.1f}m)")
+
+    console.print()
+    console.print(Panel(
+        table,
+        title=f"[bold]Monte Carlo Availability Simulation (n={result.n_trials:,})[/]",
+        border_style="cyan",
+    ))
+
+
+@app.command()
+def cost(
+    yaml_pos: Path | None = typer.Argument(None, help="YAML file path (positional)"),
+    model: Path = typer.Option(DEFAULT_MODEL_PATH, "--model", "-m", help="Model file path (JSON or YAML)"),
+    yaml_file: Path | None = typer.Option(None, "--yaml", "-y", help="YAML file with infrastructure definition"),
+    top: int = typer.Option(10, "--top", "-n", help="Number of top scenarios to display"),
+    json_output: bool = typer.Option(False, "--json", help="Output JSON summary"),
+) -> None:
+    """Estimate business cost impact of failure scenarios."""
+    from rich.panel import Panel
+    from rich.table import Table
+
+    from infrasim.simulator.cost_engine import CostImpactEngine
+    from infrasim.simulator.engine import SimulationEngine
+
+    resolved_yaml = yaml_pos or yaml_file
+    graph = _load_graph_for_analysis(model, resolved_yaml)
+
+    if not json_output:
+        console.print(f"[cyan]Running cost impact analysis ({len(graph.components)} components)...[/]")
+
+    # Run static simulation first.
+    engine = SimulationEngine(graph)
+    sim_report = engine.run_all_defaults()
+
+    # Run cost engine on simulation results.
+    cost_engine = CostImpactEngine(graph)
+    cost_report = cost_engine.analyze(sim_report)
+
+    if json_output:
+        data = {
+            "total_annual_risk": cost_report.total_annual_risk,
+            "highest_impact_scenario": cost_report.highest_impact_scenario,
+            "summary": cost_report.summary,
+            "impacts": [
+                {
+                    "scenario_name": i.scenario_name,
+                    "scenario_id": i.scenario_id,
+                    "severity": i.severity,
+                    "downtime_minutes": i.downtime_minutes,
+                    "business_loss": i.business_loss,
+                    "sla_penalty": i.sla_penalty,
+                    "recovery_cost": i.recovery_cost,
+                    "total_impact": i.total_impact,
+                }
+                for i in cost_report.impacts[:top]
+            ],
+        }
+        console.print_json(data=data)
+        return
+
+    # ---- Summary Panel ----
+    summary_text = (
+        f"[bold]Scenarios analyzed:[/] {len(cost_report.impacts)}\n"
+        f"[bold]Highest impact:[/] {cost_report.highest_impact_scenario}\n"
+        f"[bold]Estimated annual risk:[/] ${cost_report.total_annual_risk:,.2f}\n\n"
+        f"{cost_report.summary}"
+    )
+    console.print()
+    console.print(Panel(summary_text, title="[bold]Cost Impact Analysis[/]", border_style="cyan"))
+
+    # ---- Top N Scenarios Table ----
+    display_impacts = cost_report.impacts[:top]
+    if display_impacts:
+        table = Table(
+            title=f"Top {min(top, len(display_impacts))} Scenarios by Cost Impact",
+            show_header=True,
+        )
+        table.add_column("#", justify="right", width=4)
+        table.add_column("Scenario", style="cyan", width=35)
+        table.add_column("Sev", justify="right", width=5)
+        table.add_column("Downtime", justify="right", width=10)
+        table.add_column("Biz Loss", justify="right", width=12)
+        table.add_column("SLA Pen.", justify="right", width=12)
+        table.add_column("Recovery", justify="right", width=10)
+        table.add_column("Total", justify="right", width=14, style="bold")
+
+        for idx, impact in enumerate(display_impacts, 1):
+            # Color by severity.
+            if impact.total_impact > 10000:
+                total_str = f"[red]${impact.total_impact:,.2f}[/]"
+            elif impact.total_impact > 1000:
+                total_str = f"[yellow]${impact.total_impact:,.2f}[/]"
+            else:
+                total_str = f"[green]${impact.total_impact:,.2f}[/]"
+
+            table.add_row(
+                str(idx),
+                impact.scenario_name[:35],
+                f"{impact.severity:.1f}",
+                f"{impact.downtime_minutes:.1f}m",
+                f"${impact.business_loss:,.2f}",
+                f"${impact.sla_penalty:,.2f}",
+                f"${impact.recovery_cost:,.2f}",
+                total_str,
+            )
+
+        console.print()
+        console.print(table)
