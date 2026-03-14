@@ -57,9 +57,10 @@ class SimulationReport:
 class SimulationEngine:
     """Runs chaos scenarios against an InfraGraph."""
 
-    def __init__(self, graph: InfraGraph) -> None:
+    def __init__(self, graph: InfraGraph, cache=None) -> None:
         self.graph = graph
         self.cascade_engine = CascadeEngine(graph)
+        self._cache = cache  # Optional ResultCache instance
 
     def run_scenario(self, scenario: Scenario) -> ScenarioResult:
         """Run a single chaos scenario."""

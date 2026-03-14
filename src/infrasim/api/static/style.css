@@ -220,6 +220,46 @@ a:hover { color: var(--highlight-hover); text-decoration: none; }
     opacity: 1;
 }
 
+/* Sidebar submenu toggle button */
+.nav-link-toggle {
+    width: 100%;
+    background: none;
+    cursor: pointer;
+    justify-content: flex-start;
+}
+
+.nav-chevron {
+    margin-left: auto;
+    transition: transform 0.2s ease;
+    opacity: 0.5;
+    flex-shrink: 0;
+}
+
+.nav-chevron-open {
+    transform: rotate(180deg);
+}
+
+/* Sidebar submenu */
+.nav-submenu {
+    list-style: none;
+    padding: 2px 0 2px 20px;
+}
+
+.nav-submenu li {
+    margin-bottom: 1px;
+}
+
+.nav-link-sub {
+    padding: 7px 12px;
+    font-size: 12px;
+    border-left: 2px solid var(--border);
+    border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
+}
+
+.nav-link-sub.active {
+    border-left-color: var(--highlight);
+}
+
 .sidebar-footer {
     padding: 12px 12px 16px;
     border-top: 1px solid var(--border);
@@ -361,6 +401,108 @@ a:hover { color: var(--highlight-hover); text-decoration: none; }
 }
 
 .input-sm { min-width: 160px; }
+
+/* --- Score Grid (Dashboard) --- */
+.score-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 1rem;
+}
+
+.score-card {
+    text-align: center;
+}
+
+.score-card-inner {
+    padding: 24px 16px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+}
+
+.score-card-metric {
+    justify-content: center;
+    min-height: 148px;
+}
+
+.score-card-big-value {
+    font-size: 42px;
+    font-weight: 800;
+    line-height: 1;
+    letter-spacing: -2px;
+}
+
+.score-card-label {
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.8px;
+    color: var(--text-secondary);
+}
+
+.score-card-sub {
+    font-size: 11px;
+    color: var(--text-muted);
+    margin-top: 4px;
+}
+
+/* --- Simulation History --- */
+.sim-history-list {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.sim-history-item {
+    padding: 14px;
+    border-radius: var(--radius);
+    background: rgba(255,255,255,0.02);
+    border: 1px solid var(--border);
+}
+
+.sim-history-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 8px;
+}
+
+.sim-history-stats {
+    display: flex;
+    gap: 12px;
+    font-size: 12px;
+    font-weight: 600;
+    margin-bottom: 6px;
+}
+
+.sim-history-stat {
+    display: inline-block;
+}
+
+.sim-history-score {
+    font-size: 12px;
+    color: var(--text-secondary);
+}
+
+.sim-history-score strong {
+    color: var(--text-primary);
+}
+
+@media (max-width: 1200px) {
+    .score-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}
+
+@media (max-width: 480px) {
+    .score-grid {
+        grid-template-columns: 1fr;
+    }
+    .score-card-big-value {
+        font-size: 32px;
+    }
+}
 
 /* --- Cards --- */
 .card {
@@ -1552,6 +1694,218 @@ a:hover { color: var(--highlight-hover); text-decoration: none; }
     border-top: 1px solid var(--border);
 }
 
+/* --- Defense Bars (Security page) --- */
+.defense-bars {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+}
+
+.defense-bar-item {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.defense-bar-label {
+    display: flex;
+    justify-content: space-between;
+    font-size: 12px;
+    color: var(--text-secondary);
+    font-weight: 500;
+}
+
+/* --- Bar Chart (Cost page) --- */
+.bar-chart {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.bar-chart-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.bar-chart-label {
+    width: 200px;
+    flex-shrink: 0;
+    font-size: 12px;
+    color: var(--text-secondary);
+    text-align: right;
+}
+
+.bar-chart-bar-wrap {
+    flex: 1;
+    height: 18px;
+    background: rgba(255,255,255,0.05);
+    border-radius: 4px;
+    overflow: hidden;
+}
+
+.bar-chart-bar {
+    height: 100%;
+    border-radius: 4px;
+    transition: width 0.5s ease;
+}
+
+.bar-chart-value {
+    width: 80px;
+    flex-shrink: 0;
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--text-primary);
+    font-family: 'SF Mono', 'Fira Code', 'Cascadia Code', monospace;
+}
+
+/* --- Donut Legend --- */
+.donut-legend {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.donut-legend-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 12px;
+    color: var(--text-secondary);
+}
+
+.donut-dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    flex-shrink: 0;
+}
+
+/* --- ROI Calculator --- */
+.roi-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+    align-items: start;
+}
+
+.roi-input-group {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.roi-label {
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.8px;
+    color: var(--text-muted);
+}
+
+.roi-results {
+    grid-column: span 2;
+    display: flex;
+    gap: 24px;
+    padding-top: 16px;
+    border-top: 1px solid var(--border);
+}
+
+.roi-result-item {
+    flex: 1;
+    text-align: center;
+}
+
+.roi-result-label {
+    font-size: 11px;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.8px;
+    margin-bottom: 4px;
+}
+
+.roi-result-value {
+    font-size: 24px;
+    font-weight: 800;
+    letter-spacing: -1px;
+}
+
+/* --- Settings Page --- */
+.settings-form {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+.settings-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.settings-label {
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--text-secondary);
+    min-width: 120px;
+    flex-shrink: 0;
+}
+
+/* --- Integrations Grid --- */
+.integrations-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 16px;
+}
+
+.integration-card {
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 16px;
+    background: rgba(255,255,255,0.02);
+}
+
+.integration-header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 12px;
+}
+
+.integration-icon {
+    width: 40px;
+    height: 40px;
+    border-radius: var(--radius-sm);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+
+.integration-body {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+/* --- htmx indicator --- */
+.htmx-indicator {
+    display: none;
+}
+
+.htmx-request .htmx-indicator,
+.htmx-request.htmx-indicator {
+    display: inline-block;
+}
+
+@media (max-width: 768px) {
+    .bar-chart-label { width: 120px; font-size: 11px; }
+    .roi-grid { grid-template-columns: 1fr; }
+    .roi-results { grid-column: span 1; flex-direction: column; gap: 12px; }
+    .integrations-grid { grid-template-columns: 1fr; }
+    .settings-row { flex-direction: column; align-items: flex-start; }
+}
+
 /* --- Empty State --- */
 .empty-state {
     display: flex;
@@ -1731,4 +2085,41 @@ a:hover { color: var(--highlight-hover); text-decoration: none; }
     .quick-actions {
         grid-template-columns: 1fr;
     }
+
+    .container { padding: 1rem; }
+    table { font-size: 0.85rem; }
+    .main { width: 100%; }
+    h1 { font-size: 1.4rem; }
+    .graph-container { height: 300px; }
+    .metric-grid { grid-template-columns: 1fr; }
+    .stat-grid { grid-template-columns: 1fr 1fr; }
+    .stat-grid-findings { grid-template-columns: 1fr; }
+    .page-title { font-size: 14px; }
+    .score-circle { width: 110px; height: 110px; }
+    .score-value { font-size: 34px; }
+    .sim-stat-value { font-size: 22px; }
+    .rec-filter { flex-wrap: wrap; }
+    .graph-toolbar { flex-direction: column; align-items: flex-start; }
+    .graph-legend, .graph-edge-legend, .graph-health-legend { font-size: 10px; }
+    .result-header { flex-direction: column; gap: 8px; }
+    .result-meta { margin-left: 0; }
+}
+
+@media (max-width: 480px) {
+    .metric-grid { grid-template-columns: 1fr; }
+    table { display: block; overflow-x: auto; }
+    .data-table { display: block; overflow-x: auto; white-space: nowrap; }
+    .content { padding: 10px; }
+    .card-body { padding: 12px; }
+    .card-header { padding: 10px 14px; }
+    .stat-grid { grid-template-columns: 1fr; }
+    .stat-grid-findings { grid-template-columns: 1fr; }
+    .sim-stat { padding: 12px 10px; }
+    .sim-stat-value { font-size: 18px; }
+    .finding-header { flex-direction: column; gap: 4px; }
+    .nines-value { font-size: 36px; }
+    .rec-card { padding: 14px; }
+    .top-bar { padding: 0 10px 0 46px; }
+    .top-bar-actions { flex-wrap: wrap; gap: 4px; }
+    .btn-sm { padding: 4px 8px; font-size: 11px; }
 }

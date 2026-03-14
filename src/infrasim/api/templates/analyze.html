@@ -7,7 +7,7 @@
 
 {% block top_actions %}
 {% if has_data %}
-<button class="btn btn-sm btn-accent" id="runAnalysisBtn" onclick="runAnalysis()">
+<button class="btn btn-sm btn-accent" id="runAnalysisBtn" onclick="runAnalysis()" aria-label="Re-run AI analysis">
     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
         <path d="M21 16V8a2 2 0 00-1-1.73l-7-4a2 2 0 00-2 0l-7 4A2 2 0 003 8v8a2 2 0 001 1.73l7 4a2 2 0 002 0l7-4A2 2 0 0021 16z"/>
     </svg>
@@ -105,11 +105,11 @@
         <div class="card-header">
             <h3>Recommendations ({{ analysis.recommendations | length }})</h3>
             <div class="rec-filter">
-                <button class="btn btn-xs btn-outline rec-filter-btn active" onclick="filterRecs('all', this)">All</button>
-                <button class="btn btn-xs btn-outline rec-filter-btn" onclick="filterRecs('critical', this)">Critical</button>
-                <button class="btn btn-xs btn-outline rec-filter-btn" onclick="filterRecs('high', this)">High</button>
-                <button class="btn btn-xs btn-outline rec-filter-btn" onclick="filterRecs('medium', this)">Medium</button>
-                <button class="btn btn-xs btn-outline rec-filter-btn" onclick="filterRecs('low', this)">Low</button>
+                <button class="btn btn-xs btn-outline rec-filter-btn active" onclick="filterRecs('all', this)" aria-label="Show all recommendations">All</button>
+                <button class="btn btn-xs btn-outline rec-filter-btn" onclick="filterRecs('critical', this)" aria-label="Show critical recommendations">Critical</button>
+                <button class="btn btn-xs btn-outline rec-filter-btn" onclick="filterRecs('high', this)" aria-label="Show high priority recommendations">High</button>
+                <button class="btn btn-xs btn-outline rec-filter-btn" onclick="filterRecs('medium', this)" aria-label="Show medium priority recommendations">Medium</button>
+                <button class="btn btn-xs btn-outline rec-filter-btn" onclick="filterRecs('low', this)" aria-label="Show low priority recommendations">Low</button>
             </div>
         </div>
         <div class="card-body">

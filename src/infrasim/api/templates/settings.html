@@ -1,0 +1,170 @@
+{% extends "base.html" %}
+{% set active_page = "settings" %}
+
+{% block title %}ChaosProof - Settings{% endblock %}
+{% block page_title %}Settings{% endblock %}
+{% block page_subtitle %}<span class="page-subtitle">Project configuration and integrations</span>{% endblock %}
+
+{% block content %}
+<div class="dashboard-grid">
+    <!-- Project Settings -->
+    <div class="card card-wide">
+        <div class="card-header">
+            <h3>Project Configuration</h3>
+        </div>
+        <div class="card-body">
+            <div class="settings-form">
+                <div class="settings-row">
+                    <label class="settings-label">Project Name</label>
+                    <input type="text" class="input-sm" value="My Infrastructure" style="width: 100%; max-width: 400px;">
+                </div>
+                <div class="settings-row">
+                    <label class="settings-label">Description</label>
+                    <input type="text" class="input-sm" value="Production infrastructure resilience monitoring" style="width: 100%; max-width: 400px;">
+                </div>
+                <div class="settings-row">
+                    <label class="settings-label">Environment</label>
+                    <select class="select-sm" style="width: 100%; max-width: 400px;">
+                        <option selected>Production</option>
+                        <option>Staging</option>
+                        <option>Development</option>
+                    </select>
+                </div>
+                <div class="settings-row">
+                    <button class="btn btn-sm btn-accent" type="button">Save Changes</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Integrations -->
+    <div class="card card-wide">
+        <div class="card-header">
+            <h3>Integrations</h3>
+            <span class="badge badge-info">4 available</span>
+        </div>
+        <div class="card-body">
+            <div class="integrations-grid">
+                <!-- Slack -->
+                <div class="integration-card">
+                    <div class="integration-header">
+                        <div class="integration-icon" style="background: var(--purple-dim); color: var(--purple);">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M14.5 10c-.83 0-1.5-.67-1.5-1.5v-5c0-.83.67-1.5 1.5-1.5s1.5.67 1.5 1.5v5c0 .83-.67 1.5-1.5 1.5z"/>
+                                <path d="M20.5 10H19V8.5c0-.83.67-1.5 1.5-1.5s1.5.67 1.5 1.5-.67 1.5-1.5 1.5z"/>
+                            </svg>
+                        </div>
+                        <div>
+                            <div class="comp-name">Slack</div>
+                            <div class="text-muted">Alert notifications</div>
+                        </div>
+                    </div>
+                    <div class="integration-body">
+                        <label class="settings-label">Webhook URL</label>
+                        <input type="url" class="input-sm" placeholder="https://hooks.slack.com/services/..." style="width: 100%;">
+                    </div>
+                </div>
+
+                <!-- PagerDuty -->
+                <div class="integration-card">
+                    <div class="integration-header">
+                        <div class="integration-icon" style="background: var(--green-dim); color: var(--green);">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07 19.5 19.5 0 01-6-6 19.79 19.79 0 01-3.07-8.67A2 2 0 014.11 2h3a2 2 0 012 1.72c.127.96.361 1.903.7 2.81a2 2 0 01-.45 2.11L8.09 9.91a16 16 0 006 6l1.27-1.27a2 2 0 012.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0122 16.92z"/>
+                            </svg>
+                        </div>
+                        <div>
+                            <div class="comp-name">PagerDuty</div>
+                            <div class="text-muted">Incident management</div>
+                        </div>
+                    </div>
+                    <div class="integration-body">
+                        <label class="settings-label">Integration Key</label>
+                        <input type="text" class="input-sm" placeholder="Service integration key..." style="width: 100%;">
+                    </div>
+                </div>
+
+                <!-- OpsGenie -->
+                <div class="integration-card">
+                    <div class="integration-header">
+                        <div class="integration-icon" style="background: var(--blue-dim); color: var(--blue);">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9"/>
+                                <path d="M13.73 21a2 2 0 01-3.46 0"/>
+                            </svg>
+                        </div>
+                        <div>
+                            <div class="comp-name">OpsGenie</div>
+                            <div class="text-muted">Alert routing</div>
+                        </div>
+                    </div>
+                    <div class="integration-body">
+                        <label class="settings-label">API Key</label>
+                        <input type="text" class="input-sm" placeholder="OpsGenie API key..." style="width: 100%;">
+                    </div>
+                </div>
+
+                <!-- Datadog -->
+                <div class="integration-card">
+                    <div class="integration-header">
+                        <div class="integration-icon" style="background: var(--orange-dim); color: var(--orange);">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/>
+                            </svg>
+                        </div>
+                        <div>
+                            <div class="comp-name">Datadog</div>
+                            <div class="text-muted">Monitoring & metrics</div>
+                        </div>
+                    </div>
+                    <div class="integration-body">
+                        <label class="settings-label">API Key</label>
+                        <input type="text" class="input-sm" placeholder="Datadog API key..." style="width: 100%;">
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- API Key Management -->
+    <div class="card" x-data="{ showKey: false }">
+        <div class="card-header">
+            <h3>API Key</h3>
+        </div>
+        <div class="card-body">
+            <div class="settings-form">
+                <div class="settings-row">
+                    <label class="settings-label">Current API Key</label>
+                    <div style="display: flex; gap: 8px; align-items: center;">
+                        <input type="text" class="input-sm mono" :value="showKey ? 'cprf_sk_a1b2c3d4e5f6g7h8i9j0' : 'cprf_sk_**********************'" readonly style="width: 280px;">
+                        <button @click="showKey = !showKey" class="btn btn-xs btn-outline" type="button" x-text="showKey ? 'Hide' : 'Show'"></button>
+                    </div>
+                </div>
+                <div class="settings-row">
+                    <button class="btn btn-sm btn-outline" style="border-color: var(--red); color: var(--red);" type="button">Regenerate Key</button>
+                    <span class="text-muted" style="margin-left: 8px;">This will invalidate the current key</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Team Settings -->
+    <div class="card">
+        <div class="card-header">
+            <h3>Team</h3>
+            <span class="badge badge-info">Coming Soon</span>
+        </div>
+        <div class="card-body">
+            <div class="empty-inline" style="padding: 24px;">
+                <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="var(--text-muted)" stroke-width="1.5">
+                    <path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/>
+                    <circle cx="9" cy="7" r="4"/>
+                    <path d="M23 21v-2a4 4 0 00-3-3.87"/>
+                    <path d="M16 3.13a4 4 0 010 7.75"/>
+                </svg>
+                <p>Team management and role-based access control will be available in a future release.</p>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

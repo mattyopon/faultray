@@ -1,0 +1,930 @@
+# ChaosProof - SaaS Multi-Tenant Infrastructure
+#
+# SOC2 compliant multi-tenant SaaS platform
+# Load with:
+#   chaosproof load examples/saas-multi-tenant.yaml
+#
+# Architecture:
+#   CloudFront -> ALB -> Tenant Router -> API (x4)
+#   -> PostgreSQL (Primary + 2 Replicas) + Redis (x2) + Kafka
+#   -> S3 + Worker (x2)
+
+components:
+  - id: cloudfront
+    name: "CloudFront CDN"
+    type: load_balancer
+    host: cdn.saas.example.com
+    port: 443
+    replicas: 2
+    capacity:
+      max_connections: 100000
+      max_rps: 200000
+    metrics:
+      cpu_percent: 6
+      memory_percent: 10
+    security:
+      encryption_in_transit: true
+      waf_protected: true
+      rate_limiting: true
+      log_enabled: true
+    compliance_tags:
+      data_classification: public
+      audit_logging: true
+    tags:
+      - edge
+      - soc2
+
+  - id: alb
+    name: "Application Load Balancer"
+    type: load_balancer
+    host: alb.saas.internal
+    port: 443
+    replicas: 2
+    capacity:
+      max_connections: 50000
+      max_rps: 80000
+      timeout_seconds: 30.0
+    metrics:
+      cpu_percent: 15
+      memory_percent: 18
+      network_connections: 8000
+    autoscaling:
+      enabled: true
+      min_replicas: 2
+      max_replicas: 4
+      scale_up_threshold: 70.0
+      scale_down_threshold: 25.0
+    failover:
+      enabled: true
+      promotion_time_seconds: 10.0
+      health_check_interval_seconds: 5.0
+      failover_threshold: 3
+    security:
+      encryption_in_transit: true
+      waf_protected: true
+      rate_limiting: true
+      log_enabled: true
+    compliance_tags:
+      data_classification: internal
+      audit_logging: true
+    region:
+      region: us-east-1
+      availability_zone: us-east-1a
+      is_primary: true
+      dr_target_region: us-west-2
+      rpo_seconds: 0
+      rto_seconds: 30
+    tags:
+      - soc2
+
+  - id: tenant-router
+    name: "Tenant Router"
+    type: app_server
+    host: router.saas.internal
+    port: 8080
+    replicas: 3
+    capacity:
+      max_connections: 30000
+      max_rps: 50000
+      timeout_seconds: 5.0
+      max_memory_mb: 4096
+    metrics:
+      cpu_percent: 20
+      memory_percent: 25
+      disk_percent: 5
+      network_connections: 5000
+    autoscaling:
+      enabled: true
+      min_replicas: 3
+      max_replicas: 10
+      scale_up_threshold: 55.0
+      scale_down_threshold: 20.0
+      scale_up_delay_seconds: 10
+    failover:
+      enabled: true
+      promotion_time_seconds: 5.0
+      health_check_interval_seconds: 3.0
+      failover_threshold: 2
+    security:
+      encryption_in_transit: true
+      auth_required: true
+      network_segmented: true
+      rate_limiting: true
+      log_enabled: true
+    compliance_tags:
+      data_classification: confidential
+      contains_pii: true
+      audit_logging: true
+      change_management: true
+    slo_targets:
+      - name: router-availability
+        metric: availability
+        target: 99.99
+        unit: percent
+        window_days: 30
+      - name: router-latency
+        metric: latency_p99
+        target: 50.0
+        unit: ms
+        window_days: 30
+    tags:
+      - soc2
+      - routing
+      - critical
+    parameters:
+      tenant_isolation: "row-level"
+      max_tenants: 10000
+
+  - id: api-1
+    name: "API Server 1"
+    type: app_server
+    host: api01.saas.internal
+    port: 8080
+    replicas: 3
+    capacity:
+      max_connections: 5000
+      connection_pool_size: 400
+      timeout_seconds: 15.0
+      max_memory_mb: 8192
+    metrics:
+      cpu_percent: 40
+      memory_percent: 45
+      disk_percent: 10
+      network_connections: 1000
+    autoscaling:
+      enabled: true
+      min_replicas: 3
+      max_replicas: 12
+      scale_up_threshold: 60.0
+      scale_down_threshold: 20.0
+      scale_up_delay_seconds: 15
+    failover:
+      enabled: true
+      promotion_time_seconds: 10.0
+      health_check_interval_seconds: 5.0
+    security:
+      encryption_in_transit: true
+      auth_required: true
+      network_segmented: true
+      log_enabled: true
+    compliance_tags:
+      data_classification: confidential
+      contains_pii: true
+      audit_logging: true
+      change_management: true
+    cost_profile:
+      hourly_infra_cost: 1.50
+      revenue_per_minute: 80.0
+    slo_targets:
+      - name: api-availability
+        metric: availability
+        target: 99.95
+        unit: percent
+        window_days: 30
+    region:
+      region: us-east-1
+      availability_zone: us-east-1a
+      is_primary: true
+    tags:
+      - soc2
+      - api
+
+  - id: api-2
+    name: "API Server 2"
+    type: app_server
+    host: api02.saas.internal
+    port: 8080
+    replicas: 3
+    capacity:
+      max_connections: 5000
+      connection_pool_size: 400
+      timeout_seconds: 15.0
+      max_memory_mb: 8192
+    metrics:
+      cpu_percent: 38
+      memory_percent: 43
+      disk_percent: 10
+      network_connections: 950
+    autoscaling:
+      enabled: true
+      min_replicas: 3
+      max_replicas: 12
+      scale_up_threshold: 60.0
+      scale_down_threshold: 20.0
+    failover:
+      enabled: true
+      promotion_time_seconds: 10.0
+    security:
+      encryption_in_transit: true
+      auth_required: true
+      network_segmented: true
+      log_enabled: true
+    compliance_tags:
+      data_classification: confidential
+      contains_pii: true
+      audit_logging: true
+    region:
+      region: us-east-1
+      availability_zone: us-east-1b
+      is_primary: true
+    tags:
+      - soc2
+      - api
+
+  - id: api-3
+    name: "API Server 3"
+    type: app_server
+    host: api03.saas.internal
+    port: 8080
+    replicas: 3
+    capacity:
+      max_connections: 5000
+      connection_pool_size: 400
+      timeout_seconds: 15.0
+      max_memory_mb: 8192
+    metrics:
+      cpu_percent: 35
+      memory_percent: 40
+      disk_percent: 10
+      network_connections: 900
+    autoscaling:
+      enabled: true
+      min_replicas: 3
+      max_replicas: 12
+      scale_up_threshold: 60.0
+      scale_down_threshold: 20.0
+    failover:
+      enabled: true
+      promotion_time_seconds: 10.0
+    security:
+      encryption_in_transit: true
+      auth_required: true
+      network_segmented: true
+      log_enabled: true
+    compliance_tags:
+      data_classification: confidential
+      contains_pii: true
+      audit_logging: true
+    region:
+      region: us-east-1
+      availability_zone: us-east-1c
+      is_primary: true
+    tags:
+      - soc2
+      - api
+
+  - id: api-4
+    name: "API Server 4"
+    type: app_server
+    host: api04.saas.internal
+    port: 8080
+    replicas: 3
+    capacity:
+      max_connections: 5000
+      connection_pool_size: 400
+      timeout_seconds: 15.0
+      max_memory_mb: 8192
+    metrics:
+      cpu_percent: 33
+      memory_percent: 38
+      disk_percent: 10
+      network_connections: 850
+    autoscaling:
+      enabled: true
+      min_replicas: 3
+      max_replicas: 12
+      scale_up_threshold: 60.0
+      scale_down_threshold: 20.0
+    failover:
+      enabled: true
+      promotion_time_seconds: 10.0
+    security:
+      encryption_in_transit: true
+      auth_required: true
+      network_segmented: true
+      log_enabled: true
+    compliance_tags:
+      data_classification: confidential
+      contains_pii: true
+      audit_logging: true
+    region:
+      region: us-east-1
+      availability_zone: us-east-1a
+      is_primary: true
+    tags:
+      - soc2
+      - api
+
+  - id: postgres-primary
+    name: "PostgreSQL Primary"
+    type: database
+    host: db-primary.saas.internal
+    port: 5432
+    replicas: 1
+    capacity:
+      max_connections: 1000
+      max_disk_gb: 3000
+    metrics:
+      cpu_percent: 50
+      memory_percent: 65
+      disk_percent: 35
+      network_connections: 400
+    failover:
+      enabled: true
+      promotion_time_seconds: 30.0
+      health_check_interval_seconds: 5.0
+      failover_threshold: 2
+    security:
+      encryption_at_rest: true
+      encryption_in_transit: true
+      auth_required: true
+      network_segmented: true
+      backup_enabled: true
+      backup_frequency_hours: 1.0
+      log_enabled: true
+    compliance_tags:
+      data_classification: restricted
+      contains_pii: true
+      audit_logging: true
+      change_management: true
+    cost_profile:
+      hourly_infra_cost: 6.00
+      data_loss_cost_per_gb: 15000.0
+    operational_profile:
+      mtbf_hours: 8760.0
+      mttr_minutes: 30.0
+    region:
+      region: us-east-1
+      availability_zone: us-east-1a
+      is_primary: true
+      dr_target_region: us-west-2
+      rpo_seconds: 5
+      rto_seconds: 300
+    tags:
+      - soc2
+      - stateful
+      - critical
+    parameters:
+      tenant_isolation: "row-level-security"
+
+  - id: postgres-replica-1
+    name: "PostgreSQL Replica 1"
+    type: database
+    host: db-replica1.saas.internal
+    port: 5432
+    replicas: 1
+    capacity:
+      max_connections: 1000
+      max_disk_gb: 3000
+    metrics:
+      cpu_percent: 25
+      memory_percent: 45
+      disk_percent: 34
+      network_connections: 200
+    failover:
+      enabled: true
+      promotion_time_seconds: 30.0
+    security:
+      encryption_at_rest: true
+      encryption_in_transit: true
+      auth_required: true
+      network_segmented: true
+      backup_enabled: true
+      backup_frequency_hours: 4.0
+      log_enabled: true
+    compliance_tags:
+      data_classification: restricted
+      contains_pii: true
+      audit_logging: true
+    region:
+      region: us-east-1
+      availability_zone: us-east-1b
+      is_primary: false
+    tags:
+      - soc2
+      - stateful
+
+  - id: postgres-replica-2
+    name: "PostgreSQL Replica 2"
+    type: database
+    host: db-replica2.saas.internal
+    port: 5432
+    replicas: 1
+    capacity:
+      max_connections: 1000
+      max_disk_gb: 3000
+    metrics:
+      cpu_percent: 22
+      memory_percent: 42
+      disk_percent: 34
+      network_connections: 180
+    failover:
+      enabled: true
+      promotion_time_seconds: 30.0
+    security:
+      encryption_at_rest: true
+      encryption_in_transit: true
+      auth_required: true
+      network_segmented: true
+      backup_enabled: true
+      backup_frequency_hours: 4.0
+      log_enabled: true
+    compliance_tags:
+      data_classification: restricted
+      contains_pii: true
+      audit_logging: true
+    region:
+      region: us-east-1
+      availability_zone: us-east-1c
+      is_primary: false
+    tags:
+      - soc2
+      - stateful
+
+  - id: redis-session
+    name: "Redis Session Store"
+    type: cache
+    host: redis-session.saas.internal
+    port: 6379
+    replicas: 3
+    capacity:
+      max_connections: 20000
+    metrics:
+      cpu_percent: 15
+      memory_percent: 55
+      network_connections: 5000
+    failover:
+      enabled: true
+      promotion_time_seconds: 5.0
+      health_check_interval_seconds: 3.0
+      failover_threshold: 2
+    cache_warming:
+      enabled: true
+      initial_hit_ratio: 0.0
+      warm_duration_seconds: 120
+      warming_curve: exponential
+    security:
+      encryption_at_rest: true
+      encryption_in_transit: true
+      auth_required: true
+      network_segmented: true
+      log_enabled: true
+    compliance_tags:
+      data_classification: confidential
+      contains_pii: true
+      audit_logging: true
+    tags:
+      - soc2
+      - session
+    parameters:
+      tenant_isolation: "key-prefix"
+
+  - id: redis-cache
+    name: "Redis Data Cache"
+    type: cache
+    host: redis-cache.saas.internal
+    port: 6379
+    replicas: 3
+    capacity:
+      max_connections: 20000
+    metrics:
+      cpu_percent: 12
+      memory_percent: 60
+      network_connections: 4000
+    failover:
+      enabled: true
+      promotion_time_seconds: 5.0
+      health_check_interval_seconds: 3.0
+    cache_warming:
+      enabled: true
+      initial_hit_ratio: 0.1
+      warm_duration_seconds: 300
+      warming_curve: linear
+    security:
+      encryption_in_transit: true
+      auth_required: true
+      network_segmented: true
+      log_enabled: true
+    compliance_tags:
+      data_classification: internal
+    tags:
+      - cache
+
+  - id: kafka
+    name: "Kafka Event Stream"
+    type: queue
+    host: kafka.saas.internal
+    port: 9092
+    replicas: 3
+    capacity:
+      max_connections: 10000
+      max_rps: 100000
+    metrics:
+      cpu_percent: 30
+      memory_percent: 55
+      disk_percent: 45
+      network_connections: 1000
+    failover:
+      enabled: true
+      promotion_time_seconds: 10.0
+      health_check_interval_seconds: 5.0
+      failover_threshold: 3
+    security:
+      encryption_at_rest: true
+      encryption_in_transit: true
+      auth_required: true
+      network_segmented: true
+      log_enabled: true
+    compliance_tags:
+      data_classification: confidential
+      audit_logging: true
+    region:
+      region: us-east-1
+      availability_zone: us-east-1a
+      is_primary: true
+    tags:
+      - soc2
+      - event-driven
+      - audit
+
+  - id: s3-storage
+    name: "S3 Tenant Storage"
+    type: storage
+    host: s3.us-east-1.amazonaws.com
+    port: 443
+    replicas: 1
+    capacity:
+      max_disk_gb: 50000
+    metrics:
+      disk_percent: 20
+    security:
+      encryption_at_rest: true
+      encryption_in_transit: true
+      auth_required: true
+      log_enabled: true
+    compliance_tags:
+      data_classification: confidential
+      contains_pii: true
+      audit_logging: true
+    tags:
+      - soc2
+      - storage
+    parameters:
+      tenant_isolation: "bucket-prefix"
+
+  - id: worker-1
+    name: "Background Worker 1"
+    type: app_server
+    host: worker01.saas.internal
+    port: 9000
+    replicas: 2
+    capacity:
+      max_connections: 1000
+      timeout_seconds: 300.0
+      max_memory_mb: 8192
+    metrics:
+      cpu_percent: 50
+      memory_percent: 55
+      disk_percent: 15
+      network_connections: 200
+    autoscaling:
+      enabled: true
+      min_replicas: 2
+      max_replicas: 8
+      scale_up_threshold: 70.0
+      scale_down_threshold: 25.0
+    security:
+      encryption_in_transit: true
+      auth_required: true
+      network_segmented: true
+      log_enabled: true
+    compliance_tags:
+      data_classification: confidential
+      audit_logging: true
+    tags:
+      - worker
+      - async
+
+  - id: worker-2
+    name: "Background Worker 2"
+    type: app_server
+    host: worker02.saas.internal
+    port: 9000
+    replicas: 2
+    capacity:
+      max_connections: 1000
+      timeout_seconds: 300.0
+      max_memory_mb: 8192
+    metrics:
+      cpu_percent: 45
+      memory_percent: 50
+      disk_percent: 15
+      network_connections: 180
+    autoscaling:
+      enabled: true
+      min_replicas: 2
+      max_replicas: 8
+      scale_up_threshold: 70.0
+      scale_down_threshold: 25.0
+    security:
+      encryption_in_transit: true
+      auth_required: true
+      network_segmented: true
+      log_enabled: true
+    compliance_tags:
+      data_classification: confidential
+      audit_logging: true
+    tags:
+      - worker
+      - async
+
+dependencies:
+  - source: cloudfront
+    target: alb
+    type: requires
+    weight: 1.0
+    protocol: https
+    latency_ms: 1.0
+
+  - source: alb
+    target: tenant-router
+    type: requires
+    weight: 1.0
+    protocol: http
+    latency_ms: 1.0
+    circuit_breaker:
+      enabled: true
+      failure_threshold: 5
+      recovery_timeout_seconds: 30.0
+
+  - source: tenant-router
+    target: api-1
+    type: requires
+    weight: 1.0
+    protocol: http
+    latency_ms: 2.0
+    circuit_breaker:
+      enabled: true
+      failure_threshold: 5
+      recovery_timeout_seconds: 30.0
+
+  - source: tenant-router
+    target: api-2
+    type: requires
+    weight: 1.0
+    protocol: http
+    latency_ms: 2.0
+    circuit_breaker:
+      enabled: true
+      failure_threshold: 5
+      recovery_timeout_seconds: 30.0
+
+  - source: tenant-router
+    target: api-3
+    type: requires
+    weight: 1.0
+    protocol: http
+    latency_ms: 2.0
+    circuit_breaker:
+      enabled: true
+      failure_threshold: 5
+      recovery_timeout_seconds: 30.0
+
+  - source: tenant-router
+    target: api-4
+    type: requires
+    weight: 1.0
+    protocol: http
+    latency_ms: 2.0
+    circuit_breaker:
+      enabled: true
+      failure_threshold: 5
+      recovery_timeout_seconds: 30.0
+
+  - source: tenant-router
+    target: redis-session
+    type: requires
+    weight: 0.9
+    protocol: tcp
+    latency_ms: 0.5
+
+  - source: api-1
+    target: postgres-primary
+    type: requires
+    weight: 1.0
+    protocol: tcp
+    latency_ms: 2.0
+    retry_strategy:
+      enabled: true
+      max_retries: 3
+      initial_delay_ms: 100.0
+      max_delay_ms: 5000.0
+
+  - source: api-2
+    target: postgres-primary
+    type: requires
+    weight: 1.0
+    protocol: tcp
+    latency_ms: 2.0
+    retry_strategy:
+      enabled: true
+      max_retries: 3
+
+  - source: api-3
+    target: postgres-primary
+    type: requires
+    weight: 1.0
+    protocol: tcp
+    latency_ms: 2.0
+    retry_strategy:
+      enabled: true
+      max_retries: 3
+
+  - source: api-4
+    target: postgres-primary
+    type: requires
+    weight: 1.0
+    protocol: tcp
+    latency_ms: 2.0
+    retry_strategy:
+      enabled: true
+      max_retries: 3
+
+  - source: api-1
+    target: postgres-replica-1
+    type: optional
+    weight: 0.6
+    protocol: tcp
+    latency_ms: 3.0
+
+  - source: api-2
+    target: postgres-replica-1
+    type: optional
+    weight: 0.6
+    protocol: tcp
+    latency_ms: 3.0
+
+  - source: api-3
+    target: postgres-replica-2
+    type: optional
+    weight: 0.6
+    protocol: tcp
+    latency_ms: 3.0
+
+  - source: api-4
+    target: postgres-replica-2
+    type: optional
+    weight: 0.6
+    protocol: tcp
+    latency_ms: 3.0
+
+  - source: postgres-primary
+    target: postgres-replica-1
+    type: async
+    weight: 0.9
+    protocol: tcp
+    latency_ms: 1.0
+
+  - source: postgres-primary
+    target: postgres-replica-2
+    type: async
+    weight: 0.9
+    protocol: tcp
+    latency_ms: 1.0
+
+  - source: api-1
+    target: redis-cache
+    type: optional
+    weight: 0.7
+    protocol: tcp
+    latency_ms: 0.5
+    circuit_breaker:
+      enabled: true
+      failure_threshold: 3
+      recovery_timeout_seconds: 15.0
+
+  - source: api-2
+    target: redis-cache
+    type: optional
+    weight: 0.7
+    protocol: tcp
+    latency_ms: 0.5
+
+  - source: api-3
+    target: redis-cache
+    type: optional
+    weight: 0.7
+    protocol: tcp
+    latency_ms: 0.5
+
+  - source: api-4
+    target: redis-cache
+    type: optional
+    weight: 0.7
+    protocol: tcp
+    latency_ms: 0.5
+
+  - source: api-1
+    target: kafka
+    type: async
+    weight: 0.7
+    protocol: tcp
+    latency_ms: 5.0
+
+  - source: api-2
+    target: kafka
+    type: async
+    weight: 0.7
+    protocol: tcp
+    latency_ms: 5.0
+
+  - source: api-3
+    target: kafka
+    type: async
+    weight: 0.7
+    protocol: tcp
+    latency_ms: 5.0
+
+  - source: api-4
+    target: kafka
+    type: async
+    weight: 0.7
+    protocol: tcp
+    latency_ms: 5.0
+
+  - source: api-1
+    target: s3-storage
+    type: optional
+    weight: 0.4
+    protocol: https
+    latency_ms: 10.0
+
+  - source: api-2
+    target: s3-storage
+    type: optional
+    weight: 0.4
+    protocol: https
+    latency_ms: 10.0
+
+  - source: worker-1
+    target: postgres-primary
+    type: requires
+    weight: 1.0
+    protocol: tcp
+    latency_ms: 2.0
+    retry_strategy:
+      enabled: true
+      max_retries: 5
+      initial_delay_ms: 500.0
+
+  - source: worker-2
+    target: postgres-primary
+    type: requires
+    weight: 1.0
+    protocol: tcp
+    latency_ms: 2.0
+    retry_strategy:
+      enabled: true
+      max_retries: 5
+
+  - source: worker-1
+    target: kafka
+    type: requires
+    weight: 1.0
+    protocol: tcp
+    latency_ms: 5.0
+
+  - source: worker-2
+    target: kafka
+    type: requires
+    weight: 1.0
+    protocol: tcp
+    latency_ms: 5.0
+
+  - source: worker-1
+    target: s3-storage
+    type: optional
+    weight: 0.5
+    protocol: https
+    latency_ms: 10.0
+
+  - source: worker-2
+    target: s3-storage
+    type: optional
+    weight: 0.5
+    protocol: https
+    latency_ms: 10.0
+
+  - source: worker-1
+    target: redis-cache
+    type: optional
+    weight: 0.5
+    protocol: tcp
+    latency_ms: 0.5
+
+  - source: worker-2
+    target: redis-cache
+    type: optional
+    weight: 0.5
+    protocol: tcp
+    latency_ms: 0.5

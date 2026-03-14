@@ -126,6 +126,58 @@ class AuditLog(Base):
     )
 
 
+class SubscriptionRow(Base):
+    """Team subscription / pricing tier."""
+    __tablename__ = "subscriptions"
+
+    id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
+    team_id: Mapped[str] = mapped_column(String(255), nullable=False, unique=True)
+    tier: Mapped[str] = mapped_column(
+        String(20), nullable=False, default="free",
+    )
+    stripe_customer_id: Mapped[str | None] = mapped_column(
+        String(255), nullable=True,
+    )
+    started_at: Mapped[_dt.datetime] = mapped_column(
+        DateTime, server_default=func.now(), nullable=False,
+    )
+    expires_at: Mapped[_dt.datetime | None] = mapped_column(
+        DateTime, nullable=True,
+    )
+
+
+class UsageLogRow(Base):
+    """Per-team resource usage log."""
+    __tablename__ = "usage_logs"
+
+    id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
+    team_id: Mapped[str] = mapped_column(String(255), nullable=False, index=True)
+    resource: Mapped[str] = mapped_column(String(100), nullable=False)
+    quantity: Mapped[int] = mapped_column(Integer, nullable=False, default=1)
+    created_at: Mapped[_dt.datetime] = mapped_column(
+        DateTime, server_default=func.now(), nullable=False,
+    )
+
+
+class IntegrationConfigRow(Base):
+    """Per-team third-party integration configuration."""
+    __tablename__ = "integration_configs"
+
+    id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
+    team_id: Mapped[str] = mapped_column(String(255), nullable=False, index=True)
+    provider: Mapped[str] = mapped_column(
+        String(50), nullable=False,
+    )  # slack, pagerduty, opsgenie, datadog, grafana, jira, linear
+    config_json: Mapped[str | None] = mapped_column(Text, nullable=True)
+    enabled: Mapped[int] = mapped_column(Integer, nullable=False, default=1)
+    created_at: Mapped[_dt.datetime] = mapped_column(
+        DateTime, server_default=func.now(), nullable=False,
+    )
+    updated_at: Mapped[_dt.datetime] = mapped_column(
+        DateTime, server_default=func.now(), onupdate=func.now(), nullable=False,
+    )
+
+
 async def log_audit(
     session: AsyncSession,
     user_id: int | None,

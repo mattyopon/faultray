@@ -13,7 +13,7 @@
     </svg>
     Run Analysis
 </a>
-<button class="btn btn-sm btn-accent" id="runSimBtn" onclick="runSim(event)">
+<button class="btn btn-sm btn-accent" id="runSimBtn" onclick="runSim(event)" aria-label="Run chaos simulation">
     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
         <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/>
     </svg>
@@ -23,45 +23,209 @@
 {% endblock %}
 
 {% block content %}
-<div class="dashboard-grid">
-    <!-- Resilience Score -->
-    <div class="card card-resilience">
+<!-- Score Cards Row -->
+<div id="score-cards" hx-get="/htmx/score-cards" hx-trigger="every 30s" hx-swap="innerHTML">
+    <div class="score-grid">
+        <!-- Resilience Score -->
+        <div class="score-card card">
+            {% set res_score = summary.resilience_score if summary else 0 %}
+            {% if res_score >= 80 %}
+                {% set res_color = "var(--green)" %}
+                {% set res_label = "Healthy" %}
+            {% elif res_score >= 60 %}
+                {% set res_color = "var(--yellow)" %}
+                {% set res_label = "At Risk" %}
+            {% else %}
+                {% set res_color = "var(--red)" %}
+                {% set res_label = "Critical" %}
+            {% endif %}
+            <div class="score-card-inner">
+                <svg viewBox="0 0 120 120" width="100" height="100">
+                    <circle cx="60" cy="60" r="54" fill="none" stroke="#1a1f35" stroke-width="8"/>
+                    <circle cx="60" cy="60" r="54" fill="none" stroke="{{ res_color }}" stroke-width="8"
+                        stroke-dasharray="339.3" stroke-dashoffset="{{ 339.3 - (339.3 * res_score / 100) }}" stroke-linecap="round" transform="rotate(-90 60 60)"/>
+                    <text x="60" y="55" text-anchor="middle" dominant-baseline="central" fill="#fff" font-size="28" font-weight="800">{{ res_score }}</text>
+                    <text x="60" y="78" text-anchor="middle" fill="{{ res_color }}" font-size="10" font-weight="600" text-transform="uppercase">{{ res_label }}</text>
+                </svg>
+                <div class="score-card-label">Resilience Score</div>
+            </div>
+        </div>
+
+        <!-- Security Score -->
+        <div class="score-card card">
+            {% set sec_score = summary.security_score if summary and summary.security_score is defined else 68 %}
+            {% if sec_score >= 80 %}
+                {% set sec_color = "var(--green)" %}
+            {% elif sec_score >= 60 %}
+                {% set sec_color = "var(--yellow)" %}
+            {% else %}
+                {% set sec_color = "var(--red)" %}
+            {% endif %}
+            <div class="score-card-inner">
+                <svg viewBox="0 0 120 120" width="100" height="100">
+                    <circle cx="60" cy="60" r="54" fill="none" stroke="#1a1f35" stroke-width="8"/>
+                    <circle cx="60" cy="60" r="54" fill="none" stroke="{{ sec_color }}" stroke-width="8"
+                        stroke-dasharray="339.3" stroke-dashoffset="{{ 339.3 - (339.3 * sec_score / 100) }}" stroke-linecap="round" transform="rotate(-90 60 60)"/>
+                    <text x="60" y="55" text-anchor="middle" dominant-baseline="central" fill="#fff" font-size="28" font-weight="800">{{ sec_score }}</text>
+                    <text x="60" y="78" text-anchor="middle" fill="{{ sec_color }}" font-size="10" font-weight="600">SECURITY</text>
+                </svg>
+                <div class="score-card-label">Security Score</div>
+            </div>
+        </div>
+
+        <!-- Annual Risk -->
+        <div class="score-card card">
+            {% set annual_risk = summary.annual_risk if summary and summary.annual_risk is defined else 2.4 %}
+            <div class="score-card-inner score-card-metric">
+                <div class="score-card-big-value" style="color: var(--red);">
+                    ${{ "%.1f" | format(annual_risk) }}M
+                </div>
+                <div class="score-card-label">Annual Risk Exposure</div>
+                <div class="score-card-sub">Estimated loss potential</div>
+            </div>
+        </div>
+
+        <!-- Availability -->
+        <div class="score-card card">
+            {% set availability = summary.availability_nines if summary and summary.availability_nines is defined else 3.42 %}
+            <div class="score-card-inner score-card-metric">
+                <div class="score-card-big-value" style="color: var(--blue);">
+                    {{ "%.2f" | format(availability) }}
+                </div>
+                <div class="score-card-label">Availability (Nines)</div>
+                <div class="score-card-sub">{{ "%.3f" | format(100 - (100 / (10 ** availability))) }}% uptime</div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="dashboard-grid" style="margin-top: 20px;">
+    <!-- Top Risks Table -->
+    <div class="card card-wide">
         <div class="card-header">
-            <h3>Resilience Score</h3>
-            {% if report %}
-            <span class="badge badge-info">{{ report.total_scenarios }} scenarios</span>
+            <h3>Top Risks</h3>
+            <a href="/simulation" class="card-link">View All &rarr;</a>
+        </div>
+        <div class="card-body no-padding">
+            {% if report and report.critical | length > 0 %}
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>Scenario</th>
+                        <th>Impact</th>
+                        <th>Est. Loss</th>
+                        <th>Status</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for finding in report.critical[:5] %}
+                    <tr>
+                        <td>
+                            <span class="comp-name">{{ finding.scenario_name }}</span>
+                            <span class="comp-id">{{ finding.scenario_description[:60] }}{% if finding.scenario_description|length > 60 %}...{% endif %}</span>
+                        </td>
+                        <td>
+                            <span class="badge badge-critical">{{ finding.risk_score }}</span>
+                        </td>
+                        <td class="mono">${{ "%.0f" | format(finding.risk_score * 15000) }}</td>
+                        <td>
+                            {% if finding.cascade.effects | length > 3 %}
+                            <span class="health-badge health-down">Critical</span>
+                            {% else %}
+                            <span class="health-badge health-degraded">Warning</span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+            {% else %}
+            <div class="empty-inline">
+                <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#00b894" stroke-width="2">
+                    <path d="M22 11.08V12a10 10 0 11-5.93-9.14"/>
+                    <polyline points="22 4 12 14.01 9 11.01"/>
+                </svg>
+                <p>No critical risks detected. Run a simulation to evaluate your infrastructure.</p>
+            </div>
             {% endif %}
         </div>
-        <div class="card-body score-display">
-            {% set score = summary.resilience_score %}
-            {% if score >= 80 %}
-                {% set score_class = "score-good" %}
-                {% set score_label = "Healthy" %}
-            {% elif score >= 60 %}
-                {% set score_class = "score-warning" %}
-                {% set score_label = "At Risk" %}
+    </div>
+
+    <!-- Simulation History -->
+    <div class="card">
+        <div class="card-header">
+            <h3>Recent Simulations</h3>
+        </div>
+        <div class="card-body">
+            {% if report %}
+            <div class="sim-history-list">
+                <div class="sim-history-item">
+                    <div class="sim-history-header">
+                        <span class="badge badge-info">Latest</span>
+                        <span class="text-muted">{{ report.total_scenarios }} scenarios</span>
+                    </div>
+                    <div class="sim-history-stats">
+                        <span class="sim-history-stat" style="color: var(--red);">{{ report.critical_count }} critical</span>
+                        <span class="sim-history-stat" style="color: var(--yellow);">{{ report.warning_count }} warnings</span>
+                        <span class="sim-history-stat" style="color: var(--green);">{{ report.passed_count }} passed</span>
+                    </div>
+                    <div class="sim-history-score">
+                        Score: <strong>{{ summary.resilience_score }}</strong>/100
+                    </div>
+                </div>
+            </div>
             {% else %}
-                {% set score_class = "score-critical" %}
-                {% set score_label = "Critical" %}
-            {% endif %}
-            <div class="score-circle {{ score_class }}">
-                <svg viewBox="0 0 120 120" class="score-ring">
-                    <circle cx="60" cy="60" r="54" fill="none" stroke="#2d3748" stroke-width="8"/>
-                    <circle cx="60" cy="60" r="54" fill="none"
-                            stroke-width="8"
-                            stroke-dasharray="{{ 339.292 }}"
-                            stroke-dashoffset="{{ 339.292 - (339.292 * score / 100) }}"
-                            stroke-linecap="round"
-                            class="score-ring-progress"/>
+            <div class="empty-inline">
+                <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#4a5568" stroke-width="1.5">
+                    <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/>
                 </svg>
-                <div class="score-value">{{ score }}</div>
-                <div class="score-label">{{ score_label }}</div>
+                <p>No simulations yet. Run your first chaos test.</p>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Quick Actions -->
+    <div class="card">
+        <div class="card-header">
+            <h3>Quick Actions</h3>
+        </div>
+        <div class="card-body">
+            <div class="quick-actions">
+                <button class="quick-action-btn" onclick="runSim(event)">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/>
+                    </svg>
+                    <span>Run Simulation</span>
+                </button>
+                <a href="/reports" class="quick-action-btn">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/>
+                        <polyline points="14 2 14 8 20 8"/>
+                        <line x1="16" y1="13" x2="8" y2="13"/>
+                        <line x1="16" y1="17" x2="8" y2="17"/>
+                    </svg>
+                    <span>Generate Report</span>
+                </a>
+                <a href="/graph" class="quick-action-btn">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <circle cx="12" cy="5" r="3"/><circle cx="5" cy="19" r="3"/><circle cx="19" cy="19" r="3"/>
+                        <line x1="12" y1="8" x2="5" y2="16"/><line x1="12" y1="8" x2="19" y2="16"/>
+                    </svg>
+                    <span>View Graph</span>
+                </a>
+                <a href="/analyze" class="quick-action-btn">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M21 16V8a2 2 0 00-1-1.73l-7-4a2 2 0 00-2 0l-7 4A2 2 0 003 8v8a2 2 0 001 1.73l7 4a2 2 0 002 0l7-4A2 2 0 0021 16z"/>
+                    </svg>
+                    <span>AI Analysis</span>
+                </a>
             </div>
         </div>
     </div>
 
-    <!-- Component Status Grid -->
-    <div class="card">
+    <!-- Component Status Overview -->
+    <div class="card card-wide">
         <div class="card-header">
             <h3>Infrastructure Overview</h3>
             <a href="/components" class="card-link">View all &rarr;</a>
@@ -85,153 +249,6 @@
             </div>
         </div>
     </div>
-
-    <!-- Simulation Summary -->
-    {% if report %}
-    <div class="card">
-        <div class="card-header">
-            <h3>Simulation Summary</h3>
-            <a href="/simulation" class="card-link">Details &rarr;</a>
-        </div>
-        <div class="card-body">
-            <div class="stat-grid stat-grid-findings">
-                <div class="stat-item stat-critical">
-                    <div class="stat-icon">
-                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/>
-                            <line x1="12" y1="9" x2="12" y2="13"/>
-                            <line x1="12" y1="17" x2="12.01" y2="17"/>
-                        </svg>
-                    </div>
-                    <div class="stat-value">{{ report.critical_count }}</div>
-                    <div class="stat-label">Critical</div>
-                </div>
-                <div class="stat-item stat-warning">
-                    <div class="stat-icon">
-                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <circle cx="12" cy="12" r="10"/>
-                            <line x1="12" y1="8" x2="12" y2="12"/>
-                            <line x1="12" y1="16" x2="12.01" y2="16"/>
-                        </svg>
-                    </div>
-                    <div class="stat-value">{{ report.warning_count }}</div>
-                    <div class="stat-label">Warnings</div>
-                </div>
-                <div class="stat-item stat-passed">
-                    <div class="stat-icon">
-                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <path d="M22 11.08V12a10 10 0 11-5.93-9.14"/>
-                            <polyline points="22 4 12 14.01 9 11.01"/>
-                        </svg>
-                    </div>
-                    <div class="stat-value">{{ report.passed_count }}</div>
-                    <div class="stat-label">Passed</div>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Quick Actions -->
-    <div class="card">
-        <div class="card-header">
-            <h3>Quick Actions</h3>
-        </div>
-        <div class="card-body">
-            <div class="quick-actions">
-                <a href="/simulation" class="quick-action-btn">
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/>
-                    </svg>
-                    <span>View Simulation</span>
-                </a>
-                <a href="/graph" class="quick-action-btn">
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <circle cx="12" cy="5" r="3"/><circle cx="5" cy="19" r="3"/><circle cx="19" cy="19" r="3"/>
-                        <line x1="12" y1="8" x2="5" y2="16"/><line x1="12" y1="8" x2="19" y2="16"/>
-                    </svg>
-                    <span>Dependency Graph</span>
-                </a>
-                <a href="/analyze" class="quick-action-btn">
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <path d="M21 16V8a2 2 0 00-1-1.73l-7-4a2 2 0 00-2 0l-7 4A2 2 0 003 8v8a2 2 0 001 1.73l7 4a2 2 0 002 0l7-4A2 2 0 0021 16z"/>
-                    </svg>
-                    <span>AI Analysis</span>
-                </a>
-                <a href="/docs" class="quick-action-btn" target="_blank">
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/>
-                        <polyline points="14 2 14 8 20 8"/>
-                        <line x1="16" y1="13" x2="8" y2="13"/>
-                        <line x1="16" y1="17" x2="8" y2="17"/>
-                    </svg>
-                    <span>API Docs</span>
-                </a>
-            </div>
-        </div>
-    </div>
-
-    <!-- Top Critical Findings -->
-    <div class="card card-wide">
-        <div class="card-header">
-            <h3>Top Critical Findings</h3>
-            <a href="/simulation" class="card-link">View All &rarr;</a>
-        </div>
-        <div class="card-body">
-            {% if report.critical | length > 0 %}
-            <div class="findings-list">
-                {% for finding in report.critical[:5] %}
-                <div class="finding-item finding-critical">
-                    <div class="finding-header">
-                        <span class="finding-name">{{ finding.scenario_name }}</span>
-                        <span class="badge badge-critical">Risk: {{ finding.risk_score }}</span>
-                    </div>
-                    <div class="finding-detail">
-                        {{ finding.scenario_description }}
-                    </div>
-                    {% if finding.cascade.effects | length > 0 %}
-                    <div class="cascade-mini">
-                        {% for effect in finding.cascade.effects[:3] %}
-                        <span class="cascade-tag cascade-{{ effect.health }}">
-                            {{ effect.component_name }}: {{ effect.health }}
-                        </span>
-                        {% endfor %}
-                        {% if finding.cascade.effects | length > 3 %}
-                        <span class="cascade-tag cascade-more">+{{ finding.cascade.effects | length - 3 }} more</span>
-                        {% endif %}
-                    </div>
-                    {% endif %}
-                </div>
-                {% endfor %}
-            </div>
-            {% else %}
-            <div class="empty-inline">
-                <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#00b894" stroke-width="2">
-                    <path d="M22 11.08V12a10 10 0 11-5.93-9.14"/>
-                    <polyline points="22 4 12 14.01 9 11.01"/>
-                </svg>
-                <p>No critical findings detected. Your infrastructure passed all critical scenarios.</p>
-            </div>
-            {% endif %}
-        </div>
-    </div>
-    {% else %}
-    <!-- No simulation yet -->
-    <div class="card card-wide">
-        <div class="card-header">
-            <h3>Simulation Results</h3>
-        </div>
-        <div class="card-body">
-            <div class="empty-inline">
-                <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="#4a5568" stroke-width="1.5">
-                    <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/>
-                </svg>
-                <h3>No Simulation Results</h3>
-                <p>Run a chaos simulation to discover failure modes and cascade paths in your infrastructure.</p>
-                <button class="btn btn-accent" onclick="runSim(event)" id="runSimBtnEmpty">Run Simulation</button>
-            </div>
-        </div>
-    </div>
-    {% endif %}
 </div>
 
 <script>

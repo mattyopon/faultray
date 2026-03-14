@@ -1,0 +1,132 @@
+{% extends "base.html" %}
+{% set active_page = "reports" %}
+
+{% block title %}ChaosProof - Reports{% endblock %}
+{% block page_title %}Reports{% endblock %}
+{% block page_subtitle %}<span class="page-subtitle">Generated compliance and analysis reports</span>{% endblock %}
+
+{% block top_actions %}
+<button class="btn btn-sm btn-accent" @click="showModal = true" x-data x-on:click="$dispatch('open-report-modal')">
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <line x1="12" y1="5" x2="12" y2="19"/>
+        <line x1="5" y1="12" x2="19" y2="12"/>
+    </svg>
+    Generate New Report
+</button>
+{% endblock %}
+
+{% block content %}
+<div x-data="{ filter: 'all', showModal: false }" @open-report-modal.window="showModal = true">
+    <!-- Filters -->
+    <div style="display: flex; gap: 4px; margin-bottom: 20px; flex-wrap: wrap;">
+        <button @click="filter = 'all'" :class="filter === 'all' ? 'btn btn-sm btn-outline active' : 'btn btn-sm btn-outline'" type="button">All</button>
+        <button @click="filter = 'compliance'" :class="filter === 'compliance' ? 'btn btn-sm btn-outline active' : 'btn btn-sm btn-outline'" type="button">Compliance</button>
+        <button @click="filter = 'simulation'" :class="filter === 'simulation' ? 'btn btn-sm btn-outline active' : 'btn btn-sm btn-outline'" type="button">Simulation</button>
+        <button @click="filter = 'security'" :class="filter === 'security' ? 'btn btn-sm btn-outline active' : 'btn btn-sm btn-outline'" type="button">Security</button>
+        <button @click="filter = 'cost'" :class="filter === 'cost' ? 'btn btn-sm btn-outline active' : 'btn btn-sm btn-outline'" type="button">Cost</button>
+    </div>
+
+    <!-- Reports Table -->
+    <div class="card">
+        <div class="card-body no-padding">
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>Date</th>
+                        <th>Report</th>
+                        <th>Type</th>
+                        <th>Format</th>
+                        <th>Action</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% set reports_list = [
+                        {"date": "2026-03-15 09:30", "name": "DORA Compliance Assessment Q1 2026", "type": "compliance", "format": "PDF"},
+                        {"date": "2026-03-14 16:45", "name": "Infrastructure Resilience Report", "type": "simulation", "format": "HTML"},
+                        {"date": "2026-03-14 14:20", "name": "Security Posture Analysis", "type": "security", "format": "PDF"},
+                        {"date": "2026-03-13 11:00", "name": "Annual Risk Exposure Summary", "type": "cost", "format": "PDF"},
+                        {"date": "2026-03-12 08:15", "name": "Chaos Test Results - Full Suite", "type": "simulation", "format": "JSON"},
+                        {"date": "2026-03-10 15:30", "name": "SOC 2 Type II Evidence Pack", "type": "compliance", "format": "PDF"},
+                        {"date": "2026-03-08 10:00", "name": "Cost Impact Analysis - DB Failure", "type": "cost", "format": "HTML"},
+                        {"date": "2026-03-05 13:45", "name": "Penetration Test Summary", "type": "security", "format": "PDF"}
+                    ] %}
+                    {% for r in reports_list %}
+                    <tr x-show="filter === 'all' || filter === '{{ r.type }}'">
+                        <td class="mono" style="white-space: nowrap;">{{ r.date }}</td>
+                        <td><span class="comp-name">{{ r.name }}</span></td>
+                        <td>
+                            {% if r.type == "compliance" %}
+                            <span class="badge badge-info">Compliance</span>
+                            {% elif r.type == "simulation" %}
+                            <span class="badge badge-category">Simulation</span>
+                            {% elif r.type == "security" %}
+                            <span class="badge badge-critical">Security</span>
+                            {% else %}
+                            <span class="badge badge-warning">Cost</span>
+                            {% endif %}
+                        </td>
+                        <td><span class="badge badge-low">{{ r.format }}</span></td>
+                        <td>
+                            <a href="#" class="btn btn-xs btn-outline">
+                                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/>
+                                    <polyline points="7 10 12 15 17 10"/>
+                                    <line x1="12" y1="15" x2="12" y2="3"/>
+                                </svg>
+                                Download
+                            </a>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Generate Report Modal -->
+    <div x-show="showModal" x-transition.opacity style="position: fixed; inset: 0; z-index: 1000; display: flex; align-items: center; justify-content: center; background: rgba(0,0,0,0.6);" @click.self="showModal = false">
+        <div class="card" style="width: 480px; max-width: 90vw;" @click.stop>
+            <div class="card-header">
+                <h3>Generate New Report</h3>
+                <button @click="showModal = false" style="background: none; border: none; color: var(--text-muted); cursor: pointer; font-size: 18px;">&times;</button>
+            </div>
+            <div class="card-body">
+                <div style="display: flex; flex-direction: column; gap: 16px;">
+                    <div>
+                        <label class="score-card-label" style="display: block; margin-bottom: 6px;">Report Type</label>
+                        <select class="select-sm" style="width: 100%;">
+                            <option>Compliance Assessment</option>
+                            <option>Simulation Results</option>
+                            <option>Security Analysis</option>
+                            <option>Cost Impact</option>
+                            <option>Executive Summary</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="score-card-label" style="display: block; margin-bottom: 6px;">Framework</label>
+                        <select class="select-sm" style="width: 100%;">
+                            <option>DORA</option>
+                            <option>SOC 2</option>
+                            <option>ISO 27001</option>
+                            <option>PCI DSS</option>
+                            <option>NIST CSF</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="score-card-label" style="display: block; margin-bottom: 6px;">Output Format</label>
+                        <select class="select-sm" style="width: 100%;">
+                            <option>PDF</option>
+                            <option>HTML</option>
+                            <option>JSON</option>
+                        </select>
+                    </div>
+                    <div style="display: flex; gap: 8px; justify-content: flex-end; margin-top: 8px;">
+                        <button @click="showModal = false" class="btn btn-sm btn-outline" type="button">Cancel</button>
+                        <button @click="showModal = false" class="btn btn-sm btn-accent" type="button">Generate</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

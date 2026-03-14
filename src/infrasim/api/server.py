@@ -95,7 +95,7 @@ async def lifespan(application: FastAPI):
 app = FastAPI(
     title="ChaosProof API",
     description="Zero-risk infrastructure chaos engineering platform — simulate failures without touching production",
-    version="0.2.0",
+    version="1.0.0",
     docs_url="/docs",
     redoc_url="/redoc",
     lifespan=lifespan,
@@ -906,3 +906,264 @@ async def oauth_callback(code: str = "", state: str = "", provider: str = "githu
     except Exception as exc:
         logger.warning("OAuth user creation failed: %s", exc)
         return JSONResponse({"error": f"User creation failed: {exc}"}, status_code=500)
+
+
+# ---------------------------------------------------------------------------
+# New page routes (HTML — templates assumed to exist)
+# ---------------------------------------------------------------------------
+
+@app.get("/security", response_class=HTMLResponse)
+async def security_page(request: Request):
+    graph = get_graph()
+    return templates.TemplateResponse("security.html", {
+        "request": request,
+        "has_data": len(graph.components) > 0,
+    })
+
+
+@app.get("/cost", response_class=HTMLResponse)
+async def cost_page(request: Request):
+    graph = get_graph()
+    return templates.TemplateResponse("cost.html", {
+        "request": request,
+        "has_data": len(graph.components) > 0,
+    })
+
+
+@app.get("/compliance", response_class=HTMLResponse)
+async def compliance_page(request: Request):
+    graph = get_graph()
+    return templates.TemplateResponse("compliance.html", {
+        "request": request,
+        "has_data": len(graph.components) > 0,
+    })
+
+
+@app.get("/reports", response_class=HTMLResponse)
+async def reports_page(request: Request):
+    return templates.TemplateResponse("reports.html", {
+        "request": request,
+        "has_data": _last_report is not None,
+    })
+
+
+@app.get("/settings", response_class=HTMLResponse)
+async def settings_page(request: Request):
+    return templates.TemplateResponse("settings.html", {
+        "request": request,
+        "has_data": True,
+    })
+
+
+# ---------------------------------------------------------------------------
+# htmx fragment endpoints
+# ---------------------------------------------------------------------------
+
+@app.get("/htmx/score-cards", response_class=HTMLResponse)
+async def htmx_score_cards(request: Request):
+    """Dashboard score-card HTML fragment (htmx partial)."""
+    graph = get_graph()
+    summary = graph.summary()
+
+    report_data = None
+    if _last_report is not None:
+        report_data = _report_to_dict(_last_report)
+
+    return templates.TemplateResponse("fragments/score_cards.html", {
+        "request": request,
+        "summary": summary,
+        "report": report_data,
+    })
+
+
+@app.get("/htmx/risk-table", response_class=HTMLResponse)
+async def htmx_risk_table(request: Request):
+    """Risk table HTML fragment (htmx partial)."""
+    report_data = None
+    if _last_report is not None:
+        report_data = _report_to_dict(_last_report)
+
+    return templates.TemplateResponse("fragments/risk_table.html", {
+        "request": request,
+        "report": report_data,
+    })
+
+
+# ---------------------------------------------------------------------------
+# New JSON API endpoints
+# ---------------------------------------------------------------------------
+
+@app.get("/api/score-history", response_class=JSONResponse)
+async def api_score_history(
+    limit: int = 30,
+    user=Depends(_require_permission("view_results")),
+):
+    """Return resilience score history from past simulation runs."""
+    try:
+        from infrasim.api.database import SimulationRunRow, get_session_factory
+        from sqlalchemy import select
+
+        session_factory = get_session_factory()
+        async with session_factory() as session:
+            stmt = (
+                select(SimulationRunRow)
+                .where(SimulationRunRow.risk_score.isnot(None))
+                .order_by(SimulationRunRow.created_at.desc())
+                .limit(limit)
+            )
+            result = await session.execute(stmt)
+            rows = result.scalars().all()
+
+            history = [
+                {
+                    "id": row.id,
+                    "score": row.risk_score,
+                    "engine_type": row.engine_type,
+                    "created_at": row.created_at.isoformat() if row.created_at else None,
+                }
+                for row in reversed(rows)
+            ]
+            return JSONResponse({"history": history, "count": len(history)})
+    except Exception:
+        logger.debug("Could not fetch score history.", exc_info=True)
+        return JSONResponse({"history": [], "count": 0, "note": "Database not available"})
+
+
+@app.get("/api/compliance/{framework}", response_class=JSONResponse)
+async def api_compliance_check(
+    framework: str,
+    user=Depends(_require_permission("view_results")),
+):
+    """Return compliance check results for the given framework.
+
+    Supported frameworks: soc2, pci-dss, hipaa, iso27001.
+    Returns mock data until a full compliance engine is implemented.
+    """
+    graph = get_graph()
+    if not graph.components:
+        return JSONResponse(
+            {"error": "No infrastructure loaded. Visit /demo first."},
+            status_code=400,
+        )
+
+    supported = {"soc2", "pci-dss", "hipaa", "iso27001"}
+    if framework not in supported:
+        return JSONResponse(
+            {"error": f"Unsupported framework: {framework}. Supported: {sorted(supported)}"},
+            status_code=400,
+        )
+
+    # Evaluate basic compliance signals from component tags and security profiles
+    checks: list[dict] = []
+    for comp in graph.components.values():
+        sec = comp.security
+        ct = comp.compliance_tags
+
+        check = {
+            "component_id": comp.id,
+            "component_name": comp.name,
+            "encryption_at_rest": sec.encryption_at_rest,
+            "encryption_in_transit": sec.encryption_in_transit,
+            "audit_logging": ct.audit_logging,
+            "backup_enabled": sec.backup_enabled,
+            "data_classification": ct.data_classification,
+        }
+
+        if framework == "pci-dss":
+            check["pci_scope"] = ct.pci_scope
+            check["waf_protected"] = sec.waf_protected
+            check["network_segmented"] = sec.network_segmented
+        elif framework == "hipaa":
+            check["contains_phi"] = ct.contains_phi
+            check["access_control"] = sec.auth_required
+        elif framework == "soc2":
+            check["change_management"] = ct.change_management
+            check["monitoring"] = sec.log_enabled
+        elif framework == "iso27001":
+            check["ids_monitored"] = sec.ids_monitored
+            check["patch_sla_hours"] = sec.patch_sla_hours
+
+        checks.append(check)
+
+    # Compute an overall compliance ratio
+    total_checks = 0
+    passed_checks = 0
+    for check in checks:
+        for key, val in check.items():
+            if key in ("component_id", "component_name", "data_classification",
+                       "patch_sla_hours"):
+                continue
+            total_checks += 1
+            if val is True:
+                passed_checks += 1
+
+    compliance_pct = (
+        round(passed_checks / total_checks * 100, 1)
+        if total_checks > 0
+        else 0.0
+    )
+
+    return JSONResponse({
+        "framework": framework,
+        "compliance_percent": compliance_pct,
+        "total_checks": total_checks,
+        "passed_checks": passed_checks,
+        "components": checks,
+    })
+
+
+# ---------------------------------------------------------------------------
+# API versioning — mount v1 prefix (backward-compatible dual-mount)
+# ---------------------------------------------------------------------------
+
+from fastapi import APIRouter as _APIRouter
+
+_v1_router = _APIRouter(prefix="/api/v1")
+
+
+@_v1_router.get("/graph-data", response_class=JSONResponse)
+async def v1_graph_data(user=Depends(_require_permission("view_results"))):
+    return await api_graph_data(user)
+
+
+@_v1_router.post("/simulate", response_class=JSONResponse)
+async def v1_simulate(request: Request, user=Depends(_require_permission("run_simulation"))):
+    return await api_simulate(request, user)
+
+
+@_v1_router.get("/runs", response_class=JSONResponse)
+async def v1_list_runs(
+    limit: int = 50,
+    offset: int = 0,
+    project_id: int | None = None,
+    user=Depends(_require_permission("view_results")),
+):
+    return await list_runs(limit, offset, project_id, user)
+
+
+@_v1_router.get("/runs/{run_id}", response_class=JSONResponse)
+async def v1_get_run(run_id: int, user=Depends(_require_permission("view_results"))):
+    return await get_run(run_id, user)
+
+
+@_v1_router.get("/analyze", response_class=JSONResponse)
+async def v1_analyze(user=Depends(_require_permission("view_results"))):
+    return await api_analyze(user)
+
+
+@_v1_router.get("/projects", response_class=JSONResponse)
+async def v1_list_projects(user=Depends(_require_permission("view_results"))):
+    return await list_projects(user)
+
+
+@_v1_router.get("/score-history", response_class=JSONResponse)
+async def v1_score_history(limit: int = 30, user=Depends(_require_permission("view_results"))):
+    return await api_score_history(limit, user)
+
+
+@_v1_router.get("/compliance/{framework}", response_class=JSONResponse)
+async def v1_compliance(framework: str, user=Depends(_require_permission("view_results"))):
+    return await api_compliance_check(framework, user)
+
+
+app.include_router(_v1_router)

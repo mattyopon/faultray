@@ -8,15 +8,15 @@
 {% block top_actions %}
 {% if has_data %}
 <div class="sim-filter-controls">
-    <select id="severityFilter" class="select-sm" onchange="filterResults()">
+    <select id="severityFilter" class="select-sm" onchange="filterResults()" aria-label="Filter by severity">
         <option value="all">All Severities</option>
         <option value="critical">Critical Only</option>
         <option value="warning">Warnings Only</option>
         <option value="passed">Passed Only</option>
     </select>
-    <input type="text" id="searchInput" class="input-sm" placeholder="Search scenarios..." oninput="filterResults()">
+    <input type="text" id="searchInput" class="input-sm" placeholder="Search scenarios..." oninput="filterResults()" aria-label="Search scenarios">
 </div>
-<button class="btn btn-sm btn-accent" id="runSimBtn" onclick="runSimulation()">
+<button class="btn btn-sm btn-accent" id="runSimBtn" onclick="runSimulation()" aria-label="Run chaos simulation">
     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
         <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/>
     </svg>

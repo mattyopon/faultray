@@ -1,0 +1,667 @@
+# ChaosProof - Healthcare EHR Infrastructure
+#
+# HIPAA compliant Electronic Health Record system
+# Load with:
+#   chaosproof load examples/healthcare-ehr.yaml
+#
+# Architecture:
+#   API Gateway -> Auth Service -> Patient API (x2)
+#   -> EHR DB (Primary + Replica + DR) + FHIR Integration
+#   -> S3 Medical Images + Redis Cache + SQS Audit Queue
+
+components:
+  - id: api-gateway
+    name: "API Gateway"
+    type: load_balancer
+    host: api-gw.ehr.internal
+    port: 443
+    replicas: 2
+    capacity:
+      max_connections: 15000
+      max_rps: 20000
+      timeout_seconds: 20.0
+    metrics:
+      cpu_percent: 15
+      memory_percent: 20
+      network_connections: 3000
+    autoscaling:
+      enabled: true
+      min_replicas: 2
+      max_replicas: 4
+      scale_up_threshold: 65.0
+      scale_down_threshold: 25.0
+      scale_up_delay_seconds: 10
+    failover:
+      enabled: true
+      promotion_time_seconds: 10.0
+      health_check_interval_seconds: 5.0
+      failover_threshold: 3
+    security:
+      encryption_in_transit: true
+      waf_protected: true
+      rate_limiting: true
+      auth_required: true
+      network_segmented: true
+      log_enabled: true
+      ids_monitored: true
+    compliance_tags:
+      data_classification: confidential
+      contains_phi: true
+      audit_logging: true
+      change_management: true
+    region:
+      region: us-east-1
+      availability_zone: us-east-1a
+      is_primary: true
+      dr_target_region: us-west-2
+      rpo_seconds: 0
+      rto_seconds: 60
+    slo_targets:
+      - name: gateway-availability
+        metric: availability
+        target: 99.99
+        unit: percent
+        window_days: 30
+    tags:
+      - hipaa
+      - gateway
+
+  - id: auth-service
+    name: "Auth Service (OAuth2/SMART)"
+    type: app_server
+    host: auth.ehr.internal
+    port: 8443
+    replicas: 3
+    capacity:
+      max_connections: 5000
+      connection_pool_size: 200
+      timeout_seconds: 5.0
+      max_memory_mb: 2048
+    metrics:
+      cpu_percent: 20
+      memory_percent: 25
+      disk_percent: 5
+      network_connections: 500
+    autoscaling:
+      enabled: true
+      min_replicas: 3
+      max_replicas: 8
+      scale_up_threshold: 55.0
+      scale_down_threshold: 20.0
+    failover:
+      enabled: true
+      promotion_time_seconds: 5.0
+      health_check_interval_seconds: 3.0
+      failover_threshold: 2
+    security:
+      encryption_at_rest: true
+      encryption_in_transit: true
+      rate_limiting: true
+      auth_required: true
+      network_segmented: true
+      log_enabled: true
+      ids_monitored: true
+    compliance_tags:
+      data_classification: restricted
+      contains_phi: false
+      contains_pii: true
+      audit_logging: true
+      change_management: true
+    tags:
+      - hipaa
+      - auth
+      - critical
+
+  - id: patient-api-1
+    name: "Patient API 1"
+    type: app_server
+    host: patient01.ehr.internal
+    port: 8443
+    replicas: 3
+    capacity:
+      max_connections: 5000
+      connection_pool_size: 400
+      timeout_seconds: 15.0
+      max_memory_mb: 8192
+    metrics:
+      cpu_percent: 35
+      memory_percent: 40
+      disk_percent: 10
+      network_connections: 800
+    autoscaling:
+      enabled: true
+      min_replicas: 3
+      max_replicas: 10
+      scale_up_threshold: 60.0
+      scale_down_threshold: 20.0
+      scale_up_delay_seconds: 15
+    failover:
+      enabled: true
+      promotion_time_seconds: 15.0
+      health_check_interval_seconds: 5.0
+      failover_threshold: 3
+    security:
+      encryption_at_rest: true
+      encryption_in_transit: true
+      auth_required: true
+      network_segmented: true
+      log_enabled: true
+      ids_monitored: true
+    compliance_tags:
+      data_classification: restricted
+      contains_phi: true
+      contains_pii: true
+      audit_logging: true
+      change_management: true
+    cost_profile:
+      hourly_infra_cost: 2.00
+      revenue_per_minute: 100.0
+      sla_credit_percent: 10.0
+    slo_targets:
+      - name: patient-api-availability
+        metric: availability
+        target: 99.99
+        unit: percent
+        window_days: 30
+      - name: patient-api-latency
+        metric: latency_p99
+        target: 300.0
+        unit: ms
+        window_days: 30
+    region:
+      region: us-east-1
+      availability_zone: us-east-1a
+      is_primary: true
+      dr_target_region: us-west-2
+      rpo_seconds: 5
+      rto_seconds: 120
+    tags:
+      - hipaa
+      - core
+      - phi
+
+  - id: patient-api-2
+    name: "Patient API 2"
+    type: app_server
+    host: patient02.ehr.internal
+    port: 8443
+    replicas: 3
+    capacity:
+      max_connections: 5000
+      connection_pool_size: 400
+      timeout_seconds: 15.0
+      max_memory_mb: 8192
+    metrics:
+      cpu_percent: 32
+      memory_percent: 38
+      disk_percent: 10
+      network_connections: 750
+    autoscaling:
+      enabled: true
+      min_replicas: 3
+      max_replicas: 10
+      scale_up_threshold: 60.0
+      scale_down_threshold: 20.0
+    failover:
+      enabled: true
+      promotion_time_seconds: 15.0
+      health_check_interval_seconds: 5.0
+      failover_threshold: 3
+    security:
+      encryption_at_rest: true
+      encryption_in_transit: true
+      auth_required: true
+      network_segmented: true
+      log_enabled: true
+      ids_monitored: true
+    compliance_tags:
+      data_classification: restricted
+      contains_phi: true
+      contains_pii: true
+      audit_logging: true
+      change_management: true
+    region:
+      region: us-east-1
+      availability_zone: us-east-1b
+      is_primary: true
+    tags:
+      - hipaa
+      - core
+      - phi
+
+  - id: ehr-db-primary
+    name: "EHR Database Primary"
+    type: database
+    host: ehrdb-primary.ehr.internal
+    port: 5432
+    replicas: 1
+    capacity:
+      max_connections: 500
+      max_disk_gb: 5000
+    metrics:
+      cpu_percent: 40
+      memory_percent: 55
+      disk_percent: 30
+      network_connections: 200
+    failover:
+      enabled: true
+      promotion_time_seconds: 30.0
+      health_check_interval_seconds: 5.0
+      failover_threshold: 2
+    security:
+      encryption_at_rest: true
+      encryption_in_transit: true
+      auth_required: true
+      network_segmented: true
+      backup_enabled: true
+      backup_frequency_hours: 1.0
+      log_enabled: true
+      ids_monitored: true
+    compliance_tags:
+      data_classification: restricted
+      contains_phi: true
+      contains_pii: true
+      audit_logging: true
+      change_management: true
+    cost_profile:
+      hourly_infra_cost: 8.00
+      data_loss_cost_per_gb: 50000.0
+    operational_profile:
+      mtbf_hours: 8760.0
+      mttr_minutes: 30.0
+      deploy_downtime_seconds: 0.0
+    region:
+      region: us-east-1
+      availability_zone: us-east-1a
+      is_primary: true
+      dr_target_region: us-west-2
+      rpo_seconds: 5
+      rto_seconds: 300
+    tags:
+      - hipaa
+      - stateful
+      - critical
+
+  - id: ehr-db-replica
+    name: "EHR Database Replica"
+    type: database
+    host: ehrdb-replica.ehr.internal
+    port: 5432
+    replicas: 2
+    capacity:
+      max_connections: 500
+      max_disk_gb: 5000
+    metrics:
+      cpu_percent: 20
+      memory_percent: 40
+      disk_percent: 29
+      network_connections: 100
+    failover:
+      enabled: true
+      promotion_time_seconds: 30.0
+      health_check_interval_seconds: 5.0
+    security:
+      encryption_at_rest: true
+      encryption_in_transit: true
+      auth_required: true
+      network_segmented: true
+      backup_enabled: true
+      backup_frequency_hours: 1.0
+      log_enabled: true
+    compliance_tags:
+      data_classification: restricted
+      contains_phi: true
+      contains_pii: true
+      audit_logging: true
+    region:
+      region: us-east-1
+      availability_zone: us-east-1b
+      is_primary: false
+    tags:
+      - hipaa
+      - stateful
+
+  - id: ehr-db-dr
+    name: "EHR Database DR"
+    type: database
+    host: ehrdb-dr.ehr-west.internal
+    port: 5432
+    replicas: 1
+    capacity:
+      max_connections: 500
+      max_disk_gb: 5000
+    metrics:
+      cpu_percent: 5
+      memory_percent: 20
+      disk_percent: 29
+      network_connections: 10
+    failover:
+      enabled: true
+      promotion_time_seconds: 120.0
+      health_check_interval_seconds: 10.0
+      failover_threshold: 3
+    security:
+      encryption_at_rest: true
+      encryption_in_transit: true
+      auth_required: true
+      network_segmented: true
+      backup_enabled: true
+      backup_frequency_hours: 1.0
+      log_enabled: true
+    compliance_tags:
+      data_classification: restricted
+      contains_phi: true
+      contains_pii: true
+      audit_logging: true
+    region:
+      region: us-west-2
+      availability_zone: us-west-2a
+      is_primary: false
+      rpo_seconds: 30
+      rto_seconds: 600
+    tags:
+      - hipaa
+      - stateful
+      - dr
+
+  - id: fhir-integration
+    name: "FHIR Integration Service"
+    type: external_api
+    host: fhir.ehr.internal
+    port: 8443
+    replicas: 2
+    capacity:
+      max_connections: 2000
+      max_rps: 5000
+      timeout_seconds: 30.0
+    metrics:
+      cpu_percent: 25
+      memory_percent: 30
+      network_connections: 200
+    autoscaling:
+      enabled: true
+      min_replicas: 2
+      max_replicas: 4
+      scale_up_threshold: 70.0
+    failover:
+      enabled: true
+      promotion_time_seconds: 15.0
+    security:
+      encryption_at_rest: true
+      encryption_in_transit: true
+      auth_required: true
+      network_segmented: true
+      log_enabled: true
+    compliance_tags:
+      data_classification: restricted
+      contains_phi: true
+      audit_logging: true
+    tags:
+      - hipaa
+      - interop
+      - fhir
+
+  - id: s3-medical-images
+    name: "S3 Medical Images (Encrypted)"
+    type: storage
+    host: s3.us-east-1.amazonaws.com
+    port: 443
+    replicas: 1
+    capacity:
+      max_disk_gb: 100000
+    metrics:
+      disk_percent: 25
+    security:
+      encryption_at_rest: true
+      encryption_in_transit: true
+      auth_required: true
+      network_segmented: true
+      backup_enabled: true
+      backup_frequency_hours: 24.0
+      log_enabled: true
+    compliance_tags:
+      data_classification: restricted
+      contains_phi: true
+      audit_logging: true
+    tags:
+      - hipaa
+      - storage
+      - dicom
+
+  - id: redis-cache
+    name: "Redis Cache"
+    type: cache
+    host: redis.ehr.internal
+    port: 6379
+    replicas: 3
+    capacity:
+      max_connections: 10000
+    metrics:
+      cpu_percent: 10
+      memory_percent: 45
+      network_connections: 1500
+    failover:
+      enabled: true
+      promotion_time_seconds: 5.0
+      health_check_interval_seconds: 3.0
+      failover_threshold: 2
+    cache_warming:
+      enabled: true
+      initial_hit_ratio: 0.0
+      warm_duration_seconds: 180
+      warming_curve: exponential
+    security:
+      encryption_at_rest: true
+      encryption_in_transit: true
+      auth_required: true
+      network_segmented: true
+      log_enabled: true
+    compliance_tags:
+      data_classification: confidential
+      contains_phi: false
+      audit_logging: true
+    tags:
+      - hipaa
+      - cache
+
+  - id: sqs-audit-queue
+    name: "SQS Audit Queue"
+    type: queue
+    host: sqs.us-east-1.amazonaws.com
+    port: 443
+    replicas: 1
+    capacity:
+      max_connections: 5000
+      max_rps: 20000
+    metrics:
+      cpu_percent: 5
+      memory_percent: 8
+    security:
+      encryption_at_rest: true
+      encryption_in_transit: true
+      auth_required: true
+      log_enabled: true
+    compliance_tags:
+      data_classification: restricted
+      contains_phi: true
+      audit_logging: true
+    tags:
+      - hipaa
+      - audit
+      - compliance
+
+dependencies:
+  - source: api-gateway
+    target: auth-service
+    type: requires
+    weight: 1.0
+    protocol: https
+    latency_ms: 3.0
+    circuit_breaker:
+      enabled: true
+      failure_threshold: 3
+      recovery_timeout_seconds: 15.0
+      half_open_max_requests: 2
+      success_threshold: 2
+
+  - source: api-gateway
+    target: patient-api-1
+    type: requires
+    weight: 1.0
+    protocol: https
+    latency_ms: 5.0
+    circuit_breaker:
+      enabled: true
+      failure_threshold: 5
+      recovery_timeout_seconds: 30.0
+
+  - source: api-gateway
+    target: patient-api-2
+    type: requires
+    weight: 1.0
+    protocol: https
+    latency_ms: 5.0
+    circuit_breaker:
+      enabled: true
+      failure_threshold: 5
+      recovery_timeout_seconds: 30.0
+
+  - source: patient-api-1
+    target: auth-service
+    type: requires
+    weight: 1.0
+    protocol: https
+    latency_ms: 2.0
+
+  - source: patient-api-2
+    target: auth-service
+    type: requires
+    weight: 1.0
+    protocol: https
+    latency_ms: 2.0
+
+  - source: patient-api-1
+    target: ehr-db-primary
+    type: requires
+    weight: 1.0
+    protocol: tcp
+    latency_ms: 2.0
+    retry_strategy:
+      enabled: true
+      max_retries: 3
+      initial_delay_ms: 100.0
+      max_delay_ms: 5000.0
+
+  - source: patient-api-2
+    target: ehr-db-primary
+    type: requires
+    weight: 1.0
+    protocol: tcp
+    latency_ms: 2.0
+    retry_strategy:
+      enabled: true
+      max_retries: 3
+      initial_delay_ms: 100.0
+
+  - source: patient-api-1
+    target: ehr-db-replica
+    type: optional
+    weight: 0.6
+    protocol: tcp
+    latency_ms: 3.0
+
+  - source: patient-api-2
+    target: ehr-db-replica
+    type: optional
+    weight: 0.6
+    protocol: tcp
+    latency_ms: 3.0
+
+  - source: ehr-db-primary
+    target: ehr-db-replica
+    type: async
+    weight: 0.9
+    protocol: tcp
+    latency_ms: 1.0
+
+  - source: ehr-db-primary
+    target: ehr-db-dr
+    type: async
+    weight: 0.8
+    protocol: tcp
+    latency_ms: 50.0
+
+  - source: patient-api-1
+    target: fhir-integration
+    type: optional
+    weight: 0.5
+    protocol: https
+    latency_ms: 20.0
+    circuit_breaker:
+      enabled: true
+      failure_threshold: 3
+      recovery_timeout_seconds: 60.0
+
+  - source: patient-api-2
+    target: fhir-integration
+    type: optional
+    weight: 0.5
+    protocol: https
+    latency_ms: 20.0
+    circuit_breaker:
+      enabled: true
+      failure_threshold: 3
+      recovery_timeout_seconds: 60.0
+
+  - source: patient-api-1
+    target: s3-medical-images
+    type: optional
+    weight: 0.4
+    protocol: https
+    latency_ms: 15.0
+
+  - source: patient-api-2
+    target: s3-medical-images
+    type: optional
+    weight: 0.4
+    protocol: https
+    latency_ms: 15.0
+
+  - source: patient-api-1
+    target: redis-cache
+    type: optional
+    weight: 0.7
+    protocol: tcp
+    latency_ms: 0.5
+    circuit_breaker:
+      enabled: true
+      failure_threshold: 3
+      recovery_timeout_seconds: 15.0
+
+  - source: patient-api-2
+    target: redis-cache
+    type: optional
+    weight: 0.7
+    protocol: tcp
+    latency_ms: 0.5
+
+  - source: patient-api-1
+    target: sqs-audit-queue
+    type: async
+    weight: 0.9
+    protocol: https
+    latency_ms: 10.0
+
+  - source: patient-api-2
+    target: sqs-audit-queue
+    type: async
+    weight: 0.9
+    protocol: https
+    latency_ms: 10.0
+
+  - source: auth-service
+    target: sqs-audit-queue
+    type: async
+    weight: 0.8
+    protocol: https
+    latency_ms: 10.0

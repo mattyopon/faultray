@@ -1,0 +1,265 @@
+{% extends "base.html" %}
+{% set active_page = "compliance" %}
+
+{% block title %}ChaosProof - Compliance{% endblock %}
+{% block page_title %}Compliance Framework{% endblock %}
+{% block page_subtitle %}<span class="page-subtitle">Regulatory compliance assessment and tracking</span>{% endblock %}
+
+{% block top_actions %}
+<a href="/reports" class="btn btn-sm btn-outline">
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/>
+        <polyline points="14 2 14 8 20 8"/>
+    </svg>
+    Export Report
+</a>
+{% endblock %}
+
+{% block content %}
+<div x-data="{ activeTab: 'dora' }">
+    <!-- Framework Tabs -->
+    <div style="display: flex; gap: 4px; margin-bottom: 20px; flex-wrap: wrap;">
+        <button @click="activeTab = 'dora'" :class="activeTab === 'dora' ? 'btn btn-sm btn-outline active' : 'btn btn-sm btn-outline'" type="button">DORA</button>
+        <button @click="activeTab = 'soc2'" :class="activeTab === 'soc2' ? 'btn btn-sm btn-outline active' : 'btn btn-sm btn-outline'" type="button">SOC 2</button>
+        <button @click="activeTab = 'iso27001'" :class="activeTab === 'iso27001' ? 'btn btn-sm btn-outline active' : 'btn btn-sm btn-outline'" type="button">ISO 27001</button>
+        <button @click="activeTab = 'pcidss'" :class="activeTab === 'pcidss' ? 'btn btn-sm btn-outline active' : 'btn btn-sm btn-outline'" type="button">PCI DSS</button>
+        <button @click="activeTab = 'nist'" :class="activeTab === 'nist' ? 'btn btn-sm btn-outline active' : 'btn btn-sm btn-outline'" type="button">NIST CSF</button>
+    </div>
+
+    <!-- DORA -->
+    <div x-show="activeTab === 'dora'" x-transition>
+        <div class="dashboard-grid">
+            <div class="card">
+                <div class="card-header"><h3>DORA Compliance</h3></div>
+                <div class="card-body score-display">
+                    {% set dora_score = 74 %}
+                    <div class="score-circle score-warning">
+                        <svg viewBox="0 0 120 120" class="score-ring">
+                            <circle cx="60" cy="60" r="54" fill="none" stroke="#2d3748" stroke-width="8"/>
+                            <circle cx="60" cy="60" r="54" fill="none" stroke-width="8"
+                                    stroke-dasharray="339.292" stroke-dashoffset="{{ 339.292 - (339.292 * dora_score / 100) }}"
+                                    stroke-linecap="round" class="score-ring-progress"/>
+                        </svg>
+                        <div class="score-value">{{ dora_score }}</div>
+                        <div class="score-label">Compliant</div>
+                    </div>
+                </div>
+            </div>
+            <div class="card">
+                <div class="card-header"><h3>Control Summary</h3></div>
+                <div class="card-body">
+                    <div class="stat-grid">
+                        <div class="stat-item stat-passed"><div class="stat-value">12</div><div class="stat-label">Passed</div></div>
+                        <div class="stat-item stat-warning"><div class="stat-value">5</div><div class="stat-label">Partial</div></div>
+                        <div class="stat-item stat-critical"><div class="stat-value">3</div><div class="stat-label">Failed</div></div>
+                    </div>
+                </div>
+            </div>
+            <div class="card card-wide">
+                <div class="card-header"><h3>DORA Controls</h3></div>
+                <div class="card-body no-padding">
+                    <table class="data-table">
+                        <thead>
+                            <tr><th>ID</th><th>Control</th><th>Status</th><th>Description</th></tr>
+                        </thead>
+                        <tbody>
+                            {% set dora_controls = [
+                                {"id": "DORA-ICT-01", "title": "ICT Risk Management Framework", "status": "PASS", "desc": "Risk management policies and procedures established"},
+                                {"id": "DORA-ICT-02", "title": "ICT Incident Reporting", "status": "PASS", "desc": "Major incident classification and reporting mechanisms"},
+                                {"id": "DORA-ICT-03", "title": "Digital Operational Resilience Testing", "status": "PASS", "desc": "Regular resilience testing program with ChaosProof"},
+                                {"id": "DORA-ICT-04", "title": "ICT Third-Party Risk", "status": "FAIL", "desc": "Third-party provider risk assessment incomplete"},
+                                {"id": "DORA-ICT-05", "title": "Information Sharing", "status": "PARTIAL", "desc": "Threat intelligence sharing partially implemented"},
+                                {"id": "DORA-ICT-06", "title": "Threat-Led Penetration Testing", "status": "PASS", "desc": "TLPT program aligned with TIBER-EU framework"},
+                                {"id": "DORA-ICT-07", "title": "ICT Business Continuity", "status": "PARTIAL", "desc": "BCP exists but recovery testing needs improvement"},
+                                {"id": "DORA-ICT-08", "title": "ICT Change Management", "status": "PASS", "desc": "Change management procedures with rollback capability"},
+                                {"id": "DORA-ICT-09", "title": "Backup & Recovery", "status": "FAIL", "desc": "RPO/RTO targets not met for secondary systems"},
+                                {"id": "DORA-ICT-10", "title": "Audit & Logging", "status": "PASS", "desc": "Comprehensive audit logging with tamper protection"}
+                            ] %}
+                            {% for c in dora_controls %}
+                            <tr>
+                                <td class="mono">{{ c.id }}</td>
+                                <td><span class="comp-name">{{ c.title }}</span></td>
+                                <td>
+                                    {% if c.status == "PASS" %}
+                                    <span class="health-badge health-healthy">PASS</span>
+                                    {% elif c.status == "PARTIAL" %}
+                                    <span class="health-badge health-degraded">PARTIAL</span>
+                                    {% else %}
+                                    <span class="health-badge health-down">FAIL</span>
+                                    {% endif %}
+                                </td>
+                                <td class="text-muted">{{ c.desc }}</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- SOC 2 -->
+    <div x-show="activeTab === 'soc2'" x-transition>
+        <div class="dashboard-grid">
+            <div class="card">
+                <div class="card-header"><h3>SOC 2 Compliance</h3></div>
+                <div class="card-body score-display">
+                    <div class="score-circle score-good">
+                        <svg viewBox="0 0 120 120" class="score-ring">
+                            <circle cx="60" cy="60" r="54" fill="none" stroke="#2d3748" stroke-width="8"/>
+                            <circle cx="60" cy="60" r="54" fill="none" stroke-width="8"
+                                    stroke-dasharray="339.292" stroke-dashoffset="{{ 339.292 - (339.292 * 82 / 100) }}"
+                                    stroke-linecap="round" class="score-ring-progress"/>
+                        </svg>
+                        <div class="score-value">82</div>
+                        <div class="score-label">Compliant</div>
+                    </div>
+                </div>
+            </div>
+            <div class="card">
+                <div class="card-header"><h3>Trust Service Criteria</h3></div>
+                <div class="card-body">
+                    <div class="stat-grid">
+                        <div class="stat-item stat-passed"><div class="stat-value">18</div><div class="stat-label">Passed</div></div>
+                        <div class="stat-item stat-warning"><div class="stat-value">3</div><div class="stat-label">Partial</div></div>
+                        <div class="stat-item stat-critical"><div class="stat-value">1</div><div class="stat-label">Failed</div></div>
+                    </div>
+                </div>
+            </div>
+            <div class="card card-wide">
+                <div class="card-header"><h3>SOC 2 Trust Services</h3></div>
+                <div class="card-body no-padding">
+                    <table class="data-table">
+                        <thead><tr><th>Category</th><th>Controls Passed</th><th>Status</th></tr></thead>
+                        <tbody>
+                            <tr><td><span class="comp-name">Security</span></td><td>8/9</td><td><span class="health-badge health-degraded">Partial</span></td></tr>
+                            <tr><td><span class="comp-name">Availability</span></td><td>5/5</td><td><span class="health-badge health-healthy">PASS</span></td></tr>
+                            <tr><td><span class="comp-name">Processing Integrity</span></td><td>4/4</td><td><span class="health-badge health-healthy">PASS</span></td></tr>
+                            <tr><td><span class="comp-name">Confidentiality</span></td><td>3/3</td><td><span class="health-badge health-healthy">PASS</span></td></tr>
+                            <tr><td><span class="comp-name">Privacy</span></td><td>2/3</td><td><span class="health-badge health-degraded">Partial</span></td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ISO 27001 -->
+    <div x-show="activeTab === 'iso27001'" x-transition>
+        <div class="dashboard-grid">
+            <div class="card">
+                <div class="card-header"><h3>ISO 27001 Compliance</h3></div>
+                <div class="card-body score-display">
+                    <div class="score-circle score-warning">
+                        <svg viewBox="0 0 120 120" class="score-ring">
+                            <circle cx="60" cy="60" r="54" fill="none" stroke="#2d3748" stroke-width="8"/>
+                            <circle cx="60" cy="60" r="54" fill="none" stroke-width="8"
+                                    stroke-dasharray="339.292" stroke-dashoffset="{{ 339.292 - (339.292 * 71 / 100) }}"
+                                    stroke-linecap="round" class="score-ring-progress"/>
+                        </svg>
+                        <div class="score-value">71</div>
+                        <div class="score-label">In Progress</div>
+                    </div>
+                </div>
+            </div>
+            <div class="card">
+                <div class="card-header"><h3>Annex A Summary</h3></div>
+                <div class="card-body">
+                    <div class="stat-grid">
+                        <div class="stat-item stat-passed"><div class="stat-value">68</div><div class="stat-label">Implemented</div></div>
+                        <div class="stat-item stat-warning"><div class="stat-value">18</div><div class="stat-label">In Progress</div></div>
+                        <div class="stat-item stat-critical"><div class="stat-value">8</div><div class="stat-label">Not Started</div></div>
+                    </div>
+                </div>
+            </div>
+            <div class="card card-wide">
+                <div class="card-body">
+                    <p class="text-muted" style="font-size: 13px; line-height: 1.7;">ISO 27001:2022 implementation is in progress. 68 of 94 Annex A controls have been implemented. Key gaps exist in A.8 (Technology) and A.5 (Organizational) domains. Target certification date: Q3 2026.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- PCI DSS -->
+    <div x-show="activeTab === 'pcidss'" x-transition>
+        <div class="dashboard-grid">
+            <div class="card">
+                <div class="card-header"><h3>PCI DSS v4.0</h3></div>
+                <div class="card-body score-display">
+                    <div class="score-circle score-critical">
+                        <svg viewBox="0 0 120 120" class="score-ring">
+                            <circle cx="60" cy="60" r="54" fill="none" stroke="#2d3748" stroke-width="8"/>
+                            <circle cx="60" cy="60" r="54" fill="none" stroke-width="8"
+                                    stroke-dasharray="339.292" stroke-dashoffset="{{ 339.292 - (339.292 * 54 / 100) }}"
+                                    stroke-linecap="round" class="score-ring-progress"/>
+                        </svg>
+                        <div class="score-value">54</div>
+                        <div class="score-label">Non-Compliant</div>
+                    </div>
+                </div>
+            </div>
+            <div class="card">
+                <div class="card-header"><h3>Requirements</h3></div>
+                <div class="card-body">
+                    <div class="stat-grid">
+                        <div class="stat-item stat-passed"><div class="stat-value">6</div><div class="stat-label">Compliant</div></div>
+                        <div class="stat-item stat-warning"><div class="stat-value">3</div><div class="stat-label">Partial</div></div>
+                        <div class="stat-item stat-critical"><div class="stat-value">3</div><div class="stat-label">Non-Compliant</div></div>
+                    </div>
+                </div>
+            </div>
+            <div class="card card-wide">
+                <div class="card-body">
+                    <p class="text-muted" style="font-size: 13px; line-height: 1.7;">PCI DSS v4.0 assessment is ongoing. Critical gaps in Requirement 6 (Secure Systems), Requirement 10 (Logging/Monitoring), and Requirement 11 (Regular Testing). Remediation plan targets Q2 2026 for full compliance.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- NIST CSF -->
+    <div x-show="activeTab === 'nist'" x-transition>
+        <div class="dashboard-grid">
+            <div class="card">
+                <div class="card-header"><h3>NIST CSF 2.0</h3></div>
+                <div class="card-body score-display">
+                    <div class="score-circle score-good">
+                        <svg viewBox="0 0 120 120" class="score-ring">
+                            <circle cx="60" cy="60" r="54" fill="none" stroke="#2d3748" stroke-width="8"/>
+                            <circle cx="60" cy="60" r="54" fill="none" stroke-width="8"
+                                    stroke-dasharray="339.292" stroke-dashoffset="{{ 339.292 - (339.292 * 81 / 100) }}"
+                                    stroke-linecap="round" class="score-ring-progress"/>
+                        </svg>
+                        <div class="score-value">81</div>
+                        <div class="score-label">Strong</div>
+                    </div>
+                </div>
+            </div>
+            <div class="card">
+                <div class="card-header"><h3>Core Functions</h3></div>
+                <div class="card-body">
+                    <div class="stat-grid">
+                        <div class="stat-item"><div class="stat-value" style="color: var(--blue);">6</div><div class="stat-label">Functions</div></div>
+                        <div class="stat-item stat-passed"><div class="stat-value">19</div><div class="stat-label">Implemented</div></div>
+                        <div class="stat-item stat-warning"><div class="stat-value">4</div><div class="stat-label">In Progress</div></div>
+                    </div>
+                </div>
+            </div>
+            <div class="card card-wide">
+                <div class="card-body no-padding">
+                    <table class="data-table">
+                        <thead><tr><th>Function</th><th>Maturity</th><th>Status</th></tr></thead>
+                        <tbody>
+                            <tr><td><span class="comp-name">Govern (GV)</span></td><td><span class="badge badge-passed">Tier 3</span></td><td><span class="health-badge health-healthy">Strong</span></td></tr>
+                            <tr><td><span class="comp-name">Identify (ID)</span></td><td><span class="badge badge-passed">Tier 3</span></td><td><span class="health-badge health-healthy">Strong</span></td></tr>
+                            <tr><td><span class="comp-name">Protect (PR)</span></td><td><span class="badge badge-warning">Tier 2</span></td><td><span class="health-badge health-degraded">Moderate</span></td></tr>
+                            <tr><td><span class="comp-name">Detect (DE)</span></td><td><span class="badge badge-passed">Tier 3</span></td><td><span class="health-badge health-healthy">Strong</span></td></tr>
+                            <tr><td><span class="comp-name">Respond (RS)</span></td><td><span class="badge badge-passed">Tier 3</span></td><td><span class="health-badge health-healthy">Strong</span></td></tr>
+                            <tr><td><span class="comp-name">Recover (RC)</span></td><td><span class="badge badge-warning">Tier 2</span></td><td><span class="health-badge health-degraded">Moderate</span></td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

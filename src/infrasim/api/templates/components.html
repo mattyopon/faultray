@@ -13,16 +13,16 @@
             <span class="badge badge-info">{{ components | length }} total</span>
         </div>
         <div class="card-body no-padding">
-            <table class="data-table">
+            <table class="data-table" role="table" aria-label="Infrastructure components">
                 <thead>
                     <tr>
-                        <th>Name</th>
-                        <th>Type</th>
-                        <th>Host</th>
-                        <th>Replicas</th>
-                        <th>Utilization</th>
-                        <th>Health</th>
-                        <th>Details</th>
+                        <th scope="col">Name</th>
+                        <th scope="col">Type</th>
+                        <th scope="col">Host</th>
+                        <th scope="col">Replicas</th>
+                        <th scope="col">Utilization</th>
+                        <th scope="col">Health</th>
+                        <th scope="col">Details</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -50,7 +50,7 @@
                             <span class="health-badge health-{{ comp.health }}">{{ comp.health }}</span>
                         </td>
                         <td>
-                            <button class="btn btn-xs btn-outline toggle-details" onclick="toggleDetails('{{ comp.id }}')">
+                            <button class="btn btn-xs btn-outline toggle-details" onclick="toggleDetails('{{ comp.id }}')" aria-label="Toggle details for {{ comp.name }}" aria-expanded="false">
                                 Expand
                             </button>
                         </td>
@@ -138,9 +138,11 @@ function toggleDetails(id) {
     if (row.style.display === 'none') {
         row.style.display = 'table-row';
         btn.textContent = 'Collapse';
+        btn.setAttribute('aria-expanded', 'true');
     } else {
         row.style.display = 'none';
         btn.textContent = 'Expand';
+        btn.setAttribute('aria-expanded', 'false');
     }
 }
 

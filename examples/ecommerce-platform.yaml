@@ -1,0 +1,811 @@
+# ChaosProof - E-Commerce Platform Infrastructure
+#
+# PCI DSS compliant e-commerce system
+# Load with:
+#   chaosproof load examples/ecommerce-platform.yaml
+#
+# Architecture:
+#   CloudFront -> WAF -> ALB -> Web Frontend (x2) + Cart API (x2) + Payment API (x2)
+#   -> Product DB (Primary + Replica) + Order DB + Redis Cache
+#   -> Elasticsearch + SQS Order Queue + S3 Assets
+
+components:
+  - id: cloudfront
+    name: "CloudFront CDN"
+    type: load_balancer
+    host: cdn.shop.example.com
+    port: 443
+    replicas: 2
+    capacity:
+      max_connections: 100000
+      max_rps: 200000
+    metrics:
+      cpu_percent: 5
+      memory_percent: 8
+    security:
+      encryption_in_transit: true
+      waf_protected: true
+      rate_limiting: true
+      log_enabled: true
+    compliance_tags:
+      data_classification: public
+      audit_logging: true
+    tags:
+      - edge
+      - cdn
+
+  - id: waf
+    name: "AWS WAF"
+    type: custom
+    host: waf.shop.internal
+    port: 443
+    replicas: 2
+    capacity:
+      max_connections: 80000
+      max_rps: 150000
+    metrics:
+      cpu_percent: 8
+      memory_percent: 12
+    security:
+      encryption_in_transit: true
+      waf_protected: true
+      rate_limiting: true
+      ids_monitored: true
+      log_enabled: true
+    compliance_tags:
+      data_classification: internal
+      pci_scope: true
+      audit_logging: true
+    tags:
+      - security
+
+  - id: alb
+    name: "Application Load Balancer"
+    type: load_balancer
+    host: alb.shop.internal
+    port: 443
+    replicas: 2
+    capacity:
+      max_connections: 50000
+      max_rps: 80000
+      timeout_seconds: 30.0
+    metrics:
+      cpu_percent: 12
+      memory_percent: 15
+      network_connections: 5000
+    autoscaling:
+      enabled: true
+      min_replicas: 2
+      max_replicas: 4
+      scale_up_threshold: 70.0
+      scale_down_threshold: 25.0
+    failover:
+      enabled: true
+      promotion_time_seconds: 10.0
+      health_check_interval_seconds: 5.0
+      failover_threshold: 3
+    security:
+      encryption_in_transit: true
+      waf_protected: true
+      log_enabled: true
+    compliance_tags:
+      data_classification: internal
+      pci_scope: true
+      audit_logging: true
+    region:
+      region: us-east-1
+      availability_zone: us-east-1a
+      is_primary: true
+      dr_target_region: us-west-2
+      rpo_seconds: 0
+      rto_seconds: 60
+    tags:
+      - pci-dss
+
+  - id: web-frontend-1
+    name: "Web Frontend 1"
+    type: web_server
+    host: web01.shop.internal
+    port: 3000
+    replicas: 3
+    capacity:
+      max_connections: 10000
+      max_rps: 20000
+      timeout_seconds: 15.0
+      max_memory_mb: 4096
+    metrics:
+      cpu_percent: 25
+      memory_percent: 30
+      disk_percent: 10
+      network_connections: 2000
+    autoscaling:
+      enabled: true
+      min_replicas: 3
+      max_replicas: 12
+      scale_up_threshold: 60.0
+      scale_down_threshold: 20.0
+      scale_up_delay_seconds: 10
+    failover:
+      enabled: true
+      promotion_time_seconds: 5.0
+    security:
+      encryption_in_transit: true
+      auth_required: false
+      log_enabled: true
+    compliance_tags:
+      data_classification: public
+    slo_targets:
+      - name: frontend-availability
+        metric: availability
+        target: 99.95
+        unit: percent
+        window_days: 30
+    tags:
+      - frontend
+      - stateless
+
+  - id: web-frontend-2
+    name: "Web Frontend 2"
+    type: web_server
+    host: web02.shop.internal
+    port: 3000
+    replicas: 3
+    capacity:
+      max_connections: 10000
+      max_rps: 20000
+      timeout_seconds: 15.0
+      max_memory_mb: 4096
+    metrics:
+      cpu_percent: 22
+      memory_percent: 28
+      disk_percent: 10
+      network_connections: 1800
+    autoscaling:
+      enabled: true
+      min_replicas: 3
+      max_replicas: 12
+      scale_up_threshold: 60.0
+      scale_down_threshold: 20.0
+    failover:
+      enabled: true
+      promotion_time_seconds: 5.0
+    security:
+      encryption_in_transit: true
+      log_enabled: true
+    compliance_tags:
+      data_classification: public
+    tags:
+      - frontend
+      - stateless
+
+  - id: cart-api-1
+    name: "Cart API 1"
+    type: app_server
+    host: cart01.shop.internal
+    port: 8080
+    replicas: 2
+    capacity:
+      max_connections: 5000
+      connection_pool_size: 300
+      timeout_seconds: 10.0
+      max_memory_mb: 4096
+    metrics:
+      cpu_percent: 30
+      memory_percent: 35
+      disk_percent: 8
+      network_connections: 600
+    autoscaling:
+      enabled: true
+      min_replicas: 2
+      max_replicas: 8
+      scale_up_threshold: 65.0
+      scale_down_threshold: 20.0
+    failover:
+      enabled: true
+      promotion_time_seconds: 10.0
+      health_check_interval_seconds: 5.0
+    security:
+      encryption_in_transit: true
+      auth_required: true
+      network_segmented: true
+      log_enabled: true
+    compliance_tags:
+      data_classification: confidential
+      pci_scope: true
+      audit_logging: true
+    tags:
+      - api
+      - cart
+
+  - id: cart-api-2
+    name: "Cart API 2"
+    type: app_server
+    host: cart02.shop.internal
+    port: 8080
+    replicas: 2
+    capacity:
+      max_connections: 5000
+      connection_pool_size: 300
+      timeout_seconds: 10.0
+      max_memory_mb: 4096
+    metrics:
+      cpu_percent: 28
+      memory_percent: 33
+      disk_percent: 8
+      network_connections: 550
+    autoscaling:
+      enabled: true
+      min_replicas: 2
+      max_replicas: 8
+      scale_up_threshold: 65.0
+      scale_down_threshold: 20.0
+    failover:
+      enabled: true
+      promotion_time_seconds: 10.0
+    security:
+      encryption_in_transit: true
+      auth_required: true
+      network_segmented: true
+      log_enabled: true
+    compliance_tags:
+      data_classification: confidential
+      pci_scope: true
+      audit_logging: true
+    tags:
+      - api
+      - cart
+
+  - id: payment-api-1
+    name: "Payment API 1"
+    type: app_server
+    host: payment01.shop.internal
+    port: 8443
+    replicas: 2
+    capacity:
+      max_connections: 3000
+      connection_pool_size: 200
+      timeout_seconds: 15.0
+      max_memory_mb: 4096
+    metrics:
+      cpu_percent: 20
+      memory_percent: 25
+      disk_percent: 5
+      network_connections: 300
+    autoscaling:
+      enabled: true
+      min_replicas: 2
+      max_replicas: 6
+      scale_up_threshold: 50.0
+      scale_down_threshold: 15.0
+    failover:
+      enabled: true
+      promotion_time_seconds: 15.0
+      health_check_interval_seconds: 3.0
+      failover_threshold: 2
+    security:
+      encryption_at_rest: true
+      encryption_in_transit: true
+      waf_protected: true
+      rate_limiting: true
+      auth_required: true
+      network_segmented: true
+      log_enabled: true
+      ids_monitored: true
+    compliance_tags:
+      data_classification: restricted
+      pci_scope: true
+      contains_pii: true
+      audit_logging: true
+      change_management: true
+    cost_profile:
+      hourly_infra_cost: 3.00
+      revenue_per_minute: 200.0
+      sla_credit_percent: 15.0
+    slo_targets:
+      - name: payment-availability
+        metric: availability
+        target: 99.99
+        unit: percent
+        window_days: 30
+      - name: payment-latency
+        metric: latency_p99
+        target: 500.0
+        unit: ms
+        window_days: 30
+    region:
+      region: us-east-1
+      availability_zone: us-east-1a
+      is_primary: true
+      dr_target_region: us-west-2
+      rpo_seconds: 0
+      rto_seconds: 60
+    tags:
+      - pci-dss
+      - payment
+      - critical
+
+  - id: payment-api-2
+    name: "Payment API 2"
+    type: app_server
+    host: payment02.shop.internal
+    port: 8443
+    replicas: 2
+    capacity:
+      max_connections: 3000
+      connection_pool_size: 200
+      timeout_seconds: 15.0
+      max_memory_mb: 4096
+    metrics:
+      cpu_percent: 18
+      memory_percent: 23
+      disk_percent: 5
+      network_connections: 280
+    autoscaling:
+      enabled: true
+      min_replicas: 2
+      max_replicas: 6
+      scale_up_threshold: 50.0
+      scale_down_threshold: 15.0
+    failover:
+      enabled: true
+      promotion_time_seconds: 15.0
+      health_check_interval_seconds: 3.0
+      failover_threshold: 2
+    security:
+      encryption_at_rest: true
+      encryption_in_transit: true
+      waf_protected: true
+      rate_limiting: true
+      auth_required: true
+      network_segmented: true
+      log_enabled: true
+      ids_monitored: true
+    compliance_tags:
+      data_classification: restricted
+      pci_scope: true
+      contains_pii: true
+      audit_logging: true
+      change_management: true
+    region:
+      region: us-east-1
+      availability_zone: us-east-1b
+      is_primary: true
+    tags:
+      - pci-dss
+      - payment
+      - critical
+
+  - id: product-db-primary
+    name: "Product DB Primary"
+    type: database
+    host: productdb-primary.shop.internal
+    port: 5432
+    replicas: 1
+    capacity:
+      max_connections: 300
+      max_disk_gb: 1000
+    metrics:
+      cpu_percent: 35
+      memory_percent: 50
+      disk_percent: 40
+      network_connections: 120
+    failover:
+      enabled: true
+      promotion_time_seconds: 30.0
+      health_check_interval_seconds: 5.0
+      failover_threshold: 2
+    security:
+      encryption_at_rest: true
+      encryption_in_transit: true
+      auth_required: true
+      network_segmented: true
+      backup_enabled: true
+      backup_frequency_hours: 4.0
+      log_enabled: true
+    compliance_tags:
+      data_classification: confidential
+      audit_logging: true
+    region:
+      region: us-east-1
+      availability_zone: us-east-1a
+      is_primary: true
+      dr_target_region: us-west-2
+      rpo_seconds: 60
+      rto_seconds: 600
+    tags:
+      - stateful
+      - product
+
+  - id: product-db-replica
+    name: "Product DB Replica"
+    type: database
+    host: productdb-replica.shop.internal
+    port: 5432
+    replicas: 2
+    capacity:
+      max_connections: 300
+      max_disk_gb: 1000
+    metrics:
+      cpu_percent: 18
+      memory_percent: 35
+      disk_percent: 39
+      network_connections: 80
+    failover:
+      enabled: true
+      promotion_time_seconds: 30.0
+    security:
+      encryption_at_rest: true
+      encryption_in_transit: true
+      auth_required: true
+      network_segmented: true
+      backup_enabled: true
+      backup_frequency_hours: 4.0
+      log_enabled: true
+    compliance_tags:
+      data_classification: confidential
+      audit_logging: true
+    region:
+      region: us-east-1
+      availability_zone: us-east-1b
+      is_primary: false
+    tags:
+      - stateful
+      - product
+
+  - id: order-db
+    name: "Order Database"
+    type: database
+    host: orderdb.shop.internal
+    port: 5432
+    replicas: 2
+    capacity:
+      max_connections: 200
+      max_disk_gb: 500
+    metrics:
+      cpu_percent: 30
+      memory_percent: 45
+      disk_percent: 25
+      network_connections: 80
+    failover:
+      enabled: true
+      promotion_time_seconds: 30.0
+      health_check_interval_seconds: 5.0
+    security:
+      encryption_at_rest: true
+      encryption_in_transit: true
+      auth_required: true
+      network_segmented: true
+      backup_enabled: true
+      backup_frequency_hours: 1.0
+      log_enabled: true
+    compliance_tags:
+      data_classification: restricted
+      pci_scope: true
+      contains_pii: true
+      audit_logging: true
+      change_management: true
+    cost_profile:
+      data_loss_cost_per_gb: 5000.0
+    tags:
+      - pci-dss
+      - stateful
+      - order
+
+  - id: redis-cache
+    name: "Redis Cache"
+    type: cache
+    host: redis.shop.internal
+    port: 6379
+    replicas: 3
+    capacity:
+      max_connections: 20000
+    metrics:
+      cpu_percent: 10
+      memory_percent: 60
+      network_connections: 3000
+    failover:
+      enabled: true
+      promotion_time_seconds: 5.0
+      health_check_interval_seconds: 3.0
+      failover_threshold: 2
+    cache_warming:
+      enabled: true
+      initial_hit_ratio: 0.1
+      warm_duration_seconds: 180
+      warming_curve: exponential
+    security:
+      encryption_in_transit: true
+      auth_required: true
+      network_segmented: true
+      log_enabled: true
+    compliance_tags:
+      data_classification: internal
+    tags:
+      - cache
+
+  - id: elasticsearch
+    name: "Elasticsearch"
+    type: custom
+    host: es.shop.internal
+    port: 9200
+    replicas: 3
+    capacity:
+      max_connections: 5000
+      max_disk_gb: 500
+    metrics:
+      cpu_percent: 40
+      memory_percent: 65
+      disk_percent: 50
+      network_connections: 200
+    autoscaling:
+      enabled: true
+      min_replicas: 3
+      max_replicas: 6
+      scale_up_threshold: 75.0
+    security:
+      encryption_in_transit: true
+      auth_required: true
+      network_segmented: true
+      log_enabled: true
+    compliance_tags:
+      data_classification: internal
+    tags:
+      - search
+
+  - id: sqs-order-queue
+    name: "SQS Order Queue"
+    type: queue
+    host: sqs.us-east-1.amazonaws.com
+    port: 443
+    replicas: 1
+    capacity:
+      max_connections: 10000
+      max_rps: 30000
+    metrics:
+      cpu_percent: 5
+      memory_percent: 8
+    security:
+      encryption_at_rest: true
+      encryption_in_transit: true
+      auth_required: true
+      log_enabled: true
+    compliance_tags:
+      data_classification: confidential
+      pci_scope: true
+      audit_logging: true
+    tags:
+      - async
+      - order
+
+  - id: s3-assets
+    name: "S3 Static Assets"
+    type: storage
+    host: s3.us-east-1.amazonaws.com
+    port: 443
+    replicas: 1
+    capacity:
+      max_disk_gb: 10000
+    metrics:
+      disk_percent: 15
+    security:
+      encryption_at_rest: true
+      encryption_in_transit: true
+      log_enabled: true
+    compliance_tags:
+      data_classification: public
+    tags:
+      - storage
+      - static
+
+dependencies:
+  - source: cloudfront
+    target: waf
+    type: requires
+    weight: 1.0
+    protocol: https
+    latency_ms: 1.0
+
+  - source: waf
+    target: alb
+    type: requires
+    weight: 1.0
+    protocol: https
+    latency_ms: 2.0
+
+  - source: alb
+    target: web-frontend-1
+    type: requires
+    weight: 1.0
+    protocol: http
+    latency_ms: 1.0
+    circuit_breaker:
+      enabled: true
+      failure_threshold: 5
+      recovery_timeout_seconds: 30.0
+
+  - source: alb
+    target: web-frontend-2
+    type: requires
+    weight: 1.0
+    protocol: http
+    latency_ms: 1.0
+    circuit_breaker:
+      enabled: true
+      failure_threshold: 5
+      recovery_timeout_seconds: 30.0
+
+  - source: web-frontend-1
+    target: cart-api-1
+    type: requires
+    weight: 1.0
+    protocol: http
+    latency_ms: 3.0
+
+  - source: web-frontend-1
+    target: cart-api-2
+    type: requires
+    weight: 1.0
+    protocol: http
+    latency_ms: 3.0
+
+  - source: web-frontend-2
+    target: cart-api-1
+    type: requires
+    weight: 1.0
+    protocol: http
+    latency_ms: 3.0
+
+  - source: web-frontend-2
+    target: cart-api-2
+    type: requires
+    weight: 1.0
+    protocol: http
+    latency_ms: 3.0
+
+  - source: web-frontend-1
+    target: payment-api-1
+    type: requires
+    weight: 0.9
+    protocol: https
+    latency_ms: 5.0
+
+  - source: web-frontend-2
+    target: payment-api-2
+    type: requires
+    weight: 0.9
+    protocol: https
+    latency_ms: 5.0
+
+  - source: cart-api-1
+    target: product-db-primary
+    type: requires
+    weight: 1.0
+    protocol: tcp
+    latency_ms: 2.0
+    retry_strategy:
+      enabled: true
+      max_retries: 3
+      initial_delay_ms: 100.0
+
+  - source: cart-api-2
+    target: product-db-primary
+    type: requires
+    weight: 1.0
+    protocol: tcp
+    latency_ms: 2.0
+    retry_strategy:
+      enabled: true
+      max_retries: 3
+
+  - source: cart-api-1
+    target: product-db-replica
+    type: optional
+    weight: 0.6
+    protocol: tcp
+    latency_ms: 3.0
+
+  - source: cart-api-2
+    target: product-db-replica
+    type: optional
+    weight: 0.6
+    protocol: tcp
+    latency_ms: 3.0
+
+  - source: product-db-primary
+    target: product-db-replica
+    type: async
+    weight: 0.8
+    protocol: tcp
+    latency_ms: 1.0
+
+  - source: payment-api-1
+    target: order-db
+    type: requires
+    weight: 1.0
+    protocol: tcp
+    latency_ms: 2.0
+    retry_strategy:
+      enabled: true
+      max_retries: 2
+      initial_delay_ms: 200.0
+
+  - source: payment-api-2
+    target: order-db
+    type: requires
+    weight: 1.0
+    protocol: tcp
+    latency_ms: 2.0
+    retry_strategy:
+      enabled: true
+      max_retries: 2
+
+  - source: cart-api-1
+    target: redis-cache
+    type: optional
+    weight: 0.7
+    protocol: tcp
+    latency_ms: 0.5
+    circuit_breaker:
+      enabled: true
+      failure_threshold: 3
+      recovery_timeout_seconds: 15.0
+
+  - source: cart-api-2
+    target: redis-cache
+    type: optional
+    weight: 0.7
+    protocol: tcp
+    latency_ms: 0.5
+
+  - source: web-frontend-1
+    target: redis-cache
+    type: optional
+    weight: 0.5
+    protocol: tcp
+    latency_ms: 0.5
+
+  - source: web-frontend-2
+    target: redis-cache
+    type: optional
+    weight: 0.5
+    protocol: tcp
+    latency_ms: 0.5
+
+  - source: web-frontend-1
+    target: elasticsearch
+    type: optional
+    weight: 0.6
+    protocol: http
+    latency_ms: 10.0
+    circuit_breaker:
+      enabled: true
+      failure_threshold: 5
+      recovery_timeout_seconds: 30.0
+
+  - source: web-frontend-2
+    target: elasticsearch
+    type: optional
+    weight: 0.6
+    protocol: http
+    latency_ms: 10.0
+
+  - source: payment-api-1
+    target: sqs-order-queue
+    type: async
+    weight: 0.8
+    protocol: https
+    latency_ms: 15.0
+
+  - source: payment-api-2
+    target: sqs-order-queue
+    type: async
+    weight: 0.8
+    protocol: https
+    latency_ms: 15.0
+
+  - source: cloudfront
+    target: s3-assets
+    type: optional
+    weight: 0.5
+    protocol: https
+    latency_ms: 5.0

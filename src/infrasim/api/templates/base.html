@@ -5,6 +5,10 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{% block title %}ChaosProof{% endblock %}</title>
     <link rel="stylesheet" href="/static/style.css">
+    <link rel="manifest" href="/static/manifest.json">
+    <meta name="theme-color" content="#58a6ff">
+    <script src="https://unpkg.com/htmx.org@2.0.4"></script>
+    <script src="https://unpkg.com/alpinejs@3.14.8/dist/cdn.min.js" defer></script>
     {% block head %}{% endblock %}
 </head>
 <body>
@@ -17,7 +21,7 @@
         </button>
 
         <!-- Sidebar -->
-        <nav class="sidebar">
+        <nav class="sidebar" role="navigation" aria-label="Main navigation">
             <div class="sidebar-header">
                 <div class="logo">
                     <div class="logo-icon">
@@ -61,36 +65,91 @@
                         <span>Dashboard</span>
                     </a>
                 </li>
-                <li>
-                    <a href="/components" class="nav-link {% if active_page == 'components' %}active{% endif %}">
+
+                <!-- Infrastructure submenu -->
+                <li x-data="{ open: {% if active_page in ['components', 'graph'] %}true{% else %}false{% endif %} }">
+                    <button @click="open = !open" class="nav-link nav-link-toggle {% if active_page in ['components', 'graph'] %}active{% endif %}" type="button">
                         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                             <rect x="4" y="4" width="16" height="16" rx="2"/>
                             <line x1="4" y1="10" x2="20" y2="10"/>
                             <line x1="10" y1="4" x2="10" y2="20"/>
                         </svg>
-                        <span>Components</span>
-                    </a>
+                        <span>Infrastructure</span>
+                        <svg class="nav-chevron" :class="{ 'nav-chevron-open': open }" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <polyline points="6 9 12 15 18 9"/>
+                        </svg>
+                    </button>
+                    <ul class="nav-submenu" x-show="open" x-transition.duration.200ms>
+                        <li>
+                            <a href="/components" class="nav-link nav-link-sub {% if active_page == 'components' %}active{% endif %}">
+                                <span>Components</span>
+                            </a>
+                        </li>
+                        <li>
+                            <a href="/graph" class="nav-link nav-link-sub {% if active_page == 'graph' %}active{% endif %}">
+                                <span>Graph</span>
+                            </a>
+                        </li>
+                    </ul>
                 </li>
-                <li>
-                    <a href="/simulation" class="nav-link {% if active_page == 'simulation' %}active{% endif %}">
+
+                <!-- Simulation submenu -->
+                <li x-data="{ open: {% if active_page in ['simulation', 'security', 'cost'] %}true{% else %}false{% endif %} }">
+                    <button @click="open = !open" class="nav-link nav-link-toggle {% if active_page in ['simulation', 'security', 'cost'] %}active{% endif %}" type="button">
                         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                             <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/>
                         </svg>
                         <span>Simulation</span>
-                    </a>
-                </li>
-                <li>
-                    <a href="/graph" class="nav-link {% if active_page == 'graph' %}active{% endif %}">
-                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <circle cx="12" cy="5" r="3"/>
-                            <circle cx="5" cy="19" r="3"/>
-                            <circle cx="19" cy="19" r="3"/>
-                            <line x1="12" y1="8" x2="5" y2="16"/>
-                            <line x1="12" y1="8" x2="19" y2="16"/>
+                        <svg class="nav-chevron" :class="{ 'nav-chevron-open': open }" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <polyline points="6 9 12 15 18 9"/>
                         </svg>
-                        <span>Graph</span>
-                    </a>
+                    </button>
+                    <ul class="nav-submenu" x-show="open" x-transition.duration.200ms>
+                        <li>
+                            <a href="/simulation" class="nav-link nav-link-sub {% if active_page == 'simulation' %}active{% endif %}">
+                                <span>Chaos Test</span>
+                            </a>
+                        </li>
+                        <li>
+                            <a href="/security" class="nav-link nav-link-sub {% if active_page == 'security' %}active{% endif %}">
+                                <span>Security</span>
+                            </a>
+                        </li>
+                        <li>
+                            <a href="/cost" class="nav-link nav-link-sub {% if active_page == 'cost' %}active{% endif %}">
+                                <span>Cost Impact</span>
+                            </a>
+                        </li>
+                    </ul>
                 </li>
+
+                <!-- Compliance submenu -->
+                <li x-data="{ open: {% if active_page in ['compliance', 'reports'] %}true{% else %}false{% endif %} }">
+                    <button @click="open = !open" class="nav-link nav-link-toggle {% if active_page in ['compliance', 'reports'] %}active{% endif %}" type="button">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2"/>
+                            <rect x="9" y="3" width="6" height="4" rx="1"/>
+                            <path d="M9 14l2 2 4-4"/>
+                        </svg>
+                        <span>Compliance</span>
+                        <svg class="nav-chevron" :class="{ 'nav-chevron-open': open }" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <polyline points="6 9 12 15 18 9"/>
+                        </svg>
+                    </button>
+                    <ul class="nav-submenu" x-show="open" x-transition.duration.200ms>
+                        <li>
+                            <a href="/compliance" class="nav-link nav-link-sub {% if active_page == 'compliance' %}active{% endif %}">
+                                <span>Framework</span>
+                            </a>
+                        </li>
+                        <li>
+                            <a href="/reports" class="nav-link nav-link-sub {% if active_page == 'reports' %}active{% endif %}">
+                                <span>Reports</span>
+                            </a>
+                        </li>
+                    </ul>
+                </li>
+
                 <li>
                     <a href="/analyze" class="nav-link {% if active_page == 'analyze' %}active{% endif %}">
                         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -104,10 +163,20 @@
                         <span>AI Analysis</span>
                     </a>
                 </li>
+
+                <li>
+                    <a href="/settings" class="nav-link {% if active_page == 'settings' %}active{% endif %}">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <circle cx="12" cy="12" r="3"/>
+                            <path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/>
+                        </svg>
+                        <span>Settings</span>
+                    </a>
+                </li>
             </ul>
 
             <div class="sidebar-footer">
-                <a href="/demo" class="btn btn-accent btn-sm btn-block">
+                <a href="/demo" class="btn btn-accent btn-sm btn-block" aria-label="Load demo infrastructure">
                     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                         <polygon points="5 3 19 12 5 21 5 3"/>
                     </svg>
@@ -121,7 +190,7 @@
         </nav>
 
         <!-- Main content -->
-        <main class="main-content">
+        <main class="main-content" role="main" aria-label="Main content">
             <header class="top-bar">
                 <div class="top-bar-left">
                     <h1 class="page-title">{% block page_title %}Dashboard{% endblock %}</h1>
@@ -160,5 +229,18 @@
         </main>
     </div>
     {% block scripts %}{% endblock %}
+    <script>
+    if ('serviceWorker' in navigator) {
+        window.addEventListener('load', function() {
+            navigator.serviceWorker.register('/static/sw.js')
+                .then(function(registration) {
+                    console.log('SW registered: ', registration.scope);
+                })
+                .catch(function(error) {
+                    console.log('SW registration failed: ', error);
+                });
+        });
+    }
+    </script>
 </body>
 </html>

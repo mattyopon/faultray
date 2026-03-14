@@ -1,0 +1,121 @@
+{% extends "base.html" %}
+{% set active_page = "cost" %}
+
+{% block title %}ChaosProof - Cost Impact{% endblock %}
+{% block page_title %}Cost Impact Analysis{% endblock %}
+{% block page_subtitle %}<span class="page-subtitle">Financial risk assessment and ROI modeling</span>{% endblock %}
+
+{% block content %}
+<div class="dashboard-grid">
+    <!-- Annual Risk Exposure -->
+    <div class="card">
+        <div class="card-header">
+            <h3>Annual Risk Exposure</h3>
+        </div>
+        <div class="card-body score-display">
+            <div style="text-align: center;">
+                <div class="score-card-big-value" style="color: var(--red); font-size: 52px;">$2.4M</div>
+                <div class="score-card-label" style="margin-top: 8px;">Estimated Annual Loss</div>
+                <div class="score-card-sub">Based on {{ report.total_scenarios if report else 150 }}+ failure scenarios</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Risk Breakdown Donut -->
+    <div class="card">
+        <div class="card-header">
+            <h3>Risk Breakdown</h3>
+        </div>
+        <div class="card-body" style="display: flex; align-items: center; justify-content: center; gap: 24px; padding: 24px;">
+            <svg viewBox="0 0 160 160" width="140" height="140">
+                <!-- Donut segments: Infrastructure 40%, Security 25%, Compliance 20%, Operational 15% -->
+                <circle cx="80" cy="80" r="60" fill="none" stroke="#1a1f35" stroke-width="20"/>
+                <!-- Infrastructure: 40% = 144deg -->
+                <circle cx="80" cy="80" r="60" fill="none" stroke="var(--red)" stroke-width="20"
+                    stroke-dasharray="150.8 226.2" stroke-dashoffset="0" transform="rotate(-90 80 80)"/>
+                <!-- Security: 25% = 90deg -->
+                <circle cx="80" cy="80" r="60" fill="none" stroke="var(--orange)" stroke-width="20"
+                    stroke-dasharray="94.2 282.7" stroke-dashoffset="-150.8" transform="rotate(-90 80 80)"/>
+                <!-- Compliance: 20% = 72deg -->
+                <circle cx="80" cy="80" r="60" fill="none" stroke="var(--yellow)" stroke-width="20"
+                    stroke-dasharray="75.4 301.6" stroke-dashoffset="-245.0" transform="rotate(-90 80 80)"/>
+                <!-- Operational: 15% = 54deg -->
+                <circle cx="80" cy="80" r="60" fill="none" stroke="var(--blue)" stroke-width="20"
+                    stroke-dasharray="56.5 320.4" stroke-dashoffset="-320.4" transform="rotate(-90 80 80)"/>
+                <text x="80" y="76" text-anchor="middle" fill="#fff" font-size="16" font-weight="800">$2.4M</text>
+                <text x="80" y="94" text-anchor="middle" fill="var(--text-muted)" font-size="9">TOTAL RISK</text>
+            </svg>
+            <div class="donut-legend">
+                <div class="donut-legend-item"><span class="donut-dot" style="background: var(--red);"></span> Infrastructure (40%)</div>
+                <div class="donut-legend-item"><span class="donut-dot" style="background: var(--orange);"></span> Security (25%)</div>
+                <div class="donut-legend-item"><span class="donut-dot" style="background: var(--yellow);"></span> Compliance (20%)</div>
+                <div class="donut-legend-item"><span class="donut-dot" style="background: var(--blue);"></span> Operational (15%)</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Loss Ranking by Scenario (Bar Chart) -->
+    <div class="card card-wide">
+        <div class="card-header">
+            <h3>Loss Ranking by Scenario</h3>
+        </div>
+        <div class="card-body">
+            {% set scenarios = [
+                {"name": "Primary DB failure", "loss": 850000, "pct": 100},
+                {"name": "Load balancer outage", "loss": 620000, "pct": 73},
+                {"name": "Multi-AZ network partition", "loss": 480000, "pct": 56},
+                {"name": "Cache layer failure", "loss": 310000, "pct": 36},
+                {"name": "DNS resolution failure", "loss": 220000, "pct": 26},
+                {"name": "Auth service compromise", "loss": 180000, "pct": 21},
+                {"name": "Message queue overflow", "loss": 120000, "pct": 14},
+                {"name": "CDN provider outage", "loss": 95000, "pct": 11}
+            ] %}
+            <div class="bar-chart">
+                {% for s in scenarios %}
+                <div class="bar-chart-row">
+                    <div class="bar-chart-label">{{ s.name }}</div>
+                    <div class="bar-chart-bar-wrap">
+                        <div class="bar-chart-bar" style="width: {{ s.pct }}%; background: {% if s.pct > 70 %}var(--red){% elif s.pct > 40 %}var(--orange){% else %}var(--yellow){% endif %};"></div>
+                    </div>
+                    <div class="bar-chart-value">${{ "{:,.0f}".format(s.loss) }}</div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+
+    <!-- ROI Calculator -->
+    <div class="card card-wide" x-data="{ cost: 50000, reduction: 60 }">
+        <div class="card-header">
+            <h3>ROI Calculator</h3>
+        </div>
+        <div class="card-body">
+            <div class="roi-grid">
+                <div class="roi-input-group">
+                    <label class="roi-label">Mitigation Cost ($)</label>
+                    <input type="number" class="input-sm" x-model.number="cost" style="width: 100%;" min="0" step="1000">
+                </div>
+                <div class="roi-input-group">
+                    <label class="roi-label">Risk Reduction (%)</label>
+                    <input type="range" x-model.number="reduction" min="0" max="100" style="width: 100%;">
+                    <span class="text-muted" x-text="reduction + '%'"></span>
+                </div>
+                <div class="roi-results">
+                    <div class="roi-result-item">
+                        <div class="roi-result-label">Risk Reduced</div>
+                        <div class="roi-result-value" style="color: var(--green);" x-text="'$' + (2400000 * reduction / 100).toLocaleString(undefined, {maximumFractionDigits: 0})"></div>
+                    </div>
+                    <div class="roi-result-item">
+                        <div class="roi-result-label">Net Savings</div>
+                        <div class="roi-result-value" x-text="'$' + ((2400000 * reduction / 100) - cost).toLocaleString(undefined, {maximumFractionDigits: 0})" :style="(2400000 * reduction / 100 - cost) > 0 ? 'color: var(--green)' : 'color: var(--red)'"></div>
+                    </div>
+                    <div class="roi-result-item">
+                        <div class="roi-result-label">ROI Multiplier</div>
+                        <div class="roi-result-value" style="color: var(--blue);" x-text="cost > 0 ? ((2400000 * reduction / 100) / cost).toFixed(1) + 'x' : 'N/A'"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

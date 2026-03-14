@@ -11,7 +11,7 @@
 
 {% block top_actions %}
 <div class="graph-controls">
-    <button class="btn btn-xs btn-outline" onclick="resetZoom()" title="Reset zoom">
+    <button class="btn btn-xs btn-outline" onclick="resetZoom()" title="Reset zoom" aria-label="Reset graph zoom">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <path d="M3.5 3.5L8 8m0 0V3.5M8 8H3.5"/>
             <path d="M20.5 20.5L16 16m0 0v4.5M16 16h4.5"/>
@@ -20,13 +20,13 @@
         </svg>
         Reset
     </button>
-    <button class="btn btn-xs btn-outline" onclick="zoomIn()" title="Zoom in">
+    <button class="btn btn-xs btn-outline" onclick="zoomIn()" title="Zoom in" aria-label="Zoom in on graph">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
             <line x1="11" y1="8" x2="11" y2="14"/><line x1="8" y1="11" x2="14" y2="11"/>
         </svg>
     </button>
-    <button class="btn btn-xs btn-outline" onclick="zoomOut()" title="Zoom out">
+    <button class="btn btn-xs btn-outline" onclick="zoomOut()" title="Zoom out" aria-label="Zoom out on graph">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
             <line x1="8" y1="11" x2="14" y2="11"/>
@@ -60,7 +60,7 @@
             <span class="legend-item"><span class="legend-ring" style="border-color:#e94560;"></span>Down</span>
         </div>
     </div>
-    <div id="graphCanvas" class="graph-canvas"></div>
+    <div id="graphCanvas" class="graph-canvas" role="img" aria-label="Infrastructure dependency graph visualization"></div>
     <div id="nodeTooltip" class="node-tooltip" style="display:none;"></div>
 </div>
 
