@@ -1,0 +1,413 @@
+{% extends "base.html" %}
+{% set active_page = "templates" %}
+
+{% block title %}Template Gallery - FaultRay{% endblock %}
+{% block page_title %}Template Gallery{% endblock %}
+{% block page_subtitle %}<span class="page-subtitle">Pre-built resilience-optimized infrastructure templates</span>{% endblock %}
+
+{% block head %}
+<style>
+    .category-tabs {
+        display: flex;
+        gap: 0.5rem;
+        margin-bottom: 1.5rem;
+        flex-wrap: wrap;
+    }
+    .category-tab {
+        padding: 0.4rem 1rem;
+        border-radius: 6px;
+        background: var(--card-bg, #1e293b);
+        border: 1px solid var(--border, #334155);
+        color: var(--text-secondary, #94a3b8);
+        cursor: pointer;
+        font-size: 0.85rem;
+        text-decoration: none;
+        transition: all 0.2s;
+    }
+    .category-tab:hover, .category-tab.active {
+        background: var(--accent, #e94560);
+        color: #fff;
+        border-color: var(--accent, #e94560);
+    }
+    .template-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+        gap: 1.25rem;
+    }
+    .template-card {
+        background: var(--card-bg, #1e293b);
+        border: 1px solid var(--border, #334155);
+        border-radius: 10px;
+        padding: 1.25rem;
+        transition: transform 0.2s, box-shadow 0.2s;
+        cursor: pointer;
+        position: relative;
+    }
+    .template-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+        border-color: var(--accent, #e94560);
+    }
+    .template-card-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        margin-bottom: 0.75rem;
+    }
+    .template-card h3 {
+        font-size: 1rem;
+        margin: 0;
+        color: var(--text-primary, #e2e8f0);
+        line-height: 1.3;
+    }
+    .template-card .score-badge {
+        min-width: 42px;
+        text-align: center;
+        padding: 0.2rem 0.5rem;
+        border-radius: 6px;
+        font-weight: bold;
+        font-size: 0.85rem;
+        flex-shrink: 0;
+        margin-left: 0.75rem;
+    }
+    .score-high { background: rgba(16, 185, 129, 0.2); color: #10b981; }
+    .score-mid { background: rgba(245, 158, 11, 0.2); color: #f59e0b; }
+    .score-low { background: rgba(239, 68, 68, 0.2); color: #ef4444; }
+    .template-card p {
+        font-size: 0.85rem;
+        color: var(--text-secondary, #94a3b8);
+        margin: 0 0 0.75rem;
+        line-height: 1.4;
+        display: -webkit-box;
+        -webkit-line-clamp: 3;
+        -webkit-box-orient: vertical;
+        overflow: hidden;
+    }
+    .template-meta {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.5rem;
+        margin-bottom: 0.75rem;
+    }
+    .meta-badge {
+        padding: 0.15rem 0.5rem;
+        border-radius: 4px;
+        font-size: 0.75rem;
+        background: rgba(100, 116, 139, 0.2);
+        color: var(--text-secondary, #94a3b8);
+    }
+    .diff-starter { background: rgba(16, 185, 129, 0.15); color: #10b981; }
+    .diff-intermediate { background: rgba(245, 158, 11, 0.15); color: #f59e0b; }
+    .diff-advanced { background: rgba(239, 68, 68, 0.15); color: #ef4444; }
+    .diff-expert { background: rgba(168, 85, 247, 0.15); color: #a855f7; }
+    .template-footer {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        border-top: 1px solid var(--border, #334155);
+        padding-top: 0.75rem;
+        margin-top: 0.5rem;
+    }
+    .template-cost {
+        font-size: 0.8rem;
+        color: var(--text-secondary, #94a3b8);
+    }
+    .template-actions {
+        display: flex;
+        gap: 0.5rem;
+    }
+    .template-actions .btn {
+        padding: 0.3rem 0.75rem;
+        font-size: 0.8rem;
+    }
+
+    /* Detail modal */
+    .template-detail-overlay {
+        display: none;
+        position: fixed;
+        inset: 0;
+        background: rgba(0,0,0,0.7);
+        z-index: 1000;
+        justify-content: center;
+        align-items: flex-start;
+        padding: 2rem;
+        overflow-y: auto;
+    }
+    .template-detail-overlay.active {
+        display: flex;
+    }
+    .template-detail {
+        background: var(--card-bg, #1e293b);
+        border: 1px solid var(--border, #334155);
+        border-radius: 12px;
+        max-width: 800px;
+        width: 100%;
+        padding: 2rem;
+        position: relative;
+        margin-top: 2rem;
+    }
+    .template-detail .close-btn {
+        position: absolute;
+        top: 1rem;
+        right: 1rem;
+        background: none;
+        border: none;
+        color: var(--text-secondary, #94a3b8);
+        font-size: 1.5rem;
+        cursor: pointer;
+    }
+    .template-detail h2 {
+        margin-top: 0;
+        color: var(--text-primary, #e2e8f0);
+    }
+    .template-detail .detail-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 0.75rem;
+        margin: 1rem 0;
+    }
+    .detail-item {
+        display: flex;
+        flex-direction: column;
+    }
+    .detail-item label {
+        font-size: 0.75rem;
+        color: var(--text-secondary, #94a3b8);
+        margin-bottom: 0.2rem;
+    }
+    .detail-item span {
+        font-size: 0.95rem;
+        color: var(--text-primary, #e2e8f0);
+    }
+    .mermaid-block {
+        background: #0f172a;
+        border-radius: 8px;
+        padding: 1rem;
+        margin: 1rem 0;
+        font-family: monospace;
+        font-size: 0.85rem;
+        white-space: pre;
+        overflow-x: auto;
+        color: #94a3b8;
+    }
+    .bp-list {
+        list-style: none;
+        padding: 0;
+        margin: 0.5rem 0;
+    }
+    .bp-list li {
+        padding: 0.3rem 0;
+        color: var(--text-secondary, #94a3b8);
+        font-size: 0.85rem;
+    }
+    .bp-list li::before {
+        content: "\2713  ";
+        color: #10b981;
+    }
+    .compliance-tags {
+        display: flex;
+        gap: 0.4rem;
+        flex-wrap: wrap;
+    }
+    .compliance-tag {
+        padding: 0.15rem 0.5rem;
+        border-radius: 4px;
+        font-size: 0.75rem;
+        background: rgba(59, 130, 246, 0.15);
+        color: #3b82f6;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div x-data="templateGallery()">
+
+    <!-- Category filter tabs -->
+    <div class="category-tabs">
+        <a href="/templates"
+           class="category-tab {% if not active_category %}active{% endif %}">All</a>
+        {% for cat in categories %}
+        <a href="/templates?category={{ cat }}"
+           class="category-tab {% if active_category == cat %}active{% endif %}">
+            {{ cat | replace('_', ' ') | title }}
+        </a>
+        {% endfor %}
+    </div>
+
+    <!-- Template grid -->
+    <div class="template-grid">
+        {% for t in gallery_templates %}
+        <div class="template-card" @click="showDetail('{{ t.id }}')">
+            <div class="template-card-header">
+                <h3>{{ t.name }}</h3>
+                <span class="score-badge {% if t.resilience_score >= 80 %}score-high{% elif t.resilience_score >= 50 %}score-mid{% else %}score-low{% endif %}">
+                    {{ t.resilience_score | int }}
+                </span>
+            </div>
+            <p>{{ t.description }}</p>
+            <div class="template-meta">
+                <span class="meta-badge diff-{{ t.difficulty }}">{{ t.difficulty }}</span>
+                <span class="meta-badge">{{ t.category_value | replace('_', ' ') }}</span>
+                <span class="meta-badge">{{ t.cloud_provider }}</span>
+                {% for c in t.compliance %}
+                <span class="meta-badge" style="background: rgba(59,130,246,0.15); color: #3b82f6;">{{ c }}</span>
+                {% endfor %}
+            </div>
+            <div class="template-footer">
+                <span class="template-cost">{{ t.estimated_monthly_cost }}/mo</span>
+                <div class="template-actions" @click.stop>
+                    <button class="btn btn-sm btn-accent" @click="useTemplate('{{ t.id }}')">Use Template</button>
+                    <button class="btn btn-sm" @click="showDetail('{{ t.id }}')">Details</button>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+
+    {% if not gallery_templates %}
+    <div style="text-align: center; padding: 3rem; color: var(--text-secondary, #94a3b8);">
+        <p>No templates found for this category.</p>
+        <a href="/templates" class="btn btn-accent">Show All Templates</a>
+    </div>
+    {% endif %}
+
+    <!-- Detail overlay -->
+    <div class="template-detail-overlay" :class="{ active: selectedTemplate }" @click.self="selectedTemplate = null">
+        <div class="template-detail" x-show="selectedTemplate">
+            <button class="close-btn" @click="selectedTemplate = null">&times;</button>
+            <template x-if="selectedTemplate">
+                <div>
+                    <h2 x-text="selectedTemplate.name"></h2>
+                    <p x-text="selectedTemplate.description" style="color: var(--text-secondary)"></p>
+
+                    <div class="detail-grid">
+                        <div class="detail-item">
+                            <label>Category</label>
+                            <span x-text="selectedTemplate.category.replace('_', ' ')"></span>
+                        </div>
+                        <div class="detail-item">
+                            <label>Architecture</label>
+                            <span x-text="selectedTemplate.architecture_style"></span>
+                        </div>
+                        <div class="detail-item">
+                            <label>Target Availability</label>
+                            <span x-text="selectedTemplate.target_nines + ' nines'"></span>
+                        </div>
+                        <div class="detail-item">
+                            <label>Monthly Cost</label>
+                            <span x-text="selectedTemplate.estimated_monthly_cost"></span>
+                        </div>
+                        <div class="detail-item">
+                            <label>Resilience Score</label>
+                            <span x-text="selectedTemplate.resilience_score + '/100'"></span>
+                        </div>
+                        <div class="detail-item">
+                            <label>Difficulty</label>
+                            <span x-text="selectedTemplate.difficulty"></span>
+                        </div>
+                        <div class="detail-item">
+                            <label>Cloud Provider</label>
+                            <span x-text="selectedTemplate.cloud_provider"></span>
+                        </div>
+                        <div class="detail-item">
+                            <label>Components</label>
+                            <span x-text="selectedTemplate.components.length"></span>
+                        </div>
+                    </div>
+
+                    <template x-if="selectedTemplate.compliance && selectedTemplate.compliance.length > 0">
+                        <div>
+                            <h4>Compliance</h4>
+                            <div class="compliance-tags">
+                                <template x-for="c in selectedTemplate.compliance">
+                                    <span class="compliance-tag" x-text="c"></span>
+                                </template>
+                            </div>
+                        </div>
+                    </template>
+
+                    <template x-if="selectedTemplate.best_practices && selectedTemplate.best_practices.length > 0">
+                        <div>
+                            <h4>Best Practices</h4>
+                            <ul class="bp-list">
+                                <template x-for="bp in selectedTemplate.best_practices">
+                                    <li x-text="bp"></li>
+                                </template>
+                            </ul>
+                        </div>
+                    </template>
+
+                    <template x-if="selectedTemplate.diagram_mermaid">
+                        <div>
+                            <h4>Architecture Diagram</h4>
+                            <div class="mermaid-block" x-text="selectedTemplate.diagram_mermaid"></div>
+                        </div>
+                    </template>
+
+                    <h4>Components</h4>
+                    <table style="width: 100%; font-size: 0.85rem;">
+                        <thead>
+                            <tr style="color: var(--text-secondary); border-bottom: 1px solid var(--border);">
+                                <th style="text-align: left; padding: 0.4rem;">ID</th>
+                                <th style="text-align: left; padding: 0.4rem;">Name</th>
+                                <th style="text-align: left; padding: 0.4rem;">Type</th>
+                                <th style="text-align: right; padding: 0.4rem;">Replicas</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <template x-for="comp in selectedTemplate.components">
+                                <tr style="border-bottom: 1px solid rgba(51,65,85,0.5);">
+                                    <td style="padding: 0.4rem; color: #06b6d4;" x-text="comp.id"></td>
+                                    <td style="padding: 0.4rem;" x-text="comp.name"></td>
+                                    <td style="padding: 0.4rem;" x-text="comp.type"></td>
+                                    <td style="padding: 0.4rem; text-align: right;" x-text="comp.replicas || 1"></td>
+                                </tr>
+                            </template>
+                        </tbody>
+                    </table>
+
+                    <div style="margin-top: 1.5rem; display: flex; gap: 0.75rem;">
+                        <button class="btn btn-accent" @click="useTemplate(selectedTemplate.id)">Use This Template</button>
+                        <button class="btn" @click="selectedTemplate = null">Close</button>
+                    </div>
+                </div>
+            </template>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+function templateGallery() {
+    return {
+        selectedTemplate: null,
+        templates: {{ gallery_templates | tojson }},
+
+        showDetail(templateId) {
+            this.selectedTemplate = this.templates.find(t => t.id === templateId) || null;
+        },
+
+        async useTemplate(templateId) {
+            try {
+                const resp = await fetch(`/api/templates/${templateId}`);
+                if (resp.ok) {
+                    const data = await resp.json();
+                    // Create a download link for the YAML
+                    const yamlResp = await fetch(`/api/templates/${templateId}`);
+                    const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+                    const url = URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = templateId + '.json';
+                    a.click();
+                    URL.revokeObjectURL(url);
+                }
+            } catch (e) {
+                console.error('Failed to download template:', e);
+            }
+        }
+    };
+}
+</script>
+{% endblock %}

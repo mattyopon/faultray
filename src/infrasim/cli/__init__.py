@@ -66,9 +66,19 @@ import infrasim.cli.sre_maturity_cmd  # noqa: F401
 import infrasim.cli.postmortem_cmd  # noqa: F401
 import infrasim.cli.env_compare_cmd  # noqa: F401
 import infrasim.cli.template_cmd  # noqa: F401
+import infrasim.cli.team_cmd  # noqa: F401
 import infrasim.cli.compliance_monitor_cmd  # noqa: F401
 import infrasim.cli.gate_cmd  # noqa: F401
 import infrasim.cli.war_room_cmd  # noqa: F401
 import infrasim.cli.cost_optimize_cmd  # noqa: F401
+import infrasim.cli.antipattern_cmd  # noqa: F401
+import infrasim.cli.ab_test_cmd  # noqa: F401
+import infrasim.cli.fmea_cmd  # noqa: F401
+import infrasim.cli.monkey_cmd  # noqa: F401
+import infrasim.cli.import_metrics_cmd  # noqa: F401
+import infrasim.cli.budget_cmd  # noqa: F401
+import infrasim.cli.velocity_cmd  # noqa: F401
+import infrasim.cli.attack_surface_cmd  # noqa: F401
+import infrasim.cli.score_cmd  # noqa: F401
 
 __all__ = ["app", "_print_dynamic_results"]
