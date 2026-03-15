@@ -17,7 +17,15 @@ def diff_command(
     after: Path = typer.Argument(..., help="Path to the 'after' results JSON file"),
     json_output: bool = typer.Option(False, "--json", help="Output JSON summary"),
 ) -> None:
-    """Compare two simulation result files and show differences."""
+    """Compare two simulation result files and show differences.
+
+    Examples:
+        # Compare two result files
+        chaosproof diff before.json after.json
+
+        # JSON output for CI/CD
+        chaosproof diff before.json after.json --json
+    """
     if not before.exists():
         console.print(f"[red]File not found: {before}[/]")
         raise typer.Exit(1)

@@ -29,7 +29,15 @@ def config_show(
         None, "--path", "-p", help="Config file path (default: ~/.chaosproof/config.yaml)"
     ),
 ) -> None:
-    """Show current ChaosProof configuration."""
+    """Show current ChaosProof configuration.
+
+    Examples:
+        # Show all configuration
+        chaosproof config show
+
+        # Show config from a custom path
+        chaosproof config show --path /etc/chaosproof/config.yaml
+    """
     import yaml as yaml_lib
 
     config_path = path or DEFAULT_CONFIG_PATH
@@ -60,7 +68,18 @@ def config_set(
         None, "--path", "-p", help="Config file path (default: ~/.chaosproof/config.yaml)"
     ),
 ) -> None:
-    """Set a ChaosProof configuration value."""
+    """Set a ChaosProof configuration value.
+
+    Examples:
+        # Set max scenarios
+        chaosproof config set simulation.max_scenarios 200
+
+        # Set daemon interval
+        chaosproof config set daemon.interval_seconds 1800
+
+        # Set with custom config path
+        chaosproof config set ui.theme dark --path /etc/chaosproof/config.yaml
+    """
     config_path = path or DEFAULT_CONFIG_PATH
     config = load_config(config_path)
 

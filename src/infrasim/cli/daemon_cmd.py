@@ -50,7 +50,24 @@ def daemon_command(
     pagerduty_key: str | None = typer.Option(None, "--pagerduty-key", help="PagerDuty routing key"),
     teams_webhook: str | None = typer.Option(None, "--teams-webhook", help="Microsoft Teams webhook URL"),
 ) -> None:
-    """Run continuous monitoring daemon that scans infrastructure on interval."""
+    """Run continuous monitoring daemon that scans infrastructure on interval.
+
+    Examples:
+        # Start daemon with default 1-hour interval
+        chaosproof daemon
+
+        # Custom interval
+        chaosproof daemon --interval 30m
+
+        # Monitor with Slack notifications
+        chaosproof daemon --slack-webhook https://hooks.slack.com/...
+
+        # Monitor with PagerDuty alerts
+        chaosproof daemon --pagerduty-key ROUTING_KEY
+
+        # Custom model and 15-minute interval
+        chaosproof daemon --model my-model.json --interval 15m
+    """
     if not model.exists():
         console.print(f"[red]Model file not found: {model}[/]")
         console.print("Run [cyan]infrasim scan[/] first to create a model.")

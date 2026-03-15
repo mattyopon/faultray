@@ -21,6 +21,37 @@ console = Console()
 DEFAULT_MODEL_PATH = Path("chaosproof-model.json")
 
 
+def _version_callback(value: bool) -> None:
+    if value:
+        from infrasim import __version__
+
+        print(f"ChaosProof v{__version__}")
+        raise typer.Exit()
+
+
+@app.callback()
+def main(
+    version: bool = typer.Option(
+        False, "--version", "-V", callback=_version_callback, is_eager=True,
+        help="Show version and exit.",
+    ),
+    verbose: bool = typer.Option(
+        False, "--verbose", "-v",
+        help="Enable verbose logging (INFO level).",
+    ),
+    debug: bool = typer.Option(
+        False, "--debug",
+        help="Enable debug logging (DEBUG level).",
+    ),
+) -> None:
+    """ChaosProof — Zero-risk infrastructure chaos engineering simulator."""
+    if debug or verbose:
+        from infrasim.log_config import setup_logging
+
+        level = "DEBUG" if debug else "INFO"
+        setup_logging(level=level)
+
+
 def _print_dynamic_results(results: list, con: Console) -> None:
     """Print a summary of dynamic simulation results to the console."""
     if not results:

@@ -622,7 +622,30 @@ def evaluate(
     ops_days: int = typer.Option(7, "--ops-days", help="Ops simulation duration in days"),
     max_scenarios: int = typer.Option(0, "--max-scenarios", help="Max static scenarios (0=default)"),
 ) -> None:
-    """Run all 5 simulation engines and produce a unified evaluation report."""
+    """Run all 5 simulation engines and produce a unified evaluation report.
+
+    Examples:
+        # Full evaluation with default model
+        chaosproof evaluate
+
+        # Evaluate a specific model
+        chaosproof evaluate --model my-model.json
+
+        # Compare two models side by side
+        chaosproof evaluate --model model-a.json --compare model-b.json
+
+        # Export cross-engine HTML report
+        chaosproof evaluate --html evaluation.html
+
+        # JSON output for automation
+        chaosproof evaluate --json
+
+        # Custom ops simulation duration
+        chaosproof evaluate --ops-days 14
+
+        # Limit static simulation scenarios
+        chaosproof evaluate --max-scenarios 100
+    """
     from rich.panel import Panel
 
     resolved_model = file if file is not None else model

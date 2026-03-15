@@ -20,7 +20,15 @@ def analyze(
     yaml_file: Path = typer.Argument(..., help="Infrastructure YAML file"),
     json_output: bool = typer.Option(False, "--json", help="Output as JSON"),
 ) -> None:
-    """AI-powered analysis with recommendations (AI analysis + recommendations)."""
+    """AI-powered analysis with recommendations (AI analysis + recommendations).
+
+    Examples:
+        # Run AI analysis on YAML model
+        chaosproof analyze infra.yaml
+
+        # JSON output
+        chaosproof analyze infra.yaml --json
+    """
     import json as json_mod
 
     from infrasim.ai.analyzer import InfraSimAnalyzer
@@ -60,7 +68,15 @@ def dora_report(
     yaml_file: Path = typer.Argument(..., help="Infrastructure YAML file"),
     output: Path = typer.Option(Path("dora-report.html"), "--output", "-o", help="Output HTML file path"),
 ) -> None:
-    """Generate DORA compliance report (DORA compliance report generation)."""
+    """Generate DORA compliance report (DORA compliance report generation).
+
+    Examples:
+        # Generate DORA report
+        chaosproof dora-report infra.yaml
+
+        # Custom output path
+        chaosproof dora-report infra.yaml --output my-dora-report.html
+    """
     from infrasim.ai.analyzer import InfraSimAnalyzer
     from infrasim.model.loader import load_yaml
     from infrasim.reporter.compliance import generate_dora_report
@@ -95,7 +111,18 @@ def executive(
     html: Path = typer.Option(None, "--html", help="Export executive summary HTML report"),
     json_output: bool = typer.Option(False, "--json", help="Output as JSON"),
 ) -> None:
-    """Generate executive summary report for C-level stakeholders."""
+    """Generate executive summary report for C-level stakeholders.
+
+    Examples:
+        # Generate executive summary
+        chaosproof executive infra.yaml
+
+        # Export as HTML
+        chaosproof executive infra.yaml --html executive-summary.html
+
+        # JSON output
+        chaosproof executive infra.yaml --json
+    """
     import dataclasses
     import json as json_mod
 
