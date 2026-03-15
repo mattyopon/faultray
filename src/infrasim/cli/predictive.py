@@ -20,7 +20,18 @@ def predict(
     horizon: int = typer.Option(90, "--horizon", help="Prediction horizon in days"),
     json_output: bool = typer.Option(False, "--json", help="Output as JSON"),
 ) -> None:
-    """Predict future failures from degradation trends and MTBF data."""
+    """Predict future failures from degradation trends and MTBF data.
+
+    Examples:
+        # Default 90-day prediction
+        chaosproof predict infra.yaml
+
+        # Predict over 180 days
+        chaosproof predict infra.yaml --horizon 180
+
+        # JSON output
+        chaosproof predict infra.yaml --json
+    """
     from infrasim.model.loader import load_yaml
     from infrasim.simulator.predictive_engine import PredictiveEngine
 
@@ -105,7 +116,15 @@ def markov(
     yaml_file: Path = typer.Argument(..., help="Infrastructure YAML file"),
     json_output: bool = typer.Option(False, "--json", help="Output as JSON"),
 ) -> None:
-    """Compute Markov chain steady-state availability for each component."""
+    """Compute Markov chain steady-state availability for each component.
+
+    Examples:
+        # Run Markov analysis
+        chaosproof markov infra.yaml
+
+        # JSON output
+        chaosproof markov infra.yaml --json
+    """
     from infrasim.model.loader import load_yaml
     from infrasim.simulator.markov_model import compute_system_markov
 
@@ -163,7 +182,15 @@ def bayesian(
     yaml_file: Path = typer.Argument(..., help="Infrastructure YAML file"),
     json_output: bool = typer.Option(False, "--json", help="Output as JSON"),
 ) -> None:
-    """Compute Bayesian conditional failure probabilities."""
+    """Compute Bayesian conditional failure probabilities.
+
+    Examples:
+        # Run Bayesian analysis
+        chaosproof bayesian infra.yaml
+
+        # JSON output
+        chaosproof bayesian infra.yaml --json
+    """
     from infrasim.model.loader import load_yaml
     from infrasim.simulator.bayesian_model import BayesianEngine
 
@@ -219,7 +246,15 @@ def gameday(
     plan: Path = typer.Option(..., "--plan", "-p", help="Game Day plan YAML file"),
     json_output: bool = typer.Option(False, "--json", help="Output as JSON"),
 ) -> None:
-    """Execute a Game Day exercise against an infrastructure model."""
+    """Execute a Game Day exercise against an infrastructure model.
+
+    Examples:
+        # Run a game day exercise
+        chaosproof gameday infra.yaml --plan gameday-plan.yaml
+
+        # JSON output
+        chaosproof gameday infra.yaml --plan gameday-plan.yaml --json
+    """
     import yaml
 
     from infrasim.model.loader import load_yaml

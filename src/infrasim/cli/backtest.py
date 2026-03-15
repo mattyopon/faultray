@@ -33,7 +33,18 @@ def backtest(
         help="Load from YAML instead (overrides infra_file).",
     ),
 ) -> None:
-    """Validate ChaosProof predictions against real incidents."""
+    """Validate ChaosProof predictions against real incidents.
+
+    Examples:
+        # Run backtest with incidents file
+        chaosproof backtest infra.yaml --incidents incidents.json
+
+        # JSON output
+        chaosproof backtest infra.yaml --incidents incidents.json --json
+
+        # Use YAML override
+        chaosproof backtest model.json --yaml infra.yaml --incidents incidents.json
+    """
     from infrasim.simulator.backtest_engine import BacktestEngine
 
     # Load graph

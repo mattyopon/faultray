@@ -24,7 +24,18 @@ def demo(
     host: str = typer.Option("0.0.0.0", "--host", help="Web dashboard bind host"),
     port: int = typer.Option(8080, "--port", "-p", help="Web dashboard bind port"),
 ) -> None:
-    """Run simulation with a demo infrastructure (no scanning required)."""
+    """Run simulation with a demo infrastructure (no scanning required).
+
+    Examples:
+        # Run demo simulation
+        chaosproof demo
+
+        # Run demo and launch web dashboard
+        chaosproof demo --web
+
+        # Demo with custom port
+        chaosproof demo --web --port 3000
+    """
     from infrasim.model.demo import create_demo_graph
 
     console.print("[cyan]Building demo infrastructure...[/]")
@@ -60,7 +71,21 @@ def serve(
     prometheus_url: str | None = typer.Option(None, "--prometheus-url", help="Prometheus URL for continuous monitoring"),
     prometheus_interval: int = typer.Option(60, "--prometheus-interval", help="Prometheus polling interval in seconds"),
 ) -> None:
-    """Launch web dashboard."""
+    """Launch web dashboard.
+
+    Examples:
+        # Start dashboard on default port
+        chaosproof serve
+
+        # Use a specific model
+        chaosproof serve --model my-model.json
+
+        # Custom host and port
+        chaosproof serve --host 127.0.0.1 --port 3000
+
+        # Enable Prometheus continuous monitoring
+        chaosproof serve --prometheus-url http://prometheus:9090 --prometheus-interval 30
+    """
     import os
 
     import uvicorn
@@ -92,7 +117,15 @@ def report(
     model: Path = typer.Option(DEFAULT_MODEL_PATH, "--model", "-m", help="Model file path"),
     output: Path = typer.Option(Path("report.html"), "--output", "-o", help="Output HTML file path"),
 ) -> None:
-    """Generate an HTML report from a saved model (runs simulation automatically)."""
+    """Generate an HTML report from a saved model (runs simulation automatically).
+
+    Examples:
+        # Generate report with default model
+        chaosproof report
+
+        # Custom model and output path
+        chaosproof report --model my-model.json --output results.html
+    """
     from infrasim.reporter.html_report import save_html_report
 
     if not model.exists():
@@ -125,7 +158,24 @@ def plan(
     json_output: bool = typer.Option(False, "--json", help="Output plan as JSON"),
     html: Path | None = typer.Option(None, "--html", help="Export plan as HTML report"),
 ) -> None:
-    """Generate a phased remediation plan with timeline, team requirements, and ROI."""
+    """Generate a phased remediation plan with timeline, team requirements, and ROI.
+
+    Examples:
+        # Generate plan for default model
+        chaosproof plan
+
+        # Plan for a specific model
+        chaosproof plan my-model.json
+
+        # Set target score and budget
+        chaosproof plan --target-score 95 --budget 50000
+
+        # JSON output for automation
+        chaosproof plan --json
+
+        # Export plan as HTML
+        chaosproof plan --html plan-report.html
+    """
     from rich.panel import Panel
     from rich.table import Table
 

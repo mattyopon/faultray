@@ -41,7 +41,33 @@ def scan(
         None, "--save-yaml", help="Export discovered model as YAML to this path"
     ),
 ) -> None:
-    """Scan local system and build infrastructure model."""
+    """Discover infrastructure and build model.
+
+    Examples:
+        # Auto-discover AWS infrastructure
+        chaosproof scan --aws --region us-east-1
+
+        # Scan AWS with a named profile
+        chaosproof scan --aws --profile prod --region ap-northeast-1
+
+        # Scan Kubernetes cluster
+        chaosproof scan --k8s --context prod --namespace default
+
+        # Scan GCP project
+        chaosproof scan --gcp --project my-project
+
+        # Scan Azure subscription
+        chaosproof scan --azure --subscription SUB_ID --resource-group my-rg
+
+        # Discover from Prometheus
+        chaosproof scan --prometheus-url http://localhost:9090
+
+        # Local system scan with custom output
+        chaosproof scan --output model.json
+
+        # Scan and export as YAML
+        chaosproof scan --aws --save-yaml infra.yaml
+    """
     if aws:
         from infrasim.discovery.aws_scanner import AWSScanner
 
@@ -165,7 +191,15 @@ def load(
     yaml_file: Path = typer.Argument(..., help="Path to YAML infrastructure definition"),
     output: Path = typer.Option(DEFAULT_MODEL_PATH, "--output", "-o", help="Output model file path"),
 ) -> None:
-    """Load infrastructure model from a YAML file."""
+    """Load infrastructure model from a YAML file.
+
+    Examples:
+        # Load from YAML
+        chaosproof load infra.yaml
+
+        # Load and save to custom output path
+        chaosproof load infra.yaml --output custom-model.json
+    """
     from infrasim.model.loader import load_yaml
 
     console.print(f"[cyan]Loading infrastructure from {yaml_file}...[/]")
@@ -189,7 +223,15 @@ def load(
 def show(
     model: Path = typer.Option(DEFAULT_MODEL_PATH, "--model", "-m", help="Model file path"),
 ) -> None:
-    """Show infrastructure model summary."""
+    """Show infrastructure model summary.
+
+    Examples:
+        # Show default model
+        chaosproof show
+
+        # Show a specific model file
+        chaosproof show --model my-model.json
+    """
     if not model.exists():
         console.print(f"[red]Model file not found: {model}[/]")
         console.print("[dim]Try: infrasim scan --aws  (auto-discover)[/]")
@@ -227,7 +269,21 @@ def tf_import(
     ),
     output: Path = typer.Option(DEFAULT_MODEL_PATH, "--output", "-o", help="Output model file path"),
 ) -> None:
-    """Import infrastructure from Terraform state."""
+    """Import infrastructure from Terraform state.
+
+    Examples:
+        # Import from Terraform state file
+        chaosproof tf-import --state terraform.tfstate
+
+        # Import by running terraform show in a directory
+        chaosproof tf-import --dir ./terraform/
+
+        # Import from current directory
+        chaosproof tf-import
+
+        # Import and save to custom output
+        chaosproof tf-import --state terraform.tfstate -o my-model.json
+    """
     from infrasim.discovery.terraform import load_hcl_directory, load_tf_state_cmd, load_tf_state_file
 
     if tf_state:
@@ -264,7 +320,21 @@ def calibrate(
     output: Path | None = typer.Option(None, "--output", "-o", help="Save calibrated model to this path"),
     yaml_file: Path | None = typer.Option(None, "--yaml", "-y", help="YAML file with infrastructure definition"),
 ) -> None:
-    """Calibrate simulation models using real-world metrics from Prometheus or CloudWatch."""
+    """Calibrate simulation models using real-world metrics from Prometheus or CloudWatch.
+
+    Examples:
+        # Calibrate from Prometheus
+        chaosproof calibrate --prometheus http://prometheus:9090
+
+        # Calibrate from AWS CloudWatch
+        chaosproof calibrate --cloudwatch --region us-east-1
+
+        # Calibrate and save to a new file
+        chaosproof calibrate --prometheus http://prometheus:9090 -o calibrated.json
+
+        # Calibrate a YAML model
+        chaosproof calibrate --yaml infra.yaml --prometheus http://prometheus:9090
+    """
     from rich.table import Table
 
     from infrasim.cli.main import _load_graph_for_analysis
@@ -329,9 +399,16 @@ def tf_plan(
 ) -> None:
     """Analyze a Terraform plan for change impact and cascade risks.
 
-    Usage:
-      terraform plan -out=plan.out
-      infrasim tf-plan plan.out
+    Examples:
+        # Analyze a Terraform plan file
+        terraform plan -out=plan.out
+        chaosproof tf-plan plan.out
+
+        # Analyze with HTML report
+        chaosproof tf-plan plan.out --html impact-report.html
+
+        # Specify Terraform directory
+        chaosproof tf-plan plan.out --dir ./terraform/
     """
     from infrasim.discovery.terraform import load_tf_plan_cmd
 

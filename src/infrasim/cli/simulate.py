@@ -161,7 +161,45 @@ def simulate(
     baseline: Path | None = typer.Option(None, "--baseline", help="Compare against a previous baseline JSON file"),
     save_baseline: Path | None = typer.Option(None, "--save-baseline", help="Save current results as a baseline JSON file"),
 ) -> None:
-    """Run chaos simulation against infrastructure model."""
+    """Run chaos simulation against infrastructure model.
+
+    Examples:
+        # Basic simulation
+        chaosproof simulate
+
+        # Simulate with a specific model
+        chaosproof simulate --model my-model.json
+
+        # Run dynamic time-stepped simulation
+        chaosproof simulate --dynamic
+
+        # Run with AI analysis
+        chaosproof simulate --analyze
+
+        # Export HTML report
+        chaosproof simulate --html report.html
+
+        # Export Markdown report
+        chaosproof simulate --md report.md
+
+        # JSON output for CI/CD pipelines
+        chaosproof simulate --json
+
+        # Limit scenario count
+        chaosproof simulate --max-scenarios 50
+
+        # Save baseline for regression detection
+        chaosproof simulate --save-baseline baseline.json
+
+        # Compare against a baseline
+        chaosproof simulate --baseline baseline.json
+
+        # Load custom plugins
+        chaosproof simulate --plugins-dir ./my-plugins/
+
+        # Send notifications on completion
+        chaosproof simulate --slack-webhook https://hooks.slack.com/...
+    """
     if not model.exists():
         console.print(f"[red]Model file not found: {model}[/]")
         console.print("Run [cyan]infrasim scan[/] first to create a model.")
@@ -310,7 +348,24 @@ def dynamic(
     step: int = typer.Option(5, "--step", help="Time step interval in seconds"),
     json_output: bool = typer.Option(False, "--json", help="Output JSON summary"),
 ) -> None:
-    """Run dynamic time-stepped chaos simulation with realistic traffic patterns."""
+    """Run dynamic time-stepped chaos simulation with realistic traffic patterns.
+
+    Examples:
+        # Run dynamic simulation with defaults
+        chaosproof dynamic
+
+        # Custom duration and step interval
+        chaosproof dynamic --duration 600 --step 10
+
+        # Export HTML report
+        chaosproof dynamic --html dynamic-report.html
+
+        # JSON output
+        chaosproof dynamic --json
+
+        # Use a specific model
+        chaosproof dynamic --model my-model.json
+    """
     if not model.exists():
         console.print(f"[red]Model file not found: {model}[/]")
         console.print("Run [cyan]infrasim scan[/] first to create a model.")

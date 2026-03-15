@@ -20,6 +20,16 @@ def feed_update(
     Fetches articles from security news RSS/Atom feeds, analyzes them for
     infrastructure incident patterns, and generates chaos scenarios that are
     stored locally for future simulations.
+
+    Examples:
+        # Update feeds with default settings
+        chaosproof feed-update
+
+        # Use a specific model for component-aware scenarios
+        chaosproof feed-update --model my-model.json
+
+        # Custom HTTP timeout
+        chaosproof feed-update --timeout 30
     """
     from infrasim.feeds.analyzer import analyze_articles, incidents_to_scenarios
     from infrasim.feeds.fetcher import fetch_all_feeds
@@ -108,7 +118,12 @@ def feed_update(
 
 @app.command()
 def feed_list() -> None:
-    """Show stored feed-generated scenarios and statistics."""
+    """Show stored feed-generated scenarios and statistics.
+
+    Examples:
+        # List all stored feed scenarios
+        chaosproof feed-list
+    """
     from infrasim.feeds.store import get_store_stats, load_store_raw
 
     stats = get_store_stats()
@@ -163,7 +178,12 @@ def feed_list() -> None:
 
 @app.command()
 def feed_sources() -> None:
-    """Show configured feed sources."""
+    """Show configured feed sources.
+
+    Examples:
+        # List all configured feed sources
+        chaosproof feed-sources
+    """
     from infrasim.feeds.sources import DEFAULT_SOURCES
 
     from rich.table import Table
@@ -191,7 +211,12 @@ def feed_sources() -> None:
 
 @app.command()
 def feed_clear() -> None:
-    """Clear all stored feed-generated scenarios."""
+    """Clear all stored feed-generated scenarios.
+
+    Examples:
+        # Clear the feed scenario store
+        chaosproof feed-clear
+    """
     from infrasim.feeds.store import clear_store, get_store_stats
 
     stats = get_store_stats()

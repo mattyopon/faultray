@@ -64,7 +64,24 @@ def quickstart(
         help="Open the web dashboard after simulation.",
     ),
 ) -> None:
-    """Interactive quickstart -- generate infrastructure YAML and run first simulation."""
+    """Interactive quickstart -- generate infrastructure YAML and run first simulation.
+
+    Examples:
+        # Interactive mode (prompts for choices)
+        chaosproof quickstart
+
+        # Non-interactive with template
+        chaosproof quickstart --template fintech
+
+        # Use ecommerce template with custom output
+        chaosproof quickstart --template ecommerce --output my-infra.yaml
+
+        # Skip simulation
+        chaosproof quickstart --template saas --no-simulate
+
+        # Generate and open web dashboard
+        chaosproof quickstart --template web-app --web
+    """
     console.print(Panel(
         "[bold cyan]ChaosProof Quickstart[/]\n\n"
         "This wizard helps you get started with ChaosProof in seconds.\n"
