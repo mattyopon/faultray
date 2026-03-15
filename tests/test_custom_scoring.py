@@ -481,3 +481,183 @@ rules:
         graph = _make_graph(_make_component("app1"))
         with pytest.raises(ValueError, match="Expected YAML mapping"):
             CustomScoringEngine.from_yaml(graph, config_path)
+
+    def test_invalid_rules_not_list(self, tmp_path):
+        yaml_content = """
+rules: "not a list"
+"""
+        config_path = tmp_path / "bad.yaml"
+        config_path.write_text(yaml_content)
+
+        graph = _make_graph(_make_component("app1"))
+        with pytest.raises(ValueError, match="'rules' must be a list"):
+            CustomScoringEngine.from_yaml(graph, config_path)
+
+    def test_invalid_rule_entry_not_dict(self, tmp_path):
+        yaml_content = """
+rules:
+  - "just a string"
+"""
+        config_path = tmp_path / "bad.yaml"
+        config_path.write_text(yaml_content)
+
+        graph = _make_graph(_make_component("app1"))
+        with pytest.raises(ValueError, match="must be a mapping"):
+            CustomScoringEngine.from_yaml(graph, config_path)
+
+    def test_model_name_defaults_to_filename(self, tmp_path):
+        yaml_content = """
+rules:
+  - name: "test"
+    check: min_replicas
+    params: {component_type: database, min: 1}
+"""
+        config_path = tmp_path / "my-policy.yaml"
+        config_path.write_text(yaml_content)
+
+        graph = _make_graph(_make_component("app1"))
+        engine = CustomScoringEngine.from_yaml(graph, config_path)
+        assert engine.model_name == "my-policy"
+
+
+# ===================================================================
+# Additional edge case tests for built-in checks
+# ===================================================================
+
+
+class TestFilterComponentsByType:
+    """Tests for _filter_components_by_type helper."""
+
+    def test_unknown_type_returns_empty(self):
+        from infrasim.scoring import _filter_components_by_type
+        graph = _make_graph(_make_component("app1"))
+        result = _filter_components_by_type(graph, "nonexistent_type")
+        assert result == []
+
+    def test_empty_type_returns_all(self):
+        from infrasim.scoring import _filter_components_by_type
+        graph = _make_graph(
+            _make_component("app1"),
+            _make_component("db1", ComponentType.DATABASE),
+        )
+        result = _filter_components_by_type(graph, "")
+        assert len(result) == 2
+
+
+class TestMinReplicasExtended:
+    def test_empty_type_checks_all_components(self):
+        graph = _make_graph(
+            _make_component("app1", replicas=3),
+            _make_component("db1", ComponentType.DATABASE, replicas=1),
+        )
+        score = _check_min_replicas(graph, {"component_type": "", "min": 2})
+        assert score == 50.0  # 1/2 passes
+
+
+class TestEncryptionCoverageExtended:
+    def test_zero_min_percent(self):
+        graph = _make_graph(_make_component("app1", encryption=False))
+        score = _check_encryption_coverage(graph, {"min_percent": 0})
+        assert score == 100.0
+
+    def test_empty_graph(self):
+        graph = InfraGraph()
+        score = _check_encryption_coverage(graph, {"min_percent": 100})
+        assert score == 100.0
+
+
+class TestFailoverCoverageExtended:
+    def test_empty_graph(self):
+        graph = InfraGraph()
+        score = _check_failover_coverage(graph, {"min_percent": 100})
+        assert score == 100.0
+
+    def test_zero_min_percent(self):
+        graph = _make_graph(_make_component("app1", failover=False))
+        score = _check_failover_coverage(graph, {"min_percent": 0})
+        assert score == 100.0
+
+
+class TestCBCoverageExtended:
+    def test_zero_min_percent(self):
+        graph = _make_graph(
+            _make_component("app1"),
+            _make_component("db1", ComponentType.DATABASE),
+            dependencies=[Dependency(source_id="app1", target_id="db1")],
+        )
+        score = _check_cb_coverage(graph, {"min_percent": 0})
+        assert score == 100.0
+
+
+class TestBackupCoverageExtended:
+    def test_no_type_filter_checks_all(self):
+        graph = _make_graph(
+            _make_component("app1", backup=True),
+            _make_component("db1", ComponentType.DATABASE, backup=False),
+        )
+        score = _check_backup_coverage(graph, {"min_percent": 100})
+        assert score == 50.0
+
+    def test_zero_min_percent(self):
+        graph = _make_graph(_make_component("app1", backup=False))
+        score = _check_backup_coverage(graph, {"min_percent": 0})
+        assert score == 100.0
+
+    def test_empty_graph(self):
+        graph = InfraGraph()
+        score = _check_backup_coverage(graph, {"min_percent": 100})
+        assert score == 100.0
+
+
+class TestMaxChainDepthExtended:
+    def test_deep_chain(self):
+        graph = _make_graph(
+            _make_component("a", ComponentType.LOAD_BALANCER),
+            _make_component("b", ComponentType.APP_SERVER),
+            _make_component("c", ComponentType.APP_SERVER),
+            _make_component("d", ComponentType.DATABASE),
+            dependencies=[
+                Dependency(source_id="a", target_id="b"),
+                Dependency(source_id="b", target_id="c"),
+                Dependency(source_id="c", target_id="d"),
+            ],
+        )
+        # Chain depth of 4, max_depth=2 -> over by 2 -> 100 - 2*20 = 60
+        score = _check_max_chain_depth(graph, {"max_depth": 2})
+        assert score <= 60.0
+
+
+class TestNoPublicDatabaseExtended:
+    def test_custom_forbidden_ports_as_string(self):
+        graph = _make_graph(
+            _make_component("db1", ComponentType.DATABASE, port=3306),
+        )
+        score = _check_no_public_database(graph, {"forbidden_ports": "3306,5432"})
+        assert score == 0.0
+
+    def test_multiple_dbs_some_violating(self):
+        graph = _make_graph(
+            _make_component("db1", ComponentType.DATABASE, port=5432),
+            _make_component("db2", ComponentType.DATABASE, port=443),
+        )
+        score = _check_no_public_database(graph, {})
+        assert score == 50.0  # 1 of 2 violating
+
+
+class TestCustomScoringEngineExtended:
+    def test_evaluate_with_exception_in_check(self):
+        """Check function that raises should score 0."""
+        graph = _make_graph(_make_component("app1"))
+        rules = [
+            ScoringRule(
+                name="Test",
+                description="desc",
+                check_fn="max_chain_depth",
+                weight=1.0,
+                params={"max_depth": "not_a_number"},  # will cause int() to fail
+            ),
+        ]
+        engine = CustomScoringEngine(graph, rules)
+        result = engine.evaluate()
+        # The check should fail gracefully with score 0
+        assert result.rules[0]["score"] == 0.0

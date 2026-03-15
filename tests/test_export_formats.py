@@ -11,6 +11,9 @@ import pytest
 from infrasim.model.components import Component, ComponentType, HealthStatus
 from infrasim.model.graph import InfraGraph
 from infrasim.reporter.export import (
+    _report_rows,
+    _report_to_export_dict,
+    export_csv,
     export_excel,
     export_json,
     export_sarif,
@@ -271,3 +274,230 @@ class TestExcelExport:
         out = tmp_path / "nested" / "dir" / "results.xlsx"
         path = export_excel(sample_report, out)
         assert path.exists()
+
+
+# ---------------------------------------------------------------------------
+# CSV export tests
+# ---------------------------------------------------------------------------
+
+
+class TestCsvExport:
+    def test_csv_export_creates_file(self, sample_report: SimulationReport, tmp_path: Path):
+        """export_csv() should create a .csv file."""
+        out = tmp_path / "results.csv"
+        path = export_csv(sample_report, out)
+        assert path.exists()
+        assert path.suffix == ".csv"
+
+    def test_csv_has_header_and_data(self, sample_report: SimulationReport, tmp_path: Path):
+        """CSV file should have a header row and data rows."""
+        import csv as csv_mod
+        out = tmp_path / "results.csv"
+        export_csv(sample_report, out)
+
+        with open(out, newline="", encoding="utf-8") as fh:
+            reader = csv_mod.DictReader(fh)
+            rows = list(reader)
+
+        assert len(rows) >= 1
+        assert "scenario_id" in rows[0]
+        assert "risk_score" in rows[0]
+        assert "component_id" in rows[0]
+
+    def test_csv_empty_report(self, tmp_path: Path):
+        """export_csv() should work with an empty report."""
+        report = SimulationReport(results=[], resilience_score=100.0)
+        out = tmp_path / "empty.csv"
+        path = export_csv(report, out)
+        assert path.exists()
+
+        # Should still have a header row
+        with open(out, encoding="utf-8") as fh:
+            content = fh.read()
+        assert "scenario_id" in content
+
+    def test_csv_creates_parent_dirs(self, sample_report: SimulationReport, tmp_path: Path):
+        """export_csv() should create parent directories."""
+        out = tmp_path / "nested" / "dir" / "results.csv"
+        path = export_csv(sample_report, out)
+        assert path.exists()
+
+    def test_csv_scenario_without_effects(self, tmp_path: Path):
+        """Scenario with no cascade effects should still produce a row."""
+        scenario = Scenario(
+            id="s-no-effect", name="No Effect", description="No effects", faults=[],
+        )
+        cascade = CascadeChain(trigger="No Effect", total_components=1)
+        result = ScenarioResult(scenario=scenario, cascade=cascade, risk_score=0.5)
+        report = SimulationReport(results=[result], resilience_score=95.0)
+
+        out = tmp_path / "results.csv"
+        export_csv(report, out)
+
+        import csv as csv_mod
+        with open(out, newline="", encoding="utf-8") as fh:
+            reader = csv_mod.DictReader(fh)
+            rows = list(reader)
+
+        assert len(rows) == 1
+        assert rows[0]["component_id"] == ""
+
+
+# ---------------------------------------------------------------------------
+# JSON export tests
+# ---------------------------------------------------------------------------
+
+
+class TestJsonExport:
+    def test_json_export_creates_file(self, sample_report: SimulationReport, tmp_path: Path):
+        """export_json() should create a .json file."""
+        out = tmp_path / "results.json"
+        path = export_json(sample_report, out)
+        assert path.exists()
+
+    def test_json_has_expected_structure(self, sample_report: SimulationReport, tmp_path: Path):
+        """JSON file should have the expected structure."""
+        out = tmp_path / "results.json"
+        export_json(sample_report, out)
+
+        data = json.loads(out.read_text())
+        assert "resilience_score" in data
+        assert data["resilience_score"] == 65.0
+        assert data["total_scenarios"] == 3
+        assert data["critical_count"] == 1
+        assert data["warning_count"] == 1
+        assert data["passed_count"] == 1
+        assert len(data["results"]) == 3
+
+    def test_json_result_structure(self, sample_report: SimulationReport, tmp_path: Path):
+        """Each result in JSON should have scenario and cascade data."""
+        out = tmp_path / "results.json"
+        export_json(sample_report, out)
+
+        data = json.loads(out.read_text())
+        result = data["results"][0]
+        assert "scenario_id" in result
+        assert "scenario_name" in result
+        assert "risk_score" in result
+        assert "cascade" in result
+        assert "trigger" in result["cascade"]
+        assert "effects" in result["cascade"]
+
+    def test_json_empty_report(self, tmp_path: Path):
+        """export_json() should work with empty report."""
+        report = SimulationReport(results=[], resilience_score=100.0)
+        out = tmp_path / "empty.json"
+        path = export_json(report, out)
+        assert path.exists()
+
+        data = json.loads(out.read_text())
+        assert data["total_scenarios"] == 0
+        assert data["results"] == []
+
+    def test_json_creates_parent_dirs(self, sample_report: SimulationReport, tmp_path: Path):
+        """export_json() should create parent directories."""
+        out = tmp_path / "nested" / "dir" / "results.json"
+        path = export_json(sample_report, out)
+        assert path.exists()
+
+
+# ---------------------------------------------------------------------------
+# Internal helper tests
+# ---------------------------------------------------------------------------
+
+
+class TestReportRows:
+    def test_report_rows_with_effects(self, sample_report: SimulationReport):
+        """_report_rows should expand cascade effects into rows."""
+        rows = _report_rows(sample_report)
+        assert len(rows) >= 3  # At least one per scenario
+
+    def test_report_rows_empty(self):
+        """_report_rows with empty report should return empty list."""
+        report = SimulationReport(results=[], resilience_score=100.0)
+        rows = _report_rows(report)
+        assert rows == []
+
+
+class TestReportToExportDict:
+    def test_export_dict_structure(self, sample_report: SimulationReport):
+        """_report_to_export_dict should produce a valid dict."""
+        data = _report_to_export_dict(sample_report)
+        assert data["resilience_score"] == 65.0
+        assert data["total_scenarios"] == 3
+        assert len(data["results"]) == 3
+
+    def test_export_dict_effect_structure(self, sample_report: SimulationReport):
+        """Effect dicts should include all expected fields."""
+        data = _report_to_export_dict(sample_report)
+        # First result has effects
+        effects = data["results"][0]["cascade"]["effects"]
+        assert len(effects) >= 1
+        effect = effects[0]
+        assert "component_id" in effect
+        assert "component_name" in effect
+        assert "health" in effect
+        assert "reason" in effect
+        assert "estimated_time_seconds" in effect
+        assert "metrics_impact" in effect
+
+
+# ---------------------------------------------------------------------------
+# SARIF edge cases
+# ---------------------------------------------------------------------------
+
+
+class TestSarifExportExtended:
+    def test_sarif_properties_in_results(self, sample_report: SimulationReport):
+        """SARIF results should include properties with risk details."""
+        data = json.loads(export_sarif(sample_report))
+        results = data["runs"][0]["results"]
+        for result in results:
+            assert "properties" in result
+            assert "risk_score" in result["properties"]
+            assert "cascade_severity" in result["properties"]
+            assert "affected_components" in result["properties"]
+
+    def test_sarif_message_includes_effects(self, sample_report: SimulationReport):
+        """SARIF messages should include affected component details."""
+        data = json.loads(export_sarif(sample_report))
+        results = data["runs"][0]["results"]
+        critical_result = [r for r in results if r["level"] == "error"][0]
+        assert "Affected:" in critical_result["message"]["text"]
+
+    def test_sarif_deduplicates_rules(self):
+        """Multiple results with same scenario ID should share one rule."""
+        scenario = Scenario(
+            id="dup-id", name="Dup", description="Dup", faults=[],
+        )
+        cascade1 = CascadeChain(trigger="Dup", total_components=1)
+        cascade1.effects.append(
+            CascadeEffect(
+                component_id="a", component_name="A",
+                health=HealthStatus.DOWN, reason="down",
+                estimated_time_seconds=10,
+            )
+        )
+        cascade1.likelihood = 0.8
+        cascade2 = CascadeChain(trigger="Dup", total_components=1)
+        cascade2.effects.append(
+            CascadeEffect(
+                component_id="b", component_name="B",
+                health=HealthStatus.DOWN, reason="down",
+                estimated_time_seconds=10,
+            )
+        )
+        cascade2.likelihood = 0.8
+
+        report = SimulationReport(
+            results=[
+                ScenarioResult(scenario=scenario, cascade=cascade1, risk_score=8.0),
+                ScenarioResult(scenario=scenario, cascade=cascade2, risk_score=8.0),
+            ],
+            resilience_score=50.0,
+        )
+        data = json.loads(export_sarif(report))
+        rules = data["runs"][0]["tool"]["driver"]["rules"]
+        # Should have only 1 rule despite 2 results
+        assert len(rules) == 1
+        assert len(data["runs"][0]["results"]) == 2

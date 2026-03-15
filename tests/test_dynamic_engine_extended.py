@@ -1127,3 +1127,276 @@ def test_run_all_dynamic_defaults_small_graph():
     engine = DynamicSimulationEngine(graph)
     report = engine.run_all_dynamic_defaults(duration=10, step=5)
     assert len(report.results) > 0
+
+
+# ---------------------------------------------------------------------------
+# Instance-level failure tracking — _apply_faults
+# ---------------------------------------------------------------------------
+
+
+def test_instance_level_fault_tracking():
+    """Component with multiple replicas should track failure per instance."""
+    graph = InfraGraph()
+    graph.add_component(Component(
+        id="app", name="App Server", type=ComponentType.APP_SERVER,
+        replicas=3,
+        capacity=Capacity(max_connections=500),
+        metrics=ResourceMetrics(network_connections=200, cpu_percent=40),
+    ))
+    engine = DynamicSimulationEngine(graph)
+
+    scenario = DynamicScenario(
+        id="instance-fault", name="Instance Fault", description="One replica down",
+        faults=[Fault(target_component_id="app", fault_type=FaultType.COMPONENT_DOWN)],
+        duration_seconds=20, time_step_seconds=5,
+    )
+    result = engine.run_dynamic_scenario(scenario)
+    assert result.peak_severity > 0.0
+    # Snapshots should exist and show degradation
+    assert len(result.snapshots) > 0
+
+
+def test_multiple_faults_simultaneous():
+    """Multiple faults on different components simultaneously."""
+    graph = _build_dynamic_graph()
+    engine = DynamicSimulationEngine(graph)
+
+    scenario = DynamicScenario(
+        id="multi-fault", name="Multi Fault", description="Multiple failures",
+        faults=[
+            Fault(target_component_id="app", fault_type=FaultType.COMPONENT_DOWN),
+            Fault(target_component_id="db", fault_type=FaultType.COMPONENT_DOWN),
+        ],
+        duration_seconds=20, time_step_seconds=5,
+    )
+    result = engine.run_dynamic_scenario(scenario)
+    assert result.peak_severity > 0.0
+
+
+# ---------------------------------------------------------------------------
+# Traffic pattern types
+# ---------------------------------------------------------------------------
+
+
+def test_run_dynamic_with_spike_pattern():
+    """Spike traffic pattern should ramp up and sustain."""
+    graph = _build_dynamic_graph()
+    engine = DynamicSimulationEngine(graph)
+
+    scenario = DynamicScenario(
+        id="spike", name="Spike", description="Spike test",
+        traffic_pattern=TrafficPattern(
+            pattern_type=TrafficPatternType.SPIKE,
+            peak_multiplier=8.0,
+            duration_seconds=50,
+            ramp_seconds=10,
+            sustain_seconds=20,
+        ),
+        duration_seconds=50, time_step_seconds=5,
+    )
+    result = engine.run_dynamic_scenario(scenario)
+    assert len(result.snapshots) > 0
+    # Should have a traffic multiplier above 1.0 at some point
+    assert any(s.traffic_multiplier > 1.0 for s in result.snapshots)
+
+
+def test_run_dynamic_with_ramp_pattern():
+    """Ramp traffic pattern should gradually increase."""
+    graph = _build_dynamic_graph()
+    engine = DynamicSimulationEngine(graph)
+
+    scenario = DynamicScenario(
+        id="ramp", name="Ramp", description="Gradual increase",
+        traffic_pattern=TrafficPattern(
+            pattern_type=TrafficPatternType.RAMP,
+            peak_multiplier=3.0,
+            duration_seconds=30,
+        ),
+        duration_seconds=30, time_step_seconds=5,
+    )
+    result = engine.run_dynamic_scenario(scenario)
+    assert len(result.snapshots) > 0
+
+
+# ---------------------------------------------------------------------------
+# DynamicScenarioResult and DynamicSimulationReport properties
+# ---------------------------------------------------------------------------
+
+
+def test_report_warnings_property():
+    """Warnings should include scenarios with moderate peak severity."""
+    r1 = DynamicScenarioResult(
+        scenario=DynamicScenario(
+            id="a", name="A", description="A",
+            duration_seconds=10, time_step_seconds=5,
+        ),
+        peak_severity=4.5,  # warning-level
+    )
+    report = DynamicSimulationReport(results=[r1])
+    assert len(report.warnings) == 1
+    assert len(report.critical_findings) == 0
+    assert len(report.passed) == 0
+
+
+def test_report_resilience_score_calculation():
+    """Resilience score should be based on severity distribution."""
+    r_good = DynamicScenarioResult(
+        scenario=DynamicScenario(
+            id="a", name="A", description="A",
+            duration_seconds=10, time_step_seconds=5,
+        ),
+        peak_severity=1.0,
+    )
+    r_bad = DynamicScenarioResult(
+        scenario=DynamicScenario(
+            id="b", name="B", description="B",
+            duration_seconds=10, time_step_seconds=5,
+        ),
+        peak_severity=9.0,
+    )
+    report_good = DynamicSimulationReport(results=[r_good])
+    report_bad = DynamicSimulationReport(results=[r_bad])
+    assert report_good.resilience_score >= report_bad.resilience_score
+
+
+# ---------------------------------------------------------------------------
+# ComponentSnapshot dataclass
+# ---------------------------------------------------------------------------
+
+
+def test_component_snapshot_defaults():
+    """ComponentSnapshot should have correct defaults."""
+    from infrasim.simulator.dynamic_engine import ComponentSnapshot
+    snap = ComponentSnapshot(
+        component_id="app",
+        health=HealthStatus.HEALTHY,
+        utilization=30.0,
+        replicas=2,
+    )
+    assert snap.component_id == "app"
+    assert snap.is_failing_over is False
+    assert snap.failover_elapsed_seconds == 0
+
+
+def test_component_snapshot_with_failover():
+    """ComponentSnapshot should track failover state."""
+    from infrasim.simulator.dynamic_engine import ComponentSnapshot
+    snap = ComponentSnapshot(
+        component_id="db",
+        health=HealthStatus.DOWN,
+        utilization=100.0,
+        replicas=2,
+        is_failing_over=True,
+        failover_elapsed_seconds=15,
+    )
+    assert snap.is_failing_over is True
+    assert snap.failover_elapsed_seconds == 15
+
+
+# ---------------------------------------------------------------------------
+# TimeStepSnapshot dataclass
+# ---------------------------------------------------------------------------
+
+
+def test_timestep_snapshot_defaults():
+    """TimeStepSnapshot should have correct defaults."""
+    from infrasim.simulator.dynamic_engine import TimeStepSnapshot
+    ts = TimeStepSnapshot(time_seconds=10)
+    assert ts.time_seconds == 10
+    assert ts.component_states == {}
+    assert ts.active_replicas == {}
+    assert ts.traffic_multiplier == 1.0
+    assert ts.cascade_effects == []
+
+
+# ---------------------------------------------------------------------------
+# _ComponentDynamicState
+# ---------------------------------------------------------------------------
+
+
+def test_component_dynamic_state_defaults():
+    """_ComponentDynamicState should have correct defaults."""
+    state = _ComponentDynamicState(
+        component_id="app",
+        base_utilization=30.0,
+    )
+    assert state.current_utilization == 0.0
+    assert state.current_health == HealthStatus.HEALTHY
+    assert state.is_failing_over is False
+    assert state.failover_elapsed_seconds == 0
+    assert state.failover_total_seconds == 0
+    assert state.consecutive_health_failures == 0
+    assert state.is_warming is False
+
+
+# ---------------------------------------------------------------------------
+# Autoscaling capped at max_replicas
+# ---------------------------------------------------------------------------
+
+
+def test_autoscaling_respects_max_replicas():
+    """Autoscaling should not exceed max_replicas."""
+    graph = InfraGraph()
+    graph.add_component(Component(
+        id="app", name="App", type=ComponentType.APP_SERVER,
+        replicas=2,
+        capacity=Capacity(max_connections=100),
+        metrics=ResourceMetrics(network_connections=90, cpu_percent=90),
+        autoscaling=AutoScalingConfig(
+            enabled=True,
+            min_replicas=1,
+            max_replicas=3,
+            scale_up_threshold=50.0,
+            scale_up_delay_seconds=5,
+            scale_up_step=5,  # Would add 5, but max is 3
+        ),
+    ))
+    engine = DynamicSimulationEngine(graph)
+
+    scenario = DynamicScenario(
+        id="max-cap", name="Max Cap", description="Cap test",
+        traffic_pattern=TrafficPattern(
+            pattern_type=TrafficPatternType.CONSTANT,
+            peak_multiplier=5.0,
+            duration_seconds=30,
+        ),
+        duration_seconds=30, time_step_seconds=5,
+    )
+    result = engine.run_dynamic_scenario(scenario)
+    # Verify replicas never exceed max_replicas
+    for snapshot in result.snapshots:
+        for comp_id, replicas in snapshot.active_replicas.items():
+            if comp_id == "app":
+                assert replicas <= 3
+
+
+# ---------------------------------------------------------------------------
+# Failover with insufficient replicas
+# ---------------------------------------------------------------------------
+
+
+def test_failover_single_replica_down():
+    """Failover on a single-replica component should handle gracefully."""
+    graph = InfraGraph()
+    graph.add_component(Component(
+        id="db", name="Database", type=ComponentType.DATABASE,
+        replicas=1,  # only 1 replica
+        capacity=Capacity(max_connections=100),
+        metrics=ResourceMetrics(cpu_percent=30),
+        failover=FailoverConfig(
+            enabled=True,
+            promotion_time_seconds=5.0,
+            health_check_interval_seconds=5.0,
+            failover_threshold=1,
+        ),
+    ))
+    engine = DynamicSimulationEngine(graph)
+
+    scenario = DynamicScenario(
+        id="single-replica-fo", name="Single Replica Failover",
+        description="Failover with single replica",
+        faults=[Fault(target_component_id="db", fault_type=FaultType.COMPONENT_DOWN)],
+        duration_seconds=30, time_step_seconds=5,
+    )
+    result = engine.run_dynamic_scenario(scenario)
+    assert result.peak_severity > 0.0

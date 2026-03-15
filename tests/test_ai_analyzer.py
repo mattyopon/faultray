@@ -491,3 +491,254 @@ def test_single_component_graph():
     # No SPOF because no required dependents
     spof_recs = [r for r in ai_report.recommendations if r.category == "spof"]
     assert len(spof_recs) == 0
+
+
+# ---------------------------------------------------------------------------
+# Tests: Score-to-nines mapping edge cases
+# ---------------------------------------------------------------------------
+
+
+def test_score_to_nines_all_ranges():
+    """Verify all score ranges map correctly."""
+    assert _score_to_nines(95) == 4.5
+    assert _score_to_nines(90) == 4.0
+    assert _score_to_nines(80) == 3.5
+    assert _score_to_nines(70) == 3.0
+    assert _score_to_nines(60) == 2.5
+    assert _score_to_nines(50) == 2.0
+    assert _score_to_nines(30) == 1.5
+    assert _score_to_nines(20) == 1.0
+    assert _score_to_nines(0) == 1.0
+
+
+def test_nines_tier_label_all_tiers():
+    """Verify all nines tiers have correct labels."""
+    label_45 = _nines_tier_label(4.5)
+    assert "Excellent" in label_45
+
+    label_40 = _nines_tier_label(4.0)
+    assert "High" in label_40
+
+    label_35 = _nines_tier_label(3.5)
+    assert "Good" in label_35
+
+    label_30 = _nines_tier_label(3.0)
+    assert "Standard" in label_30
+
+    label_25 = _nines_tier_label(2.5)
+    assert "Basic" in label_25
+
+    label_20 = _nines_tier_label(2.0)
+    assert "Low" in label_20
+
+    label_10 = _nines_tier_label(1.0)
+    assert "Poor" in label_10
+
+
+# ---------------------------------------------------------------------------
+# Tests: Upgrade path edge cases
+# ---------------------------------------------------------------------------
+
+
+def test_upgrade_path_at_highest_tier():
+    """At the highest tier, upgrade path should provide guidance."""
+    # Build a well-protected graph with high resilience
+    graph = InfraGraph()
+    graph.add_component(Component(
+        id="app", name="App", type=ComponentType.APP_SERVER,
+        replicas=3,
+        failover=FailoverConfig(enabled=True),
+    ))
+    graph.add_component(Component(
+        id="db", name="DB", type=ComponentType.DATABASE,
+        replicas=3,
+        failover=FailoverConfig(enabled=True),
+    ))
+    graph.add_dependency(Dependency(
+        source_id="app", target_id="db",
+        dependency_type="requires",
+        circuit_breaker=CircuitBreakerConfig(enabled=True),
+        retry_strategy=RetryStrategy(enabled=True),
+    ))
+
+    # Use a very high resilience score to simulate highest tier
+    report = SimulationReport(results=[], resilience_score=99.0)
+
+    analyzer = InfraSimAnalyzer()
+    ai_report = analyzer.analyze(graph, report)
+
+    # At 4.5 nines, next tier is 5.0 which may or may not be reachable.
+    # The upgrade path should be a non-empty, informative string regardless.
+    assert len(ai_report.upgrade_path) > 20
+    assert isinstance(ai_report.upgrade_path, str)
+    # At 4.5 nines, it either says "highest" (if theoretical_max >= 5.0)
+    # or suggests architectural changes to reach 5.0 nines
+    assert (
+        "highest" in ai_report.upgrade_path.lower()
+        or "maintain" in ai_report.upgrade_path.lower()
+        or "nines" in ai_report.upgrade_path.lower()
+    )
+
+
+def test_upgrade_path_needs_architectural_changes():
+    """When theoretical max can't reach next tier, should suggest architectural changes."""
+    graph = InfraGraph()
+    graph.add_component(Component(
+        id="app", name="App", type=ComponentType.APP_SERVER,
+        replicas=2,
+        failover=FailoverConfig(enabled=True),
+    ))
+    graph.add_component(Component(
+        id="db", name="DB", type=ComponentType.DATABASE,
+        replicas=2,
+        failover=FailoverConfig(enabled=True),
+    ))
+    graph.add_dependency(Dependency(
+        source_id="app", target_id="db",
+        dependency_type="requires",
+        circuit_breaker=CircuitBreakerConfig(enabled=True),
+        retry_strategy=RetryStrategy(enabled=True),
+    ))
+
+    engine = SimulationEngine(graph)
+    report = engine.run_all_defaults()
+
+    analyzer = InfraSimAnalyzer()
+    ai_report = analyzer.analyze(graph, report)
+
+    # The upgrade path should be a non-empty string
+    assert len(ai_report.upgrade_path) > 0
+
+
+# ---------------------------------------------------------------------------
+# Tests: LLM provider
+# ---------------------------------------------------------------------------
+
+
+def test_set_llm_provider():
+    """set_llm_provider should store the provider."""
+    analyzer = InfraSimAnalyzer()
+    assert analyzer._llm_provider is None
+
+    class MockLLM:
+        def generate_summary(self, context):
+            return "mock summary"
+        def generate_recommendations(self, context):
+            return []
+
+    analyzer.set_llm_provider(MockLLM())
+    assert analyzer._llm_provider is not None
+
+
+# ---------------------------------------------------------------------------
+# Tests: Capacity bottleneck edge cases
+# ---------------------------------------------------------------------------
+
+
+def test_no_bottleneck_with_low_utilization():
+    """Components with <70% utilization should not be flagged."""
+    graph = InfraGraph()
+    graph.add_component(Component(
+        id="app", name="App", type=ComponentType.APP_SERVER,
+        replicas=2,
+        metrics=ResourceMetrics(cpu_percent=30, memory_percent=40, disk_percent=20),
+    ))
+    report = SimulationReport(results=[], resilience_score=80.0)
+
+    analyzer = InfraSimAnalyzer()
+    ai_report = analyzer.analyze(graph, report)
+
+    capacity_recs = [r for r in ai_report.recommendations if r.category == "capacity"]
+    assert len(capacity_recs) == 0
+
+
+def test_bottleneck_connection_pool():
+    """Connection pool at >70% should trigger bottleneck."""
+    graph = InfraGraph()
+    graph.add_component(Component(
+        id="db", name="DB", type=ComponentType.DATABASE,
+        replicas=1,
+        metrics=ResourceMetrics(network_connections=85, cpu_percent=30),
+        capacity=Capacity(connection_pool_size=100),
+    ))
+    report = SimulationReport(results=[], resilience_score=80.0)
+
+    analyzer = InfraSimAnalyzer()
+    ai_report = analyzer.analyze(graph, report)
+
+    capacity_recs = [r for r in ai_report.recommendations if r.category == "capacity"]
+    assert len(capacity_recs) >= 1
+    assert any("Connection pool" in r.description for r in capacity_recs)
+
+
+# ---------------------------------------------------------------------------
+# Tests: Missing protections edge cases
+# ---------------------------------------------------------------------------
+
+
+def test_optional_dep_not_flagged():
+    """Optional dependencies should not be flagged for missing protections."""
+    graph = InfraGraph()
+    graph.add_component(Component(
+        id="app", name="App", type=ComponentType.APP_SERVER,
+        replicas=2,
+    ))
+    graph.add_component(Component(
+        id="cache", name="Cache", type=ComponentType.CACHE,
+        replicas=2,
+    ))
+    graph.add_dependency(Dependency(
+        source_id="app", target_id="cache",
+        dependency_type="optional",  # not "requires"
+    ))
+    report = SimulationReport(results=[], resilience_score=80.0)
+
+    analyzer = InfraSimAnalyzer()
+    ai_report = analyzer.analyze(graph, report)
+
+    config_recs = [r for r in ai_report.recommendations if r.category == "config"]
+    assert len(config_recs) == 0
+
+
+# ---------------------------------------------------------------------------
+# Tests: Summary generation variants
+# ---------------------------------------------------------------------------
+
+
+def test_summary_no_critical_risks():
+    """Summary with no critical recommendations should say 'good shape'."""
+    graph = InfraGraph()
+    graph.add_component(Component(
+        id="app", name="App", type=ComponentType.APP_SERVER,
+        replicas=2,
+        failover=FailoverConfig(enabled=True),
+    ))
+    graph.add_component(Component(
+        id="db", name="DB", type=ComponentType.DATABASE,
+        replicas=2,
+        failover=FailoverConfig(enabled=True),
+    ))
+    graph.add_dependency(Dependency(
+        source_id="app", target_id="db",
+        dependency_type="requires",
+        circuit_breaker=CircuitBreakerConfig(enabled=True),
+        retry_strategy=RetryStrategy(enabled=True),
+    ))
+
+    engine = SimulationEngine(graph)
+    report = engine.run_all_defaults()
+    analyzer = InfraSimAnalyzer()
+    ai_report = analyzer.analyze(graph, report)
+
+    critical_recs = [r for r in ai_report.recommendations if r.severity == "critical"]
+    if not critical_recs:
+        assert "good shape" in ai_report.summary.lower()
+
+
+def test_top_risks_no_critical():
+    """When no critical risks, should return 'No critical risks detected.'."""
+    graph = InfraGraph()
+    report = SimulationReport(results=[], resilience_score=100.0)
+    analyzer = InfraSimAnalyzer()
+    ai_report = analyzer.analyze(graph, report)
+    assert any("No critical risks" in r for r in ai_report.top_risks)

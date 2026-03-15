@@ -239,3 +239,172 @@ class TestReportAndRecommendations:
         # Should auto-map to the database component
         assert len(report.impacts) == 1
         assert "db" in report.impacts[0].affected_components
+
+
+# ---------------------------------------------------------------------------
+# Additional edge case tests
+# ---------------------------------------------------------------------------
+
+
+class TestNormalizeInput:
+    """Test the _normalize_input static method with various formats."""
+
+    def test_direct_list(self):
+        entries = SupplyChainEngine._normalize_input([{"id": "CVE-1"}])
+        assert len(entries) == 1
+
+    def test_snyk_format(self):
+        entries = SupplyChainEngine._normalize_input({
+            "vulnerabilities": [{"id": "CVE-1"}, {"id": "CVE-2"}]
+        })
+        assert len(entries) == 2
+
+    def test_trivy_format(self):
+        entries = SupplyChainEngine._normalize_input({
+            "Results": [
+                {"Vulnerabilities": [{"VulnerabilityID": "CVE-1"}]},
+                {"Vulnerabilities": [{"VulnerabilityID": "CVE-2"}]},
+            ]
+        })
+        assert len(entries) == 2
+
+    def test_trivy_empty_vulnerabilities(self):
+        entries = SupplyChainEngine._normalize_input({
+            "Results": [
+                {"Target": "app"},  # no Vulnerabilities key
+            ]
+        })
+        assert len(entries) == 0
+
+    def test_dependabot_format(self):
+        entries = SupplyChainEngine._normalize_input({
+            "results": [{"id": "CVE-1"}]
+        })
+        assert len(entries) == 1
+
+    def test_unknown_dict_format(self):
+        entries = SupplyChainEngine._normalize_input({"unknown_key": "value"})
+        assert len(entries) == 0
+
+    def test_non_dict_non_list(self):
+        entries = SupplyChainEngine._normalize_input("not a dict or list")
+        assert len(entries) == 0
+
+
+class TestAutoMapComponents:
+    """Test the _auto_map_components heuristic mapping."""
+
+    def test_cache_keyword(self):
+        graph = _make_graph()
+        engine = SupplyChainEngine(graph)
+        report = engine.analyze_from_data([
+            {"cve_id": "CVE-CACHE", "severity": "medium",
+             "package": "redis-client", "description": "cache vulnerability"}
+        ])
+        assert len(report.impacts) == 1
+        assert "cache" in report.impacts[0].affected_components
+
+    def test_queue_keyword(self):
+        """Queue components should be matched by queue keywords."""
+        g = InfraGraph()
+        g.add_component(Component(id="q", name="Queue", type=ComponentType.QUEUE))
+        engine = SupplyChainEngine(g)
+        report = engine.analyze_from_data([
+            {"cve_id": "CVE-Q", "severity": "high",
+             "package": "kafka-client", "description": "message queue issue"}
+        ])
+        assert len(report.impacts) == 1
+        assert "q" in report.impacts[0].affected_components
+
+    def test_fallback_to_first_component(self):
+        """If no keywords match, should fallback to first component."""
+        graph = _make_graph()
+        engine = SupplyChainEngine(graph)
+        report = engine.analyze_from_data([
+            {"cve_id": "CVE-UNK", "severity": "low",
+             "package": "obscure-lib", "description": "some unrelated issue"}
+        ])
+        assert len(report.impacts) == 1
+        # Should fallback to first component id
+        assert len(report.impacts[0].affected_components) == 1
+
+    def test_explicit_affected_components(self):
+        """Explicit affected_components should override auto-mapping."""
+        graph = _make_graph()
+        engine = SupplyChainEngine(graph)
+        report = engine.analyze_from_data([
+            {"cve_id": "CVE-EXP", "severity": "critical",
+             "package": "anything", "affected_components": ["lb", "app"]}
+        ])
+        assert report.impacts[0].affected_components == ["lb", "app"]
+
+
+class TestDetermineImpact:
+    """Test infrastructure impact determination."""
+
+    def test_database_critical_impact(self):
+        graph = _make_graph()
+        engine = SupplyChainEngine(graph)
+        impact = engine._determine_impact({"database"}, "critical")
+        assert impact == "data breach"
+
+    def test_cache_high_impact(self):
+        graph = _make_graph()
+        engine = SupplyChainEngine(graph)
+        impact = engine._determine_impact({"cache"}, "high")
+        assert impact == "OOM"
+
+    def test_unknown_type_falls_back_to_default(self):
+        graph = _make_graph()
+        engine = SupplyChainEngine(graph)
+        impact = engine._determine_impact({"unknown_type"}, "critical")
+        assert impact == "remote code execution"  # DEFAULT_IMPACT["critical"]
+
+    def test_empty_types_uses_default(self):
+        graph = _make_graph()
+        engine = SupplyChainEngine(graph)
+        impact = engine._determine_impact(set(), "medium")
+        assert impact == "CPU spike"  # DEFAULT_IMPACT["medium"]
+
+
+class TestGenerateRecommendations:
+    """Test recommendation generation logic."""
+
+    def test_high_blast_radius_warning(self):
+        graph = _make_graph()
+        engine = SupplyChainEngine(graph)
+        impacts = [
+            VulnerabilityImpact(
+                cve_id="CVE-1", package="pkg", severity="medium",
+                affected_components=["app"], infrastructure_impact="CPU spike",
+                estimated_blast_radius=5, risk_score=5.0,
+            )
+        ]
+        recs = engine._generate_recommendations(impacts)
+        assert any("blast radius" in r.lower() for r in recs)
+
+    def test_data_breach_encryption_recommendation(self):
+        graph = _make_graph()
+        engine = SupplyChainEngine(graph)
+        impacts = [
+            VulnerabilityImpact(
+                cve_id="CVE-1", package="pkg", severity="critical",
+                affected_components=["db"], infrastructure_impact="data breach",
+                estimated_blast_radius=2, risk_score=9.0,
+            )
+        ]
+        recs = engine._generate_recommendations(impacts)
+        assert any("encryption" in r.lower() for r in recs)
+
+    def test_low_severity_generic_advice(self):
+        graph = _make_graph()
+        engine = SupplyChainEngine(graph)
+        impacts = [
+            VulnerabilityImpact(
+                cve_id="CVE-1", package="pkg", severity="low",
+                affected_components=["app"], infrastructure_impact="minor",
+                estimated_blast_radius=0, risk_score=1.0,
+            )
+        ]
+        recs = engine._generate_recommendations(impacts)
+        assert any("low/medium" in r.lower() or "monitor" in r.lower() for r in recs)

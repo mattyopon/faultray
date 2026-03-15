@@ -421,3 +421,98 @@ class TestAntiPatternDataclass:
         assert ap.affected_components == []
         assert ap.recommendation == ""
         assert ap.reference == ""
+
+
+# ---------------------------------------------------------------------------
+# Additional edge case tests
+# ---------------------------------------------------------------------------
+
+
+class TestNoAZSet:
+    """Test when no component has any AZ configured (no AZ awareness)."""
+
+    def test_no_az_on_any_component(self):
+        graph = InfraGraph()
+        for cid in ["app", "db"]:
+            graph.add_component(Component(
+                id=cid, name=cid, type=ComponentType.APP_SERVER,
+                region=RegionConfig(),  # no AZ set
+            ))
+        detector = AntiPatternDetector(graph)
+        patterns = detector.detect()
+        az_patterns = [p for p in patterns if p.id == "single_az"]
+        assert len(az_patterns) == 1
+        assert az_patterns[0].severity == "critical"
+        assert "No availability zone" in az_patterns[0].description
+
+
+class TestMixedAZ:
+    """Partial AZ coverage should NOT trigger single_az."""
+
+    def test_some_components_have_az_some_dont(self):
+        graph = InfraGraph()
+        graph.add_component(Component(
+            id="app", name="App", type=ComponentType.APP_SERVER,
+            region=RegionConfig(availability_zone="us-east-1a"),
+        ))
+        graph.add_component(Component(
+            id="db", name="DB", type=ComponentType.DATABASE,
+            region=RegionConfig(),  # no AZ
+        ))
+        detector = AntiPatternDetector(graph)
+        patterns = detector.detect()
+        az_patterns = [p for p in patterns if p.id == "single_az"]
+        assert len(az_patterns) == 0
+
+
+class TestDatabaseDirectAccessSingleApp:
+    """Single app server accessing DB directly should NOT be flagged."""
+
+    def test_single_app_to_db(self):
+        graph = InfraGraph()
+        graph.add_component(Component(
+            id="db", name="Database", type=ComponentType.DATABASE,
+        ))
+        graph.add_component(Component(
+            id="app", name="App", type=ComponentType.APP_SERVER,
+        ))
+        graph.add_dependency(Dependency(
+            source_id="app", target_id="db", dependency_type="requires",
+        ))
+        detector = AntiPatternDetector(graph)
+        patterns = detector.detect()
+        db_patterns = [p for p in patterns if p.id == "database_direct_access"]
+        assert len(db_patterns) == 0
+
+
+class TestThunderingHerdWithSingleflight:
+    """Components with singleflight enabled should not be flagged."""
+
+    def test_singleflight_prevents_thundering_herd(self):
+        graph = InfraGraph()
+        graph.add_component(Component(
+            id="db", name="Database", type=ComponentType.DATABASE,
+        ))
+        for i in range(3):
+            cid = f"app_{i}"
+            graph.add_component(Component(
+                id=cid, name=f"App {i}", type=ComponentType.APP_SERVER,
+                singleflight=SingleflightConfig(enabled=True),
+            ))
+            graph.add_dependency(Dependency(
+                source_id=cid, target_id="db", dependency_type="requires",
+                retry_strategy=RetryStrategy(enabled=False),
+            ))
+        detector = AntiPatternDetector(graph)
+        patterns = detector.detect()
+        th_patterns = [p for p in patterns if p.id == "thundering_herd"]
+        assert len(th_patterns) == 0
+
+
+class TestSeverityOrdering:
+    """Verify severity ordering constant is correct."""
+
+    def test_severity_order_values(self):
+        from infrasim.simulator.antipattern_detector import _SEVERITY_ORDER
+        assert _SEVERITY_ORDER["critical"] > _SEVERITY_ORDER["high"]
+        assert _SEVERITY_ORDER["high"] > _SEVERITY_ORDER["medium"]
