@@ -1,0 +1,201 @@
+# ChaosProof Template: Data Pipeline
+#
+# Architecture: Ingestion API -> Message Queue -> Stream Processor -> Database + Object Storage
+# Use case: Real-time data ingestion and processing pipeline
+#
+# Load with:
+#   infrasim template use data-pipeline --output my-infra.yaml
+
+schema_version: "3.0"
+
+components:
+  - id: ingestion-api
+    name: "Data Ingestion API"
+    type: app_server
+    host: ingest.data.internal
+    port: 443
+    replicas: 3
+    capacity:
+      max_connections: 10000
+      max_rps: 50000
+      timeout_seconds: 5
+      max_memory_mb: 4096
+    metrics:
+      cpu_percent: 25
+      memory_percent: 30
+      network_connections: 3000
+    autoscaling:
+      enabled: true
+      min_replicas: 2
+      max_replicas: 12
+      scale_up_threshold: 60
+    security:
+      encryption_in_transit: true
+      rate_limiting: true
+      auth_required: true
+      log_enabled: true
+    cost_profile:
+      hourly_infra_cost: 0.40
+    compliance_tags:
+      data_classification: confidential
+      audit_logging: true
+
+  - id: message-queue
+    name: "Kafka Message Queue"
+    type: queue
+    host: kafka.data.internal
+    port: 9092
+    replicas: 3
+    capacity:
+      max_connections: 20000
+      max_disk_gb: 500
+    metrics:
+      cpu_percent: 20
+      memory_percent: 55
+      disk_percent: 40
+      network_connections: 1500
+    failover:
+      enabled: true
+      promotion_time_seconds: 10
+    security:
+      encryption_at_rest: true
+      encryption_in_transit: true
+      auth_required: true
+      network_segmented: true
+      log_enabled: true
+    cost_profile:
+      hourly_infra_cost: 0.80
+    compliance_tags:
+      data_classification: confidential
+      audit_logging: true
+
+  - id: stream-processor
+    name: "Stream Processor (Flink)"
+    type: app_server
+    host: processor.data.internal
+    port: 8081
+    replicas: 4
+    capacity:
+      max_connections: 5000
+      max_rps: 30000
+      max_memory_mb: 16384
+    metrics:
+      cpu_percent: 60
+      memory_percent: 70
+      network_connections: 800
+    autoscaling:
+      enabled: true
+      min_replicas: 2
+      max_replicas: 16
+      scale_up_threshold: 65
+    security:
+      encryption_in_transit: true
+      log_enabled: true
+      network_segmented: true
+    cost_profile:
+      hourly_infra_cost: 1.50
+    compliance_tags:
+      data_classification: confidential
+
+  - id: analytics-db
+    name: "Analytics Database (ClickHouse)"
+    type: database
+    host: analytics.data.internal
+    port: 8123
+    replicas: 3
+    capacity:
+      max_connections: 500
+      max_disk_gb: 2000
+      max_memory_mb: 65536
+    metrics:
+      cpu_percent: 40
+      memory_percent: 55
+      disk_percent: 50
+      network_connections: 200
+    failover:
+      enabled: true
+      promotion_time_seconds: 30
+    security:
+      encryption_at_rest: true
+      encryption_in_transit: true
+      backup_enabled: true
+      backup_frequency_hours: 6
+      network_segmented: true
+      log_enabled: true
+    cost_profile:
+      hourly_infra_cost: 2.50
+    compliance_tags:
+      data_classification: confidential
+      audit_logging: true
+
+  - id: object-storage
+    name: "S3 Object Storage"
+    type: storage
+    host: s3.data.internal
+    port: 443
+    replicas: 3
+    capacity:
+      max_disk_gb: 10000
+      max_connections: 5000
+    metrics:
+      cpu_percent: 5
+      memory_percent: 10
+      disk_percent: 30
+    security:
+      encryption_at_rest: true
+      encryption_in_transit: true
+      backup_enabled: true
+      log_enabled: true
+    cost_profile:
+      hourly_infra_cost: 0.15
+    compliance_tags:
+      data_classification: confidential
+      audit_logging: true
+
+dependencies:
+  - source: ingestion-api
+    target: message-queue
+    type: requires
+    protocol: tcp
+    port: 9092
+    latency_ms: 3.0
+    circuit_breaker:
+      enabled: true
+      failure_threshold: 5
+      recovery_timeout_seconds: 30
+    retry_strategy:
+      enabled: true
+      max_retries: 5
+      initial_delay_ms: 200
+
+  - source: stream-processor
+    target: message-queue
+    type: requires
+    protocol: tcp
+    port: 9092
+    latency_ms: 2.0
+
+  - source: stream-processor
+    target: analytics-db
+    type: requires
+    protocol: tcp
+    port: 8123
+    latency_ms: 5.0
+    circuit_breaker:
+      enabled: true
+      failure_threshold: 3
+      recovery_timeout_seconds: 60
+    retry_strategy:
+      enabled: true
+      max_retries: 3
+
+  - source: stream-processor
+    target: object-storage
+    type: async
+    protocol: http
+    port: 443
+    latency_ms: 10.0
+    weight: 0.6
+    circuit_breaker:
+      enabled: true
+      failure_threshold: 5

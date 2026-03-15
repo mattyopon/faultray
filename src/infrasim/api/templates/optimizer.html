@@ -1,0 +1,327 @@
+{% extends "base.html" %}
+{% set active_page = "optimizer" %}
+
+{% block title %}FaultRay - Pareto Optimizer{% endblock %}
+{% block page_title %}Pareto Optimizer{% endblock %}
+{% block page_subtitle %}<span class="page-subtitle">Cost vs. Resilience trade-off analysis</span>{% endblock %}
+
+{% block content %}
+<div x-data="paretoOptimizer()" x-init="init()">
+    {% if not has_data %}
+    <div class="empty-inline">
+        <h3>No Infrastructure Loaded</h3>
+        <p>Load infrastructure data to run Pareto optimization.</p>
+    </div>
+    {% else %}
+    <!-- Summary Cards -->
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px; margin-bottom: 24px;">
+        <div class="card" style="padding: 16px; text-align: center;">
+            <div style="font-size: 0.8em; color: var(--text-secondary);">Current Score</div>
+            <div style="font-size: 2em; font-weight: bold; color: var(--accent);" x-text="current.resilience_score || '-'"></div>
+            <div style="font-size: 0.8em; color: var(--text-secondary);" x-text="'$' + (current.estimated_monthly_cost || 0).toLocaleString() + '/mo'"></div>
+        </div>
+        <div class="card" style="padding: 16px; text-align: center;">
+            <div style="font-size: 0.8em; color: var(--text-secondary);">Best Resilience</div>
+            <div style="font-size: 2em; font-weight: bold; color: #00b894;" x-text="bestResilient.resilience_score || '-'"></div>
+            <div style="font-size: 0.8em; color: var(--text-secondary);" x-text="'$' + (bestResilient.estimated_monthly_cost || 0).toLocaleString() + '/mo'"></div>
+        </div>
+        <div class="card" style="padding: 16px; text-align: center;">
+            <div style="font-size: 0.8em; color: var(--text-secondary);">Best Value</div>
+            <div style="font-size: 2em; font-weight: bold; color: #f0a500;" x-text="bestValue.resilience_score || '-'"></div>
+            <div style="font-size: 0.8em; color: var(--text-secondary);" x-text="'$' + (bestValue.estimated_monthly_cost || 0).toLocaleString() + '/mo'"></div>
+        </div>
+        <div class="card" style="padding: 16px; text-align: center;">
+            <div style="font-size: 0.8em; color: var(--text-secondary);">Cost to +1 Nine</div>
+            <div style="font-size: 2em; font-weight: bold; color: #e94560;" x-text="costToNextNine > 0 ? '$' + costToNextNine.toLocaleString() : 'N/A'"></div>
+            <div style="font-size: 0.8em; color: var(--text-secondary);">additional/mo</div>
+        </div>
+    </div>
+
+    <div style="display: grid; grid-template-columns: 1fr 380px; gap: 20px;">
+        <!-- Chart Area -->
+        <div class="card" style="padding: 20px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+                <h3 style="margin: 0;">Pareto Frontier</h3>
+                <div style="display: flex; gap: 12px; align-items: center;">
+                    <label style="font-size: 0.8em; display: flex; align-items: center; gap: 6px;">
+                        Budget: $<input type="number" x-model.number="budgetFilter" @input="applyBudgetFilter()"
+                               style="width: 80px; padding: 4px 8px; background: var(--bg-tertiary); border: 1px solid var(--border); border-radius: 4px; color: var(--text-primary);"
+                               placeholder="max">
+                        /mo
+                    </label>
+                    <label style="font-size: 0.8em; display: flex; align-items: center; gap: 6px;">
+                        Target:
+                        <input type="number" x-model.number="targetFilter" @input="applyTargetFilter()"
+                               style="width: 60px; padding: 4px 8px; background: var(--bg-tertiary); border: 1px solid var(--border); border-radius: 4px; color: var(--text-primary);"
+                               placeholder="score" min="0" max="100">
+                    </label>
+                </div>
+            </div>
+
+            <!-- CSS Scatter Plot -->
+            <div style="position: relative; width: 100%; height: 400px; background: var(--bg-tertiary); border-radius: 8px; border: 1px solid var(--border); overflow: hidden;">
+                <!-- Y-axis label -->
+                <div style="position: absolute; left: -4px; top: 50%; transform: rotate(-90deg) translateX(-50%); font-size: 0.75em; color: var(--text-secondary); white-space: nowrap;">Resilience Score</div>
+                <!-- X-axis label -->
+                <div style="position: absolute; bottom: 2px; left: 50%; transform: translateX(-50%); font-size: 0.75em; color: var(--text-secondary);">Monthly Cost ($)</div>
+
+                <!-- Grid lines -->
+                <template x-for="i in 4">
+                    <div :style="`position:absolute; left:40px; right:10px; top:${10 + (i-1)*25}%; height:1px; background:var(--border); opacity:0.3;`"></div>
+                </template>
+
+                <!-- Y-axis values -->
+                <template x-for="i in 5">
+                    <div :style="`position:absolute; left:4px; top:${8 + (i-1)*20}%; font-size:0.65em; color:var(--text-secondary);`"
+                         x-text="(100 - (i-1)*25)"></div>
+                </template>
+
+                <!-- Plot area -->
+                <div style="position: absolute; left: 40px; right: 10px; top: 10px; bottom: 30px;" x-ref="plotArea">
+                    <!-- Budget line -->
+                    <template x-if="budgetFilter > 0 && maxCost > 0">
+                        <div :style="`position:absolute; left:${Math.min(100, (budgetFilter/maxCost)*100)}%; top:0; bottom:0; width:2px; background:#e94560; opacity:0.6;`">
+                            <div style="position:absolute; top:-16px; left:4px; font-size:0.65em; color:#e94560; white-space:nowrap;" x-text="'Budget $'+budgetFilter.toLocaleString()"></div>
+                        </div>
+                    </template>
+
+                    <!-- Target line -->
+                    <template x-if="targetFilter > 0">
+                        <div :style="`position:absolute; left:0; right:0; top:${100 - targetFilter}%; height:2px; background:#00b894; opacity:0.6;`">
+                            <div style="position:absolute; right:4px; top:-16px; font-size:0.65em; color:#00b894; white-space:nowrap;" x-text="'Target '+targetFilter"></div>
+                        </div>
+                    </template>
+
+                    <!-- Solution points -->
+                    <template x-for="(sol, idx) in displaySolutions" :key="idx">
+                        <div @click="selectSolution(idx)"
+                             :style="`position:absolute; left:calc(${maxCost > 0 ? (sol.estimated_monthly_cost/maxCost)*100 : 50}% - 6px); top:calc(${100 - sol.resilience_score}% - 6px); width:12px; height:12px; border-radius:50%; cursor:pointer; transition:all 0.2s; z-index:${selectedIdx === idx ? 10 : 1}; transform:scale(${selectedIdx === idx ? 1.8 : 1}); border:2px solid ${sol.is_current ? '#e94560' : (selectedIdx === idx ? '#fff' : 'transparent')};`"
+                             :class="sol.is_current ? 'plot-dot-current' : 'plot-dot'"
+                             :title="`Score: ${sol.resilience_score} | Cost: $${sol.estimated_monthly_cost.toLocaleString()}`">
+                        </div>
+                    </template>
+                </div>
+            </div>
+
+            <!-- Legend -->
+            <div style="display: flex; gap: 20px; margin-top: 12px; font-size: 0.8em; color: var(--text-secondary);">
+                <span><span style="display:inline-block; width:10px; height:10px; border-radius:50%; background:#e94560; margin-right:4px;"></span> Current</span>
+                <span><span style="display:inline-block; width:10px; height:10px; border-radius:50%; background:var(--accent); margin-right:4px;"></span> Pareto Optimal</span>
+                <span style="color:#e94560;">| Budget Limit</span>
+                <span style="color:#00b894;">-- Target Score</span>
+            </div>
+        </div>
+
+        <!-- Solution Detail Panel -->
+        <div>
+            <div class="card" style="padding: 16px; position: sticky; top: 20px;">
+                <h3 style="margin-top: 0; display: flex; align-items: center; gap: 8px;">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/>
+                    </svg>
+                    <span x-text="selectedSolution ? 'Solution #' + (selectedIdx + 1) : 'Select a Solution'"></span>
+                </h3>
+
+                <template x-if="selectedSolution">
+                    <div>
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 16px;">
+                            <div style="padding: 12px; background: var(--bg-tertiary); border-radius: 8px; text-align: center;">
+                                <div style="font-size: 0.75em; color: var(--text-secondary);">Score</div>
+                                <div style="font-size: 1.5em; font-weight: bold;" x-text="selectedSolution.resilience_score"></div>
+                            </div>
+                            <div style="padding: 12px; background: var(--bg-tertiary); border-radius: 8px; text-align: center;">
+                                <div style="font-size: 0.75em; color: var(--text-secondary);">Cost/mo</div>
+                                <div style="font-size: 1.5em; font-weight: bold;" x-text="'$' + selectedSolution.estimated_monthly_cost.toLocaleString()"></div>
+                            </div>
+                            <div style="padding: 12px; background: var(--bg-tertiary); border-radius: 8px; text-align: center;">
+                                <div style="font-size: 0.75em; color: var(--text-secondary);">Nines</div>
+                                <div style="font-size: 1.5em; font-weight: bold;" x-text="selectedSolution.availability_nines"></div>
+                            </div>
+                            <div style="padding: 12px; background: var(--bg-tertiary); border-radius: 8px; text-align: center;">
+                                <div style="font-size: 0.75em; color: var(--text-secondary);">SPOFs</div>
+                                <div style="font-size: 1.5em; font-weight: bold;" x-text="selectedSolution.spof_count"></div>
+                            </div>
+                        </div>
+
+                        <template x-if="selectedSolution.is_current">
+                            <div style="padding: 8px 12px; background: rgba(233,69,96,0.1); border: 1px solid rgba(233,69,96,0.3); border-radius: 6px; font-size: 0.85em; margin-bottom: 12px;">
+                                This is your current configuration.
+                            </div>
+                        </template>
+
+                        <template x-if="selectedSolution.improvements && selectedSolution.improvements.length > 0">
+                            <div>
+                                <h4 style="margin: 12px 0 8px 0; font-size: 0.9em;">Required Changes:</h4>
+                                <template x-for="imp in selectedSolution.improvements" :key="imp">
+                                    <div style="padding: 6px 10px; margin-bottom: 4px; background: var(--bg-tertiary); border-radius: 4px; font-size: 0.85em; border-left: 3px solid #00b894;">
+                                        <span x-text="imp"></span>
+                                    </div>
+                                </template>
+                            </div>
+                        </template>
+
+                        <template x-if="!selectedSolution.is_current">
+                            <div style="margin-top: 16px; padding: 10px; background: var(--bg-tertiary); border-radius: 6px;">
+                                <div style="font-size: 0.8em; color: var(--text-secondary);">Cost Delta from Current</div>
+                                <div style="font-size: 1.2em; font-weight: bold;"
+                                     :style="`color: ${selectedSolution.estimated_monthly_cost > current.estimated_monthly_cost ? '#e94560' : '#00b894'}`"
+                                     x-text="(selectedSolution.estimated_monthly_cost > current.estimated_monthly_cost ? '+' : '') + '$' + (selectedSolution.estimated_monthly_cost - current.estimated_monthly_cost).toLocaleString() + '/mo'">
+                                </div>
+                                <div style="font-size: 0.8em; color: var(--text-secondary); margin-top: 4px;">
+                                    Score: <span x-text="current.resilience_score"></span> &rarr; <span x-text="selectedSolution.resilience_score"></span>
+                                    (<span :style="`color: ${selectedSolution.resilience_score > current.resilience_score ? '#00b894' : '#e94560'}`"
+                                           x-text="(selectedSolution.resilience_score > current.resilience_score ? '+' : '') + (selectedSolution.resilience_score - current.resilience_score).toFixed(1)"></span>)
+                                </div>
+                            </div>
+                        </template>
+                    </div>
+                </template>
+
+                <template x-if="!selectedSolution">
+                    <p style="color: var(--text-secondary); font-size: 0.9em;">
+                        Click a point on the scatter plot to see solution details and required changes.
+                    </p>
+                </template>
+            </div>
+        </div>
+    </div>
+
+    <!-- Solutions Table -->
+    <div class="card" style="padding: 20px; margin-top: 20px;">
+        <h3 style="margin-top: 0;">All Pareto-Optimal Solutions</h3>
+        <div style="overflow-x: auto;">
+            <table style="width: 100%; border-collapse: collapse; font-size: 0.85em;">
+                <thead>
+                    <tr style="border-bottom: 2px solid var(--border);">
+                        <th style="padding: 8px 12px; text-align: left;">#</th>
+                        <th style="padding: 8px 12px; text-align: right;">Score</th>
+                        <th style="padding: 8px 12px; text-align: right;">Nines</th>
+                        <th style="padding: 8px 12px; text-align: right;">Cost/mo</th>
+                        <th style="padding: 8px 12px; text-align: right;">SPOFs</th>
+                        <th style="padding: 8px 12px; text-align: left;">Key Changes</th>
+                        <th style="padding: 8px 12px; text-align: center;"></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <template x-for="(sol, idx) in displaySolutions" :key="idx">
+                        <tr @click="selectSolution(idx)"
+                            style="border-bottom: 1px solid var(--border); cursor: pointer; transition: background 0.15s;"
+                            :style="`background: ${selectedIdx === idx ? 'rgba(9,132,227,0.1)' : 'transparent'};`"
+                            @mouseenter="$el.style.background = selectedIdx === idx ? 'rgba(9,132,227,0.15)' : 'var(--bg-tertiary)'"
+                            @mouseleave="$el.style.background = selectedIdx === idx ? 'rgba(9,132,227,0.1)' : 'transparent'">
+                            <td style="padding: 8px 12px;" x-text="idx + 1"></td>
+                            <td style="padding: 8px 12px; text-align: right; font-weight: bold;"
+                                :style="`color: ${sol.resilience_score >= 80 ? '#00b894' : sol.resilience_score >= 50 ? '#f0a500' : '#e94560'};`"
+                                x-text="sol.resilience_score"></td>
+                            <td style="padding: 8px 12px; text-align: right;" x-text="sol.availability_nines"></td>
+                            <td style="padding: 8px 12px; text-align: right;" x-text="'$' + sol.estimated_monthly_cost.toLocaleString()"></td>
+                            <td style="padding: 8px 12px; text-align: right;" x-text="sol.spof_count"></td>
+                            <td style="padding: 8px 12px; font-size: 0.9em; color: var(--text-secondary);"
+                                x-text="sol.is_current ? '(current)' : (sol.improvements || []).slice(0,2).join(', ') + (sol.improvements && sol.improvements.length > 2 ? ' ...' : '')"></td>
+                            <td style="padding: 8px 12px; text-align: center;"
+                                x-text="sol.is_current ? 'CURRENT' : ''"></td>
+                        </tr>
+                    </template>
+                </tbody>
+            </table>
+        </div>
+    </div>
+    {% endif %}
+</div>
+
+<style>
+.plot-dot {
+    background: var(--accent);
+}
+.plot-dot:hover {
+    transform: scale(1.5) !important;
+    box-shadow: 0 0 8px var(--accent);
+}
+.plot-dot-current {
+    background: #e94560;
+}
+.plot-dot-current:hover {
+    transform: scale(1.5) !important;
+    box-shadow: 0 0 8px #e94560;
+}
+</style>
+{% endblock %}
+
+{% block scripts %}
+<script>
+function paretoOptimizer() {
+    return {
+        solutions: [],
+        displaySolutions: [],
+        current: {},
+        bestResilient: {},
+        bestValue: {},
+        costToNextNine: 0,
+        maxCost: 0,
+        selectedIdx: null,
+        selectedSolution: null,
+        budgetFilter: 0,
+        targetFilter: 0,
+
+        async init() {
+            try {
+                const resp = await fetch('/api/optimize');
+                const data = await resp.json();
+                this.solutions = data.solutions || [];
+                this.displaySolutions = [...this.solutions];
+                this.current = data.current || {};
+                this.costToNextNine = data.cost_to_next_nine || 0;
+
+                // Find special solutions
+                if (this.solutions.length > 0) {
+                    this.bestResilient = this.solutions.reduce((a, b) =>
+                        a.resilience_score > b.resilience_score ? a : b);
+                    this.bestValue = this.solutions.reduce((a, b) =>
+                        (a.resilience_score / Math.max(a.estimated_monthly_cost, 1)) >
+                        (b.resilience_score / Math.max(b.estimated_monthly_cost, 1)) ? a : b);
+                    this.maxCost = Math.max(...this.solutions.map(s => s.estimated_monthly_cost)) * 1.1;
+                }
+
+                // Auto-select current
+                const currentIdx = this.solutions.findIndex(s => s.is_current);
+                if (currentIdx >= 0) {
+                    this.selectSolution(currentIdx);
+                }
+            } catch (e) {
+                console.error('Failed to load optimization data:', e);
+            }
+        },
+
+        selectSolution(idx) {
+            this.selectedIdx = idx;
+            this.selectedSolution = this.displaySolutions[idx];
+        },
+
+        applyBudgetFilter() {
+            this.applyFilters();
+        },
+
+        applyTargetFilter() {
+            this.applyFilters();
+        },
+
+        applyFilters() {
+            let filtered = [...this.solutions];
+            if (this.budgetFilter > 0) {
+                filtered = filtered.filter(s => s.estimated_monthly_cost <= this.budgetFilter || s.is_current);
+            }
+            if (this.targetFilter > 0) {
+                filtered = filtered.filter(s => s.resilience_score >= this.targetFilter || s.is_current);
+            }
+            this.displaySolutions = filtered;
+            this.selectedIdx = null;
+            this.selectedSolution = null;
+
+            if (filtered.length > 0) {
+                this.maxCost = Math.max(...filtered.map(s => s.estimated_monthly_cost)) * 1.1;
+            }
+        }
+    };
+}
+</script>
+{% endblock %}

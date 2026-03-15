@@ -1,0 +1,312 @@
+# ChaosProof Template: E-Commerce Platform
+#
+# Architecture: CDN -> LB -> Web + API -> DB + Cache + Queue + Search
+# Use case: Full-featured e-commerce platform with PCI compliance
+#
+# Load with:
+#   infrasim template use ecommerce --output my-infra.yaml
+
+schema_version: "3.0"
+
+components:
+  - id: cdn
+    name: "CloudFront CDN"
+    type: load_balancer
+    host: cdn.shop.internal
+    port: 443
+    replicas: 2
+    capacity:
+      max_connections: 100000
+      max_rps: 200000
+    metrics:
+      cpu_percent: 5
+      memory_percent: 8
+      network_connections: 5000
+    security:
+      encryption_in_transit: true
+      waf_protected: true
+      rate_limiting: true
+      log_enabled: true
+    cost_profile:
+      hourly_infra_cost: 0.20
+    compliance_tags:
+      data_classification: public
+      audit_logging: true
+
+  - id: lb
+    name: "Application Load Balancer"
+    type: load_balancer
+    host: alb.shop.internal
+    port: 443
+    replicas: 2
+    capacity:
+      max_connections: 50000
+      max_rps: 100000
+    metrics:
+      cpu_percent: 10
+      memory_percent: 12
+      network_connections: 3000
+    failover:
+      enabled: true
+      promotion_time_seconds: 10
+    security:
+      encryption_in_transit: true
+      waf_protected: true
+      rate_limiting: true
+      log_enabled: true
+      ids_monitored: true
+    cost_profile:
+      hourly_infra_cost: 0.30
+    compliance_tags:
+      data_classification: internal
+      pci_scope: true
+      audit_logging: true
+
+  - id: web-frontend
+    name: "Web Frontend (Next.js)"
+    type: web_server
+    host: web.shop.internal
+    port: 3000
+    replicas: 3
+    capacity:
+      max_connections: 10000
+      max_rps: 30000
+      max_memory_mb: 4096
+    metrics:
+      cpu_percent: 25
+      memory_percent: 35
+      network_connections: 1200
+    autoscaling:
+      enabled: true
+      min_replicas: 2
+      max_replicas: 10
+    security:
+      encryption_in_transit: true
+      log_enabled: true
+    cost_profile:
+      hourly_infra_cost: 0.30
+    compliance_tags:
+      data_classification: public
+
+  - id: api-server
+    name: "API Server (Node.js)"
+    type: app_server
+    host: api.shop.internal
+    port: 8080
+    replicas: 4
+    capacity:
+      max_connections: 5000
+      max_rps: 20000
+      connection_pool_size: 200
+      timeout_seconds: 15
+      max_memory_mb: 4096
+    metrics:
+      cpu_percent: 40
+      memory_percent: 50
+      network_connections: 1500
+    autoscaling:
+      enabled: true
+      min_replicas: 3
+      max_replicas: 12
+    security:
+      encryption_in_transit: true
+      auth_required: true
+      log_enabled: true
+      network_segmented: true
+    cost_profile:
+      hourly_infra_cost: 0.50
+      revenue_per_minute: 100.0
+    compliance_tags:
+      data_classification: confidential
+      pci_scope: true
+      audit_logging: true
+
+  - id: product-db
+    name: "Product Database (PostgreSQL)"
+    type: database
+    host: productdb.shop.internal
+    port: 5432
+    replicas: 2
+    capacity:
+      max_connections: 500
+      max_disk_gb: 500
+      max_memory_mb: 16384
+    metrics:
+      cpu_percent: 30
+      memory_percent: 55
+      disk_percent: 40
+      network_connections: 150
+    failover:
+      enabled: true
+      promotion_time_seconds: 20
+    security:
+      encryption_at_rest: true
+      encryption_in_transit: true
+      backup_enabled: true
+      backup_frequency_hours: 4
+      network_segmented: true
+      log_enabled: true
+    cost_profile:
+      hourly_infra_cost: 1.50
+    compliance_tags:
+      data_classification: confidential
+      pci_scope: true
+      audit_logging: true
+
+  - id: redis-cache
+    name: "Redis Cache"
+    type: cache
+    host: redis.shop.internal
+    port: 6379
+    replicas: 2
+    capacity:
+      max_connections: 20000
+      max_memory_mb: 8192
+    metrics:
+      cpu_percent: 10
+      memory_percent: 65
+      network_connections: 1000
+    failover:
+      enabled: true
+      promotion_time_seconds: 5
+    security:
+      encryption_in_transit: true
+      auth_required: true
+      network_segmented: true
+    cost_profile:
+      hourly_infra_cost: 0.45
+    compliance_tags:
+      data_classification: internal
+
+  - id: order-queue
+    name: "SQS Order Queue"
+    type: queue
+    host: sqs.shop.internal
+    port: 443
+    replicas: 2
+    capacity:
+      max_connections: 10000
+    metrics:
+      cpu_percent: 8
+      memory_percent: 15
+      network_connections: 300
+    security:
+      encryption_at_rest: true
+      encryption_in_transit: true
+      log_enabled: true
+    cost_profile:
+      hourly_infra_cost: 0.10
+    compliance_tags:
+      data_classification: confidential
+      audit_logging: true
+
+  - id: search-engine
+    name: "Elasticsearch Search"
+    type: custom
+    host: search.shop.internal
+    port: 9200
+    replicas: 3
+    capacity:
+      max_connections: 3000
+      max_disk_gb: 200
+      max_memory_mb: 16384
+    metrics:
+      cpu_percent: 35
+      memory_percent: 60
+      disk_percent: 45
+      network_connections: 400
+    autoscaling:
+      enabled: true
+      min_replicas: 2
+      max_replicas: 6
+    security:
+      encryption_at_rest: true
+      encryption_in_transit: true
+      auth_required: true
+      network_segmented: true
+      log_enabled: true
+    cost_profile:
+      hourly_infra_cost: 1.00
+    compliance_tags:
+      data_classification: internal
+
+dependencies:
+  - source: cdn
+    target: lb
+    type: requires
+    protocol: http
+    latency_ms: 2.0
+
+  - source: lb
+    target: web-frontend
+    type: requires
+    protocol: http
+    latency_ms: 1.0
+    circuit_breaker:
+      enabled: true
+      failure_threshold: 5
+
+  - source: lb
+    target: api-server
+    type: requires
+    protocol: http
+    latency_ms: 1.0
+    circuit_breaker:
+      enabled: true
+      failure_threshold: 5
+
+  - source: web-frontend
+    target: api-server
+    type: requires
+    protocol: http
+    port: 8080
+    latency_ms: 2.0
+    circuit_breaker:
+      enabled: true
+      failure_threshold: 5
+      recovery_timeout_seconds: 30
+
+  - source: api-server
+    target: product-db
+    type: requires
+    protocol: tcp
+    port: 5432
+    latency_ms: 2.0
+    circuit_breaker:
+      enabled: true
+      failure_threshold: 3
+    retry_strategy:
+      enabled: true
+      max_retries: 3
+
+  - source: api-server
+    target: redis-cache
+    type: optional
+    protocol: tcp
+    port: 6379
+    latency_ms: 0.5
+    weight: 0.7
+    circuit_breaker:
+      enabled: true
+      failure_threshold: 5
+
+  - source: api-server
+    target: order-queue
+    type: async
+    protocol: http
+    latency_ms: 5.0
+    weight: 0.8
+    circuit_breaker:
+      enabled: true
+      failure_threshold: 5
+
+  - source: api-server
+    target: search-engine
+    type: optional
+    protocol: http
+    port: 9200
+    latency_ms: 10.0
+    weight: 0.6
+    circuit_breaker:
+      enabled: true
+      failure_threshold: 5

@@ -1,0 +1,321 @@
+{% extends "base.html" %}
+{% set active_page = "whatif" %}
+
+{% block title %}FaultRay - What-If Analysis{% endblock %}
+{% block page_title %}What-If Analysis{% endblock %}
+{% block page_subtitle %}<span class="page-subtitle">Interactive parameter tuning & resilience prediction</span>{% endblock %}
+
+{% block content %}
+<div x-data="whatIfAnalysis()" x-init="init()">
+    {% if not has_data %}
+    <div class="empty-inline">
+        <h3>No Infrastructure Loaded</h3>
+        <p>Load infrastructure data to start what-if analysis.</p>
+    </div>
+    {% else %}
+    <div style="display: grid; grid-template-columns: 380px 1fr; gap: 20px;">
+        <!-- Parameter Panel (left) -->
+        <div>
+            <div class="card" style="position: sticky; top: 20px;">
+                <h3 style="margin-top: 0; display: flex; align-items: center; gap: 8px;">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M12 20V10"/><path d="M18 20V4"/><path d="M6 20v-4"/>
+                    </svg>
+                    Parameters
+                </h3>
+
+                <template x-for="(comp, compId) in components" :key="compId">
+                    <div style="margin-bottom: 16px; padding: 12px; background: var(--bg-tertiary); border-radius: 8px;">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                            <strong style="font-size: 0.9em;" x-text="comp.name"></strong>
+                            <span style="font-size: 0.75em; color: var(--text-secondary);" x-text="comp.type"></span>
+                        </div>
+
+                        <!-- Replicas slider -->
+                        <div style="margin-bottom: 10px;">
+                            <div style="display: flex; justify-content: space-between; font-size: 0.8em; color: var(--text-secondary);">
+                                <span>Replicas</span>
+                                <span x-text="modifications[compId]?.replicas ?? comp.replicas"></span>
+                            </div>
+                            <input type="range" min="1" max="10"
+                                   :value="modifications[compId]?.replicas ?? comp.replicas"
+                                   @input="setModification(compId, 'replicas', parseInt($event.target.value))"
+                                   style="width: 100%; accent-color: var(--accent);">
+                        </div>
+
+                        <!-- Toggles -->
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 6px;">
+                            <label style="display: flex; align-items: center; gap: 6px; font-size: 0.8em; cursor: pointer;">
+                                <input type="checkbox"
+                                       :checked="modifications[compId]?.circuit_breaker ?? comp.circuit_breaker"
+                                       @change="setModification(compId, 'circuit_breaker', $event.target.checked)"
+                                       style="accent-color: var(--accent);">
+                                Circuit Breaker
+                            </label>
+                            <label style="display: flex; align-items: center; gap: 6px; font-size: 0.8em; cursor: pointer;">
+                                <input type="checkbox"
+                                       :checked="modifications[compId]?.autoscaling ?? comp.autoscaling"
+                                       @change="setModification(compId, 'autoscaling', $event.target.checked)"
+                                       style="accent-color: var(--accent);">
+                                Autoscaling
+                            </label>
+                            <label style="display: flex; align-items: center; gap: 6px; font-size: 0.8em; cursor: pointer;">
+                                <input type="checkbox"
+                                       :checked="modifications[compId]?.failover ?? comp.failover"
+                                       @change="setModification(compId, 'failover', $event.target.checked)"
+                                       style="accent-color: var(--accent);">
+                                Failover
+                            </label>
+                            <label style="display: flex; align-items: center; gap: 6px; font-size: 0.8em; cursor: pointer;">
+                                <input type="checkbox"
+                                       :checked="modifications[compId]?.health_check ?? comp.health_check"
+                                       @change="setModification(compId, 'health_check', $event.target.checked)"
+                                       style="accent-color: var(--accent);">
+                                Health Check
+                            </label>
+                        </div>
+                    </div>
+                </template>
+
+                <!-- Action buttons -->
+                <div style="display: flex; gap: 8px; margin-top: 12px;">
+                    <button class="btn btn-accent btn-sm" @click="calculate()" :disabled="calculating" style="flex: 1;">
+                        <template x-if="calculating"><span class="spinner"></span></template>
+                        <span x-text="calculating ? 'Calculating...' : 'Calculate'"></span>
+                    </button>
+                    <button class="btn btn-sm" @click="resetAll()" style="flex: 1; background: var(--bg-tertiary); border: 1px solid var(--border-color);">
+                        Reset
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Results Panel (right) -->
+        <div>
+            <!-- Resilience Score Card -->
+            <div class="card" style="margin-bottom: 20px;">
+                <div style="display: flex; align-items: center; gap: 30px; flex-wrap: wrap;">
+                    <!-- Score circle -->
+                    <div style="text-align: center; min-width: 120px;">
+                        <div style="position: relative; width: 100px; height: 100px; margin: 0 auto;">
+                            <svg viewBox="0 0 36 36" style="width: 100%; height: 100%; transform: rotate(-90deg);">
+                                <circle cx="18" cy="18" r="15.9" fill="none" stroke="var(--bg-tertiary)" stroke-width="2.5"/>
+                                <circle cx="18" cy="18" r="15.9" fill="none"
+                                        :stroke="scoreColor(currentScore)"
+                                        stroke-width="2.5"
+                                        stroke-linecap="round"
+                                        :stroke-dasharray="(currentScore) + ', 100'"
+                                        style="transition: stroke-dasharray 0.6s ease, stroke 0.6s ease;"/>
+                            </svg>
+                            <div style="position: absolute; inset: 0; display: flex; align-items: center; justify-content: center;">
+                                <span style="font-size: 1.6em; font-weight: bold;" :style="'color:' + scoreColor(currentScore)"
+                                      x-text="currentScore.toFixed(1)"></span>
+                            </div>
+                        </div>
+                        <div style="font-size: 0.85em; color: var(--text-secondary); margin-top: 4px;">Resilience Score</div>
+                    </div>
+
+                    <!-- Delta indicator -->
+                    <div style="text-align: center;">
+                        <div style="font-size: 2em; font-weight: bold;"
+                             :style="'color:' + (scoreDelta > 0 ? '#28a745' : (scoreDelta < 0 ? '#dc3545' : 'var(--text-secondary)'))"
+                             x-text="(scoreDelta > 0 ? '+' : '') + scoreDelta.toFixed(1)"></div>
+                        <div style="font-size: 0.85em; color: var(--text-secondary);">Delta from baseline</div>
+                    </div>
+
+                    <!-- Metrics -->
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; flex: 1; min-width: 200px;">
+                        <div style="background: var(--bg-tertiary); padding: 12px; border-radius: 8px; text-align: center;">
+                            <div style="font-size: 1.4em; font-weight: bold;" :style="'color:' + (spofCount === 0 ? '#28a745' : '#dc3545')"
+                                 x-text="spofCount"></div>
+                            <div style="font-size: 0.8em; color: var(--text-secondary);">SPOFs</div>
+                        </div>
+                        <div style="background: var(--bg-tertiary); padding: 12px; border-radius: 8px; text-align: center;">
+                            <div style="font-size: 1.4em; font-weight: bold; color: var(--text-primary);"
+                                 x-text="availabilityEstimate + '%'"></div>
+                            <div style="font-size: 0.8em; color: var(--text-secondary);">Availability</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Recommendations -->
+            <template x-if="recommendations.length > 0">
+                <div class="card" style="margin-bottom: 20px;">
+                    <h3 style="margin-top: 0;">Recommendations</h3>
+                    <template x-for="(rec, i) in recommendations" :key="i">
+                        <div style="padding: 10px 14px; background: var(--bg-tertiary); border-radius: 6px; margin-bottom: 8px; border-left: 3px solid #28a745; font-size: 0.9em;">
+                            <span x-text="rec"></span>
+                        </div>
+                    </template>
+                </div>
+            </template>
+
+            <!-- Before/After Comparison -->
+            <template x-if="hasCalculated">
+                <div class="card" style="margin-bottom: 20px;">
+                    <h3 style="margin-top: 0;">Before / After Comparison</h3>
+                    <table style="width: 100%; border-collapse: collapse;">
+                        <thead>
+                            <tr>
+                                <th style="text-align: left; padding: 10px; border-bottom: 1px solid var(--border-color);">Component</th>
+                                <th style="text-align: center; padding: 10px; border-bottom: 1px solid var(--border-color);">Before</th>
+                                <th style="text-align: center; padding: 10px; border-bottom: 1px solid var(--border-color);">After</th>
+                                <th style="text-align: center; padding: 10px; border-bottom: 1px solid var(--border-color);">Change</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <template x-for="(comp, compId) in components" :key="compId">
+                                <template x-if="hasModification(compId)">
+                                    <tr>
+                                        <td style="padding: 8px 10px; border-bottom: 1px solid var(--border-color);" x-text="comp.name"></td>
+                                        <td style="padding: 8px 10px; border-bottom: 1px solid var(--border-color); text-align: center; font-size: 0.85em;">
+                                            <span x-text="'R:' + comp.replicas"></span>
+                                            <span x-show="comp.autoscaling" style="color: #28a745;"> AS</span>
+                                            <span x-show="comp.failover" style="color: #0984e3;"> FO</span>
+                                        </td>
+                                        <td style="padding: 8px 10px; border-bottom: 1px solid var(--border-color); text-align: center; font-size: 0.85em;">
+                                            <span x-text="'R:' + (modifications[compId]?.replicas ?? comp.replicas)"></span>
+                                            <span x-show="modifications[compId]?.autoscaling ?? comp.autoscaling" style="color: #28a745;"> AS</span>
+                                            <span x-show="modifications[compId]?.failover ?? comp.failover" style="color: #0984e3;"> FO</span>
+                                        </td>
+                                        <td style="padding: 8px 10px; border-bottom: 1px solid var(--border-color); text-align: center;">
+                                            <span style="color: #ffc107;">Modified</span>
+                                        </td>
+                                    </tr>
+                                </template>
+                            </template>
+                        </tbody>
+                    </table>
+                </div>
+            </template>
+
+            <!-- Export / Apply -->
+            <template x-if="hasCalculated">
+                <div style="display: flex; gap: 12px;">
+                    <button class="btn btn-accent btn-sm" @click="exportYaml()" :disabled="exporting">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/>
+                            <polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/>
+                        </svg>
+                        <span x-text="exporting ? 'Exporting...' : 'Export YAML'"></span>
+                    </button>
+                </div>
+            </template>
+        </div>
+    </div>
+    {% endif %}
+</div>
+
+<script>
+function whatIfAnalysis() {
+    return {
+        components: {},
+        modifications: {},
+        baselineScore: 0,
+        currentScore: 0,
+        scoreDelta: 0,
+        spofCount: 0,
+        availabilityEstimate: '99.9',
+        recommendations: [],
+        calculating: false,
+        exporting: false,
+        hasCalculated: false,
+        debounceTimer: null,
+
+        async init() {
+            try {
+                const resp = await fetch('/api/whatif/components');
+                const data = await resp.json();
+                if (data.components) {
+                    this.components = data.components;
+                    this.baselineScore = data.baseline_score || 0;
+                    this.currentScore = this.baselineScore;
+                    this.spofCount = data.spof_count || 0;
+                    this.availabilityEstimate = data.availability_estimate || '99.9';
+                    this.recommendations = data.recommendations || [];
+                }
+            } catch (err) {
+                console.error('Failed to load components:', err);
+            }
+        },
+
+        setModification(compId, field, value) {
+            if (!this.modifications[compId]) {
+                this.modifications[compId] = {};
+            }
+            this.modifications[compId][field] = value;
+            // Auto-calculate with debounce
+            clearTimeout(this.debounceTimer);
+            this.debounceTimer = setTimeout(() => this.calculate(), 400);
+        },
+
+        hasModification(compId) {
+            return this.modifications[compId] && Object.keys(this.modifications[compId]).length > 0;
+        },
+
+        async calculate() {
+            this.calculating = true;
+            try {
+                const resp = await fetch('/api/whatif/calculate', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ modifications: this.modifications }),
+                });
+                const data = await resp.json();
+                if (data.error) {
+                    console.error(data.error);
+                    return;
+                }
+                this.currentScore = data.resilience_score || 0;
+                this.scoreDelta = data.delta || 0;
+                this.spofCount = data.spof_count || 0;
+                this.availabilityEstimate = data.availability_estimate || '99.9';
+                this.recommendations = data.recommendations || [];
+                this.hasCalculated = true;
+            } catch (err) {
+                console.error('Calculation failed:', err);
+            } finally {
+                this.calculating = false;
+            }
+        },
+
+        resetAll() {
+            this.modifications = {};
+            this.currentScore = this.baselineScore;
+            this.scoreDelta = 0;
+            this.hasCalculated = false;
+            this.init();
+        },
+
+        async exportYaml() {
+            this.exporting = true;
+            try {
+                const resp = await fetch('/api/whatif/export', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ modifications: this.modifications }),
+                });
+                const blob = await resp.blob();
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = 'whatif-modified.yaml';
+                a.click();
+                URL.revokeObjectURL(url);
+            } catch (err) {
+                console.error('Export failed:', err);
+            } finally {
+                this.exporting = false;
+            }
+        },
+
+        scoreColor(score) {
+            if (score >= 80) return '#28a745';
+            if (score >= 60) return '#ffc107';
+            return '#dc3545';
+        }
+    };
+}
+</script>
+{% endblock %}

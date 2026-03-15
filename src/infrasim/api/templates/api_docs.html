@@ -1,0 +1,1253 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>FaultRay API Documentation</title>
+<style>
+/* ── Reset & Variables ──────────────────────────────────── */
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#0d1117;--bg-nav:#161b22;--bg-content:#0d1117;--bg-code:#1c2128;
+  --bg-card:#21262d;--bg-hover:#30363d;
+  --text:#c9d1d9;--text-muted:#8b949e;--text-bright:#f0f6fc;
+  --border:#30363d;
+  --accent:#58a6ff;--accent-dim:#1f6feb;
+  --green:#3fb950;--red:#f85149;--yellow:#d29922;--purple:#bc8cff;--orange:#f0883e;
+  --method-get:#3fb950;--method-post:#58a6ff;--method-put:#d29922;--method-delete:#f85149;
+  --method-patch:#bc8cff;
+  --font-sans:-apple-system,BlinkMacSystemFont,"Segoe UI",Helvetica,Arial,sans-serif;
+  --font-mono:"SFMono-Regular",Consolas,"Liberation Mono",Menlo,monospace;
+  --nav-width:260px;--code-width:420px;
+}
+html{font-size:15px;scroll-behavior:smooth}
+body{font-family:var(--font-sans);background:var(--bg);color:var(--text);line-height:1.6;overflow-x:hidden}
+a{color:var(--accent);text-decoration:none}
+a:hover{text-decoration:underline}
+code{font-family:var(--font-mono);font-size:0.88em}
+
+/* ── Layout ─────────────────────────────────────────────── */
+.layout{display:flex;min-height:100vh}
+
+/* ── Sidebar Nav ────────────────────────────────────────── */
+.nav{width:var(--nav-width);background:var(--bg-nav);border-right:1px solid var(--border);position:fixed;top:0;left:0;bottom:0;overflow-y:auto;z-index:100;padding:0}
+.nav-header{padding:20px 16px;border-bottom:1px solid var(--border)}
+.nav-header h1{font-size:1.1rem;color:var(--text-bright);display:flex;align-items:center;gap:8px}
+.nav-header .logo-icon{width:28px;height:28px;background:var(--accent-dim);border-radius:6px;display:flex;align-items:center;justify-content:center;color:#fff;font-weight:800;font-size:14px}
+.nav-header .version{font-size:0.7rem;color:var(--text-muted);background:var(--bg-hover);padding:2px 6px;border-radius:4px;margin-left:auto}
+
+/* Search */
+.nav-search{padding:12px 16px;border-bottom:1px solid var(--border)}
+.nav-search input{width:100%;padding:8px 10px;background:var(--bg);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:0.85rem;outline:none}
+.nav-search input:focus{border-color:var(--accent)}
+.nav-search input::placeholder{color:var(--text-muted)}
+
+/* Nav groups */
+.nav-group{padding:12px 0}
+.nav-group-title{padding:0 16px 6px;font-size:0.7rem;text-transform:uppercase;letter-spacing:1px;color:var(--text-muted);font-weight:600}
+.nav-item{display:flex;align-items:center;gap:6px;padding:6px 16px;font-size:0.85rem;color:var(--text);cursor:pointer;transition:background .15s}
+.nav-item:hover{background:var(--bg-hover);text-decoration:none}
+.nav-item.active{background:var(--bg-hover);color:var(--accent)}
+.nav-item .method{font-size:0.65rem;font-weight:700;padding:2px 5px;border-radius:3px;text-transform:uppercase;font-family:var(--font-mono);min-width:38px;text-align:center;flex-shrink:0}
+.nav-item .method.get{background:rgba(63,185,80,.15);color:var(--method-get)}
+.nav-item .method.post{background:rgba(88,166,255,.15);color:var(--method-post)}
+.nav-item .method.put{background:rgba(210,153,34,.15);color:var(--method-put)}
+.nav-item .method.delete{background:rgba(248,81,73,.15);color:var(--method-delete)}
+.nav-item .path{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+
+/* Back link */
+.nav-back{display:flex;align-items:center;gap:6px;padding:10px 16px;font-size:0.85rem;color:var(--text-muted);border-bottom:1px solid var(--border)}
+.nav-back:hover{color:var(--accent);text-decoration:none}
+
+/* ── Content Area ───────────────────────────────────────── */
+.content-wrap{margin-left:var(--nav-width);flex:1;display:flex;min-width:0}
+.content{flex:1;min-width:0;padding:40px 48px 80px}
+
+/* ── Code Panel (right) ─────────────────────────────────── */
+.code-panel{width:var(--code-width);background:var(--bg-code);border-left:1px solid var(--border);position:sticky;top:0;height:100vh;overflow-y:auto;padding:24px;flex-shrink:0}
+
+/* ── Hero / Intro ───────────────────────────────────────── */
+.hero{margin-bottom:48px}
+.hero h2{font-size:2rem;color:var(--text-bright);margin-bottom:8px}
+.hero p{color:var(--text-muted);font-size:1rem;max-width:640px}
+.hero .base-url{margin-top:16px;background:var(--bg-card);border:1px solid var(--border);border-radius:8px;padding:12px 16px;display:inline-flex;align-items:center;gap:10px;font-family:var(--font-mono);font-size:0.9rem;color:var(--green)}
+.hero .base-url .label{color:var(--text-muted);font-family:var(--font-sans);font-size:0.8rem}
+
+/* ── Section ────────────────────────────────────────────── */
+.section{margin-bottom:56px;scroll-margin-top:24px}
+.section-title{font-size:1.3rem;color:var(--text-bright);border-bottom:1px solid var(--border);padding-bottom:10px;margin-bottom:24px}
+
+/* ── Endpoint Card ──────────────────────────────────────── */
+.endpoint{background:var(--bg-card);border:1px solid var(--border);border-radius:10px;margin-bottom:24px;overflow:hidden;scroll-margin-top:24px}
+.endpoint-header{display:flex;align-items:center;gap:10px;padding:14px 18px;cursor:pointer;user-select:none;border-bottom:1px solid transparent;transition:background .15s}
+.endpoint-header:hover{background:var(--bg-hover)}
+.endpoint-header.open{border-bottom-color:var(--border)}
+.endpoint-method{font-size:0.75rem;font-weight:700;padding:4px 8px;border-radius:4px;font-family:var(--font-mono);text-transform:uppercase;min-width:54px;text-align:center}
+.endpoint-method.get{background:rgba(63,185,80,.15);color:var(--method-get);border:1px solid rgba(63,185,80,.25)}
+.endpoint-method.post{background:rgba(88,166,255,.15);color:var(--method-post);border:1px solid rgba(88,166,255,.25)}
+.endpoint-method.put{background:rgba(210,153,34,.15);color:var(--method-put);border:1px solid rgba(210,153,34,.25)}
+.endpoint-method.delete{background:rgba(248,81,73,.15);color:var(--method-delete);border:1px solid rgba(248,81,73,.25)}
+.endpoint-path{font-family:var(--font-mono);font-size:0.9rem;color:var(--text-bright)}
+.endpoint-desc{font-size:0.85rem;color:var(--text-muted);margin-left:auto;text-align:right;max-width:300px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.endpoint-chevron{color:var(--text-muted);transition:transform .2s;margin-left:8px;flex-shrink:0}
+.endpoint-header.open .endpoint-chevron{transform:rotate(90deg)}
+
+.endpoint-body{padding:18px;display:none}
+.endpoint-body.open{display:block}
+
+.endpoint-body h4{font-size:0.8rem;text-transform:uppercase;letter-spacing:0.8px;color:var(--text-muted);margin:16px 0 8px}
+.endpoint-body h4:first-child{margin-top:0}
+
+/* Params table */
+.params-table{width:100%;border-collapse:collapse}
+.params-table th{text-align:left;font-size:0.75rem;text-transform:uppercase;color:var(--text-muted);padding:6px 10px;border-bottom:1px solid var(--border);letter-spacing:0.5px}
+.params-table td{padding:8px 10px;border-bottom:1px solid var(--border);font-size:0.85rem}
+.params-table .param-name{font-family:var(--font-mono);color:var(--accent)}
+.params-table .param-type{color:var(--purple);font-family:var(--font-mono);font-size:0.8rem}
+.params-table .param-required{color:var(--red);font-size:0.75rem;font-weight:600}
+.params-table .param-optional{color:var(--text-muted);font-size:0.75rem}
+
+/* Code blocks */
+.code-block{position:relative;background:var(--bg);border:1px solid var(--border);border-radius:8px;margin:8px 0;overflow:hidden}
+.code-block pre{padding:14px;overflow-x:auto;font-size:0.82rem;line-height:1.5;color:var(--text)}
+.code-block .copy-btn{position:absolute;top:8px;right:8px;background:var(--bg-hover);border:1px solid var(--border);border-radius:4px;color:var(--text-muted);font-size:0.7rem;padding:3px 8px;cursor:pointer;transition:color .15s}
+.code-block .copy-btn:hover{color:var(--accent)}
+
+/* Response schema */
+.response-block{background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:14px;font-family:var(--font-mono);font-size:0.82rem;line-height:1.5;color:var(--text);overflow-x:auto;white-space:pre}
+
+/* Language tabs */
+.lang-tabs{display:flex;gap:0;margin-bottom:0;border-bottom:1px solid var(--border)}
+.lang-tab{padding:6px 14px;font-size:0.8rem;color:var(--text-muted);cursor:pointer;border-bottom:2px solid transparent;transition:color .15s}
+.lang-tab:hover{color:var(--text)}
+.lang-tab.active{color:var(--accent);border-bottom-color:var(--accent)}
+.lang-content{display:none}
+.lang-content.active{display:block}
+
+/* ── Auth & Rate Limit info ─────────────────────────────── */
+.info-card{background:var(--bg-card);border:1px solid var(--border);border-radius:10px;padding:20px;margin-bottom:24px}
+.info-card h3{font-size:1rem;color:var(--text-bright);margin-bottom:10px}
+.info-card p{font-size:0.9rem;color:var(--text);margin-bottom:8px}
+.info-card .inline-code{background:var(--bg);padding:2px 6px;border-radius:4px;font-family:var(--font-mono);font-size:0.85em;color:var(--accent)}
+.info-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:12px;margin-top:12px}
+.info-grid-item{background:var(--bg);border:1px solid var(--border);border-radius:6px;padding:10px;text-align:center}
+.info-grid-item .tier{font-weight:700;color:var(--text-bright);font-size:0.95rem}
+.info-grid-item .limit{color:var(--text-muted);font-size:0.8rem}
+
+/* Status codes */
+.status-table{width:100%;border-collapse:collapse;margin-top:8px}
+.status-table td{padding:6px 10px;border-bottom:1px solid var(--border);font-size:0.85rem}
+.status-table .status-code{font-family:var(--font-mono);font-weight:600;width:60px}
+.status-code.s2xx{color:var(--green)}
+.status-code.s4xx{color:var(--yellow)}
+.status-code.s5xx{color:var(--red)}
+
+/* ── Right panel content ────────────────────────────────── */
+.panel-section{margin-bottom:32px}
+.panel-section h3{font-size:0.85rem;color:var(--text-bright);margin-bottom:12px}
+
+/* ── Responsive ─────────────────────────────────────────── */
+@media(max-width:1200px){
+  .code-panel{display:none}
+}
+@media(max-width:900px){
+  .nav{transform:translateX(-100%);transition:transform .3s}
+  .nav.open{transform:translateX(0)}
+  .content-wrap{margin-left:0}
+  .content{padding:24px 16px}
+  .mobile-toggle{display:flex}
+}
+.mobile-toggle{display:none;position:fixed;top:12px;left:12px;z-index:200;background:var(--bg-card);border:1px solid var(--border);border-radius:6px;padding:8px;cursor:pointer;color:var(--text)}
+</style>
+</head>
+<body>
+
+<button class="mobile-toggle" onclick="document.querySelector('.nav').classList.toggle('open')" aria-label="Toggle navigation">
+  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+</button>
+
+<div class="layout">
+
+<!-- ─── Left Navigation ────────────────────────────────── -->
+<nav class="nav" id="sideNav">
+  <a href="/" class="nav-back">
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"/></svg>
+    Back to Dashboard
+  </a>
+  <div class="nav-header">
+    <h1>
+      <span class="logo-icon">F</span>
+      FaultRay API
+      <span class="version">v2.1</span>
+    </h1>
+  </div>
+  <div class="nav-search">
+    <input type="text" id="searchInput" placeholder="Search endpoints..." autocomplete="off">
+  </div>
+
+  <div class="nav-group">
+    <div class="nav-group-title">Getting Started</div>
+    <a href="#auth" class="nav-item"><span class="path">Authentication</span></a>
+    <a href="#rate-limiting" class="nav-item"><span class="path">Rate Limiting</span></a>
+    <a href="#status-codes" class="nav-item"><span class="path">Response Codes</span></a>
+    <a href="#versioning" class="nav-item"><span class="path">API Versioning</span></a>
+  </div>
+
+  <div class="nav-group">
+    <div class="nav-group-title">Infrastructure</div>
+    <a href="#ep-get-topology" class="nav-item"><span class="method get">GET</span><span class="path">/api/topology</span></a>
+    <a href="#ep-post-simulate-failure" class="nav-item"><span class="method post">POST</span><span class="path">/api/simulate-failure/{id}</span></a>
+  </div>
+
+  <div class="nav-group">
+    <div class="nav-group-title">Simulation</div>
+    <a href="#ep-post-whatif-calculate" class="nav-item"><span class="method post">POST</span><span class="path">/api/whatif/calculate</span></a>
+    <a href="#ep-post-whatif-export" class="nav-item"><span class="method post">POST</span><span class="path">/api/whatif/export</span></a>
+    <a href="#ep-get-score-history" class="nav-item"><span class="method get">GET</span><span class="path">/api/score-history</span></a>
+  </div>
+
+  <div class="nav-group">
+    <div class="nav-group-title">Analysis</div>
+    <a href="#ep-get-architecture-advice" class="nav-item"><span class="method get">GET</span><span class="path">/api/architecture-advice</span></a>
+    <a href="#ep-get-risk-heatmap" class="nav-item"><span class="method get">GET</span><span class="path">/api/risk-heatmap</span></a>
+    <a href="#ep-get-cost-attribution" class="nav-item"><span class="method get">GET</span><span class="path">/api/cost-attribution</span></a>
+    <a href="#ep-get-benchmark" class="nav-item"><span class="method get">GET</span><span class="path">/api/benchmark/{industry}</span></a>
+  </div>
+
+  <div class="nav-group">
+    <div class="nav-group-title">Compliance</div>
+    <a href="#ep-get-compliance" class="nav-item"><span class="method get">GET</span><span class="path">/api/compliance/{framework}</span></a>
+  </div>
+
+  <div class="nav-group">
+    <div class="nav-group-title">Incidents</div>
+    <a href="#ep-get-incidents" class="nav-item"><span class="method get">GET</span><span class="path">/api/incidents</span></a>
+    <a href="#ep-post-replay" class="nav-item"><span class="method post">POST</span><span class="path">/api/replay/{incident_id}</span></a>
+  </div>
+
+  <div class="nav-group">
+    <div class="nav-group-title">Marketplace</div>
+    <a href="#ep-get-marketplace-packages" class="nav-item"><span class="method get">GET</span><span class="path">/api/marketplace/packages</span></a>
+    <a href="#ep-get-marketplace-featured" class="nav-item"><span class="method get">GET</span><span class="path">/api/marketplace/featured</span></a>
+    <a href="#ep-post-marketplace-install" class="nav-item"><span class="method post">POST</span><span class="path">/api/marketplace/install/{id}</span></a>
+  </div>
+
+  <div class="nav-group">
+    <div class="nav-group-title">Calendar</div>
+    <a href="#ep-get-calendar" class="nav-item"><span class="method get">GET</span><span class="path">/api/calendar</span></a>
+    <a href="#ep-post-calendar-schedule" class="nav-item"><span class="method post">POST</span><span class="path">/api/calendar/schedule</span></a>
+    <a href="#ep-get-calendar-ical" class="nav-item"><span class="method get">GET</span><span class="path">/api/calendar/ical</span></a>
+  </div>
+
+  <div class="nav-group">
+    <div class="nav-group-title">Badges</div>
+    <a href="#ep-get-badge" class="nav-item"><span class="method get">GET</span><span class="path">/badge/{type}.svg</span></a>
+    <a href="#ep-get-badge-markdown" class="nav-item"><span class="method get">GET</span><span class="path">/api/badge-markdown</span></a>
+  </div>
+
+  <div class="nav-group">
+    <div class="nav-group-title">Chat</div>
+    <a href="#ep-post-chat" class="nav-item"><span class="method post">POST</span><span class="path">/api/chat</span></a>
+  </div>
+
+  <div class="nav-group">
+    <div class="nav-group-title">Export</div>
+    <a href="#ep-post-topology-diff" class="nav-item"><span class="method post">POST</span><span class="path">/api/topology-diff</span></a>
+  </div>
+
+  <div class="nav-group">
+    <div class="nav-group-title">System</div>
+    <a href="#ep-get-health" class="nav-item"><span class="method get">GET</span><span class="path">/api/health</span></a>
+    <a href="#ep-get-versions" class="nav-item"><span class="method get">GET</span><span class="path">/api/versions</span></a>
+  </div>
+</nav>
+
+<!-- ─── Main Content ───────────────────────────────────── -->
+<div class="content-wrap">
+<div class="content">
+
+<!-- Hero -->
+<div class="hero" id="top">
+  <h2>FaultRay API Reference</h2>
+  <p>Comprehensive REST API for infrastructure chaos engineering. Simulate failures, analyze risk, check compliance, and manage chaos experiments programmatically.</p>
+  <div class="base-url">
+    <span class="label">Base URL</span>
+    <span>http://localhost:8000</span>
+  </div>
+</div>
+
+<!-- ── Authentication ──────────────────────────────────── -->
+<div class="section" id="auth">
+  <h3 class="section-title">Authentication</h3>
+  <div class="info-card">
+    <h3>API Key Authentication</h3>
+    <p>Authenticate requests by including your API key in the <span class="inline-code">Authorization</span> header as a Bearer token.</p>
+    <div class="code-block"><pre>Authorization: Bearer fr_live_abc123def456...</pre><button class="copy-btn" onclick="copyCode(this)">Copy</button></div>
+    <p>API keys can be generated via OAuth login or the settings page. When authentication is not configured, all endpoints are accessible without a key.</p>
+    <h4 style="margin-top:16px;font-size:0.8rem;text-transform:uppercase;letter-spacing:0.8px;color:var(--text-muted)">Permissions</h4>
+    <p>Endpoints require specific permissions: <span class="inline-code">view_results</span> for read operations, <span class="inline-code">run_simulation</span> for write operations, and <span class="inline-code">create_project</span> for project management.</p>
+  </div>
+</div>
+
+<!-- ── Rate Limiting ───────────────────────────────────── -->
+<div class="section" id="rate-limiting">
+  <h3 class="section-title">Rate Limiting</h3>
+  <div class="info-card">
+    <h3>Sliding Window Rate Limits</h3>
+    <p>All <span class="inline-code">/api/*</span> endpoints are rate-limited using a sliding window algorithm. Rate limits are applied per client IP address or API key.</p>
+    <p>When rate-limited, the API returns a <span class="inline-code">429 Too Many Requests</span> response.</p>
+    <div class="info-grid">
+      <div class="info-grid-item"><div class="tier">Free</div><div class="limit">30 req/min</div></div>
+      <div class="info-grid-item"><div class="tier">Basic</div><div class="limit">120 req/min</div></div>
+      <div class="info-grid-item"><div class="tier">Pro</div><div class="limit">600 req/min</div></div>
+      <div class="info-grid-item"><div class="tier">Enterprise</div><div class="limit">3,000 req/min</div></div>
+    </div>
+  </div>
+</div>
+
+<!-- ── Response Codes ──────────────────────────────────── -->
+<div class="section" id="status-codes">
+  <h3 class="section-title">Response Codes</h3>
+  <div class="info-card">
+    <table class="status-table">
+      <tr><td class="status-code s2xx">200</td><td>Success - request processed successfully</td></tr>
+      <tr><td class="status-code s2xx">201</td><td>Created - resource created successfully</td></tr>
+      <tr><td class="status-code s4xx">400</td><td>Bad Request - missing or invalid parameters</td></tr>
+      <tr><td class="status-code s4xx">401</td><td>Unauthorized - missing or invalid API key</td></tr>
+      <tr><td class="status-code s4xx">403</td><td>Forbidden - insufficient permissions</td></tr>
+      <tr><td class="status-code s4xx">404</td><td>Not Found - resource does not exist</td></tr>
+      <tr><td class="status-code s4xx">429</td><td>Too Many Requests - rate limit exceeded</td></tr>
+      <tr><td class="status-code s5xx">500</td><td>Internal Server Error - unexpected failure</td></tr>
+      <tr><td class="status-code s5xx">503</td><td>Service Unavailable - database not available</td></tr>
+    </table>
+    <h4 style="margin-top:16px;font-size:0.8rem;text-transform:uppercase;letter-spacing:0.8px;color:var(--text-muted)">Error Response Format</h4>
+    <div class="code-block"><pre>{
+  "error": {
+    "code": 429,
+    "message": "Too many requests. Please try again later."
+  }
+}</pre><button class="copy-btn" onclick="copyCode(this)">Copy</button></div>
+  </div>
+</div>
+
+<!-- ── Versioning ──────────────────────────────────────── -->
+<div class="section" id="versioning">
+  <h3 class="section-title">API Versioning</h3>
+  <div class="info-card">
+    <h3>Version Prefixes</h3>
+    <p>The API supports versioned prefixes. All endpoints are available at both the unversioned path and under <span class="inline-code">/api/v1/</span>. New endpoints are also available under <span class="inline-code">/api/v2/</span> (beta).</p>
+    <div class="code-block"><pre># Unversioned (always points to latest stable)
+GET /api/topology
+
+# Explicit version
+GET /api/v1/topology
+GET /api/v2/dashboard/summary</pre><button class="copy-btn" onclick="copyCode(this)">Copy</button></div>
+    <p style="margin-top:10px">Use <span class="inline-code">GET /api/versions</span> to discover available API versions and their status.</p>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════ -->
+<!-- ENDPOINTS                                               -->
+<!-- ═══════════════════════════════════════════════════════ -->
+
+<!-- ── Infrastructure ──────────────────────────────────── -->
+<div class="section" id="infrastructure">
+  <h3 class="section-title">Infrastructure</h3>
+
+  <div class="endpoint" id="ep-get-topology">
+    <div class="endpoint-header" onclick="toggleEndpoint(this)">
+      <span class="endpoint-method get">GET</span>
+      <span class="endpoint-path">/api/topology</span>
+      <span class="endpoint-desc">Get infrastructure topology</span>
+      <span class="endpoint-chevron">&#9654;</span>
+    </div>
+    <div class="endpoint-body">
+      <p>Return infrastructure topology as nodes and edges for visualization. Includes risk levels, SPOF detection, and utilization data.</p>
+      <h4>Parameters</h4>
+      <p style="color:var(--text-muted);font-size:0.85rem">No parameters required.</p>
+      <h4>Response Schema</h4>
+      <div class="response-block">{
+  "nodes": [
+    {
+      "id": "web-server",
+      "name": "Web Server",
+      "type": "server",
+      "replicas": 3,
+      "utilization": 42.5,
+      "health": "healthy",
+      "is_spof": false,
+      "risk_level": "low"
+    }
+  ],
+  "edges": [
+    {
+      "source": "web-server",
+      "target": "database",
+      "dependency_type": "hard",
+      "weight": 0.9,
+      "critical": true
+    }
+  ],
+  "metadata": {
+    "total_components": 12,
+    "total_edges": 18,
+    "resilience_score": 72.5
+  }
+}</div>
+      <h4>Example</h4>
+      <div class="lang-tabs">
+        <span class="lang-tab active" onclick="switchLang(this,'curl')">curl</span>
+        <span class="lang-tab" onclick="switchLang(this,'python')">Python</span>
+        <span class="lang-tab" onclick="switchLang(this,'javascript')">JavaScript</span>
+      </div>
+      <div class="lang-content active" data-lang="curl"><div class="code-block"><pre>curl -X GET http://localhost:8000/api/topology \
+  -H "Authorization: Bearer YOUR_API_KEY"</pre><button class="copy-btn" onclick="copyCode(this)">Copy</button></div></div>
+      <div class="lang-content" data-lang="python"><div class="code-block"><pre>import requests
+
+resp = requests.get(
+    "http://localhost:8000/api/topology",
+    headers={"Authorization": "Bearer YOUR_API_KEY"}
+)
+data = resp.json()
+print(f"Components: {data['metadata']['total_components']}")</pre><button class="copy-btn" onclick="copyCode(this)">Copy</button></div></div>
+      <div class="lang-content" data-lang="javascript"><div class="code-block"><pre>const resp = await fetch("http://localhost:8000/api/topology", {
+  headers: { "Authorization": "Bearer YOUR_API_KEY" }
+});
+const data = await resp.json();
+console.log(`Components: ${data.metadata.total_components}`);</pre><button class="copy-btn" onclick="copyCode(this)">Copy</button></div></div>
+    </div>
+  </div>
+
+  <div class="endpoint" id="ep-post-simulate-failure">
+    <div class="endpoint-header" onclick="toggleEndpoint(this)">
+      <span class="endpoint-method post">POST</span>
+      <span class="endpoint-path">/api/simulate-failure/{component_id}</span>
+      <span class="endpoint-desc">Simulate component failure</span>
+      <span class="endpoint-chevron">&#9654;</span>
+    </div>
+    <div class="endpoint-body">
+      <p>Simulate a component failure and return cascade effects with wave-by-wave breakdown, blast radius, and recovery time estimate.</p>
+      <h4>Path Parameters</h4>
+      <table class="params-table">
+        <thead><tr><th>Name</th><th>Type</th><th>Required</th><th>Description</th></tr></thead>
+        <tbody>
+          <tr><td class="param-name">component_id</td><td class="param-type">string</td><td class="param-required">Required</td><td>ID of the component to fail</td></tr>
+        </tbody>
+      </table>
+      <h4>Response Schema</h4>
+      <div class="response-block">{
+  "root_cause": "database",
+  "total_affected": 5,
+  "risk_score": 7.2,
+  "waves": [
+    {"wave": 0, "components": [{"id": "database", "health": "down", "reason": "..."}]},
+    {"wave": 1, "components": [...]}
+  ],
+  "blast_radius_score": 0.42,
+  "recovery_time_estimate": "15-30 minutes"
+}</div>
+      <h4>Example</h4>
+      <div class="lang-tabs">
+        <span class="lang-tab active" onclick="switchLang(this,'curl')">curl</span>
+        <span class="lang-tab" onclick="switchLang(this,'python')">Python</span>
+        <span class="lang-tab" onclick="switchLang(this,'javascript')">JavaScript</span>
+      </div>
+      <div class="lang-content active" data-lang="curl"><div class="code-block"><pre>curl -X POST http://localhost:8000/api/simulate-failure/database \
+  -H "Authorization: Bearer YOUR_API_KEY"</pre><button class="copy-btn" onclick="copyCode(this)">Copy</button></div></div>
+      <div class="lang-content" data-lang="python"><div class="code-block"><pre>import requests
+
+resp = requests.post(
+    "http://localhost:8000/api/simulate-failure/database",
+    headers={"Authorization": "Bearer YOUR_API_KEY"}
+)
+result = resp.json()
+print(f"Blast radius: {result['blast_radius_score']}")</pre><button class="copy-btn" onclick="copyCode(this)">Copy</button></div></div>
+      <div class="lang-content" data-lang="javascript"><div class="code-block"><pre>const resp = await fetch("http://localhost:8000/api/simulate-failure/database", {
+  method: "POST",
+  headers: { "Authorization": "Bearer YOUR_API_KEY" }
+});
+const result = await resp.json();
+console.log(`Blast radius: ${result.blast_radius_score}`);</pre><button class="copy-btn" onclick="copyCode(this)">Copy</button></div></div>
+    </div>
+  </div>
+</div>
+
+<!-- ── Simulation ──────────────────────────────────────── -->
+<div class="section" id="simulation">
+  <h3 class="section-title">Simulation</h3>
+
+  <div class="endpoint" id="ep-post-whatif-calculate">
+    <div class="endpoint-header" onclick="toggleEndpoint(this)">
+      <span class="endpoint-method post">POST</span>
+      <span class="endpoint-path">/api/whatif/calculate</span>
+      <span class="endpoint-desc">What-if resilience calculation</span>
+      <span class="endpoint-chevron">&#9654;</span>
+    </div>
+    <div class="endpoint-body">
+      <p>Calculate resilience impact of infrastructure modifications without applying them. Compare replicas, circuit breakers, failover, and autoscaling changes.</p>
+      <h4>Request Body</h4>
+      <table class="params-table">
+        <thead><tr><th>Name</th><th>Type</th><th>Required</th><th>Description</th></tr></thead>
+        <tbody>
+          <tr><td class="param-name">modifications</td><td class="param-type">object</td><td class="param-required">Required</td><td>Map of component_id to modification object</td></tr>
+          <tr><td class="param-name">modifications.*.replicas</td><td class="param-type">integer</td><td class="param-optional">Optional</td><td>Number of replicas (min 1)</td></tr>
+          <tr><td class="param-name">modifications.*.circuit_breaker</td><td class="param-type">boolean</td><td class="param-optional">Optional</td><td>Enable/disable circuit breaker</td></tr>
+          <tr><td class="param-name">modifications.*.failover</td><td class="param-type">boolean</td><td class="param-optional">Optional</td><td>Enable/disable failover</td></tr>
+          <tr><td class="param-name">modifications.*.autoscaling</td><td class="param-type">boolean</td><td class="param-optional">Optional</td><td>Enable/disable autoscaling</td></tr>
+        </tbody>
+      </table>
+      <h4>Example</h4>
+      <div class="lang-tabs">
+        <span class="lang-tab active" onclick="switchLang(this,'curl')">curl</span>
+        <span class="lang-tab" onclick="switchLang(this,'python')">Python</span>
+        <span class="lang-tab" onclick="switchLang(this,'javascript')">JavaScript</span>
+      </div>
+      <div class="lang-content active" data-lang="curl"><div class="code-block"><pre>curl -X POST http://localhost:8000/api/whatif/calculate \
+  -H "Content-Type: application/json" \
+  -d '{
+    "modifications": {
+      "database": {"replicas": 3, "failover": true},
+      "cache": {"circuit_breaker": true}
+    }
+  }'</pre><button class="copy-btn" onclick="copyCode(this)">Copy</button></div></div>
+      <div class="lang-content" data-lang="python"><div class="code-block"><pre>import requests
+
+resp = requests.post(
+    "http://localhost:8000/api/whatif/calculate",
+    json={"modifications": {
+        "database": {"replicas": 3, "failover": True},
+        "cache": {"circuit_breaker": True}
+    }}
+)
+result = resp.json()
+print(f"Score delta: {result['delta']:+.1f}")</pre><button class="copy-btn" onclick="copyCode(this)">Copy</button></div></div>
+      <div class="lang-content" data-lang="javascript"><div class="code-block"><pre>const resp = await fetch("http://localhost:8000/api/whatif/calculate", {
+  method: "POST",
+  headers: { "Content-Type": "application/json" },
+  body: JSON.stringify({
+    modifications: {
+      database: { replicas: 3, failover: true },
+      cache: { circuit_breaker: true }
+    }
+  })
+});
+const result = await resp.json();</pre><button class="copy-btn" onclick="copyCode(this)">Copy</button></div></div>
+    </div>
+  </div>
+
+  <div class="endpoint" id="ep-post-whatif-export">
+    <div class="endpoint-header" onclick="toggleEndpoint(this)">
+      <span class="endpoint-method post">POST</span>
+      <span class="endpoint-path">/api/whatif/export</span>
+      <span class="endpoint-desc">Export modified infrastructure YAML</span>
+      <span class="endpoint-chevron">&#9654;</span>
+    </div>
+    <div class="endpoint-body">
+      <p>Apply what-if modifications and export the resulting infrastructure as a downloadable YAML file.</p>
+      <h4>Request Body</h4>
+      <p style="color:var(--text-muted);font-size:0.85rem">Same format as <span class="inline-code">/api/whatif/calculate</span>.</p>
+      <h4>Example</h4>
+      <div class="lang-tabs">
+        <span class="lang-tab active" onclick="switchLang(this,'curl')">curl</span>
+        <span class="lang-tab" onclick="switchLang(this,'python')">Python</span>
+        <span class="lang-tab" onclick="switchLang(this,'javascript')">JavaScript</span>
+      </div>
+      <div class="lang-content active" data-lang="curl"><div class="code-block"><pre>curl -X POST http://localhost:8000/api/whatif/export \
+  -H "Content-Type: application/json" \
+  -d '{"modifications": {"database": {"replicas": 3}}}' \
+  -o modified-infra.yaml</pre><button class="copy-btn" onclick="copyCode(this)">Copy</button></div></div>
+      <div class="lang-content" data-lang="python"><div class="code-block"><pre>import requests
+
+resp = requests.post(
+    "http://localhost:8000/api/whatif/export",
+    json={"modifications": {"database": {"replicas": 3}}}
+)
+with open("modified-infra.yaml", "wb") as f:
+    f.write(resp.content)</pre><button class="copy-btn" onclick="copyCode(this)">Copy</button></div></div>
+      <div class="lang-content" data-lang="javascript"><div class="code-block"><pre>const resp = await fetch("http://localhost:8000/api/whatif/export", {
+  method: "POST",
+  headers: { "Content-Type": "application/json" },
+  body: JSON.stringify({modifications: {database: {replicas: 3}}})
+});
+const yaml = await resp.text();</pre><button class="copy-btn" onclick="copyCode(this)">Copy</button></div></div>
+    </div>
+  </div>
+
+  <div class="endpoint" id="ep-get-score-history">
+    <div class="endpoint-header" onclick="toggleEndpoint(this)">
+      <span class="endpoint-method get">GET</span>
+      <span class="endpoint-path">/api/score-history</span>
+      <span class="endpoint-desc">Resilience score history</span>
+      <span class="endpoint-chevron">&#9654;</span>
+    </div>
+    <div class="endpoint-body">
+      <p>Return resilience score history from past simulation runs for trend analysis.</p>
+      <h4>Query Parameters</h4>
+      <table class="params-table">
+        <thead><tr><th>Name</th><th>Type</th><th>Required</th><th>Description</th></tr></thead>
+        <tbody>
+          <tr><td class="param-name">limit</td><td class="param-type">integer</td><td class="param-optional">Optional</td><td>Maximum entries to return (default: 30)</td></tr>
+        </tbody>
+      </table>
+      <h4>Example</h4>
+      <div class="lang-tabs">
+        <span class="lang-tab active" onclick="switchLang(this,'curl')">curl</span>
+        <span class="lang-tab" onclick="switchLang(this,'python')">Python</span>
+        <span class="lang-tab" onclick="switchLang(this,'javascript')">JavaScript</span>
+      </div>
+      <div class="lang-content active" data-lang="curl"><div class="code-block"><pre>curl http://localhost:8000/api/score-history?limit=10</pre><button class="copy-btn" onclick="copyCode(this)">Copy</button></div></div>
+      <div class="lang-content" data-lang="python"><div class="code-block"><pre>resp = requests.get("http://localhost:8000/api/score-history", params={"limit": 10})
+history = resp.json()["history"]</pre><button class="copy-btn" onclick="copyCode(this)">Copy</button></div></div>
+      <div class="lang-content" data-lang="javascript"><div class="code-block"><pre>const resp = await fetch("http://localhost:8000/api/score-history?limit=10");
+const { history } = await resp.json();</pre><button class="copy-btn" onclick="copyCode(this)">Copy</button></div></div>
+    </div>
+  </div>
+</div>
+
+<!-- ── Analysis ────────────────────────────────────────── -->
+<div class="section" id="analysis">
+  <h3 class="section-title">Analysis</h3>
+
+  <div class="endpoint" id="ep-get-architecture-advice">
+    <div class="endpoint-header" onclick="toggleEndpoint(this)">
+      <span class="endpoint-method get">GET</span>
+      <span class="endpoint-path">/api/architecture-advice</span>
+      <span class="endpoint-desc">AI architecture recommendations</span>
+      <span class="endpoint-chevron">&#9654;</span>
+    </div>
+    <div class="endpoint-body">
+      <p>Get AI-powered architecture redesign recommendations to achieve target availability.</p>
+      <h4>Query Parameters</h4>
+      <table class="params-table">
+        <thead><tr><th>Name</th><th>Type</th><th>Required</th><th>Description</th></tr></thead>
+        <tbody>
+          <tr><td class="param-name">target_nines</td><td class="param-type">float</td><td class="param-optional">Optional</td><td>Target availability in nines (default: 4.0 = 99.99%)</td></tr>
+        </tbody>
+      </table>
+      <h4>Example</h4>
+      <div class="lang-tabs"><span class="lang-tab active" onclick="switchLang(this,'curl')">curl</span><span class="lang-tab" onclick="switchLang(this,'python')">Python</span><span class="lang-tab" onclick="switchLang(this,'javascript')">JavaScript</span></div>
+      <div class="lang-content active" data-lang="curl"><div class="code-block"><pre>curl http://localhost:8000/api/architecture-advice?target_nines=3.5</pre><button class="copy-btn" onclick="copyCode(this)">Copy</button></div></div>
+      <div class="lang-content" data-lang="python"><div class="code-block"><pre>resp = requests.get("http://localhost:8000/api/architecture-advice", params={"target_nines": 3.5})</pre><button class="copy-btn" onclick="copyCode(this)">Copy</button></div></div>
+      <div class="lang-content" data-lang="javascript"><div class="code-block"><pre>const resp = await fetch("http://localhost:8000/api/architecture-advice?target_nines=3.5");</pre><button class="copy-btn" onclick="copyCode(this)">Copy</button></div></div>
+    </div>
+  </div>
+
+  <div class="endpoint" id="ep-get-risk-heatmap">
+    <div class="endpoint-header" onclick="toggleEndpoint(this)">
+      <span class="endpoint-method get">GET</span>
+      <span class="endpoint-path">/api/risk-heatmap</span>
+      <span class="endpoint-desc">Risk heat map data</span>
+      <span class="endpoint-chevron">&#9654;</span>
+    </div>
+    <div class="endpoint-body">
+      <p>Return risk heat map with per-component risk scores, zones, and hotspots across multiple dimensions.</p>
+      <h4>Example</h4>
+      <div class="lang-tabs"><span class="lang-tab active" onclick="switchLang(this,'curl')">curl</span><span class="lang-tab" onclick="switchLang(this,'python')">Python</span><span class="lang-tab" onclick="switchLang(this,'javascript')">JavaScript</span></div>
+      <div class="lang-content active" data-lang="curl"><div class="code-block"><pre>curl http://localhost:8000/api/risk-heatmap</pre><button class="copy-btn" onclick="copyCode(this)">Copy</button></div></div>
+      <div class="lang-content" data-lang="python"><div class="code-block"><pre>resp = requests.get("http://localhost:8000/api/risk-heatmap")
+heatmap = resp.json()</pre><button class="copy-btn" onclick="copyCode(this)">Copy</button></div></div>
+      <div class="lang-content" data-lang="javascript"><div class="code-block"><pre>const resp = await fetch("http://localhost:8000/api/risk-heatmap");
+const heatmap = await resp.json();</pre><button class="copy-btn" onclick="copyCode(this)">Copy</button></div></div>
+    </div>
+  </div>
+
+  <div class="endpoint" id="ep-get-cost-attribution">
+    <div class="endpoint-header" onclick="toggleEndpoint(this)">
+      <span class="endpoint-method get">GET</span>
+      <span class="endpoint-path">/api/cost-attribution</span>
+      <span class="endpoint-desc">Failure cost attribution</span>
+      <span class="endpoint-chevron">&#9654;</span>
+    </div>
+    <div class="endpoint-body">
+      <p>Analyse the financial impact of potential failures, attributing costs to individual components and teams.</p>
+      <h4>Query Parameters</h4>
+      <table class="params-table">
+        <thead><tr><th>Name</th><th>Type</th><th>Required</th><th>Description</th></tr></thead>
+        <tbody>
+          <tr><td class="param-name">revenue_per_hour</td><td class="param-type">float</td><td class="param-optional">Optional</td><td>Hourly revenue for cost calculation (default: 10000)</td></tr>
+        </tbody>
+      </table>
+      <h4>Example</h4>
+      <div class="lang-tabs"><span class="lang-tab active" onclick="switchLang(this,'curl')">curl</span><span class="lang-tab" onclick="switchLang(this,'python')">Python</span><span class="lang-tab" onclick="switchLang(this,'javascript')">JavaScript</span></div>
+      <div class="lang-content active" data-lang="curl"><div class="code-block"><pre>curl "http://localhost:8000/api/cost-attribution?revenue_per_hour=25000"</pre><button class="copy-btn" onclick="copyCode(this)">Copy</button></div></div>
+      <div class="lang-content" data-lang="python"><div class="code-block"><pre>resp = requests.get("http://localhost:8000/api/cost-attribution", params={"revenue_per_hour": 25000})</pre><button class="copy-btn" onclick="copyCode(this)">Copy</button></div></div>
+      <div class="lang-content" data-lang="javascript"><div class="code-block"><pre>const resp = await fetch("http://localhost:8000/api/cost-attribution?revenue_per_hour=25000");</pre><button class="copy-btn" onclick="copyCode(this)">Copy</button></div></div>
+    </div>
+  </div>
+
+  <div class="endpoint" id="ep-get-benchmark">
+    <div class="endpoint-header" onclick="toggleEndpoint(this)">
+      <span class="endpoint-method get">GET</span>
+      <span class="endpoint-path">/api/benchmark/{industry}</span>
+      <span class="endpoint-desc">Industry benchmark comparison</span>
+      <span class="endpoint-chevron">&#9654;</span>
+    </div>
+    <div class="endpoint-body">
+      <p>Benchmark your infrastructure resilience against anonymised industry peers. Use <span class="inline-code">industry=list</span> to see available industries, or <span class="inline-code">industry=all</span> to compare across all.</p>
+      <h4>Path Parameters</h4>
+      <table class="params-table">
+        <thead><tr><th>Name</th><th>Type</th><th>Required</th><th>Description</th></tr></thead>
+        <tbody>
+          <tr><td class="param-name">industry</td><td class="param-type">string</td><td class="param-required">Required</td><td>Industry name (fintech, saas, healthcare, etc.) or "list" / "all"</td></tr>
+        </tbody>
+      </table>
+      <h4>Example</h4>
+      <div class="lang-tabs"><span class="lang-tab active" onclick="switchLang(this,'curl')">curl</span><span class="lang-tab" onclick="switchLang(this,'python')">Python</span><span class="lang-tab" onclick="switchLang(this,'javascript')">JavaScript</span></div>
+      <div class="lang-content active" data-lang="curl"><div class="code-block"><pre>curl http://localhost:8000/api/benchmark/fintech</pre><button class="copy-btn" onclick="copyCode(this)">Copy</button></div></div>
+      <div class="lang-content" data-lang="python"><div class="code-block"><pre>resp = requests.get("http://localhost:8000/api/benchmark/fintech")</pre><button class="copy-btn" onclick="copyCode(this)">Copy</button></div></div>
+      <div class="lang-content" data-lang="javascript"><div class="code-block"><pre>const resp = await fetch("http://localhost:8000/api/benchmark/fintech");</pre><button class="copy-btn" onclick="copyCode(this)">Copy</button></div></div>
+    </div>
+  </div>
+</div>
+
+<!-- ── Compliance ───────────────────────────────────────── -->
+<div class="section" id="compliance-section">
+  <h3 class="section-title">Compliance</h3>
+  <div class="endpoint" id="ep-get-compliance">
+    <div class="endpoint-header" onclick="toggleEndpoint(this)">
+      <span class="endpoint-method get">GET</span>
+      <span class="endpoint-path">/api/compliance/{framework}</span>
+      <span class="endpoint-desc">Compliance check by framework</span>
+      <span class="endpoint-chevron">&#9654;</span>
+    </div>
+    <div class="endpoint-body">
+      <p>Evaluate infrastructure compliance against a specific framework. Supported: <span class="inline-code">soc2</span>, <span class="inline-code">pci-dss</span>, <span class="inline-code">hipaa</span>, <span class="inline-code">iso27001</span>.</p>
+      <h4>Path Parameters</h4>
+      <table class="params-table">
+        <thead><tr><th>Name</th><th>Type</th><th>Required</th><th>Description</th></tr></thead>
+        <tbody>
+          <tr><td class="param-name">framework</td><td class="param-type">string</td><td class="param-required">Required</td><td>Compliance framework identifier</td></tr>
+        </tbody>
+      </table>
+      <h4>Example</h4>
+      <div class="lang-tabs"><span class="lang-tab active" onclick="switchLang(this,'curl')">curl</span><span class="lang-tab" onclick="switchLang(this,'python')">Python</span><span class="lang-tab" onclick="switchLang(this,'javascript')">JavaScript</span></div>
+      <div class="lang-content active" data-lang="curl"><div class="code-block"><pre>curl http://localhost:8000/api/compliance/soc2</pre><button class="copy-btn" onclick="copyCode(this)">Copy</button></div></div>
+      <div class="lang-content" data-lang="python"><div class="code-block"><pre>resp = requests.get("http://localhost:8000/api/compliance/soc2")</pre><button class="copy-btn" onclick="copyCode(this)">Copy</button></div></div>
+      <div class="lang-content" data-lang="javascript"><div class="code-block"><pre>const resp = await fetch("http://localhost:8000/api/compliance/soc2");</pre><button class="copy-btn" onclick="copyCode(this)">Copy</button></div></div>
+    </div>
+  </div>
+</div>
+
+<!-- ── Incidents ────────────────────────────────────────── -->
+<div class="section" id="incidents-section">
+  <h3 class="section-title">Incidents</h3>
+
+  <div class="endpoint" id="ep-get-incidents">
+    <div class="endpoint-header" onclick="toggleEndpoint(this)">
+      <span class="endpoint-method get">GET</span>
+      <span class="endpoint-path">/api/incidents</span>
+      <span class="endpoint-desc">List historical incidents</span>
+      <span class="endpoint-chevron">&#9654;</span>
+    </div>
+    <div class="endpoint-body">
+      <p>List available historical cloud provider incidents for replay simulation.</p>
+      <h4>Query Parameters</h4>
+      <table class="params-table">
+        <thead><tr><th>Name</th><th>Type</th><th>Required</th><th>Description</th></tr></thead>
+        <tbody>
+          <tr><td class="param-name">provider</td><td class="param-type">string</td><td class="param-optional">Optional</td><td>Filter by cloud provider (aws, gcp, azure)</td></tr>
+        </tbody>
+      </table>
+      <h4>Example</h4>
+      <div class="lang-tabs"><span class="lang-tab active" onclick="switchLang(this,'curl')">curl</span><span class="lang-tab" onclick="switchLang(this,'python')">Python</span><span class="lang-tab" onclick="switchLang(this,'javascript')">JavaScript</span></div>
+      <div class="lang-content active" data-lang="curl"><div class="code-block"><pre>curl http://localhost:8000/api/incidents?provider=aws</pre><button class="copy-btn" onclick="copyCode(this)">Copy</button></div></div>
+      <div class="lang-content" data-lang="python"><div class="code-block"><pre>resp = requests.get("http://localhost:8000/api/incidents", params={"provider": "aws"})</pre><button class="copy-btn" onclick="copyCode(this)">Copy</button></div></div>
+      <div class="lang-content" data-lang="javascript"><div class="code-block"><pre>const resp = await fetch("http://localhost:8000/api/incidents?provider=aws");</pre><button class="copy-btn" onclick="copyCode(this)">Copy</button></div></div>
+    </div>
+  </div>
+
+  <div class="endpoint" id="ep-post-replay">
+    <div class="endpoint-header" onclick="toggleEndpoint(this)">
+      <span class="endpoint-method post">POST</span>
+      <span class="endpoint-path">/api/replay/{incident_id}</span>
+      <span class="endpoint-desc">Replay historical incident</span>
+      <span class="endpoint-chevron">&#9654;</span>
+    </div>
+    <div class="endpoint-body">
+      <p>Replay a historical cloud provider incident against your current infrastructure to test resilience.</p>
+      <h4>Path Parameters</h4>
+      <table class="params-table">
+        <thead><tr><th>Name</th><th>Type</th><th>Required</th><th>Description</th></tr></thead>
+        <tbody>
+          <tr><td class="param-name">incident_id</td><td class="param-type">string</td><td class="param-required">Required</td><td>ID of the incident to replay</td></tr>
+        </tbody>
+      </table>
+      <h4>Example</h4>
+      <div class="lang-tabs"><span class="lang-tab active" onclick="switchLang(this,'curl')">curl</span><span class="lang-tab" onclick="switchLang(this,'python')">Python</span><span class="lang-tab" onclick="switchLang(this,'javascript')">JavaScript</span></div>
+      <div class="lang-content active" data-lang="curl"><div class="code-block"><pre>curl -X POST http://localhost:8000/api/replay/aws-us-east-1-2017</pre><button class="copy-btn" onclick="copyCode(this)">Copy</button></div></div>
+      <div class="lang-content" data-lang="python"><div class="code-block"><pre>resp = requests.post("http://localhost:8000/api/replay/aws-us-east-1-2017")</pre><button class="copy-btn" onclick="copyCode(this)">Copy</button></div></div>
+      <div class="lang-content" data-lang="javascript"><div class="code-block"><pre>const resp = await fetch("http://localhost:8000/api/replay/aws-us-east-1-2017", {method: "POST"});</pre><button class="copy-btn" onclick="copyCode(this)">Copy</button></div></div>
+    </div>
+  </div>
+</div>
+
+<!-- ── Marketplace ──────────────────────────────────────── -->
+<div class="section" id="marketplace-section">
+  <h3 class="section-title">Marketplace</h3>
+
+  <div class="endpoint" id="ep-get-marketplace-packages">
+    <div class="endpoint-header" onclick="toggleEndpoint(this)">
+      <span class="endpoint-method get">GET</span>
+      <span class="endpoint-path">/api/marketplace/packages</span>
+      <span class="endpoint-desc">List scenario packages</span>
+      <span class="endpoint-chevron">&#9654;</span>
+    </div>
+    <div class="endpoint-body">
+      <p>List all marketplace chaos scenario packages with optional filtering by category or provider.</p>
+      <h4>Query Parameters</h4>
+      <table class="params-table">
+        <thead><tr><th>Name</th><th>Type</th><th>Required</th><th>Description</th></tr></thead>
+        <tbody>
+          <tr><td class="param-name">category</td><td class="param-type">string</td><td class="param-optional">Optional</td><td>Filter by category</td></tr>
+          <tr><td class="param-name">provider</td><td class="param-type">string</td><td class="param-optional">Optional</td><td>Filter by cloud provider</td></tr>
+        </tbody>
+      </table>
+      <h4>Example</h4>
+      <div class="lang-tabs"><span class="lang-tab active" onclick="switchLang(this,'curl')">curl</span><span class="lang-tab" onclick="switchLang(this,'python')">Python</span><span class="lang-tab" onclick="switchLang(this,'javascript')">JavaScript</span></div>
+      <div class="lang-content active" data-lang="curl"><div class="code-block"><pre>curl http://localhost:8000/api/marketplace/packages?category=database</pre><button class="copy-btn" onclick="copyCode(this)">Copy</button></div></div>
+      <div class="lang-content" data-lang="python"><div class="code-block"><pre>resp = requests.get("http://localhost:8000/api/marketplace/packages")</pre><button class="copy-btn" onclick="copyCode(this)">Copy</button></div></div>
+      <div class="lang-content" data-lang="javascript"><div class="code-block"><pre>const resp = await fetch("http://localhost:8000/api/marketplace/packages");</pre><button class="copy-btn" onclick="copyCode(this)">Copy</button></div></div>
+    </div>
+  </div>
+
+  <div class="endpoint" id="ep-get-marketplace-featured">
+    <div class="endpoint-header" onclick="toggleEndpoint(this)">
+      <span class="endpoint-method get">GET</span>
+      <span class="endpoint-path">/api/marketplace/featured</span>
+      <span class="endpoint-desc">Featured packages</span>
+      <span class="endpoint-chevron">&#9654;</span>
+    </div>
+    <div class="endpoint-body">
+      <p>Get curated featured marketplace packages.</p>
+      <h4>Example</h4>
+      <div class="lang-tabs"><span class="lang-tab active" onclick="switchLang(this,'curl')">curl</span><span class="lang-tab" onclick="switchLang(this,'python')">Python</span><span class="lang-tab" onclick="switchLang(this,'javascript')">JavaScript</span></div>
+      <div class="lang-content active" data-lang="curl"><div class="code-block"><pre>curl http://localhost:8000/api/marketplace/featured</pre><button class="copy-btn" onclick="copyCode(this)">Copy</button></div></div>
+      <div class="lang-content" data-lang="python"><div class="code-block"><pre>resp = requests.get("http://localhost:8000/api/marketplace/featured")</pre><button class="copy-btn" onclick="copyCode(this)">Copy</button></div></div>
+      <div class="lang-content" data-lang="javascript"><div class="code-block"><pre>const resp = await fetch("http://localhost:8000/api/marketplace/featured");</pre><button class="copy-btn" onclick="copyCode(this)">Copy</button></div></div>
+    </div>
+  </div>
+
+  <div class="endpoint" id="ep-post-marketplace-install">
+    <div class="endpoint-header" onclick="toggleEndpoint(this)">
+      <span class="endpoint-method post">POST</span>
+      <span class="endpoint-path">/api/marketplace/install/{package_id}</span>
+      <span class="endpoint-desc">Install scenario package</span>
+      <span class="endpoint-chevron">&#9654;</span>
+    </div>
+    <div class="endpoint-body">
+      <p>Install a marketplace package, converting its scenarios to FaultRay format.</p>
+      <h4>Path Parameters</h4>
+      <table class="params-table">
+        <thead><tr><th>Name</th><th>Type</th><th>Required</th><th>Description</th></tr></thead>
+        <tbody>
+          <tr><td class="param-name">package_id</td><td class="param-type">string</td><td class="param-required">Required</td><td>Package identifier</td></tr>
+        </tbody>
+      </table>
+      <h4>Example</h4>
+      <div class="lang-tabs"><span class="lang-tab active" onclick="switchLang(this,'curl')">curl</span><span class="lang-tab" onclick="switchLang(this,'python')">Python</span><span class="lang-tab" onclick="switchLang(this,'javascript')">JavaScript</span></div>
+      <div class="lang-content active" data-lang="curl"><div class="code-block"><pre>curl -X POST http://localhost:8000/api/marketplace/install/aws-rds-failures</pre><button class="copy-btn" onclick="copyCode(this)">Copy</button></div></div>
+      <div class="lang-content" data-lang="python"><div class="code-block"><pre>resp = requests.post("http://localhost:8000/api/marketplace/install/aws-rds-failures")</pre><button class="copy-btn" onclick="copyCode(this)">Copy</button></div></div>
+      <div class="lang-content" data-lang="javascript"><div class="code-block"><pre>const resp = await fetch("http://localhost:8000/api/marketplace/install/aws-rds-failures", {method: "POST"});</pre><button class="copy-btn" onclick="copyCode(this)">Copy</button></div></div>
+    </div>
+  </div>
+</div>
+
+<!-- ── Calendar ─────────────────────────────────────────── -->
+<div class="section" id="calendar-section">
+  <h3 class="section-title">Calendar</h3>
+
+  <div class="endpoint" id="ep-get-calendar">
+    <div class="endpoint-header" onclick="toggleEndpoint(this)">
+      <span class="endpoint-method get">GET</span>
+      <span class="endpoint-path">/api/calendar</span>
+      <span class="endpoint-desc">Chaos calendar view</span>
+      <span class="endpoint-chevron">&#9654;</span>
+    </div>
+    <div class="endpoint-body">
+      <p>Return calendar view with scheduled experiments, history, blackout windows, and coverage stats.</p>
+      <h4>Example</h4>
+      <div class="lang-tabs"><span class="lang-tab active" onclick="switchLang(this,'curl')">curl</span><span class="lang-tab" onclick="switchLang(this,'python')">Python</span><span class="lang-tab" onclick="switchLang(this,'javascript')">JavaScript</span></div>
+      <div class="lang-content active" data-lang="curl"><div class="code-block"><pre>curl http://localhost:8000/api/calendar</pre><button class="copy-btn" onclick="copyCode(this)">Copy</button></div></div>
+      <div class="lang-content" data-lang="python"><div class="code-block"><pre>resp = requests.get("http://localhost:8000/api/calendar")</pre><button class="copy-btn" onclick="copyCode(this)">Copy</button></div></div>
+      <div class="lang-content" data-lang="javascript"><div class="code-block"><pre>const resp = await fetch("http://localhost:8000/api/calendar");</pre><button class="copy-btn" onclick="copyCode(this)">Copy</button></div></div>
+    </div>
+  </div>
+
+  <div class="endpoint" id="ep-post-calendar-schedule">
+    <div class="endpoint-header" onclick="toggleEndpoint(this)">
+      <span class="endpoint-method post">POST</span>
+      <span class="endpoint-path">/api/calendar/schedule</span>
+      <span class="endpoint-desc">Schedule chaos experiment</span>
+      <span class="endpoint-chevron">&#9654;</span>
+    </div>
+    <div class="endpoint-body">
+      <p>Schedule a new chaos experiment with target components, scenario IDs, and optional recurrence.</p>
+      <h4>Request Body</h4>
+      <table class="params-table">
+        <thead><tr><th>Name</th><th>Type</th><th>Required</th><th>Description</th></tr></thead>
+        <tbody>
+          <tr><td class="param-name">name</td><td class="param-type">string</td><td class="param-required">Required</td><td>Experiment name</td></tr>
+          <tr><td class="param-name">description</td><td class="param-type">string</td><td class="param-optional">Optional</td><td>Experiment description</td></tr>
+          <tr><td class="param-name">scenario_ids</td><td class="param-type">array</td><td class="param-optional">Optional</td><td>Scenario IDs to run</td></tr>
+          <tr><td class="param-name">target_components</td><td class="param-type">array</td><td class="param-optional">Optional</td><td>Component IDs to target</td></tr>
+          <tr><td class="param-name">scheduled_time</td><td class="param-type">string</td><td class="param-optional">Optional</td><td>ISO-8601 datetime</td></tr>
+          <tr><td class="param-name">recurrence</td><td class="param-type">string</td><td class="param-optional">Optional</td><td>Recurrence pattern (daily, weekly, monthly)</td></tr>
+        </tbody>
+      </table>
+      <h4>Example</h4>
+      <div class="lang-tabs"><span class="lang-tab active" onclick="switchLang(this,'curl')">curl</span><span class="lang-tab" onclick="switchLang(this,'python')">Python</span><span class="lang-tab" onclick="switchLang(this,'javascript')">JavaScript</span></div>
+      <div class="lang-content active" data-lang="curl"><div class="code-block"><pre>curl -X POST http://localhost:8000/api/calendar/schedule \
+  -H "Content-Type: application/json" \
+  -d '{"name": "Weekly DB Failover", "target_components": ["database"], "recurrence": "weekly"}'</pre><button class="copy-btn" onclick="copyCode(this)">Copy</button></div></div>
+      <div class="lang-content" data-lang="python"><div class="code-block"><pre>resp = requests.post("http://localhost:8000/api/calendar/schedule", json={
+    "name": "Weekly DB Failover",
+    "target_components": ["database"],
+    "recurrence": "weekly"
+})</pre><button class="copy-btn" onclick="copyCode(this)">Copy</button></div></div>
+      <div class="lang-content" data-lang="javascript"><div class="code-block"><pre>const resp = await fetch("http://localhost:8000/api/calendar/schedule", {
+  method: "POST",
+  headers: {"Content-Type": "application/json"},
+  body: JSON.stringify({name: "Weekly DB Failover", target_components: ["database"], recurrence: "weekly"})
+});</pre><button class="copy-btn" onclick="copyCode(this)">Copy</button></div></div>
+    </div>
+  </div>
+
+  <div class="endpoint" id="ep-get-calendar-ical">
+    <div class="endpoint-header" onclick="toggleEndpoint(this)">
+      <span class="endpoint-method get">GET</span>
+      <span class="endpoint-path">/api/calendar/ical</span>
+      <span class="endpoint-desc">Download iCal file</span>
+      <span class="endpoint-chevron">&#9654;</span>
+    </div>
+    <div class="endpoint-body">
+      <p>Download iCalendar (.ics) file for import into Google Calendar, Outlook, or other calendar applications.</p>
+      <h4>Example</h4>
+      <div class="lang-tabs"><span class="lang-tab active" onclick="switchLang(this,'curl')">curl</span><span class="lang-tab" onclick="switchLang(this,'python')">Python</span><span class="lang-tab" onclick="switchLang(this,'javascript')">JavaScript</span></div>
+      <div class="lang-content active" data-lang="curl"><div class="code-block"><pre>curl http://localhost:8000/api/calendar/ical -o chaos-calendar.ics</pre><button class="copy-btn" onclick="copyCode(this)">Copy</button></div></div>
+      <div class="lang-content" data-lang="python"><div class="code-block"><pre>resp = requests.get("http://localhost:8000/api/calendar/ical")
+with open("chaos-calendar.ics", "wb") as f:
+    f.write(resp.content)</pre><button class="copy-btn" onclick="copyCode(this)">Copy</button></div></div>
+      <div class="lang-content" data-lang="javascript"><div class="code-block"><pre>const resp = await fetch("http://localhost:8000/api/calendar/ical");
+const blob = await resp.blob();</pre><button class="copy-btn" onclick="copyCode(this)">Copy</button></div></div>
+    </div>
+  </div>
+</div>
+
+<!-- ── Badges ───────────────────────────────────────────── -->
+<div class="section" id="badges-section">
+  <h3 class="section-title">Badges</h3>
+
+  <div class="endpoint" id="ep-get-badge">
+    <div class="endpoint-header" onclick="toggleEndpoint(this)">
+      <span class="endpoint-method get">GET</span>
+      <span class="endpoint-path">/badge/{type}.svg</span>
+      <span class="endpoint-desc">Get SVG badge</span>
+      <span class="endpoint-chevron">&#9654;</span>
+    </div>
+    <div class="endpoint-body">
+      <p>Return an SVG badge for embedding in READMEs, dashboards, or documentation. Types: <span class="inline-code">resilience_score</span>, <span class="inline-code">sla_estimate</span>, <span class="inline-code">grade</span>, <span class="inline-code">spof_count</span>, <span class="inline-code">component_count</span>.</p>
+      <h4>Path Parameters</h4>
+      <table class="params-table">
+        <thead><tr><th>Name</th><th>Type</th><th>Required</th><th>Description</th></tr></thead>
+        <tbody>
+          <tr><td class="param-name">type</td><td class="param-type">string</td><td class="param-required">Required</td><td>Badge type</td></tr>
+        </tbody>
+      </table>
+      <h4>Query Parameters</h4>
+      <table class="params-table">
+        <thead><tr><th>Name</th><th>Type</th><th>Required</th><th>Description</th></tr></thead>
+        <tbody>
+          <tr><td class="param-name">style</td><td class="param-type">string</td><td class="param-optional">Optional</td><td>Badge style: flat, flat-square, for-the-badge, plastic (default: flat)</td></tr>
+        </tbody>
+      </table>
+      <h4>Example</h4>
+      <div class="lang-tabs"><span class="lang-tab active" onclick="switchLang(this,'curl')">curl</span><span class="lang-tab" onclick="switchLang(this,'python')">Python</span><span class="lang-tab" onclick="switchLang(this,'javascript')">JavaScript</span></div>
+      <div class="lang-content active" data-lang="curl"><div class="code-block"><pre>curl http://localhost:8000/badge/resilience_score.svg?style=flat-square -o badge.svg</pre><button class="copy-btn" onclick="copyCode(this)">Copy</button></div></div>
+      <div class="lang-content" data-lang="python"><div class="code-block"><pre># Markdown embed:
+# ![Resilience](http://localhost:8000/badge/resilience_score.svg)</pre><button class="copy-btn" onclick="copyCode(this)">Copy</button></div></div>
+      <div class="lang-content" data-lang="javascript"><div class="code-block"><pre>// HTML embed:
+// &lt;img src="http://localhost:8000/badge/resilience_score.svg" alt="Resilience"&gt;</pre><button class="copy-btn" onclick="copyCode(this)">Copy</button></div></div>
+    </div>
+  </div>
+
+  <div class="endpoint" id="ep-get-badge-markdown">
+    <div class="endpoint-header" onclick="toggleEndpoint(this)">
+      <span class="endpoint-method get">GET</span>
+      <span class="endpoint-path">/api/badge-markdown</span>
+      <span class="endpoint-desc">Badge markdown snippets</span>
+      <span class="endpoint-chevron">&#9654;</span>
+    </div>
+    <div class="endpoint-body">
+      <p>Get pre-formatted Markdown snippets for embedding all available badges in README files.</p>
+      <h4>Query Parameters</h4>
+      <table class="params-table">
+        <thead><tr><th>Name</th><th>Type</th><th>Required</th><th>Description</th></tr></thead>
+        <tbody>
+          <tr><td class="param-name">base_url</td><td class="param-type">string</td><td class="param-optional">Optional</td><td>Base URL for badge links (default: http://localhost:8000)</td></tr>
+        </tbody>
+      </table>
+      <h4>Example</h4>
+      <div class="lang-tabs"><span class="lang-tab active" onclick="switchLang(this,'curl')">curl</span><span class="lang-tab" onclick="switchLang(this,'python')">Python</span><span class="lang-tab" onclick="switchLang(this,'javascript')">JavaScript</span></div>
+      <div class="lang-content active" data-lang="curl"><div class="code-block"><pre>curl "http://localhost:8000/api/badge-markdown?base_url=https://faultray.example.com"</pre><button class="copy-btn" onclick="copyCode(this)">Copy</button></div></div>
+      <div class="lang-content" data-lang="python"><div class="code-block"><pre>resp = requests.get("http://localhost:8000/api/badge-markdown")</pre><button class="copy-btn" onclick="copyCode(this)">Copy</button></div></div>
+      <div class="lang-content" data-lang="javascript"><div class="code-block"><pre>const resp = await fetch("http://localhost:8000/api/badge-markdown");</pre><button class="copy-btn" onclick="copyCode(this)">Copy</button></div></div>
+    </div>
+  </div>
+</div>
+
+<!-- ── Chat ─────────────────────────────────────────────── -->
+<div class="section" id="chat-section">
+  <h3 class="section-title">Chat</h3>
+
+  <div class="endpoint" id="ep-post-chat">
+    <div class="endpoint-header" onclick="toggleEndpoint(this)">
+      <span class="endpoint-method post">POST</span>
+      <span class="endpoint-path">/api/chat</span>
+      <span class="endpoint-desc">Infrastructure chat query</span>
+      <span class="endpoint-chevron">&#9654;</span>
+    </div>
+    <div class="endpoint-body">
+      <p>Ask a natural language question about your infrastructure. The chat engine interprets intent and returns structured data alongside a human-readable response.</p>
+      <h4>Request Body</h4>
+      <table class="params-table">
+        <thead><tr><th>Name</th><th>Type</th><th>Required</th><th>Description</th></tr></thead>
+        <tbody>
+          <tr><td class="param-name">question</td><td class="param-type">string</td><td class="param-required">Required</td><td>Natural language question</td></tr>
+        </tbody>
+      </table>
+      <h4>Example</h4>
+      <div class="lang-tabs"><span class="lang-tab active" onclick="switchLang(this,'curl')">curl</span><span class="lang-tab" onclick="switchLang(this,'python')">Python</span><span class="lang-tab" onclick="switchLang(this,'javascript')">JavaScript</span></div>
+      <div class="lang-content active" data-lang="curl"><div class="code-block"><pre>curl -X POST http://localhost:8000/api/chat \
+  -H "Content-Type: application/json" \
+  -d '{"question": "What are the single points of failure?"}'</pre><button class="copy-btn" onclick="copyCode(this)">Copy</button></div></div>
+      <div class="lang-content" data-lang="python"><div class="code-block"><pre>resp = requests.post("http://localhost:8000/api/chat", json={
+    "question": "What are the single points of failure?"
+})</pre><button class="copy-btn" onclick="copyCode(this)">Copy</button></div></div>
+      <div class="lang-content" data-lang="javascript"><div class="code-block"><pre>const resp = await fetch("http://localhost:8000/api/chat", {
+  method: "POST",
+  headers: {"Content-Type": "application/json"},
+  body: JSON.stringify({question: "What are the single points of failure?"})
+});</pre><button class="copy-btn" onclick="copyCode(this)">Copy</button></div></div>
+    </div>
+  </div>
+</div>
+
+<!-- ── Export ───────────────────────────────────────────── -->
+<div class="section" id="export-section">
+  <h3 class="section-title">Export</h3>
+
+  <div class="endpoint" id="ep-post-topology-diff">
+    <div class="endpoint-header" onclick="toggleEndpoint(this)">
+      <span class="endpoint-method post">POST</span>
+      <span class="endpoint-path">/api/topology-diff</span>
+      <span class="endpoint-desc">Compare topology files</span>
+      <span class="endpoint-chevron">&#9654;</span>
+    </div>
+    <div class="endpoint-body">
+      <p>Upload two YAML infrastructure files and receive a structured diff with Mermaid diagram code. Uses multipart form upload.</p>
+      <h4>Form Data</h4>
+      <table class="params-table">
+        <thead><tr><th>Name</th><th>Type</th><th>Required</th><th>Description</th></tr></thead>
+        <tbody>
+          <tr><td class="param-name">before_file</td><td class="param-type">file</td><td class="param-required">Required</td><td>YAML file (before state)</td></tr>
+          <tr><td class="param-name">after_file</td><td class="param-type">file</td><td class="param-required">Required</td><td>YAML file (after state)</td></tr>
+        </tbody>
+      </table>
+      <h4>Example</h4>
+      <div class="lang-tabs"><span class="lang-tab active" onclick="switchLang(this,'curl')">curl</span><span class="lang-tab" onclick="switchLang(this,'python')">Python</span><span class="lang-tab" onclick="switchLang(this,'javascript')">JavaScript</span></div>
+      <div class="lang-content active" data-lang="curl"><div class="code-block"><pre>curl -X POST http://localhost:8000/api/topology-diff \
+  -F "before_file=@before.yaml" \
+  -F "after_file=@after.yaml"</pre><button class="copy-btn" onclick="copyCode(this)">Copy</button></div></div>
+      <div class="lang-content" data-lang="python"><div class="code-block"><pre>resp = requests.post("http://localhost:8000/api/topology-diff", files={
+    "before_file": open("before.yaml", "rb"),
+    "after_file": open("after.yaml", "rb")
+})</pre><button class="copy-btn" onclick="copyCode(this)">Copy</button></div></div>
+      <div class="lang-content" data-lang="javascript"><div class="code-block"><pre>const form = new FormData();
+form.append("before_file", beforeBlob, "before.yaml");
+form.append("after_file", afterBlob, "after.yaml");
+const resp = await fetch("http://localhost:8000/api/topology-diff", {method: "POST", body: form});</pre><button class="copy-btn" onclick="copyCode(this)">Copy</button></div></div>
+    </div>
+  </div>
+</div>
+
+<!-- ── System ──────────────────────────────────────────── -->
+<div class="section" id="system-section">
+  <h3 class="section-title">System</h3>
+
+  <div class="endpoint" id="ep-get-health">
+    <div class="endpoint-header" onclick="toggleEndpoint(this)">
+      <span class="endpoint-method get">GET</span>
+      <span class="endpoint-path">/api/health</span>
+      <span class="endpoint-desc">API health check</span>
+      <span class="endpoint-chevron">&#9654;</span>
+    </div>
+    <div class="endpoint-body">
+      <p>Health check endpoint returning API status, version, uptime, and loaded component count.</p>
+      <h4>Response Schema</h4>
+      <div class="response-block">{
+  "status": "healthy",
+  "version": "2.1.0",
+  "uptime": "2h 15m 30s",
+  "uptime_seconds": 8130.0,
+  "components_loaded": 12,
+  "api_versions": [...],
+  "rate_limit_tiers": {"free": 30, "basic": 120, ...},
+  "timestamp": "2026-03-15T10:30:00+00:00"
+}</div>
+      <h4>Example</h4>
+      <div class="lang-tabs"><span class="lang-tab active" onclick="switchLang(this,'curl')">curl</span><span class="lang-tab" onclick="switchLang(this,'python')">Python</span><span class="lang-tab" onclick="switchLang(this,'javascript')">JavaScript</span></div>
+      <div class="lang-content active" data-lang="curl"><div class="code-block"><pre>curl http://localhost:8000/api/health</pre><button class="copy-btn" onclick="copyCode(this)">Copy</button></div></div>
+      <div class="lang-content" data-lang="python"><div class="code-block"><pre>resp = requests.get("http://localhost:8000/api/health")
+print(resp.json()["status"])  # "healthy"</pre><button class="copy-btn" onclick="copyCode(this)">Copy</button></div></div>
+      <div class="lang-content" data-lang="javascript"><div class="code-block"><pre>const resp = await fetch("http://localhost:8000/api/health");
+const { status } = await resp.json();</pre><button class="copy-btn" onclick="copyCode(this)">Copy</button></div></div>
+    </div>
+  </div>
+
+  <div class="endpoint" id="ep-get-versions">
+    <div class="endpoint-header" onclick="toggleEndpoint(this)">
+      <span class="endpoint-method get">GET</span>
+      <span class="endpoint-path">/api/versions</span>
+      <span class="endpoint-desc">List API versions</span>
+      <span class="endpoint-chevron">&#9654;</span>
+    </div>
+    <div class="endpoint-body">
+      <p>Discover available API versions, their lifecycle status, and changelogs.</p>
+      <h4>Example</h4>
+      <div class="lang-tabs"><span class="lang-tab active" onclick="switchLang(this,'curl')">curl</span><span class="lang-tab" onclick="switchLang(this,'python')">Python</span><span class="lang-tab" onclick="switchLang(this,'javascript')">JavaScript</span></div>
+      <div class="lang-content active" data-lang="curl"><div class="code-block"><pre>curl http://localhost:8000/api/versions</pre><button class="copy-btn" onclick="copyCode(this)">Copy</button></div></div>
+      <div class="lang-content" data-lang="python"><div class="code-block"><pre>resp = requests.get("http://localhost:8000/api/versions")</pre><button class="copy-btn" onclick="copyCode(this)">Copy</button></div></div>
+      <div class="lang-content" data-lang="javascript"><div class="code-block"><pre>const resp = await fetch("http://localhost:8000/api/versions");</pre><button class="copy-btn" onclick="copyCode(this)">Copy</button></div></div>
+    </div>
+  </div>
+</div>
+
+</div><!-- /.content -->
+
+<!-- ─── Right Code Panel ───────────────────────────────── -->
+<div class="code-panel">
+  <div class="panel-section">
+    <h3>Quick Start</h3>
+    <div class="code-block"><pre><span style="color:var(--text-muted)"># 1. Load demo infrastructure</span>
+curl http://localhost:8000/demo
+
+<span style="color:var(--text-muted)"># 2. Get topology</span>
+curl http://localhost:8000/api/topology
+
+<span style="color:var(--text-muted)"># 3. Simulate a failure</span>
+curl -X POST \
+  http://localhost:8000/api/simulate-failure/database
+
+<span style="color:var(--text-muted)"># 4. Check resilience score</span>
+curl http://localhost:8000/api/health</pre><button class="copy-btn" onclick="copyCode(this)">Copy</button></div>
+  </div>
+
+  <div class="panel-section">
+    <h3>Python SDK</h3>
+    <div class="code-block"><pre><span style="color:var(--purple)">import</span> requests
+
+BASE = <span style="color:var(--green)">"http://localhost:8000"</span>
+
+<span style="color:var(--text-muted)"># Load demo</span>
+requests.get(f<span style="color:var(--green)">"{BASE}/demo"</span>)
+
+<span style="color:var(--text-muted)"># Get topology</span>
+topo = requests.get(
+    f<span style="color:var(--green)">"{BASE}/api/topology"</span>
+).json()
+
+<span style="color:var(--text-muted)"># Run what-if analysis</span>
+result = requests.post(
+    f<span style="color:var(--green)">"{BASE}/api/whatif/calculate"</span>,
+    json={<span style="color:var(--green)">"modifications"</span>: {
+        <span style="color:var(--green)">"database"</span>: {
+            <span style="color:var(--green)">"replicas"</span>: 3,
+            <span style="color:var(--green)">"failover"</span>: <span style="color:var(--orange)">True</span>
+        }
+    }}
+).json()
+
+<span style="color:var(--purple)">print</span>(f<span style="color:var(--green)">"Score: {result['resilience_score']}"</span>)
+<span style="color:var(--purple)">print</span>(f<span style="color:var(--green)">"Delta: {result['delta']:+.1f}"</span>)</pre><button class="copy-btn" onclick="copyCode(this)">Copy</button></div>
+  </div>
+
+  <div class="panel-section">
+    <h3>Response Format</h3>
+    <p style="font-size:0.82rem;color:var(--text-muted);margin-bottom:8px">All API responses are JSON. Errors follow a consistent format:</p>
+    <div class="code-block"><pre>{
+  <span style="color:var(--green)">"error"</span>: {
+    <span style="color:var(--green)">"code"</span>: <span style="color:var(--orange)">400</span>,
+    <span style="color:var(--green)">"message"</span>: <span style="color:var(--green)">"Description"</span>
+  }
+}</pre></div>
+  </div>
+</div>
+
+</div><!-- /.content-wrap -->
+</div><!-- /.layout -->
+
+<script>
+/* Toggle endpoint accordion */
+function toggleEndpoint(header) {
+  const body = header.nextElementSibling;
+  const isOpen = header.classList.contains('open');
+  header.classList.toggle('open');
+  body.classList.toggle('open');
+}
+
+/* Language tab switcher */
+function switchLang(tab, lang) {
+  const tabs = tab.parentElement;
+  const container = tabs.parentElement;
+  tabs.querySelectorAll('.lang-tab').forEach(t => t.classList.remove('active'));
+  tab.classList.add('active');
+  container.querySelectorAll('.lang-content').forEach(c => {
+    c.classList.toggle('active', c.dataset.lang === lang);
+  });
+}
+
+/* Copy to clipboard */
+function copyCode(btn) {
+  const pre = btn.parentElement.querySelector('pre');
+  const text = pre.textContent;
+  navigator.clipboard.writeText(text).then(() => {
+    const orig = btn.textContent;
+    btn.textContent = 'Copied!';
+    setTimeout(() => { btn.textContent = orig; }, 1500);
+  });
+}
+
+/* Search endpoints */
+document.getElementById('searchInput').addEventListener('input', function(e) {
+  const q = e.target.value.toLowerCase();
+  document.querySelectorAll('.nav-item').forEach(item => {
+    const text = item.textContent.toLowerCase();
+    item.style.display = text.includes(q) ? '' : 'none';
+  });
+  document.querySelectorAll('.nav-group').forEach(group => {
+    const visible = group.querySelectorAll('.nav-item[style=""], .nav-item:not([style])');
+    const title = group.querySelector('.nav-group-title');
+    if (title) {
+      title.style.display = visible.length > 0 || q === '' ? '' : 'none';
+    }
+  });
+});
+
+/* Highlight current nav item on scroll */
+const observer = new IntersectionObserver(entries => {
+  entries.forEach(entry => {
+    if (entry.isIntersecting) {
+      const id = entry.target.id;
+      document.querySelectorAll('.nav-item').forEach(item => {
+        item.classList.toggle('active', item.getAttribute('href') === '#' + id);
+      });
+    }
+  });
+}, { rootMargin: '-100px 0px -60% 0px' });
+
+document.querySelectorAll('.endpoint, .section').forEach(el => {
+  if (el.id) observer.observe(el);
+});
+</script>
+</body>
+</html>

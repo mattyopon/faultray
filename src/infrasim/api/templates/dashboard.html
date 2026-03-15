@@ -23,12 +23,107 @@
 {% endblock %}
 
 {% block content %}
-<!-- Score Cards Row -->
-<div id="score-cards" hx-get="/htmx/score-cards" hx-trigger="every 30s" hx-swap="innerHTML">
+<style>
+/* ── Dashboard V2 Enhancements ────────────────────────── */
+.dashboard-v2 .score-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:16px}
+@media(max-width:1100px){.dashboard-v2 .score-grid{grid-template-columns:repeat(2,1fr)}}
+@media(max-width:600px){.dashboard-v2 .score-grid{grid-template-columns:1fr}}
+
+.dashboard-v2 .score-card{position:relative;overflow:hidden}
+.dashboard-v2 .score-card .sparkline{position:absolute;bottom:8px;right:12px;font-family:var(--font-mono,monospace);font-size:10px;color:var(--text-muted,#8b949e);letter-spacing:1px;opacity:.6}
+
+/* SRE Maturity Badge */
+.maturity-badge{display:inline-block;padding:3px 10px;border-radius:4px;font-size:0.75rem;font-weight:700;letter-spacing:.5px}
+.maturity-l1{background:rgba(248,81,73,.15);color:#f85149}
+.maturity-l2{background:rgba(240,136,62,.15);color:#f0883e}
+.maturity-l3{background:rgba(210,153,34,.15);color:#d29922}
+.maturity-l4{background:rgba(63,185,80,.15);color:#3fb950}
+.maturity-l5{background:rgba(88,166,255,.15);color:#58a6ff}
+
+/* Risk distribution bar */
+.risk-bar-wrap{margin:8px 0}
+.risk-bar{display:flex;height:24px;border-radius:6px;overflow:hidden;background:#1a1f35}
+.risk-bar-seg{display:flex;align-items:center;justify-content:center;font-size:0.65rem;font-weight:700;color:#fff;min-width:0;transition:width .4s ease}
+.risk-bar-seg.critical{background:#f85149}
+.risk-bar-seg.high{background:#f0883e}
+.risk-bar-seg.medium{background:#d29922}
+.risk-bar-seg.low{background:#3fb950}
+.risk-legend{display:flex;gap:14px;margin-top:6px;flex-wrap:wrap}
+.risk-legend-item{display:flex;align-items:center;gap:4px;font-size:0.75rem;color:var(--text-muted,#8b949e)}
+.risk-legend-dot{width:8px;height:8px;border-radius:50%}
+
+/* Component donut (pure CSS) */
+.donut-wrap{display:flex;align-items:center;gap:20px}
+.css-donut{width:100px;height:100px;border-radius:50%;position:relative}
+.css-donut .donut-center{position:absolute;inset:18px;border-radius:50%;background:var(--bg-card,#21262d);display:flex;align-items:center;justify-content:center;font-size:1.1rem;font-weight:800;color:var(--text-bright,#f0f6fc)}
+.donut-legend{flex:1}
+.donut-legend-item{display:flex;align-items:center;gap:6px;font-size:0.8rem;margin-bottom:4px}
+.donut-legend-dot{width:10px;height:10px;border-radius:3px;flex-shrink:0}
+
+/* Metrics grid */
+.metrics-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(100px,1fr));gap:10px}
+.metric-item{text-align:center;padding:10px 6px;background:var(--bg,#0d1117);border:1px solid var(--border,#30363d);border-radius:8px}
+.metric-value{font-size:1.3rem;font-weight:800;color:var(--text-bright,#f0f6fc)}
+.metric-label{font-size:0.7rem;color:var(--text-muted,#8b949e);margin-top:2px;text-transform:uppercase;letter-spacing:.5px}
+
+/* Activity feed */
+.activity-feed{max-height:260px;overflow-y:auto}
+.activity-item{display:flex;align-items:flex-start;gap:10px;padding:8px 0;border-bottom:1px solid var(--border,#30363d)}
+.activity-item:last-child{border-bottom:none}
+.activity-icon{width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:12px}
+.activity-icon.sim{background:rgba(88,166,255,.15);color:#58a6ff}
+.activity-icon.alert{background:rgba(248,81,73,.15);color:#f85149}
+.activity-icon.score{background:rgba(63,185,80,.15);color:#3fb950}
+.activity-icon.info{background:rgba(210,153,34,.15);color:#d29922}
+.activity-text{font-size:0.85rem;color:var(--text,#c9d1d9)}
+.activity-time{font-size:0.7rem;color:var(--text-muted,#8b949e);margin-top:2px}
+
+/* Quick actions grid */
+.quick-actions-v2{display:grid;grid-template-columns:repeat(2,1fr);gap:8px}
+.qa-btn{display:flex;align-items:center;gap:8px;padding:10px 12px;background:var(--bg,#0d1117);border:1px solid var(--border,#30363d);border-radius:8px;color:var(--text,#c9d1d9);text-decoration:none;font-size:0.85rem;transition:all .15s;cursor:pointer}
+.qa-btn:hover{background:var(--bg-hover,#30363d);border-color:var(--accent,#58a6ff);color:var(--accent,#58a6ff);text-decoration:none}
+
+/* Compliance meters */
+.compliance-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:12px}
+.compliance-meter{text-align:center;padding:12px 8px;background:var(--bg,#0d1117);border:1px solid var(--border,#30363d);border-radius:8px}
+.compliance-meter .meter-label{font-size:0.7rem;text-transform:uppercase;letter-spacing:.5px;color:var(--text-muted,#8b949e);margin-bottom:6px}
+.compliance-meter .meter-ring{position:relative;width:56px;height:56px;margin:0 auto}
+.compliance-meter .meter-ring svg{transform:rotate(-90deg)}
+.compliance-meter .meter-value{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:0.85rem;font-weight:700;color:var(--text-bright,#f0f6fc)}
+
+/* Incident readiness */
+.readiness-score{display:flex;align-items:center;gap:16px}
+.readiness-bar{flex:1;height:12px;background:var(--bg,#0d1117);border-radius:6px;overflow:hidden}
+.readiness-fill{height:100%;border-radius:6px;transition:width .4s ease}
+.readiness-items{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-top:12px}
+.readiness-item{font-size:0.82rem;color:var(--text,#c9d1d9);display:flex;align-items:center;gap:6px}
+.readiness-check{color:var(--green,#3fb950)}
+.readiness-cross{color:var(--red,#f85149)}
+
+/* Component tiles */
+.comp-tiles{display:grid;grid-template-columns:repeat(auto-fill,minmax(70px,1fr));gap:6px}
+.comp-tile{padding:8px 6px;border-radius:6px;text-align:center;font-size:0.65rem;font-weight:600;color:#fff;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.comp-tile.healthy{background:rgba(63,185,80,.2);color:#3fb950;border:1px solid rgba(63,185,80,.3)}
+.comp-tile.degraded{background:rgba(210,153,34,.2);color:#d29922;border:1px solid rgba(210,153,34,.3)}
+.comp-tile.down{background:rgba(248,81,73,.2);color:#f85149;border:1px solid rgba(248,81,73,.3)}
+
+/* Dashboard grid layout */
+.dash-row{display:grid;gap:16px;margin-bottom:16px}
+.dash-row-2{grid-template-columns:1fr 1fr}
+.dash-row-3{grid-template-columns:2fr 1fr}
+.dash-row-2-1{grid-template-columns:2fr 1fr}
+.dash-row-1-2{grid-template-columns:1fr 2fr}
+@media(max-width:900px){.dash-row-2,.dash-row-3,.dash-row-2-1,.dash-row-1-2{grid-template-columns:1fr}}
+</style>
+
+<div class="dashboard-v2">
+
+<!-- ═══ Row 1: Score Cards with Sparklines ═══════════════ -->
+<div id="score-cards" hx-get="/api/dashboard/summary" hx-trigger="every 30s" hx-swap="none">
     <div class="score-grid">
         <!-- Resilience Score -->
         <div class="score-card card">
-            {% set res_score = summary.resilience_score if summary else 0 %}
+            {% set res_score = dashboard.resilience_score if dashboard else (summary.resilience_score if summary else 0) %}
             {% if res_score >= 80 %}
                 {% set res_color = "var(--green)" %}
                 {% set res_label = "Healthy" %}
@@ -48,60 +143,337 @@
                     <text x="60" y="78" text-anchor="middle" fill="{{ res_color }}" font-size="10" font-weight="600" text-transform="uppercase">{{ res_label }}</text>
                 </svg>
                 <div class="score-card-label">Resilience Score</div>
+                <div class="sparkline">{{ dashboard.sparkline if dashboard and dashboard.sparkline else "_ _ _ _" }}</div>
             </div>
         </div>
 
-        <!-- Security Score -->
+        <!-- SLA Estimate -->
         <div class="score-card card">
-            {% set sec_score = summary.security_score if summary and summary.security_score is defined else 68 %}
-            {% if sec_score >= 80 %}
-                {% set sec_color = "var(--green)" %}
-            {% elif sec_score >= 60 %}
-                {% set sec_color = "var(--yellow)" %}
+            {% set sla_val = dashboard.sla_estimate if dashboard else (summary.availability_nines if summary and summary.availability_nines is defined else "99.9") %}
+            {% set sla_str = sla_val | string %}
+            {% if sla_str >= "99.99" %}
+                {% set sla_color = "var(--green)" %}
+            {% elif sla_str >= "99.9" %}
+                {% set sla_color = "var(--blue, #58a6ff)" %}
             {% else %}
-                {% set sec_color = "var(--red)" %}
+                {% set sla_color = "var(--yellow)" %}
             {% endif %}
-            <div class="score-card-inner">
-                <svg viewBox="0 0 120 120" width="100" height="100">
-                    <circle cx="60" cy="60" r="54" fill="none" stroke="#1a1f35" stroke-width="8"/>
-                    <circle cx="60" cy="60" r="54" fill="none" stroke="{{ sec_color }}" stroke-width="8"
-                        stroke-dasharray="339.3" stroke-dashoffset="{{ 339.3 - (339.3 * sec_score / 100) }}" stroke-linecap="round" transform="rotate(-90 60 60)"/>
-                    <text x="60" y="55" text-anchor="middle" dominant-baseline="central" fill="#fff" font-size="28" font-weight="800">{{ sec_score }}</text>
-                    <text x="60" y="78" text-anchor="middle" fill="{{ sec_color }}" font-size="10" font-weight="600">SECURITY</text>
-                </svg>
-                <div class="score-card-label">Security Score</div>
+            <div class="score-card-inner score-card-metric">
+                <div class="score-card-big-value" style="color: {{ sla_color }};">
+                    {{ sla_str }}%
+                </div>
+                <div class="score-card-label">SLA Estimate</div>
+                <div class="score-card-sub">Estimated availability</div>
             </div>
         </div>
 
-        <!-- Annual Risk -->
+        <!-- SPOF Count -->
         <div class="score-card card">
-            {% set annual_risk = summary.annual_risk if summary and summary.annual_risk is defined else 2.4 %}
+            {% set spof = dashboard.spof_count if dashboard else 0 %}
+            {% if spof == 0 %}
+                {% set spof_color = "var(--green)" %}
+                {% set spof_severity = "None detected" %}
+            {% elif spof <= 2 %}
+                {% set spof_color = "var(--yellow)" %}
+                {% set spof_severity = "Moderate risk" %}
+            {% else %}
+                {% set spof_color = "var(--red)" %}
+                {% set spof_severity = "High risk" %}
+            {% endif %}
             <div class="score-card-inner score-card-metric">
-                <div class="score-card-big-value" style="color: var(--red);">
-                    ${{ "%.1f" | format(annual_risk) }}M
+                <div class="score-card-big-value" style="color: {{ spof_color }};">
+                    {{ spof }}
                 </div>
-                <div class="score-card-label">Annual Risk Exposure</div>
-                <div class="score-card-sub">Estimated loss potential</div>
+                <div class="score-card-label">SPOF Count</div>
+                <div class="score-card-sub" style="color: {{ spof_color }}">{{ spof_severity }}</div>
             </div>
         </div>
 
-        <!-- Availability -->
+        <!-- SRE Maturity -->
         <div class="score-card card">
-            {% set availability = summary.availability_nines if summary and summary.availability_nines is defined else 3.42 %}
+            {% set maturity = dashboard.sre_maturity_level if dashboard else 2 %}
             <div class="score-card-inner score-card-metric">
-                <div class="score-card-big-value" style="color: var(--blue);">
-                    {{ "%.2f" | format(availability) }}
+                <div style="margin-bottom:6px">
+                    <span class="maturity-badge maturity-l{{ maturity }}">L{{ maturity }}</span>
                 </div>
-                <div class="score-card-label">Availability (Nines)</div>
-                <div class="score-card-sub">{{ "%.3f" | format(100 - (100 / (10 ** availability))) }}% uptime</div>
+                <div class="score-card-label">SRE Maturity</div>
+                <div class="score-card-sub">
+                    {% if maturity >= 5 %}Exemplary
+                    {% elif maturity >= 4 %}Advanced
+                    {% elif maturity >= 3 %}Defined
+                    {% elif maturity >= 2 %}Managed
+                    {% else %}Initial{% endif %}
+                </div>
             </div>
         </div>
     </div>
 </div>
 
-<div class="dashboard-grid" style="margin-top: 20px;">
+<!-- ═══ Row 2: Risk Distribution + Quick Stats ══════════ -->
+<div class="dash-row dash-row-2" style="margin-top:16px">
+    <!-- Risk Distribution -->
+    <div class="card">
+        <div class="card-header">
+            <h3>Risk Distribution</h3>
+            <a href="/heatmap" class="card-link">Heat Map &rarr;</a>
+        </div>
+        <div class="card-body">
+            {% set rd = dashboard.risk_distribution if dashboard else {"critical": 0, "high": 0, "medium": 0, "low": 0} %}
+            {% set rd_total = rd.critical + rd.high + rd.medium + rd.low %}
+            <div class="risk-bar-wrap">
+                <div class="risk-bar">
+                    {% if rd_total > 0 %}
+                    {% if rd.critical > 0 %}<div class="risk-bar-seg critical" style="width:{{ (rd.critical / rd_total * 100) | round(1) }}%">{{ rd.critical }}</div>{% endif %}
+                    {% if rd.high > 0 %}<div class="risk-bar-seg high" style="width:{{ (rd.high / rd_total * 100) | round(1) }}%">{{ rd.high }}</div>{% endif %}
+                    {% if rd.medium > 0 %}<div class="risk-bar-seg medium" style="width:{{ (rd.medium / rd_total * 100) | round(1) }}%">{{ rd.medium }}</div>{% endif %}
+                    {% if rd.low > 0 %}<div class="risk-bar-seg low" style="width:{{ (rd.low / rd_total * 100) | round(1) }}%">{{ rd.low }}</div>{% endif %}
+                    {% else %}
+                    <div class="risk-bar-seg low" style="width:100%;background:#1a1f35;color:var(--text-muted)">No data</div>
+                    {% endif %}
+                </div>
+                <div class="risk-legend">
+                    <span class="risk-legend-item"><span class="risk-legend-dot" style="background:#f85149"></span> Critical ({{ rd.critical }})</span>
+                    <span class="risk-legend-item"><span class="risk-legend-dot" style="background:#f0883e"></span> High ({{ rd.high }})</span>
+                    <span class="risk-legend-item"><span class="risk-legend-dot" style="background:#d29922"></span> Medium ({{ rd.medium }})</span>
+                    <span class="risk-legend-item"><span class="risk-legend-dot" style="background:#3fb950"></span> Low ({{ rd.low }})</span>
+                </div>
+            </div>
+
+            <!-- Component type breakdown donut -->
+            {% set cb = dashboard.component_breakdown if dashboard else (summary.component_types if summary else {}) %}
+            {% set cb_total = cb.values() | list | sum if cb else 0 %}
+            {% set donut_colors = ["#58a6ff", "#3fb950", "#f0883e", "#bc8cff", "#d29922", "#f85149", "#79c0ff", "#56d364"] %}
+            {% if cb_total > 0 %}
+            <div class="donut-wrap" style="margin-top:16px">
+                {% set ns = namespace(offset=0) %}
+                <div class="css-donut" style="background: conic-gradient({% for type_name, count in cb.items() %}{{ donut_colors[loop.index0 % 8] }} {{ ns.offset }}deg {{ ns.offset + (count / cb_total * 360) }}deg{% if not loop.last %}, {% endif %}{% set ns.offset = ns.offset + (count / cb_total * 360) %}{% endfor %})">
+                    <div class="donut-center">{{ cb_total }}</div>
+                </div>
+                <div class="donut-legend">
+                    {% for type_name, count in cb.items() %}
+                    <div class="donut-legend-item">
+                        <span class="donut-legend-dot" style="background:{{ donut_colors[loop.index0 % 8] }}"></span>
+                        <span>{{ type_name | replace("_", " ") | title }} ({{ count }})</span>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Key Metrics -->
+    <div class="card">
+        <div class="card-header">
+            <h3>Key Metrics</h3>
+        </div>
+        <div class="card-body">
+            {% set qs = dashboard.quick_stats if dashboard else {} %}
+            <div class="metrics-grid">
+                <div class="metric-item">
+                    <div class="metric-value">{{ summary.total_components if summary else 0 }}</div>
+                    <div class="metric-label">Components</div>
+                </div>
+                <div class="metric-item">
+                    <div class="metric-value">{{ summary.total_dependencies if summary else 0 }}</div>
+                    <div class="metric-label">Dependencies</div>
+                </div>
+                <div class="metric-item">
+                    <div class="metric-value">{{ qs.failover_pct if qs and qs.failover_pct is defined else "0" }}%</div>
+                    <div class="metric-label">Failover</div>
+                </div>
+                <div class="metric-item">
+                    <div class="metric-value">{{ qs.circuit_breaker_pct if qs and qs.circuit_breaker_pct is defined else "0" }}%</div>
+                    <div class="metric-label">CB Coverage</div>
+                </div>
+                <div class="metric-item">
+                    <div class="metric-value">{{ qs.autoscaling_pct if qs and qs.autoscaling_pct is defined else "0" }}%</div>
+                    <div class="metric-label">Autoscale</div>
+                </div>
+                <div class="metric-item">
+                    <div class="metric-value">{{ qs.monitoring_pct if qs and qs.monitoring_pct is defined else "0" }}%</div>
+                    <div class="metric-label">Monitored</div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ═══ Row 3: Activity Feed + Quick Actions ════════════ -->
+<div class="dash-row dash-row-2-1">
+    <!-- Activity Feed -->
+    <div class="card">
+        <div class="card-header">
+            <h3>Recent Activity</h3>
+        </div>
+        <div class="card-body">
+            <div class="activity-feed" hx-get="/api/dashboard/summary" hx-trigger="every 30s" hx-swap="none">
+                {% set activities = dashboard.recent_activity if dashboard and dashboard.recent_activity else [] %}
+                {% if activities %}
+                    {% for act in activities %}
+                    <div class="activity-item">
+                        <div class="activity-icon {{ act.type if act.type else 'info' }}">
+                            {% if act.type == "sim" %}
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>
+                            {% elif act.type == "alert" %}
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+                            {% elif act.type == "score" %}
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/></svg>
+                            {% else %}
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
+                            {% endif %}
+                        </div>
+                        <div>
+                            <div class="activity-text">{{ act.message }}</div>
+                            <div class="activity-time">{{ act.time if act.time else "just now" }}</div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                {% else %}
+                    {% if report %}
+                    <div class="activity-item">
+                        <div class="activity-icon sim">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>
+                        </div>
+                        <div>
+                            <div class="activity-text">Simulation completed: {{ report.total_scenarios }} scenarios evaluated</div>
+                            <div class="activity-time">Score: {{ report.resilience_score }}</div>
+                        </div>
+                    </div>
+                    {% if report.critical_count > 0 %}
+                    <div class="activity-item">
+                        <div class="activity-icon alert">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/></svg>
+                        </div>
+                        <div>
+                            <div class="activity-text">{{ report.critical_count }} critical findings detected</div>
+                            <div class="activity-time">Requires attention</div>
+                        </div>
+                    </div>
+                    {% endif %}
+                    {% else %}
+                    <div class="activity-item">
+                        <div class="activity-icon info">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
+                        </div>
+                        <div>
+                            <div class="activity-text">No activity yet. Run your first simulation to start.</div>
+                            <div class="activity-time">Getting started</div>
+                        </div>
+                    </div>
+                    {% endif %}
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Quick Actions -->
+    <div class="card">
+        <div class="card-header">
+            <h3>Quick Actions</h3>
+        </div>
+        <div class="card-body">
+            <div class="quick-actions-v2">
+                <button class="qa-btn" onclick="runSim(event)">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>
+                    Run Simulation
+                </button>
+                <a href="/whatif" class="qa-btn">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+                    Check SLA
+                </a>
+                <a href="/reports" class="qa-btn">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+                    Generate Report
+                </a>
+                <a href="/graph" class="qa-btn">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="5" r="3"/><circle cx="5" cy="19" r="3"/><circle cx="19" cy="19" r="3"/><line x1="12" y1="8" x2="5" y2="16"/><line x1="12" y1="8" x2="19" y2="16"/></svg>
+                    View Genome
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ═══ Row 4: Compliance Overview + Incident Readiness ══ -->
+<div class="dash-row dash-row-2">
+    <!-- Compliance Overview -->
+    <div class="card">
+        <div class="card-header">
+            <h3>Compliance Overview</h3>
+            <a href="/compliance" class="card-link">Details &rarr;</a>
+        </div>
+        <div class="card-body">
+            {% set cs = dashboard.compliance_scores if dashboard else {"dora": 0, "soc2": 0, "hipaa": 0, "iso27001": 0} %}
+            <div class="compliance-grid">
+                {% for fw, score in cs.items() %}
+                {% set circumference = 138.2 %}
+                {% if score >= 80 %}{% set meter_color = "#3fb950" %}
+                {% elif score >= 60 %}{% set meter_color = "#d29922" %}
+                {% else %}{% set meter_color = "#f85149" %}{% endif %}
+                <div class="compliance-meter">
+                    <div class="meter-label">{{ fw | upper }}</div>
+                    <div class="meter-ring">
+                        <svg width="56" height="56" viewBox="0 0 56 56">
+                            <circle cx="28" cy="28" r="22" fill="none" stroke="#1a1f35" stroke-width="5"/>
+                            <circle cx="28" cy="28" r="22" fill="none" stroke="{{ meter_color }}" stroke-width="5"
+                                stroke-dasharray="{{ circumference }}" stroke-dashoffset="{{ circumference - (circumference * score / 100) }}" stroke-linecap="round"/>
+                        </svg>
+                        <div class="meter-value">{{ score }}%</div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Incident Readiness -->
+    <div class="card">
+        <div class="card-header">
+            <h3>Incident Readiness</h3>
+        </div>
+        <div class="card-body">
+            {% set qs = dashboard.quick_stats if dashboard else {} %}
+            {% set failover_pct = qs.failover_pct if qs and qs.failover_pct is defined else 0 %}
+            {% set monitoring_pct = qs.monitoring_pct if qs and qs.monitoring_pct is defined else 0 %}
+            {% set readiness = ((failover_pct + monitoring_pct) / 2) | round(0) | int %}
+            {% if readiness >= 70 %}{% set r_color = "var(--green)" %}
+            {% elif readiness >= 40 %}{% set r_color = "var(--yellow)" %}
+            {% else %}{% set r_color = "var(--red)" %}{% endif %}
+
+            <div class="readiness-score">
+                <span style="font-size:1.8rem;font-weight:800;color:{{ r_color }}">{{ readiness }}%</span>
+                <div class="readiness-bar">
+                    <div class="readiness-fill" style="width:{{ readiness }}%;background:{{ r_color }}"></div>
+                </div>
+            </div>
+
+            <div class="readiness-items">
+                <div class="readiness-item">
+                    {% if failover_pct > 50 %}<span class="readiness-check">&#10003;</span>{% else %}<span class="readiness-cross">&#10007;</span>{% endif %}
+                    Failover ({{ failover_pct }}%)
+                </div>
+                <div class="readiness-item">
+                    {% if monitoring_pct > 50 %}<span class="readiness-check">&#10003;</span>{% else %}<span class="readiness-cross">&#10007;</span>{% endif %}
+                    Monitoring ({{ monitoring_pct }}%)
+                </div>
+                <div class="readiness-item">
+                    {% if report %}<span class="readiness-check">&#10003;</span> Simulated{% else %}<span class="readiness-cross">&#10007;</span> Not simulated{% endif %}
+                </div>
+                <div class="readiness-item">
+                    {% set cb_pct = qs.circuit_breaker_pct if qs and qs.circuit_breaker_pct is defined else 0 %}
+                    {% if cb_pct > 30 %}<span class="readiness-check">&#10003;</span>{% else %}<span class="readiness-cross">&#10007;</span>{% endif %}
+                    Circuit Breakers ({{ cb_pct }}%)
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ═══ Row 5: Infrastructure Overview ═══════════════════ -->
+<div class="dash-row dash-row-2-1">
     <!-- Top Risks Table -->
-    <div class="card card-wide">
+    <div class="card">
         <div class="card-header">
             <h3>Top Risks</h3>
             <a href="/simulation" class="card-link">View All &rarr;</a>
@@ -151,105 +523,39 @@
         </div>
     </div>
 
-    <!-- Simulation History -->
+    <!-- Component Status Grid -->
     <div class="card">
         <div class="card-header">
-            <h3>Recent Simulations</h3>
+            <h3>Component Status</h3>
+            <a href="/components" class="card-link">All &rarr;</a>
         </div>
         <div class="card-body">
-            {% if report %}
-            <div class="sim-history-list">
-                <div class="sim-history-item">
-                    <div class="sim-history-header">
-                        <span class="badge badge-info">Latest</span>
-                        <span class="text-muted">{{ report.total_scenarios }} scenarios</span>
+            {% if summary and summary.component_types %}
+            <div class="comp-tiles">
+                {% if components is defined and components %}
+                    {% for comp in components[:20] %}
+                    <div class="comp-tile {{ comp.health if comp.health else 'healthy' }}" title="{{ comp.name }} ({{ comp.type }})">
+                        {{ comp.name[:10] }}
                     </div>
-                    <div class="sim-history-stats">
-                        <span class="sim-history-stat" style="color: var(--red);">{{ report.critical_count }} critical</span>
-                        <span class="sim-history-stat" style="color: var(--yellow);">{{ report.warning_count }} warnings</span>
-                        <span class="sim-history-stat" style="color: var(--green);">{{ report.passed_count }} passed</span>
-                    </div>
-                    <div class="sim-history-score">
-                        Score: <strong>{{ summary.resilience_score }}</strong>/100
-                    </div>
-                </div>
+                    {% endfor %}
+                {% else %}
+                    {% for type_name, count in summary.component_types.items() %}
+                    {% for i in range(count if count <= 4 else 4) %}
+                    <div class="comp-tile healthy" title="{{ type_name }}">{{ type_name[:8] }}</div>
+                    {% endfor %}
+                    {% endfor %}
+                {% endif %}
             </div>
             {% else %}
-            <div class="empty-inline">
-                <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#4a5568" stroke-width="1.5">
-                    <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/>
-                </svg>
-                <p>No simulations yet. Run your first chaos test.</p>
+            <div class="empty-inline" style="padding:20px 0">
+                <p style="color:var(--text-muted)">Load infrastructure to see component status.</p>
             </div>
             {% endif %}
         </div>
     </div>
-
-    <!-- Quick Actions -->
-    <div class="card">
-        <div class="card-header">
-            <h3>Quick Actions</h3>
-        </div>
-        <div class="card-body">
-            <div class="quick-actions">
-                <button class="quick-action-btn" onclick="runSim(event)">
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/>
-                    </svg>
-                    <span>Run Simulation</span>
-                </button>
-                <a href="/reports" class="quick-action-btn">
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/>
-                        <polyline points="14 2 14 8 20 8"/>
-                        <line x1="16" y1="13" x2="8" y2="13"/>
-                        <line x1="16" y1="17" x2="8" y2="17"/>
-                    </svg>
-                    <span>Generate Report</span>
-                </a>
-                <a href="/graph" class="quick-action-btn">
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <circle cx="12" cy="5" r="3"/><circle cx="5" cy="19" r="3"/><circle cx="19" cy="19" r="3"/>
-                        <line x1="12" y1="8" x2="5" y2="16"/><line x1="12" y1="8" x2="19" y2="16"/>
-                    </svg>
-                    <span>View Graph</span>
-                </a>
-                <a href="/analyze" class="quick-action-btn">
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <path d="M21 16V8a2 2 0 00-1-1.73l-7-4a2 2 0 00-2 0l-7 4A2 2 0 003 8v8a2 2 0 001 1.73l7 4a2 2 0 002 0l7-4A2 2 0 0021 16z"/>
-                    </svg>
-                    <span>AI Analysis</span>
-                </a>
-            </div>
-        </div>
-    </div>
-
-    <!-- Component Status Overview -->
-    <div class="card card-wide">
-        <div class="card-header">
-            <h3>Infrastructure Overview</h3>
-            <a href="/components" class="card-link">View all &rarr;</a>
-        </div>
-        <div class="card-body">
-            <div class="stat-grid">
-                <div class="stat-item">
-                    <div class="stat-value">{{ summary.total_components }}</div>
-                    <div class="stat-label">Components</div>
-                </div>
-                <div class="stat-item">
-                    <div class="stat-value">{{ summary.total_dependencies }}</div>
-                    <div class="stat-label">Dependencies</div>
-                </div>
-                {% for type_name, count in summary.component_types.items() %}
-                <div class="stat-item">
-                    <div class="stat-value">{{ count }}</div>
-                    <div class="stat-label">{{ type_name | replace("_", " ") | title }}</div>
-                </div>
-                {% endfor %}
-            </div>
-        </div>
-    </div>
 </div>
+
+</div><!-- /.dashboard-v2 -->
 
 <script>
 function runSim(e) {

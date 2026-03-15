@@ -58,5 +58,17 @@ import infrasim.cli.contract_cmd  # noqa: F401
 import infrasim.cli.canary_cmd  # noqa: F401
 import infrasim.cli.multienv_cmd  # noqa: F401
 import infrasim.cli.cost_attr_cmd  # noqa: F401
+import infrasim.cli.plugin_cmd  # noqa: F401
+import infrasim.cli.topology_diff_cmd  # noqa: F401
+import infrasim.cli.optimizer_cmd  # noqa: F401
+import infrasim.cli.anomaly_cmd  # noqa: F401
+import infrasim.cli.sre_maturity_cmd  # noqa: F401
+import infrasim.cli.postmortem_cmd  # noqa: F401
+import infrasim.cli.env_compare_cmd  # noqa: F401
+import infrasim.cli.template_cmd  # noqa: F401
+import infrasim.cli.compliance_monitor_cmd  # noqa: F401
+import infrasim.cli.gate_cmd  # noqa: F401
+import infrasim.cli.war_room_cmd  # noqa: F401
+import infrasim.cli.cost_optimize_cmd  # noqa: F401
 
 __all__ = ["app", "_print_dynamic_results"]
