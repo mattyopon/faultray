@@ -471,6 +471,69 @@ class TestEdgeCases:
         tracker.add_incident(Incident("api", _REF + timedelta(days=1), 60.0))
         assert tracker.consumed_budget(t, _REF) == 0.0
 
+    def test_budget_status_zero_budget(self):
+        """Test line 168: budget_status returns EXHAUSTED when total budget is 0."""
+        tracker = SLABudgetTracker()
+        t = _target(pct=100.0, window=30)  # 100% SLA = 0 budget
+        status = tracker.budget_status(t, _REF)
+        assert status == BudgetStatus.EXHAUSTED
+
+    def test_burn_rate_before_lookback(self):
+        """Test line 196: incidents before lookback period are ignored."""
+        tracker = SLABudgetTracker()
+        t = _target(pct=99.9, window=30)
+        # Incident 10 days ago, lookback is 7 days
+        tracker.add_incident(Incident("api", _REF - timedelta(days=10), 20.0))
+        br = tracker.burn_rate(t, _REF, lookback_days=7)
+        assert br.current_burn_rate == 0.0
+
+    def test_burn_rate_after_ref(self):
+        """Test line 198: incidents after reference time are ignored."""
+        tracker = SLABudgetTracker()
+        t = _target(pct=99.9, window=30)
+        tracker.add_incident(Incident("api", _REF + timedelta(days=1), 20.0))
+        br = tracker.burn_rate(t, _REF, lookback_days=7)
+        assert br.current_burn_rate == 0.0
+
+    def test_burn_rate_component_filter(self):
+        """Test line 200: component filter in burn rate calculation."""
+        tracker = SLABudgetTracker()
+        t = _target(pct=99.9, window=30, component_ids=["api"])
+        tracker.add_incident(Incident("db", _REF - timedelta(hours=1), 20.0))
+        br = tracker.burn_rate(t, _REF, lookback_days=7)
+        assert br.current_burn_rate == 0.0
+
+    def test_burn_rate_zero_expected(self):
+        """Test line 210: current_rate = 0 when expected_per_day is 0."""
+        tracker = SLABudgetTracker()
+        t = _target(pct=100.0, window=0)  # zero budget and zero window
+        br = tracker.burn_rate(t, _REF, lookback_days=7)
+        assert br.current_burn_rate == 0.0
+
+    def test_report_exhaustion_warning(self):
+        """Test line 323: recommendations for exhausted budget."""
+        tracker = SLABudgetTracker()
+        t = _target(pct=99.9, window=30)
+        # Nearly exhaust the budget
+        tracker.add_incident(Incident("api", _REF - timedelta(hours=1), 42.0))
+        report = tracker.generate_report(t, _REF)
+        # Should have recommendation about exhaustion or critical
+        assert len(report.recommendations) >= 1
+
+    def test_report_degrading_burn_rate_recommendation(self):
+        """Test line 330: recommendation when burn rate trend is DEGRADING.
+
+        Budget = 43.2 min over 30 days = 1.44 min/day expected.
+        Need rate between 1.5 and 3.0 to trigger DEGRADING trend.
+        25 min in 7 days = 3.57 min/day -> rate = 3.57 / 1.44 = 2.48 -> DEGRADING.
+        """
+        tracker = SLABudgetTracker()
+        t = _target(pct=99.9, window=30)
+        tracker.add_incident(Incident("api", _REF - timedelta(days=3), 25.0))
+        report = tracker.generate_report(t, _REF)
+        burn_recs = [r for r in report.recommendations if "monitor" in r.lower() or "increasing" in r.lower()]
+        assert len(burn_recs) >= 1
+
     def test_zero_window(self):
         tracker = SLABudgetTracker()
         t = _target(window=0)

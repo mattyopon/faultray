@@ -454,3 +454,89 @@ class TestEdgeCases:
             report = f.forecast(g, horizon)
             assert report.planning_horizon_days == horizon.value
             assert len(report.forecasts) == 1
+
+
+# ---------------------------------------------------------------------------
+# Coverage gaps — lines 212, 230, 241, 271
+# ---------------------------------------------------------------------------
+
+
+class TestLinearRegressionEdgeCases:
+    """Test _linear_regression edge cases directly."""
+
+    def test_empty_data_returns_zero(self):
+        """Empty data list -> (0.0, 0.0). [line 212]"""
+        slope, confidence = CapacityForecaster._linear_regression([])
+        assert slope == 0.0
+        assert confidence == 0.0
+
+    def test_single_data_point_returns_zero(self):
+        """Single data point -> (0.0, 0.0). [line 212]"""
+        dp = CapacityDataPoint(
+            timestamp=datetime(2025, 1, 1), utilization=50.0, replicas=1,
+        )
+        slope, confidence = CapacityForecaster._linear_regression([dp])
+        assert slope == 0.0
+        assert confidence == 0.0
+
+    def test_same_timestamps_denom_zero(self):
+        """All data points at the same timestamp -> denom=0, returns (0, 0). [line 230]"""
+        same_time = datetime(2025, 1, 1)
+        dps = [
+            CapacityDataPoint(timestamp=same_time, utilization=30.0, replicas=1),
+            CapacityDataPoint(timestamp=same_time, utilization=60.0, replicas=1),
+        ]
+        slope, confidence = CapacityForecaster._linear_regression(dps)
+        assert slope == 0.0
+        assert confidence == 0.0
+
+    def test_constant_utilization_r_squared_one(self):
+        """Constant utilization (ss_tot=0) -> r_squared=1.0. [line 241]"""
+        base = datetime(2025, 1, 1)
+        dps = [
+            CapacityDataPoint(
+                timestamp=base + timedelta(days=i),
+                utilization=50.0,  # constant
+                replicas=1,
+            )
+            for i in range(5)
+        ]
+        slope, confidence = CapacityForecaster._linear_regression(dps)
+        assert slope == 0.0
+        assert confidence == 1.0  # r_squared = 1.0 for constant data
+
+
+class TestRecommendActionFallback:
+    """Test the final 'No action needed' return. [line 271]"""
+
+    def test_low_growth_no_risk(self):
+        """Low current util, low predicted util, distant capacity ->
+        'No action needed'. [line 271]"""
+        action = CapacityForecaster._recommend_action(
+            current_util=20.0,
+            predicted_util=25.0,
+            days_until_cap=365.0,
+            horizon_days=30,
+        )
+        assert action == "No action needed"
+
+    def test_well_within_capacity(self):
+        """Predicted utilization well below 75% threshold."""
+        action = CapacityForecaster._recommend_action(
+            current_util=10.0,
+            predicted_util=30.0,
+            days_until_cap=float("inf"),
+            horizon_days=30,
+        )
+        assert action == "No action needed"
+
+    def test_urgent_when_days_until_cap_within_7(self):
+        """days_until_cap <= 7 but not yet at capacity ->
+        URGENT recommendation. [line 271]"""
+        action = CapacityForecaster._recommend_action(
+            current_util=80.0,
+            predicted_util=95.0,
+            days_until_cap=5.0,
+            horizon_days=30,
+        )
+        assert "URGENT" in action

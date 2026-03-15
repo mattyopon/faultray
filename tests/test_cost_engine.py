@@ -541,3 +541,231 @@ def test_highest_impact_scenario_name():
     cost_report = engine.analyze(report)
 
     assert cost_report.highest_impact_scenario == "DB Failure"
+
+
+def test_estimate_downtime_severity_fallback():
+    """When no component has MTTR, should fallback to severity * SEVERITY_TO_DOWNTIME_FACTOR."""
+    graph = InfraGraph()
+    graph.add_component(Component(
+        id="svc", name="Service", type=ComponentType.APP_SERVER,
+        operational_profile=OperationalProfile(mttr_minutes=0.0),
+    ))
+
+    effects = [
+        CascadeEffect(
+            component_id="svc", component_name="Service",
+            health=HealthStatus.DOWN, reason="Failure",
+        ),
+    ]
+    report = _build_report_with_effects(graph, effects)
+
+    engine = CostImpactEngine(graph)
+    cost_report = engine.analyze(report)
+    # severity is computed from cascade, downtime = severity * 6.0
+    impact = cost_report.impacts[0]
+    assert impact.downtime_minutes > 0
+    assert impact.downtime_minutes == round(impact.severity * 6.0, 2)
+
+
+def test_business_loss_healthy_component_zero_factor():
+    """HEALTHY component should contribute 0 business loss (factor=0.0)."""
+    graph = InfraGraph()
+    graph.add_component(Component(
+        id="svc", name="Service", type=ComponentType.APP_SERVER,
+        cost_profile=CostProfile(revenue_per_minute=100.0),
+    ))
+    effects = [
+        CascadeEffect(
+            component_id="svc", component_name="Service",
+            health=HealthStatus.HEALTHY, reason="No issue",
+        ),
+    ]
+    report = _build_report_with_effects(graph, effects)
+    engine = CostImpactEngine(graph)
+    cost_report = engine.analyze(report)
+    assert cost_report.impacts[0].business_loss == 0.0
+
+
+def test_business_loss_churn_cost():
+    """Churn cost should contribute to business loss via customer_ltv."""
+    graph = InfraGraph()
+    graph.add_component(Component(
+        id="svc", name="Service", type=ComponentType.APP_SERVER,
+        cost_profile=CostProfile(
+            revenue_per_minute=0.0,  # No direct revenue
+            customer_ltv=1000.0,
+            churn_rate_per_hour_outage=0.01,
+        ),
+        operational_profile=OperationalProfile(mttr_minutes=60.0),
+    ))
+    effects = [
+        CascadeEffect(
+            component_id="svc", component_name="Service",
+            health=HealthStatus.DOWN, reason="Outage",
+        ),
+    ]
+    report = _build_report_with_effects(graph, effects)
+    engine = CostImpactEngine(graph)
+    cost_report = engine.analyze(report)
+    # Churn cost = 1000 * 0.01 * 1.0h * 1.0 (DOWN factor) = 10.0
+    assert cost_report.impacts[0].business_loss == 10.0
+
+
+def test_sla_penalty_monthly_contract_value():
+    """SLA penalty should use monthly_contract_value when set."""
+    graph = InfraGraph()
+    graph.add_component(Component(
+        id="api", name="API", type=ComponentType.APP_SERVER,
+        cost_profile=CostProfile(
+            revenue_per_minute=0.0,
+            monthly_contract_value=50000.0,
+            sla_credit_percent=25.0,
+        ),
+        operational_profile=OperationalProfile(mttr_minutes=120.0),
+        slo_targets=[SLOTarget(name="Avail", metric="availability", target=99.99)],
+    ))
+    effects = [
+        CascadeEffect(
+            component_id="api", component_name="API",
+            health=HealthStatus.DOWN, reason="Outage",
+        ),
+    ]
+    report = _build_report_with_effects(graph, effects)
+    engine = CostImpactEngine(graph)
+    cost_report = engine.analyze(report)
+    # SLA penalty = 50000 * 0.25 = 12500
+    assert cost_report.impacts[0].sla_penalty == 12500.0
+
+
+def test_sla_penalty_no_breach():
+    """When downtime < allowed downtime, no SLA penalty should be charged."""
+    graph = InfraGraph()
+    graph.add_component(Component(
+        id="api", name="API", type=ComponentType.APP_SERVER,
+        cost_profile=CostProfile(
+            revenue_per_minute=100.0,
+            sla_credit_percent=10.0,
+        ),
+        operational_profile=OperationalProfile(mttr_minutes=1.0),
+        # 99.0% SLO -> 432 min allowed -> 1 min << 432
+        slo_targets=[SLOTarget(name="Avail", metric="availability", target=99.0)],
+    ))
+    effects = [
+        CascadeEffect(
+            component_id="api", component_name="API",
+            health=HealthStatus.DOWN, reason="Brief outage",
+        ),
+    ]
+    report = _build_report_with_effects(graph, effects)
+    engine = CostImpactEngine(graph)
+    cost_report = engine.analyze(report)
+    assert cost_report.impacts[0].sla_penalty == 0.0
+
+
+def test_sla_penalty_no_revenue_no_contract():
+    """When both rpm and mcv are 0, no SLA penalty should be charged."""
+    graph = InfraGraph()
+    graph.add_component(Component(
+        id="worker", name="Worker", type=ComponentType.APP_SERVER,
+        cost_profile=CostProfile(
+            revenue_per_minute=0.0,
+            monthly_contract_value=0.0,
+            sla_credit_percent=10.0,
+        ),
+        operational_profile=OperationalProfile(mttr_minutes=120.0),
+        slo_targets=[SLOTarget(name="Avail", metric="availability", target=99.99)],
+    ))
+    effects = [
+        CascadeEffect(
+            component_id="worker", component_name="Worker",
+            health=HealthStatus.DOWN, reason="Outage",
+        ),
+    ]
+    report = _build_report_with_effects(graph, effects)
+    engine = CostImpactEngine(graph)
+    cost_report = engine.analyze(report)
+    assert cost_report.impacts[0].sla_penalty == 0.0
+
+
+def test_recovery_cost_zero_downtime():
+    """Zero downtime should produce zero recovery cost."""
+    graph = InfraGraph()
+    graph.add_component(Component(
+        id="svc", name="Service", type=ComponentType.APP_SERVER,
+        cost_profile=CostProfile(recovery_engineer_cost=200.0),
+    ))
+    # DEGRADED component: no DOWN component, so recovery cost should be 0
+    effects = [
+        CascadeEffect(
+            component_id="svc", component_name="Service",
+            health=HealthStatus.DEGRADED, reason="Slow",
+        ),
+    ]
+    report = _build_report_with_effects(graph, effects)
+    engine = CostImpactEngine(graph)
+    cost_report = engine.analyze(report)
+    assert cost_report.impacts[0].recovery_cost == 0.0
+
+
+def test_recovery_cost_component_team_size():
+    """recovery_team_size from component should override engine-level num_engineers."""
+    graph = InfraGraph()
+    graph.add_component(Component(
+        id="svc", name="Service", type=ComponentType.APP_SERVER,
+        cost_profile=CostProfile(
+            recovery_engineer_cost=200.0,
+            recovery_team_size=5,
+        ),
+        operational_profile=OperationalProfile(mttr_minutes=60.0),
+    ))
+    effects = [
+        CascadeEffect(
+            component_id="svc", component_name="Service",
+            health=HealthStatus.DOWN, reason="Down",
+        ),
+    ]
+    report = _build_report_with_effects(graph, effects)
+    engine = CostImpactEngine(graph, num_engineers=2)  # default 2, but component says 5
+    cost_report = engine.analyze(report)
+    # 200 * 1h * 5 = 1000 (uses component's team_size=5, not engine's num_engineers=2)
+    assert cost_report.impacts[0].recovery_cost == 1000.0
+
+
+def test_recovery_cost_default_hourly_cost():
+    """When recovery_engineer_cost is 0, should fallback to default 100.0."""
+    graph = InfraGraph()
+    graph.add_component(Component(
+        id="svc", name="Service", type=ComponentType.APP_SERVER,
+        cost_profile=CostProfile(recovery_engineer_cost=0.0),
+        operational_profile=OperationalProfile(mttr_minutes=60.0),
+    ))
+    effects = [
+        CascadeEffect(
+            component_id="svc", component_name="Service",
+            health=HealthStatus.DOWN, reason="Down",
+        ),
+    ]
+    report = _build_report_with_effects(graph, effects)
+    engine = CostImpactEngine(graph, num_engineers=1)
+    cost_report = engine.analyze(report)
+    # Default 100 * 1h * 1 = 100
+    assert cost_report.impacts[0].recovery_cost == 100.0
+
+
+def test_estimate_downtime_unknown_component():
+    """Effect targeting unknown component should be skipped in MTTR calc."""
+    graph = InfraGraph()
+    graph.add_component(Component(
+        id="svc", name="Service", type=ComponentType.APP_SERVER,
+    ))
+    effects = [
+        CascadeEffect(
+            component_id="nonexistent", component_name="Ghost",
+            health=HealthStatus.DOWN, reason="Unknown",
+        ),
+    ]
+    report = _build_report_with_effects(graph, effects)
+    engine = CostImpactEngine(graph)
+    cost_report = engine.analyze(report)
+    # Unknown component skipped in MTTR, falls back to severity-based
+    assert cost_report.impacts[0].downtime_minutes > 0

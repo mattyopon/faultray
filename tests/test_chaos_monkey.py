@@ -341,6 +341,112 @@ def test_most_dangerous_and_safest():
         assert report.safest_component in graph.components
 
 
+def test_default_config():
+    """Test line 104: run() creates default ChaosMonkeyConfig when None."""
+    graph = _build_test_graph()
+    monkey = ChaosMonkey()
+    report = monkey.run(graph, config=None)
+    assert isinstance(report, ChaosMonkeyReport)
+    assert report.total_rounds > 0
+
+
+def test_run_single_empty_report():
+    """Test line 156: run_single returns default MonkeyExperiment when no experiments."""
+    graph = InfraGraph()
+    monkey = ChaosMonkey()
+    exp = monkey.run_single(graph, level=ChaosLevel.MONKEY, seed=42)
+    assert isinstance(exp, MonkeyExperiment)
+    assert exp.round_number == 1
+    assert exp.survived is True
+    assert exp.failed_components == []
+
+
+def test_find_weakest_empty_graph():
+    """Test line 181: find_weakest_point returns empty string for empty graph."""
+    graph = InfraGraph()
+    monkey = ChaosMonkey()
+    result = monkey.find_weakest_point(graph, rounds=10, seed=42)
+    assert result == ""
+
+
+def test_find_weakest_zero_count_component():
+    """Test line 203: avg_damage[cid] = 0.0 when count[cid] == 0."""
+    graph = InfraGraph()
+    graph.add_component(Component(
+        id="solo", name="Solo", type=ComponentType.APP_SERVER,
+    ))
+    monkey = ChaosMonkey()
+    result = monkey.find_weakest_point(graph, rounds=5, seed=42)
+    assert result == "solo"
+
+
+def test_gorilla_no_viable_types_fallback():
+    """Test line 276: gorilla falls back to random selection when no type has >= 2."""
+    graph = InfraGraph()
+    # Each component is a different type, so no type has >= 2
+    graph.add_component(Component(id="lb", name="LB", type=ComponentType.LOAD_BALANCER))
+    graph.add_component(Component(id="db", name="DB", type=ComponentType.DATABASE))
+    graph.add_component(Component(id="cache", name="Cache", type=ComponentType.CACHE))
+    monkey = ChaosMonkey()
+    config = ChaosMonkeyConfig(level=ChaosLevel.GORILLA, rounds=3, seed=42)
+    report = monkey.run(graph, config)
+    assert report.total_rounds == 3
+    for exp in report.experiments:
+        assert exp.level == ChaosLevel.GORILLA
+
+
+def test_evaluate_failures_zero_comps():
+    """Test line 327: resilience_during = 0 when total_comps == 0."""
+    graph = InfraGraph()
+    monkey = ChaosMonkey()
+    config = ChaosMonkeyConfig(level=ChaosLevel.MONKEY, rounds=1, seed=42)
+    report = monkey.run(graph, config)
+    assert report.total_rounds == 0
+
+
+def test_build_report_empty_experiments():
+    """Test line 351: _build_report returns default report when experiments is empty."""
+    graph = _build_test_graph()
+    monkey = ChaosMonkey()
+    report = monkey._build_report(
+        graph,
+        ChaosMonkeyConfig(),
+        [],
+    )
+    assert report.total_rounds == 0
+    assert report.survival_rate == 1.0
+
+
+def test_find_weakest_zero_count_many_components():
+    """Test line 203: some components have count==0 when rounds < num_components.
+
+    With many components and only 1 round, most components will have count==0,
+    triggering the avg_damage[cid] = 0.0 fallback path.
+    """
+    graph = InfraGraph()
+    for i in range(20):
+        graph.add_component(Component(
+            id=f"c{i}", name=f"C{i}", type=ComponentType.APP_SERVER,
+        ))
+    monkey = ChaosMonkey()
+    # rounds=1 -> only 1 component gets tested, the other 19 get count==0
+    result = monkey.find_weakest_point(graph, rounds=1, seed=42)
+    assert result in [f"c{i}" for i in range(20)]
+
+
+def test_evaluate_failures_zero_comps_via_method():
+    """Test line 327: _evaluate_failures with empty graph gives resilience_during=0."""
+    import random
+    graph = InfraGraph()
+    monkey = ChaosMonkey()
+    rng = random.Random(42)
+    exp = monkey._evaluate_failures(
+        graph, rng=rng, targets=[], round_num=1,
+        level=ChaosLevel.MONKEY,
+    )
+    assert exp.resilience_during == 0.0
+
+
 def test_survival_rate_bounds():
     """Survival rate should be between 0 and 1."""
     graph = _build_test_graph()

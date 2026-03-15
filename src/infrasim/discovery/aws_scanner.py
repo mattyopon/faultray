@@ -14,6 +14,7 @@ from pathlib import Path
 
 import yaml
 
+from infrasim.errors import ExternalServiceError
 from infrasim.model.components import (
     AutoScalingConfig,
     Capacity,
@@ -57,11 +58,11 @@ def _is_critical_port(port: int) -> bool:
 
 
 def _boto3_session(region: str, profile: str | None = None):
-    """Create a boto3 session, raising RuntimeError if boto3 is unavailable."""
+    """Create a boto3 session, raising ExternalServiceError if boto3 is unavailable."""
     try:
         import boto3
     except ImportError:
-        raise RuntimeError(
+        raise ExternalServiceError(
             "boto3 is required for AWS scanning. Install with: pip install boto3"
         )
 
@@ -131,7 +132,7 @@ class AWSScanner:
         for name, scanner_fn in scanners:
             try:
                 scanner_fn(graph)
-            except RuntimeError:
+            except ExternalServiceError:
                 raise  # Re-raise boto3 import errors
             except Exception as exc:
                 msg = f"Failed to scan {name}: {exc}"

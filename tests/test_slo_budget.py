@@ -246,3 +246,124 @@ def test_stricter_slo_gives_less_budget():
     result_9999 = sim_9999.simulate(report)
 
     assert result_999.budget_total_minutes > result_9999.budget_total_minutes
+
+
+def test_estimate_downtime_no_effects():
+    """Scenario with no cascade effects should estimate 0 downtime."""
+    graph = _build_test_graph()
+    simulator = SLOBudgetSimulator(graph, slo_target=99.9, window_days=30)
+    from infrasim.simulator.engine import ScenarioResult
+    from infrasim.simulator.cascade import CascadeChain
+
+    scenario = Scenario(
+        id="s-noeffect", name="No Effect", description="Nothing",
+        faults=[],
+    )
+    cascade = CascadeChain(
+        trigger="No Effect", effects=[], total_components=3,
+    )
+    result = ScenarioResult(scenario=scenario, cascade=cascade, risk_score=0.0)
+    assert simulator._estimate_downtime(result) == 0.0
+
+
+def test_estimate_downtime_degraded_only():
+    """Scenario with only degraded effects should return fractional downtime."""
+    from infrasim.model.components import HealthStatus
+    from infrasim.simulator.cascade import CascadeChain, CascadeEffect
+    from infrasim.simulator.engine import ScenarioResult
+
+    graph = _build_test_graph()
+    simulator = SLOBudgetSimulator(graph, slo_target=99.9, window_days=30)
+
+    scenario = Scenario(
+        id="s-deg", name="Degraded", description="Degraded only",
+        faults=[Fault(target_component_id="app", fault_type=FaultType.LATENCY_SPIKE)],
+    )
+    effects = [
+        CascadeEffect(
+            component_id="app", component_name="App",
+            health=HealthStatus.DEGRADED, reason="Latency spike",
+        ),
+    ]
+    cascade = CascadeChain(
+        trigger="Degraded", effects=effects, total_components=3,
+    )
+    result = ScenarioResult(scenario=scenario, cascade=cascade, risk_score=3.0)
+    downtime = simulator._estimate_downtime(result)
+    assert downtime == 1.0  # 1 degraded component * 1.0 min
+
+
+def test_estimate_downtime_down_component_no_mttr():
+    """DOWN component with zero MTTR should fallback to 30.0 min default."""
+    from infrasim.model.components import HealthStatus
+    from infrasim.simulator.cascade import CascadeChain, CascadeEffect
+    from infrasim.simulator.engine import ScenarioResult
+
+    graph = InfraGraph()
+    graph.add_component(Component(
+        id="svc", name="Service", type=ComponentType.APP_SERVER,
+        replicas=1,
+        operational_profile=OperationalProfile(mttr_minutes=0),
+    ))
+
+    simulator = SLOBudgetSimulator(graph, slo_target=99.9, window_days=30)
+    scenario = Scenario(
+        id="s-down", name="Down", description="Down",
+        faults=[Fault(target_component_id="svc", fault_type=FaultType.COMPONENT_DOWN)],
+    )
+    effects = [
+        CascadeEffect(
+            component_id="svc", component_name="Service",
+            health=HealthStatus.DOWN, reason="Down",
+        ),
+    ]
+    cascade = CascadeChain(
+        trigger="Down", effects=effects, total_components=1,
+    )
+    result = ScenarioResult(scenario=scenario, cascade=cascade, risk_score=5.0)
+    downtime = simulator._estimate_downtime(result)
+    # Default MTTR=30 * severity_factor=min(5/10, 1.0)=0.5 -> 15.0
+    assert downtime > 0
+
+
+def test_estimate_downtime_unknown_component():
+    """DOWN effect for unknown component should use default 30.0 MTTR."""
+    from infrasim.model.components import HealthStatus
+    from infrasim.simulator.cascade import CascadeChain, CascadeEffect
+    from infrasim.simulator.engine import ScenarioResult
+
+    graph = _build_test_graph()
+    simulator = SLOBudgetSimulator(graph, slo_target=99.9, window_days=30)
+
+    scenario = Scenario(
+        id="s-unk", name="Unknown", description="Unknown",
+        faults=[],
+    )
+    effects = [
+        CascadeEffect(
+            component_id="nonexistent", component_name="Ghost",
+            health=HealthStatus.DOWN, reason="Down",
+        ),
+    ]
+    cascade = CascadeChain(
+        trigger="Unknown", effects=effects, total_components=3,
+    )
+    result = ScenarioResult(scenario=scenario, cascade=cascade, risk_score=8.0)
+    downtime = simulator._estimate_downtime(result)
+    assert downtime > 0  # Should use default 30.0 * severity_factor
+
+
+def test_classify_appetite_zero_budget():
+    """Zero budget total should return conservative."""
+    graph = _build_test_graph()
+    simulator = SLOBudgetSimulator(graph, slo_target=99.9, window_days=30)
+    assert simulator._classify_appetite(0.0, 0.0) == "conservative"
+
+
+def test_max_safe_blast_method():
+    """_max_safe_blast should scale with remaining budget."""
+    graph = _build_test_graph()
+    simulator = SLOBudgetSimulator(graph, slo_target=99.9, window_days=30)
+    assert simulator._max_safe_blast(0.0) == 0.0
+    assert simulator._max_safe_blast(43.2) == 1.0
+    assert 0.0 < simulator._max_safe_blast(20.0) < 1.0

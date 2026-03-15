@@ -347,6 +347,44 @@ class TestEdgeCases:
         assert usage is not None
         assert usage.estimated_monthly_cost == 7200.0
 
+    def test_get_usage_nonexistent_returns_none(self):
+        """Test line 208: get_usage returns None for missing component (already tested but explicit)."""
+        opt = ResourceOptimizer()
+        g = InfraGraph()
+        result = opt.get_usage(g, "nonexistent")
+        assert result is None
+
+    def test_under_provisioned_scale_up(self):
+        """Test lines 258-261: under-provisioned generates SCALE_UP recommendation."""
+        opt = ResourceOptimizer(under_threshold=5.0)  # very low threshold
+        g = InfraGraph()
+        from infrasim.model.components import Capacity, ResourceMetrics
+        c = _comp("hot", "Hot Server", replicas=2)
+        c.capacity = Capacity(max_connections=100)
+        c.metrics = ResourceMetrics(cpu_percent=95, memory_percent=90, network_connections=90)
+        g.add_component(c)
+        report = opt.analyze(g)
+        scale_up = [r for r in report.recommendations if r.optimization_type == OptimizationType.SCALE_UP]
+        assert len(scale_up) >= 1
+        for rec in scale_up:
+            assert rec.priority == Priority.HIGH
+            assert rec.estimated_monthly_savings < 0  # cost increase, negative savings
+
+    def test_idle_with_dependents_scale_down(self):
+        """Test lines 227-238: idle component with dependents gets SCALE_DOWN not DECOMMISSION."""
+        opt = ResourceOptimizer(idle_threshold=100.0)  # everything is idle
+        g = InfraGraph()
+        g.add_component(_comp("api", "API", replicas=2))
+        g.add_component(_comp("db", "DB", ComponentType.DATABASE))
+        g.add_dependency(Dependency(source_id="api", target_id="db"))
+        report = opt.analyze(g)
+        db_recs = [r for r in report.recommendations if r.component_id == "db"]
+        # db has a dependent (api), so should get scale_down, not decommission
+        scale_down = [r for r in db_recs if r.optimization_type == OptimizationType.SCALE_DOWN]
+        decom = [r for r in db_recs if r.optimization_type == OptimizationType.DECOMMISSION]
+        assert len(scale_down) >= 1
+        assert len(decom) == 0
+
     def test_report_dataclass(self):
         report = OptimizationReport(
             resource_usages=[],
@@ -360,3 +398,24 @@ class TestEdgeCases:
             optimization_score=100.0,
         )
         assert report.optimization_score == 100.0
+
+    def test_generate_recs_skips_none_component(self):
+        """Test line 208: _generate_recommendations skips usage with nonexistent component_id."""
+        opt = ResourceOptimizer()
+        g = InfraGraph()
+        # Create a fake usage for a component that doesn't exist in the graph
+        fake_usage = ResourceUsage(
+            component_id="ghost",
+            component_name="Ghost",
+            component_type="app_server",
+            replicas=1,
+            utilization_percent=50.0,
+            estimated_monthly_cost=100.0,
+            is_idle=False,
+            is_over_provisioned=False,
+            is_under_provisioned=False,
+            has_autoscaling=False,
+        )
+        recs = opt._generate_recommendations(g, [fake_usage])
+        # Should return empty list since the component doesn't exist
+        assert recs == []

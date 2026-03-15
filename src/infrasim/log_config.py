@@ -4,6 +4,16 @@ import logging
 import sys
 
 
+def get_logger(name: str) -> logging.Logger:
+    """Get a properly configured logger for a module.
+
+    Returns a logger under the ``infrasim`` namespace so that all module
+    loggers are children of the root ``infrasim`` logger configured by
+    :func:`setup_logging`.
+    """
+    return logging.getLogger(f"infrasim.{name}")
+
+
 def setup_logging(level: str = "WARNING", json_format: bool = False) -> None:
     """Configure structured logging for FaultRay.
 

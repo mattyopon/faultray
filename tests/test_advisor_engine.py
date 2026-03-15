@@ -399,6 +399,118 @@ class TestSorting:
 # ---------------------------------------------------------------------------
 
 
+class TestBottleneckNoneComponent:
+    def test_bottleneck_skips_none_comp(self):
+        """Test line 224: _detect_bottlenecks skips components where get_component returns None."""
+        # This is implicitly tested when the graph is consistent, but we verify
+        # that the method works correctly for a valid graph
+        graph = InfraGraph()
+        graph.add_component(Component(
+            id="a", name="A", type=ComponentType.APP_SERVER, replicas=1,
+        ))
+        graph.add_component(Component(
+            id="b", name="B", type=ComponentType.APP_SERVER, replicas=1,
+        ))
+        graph.add_dependency(Dependency(source_id="a", target_id="b"))
+        engine = ChaosAdvisorEngine(graph)
+        report = engine.analyze()
+        # Should not crash even if internal graph state is odd
+        assert isinstance(report, AdvisorReport)
+
+    def test_bottleneck_no_bottleneck_small_graph(self):
+        """Test line 213: empty centrality dict returns no bottleneck recs."""
+        graph = InfraGraph()
+        graph.add_component(Component(
+            id="solo", name="Solo", type=ComponentType.APP_SERVER, replicas=1,
+        ))
+        engine = ChaosAdvisorEngine(graph)
+        report = engine.analyze()
+        bottleneck_recs = [r for r in report.recommendations if "Bottleneck" in r.scenario_name]
+        assert len(bottleneck_recs) == 0
+
+
+class TestTopologyInsightsEdgeCases:
+    def test_non_dag_longest_path(self):
+        """Test lines 353-354: longest_path for cyclic (non-DAG) graph returns empty."""
+        graph = InfraGraph()
+        graph.add_component(Component(id="a", name="A", type=ComponentType.APP_SERVER, replicas=1))
+        graph.add_component(Component(id="b", name="B", type=ComponentType.APP_SERVER, replicas=1))
+        graph.add_dependency(Dependency(source_id="a", target_id="b"))
+        graph.add_dependency(Dependency(source_id="b", target_id="a"))
+        engine = ChaosAdvisorEngine(graph)
+        report = engine.analyze()
+        # Cyclic graph -> longest_path should be empty via lines 353-354
+        assert report.topology_insights["longest_path"] == []
+        assert report.topology_insights["longest_path_length"] == 0
+
+    def test_exception_in_longest_path(self):
+        """Test lines 355-357: exception during longest_path calculation is caught."""
+        import unittest.mock as mock
+        graph = InfraGraph()
+        graph.add_component(Component(id="a", name="A", type=ComponentType.APP_SERVER, replicas=1))
+        graph.add_component(Component(id="b", name="B", type=ComponentType.APP_SERVER, replicas=1))
+        graph.add_dependency(Dependency(source_id="a", target_id="b"))
+
+        engine = ChaosAdvisorEngine(graph)
+        # Patch nx.dag_longest_path to raise an exception
+        import networkx as nx
+        with mock.patch.object(nx, "dag_longest_path", side_effect=RuntimeError("boom")):
+            report = engine.analyze()
+        assert report.topology_insights["longest_path"] == []
+        assert report.topology_insights["longest_path_length"] == 0
+
+
+class TestCoverageScoreLowPriority:
+    def test_low_priority_penalty(self):
+        """Test line 405: 'low' priority recommendations penalize by 1."""
+        engine = ChaosAdvisorEngine.__new__(ChaosAdvisorEngine)
+        # Create a recommendation with 'low' priority
+        rec = ChaosRecommendation(
+            priority="low",
+            scenario_name="Test",
+            scenario_id="t1",
+            reasoning="r",
+            risk_if_untested="risk",
+            estimated_blast_radius=1,
+        )
+        score = engine._compute_coverage_score([rec])
+        assert score == 99.0  # 100 - 1
+
+
+class TestBottleneckEmptyCentralityMocked:
+    def test_empty_centrality_returns_no_recs(self):
+        """Test line 213: empty centrality dict returns no bottleneck recs (mocked)."""
+        import unittest.mock as mock
+        import networkx as nx
+
+        graph = InfraGraph()
+        graph.add_component(Component(id="a", name="A", type=ComponentType.APP_SERVER, replicas=1))
+        graph.add_component(Component(id="b", name="B", type=ComponentType.APP_SERVER, replicas=1))
+        graph.add_dependency(Dependency(source_id="a", target_id="b"))
+        engine = ChaosAdvisorEngine(graph)
+        # Mock betweenness_centrality to return empty dict
+        with mock.patch.object(nx, "betweenness_centrality", return_value={}):
+            recs = engine._detect_bottlenecks()
+        assert recs == []
+
+    def test_bottleneck_skips_none_comp_mocked(self):
+        """Test line 224: _detect_bottlenecks skips nodes where get_component returns None."""
+        import unittest.mock as mock
+        import networkx as nx
+
+        graph = InfraGraph()
+        graph.add_component(Component(id="a", name="A", type=ComponentType.APP_SERVER, replicas=1))
+        graph.add_component(Component(id="b", name="B", type=ComponentType.APP_SERVER, replicas=1))
+        graph.add_dependency(Dependency(source_id="a", target_id="b"))
+        engine = ChaosAdvisorEngine(graph)
+        # Mock centrality to return a high score for a fake node
+        with mock.patch.object(nx, "betweenness_centrality", return_value={"fake_node": 0.5, "a": 0.0}):
+            recs = engine._detect_bottlenecks()
+        # fake_node should be skipped (get_component returns None)
+        # "a" has centrality < 0.1 so it breaks the loop
+        assert all("fake_node" not in r.scenario_name for r in recs)
+
+
 class TestEdgeCases:
     def test_single_node_no_spof(self, single_node_graph):
         """A single node with no dependents should not be flagged as SPOF."""

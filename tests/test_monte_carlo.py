@@ -253,3 +253,77 @@ class TestReplicasEffect:
             f"3-replica mean {r3.availability_mean} should be > "
             f"1-replica mean {r1.availability_mean}"
         )
+
+
+class TestHelpers:
+    """Test internal helper functions."""
+
+    def test_percentile_empty_list(self) -> None:
+        from infrasim.simulator.monte_carlo import _percentile
+        assert _percentile([], 50) == 0.0
+
+    def test_percentile_single_element(self) -> None:
+        from infrasim.simulator.monte_carlo import _percentile
+        assert _percentile([42.0], 50) == 42.0
+        assert _percentile([42.0], 0) == 42.0
+        assert _percentile([42.0], 100) == 42.0
+
+    def test_percentile_exact_index(self) -> None:
+        from infrasim.simulator.monte_carlo import _percentile
+        # 3 elements: indices 0, 1, 2. p50 -> k = 0.5 * 2 = 1.0 (exact)
+        assert _percentile([1.0, 2.0, 3.0], 50) == 2.0
+
+    def test_mean_empty(self) -> None:
+        from infrasim.simulator.monte_carlo import _mean
+        assert _mean([]) == 0.0
+
+    def test_std_empty_and_single(self) -> None:
+        from infrasim.simulator.monte_carlo import _std
+        assert _std([]) == 0.0
+        assert _std([5.0]) == 0.0
+
+    def test_sample_exponential_zero_mean(self) -> None:
+        import random as rand_mod
+        from infrasim.simulator.monte_carlo import _sample_exponential
+        rng = rand_mod.Random(42)
+        assert _sample_exponential(rng, 0.0) == 0.0
+
+    def test_sample_lognormal_zero_mean(self) -> None:
+        import random as rand_mod
+        from infrasim.simulator.monte_carlo import _sample_lognormal
+        rng = rand_mod.Random(42)
+        assert _sample_lognormal(rng, 0.0) == 0.0
+
+
+class TestDefaultMTBF:
+    """Test default MTBF/MTTR handling for components with zero values."""
+
+    def test_zero_mtbf_uses_default(self) -> None:
+        """Components with zero MTBF should use type-based defaults."""
+        graph = InfraGraph()
+        graph.add_component(Component(
+            id="app", name="App", type=ComponentType.APP_SERVER, replicas=1,
+            operational_profile=OperationalProfile(mtbf_hours=0, mttr_minutes=0),
+        ))
+        result = run_monte_carlo(graph, n_trials=100, seed=42)
+        # Should still produce valid results (not crash)
+        assert 0.0 <= result.availability_mean <= 1.0
+
+    def test_non_critical_path_component(self) -> None:
+        """Components with 'optional' dependencies are not on the critical path."""
+        graph = InfraGraph()
+        graph.add_component(Component(
+            id="app", name="App", type=ComponentType.APP_SERVER, replicas=1,
+            operational_profile=OperationalProfile(mtbf_hours=2160, mttr_minutes=5),
+        ))
+        graph.add_component(Component(
+            id="cache", name="Cache", type=ComponentType.CACHE, replicas=1,
+            operational_profile=OperationalProfile(mtbf_hours=500, mttr_minutes=30),
+        ))
+        graph.add_dependency(Dependency(
+            source_id="app", target_id="cache", dependency_type="optional",
+        ))
+        # Cache is optional, so its failures shouldn't affect system availability
+        result = run_monte_carlo(graph, n_trials=1000, seed=42)
+        # App alone is on critical path, availability should be reasonable
+        assert result.availability_mean > 0.9

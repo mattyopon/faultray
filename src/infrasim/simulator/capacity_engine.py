@@ -12,6 +12,7 @@ import math
 
 from pydantic import BaseModel, Field
 
+from infrasim.errors import ValidationError
 from infrasim.model.components import Component
 from infrasim.model.graph import InfraGraph
 from infrasim.simulator.ops_engine import OpsScenario, OpsSimulationEngine
@@ -161,7 +162,7 @@ class CapacityPlanningEngine:
             a conservative estimate is derived from component health states.
         """
         if slo_target <= 0.0 or slo_target > 100.0:
-            raise ValueError(
+            raise ValidationError(
                 f"slo_target must be between 0 (exclusive) and 100 (inclusive), got {slo_target}"
             )
 
