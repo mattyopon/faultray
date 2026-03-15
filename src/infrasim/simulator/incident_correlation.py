@@ -9,10 +9,10 @@ surfacing connections that humans might miss.
 from __future__ import annotations
 
 from collections import defaultdict
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from enum import Enum
 
-from infrasim.model.components import Component, ComponentType, HealthStatus
+from infrasim.model.components import Component, HealthStatus
 from infrasim.model.graph import InfraGraph
 
 

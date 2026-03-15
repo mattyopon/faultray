@@ -1,6 +1,6 @@
 """Chaos Experiment Marketplace — community-contributed chaos scenarios.
 
-Scenarios are stored locally in ``~/.chaosproof/marketplace/`` as JSON files.
+Scenarios are stored locally in ``~/.faultray/marketplace/`` as JSON files.
 No external service is required.
 """
 
@@ -18,7 +18,7 @@ if TYPE_CHECKING:
     from infrasim.simulator.scenarios import Scenario
 
 
-MARKETPLACE_DIR = Path.home() / ".chaosproof" / "marketplace"
+MARKETPLACE_DIR = Path.home() / ".faultray" / "marketplace"
 
 VALID_CATEGORIES = {"database", "network", "security", "traffic", "compound"}
 VALID_DOMAINS = {"ecommerce", "fintech", "saas", "healthcare", "general"}

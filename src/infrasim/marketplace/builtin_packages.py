@@ -1,6 +1,6 @@
-"""Built-in chaos scenario packages for the ChaosProof Marketplace.
+"""Built-in chaos scenario packages for the FaultRay Marketplace.
 
-Each package contains 3-5 scenario definitions that map to ChaosProof's
+Each package contains 3-5 scenario definitions that map to FaultRay's
 FaultType and Scenario model.  These packages are always available without
 any network access.
 """
@@ -29,7 +29,7 @@ _aws_region_failover = ScenarioPackage(
         "Comprehensive region failover scenarios including AZ isolation, "
         "cross-region failover, and Route53 health check failures"
     ),
-    author="ChaosProof Team",
+    author="FaultRay Team",
     category="disaster_recovery",
     provider="aws",
     severity="critical",
@@ -123,7 +123,7 @@ _aws_database_chaos = ScenarioPackage(
         "Database failure scenarios: storage full, replication lag, "
         "failover testing, connection pool exhaustion"
     ),
-    author="ChaosProof Team",
+    author="FaultRay Team",
     category="infrastructure",
     provider="aws",
     severity="high",
@@ -209,7 +209,7 @@ _kubernetes_pod_disruption = ScenarioPackage(
         "Pod eviction, node drain, resource quota, OOM kill, "
         "liveness probe failure scenarios"
     ),
-    author="ChaosProof Team",
+    author="FaultRay Team",
     category="infrastructure",
     provider="kubernetes",
     severity="high",
@@ -309,7 +309,7 @@ _security_attack_simulation = ScenarioPackage(
         "Simulate DDoS, credential stuffing, SQL injection impact, "
         "API abuse, and data exfiltration scenarios"
     ),
-    author="ChaosProof Team",
+    author="FaultRay Team",
     category="security",
     provider="generic",
     severity="critical",
@@ -387,7 +387,7 @@ _network_chaos_pack = ScenarioPackage(
         "Network partition, latency injection, packet loss, DNS failure, "
         "TLS certificate expiry"
     ),
-    author="ChaosProof Team",
+    author="FaultRay Team",
     category="infrastructure",
     provider="generic",
     severity="high",
@@ -489,7 +489,7 @@ _compliance_dora = ScenarioPackage(
         "Scenarios designed to test DORA (Digital Operational Resilience Act) "
         "compliance requirements for financial institutions"
     ),
-    author="ChaosProof Team",
+    author="FaultRay Team",
     category="compliance",
     provider="generic",
     severity="critical",
@@ -567,7 +567,7 @@ _compliance_soc2 = ScenarioPackage(
         "Scenarios to validate SOC2 Type II compliance: availability, "
         "processing integrity, confidentiality controls"
     ),
-    author="ChaosProof Team",
+    author="FaultRay Team",
     category="compliance",
     provider="generic",
     severity="high",
@@ -645,7 +645,7 @@ _microservices_resilience = ScenarioPackage(
         "Test circuit breakers, bulkheads, retries, timeouts, "
         "and fallback patterns in microservice architectures"
     ),
-    author="ChaosProof Team",
+    author="FaultRay Team",
     category="infrastructure",
     provider="generic",
     severity="medium",
@@ -739,7 +739,7 @@ _data_pipeline_chaos = ScenarioPackage(
         "Kafka partition loss, Spark job failure, ETL pipeline corruption, "
         "data lake access denied"
     ),
-    author="ChaosProof Team",
+    author="FaultRay Team",
     category="infrastructure",
     provider="aws",
     severity="high",
@@ -818,7 +818,7 @@ _cdn_edge_failures = ScenarioPackage(
         "CDN cache invalidation, origin failover, edge compute failure, "
         "SSL renewal failure"
     ),
-    author="ChaosProof Team",
+    author="FaultRay Team",
     category="infrastructure",
     provider="generic",
     severity="medium",
@@ -889,7 +889,7 @@ _third_party_outage = ScenarioPackage(
         "Simulate outages of common third-party services: Stripe, Auth0, "
         "Twilio, SendGrid, Datadog"
     ),
-    author="ChaosProof Team",
+    author="FaultRay Team",
     category="infrastructure",
     provider="generic",
     severity="high",
@@ -975,7 +975,7 @@ _load_testing_chaos = ScenarioPackage(
         "Traffic spike, connection pool exhaustion, memory leak, "
         "CPU spike, disk IO saturation"
     ),
-    author="ChaosProof Team",
+    author="FaultRay Team",
     category="performance",
     provider="generic",
     severity="high",
@@ -1061,7 +1061,7 @@ _deployment_chaos = ScenarioPackage(
         "Bad deployment rollback, canary failure, blue-green switch failure, "
         "config drift"
     ),
-    author="ChaosProof Team",
+    author="FaultRay Team",
     category="infrastructure",
     provider="generic",
     severity="high",
@@ -1156,7 +1156,7 @@ _observability_failure = ScenarioPackage(
         "What happens when your monitoring goes down? Prometheus failure, "
         "log pipeline break, alert fatigue simulation"
     ),
-    author="ChaosProof Team",
+    author="FaultRay Team",
     category="infrastructure",
     provider="generic",
     severity="medium",
@@ -1228,7 +1228,7 @@ _gameday_starter_kit = ScenarioPackage(
         "Pre-built GameDay exercise packages for teams new to chaos engineering. "
         "Gentle, well-documented scenarios with clear rollback procedures"
     ),
-    author="ChaosProof Team",
+    author="FaultRay Team",
     category="infrastructure",
     provider="generic",
     severity="low",

@@ -9,7 +9,7 @@ from __future__ import annotations
 from enum import Enum
 from dataclasses import dataclass, field
 
-from infrasim.model.components import ComponentType, HealthStatus
+from infrasim.model.components import ComponentType
 from infrasim.model.graph import InfraGraph
 
 

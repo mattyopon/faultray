@@ -38,19 +38,19 @@ def gate_check(
 
     Examples:
         # Basic regression check
-        infrasim gate check --before model-v1.json --after model-v2.json
+        faultray gate check --before model-v1.json --after model-v2.json
 
         # With custom thresholds
-        infrasim gate check --before old.yaml --after new.yaml --min-score 70 --max-drop 3
+        faultray gate check --before old.yaml --after new.yaml --min-score 70 --max-drop 3
 
         # JSON output for CI parsing
-        infrasim gate check --before old.json --after new.json --json
+        faultray gate check --before old.json --after new.json --json
 
         # Export SARIF for GitHub Security tab
-        infrasim gate check --before old.json --after new.json --sarif results.sarif
+        faultray gate check --before old.json --after new.json --sarif results.sarif
 
         # Generate PR comment
-        infrasim gate check --before old.json --after new.json --pr-comment
+        faultray gate check --before old.json --after new.json --pr-comment
     """
     from infrasim.integrations.regression_gate import ChaosRegressionGate
 
@@ -123,8 +123,8 @@ def gate_terraform_plan(
     Exit code 0 = passed, 1 = blocked.
 
     Examples:
-        infrasim gate terraform-plan plan.json --model current.json
-        infrasim gate terraform-plan plan.json --model current.json --min-score 70
+        faultray gate terraform-plan plan.json --model current.json
+        faultray gate terraform-plan plan.json --model current.json --min-score 70
     """
     from infrasim.integrations.regression_gate import ChaosRegressionGate
 

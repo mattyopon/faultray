@@ -16,18 +16,16 @@ from infrasim.model.components import (
     Capacity,
     Component,
     ComponentType,
-    CostProfile,
     Dependency,
     FailoverConfig,
     RegionConfig,
-    ResourceMetrics,
     SecurityProfile,
 )
 from infrasim.model.graph import InfraGraph
 
 logger = logging.getLogger(__name__)
 
-# Mapping from Azure service to InfraSim ComponentType
+# Mapping from Azure service to FaultRay ComponentType
 AZURE_TYPE_MAP: dict[str, ComponentType] = {
     "virtual_machine": ComponentType.APP_SERVER,
     "sql_database": ComponentType.DATABASE,
@@ -170,14 +168,12 @@ class AzureScanner:
 
                 # Extract network info
                 host = ""
-                subnet_id = ""
                 if hasattr(vm, "network_profile") and vm.network_profile:
                     nics = vm.network_profile.network_interfaces or []
                     if nics:
                         nic_ref = nics[0]
                         nic_id = getattr(nic_ref, "id", "")
                         if nic_id:
-                            subnet_id = nic_id
                             self._component_subnets[comp_id] = nic_id
 
                 component = Component(

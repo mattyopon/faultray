@@ -1,11 +1,11 @@
 """CLI commands for Runbook Validation and Generation.
 
 Usage:
-    infrasim runbook validate model.yaml --runbook runbook.yaml
-    infrasim runbook validate model.yaml --runbook runbook.yaml --json
-    infrasim runbook generate --model infra.yaml --output ./runbooks/
-    infrasim runbook list --model infra.yaml
-    infrasim runbook coverage --model infra.yaml
+    faultray runbook validate model.yaml --runbook runbook.yaml
+    faultray runbook validate model.yaml --runbook runbook.yaml --json
+    faultray runbook generate --model infra.yaml --output ./runbooks/
+    faultray runbook list --model infra.yaml
+    faultray runbook coverage --model infra.yaml
 """
 
 from __future__ import annotations
@@ -55,8 +55,8 @@ def validate(
 
     \b
     Examples:
-        infrasim runbook validate infra.yaml --runbook db-failover.yaml
-        infrasim runbook validate model.json --runbook runbook.yaml --json
+        faultray runbook validate infra.yaml --runbook db-failover.yaml
+        faultray runbook validate model.json --runbook runbook.yaml --json
     """
     # Load infrastructure model
     yaml_path = model if str(model).endswith((".yaml", ".yml")) else None
@@ -291,7 +291,7 @@ def runbook_generate(
         console.print_json(data=library.to_dict())
         return
 
-    paths = generator.export_library(library, output, format=format)
+    generator.export_library(library, output, format=format)
     console.print(f"\n[green]Generated {len(library.runbooks)} runbooks in {output}[/]")
     _print_library_summary(library)
 
@@ -326,7 +326,7 @@ def runbook_list_cmd(
 
     from infrasim.simulator.engine import SimulationEngine
 
-    console.print(f"[cyan]Running simulation to identify scenarios...[/]")
+    console.print("[cyan]Running simulation to identify scenarios...[/]")
     engine = SimulationEngine(graph)
     report = engine.run_all_defaults()
 
@@ -405,7 +405,7 @@ def runbook_coverage(
     from infrasim.remediation.runbook_generator import RunbookGenerator
     from infrasim.simulator.engine import SimulationEngine
 
-    console.print(f"[cyan]Running simulation and generating runbooks...[/]")
+    console.print("[cyan]Running simulation and generating runbooks...[/]")
 
     engine = SimulationEngine(graph)
     report = engine.run_all_defaults()

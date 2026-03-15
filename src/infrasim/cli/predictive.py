@@ -8,7 +8,6 @@ from pathlib import Path
 import typer
 
 from infrasim.cli.main import (
-    _load_graph_for_analysis,
     app,
     console,
 )

@@ -1,4 +1,4 @@
-"""Dependency Freshness Tracker for ChaosProof.
+"""Dependency Freshness Tracker for FaultRay.
 
 Tracks the "freshness" of infrastructure components — identifying outdated,
 end-of-life, or potentially vulnerable technology choices based on version
@@ -14,10 +14,9 @@ Usage:
 from __future__ import annotations
 
 import re
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from enum import Enum
 
-from infrasim.model.components import ComponentType, HealthStatus
 from infrasim.model.graph import InfraGraph
 
 

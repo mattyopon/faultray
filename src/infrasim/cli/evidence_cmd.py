@@ -2,11 +2,9 @@
 
 from __future__ import annotations
 
-import json as json_mod
 from pathlib import Path
 
 import typer
-from rich.console import Console
 from rich.panel import Panel
 from rich.table import Table
 
@@ -125,7 +123,7 @@ def evidence_frameworks() -> None:
     Examples:
         faultray evidence frameworks
     """
-    from infrasim.reporter.evidence_generator import EvidenceGenerator, CONTROL_MAPPINGS
+    from infrasim.reporter.evidence_generator import CONTROL_MAPPINGS
 
     table = Table(title="Supported Compliance Frameworks", show_header=True)
     table.add_column("Framework", style="cyan", width=15)

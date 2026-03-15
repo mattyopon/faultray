@@ -6,12 +6,10 @@ component failures cascade through the infrastructure dependency graph.
 
 from __future__ import annotations
 
-import copy
 from collections import deque
 from dataclasses import dataclass, field
 from enum import Enum
 
-from infrasim.model.components import ComponentType, HealthStatus
 from infrasim.model.graph import InfraGraph
 
 

@@ -318,3 +318,90 @@ class TestBayesianQuery:
 
         posteriors = engine.query({"db": "down"})
         assert set(posteriors.keys()) == {"lb", "app", "db"}
+
+
+# ---------------------------------------------------------------------------
+# Tests for missing coverage lines (97, 127, 215)
+# ---------------------------------------------------------------------------
+
+
+class TestDefaultMtbfFallback:
+    """Line 97: fallback to _DEFAULT_MTBF when mtbf_hours <= 0."""
+
+    def test_zero_mtbf_uses_default(self) -> None:
+        """When mtbf_hours is 0 (default), _compute_priors should use _DEFAULT_MTBF."""
+        graph = InfraGraph()
+        graph.add_component(Component(
+            id="app", name="App", type=ComponentType.APP_SERVER,
+            operational_profile=OperationalProfile(mtbf_hours=0, mttr_minutes=30),
+        ))
+        engine = BayesianEngine(graph)
+        results = engine.analyze()
+
+        # With mtbf_hours=0, code falls back to _DEFAULT_MTBF["app_server"] = 2160.0
+        # Prior = (30/60) / (2160 + 30/60) = 0.5 / 2160.5
+        expected = 0.5 / (2160.0 + 0.5)
+        assert len(results) == 1
+        assert abs(results[0].prior_failure_prob - expected) < 1e-6
+
+    def test_negative_mtbf_uses_default(self) -> None:
+        """When mtbf_hours is negative, _compute_priors should use _DEFAULT_MTBF."""
+        graph = InfraGraph()
+        graph.add_component(Component(
+            id="db", name="DB", type=ComponentType.DATABASE,
+            operational_profile=OperationalProfile(mtbf_hours=-10, mttr_minutes=30),
+        ))
+        engine = BayesianEngine(graph)
+        results = engine.analyze()
+
+        # Fallback to _DEFAULT_MTBF["database"] = 4320.0
+        expected = 0.5 / (4320.0 + 0.5)
+        assert len(results) == 1
+        assert abs(results[0].prior_failure_prob - expected) < 1e-6
+
+
+class TestEdgeNoneContinue:
+    """Lines 127 and 215: continue when get_dependency_edge returns None."""
+
+    @staticmethod
+    def _graph_with_edgeless_dependency() -> InfraGraph:
+        """Create a graph where get_dependencies returns a node but
+        get_dependency_edge returns None (edge exists without 'dependency' data)."""
+        graph = InfraGraph()
+        graph.add_component(Component(
+            id="app", name="App", type=ComponentType.APP_SERVER,
+            operational_profile=OperationalProfile(mtbf_hours=2160, mttr_minutes=10),
+        ))
+        graph.add_component(Component(
+            id="db", name="DB", type=ComponentType.DATABASE,
+            operational_profile=OperationalProfile(mtbf_hours=4320, mttr_minutes=30),
+        ))
+        # Add edge directly to the networkx graph without 'dependency' metadata.
+        # This means get_dependencies("app") returns [db_comp], but
+        # get_dependency_edge("app", "db") returns None.
+        graph._graph.add_edge("app", "db")
+        return graph
+
+    def test_analyze_skips_edge_none(self) -> None:
+        """Line 127: analyze() should skip dependencies with no edge data."""
+        graph = self._graph_with_edgeless_dependency()
+        engine = BayesianEngine(graph)
+        results = engine.analyze()
+
+        app_result = next(r for r in results if r.component_id == "app")
+        # The dependency edge has no data, so it should be skipped entirely.
+        assert len(app_result.conditional_impacts) == 0
+        assert app_result.most_critical_dependency == ""
+        # Posterior should equal prior since no dependency was processed.
+        assert app_result.posterior_given_deps == app_result.prior_failure_prob
+
+    def test_query_skips_edge_none(self) -> None:
+        """Line 215: query() should skip dependencies with no edge data."""
+        graph = self._graph_with_edgeless_dependency()
+        engine = BayesianEngine(graph)
+
+        posteriors = engine.query({"db": "down"})
+        # Even though db is "down", app should not be affected because
+        # the edge has no dependency metadata and is skipped.
+        baseline = engine.query({})
+        assert posteriors["app"] == baseline["app"]

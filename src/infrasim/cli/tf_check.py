@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import json
 from pathlib import Path
 
 import typer
@@ -35,16 +34,16 @@ def tf_check(
 
     Examples:
         # Basic analysis
-        infrasim tf-check plan.json
+        faultray tf-check plan.json
 
         # Fail CI if resilience drops
-        infrasim tf-check plan.json --fail-on-regression
+        faultray tf-check plan.json --fail-on-regression
 
         # Set minimum score threshold
-        infrasim tf-check plan.json --min-score 70
+        faultray tf-check plan.json --min-score 70
 
         # JSON output for CI/CD
-        infrasim tf-check plan.json --json
+        faultray tf-check plan.json --json
     """
     from infrasim.integrations.terraform_provider import TerraformFaultRayProvider
 
@@ -119,10 +118,10 @@ def score_custom(
 
     Examples:
         # Evaluate with a custom policy
-        infrasim score-custom my-model.json --policy scoring-policy.yaml
+        faultray score-custom my-model.json --policy scoring-policy.yaml
 
         # JSON output
-        infrasim score-custom my-model.json --policy scoring-policy.yaml --json
+        faultray score-custom my-model.json --policy scoring-policy.yaml --json
     """
     from infrasim.scoring import CustomScoringEngine
 
@@ -180,13 +179,13 @@ def correlate(
 
     Examples:
         # From CSV file
-        infrasim correlate my-model.json --incidents incidents.csv
+        faultray correlate my-model.json --incidents incidents.csv
 
         # From PagerDuty
-        infrasim correlate my-model.json --pagerduty-key <key> --days 90
+        faultray correlate my-model.json --pagerduty-key <key> --days 90
 
         # JSON output
-        infrasim correlate my-model.json --incidents incidents.csv --json
+        faultray correlate my-model.json --incidents incidents.csv --json
     """
     from infrasim.integrations.incident_correlator import IncidentCorrelator
 

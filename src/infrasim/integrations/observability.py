@@ -1,7 +1,7 @@
 """Observability Integration Hub -- import metrics from monitoring platforms.
 
 Imports real metrics from Datadog, New Relic, Grafana, or JSON files to
-calibrate InfraSim simulation models.  All external API calls are
+calibrate FaultRay simulation models.  All external API calls are
 **read-only** -- this module never writes to monitoring platforms.
 """
 
@@ -350,7 +350,7 @@ class ObservabilityHub:
                 # Try to fetch panel data through datasource proxy
                 for target in targets:
                     expr = target.get("expr", "")
-                    ref_id = target.get("refId", "A")
+                    target.get("refId", "A")
                     if not expr:
                         continue
 

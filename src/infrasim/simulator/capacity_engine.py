@@ -1,4 +1,4 @@
-"""Capacity planning engine for InfraSim v4.0.
+"""Capacity planning engine for FaultRay v4.0.
 
 Predicts when infrastructure components will need scaling based on
 traffic growth trends, projects error budget consumption, and generates

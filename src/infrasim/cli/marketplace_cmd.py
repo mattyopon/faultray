@@ -333,8 +333,8 @@ def _cmd_install(mp, package_id: str) -> None:
         console.print(f"    Faults: {fault_types}")
 
     console.print(
-        f"\n[dim]Scenarios are now available for simulation. "
-        f"Run 'faultray simulate' to test your infrastructure.[/]"
+        "\n[dim]Scenarios are now available for simulation. "
+        "Run 'faultray simulate' to test your infrastructure.[/]"
     )
 
 
@@ -351,7 +351,7 @@ def _cmd_featured(mp, json_output: bool) -> None:
 
     console.print()
     console.print(Panel(
-        "[bold]Hand-picked packages recommended by the ChaosProof team[/]",
+        "[bold]Hand-picked packages recommended by the FaultRay team[/]",
         title="[bold]Featured Packages[/]",
         border_style="green",
     ))
@@ -446,7 +446,7 @@ def _cmd_export(mp, name: str, output_path: str) -> None:
         console.print(f"[green]Package exported to {out}[/]")
     else:
         console.print(f"[green]Package '{name}' created with ID: {pkg.id}[/]")
-        console.print(f"[dim]Saved to marketplace store. Share the JSON to distribute.[/]")
+        console.print("[dim]Saved to marketplace store. Share the JSON to distribute.[/]")
 
 
 def _cmd_rate(mp, package_id: str, author: str, score: int, comment: str) -> None:

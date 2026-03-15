@@ -1,12 +1,12 @@
 """Generate CI/CD resilience gate configurations.
 
 Generates GitHub Actions, GitLab CI, and Jenkins pipeline configurations
-that run ChaosProof resilience checks as part of the CI/CD pipeline.
+that run FaultRay resilience checks as part of the CI/CD pipeline.
 """
 
 from __future__ import annotations
 
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 
 import yaml
 
@@ -42,7 +42,7 @@ class CIGateGenerator:
             Complete YAML content for a GitHub Actions workflow file.
         """
         workflow: dict = {
-            "name": "ChaosProof Resilience Gate",
+            "name": "FaultRay Resilience Gate",
             "on": {
                 "pull_request": {
                     "paths": [
@@ -253,7 +253,7 @@ const scoreEmoji = score >= 80 ? '\\u2705' : score >= 60 ? '\\u26a0\\ufe0f' : '\
 const statusText = critical === 0 ? 'PASSED' : 'FAILED';
 const statusEmoji = critical === 0 ? '\\u2705' : '\\u274c';
 
-const body = `## ${statusEmoji} ChaosProof Resilience Gate: ${statusText}
+const body = `## ${statusEmoji} FaultRay Resilience Gate: ${statusText}
 
 | Metric | Value |
 |--------|-------|
@@ -282,7 +282,7 @@ const { data: comments } = await github.rest.issues.listComments({
 });
 
 const botComment = comments.find(c =>
-  c.body.includes('ChaosProof Resilience Gate')
+  c.body.includes('FaultRay Resilience Gate')
 );
 
 if (botComment) {
@@ -322,7 +322,7 @@ if (botComment) {
             "  -d \"{",
             '    \\\"attachments\\\": [{',
             '      \\\"color\\\": \\\"$COLOR\\\",',
-            '      \\\"title\\\": \\\"ChaosProof Resilience Gate: $STATUS\\\",',
+            '      \\\"title\\\": \\\"FaultRay Resilience Gate: $STATUS\\\",',
             '      \\\"text\\\": \\\"Score: $SCORE/100 | Critical: $CRITICAL\\\",',
             '      \\\"footer\\\": \\\"${{ github.repository }} @ ${{ github.sha }}\\\"',
             "    }]",

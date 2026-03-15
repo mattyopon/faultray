@@ -13,7 +13,6 @@ from rich.table import Table
 from infrasim.cli.main import _load_graph_for_analysis, app, console
 from infrasim.simulator.sre_maturity import (
     MaturityDimension,
-    MaturityLevel,
     SREMaturityEngine,
     _DIMENSION_LABELS,
     _LEVEL_LABELS,

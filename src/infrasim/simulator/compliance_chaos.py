@@ -5,16 +5,16 @@ Given a compliance framework (SOC2, HIPAA, PCI-DSS, ISO27001, GDPR),
 generates chaos experiments that test whether the infrastructure meets
 those requirements under failure conditions.
 
-This is a unique ChaosProof feature — no competitor offers compliance-driven
+This is a unique FaultRay feature — no competitor offers compliance-driven
 chaos experiment generation.
 """
 
 from __future__ import annotations
 
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from enum import Enum
 
-from infrasim.model.components import Component, ComponentType, HealthStatus
+from infrasim.model.components import Component, ComponentType
 from infrasim.model.graph import InfraGraph
 
 

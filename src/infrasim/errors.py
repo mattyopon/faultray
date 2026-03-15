@@ -1,4 +1,4 @@
-"""ChaosProof exception hierarchy.
+"""FaultRay exception hierarchy.
 
 All custom exceptions inherit from :class:`ChaosProofError` so callers can
 catch the entire family with a single ``except ChaosProofError``.
@@ -10,7 +10,7 @@ so existing ``except`` handlers continue to work.
 
 
 class ChaosProofError(Exception):
-    """Base exception for all ChaosProof errors."""
+    """Base exception for all FaultRay errors."""
 
 
 class ComponentNotFoundError(ChaosProofError, KeyError):

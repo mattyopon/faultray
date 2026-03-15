@@ -22,7 +22,7 @@ from datetime import datetime, timezone
 
 import networkx as nx
 
-from infrasim.model.components import ComponentType, HealthStatus
+from infrasim.model.components import ComponentType
 from infrasim.model.graph import InfraGraph
 
 logger = logging.getLogger(__name__)
@@ -1189,7 +1189,7 @@ class ChaosGenomeEngine:
 
         # Microservices: many components, moderate density
         trait_map = {t.name: t.value for t in traits}
-        density = trait_map.get("graph_density", 0.5)
+        trait_map.get("graph_density", 0.5)
         diversity = trait_map.get("component_diversity", 0.5)
 
         if n_components >= 8 and diversity > 0.5:

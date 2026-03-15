@@ -12,7 +12,7 @@ from enum import Enum
 
 import networkx as nx
 
-from infrasim.model.components import Component, ComponentType, Dependency, HealthStatus
+from infrasim.model.components import Dependency, HealthStatus
 from infrasim.model.graph import InfraGraph
 
 

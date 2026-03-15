@@ -12,7 +12,6 @@ import json
 from dataclasses import dataclass, field
 from pathlib import Path
 
-from infrasim.model.components import HealthStatus
 from infrasim.model.graph import InfraGraph
 from infrasim.simulator.cascade import CascadeEngine
 from infrasim.simulator.engine import ScenarioResult, SimulationEngine

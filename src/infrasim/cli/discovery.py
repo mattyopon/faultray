@@ -10,12 +10,11 @@ import typer
 from infrasim.cli.main import (
     DEFAULT_MODEL_PATH,
     InfraGraph,
-    SimulationEngine,
     app,
     console,
-    print_infrastructure_summary,
-    print_simulation_report,
 )
+from infrasim.reporter.report import print_infrastructure_summary, print_simulation_report
+from infrasim.simulator.engine import SimulationEngine
 from infrasim.discovery.scanner import scan_local
 
 
@@ -76,9 +75,9 @@ def scan(
             scanner = AWSScanner(region=region, profile=profile)
             result = scanner.scan()
         except RuntimeError as exc:
-            console.print(f"[red]AWS credentials not found.[/]")
-            console.print(f"[dim]Try: aws configure[/]")
-            console.print(f"[dim]Or: export AWS_PROFILE=myprofile[/]")
+            console.print("[red]AWS credentials not found.[/]")
+            console.print("[dim]Try: aws configure[/]")
+            console.print("[dim]Or: export AWS_PROFILE=myprofile[/]")
             console.print(f"[dim]Error detail: {exc}[/]")
             raise typer.Exit(1)
 
@@ -234,9 +233,9 @@ def show(
     """
     if not model.exists():
         console.print(f"[red]Model file not found: {model}[/]")
-        console.print("[dim]Try: infrasim scan --aws  (auto-discover)[/]")
-        console.print("[dim]Or:  infrasim quickstart  (interactive builder)[/]")
-        console.print("[dim]Or:  infrasim demo        (demo infrastructure)[/]")
+        console.print("[dim]Try: faultray scan --aws  (auto-discover)[/]")
+        console.print("[dim]Or:  faultray quickstart  (interactive builder)[/]")
+        console.print("[dim]Or:  faultray demo        (demo infrastructure)[/]")
         raise typer.Exit(1)
 
     graph = InfraGraph.load(model)
@@ -308,7 +307,7 @@ def tf_import(
 
     graph.save(output)
     console.print(f"\n[green]Model saved to {output}[/]")
-    console.print(f"Run [cyan]infrasim simulate -m {output}[/] to analyze risks.")
+    console.print(f"Run [cyan]faultray simulate -m {output}[/] to analyze risks.")
 
 
 @app.command()

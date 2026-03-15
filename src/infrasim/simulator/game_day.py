@@ -10,7 +10,7 @@ import uuid
 from dataclasses import dataclass, field
 from enum import Enum
 
-from infrasim.model.components import Component, ComponentType, HealthStatus
+from infrasim.model.components import Component, ComponentType
 from infrasim.model.graph import InfraGraph
 
 
@@ -196,7 +196,7 @@ def _make_component_failure_exercise(
     comp: Component,
     difficulty: ExerciseDifficulty,
 ) -> GameDayExercise:
-    params = _DIFFICULTY_PARAMS[difficulty]
+    _DIFFICULTY_PARAMS[difficulty]
     objectives = [
         ExerciseObjective(
             description=f"System survives failure of {comp.name}",

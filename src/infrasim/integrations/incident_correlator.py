@@ -4,17 +4,16 @@ Validates simulation accuracy by comparing real-world incidents against
 predicted failure scenarios.
 
 Usage:
-    infrasim correlate my-model.json --incidents incidents.csv
-    infrasim correlate my-model.json --pagerduty-key <key> --days 90
+    faultray correlate my-model.json --incidents incidents.csv
+    faultray correlate my-model.json --pagerduty-key <key> --days 90
 """
 
 from __future__ import annotations
 
 import csv
 import logging
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from pathlib import Path
-from typing import Any
 
 from infrasim.model.graph import InfraGraph
 from infrasim.simulator.engine import SimulationEngine, SimulationReport

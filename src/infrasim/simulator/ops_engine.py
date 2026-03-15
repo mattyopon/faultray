@@ -1,4 +1,4 @@
-"""Operational simulation engine for InfraSim v3.0.
+"""Operational simulation engine for FaultRay v3.0.
 
 Models real-world operational scenarios over days/weeks: deployments,
 maintenance windows, gradual degradation (memory leaks, disk fill,
@@ -26,7 +26,6 @@ from infrasim.model.graph import InfraGraph
 from infrasim.simulator.scenarios import Fault, FaultType
 from infrasim.simulator.traffic import (
     TrafficPattern,
-    TrafficPatternType,
     create_diurnal_weekly,
     create_growth_trend,
 )
@@ -831,7 +830,7 @@ class OpsSimulationEngine:
 
                 if is_faulted:
                     # Classify active faults for this component
-                    is_only_planned = all(
+                    all(
                         ev.event_type in (OpsEventType.MAINTENANCE, OpsEventType.DEPLOY, OpsEventType.CERT_RENEWAL)
                         for ev in all_events
                         if ev.target_component_id == comp_id

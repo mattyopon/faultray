@@ -463,3 +463,125 @@ def test_create_default_base_scenario_no_app_servers():
     # Without app servers, should fallback to first 2 components
     deploy_component_ids = {d["component_id"] for d in scenario.scheduled_deploys}
     assert len(deploy_component_ids) > 0
+
+
+# ---------------------------------------------------------------------------
+# Coverage: zero MTTR/MTBF pre-population in _apply_mttr_factor (lines 540,549)
+# ---------------------------------------------------------------------------
+
+
+def _build_zero_profile_graph() -> InfraGraph:
+    """Build a graph where components have zero MTBF and zero MTTR.
+
+    This triggers the default pre-population branches in _apply_mttr_factor,
+    _apply_mtbf_factor, and run_multi_whatif.
+    """
+    graph = InfraGraph()
+    graph.add_component(Component(
+        id="app", name="App", type=ComponentType.APP_SERVER,
+        replicas=2,
+        metrics=ResourceMetrics(cpu_percent=20, memory_percent=25),
+        capacity=Capacity(max_connections=1000),
+        slo_targets=[SLOTarget(name="avail", metric="availability", target=99.9)],
+        operational_profile=OperationalProfile(mtbf_hours=0, mttr_minutes=0),
+    ))
+    graph.add_component(Component(
+        id="db", name="DB", type=ComponentType.DATABASE,
+        replicas=2,
+        metrics=ResourceMetrics(cpu_percent=20, memory_percent=25, disk_percent=20),
+        capacity=Capacity(max_connections=200),
+        slo_targets=[SLOTarget(name="avail", metric="availability", target=99.9)],
+        operational_profile=OperationalProfile(mtbf_hours=0, mttr_minutes=0),
+    ))
+    graph.add_dependency(Dependency(source_id="app", target_id="db", dependency_type="requires"))
+    return graph
+
+
+def test_apply_mttr_factor_zero_profiles():
+    """_apply_mttr_factor should pre-populate zero MTBF and MTTR with defaults."""
+    graph = _build_zero_profile_graph()
+    engine = WhatIfEngine(graph)
+    whatif = WhatIfScenario(
+        base_scenario=_base_scenario(),
+        parameter="mttr_factor",
+        values=[1.0],
+    )
+    result = engine.run_whatif(whatif)
+    assert len(result.avg_availabilities) == 1
+    assert result.parameter == "mttr_factor"
+
+
+# ---------------------------------------------------------------------------
+# Coverage: zero MTBF pre-population in _apply_mtbf_factor (line 585)
+# ---------------------------------------------------------------------------
+
+
+def test_apply_mtbf_factor_zero_profiles():
+    """_apply_mtbf_factor should pre-populate zero MTBF with defaults."""
+    graph = _build_zero_profile_graph()
+    engine = WhatIfEngine(graph)
+    whatif = WhatIfScenario(
+        base_scenario=_base_scenario(),
+        parameter="mtbf_factor",
+        values=[1.0],
+    )
+    result = engine.run_whatif(whatif)
+    assert len(result.avg_availabilities) == 1
+    assert result.parameter == "mtbf_factor"
+
+
+# ---------------------------------------------------------------------------
+# Coverage: autoscaling in _apply_replica_factor (lines 670-673)
+# ---------------------------------------------------------------------------
+
+
+def test_apply_replica_factor_with_autoscaling():
+    """_apply_replica_factor should scale autoscaling min/max when enabled."""
+    from infrasim.model.components import AutoScalingConfig
+    graph = InfraGraph()
+    graph.add_component(Component(
+        id="app", name="App", type=ComponentType.APP_SERVER,
+        replicas=4,
+        metrics=ResourceMetrics(cpu_percent=20, memory_percent=25),
+        capacity=Capacity(max_connections=1000),
+        slo_targets=[SLOTarget(name="avail", metric="availability", target=99.9)],
+        operational_profile=OperationalProfile(mtbf_hours=720, mttr_minutes=30),
+        autoscaling=AutoScalingConfig(enabled=True, min_replicas=2, max_replicas=10),
+    ))
+    graph.add_component(Component(
+        id="db", name="DB", type=ComponentType.DATABASE,
+        replicas=2,
+        metrics=ResourceMetrics(cpu_percent=20, memory_percent=25, disk_percent=20),
+        capacity=Capacity(max_connections=200),
+        slo_targets=[SLOTarget(name="avail", metric="availability", target=99.9)],
+        operational_profile=OperationalProfile(mtbf_hours=2160, mttr_minutes=60),
+    ))
+    graph.add_dependency(Dependency(source_id="app", target_id="db", dependency_type="requires"))
+
+    engine = WhatIfEngine(graph)
+    whatif = WhatIfScenario(
+        base_scenario=_base_scenario(),
+        parameter="replica_factor",
+        values=[0.5],
+    )
+    result = engine.run_whatif(whatif)
+    assert len(result.avg_availabilities) == 1
+    assert result.parameter == "replica_factor"
+
+
+# ---------------------------------------------------------------------------
+# Coverage: zero MTTR/MTBF in run_multi_whatif (lines 345, 354)
+# ---------------------------------------------------------------------------
+
+
+def test_multi_whatif_zero_mttr_mtbf():
+    """run_multi_whatif should pre-populate zero MTTR and MTBF with defaults."""
+    graph = _build_zero_profile_graph()
+    engine = WhatIfEngine(graph)
+    multi = MultiWhatIfScenario(
+        base_scenario=_base_scenario(),
+        parameters={"mttr_factor": 2.0, "mtbf_factor": 0.5},
+    )
+    result = engine.run_multi_whatif(multi)
+    assert result.avg_availability > 0
+    assert result.avg_availability <= 100.0

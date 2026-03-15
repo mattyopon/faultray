@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import json
 from pathlib import Path
 
 import typer
@@ -45,10 +44,10 @@ def slo_budget(
     within-budget or exceeding-budget based on the remaining error budget.
 
     Examples:
-        infrasim slo-budget infra.yaml
-        infrasim slo-budget infra.yaml --slo 99.9 --consumed 10
-        infrasim slo-budget infra.yaml --slo 99.95 --window 7
-        infrasim slo-budget infra.yaml --slo 99.9 --consumed 10 --json
+        faultray slo-budget infra.yaml
+        faultray slo-budget infra.yaml --slo 99.9 --consumed 10
+        faultray slo-budget infra.yaml --slo 99.95 --window 7
+        faultray slo-budget infra.yaml --slo 99.9 --consumed 10 --json
     """
     from infrasim.simulator.engine import SimulationEngine
     from infrasim.simulator.slo_budget import SLOBudgetSimulator

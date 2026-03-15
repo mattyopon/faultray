@@ -386,7 +386,7 @@ class RunbookGenerator:
     def to_html(self, runbook: Runbook) -> str:
         """Convert a runbook to standalone HTML format."""
         md_content = self.to_markdown(runbook)
-        escaped = html_mod.escape(md_content)
+        html_mod.escape(md_content)
 
         # Simple markdown-to-HTML conversion
         html_body = self._md_to_html(md_content)
@@ -548,7 +548,7 @@ class RunbookGenerator:
                 title="Check database connectivity",
                 description="Verify database is accepting connections and responding to queries.",
                 commands=[
-                    f"# Check database status",
+                    "# Check database status",
                     f"kubectl exec -it $(kubectl get pod -l app={primary_comp_id} -o jsonpath='{{.items[0].metadata.name}}') -- pg_isready",
                 ],
                 expected_outcome="Database reports accepting or refusing connections",
@@ -592,7 +592,7 @@ class RunbookGenerator:
             title="Verify dependencies are reachable",
             description=f"Check that all downstream dependencies of {comp_name} are healthy.",
             commands=[
-                f"# Verify connectivity to dependencies",
+                "# Verify connectivity to dependencies",
                 f"kubectl exec -it $(kubectl get pod -l app={primary_comp_id} -o jsonpath='{{.items[0].metadata.name}}') -- nslookup <dependency-host>",
             ],
             expected_outcome="All dependencies are reachable and responding",
@@ -705,7 +705,7 @@ class RunbookGenerator:
                 title="Check load balancer health",
                 description="Verify load balancer is routing traffic correctly.",
                 commands=[
-                    f"# Check LB target health",
+                    "# Check LB target health",
                     "aws elbv2 describe-target-health --target-group-arn <arn>",
                 ],
                 expected_outcome="Healthy targets are receiving traffic",
@@ -723,7 +723,7 @@ class RunbookGenerator:
                 "This may include configuration changes, code deployments, or infrastructure updates."
             ),
             commands=[
-                f"# Apply fix specific to the identified root cause",
+                "# Apply fix specific to the identified root cause",
                 f"# kubectl rollout restart deployment/{primary_comp_id}",
             ],
             expected_outcome="Root cause addressed and fix deployed",
@@ -976,7 +976,7 @@ class RunbookGenerator:
         lines.append("<style>body{font-family:sans-serif;max-width:900px;margin:0 auto;padding:2rem;}")
         lines.append("table{border-collapse:collapse;width:100%}th,td{border:1px solid #ddd;padding:8px;text-align:left}")
         lines.append("th{background:#f4f4f4}.critical{color:#dc3545}.warning{color:#ffc107}</style></head><body>")
-        lines.append(f"<h1>Runbook Library</h1>")
+        lines.append("<h1>Runbook Library</h1>")
         lines.append(f"<p>Total: {len(library.runbooks)} | Coverage: {library.coverage_percentage:.1f}%</p>")
         lines.append("<table><tr><th>ID</th><th>Title</th><th>Severity</th><th>Blast Radius</th><th>Recovery</th></tr>")
         for rb in library.runbooks:

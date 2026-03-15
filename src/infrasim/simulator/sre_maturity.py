@@ -17,7 +17,7 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from enum import Enum
 
-from infrasim.model.components import Component, HealthStatus
+from infrasim.model.components import Component
 from infrasim.model.graph import InfraGraph
 
 
@@ -684,7 +684,7 @@ class SREMaturityEngine:
         encrypt_ratio = (has_encrypt_rest + has_encrypt_transit) / (total * 2)
         auth_ratio = has_auth / total
         segmentation_ratio = has_segmentation / total
-        waf_ratio = has_waf / total
+        has_waf / total
         advanced_ratio = (has_rate_limit + has_ids + has_log) / (total * 3)
 
         evidence: list[str] = []
@@ -762,7 +762,7 @@ class SREMaturityEngine:
         fo_ratio = has_failover / total
         cb_ratio = has_cb / total_edges if total_edges > 0 else 0.0
         retry_ratio = has_retry / total_edges if total_edges > 0 else 0.0
-        sf_ratio = has_singleflight / total
+        has_singleflight / total
 
         auto_score = (as_ratio + fo_ratio + cb_ratio + retry_ratio) / 4.0
 

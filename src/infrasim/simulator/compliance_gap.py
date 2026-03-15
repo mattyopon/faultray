@@ -12,7 +12,7 @@ import logging
 from dataclasses import dataclass, field
 from enum import Enum
 
-from infrasim.model.components import Component, ComponentType, HealthStatus
+from infrasim.model.components import Component, ComponentType
 from infrasim.model.graph import InfraGraph
 
 logger = logging.getLogger(__name__)
@@ -211,7 +211,7 @@ class ComplianceGapAnalyzer:
     ) -> list[ComplianceGap]:
         """Dispatch a requirement to the appropriate checker and return gaps."""
         cat = req.category.lower()
-        rid = req.requirement_id.lower()
+        req.requirement_id.lower()
         desc = req.description.lower()
 
         # Encryption at rest

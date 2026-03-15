@@ -1,9 +1,9 @@
 """CLI command for Dependency Impact Scoring.
 
 Usage:
-    infrasim deps score model.yaml --top 10
-    infrasim deps score model.yaml --json
-    infrasim deps heatmap model.yaml --json
+    faultray deps score model.yaml --top 10
+    faultray deps score model.yaml --json
+    faultray deps heatmap model.yaml --json
 """
 
 from __future__ import annotations
@@ -47,10 +47,10 @@ def score(
 
     \b
     Examples:
-        infrasim deps score infra.yaml
-        infrasim deps score infra.yaml --top 5
-        infrasim deps score model.json --json
-        infrasim deps score infra.yaml --all
+        faultray deps score infra.yaml
+        faultray deps score infra.yaml --top 5
+        faultray deps score model.json --json
+        faultray deps score infra.yaml --all
     """
     yaml_path = model if str(model).endswith((".yaml", ".yml")) else None
     json_path = model if yaml_path is None else None
@@ -168,8 +168,8 @@ def heatmap(
 
     \b
     Examples:
-        infrasim deps heatmap infra.yaml
-        infrasim deps heatmap model.json --json
+        faultray deps heatmap infra.yaml
+        faultray deps heatmap model.json --json
     """
     yaml_path = model if str(model).endswith((".yaml", ".yml")) else None
     json_path = model if yaml_path is None else None

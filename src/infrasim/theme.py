@@ -1,4 +1,4 @@
-"""Shared theme constants for ChaosProof."""
+"""Shared theme constants for FaultRay."""
 
 SEVERITY_COLORS = {
     "critical": "#dc3545",

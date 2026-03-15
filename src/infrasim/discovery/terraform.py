@@ -16,7 +16,7 @@ from infrasim.model.components import (
 )
 from infrasim.model.graph import InfraGraph
 
-# Terraform resource type to InfraSim component type mapping
+# Terraform resource type to FaultRay component type mapping
 TF_RESOURCE_MAP: dict[str, ComponentType] = {
     # AWS
     "aws_lb": ComponentType.LOAD_BALANCER,
@@ -322,7 +322,7 @@ def _extract_resources(state_json: dict) -> list[dict]:
 
 
 def _resource_to_component(res: dict) -> Component | None:
-    """Convert a Terraform resource to an InfraSim Component."""
+    """Convert a Terraform resource to a FaultRay Component."""
     res_type = res["type"]
     comp_type = TF_RESOURCE_MAP.get(res_type)
     if not comp_type:

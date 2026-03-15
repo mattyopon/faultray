@@ -1,7 +1,7 @@
 """Compliance Evidence Auto-Generator.
 
-Automatically generates audit-ready compliance evidence from ChaosProof /
-FaultRay simulation results.  Maps simulation outputs to real control IDs
+Automatically generates audit-ready compliance evidence from FaultRay
+simulation results.  Maps simulation outputs to real control IDs
 for SOC 2, DORA, ISO 27001, and PCI-DSS frameworks.  Exports to CSV.
 """
 

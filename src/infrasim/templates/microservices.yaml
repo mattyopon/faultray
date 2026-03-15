@@ -1,10 +1,10 @@
-# ChaosProof Template: Microservices Architecture
+# FaultRay Template: Microservices Architecture
 #
 # Architecture: API Gateway -> Services (User/Order/Product) -> DB + Queue + Cache
 # Use case: Event-driven microservices with async communication
 #
 # Load with:
-#   infrasim template use microservices --output my-infra.yaml
+#   faultray template use microservices --output my-infra.yaml
 
 schema_version: "3.0"
 

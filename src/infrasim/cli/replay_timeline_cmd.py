@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import json
 from pathlib import Path
 
 import typer
@@ -34,8 +33,8 @@ def replay_timeline(
          "component_id": "db-primary", "details": "Disk full"}
 
     Examples:
-        infrasim replay-timeline infra.yaml --incident incident.json
-        infrasim replay-timeline infra.yaml --incident incident.json --json
+        faultray replay-timeline infra.yaml --incident incident.json
+        faultray replay-timeline infra.yaml --incident incident.json --json
     """
     from infrasim.simulator.replay_engine import ReplayEngine
 

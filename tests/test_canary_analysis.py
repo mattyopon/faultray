@@ -435,3 +435,92 @@ class TestEdgeCases:
             informational=True,
         )
         assert metric.verdict == "pass"
+
+    def test_marginal_verdict_higher_is_better(self):
+        """Line 423: higher_is_better metric where degradation is between marginal_zone and threshold."""
+        analyzer = CanaryAnalyzer()
+        # baseline=100, canary=96 -> delta=-4, degradation=4
+        # threshold=5.0, marginal_zone=2.0 -> 2.0 < 4.0 <= 5.0 -> marginal
+        metric = analyzer._make_metric(
+            "score", 100.0, 96.0, threshold=5.0,
+            marginal_zone=2.0, higher_is_better=True,
+        )
+        assert metric.verdict == "marginal"
+
+    def test_marginal_verdict_lower_is_better(self):
+        """Line 432: non-higher_is_better metric where delta is between marginal_zone and threshold."""
+        analyzer = CanaryAnalyzer()
+        # baseline=10, canary=12 -> delta=2, degradation=2
+        # threshold=3.0, marginal_zone=1.0 -> 1.0 < 2.0 <= 3.0 -> marginal
+        metric = analyzer._make_metric(
+            "errors", 10.0, 12.0, threshold=3.0,
+            marginal_zone=1.0, higher_is_better=False,
+        )
+        assert metric.verdict == "marginal"
+
+    def test_marginal_overall_verdict_and_summary(self):
+        """Lines 329, 342, 360: overall marginal verdict with recommendation and summary text.
+
+        Build graphs with enough components so that disabling failover on one
+        produces a failover_coverage drop that lands in the marginal zone
+        (between marginal_zone=5.0 and threshold=10.0 for higher_is_better).
+
+        With 12 components all having failover, coverage is 100%.
+        Disabling failover on 1 gives coverage 91.67% -> degradation ~8.33%,
+        which is > 5.0 (marginal_zone) and <= 10.0 (threshold) -> marginal.
+        """
+        def _build_large_failover_graph() -> InfraGraph:
+            graph = InfraGraph()
+            for i in range(12):
+                graph.add_component(Component(
+                    id=f"svc-{i}",
+                    name=f"Service {i}",
+                    type=ComponentType.APP_SERVER,
+                    replicas=2,
+                    failover=FailoverConfig(enabled=True),
+                    autoscaling=AutoScalingConfig(enabled=True, min_replicas=2, max_replicas=4),
+                ))
+            # Chain dependencies: svc-0 -> svc-1 -> ... -> svc-11
+            for i in range(11):
+                graph.add_dependency(Dependency(
+                    source_id=f"svc-{i}",
+                    target_id=f"svc-{i+1}",
+                    dependency_type="requires",
+                    circuit_breaker=CircuitBreakerConfig(enabled=True),
+                ))
+            return graph
+
+        baseline = _build_large_failover_graph()
+        canary = _build_large_failover_graph()
+
+        # Disable failover on one canary component: 12->11 -> coverage
+        # drops from 100% to 91.67%, degradation = 8.33 which is in (5, 10].
+        canary.components["svc-11"].failover = FailoverConfig(enabled=False)
+
+        # Use lenient config so all score/spof/critical/blast_radius metrics
+        # pass easily; only the failover_coverage metric should be marginal.
+        config = CanaryConfig(
+            score_threshold=90.0,
+            spof_threshold=100,
+            critical_threshold=100,
+            blast_radius_threshold=10.0,
+            marginal_zone=50.0,  # wide enough so resilience_score doesn't go marginal
+        )
+        analyzer = CanaryAnalyzer()
+        result = analyzer.analyze_graphs(baseline, canary, config=config)
+
+        # Verify the overall verdict is marginal (line 329)
+        assert result.failed_count == 0, (
+            f"Expected no failures but got {result.failed_count}: "
+            + ", ".join(f"{m.name}={m.verdict}(delta={m.delta})" for m in result.metrics if m.verdict == "fail")
+        )
+        assert result.marginal_count > 0
+        assert result.overall_verdict == "marginal"
+
+        # Summary should contain the MARGINAL text (line 360)
+        assert "MARGINAL" in result.summary
+        assert "marginal zone" in result.summary
+
+        # Recommendations should contain marginal text (line 342)
+        marginal_recs = [r for r in result.recommendations if "Monitor closely" in r]
+        assert len(marginal_recs) > 0

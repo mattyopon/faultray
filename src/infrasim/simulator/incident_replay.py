@@ -715,7 +715,7 @@ class IncidentReplayEngine:
         down_components = [
             a for a in affected if a.health_during_incident == HealthStatus.DOWN
         ]
-        degraded_components = [
+        [
             a for a in affected if a.health_during_incident == HealthStatus.DEGRADED
         ]
 

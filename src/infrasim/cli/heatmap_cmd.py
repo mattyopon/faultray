@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import json
 from pathlib import Path
 
 import typer
@@ -184,12 +183,6 @@ def _print_heatmap(data) -> None:
         zone_table.add_column("Description")
 
         for zone in data.zones:
-            zone_level = (
-                "critical" if zone.zone_risk >= 0.75
-                else "high" if zone.zone_risk >= 0.5
-                else "medium" if zone.zone_risk >= 0.25
-                else "low"
-            )
             zone_table.add_row(
                 zone.name,
                 str(len(zone.components)),

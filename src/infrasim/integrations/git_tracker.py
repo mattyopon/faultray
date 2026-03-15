@@ -1,11 +1,11 @@
-"""Architecture Git Diff Tracker for ChaosProof.
+"""Architecture Git Diff Tracker for FaultRay.
 
 Track infrastructure changes over git history by analyzing how the
 infrastructure model file changes across commits.
 
 Usage:
     from infrasim.integrations.git_tracker import GitArchitectureTracker
-    tracker = GitArchitectureTracker(repo_path, model_file="infrasim-model.yaml")
+    tracker = GitArchitectureTracker(repo_path, model_file="faultray-model.yaml")
     changes = tracker.track_history(commits=20)
     regression = tracker.find_regression_commit()
 """
@@ -51,7 +51,7 @@ class GitArchitectureTracker:
     def __init__(
         self,
         repo_path: Path | str,
-        model_file: str = "infrasim-model.yaml",
+        model_file: str = "faultray-model.yaml",
     ) -> None:
         """Initialize the tracker.
 

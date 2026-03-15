@@ -8,9 +8,9 @@ class TestSDKVersion:
         import infrasim
         assert isinstance(infrasim.__version__, str)
 
-    def test_version_is_2_1_0(self):
+    def test_version_is_10_0_0(self):
         import infrasim
-        assert infrasim.__version__ == "2.1.0"
+        assert infrasim.__version__ == "10.0.0"
 
 
 class TestSDKAllExports:

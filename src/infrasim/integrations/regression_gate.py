@@ -11,15 +11,14 @@ Usage:
         print(result.blocking_reason)
 
 CLI:
-    infrasim gate check --before model-v1.json --after model-v2.json --min-score 60
-    infrasim gate terraform-plan plan.out --model current.json
+    faultray gate check --before model-v1.json --after model-v2.json --min-score 60
+    faultray gate terraform-plan plan.out --model current.json
 
 Exit code 0 = passed, 1 = blocked.
 """
 
 from __future__ import annotations
 
-import json
 import logging
 from dataclasses import dataclass, field
 from pathlib import Path
@@ -164,7 +163,7 @@ class ChaosRegressionGate:
         lines.append("### Resilience Score")
         lines.append("")
         lines.append(
-            f"| Metric | Value |"
+            "| Metric | Value |"
         )
         lines.append("| --- | --- |")
         lines.append(f"| Before | {result.before_score:.1f} |")

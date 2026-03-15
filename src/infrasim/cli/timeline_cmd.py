@@ -3,12 +3,16 @@
 from __future__ import annotations
 
 from pathlib import Path
+from typing import TYPE_CHECKING
 
 import typer
 from rich.panel import Panel
 from rich.table import Table
 
 from infrasim.cli.main import app, console, _load_graph_for_analysis, DEFAULT_MODEL_PATH
+
+if TYPE_CHECKING:
+    from infrasim.simulator.resilience_timeline import ResilienceTimeline
 
 
 @app.command(name="timeline")
@@ -88,7 +92,6 @@ def _show_timeline(
     width: int,
 ) -> None:
     """Display the timeline with a Rich table and sparkline."""
-    import json as json_mod
 
     report = tl.generate_report()
     snapshots = tl.get_history(days=days)
@@ -195,7 +198,6 @@ def _show_timeline(
 
 def _show_trends(tl: "ResilienceTimeline", json_output: bool) -> None:
     """Display trend analysis for multiple time periods."""
-    import json as json_mod
 
     trends = tl.get_trends()
 
@@ -281,7 +283,6 @@ def _show_trends(tl: "ResilienceTimeline", json_output: bool) -> None:
 
 def _show_milestones(tl: "ResilienceTimeline", json_output: bool) -> None:
     """Display milestone events."""
-    import json as json_mod
 
     milestones = tl.get_milestones()
 

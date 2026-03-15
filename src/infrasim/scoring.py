@@ -4,7 +4,7 @@ Users can define scoring rules in YAML and evaluate their infrastructure
 against custom policies.
 
 Usage:
-    infrasim score-custom my-model.json --policy scoring-policy.yaml --json
+    faultray score-custom my-model.json --policy scoring-policy.yaml --json
 """
 
 from __future__ import annotations
@@ -12,7 +12,7 @@ from __future__ import annotations
 import logging
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Any, Callable
+from typing import Callable
 
 import yaml
 

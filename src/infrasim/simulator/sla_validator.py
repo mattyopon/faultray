@@ -542,7 +542,7 @@ class SLAValidatorEngine:
             if remaining_gap <= 1.0:
                 break
 
-            a_base = _component_base_availability(comp)
+            _component_base_availability(comp)
 
             # Calculate what availability is needed from this component
             # to close the gap
@@ -718,7 +718,7 @@ class SLAValidatorEngine:
                 lines.append(f"           = 1 - ({1.0 - a_base:.6f})^{replicas}")
                 lines.append(f"           = {a_effective * 100:.6f}%")
             else:
-                lines.append(f"    Replicas: 1 (no redundancy)")
+                lines.append("    Replicas: 1 (no redundancy)")
                 lines.append(f"    Effective availability: {a_effective * 100:.4f}%")
 
             if comp.failover.enabled:

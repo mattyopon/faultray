@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import json as json_mod
 from pathlib import Path
 
 import typer
@@ -41,9 +40,9 @@ def budget(
     dependency graph topology, and component types.
 
     Examples:
-        infrasim budget infra.yaml allocate --slo 99.9 --window 30
-        infrasim budget infra.yaml allocate --slo 99.95 --json
-        infrasim budget infra.yaml --json
+        faultray budget infra.yaml allocate --slo 99.9 --window 30
+        faultray budget infra.yaml allocate --slo 99.95 --json
+        faultray budget infra.yaml --json
     """
     from infrasim.simulator.failure_budget import FailureBudgetAllocator
 

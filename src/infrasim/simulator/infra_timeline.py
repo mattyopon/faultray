@@ -18,13 +18,13 @@ from __future__ import annotations
 import hashlib
 import json
 import logging
-from dataclasses import asdict, dataclass, field
+from dataclasses import dataclass
 from datetime import datetime, timezone
 from enum import Enum
 from pathlib import Path
 from typing import Any
 
-from infrasim.model.components import Component, ComponentType, Dependency, HealthStatus
+from infrasim.model.components import Component, Dependency
 from infrasim.model.graph import InfraGraph
 
 logger = logging.getLogger(__name__)

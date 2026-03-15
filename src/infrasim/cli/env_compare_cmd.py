@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import json
 from pathlib import Path
 
 import typer
@@ -36,8 +35,8 @@ def env_compare(
     Detects configuration drift, security posture gaps, and cost differences.
 
     Examples:
-        infrasim env-compare --prod prod.yaml --staging staging.yaml --dev dev.yaml
-        infrasim env-compare --prod prod.yaml --staging staging.yaml --json
+        faultray env-compare --prod prod.yaml --staging staging.yaml --dev dev.yaml
+        faultray env-compare --prod prod.yaml --staging staging.yaml --json
     """
     from infrasim.model.loader import load_yaml
     from infrasim.simulator.env_comparator import EnvironmentComparator

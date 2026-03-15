@@ -5,8 +5,8 @@
 
 [![Python 3.11+](https://img.shields.io/badge/python-3.11+-blue.svg)](https://www.python.org/downloads/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
-[![Tests](https://img.shields.io/badge/tests-1%2C070%20passed-brightgreen.svg)]()
-[![Version](https://img.shields.io/badge/version-8.0.0-blue.svg)]()
+[![Tests](https://img.shields.io/badge/tests-12%2C041%20passed-brightgreen.svg)]()
+[![Version](https://img.shields.io/badge/version-10.0.0-blue.svg)]()
 [![Docker](https://img.shields.io/badge/docker-ready-2496ED.svg)](Dockerfile)
 [![PyPI](https://img.shields.io/badge/PyPI-faultray-orange.svg)]()
 
@@ -457,7 +457,7 @@ docker compose --profile cli run -v $(pwd)/terraform.tfstate:/app/terraform.tfst
 # Install in development mode
 pip install -e ".[dev]"
 
-# Run tests (1,070 tests, ~60 seconds)
+# Run tests (12,041 tests)
 pytest tests/ -v
 
 # Lint
@@ -469,7 +469,7 @@ docker build -t faultray:dev .
 
 ### Test Coverage
 
-**1,070 tests — all passing** (pytest, < 62 seconds)
+**12,041 tests — all passing** (pytest)
 
 | Module | Description |
 |--------|-------------|

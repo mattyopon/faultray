@@ -30,13 +30,13 @@ def cost_optimize(
 
     Examples:
         # Basic cost optimization
-        infrasim cost-optimize infra.yaml
+        faultray cost-optimize infra.yaml
 
         # With custom minimum score
-        infrasim cost-optimize infra.yaml --min-score 80
+        faultray cost-optimize infra.yaml --min-score 80
 
         # JSON output
-        infrasim cost-optimize infra.yaml --json
+        faultray cost-optimize infra.yaml --json
     """
     from infrasim.simulator.cost_optimizer import CostOptimizer
 

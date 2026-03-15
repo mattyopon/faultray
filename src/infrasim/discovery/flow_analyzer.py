@@ -7,8 +7,6 @@ strictly **read-only**.
 
 from __future__ import annotations
 
-import csv
-import io
 import logging
 from dataclasses import dataclass, field
 from pathlib import Path
@@ -163,7 +161,7 @@ class FlowLogAnalyzer:
             :class:`FlowAnalysisResult`.
         """
         text = path.read_text()
-        lines = [l.strip() for l in text.splitlines() if l.strip()]
+        lines = [line.strip() for line in text.splitlines() if line.strip()]
         # Skip header
         if lines and lines[0].startswith("version"):
             lines = lines[1:]

@@ -1,6 +1,6 @@
 """Natural Language to Infrastructure Converter.
 
-Converts plain-text infrastructure descriptions into ChaosProof YAML definitions.
+Converts plain-text infrastructure descriptions into FaultRay YAML definitions.
 Uses pattern matching and NLP heuristics to extract components, relationships,
 and configurations from natural language.
 
@@ -440,13 +440,13 @@ class NLInfraParser:
         return result
 
     def to_yaml(self, parsed: ParsedInfrastructure) -> str:
-        """Generate YAML string matching ChaosProof format from parsed infrastructure.
+        """Generate YAML string matching FaultRay format from parsed infrastructure.
 
         Args:
             parsed: A ParsedInfrastructure from parse().
 
         Returns:
-            YAML string in ChaosProof format.
+            YAML string in FaultRay format.
         """
         yaml_data = self._build_yaml_dict(parsed)
         return yaml.dump(
@@ -880,7 +880,7 @@ class NLInfraParser:
     # ------------------------------------------------------------------
 
     def _build_yaml_dict(self, parsed: ParsedInfrastructure) -> dict:
-        """Build a dict suitable for YAML output in ChaosProof format."""
+        """Build a dict suitable for YAML output in FaultRay format."""
         components_list = []
         for pc in parsed.components:
             comp_dict = self._parsed_to_yaml_component(pc)
@@ -1002,7 +1002,7 @@ class NLInfraParser:
         return dep
 
     def _parsed_to_component(self, pc: ParsedComponent) -> Component:
-        """Convert a ParsedComponent to an infrasim Component model."""
+        """Convert a ParsedComponent to a FaultRay Component model."""
         from infrasim.model.components import (
             AutoScalingConfig,
             Capacity,

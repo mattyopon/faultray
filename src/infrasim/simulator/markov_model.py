@@ -10,7 +10,7 @@ iterative power method to find the steady-state distribution.
 from __future__ import annotations
 
 import math
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 
 from infrasim.model.graph import InfraGraph
 

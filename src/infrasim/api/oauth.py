@@ -39,7 +39,7 @@ class OAuthConfig:
     def from_env(cls, provider: str) -> Optional["OAuthConfig"]:
         """Build config from ``FAULTRAY_OAUTH_{PROVIDER}_*`` env vars.
 
-        Falls back to ``CHAOSPROOF_OAUTH_*`` then ``INFRASIM_OAUTH_*`` for
+        Falls back to legacy ``CHAOSPROOF_OAUTH_*`` then ``INFRASIM_OAUTH_*`` for
         backward compatibility.
 
         Returns ``None`` when the required ``CLIENT_ID`` / ``CLIENT_SECRET``

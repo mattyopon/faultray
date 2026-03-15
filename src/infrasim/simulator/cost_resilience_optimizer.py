@@ -2,14 +2,13 @@
 
 Finds the optimal balance between infrastructure cost and resilience.
 Shows what you get for each dollar spent on reliability, and identifies
-the most cost-effective improvements. Unique to ChaosProof — no
+the most cost-effective improvements. Unique to FaultRay — no
 competitor offers this analysis.
 """
 
 from __future__ import annotations
 
-import math
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from enum import Enum
 
 from infrasim.model.components import Component, ComponentType, HealthStatus

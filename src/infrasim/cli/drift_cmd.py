@@ -6,15 +6,18 @@ monitor infrastructure for resilience degradation.
 
 from __future__ import annotations
 
-import json as json_mod
 import time
 from pathlib import Path
+from typing import TYPE_CHECKING
 
 import typer
 from rich.panel import Panel
 from rich.table import Table
 
 from infrasim.cli.main import _load_graph_for_analysis, app, console
+
+if TYPE_CHECKING:
+    from infrasim.simulator.drift_detector import DriftDetector, DriftReport
 
 
 @app.command("drift")

@@ -41,19 +41,19 @@ def war_room(
 
     Examples:
         # Default database outage simulation
-        infrasim war-room infra.yaml
+        faultray war-room infra.yaml
 
         # Specific incident with small team
-        infrasim war-room infra.yaml --incident cascading_failure --team-size 2
+        faultray war-room infra.yaml --incident cascading_failure --team-size 2
 
         # Without runbook
-        infrasim war-room infra.yaml --incident security_breach --no-runbook
+        faultray war-room infra.yaml --incident security_breach --no-runbook
 
         # List available incidents
-        infrasim war-room infra.yaml --list
+        faultray war-room infra.yaml --list
 
         # JSON output
-        infrasim war-room infra.yaml --json
+        faultray war-room infra.yaml --json
     """
     from infrasim.simulator.war_room import WarRoomSimulator
 

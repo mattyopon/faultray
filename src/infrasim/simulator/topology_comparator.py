@@ -7,10 +7,10 @@ and architectural pattern changes.
 
 from __future__ import annotations
 
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from enum import Enum
 
-from infrasim.model.components import ComponentType, HealthStatus
+from infrasim.model.components import HealthStatus
 from infrasim.model.graph import InfraGraph
 
 

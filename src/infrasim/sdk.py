@@ -42,7 +42,15 @@ from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
 if TYPE_CHECKING:
-    pass
+    from infrasim.contracts.engine import ContractValidationResult
+    from infrasim.model.graph import InfraGraph
+    from infrasim.simulator.benchmarking import BenchmarkResult
+    from infrasim.simulator.chaos_genome import GenomeProfile
+    from infrasim.simulator.engine import SimulationReport
+    from infrasim.simulator.incident_replay import ReplayResult
+    from infrasim.simulator.multi_env import ComparisonMatrix
+    from infrasim.simulator.risk_heatmap import HeatMapData
+    from infrasim.simulator.sla_validator import SLAValidationResult
 
 logger = logging.getLogger(__name__)
 
@@ -69,7 +77,6 @@ class FaultZero:
         Raises:
             ValueError: If neither ``yaml_path`` nor ``graph`` is provided.
         """
-        from infrasim.model.graph import InfraGraph
 
         if graph is not None:
             self._graph = graph
@@ -163,7 +170,6 @@ class FaultZero:
             ValueError: If fewer than two paths are provided.
         """
         from infrasim.simulator.multi_env import (
-            ComparisonMatrix,
             MultiEnvComparator,
         )
 

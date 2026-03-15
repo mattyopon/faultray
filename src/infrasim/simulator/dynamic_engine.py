@@ -1,4 +1,4 @@
-"""Time-stepped dynamic simulation engine for InfraSim v2.0.
+"""Time-stepped dynamic simulation engine for FaultRay v2.0.
 
 Runs simulations over discrete time steps, applying time-varying traffic
 patterns, auto-scaling decisions, failover logic, component recovery, and
@@ -16,17 +16,13 @@ from pydantic import BaseModel, Field, field_validator
 
 from infrasim.model.components import (
     AutoScalingConfig,
-    CacheWarmingConfig,
     CircuitBreakerConfig,
-    Component,
-    Dependency,
     FailoverConfig,
     HealthStatus,
-    SingleflightConfig,
 )
 from infrasim.model.graph import InfraGraph
 from infrasim.simulator.cascade import CascadeChain, CascadeEffect, CascadeEngine
-from infrasim.simulator.scenarios import Fault, FaultType, Scenario, generate_default_scenarios
+from infrasim.simulator.scenarios import Fault, FaultType, generate_default_scenarios
 from infrasim.simulator.traffic import (
     TrafficPattern,
     TrafficPatternType,

@@ -11,7 +11,7 @@ from dataclasses import dataclass, field
 from datetime import datetime, timedelta
 from enum import Enum
 
-from infrasim.model.components import ComponentType, HealthStatus
+from infrasim.model.components import HealthStatus
 from infrasim.model.graph import InfraGraph
 
 

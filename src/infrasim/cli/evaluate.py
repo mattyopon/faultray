@@ -7,9 +7,7 @@ analysis, and capacity planning.
 
 from __future__ import annotations
 
-import json as json_lib
 import logging
-import sys
 from pathlib import Path
 
 import typer
@@ -158,7 +156,6 @@ def _run_evaluation(
     # ------------------------------------------------------------------
     if is_enabled("ops_engine"):
         try:
-            from infrasim.model.components import SLOTarget
             from infrasim.simulator.ops_engine import OpsScenario, OpsSimulationEngine
             from infrasim.simulator.traffic import create_diurnal_weekly
 
@@ -404,7 +401,7 @@ def _print_comparison_table(data_a: dict, data_b: dict) -> None:
         """Build a colored delta Text object."""
         diff = val_b - val_a
         if abs(diff) < 1e-9:
-            return Text(f"  0", style="dim")
+            return Text("  0", style="dim")
         sign = "+" if diff > 0 else ""
         label = f"{sign}{diff:{fmt}}"
         if higher_is_better:
@@ -646,7 +643,6 @@ def evaluate(
         # Limit static simulation scenarios
         faultray evaluate --max-scenarios 100
     """
-    from rich.panel import Panel
 
     resolved_model = file if file is not None else model
     graph = _load_graph_for_analysis(resolved_model, yaml_file=None)
@@ -760,7 +756,7 @@ def _print_rich_report(evaluation_data: dict, ops_days: int) -> None:
     raw = evaluation_data["_raw"]
     static_report = raw["static_report"]
     whatif_results = raw["whatif_results"]
-    cap_report = raw["cap_report"]
+    raw["cap_report"]
     ops_result = raw["ops_result"]
 
     static_total = static["total_scenarios"]
@@ -799,7 +795,7 @@ def _print_rich_report(evaluation_data: dict, ops_days: int) -> None:
     ))
 
     # 1. Static
-    console.print(f"\n  [bold]1. Static Simulation[/]")
+    console.print("\n  [bold]1. Static Simulation[/]")
     console.print(f"     Resilience Score: [bold]{static_report.resilience_score:.0f}/100[/]")
     console.print(
         f"     Scenarios: [bold]{static_total:,}[/] tested"
@@ -814,7 +810,7 @@ def _print_rich_report(evaluation_data: dict, ops_days: int) -> None:
     )
 
     # 2. Dynamic
-    console.print(f"\n  [bold]2. Dynamic Simulation[/]")
+    console.print("\n  [bold]2. Dynamic Simulation[/]")
     console.print(f"     Scenarios: [bold]{dyn_total:,}[/] tested")
     crit_color = "red" if dyn_critical > 0 else "dim"
     warn_color = "yellow" if dyn_warning > 0 else "dim"
@@ -850,7 +846,7 @@ def _print_rich_report(evaluation_data: dict, ops_days: int) -> None:
     console.print(f"     Peak Utilization: {ops_result.peak_utilization:.1f}%")
 
     # 4. What-If
-    console.print(f"\n  [bold]4. What-If Analysis[/]")
+    console.print("\n  [bold]4. What-If Analysis[/]")
     whatif_parts = []
     for wr in whatif_results:
         param_short = wr.parameter.replace("_factor", "").replace("_", " ").title()
@@ -863,23 +859,23 @@ def _print_rich_report(evaluation_data: dict, ops_days: int) -> None:
         console.print(f"     {' | '.join(chunk)}")
 
     # 5. Capacity
-    console.print(f"\n  [bold]5. Capacity Planning[/]")
+    console.print("\n  [bold]5. Capacity Planning[/]")
     if over_provisioned_count:
         console.print(f"     Over-provisioned: {over_provisioned_count} components")
     else:
-        console.print(f"     Over-provisioned: 0 components")
+        console.print("     Over-provisioned: 0 components")
     if cost_val < 0:
         console.print(f"     Cost Reduction: [green]{cost_val:.1f}%[/]")
     elif cost_val > 0:
         console.print(f"     Cost Increase: [yellow]+{cost_val:.1f}%[/]")
     else:
-        console.print(f"     Cost Change: 0.0%")
+        console.print("     Cost Change: 0.0%")
     console.print(f"     Bottlenecks: {bottleneck_count} components")
 
     # 6. 5-Layer Availability Limits
     limits = evaluation_data.get("availability_limits", {})
     if limits:
-        console.print(f"\n  [bold]6. 5-Layer Availability Limits[/]")
+        console.print("\n  [bold]6. 5-Layer Availability Limits[/]")
         for layer_key, label in [
             ("layer1_software", "Layer 1 (Software)"),
             ("layer2_hardware", "Layer 2 (Hardware)"),
@@ -907,7 +903,7 @@ def _print_rich_report(evaluation_data: dict, ops_days: int) -> None:
     # 7. Resilience Score v2
     graph = raw["graph"]
     score_v2 = graph.resilience_score_v2()
-    console.print(f"\n  [bold]7. Resilience Score v2[/]")
+    console.print("\n  [bold]7. Resilience Score v2[/]")
     v2_total = score_v2["score"]
     if v2_total >= 80:
         v2_color = "green"
@@ -942,13 +938,13 @@ def _print_rich_report(evaluation_data: dict, ops_days: int) -> None:
 
     v2_recs = score_v2.get("recommendations", [])
     if v2_recs:
-        console.print(f"     [bold]Top Recommendations:[/]")
+        console.print("     [bold]Top Recommendations:[/]")
         for rec in v2_recs[:5]:
             console.print(f"       - {rec}")
 
     # Overall Assessment
     l1_nines = limits.get("layer1_software", {}).get("nines", 0) if limits else 0
-    l2_nines = limits.get("layer2_hardware", {}).get("nines", 0) if limits else 0
+    limits.get("layer2_hardware", {}).get("nines", 0) if limits else 0
     l3_nines = limits.get("layer3_theoretical", {}).get("nines", 0) if limits else 0
     assessment_lines = (
         f"  Overall Assessment\n"

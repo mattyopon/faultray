@@ -2,7 +2,7 @@
 
 A curated catalog of chaos engineering scenarios that users can:
 - Browse by category, provider, severity
-- Import into their ChaosProof instance
+- Import into their FaultRay instance
 - Rate and review
 - Contribute their own scenarios
 - Share with teams
@@ -14,7 +14,6 @@ from __future__ import annotations
 
 import json
 import logging
-import uuid
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
 from pathlib import Path
@@ -25,7 +24,7 @@ if TYPE_CHECKING:
 
 logger = logging.getLogger(__name__)
 
-MARKETPLACE_DIR = Path.home() / ".chaosproof" / "marketplace" / "packages"
+MARKETPLACE_DIR = Path.home() / ".faultray" / "marketplace" / "packages"
 
 VALID_CATEGORIES = frozenset({
     "infrastructure",
@@ -257,7 +256,7 @@ CATEGORIES: list[MarketplaceCategory] = [
 class ScenarioMarketplace:
     """Local-first marketplace for chaos engineering scenario packages.
 
-    Packages are stored as JSON files in ``~/.chaosproof/marketplace/packages/``.
+    Packages are stored as JSON files in ``~/.faultray/marketplace/packages/``.
     Built-in packages are loaded from :mod:`infrasim.marketplace.builtin_packages`
     and merged with any user-installed packages.
     """
@@ -347,7 +346,7 @@ class ScenarioMarketplace:
         raise KeyError(f"Package not found: {package_id}")
 
     def install_package(self, package_id: str) -> list[Scenario]:
-        """Install a package: convert its scenarios to ChaosProof Scenario objects.
+        """Install a package: convert its scenarios to FaultRay Scenario objects.
 
         Also persists the package locally with an incremented download count.
         """
@@ -394,7 +393,7 @@ class ScenarioMarketplace:
         self,
         scenarios: list,
         package_name: str,
-        author: str = "ChaosProof User",
+        author: str = "FaultRay User",
         category: str = "infrastructure",
         provider: str = "generic",
         severity: str = "medium",

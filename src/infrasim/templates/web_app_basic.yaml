@@ -1,11 +1,11 @@
-# ChaosProof Template: Basic Web Application
+# FaultRay Template: Basic Web Application
 #
 # Architecture: LB -> App Servers -> Database + Cache
 # Use case: Standard web application with session caching
 #
 # Load with:
-#   infrasim template use web-app --output my-infra.yaml
-#   infrasim load my-infra.yaml
+#   faultray template use web-app --output my-infra.yaml
+#   faultray load my-infra.yaml
 
 schema_version: "3.0"
 

@@ -1,14 +1,13 @@
 """CLI command for Natural Language Query.
 
 Usage:
-    infrasim ask "What happens if the database goes down?"
-    infrasim ask "How resilient is the system?" --model my-model.yaml
-    infrasim ask "What are the risks?" --json
+    faultray ask "What happens if the database goes down?"
+    faultray ask "How resilient is the system?" --model my-model.yaml
+    faultray ask "What are the risks?" --json
 """
 
 from __future__ import annotations
 
-import json
 from pathlib import Path
 
 import typer
@@ -36,13 +35,13 @@ def ask(
 
     \b
     Examples:
-        infrasim ask "What happens if the database goes down?"
-        infrasim ask "How resilient is the system?"
-        infrasim ask "What are the biggest risks?"
-        infrasim ask "Can we survive a cache outage?"
-        infrasim ask "What is the availability?"
-        infrasim ask "What happens if traffic spikes 10x?"
-        infrasim ask "Show me the single points of failure"
+        faultray ask "What happens if the database goes down?"
+        faultray ask "How resilient is the system?"
+        faultray ask "What are the biggest risks?"
+        faultray ask "Can we survive a cache outage?"
+        faultray ask "What is the availability?"
+        faultray ask "What happens if traffic spikes 10x?"
+        faultray ask "Show me the single points of failure"
     """
     graph = _load_graph_for_analysis(model, yaml_file)
 
@@ -69,7 +68,7 @@ def ask(
     console.print(Panel(
         f"[bold]Question:[/] {result.query}\n"
         f"[bold]Interpreted as:[/] {result.interpreted_as}",
-        title="[bold cyan]ChaosProof Natural Language Query[/]",
+        title="[bold cyan]FaultRay Natural Language Query[/]",
         border_style="cyan",
     ))
 

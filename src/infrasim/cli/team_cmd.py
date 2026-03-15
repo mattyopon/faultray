@@ -269,7 +269,7 @@ def team_record(
 
     tracker.record_snapshot(graph, team_mapping)
     console.print("[green]Team metrics snapshot recorded.[/]")
-    console.print(f"[dim]History stored at: ~/.faultzero/team_history.jsonl[/]")
+    console.print("[dim]History stored at: ~/.faultzero/team_history.jsonl[/]")
 
 
 @team_app.command("history")

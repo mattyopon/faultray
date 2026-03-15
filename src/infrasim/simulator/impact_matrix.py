@@ -11,7 +11,6 @@ from collections import deque
 from dataclasses import dataclass, field
 from enum import Enum
 
-from infrasim.model.components import ComponentType, HealthStatus
 from infrasim.model.graph import InfraGraph
 
 

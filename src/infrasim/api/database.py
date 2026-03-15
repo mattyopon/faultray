@@ -1,4 +1,4 @@
-"""SQLAlchemy async database layer for InfraSim SaaS persistence."""
+"""SQLAlchemy async database layer for FaultRay SaaS persistence."""
 
 from __future__ import annotations
 
@@ -14,8 +14,8 @@ from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
 # ---------------------------------------------------------------------------
 # Database path
 # ---------------------------------------------------------------------------
-DB_DIR = Path.home() / ".infrasim"
-DB_PATH = DB_DIR / "infrasim.db"
+DB_DIR = Path.home() / ".faultray"
+DB_PATH = DB_DIR / "faultray.db"
 
 
 def get_database_url(path: Path | None = None) -> str:

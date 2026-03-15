@@ -1,5 +1,7 @@
 """Tests for Failure Cost Attribution Engine."""
 
+from unittest.mock import patch
+
 from infrasim.model.components import (
     AutoScalingConfig,
     Capacity,
@@ -495,3 +497,124 @@ def test_team_percentage_sums_to_100():
 
     total_pct = sum(tp.percentage_of_total_risk for tp in report.team_profiles)
     assert abs(total_pct - 100.0) < 1.0
+
+
+# ---------------------------------------------------------------------------
+# Edge-case tests for full coverage
+# ---------------------------------------------------------------------------
+
+def test_estimate_traffic_fraction_empty_graph():
+    """Empty graph (0 components) should return 0.0 traffic fraction."""
+    graph = InfraGraph()
+    # We need the component_id to exist in the graph's networkx structure
+    # but the components dict is empty, so total == 0 triggers line 202.
+    assert _estimate_traffic_fraction(graph, "anything") == 0.0
+
+
+def test_estimate_traffic_fraction_isolated_component():
+    """Isolated component (no dependents, no dependencies) returns 1/total."""
+    graph = InfraGraph()
+    # Add two isolated components (no edges between them)
+    graph.add_component(Component(
+        id="isolated-a", name="Isolated A", type=ComponentType.APP_SERVER,
+        replicas=1,
+    ))
+    graph.add_component(Component(
+        id="isolated-b", name="Isolated B", type=ComponentType.APP_SERVER,
+        replicas=1,
+    ))
+    # "isolated-a" has no dependents and no dependencies -> 1.0 / 2 = 0.5
+    frac = _estimate_traffic_fraction(graph, "isolated-a")
+    assert frac == 1.0 / 2
+
+
+def test_calculate_component_cost_cascade_with_phantom_affected():
+    """Cascade loop should skip affected components not in graph (line 363).
+
+    Uses mock to make get_all_affected return an ID for which
+    get_component returns None, triggering the continue branch.
+    """
+    graph = InfraGraph()
+    graph.add_component(Component(
+        id="api-server", name="API", type=ComponentType.APP_SERVER,
+        replicas=1,
+    ))
+    model = CostModel(revenue_per_hour=10_000)
+    engine = CostAttributionEngine()
+
+    # Patch get_all_affected to return a set including a phantom ID
+    with patch.object(graph, "get_all_affected", return_value={"phantom-node"}):
+        profile = engine.calculate_component_cost(graph, "api-server", model)
+
+    assert profile.component_id == "api-server"
+    # phantom-node is skipped (continue), so cascade_multiplier stays 1.0
+    # meaning cascade_cost == direct_cost
+    assert profile.cascade_cost == profile.direct_cost
+
+
+def test_get_component_risk_not_found():
+    """_get_component_risk should return 0.0 for unknown component (line 538)."""
+    engine = CostAttributionEngine()
+    profiles = [
+        ComponentCostProfile(
+            component_id="known",
+            component_name="Known",
+            owner_team="platform",
+            annual_failure_probability=0.5,
+            estimated_downtime_hours=1.0,
+            direct_cost=1000.0,
+            cascade_cost=2000.0,
+            total_annual_risk=5000.0,
+            percentage_of_total_risk=100.0,
+            improvement_roi=1.0,
+        ),
+    ]
+    assert engine._get_component_risk(profiles, "unknown-comp") == 0.0
+
+
+def test_find_opportunities_skips_missing_component():
+    """_find_opportunities should skip components not in graph (line 555)."""
+    engine = CostAttributionEngine()
+    graph = InfraGraph()
+    model = CostModel(revenue_per_hour=10_000)
+
+    # Create a profile for a component that does NOT exist in the graph
+    profiles = [
+        ComponentCostProfile(
+            component_id="ghost",
+            component_name="Ghost",
+            owner_team="platform",
+            annual_failure_probability=0.9,
+            estimated_downtime_hours=2.0,
+            direct_cost=5000.0,
+            cascade_cost=10000.0,
+            total_annual_risk=50000.0,
+            percentage_of_total_risk=100.0,
+            improvement_roi=5.0,
+        ),
+    ]
+    opportunities = engine._find_opportunities(graph, profiles, model)
+    # ghost is not in graph -> continue -> no opportunities generated for it
+    assert all(opp[0] != "ghost" for opp in opportunities)
+
+
+def test_find_opportunities_failover_recommendation():
+    """Components with 2+ replicas but no failover should get failover recommendation (line 571)."""
+    graph = InfraGraph()
+    # Component with 2 replicas but no failover enabled
+    graph.add_component(Component(
+        id="app-nofailover", name="App No Failover", type=ComponentType.APP_SERVER,
+        replicas=2, failover=FailoverConfig(enabled=False),
+    ))
+    model = CostModel(revenue_per_hour=10_000)
+    engine = CostAttributionEngine()
+
+    report = engine.analyze(graph, model)
+
+    # Find the failover recommendation in opportunities
+    failover_opps = [
+        opp for opp in report.cost_reduction_opportunities
+        if "Enable failover" in opp[2]
+    ]
+    assert len(failover_opps) > 0
+    assert failover_opps[0][0] == "app-nofailover"

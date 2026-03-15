@@ -17,7 +17,7 @@ import textwrap
 from dataclasses import dataclass, field
 from pathlib import Path
 
-from infrasim.discovery.terraform import parse_tf_plan, parse_tf_state
+from infrasim.discovery.terraform import parse_tf_plan
 from infrasim.model.graph import InfraGraph
 from infrasim.simulator.engine import SimulationEngine
 

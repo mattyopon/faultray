@@ -196,7 +196,7 @@ class DRReadinessScorer:
         autoscale_count = sum(1 for c in components if c.autoscaling.enabled)
         total = len(components)
 
-        automated = failover_count + autoscale_count
+        failover_count + autoscale_count
         # A component can have both, so count unique
         auto_components = sum(
             1 for c in components if c.failover.enabled or c.autoscaling.enabled

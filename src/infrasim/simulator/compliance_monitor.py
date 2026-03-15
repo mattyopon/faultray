@@ -16,7 +16,6 @@ from dataclasses import dataclass, field
 from datetime import datetime, timezone
 from enum import Enum
 from pathlib import Path
-from typing import Callable
 
 from infrasim.model.components import ComponentType
 from infrasim.model.graph import InfraGraph

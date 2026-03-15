@@ -12,7 +12,7 @@ from datetime import datetime, timedelta, timezone
 from enum import Enum
 from typing import Any
 
-from infrasim.model.components import ComponentType, HealthStatus
+from infrasim.model.components import ComponentType
 from infrasim.model.graph import InfraGraph
 
 

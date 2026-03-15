@@ -15,7 +15,7 @@ from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     pass
 
-from infrasim.model.components import Component, ComponentType, HealthStatus
+from infrasim.model.components import ComponentType, HealthStatus
 from infrasim.model.graph import InfraGraph
 
 
