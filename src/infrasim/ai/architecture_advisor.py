@@ -959,8 +959,8 @@ class ArchitectureAdvisor:
                 )
             )
 
-        # Proposal 3: Full Resilience Architecture (if target >= 4 nines)
-        if target_nines >= 4.0:
+        # Proposal 3: Full Resilience Architecture (if target >= 4 nines and has components)
+        if target_nines >= 4.0 and len(graph.components) > 0:
             full_changes = list(quick_wins) + list(critical_changes)
 
             # Add multi-region if applicable

@@ -1,0 +1,314 @@
+{% extends "base.html" %}
+{% block title %}Risk Heat Map - FaultRay{% endblock %}
+{% block page_title %}Risk Heat Map{% endblock %}
+{% block page_subtitle %}<span class="page-subtitle">Multi-dimensional infrastructure risk analysis</span>{% endblock %}
+
+{% block head %}
+<style>
+    .heatmap-container { display: flex; flex-direction: column; gap: 1.5rem; }
+
+    /* Overview cards */
+    .risk-overview { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 1rem; }
+    .risk-card {
+        background: var(--surface-secondary, #1a1a2e);
+        border: 1px solid var(--border-color, #2d2d44);
+        border-radius: 12px;
+        padding: 1.25rem;
+        text-align: center;
+        transition: transform 0.2s;
+    }
+    .risk-card:hover { transform: translateY(-2px); }
+    .risk-card .risk-label { font-size: 0.8rem; color: var(--text-muted, #888); text-transform: uppercase; letter-spacing: 0.05em; }
+    .risk-card .risk-value { font-size: 2rem; font-weight: 700; margin: 0.3rem 0; }
+    .risk-card .risk-sub { font-size: 0.75rem; color: var(--text-muted, #888); }
+
+    /* Heat map grid */
+    .heatmap-grid-wrapper { background: var(--surface-secondary, #1a1a2e); border-radius: 12px; padding: 1.5rem; border: 1px solid var(--border-color, #2d2d44); }
+    .heatmap-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); gap: 0.5rem; margin-top: 1rem; }
+    .heatmap-cell {
+        border-radius: 8px;
+        padding: 0.75rem;
+        text-align: center;
+        cursor: pointer;
+        transition: transform 0.2s, box-shadow 0.2s;
+        position: relative;
+        min-height: 80px;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+    }
+    .heatmap-cell:hover { transform: scale(1.05); box-shadow: 0 4px 20px rgba(0,0,0,0.3); z-index: 10; }
+    .heatmap-cell .cell-name { font-size: 0.75rem; font-weight: 600; color: #fff; word-break: break-word; }
+    .heatmap-cell .cell-type { font-size: 0.65rem; color: rgba(255,255,255,0.7); margin-top: 0.2rem; }
+    .heatmap-cell .cell-score { font-size: 1.1rem; font-weight: 700; color: #fff; margin-top: 0.3rem; }
+
+    /* Tooltip */
+    .tooltip-overlay {
+        display: none;
+        position: fixed;
+        top: 0; left: 0; right: 0; bottom: 0;
+        z-index: 100;
+        background: rgba(0,0,0,0.4);
+    }
+    .tooltip-overlay.active { display: flex; align-items: center; justify-content: center; }
+    .tooltip-content {
+        background: var(--surface-secondary, #1a1a2e);
+        border: 1px solid var(--border-color, #2d2d44);
+        border-radius: 12px;
+        padding: 1.5rem;
+        max-width: 500px;
+        width: 90%;
+        max-height: 80vh;
+        overflow-y: auto;
+    }
+    .tooltip-content h3 { margin: 0 0 1rem; }
+    .tooltip-content .close-btn { float: right; cursor: pointer; font-size: 1.5rem; color: var(--text-muted, #888); background: none; border: none; }
+
+    /* Dimension bars */
+    .dim-row { display: flex; align-items: center; gap: 0.5rem; margin: 0.5rem 0; }
+    .dim-label { width: 120px; font-size: 0.8rem; color: var(--text-muted, #888); }
+    .dim-bar-bg { flex: 1; height: 8px; background: rgba(255,255,255,0.1); border-radius: 4px; overflow: hidden; }
+    .dim-bar-fill { height: 100%; border-radius: 4px; transition: width 0.3s; }
+    .dim-value { width: 50px; text-align: right; font-size: 0.8rem; font-weight: 600; }
+
+    /* Zones */
+    .zone-section { background: var(--surface-secondary, #1a1a2e); border-radius: 12px; padding: 1.5rem; border: 1px solid var(--border-color, #2d2d44); }
+    .zone-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem; }
+    .zone-name { font-weight: 600; font-size: 1rem; }
+    .zone-risk-badge { padding: 0.2rem 0.6rem; border-radius: 4px; font-size: 0.75rem; font-weight: 600; color: #fff; }
+
+    /* Hotspots panel */
+    .hotspots-panel { background: var(--surface-secondary, #1a1a2e); border: 1px solid #dc3545; border-radius: 12px; padding: 1.5rem; }
+    .hotspot-item { display: flex; align-items: center; gap: 1rem; padding: 0.75rem 0; border-bottom: 1px solid var(--border-color, #2d2d44); }
+    .hotspot-item:last-child { border-bottom: none; }
+    .hotspot-rank { font-size: 1.2rem; font-weight: 700; width: 30px; text-align: center; }
+    .hotspot-info { flex: 1; }
+    .hotspot-name { font-weight: 600; }
+    .hotspot-factors { font-size: 0.75rem; color: var(--text-muted, #888); margin-top: 0.3rem; }
+    .hotspot-score { font-size: 1.1rem; font-weight: 700; }
+
+    /* Dimension filter */
+    .dimension-filter { display: flex; gap: 0.5rem; flex-wrap: wrap; margin-bottom: 1rem; }
+    .dim-btn {
+        padding: 0.4rem 0.8rem;
+        border: 1px solid var(--border-color, #2d2d44);
+        border-radius: 6px;
+        background: transparent;
+        color: var(--text-primary, #eee);
+        cursor: pointer;
+        font-size: 0.8rem;
+        transition: background 0.2s;
+    }
+    .dim-btn.active { background: var(--accent-color, #58a6ff); border-color: var(--accent-color, #58a6ff); }
+    .dim-btn:hover { background: rgba(88, 166, 255, 0.2); }
+
+    /* Legend */
+    .legend { display: flex; gap: 1rem; align-items: center; margin-top: 0.5rem; }
+    .legend-item { display: flex; align-items: center; gap: 0.3rem; font-size: 0.75rem; color: var(--text-muted, #888); }
+    .legend-color { width: 16px; height: 16px; border-radius: 3px; }
+
+    .loading-spinner { text-align: center; padding: 3rem; color: var(--text-muted, #888); }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="heatmap-container" x-data="heatmapApp()" x-init="loadData()">
+    <!-- Loading state -->
+    <div class="loading-spinner" x-show="loading">
+        <p>Analyzing risk dimensions...</p>
+    </div>
+
+    <template x-if="!loading && data">
+        <div>
+            <!-- Overview cards -->
+            <div class="risk-overview">
+                <div class="risk-card">
+                    <div class="risk-label">Overall Risk</div>
+                    <div class="risk-value" :style="'color:' + riskColor(data.overall_risk_score)" x-text="(data.overall_risk_score * 100).toFixed(1) + '%'"></div>
+                    <div class="risk-sub" x-text="riskLevel(data.overall_risk_score)"></div>
+                </div>
+                <div class="risk-card">
+                    <div class="risk-label">Critical</div>
+                    <div class="risk-value" style="color: #dc3545" x-text="data.risk_distribution.critical || 0"></div>
+                    <div class="risk-sub">components</div>
+                </div>
+                <div class="risk-card">
+                    <div class="risk-label">High</div>
+                    <div class="risk-value" style="color: #fd7e14" x-text="data.risk_distribution.high || 0"></div>
+                    <div class="risk-sub">components</div>
+                </div>
+                <div class="risk-card">
+                    <div class="risk-label">Medium</div>
+                    <div class="risk-value" style="color: #ffc107" x-text="data.risk_distribution.medium || 0"></div>
+                    <div class="risk-sub">components</div>
+                </div>
+                <div class="risk-card">
+                    <div class="risk-label">Low</div>
+                    <div class="risk-value" style="color: #28a745" x-text="data.risk_distribution.low || 0"></div>
+                    <div class="risk-sub">components</div>
+                </div>
+            </div>
+
+            <!-- Dimension filter -->
+            <div class="heatmap-grid-wrapper">
+                <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.5rem;">
+                    <h3 style="margin: 0;">Risk Heat Map</h3>
+                    <div class="legend">
+                        <div class="legend-item"><div class="legend-color" style="background: #28a745;"></div>Low (0-25%)</div>
+                        <div class="legend-item"><div class="legend-color" style="background: #ffc107;"></div>Medium (25-50%)</div>
+                        <div class="legend-item"><div class="legend-color" style="background: #fd7e14;"></div>High (50-75%)</div>
+                        <div class="legend-item"><div class="legend-color" style="background: #dc3545;"></div>Critical (75-100%)</div>
+                    </div>
+                </div>
+
+                <div class="dimension-filter">
+                    <button class="dim-btn" :class="{ active: selectedDimension === 'overall' }" @click="selectedDimension = 'overall'">Overall Risk</button>
+                    <button class="dim-btn" :class="{ active: selectedDimension === 'blast_radius' }" @click="selectedDimension = 'blast_radius'">Blast Radius</button>
+                    <button class="dim-btn" :class="{ active: selectedDimension === 'spof' }" @click="selectedDimension = 'spof'">SPOF</button>
+                    <button class="dim-btn" :class="{ active: selectedDimension === 'utilization' }" @click="selectedDimension = 'utilization'">Utilization</button>
+                    <button class="dim-btn" :class="{ active: selectedDimension === 'dependency_depth' }" @click="selectedDimension = 'dependency_depth'">Dependency</button>
+                    <button class="dim-btn" :class="{ active: selectedDimension === 'recovery' }" @click="selectedDimension = 'recovery'">Recovery</button>
+                    <button class="dim-btn" :class="{ active: selectedDimension === 'security' }" @click="selectedDimension = 'security'">Security</button>
+                </div>
+
+                <div class="heatmap-grid">
+                    <template x-for="comp in data.components" :key="comp.component_id">
+                        <div class="heatmap-cell"
+                             :style="'background:' + getCellColor(comp)"
+                             @click="selectedComponent = comp">
+                            <div class="cell-name" x-text="comp.component_name"></div>
+                            <div class="cell-type" x-text="comp.component_type"></div>
+                            <div class="cell-score" x-text="(getCellScore(comp) * 100).toFixed(0) + '%'"></div>
+                        </div>
+                    </template>
+                </div>
+            </div>
+
+            <!-- Zones -->
+            <div>
+                <h3>Risk Zones</h3>
+                <template x-for="zone in data.zones" :key="zone.name">
+                    <div class="zone-section" style="margin-bottom: 0.75rem;">
+                        <div class="zone-header">
+                            <span class="zone-name" x-text="zone.name"></span>
+                            <span class="zone-risk-badge" :style="'background:' + riskColor(zone.zone_risk)"
+                                  x-text="(zone.zone_risk * 100).toFixed(0) + '% risk'"></span>
+                        </div>
+                        <div style="font-size: 0.8rem; color: var(--text-muted, #888);" x-text="zone.description"></div>
+                        <div style="font-size: 0.8rem; margin-top: 0.3rem;">
+                            <span x-text="zone.components.length"></span> component(s)
+                        </div>
+                    </div>
+                </template>
+            </div>
+
+            <!-- Hotspots -->
+            <div class="hotspots-panel">
+                <h3 style="color: #dc3545; margin-top: 0;">Top Risk Hotspots</h3>
+                <template x-for="(h, idx) in data.hotspots" :key="h.component_id">
+                    <div class="hotspot-item">
+                        <div class="hotspot-rank" :style="'color:' + riskColor(h.overall_risk)" x-text="'#' + (idx + 1)"></div>
+                        <div class="hotspot-info">
+                            <div class="hotspot-name" x-text="h.component_name"></div>
+                            <div class="hotspot-factors">
+                                <template x-for="factor in h.risk_factors.slice(0, 3)" :key="factor">
+                                    <div x-text="factor"></div>
+                                </template>
+                            </div>
+                        </div>
+                        <div class="hotspot-score" :style="'color:' + riskColor(h.overall_risk)"
+                             x-text="(h.overall_risk * 100).toFixed(0) + '%'"></div>
+                    </div>
+                </template>
+            </div>
+        </div>
+    </template>
+
+    <!-- Drill-down overlay -->
+    <div class="tooltip-overlay" :class="{ active: selectedComponent }" @click.self="selectedComponent = null">
+        <div class="tooltip-content" x-show="selectedComponent">
+            <button class="close-btn" @click="selectedComponent = null">&times;</button>
+            <template x-if="selectedComponent">
+                <div>
+                    <h3 x-text="selectedComponent.component_name"></h3>
+                    <p style="color: var(--text-muted, #888); font-size: 0.85rem;">
+                        Type: <span x-text="selectedComponent.component_type"></span> |
+                        Risk Level: <strong :style="'color:' + selectedComponent.color" x-text="selectedComponent.risk_level.toUpperCase()"></strong> |
+                        Overall: <strong x-text="(selectedComponent.overall_risk * 100).toFixed(1) + '%'"></strong>
+                    </p>
+
+                    <h4>Risk Dimensions</h4>
+                    <template x-for="[dim, score] in Object.entries(selectedComponent.risk_scores)" :key="dim">
+                        <div class="dim-row">
+                            <div class="dim-label" x-text="dim.replace(/_/g, ' ')"></div>
+                            <div class="dim-bar-bg">
+                                <div class="dim-bar-fill" :style="'width:' + (score * 100) + '%; background:' + riskColor(score)"></div>
+                            </div>
+                            <div class="dim-value" :style="'color:' + riskColor(score)" x-text="(score * 100).toFixed(0) + '%'"></div>
+                        </div>
+                    </template>
+
+                    <template x-if="selectedComponent.risk_factors.length > 0">
+                        <div>
+                            <h4>Risk Factors</h4>
+                            <ul style="padding-left: 1.2rem; font-size: 0.85rem;">
+                                <template x-for="factor in selectedComponent.risk_factors" :key="factor">
+                                    <li x-text="factor" style="margin-bottom: 0.4rem;"></li>
+                                </template>
+                            </ul>
+                        </div>
+                    </template>
+                </div>
+            </template>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+function heatmapApp() {
+    return {
+        loading: true,
+        data: null,
+        selectedDimension: 'overall',
+        selectedComponent: null,
+
+        async loadData() {
+            try {
+                const res = await fetch('/api/risk-heatmap');
+                this.data = await res.json();
+            } catch (e) {
+                console.error('Failed to load heat map data:', e);
+            } finally {
+                this.loading = false;
+            }
+        },
+
+        riskColor(score) {
+            if (score < 0.25) return '#28a745';
+            if (score < 0.5) return '#ffc107';
+            if (score < 0.75) return '#fd7e14';
+            return '#dc3545';
+        },
+
+        riskLevel(score) {
+            if (score < 0.25) return 'LOW';
+            if (score < 0.5) return 'MEDIUM';
+            if (score < 0.75) return 'HIGH';
+            return 'CRITICAL';
+        },
+
+        getCellScore(comp) {
+            if (this.selectedDimension === 'overall') return comp.overall_risk;
+            return comp.risk_scores[this.selectedDimension] || 0;
+        },
+
+        getCellColor(comp) {
+            return this.riskColor(this.getCellScore(comp));
+        }
+    };
+}
+</script>
+{% endblock %}

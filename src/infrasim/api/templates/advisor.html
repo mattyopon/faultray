@@ -1,0 +1,422 @@
+{% extends "base.html" %}
+
+{% block title %}Architecture Advisor - FaultRay{% endblock %}
+{% block page_title %}Architecture Advisor{% endblock %}
+{% block page_subtitle %}<span class="page-subtitle">AI-powered infrastructure redesign recommendations</span>{% endblock %}
+
+{% block head %}
+<script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+<style>
+    .advisor-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 1.5rem;
+        margin-bottom: 1.5rem;
+    }
+    @media (max-width: 900px) {
+        .advisor-grid { grid-template-columns: 1fr; }
+    }
+    .advisor-card {
+        background: var(--bg-card, #1a1a2e);
+        border: 1px solid var(--border-color, #2d3748);
+        border-radius: 12px;
+        padding: 1.5rem;
+    }
+    .advisor-card h3 {
+        margin-top: 0;
+        margin-bottom: 1rem;
+        color: var(--text-primary, #e2e8f0);
+        font-size: 1.1rem;
+    }
+    .advisor-full {
+        grid-column: 1 / -1;
+    }
+    .score-display {
+        display: flex;
+        align-items: center;
+        gap: 2rem;
+        margin: 1rem 0;
+    }
+    .score-circle {
+        width: 100px;
+        height: 100px;
+        border-radius: 50%;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        font-weight: bold;
+        border: 4px solid;
+    }
+    .score-circle .score-value {
+        font-size: 1.8rem;
+        line-height: 1;
+    }
+    .score-circle .score-label {
+        font-size: 0.7rem;
+        opacity: 0.8;
+    }
+    .score-good { border-color: #28a745; color: #28a745; }
+    .score-warn { border-color: #ffc107; color: #ffc107; }
+    .score-bad { border-color: #dc3545; color: #dc3545; }
+    .gap-text {
+        color: var(--text-secondary, #a0aec0);
+        font-size: 0.95rem;
+        line-height: 1.6;
+    }
+    .anti-pattern {
+        background: rgba(220, 53, 69, 0.1);
+        border-left: 3px solid #dc3545;
+        padding: 0.75rem 1rem;
+        margin-bottom: 0.75rem;
+        border-radius: 0 6px 6px 0;
+    }
+    .anti-pattern-name {
+        color: #dc3545;
+        font-weight: bold;
+        margin-bottom: 0.3rem;
+    }
+    .anti-pattern-desc {
+        color: var(--text-secondary, #a0aec0);
+        font-size: 0.9rem;
+    }
+    .pattern-badge {
+        display: inline-block;
+        background: rgba(0, 123, 255, 0.15);
+        color: #58a6ff;
+        padding: 0.25rem 0.75rem;
+        border-radius: 20px;
+        font-size: 0.85rem;
+        margin: 0.2rem;
+    }
+    .quick-win-row {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 0.75rem 0;
+        border-bottom: 1px solid var(--border-color, #2d3748);
+    }
+    .quick-win-row:last-child { border-bottom: none; }
+    .quick-win-desc {
+        flex: 1;
+        color: var(--text-primary, #e2e8f0);
+    }
+    .quick-win-impact {
+        color: #28a745;
+        font-weight: bold;
+        min-width: 60px;
+        text-align: right;
+    }
+    .quick-win-effort {
+        color: var(--text-secondary, #a0aec0);
+        font-size: 0.85rem;
+        min-width: 80px;
+        text-align: right;
+    }
+    .quick-win-cost {
+        color: var(--text-secondary, #a0aec0);
+        font-size: 0.85rem;
+        min-width: 100px;
+        text-align: right;
+    }
+    .proposal-card {
+        background: var(--bg-card, #1a1a2e);
+        border: 1px solid var(--border-color, #2d3748);
+        border-radius: 12px;
+        padding: 1.5rem;
+        margin-bottom: 1.5rem;
+        cursor: pointer;
+        transition: border-color 0.2s;
+    }
+    .proposal-card:hover {
+        border-color: #58a6ff;
+    }
+    .proposal-card.active {
+        border-color: #58a6ff;
+        box-shadow: 0 0 0 1px #58a6ff;
+    }
+    .proposal-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        margin-bottom: 1rem;
+    }
+    .proposal-name {
+        font-size: 1.15rem;
+        font-weight: bold;
+        color: var(--text-primary, #e2e8f0);
+    }
+    .proposal-score {
+        text-align: right;
+    }
+    .proposal-desc {
+        color: var(--text-secondary, #a0aec0);
+        font-size: 0.9rem;
+        margin-bottom: 1rem;
+    }
+    .proposal-meta {
+        display: flex;
+        gap: 1.5rem;
+        font-size: 0.85rem;
+        color: var(--text-secondary, #a0aec0);
+    }
+    .proposal-meta strong {
+        color: var(--text-primary, #e2e8f0);
+    }
+    .proposal-changes {
+        margin-top: 1rem;
+        display: none;
+    }
+    .proposal-card.active .proposal-changes {
+        display: block;
+    }
+    .change-table {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 0.9rem;
+    }
+    .change-table th {
+        text-align: left;
+        padding: 0.5rem;
+        border-bottom: 2px solid var(--border-color, #2d3748);
+        color: var(--text-secondary, #a0aec0);
+        font-size: 0.8rem;
+        text-transform: uppercase;
+    }
+    .change-table td {
+        padding: 0.5rem;
+        border-bottom: 1px solid var(--border-color, #2d3748);
+        color: var(--text-primary, #e2e8f0);
+    }
+    .mermaid-container {
+        background: #fff;
+        border-radius: 8px;
+        padding: 1rem;
+        margin-top: 1rem;
+        overflow-x: auto;
+    }
+    .target-form {
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+    }
+    .target-form input {
+        background: var(--bg-input, #2d3748);
+        border: 1px solid var(--border-color, #4a5568);
+        color: var(--text-primary, #e2e8f0);
+        padding: 0.5rem 1rem;
+        border-radius: 6px;
+        width: 100px;
+        font-size: 0.95rem;
+    }
+    .target-form button {
+        background: #58a6ff;
+        color: #fff;
+        border: none;
+        padding: 0.5rem 1.5rem;
+        border-radius: 6px;
+        cursor: pointer;
+        font-size: 0.95rem;
+    }
+    .target-form button:hover {
+        background: #4090e0;
+    }
+    .trade-off-list, .prereq-list {
+        margin: 0.5rem 0;
+        padding-left: 1.2rem;
+        color: var(--text-secondary, #a0aec0);
+        font-size: 0.9rem;
+    }
+    .trade-off-list li, .prereq-list li {
+        margin-bottom: 0.3rem;
+    }
+</style>
+{% endblock %}
+
+{% set active_page = "advisor" %}
+
+{% block top_actions %}
+<form class="target-form" method="get" action="/advisor">
+    <label for="target_nines" style="color: var(--text-secondary);">Target Nines:</label>
+    <input type="number" id="target_nines" name="target_nines" value="{{ target_nines }}" step="0.5" min="1" max="5">
+    <button type="submit">Analyze</button>
+</form>
+{% endblock %}
+
+{% block content %}
+{% if report %}
+<!-- Score Summary -->
+<div class="advisor-grid">
+    <div class="advisor-card">
+        <h3>Current Assessment</h3>
+        <div class="score-display">
+            {% set score_class = 'score-good' if report.current_nines >= report.target_nines else ('score-warn' if report.current_nines >= report.target_nines - 1.0 else 'score-bad') %}
+            <div class="score-circle {{ score_class }}">
+                <span class="score-value">{{ report.current_score }}</span>
+                <span class="score-label">/ 100</span>
+            </div>
+            <div>
+                <div style="font-size: 1.5rem; font-weight: bold; color: var(--text-primary);">
+                    {{ report.current_nines }} nines
+                </div>
+                <div style="color: var(--text-secondary); font-size: 0.9rem;">
+                    Target: {{ report.target_nines }} nines
+                </div>
+            </div>
+        </div>
+        <p class="gap-text">{{ report.current_assessment }}</p>
+    </div>
+
+    <div class="advisor-card">
+        <h3>Gap Analysis</h3>
+        <p class="gap-text">{{ report.gap_analysis }}</p>
+        {% if report.architecture_patterns_recommended %}
+        <h4 style="margin-top: 1rem; color: var(--text-primary);">Recommended Patterns</h4>
+        <div>
+            {% for pattern in report.architecture_patterns_recommended %}
+            <span class="pattern-badge">{{ pattern[0].replace('_', ' ').title() }}</span>
+            {% endfor %}
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Anti-Patterns -->
+{% if report.anti_patterns_detected %}
+<div class="advisor-card advisor-full" style="margin-bottom: 1.5rem;">
+    <h3>Anti-Patterns Detected</h3>
+    {% for name, desc in report.anti_patterns_detected %}
+    <div class="anti-pattern">
+        <div class="anti-pattern-name">{{ name }}</div>
+        <div class="anti-pattern-desc">{{ desc }}</div>
+    </div>
+    {% endfor %}
+</div>
+{% endif %}
+
+<!-- Quick Wins -->
+{% if report.quick_wins %}
+<div class="advisor-card advisor-full" style="margin-bottom: 1.5rem;">
+    <h3>Quick Wins</h3>
+    {% for win in report.quick_wins %}
+    <div class="quick-win-row">
+        <span class="quick-win-desc">{{ win.description }}</span>
+        <span class="quick-win-effort">{{ win.effort }}</span>
+        <span class="quick-win-cost">{{ win.estimated_cost }}</span>
+        <span class="quick-win-impact">+{{ win.resilience_impact }}</span>
+    </div>
+    {% endfor %}
+</div>
+{% endif %}
+
+<!-- Proposals -->
+{% if report.proposals %}
+<h2 style="color: var(--text-primary); margin: 1.5rem 0 1rem;">Architecture Proposals</h2>
+{% for proposal in report.proposals %}
+<div class="proposal-card" onclick="this.classList.toggle('active')" x-data="{ open: false }" @click="open = !open">
+    <div class="proposal-header">
+        <div>
+            <div class="proposal-name">{{ proposal.name }}</div>
+            <div class="proposal-desc">{{ proposal.description }}</div>
+        </div>
+        <div class="proposal-score">
+            <div style="font-size: 1.2rem; font-weight: bold; color: #28a745;">
+                {{ proposal.current_score }} &rarr; {{ proposal.projected_score }}
+            </div>
+            <div style="color: var(--text-secondary); font-size: 0.8rem;">
+                +{{ (proposal.projected_score - proposal.current_score)|round(1) }} points
+            </div>
+        </div>
+    </div>
+    <div class="proposal-meta">
+        <span>Effort: <strong>{{ proposal.total_effort }}</strong></span>
+        <span>Cost: <strong>{{ proposal.estimated_monthly_cost }}</strong></span>
+        <span>Changes: <strong>{{ proposal.changes|length }}</strong></span>
+    </div>
+    {% if proposal.patterns_applied %}
+    <div style="margin-top: 0.5rem;">
+        {% for p in proposal.patterns_applied %}
+        <span class="pattern-badge">{{ p.replace('_', ' ').title() }}</span>
+        {% endfor %}
+    </div>
+    {% endif %}
+    <div class="proposal-changes" x-show="open" x-transition>
+        {% if proposal.changes %}
+        <table class="change-table">
+            <thead>
+                <tr>
+                    <th>Type</th>
+                    <th>Component</th>
+                    <th>Description</th>
+                    <th>Impact</th>
+                    <th>Effort</th>
+                    <th>Cost</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for change in proposal.changes %}
+                <tr>
+                    <td>{{ change.change_type }}</td>
+                    <td style="color: #58a6ff;">{{ change.component_id or '-' }}</td>
+                    <td>{{ change.description }}</td>
+                    <td style="color: #28a745; font-weight: bold;">+{{ change.resilience_impact }}</td>
+                    <td>{{ change.effort }}</td>
+                    <td>{{ change.estimated_cost }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        {% endif %}
+        {% if proposal.trade_offs %}
+        <h4 style="margin-top: 1rem; color: var(--text-primary);">Trade-offs</h4>
+        <ul class="trade-off-list">
+            {% for t in proposal.trade_offs %}
+            <li>{{ t }}</li>
+            {% endfor %}
+        </ul>
+        {% endif %}
+        {% if proposal.prerequisites %}
+        <h4 style="margin-top: 0.75rem; color: var(--text-primary);">Prerequisites</h4>
+        <ul class="prereq-list">
+            {% for p in proposal.prerequisites %}
+            <li>{{ p }}</li>
+            {% endfor %}
+        </ul>
+        {% endif %}
+    </div>
+</div>
+{% endfor %}
+{% endif %}
+
+<!-- Mermaid Diagram -->
+{% if report.mermaid_diagram %}
+<div class="advisor-card advisor-full" style="margin-top: 1.5rem;">
+    <h3>Proposed Architecture Diagram</h3>
+    <div class="mermaid-container">
+        <pre class="mermaid">
+{{ report.mermaid_diagram }}
+        </pre>
+    </div>
+</div>
+{% endif %}
+
+{% else %}
+<div class="empty-state">
+    <h2>No Infrastructure Loaded</h2>
+    <p>Load infrastructure data to get architecture recommendations.</p>
+    <div class="empty-state-actions">
+        <a href="/demo" class="btn btn-accent">Load Demo Infrastructure</a>
+    </div>
+</div>
+{% endif %}
+{% endblock %}
+
+{% block scripts %}
+<script>
+    mermaid.initialize({
+        startOnLoad: true,
+        theme: 'default',
+        securityLevel: 'loose',
+    });
+</script>
+{% endblock %}

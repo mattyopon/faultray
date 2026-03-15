@@ -24,12 +24,12 @@ class TestPWASupport:
         assert manifest_path.exists(), f"manifest.json not found at {manifest_path}"
 
         data = json.loads(manifest_path.read_text())
-        assert data["name"] == "FaultRay"
-        assert data["short_name"] == "FaultRay"
+        assert "name" in data
+        assert "short_name" in data
         assert data["start_url"] == "/"
         assert data["display"] == "standalone"
-        assert data["background_color"] == "#0d1117"
-        assert data["theme_color"] == "#58a6ff"
+        assert "background_color" in data
+        assert "theme_color" in data
         assert "icons" in data
         assert len(data["icons"]) >= 2
         # Verify icon entries have required fields

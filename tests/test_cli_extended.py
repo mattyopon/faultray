@@ -1410,7 +1410,7 @@ class TestAdminExtended:
         model_path = _create_model_file(tmp_path)
         output_html = tmp_path / "report.html"
         result = runner.invoke(app, [
-            "report", "--model", str(model_path), "--output", str(output_html),
+            "report", "executive", str(model_path), "--output", str(output_html),
         ])
         assert result.exit_code == 0
         assert output_html.exists()

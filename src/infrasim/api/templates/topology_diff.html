@@ -1,0 +1,269 @@
+{% extends "base.html" %}
+{% set active_page = "topology_diff" %}
+
+{% block title %}FaultRay - Topology Diff{% endblock %}
+{% block page_title %}Topology Diff{% endblock %}
+{% block page_subtitle %}<span class="page-subtitle">Side-by-side infrastructure comparison</span>{% endblock %}
+
+{% block content %}
+<div x-data="topoDiff()">
+    <!-- Upload Form -->
+    <div class="card" style="margin-bottom: 20px;">
+        <h3 style="margin-top: 0;">Compare Two Topologies</h3>
+        <p style="color: var(--text-secondary); margin-bottom: 16px;">Upload two YAML infrastructure files to see what changed between them.</p>
+        <form id="diffForm" @submit.prevent="submitDiff" enctype="multipart/form-data" style="display: flex; gap: 20px; align-items: flex-end; flex-wrap: wrap;">
+            <div style="flex: 1; min-width: 200px;">
+                <label style="display: block; margin-bottom: 6px; font-size: 0.85em; color: var(--text-secondary);">Before (baseline)</label>
+                <input type="file" name="before_file" accept=".yaml,.yml" required
+                       style="width: 100%; padding: 8px; background: var(--bg-tertiary); border: 1px solid var(--border-color); border-radius: 6px; color: var(--text-primary);">
+            </div>
+            <div style="flex: 1; min-width: 200px;">
+                <label style="display: block; margin-bottom: 6px; font-size: 0.85em; color: var(--text-secondary);">After (new version)</label>
+                <input type="file" name="after_file" accept=".yaml,.yml" required
+                       style="width: 100%; padding: 8px; background: var(--bg-tertiary); border: 1px solid var(--border-color); border-radius: 6px; color: var(--text-primary);">
+            </div>
+            <button type="submit" class="btn btn-accent" :disabled="loading">
+                <template x-if="loading"><span class="spinner"></span></template>
+                <template x-if="!loading">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M16 3h5v5"/><path d="M8 3H3v5"/><path d="M21 3l-7 7"/><path d="M3 3l7 7"/>
+                        <path d="M16 21h5v-5"/><path d="M8 21H3v-5"/><path d="M21 21l-7-7"/><path d="M3 21l7-7"/>
+                    </svg>
+                </template>
+                <span x-text="loading ? 'Comparing...' : 'Compare'"></span>
+            </button>
+        </form>
+    </div>
+
+    <!-- Error display -->
+    <template x-if="error">
+        <div class="card" style="border-left: 3px solid #dc3545; margin-bottom: 20px;">
+            <p style="color: #dc3545; margin: 0;" x-text="error"></p>
+        </div>
+    </template>
+
+    <!-- Results -->
+    <template x-if="result">
+        <div>
+            <!-- Score Comparison Bar -->
+            <div class="sim-summary-bar" style="margin-bottom: 20px;">
+                <div class="sim-stat">
+                    <span class="sim-stat-value" :class="scoreClass(result.score_before)" x-text="result.score_before"></span>
+                    <span class="sim-stat-label">Before</span>
+                </div>
+                <div class="sim-stat-divider"></div>
+                <div class="sim-stat">
+                    <span class="sim-stat-value" :style="'color:' + (result.score_delta >= 0 ? '#28a745' : '#dc3545')"
+                          x-text="(result.score_delta >= 0 ? '+' : '') + result.score_delta"></span>
+                    <span class="sim-stat-label">Delta</span>
+                </div>
+                <div class="sim-stat-divider"></div>
+                <div class="sim-stat">
+                    <span class="sim-stat-value" :class="scoreClass(result.score_after)" x-text="result.score_after"></span>
+                    <span class="sim-stat-label">After</span>
+                </div>
+                <div class="sim-stat-divider"></div>
+                <div class="sim-stat">
+                    <span class="sim-stat-value" x-text="result.components_added.length">0</span>
+                    <span class="sim-stat-label" style="color: #28a745;">Added</span>
+                </div>
+                <div class="sim-stat">
+                    <span class="sim-stat-value" x-text="result.components_removed.length">0</span>
+                    <span class="sim-stat-label" style="color: #dc3545;">Removed</span>
+                </div>
+                <div class="sim-stat">
+                    <span class="sim-stat-value" x-text="result.components_modified.length">0</span>
+                    <span class="sim-stat-label" style="color: #ffc107;">Modified</span>
+                </div>
+            </div>
+
+            <!-- Summary -->
+            <div class="card" style="margin-bottom: 20px;">
+                <p style="margin: 0;"><strong>Summary:</strong> <span x-text="result.summary"></span></p>
+                <p style="margin: 8px 0 0;"><strong>Risk Assessment:</strong>
+                    <span :style="'color:' + (result.risk_assessment === 'improved' ? '#28a745' : (result.risk_assessment === 'degraded' ? '#dc3545' : '#8b949e'))"
+                          x-text="result.risk_assessment"></span>
+                </p>
+            </div>
+
+            <!-- Mermaid Diagram -->
+            <template x-if="mermaidCode">
+                <div class="card" style="margin-bottom: 20px;">
+                    <h3 style="margin-top: 0;">Topology Diagram</h3>
+                    <div id="mermaid-container" style="background: #fff; padding: 20px; border-radius: 8px; overflow-x: auto;"></div>
+                </div>
+            </template>
+
+            <!-- Side-by-side comparison -->
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 20px;">
+                <div class="card">
+                    <h3 style="margin-top: 0;">Before</h3>
+                    <template x-for="comp in beforeComponents" :key="comp.component_id">
+                        <div :class="'diff-item diff-' + comp.diff_type" style="padding: 8px 12px; border-radius: 4px; margin-bottom: 4px; font-size: 0.9em;">
+                            <span x-text="comp.component_name"></span>
+                            <template x-if="comp.diff_type === 'removed'">
+                                <span style="color: #dc3545; font-size: 0.8em;"> (removed)</span>
+                            </template>
+                            <template x-if="comp.diff_type === 'modified'">
+                                <span style="color: #ffc107; font-size: 0.8em;"> (modified)</span>
+                            </template>
+                        </div>
+                    </template>
+                </div>
+                <div class="card">
+                    <h3 style="margin-top: 0;">After</h3>
+                    <template x-for="comp in afterComponents" :key="comp.component_id">
+                        <div :class="'diff-item diff-' + comp.diff_type" style="padding: 8px 12px; border-radius: 4px; margin-bottom: 4px; font-size: 0.9em;">
+                            <span x-text="comp.component_name"></span>
+                            <template x-if="comp.diff_type === 'added'">
+                                <span style="color: #28a745; font-size: 0.8em;"> (new)</span>
+                            </template>
+                            <template x-if="comp.diff_type === 'modified'">
+                                <span style="color: #ffc107; font-size: 0.8em;">
+                                    (<span x-text="comp.changes.map(c => c.field + ': ' + c.new_value).join(', ')"></span>)
+                                </span>
+                            </template>
+                        </div>
+                    </template>
+                </div>
+            </div>
+
+            <!-- Change Log Table -->
+            <div class="card">
+                <h3 style="margin-top: 0;">Change Log</h3>
+                <table style="width: 100%; border-collapse: collapse;">
+                    <thead>
+                        <tr>
+                            <th style="text-align: left; padding: 10px; border-bottom: 1px solid var(--border-color);">ID</th>
+                            <th style="text-align: left; padding: 10px; border-bottom: 1px solid var(--border-color);">Name</th>
+                            <th style="text-align: left; padding: 10px; border-bottom: 1px solid var(--border-color);">Change</th>
+                            <th style="text-align: left; padding: 10px; border-bottom: 1px solid var(--border-color);">Details</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <template x-for="row in changeLog" :key="row.id + row.change">
+                            <tr>
+                                <td style="padding: 8px 10px; border-bottom: 1px solid var(--border-color); font-family: monospace;" x-text="row.id"></td>
+                                <td style="padding: 8px 10px; border-bottom: 1px solid var(--border-color);" x-text="row.name"></td>
+                                <td style="padding: 8px 10px; border-bottom: 1px solid var(--border-color);">
+                                    <span :style="'color:' + (row.change === 'Added' ? '#28a745' : (row.change === 'Removed' ? '#dc3545' : '#ffc107'))"
+                                          x-text="row.change"></span>
+                                </td>
+                                <td style="padding: 8px 10px; border-bottom: 1px solid var(--border-color); font-size: 0.85em;" x-text="row.details"></td>
+                            </tr>
+                        </template>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </template>
+</div>
+
+<style>
+.diff-item { border-left: 3px solid var(--border-color); }
+.diff-item.diff-added { background: rgba(40, 167, 69, 0.1); border-left-color: #28a745; }
+.diff-item.diff-removed { background: rgba(220, 53, 69, 0.1); border-left-color: #dc3545; }
+.diff-item.diff-modified { background: rgba(255, 193, 7, 0.1); border-left-color: #ffc107; }
+.diff-item.diff-unchanged { background: rgba(108, 117, 125, 0.05); border-left-color: #6c757d; }
+</style>
+
+<script>
+function topoDiff() {
+    return {
+        result: null,
+        error: null,
+        loading: false,
+        mermaidCode: null,
+
+        get beforeComponents() {
+            if (!this.result) return [];
+            return [
+                ...this.result.components_removed,
+                ...this.result.components_modified,
+                ...this.result.components_unchanged,
+            ];
+        },
+
+        get afterComponents() {
+            if (!this.result) return [];
+            return [
+                ...this.result.components_added,
+                ...this.result.components_modified,
+                ...this.result.components_unchanged,
+            ];
+        },
+
+        get changeLog() {
+            if (!this.result) return [];
+            const rows = [];
+            for (const c of this.result.components_added) {
+                rows.push({ id: c.component_id, name: c.component_name, change: 'Added', details: 'New component' });
+            }
+            for (const c of this.result.components_removed) {
+                rows.push({ id: c.component_id, name: c.component_name, change: 'Removed', details: 'Component removed' });
+            }
+            for (const c of this.result.components_modified) {
+                const details = c.changes.map(ch => ch.field + ': ' + ch.old_value + ' -> ' + ch.new_value).join('; ');
+                rows.push({ id: c.component_id, name: c.component_name, change: 'Modified', details });
+            }
+            for (const e of this.result.edges_added) {
+                rows.push({ id: e.source + ' -> ' + e.target, name: 'Dependency', change: 'Added', details: 'Type: ' + (e.new_type || 'unknown') });
+            }
+            for (const e of this.result.edges_removed) {
+                rows.push({ id: e.source + ' -> ' + e.target, name: 'Dependency', change: 'Removed', details: 'Type: ' + (e.old_type || 'unknown') });
+            }
+            return rows;
+        },
+
+        scoreClass(score) {
+            if (score >= 80) return 'score-text-good';
+            if (score >= 60) return 'score-text-warning';
+            return 'score-text-critical';
+        },
+
+        async submitDiff() {
+            this.loading = true;
+            this.error = null;
+            this.result = null;
+            this.mermaidCode = null;
+
+            const form = document.getElementById('diffForm');
+            const formData = new FormData(form);
+
+            try {
+                const response = await fetch('/api/topology-diff', {
+                    method: 'POST',
+                    body: formData,
+                });
+                const data = await response.json();
+                if (data.error) {
+                    this.error = typeof data.error === 'string' ? data.error : data.error.message;
+                } else {
+                    this.result = data.diff;
+                    this.mermaidCode = data.mermaid;
+                    // Render mermaid after DOM update
+                    this.$nextTick(() => {
+                        if (this.mermaidCode && typeof mermaid !== 'undefined') {
+                            const container = document.getElementById('mermaid-container');
+                            if (container) {
+                                container.innerHTML = '<pre class="mermaid">' + this.mermaidCode + '</pre>';
+                                mermaid.run({ nodes: container.querySelectorAll('.mermaid') });
+                            }
+                        }
+                    });
+                }
+            } catch (err) {
+                this.error = 'Failed to compare topologies: ' + err.message;
+            } finally {
+                this.loading = false;
+            }
+        }
+    };
+}
+</script>
+{% endblock %}
+
+{% block head %}
+<script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+<script>mermaid.initialize({ startOnLoad: false, theme: 'default' });</script>
+{% endblock %}

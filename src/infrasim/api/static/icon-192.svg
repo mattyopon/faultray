@@ -1,0 +1,22 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="192" height="192" viewBox="0 0 192 192">
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#0f0f23"/>
+      <stop offset="100%" stop-color="#1a237e"/>
+    </linearGradient>
+    <linearGradient id="bolt" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#ffffff"/>
+      <stop offset="100%" stop-color="#28a745"/>
+    </linearGradient>
+  </defs>
+  <!-- Background circle -->
+  <circle cx="96" cy="96" r="88" fill="url(#bg)" stroke="#3949ab" stroke-width="4"/>
+  <!-- Shield -->
+  <path d="M96 28 L148 56 L148 104 C148 136 124 160 96 172 C68 160 44 136 44 104 L44 56 Z"
+        fill="none" stroke="#5c6bc0" stroke-width="5" stroke-linejoin="round" opacity="0.9"/>
+  <path d="M96 36 L142 60 L142 104 C142 132 120 154 96 164 C72 154 50 132 50 104 L50 60 Z"
+        fill="#1a237e" fill-opacity="0.4"/>
+  <!-- Lightning bolt -->
+  <path d="M108 52 L82 100 L100 100 L84 148 L120 92 L100 92 Z"
+        fill="url(#bolt)" stroke="#ffffff" stroke-width="1.5" stroke-linejoin="round"/>
+</svg>

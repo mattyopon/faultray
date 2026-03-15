@@ -236,12 +236,12 @@ class TestReport:
     def test_report_generates_html(self, tmp_path):
         model_path = _create_model_file(tmp_path)
         output_html = tmp_path / "output-report.html"
-        result = runner.invoke(app, ["report", "--model", str(model_path), "--output", str(output_html)])
+        result = runner.invoke(app, ["report", "executive", str(model_path), "--output", str(output_html)])
         assert result.exit_code == 0
         assert output_html.exists()
 
     def test_report_missing_model(self, tmp_path):
-        result = runner.invoke(app, ["report", "--model", str(tmp_path / "missing.json")])
+        result = runner.invoke(app, ["report", "executive", str(tmp_path / "missing.json")])
         assert result.exit_code != 0
 
 

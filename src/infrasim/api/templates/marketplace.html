@@ -1,0 +1,288 @@
+{% extends "base.html" %}
+{% set active_page = "marketplace" %}
+
+{% block title %}FaultRay - Marketplace{% endblock %}
+{% block page_title %}Scenario Marketplace{% endblock %}
+{% block page_subtitle %}<span class="page-subtitle">Browse, install, and share chaos engineering scenarios</span>{% endblock %}
+
+{% block top_actions %}
+<div class="sim-filter-controls">
+    <input type="text" id="searchInput" class="input-sm" placeholder="Search packages..." oninput="searchPackages()" aria-label="Search packages">
+</div>
+{% endblock %}
+
+{% block content %}
+<div x-data="marketplaceApp()" x-init="init()">
+
+    <!-- Category filter tabs -->
+    <div style="display: flex; gap: 0.5rem; margin-bottom: 1.5rem; flex-wrap: wrap;">
+        <button @click="filterCategory('')" class="btn btn-sm" :class="currentCategory === '' ? 'btn-accent' : ''" style="font-size: 0.85rem;">
+            All
+        </button>
+        <template x-for="cat in categories" :key="cat.name">
+            <button @click="filterCategory(cat.name)" class="btn btn-sm" :class="currentCategory === cat.name ? 'btn-accent' : ''" style="font-size: 0.85rem;">
+                <span x-text="cat.display_name"></span>
+                <span style="opacity: 0.6; margin-left: 4px;" x-text="'(' + cat.package_count + ')'"></span>
+            </button>
+        </template>
+    </div>
+
+    <!-- Provider filter -->
+    <div style="display: flex; gap: 0.5rem; margin-bottom: 1.5rem; flex-wrap: wrap; align-items: center;">
+        <span style="font-size: 0.85rem; opacity: 0.6; margin-right: 0.25rem;">Provider:</span>
+        <button @click="filterProvider('')" class="btn btn-sm" :class="currentProvider === '' ? 'btn-accent' : ''" style="font-size: 0.8rem; padding: 0.2rem 0.6rem;">All</button>
+        <template x-for="prov in providers" :key="prov">
+            <button @click="filterProvider(prov)" class="btn btn-sm" :class="currentProvider === prov ? 'btn-accent' : ''" style="font-size: 0.8rem; padding: 0.2rem 0.6rem; text-transform: uppercase;" x-text="prov"></button>
+        </template>
+    </div>
+
+    <!-- Featured packages panel -->
+    <template x-if="showFeatured && featured.length > 0">
+        <div style="margin-bottom: 2rem;">
+            <h3 style="margin-bottom: 1rem; color: var(--accent);">Featured Packages</h3>
+            <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(340px, 1fr)); gap: 1rem;">
+                <template x-for="pkg in featured" :key="pkg.id">
+                    <div class="card" style="cursor: pointer; transition: transform 0.15s;" @click="showDetail(pkg)" @mouseenter="$el.style.transform='translateY(-2px)'" @mouseleave="$el.style.transform='none'">
+                        <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 0.75rem;">
+                            <div>
+                                <h4 style="margin: 0; color: var(--accent);" x-text="pkg.name"></h4>
+                                <span style="font-size: 0.75rem; opacity: 0.6;" x-text="'v' + pkg.version + ' by ' + pkg.author"></span>
+                            </div>
+                            <span style="font-size: 0.7rem; padding: 2px 8px; border-radius: 4px; font-weight: 600;"
+                                  :style="severityStyle(pkg.severity)" x-text="pkg.severity.toUpperCase()"></span>
+                        </div>
+                        <p style="font-size: 0.85rem; opacity: 0.8; margin-bottom: 0.75rem; line-height: 1.4;" x-text="pkg.description"></p>
+                        <div style="display: flex; gap: 0.5rem; flex-wrap: wrap; margin-bottom: 0.75rem;">
+                            <template x-for="tag in pkg.tags.slice(0, 4)" :key="tag">
+                                <span style="font-size: 0.7rem; padding: 2px 6px; background: rgba(88, 166, 255, 0.15); border-radius: 3px; color: var(--accent);" x-text="tag"></span>
+                            </template>
+                        </div>
+                        <div style="display: flex; justify-content: space-between; align-items: center; font-size: 0.8rem; opacity: 0.7;">
+                            <span x-text="renderStars(pkg.rating) + ' (' + pkg.rating.toFixed(1) + ')'"></span>
+                            <span x-text="pkg.downloads.toLocaleString() + ' downloads'"></span>
+                            <span :style="difficultyStyle(pkg.difficulty)" x-text="pkg.difficulty"></span>
+                        </div>
+                    </div>
+                </template>
+            </div>
+        </div>
+    </template>
+
+    <!-- All packages grid -->
+    <h3 style="margin-bottom: 1rem;" x-text="currentCategory || currentProvider ? 'Filtered Packages' : 'All Packages'"></h3>
+    <template x-if="filteredPackages.length === 0">
+        <div style="text-align: center; padding: 3rem; opacity: 0.6;">
+            <p>No packages found matching your filters.</p>
+        </div>
+    </template>
+    <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(340px, 1fr)); gap: 1rem;">
+        <template x-for="pkg in filteredPackages" :key="pkg.id">
+            <div class="card" style="cursor: pointer; transition: transform 0.15s;" @click="showDetail(pkg)" @mouseenter="$el.style.transform='translateY(-2px)'" @mouseleave="$el.style.transform='none'">
+                <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 0.5rem;">
+                    <div>
+                        <h4 style="margin: 0;" x-text="pkg.name"></h4>
+                        <span style="font-size: 0.75rem; opacity: 0.5;" x-text="pkg.provider.toUpperCase() + ' | ' + pkg.category"></span>
+                    </div>
+                    <span style="font-size: 0.7rem; padding: 2px 8px; border-radius: 4px; font-weight: 600;"
+                          :style="severityStyle(pkg.severity)" x-text="pkg.severity.toUpperCase()"></span>
+                </div>
+                <p style="font-size: 0.85rem; opacity: 0.8; margin-bottom: 0.5rem;" x-text="pkg.description.substring(0, 120) + (pkg.description.length > 120 ? '...' : '')"></p>
+                <div style="display: flex; gap: 0.4rem; flex-wrap: wrap; margin-bottom: 0.5rem;">
+                    <template x-for="tag in pkg.tags.slice(0, 3)" :key="tag">
+                        <span style="font-size: 0.7rem; padding: 1px 5px; background: rgba(88, 166, 255, 0.1); border-radius: 3px; color: var(--accent);" x-text="tag"></span>
+                    </template>
+                </div>
+                <div style="display: flex; justify-content: space-between; align-items: center; font-size: 0.78rem; opacity: 0.6;">
+                    <span x-text="renderStars(pkg.rating) + ' ' + pkg.rating.toFixed(1)"></span>
+                    <span x-text="pkg.scenarios.length + ' scenarios'"></span>
+                    <span :style="difficultyStyle(pkg.difficulty)" x-text="pkg.difficulty"></span>
+                </div>
+            </div>
+        </template>
+    </div>
+
+    <!-- Detail modal overlay -->
+    <template x-if="selectedPkg">
+        <div style="position: fixed; inset: 0; background: rgba(0,0,0,0.6); z-index: 1000; display: flex; align-items: center; justify-content: center; padding: 2rem;"
+             @click.self="selectedPkg = null">
+            <div class="card" style="max-width: 700px; width: 100%; max-height: 80vh; overflow-y: auto; position: relative;">
+                <button @click="selectedPkg = null" style="position: absolute; top: 0.75rem; right: 0.75rem; background: none; border: none; color: inherit; font-size: 1.2rem; cursor: pointer;">X</button>
+
+                <h2 style="margin: 0 0 0.25rem 0; color: var(--accent);" x-text="selectedPkg.name"></h2>
+                <p style="font-size: 0.85rem; opacity: 0.6; margin-bottom: 1rem;" x-text="'v' + selectedPkg.version + ' by ' + selectedPkg.author"></p>
+                <p style="margin-bottom: 1rem;" x-text="selectedPkg.description"></p>
+
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 0.75rem; margin-bottom: 1.25rem;">
+                    <div><strong>Category:</strong> <span x-text="selectedPkg.category"></span></div>
+                    <div><strong>Provider:</strong> <span style="text-transform: uppercase;" x-text="selectedPkg.provider"></span></div>
+                    <div><strong>Severity:</strong> <span :style="severityStyle(selectedPkg.severity)" x-text="selectedPkg.severity.toUpperCase()"></span></div>
+                    <div><strong>Difficulty:</strong> <span :style="difficultyStyle(selectedPkg.difficulty)" x-text="selectedPkg.difficulty"></span></div>
+                    <div><strong>Duration:</strong> <span x-text="selectedPkg.estimated_duration"></span></div>
+                    <div><strong>Downloads:</strong> <span x-text="selectedPkg.downloads.toLocaleString()"></span></div>
+                    <div><strong>Rating:</strong> <span x-text="renderStars(selectedPkg.rating) + ' ' + selectedPkg.rating.toFixed(1)"></span></div>
+                    <div><strong>Scenarios:</strong> <span x-text="selectedPkg.scenarios.length"></span></div>
+                </div>
+
+                <!-- Tags -->
+                <div style="display: flex; gap: 0.4rem; flex-wrap: wrap; margin-bottom: 1.25rem;">
+                    <template x-for="tag in selectedPkg.tags" :key="tag">
+                        <span style="font-size: 0.75rem; padding: 2px 8px; background: rgba(88, 166, 255, 0.15); border-radius: 4px; color: var(--accent);" x-text="tag"></span>
+                    </template>
+                </div>
+
+                <!-- Scenarios list -->
+                <h4 style="margin-bottom: 0.5rem;">Included Scenarios</h4>
+                <div style="margin-bottom: 1.25rem;">
+                    <template x-for="(sc, idx) in selectedPkg.scenarios" :key="idx">
+                        <div style="padding: 0.5rem; border-left: 3px solid var(--accent); margin-bottom: 0.5rem; background: rgba(88, 166, 255, 0.05); border-radius: 0 4px 4px 0;">
+                            <strong x-text="sc.name"></strong>
+                            <p style="font-size: 0.85rem; opacity: 0.8; margin: 0.25rem 0 0 0;" x-text="sc.description"></p>
+                            <span style="font-size: 0.75rem; opacity: 0.5;" x-text="(sc.faults ? sc.faults.length : 0) + ' fault(s)' + (sc.traffic_multiplier && sc.traffic_multiplier > 1 ? ', ' + sc.traffic_multiplier + 'x traffic' : '')"></span>
+                        </div>
+                    </template>
+                </div>
+
+                <!-- Install button -->
+                <button class="btn btn-accent" @click="installPkg(selectedPkg.id)" style="width: 100%;"
+                        :disabled="installing">
+                    <span x-show="!installing">Install Package</span>
+                    <span x-show="installing">Installing...</span>
+                </button>
+                <template x-if="installResult">
+                    <p style="margin-top: 0.5rem; color: var(--success); text-align: center;" x-text="installResult"></p>
+                </template>
+            </div>
+        </div>
+    </template>
+
+</div>
+
+<script>
+function marketplaceApp() {
+    return {
+        packages: [],
+        featured: [],
+        categories: [],
+        providers: ['aws', 'azure', 'gcp', 'kubernetes', 'generic'],
+        currentCategory: '',
+        currentProvider: '',
+        searchQuery: '',
+        selectedPkg: null,
+        installing: false,
+        installResult: '',
+        showFeatured: true,
+
+        async init() {
+            const [pkgRes, featRes, catRes] = await Promise.all([
+                fetch('/api/marketplace/packages'),
+                fetch('/api/marketplace/featured'),
+                fetch('/api/marketplace/categories'),
+            ]);
+            const pkgData = await pkgRes.json();
+            const featData = await featRes.json();
+            const catData = await catRes.json();
+            this.packages = pkgData.packages || [];
+            this.featured = featData.packages || [];
+            this.categories = catData.categories || [];
+        },
+
+        get filteredPackages() {
+            let result = this.packages;
+            if (this.currentCategory) {
+                result = result.filter(p => p.category === this.currentCategory);
+            }
+            if (this.currentProvider) {
+                result = result.filter(p => p.provider === this.currentProvider);
+            }
+            if (this.searchQuery) {
+                const q = this.searchQuery.toLowerCase();
+                result = result.filter(p =>
+                    p.name.toLowerCase().includes(q) ||
+                    p.description.toLowerCase().includes(q) ||
+                    p.tags.some(t => t.toLowerCase().includes(q))
+                );
+            }
+            return result;
+        },
+
+        filterCategory(cat) {
+            this.currentCategory = cat;
+            this.showFeatured = !cat && !this.currentProvider;
+        },
+
+        filterProvider(prov) {
+            this.currentProvider = prov;
+            this.showFeatured = !prov && !this.currentCategory;
+        },
+
+        showDetail(pkg) {
+            this.selectedPkg = pkg;
+            this.installResult = '';
+            this.installing = false;
+        },
+
+        async installPkg(pkgId) {
+            this.installing = true;
+            this.installResult = '';
+            try {
+                const res = await fetch('/api/marketplace/install/' + pkgId, { method: 'POST' });
+                const data = await res.json();
+                if (data.installed) {
+                    this.installResult = 'Installed ' + data.installed + ' scenario(s) successfully!';
+                } else {
+                    this.installResult = 'Installation failed.';
+                }
+            } catch (e) {
+                this.installResult = 'Error: ' + e.message;
+            }
+            this.installing = false;
+        },
+
+        renderStars(rating) {
+            const filled = Math.round(rating);
+            return '\u2605'.repeat(filled) + '\u2606'.repeat(5 - filled);
+        },
+
+        severityStyle(severity) {
+            const colors = {
+                critical: 'background: rgba(233, 69, 96, 0.2); color: #e94560;',
+                high: 'background: rgba(255, 107, 107, 0.2); color: #ff6b6b;',
+                medium: 'background: rgba(240, 165, 0, 0.2); color: #f0a500;',
+                low: 'background: rgba(0, 184, 148, 0.2); color: #00b894;',
+            };
+            return colors[severity] || '';
+        },
+
+        difficultyStyle(difficulty) {
+            const colors = {
+                beginner: 'color: #00b894;',
+                intermediate: 'color: #f0a500;',
+                advanced: 'color: #ff6b6b;',
+                expert: 'color: #e94560; font-weight: 600;',
+            };
+            return colors[difficulty] || '';
+        },
+    };
+}
+
+// Global search function bound to input
+function searchPackages() {
+    const input = document.getElementById('searchInput');
+    if (input) {
+        // Trigger Alpine.js reactivity via custom event
+        const event = new CustomEvent('search', { detail: input.value });
+        document.dispatchEvent(event);
+        // Also update Alpine data directly
+        const appEl = document.querySelector('[x-data]');
+        if (appEl && appEl.__x) {
+            appEl.__x.$data.searchQuery = input.value;
+        }
+        // Alpine.js v3 approach
+        if (window.Alpine) {
+            const scope = Alpine.$data(appEl);
+            if (scope) scope.searchQuery = input.value;
+        }
+    }
+}
+</script>
+{% endblock %}

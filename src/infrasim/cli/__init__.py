@@ -38,5 +38,25 @@ import infrasim.cli.autoscale_cmd  # noqa: F401
 import infrasim.cli.replay_cmd  # noqa: F401
 import infrasim.cli.drift_cmd  # noqa: F401
 import infrasim.cli.advisor_cmd  # noqa: F401
+import infrasim.cli.timeline_cmd  # noqa: F401
+import infrasim.cli.benchmark_cmd  # noqa: F401
+import infrasim.cli.twin_cmd  # noqa: F401
+import infrasim.cli.calendar_cmd  # noqa: F401
+import infrasim.cli.evidence_cmd  # noqa: F401
+import infrasim.cli.export_cmd  # noqa: F401
+import infrasim.cli.fuzz_cmd  # noqa: F401
+import infrasim.cli.replay_timeline_cmd  # noqa: F401
+import infrasim.cli.slo_budget_cmd  # noqa: F401
+import infrasim.cli.ask_cmd  # noqa: F401
+import infrasim.cli.runbook_cmd  # noqa: F401
+import infrasim.cli.deps_cmd  # noqa: F401
+import infrasim.cli.git_track_cmd  # noqa: F401
+import infrasim.cli.graph_export_cmd  # noqa: F401
+import infrasim.cli.heatmap_cmd  # noqa: F401
+import infrasim.cli.report_cmd  # noqa: F401
+import infrasim.cli.contract_cmd  # noqa: F401
+import infrasim.cli.canary_cmd  # noqa: F401
+import infrasim.cli.multienv_cmd  # noqa: F401
+import infrasim.cli.cost_attr_cmd  # noqa: F401
 
 __all__ = ["app", "_print_dynamic_results"]

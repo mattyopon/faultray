@@ -12,7 +12,7 @@ from pathlib import Path
 
 from fastapi import Depends, FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import HTMLResponse, JSONResponse
+from fastapi.responses import HTMLResponse, JSONResponse, Response
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 
@@ -1024,6 +1024,41 @@ async def reports_page(request: Request):
     })
 
 
+@app.get("/report/executive", response_class=HTMLResponse)
+async def executive_report(company_name: str = "Your Organization"):
+    """Generate executive report (printable HTML).
+
+    Returns a self-contained HTML report designed for C-suite audiences.
+    Print to PDF via browser (Ctrl+P) or wkhtmltopdf.
+    """
+    global _last_report
+    graph = get_graph()
+    if not graph.components:
+        return HTMLResponse(
+            "<html><body><h1>No infrastructure loaded.</h1>"
+            "<p>Visit /demo first to load a demo infrastructure.</p></body></html>",
+            status_code=400,
+        )
+
+    # Run simulation if not already done
+    if _last_report is None:
+        engine = SimulationEngine(graph)
+        _last_report = engine.run_all_defaults()
+
+    from infrasim.ai.analyzer import InfraSimAnalyzer
+    from infrasim.reporter.executive_pdf import ExecutiveReportGenerator
+
+    analyzer = InfraSimAnalyzer()
+    ai_report = analyzer.analyze(graph, _last_report)
+
+    generator = ExecutiveReportGenerator()
+    html_content = generator.generate(
+        graph, _last_report, ai_report,
+        company_name=company_name,
+    )
+    return HTMLResponse(html_content)
+
+
 @app.get("/settings", response_class=HTMLResponse)
 async def settings_page(request: Request):
     return templates.TemplateResponse("settings.html", {
@@ -1445,6 +1480,85 @@ async def api_compliance_check(
 
 
 # ---------------------------------------------------------------------------
+# Industry Benchmarking endpoint
+# ---------------------------------------------------------------------------
+
+@app.get("/api/benchmark/{industry}", response_class=JSONResponse)
+async def benchmark_industry(
+    industry: str,
+    user=Depends(_require_permission("view_results")),
+):
+    """Benchmark infrastructure against industry peers.
+
+    Compare your infrastructure's resilience against anonymized industry
+    benchmarks for fintech, saas, healthcare, and other verticals.
+    Use ``industry=all`` to compare across all industries.
+    """
+    graph = get_graph()
+    if not graph.components:
+        return JSONResponse(
+            {"error": "No infrastructure loaded. Visit /demo first."},
+            status_code=400,
+        )
+
+    from infrasim.simulator.benchmarking import BenchmarkEngine, INDUSTRY_PROFILES
+
+    engine = BenchmarkEngine()
+
+    if industry == "list":
+        profiles = engine.list_industries()
+        return JSONResponse({
+            "industries": [
+                {
+                    "industry": p.industry,
+                    "display_name": p.display_name,
+                    "avg_score": p.avg_resilience_score,
+                    "median_score": p.median_resilience_score,
+                    "sample_size": p.sample_size,
+                }
+                for p in profiles
+            ],
+        })
+
+    if industry == "all":
+        results = engine.compare_across_industries(graph)
+        data = {}
+        for ind, result in results.items():
+            data[ind] = {
+                "your_score": result.your_score,
+                "percentile": result.percentile,
+                "rank": result.rank_description,
+                "strengths": len(result.strengths),
+                "weaknesses": len(result.weaknesses),
+            }
+        return JSONResponse({"benchmarks": data})
+
+    if industry not in INDUSTRY_PROFILES:
+        available = sorted(INDUSTRY_PROFILES.keys())
+        return JSONResponse(
+            {"error": f"Unknown industry '{industry}'. Available: {available}"},
+            status_code=400,
+        )
+
+    result = engine.benchmark(graph, industry)
+    radar = engine.generate_radar_chart_data(result)
+    return JSONResponse({
+        "your_score": result.your_score,
+        "industry": result.industry,
+        "percentile": result.percentile,
+        "rank": result.rank_description,
+        "comparison": {
+            k: {"yours": v[0], "industry_avg": v[1]}
+            for k, v in result.comparison.items()
+        },
+        "strengths": result.strengths,
+        "weaknesses": result.weaknesses,
+        "improvement_priority": result.improvement_priority,
+        "radar_chart": radar,
+    })
+
+
+# ---------------------------------------------------------------------------
 # Slack Bot endpoint
 # ---------------------------------------------------------------------------
 
@@ -1544,6 +1658,388 @@ async def v1_score_history(limit: int = 30, user=Depends(_require_permission("vi
 @_v1_router.get("/compliance/{framework}", response_class=JSONResponse)
 async def v1_compliance(framework: str, user=Depends(_require_permission("view_results"))):
     return await api_compliance_check(framework, user)
+
+
+# ---------------------------------------------------------------------------
+# Marketplace API endpoints
+# ---------------------------------------------------------------------------
+
+
+@app.get("/api/marketplace/packages", response_class=JSONResponse)
+async def list_marketplace_packages(
+    category: str | None = None,
+    provider: str | None = None,
+):
+    """List all marketplace packages, optionally filtered by category/provider."""
+    from infrasim.marketplace import ScenarioMarketplace
+
+    mp = ScenarioMarketplace()
+    packages = mp.list_packages(category=category, provider=provider)
+    return JSONResponse({"packages": [p.to_dict() for p in packages]})
+
+
+@app.get("/api/marketplace/packages/{package_id}", response_class=JSONResponse)
+async def get_marketplace_package(package_id: str):
+    """Get a specific marketplace package by ID."""
+    from infrasim.marketplace import ScenarioMarketplace
+
+    mp = ScenarioMarketplace()
+    try:
+        pkg = mp.get_package(package_id)
+    except KeyError:
+        raise HTTPException(status_code=404, detail=f"Package not found: {package_id}")
+    return JSONResponse(pkg.to_dict())
+
+
+@app.post("/api/marketplace/install/{package_id}", response_class=JSONResponse)
+async def install_marketplace_package(package_id: str):
+    """Install a marketplace package (convert scenarios to ChaosProof format)."""
+    from infrasim.marketplace import ScenarioMarketplace
+
+    mp = ScenarioMarketplace()
+    try:
+        scenarios = mp.install_package(package_id)
+    except KeyError:
+        raise HTTPException(status_code=404, detail=f"Package not found: {package_id}")
+    return JSONResponse({
+        "installed": len(scenarios),
+        "package_id": package_id,
+        "scenarios": [
+            {
+                "id": s.id,
+                "name": s.name,
+                "description": s.description,
+                "fault_count": len(s.faults),
+            }
+            for s in scenarios
+        ],
+    })
+
+
+@app.get("/api/marketplace/featured", response_class=JSONResponse)
+async def get_featured_packages():
+    """Get featured/curated marketplace packages."""
+    from infrasim.marketplace import ScenarioMarketplace
+
+    mp = ScenarioMarketplace()
+    featured = mp.get_featured()
+    return JSONResponse({"packages": [p.to_dict() for p in featured]})
+
+
+@app.get("/api/marketplace/categories", response_class=JSONResponse)
+async def get_marketplace_categories():
+    """Get all marketplace categories with package counts."""
+    from infrasim.marketplace import ScenarioMarketplace
+
+    mp = ScenarioMarketplace()
+    categories = mp.get_categories()
+    return JSONResponse({"categories": [c.to_dict() for c in categories]})
+
+
+@app.get("/api/marketplace/popular", response_class=JSONResponse)
+async def get_popular_packages():
+    """Get most popular marketplace packages by downloads."""
+    from infrasim.marketplace import ScenarioMarketplace
+
+    mp = ScenarioMarketplace()
+    popular = mp.get_popular()
+    return JSONResponse({"packages": [p.to_dict() for p in popular]})
+
+
+@app.get("/api/marketplace/search", response_class=JSONResponse)
+async def search_marketplace_packages(q: str = ""):
+    """Search marketplace packages by query."""
+    from infrasim.marketplace import ScenarioMarketplace
+
+    mp = ScenarioMarketplace()
+    results = mp.search(q)
+    return JSONResponse({"packages": [p.to_dict() for p in results]})
+
+
+@app.get("/marketplace", response_class=HTMLResponse)
+async def marketplace_page(request: Request):
+    """Marketplace HTML page."""
+    graph = get_graph()
+    has_data = bool(graph and graph.components)
+    return templates.TemplateResponse("marketplace.html", {
+        "request": request,
+        "has_data": has_data,
+        "active_page": "marketplace",
+    })
+
+
+# ---------------------------------------------------------------------------
+# Conversational Infrastructure Chat
+# ---------------------------------------------------------------------------
+
+@app.get("/chat", response_class=HTMLResponse)
+async def chat_page(request: Request):
+    """Chat interface page."""
+    from infrasim.api.chat_engine import ChatEngine
+
+    graph = get_graph()
+    engine = ChatEngine()
+    suggestions = engine.get_suggestions(graph) if graph.components else [
+        "Load the demo infrastructure first",
+    ]
+    return templates.TemplateResponse("chat.html", {
+        "request": request,
+        "has_data": len(graph.components) > 0,
+        "suggestions": suggestions,
+        "active_page": "chat",
+    })
+
+
+@app.post("/api/chat", response_class=JSONResponse)
+async def chat_api(request: Request):
+    """Process a chat message about infrastructure."""
+    from infrasim.api.chat_engine import ChatEngine
+
+    body = await request.json()
+    question = body.get("question", "").strip()
+    if not question:
+        return JSONResponse(
+            {"error": "No question provided"},
+            status_code=400,
+        )
+
+    graph = get_graph()
+    engine = ChatEngine()
+    response = engine.ask(question, graph)
+
+    return JSONResponse({
+        "text": response.text,
+        "intent": response.intent.value,
+        "data": response.data,
+        "suggestions": response.suggestions,
+        "visualization": response.visualization,
+    })
+
+
+# ---------------------------------------------------------------------------
+# Resilience Badge endpoints
+# ---------------------------------------------------------------------------
+
+@app.get("/badge/{badge_type}.svg")
+async def get_badge_svg(badge_type: str, style: str = "flat"):
+    """Return SVG badge for embedding in READMEs and dashboards."""
+    from infrasim.api.badge_generator import BadgeGenerator, BadgeStyle, BadgeType
+
+    graph = get_graph()
+    gen = BadgeGenerator()
+
+    style_map = {
+        "flat": BadgeStyle.FLAT,
+        "flat_square": BadgeStyle.FLAT_SQUARE,
+        "flat-square": BadgeStyle.FLAT_SQUARE,
+        "for_the_badge": BadgeStyle.FOR_THE_BADGE,
+        "for-the-badge": BadgeStyle.FOR_THE_BADGE,
+        "plastic": BadgeStyle.PLASTIC,
+    }
+    badge_style = style_map.get(style, BadgeStyle.FLAT)
+
+    type_map = {
+        "resilience_score": "resilience",
+        "sla_estimate": "sla",
+        "grade": "grade",
+        "spof_count": "spof",
+        "component_count": "component",
+    }
+
+    svg = ""
+    bt = type_map.get(badge_type, badge_type)
+    if bt == "resilience":
+        svg = gen.generate_resilience_badge(graph, badge_style)
+    elif bt == "sla":
+        svg = gen.generate_sla_badge(graph, badge_style)
+    elif bt == "grade":
+        svg = gen.generate_grade_badge(graph, badge_style)
+    elif bt == "spof":
+        svg = gen.generate_spof_badge(graph, badge_style)
+    elif bt == "component":
+        svg = gen._generate_component_count_badge(graph, badge_style)
+    else:
+        # Default to resilience
+        svg = gen.generate_resilience_badge(graph, badge_style)
+
+    return Response(
+        content=svg,
+        media_type="image/svg+xml",
+        headers={"Cache-Control": "no-cache, no-store, must-revalidate"},
+    )
+
+
+@app.get("/badge/all")
+async def get_all_badges():
+    """Return all badge URLs and markdown snippets."""
+    from infrasim.api.badge_generator import BadgeGenerator
+
+    graph = get_graph()
+    gen = BadgeGenerator()
+    badges = gen.generate_all_badges(graph)
+
+    return JSONResponse({
+        "badges": {name: f"/badge/{name}.svg" for name in badges},
+        "markdown": gen.get_markdown_links(""),
+    })
+
+
+@app.get("/api/badge-markdown")
+async def get_badge_markdown(base_url: str = "http://localhost:8000"):
+    """Return markdown to embed badges in README."""
+    from infrasim.api.badge_generator import BadgeGenerator
+
+    gen = BadgeGenerator()
+    return JSONResponse({
+        "markdown": gen.get_markdown_links(base_url),
+    })
+
+
+# ---------------------------------------------------------------------------
+# Chaos Calendar endpoints
+# ---------------------------------------------------------------------------
+
+@app.get("/calendar", response_class=HTMLResponse)
+async def calendar_page(request: Request):
+    """Chaos Calendar page — schedule and track chaos experiments."""
+    graph = get_graph()
+    return templates.TemplateResponse("calendar.html", {
+        "request": request,
+        "has_data": len(graph.components) > 0,
+        "active_page": "calendar",
+    })
+
+
+@app.get("/api/calendar", response_class=JSONResponse)
+async def api_calendar_view():
+    """Return calendar view JSON with experiments, stats, and blackout windows."""
+    from infrasim.scheduler.chaos_calendar import ChaosCalendar
+
+    cal = ChaosCalendar()
+    view = cal.get_calendar_view()
+
+    return JSONResponse({
+        "experiments": [exp.to_dict() for exp in view.experiments],
+        "upcoming": [exp.to_dict() for exp in view.upcoming],
+        "overdue": [exp.to_dict() for exp in view.overdue],
+        "history": [exp.to_dict() for exp in view.history],
+        "blackout_windows": [bw.to_dict() for bw in view.blackout_windows],
+        "coverage_score": view.coverage_score,
+        "experiment_frequency": view.experiment_frequency,
+        "streak": view.streak,
+    })
+
+
+@app.post("/api/calendar/schedule", response_class=JSONResponse)
+async def api_calendar_schedule(request: Request):
+    """Schedule a new chaos experiment."""
+    from infrasim.scheduler.chaos_calendar import ChaosCalendar, ChaosExperiment
+
+    body = await request.json()
+    cal = ChaosCalendar()
+
+    experiment = ChaosExperiment(
+        id="",
+        name=body.get("name", "Untitled Experiment"),
+        description=body.get("description", ""),
+        scenario_ids=body.get("scenario_ids", []),
+        target_components=body.get("target_components", []),
+        owner=body.get("owner", ""),
+        tags=body.get("tags", []),
+        infrastructure_file=body.get("infrastructure_file", ""),
+        duration_estimate=body.get("duration_estimate", "30m"),
+        notes=body.get("notes", ""),
+    )
+
+    if "scheduled_time" in body:
+        from datetime import datetime
+        experiment.scheduled_time = datetime.fromisoformat(body["scheduled_time"])
+    if "recurrence" in body:
+        from infrasim.scheduler.chaos_calendar import RecurrencePattern
+        experiment.recurrence = RecurrencePattern(body["recurrence"])
+
+    eid = cal.schedule(experiment)
+    return JSONResponse({"experiment_id": eid, "status": "scheduled"})
+
+
+@app.delete("/api/calendar/{experiment_id}", response_class=JSONResponse)
+async def api_calendar_cancel(experiment_id: str):
+    """Cancel a scheduled experiment."""
+    from infrasim.scheduler.chaos_calendar import ChaosCalendar
+
+    cal = ChaosCalendar()
+    success = cal.cancel(experiment_id)
+    if not success:
+        raise HTTPException(status_code=404, detail=f"Experiment '{experiment_id}' not found")
+    return JSONResponse({"experiment_id": experiment_id, "status": "cancelled"})
+
+
+@app.post("/api/calendar/auto-schedule", response_class=JSONResponse)
+async def api_calendar_auto_schedule():
+    """Auto-schedule experiments for critical components."""
+    from infrasim.scheduler.chaos_calendar import ChaosCalendar
+
+    graph = get_graph()
+    if not graph.components:
+        raise HTTPException(status_code=400, detail="No infrastructure loaded. Visit /demo first.")
+
+    cal = ChaosCalendar()
+    experiments = cal.auto_schedule(graph)
+    return JSONResponse({
+        "scheduled": len(experiments),
+        "experiments": [exp.to_dict() for exp in experiments],
+    })
+
+
+@app.get("/api/calendar/ical")
+async def api_calendar_ical():
+    """Download iCalendar (.ics) file for import into Google Calendar, Outlook, etc."""
+    from infrasim.scheduler.chaos_calendar import ChaosCalendar
+
+    cal = ChaosCalendar()
+    ical = cal.export_ical()
+    return Response(
+        content=ical,
+        media_type="text/calendar",
+        headers={"Content-Disposition": "attachment; filename=chaos-calendar.ics"},
+    )
+
+
+# ---------------------------------------------------------------------------
+# Risk Heat Map
+# ---------------------------------------------------------------------------
+
+
+@app.get("/heatmap", response_class=HTMLResponse)
+async def heatmap_page(request: Request):
+    """Interactive risk heat map page."""
+    graph = get_graph()
+    return templates.TemplateResponse("heatmap.html", {
+        "request": request,
+        "has_data": len(graph.components) > 0,
+        "active_page": "heatmap",
+    })
+
+
+@app.get("/api/risk-heatmap", response_class=JSONResponse)
+async def api_risk_heatmap(user=Depends(_require_permission("view_results"))):
+    """Return risk heat map data as JSON."""
+    graph = get_graph()
+    if not graph.components:
+        return JSONResponse({
+            "components": [],
+            "zones": [],
+            "hotspots": [],
+            "overall_risk_score": 0,
+            "risk_distribution": {"critical": 0, "high": 0, "medium": 0, "low": 0},
+            "dimension_weights": {},
+        })
+
+    from infrasim.simulator.risk_heatmap import RiskHeatMapEngine
+
+    engine = RiskHeatMapEngine()
+    data = engine.analyze(graph)
+    return JSONResponse(data.to_dict())
 
 
 app.include_router(_v1_router)

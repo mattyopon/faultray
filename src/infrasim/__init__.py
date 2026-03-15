@@ -54,6 +54,8 @@ def __getattr__(name: str):
         "SARIFExporter": (
             "infrasim.ci.sarif_exporter", "SARIFExporter",
         ),
+        # SDK entry point
+        "FaultZero": ("infrasim.sdk", "FaultZero"),
     }
 
     if name in _import_map:
@@ -76,4 +78,5 @@ __all__ = [
     "CostImpactEngine", "SecurityResilienceEngine",
     "SLAValidatorEngine", "SLATarget",
     "CIGateGenerator", "CIGateConfig", "SARIFExporter",
+    "FaultZero",
 ]

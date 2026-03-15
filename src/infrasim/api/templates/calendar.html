@@ -1,0 +1,560 @@
+{% extends "base.html" %}
+
+{% block title %}Chaos Calendar - FaultRay{% endblock %}
+{% block page_title %}Chaos Calendar{% endblock %}
+{% block page_subtitle %}<span class="page-subtitle">Schedule and track chaos experiments</span>{% endblock %}
+
+{% block head %}
+<style>
+    .calendar-layout {
+        display: grid;
+        grid-template-columns: 1fr 340px;
+        gap: 1.5rem;
+    }
+
+    @media (max-width: 1024px) {
+        .calendar-layout {
+            grid-template-columns: 1fr;
+        }
+    }
+
+    /* Calendar Grid */
+    .cal-grid {
+        background: var(--card-bg, #161b22);
+        border: 1px solid var(--border, #30363d);
+        border-radius: 8px;
+        overflow: hidden;
+    }
+
+    .cal-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 1rem 1.25rem;
+        border-bottom: 1px solid var(--border, #30363d);
+    }
+
+    .cal-header h3 {
+        margin: 0;
+        font-size: 1.1rem;
+        color: var(--text-primary, #e6edf3);
+    }
+
+    .cal-nav {
+        display: flex;
+        gap: 0.5rem;
+    }
+
+    .cal-nav button {
+        background: var(--bg, #0d1117);
+        border: 1px solid var(--border, #30363d);
+        color: var(--text-secondary, #8b949e);
+        padding: 0.25rem 0.75rem;
+        border-radius: 4px;
+        cursor: pointer;
+        font-size: 0.85rem;
+    }
+
+    .cal-nav button:hover {
+        border-color: var(--accent, #58a6ff);
+        color: var(--accent, #58a6ff);
+    }
+
+    .cal-weekdays {
+        display: grid;
+        grid-template-columns: repeat(7, 1fr);
+        text-align: center;
+        padding: 0.5rem 0;
+        font-size: 0.75rem;
+        font-weight: 600;
+        color: var(--text-secondary, #8b949e);
+        border-bottom: 1px solid var(--border, #30363d);
+    }
+
+    .cal-days {
+        display: grid;
+        grid-template-columns: repeat(7, 1fr);
+        gap: 1px;
+        background: var(--border, #30363d);
+    }
+
+    .cal-day {
+        background: var(--card-bg, #161b22);
+        min-height: 80px;
+        padding: 0.5rem;
+        cursor: pointer;
+        transition: background 0.15s;
+    }
+
+    .cal-day:hover {
+        background: var(--bg, #0d1117);
+    }
+
+    .cal-day.other-month {
+        opacity: 0.3;
+    }
+
+    .cal-day.today {
+        border: 2px solid var(--accent, #58a6ff);
+    }
+
+    .cal-day.blackout {
+        background: #1c1c1c;
+        opacity: 0.6;
+    }
+
+    .cal-day-number {
+        font-size: 0.8rem;
+        color: var(--text-secondary, #8b949e);
+        margin-bottom: 0.25rem;
+    }
+
+    .cal-exp-dot {
+        display: inline-block;
+        width: 6px;
+        height: 6px;
+        border-radius: 50%;
+        margin: 1px;
+    }
+
+    .cal-exp-dot.scheduled { background: #58a6ff; }
+    .cal-exp-dot.running { background: #d29922; }
+    .cal-exp-dot.completed { background: #3fb950; }
+    .cal-exp-dot.failed { background: #f85149; }
+    .cal-exp-dot.cancelled { background: #8b949e; }
+    .cal-exp-dot.skipped { background: #6e7681; }
+
+    .cal-exp-label {
+        font-size: 0.65rem;
+        color: var(--text-primary, #e6edf3);
+        padding: 1px 4px;
+        border-radius: 3px;
+        margin-top: 2px;
+        display: block;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+
+    /* Sidebar */
+    .cal-sidebar {
+        display: flex;
+        flex-direction: column;
+        gap: 1rem;
+    }
+
+    .cal-card {
+        background: var(--card-bg, #161b22);
+        border: 1px solid var(--border, #30363d);
+        border-radius: 8px;
+        padding: 1rem 1.25rem;
+    }
+
+    .cal-card h4 {
+        margin: 0 0 0.75rem;
+        font-size: 0.9rem;
+        color: var(--text-primary, #e6edf3);
+    }
+
+    .stat-row {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 0.4rem 0;
+        font-size: 0.85rem;
+        color: var(--text-secondary, #8b949e);
+    }
+
+    .stat-value {
+        font-weight: 600;
+        color: var(--text-primary, #e6edf3);
+    }
+
+    .stat-value.green { color: #3fb950; }
+    .stat-value.yellow { color: #d29922; }
+    .stat-value.red { color: #f85149; }
+
+    .exp-list {
+        list-style: none;
+        padding: 0;
+        margin: 0;
+    }
+
+    .exp-list li {
+        padding: 0.5rem 0;
+        border-bottom: 1px solid var(--border, #30363d);
+        font-size: 0.8rem;
+    }
+
+    .exp-list li:last-child {
+        border-bottom: none;
+    }
+
+    .exp-name {
+        color: var(--text-primary, #e6edf3);
+        font-weight: 500;
+    }
+
+    .exp-meta {
+        color: var(--text-secondary, #8b949e);
+        font-size: 0.75rem;
+        margin-top: 2px;
+    }
+
+    .exp-status {
+        display: inline-block;
+        padding: 1px 6px;
+        border-radius: 10px;
+        font-size: 0.7rem;
+        font-weight: 600;
+    }
+
+    .exp-status.scheduled { background: rgba(88, 166, 255, 0.15); color: #58a6ff; }
+    .exp-status.completed { background: rgba(63, 185, 80, 0.15); color: #3fb950; }
+    .exp-status.failed { background: rgba(248, 81, 73, 0.15); color: #f85149; }
+    .exp-status.running { background: rgba(210, 153, 34, 0.15); color: #d29922; }
+    .exp-status.skipped { background: rgba(110, 118, 129, 0.15); color: #6e7681; }
+    .exp-status.cancelled { background: rgba(139, 148, 158, 0.15); color: #8b949e; }
+
+    .cal-actions {
+        display: flex;
+        gap: 0.5rem;
+        flex-wrap: wrap;
+    }
+
+    .cal-actions .btn {
+        flex: 1;
+        min-width: 120px;
+    }
+
+    .blackout-tag {
+        display: inline-block;
+        padding: 2px 8px;
+        background: rgba(248, 81, 73, 0.1);
+        color: #f85149;
+        border-radius: 4px;
+        font-size: 0.75rem;
+        margin-bottom: 4px;
+    }
+
+    .coverage-bar {
+        width: 100%;
+        height: 8px;
+        background: var(--bg, #0d1117);
+        border-radius: 4px;
+        overflow: hidden;
+        margin-top: 0.5rem;
+    }
+
+    .coverage-bar-fill {
+        height: 100%;
+        border-radius: 4px;
+        transition: width 0.3s;
+    }
+
+    .empty-exp {
+        color: var(--text-secondary, #8b949e);
+        font-size: 0.85rem;
+        text-align: center;
+        padding: 1rem;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="calendar-layout" x-data="calendarApp()">
+    <!-- Calendar Grid -->
+    <div class="cal-grid">
+        <div class="cal-header">
+            <div class="cal-nav">
+                <button @click="prevMonth()">&larr;</button>
+            </div>
+            <h3 x-text="monthYear"></h3>
+            <div class="cal-nav">
+                <button @click="nextMonth()">&rarr;</button>
+                <button @click="goToday()">Today</button>
+            </div>
+        </div>
+        <div class="cal-weekdays">
+            <div>Sun</div><div>Mon</div><div>Tue</div><div>Wed</div>
+            <div>Thu</div><div>Fri</div><div>Sat</div>
+        </div>
+        <div class="cal-days">
+            <template x-for="day in calendarDays" :key="day.key">
+                <div class="cal-day"
+                     :class="{
+                         'other-month': !day.currentMonth,
+                         'today': day.isToday,
+                         'blackout': day.inBlackout
+                     }"
+                     @click="selectDay(day)">
+                    <div class="cal-day-number" x-text="day.number"></div>
+                    <template x-for="exp in day.experiments" :key="exp.id">
+                        <div>
+                            <span class="cal-exp-dot" :class="exp.status"></span>
+                            <span class="cal-exp-label" x-text="exp.name"></span>
+                        </div>
+                    </template>
+                    <template x-if="day.inBlackout">
+                        <span class="blackout-tag" x-text="day.blackoutReason"></span>
+                    </template>
+                </div>
+            </template>
+        </div>
+    </div>
+
+    <!-- Sidebar -->
+    <div class="cal-sidebar">
+        <!-- Actions -->
+        <div class="cal-card">
+            <h4>Actions</h4>
+            <div class="cal-actions">
+                <button class="btn btn-accent btn-sm"
+                        hx-post="/api/calendar/auto-schedule"
+                        hx-swap="none"
+                        @click="setTimeout(() => loadCalendar(), 500)">
+                    Auto-Schedule
+                </button>
+                <a href="/api/calendar/ical" class="btn btn-sm" download="chaos-calendar.ics">
+                    Export .ics
+                </a>
+            </div>
+        </div>
+
+        <!-- Stats -->
+        <div class="cal-card">
+            <h4>Coverage</h4>
+            <div class="stat-row">
+                <span>Components Tested (30d)</span>
+                <span class="stat-value" :class="coverageColor" x-text="coverageScore + '%'"></span>
+            </div>
+            <div class="coverage-bar">
+                <div class="coverage-bar-fill"
+                     :style="'width:' + coverageScore + '%; background:' + coverageBarColor">
+                </div>
+            </div>
+            <div class="stat-row" style="margin-top: 0.5rem;">
+                <span>Experiments / Week</span>
+                <span class="stat-value" x-text="experimentFrequency"></span>
+            </div>
+            <div class="stat-row">
+                <span>Weekly Streak</span>
+                <span class="stat-value green" x-text="streak + ' weeks'"></span>
+            </div>
+        </div>
+
+        <!-- Upcoming -->
+        <div class="cal-card">
+            <h4>Upcoming (7 days)</h4>
+            <template x-if="upcoming.length === 0">
+                <div class="empty-exp">No upcoming experiments</div>
+            </template>
+            <ul class="exp-list">
+                <template x-for="exp in upcoming" :key="exp.id">
+                    <li>
+                        <div class="exp-name" x-text="exp.name"></div>
+                        <div class="exp-meta">
+                            <span class="exp-status" :class="exp.status" x-text="exp.status"></span>
+                            <span x-text="formatDate(exp.scheduled_time)"></span>
+                        </div>
+                    </li>
+                </template>
+            </ul>
+        </div>
+
+        <!-- Overdue -->
+        <template x-if="overdue.length > 0">
+            <div class="cal-card" style="border-color: #f85149;">
+                <h4 style="color: #f85149;">Overdue</h4>
+                <ul class="exp-list">
+                    <template x-for="exp in overdue" :key="exp.id">
+                        <li>
+                            <div class="exp-name" x-text="exp.name"></div>
+                            <div class="exp-meta">
+                                <span x-text="'Was due: ' + formatDate(exp.scheduled_time)"></span>
+                            </div>
+                        </li>
+                    </template>
+                </ul>
+            </div>
+        </template>
+
+        <!-- Blackout Windows -->
+        <template x-if="blackoutWindows.length > 0">
+            <div class="cal-card">
+                <h4>Blackout Windows</h4>
+                <ul class="exp-list">
+                    <template x-for="bw in blackoutWindows" :key="bw.start">
+                        <li>
+                            <span class="blackout-tag" x-text="bw.reason"></span>
+                            <div class="exp-meta" x-text="formatDate(bw.start) + ' - ' + formatDate(bw.end)"></div>
+                        </li>
+                    </template>
+                </ul>
+            </div>
+        </template>
+
+        <!-- Recent History -->
+        <div class="cal-card">
+            <h4>Recent History</h4>
+            <template x-if="history.length === 0">
+                <div class="empty-exp">No past experiments</div>
+            </template>
+            <ul class="exp-list">
+                <template x-for="exp in history.slice(0, 5)" :key="exp.id">
+                    <li>
+                        <div class="exp-name" x-text="exp.name"></div>
+                        <div class="exp-meta">
+                            <span class="exp-status" :class="exp.status" x-text="exp.status"></span>
+                            <span x-text="formatDate(exp.updated_at)"></span>
+                        </div>
+                    </li>
+                </template>
+            </ul>
+        </div>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+function calendarApp() {
+    return {
+        currentDate: new Date(),
+        experiments: [],
+        upcoming: [],
+        overdue: [],
+        history: [],
+        blackoutWindows: [],
+        coverageScore: 0,
+        experimentFrequency: 0,
+        streak: 0,
+
+        get monthYear() {
+            return this.currentDate.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
+        },
+
+        get coverageColor() {
+            if (this.coverageScore >= 80) return 'green';
+            if (this.coverageScore >= 50) return 'yellow';
+            return 'red';
+        },
+
+        get coverageBarColor() {
+            if (this.coverageScore >= 80) return '#3fb950';
+            if (this.coverageScore >= 50) return '#d29922';
+            return '#f85149';
+        },
+
+        get calendarDays() {
+            const year = this.currentDate.getFullYear();
+            const month = this.currentDate.getMonth();
+            const firstDay = new Date(year, month, 1);
+            const lastDay = new Date(year, month + 1, 0);
+            const startPad = firstDay.getDay();
+            const days = [];
+            const today = new Date();
+            today.setHours(0, 0, 0, 0);
+
+            // Previous month padding
+            for (let i = startPad - 1; i >= 0; i--) {
+                const d = new Date(year, month, -i);
+                days.push(this._makeDay(d, false, today));
+            }
+
+            // Current month
+            for (let i = 1; i <= lastDay.getDate(); i++) {
+                const d = new Date(year, month, i);
+                days.push(this._makeDay(d, true, today));
+            }
+
+            // Next month padding (fill to 42 cells = 6 rows)
+            const remaining = 42 - days.length;
+            for (let i = 1; i <= remaining; i++) {
+                const d = new Date(year, month + 1, i);
+                days.push(this._makeDay(d, false, today));
+            }
+
+            return days;
+        },
+
+        _makeDay(date, currentMonth, today) {
+            const dayStr = date.toISOString().split('T')[0];
+            const dayExps = this.experiments.filter(exp => {
+                const expDate = new Date(exp.scheduled_time).toISOString().split('T')[0];
+                return expDate === dayStr;
+            });
+
+            let inBlackout = false;
+            let blackoutReason = '';
+            for (const bw of this.blackoutWindows) {
+                const bwStart = new Date(bw.start);
+                const bwEnd = new Date(bw.end);
+                if (date >= bwStart && date <= bwEnd) {
+                    inBlackout = true;
+                    blackoutReason = bw.reason;
+                    break;
+                }
+            }
+
+            return {
+                key: dayStr,
+                date: date,
+                number: date.getDate(),
+                currentMonth: currentMonth,
+                isToday: date.getTime() === today.getTime(),
+                experiments: dayExps,
+                inBlackout: inBlackout,
+                blackoutReason: blackoutReason,
+            };
+        },
+
+        prevMonth() {
+            this.currentDate = new Date(this.currentDate.getFullYear(), this.currentDate.getMonth() - 1, 1);
+        },
+
+        nextMonth() {
+            this.currentDate = new Date(this.currentDate.getFullYear(), this.currentDate.getMonth() + 1, 1);
+        },
+
+        goToday() {
+            this.currentDate = new Date();
+        },
+
+        selectDay(day) {
+            console.log('Selected day:', day.date, 'Experiments:', day.experiments);
+        },
+
+        formatDate(isoStr) {
+            if (!isoStr) return '';
+            const d = new Date(isoStr);
+            return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
+        },
+
+        async loadCalendar() {
+            try {
+                const resp = await fetch('/api/calendar');
+                if (resp.ok) {
+                    const data = await resp.json();
+                    this.experiments = data.experiments || [];
+                    this.upcoming = data.upcoming || [];
+                    this.overdue = data.overdue || [];
+                    this.history = data.history || [];
+                    this.blackoutWindows = data.blackout_windows || [];
+                    this.coverageScore = data.coverage_score || 0;
+                    this.experimentFrequency = data.experiment_frequency || 0;
+                    this.streak = data.streak || 0;
+                }
+            } catch (e) {
+                console.error('Failed to load calendar:', e);
+            }
+        },
+
+        init() {
+            this.loadCalendar();
+        },
+    };
+}
+</script>
+{% endblock %}

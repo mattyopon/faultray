@@ -1,0 +1,32 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512">
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#0f0f23"/>
+      <stop offset="100%" stop-color="#1a237e"/>
+    </linearGradient>
+    <linearGradient id="bolt" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#ffffff"/>
+      <stop offset="100%" stop-color="#28a745"/>
+    </linearGradient>
+    <filter id="glow">
+      <feGaussianBlur stdDeviation="4" result="blur"/>
+      <feMerge>
+        <feMergeNode in="blur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+  </defs>
+  <!-- Background circle -->
+  <circle cx="256" cy="256" r="240" fill="url(#bg)" stroke="#3949ab" stroke-width="8"/>
+  <!-- Outer ring -->
+  <circle cx="256" cy="256" r="224" fill="none" stroke="#5c6bc0" stroke-width="2" opacity="0.5"/>
+  <!-- Shield -->
+  <path d="M256 72 L396 148 L396 280 C396 360 332 428 256 460 C180 428 116 360 116 280 L116 148 Z"
+        fill="none" stroke="#5c6bc0" stroke-width="10" stroke-linejoin="round" opacity="0.9"/>
+  <path d="M256 88 L384 158 L384 280 C384 352 324 416 256 446 C188 416 128 352 128 280 L128 158 Z"
+        fill="#1a237e" fill-opacity="0.4"/>
+  <!-- Lightning bolt -->
+  <path d="M290 136 L218 268 L268 268 L222 396 L324 244 L268 244 Z"
+        fill="url(#bolt)" stroke="#ffffff" stroke-width="3" stroke-linejoin="round"
+        filter="url(#glow)"/>
+</svg>
