@@ -1,4 +1,4 @@
-"""Backtest engine -- validate ChaosProof predictions against real incidents."""
+"""Backtest engine -- validate FaultZero predictions against real incidents."""
 
 from __future__ import annotations
 

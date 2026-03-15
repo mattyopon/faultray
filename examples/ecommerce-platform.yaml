@@ -1,8 +1,8 @@
-# ChaosProof - E-Commerce Platform Infrastructure
+# FaultZero - E-Commerce Platform Infrastructure
 #
 # PCI DSS compliant e-commerce system
 # Load with:
-#   chaosproof load examples/ecommerce-platform.yaml
+#   faultzero load examples/ecommerce-platform.yaml
 #
 # Architecture:
 #   CloudFront -> WAF -> ALB -> Web Frontend (x2) + Cart API (x2) + Payment API (x2)

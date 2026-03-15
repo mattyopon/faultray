@@ -1,8 +1,8 @@
-# ChaosProof - SaaS Multi-Tenant Infrastructure
+# FaultZero - SaaS Multi-Tenant Infrastructure
 #
 # SOC2 compliant multi-tenant SaaS platform
 # Load with:
-#   chaosproof load examples/saas-multi-tenant.yaml
+#   faultzero load examples/saas-multi-tenant.yaml
 #
 # Architecture:
 #   CloudFront -> ALB -> Tenant Router -> API (x4)

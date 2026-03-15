@@ -224,7 +224,7 @@ def export_sarif(report: SimulationReport) -> str:
             {
                 "tool": {
                     "driver": {
-                        "name": "ChaosProof",
+                        "name": "FaultZero",
                         "informationUri": "https://github.com/mattyopon/infrasim",
                         "version": "2.1.0",
                         "rules": rules,
@@ -294,7 +294,7 @@ def export_excel(report: SimulationReport, path: Path) -> Path:
     ws_summary.title = "Summary"
 
     header_font = Font(bold=True, size=14)
-    ws_summary["A1"] = "ChaosProof Simulation Report"
+    ws_summary["A1"] = "FaultZero Simulation Report"
     ws_summary["A1"].font = header_font
 
     ws_summary["A3"] = "Resilience Score"

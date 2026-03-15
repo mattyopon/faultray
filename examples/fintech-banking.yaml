@@ -1,8 +1,8 @@
-# ChaosProof - Fintech Banking Infrastructure
+# FaultZero - Fintech Banking Infrastructure
 #
 # DORA (Digital Operational Resilience Act) compliant banking system
 # Load with:
-#   chaosproof load examples/fintech-banking.yaml
+#   faultzero load examples/fintech-banking.yaml
 #
 # Architecture:
 #   CloudFront CDN -> WAF -> API Gateway -> Core Banking APIs (x3)

@@ -1,4 +1,4 @@
-"""Example: Using ChaosProof as a Python library.
+"""Example: Using FaultZero as a Python library.
 
 Demonstrates how to load infrastructure, run simulations, and
 compute availability models programmatically.

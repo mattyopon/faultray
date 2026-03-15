@@ -1,4 +1,4 @@
-"""Historical trend tracking for ChaosProof resilience scores.
+"""Historical trend tracking for FaultZero resilience scores.
 
 Tracks resilience scores over time using SQLite to detect trends,
 regressions, and improvements in infrastructure resilience.
@@ -57,7 +57,7 @@ class HistoryTracker:
     """Track resilience scores over time using SQLite."""
 
     def __init__(self, db_path: Path | None = None) -> None:
-        self.db_path = db_path or Path.home() / ".chaosproof" / "history.db"
+        self.db_path = db_path or Path.home() / ".faultzero" / "history.db"
         self._init_db()
 
     def _init_db(self) -> None:

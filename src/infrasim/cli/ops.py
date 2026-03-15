@@ -64,28 +64,28 @@ def ops_sim(
 
     Examples:
         # Run with all default scenarios
-        chaosproof ops-sim infra.yaml --defaults
+        faultzero ops-sim infra.yaml --defaults
 
         # Custom 14-day simulation
-        chaosproof ops-sim --yaml infra.yaml --days 14
+        faultzero ops-sim --yaml infra.yaml --days 14
 
         # Fine-grained time steps
-        chaosproof ops-sim infra.yaml --step 1min --days 3
+        faultzero ops-sim infra.yaml --step 1min --days 3
 
         # Customize traffic pattern
-        chaosproof ops-sim infra.yaml --diurnal-peak 5.0 --weekend-factor 0.4
+        faultzero ops-sim infra.yaml --diurnal-peak 5.0 --weekend-factor 0.4
 
         # Custom deploy schedule
-        chaosproof ops-sim infra.yaml --deploy-days mon,wed,fri --deploy-hour 10
+        faultzero ops-sim infra.yaml --deploy-days mon,wed,fri --deploy-hour 10
 
         # Disable random failures for deterministic output
-        chaosproof ops-sim infra.yaml --no-random-failures --no-degradation
+        faultzero ops-sim infra.yaml --no-random-failures --no-degradation
 
         # Add traffic growth
-        chaosproof ops-sim infra.yaml --growth 0.15
+        faultzero ops-sim infra.yaml --growth 0.15
 
         # JSON output
-        chaosproof ops-sim infra.yaml --json
+        faultzero ops-sim infra.yaml --json
     """
     yaml_file = yaml_pos or yaml_file
     from infrasim.model.components import SLOTarget
@@ -262,16 +262,16 @@ def whatif(
 
     Examples:
         # Run all default what-if analyses
-        chaosproof whatif infra.yaml --defaults
+        faultzero whatif infra.yaml --defaults
 
         # Sweep a single parameter
-        chaosproof whatif infra.yaml --parameter mttr_factor --values 0.5,1.0,2.0,5.0
+        faultzero whatif infra.yaml --parameter mttr_factor --values 0.5,1.0,2.0,5.0
 
         # Multi-parameter what-if
-        chaosproof whatif infra.yaml --multi "mttr_factor=2.0,traffic_factor=3.0"
+        faultzero whatif infra.yaml --multi "mttr_factor=2.0,traffic_factor=3.0"
 
         # Run default multi-parameter combinations
-        chaosproof whatif infra.yaml --multi defaults
+        faultzero whatif infra.yaml --multi defaults
     """
     resolved_yaml = yaml_pos or yaml_file
     try:
@@ -349,19 +349,19 @@ def capacity(
 
     Examples:
         # Basic capacity forecast
-        chaosproof capacity infra.yaml
+        faultzero capacity infra.yaml
 
         # Custom growth rate (20% monthly)
-        chaosproof capacity infra.yaml --growth 0.20
+        faultzero capacity infra.yaml --growth 0.20
 
         # Stricter SLO target
-        chaosproof capacity infra.yaml --slo 99.99
+        faultzero capacity infra.yaml --slo 99.99
 
         # Include ops simulation for actual burn rate
-        chaosproof capacity infra.yaml --simulate
+        faultzero capacity infra.yaml --simulate
 
         # Use JSON model
-        chaosproof capacity --model model.json
+        faultzero capacity --model model.json
     """
     resolved_yaml = yaml_pos or yaml_file
 
@@ -511,13 +511,13 @@ def advise(
 
     Examples:
         # Get recommendations from YAML
-        chaosproof advise infra.yaml
+        faultzero advise infra.yaml
 
         # JSON output for integration
-        chaosproof advise infra.yaml --json
+        faultzero advise infra.yaml --json
 
         # Use a JSON model
-        chaosproof advise --model model.json
+        faultzero advise --model model.json
     """
     from rich.panel import Panel
     from rich.table import Table
@@ -620,19 +620,19 @@ def monte_carlo_cmd(
 
     Examples:
         # Default 10,000 trials
-        chaosproof monte-carlo infra.yaml
+        faultzero monte-carlo infra.yaml
 
         # More trials for higher precision
-        chaosproof monte-carlo infra.yaml --trials 100000
+        faultzero monte-carlo infra.yaml --trials 100000
 
         # Custom random seed
-        chaosproof monte-carlo infra.yaml --seed 123
+        faultzero monte-carlo infra.yaml --seed 123
 
         # JSON output
-        chaosproof monte-carlo infra.yaml --json
+        faultzero monte-carlo infra.yaml --json
 
         # Use JSON model
-        chaosproof monte-carlo --model model.json
+        faultzero monte-carlo --model model.json
     """
     resolved_yaml = yaml_pos or yaml_file
     graph = _load_graph_for_analysis(model, resolved_yaml)
@@ -712,16 +712,16 @@ def cost(
 
     Examples:
         # Cost analysis from YAML
-        chaosproof cost infra.yaml
+        faultzero cost infra.yaml
 
         # Show top 20 scenarios
-        chaosproof cost infra.yaml --top 20
+        faultzero cost infra.yaml --top 20
 
         # JSON output
-        chaosproof cost infra.yaml --json
+        faultzero cost infra.yaml --json
 
         # Use JSON model
-        chaosproof cost --model model.json
+        faultzero cost --model model.json
     """
     from rich.panel import Panel
     from rich.table import Table
@@ -828,16 +828,16 @@ def compliance(
 
     Examples:
         # Check SOC 2 compliance
-        chaosproof compliance infra.yaml --framework soc2
+        faultzero compliance infra.yaml --framework soc2
 
         # Check all frameworks
-        chaosproof compliance infra.yaml --all
+        faultzero compliance infra.yaml --all
 
         # Check PCI DSS compliance
-        chaosproof compliance infra.yaml --framework pci_dss
+        faultzero compliance infra.yaml --framework pci_dss
 
         # JSON output
-        chaosproof compliance infra.yaml --json --all
+        faultzero compliance infra.yaml --json --all
     """
     from rich.panel import Panel
     from rich.table import Table
@@ -955,19 +955,19 @@ def dr(
 
     Examples:
         # Run all DR scenarios
-        chaosproof dr infra.yaml --all
+        faultzero dr infra.yaml --all
 
         # Simulate AZ failure
-        chaosproof dr infra.yaml --scenario az-failure --az us-east-1a
+        faultzero dr infra.yaml --scenario az-failure --az us-east-1a
 
         # Simulate region failure
-        chaosproof dr infra.yaml --scenario region-failure --region us-east-1
+        faultzero dr infra.yaml --scenario region-failure --region us-east-1
 
         # Simulate network partition between regions
-        chaosproof dr infra.yaml --scenario network-partition --region-a us-east-1 --region-b eu-west-1
+        faultzero dr infra.yaml --scenario network-partition --region-a us-east-1 --region-b eu-west-1
 
         # JSON output
-        chaosproof dr infra.yaml --json --all
+        faultzero dr infra.yaml --json --all
     """
     from rich.panel import Panel
     from rich.table import Table
@@ -1073,13 +1073,13 @@ def security(
 
     Examples:
         # Run all attack simulations
-        chaosproof security infra.yaml
+        faultzero security infra.yaml
 
         # JSON output
-        chaosproof security infra.yaml --json
+        faultzero security infra.yaml --json
 
         # Use JSON model
-        chaosproof security --model model.json
+        faultzero security --model model.json
     """
     from rich.panel import Panel
     from rich.table import Table
@@ -1204,19 +1204,19 @@ def fix(
 
     Examples:
         # Generate remediation code
-        chaosproof fix infra.yaml
+        faultzero fix infra.yaml
 
         # Set target resilience score
-        chaosproof fix infra.yaml --target-score 95
+        faultzero fix infra.yaml --target-score 95
 
         # Preview changes without writing files
-        chaosproof fix infra.yaml --dry-run
+        faultzero fix infra.yaml --dry-run
 
         # Output plan as JSON
-        chaosproof fix infra.yaml --json
+        faultzero fix infra.yaml --json
 
         # Custom output directory
-        chaosproof fix infra.yaml --output ./my-remediation/
+        faultzero fix infra.yaml --output ./my-remediation/
     """
     import json as json_lib
 
@@ -1262,7 +1262,7 @@ def fix(
         f"[bold]Phases:[/] {plan.total_phases}  [bold]Files:[/] {len(plan.files)}"
     )
     console.print()
-    console.print(Panel(summary_text, title="[bold]ChaosProof Remediation Plan[/]", border_style=score_color))
+    console.print(Panel(summary_text, title="[bold]FaultZero Remediation Plan[/]", border_style=score_color))
 
     # Files table
     table = Table(title="Remediation Files", show_header=True)

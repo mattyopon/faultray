@@ -1,4 +1,4 @@
-"""Issue tracker integrations for ChaosProof -- Jira and Linear."""
+"""Issue tracker integrations for FaultZero -- Jira and Linear."""
 
 from __future__ import annotations
 
@@ -40,7 +40,7 @@ class JiraClient:
                 "description": description,
                 "issuetype": {"name": issue_type},
                 "priority": {"name": priority},
-                "labels": labels or ["chaosproof", "auto-generated"],
+                "labels": labels or ["faultzero", "auto-generated"],
             }
         }
 

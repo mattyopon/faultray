@@ -1,4 +1,4 @@
-"""Datadog integration for ChaosProof -- events and custom metrics."""
+"""Datadog integration for FaultZero -- events and custom metrics."""
 
 from __future__ import annotations
 
@@ -48,8 +48,8 @@ class DatadogClient:
                     "title": title,
                     "text": text,
                     "alert_type": alert_type,
-                    "tags": tags or ["source:chaosproof"],
-                    "source_type_name": "chaosproof",
+                    "tags": tags or ["source:faultzero"],
+                    "source_type_name": "faultzero",
                 },
                 timeout=10.0,
             )
@@ -65,23 +65,23 @@ class DatadogClient:
     ) -> dict:
         """Submit custom metrics to Datadog (POST /api/v2/series)."""
         now = int(time.time())
-        metric_tags = tags or ["source:chaosproof"]
+        metric_tags = tags or ["source:faultzero"]
 
         series = [
             {
-                "metric": "chaosproof.resilience_score",
+                "metric": "faultzero.resilience_score",
                 "type": 3,  # gauge
                 "points": [{"timestamp": now, "value": resilience_score}],
                 "tags": metric_tags,
             },
             {
-                "metric": "chaosproof.security_score",
+                "metric": "faultzero.security_score",
                 "type": 3,
                 "points": [{"timestamp": now, "value": security_score}],
                 "tags": metric_tags,
             },
             {
-                "metric": "chaosproof.risk_exposure",
+                "metric": "faultzero.risk_exposure",
                 "type": 3,
                 "points": [{"timestamp": now, "value": risk_exposure}],
                 "tags": metric_tags,

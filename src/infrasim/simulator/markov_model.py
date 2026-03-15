@@ -1,4 +1,4 @@
-"""Markov chain availability model for ChaosProof.
+"""Markov chain availability model for FaultZero.
 
 Computes steady-state availability using a 3-state continuous-time Markov
 chain:  HEALTHY <-> DEGRADED -> DOWN -> HEALTHY.

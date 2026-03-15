@@ -1044,7 +1044,7 @@ class AWSScanner:
 
 
 def export_yaml(graph: InfraGraph, path: Path) -> None:
-    """Export an InfraGraph to ChaosProof YAML format.
+    """Export an InfraGraph to FaultZero YAML format.
 
     Generates a YAML file compatible with ``infrasim load``.
 

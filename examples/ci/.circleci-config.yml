@@ -1,4 +1,4 @@
-# CircleCI template for ChaosProof chaos simulation
+# CircleCI template for FaultZero chaos simulation
 # Copy this file to your repository as .circleci/config.yml
 
 version: 2.1
@@ -9,19 +9,19 @@ executors:
       - image: cimg/python:3.12
 
 jobs:
-  chaosproof:
+  faultzero:
     executor: python
     steps:
       - checkout
 
       - run:
-          name: Install ChaosProof
-          command: pip install chaosproof
+          name: Install FaultZero
+          command: pip install faultzero
 
       - run:
           name: Run Chaos Simulation
           command: |
-            chaosproof simulate --model infra.yaml --json > results.json
+            faultzero simulate --model infra.yaml --json > results.json
             cat results.json
 
       - run:
@@ -40,7 +40,7 @@ jobs:
           name: Baseline Comparison
           command: |
             if [ -f baseline.json ]; then
-              chaosproof simulate --model infra.yaml --baseline baseline.json
+              faultzero simulate --model infra.yaml --baseline baseline.json
             else
               echo "No baseline.json found — skipping comparison."
             fi
@@ -48,10 +48,10 @@ jobs:
 
       - store_artifacts:
           path: results.json
-          destination: chaosproof-results
+          destination: faultzero-results
 
 workflows:
   version: 2
   test-and-chaos:
     jobs:
-      - chaosproof
+      - faultzero

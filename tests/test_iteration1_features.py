@@ -144,7 +144,7 @@ class TestEvaluateBasic:
         assert result.exit_code == 0
         assert html_path.exists()
         html_content = html_path.read_text()
-        assert "ChaosProof Full Evaluation Report" in html_content
+        assert "FaultZero Full Evaluation Report" in html_content
         assert "Static Simulation" in html_content
 
     def test_evaluate_ops_deploy_fallback(self, tmp_path: Path) -> None:

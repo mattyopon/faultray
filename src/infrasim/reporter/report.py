@@ -85,7 +85,7 @@ def print_simulation_report(report: SimulationReport, console: Console | None = 
         f"[bold red]Critical: {len(report.critical_findings)}[/]  "
         f"[yellow]Warning: {len(report.warnings)}[/]  "
         f"[green]Passed: {len(report.passed)}[/]",
-        title="[bold]ChaosProof Chaos Simulation Report[/]",
+        title="[bold]FaultZero Chaos Simulation Report[/]",
         border_style=color,
     ))
 

@@ -1,4 +1,4 @@
-"""Tests for the ChaosProof public Python SDK surface."""
+"""Tests for the FaultZero public Python SDK surface."""
 
 from __future__ import annotations
 

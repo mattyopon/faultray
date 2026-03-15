@@ -24,10 +24,10 @@ def analyze(
 
     Examples:
         # Run AI analysis on YAML model
-        chaosproof analyze infra.yaml
+        faultzero analyze infra.yaml
 
         # JSON output
-        chaosproof analyze infra.yaml --json
+        faultzero analyze infra.yaml --json
     """
     import json as json_mod
 
@@ -72,10 +72,10 @@ def dora_report(
 
     Examples:
         # Generate DORA report
-        chaosproof dora-report infra.yaml
+        faultzero dora-report infra.yaml
 
         # Custom output path
-        chaosproof dora-report infra.yaml --output my-dora-report.html
+        faultzero dora-report infra.yaml --output my-dora-report.html
     """
     from infrasim.ai.analyzer import InfraSimAnalyzer
     from infrasim.model.loader import load_yaml
@@ -115,13 +115,13 @@ def executive(
 
     Examples:
         # Generate executive summary
-        chaosproof executive infra.yaml
+        faultzero executive infra.yaml
 
         # Export as HTML
-        chaosproof executive infra.yaml --html executive-summary.html
+        faultzero executive infra.yaml --html executive-summary.html
 
         # JSON output
-        chaosproof executive infra.yaml --json
+        faultzero executive infra.yaml --json
     """
     import dataclasses
     import json as json_mod

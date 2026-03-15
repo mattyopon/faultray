@@ -1,17 +1,17 @@
-# GitLab CI template for ChaosProof chaos simulation
+# GitLab CI template for FaultZero chaos simulation
 # Copy this file to your repository root as .gitlab-ci.yml
 
 stages:
   - test
   - chaos
 
-chaosproof:
+faultzero:
   stage: chaos
   image: python:3.12
   before_script:
-    - pip install chaosproof
+    - pip install faultzero
   script:
-    - chaosproof simulate --model infra.yaml --json > results.json
+    - faultzero simulate --model infra.yaml --json > results.json
     - |
       CRITICAL=$(python3 -c "
       import json, sys
@@ -21,7 +21,7 @@ chaosproof:
       sys.exit(1 if c > 0 else 0)
       ")
       echo "Critical findings: $CRITICAL"
-    - chaosproof simulate --model infra.yaml --baseline baseline.json || true
+    - faultzero simulate --model infra.yaml --baseline baseline.json || true
   artifacts:
     reports:
       codequality: results.json

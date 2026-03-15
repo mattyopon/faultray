@@ -1,12 +1,12 @@
-name: 'ChaosProof Chaos Check'
-description: 'Run ChaosProof chaos simulation on infrastructure YAML files'
+name: 'FaultZero Chaos Check'
+description: 'Run FaultZero chaos simulation on infrastructure YAML files'
 branding:
   icon: 'shield'
   color: 'orange'
 
 inputs:
   yaml-file:
-    description: 'Path to ChaosProof YAML file'
+    description: 'Path to FaultZero YAML file'
     required: true
   python-version:
     description: 'Python version'
@@ -36,20 +36,20 @@ runs:
       with:
         python-version: ${{ inputs.python-version }}
 
-    - name: Install ChaosProof
+    - name: Install FaultZero
       shell: bash
-      run: pip install chaosproof
+      run: pip install faultzero
 
-    - name: Run ChaosProof
+    - name: Run FaultZero
       id: run
       shell: bash
       run: |
-        chaosproof load "${{ inputs.yaml-file }}"
-        chaosproof simulate --json /tmp/chaosproof-results.json 2>&1 | tee /tmp/chaosproof-output.txt
+        faultzero load "${{ inputs.yaml-file }}"
+        faultzero simulate --json /tmp/faultzero-results.json 2>&1 | tee /tmp/faultzero-output.txt
 
         # Extract metrics
-        SCORE=$(python3 -c "import json; r=json.load(open('/tmp/chaosproof-results.json')); print(r.get('resilience_score', 0))" 2>/dev/null || echo "0")
-        CRITICAL=$(python3 -c "import json; r=json.load(open('/tmp/chaosproof-results.json')); print(len([x for x in r.get('results',[]) if x.get('is_critical')]))" 2>/dev/null || echo "0")
+        SCORE=$(python3 -c "import json; r=json.load(open('/tmp/faultzero-results.json')); print(r.get('resilience_score', 0))" 2>/dev/null || echo "0")
+        CRITICAL=$(python3 -c "import json; r=json.load(open('/tmp/faultzero-results.json')); print(len([x for x in r.get('results',[]) if x.get('is_critical')]))" 2>/dev/null || echo "0")
 
         echo "score=$SCORE" >> $GITHUB_OUTPUT
         echo "critical=$CRITICAL" >> $GITHUB_OUTPUT

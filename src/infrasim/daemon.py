@@ -11,7 +11,7 @@ from pathlib import Path
 logger = logging.getLogger(__name__)
 
 
-class ChaosProofDaemon:
+class FaultZeroDaemon:
     """Continuously scan an infrastructure model on a fixed interval.
 
     On each tick the daemon:
@@ -31,7 +31,7 @@ class ChaosProofDaemon:
     ) -> None:
         self.model_path = Path(model_path)
         self.interval = interval_seconds
-        self.results_dir = results_dir or (Path.home() / ".chaosproof" / "daemon")
+        self.results_dir = results_dir or (Path.home() / ".faultzero" / "daemon")
         self.results_dir.mkdir(parents=True, exist_ok=True)
         self.notification_config = notification_config or {}
         self._running = False
@@ -56,7 +56,7 @@ class ChaosProofDaemon:
         signal.signal(signal.SIGTERM, self._handle_signal)
 
         logger.info(
-            "ChaosProof daemon started: model=%s interval=%ds",
+            "FaultZero daemon started: model=%s interval=%ds",
             self.model_path,
             self.interval,
         )
@@ -79,7 +79,7 @@ class ChaosProofDaemon:
     def stop(self) -> None:
         """Signal the daemon to stop."""
         self._running = False
-        logger.info("ChaosProof daemon stopping.")
+        logger.info("FaultZero daemon stopping.")
 
     @property
     def running(self) -> bool:

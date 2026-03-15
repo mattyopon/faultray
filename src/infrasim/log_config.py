@@ -1,11 +1,11 @@
-"""Structured logging configuration for ChaosProof."""
+"""Structured logging configuration for FaultZero."""
 
 import logging
 import sys
 
 
 def setup_logging(level: str = "WARNING", json_format: bool = False) -> None:
-    """Configure structured logging for ChaosProof.
+    """Configure structured logging for FaultZero.
 
     Args:
         level: Log level string (DEBUG, INFO, WARNING, ERROR, CRITICAL).

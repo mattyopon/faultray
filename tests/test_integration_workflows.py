@@ -1,4 +1,4 @@
-"""Integration tests verifying data flows between ChaosProof commands.
+"""Integration tests verifying data flows between FaultZero commands.
 
 These tests validate end-to-end workflows where the output of one engine
 feeds into the next, ensuring structural compatibility across the pipeline:

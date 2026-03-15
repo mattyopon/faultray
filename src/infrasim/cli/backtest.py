@@ -1,4 +1,4 @@
-"""Backtest CLI command -- validate ChaosProof predictions against real incidents."""
+"""Backtest CLI command -- validate FaultZero predictions against real incidents."""
 
 from __future__ import annotations
 
@@ -33,17 +33,17 @@ def backtest(
         help="Load from YAML instead (overrides infra_file).",
     ),
 ) -> None:
-    """Validate ChaosProof predictions against real incidents.
+    """Validate FaultZero predictions against real incidents.
 
     Examples:
         # Run backtest with incidents file
-        chaosproof backtest infra.yaml --incidents incidents.json
+        faultzero backtest infra.yaml --incidents incidents.json
 
         # JSON output
-        chaosproof backtest infra.yaml --incidents incidents.json --json
+        faultzero backtest infra.yaml --incidents incidents.json --json
 
         # Use YAML override
-        chaosproof backtest model.json --yaml infra.yaml --incidents incidents.json
+        faultzero backtest model.json --yaml infra.yaml --incidents incidents.json
     """
     from infrasim.simulator.backtest_engine import BacktestEngine
 
@@ -67,7 +67,7 @@ def backtest(
     # Rich table output
     console.print()
     console.print(
-        f"[bold]ChaosProof Backtest Results[/]  "
+        f"[bold]FaultZero Backtest Results[/]  "
         f"({summary['total_incidents']} incidents)"
     )
     console.print()

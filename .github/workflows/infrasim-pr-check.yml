@@ -1,4 +1,4 @@
-name: ChaosProof Infrastructure Check
+name: FaultZero Infrastructure Check
 
 on:
   pull_request:
@@ -8,14 +8,14 @@ on:
       - '**/terraform/**'
       - '**/*.tf'
       - '**/infrasim*.yaml'
-      - '**/chaosproof*.yaml'
+      - '**/faultzero*.yaml'
 
 permissions:
   pull-requests: write
   contents: read
 
 jobs:
-  chaosproof-check:
+  faultzero-check:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -25,16 +25,16 @@ jobs:
         with:
           python-version: '3.11'
 
-      - name: Install ChaosProof
-        run: pip install chaosproof  # or pip install -e . if in same repo
+      - name: Install FaultZero
+        run: pip install faultzero  # or pip install -e . if in same repo
 
       - name: Find infrastructure YAML files
         id: find-yaml
         run: |
-          # Find ChaosProof/InfraSim YAML files in the PR
-          FILES=$(find . -name 'chaosproof*.yaml' -o -name 'infrasim*.yaml' -o -name 'chaosproof*.yml' -o -name 'infrasim*.yml' -o -name 'infrastructure*.yaml' | head -5)
+          # Find FaultZero/InfraSim YAML files in the PR
+          FILES=$(find . -name 'faultzero*.yaml' -o -name 'infrasim*.yaml' -o -name 'faultzero*.yml' -o -name 'infrasim*.yml' -o -name 'infrastructure*.yaml' | head -5)
           if [ -z "$FILES" ]; then
-            echo "No ChaosProof YAML files found"
+            echo "No FaultZero YAML files found"
             echo "found=false" >> $GITHUB_OUTPUT
           else
             echo "found=true" >> $GITHUB_OUTPUT
@@ -42,18 +42,18 @@ jobs:
             echo "first_file=$(echo $FILES | head -1)" >> $GITHUB_OUTPUT
           fi
 
-      - name: Run ChaosProof simulation
+      - name: Run FaultZero simulation
         if: steps.find-yaml.outputs.found == 'true'
         run: |
           FILE="${{ steps.find-yaml.outputs.first_file }}"
-          echo "Running ChaosProof on $FILE..."
+          echo "Running FaultZero on $FILE..."
 
           # Run simulation with JSON output
-          chaosproof load "$FILE"
-          chaosproof simulate --json chaosproof-results.json 2>&1 | tee chaosproof-output.txt
+          faultzero load "$FILE"
+          faultzero simulate --json faultzero-results.json 2>&1 | tee faultzero-output.txt
 
           # Run AI analysis
-          chaosproof analyze "$FILE" --json 2>&1 | tee chaosproof-analysis.txt
+          faultzero analyze "$FILE" --json 2>&1 | tee faultzero-analysis.txt
 
       - name: Comment PR with results
         if: steps.find-yaml.outputs.found == 'true'
@@ -63,16 +63,16 @@ jobs:
             const fs = require('fs');
 
             let output = '';
-            try { output = fs.readFileSync('chaosproof-output.txt', 'utf8'); } catch(e) {}
+            try { output = fs.readFileSync('faultzero-output.txt', 'utf8'); } catch(e) {}
             let analysis = '';
-            try { analysis = fs.readFileSync('chaosproof-analysis.txt', 'utf8'); } catch(e) {}
+            try { analysis = fs.readFileSync('faultzero-analysis.txt', 'utf8'); } catch(e) {}
 
             // Parse key metrics from output
             const lines = output.split('\n');
             const resilienceLine = lines.find(l => l.includes('Resilience'));
             const criticalLine = lines.find(l => l.includes('CRITICAL') || l.includes('Critical'));
 
-            const body = `## ChaosProof Chaos Simulation Report
+            const body = `## FaultZero Chaos Simulation Report
 
             ${resilienceLine ? '**' + resilienceLine.trim() + '**' : ''}
             ${criticalLine ? criticalLine.trim() : ''}
@@ -94,9 +94,9 @@ jobs:
             </details>
 
             ---
-            *Powered by [ChaosProof](https://github.com/mattyopon/infrasim) -- Zero-Risk Infrastructure Chaos Simulation*`;
+            *Powered by [FaultZero](https://github.com/mattyopon/infrasim) -- Zero-Risk Infrastructure Chaos Simulation*`;
 
-            // Find existing ChaosProof comment to update
+            // Find existing FaultZero comment to update
             const { data: comments } = await github.rest.issues.listComments({
               owner: context.repo.owner,
               repo: context.repo.repo,
@@ -104,7 +104,7 @@ jobs:
             });
 
             const existingComment = comments.find(c =>
-              c.body.includes('ChaosProof Chaos Simulation Report'));
+              c.body.includes('FaultZero Chaos Simulation Report'));
 
             if (existingComment) {
               await github.rest.issues.updateComment({

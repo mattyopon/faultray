@@ -1,4 +1,4 @@
-"""Grafana integration for ChaosProof -- annotations and dashboards."""
+"""Grafana integration for FaultZero -- annotations and dashboards."""
 
 from __future__ import annotations
 
@@ -47,7 +47,7 @@ class GrafanaClient:
         now_ms = int(time.time() * 1000)
         payload: dict = {
             "text": text,
-            "tags": tags or ["chaosproof", "simulation"],
+            "tags": tags or ["faultzero", "simulation"],
             "time": now_ms,
         }
         if dashboard_uid:

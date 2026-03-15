@@ -45,28 +45,28 @@ def scan(
 
     Examples:
         # Auto-discover AWS infrastructure
-        chaosproof scan --aws --region us-east-1
+        faultzero scan --aws --region us-east-1
 
         # Scan AWS with a named profile
-        chaosproof scan --aws --profile prod --region ap-northeast-1
+        faultzero scan --aws --profile prod --region ap-northeast-1
 
         # Scan Kubernetes cluster
-        chaosproof scan --k8s --context prod --namespace default
+        faultzero scan --k8s --context prod --namespace default
 
         # Scan GCP project
-        chaosproof scan --gcp --project my-project
+        faultzero scan --gcp --project my-project
 
         # Scan Azure subscription
-        chaosproof scan --azure --subscription SUB_ID --resource-group my-rg
+        faultzero scan --azure --subscription SUB_ID --resource-group my-rg
 
         # Discover from Prometheus
-        chaosproof scan --prometheus-url http://localhost:9090
+        faultzero scan --prometheus-url http://localhost:9090
 
         # Local system scan with custom output
-        chaosproof scan --output model.json
+        faultzero scan --output model.json
 
         # Scan and export as YAML
-        chaosproof scan --aws --save-yaml infra.yaml
+        faultzero scan --aws --save-yaml infra.yaml
     """
     if aws:
         from infrasim.discovery.aws_scanner import AWSScanner
@@ -195,10 +195,10 @@ def load(
 
     Examples:
         # Load from YAML
-        chaosproof load infra.yaml
+        faultzero load infra.yaml
 
         # Load and save to custom output path
-        chaosproof load infra.yaml --output custom-model.json
+        faultzero load infra.yaml --output custom-model.json
     """
     from infrasim.model.loader import load_yaml
 
@@ -227,10 +227,10 @@ def show(
 
     Examples:
         # Show default model
-        chaosproof show
+        faultzero show
 
         # Show a specific model file
-        chaosproof show --model my-model.json
+        faultzero show --model my-model.json
     """
     if not model.exists():
         console.print(f"[red]Model file not found: {model}[/]")
@@ -273,16 +273,16 @@ def tf_import(
 
     Examples:
         # Import from Terraform state file
-        chaosproof tf-import --state terraform.tfstate
+        faultzero tf-import --state terraform.tfstate
 
         # Import by running terraform show in a directory
-        chaosproof tf-import --dir ./terraform/
+        faultzero tf-import --dir ./terraform/
 
         # Import from current directory
-        chaosproof tf-import
+        faultzero tf-import
 
         # Import and save to custom output
-        chaosproof tf-import --state terraform.tfstate -o my-model.json
+        faultzero tf-import --state terraform.tfstate -o my-model.json
     """
     from infrasim.discovery.terraform import load_hcl_directory, load_tf_state_cmd, load_tf_state_file
 
@@ -324,16 +324,16 @@ def calibrate(
 
     Examples:
         # Calibrate from Prometheus
-        chaosproof calibrate --prometheus http://prometheus:9090
+        faultzero calibrate --prometheus http://prometheus:9090
 
         # Calibrate from AWS CloudWatch
-        chaosproof calibrate --cloudwatch --region us-east-1
+        faultzero calibrate --cloudwatch --region us-east-1
 
         # Calibrate and save to a new file
-        chaosproof calibrate --prometheus http://prometheus:9090 -o calibrated.json
+        faultzero calibrate --prometheus http://prometheus:9090 -o calibrated.json
 
         # Calibrate a YAML model
-        chaosproof calibrate --yaml infra.yaml --prometheus http://prometheus:9090
+        faultzero calibrate --yaml infra.yaml --prometheus http://prometheus:9090
     """
     from rich.table import Table
 
@@ -402,13 +402,13 @@ def tf_plan(
     Examples:
         # Analyze a Terraform plan file
         terraform plan -out=plan.out
-        chaosproof tf-plan plan.out
+        faultzero tf-plan plan.out
 
         # Analyze with HTML report
-        chaosproof tf-plan plan.out --html impact-report.html
+        faultzero tf-plan plan.out --html impact-report.html
 
         # Specify Terraform directory
-        chaosproof tf-plan plan.out --dir ./terraform/
+        faultzero tf-plan plan.out --dir ./terraform/
     """
     from infrasim.discovery.terraform import load_tf_plan_cmd
 

@@ -1,4 +1,4 @@
-"""Performance benchmarking tests for ChaosProof simulation engine.
+"""Performance benchmarking tests for FaultZero simulation engine.
 
 Verifies that simulations complete within acceptable time bounds
 across small, medium, and large infrastructure graphs.

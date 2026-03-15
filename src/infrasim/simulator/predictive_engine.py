@@ -1,4 +1,4 @@
-"""Predictive failure engine for ChaosProof.
+"""Predictive failure engine for FaultZero.
 
 Predicts future failures from degradation trends using linear extrapolation
 and exponential failure probability (CDF).  Uses ONLY the Python standard

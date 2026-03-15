@@ -10,7 +10,7 @@ from fastapi.testclient import TestClient
 
 @pytest.fixture
 def client():
-    """Create a test client for the ChaosProof API."""
+    """Create a test client for the FaultZero API."""
     from infrasim.api.server import app
     return TestClient(app, raise_server_exceptions=False)
 
@@ -22,7 +22,7 @@ class TestScorecardWidget:
         resp = client.get("/widget/scorecard")
         assert resp.status_code == 200
         assert "text/html" in resp.headers["content-type"]
-        assert "ChaosProof" in resp.text
+        assert "FaultZero" in resp.text
 
     def test_scorecard_contains_score(self, client):
         resp = client.get("/widget/scorecard")
@@ -45,7 +45,7 @@ class TestEmbedScript:
         resp = client.get("/widget/embed.js")
         assert resp.status_code == 200
         assert "javascript" in resp.headers["content-type"]
-        assert "ChaosProof" in resp.text
+        assert "FaultZero" in resp.text
         assert "renderCard" in resp.text
 
     def test_embed_js_creates_iframe(self, client):
@@ -61,7 +61,7 @@ class TestBadgeEndpoint:
         assert resp.status_code == 200
         data = resp.json()
         assert data["schemaVersion"] == 1
-        assert data["label"] == "ChaosProof"
+        assert data["label"] == "FaultZero"
         assert "/100" in data["message"]
         assert data["color"] in ("brightgreen", "yellow", "red")
 

@@ -1,4 +1,4 @@
-"""Slack bot for interactive ChaosProof commands.
+"""Slack bot for interactive FaultZero commands.
 
 Provides a Slack bot that responds to slash commands for running
 simulations, checking scores, and viewing trends. Does NOT require
@@ -48,10 +48,10 @@ def parse_slack_command(text: str, user_id: str = "", channel_id: str = "") -> S
     """Parse raw Slack command text into a SlackCommand.
 
     Expected formats:
-        /chaosproof simulate
-        /chaosproof score
-        /chaosproof trend --days 30
-        /chaosproof help
+        /faultzero simulate
+        /faultzero score
+        /faultzero trend --days 30
+        /faultzero help
     """
     parts = text.strip().split()
     if not parts:
@@ -74,8 +74,8 @@ def parse_slack_command(text: str, user_id: str = "", channel_id: str = "") -> S
     return SlackCommand(command=cmd, args=args, user_id=user_id, channel_id=channel_id)
 
 
-class ChaosProofSlackBot:
-    """Slack bot for interactive ChaosProof commands.
+class FaultZeroSlackBot:
+    """Slack bot for interactive FaultZero commands.
 
     Does not depend on slack_sdk. Builds Slack Block Kit JSON payloads
     that can be sent via webhook or returned as HTTP responses.
@@ -114,7 +114,7 @@ class ChaosProofSlackBot:
         graph = self._load_graph()
         if graph is None:
             return SlackResponse(
-                text="No model file found. Set model_path or use default chaosproof-model.json.",
+                text="No model file found. Set model_path or use default faultzero-model.json.",
                 ephemeral=True,
             )
 
@@ -161,7 +161,7 @@ class ChaosProofSlackBot:
         blocks = [
             {
                 "type": "header",
-                "text": {"type": "plain_text", "text": "ChaosProof Resilience Score"},
+                "text": {"type": "plain_text", "text": "FaultZero Resilience Score"},
             },
             {
                 "type": "section",
@@ -231,7 +231,7 @@ class ChaosProofSlackBot:
         blocks = [
             {
                 "type": "header",
-                "text": {"type": "plain_text", "text": f"ChaosProof Trend ({days} days)"},
+                "text": {"type": "plain_text", "text": f"FaultZero Trend ({days} days)"},
             },
             {
                 "type": "section",
@@ -264,11 +264,11 @@ class ChaosProofSlackBot:
 
     def _cmd_help(self, args: dict) -> SlackResponse:
         """Show available commands."""
-        text = "ChaosProof Slack Bot Commands"
+        text = "FaultZero Slack Bot Commands"
         blocks = [
             {
                 "type": "header",
-                "text": {"type": "plain_text", "text": "ChaosProof Slack Commands"},
+                "text": {"type": "plain_text", "text": "FaultZero Slack Commands"},
             },
             {
                 "type": "section",
@@ -276,11 +276,11 @@ class ChaosProofSlackBot:
                     "type": "mrkdwn",
                     "text": (
                         "*Available Commands:*\n\n"
-                        "`/chaosproof simulate` - Run chaos simulation and show results\n"
-                        "`/chaosproof score` - Show current resilience score\n"
-                        "`/chaosproof trend` - Show 30-day score trend\n"
-                        "`/chaosproof trend --days 90` - Show 90-day score trend\n"
-                        "`/chaosproof help` - Show this help message"
+                        "`/faultzero simulate` - Run chaos simulation and show results\n"
+                        "`/faultzero score` - Show current resilience score\n"
+                        "`/faultzero trend` - Show 30-day score trend\n"
+                        "`/faultzero trend --days 90` - Show 90-day score trend\n"
+                        "`/faultzero help` - Show this help message"
                     ),
                 },
             },
@@ -290,7 +290,7 @@ class ChaosProofSlackBot:
     def _cmd_unknown(self, args: dict) -> SlackResponse:
         """Handle unknown commands."""
         return SlackResponse(
-            text="Unknown command. Use `/chaosproof help` for available commands.",
+            text="Unknown command. Use `/faultzero help` for available commands.",
             ephemeral=True,
         )
 
@@ -315,7 +315,7 @@ class ChaosProofSlackBot:
                 "type": "header",
                 "text": {
                     "type": "plain_text",
-                    "text": "ChaosProof Simulation Results",
+                    "text": "FaultZero Simulation Results",
                 },
             },
             {
@@ -354,7 +354,7 @@ class ChaosProofSlackBot:
 
         path = self.model_path
         if path is None:
-            path = Path("chaosproof-model.json")
+            path = Path("faultzero-model.json")
 
         if not path.exists():
             return None

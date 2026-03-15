@@ -1,4 +1,4 @@
-"""FastAPI web dashboard for ChaosProof."""
+"""FastAPI web dashboard for FaultZero."""
 
 from __future__ import annotations
 
@@ -67,18 +67,18 @@ async def lifespan(application: FastAPI):
     from infrasim.api.database import init_db
     try:
         await init_db()
-        logger.info("ChaosProof database initialised.")
+        logger.info("FaultZero database initialised.")
     except Exception:
         logger.warning("Database initialisation skipped (aiosqlite may not be installed).")
 
     # Start Prometheus background monitor if configured
     _prom_monitor = None
-    prom_url = os.environ.get("CHAOSPROOF_PROMETHEUS_URL", os.environ.get("INFRASIM_PROMETHEUS_URL"))
+    prom_url = os.environ.get("FAULTZERO_PROMETHEUS_URL", os.environ.get("CHAOSPROOF_PROMETHEUS_URL", os.environ.get("INFRASIM_PROMETHEUS_URL")))
     if prom_url:
         try:
             from infrasim.discovery.prometheus_monitor import PrometheusMonitor
 
-            interval = int(os.environ.get("CHAOSPROOF_PROMETHEUS_INTERVAL", os.environ.get("INFRASIM_PROMETHEUS_INTERVAL", "60")))
+            interval = int(os.environ.get("FAULTZERO_PROMETHEUS_INTERVAL", os.environ.get("CHAOSPROOF_PROMETHEUS_INTERVAL", os.environ.get("INFRASIM_PROMETHEUS_INTERVAL", "60"))))
             _prom_monitor = PrometheusMonitor(prom_url, get_graph(), interval)
             await _prom_monitor.start()
             logger.info("Prometheus monitor started: %s (interval=%ds)", prom_url, interval)
@@ -93,7 +93,7 @@ async def lifespan(application: FastAPI):
 
 
 app = FastAPI(
-    title="ChaosProof API",
+    title="FaultZero API",
     description="Zero-risk infrastructure chaos engineering platform — simulate failures without touching production",
     version="1.0.0",
     docs_url="/docs",
@@ -102,9 +102,9 @@ app = FastAPI(
 )
 
 # ---------------------------------------------------------------------------
-# CORS middleware — origins configurable via CHAOSPROOF_CORS_ORIGINS env var
+# CORS middleware — origins configurable via FAULTZERO_CORS_ORIGINS env var (CHAOSPROOF_CORS_ORIGINS / INFRASIM_CORS_ORIGINS also accepted)
 # ---------------------------------------------------------------------------
-_cors_origins_raw = os.environ.get("CHAOSPROOF_CORS_ORIGINS", os.environ.get("INFRASIM_CORS_ORIGINS", "*"))
+_cors_origins_raw = os.environ.get("FAULTZERO_CORS_ORIGINS", os.environ.get("CHAOSPROOF_CORS_ORIGINS", os.environ.get("INFRASIM_CORS_ORIGINS", "*")))
 _cors_origins: list[str] = [
     origin.strip()
     for origin in _cors_origins_raw.split(",")
@@ -168,6 +168,20 @@ app.include_router(insurance_router)
 from infrasim.api.widget import widget_router
 
 app.include_router(widget_router)
+
+# ---------------------------------------------------------------------------
+# GraphQL-like API router
+# ---------------------------------------------------------------------------
+from infrasim.api.graphql_api import graphql_router
+
+app.include_router(graphql_router)
+
+# ---------------------------------------------------------------------------
+# Team Workspace API router
+# ---------------------------------------------------------------------------
+from infrasim.api.teams import teams_router
+
+app.include_router(teams_router)
 
 
 app.mount("/static", StaticFiles(directory=str(BASE_DIR / "static")), name="static")
@@ -833,8 +847,9 @@ async def list_audit_logs(
 async def oauth_login(provider: str):
     """Redirect to the OAuth provider's authorization page.
 
-    Only active when ``CHAOSPROOF_OAUTH_{PROVIDER}_CLIENT_ID`` and
-    ``CHAOSPROOF_OAUTH_{PROVIDER}_CLIENT_SECRET`` env vars are set.
+    Only active when ``FAULTZERO_OAUTH_{PROVIDER}_CLIENT_ID`` and
+    ``FAULTZERO_OAUTH_{PROVIDER}_CLIENT_SECRET`` env vars are set
+    (``CHAOSPROOF_OAUTH_*`` and ``INFRASIM_OAUTH_*`` also accepted as fallbacks).
     """
     from infrasim.api.oauth import OAuthConfig, generate_oauth_url
 
@@ -1125,7 +1140,7 @@ async def api_compliance_check(
 
 @app.post("/api/slack/commands", response_class=JSONResponse)
 async def slack_command_handler(request: Request):
-    """Handle Slack slash commands for ChaosProof.
+    """Handle Slack slash commands for FaultZero.
 
     Expected form data from Slack:
         text: "simulate", "score", "trend", "help"
@@ -1149,12 +1164,12 @@ async def slack_command_handler(request: Request):
             user_id = body.get("user_id", "")
             channel_id = body.get("channel_id", "")
 
-        from infrasim.integrations.slack_bot import ChaosProofSlackBot, parse_slack_command
+        from infrasim.integrations.slack_bot import FaultZeroSlackBot, parse_slack_command
 
         # Use the currently loaded graph's model path if available
         model_path = _model_path
 
-        bot = ChaosProofSlackBot(model_path=model_path)
+        bot = FaultZeroSlackBot(model_path=model_path)
         command = parse_slack_command(str(text), user_id=str(user_id), channel_id=str(channel_id))
         response = bot.handle_command(command)
 

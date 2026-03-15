@@ -1,4 +1,4 @@
-"""OpsGenie alert integration for ChaosProof."""
+"""OpsGenie alert integration for FaultZero."""
 
 from __future__ import annotations
 
@@ -39,9 +39,9 @@ class OpsGenieClient:
                     "message": message,
                     "description": description,
                     "priority": priority,
-                    "tags": tags or ["chaosproof"],
+                    "tags": tags or ["faultzero"],
                     "details": details or {},
-                    "source": "ChaosProof",
+                    "source": "FaultZero",
                 },
                 timeout=10.0,
             )
@@ -54,7 +54,7 @@ class OpsGenieClient:
             resp = await client.post(
                 f"{self.base_url}/v2/alerts/{alert_id}/close",
                 headers=self._headers(),
-                json={"note": note or "Closed by ChaosProof"},
+                json={"note": note or "Closed by FaultZero"},
                 timeout=10.0,
             )
             resp.raise_for_status()

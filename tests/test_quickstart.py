@@ -326,7 +326,7 @@ class TestPlanCLI:
         assert result.exit_code == 0
         assert html_path.exists()
         content = html_path.read_text()
-        assert "ChaosProof" in content
+        assert "FaultZero" in content
         assert "Phase" in content
 
     def test_plan_missing_model(self):

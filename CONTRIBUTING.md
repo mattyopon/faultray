@@ -1,17 +1,17 @@
-# Contributing to ChaosProof
+# Contributing to FaultZero
 
-Thank you for your interest in contributing to ChaosProof!
+Thank you for your interest in contributing to FaultZero!
 
-# ChaosProof へのコントリビューション
+# FaultZero へのコントリビューション
 
-ChaosProof への貢献に興味を持っていただきありがとうございます！
+FaultZero への貢献に興味を持っていただきありがとうございます！
 
 ## Quick Start / クイックスタート
 
 ```bash
 # Clone the repository
 git clone https://github.com/mattyopon/infrasim.git
-cd chaosproof
+cd faultzero
 
 # Create virtual environment
 python -m venv .venv
@@ -28,7 +28,7 @@ pytest tests/ -v
 ruff check src/ tests/
 
 # Run the demo
-chaosproof demo
+faultzero demo
 ```
 
 ## Development Guidelines / 開発ガイドライン
@@ -46,7 +46,7 @@ chaosproof demo
 
 ### Commit Messages
 - Use conventional commits: `feat:`, `fix:`, `docs:`, `test:`, `refactor:`
-- Include version bump in feat/fix commits (e.g., `feat: ChaosProof vX.Y - description`)
+- Include version bump in feat/fix commits (e.g., `feat: FaultZero vX.Y - description`)
 
 ### Pull Requests
 1. Fork the repository

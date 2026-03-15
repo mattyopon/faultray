@@ -1,4 +1,4 @@
-"""Billing foundation -- pricing tiers and usage tracking for ChaosProof SaaS."""
+"""Billing foundation -- pricing tiers and usage tracking for FaultZero SaaS."""
 
 from __future__ import annotations
 

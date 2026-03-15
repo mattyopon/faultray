@@ -49,7 +49,7 @@ def _check_gcp_libs() -> None:
     except ImportError:
         raise RuntimeError(
             "google-cloud-compute is required for GCP scanning. "
-            "Install with: pip install 'chaosproof[gcp]'"
+            "Install with: pip install 'faultzero[gcp]'"
         )
 
 

@@ -1,4 +1,4 @@
-"""Tests for ChaosProof feature flags."""
+"""Tests for FaultZero feature flags."""
 
 import pytest
 

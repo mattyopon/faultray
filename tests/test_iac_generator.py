@@ -284,7 +284,7 @@ class TestReadmeGeneration:
         plan = gen.generate()
 
         readme = plan.readme_content
-        assert "# ChaosProof Remediation Plan" in readme
+        assert "# FaultZero Remediation Plan" in readme
         assert "Summary" in readme
         assert "Resilience Score" in readme
         assert "How to Apply" in readme
@@ -324,7 +324,7 @@ class TestWriteToDirectory:
         # README should exist
         assert (output_dir / "README.md").exists()
         readme_text = (output_dir / "README.md").read_text()
-        assert "ChaosProof" in readme_text
+        assert "FaultZero" in readme_text
 
         # All plan files should exist on disk
         for f in plan.files:

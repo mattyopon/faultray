@@ -20,7 +20,7 @@ class ResultCache:
     """
 
     def __init__(self, cache_dir: Path | None = None) -> None:
-        self.db_path = (cache_dir or Path.home() / ".chaosproof") / "cache.db"
+        self.db_path = (cache_dir or Path.home() / ".faultzero") / "cache.db"
         self.db_path.parent.mkdir(parents=True, exist_ok=True)
         self._hits = 0
         self._misses = 0

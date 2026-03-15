@@ -1,4 +1,4 @@
-"""Auto-remediation pipeline for ChaosProof.
+"""Auto-remediation pipeline for FaultZero.
 
 Orchestrates the full scan -> evaluate -> fix -> validate -> apply cycle.
 Dry-run by default for safety.

@@ -1,4 +1,4 @@
-"""Tests for RBAC (Role-Based Access Control) in ChaosProof."""
+"""Tests for RBAC (Role-Based Access Control) in FaultZero."""
 
 from __future__ import annotations
 

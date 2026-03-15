@@ -19,16 +19,16 @@ def history(
 
     Examples:
         # Show 90-day trend (default)
-        chaosproof history
+        faultzero history
 
         # Show 30-day trend
-        chaosproof history --days 30
+        faultzero history --days 30
 
         # Export as JSON
-        chaosproof history --json
+        faultzero history --json
 
         # Use custom database path
-        chaosproof history --db ./my-history.db
+        faultzero history --db ./my-history.db
     """
     from rich.panel import Panel
     from rich.table import Table
@@ -46,7 +46,7 @@ def history(
     if not trend.entries:
         console.print(
             "\n[yellow]No history data found.[/]\n"
-            "[dim]Run 'chaosproof evaluate' or 'chaosproof simulate' to start tracking.[/]"
+            "[dim]Run 'faultzero evaluate' or 'faultzero simulate' to start tracking.[/]"
         )
         return
 
@@ -78,7 +78,7 @@ def history(
     console.print()
     console.print(Panel(
         summary,
-        title=f"[bold]ChaosProof Score Trend ({days} days)[/]",
+        title=f"[bold]FaultZero Score Trend ({days} days)[/]",
         border_style=color,
     ))
 

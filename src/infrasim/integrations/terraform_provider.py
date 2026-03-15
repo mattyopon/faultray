@@ -1,11 +1,11 @@
-"""Terraform ChaosProof Provider - integrate ChaosProof into Terraform workflow.
+"""Terraform FaultZero Provider - integrate FaultZero into Terraform workflow.
 
 Analyzes terraform plan files for resilience impact by building before/after
 InfraGraphs and comparing their simulation results.
 
 Usage:
     terraform plan -out=plan.out
-    chaosproof tf-check plan.out --fail-on-regression
+    faultzero tf-check plan.out --fail-on-regression
 """
 
 from __future__ import annotations
@@ -41,12 +41,12 @@ class TerraformPlanAnalysis:
     changes: list[dict] = field(default_factory=list)
 
 
-class TerraformChaosProofProvider:
-    """Integrate ChaosProof into Terraform workflow.
+class TerraformFaultZeroProvider:
+    """Integrate FaultZero into Terraform workflow.
 
     Usage in Terraform:
         terraform plan -out=plan.out
-        chaosproof tf-check plan.out --fail-on-regression
+        faultzero tf-check plan.out --fail-on-regression
     """
 
     def __init__(self, tf_dir: Path | None = None) -> None:
@@ -171,17 +171,17 @@ class TerraformChaosProofProvider:
         return analysis.score_after >= min_score
 
     def generate_sentinel_policy(self, min_score: float = 60.0) -> str:
-        """Generate a HashiCorp Sentinel policy for ChaosProof checks.
+        """Generate a HashiCorp Sentinel policy for FaultZero checks.
 
         This generates a Sentinel policy that can be used with Terraform
         Enterprise/Cloud to enforce resilience score thresholds.
         """
         return textwrap.dedent(f"""\
-            # ChaosProof Sentinel Policy
+            # FaultZero Sentinel Policy
             # Enforces minimum resilience score for infrastructure changes.
             #
             # Install: Add to your Sentinel policy set in Terraform Cloud/Enterprise.
-            # Requires: ChaosProof CLI installed on the Sentinel runner.
+            # Requires: FaultZero CLI installed on the Sentinel runner.
 
             import "tfplan/v2" as tfplan
             import "subprocess"
@@ -189,16 +189,16 @@ class TerraformChaosProofProvider:
             # Minimum resilience score required for plan approval
             min_resilience_score = {min_score}
 
-            # Run ChaosProof analysis on the plan
-            chaosproof_check = rule {{
-                result = subprocess.run(["chaosproof", "tf-check", "--min-score", string(min_resilience_score), "--json"])
+            # Run FaultZero analysis on the plan
+            faultzero_check = rule {{
+                result = subprocess.run(["faultzero", "tf-check", "--min-score", string(min_resilience_score), "--json"])
                 score_data = json.unmarshal(result.stdout)
                 score_data["score_after"] >= min_resilience_score
             }}
 
             # Main policy rule
             main = rule {{
-                chaosproof_check
+                faultzero_check
             }}
         """)
 

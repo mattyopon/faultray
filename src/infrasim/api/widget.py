@@ -58,7 +58,7 @@ async def scorecard_widget(project_id: str = "default"):
 <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
             padding: 16px; border-radius: 8px;
             background: #0d1117; color: #e6edf3; max-width: 300px;">
-    <h3 style="margin: 0 0 8px; color: #58a6ff;">ChaosProof</h3>
+    <h3 style="margin: 0 0 8px; color: #58a6ff;">FaultZero</h3>
     <div style="font-size: 2rem; font-weight: bold; color: {color};">{score}/100</div>
     <div style="margin-top: 8px; color: #8b949e;">{status}</div>
     <div style="margin-top: 4px; font-size: 0.75rem; color: #484f58;">Project: {project_id}</div>
@@ -82,7 +82,7 @@ async def badge_endpoint(project_id: str = "default"):
 
     return {
         "schemaVersion": 1,
-        "label": "ChaosProof",
+        "label": "FaultZero",
         "message": f"{score}/100",
         "color": badge_color,
     }
@@ -94,17 +94,17 @@ async def embed_script():
 
     Usage::
 
-        <script src="https://your-chaosproof-instance/widget/embed.js"></script>
-        <div id="chaosproof-widget"></div>
+        <script src="https://your-faultzero-instance/widget/embed.js"></script>
+        <div id="faultzero-widget"></div>
         <script>
-            ChaosProof.renderCard(
-                document.getElementById('chaosproof-widget'),
-                'https://your-chaosproof-instance'
+            FaultZero.renderCard(
+                document.getElementById('faultzero-widget'),
+                'https://your-faultzero-instance'
             );
         </script>
     """
     js = """\
-window.ChaosProof = {
+window.FaultZero = {
     renderCard: function(container, apiUrl, projectId) {
         var iframe = document.createElement('iframe');
         var pid = projectId || 'default';

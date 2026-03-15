@@ -53,7 +53,7 @@ def _check_azure_libs() -> None:
     except ImportError:
         raise RuntimeError(
             "azure-identity is required for Azure scanning. "
-            "Install with: pip install 'chaosproof[azure]'"
+            "Install with: pip install 'faultzero[azure]'"
         )
 
 

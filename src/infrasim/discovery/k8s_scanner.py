@@ -38,7 +38,7 @@ def _check_k8s_lib() -> None:
     except ImportError:
         raise RuntimeError(
             "kubernetes is required for K8s scanning. "
-            "Install with: pip install 'chaosproof[k8s]'"
+            "Install with: pip install 'faultzero[k8s]'"
         )
 
 

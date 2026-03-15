@@ -9,7 +9,7 @@ from unittest.mock import MagicMock, patch
 import pytest
 
 from infrasim.integrations.slack_bot import (
-    ChaosProofSlackBot,
+    FaultZeroSlackBot,
     SlackCommand,
     SlackResponse,
     parse_slack_command,
@@ -138,7 +138,7 @@ class TestSlackResponse:
 
 class TestHelpCommand:
     def test_help_response(self):
-        bot = ChaosProofSlackBot()
+        bot = FaultZeroSlackBot()
         cmd = SlackCommand(command="help")
         resp = bot.handle_command(cmd)
 
@@ -153,7 +153,7 @@ class TestHelpCommand:
 
 class TestUnknownCommand:
     def test_unknown_response(self):
-        bot = ChaosProofSlackBot()
+        bot = FaultZeroSlackBot()
         cmd = SlackCommand(command="foobar")
         resp = bot.handle_command(cmd)
 
@@ -168,7 +168,7 @@ class TestUnknownCommand:
 class TestScoreCommand:
     def test_score_with_model(self, tmp_path):
         model_path = _save_model(tmp_path)
-        bot = ChaosProofSlackBot(model_path=model_path)
+        bot = FaultZeroSlackBot(model_path=model_path)
         cmd = SlackCommand(command="score")
         resp = bot.handle_command(cmd)
 
@@ -177,7 +177,7 @@ class TestScoreCommand:
         assert resp.ephemeral is False
 
     def test_score_no_model(self, tmp_path):
-        bot = ChaosProofSlackBot(model_path=tmp_path / "nonexistent.json")
+        bot = FaultZeroSlackBot(model_path=tmp_path / "nonexistent.json")
         cmd = SlackCommand(command="score")
         resp = bot.handle_command(cmd)
 
@@ -192,7 +192,7 @@ class TestScoreCommand:
 class TestSimulateCommand:
     def test_simulate_with_model(self, tmp_path):
         model_path = _save_model(tmp_path)
-        bot = ChaosProofSlackBot(model_path=model_path)
+        bot = FaultZeroSlackBot(model_path=model_path)
         cmd = SlackCommand(command="simulate")
         resp = bot.handle_command(cmd)
 
@@ -201,7 +201,7 @@ class TestSimulateCommand:
         assert resp.ephemeral is False
 
     def test_simulate_no_model(self, tmp_path):
-        bot = ChaosProofSlackBot(model_path=tmp_path / "nonexistent.json")
+        bot = FaultZeroSlackBot(model_path=tmp_path / "nonexistent.json")
         cmd = SlackCommand(command="simulate")
         resp = bot.handle_command(cmd)
 
@@ -214,7 +214,7 @@ class TestSimulateCommand:
 
 class TestTrendCommand:
     def test_trend_no_history(self, tmp_path):
-        bot = ChaosProofSlackBot(model_path=tmp_path / "nonexistent.json")
+        bot = FaultZeroSlackBot(model_path=tmp_path / "nonexistent.json")
         cmd = SlackCommand(command="trend")
         # This should handle gracefully when no history exists
         resp = bot.handle_command(cmd)
@@ -225,12 +225,12 @@ class TestTrendCommand:
         # Set up history first
         from infrasim.history import HistoryTracker
 
-        db_path = Path.home() / ".chaosproof" / "history.db"
+        db_path = Path.home() / ".faultzero" / "history.db"
         tracker = HistoryTracker(db_path=db_path)
         graph = _make_graph()
         tracker.record(graph)
 
-        bot = ChaosProofSlackBot()
+        bot = FaultZeroSlackBot()
         cmd = SlackCommand(command="trend", args={"days": "30"})
         resp = bot.handle_command(cmd)
 
@@ -243,7 +243,7 @@ class TestTrendCommand:
 
 class TestFormatBlocks:
     def test_format_score_blocks_high(self):
-        bot = ChaosProofSlackBot()
+        bot = FaultZeroSlackBot()
         blocks = bot._format_score_blocks(90.0, 0, 1, 10, 11)
 
         assert len(blocks) >= 2
@@ -259,7 +259,7 @@ class TestFormatBlocks:
         assert found_green
 
     def test_format_score_blocks_low(self):
-        bot = ChaosProofSlackBot()
+        bot = FaultZeroSlackBot()
         blocks = bot._format_score_blocks(40.0, 5, 3, 2, 10)
 
         assert len(blocks) >= 2
@@ -271,7 +271,7 @@ class TestFormatBlocks:
         assert found_red
 
     def test_format_error_blocks(self):
-        bot = ChaosProofSlackBot()
+        bot = FaultZeroSlackBot()
         blocks = bot._format_error_blocks("test_cmd", ValueError("test error"))
 
         assert len(blocks) >= 1
@@ -280,7 +280,7 @@ class TestFormatBlocks:
 
     def test_error_handling_in_command(self):
         """Commands that raise exceptions should return error blocks."""
-        bot = ChaosProofSlackBot()
+        bot = FaultZeroSlackBot()
 
         # Patch _cmd_simulate to raise
         with patch.object(bot, "_cmd_simulate", side_effect=RuntimeError("boom")):

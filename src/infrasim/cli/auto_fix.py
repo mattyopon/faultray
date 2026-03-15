@@ -19,7 +19,7 @@ from infrasim.cli.main import (
 def auto_fix(
     model: Path = typer.Argument(
         None,
-        help="Model file path (JSON or YAML). Defaults to chaosproof-model.json.",
+        help="Model file path (JSON or YAML). Defaults to faultzero-model.json.",
     ),
     target_score: float = typer.Option(
         90.0, "--target-score", "-t", help="Target resilience score (0-100)"
@@ -42,16 +42,16 @@ def auto_fix(
 
     Examples:
         # Preview remediation plan (dry-run, safe)
-        chaosproof auto-fix model.yaml --target-score 90
+        faultzero auto-fix model.yaml --target-score 90
 
         # Apply remediations (writes files to disk)
-        chaosproof auto-fix model.yaml --target-score 90 --apply
+        faultzero auto-fix model.yaml --target-score 90 --apply
 
         # JSON output for automation
-        chaosproof auto-fix model.yaml --json
+        faultzero auto-fix model.yaml --json
 
         # Custom output directory
-        chaosproof auto-fix model.yaml --apply --output ./fixes/
+        faultzero auto-fix model.yaml --apply --output ./fixes/
     """
     from rich.panel import Panel
     from rich.table import Table
@@ -147,5 +147,5 @@ def auto_fix(
     if dry_run and result.files_generated > 0:
         console.print(
             f"\n[dim]To apply these changes, run:[/]\n"
-            f"  chaosproof auto-fix {resolved_model} --target-score {target_score:.0f} --apply\n"
+            f"  faultzero auto-fix {resolved_model} --target-score {target_score:.0f} --apply\n"
         )

@@ -234,7 +234,7 @@ class TestOpsGenieNotification:
             call_kwargs = client_instance.post.call_args
             payload = call_kwargs.kwargs.get("json") or call_kwargs[1].get("json")
             assert payload["priority"] == "P1"
-            assert "ChaosProof" in payload["source"]
+            assert "FaultZero" in payload["source"]
 
             # Verify auth header
             headers = call_kwargs.kwargs.get("headers") or call_kwargs[1].get("headers")

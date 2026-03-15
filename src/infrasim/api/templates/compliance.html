@@ -1,7 +1,7 @@
 {% extends "base.html" %}
 {% set active_page = "compliance" %}
 
-{% block title %}ChaosProof - Compliance{% endblock %}
+{% block title %}FaultZero - Compliance{% endblock %}
 {% block page_title %}Compliance Framework{% endblock %}
 {% block page_subtitle %}<span class="page-subtitle">Regulatory compliance assessment and tracking</span>{% endblock %}
 
@@ -66,7 +66,7 @@
                             {% set dora_controls = [
                                 {"id": "DORA-ICT-01", "title": "ICT Risk Management Framework", "status": "PASS", "desc": "Risk management policies and procedures established"},
                                 {"id": "DORA-ICT-02", "title": "ICT Incident Reporting", "status": "PASS", "desc": "Major incident classification and reporting mechanisms"},
-                                {"id": "DORA-ICT-03", "title": "Digital Operational Resilience Testing", "status": "PASS", "desc": "Regular resilience testing program with ChaosProof"},
+                                {"id": "DORA-ICT-03", "title": "Digital Operational Resilience Testing", "status": "PASS", "desc": "Regular resilience testing program with FaultZero"},
                                 {"id": "DORA-ICT-04", "title": "ICT Third-Party Risk", "status": "FAIL", "desc": "Third-party provider risk assessment incomplete"},
                                 {"id": "DORA-ICT-05", "title": "Information Sharing", "status": "PARTIAL", "desc": "Threat intelligence sharing partially implemented"},
                                 {"id": "DORA-ICT-06", "title": "Threat-Led Penetration Testing", "status": "PASS", "desc": "TLPT program aligned with TIBER-EU framework"},

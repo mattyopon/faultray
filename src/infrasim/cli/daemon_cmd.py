@@ -54,19 +54,19 @@ def daemon_command(
 
     Examples:
         # Start daemon with default 1-hour interval
-        chaosproof daemon
+        faultzero daemon
 
         # Custom interval
-        chaosproof daemon --interval 30m
+        faultzero daemon --interval 30m
 
         # Monitor with Slack notifications
-        chaosproof daemon --slack-webhook https://hooks.slack.com/...
+        faultzero daemon --slack-webhook https://hooks.slack.com/...
 
         # Monitor with PagerDuty alerts
-        chaosproof daemon --pagerduty-key ROUTING_KEY
+        faultzero daemon --pagerduty-key ROUTING_KEY
 
         # Custom model and 15-minute interval
-        chaosproof daemon --model my-model.json --interval 15m
+        faultzero daemon --model my-model.json --interval 15m
     """
     if not model.exists():
         console.print(f"[red]Model file not found: {model}[/]")
@@ -92,15 +92,15 @@ def daemon_command(
     if teams_webhook:
         notification_config["teams_webhook"] = teams_webhook
 
-    console.print(f"[cyan]Starting ChaosProof daemon...[/]")
+    console.print(f"[cyan]Starting FaultZero daemon...[/]")
     console.print(f"  Model: {model}")
     console.print(f"  Interval: {interval} ({interval_seconds}s)")
     console.print(f"  Notifications: {list(notification_config.keys()) or ['none']}")
     console.print(f"  Press Ctrl+C to stop.\n")
 
-    from infrasim.daemon import ChaosProofDaemon
+    from infrasim.daemon import FaultZeroDaemon
 
-    daemon = ChaosProofDaemon(
+    daemon = FaultZeroDaemon(
         model_path=model,
         interval_seconds=interval_seconds,
         notification_config=notification_config,

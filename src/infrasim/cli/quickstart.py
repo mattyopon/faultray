@@ -1,4 +1,4 @@
-"""Interactive quickstart command for ChaosProof."""
+"""Interactive quickstart command for FaultZero."""
 
 from __future__ import annotations
 
@@ -68,23 +68,23 @@ def quickstart(
 
     Examples:
         # Interactive mode (prompts for choices)
-        chaosproof quickstart
+        faultzero quickstart
 
         # Non-interactive with template
-        chaosproof quickstart --template fintech
+        faultzero quickstart --template fintech
 
         # Use ecommerce template with custom output
-        chaosproof quickstart --template ecommerce --output my-infra.yaml
+        faultzero quickstart --template ecommerce --output my-infra.yaml
 
         # Skip simulation
-        chaosproof quickstart --template saas --no-simulate
+        faultzero quickstart --template saas --no-simulate
 
         # Generate and open web dashboard
-        chaosproof quickstart --template web-app --web
+        faultzero quickstart --template web-app --web
     """
     console.print(Panel(
-        "[bold cyan]ChaosProof Quickstart[/]\n\n"
-        "This wizard helps you get started with ChaosProof in seconds.\n"
+        "[bold cyan]FaultZero Quickstart[/]\n\n"
+        "This wizard helps you get started with FaultZero in seconds.\n"
         "Choose an industry template, run your first chaos simulation,\n"
         "and explore the results in the web dashboard.",
         border_style="cyan",
@@ -174,6 +174,6 @@ def quickstart(
         console.print(
             "\n[dim]Next steps:[/]\n"
             f"  1. Edit [cyan]{output}[/] to customize your infrastructure\n"
-            "  2. Run [cyan]chaosproof simulate {output}[/] for detailed analysis\n"
-            "  3. Run [cyan]chaosproof serve[/] to open the web dashboard\n"
+            "  2. Run [cyan]faultzero simulate {output}[/] for detailed analysis\n"
+            "  3. Run [cyan]faultzero serve[/] to open the web dashboard\n"
         )

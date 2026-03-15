@@ -1,4 +1,4 @@
-"""Game Day simulation engine for ChaosProof.
+"""Game Day simulation engine for FaultZero.
 
 Simulates structured Game Day exercises by executing a sequence of planned
 steps — fault injections, health verifications, and manual checks — against

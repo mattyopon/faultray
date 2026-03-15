@@ -1,4 +1,4 @@
-"""API key authentication and RBAC for ChaosProof."""
+"""API key authentication and RBAC for FaultZero."""
 
 from __future__ import annotations
 

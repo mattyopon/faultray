@@ -21,10 +21,10 @@ def diff_command(
 
     Examples:
         # Compare two result files
-        chaosproof diff before.json after.json
+        faultzero diff before.json after.json
 
         # JSON output for CI/CD
-        chaosproof diff before.json after.json --json
+        faultzero diff before.json after.json --json
     """
     if not before.exists():
         console.print(f"[red]File not found: {before}[/]")

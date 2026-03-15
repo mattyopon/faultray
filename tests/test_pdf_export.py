@@ -74,7 +74,7 @@ class TestPdfReadyHtml:
 
     def test_contains_original_html_content(self, demo_report, demo_graph):
         html = generate_pdf_ready_html(demo_report, demo_graph)
-        assert "ChaosProof" in html or "InfraSim" in html
+        assert "FaultZero" in html or "InfraSim" in html
         assert "</html>" in html
 
     def test_save_pdf_ready_html(self, demo_report, demo_graph, tmp_path):
@@ -98,7 +98,7 @@ class TestPdfReadyHtml:
 class TestMarkdownExport:
     def test_contains_header(self, demo_report, demo_graph):
         md = export_markdown(demo_report, demo_graph)
-        assert "# ChaosProof Chaos Simulation Report" in md
+        assert "# FaultZero Chaos Simulation Report" in md
 
     def test_contains_summary_table(self, demo_report, demo_graph):
         md = export_markdown(demo_report, demo_graph)
@@ -160,7 +160,7 @@ class TestCliFlags:
         assert result.exit_code == 0
         assert output.exists()
         content = output.read_text(encoding="utf-8")
-        assert "# ChaosProof" in content
+        assert "# FaultZero" in content
 
     def test_both_flags(self, tmp_path):
         model_path = self._create_model_file(tmp_path)

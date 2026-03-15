@@ -165,40 +165,40 @@ def simulate(
 
     Examples:
         # Basic simulation
-        chaosproof simulate
+        faultzero simulate
 
         # Simulate with a specific model
-        chaosproof simulate --model my-model.json
+        faultzero simulate --model my-model.json
 
         # Run dynamic time-stepped simulation
-        chaosproof simulate --dynamic
+        faultzero simulate --dynamic
 
         # Run with AI analysis
-        chaosproof simulate --analyze
+        faultzero simulate --analyze
 
         # Export HTML report
-        chaosproof simulate --html report.html
+        faultzero simulate --html report.html
 
         # Export Markdown report
-        chaosproof simulate --md report.md
+        faultzero simulate --md report.md
 
         # JSON output for CI/CD pipelines
-        chaosproof simulate --json
+        faultzero simulate --json
 
         # Limit scenario count
-        chaosproof simulate --max-scenarios 50
+        faultzero simulate --max-scenarios 50
 
         # Save baseline for regression detection
-        chaosproof simulate --save-baseline baseline.json
+        faultzero simulate --save-baseline baseline.json
 
         # Compare against a baseline
-        chaosproof simulate --baseline baseline.json
+        faultzero simulate --baseline baseline.json
 
         # Load custom plugins
-        chaosproof simulate --plugins-dir ./my-plugins/
+        faultzero simulate --plugins-dir ./my-plugins/
 
         # Send notifications on completion
-        chaosproof simulate --slack-webhook https://hooks.slack.com/...
+        faultzero simulate --slack-webhook https://hooks.slack.com/...
     """
     if not model.exists():
         console.print(f"[red]Model file not found: {model}[/]")
@@ -355,19 +355,19 @@ def dynamic(
 
     Examples:
         # Run dynamic simulation with defaults
-        chaosproof dynamic
+        faultzero dynamic
 
         # Custom duration and step interval
-        chaosproof dynamic --duration 600 --step 10
+        faultzero dynamic --duration 600 --step 10
 
         # Export HTML report
-        chaosproof dynamic --html dynamic-report.html
+        faultzero dynamic --html dynamic-report.html
 
         # JSON output
-        chaosproof dynamic --json
+        faultzero dynamic --json
 
         # Use a specific model
-        chaosproof dynamic --model my-model.json
+        faultzero dynamic --model my-model.json
     """
     if not model.exists():
         console.print(f"[red]Model file not found: {model}[/]")

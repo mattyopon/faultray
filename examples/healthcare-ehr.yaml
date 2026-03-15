@@ -1,8 +1,8 @@
-# ChaosProof - Healthcare EHR Infrastructure
+# FaultZero - Healthcare EHR Infrastructure
 #
 # HIPAA compliant Electronic Health Record system
 # Load with:
-#   chaosproof load examples/healthcare-ehr.yaml
+#   faultzero load examples/healthcare-ehr.yaml
 #
 # Architecture:
 #   API Gateway -> Auth Service -> Patient API (x2)

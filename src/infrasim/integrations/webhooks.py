@@ -24,7 +24,7 @@ async def send_slack_notification(webhook_url: str, report_summary: dict) -> boo
     blocks = [
         {
             "type": "header",
-            "text": {"type": "plain_text", "text": "ChaosProof Simulation Report"},
+            "text": {"type": "plain_text", "text": "FaultZero Simulation Report"},
         },
         {
             "type": "section",
@@ -47,7 +47,7 @@ async def send_slack_notification(webhook_url: str, report_summary: dict) -> boo
                     "type": "mrkdwn",
                     "text": (
                         ":rotating_light: *Critical findings detected!* "
-                        "Run `chaosproof analyze` for recommendations."
+                        "Run `faultzero analyze` for recommendations."
                     ),
                 },
             }
@@ -73,11 +73,11 @@ async def send_pagerduty_event(routing_key: str, report_summary: dict) -> bool:
         "event_action": "trigger",
         "payload": {
             "summary": (
-                f"ChaosProof: {report_summary['critical_count']} "
+                f"FaultZero: {report_summary['critical_count']} "
                 "critical infrastructure risks detected"
             ),
             "severity": "critical",
-            "source": "chaosproof",
+            "source": "faultzero",
             "custom_details": report_summary,
         },
     }
@@ -130,7 +130,7 @@ async def send_teams(webhook_url: str, report_summary: dict) -> bool:
                             "type": "TextBlock",
                             "size": "Large",
                             "weight": "Bolder",
-                            "text": "ChaosProof Simulation Report",
+                            "text": "FaultZero Simulation Report",
                         },
                         {
                             "type": "FactSet",
@@ -151,7 +151,7 @@ async def send_teams(webhook_url: str, report_summary: dict) -> bool:
         card["attachments"][0]["content"]["body"].append(
             {
                 "type": "TextBlock",
-                "text": "Critical findings detected! Run `chaosproof analyze` for recommendations.",
+                "text": "Critical findings detected! Run `faultzero analyze` for recommendations.",
                 "color": "Attention",
                 "weight": "Bolder",
             }
@@ -179,7 +179,7 @@ class SmtpConfig:
     username: str = ""
     password: str = ""
     use_tls: bool = True
-    from_address: str = "chaosproof@localhost"
+    from_address: str = "faultzero@localhost"
 
 
 def send_email(
@@ -253,8 +253,8 @@ async def send_opsgenie(api_key: str, message: str, priority: str = "P3") -> boo
     payload = {
         "message": message,
         "priority": priority,
-        "source": "ChaosProof",
-        "tags": ["chaosproof", "infrastructure", "simulation"],
+        "source": "FaultZero",
+        "tags": ["faultzero", "infrastructure", "simulation"],
     }
 
     try:
@@ -321,7 +321,7 @@ async def notify_by_severity(results: dict, config: NotificationConfig | dict) -
             )
         if config.opsgenie_key:
             message = (
-                f"ChaosProof: {results.get('critical_count', 0)} "
+                f"FaultZero: {results.get('critical_count', 0)} "
                 "critical infrastructure risks detected"
             )
             statuses["opsgenie"] = await send_opsgenie(
@@ -344,9 +344,9 @@ async def notify_by_severity(results: dict, config: NotificationConfig | dict) -
         critical_count = results.get("critical_count", 0)
         warning_count = results.get("warning_count", 0)
         passed_count = results.get("passed_count", 0)
-        subject = f"ChaosProof Report - Score: {score}/100"
+        subject = f"FaultZero Report - Score: {score}/100"
         body = (
-            f"ChaosProof Simulation Report\n"
+            f"FaultZero Simulation Report\n"
             f"============================\n\n"
             f"Resilience Score: {score}/100\n"
             f"Critical: {critical_count}\n"

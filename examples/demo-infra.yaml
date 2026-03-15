@@ -1,7 +1,7 @@
-# ChaosProof - Example infrastructure definition
+# FaultZero - Example infrastructure definition
 #
 # Load with:
-#   chaosproof load examples/demo-infra.yaml
+#   faultzero load examples/demo-infra.yaml
 #
 # This describes a typical web application stack:
 #   nginx (load balancer) -> app servers -> PostgreSQL + Redis + RabbitMQ

@@ -3,9 +3,9 @@ requires = ["hatchling"]
 build-backend = "hatchling.build"
 
 [project]
-name = "chaosproof"
+name = "faultzero"
 version = "1.2.0"
-description = "ChaosProof — Zero-risk infrastructure chaos engineering. Prove your availability ceiling mathematically."
+description = "FaultZero — Zero-risk infrastructure chaos engineering. Prove your availability ceiling mathematically."
 readme = "README.md"
 license = {text = "MIT"}
 requires-python = ">=3.11"
@@ -80,6 +80,7 @@ Issues = "https://github.com/mattyopon/infrasim/issues"
 Changelog = "https://github.com/mattyopon/infrasim#changelog"
 
 [project.scripts]
+faultzero = "infrasim.cli:app"
 chaosproof = "infrasim.cli:app"
 infrasim = "infrasim.cli:app"
 

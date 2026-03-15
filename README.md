@@ -1,4 +1,4 @@
-# ChaosProof — Zero-Risk Infrastructure Chaos Simulation
+# FaultZero — Zero-Risk Infrastructure Chaos Simulation
 
 > **Simulate infrastructure failures without touching production.**
 > **Prove your system's availability ceiling mathematically.**
@@ -8,15 +8,15 @@
 [![Tests](https://img.shields.io/badge/tests-89%20passed-brightgreen.svg)]()
 [![Version](https://img.shields.io/badge/version-5.14-blue.svg)]()
 [![Docker](https://img.shields.io/badge/docker-ready-2496ED.svg)](Dockerfile)
-[![PyPI](https://img.shields.io/badge/PyPI-chaosproof-orange.svg)]()
+[![PyPI](https://img.shields.io/badge/PyPI-faultzero-orange.svg)]()
 
 ---
 
-## Why ChaosProof?
+## Why FaultZero?
 
-Most chaos engineering tools inject real faults into real infrastructure. ChaosProof takes a fundamentally different approach: **pure mathematical simulation** that models your entire dependency graph in memory, runs 150+ failure scenarios, and proves your system's theoretical availability ceiling — all without touching a single server.
+Most chaos engineering tools inject real faults into real infrastructure. FaultZero takes a fundamentally different approach: **pure mathematical simulation** that models your entire dependency graph in memory, runs 150+ failure scenarios, and proves your system's theoretical availability ceiling — all without touching a single server.
 
-| | **Gremlin** | **Steadybit** | **AWS FIS** | **ChaosProof** |
+| | **Gremlin** | **Steadybit** | **AWS FIS** | **FaultZero** |
 |---|---|---|---|---|
 | **Approach** | Fault injection | Fault injection | Fault injection | Mathematical simulation |
 | **Risk to production** | Medium-High | Medium | Medium | **Zero** |
@@ -45,10 +45,10 @@ Most chaos engineering tools inject real faults into real infrastructure. ChaosP
 pip install -e .
 
 # Run demo (6-component web stack simulation)
-chaosproof demo
+faultzero demo
 
 # With web dashboard
-chaosproof demo --web
+faultzero demo --web
 ```
 
 ### Docker
@@ -64,14 +64,14 @@ docker compose --profile demo up demo
 docker compose --profile cli run cli simulate
 
 # Build from source
-docker build -t chaosproof .
-docker run -p 8000:8000 chaosproof
+docker build -t faultzero .
+docker run -p 8000:8000 faultzero
 ```
 
 ### Demo Output
 
 ```
-╭────────── ChaosProof Chaos Simulation Report ──────────╮
+╭────────── FaultZero Chaos Simulation Report ──────────╮
 │ Resilience Score: 36/100                             │
 │ Scenarios tested: 150                                │
 │ Critical: 7  Warning: 66  Passed: 77                 │
@@ -114,9 +114,9 @@ CRITICAL FINDINGS
 
 ## 3-Layer Availability Limit Model
 
-**This is ChaosProof's unique contribution to chaos engineering.**
+**This is FaultZero's unique contribution to chaos engineering.**
 
-Traditional chaos tools answer "what breaks?" ChaosProof answers **"what is the maximum availability your architecture can physically achieve?"** using a three-layer mathematical model.
+Traditional chaos tools answer "what breaks?" FaultZero answers **"what is the maximum availability your architecture can physically achieve?"** using a three-layer mathematical model.
 
 ```
                     ┌─────────────────────────────────────────┐
@@ -145,7 +145,7 @@ Calculated from component MTBF (Mean Time Between Failures), redundancy factor, 
 
 Assumes perfect redundancy, instant failover, and zero software errors. This is the mathematical ceiling your architecture can never exceed: **6.65 nines (99.99997%)**.
 
-**Why this matters:** If your SLO target is 99.99% but your Layer 1 limit is 99.95%, no amount of engineering effort will close the gap without architectural changes. ChaosProof tells you this **before** you waste months trying.
+**Why this matters:** If your SLO target is 99.99% but your Layer 1 limit is 99.95%, no amount of engineering effort will close the gap without architectural changes. FaultZero tells you this **before** you waste months trying.
 
 ---
 
@@ -154,32 +154,32 @@ Assumes perfect redundancy, instant failover, and zero software errors. This is 
 ### 1. Cascade Engine
 Models fault propagation through dependency graphs. Identifies single points of failure, compound failures, and cascade paths.
 ```bash
-chaosproof load infra.yaml
-chaosproof simulate --html report.html
+faultzero load infra.yaml
+faultzero simulate --html report.html
 ```
 
 ### 2. Dynamic Engine
 Time-stepped simulation with traffic pattern integration. Models real-world load variations over hours or days.
 ```bash
-chaosproof dynamic infra.yaml --traffic diurnal --duration 24h --step 1min
+faultzero dynamic infra.yaml --traffic diurnal --duration 24h --step 1min
 ```
 
 ### 3. Ops Engine
 Long-running operational simulation (days to weeks) with SLO tracking, incident generation, and deployment events.
 ```bash
-chaosproof ops-sim infra.yaml --days 7 --step 5min
+faultzero ops-sim infra.yaml --days 7 --step 5min
 ```
 
 ### 4. What-If Engine
 Parameter sweep analysis to understand fault tolerance sensitivity across multiple dimensions.
 ```bash
-chaosproof whatif infra.yaml --parameter mttr_factor --values "0.5,1.0,2.0,4.0"
+faultzero whatif infra.yaml --parameter mttr_factor --values "0.5,1.0,2.0,4.0"
 ```
 
 ### 5. Capacity Engine
 Growth forecasting with resource exhaustion prediction and SLO compliance evaluation.
 ```bash
-chaosproof capacity infra.yaml --growth 0.15 --slo 99.9
+faultzero capacity infra.yaml --growth 0.15 --slo 99.9
 ```
 
 ---
@@ -220,48 +220,48 @@ dependencies:
 ```
 
 ```bash
-chaosproof load infra.yaml
-chaosproof simulate --html report.html
+faultzero load infra.yaml
+faultzero simulate --html report.html
 ```
 
 ### From Terraform
 
 ```bash
 # Import from state file
-chaosproof tf-import --state terraform.tfstate
+faultzero tf-import --state terraform.tfstate
 
 # Import from live terraform
-chaosproof tf-import --dir ./terraform
+faultzero tf-import --dir ./terraform
 
 # Analyze plan impact
 terraform plan -out=plan.out
-chaosproof tf-plan plan.out --html plan-report.html
+faultzero tf-plan plan.out --html plan-report.html
 ```
 
 ### From Prometheus
 
 ```bash
-chaosproof scan --prometheus-url http://prometheus:9090
-chaosproof simulate
+faultzero scan --prometheus-url http://prometheus:9090
+faultzero simulate
 ```
 
 ### Security News Feed
 
 ```bash
 # Fetch latest security news and generate scenarios
-chaosproof feed-update
+faultzero feed-update
 
 # View generated scenarios
-chaosproof feed-list
+faultzero feed-list
 
 # Simulate with feed scenarios included automatically
-chaosproof simulate
+faultzero simulate
 ```
 
 ### Web Dashboard
 
 ```bash
-chaosproof serve --port 8080
+faultzero serve --port 8080
 # Open http://localhost:8080
 ```
 
@@ -271,10 +271,10 @@ Simulate long-running operations and track SLO compliance and incident patterns 
 
 ```bash
 # Run 7-day operational simulation with 5-minute time steps
-chaosproof ops-sim infra.yaml --days 7 --step 5min
+faultzero ops-sim infra.yaml --days 7 --step 5min
 
 # Run with default parameters
-chaosproof ops-sim --defaults
+faultzero ops-sim --defaults
 ```
 
 ### What-If Analysis
@@ -283,10 +283,10 @@ Sweep parameters to analyze fault tolerance sensitivity across multiple dimensio
 
 ```bash
 # Run with default parameter sweep
-chaosproof whatif infra.yaml --defaults
+faultzero whatif infra.yaml --defaults
 
 # Sweep a specific parameter
-chaosproof whatif --parameter mttr_factor --values "0.5,1.0,2.0,4.0"
+faultzero whatif --parameter mttr_factor --values "0.5,1.0,2.0,4.0"
 ```
 
 ### Capacity Planning
@@ -295,7 +295,7 @@ Forecast resource exhaustion and evaluate SLO compliance under growth projection
 
 ```bash
 # Capacity planning with 15% annual growth targeting 99.9% SLO
-chaosproof capacity infra.yaml --growth 0.15 --slo 99.9
+faultzero capacity infra.yaml --growth 0.15 --slo 99.9
 ```
 
 ### Traffic Patterns
@@ -317,7 +317,7 @@ chaosproof capacity infra.yaml --growth 0.15 --slo 99.9
 
 ```bash
 # Dynamic simulation with traffic pattern
-chaosproof dynamic infra.yaml --traffic diurnal --duration 24h --step 1min
+faultzero dynamic infra.yaml --traffic diurnal --duration 24h --step 1min
 ```
 
 ---
@@ -388,23 +388,23 @@ Discovery Layer          Model Layer           Simulator Layer
 
 | Command | Description |
 |---------|-------------|
-| `chaosproof scan` | Discover local system or Prometheus infrastructure |
-| `chaosproof simulate` | Run chaos simulation (150+ scenarios) |
-| `chaosproof dynamic` | Run dynamic time-stepped simulation with traffic patterns |
-| `chaosproof ops-sim` | Long-running operational simulation with SLO tracking |
-| `chaosproof show` | Display infrastructure model summary |
-| `chaosproof load <yaml>` | Load infrastructure from YAML |
-| `chaosproof tf-import` | Import from Terraform state |
-| `chaosproof tf-plan <plan>` | Analyze Terraform plan impact |
-| `chaosproof report` | Generate HTML report |
-| `chaosproof serve` | Launch web dashboard |
-| `chaosproof demo` | Run demo with sample infrastructure |
-| `chaosproof feed-update` | Update scenarios from security news |
-| `chaosproof feed-list` | Show stored feed scenarios |
-| `chaosproof feed-sources` | Show configured news sources |
-| `chaosproof feed-clear` | Clear feed scenario store |
-| `chaosproof whatif` | Run what-if analysis (parameter sweep) |
-| `chaosproof capacity` | Capacity planning with growth forecasting |
+| `faultzero scan` | Discover local system or Prometheus infrastructure |
+| `faultzero simulate` | Run chaos simulation (150+ scenarios) |
+| `faultzero dynamic` | Run dynamic time-stepped simulation with traffic patterns |
+| `faultzero ops-sim` | Long-running operational simulation with SLO tracking |
+| `faultzero show` | Display infrastructure model summary |
+| `faultzero load <yaml>` | Load infrastructure from YAML |
+| `faultzero tf-import` | Import from Terraform state |
+| `faultzero tf-plan <plan>` | Analyze Terraform plan impact |
+| `faultzero report` | Generate HTML report |
+| `faultzero serve` | Launch web dashboard |
+| `faultzero demo` | Run demo with sample infrastructure |
+| `faultzero feed-update` | Update scenarios from security news |
+| `faultzero feed-list` | Show stored feed scenarios |
+| `faultzero feed-sources` | Show configured news sources |
+| `faultzero feed-clear` | Clear feed scenario store |
+| `faultzero whatif` | Run what-if analysis (parameter sweep) |
+| `faultzero capacity` | Capacity planning with growth forecasting |
 
 ---
 
@@ -422,16 +422,16 @@ Discovery Layer          Model Layer           Simulator Layer
 
 ```bash
 # Build
-docker build -t chaosproof .
+docker build -t faultzero .
 
 # Run web dashboard
-docker run -p 8000:8000 chaosproof
+docker run -p 8000:8000 faultzero
 
 # Run CLI command
-docker run --rm chaosproof chaosproof simulate
+docker run --rm faultzero faultzero simulate
 
 # Mount custom infrastructure definition
-docker run --rm -v $(pwd)/infra.yaml:/app/infra.yaml chaosproof chaosproof load /app/infra.yaml
+docker run --rm -v $(pwd)/infra.yaml:/app/infra.yaml faultzero faultzero load /app/infra.yaml
 ```
 
 ### Docker Compose Examples
@@ -463,7 +463,7 @@ pytest tests/ -v
 ruff check src/ tests/
 
 # Build Docker image
-docker build -t chaosproof:dev .
+docker build -t faultzero:dev .
 ```
 
 ### Test Coverage
@@ -558,16 +558,16 @@ MIT License - see [LICENSE](LICENSE)
 
 ---
 
-# ChaosProof — ゼロリスク・インフラ障害シミュレーション（日本語）
+# FaultZero — ゼロリスク・インフラ障害シミュレーション（日本語）
 
 > **本番環境に一切触れずにインフラ障害をシミュレーション。**
 > **システムの可用性上限を数学的に証明。**
 
-## なぜ ChaosProof なのか？
+## なぜ FaultZero なのか？
 
-従来のカオスエンジニアリングツール（Gremlin, Steadybit, AWS FIS）は**実際のインフラに障害を注入**します。ChaosProof はまったく異なるアプローチ：**純粋な数学的シミュレーション**で依存関係グラフ全体をメモリ上にモデル化し、150以上の障害シナリオを実行して、システムの理論的可用性上限を証明します。サーバーに一切触れません。
+従来のカオスエンジニアリングツール（Gremlin, Steadybit, AWS FIS）は**実際のインフラに障害を注入**します。FaultZero はまったく異なるアプローチ：**純粋な数学的シミュレーション**で依存関係グラフ全体をメモリ上にモデル化し、150以上の障害シナリオを実行して、システムの理論的可用性上限を証明します。サーバーに一切触れません。
 
-| | **Gremlin** | **Steadybit** | **AWS FIS** | **ChaosProof** |
+| | **Gremlin** | **Steadybit** | **AWS FIS** | **FaultZero** |
 |---|---|---|---|---|
 | **アプローチ** | 障害注入 | 障害注入 | 障害注入 | 数学的シミュレーション |
 | **本番リスク** | 中〜高 | 中 | 中 | **ゼロ** |
@@ -585,10 +585,10 @@ MIT License - see [LICENSE](LICENSE)
 pip install -e .
 
 # デモ実行（6コンポーネントWebスタック）
-chaosproof demo
+faultzero demo
 
 # Web ダッシュボード付き
-chaosproof demo --web
+faultzero demo --web
 ```
 
 ### Docker
@@ -620,7 +620,7 @@ docker compose --profile cli run cli simulate
 
 ## 3層可用性限界モデル（最大の特徴）
 
-ChaosProof 独自の理論モデルです。従来のカオスツールが「何が壊れるか？」に答えるのに対し、ChaosProof は **「あなたのアーキテクチャが物理的に達成できる最大可用性はいくつか？」** に答えます。
+FaultZero 独自の理論モデルです。従来のカオスツールが「何が壊れるか？」に答えるのに対し、FaultZero は **「あなたのアーキテクチャが物理的に達成できる最大可用性はいくつか？」** に答えます。
 
 | 層 | 名称 | 上限 | 説明 |
 |---|---|---|---|
@@ -628,7 +628,7 @@ ChaosProof 独自の理論モデルです。従来のカオスツールが「何
 | **Layer 2** | ハードウェア限界 | 5.91 nines | コンポーネントMTBF × 冗長係数から算出される物理的上限 |
 | **Layer 1** | ソフトウェア限界 | 4.00 nines | デプロイ失敗・設定ドリフト・ヒューマンエラーを考慮した実用上限 |
 
-**重要な意味:** SLO目標が99.99%でもLayer 1の限界が99.95%なら、どれだけエンジニアリング努力を重ねてもアーキテクチャ変更なしにはギャップを埋められません。ChaosProof は**数ヶ月の無駄な努力の前に**それを教えてくれます。
+**重要な意味:** SLO目標が99.99%でもLayer 1の限界が99.95%なら、どれだけエンジニアリング努力を重ねてもアーキテクチャ変更なしにはギャップを埋められません。FaultZero は**数ヶ月の無駄な努力の前に**それを教えてくれます。
 
 ## 5つのシミュレーションエンジン
 

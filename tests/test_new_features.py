@@ -446,7 +446,7 @@ class TestEvaluateCommand:
             assert "HTML report saved" in result.output
             assert html_path.exists()
             content = html_path.read_text(encoding="utf-8")
-            assert "ChaosProof Full Evaluation Report" in content
+            assert "FaultZero Full Evaluation Report" in content
             assert "<!DOCTYPE html>" in content
             assert "Static Simulation" in content
             assert "Dynamic Simulation" in content

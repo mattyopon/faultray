@@ -1,6 +1,6 @@
 ---
 name: Bug Report
-about: Report a bug in ChaosProof
+about: Report a bug in FaultZero
 labels: bug
 ---
 
@@ -20,5 +20,5 @@ What actually happens.
 ## Environment
 - OS:
 - Python version:
-- ChaosProof version:
+- FaultZero version:
 - Installation method (pip/docker/source):

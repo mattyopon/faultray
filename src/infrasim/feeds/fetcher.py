@@ -122,7 +122,7 @@ async def fetch_feed(source: FeedSource, timeout: float = 15.0) -> list[FeedArti
     async with httpx.AsyncClient(
         follow_redirects=True,
         timeout=timeout,
-        headers={"User-Agent": "ChaosProof/1.0 (chaos-engineering-simulator)"},
+        headers={"User-Agent": "FaultZero/1.0 (chaos-engineering-simulator)"},
     ) as client:
         try:
             resp = await client.get(source.url)

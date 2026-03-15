@@ -1,4 +1,4 @@
-const CACHE_NAME = 'chaosproof-v1';
+const CACHE_NAME = 'faultzero-v1';
 const STATIC_ASSETS = [
     '/static/style.css',
     '/static/graph.js',

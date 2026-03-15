@@ -1,4 +1,4 @@
-"""Tests for Terraform ChaosProof Provider."""
+"""Tests for Terraform FaultZero Provider."""
 
 from __future__ import annotations
 
@@ -8,7 +8,7 @@ from pathlib import Path
 import pytest
 
 from infrasim.integrations.terraform_provider import (
-    TerraformChaosProofProvider,
+    TerraformFaultZeroProvider,
     TerraformPlanAnalysis,
 )
 
@@ -50,7 +50,7 @@ def _write_plan_json(tmp_path: Path, plan_json: dict) -> Path:
 
 
 # ===================================================================
-# TerraformChaosProofProvider.analyze_plan_json
+# TerraformFaultZeroProvider.analyze_plan_json
 # ===================================================================
 
 
@@ -58,7 +58,7 @@ class TestAnalyzePlanJson:
     """Tests for analyze_plan_json() (no file I/O)."""
 
     def test_empty_plan(self):
-        provider = TerraformChaosProofProvider()
+        provider = TerraformFaultZeroProvider()
         analysis = provider.analyze_plan_json({})
 
         assert isinstance(analysis, TerraformPlanAnalysis)
@@ -80,7 +80,7 @@ class TestAnalyzePlanJson:
                 after={"instance_class": "db.r5.large", "name": "db"},
             ),
         )
-        provider = TerraformChaosProofProvider()
+        provider = TerraformFaultZeroProvider()
         analysis = provider.analyze_plan_json(plan)
 
         assert analysis.resources_added == 2
@@ -96,7 +96,7 @@ class TestAnalyzePlanJson:
                 after=None,
             ),
         )
-        provider = TerraformChaosProofProvider()
+        provider = TerraformFaultZeroProvider()
         analysis = provider.analyze_plan_json(plan)
 
         assert analysis.resources_destroyed == 1
@@ -111,7 +111,7 @@ class TestAnalyzePlanJson:
                 after={"instance_type": "t3.large", "name": "app"},
             ),
         )
-        provider = TerraformChaosProofProvider()
+        provider = TerraformFaultZeroProvider()
         analysis = provider.analyze_plan_json(plan)
 
         assert analysis.resources_changed == 1
@@ -131,7 +131,7 @@ class TestAnalyzePlanJson:
                 },
             ),
         )
-        provider = TerraformChaosProofProvider()
+        provider = TerraformFaultZeroProvider()
         analysis = provider.analyze_plan_json(plan)
 
         # After graph has at least one component, score should be > 0
@@ -146,7 +146,7 @@ class TestAnalyzePlanJson:
                 after={"name": "stable"},
             ),
         )
-        provider = TerraformChaosProofProvider()
+        provider = TerraformFaultZeroProvider()
         analysis = provider.analyze_plan_json(plan)
 
         assert analysis.resources_added == 0
@@ -155,7 +155,7 @@ class TestAnalyzePlanJson:
 
 
 # ===================================================================
-# TerraformChaosProofProvider.analyze_plan (file-based)
+# TerraformFaultZeroProvider.analyze_plan (file-based)
 # ===================================================================
 
 
@@ -172,20 +172,20 @@ class TestAnalyzePlanFile:
         )
         plan_file = _write_plan_json(tmp_path, plan)
 
-        provider = TerraformChaosProofProvider()
+        provider = TerraformFaultZeroProvider()
         analysis = provider.analyze_plan(plan_file)
 
         assert analysis.plan_file == str(plan_file)
         assert analysis.resources_added == 1
 
     def test_file_not_found_raises(self, tmp_path):
-        provider = TerraformChaosProofProvider()
+        provider = TerraformFaultZeroProvider()
         with pytest.raises(FileNotFoundError):
             provider.analyze_plan(tmp_path / "nonexistent.json")
 
 
 # ===================================================================
-# TerraformChaosProofProvider.check_policy_json
+# TerraformFaultZeroProvider.check_policy_json
 # ===================================================================
 
 
@@ -194,7 +194,7 @@ class TestCheckPolicy:
 
     def test_empty_plan_fails_policy(self):
         """Empty plan has score 0, which fails a min_score > 0 policy."""
-        provider = TerraformChaosProofProvider()
+        provider = TerraformFaultZeroProvider()
         result = provider.check_policy_json({}, min_score=50.0)
         # Empty plan => score_after = 0 => fails
         assert result is False
@@ -207,14 +207,14 @@ class TestCheckPolicy:
                 after={"instance_type": "t3.medium", "name": "web"},
             ),
         )
-        provider = TerraformChaosProofProvider()
+        provider = TerraformFaultZeroProvider()
         # Single component with no dependencies gets resilience = 100
         result = provider.check_policy_json(plan, min_score=50.0)
         assert result is True
 
 
 # ===================================================================
-# TerraformChaosProofProvider.generate_sentinel_policy
+# TerraformFaultZeroProvider.generate_sentinel_policy
 # ===================================================================
 
 
@@ -222,13 +222,13 @@ class TestGenerateSentinelPolicy:
     """Tests for generate_sentinel_policy()."""
 
     def test_generates_valid_sentinel(self):
-        provider = TerraformChaosProofProvider()
+        provider = TerraformFaultZeroProvider()
         policy = provider.generate_sentinel_policy(min_score=75.0)
 
-        assert "ChaosProof Sentinel Policy" in policy
+        assert "FaultZero Sentinel Policy" in policy
         assert "75.0" in policy
         assert "min_resilience_score" in policy
-        assert "chaosproof" in policy
+        assert "faultzero" in policy
 
 
 # ===================================================================
@@ -240,7 +240,7 @@ class TestRecommendation:
     """Tests for _determine_recommendation()."""
 
     def test_safe_recommendation(self):
-        provider = TerraformChaosProofProvider()
+        provider = TerraformFaultZeroProvider()
         plan = _make_plan_json(
             _make_plan_change(
                 "aws_instance", "web",
@@ -262,6 +262,6 @@ class TestRecommendation:
                 after=None,
             ),
         )
-        provider = TerraformChaosProofProvider()
+        provider = TerraformFaultZeroProvider()
         analysis = provider.analyze_plan_json(plan)
         assert analysis.recommendation == "high risk"

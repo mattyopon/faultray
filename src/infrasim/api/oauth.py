@@ -1,4 +1,4 @@
-"""OAuth2 SSO integration for ChaosProof (GitHub and Google providers)."""
+"""OAuth2 SSO integration for FaultZero (GitHub and Google providers)."""
 
 from __future__ import annotations
 
@@ -37,20 +37,22 @@ class OAuthConfig:
 
     @classmethod
     def from_env(cls, provider: str) -> Optional["OAuthConfig"]:
-        """Build config from ``CHAOSPROOF_OAUTH_{PROVIDER}_*`` env vars.
+        """Build config from ``FAULTZERO_OAUTH_{PROVIDER}_*`` env vars.
 
-        Falls back to ``INFRASIM_OAUTH_*`` for backward compatibility.
+        Falls back to ``CHAOSPROOF_OAUTH_*`` then ``INFRASIM_OAUTH_*`` for
+        backward compatibility.
 
         Returns ``None`` when the required ``CLIENT_ID`` / ``CLIENT_SECRET``
         variables are not set.
         """
-        new_prefix = f"CHAOSPROOF_OAUTH_{provider.upper()}"
+        new_prefix = f"FAULTZERO_OAUTH_{provider.upper()}"
+        mid_prefix = f"CHAOSPROOF_OAUTH_{provider.upper()}"
         old_prefix = f"INFRASIM_OAUTH_{provider.upper()}"
-        client_id = os.getenv(f"{new_prefix}_CLIENT_ID", os.getenv(f"{old_prefix}_CLIENT_ID"))
-        client_secret = os.getenv(f"{new_prefix}_CLIENT_SECRET", os.getenv(f"{old_prefix}_CLIENT_SECRET"))
+        client_id = os.getenv(f"{new_prefix}_CLIENT_ID", os.getenv(f"{mid_prefix}_CLIENT_ID", os.getenv(f"{old_prefix}_CLIENT_ID")))
+        client_secret = os.getenv(f"{new_prefix}_CLIENT_SECRET", os.getenv(f"{mid_prefix}_CLIENT_SECRET", os.getenv(f"{old_prefix}_CLIENT_SECRET")))
         redirect_uri = os.getenv(
             f"{new_prefix}_REDIRECT_URI",
-            os.getenv(f"{old_prefix}_REDIRECT_URI", "http://localhost:8000/auth/callback"),
+            os.getenv(f"{mid_prefix}_REDIRECT_URI", os.getenv(f"{old_prefix}_REDIRECT_URI", "http://localhost:8000/auth/callback")),
         )
         if client_id and client_secret:
             return cls(

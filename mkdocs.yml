@@ -1,0 +1,40 @@
+site_name: FaultZero Documentation
+site_description: Zero-risk infrastructure chaos simulation
+theme:
+  name: material
+  palette:
+    scheme: slate
+    primary: blue
+  features:
+    - navigation.tabs
+    - navigation.sections
+    - search.suggest
+
+nav:
+  - Home: index.md
+  - Getting Started:
+    - Installation: getting-started/installation.md
+    - Quick Start: getting-started/quickstart.md
+    - Your First Simulation: getting-started/first-simulation.md
+  - Concepts:
+    - How It Works: concepts/how-it-works.md
+    - 5-Layer Model: concepts/five-layer-model.md
+    - Risk Scoring: concepts/risk-scoring.md
+  - CLI Reference:
+    - Commands: cli/commands.md
+  - API Reference:
+    - REST API: api/rest.md
+    - GraphQL: api/graphql.md
+    - Python SDK: api/python-sdk.md
+  - Integrations:
+    - AWS: integrations/aws.md
+    - GCP: integrations/gcp.md
+    - Azure: integrations/azure.md
+    - Kubernetes: integrations/kubernetes.md
+    - Terraform: integrations/terraform.md
+    - CI/CD: integrations/cicd.md
+    - Slack: integrations/slack.md
+  - Enterprise:
+    - Compliance: enterprise/compliance.md
+    - Insurance Scoring: enterprise/insurance.md
+    - RBAC: enterprise/rbac.md

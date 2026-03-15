@@ -17,7 +17,7 @@ from infrasim.config import (
 
 config_app = typer.Typer(
     name="config",
-    help="Manage ChaosProof configuration.",
+    help="Manage FaultZero configuration.",
     no_args_is_help=True,
 )
 app.add_typer(config_app, name="config")
@@ -26,17 +26,17 @@ app.add_typer(config_app, name="config")
 @config_app.command("show")
 def config_show(
     path: Path = typer.Option(
-        None, "--path", "-p", help="Config file path (default: ~/.chaosproof/config.yaml)"
+        None, "--path", "-p", help="Config file path (default: ~/.faultzero/config.yaml)"
     ),
 ) -> None:
-    """Show current ChaosProof configuration.
+    """Show current FaultZero configuration.
 
     Examples:
         # Show all configuration
-        chaosproof config show
+        faultzero config show
 
         # Show config from a custom path
-        chaosproof config show --path /etc/chaosproof/config.yaml
+        faultzero config show --path /etc/faultzero/config.yaml
     """
     import yaml as yaml_lib
 
@@ -56,7 +56,7 @@ def config_show(
         "ui": config.ui,
     }
 
-    console.print(f"[bold]ChaosProof Configuration[/] ({config_path})\n")
+    console.print(f"[bold]FaultZero Configuration[/] ({config_path})\n")
     console.print(yaml_lib.dump(data, default_flow_style=False, sort_keys=False))
 
 
@@ -65,20 +65,20 @@ def config_set(
     key: str = typer.Argument(..., help="Config key in dot notation (e.g. simulation.max_scenarios)"),
     value: str = typer.Argument(..., help="Value to set"),
     path: Path = typer.Option(
-        None, "--path", "-p", help="Config file path (default: ~/.chaosproof/config.yaml)"
+        None, "--path", "-p", help="Config file path (default: ~/.faultzero/config.yaml)"
     ),
 ) -> None:
-    """Set a ChaosProof configuration value.
+    """Set a FaultZero configuration value.
 
     Examples:
         # Set max scenarios
-        chaosproof config set simulation.max_scenarios 200
+        faultzero config set simulation.max_scenarios 200
 
         # Set daemon interval
-        chaosproof config set daemon.interval_seconds 1800
+        faultzero config set daemon.interval_seconds 1800
 
         # Set with custom config path
-        chaosproof config set ui.theme dark --path /etc/chaosproof/config.yaml
+        faultzero config set ui.theme dark --path /etc/faultzero/config.yaml
     """
     config_path = path or DEFAULT_CONFIG_PATH
     config = load_config(config_path)

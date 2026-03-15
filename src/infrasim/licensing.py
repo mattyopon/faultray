@@ -1,4 +1,4 @@
-"""Feature gating stub for ChaosProof OSS vs commercial tiers.
+"""Feature gating stub for FaultZero OSS vs commercial tiers.
 
 This module defines a feature tier structure for future commercial
 gating.  Currently **all features are enabled** regardless of tier --

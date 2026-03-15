@@ -12,20 +12,20 @@ from infrasim.reporter.report import print_infrastructure_summary, print_simulat
 from infrasim.simulator.engine import SimulationEngine
 
 app = typer.Typer(
-    name="chaosproof",
-    help="ChaosProof — Zero-risk infrastructure chaos engineering simulator",
+    name="faultzero",
+    help="FaultZero — Zero-risk infrastructure chaos engineering simulator",
     no_args_is_help=True,
 )
 console = Console()
 
-DEFAULT_MODEL_PATH = Path("chaosproof-model.json")
+DEFAULT_MODEL_PATH = Path("faultzero-model.json")
 
 
 def _version_callback(value: bool) -> None:
     if value:
         from infrasim import __version__
 
-        print(f"ChaosProof v{__version__}")
+        print(f"FaultZero v{__version__}")
         raise typer.Exit()
 
 
@@ -44,7 +44,7 @@ def main(
         help="Enable debug logging (DEBUG level).",
     ),
 ) -> None:
-    """ChaosProof — Zero-risk infrastructure chaos engineering simulator."""
+    """FaultZero — Zero-risk infrastructure chaos engineering simulator."""
     if debug or verbose:
         from infrasim.log_config import setup_logging
 
@@ -212,7 +212,7 @@ def _print_ops_results(result: "OpsSimulationResult", con: Console) -> None:  # 
     con.print()
     con.print(Panel(
         summary_text,
-        title="[bold]ChaosProof Operational Simulation Report[/]",
+        title="[bold]FaultZero Operational Simulation Report[/]",
         border_style=avail_color,
     ))
 

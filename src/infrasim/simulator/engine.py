@@ -269,7 +269,7 @@ class SimulationEngine:
     @staticmethod
     def _save_checkpoint(results: list[ScenarioResult], count: int) -> Path:
         """Save partial simulation results to a temporary checkpoint file."""
-        checkpoint_dir = Path(tempfile.gettempdir()) / "chaosproof_checkpoints"
+        checkpoint_dir = Path(tempfile.gettempdir()) / "faultzero_checkpoints"
         checkpoint_dir.mkdir(exist_ok=True)
         checkpoint_path = checkpoint_dir / "simulation_checkpoint.json"
 

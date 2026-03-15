@@ -1,4 +1,4 @@
-"""ChaosProof — Zero-risk infrastructure chaos simulation."""
+"""FaultZero — Zero-risk infrastructure chaos simulation."""
 
 __version__ = "2.1.0"
 

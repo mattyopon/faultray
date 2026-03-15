@@ -24,8 +24,8 @@ class TestPWASupport:
         assert manifest_path.exists(), f"manifest.json not found at {manifest_path}"
 
         data = json.loads(manifest_path.read_text())
-        assert data["name"] == "ChaosProof"
-        assert data["short_name"] == "ChaosProof"
+        assert data["name"] == "FaultZero"
+        assert data["short_name"] == "FaultZero"
         assert data["start_url"] == "/"
         assert data["display"] == "standalone"
         assert data["background_color"] == "#0d1117"

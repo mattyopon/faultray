@@ -1,16 +1,16 @@
 services:
   # Web dashboard mode
-  chaosproof:
+  faultzero:
     build: .
     ports:
       - "8000:8000"
     environment:
-      - CHAOSPROOF_DB_PATH=/data/chaosproof.db
-      - CHAOSPROOF_CORS_ORIGINS=*
+      - FAULTZERO_DB_PATH=/data/faultzero.db
+      - FAULTZERO_CORS_ORIGINS=*
     volumes:
-      - chaosproof-data:/data
+      - faultzero-data:/data
       - ./examples:/app/examples:ro
-    command: ["chaosproof", "serve", "--host", "0.0.0.0", "--port", "8000"]
+    command: ["faultzero", "serve", "--host", "0.0.0.0", "--port", "8000"]
     healthcheck:
       test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/')"]
       interval: 30s
@@ -23,11 +23,11 @@ services:
     ports:
       - "8000:8000"
     environment:
-      - CHAOSPROOF_DB_PATH=/data/chaosproof.db
-      - CHAOSPROOF_CORS_ORIGINS=*
+      - FAULTZERO_DB_PATH=/data/faultzero.db
+      - FAULTZERO_CORS_ORIGINS=*
     volumes:
-      - chaosproof-data:/data
-    command: ["chaosproof", "demo", "--web"]
+      - faultzero-data:/data
+    command: ["faultzero", "demo", "--web"]
     healthcheck:
       test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/')"]
       interval: 30s
@@ -40,13 +40,13 @@ services:
   cli:
     build: .
     volumes:
-      - chaosproof-data:/data
+      - faultzero-data:/data
       - ./examples:/app/examples
       - ./reports:/app/reports
-    entrypoint: ["chaosproof"]
+    entrypoint: ["faultzero"]
     command: ["--help"]
     profiles:
       - cli
 
 volumes:
-  chaosproof-data:
+  faultzero-data:

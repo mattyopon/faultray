@@ -1,6 +1,6 @@
 services:
   - type: web
-    name: chaosproof-demo
+    name: faultzero-demo
     runtime: docker
     plan: free
     healthCheckPath: /
