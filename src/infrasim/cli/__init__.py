@@ -36,5 +36,7 @@ import infrasim.cli.dna_cmd  # noqa: F401
 import infrasim.cli.supply_chain_cmd  # noqa: F401
 import infrasim.cli.autoscale_cmd  # noqa: F401
 import infrasim.cli.replay_cmd  # noqa: F401
+import infrasim.cli.drift_cmd  # noqa: F401
+import infrasim.cli.advisor_cmd  # noqa: F401
 
 __all__ = ["app", "_print_dynamic_results"]

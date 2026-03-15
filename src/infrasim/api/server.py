@@ -424,9 +424,57 @@ async def analyze_page(request: Request):
     })
 
 
+@app.get("/advisor", response_class=HTMLResponse)
+async def advisor_page(request: Request, target_nines: float = 4.0):
+    """Architecture Advisor page — shows redesign recommendations."""
+    graph = get_graph()
+    has_data = len(graph.components) > 0
+
+    advisor_data = None
+    if has_data:
+        import dataclasses
+
+        from infrasim.ai.architecture_advisor import ArchitectureAdvisor
+
+        advisor = ArchitectureAdvisor()
+        report = advisor.advise(graph, target_nines=target_nines)
+        advisor_data = dataclasses.asdict(report)
+
+    return templates.TemplateResponse("advisor.html", {
+        "request": request,
+        "has_data": has_data,
+        "report": advisor_data,
+        "target_nines": target_nines,
+    })
+
+
 # ---------------------------------------------------------------------------
 # JSON API routes
 # ---------------------------------------------------------------------------
+
+@app.get("/api/architecture-advice", response_class=JSONResponse)
+async def get_architecture_advice(
+    target_nines: float = 4.0,
+    user=Depends(_require_permission("view_results")),
+):
+    """Get AI architecture recommendations."""
+    graph = get_graph()
+    if not graph.components:
+        return JSONResponse(
+            {"error": "No infrastructure loaded. Visit /demo first."},
+            status_code=400,
+        )
+
+    import dataclasses
+
+    from infrasim.ai.architecture_advisor import ArchitectureAdvisor
+
+    advisor = ArchitectureAdvisor()
+    report = advisor.advise(graph, target_nines=target_nines)
+    report_dict = dataclasses.asdict(report)
+
+    return JSONResponse(report_dict)
+
 
 @app.get("/api/analyze", response_class=JSONResponse)
 async def api_analyze(user=Depends(_require_permission("view_results"))):
