@@ -2855,3 +2855,302 @@ async def dashboard_summary():
             "monitoring_pct": monitoring_pct,
         },
     })
+
+
+# ---------------------------------------------------------------------------
+# Template Gallery routes
+# ---------------------------------------------------------------------------
+
+@app.get("/templates", response_class=HTMLResponse)
+async def templates_page(request: Request, category: str | None = None):
+    """Render the Template Gallery page."""
+    from dataclasses import asdict
+
+    from infrasim.templates.gallery import TemplateGallery, TemplateCategory
+
+    gallery = TemplateGallery()
+    gallery_templates = gallery.list_templates(category=category)
+    categories = [c.value for c in TemplateCategory]
+
+    template_data = [asdict(t) for t in gallery_templates]
+    # Add category enum value for filtering
+    for td in template_data:
+        td["category_value"] = td["category"]
+
+    return templates.TemplateResponse("gallery.html", {
+        "request": request,
+        "has_data": True,
+        "gallery_templates": template_data,
+        "categories": categories,
+        "active_category": category,
+    })
+
+
+@app.get("/api/templates", response_class=JSONResponse)
+async def api_list_templates(category: str | None = None):
+    """List all gallery templates as JSON."""
+    from dataclasses import asdict
+
+    from infrasim.templates.gallery import TemplateGallery
+
+    gallery = TemplateGallery()
+    gallery_templates = gallery.list_templates(category=category)
+    return JSONResponse([asdict(t) for t in gallery_templates])
+
+
+@app.get("/api/templates/{template_id}", response_class=JSONResponse)
+async def api_get_template(template_id: str):
+    """Get a specific template by ID."""
+    from dataclasses import asdict
+
+    from infrasim.templates.gallery import TemplateGallery
+
+    gallery = TemplateGallery()
+    try:
+        t = gallery.get_template(template_id)
+    except KeyError:
+        raise HTTPException(status_code=404, detail=f"Template '{template_id}' not found")
+    return JSONResponse(asdict(t))
+
+
+# ---------------------------------------------------------------------------
+# FMEA Analysis routes
+# ---------------------------------------------------------------------------
+
+@app.get("/fmea", response_class=HTMLResponse)
+async def fmea_page(request: Request):
+    """FMEA (Failure Mode & Effects Analysis) dashboard."""
+    graph = get_graph()
+    return templates.TemplateResponse("fmea.html", {
+        "request": request,
+        "has_data": bool(graph.components),
+        "active_page": "fmea",
+    })
+
+
+@app.get("/api/fmea", response_class=JSONResponse)
+async def api_fmea(
+    component: str | None = None,
+    min_rpn: int = 0,
+):
+    """Run FMEA analysis and return results as JSON."""
+    from infrasim.simulator.fmea_engine import FMEAEngine
+
+    graph = get_graph()
+    engine = FMEAEngine()
+
+    if component:
+        modes = engine.analyze_component(graph, component)
+        report = engine._build_report(modes)
+    else:
+        report = engine.analyze(graph)
+
+    failure_modes = report.failure_modes
+    if min_rpn > 0:
+        failure_modes = [fm for fm in failure_modes if fm.rpn >= min_rpn]
+
+    return JSONResponse({
+        "total_rpn": report.total_rpn,
+        "average_rpn": report.average_rpn,
+        "high_risk_count": report.high_risk_count,
+        "medium_risk_count": report.medium_risk_count,
+        "low_risk_count": report.low_risk_count,
+        "failure_modes": [
+            {
+                "id": fm.id,
+                "component_id": fm.component_id,
+                "component_name": fm.component_name,
+                "mode": fm.mode,
+                "cause": fm.cause,
+                "effect_local": fm.effect_local,
+                "effect_system": fm.effect_system,
+                "severity": fm.severity,
+                "occurrence": fm.occurrence,
+                "detection": fm.detection,
+                "rpn": fm.rpn,
+                "current_controls": fm.current_controls,
+                "recommended_actions": fm.recommended_actions,
+                "responsible": fm.responsible,
+            }
+            for fm in failure_modes
+        ],
+        "rpn_by_component": report.rpn_by_component,
+        "rpn_by_failure_mode": report.rpn_by_failure_mode,
+        "improvement_priority": [
+            {"component": c, "action": a, "rpn": r}
+            for c, a, r in report.improvement_priority
+        ],
+    })
+
+
+# ---------------------------------------------------------------------------
+# Chaos Monkey routes
+# ---------------------------------------------------------------------------
+
+@app.get("/chaos-monkey", response_class=HTMLResponse)
+async def chaos_monkey_page(request: Request):
+    """Chaos Monkey dashboard."""
+    graph = get_graph()
+    return templates.TemplateResponse("chaos_monkey.html", {
+        "request": request,
+        "has_data": bool(graph.components),
+        "active_page": "chaos_monkey",
+    })
+
+
+@app.post("/api/chaos-monkey", response_class=JSONResponse)
+async def api_chaos_monkey(request: Request):
+    """Run a Chaos Monkey experiment and return results."""
+    from infrasim.simulator.chaos_monkey import ChaosLevel, ChaosMonkey, ChaosMonkeyConfig
+
+    graph = get_graph()
+
+    # Parse params from form data or query string
+    try:
+        form = await request.form()
+        level_str = form.get("level", "monkey")
+        rounds = int(form.get("rounds", "10"))
+        seed_str = form.get("seed")
+        exclude_str = form.get("exclude", "")
+    except Exception:
+        level_str = request.query_params.get("level", "monkey")
+        rounds = int(request.query_params.get("rounds", "10"))
+        seed_str = request.query_params.get("seed")
+        exclude_str = request.query_params.get("exclude", "")
+
+    try:
+        chaos_level = ChaosLevel(level_str)
+    except ValueError:
+        chaos_level = ChaosLevel.MONKEY
+
+    seed = int(seed_str) if seed_str else None
+    exclude_list = [x.strip() for x in exclude_str.split(",") if x.strip()] if exclude_str else []
+
+    config = ChaosMonkeyConfig(
+        level=chaos_level,
+        rounds=min(rounds, 100),
+        seed=seed,
+        exclude_components=exclude_list,
+    )
+
+    monkey = ChaosMonkey()
+    report = monkey.run(graph, config)
+
+    return JSONResponse({
+        "total_rounds": report.total_rounds,
+        "survival_rate": report.survival_rate,
+        "avg_cascade_depth": report.avg_cascade_depth,
+        "avg_affected": report.avg_affected,
+        "most_dangerous_component": report.most_dangerous_component,
+        "safest_component": report.safest_component,
+        "mean_time_to_impact": report.mean_time_to_impact,
+        "resilience_score_range": list(report.resilience_score_range),
+        "recommendations": report.recommendations,
+        "experiments": [
+            {
+                "round": e.round_number,
+                "failed_components": e.failed_components,
+                "level": e.level.value,
+                "survived": e.survived,
+                "cascade_depth": e.cascade_depth,
+                "affected_count": e.affected_count,
+                "resilience_during": e.resilience_during,
+                "recovery_possible": e.recovery_possible,
+            }
+            for e in report.experiments
+        ],
+        "worst_experiment": {
+            "round": report.worst_experiment.round_number,
+            "failed_components": report.worst_experiment.failed_components,
+            "affected_count": report.worst_experiment.affected_count,
+        } if report.worst_experiment else None,
+        "best_experiment": {
+            "round": report.best_experiment.round_number,
+            "failed_components": report.best_experiment.failed_components,
+            "affected_count": report.best_experiment.affected_count,
+        } if report.best_experiment else None,
+    })
+
+
+# ---------------------------------------------------------------------------
+# Attack Surface Analysis
+# ---------------------------------------------------------------------------
+
+@app.get("/attack-surface", response_class=HTMLResponse)
+async def attack_surface_page(request: Request):
+    """Attack Surface Analysis page."""
+    graph = get_graph()
+    has_data = len(graph.components) > 0
+
+    report_data = None
+    if has_data:
+        from infrasim.simulator.attack_surface import AttackSurfaceAnalyzer
+
+        analyzer = AttackSurfaceAnalyzer()
+        report = analyzer.analyze(graph)
+        report_data = report.to_dict()
+
+    return templates.TemplateResponse("attack_surface.html", {
+        "request": request,
+        "has_data": has_data,
+        "report": report_data,
+    })
+
+
+@app.get("/api/attack-surface", response_class=JSONResponse)
+async def api_attack_surface(user=Depends(_require_permission("view_results"))):
+    """Return attack surface analysis as JSON."""
+    graph = get_graph()
+    if not graph.components:
+        return JSONResponse(
+            {"error": "No infrastructure loaded. Visit /demo first."},
+            status_code=400,
+        )
+
+    from infrasim.simulator.attack_surface import AttackSurfaceAnalyzer
+
+    analyzer = AttackSurfaceAnalyzer()
+    report = analyzer.analyze(graph)
+    return JSONResponse(report.to_dict())
+
+
+# ---------------------------------------------------------------------------
+# Score Decomposition
+# ---------------------------------------------------------------------------
+
+@app.get("/score-explain", response_class=HTMLResponse)
+async def score_explain_page(request: Request):
+    """Resilience Score Decomposition page."""
+    graph = get_graph()
+    has_data = len(graph.components) > 0
+
+    decomposition_data = None
+    if has_data:
+        from infrasim.simulator.score_decomposition import ScoreDecomposer
+
+        decomposer = ScoreDecomposer()
+        decomposition = decomposer.decompose(graph)
+        decomposition_data = decomposition.to_dict()
+
+    return templates.TemplateResponse("score_explain.html", {
+        "request": request,
+        "has_data": has_data,
+        "decomposition": decomposition_data,
+    })
+
+
+@app.get("/api/score-decomposition", response_class=JSONResponse)
+async def api_score_decomposition(user=Depends(_require_permission("view_results"))):
+    """Return resilience score decomposition as JSON."""
+    graph = get_graph()
+    if not graph.components:
+        return JSONResponse(
+            {"error": "No infrastructure loaded. Visit /demo first."},
+            status_code=400,
+        )
+
+    from infrasim.simulator.score_decomposition import ScoreDecomposer
+
+    decomposer = ScoreDecomposer()
+    decomposition = decomposer.decompose(graph)
+    return JSONResponse(decomposition.to_dict())

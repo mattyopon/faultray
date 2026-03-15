@@ -1,0 +1,173 @@
+{% extends "base.html" %}
+
+{% block title %}FaultRay - Chaos Monkey{% endblock %}
+
+{% block page_title %}Chaos Monkey{% endblock %}
+{% block page_subtitle %}<span class="page-subtitle">Netflix-style Random Failure Injection</span>{% endblock %}
+
+{% block content %}
+<div class="content-grid" x-data="chaosApp()">
+    <!-- Configuration form -->
+    <div class="card" style="padding:1.2rem;margin-bottom:1.5rem;">
+        <h3 style="margin:0 0 1rem;color:#e2e8f0;font-size:1rem;">Configuration</h3>
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:1rem;align-items:end;">
+            <div>
+                <label style="display:block;color:#a0aec0;font-size:0.8rem;margin-bottom:0.3rem;">Level</label>
+                <select x-model="config.level" style="width:100%;background:#1a202c;color:#e2e8f0;border:1px solid #2d3748;border-radius:4px;padding:0.5rem;">
+                    <option value="monkey">Monkey (single failure)</option>
+                    <option value="gorilla">Gorilla (same-type group)</option>
+                    <option value="kong">Kong (massive failure)</option>
+                    <option value="army">Army (progressive)</option>
+                </select>
+            </div>
+            <div>
+                <label style="display:block;color:#a0aec0;font-size:0.8rem;margin-bottom:0.3rem;">Rounds</label>
+                <input type="number" x-model.number="config.rounds" min="1" max="100" style="width:100%;background:#1a202c;color:#e2e8f0;border:1px solid #2d3748;border-radius:4px;padding:0.5rem;">
+            </div>
+            <div>
+                <label style="display:block;color:#a0aec0;font-size:0.8rem;margin-bottom:0.3rem;">Seed (optional)</label>
+                <input type="number" x-model.number="config.seed" placeholder="random" style="width:100%;background:#1a202c;color:#e2e8f0;border:1px solid #2d3748;border-radius:4px;padding:0.5rem;">
+            </div>
+            <div>
+                <label style="display:block;color:#a0aec0;font-size:0.8rem;margin-bottom:0.3rem;">Exclude (comma-separated)</label>
+                <input type="text" x-model="config.exclude" placeholder="e.g. lb,dns" style="width:100%;background:#1a202c;color:#e2e8f0;border:1px solid #2d3748;border-radius:4px;padding:0.5rem;">
+            </div>
+            <div>
+                <button @click="unleash()" :disabled="loading"
+                    style="width:100%;padding:0.6rem 1.2rem;background:#e94560;color:white;border:none;border-radius:4px;cursor:pointer;font-weight:600;font-size:0.9rem;"
+                    :style="loading ? 'opacity:0.6;cursor:wait;' : ''">
+                    <span x-show="!loading">Unleash the Monkey</span>
+                    <span x-show="loading">Running...</span>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Results (shown after run) -->
+    <template x-if="report">
+        <div>
+            <!-- Summary cards -->
+            <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:1rem;margin-bottom:1.5rem;">
+                <div class="card" style="padding:1rem;text-align:center;">
+                    <div style="font-size:0.75rem;color:#a0aec0;text-transform:uppercase;">Survival Rate</div>
+                    <div style="font-size:1.8rem;font-weight:700;"
+                         :style="report.survival_rate >= 0.8 ? 'color:#00b894;' : report.survival_rate >= 0.5 ? 'color:#f0a500;' : 'color:#e94560;'"
+                         x-text="(report.survival_rate * 100).toFixed(1) + '%'"></div>
+                </div>
+                <div class="card" style="padding:1rem;text-align:center;">
+                    <div style="font-size:0.75rem;color:#a0aec0;text-transform:uppercase;">Avg Cascade</div>
+                    <div style="font-size:1.8rem;font-weight:700;color:#e2e8f0;" x-text="report.avg_cascade_depth"></div>
+                </div>
+                <div class="card" style="padding:1rem;text-align:center;">
+                    <div style="font-size:0.75rem;color:#a0aec0;text-transform:uppercase;">Avg Affected</div>
+                    <div style="font-size:1.8rem;font-weight:700;color:#e2e8f0;" x-text="report.avg_affected"></div>
+                </div>
+                <div class="card" style="padding:1rem;text-align:center;">
+                    <div style="font-size:0.75rem;color:#a0aec0;text-transform:uppercase;">Most Dangerous</div>
+                    <div style="font-size:1rem;font-weight:700;color:#e94560;" x-text="report.most_dangerous_component || '-'"></div>
+                </div>
+                <div class="card" style="padding:1rem;text-align:center;">
+                    <div style="font-size:0.75rem;color:#a0aec0;text-transform:uppercase;">Safest</div>
+                    <div style="font-size:1rem;font-weight:700;color:#00b894;" x-text="report.safest_component || '-'"></div>
+                </div>
+            </div>
+
+            <!-- Survival gauge -->
+            <div class="card" style="padding:1rem;margin-bottom:1.5rem;">
+                <h3 style="margin:0 0 0.8rem;color:#e2e8f0;font-size:1rem;">Survival Gauge</h3>
+                <div style="position:relative;height:28px;background:#1a202c;border-radius:14px;overflow:hidden;">
+                    <div :style="'width:' + (report.survival_rate * 100) + '%;height:100%;border-radius:14px;background:' + (report.survival_rate >= 0.8 ? '#00b894' : report.survival_rate >= 0.5 ? '#f0a500' : '#e94560') + ';transition:width 0.5s;'"></div>
+                    <div style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);font-size:0.85rem;font-weight:600;color:#fff;"
+                         x-text="(report.survival_rate * 100).toFixed(1) + '% survived'"></div>
+                </div>
+            </div>
+
+            <!-- Experiments table -->
+            <div class="card" style="padding:1rem;overflow-x:auto;margin-bottom:1.5rem;">
+                <h3 style="margin:0 0 0.8rem;color:#e2e8f0;font-size:1rem;">Experiments</h3>
+                <table style="width:100%;border-collapse:collapse;font-size:0.85rem;">
+                    <thead>
+                        <tr style="border-bottom:2px solid #2d3748;">
+                            <th style="padding:0.5rem;text-align:center;color:#a0aec0;">Round</th>
+                            <th style="padding:0.5rem;text-align:left;color:#a0aec0;">Failed Components</th>
+                            <th style="padding:0.5rem;text-align:center;color:#a0aec0;">Survived</th>
+                            <th style="padding:0.5rem;text-align:center;color:#a0aec0;">Cascade</th>
+                            <th style="padding:0.5rem;text-align:center;color:#a0aec0;">Affected</th>
+                            <th style="padding:0.5rem;text-align:center;color:#a0aec0;">Resilience</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <template x-for="exp in report.experiments" :key="exp.round">
+                            <tr style="border-bottom:1px solid #1a202c;">
+                                <td style="padding:0.5rem;text-align:center;color:#e2e8f0;" x-text="exp.round"></td>
+                                <td style="padding:0.5rem;color:#e2e8f0;font-size:0.8rem;" x-text="exp.failed_components.join(', ')"></td>
+                                <td style="padding:0.5rem;text-align:center;">
+                                    <span x-show="exp.survived" style="color:#00b894;font-weight:600;">YES</span>
+                                    <span x-show="!exp.survived" style="color:#e94560;font-weight:600;">NO</span>
+                                </td>
+                                <td style="padding:0.5rem;text-align:center;color:#e2e8f0;" x-text="exp.cascade_depth"></td>
+                                <td style="padding:0.5rem;text-align:center;color:#e2e8f0;" x-text="exp.affected_count"></td>
+                                <td style="padding:0.5rem;text-align:center;color:#e2e8f0;" x-text="exp.resilience_during"></td>
+                            </tr>
+                        </template>
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Recommendations -->
+            <div class="card" style="padding:1rem;" x-show="report.recommendations && report.recommendations.length > 0">
+                <h3 style="margin:0 0 0.8rem;color:#e2e8f0;font-size:1rem;">Recommendations</h3>
+                <ul style="margin:0;padding-left:1.2rem;">
+                    <template x-for="rec in report.recommendations" :key="rec">
+                        <li style="color:#a0aec0;margin-bottom:0.4rem;font-size:0.9rem;" x-text="rec"></li>
+                    </template>
+                </ul>
+            </div>
+        </div>
+    </template>
+
+    <!-- No results yet -->
+    <div x-show="!report && !loading" class="card" style="padding:3rem;text-align:center;color:#4a5568;">
+        <p style="font-size:1.1rem;">Configure and run a Chaos Monkey experiment to see results.</p>
+    </div>
+</div>
+
+<script>
+function chaosApp() {
+    return {
+        config: {
+            level: 'monkey',
+            rounds: 10,
+            seed: null,
+            exclude: ''
+        },
+        report: null,
+        loading: false,
+
+        unleash() {
+            this.loading = true;
+            this.report = null;
+            const params = new URLSearchParams();
+            params.set('level', this.config.level);
+            params.set('rounds', this.config.rounds);
+            if (this.config.seed) params.set('seed', this.config.seed);
+            if (this.config.exclude) params.set('exclude', this.config.exclude);
+
+            fetch('/api/chaos-monkey', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/x-www-form-urlencoded'},
+                body: params.toString()
+            })
+            .then(r => r.json())
+            .then(data => {
+                this.report = data;
+                this.loading = false;
+            })
+            .catch(() => {
+                this.loading = false;
+            });
+        }
+    };
+}
+</script>
+{% endblock %}

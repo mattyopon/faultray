@@ -1,0 +1,164 @@
+{% extends "base.html" %}
+
+{% block title %}FaultRay - FMEA Analysis{% endblock %}
+
+{% block page_title %}FMEA Analysis{% endblock %}
+{% block page_subtitle %}<span class="page-subtitle">Failure Mode &amp; Effects Analysis</span>{% endblock %}
+
+{% block content %}
+<div class="content-grid" x-data="fmeaApp()">
+    <!-- Summary cards -->
+    <div class="metric-cards" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:1rem;margin-bottom:1.5rem;">
+        <div class="card" style="padding:1rem;text-align:center;">
+            <div style="font-size:0.75rem;color:#a0aec0;text-transform:uppercase;">Total RPN</div>
+            <div style="font-size:1.8rem;font-weight:700;color:#e2e8f0;" x-text="totalRpn"></div>
+        </div>
+        <div class="card" style="padding:1rem;text-align:center;">
+            <div style="font-size:0.75rem;color:#a0aec0;text-transform:uppercase;">Average RPN</div>
+            <div style="font-size:1.8rem;font-weight:700;color:#e2e8f0;" x-text="averageRpn"></div>
+        </div>
+        <div class="card" style="padding:1rem;text-align:center;">
+            <div style="font-size:0.75rem;color:#a0aec0;text-transform:uppercase;">High Risk (&gt;200)</div>
+            <div style="font-size:1.8rem;font-weight:700;color:#e94560;" x-text="highRisk"></div>
+        </div>
+        <div class="card" style="padding:1rem;text-align:center;">
+            <div style="font-size:0.75rem;color:#a0aec0;text-transform:uppercase;">Medium Risk</div>
+            <div style="font-size:1.8rem;font-weight:700;color:#f0a500;" x-text="mediumRisk"></div>
+        </div>
+        <div class="card" style="padding:1rem;text-align:center;">
+            <div style="font-size:0.75rem;color:#a0aec0;text-transform:uppercase;">Low Risk</div>
+            <div style="font-size:1.8rem;font-weight:700;color:#00b894;" x-text="lowRisk"></div>
+        </div>
+    </div>
+
+    <!-- Filter -->
+    <div class="card" style="padding:1rem;margin-bottom:1rem;">
+        <div style="display:flex;gap:1rem;align-items:center;flex-wrap:wrap;">
+            <label style="color:#a0aec0;font-size:0.85rem;">Filter by Component:</label>
+            <select x-model="filterComponent" style="background:#1a202c;color:#e2e8f0;border:1px solid #2d3748;border-radius:4px;padding:0.4rem 0.8rem;">
+                <option value="">All Components</option>
+                <template x-for="c in components" :key="c">
+                    <option :value="c" x-text="c"></option>
+                </template>
+            </select>
+            <label style="color:#a0aec0;font-size:0.85rem;">Min RPN:</label>
+            <input type="number" x-model.number="filterMinRpn" min="0" max="1000" style="background:#1a202c;color:#e2e8f0;border:1px solid #2d3748;border-radius:4px;padding:0.4rem;width:80px;">
+        </div>
+    </div>
+
+    <!-- Risk distribution chart -->
+    <div class="card" style="padding:1rem;margin-bottom:1.5rem;">
+        <h3 style="margin:0 0 0.8rem;color:#e2e8f0;font-size:1rem;">Risk Distribution</h3>
+        <div style="display:flex;height:24px;border-radius:6px;overflow:hidden;background:#1a202c;">
+            <div :style="'width:' + highPct + '%;background:#e94560;'" :title="'High: ' + highRisk"></div>
+            <div :style="'width:' + medPct + '%;background:#f0a500;'" :title="'Medium: ' + mediumRisk"></div>
+            <div :style="'width:' + lowPct + '%;background:#00b894;'" :title="'Low: ' + lowRisk"></div>
+        </div>
+        <div style="display:flex;gap:1.5rem;margin-top:0.5rem;font-size:0.8rem;color:#a0aec0;">
+            <span><span style="display:inline-block;width:10px;height:10px;background:#e94560;border-radius:2px;margin-right:4px;"></span>High (&gt;200)</span>
+            <span><span style="display:inline-block;width:10px;height:10px;background:#f0a500;border-radius:2px;margin-right:4px;"></span>Medium (100-200)</span>
+            <span><span style="display:inline-block;width:10px;height:10px;background:#00b894;border-radius:2px;margin-right:4px;"></span>Low (&le;100)</span>
+        </div>
+    </div>
+
+    <!-- FMEA table -->
+    <div class="card" style="padding:1rem;overflow-x:auto;">
+        <h3 style="margin:0 0 0.8rem;color:#e2e8f0;font-size:1rem;">Failure Modes (sorted by RPN)</h3>
+        <table style="width:100%;border-collapse:collapse;font-size:0.85rem;">
+            <thead>
+                <tr style="border-bottom:2px solid #2d3748;">
+                    <th style="padding:0.5rem;text-align:left;color:#a0aec0;">Component</th>
+                    <th style="padding:0.5rem;text-align:left;color:#a0aec0;">Failure Mode</th>
+                    <th style="padding:0.5rem;text-align:left;color:#a0aec0;">Cause</th>
+                    <th style="padding:0.5rem;text-align:center;color:#a0aec0;">S</th>
+                    <th style="padding:0.5rem;text-align:center;color:#a0aec0;">O</th>
+                    <th style="padding:0.5rem;text-align:center;color:#a0aec0;">D</th>
+                    <th style="padding:0.5rem;text-align:center;color:#a0aec0;cursor:pointer;" @click="sortBy='rpn';sortAsc=!sortAsc">RPN</th>
+                    <th style="padding:0.5rem;text-align:left;color:#a0aec0;">System Effect</th>
+                </tr>
+            </thead>
+            <tbody>
+                <template x-for="fm in filteredModes" :key="fm.id">
+                    <tr style="border-bottom:1px solid #1a202c;">
+                        <td style="padding:0.5rem;color:#e2e8f0;font-weight:600;" x-text="fm.component_name"></td>
+                        <td style="padding:0.5rem;color:#e2e8f0;" x-text="fm.mode"></td>
+                        <td style="padding:0.5rem;color:#a0aec0;" x-text="fm.cause"></td>
+                        <td style="padding:0.5rem;text-align:center;color:#e2e8f0;" x-text="fm.severity"></td>
+                        <td style="padding:0.5rem;text-align:center;color:#e2e8f0;" x-text="fm.occurrence"></td>
+                        <td style="padding:0.5rem;text-align:center;color:#e2e8f0;" x-text="fm.detection"></td>
+                        <td style="padding:0.5rem;text-align:center;font-weight:700;" :style="rpnColor(fm.rpn)" x-text="fm.rpn"></td>
+                        <td style="padding:0.5rem;color:#a0aec0;font-size:0.8rem;" x-text="fm.effect_system"></td>
+                    </tr>
+                </template>
+            </tbody>
+        </table>
+        <div x-show="filteredModes.length === 0" style="text-align:center;padding:2rem;color:#4a5568;">
+            No failure modes match the current filters.
+        </div>
+    </div>
+</div>
+
+<script>
+function fmeaApp() {
+    return {
+        modes: [],
+        components: [],
+        filterComponent: '',
+        filterMinRpn: 0,
+        sortBy: 'rpn',
+        sortAsc: false,
+        totalRpn: 0,
+        averageRpn: 0,
+        highRisk: 0,
+        mediumRisk: 0,
+        lowRisk: 0,
+
+        get highPct() {
+            const t = this.highRisk + this.mediumRisk + this.lowRisk;
+            return t > 0 ? (this.highRisk / t * 100).toFixed(1) : 0;
+        },
+        get medPct() {
+            const t = this.highRisk + this.mediumRisk + this.lowRisk;
+            return t > 0 ? (this.mediumRisk / t * 100).toFixed(1) : 0;
+        },
+        get lowPct() {
+            const t = this.highRisk + this.mediumRisk + this.lowRisk;
+            return t > 0 ? (this.lowRisk / t * 100).toFixed(1) : 0;
+        },
+
+        get filteredModes() {
+            let result = this.modes;
+            if (this.filterComponent) {
+                result = result.filter(m => m.component_id === this.filterComponent);
+            }
+            if (this.filterMinRpn > 0) {
+                result = result.filter(m => m.rpn >= this.filterMinRpn);
+            }
+            result.sort((a, b) => this.sortAsc ? a.rpn - b.rpn : b.rpn - a.rpn);
+            return result;
+        },
+
+        rpnColor(rpn) {
+            if (rpn > 200) return 'color:#e94560;';
+            if (rpn > 100) return 'color:#f0a500;';
+            return 'color:#00b894;';
+        },
+
+        init() {
+            fetch('/api/fmea')
+                .then(r => r.json())
+                .then(data => {
+                    this.modes = data.failure_modes || [];
+                    this.totalRpn = data.total_rpn || 0;
+                    this.averageRpn = data.average_rpn || 0;
+                    this.highRisk = data.high_risk_count || 0;
+                    this.mediumRisk = data.medium_risk_count || 0;
+                    this.lowRisk = data.low_risk_count || 0;
+                    const compSet = new Set(this.modes.map(m => m.component_id));
+                    this.components = [...compSet].sort();
+                });
+        }
+    };
+}
+</script>
+{% endblock %}

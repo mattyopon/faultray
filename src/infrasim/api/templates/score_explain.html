@@ -1,0 +1,263 @@
+{% extends "base.html" %}
+{% set active_page = "score_explain" %}
+
+{% block title %}FaultRay - Score Breakdown{% endblock %}
+{% block page_title %}Resilience Score Breakdown{% endblock %}
+{% block page_subtitle %}<span class="page-subtitle">Understand exactly what drives your resilience score</span>{% endblock %}
+
+{% block top_actions %}
+<button class="btn btn-sm btn-accent" id="runScoreBtn"
+        hx-get="/api/score-decomposition" hx-target="#score-results" hx-swap="innerHTML"
+        hx-indicator="#score-spinner">
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M22 12h-4l-3 9L9 3l-3 9H2"/>
+    </svg>
+    Analyze Score
+</button>
+<span id="score-spinner" class="htmx-indicator"><span class="spinner"></span></span>
+{% endblock %}
+
+{% block content %}
+<div class="dashboard-grid" id="score-results">
+    <!-- Score & Grade -->
+    <div class="card">
+        <div class="card-header">
+            <h3>Resilience Score</h3>
+        </div>
+        <div class="card-body score-display">
+            {% set score = decomposition.total_score if decomposition else 0 %}
+            {% if score >= 80 %}
+                {% set sc_class = "score-good" %}
+            {% elif score >= 60 %}
+                {% set sc_class = "score-warning" %}
+            {% else %}
+                {% set sc_class = "score-critical" %}
+            {% endif %}
+            <div class="score-circle {{ sc_class }}">
+                <svg viewBox="0 0 120 120" class="score-ring">
+                    <circle cx="60" cy="60" r="54" fill="none" stroke="#2d3748" stroke-width="8"/>
+                    <circle cx="60" cy="60" r="54" fill="none"
+                            stroke-width="8"
+                            stroke-dasharray="339.292"
+                            stroke-dashoffset="{{ 339.292 - (339.292 * score / 100) }}"
+                            stroke-linecap="round"
+                            class="score-ring-progress"/>
+                </svg>
+                <div class="score-value">{{ "%.0f"|format(score) }}</div>
+                <div class="score-label">{{ decomposition.grade if decomposition else "N/A" }}</div>
+            </div>
+            {% if decomposition %}
+            <div style="margin-top: 12px; text-align: center;">
+                <span class="text-muted">Percentile: ~{{ "%.0f"|format(decomposition.percentile_estimate) }}%</span>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Score Summary -->
+    <div class="card">
+        <div class="card-header">
+            <h3>Score Summary</h3>
+        </div>
+        <div class="card-body">
+            {% if decomposition %}
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+                <div class="stat-item">
+                    <div class="stat-value" style="font-size: 1.6em; color: var(--blue);">{{ "%.0f"|format(decomposition.base_score) }}</div>
+                    <div class="stat-label">Base Score</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-value" style="font-size: 1.6em; color: var(--red);">-{{ "%.1f"|format(decomposition.penalties_total) }}</div>
+                    <div class="stat-label">Total Penalties</div>
+                </div>
+            </div>
+            <div style="margin-top: 20px;">
+                <div class="defense-bar-item">
+                    <div class="defense-bar-label">
+                        <span>Score</span>
+                        <span class="mono">{{ "%.0f"|format(decomposition.total_score) }}/{{ "%.0f"|format(decomposition.max_possible_score) }}</span>
+                    </div>
+                    <div class="utilization-bar-container" style="height: 12px;">
+                        {% if score >= 80 %}{% set bar_color = "var(--green)" %}
+                        {% elif score >= 60 %}{% set bar_color = "var(--yellow)" %}
+                        {% else %}{% set bar_color = "var(--red)" %}{% endif %}
+                        <div class="utilization-bar" style="width: {{ score }}%; background: {{ bar_color }};"></div>
+                    </div>
+                </div>
+            </div>
+            {% else %}
+            <p class="text-muted">Run the analysis to see results.</p>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Waterfall Chart (CSS-based) -->
+    {% if decomposition and decomposition.factors %}
+    <div class="card card-wide">
+        <div class="card-header">
+            <h3>Score Waterfall</h3>
+        </div>
+        <div class="card-body">
+            <div style="display: flex; flex-direction: column; gap: 8px;">
+                <!-- Base score bar -->
+                <div style="display: flex; align-items: center; gap: 12px;">
+                    <span style="width: 200px; text-align: right; font-weight: 600;">Base Score</span>
+                    <div style="flex: 1; height: 28px; background: var(--bg-secondary); border-radius: 4px; overflow: hidden; position: relative;">
+                        <div style="height: 100%; width: {{ decomposition.base_score }}%; background: var(--blue); border-radius: 4px;"></div>
+                    </div>
+                    <span class="mono" style="width: 60px;">{{ "%.0f"|format(decomposition.base_score) }}</span>
+                </div>
+
+                <!-- Penalty bars -->
+                {% set ns = namespace(running=decomposition.base_score) %}
+                {% for factor in decomposition.factors %}
+                {% if factor.category == "penalty" and factor.points != 0 %}
+                <div style="display: flex; align-items: center; gap: 12px;">
+                    <span style="width: 200px; text-align: right; color: var(--red);">{{ factor.name }}</span>
+                    <div style="flex: 1; height: 28px; background: var(--bg-secondary); border-radius: 4px; overflow: hidden; position: relative;">
+                        {% set ns.running = ns.running + factor.points %}
+                        <div style="height: 100%; width: {{ ns.running }}%; background: var(--yellow); border-radius: 4px;"></div>
+                        <div style="position: absolute; right: {{ 100 - ns.running - (factor.points|abs) }}%; top: 0; height: 100%; width: {{ (factor.points|abs) }}%; background: var(--red); opacity: 0.6;"></div>
+                    </div>
+                    <span class="mono" style="width: 60px; color: var(--red);">{{ "%+.1f"|format(factor.points) }}</span>
+                </div>
+                {% endif %}
+                {% endfor %}
+
+                <!-- Final score bar -->
+                <div style="display: flex; align-items: center; gap: 12px;">
+                    <span style="width: 200px; text-align: right; font-weight: 600;">Final Score</span>
+                    <div style="flex: 1; height: 28px; background: var(--bg-secondary); border-radius: 4px; overflow: hidden;">
+                        {% if decomposition.total_score >= 80 %}{% set final_color = "var(--green)" %}
+                        {% elif decomposition.total_score >= 60 %}{% set final_color = "var(--yellow)" %}
+                        {% else %}{% set final_color = "var(--red)" %}{% endif %}
+                        <div style="height: 100%; width: {{ decomposition.total_score }}%; background: {{ final_color }}; border-radius: 4px;"></div>
+                    </div>
+                    <span class="mono" style="width: 60px; font-weight: 600;">{{ "%.0f"|format(decomposition.total_score) }}</span>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Penalty Factors -->
+    {% if decomposition %}
+    {% set penalties = [] %}
+    {% for f in decomposition.factors %}
+        {% if f.category == "penalty" %}
+            {% if penalties.append(f) %}{% endif %}
+        {% endif %}
+    {% endfor %}
+    {% if penalties %}
+    <div class="card card-wide">
+        <div class="card-header">
+            <h3>Penalty Factors</h3>
+        </div>
+        <div class="card-body no-padding">
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>Factor</th>
+                        <th>Points</th>
+                        <th>Description</th>
+                        <th>Remediation</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for f in decomposition.factors %}
+                    {% if f.category == "penalty" %}
+                    <tr>
+                        <td><span class="comp-name">{{ f.name }}</span></td>
+                        <td><span class="badge badge-critical">{{ "%+.1f"|format(f.points) }}</span></td>
+                        <td><span class="text-muted">{{ f.description[:80] }}</span></td>
+                        <td><span class="text-muted">{{ f.remediation or "N/A" }}</span></td>
+                    </tr>
+                    {% endif %}
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+    {% endif %}
+    {% endif %}
+
+    <!-- Positive Factors -->
+    {% if decomposition %}
+    {% set has_bonus = false %}
+    {% for f in decomposition.factors %}
+        {% if f.category in ["bonus", "neutral"] %}{% set has_bonus = true %}{% endif %}
+    {% endfor %}
+    {% if has_bonus %}
+    <div class="card card-wide">
+        <div class="card-header">
+            <h3>Positive Factors</h3>
+        </div>
+        <div class="card-body no-padding">
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>Factor</th>
+                        <th>Description</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for f in decomposition.factors %}
+                    {% if f.category in ["bonus", "neutral"] %}
+                    <tr>
+                        <td><span class="comp-name" style="color: var(--green);">{{ f.name }}</span></td>
+                        <td><span class="text-muted">{{ f.description }}</span></td>
+                    </tr>
+                    {% endif %}
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+    {% endif %}
+    {% endif %}
+
+    <!-- Top Improvements -->
+    {% if decomposition and decomposition.improvements %}
+    <div class="card card-wide">
+        <div class="card-header">
+            <h3>Top Improvements</h3>
+            <span class="text-muted" style="font-size: 0.85em;">Actions sorted by impact</span>
+        </div>
+        <div class="card-body no-padding">
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>#</th>
+                        <th>Action</th>
+                        <th>Component</th>
+                        <th>Impact</th>
+                        <th>Effort</th>
+                        <th>Description</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for imp in decomposition.improvements[:10] %}
+                    <tr>
+                        <td>{{ loop.index }}</td>
+                        <td><span class="badge badge-info">{{ imp.action }}</span></td>
+                        <td><span class="comp-name">{{ imp.component_id }}</span></td>
+                        <td><span class="badge badge-passed">+{{ "%.1f"|format(imp.estimated_improvement) }}</span></td>
+                        <td>
+                            {% if imp.effort == "low" %}
+                            <span class="health-badge health-healthy">Low</span>
+                            {% elif imp.effort == "medium" %}
+                            <span class="health-badge health-degraded">Medium</span>
+                            {% else %}
+                            <span class="health-badge health-down">High</span>
+                            {% endif %}
+                        </td>
+                        <td><span class="text-muted">{{ imp.description[:50] }}</span></td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

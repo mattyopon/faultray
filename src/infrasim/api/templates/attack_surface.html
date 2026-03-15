@@ -1,0 +1,254 @@
+{% extends "base.html" %}
+{% set active_page = "attack_surface" %}
+
+{% block title %}FaultRay - Attack Surface Analysis{% endblock %}
+{% block page_title %}Attack Surface Analysis{% endblock %}
+{% block page_subtitle %}<span class="page-subtitle">Map entry points, lateral paths, and high-value targets</span>{% endblock %}
+
+{% block top_actions %}
+<button class="btn btn-sm btn-accent" id="runAttackSurfaceBtn"
+        hx-get="/api/attack-surface" hx-target="#attack-surface-results" hx-swap="innerHTML"
+        hx-indicator="#as-spinner">
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+    </svg>
+    Run Analysis
+</button>
+<span id="as-spinner" class="htmx-indicator"><span class="spinner"></span></span>
+{% endblock %}
+
+{% block content %}
+<div class="dashboard-grid" id="attack-surface-results">
+    <!-- Attack Surface Score -->
+    <div class="card">
+        <div class="card-header">
+            <h3>Attack Surface Score</h3>
+            <span class="text-muted" style="font-size: 0.85em;">Lower is better</span>
+        </div>
+        <div class="card-body score-display">
+            {% set as_score = report.total_attack_surface_score if report else 0 %}
+            {% if as_score <= 30 %}
+                {% set sc_class = "score-good" %}
+                {% set sc_label = "Low Risk" %}
+            {% elif as_score <= 60 %}
+                {% set sc_class = "score-warning" %}
+                {% set sc_label = "Moderate" %}
+            {% else %}
+                {% set sc_class = "score-critical" %}
+                {% set sc_label = "High Risk" %}
+            {% endif %}
+            <div class="score-circle {{ sc_class }}">
+                <svg viewBox="0 0 120 120" class="score-ring">
+                    <circle cx="60" cy="60" r="54" fill="none" stroke="#2d3748" stroke-width="8"/>
+                    <circle cx="60" cy="60" r="54" fill="none"
+                            stroke-width="8"
+                            stroke-dasharray="339.292"
+                            stroke-dashoffset="{{ 339.292 - (339.292 * as_score / 100) }}"
+                            stroke-linecap="round"
+                            class="score-ring-progress"/>
+                </svg>
+                <div class="score-value">{{ "%.0f"|format(as_score) }}</div>
+                <div class="score-label">{{ sc_label }}</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Quick Stats -->
+    <div class="card">
+        <div class="card-header">
+            <h3>Surface Summary</h3>
+        </div>
+        <div class="card-body">
+            {% if report %}
+            <div class="stat-grid" style="display:grid; grid-template-columns:1fr 1fr; gap:16px;">
+                <div class="stat-item">
+                    <div class="stat-value" style="font-size:2em; color:var(--red);">{{ report.external_exposure }}</div>
+                    <div class="stat-label">Internet-Facing</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-value" style="font-size:2em; color:var(--yellow);">{{ report.entry_points|length }}</div>
+                    <div class="stat-label">Entry Points</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-value" style="font-size:2em; color:var(--blue);">{{ report.lateral_paths|length }}</div>
+                    <div class="stat-label">Lateral Paths</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-value" style="font-size:2em; color:var(--green);">{{ "%.1f"|format(report.avg_defense_depth) }}</div>
+                    <div class="stat-label">Avg Defense Depth</div>
+                </div>
+            </div>
+            {% else %}
+            <p class="text-muted">Run the analysis to see results.</p>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Entry Points -->
+    <div class="card card-wide">
+        <div class="card-header">
+            <h3>Entry Points</h3>
+        </div>
+        <div class="card-body no-padding">
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>Component</th>
+                        <th>Exposure</th>
+                        <th>Protocol</th>
+                        <th>Attack Vectors</th>
+                        <th>Defense</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% if report %}
+                    {% for ep in report.entry_points %}
+                    <tr>
+                        <td><span class="comp-name">{{ ep.component_name }}</span></td>
+                        <td>
+                            {% if ep.exposure_type == "internet" %}
+                            <span class="health-badge health-down">Internet</span>
+                            {% elif ep.exposure_type == "api" %}
+                            <span class="health-badge health-degraded">API</span>
+                            {% else %}
+                            <span class="health-badge health-healthy">Internal</span>
+                            {% endif %}
+                        </td>
+                        <td><span class="mono">{{ ep.protocol }}</span></td>
+                        <td><span class="text-muted">{{ ep.attack_vectors[:3]|join(", ") }}</span></td>
+                        <td>
+                            {% set def_pct = (ep.defense_score * 100)|int %}
+                            {% if def_pct >= 60 %}
+                            <span class="badge badge-passed">{{ def_pct }}%</span>
+                            {% elif def_pct >= 30 %}
+                            <span class="badge badge-warning">{{ def_pct }}%</span>
+                            {% else %}
+                            <span class="badge badge-critical">{{ def_pct }}%</span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                    {% else %}
+                    <tr><td colspan="5" class="text-muted">No data yet. Run analysis above.</td></tr>
+                    {% endif %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- High-Value Targets -->
+    <div class="card card-wide">
+        <div class="card-header">
+            <h3>High-Value Targets</h3>
+        </div>
+        <div class="card-body no-padding">
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>Component</th>
+                        <th>Value Type</th>
+                        <th>Risk Score</th>
+                        <th>Reachable From</th>
+                        <th>Min Hops</th>
+                        <th>Defense Depth</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% if report %}
+                    {% for ht in report.high_value_targets|sort(attribute='risk_score', reverse=true) %}
+                    <tr>
+                        <td><span class="comp-name">{{ ht.component_name }}</span></td>
+                        <td><span class="badge badge-info">{{ ht.value_type }}</span></td>
+                        <td>
+                            {% if ht.risk_score >= 7 %}
+                            <span class="badge badge-critical">{{ "%.1f"|format(ht.risk_score) }}/10</span>
+                            {% elif ht.risk_score >= 4 %}
+                            <span class="badge badge-warning">{{ "%.1f"|format(ht.risk_score) }}/10</span>
+                            {% else %}
+                            <span class="badge badge-passed">{{ "%.1f"|format(ht.risk_score) }}/10</span>
+                            {% endif %}
+                        </td>
+                        <td>{{ ht.reachable_from|length }} entry point(s)</td>
+                        <td>{{ ht.min_hops }}</td>
+                        <td>
+                            {% if ht.defense_depth == 0 %}
+                            <span class="badge badge-critical">None</span>
+                            {% elif ht.defense_depth <= 2 %}
+                            <span class="badge badge-warning">{{ ht.defense_depth }} barrier(s)</span>
+                            {% else %}
+                            <span class="badge badge-passed">{{ ht.defense_depth }} barrier(s)</span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                    {% else %}
+                    <tr><td colspan="6" class="text-muted">No data yet. Run analysis above.</td></tr>
+                    {% endif %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Attack Chains -->
+    {% if report and report.attack_chains %}
+    <div class="card card-wide">
+        <div class="card-header">
+            <h3>Attack Chains</h3>
+        </div>
+        <div class="card-body">
+            {% for chain in report.attack_chains %}
+            <div style="margin-bottom: 24px; padding: 16px; background: var(--bg-card); border-radius: 8px; border-left: 3px solid {% if chain.impact == 'critical' %}var(--red){% elif chain.impact == 'high' %}var(--yellow){% else %}var(--blue){% endif %};">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+                    <h4 style="margin: 0;">{{ chain.name }}</h4>
+                    <div>
+                        {% if chain.impact == "critical" %}
+                        <span class="badge badge-critical">{{ chain.impact|upper }}</span>
+                        {% elif chain.impact == "high" %}
+                        <span class="badge badge-warning">{{ chain.impact|upper }}</span>
+                        {% else %}
+                        <span class="badge badge-info">{{ chain.impact|upper }}</span>
+                        {% endif %}
+                        <span class="badge" style="background: var(--bg-tertiary); color: var(--text-muted);">{{ chain.likelihood }} likelihood</span>
+                    </div>
+                </div>
+                <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-bottom: 12px;">
+                    {% for step in chain.steps %}
+                    <div style="padding: 6px 12px; background: var(--bg-secondary); border-radius: 6px; font-size: 0.85em;">
+                        <strong>{{ step.component }}</strong><br/>
+                        <span class="text-muted">{{ step.action }}</span>
+                    </div>
+                    {% if not loop.last %}
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--text-muted)" stroke-width="2">
+                        <path d="M5 12h14M12 5l7 7-7 7"/>
+                    </svg>
+                    {% endif %}
+                    {% endfor %}
+                </div>
+                {% if chain.mitigations %}
+                <div class="text-muted" style="font-size: 0.85em;">
+                    <strong>Mitigations:</strong> {{ chain.mitigations[:3]|join("; ") }}
+                </div>
+                {% endif %}
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Recommendations -->
+    {% if report and report.recommendations %}
+    <div class="card card-wide">
+        <div class="card-header">
+            <h3>Recommendations</h3>
+        </div>
+        <div class="card-body">
+            {% for rec in report.recommendations %}
+            <div style="padding: 12px 16px; margin-bottom: 8px; background: var(--bg-secondary); border-radius: 6px; border-left: 3px solid var(--yellow);">
+                {{ loop.index }}. {{ rec }}
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}
