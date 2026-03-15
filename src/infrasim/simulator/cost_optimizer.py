@@ -11,22 +11,19 @@ Usage:
     print(f"Savings: ${report.total_savings_monthly:.0f}/mo")
 
 CLI:
-    infrasim cost-optimize model.yaml --min-score 70 --json
+    faultray cost-optimize model.yaml --min-score 70 --json
 """
 
 from __future__ import annotations
 
 import copy
 import logging
-import math
 from dataclasses import dataclass, field
 
 from infrasim.model.components import ComponentType
 from infrasim.model.graph import InfraGraph
 from infrasim.simulator.pareto_optimizer import (
-    AUTOSCALING_COST,
     COST_PER_REPLICA,
-    FAILOVER_COST,
     _calculate_base_cost,
 )
 
@@ -422,7 +419,6 @@ class CostOptimizer:
         if comp is None:
             return 0.0
 
-        old_replicas = comp.replicas
         comp.replicas = max(1, new_replicas)
         new_score = modified.resilience_score()
         original_score = self.graph.resilience_score()

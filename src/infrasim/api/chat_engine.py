@@ -22,7 +22,7 @@ import re
 from dataclasses import dataclass, field
 from enum import Enum
 
-from infrasim.model.components import Component, ComponentType, HealthStatus
+from infrasim.model.components import Component, ComponentType
 from infrasim.model.graph import InfraGraph
 
 
@@ -298,7 +298,7 @@ class ChatEngine:
                 dep_list += f" (+{len(s['dependents']) - 3} more)"
             lines.append(f"| {s['name']} | {s['type']} | {dep_list} |")
 
-        lines.append(f"\nThese components have **no redundancy** (replicas=1) but other components depend on them.")
+        lines.append("\nThese components have **no redundancy** (replicas=1) but other components depend on them.")
 
         suggestions = []
         if spofs:
@@ -450,7 +450,7 @@ class ChatEngine:
         sys_avail = _system_availability(graph)
         sys_nines = _to_nines(sys_avail)
 
-        lines = [f"**System Availability Analysis**\n"]
+        lines = ["**System Availability Analysis**\n"]
         lines.append(f"- **Estimated System Availability:** {sys_avail * 100:.4f}%")
         lines.append(f"- **Nines:** {sys_nines:.2f}")
 
@@ -505,7 +505,7 @@ class ChatEngine:
         score = scored["score"]
         breakdown = scored["breakdown"]
 
-        lines = [f"**Risk Assessment**\n"]
+        lines = ["**Risk Assessment**\n"]
         lines.append(f"**Overall Resilience Score: {score}/100**\n")
 
         # Score breakdown
@@ -781,7 +781,7 @@ class ChatEngine:
         else:
             health_emoji = "Needs Attention"
 
-        lines = [f"**Infrastructure Overview**\n"]
+        lines = ["**Infrastructure Overview**\n"]
         lines.append(f"- **Total Components:** {summary['total_components']}")
         lines.append(f"- **Total Dependencies:** {summary['total_dependencies']}")
         lines.append(f"- **Resilience Score:** {score}/100 ({health_emoji})")
@@ -848,9 +848,9 @@ class ChatEngine:
     def _handle_unknown(self, question: str, graph: InfraGraph) -> ChatResponse:
         return ChatResponse(
             text=(
-                f"I'm not sure how to answer that. "
-                f"Try asking about single points of failure, availability, "
-                f"cascade analysis, or type **help** to see what I can do."
+                "I'm not sure how to answer that. "
+                "Try asking about single points of failure, availability, "
+                "cascade analysis, or type **help** to see what I can do."
             ),
             intent=ChatIntent.UNKNOWN,
             suggestions=self.get_suggestions(graph),

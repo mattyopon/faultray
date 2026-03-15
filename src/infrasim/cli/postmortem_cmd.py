@@ -6,7 +6,6 @@ import json as json_mod
 from pathlib import Path
 
 import typer
-from rich.console import Console
 from rich.panel import Panel
 from rich.table import Table
 
@@ -119,7 +118,7 @@ def postmortem_generate(
             console.print(f"  - {theme}")
 
     # Show file list
-    console.print(f"\n[bold]Generated Files:[/]")
+    console.print("\n[bold]Generated Files:[/]")
     for p in paths:
         console.print(f"  {p}")
 
@@ -203,7 +202,7 @@ def postmortem_summary(
     )
 
     if not json_output:
-        console.print(f"[cyan]Running simulation and generating post-mortems...[/]")
+        console.print("[cyan]Running simulation and generating post-mortems...[/]")
 
     engine = SimulationEngine(graph)
     sim_report = engine.run_all_defaults(include_feed=False, include_plugins=False)

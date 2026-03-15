@@ -7,12 +7,12 @@ from pathlib import Path
 import typer
 
 from infrasim.cli.main import (
-    SimulationEngine,
     _print_ai_analysis,
     app,
     console,
-    print_simulation_report,
 )
+from infrasim.reporter.report import print_simulation_report
+from infrasim.simulator.engine import SimulationEngine
 
 
 @app.command()
@@ -31,7 +31,7 @@ def analyze(
     """
     import json as json_mod
 
-    from infrasim.ai.analyzer import InfraSimAnalyzer
+    from infrasim.ai.analyzer import FaultRayAnalyzer
     from infrasim.model.loader import load_yaml
 
     if not yaml_file.exists():
@@ -50,7 +50,7 @@ def analyze(
     sim_report = engine.run_all_defaults()
 
     console.print("[cyan]Running AI analysis...[/]")
-    ai_analyzer = InfraSimAnalyzer()
+    ai_analyzer = FaultRayAnalyzer()
     ai_report = ai_analyzer.analyze(graph, sim_report)
 
     if json_output:
@@ -77,7 +77,7 @@ def dora_report(
         # Custom output path
         faultray dora-report infra.yaml --output my-dora-report.html
     """
-    from infrasim.ai.analyzer import InfraSimAnalyzer
+    from infrasim.ai.analyzer import FaultRayAnalyzer
     from infrasim.model.loader import load_yaml
     from infrasim.reporter.compliance import generate_dora_report
 
@@ -97,7 +97,7 @@ def dora_report(
     sim_report = engine.run_all_defaults()
 
     console.print("[cyan]Running AI analysis...[/]")
-    ai_analyzer = InfraSimAnalyzer()
+    ai_analyzer = FaultRayAnalyzer()
     ai_report = ai_analyzer.analyze(graph, sim_report)
 
     console.print("[cyan]Generating DORA compliance report...[/]")
@@ -128,7 +128,6 @@ def executive(
 
     from infrasim.model.loader import load_yaml
     from infrasim.reporter.executive_report import (
-        ExecutiveSummary,
         generate_executive_summary,
         render_executive_html,
     )

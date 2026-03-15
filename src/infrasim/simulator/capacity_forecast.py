@@ -1,4 +1,4 @@
-"""Capacity forecasting engine for InfraSim.
+"""Capacity forecasting engine for FaultRay.
 
 Predicts future resource needs based on current utilization trends
 using simple linear regression when historical data points are available,
@@ -8,11 +8,10 @@ or estimates from current utilization otherwise.
 from __future__ import annotations
 
 import math
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from datetime import datetime
 from enum import Enum
 
-from infrasim.model.components import Component, ComponentType, HealthStatus
 from infrasim.model.graph import InfraGraph
 
 

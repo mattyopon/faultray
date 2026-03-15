@@ -39,7 +39,6 @@ def diff_command(
     result = differ.diff_files(before, after)
 
     if json_output:
-        import json as json_mod
 
         data = {
             "score_before": result.score_before,

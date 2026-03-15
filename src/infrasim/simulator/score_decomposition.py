@@ -430,7 +430,6 @@ class ScoreDecomposer:
         - "enable-autoscaling": enable autoscaling
         - "reduce-utilization": set all metrics to 50%
         """
-        import copy
 
         comp = graph.get_component(component_id)
         if comp is None:

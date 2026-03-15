@@ -3,16 +3,13 @@
 from __future__ import annotations
 
 import asyncio
-import re
 from urllib.parse import urlparse
 
 import httpx
 
 from infrasim.model.components import (
-    Capacity,
     Component,
     ComponentType,
-    Dependency,
     ResourceMetrics,
 )
 from infrasim.model.graph import InfraGraph

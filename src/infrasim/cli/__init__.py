@@ -1,4 +1,4 @@
-"""CLI package for InfraSim.
+"""CLI package for FaultRay.
 
 Re-exports the Typer ``app`` so that ``infrasim.cli:app`` keeps working as the
 entry-point defined in pyproject.toml.  Submodules register their commands by

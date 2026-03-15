@@ -17,12 +17,11 @@ Designed to be printed to PDF via browser or wkhtmltopdf.
 from __future__ import annotations
 
 import html
-import math
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
 
 from infrasim.ai.analyzer import AIAnalysisReport
-from infrasim.model.components import ComponentType, HealthStatus
+from infrasim.model.components import HealthStatus
 from infrasim.model.graph import InfraGraph
 from infrasim.simulator.engine import SimulationReport
 
@@ -271,7 +270,7 @@ class ExecutiveReportGenerator:
     def _assess_compliance(self, graph: InfraGraph) -> dict:
         """Run a basic compliance assessment for the report."""
         try:
-            from infrasim.simulator.compliance_monitor import ComplianceFramework, ComplianceMonitor
+            from infrasim.simulator.compliance_monitor import ComplianceMonitor
             monitor = ComplianceMonitor()
             snapshots = monitor.assess_all(graph)
             result = {}
@@ -368,7 +367,7 @@ class ExecutiveReportGenerator:
         for finding in r.key_findings[:5]:
             findings_html += f"<li>{_esc(finding)}</li>\n"
 
-        annual_risk = self._estimate_annual_risk(self._graph, self._sim_report) if self._graph and self._sim_report else 0
+        self._estimate_annual_risk(self._graph, self._sim_report) if self._graph and self._sim_report else 0
         sla_pct = self._sla_achievement()
 
         return f"""
@@ -747,7 +746,6 @@ class ExecutiveReportGenerator:
             return ""
 
         # Build a simple CSS-only trend visualization
-        resilience_score = self._sim_report.resilience_score
         nines = self._ai_report.estimated_current_nines if self._ai_report else 2.0
         max_nines = self._ai_report.theoretical_max_nines if self._ai_report else 4.0
 
@@ -793,7 +791,7 @@ class ExecutiveReportGenerator:
         comp_rows = ""
         for comp in self._graph.components.values():
             dependents = self._graph.get_dependents(comp.id)
-            deps = self._graph.get_dependencies(comp.id)
+            self._graph.get_dependencies(comp.id)
             health_color = {
                 HealthStatus.HEALTHY: "#28a745",
                 HealthStatus.DEGRADED: "#ffc107",

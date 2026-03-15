@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import json as json_mod
 from pathlib import Path
 
 import typer
@@ -49,9 +48,9 @@ def velocity(
     and estimate the impact of change velocity on system availability.
 
     Examples:
-        infrasim velocity infra.yaml --deploys-per-week 10 --cfr 5
-        infrasim velocity infra.yaml --deploys-per-week 50 --cfr 3 --mttr 15 --json
-        infrasim velocity infra.yaml --sweep --json
+        faultray velocity infra.yaml --deploys-per-week 10 --cfr 5
+        faultray velocity infra.yaml --deploys-per-week 50 --cfr 3 --mttr 15 --json
+        faultray velocity infra.yaml --sweep --json
     """
     from infrasim.simulator.change_velocity import ChangeVelocityAnalyzer
 

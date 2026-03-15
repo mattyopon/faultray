@@ -17,7 +17,7 @@ import math
 from dataclasses import dataclass, field
 from enum import Enum
 
-from infrasim.model.components import ComponentType, HealthStatus
+from infrasim.model.components import ComponentType
 from infrasim.model.graph import InfraGraph
 
 logger = logging.getLogger(__name__)

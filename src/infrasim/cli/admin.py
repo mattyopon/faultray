@@ -3,19 +3,22 @@
 from __future__ import annotations
 
 from pathlib import Path
+from typing import TYPE_CHECKING
 
 import typer
+
+if TYPE_CHECKING:
+    from infrasim.simulator.planner import RemediationPlan, RemediationPlanner
 
 from infrasim.cli.main import (
     DEFAULT_MODEL_PATH,
     InfraGraph,
-    SimulationEngine,
     _load_graph_for_analysis,
     app,
     console,
-    print_infrastructure_summary,
-    print_simulation_report,
 )
+from infrasim.reporter.report import print_infrastructure_summary, print_simulation_report
+from infrasim.simulator.engine import SimulationEngine
 
 
 @app.command()
@@ -130,7 +133,7 @@ def report(
 
     if not model.exists():
         console.print(f"[red]Model file not found: {model}[/]")
-        console.print("Run [cyan]infrasim scan[/] or [cyan]infrasim load[/] first.")
+        console.print("Run [cyan]faultray scan[/] or [cyan]faultray load[/] first.")
         raise typer.Exit(1)
 
     console.print("[cyan]Loading infrastructure model...[/]")
@@ -277,7 +280,6 @@ def plan(
 
 def _export_plan_html(path: Path, plan: "RemediationPlan", planner: "RemediationPlanner") -> None:
     """Generate an HTML report for the remediation plan."""
-    from infrasim.simulator.planner import RemediationPlan
 
     roi_str = (
         f"{plan.overall_roi:.0f}%"
@@ -441,7 +443,7 @@ def _build_yaml_from_answers(
     """Build a YAML infrastructure definition from quickstart answers."""
     import yaml
 
-    tmpl = _TEMPLATES.get(template, _TEMPLATES["web-app"])
+    _TEMPLATES.get(template, _TEMPLATES["web-app"])
 
     # Start with template components and customize
     components: list[dict] = []
@@ -733,7 +735,7 @@ def quickstart(
     cache: str | None = typer.Option(None, "--cache", help="Cache: redis, none"),
     queue: str | None = typer.Option(None, "--queue", help="Message queue: kafka, sqs, rabbitmq, none"),
     cdn: str | None = typer.Option(None, "--cdn", help="CDN: cloudfront, none"),
-    output: Path = typer.Option(Path("infrasim-model.yaml"), "--output", "-o", help="Output YAML file path"),
+    output: Path = typer.Option(Path("faultray-model.yaml"), "--output", "-o", help="Output YAML file path"),
 ) -> None:
     """Interactive infrastructure builder for new users.
 
@@ -859,4 +861,4 @@ def quickstart(
         border_style="cyan",
     ))
 
-    console.print("\nRun [cyan]infrasim plan[/] to see improvement recommendations.")
+    console.print("\nRun [cyan]faultray plan[/] to see improvement recommendations.")

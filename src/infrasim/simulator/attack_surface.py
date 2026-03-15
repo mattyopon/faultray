@@ -14,6 +14,7 @@ This module thinks like an attacker - what could they reach?
 
 from __future__ import annotations
 
+import re as _re
 from collections import deque
 from dataclasses import dataclass, field
 
@@ -186,8 +187,6 @@ _HVT_PAYMENT_TOKENS = {"payment", "stripe", "billing", "checkout", "pay"}
 _HVT_PII_TOKENS = {"user", "customer", "profile", "personal", "account"}
 _HVT_SECRETS_TOKENS = {"secret", "vault", "kms", "key", "cert", "credential"}
 
-import re as _re
-
 _WORD_BOUNDARY_CACHE: dict[str, _re.Pattern] = {}
 
 
@@ -348,7 +347,7 @@ class AttackSurfaceAnalyzer:
             entry_points = self.find_entry_points(graph)
 
         paths: list[LateralMovePath] = []
-        entry_ids = {ep.component_id for ep in entry_points}
+        {ep.component_id for ep in entry_points}
 
         for ep in entry_points:
             # BFS from entry point following dependency edges (both directions for reachability)
@@ -473,9 +472,9 @@ class AttackSurfaceAnalyzer:
             lateral_paths = self.find_lateral_paths(graph, entry_points)
 
         chains: list[AttackChain] = []
-        entry_ids = {ep.component_id for ep in entry_points}
-        hvt_ids = {ht.component_id for ht in high_value_targets}
-        hvt_map = {ht.component_id: ht for ht in high_value_targets}
+        {ep.component_id for ep in entry_points}
+        {ht.component_id for ht in high_value_targets}
+        {ht.component_id: ht for ht in high_value_targets}
 
         # 1. External to Database chain
         db_targets = [ht for ht in high_value_targets if ht.value_type == "data_store"]

@@ -8,7 +8,7 @@ fingerprints) and applies mutations to explore the failure space.
 from __future__ import annotations
 
 import random
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 
 from infrasim.model.graph import InfraGraph
 from infrasim.simulator.engine import ScenarioResult, SimulationEngine

@@ -146,7 +146,7 @@ def ops_sim(
             graph = InfraGraph.load(model)
     else:
         console.print(f"[red]Model file not found: {model}[/]")
-        console.print("Run [cyan]infrasim scan[/] or [cyan]infrasim load[/] first.")
+        console.print("Run [cyan]faultray scan[/] or [cyan]faultray load[/] first.")
         raise typer.Exit(1)
 
     # Collect SLOs from components if not from YAML global section
@@ -241,7 +241,7 @@ def ops_sim(
         _print_ops_results(result, console)
 
     if html:
-        console.print(f"\n[dim]HTML export for ops-sim is not yet implemented.[/]")
+        console.print("\n[dim]HTML export for ops-sim is not yet implemented.[/]")
 
 
 @app.command()
@@ -277,7 +277,7 @@ def whatif(
     try:
         from infrasim.simulator.whatif_engine import WhatIfEngine
     except ImportError:
-        console.print("[red]What-if engine not available. Install infrasim with what-if support.[/]")
+        console.print("[red]What-if engine not available. Install faultray with what-if support.[/]")
         raise typer.Exit(1)
 
     graph = _load_graph_for_analysis(model, resolved_yaml)
@@ -378,7 +378,7 @@ def capacity(
     try:
         from infrasim.simulator.capacity_engine import CapacityPlanningEngine
     except ImportError:
-        console.print("[red]Capacity planning engine not available. Install infrasim with capacity support.[/]")
+        console.print("[red]Capacity planning engine not available. Install faultray with capacity support.[/]")
         raise typer.Exit(1)
 
     graph = _load_graph_for_analysis(model, resolved_yaml)
@@ -532,7 +532,6 @@ def advise(
 
     if json_output:
         import dataclasses
-        import json as json_lib
 
         data = {
             "total_recommendations": report.total_recommendations,
@@ -648,7 +647,6 @@ def monte_carlo_cmd(
     result = run_monte_carlo(graph, n_trials=n_trials, seed=seed)
 
     if json_output:
-        import json as json_lib
 
         data = {
             "n_trials": result.n_trials,
@@ -864,7 +862,6 @@ def compliance(
         raise typer.Exit(1)
 
     if json_output:
-        import json as json_lib
 
         data: dict = {}
         for fw_name, report in reports.items():
@@ -1218,7 +1215,6 @@ def fix(
         # Custom output directory
         faultray fix infra.yaml --output ./my-remediation/
     """
-    import json as json_lib
 
     from rich.panel import Panel
     from rich.table import Table

@@ -13,3 +13,4 @@ infrasim-model.json
 *.docx
 .claude/worktrees/
 .coverage
+*.db

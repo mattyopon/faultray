@@ -1,9 +1,9 @@
 """CLI command for Architecture Git Diff Tracking.
 
 Usage:
-    infrasim git-track model.yaml --commits 20
-    infrasim git-track model.yaml --find-regression
-    infrasim git-track model.yaml --json
+    faultray git-track model.yaml --commits 20
+    faultray git-track model.yaml --find-regression
+    faultray git-track model.yaml --json
 """
 
 from __future__ import annotations
@@ -20,7 +20,7 @@ from infrasim.cli.main import app, console
 @app.command(name="git-track")
 def git_track(
     model_file: str = typer.Argument(
-        "infrasim-model.yaml",
+        "faultray-model.yaml",
         help="Path to the infrastructure model file (relative to repo root)",
     ),
     commits: int = typer.Option(20, "--commits", "-n", help="Number of commits to analyze"),
@@ -38,10 +38,10 @@ def git_track(
 
     \b
     Examples:
-        infrasim git-track infrasim-model.yaml
-        infrasim git-track infrasim-model.yaml --commits 50
-        infrasim git-track infrasim-model.yaml --find-regression
-        infrasim git-track model.json --repo /path/to/repo --json
+        faultray git-track faultray-model.yaml
+        faultray git-track faultray-model.yaml --commits 50
+        faultray git-track faultray-model.yaml --find-regression
+        faultray git-track model.json --repo /path/to/repo --json
     """
     from infrasim.integrations.git_tracker import GitArchitectureTracker
 

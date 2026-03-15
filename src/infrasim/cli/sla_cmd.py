@@ -171,7 +171,7 @@ def sla_improve(
     """
     import math
 
-    from infrasim.simulator.sla_validator import SLATarget, SLAValidatorEngine
+    from infrasim.simulator.sla_validator import SLAValidatorEngine
 
     if target >= 100.0:
         console.print("[red]Target must be less than 100%[/]")

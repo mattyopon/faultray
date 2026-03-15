@@ -11,7 +11,6 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from enum import Enum
 
-from infrasim.model.components import ComponentType, HealthStatus
 from infrasim.model.graph import InfraGraph
 
 
@@ -788,7 +787,7 @@ class ChaosMaturityAssessor:
 
         avg_runbook = sum(runbook_scores) / total
         avg_automation = sum(automation_scores) / total
-        avg_team_size = sum(team_sizes) / total
+        sum(team_sizes) / total
         avg_oncall = sum(oncall_hours) / total
 
         # Check for non-default configurations (default runbook=50%, automation=20%)

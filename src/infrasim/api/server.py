@@ -51,6 +51,7 @@ _rate_limiter = RateLimiter()
 # Module-level state
 # ---------------------------------------------------------------------------
 _graph: InfraGraph | None = None
+_model_path: Path | None = None
 _last_report = None
 
 BASE_DIR = Path(__file__).resolve().parent
@@ -102,7 +103,7 @@ app = FastAPI(
 )
 
 # ---------------------------------------------------------------------------
-# CORS middleware — origins configurable via FAULTRAY_CORS_ORIGINS env var (CHAOSPROOF_CORS_ORIGINS / INFRASIM_CORS_ORIGINS also accepted)
+# CORS middleware — origins configurable via FAULTRAY_CORS_ORIGINS env var (legacy CHAOSPROOF_CORS_ORIGINS / INFRASIM_CORS_ORIGINS also accepted)
 # ---------------------------------------------------------------------------
 _cors_origins_raw = os.environ.get("FAULTRAY_CORS_ORIGINS", os.environ.get("CHAOSPROOF_CORS_ORIGINS", os.environ.get("INFRASIM_CORS_ORIGINS", "*")))
 _cors_origins: list[str] = [
@@ -291,7 +292,7 @@ async def _optional_user(request: Request):
     """Try to resolve the current user; return None if auth module unavailable."""
     try:
         from infrasim.api.auth import get_current_user
-        from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
+        from fastapi.security import HTTPBearer
 
         scheme = HTTPBearer(auto_error=False)
         credentials = await scheme(request)
@@ -514,10 +515,10 @@ async def analyze_page(request: Request):
             _last_report = engine.run_all_defaults()
 
         # Run AI analysis
-        from infrasim.ai.analyzer import InfraSimAnalyzer
+        from infrasim.ai.analyzer import FaultRayAnalyzer
         import dataclasses
 
-        analyzer = InfraSimAnalyzer()
+        analyzer = FaultRayAnalyzer()
         ai_report = analyzer.analyze(graph, _last_report)
 
         # Convert to template-friendly dict
@@ -598,10 +599,10 @@ async def api_analyze(user=Depends(_require_permission("view_results"))):
         engine = SimulationEngine(graph)
         _last_report = engine.run_all_defaults()
 
-    from infrasim.ai.analyzer import InfraSimAnalyzer
+    from infrasim.ai.analyzer import FaultRayAnalyzer
     import dataclasses
 
-    analyzer = InfraSimAnalyzer()
+    analyzer = FaultRayAnalyzer()
     ai_report = analyzer.analyze(graph, _last_report)
     report_dict = dataclasses.asdict(ai_report)
 
@@ -1010,7 +1011,7 @@ async def oauth_login(provider: str):
 
     Only active when ``FAULTRAY_OAUTH_{PROVIDER}_CLIENT_ID`` and
     ``FAULTRAY_OAUTH_{PROVIDER}_CLIENT_SECRET`` env vars are set
-    (``CHAOSPROOF_OAUTH_*`` and ``INFRASIM_OAUTH_*`` also accepted as fallbacks).
+    (legacy ``CHAOSPROOF_OAUTH_*`` and ``INFRASIM_OAUTH_*`` also accepted as fallbacks).
     """
     from infrasim.api.oauth import OAuthConfig, generate_oauth_url
 
@@ -1151,10 +1152,10 @@ async def executive_report(company_name: str = "Your Organization"):
         engine = SimulationEngine(graph)
         _last_report = engine.run_all_defaults()
 
-    from infrasim.ai.analyzer import InfraSimAnalyzer
+    from infrasim.ai.analyzer import FaultRayAnalyzer
     from infrasim.reporter.executive_pdf import ExecutiveReportGenerator
 
-    analyzer = InfraSimAnalyzer()
+    analyzer = FaultRayAnalyzer()
     ai_report = analyzer.analyze(graph, _last_report)
 
     generator = ExecutiveReportGenerator()
@@ -1799,7 +1800,7 @@ async def get_marketplace_package(package_id: str):
 
 @app.post("/api/marketplace/install/{package_id}", response_class=JSONResponse)
 async def install_marketplace_package(package_id: str):
-    """Install a marketplace package (convert scenarios to ChaosProof format)."""
+    """Install a marketplace package (convert scenarios to FaultRay format)."""
     from infrasim.marketplace import ScenarioMarketplace
 
     mp = ScenarioMarketplace()
@@ -1929,7 +1930,7 @@ async def chat_api(request: Request):
 @app.get("/badge/{badge_type}.svg")
 async def get_badge_svg(badge_type: str, style: str = "flat"):
     """Return SVG badge for embedding in READMEs and dashboards."""
-    from infrasim.api.badge_generator import BadgeGenerator, BadgeStyle, BadgeType
+    from infrasim.api.badge_generator import BadgeGenerator, BadgeStyle
 
     graph = get_graph()
     gen = BadgeGenerator()
@@ -2286,7 +2287,6 @@ async def topology_diff_api(request: Request):
     """Compare two uploaded YAML files and return diff results."""
     import tempfile
 
-    from fastapi import UploadFile
 
     form = await request.form()
     before_file = form.get("before_file")

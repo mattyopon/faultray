@@ -8,7 +8,6 @@ estimates, and projected resilience score improvement.
 
 from __future__ import annotations
 
-import copy
 import logging
 from dataclasses import dataclass, field
 

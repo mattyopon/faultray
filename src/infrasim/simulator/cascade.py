@@ -5,7 +5,7 @@ from __future__ import annotations
 from collections import deque
 from dataclasses import dataclass, field
 
-from infrasim.model.components import Component, ComponentType, HealthStatus
+from infrasim.model.components import Component, HealthStatus
 from infrasim.model.graph import InfraGraph
 from infrasim.simulator.scenarios import Fault, FaultType
 

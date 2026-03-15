@@ -1,7 +1,6 @@
 """Webhook integrations for notifications."""
 from __future__ import annotations
 
-import json
 import logging
 import smtplib
 from dataclasses import dataclass, field

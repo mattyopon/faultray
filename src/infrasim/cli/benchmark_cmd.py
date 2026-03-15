@@ -3,12 +3,17 @@
 from __future__ import annotations
 
 from pathlib import Path
+from typing import TYPE_CHECKING
 
 import typer
 from rich.panel import Panel
 from rich.table import Table
 
 from infrasim.cli.main import app, console, _load_graph_for_analysis, DEFAULT_MODEL_PATH
+
+if TYPE_CHECKING:
+    from infrasim.model.graph import InfraGraph
+    from infrasim.simulator.benchmarking import BenchmarkEngine
 
 
 @app.command(name="benchmark")

@@ -2,11 +2,9 @@
 
 from __future__ import annotations
 
-import json as json_mod
 from pathlib import Path
 
 import typer
-from rich.console import Console
 from rich.panel import Panel
 from rich.table import Table
 

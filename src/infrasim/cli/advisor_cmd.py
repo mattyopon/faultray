@@ -4,11 +4,16 @@ from __future__ import annotations
 
 import json as json_mod
 from pathlib import Path
+from typing import TYPE_CHECKING
 
 import typer
 from rich.console import Console
 from rich.panel import Panel
 from rich.table import Table
+
+if TYPE_CHECKING:
+    from infrasim.ai.architecture_advisor import ArchitectureAdvisor, ArchitectureReport
+    from infrasim.model.graph import InfraGraph
 
 from infrasim.cli.main import app, console
 
@@ -160,7 +165,6 @@ def _print_full_report(
     con: Console,
 ) -> None:
     """Print the full architecture advisory report with Rich formatting."""
-    from infrasim.ai.architecture_advisor import ArchitectureReport
 
     # Assessment
     con.print()

@@ -96,7 +96,6 @@ def replay_list(
         raise typer.Exit()
 
     if json_output:
-        import json
         data = [
             {
                 "id": inc.id,

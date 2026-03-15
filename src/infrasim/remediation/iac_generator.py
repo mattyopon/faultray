@@ -8,12 +8,11 @@ recovery) and include cost estimates and expected resilience score impact.
 
 from __future__ import annotations
 
-import json
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any, Callable
 
-from infrasim.model.components import Component, ComponentType
+from infrasim.model.components import Component
 from infrasim.model.graph import InfraGraph
 
 

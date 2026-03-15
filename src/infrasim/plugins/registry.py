@@ -1,11 +1,9 @@
 """Plugin registry for custom scenarios and analyzers."""
 from __future__ import annotations
 
-from dataclasses import dataclass, field
 from pathlib import Path
 from typing import TYPE_CHECKING, Protocol
 import importlib.util
-import json
 import logging
 
 if TYPE_CHECKING:

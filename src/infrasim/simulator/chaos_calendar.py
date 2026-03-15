@@ -3,7 +3,7 @@
 Provides scheduled chaos windows, experiment suggestion, result recording,
 risk forecasting (Poisson process), and Bayesian MTBF adjustments.
 
-Stores persistent data in SQLite at ``~/.chaosproof/calendar.db``.
+Stores persistent data in SQLite at ``~/.faultray/calendar.db``.
 """
 
 from __future__ import annotations
@@ -12,16 +12,14 @@ import json
 import logging
 import math
 import sqlite3
-import uuid
 from dataclasses import dataclass, field
-from datetime import datetime, timezone
 from pathlib import Path
 
 from infrasim.model.graph import InfraGraph
 
 logger = logging.getLogger(__name__)
 
-_DEFAULT_DB_DIR = Path.home() / ".chaosproof"
+_DEFAULT_DB_DIR = Path.home() / ".faultray"
 _DEFAULT_DB_PATH = _DEFAULT_DB_DIR / "calendar.db"
 
 
@@ -135,7 +133,7 @@ class ChaosCalendar:
     Args:
         graph: The infrastructure graph to reason about.
         store_path: Optional path to the SQLite database.
-                    Defaults to ``~/.chaosproof/calendar.db``.
+                    Defaults to ``~/.faultray/calendar.db``.
     """
 
     def __init__(

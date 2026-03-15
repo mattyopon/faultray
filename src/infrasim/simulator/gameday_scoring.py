@@ -10,9 +10,7 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from enum import Enum
 from datetime import datetime
-import math
 
-from infrasim.model.components import Component, ComponentType, HealthStatus
 from infrasim.model.graph import InfraGraph
 
 

@@ -113,7 +113,7 @@ def feed_update(
 
     console.print(f"\n[green]Generated {len(scenarios)} new scenarios from security feeds[/]")
     console.print(f"[dim]Store: {store_path}[/]")
-    console.print(f"\nRun [cyan]infrasim simulate[/] to include feed scenarios in simulation.")
+    console.print("\nRun [cyan]faultray simulate[/] to include feed scenarios in simulation.")
 
 
 @app.command()
@@ -130,10 +130,10 @@ def feed_list() -> None:
     raw = load_store_raw()
 
     if not stats["last_updated"]:
-        console.print("[yellow]No feed data yet. Run [cyan]infrasim feed-update[/] first.[/]")
+        console.print("[yellow]No feed data yet. Run [cyan]faultray feed-update[/] first.[/]")
         return
 
-    console.print(f"\n[bold]Feed Scenario Store[/]")
+    console.print("\n[bold]Feed Scenario Store[/]")
     console.print(f"  Last updated: [cyan]{stats['last_updated']}[/]")
     console.print(f"  Scenarios: [bold]{stats['scenario_count']}[/]")
     console.print(f"  Source articles: [bold]{stats['article_count']}[/]")

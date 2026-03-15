@@ -17,9 +17,8 @@ import random
 from dataclasses import dataclass, field
 from enum import Enum
 
-from infrasim.model.components import HealthStatus
 from infrasim.model.graph import InfraGraph
-from infrasim.simulator.cascade import CascadeChain, CascadeEngine
+from infrasim.simulator.cascade import CascadeEngine
 from infrasim.simulator.scenarios import Fault, FaultType
 
 

@@ -70,7 +70,7 @@ def daemon_command(
     """
     if not model.exists():
         console.print(f"[red]Model file not found: {model}[/]")
-        console.print("Run [cyan]infrasim scan[/] first to create a model.")
+        console.print("Run [cyan]faultray scan[/] first to create a model.")
         raise typer.Exit(1)
 
     try:
@@ -92,11 +92,11 @@ def daemon_command(
     if teams_webhook:
         notification_config["teams_webhook"] = teams_webhook
 
-    console.print(f"[cyan]Starting FaultRay daemon...[/]")
+    console.print("[cyan]Starting FaultRay daemon...[/]")
     console.print(f"  Model: {model}")
     console.print(f"  Interval: {interval} ({interval_seconds}s)")
     console.print(f"  Notifications: {list(notification_config.keys()) or ['none']}")
-    console.print(f"  Press Ctrl+C to stop.\n")
+    console.print("  Press Ctrl+C to stop.\n")
 
     from infrasim.daemon import FaultRayDaemon
 

@@ -1,10 +1,10 @@
-# ChaosProof Template: E-Commerce Platform
+# FaultRay Template: E-Commerce Platform
 #
 # Architecture: CDN -> LB -> Web + API -> DB + Cache + Queue + Search
 # Use case: Full-featured e-commerce platform with PCI compliance
 #
 # Load with:
-#   infrasim template use ecommerce --output my-infra.yaml
+#   faultray template use ecommerce --output my-infra.yaml
 
 schema_version: "3.0"
 

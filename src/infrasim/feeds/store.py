@@ -15,7 +15,7 @@ from infrasim.simulator.scenarios import Fault, FaultType, Scenario
 
 logger = logging.getLogger(__name__)
 
-DEFAULT_STORE_DIR = Path.home() / ".infrasim"
+DEFAULT_STORE_DIR = Path.home() / ".faultray"
 DEFAULT_STORE_FILE = DEFAULT_STORE_DIR / "feed-scenarios.json"
 
 

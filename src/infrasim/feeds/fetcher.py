@@ -5,7 +5,6 @@ from __future__ import annotations
 import logging
 import xml.etree.ElementTree as ET
 from dataclasses import dataclass, field
-from datetime import datetime
 
 import httpx
 

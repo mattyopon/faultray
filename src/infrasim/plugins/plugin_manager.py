@@ -19,7 +19,6 @@ from __future__ import annotations
 
 import importlib
 import importlib.util
-import json
 import logging
 import sys
 import textwrap
@@ -29,8 +28,7 @@ from pathlib import Path
 from typing import TYPE_CHECKING, Any, Protocol, runtime_checkable
 
 if TYPE_CHECKING:
-    from infrasim.model.graph import InfraGraph
-    from infrasim.simulator.engine import SimulationReport
+    pass
 
 logger = logging.getLogger(__name__)
 
@@ -555,32 +553,32 @@ class PluginManager:
 
         lines = [
             f'"""FaultZero plugin: {name}.',
-            f"",
+            "",
             f"Auto-generated plugin template for type '{ptype.value}'.",
-            f'"""',
-            f"",
-            f"PLUGIN_METADATA = {{",
+            '"""',
+            "",
+            "PLUGIN_METADATA = {",
             f'    "name": "{name}",',
-            f'    "version": "1.0.0",',
-            f'    "author": "Your Name",',
+            '    "version": "1.0.0",',
+            '    "author": "Your Name",',
             f'    "description": "Description of {name}",',
             f'    "type": "{ptype.value}",',
-            f"}}",
-            f"",
-            f"",
+            "}",
+            "",
+            "",
             f"class {class_name}:",
             f'    """Plugin implementation for {name}."""',
-            f"",
+            "",
             f'    name = "{name}"',
-            f'    version = "1.0.0"',
+            '    version = "1.0.0"',
             f'    plugin_type = "{ptype.value}"',
-            f"",
-            f"    def initialize(self, config):",
-            f'        """One-time setup with user-supplied configuration."""',
-            f"        self.config = config",
-            f"",
-            f"    def execute(self, context):",
-            f'        """Run the plugin logic."""',
+            "",
+            "    def initialize(self, config):",
+            '        """One-time setup with user-supplied configuration."""',
+            "        self.config = config",
+            "",
+            "    def execute(self, context):",
+            '        """Run the plugin logic."""',
         ]
         # Append execute body lines (already indented with 8 spaces)
         lines.append(execute_body)

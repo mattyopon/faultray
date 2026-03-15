@@ -405,7 +405,7 @@ def _estimate_annual_loss(graph: InfraGraph, overall_score: int) -> float:
     )
 
     # Risk multiplier: perfect score = 0.001 (0.1%), worst = 0.1 (10%)
-    risk_factor = max(0.001, (100 - overall_score) / 1000.0)
+    max(0.001, (100 - overall_score) / 1000.0)
 
     # Expected annual downtime hours based on score
     # Score 100 -> 0.5h/year, Score 0 -> 500h/year

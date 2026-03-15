@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from collections import deque
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from enum import Enum
 
 from infrasim.model.components import ComponentType
@@ -112,7 +112,6 @@ class SecurityResilienceEngine:
                 mitigation_recommendations=[f"Component '{entry_point_id}' not found in graph."],
             )
 
-        sec = entry.security
 
         # 1. Defense effectiveness at the entry point
         defense = self._compute_defense_effectiveness(entry_point_id, attack_type)

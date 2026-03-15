@@ -428,3 +428,88 @@ class TestRemediationPlanner:
         assert planner._extract_component_id("Component 'app-1' has no redundancy") == "app-1"
         assert planner._extract_component_id("No component id here") == ""
         assert planner._extract_component_id("component 'db' is slow") == "db"
+
+    def test_high_utilization_recommendation_generates_task(self):
+        """A 'high utilization' recommendation should generate an autoscaling task."""
+        graph = _build_single_component_graph()
+        planner = RemediationPlanner(graph)
+        tasks = planner._generate_tasks_from_recommendations(
+            ["Component 'app' has high utilization (cpu > 80%)"]
+        )
+        assert len(tasks) == 1
+        assert "autoscaling" in tasks[0].title.lower() or "scale up" in tasks[0].title.lower()
+        assert tasks[0].priority == "high"
+        assert "'app'" in tasks[0].title
+
+    def test_high_utilization_recommendation_without_component_id(self):
+        """A 'high utilization' recommendation without component ID uses fallback title."""
+        graph = _build_single_component_graph()
+        planner = RemediationPlanner(graph)
+        tasks = planner._generate_tasks_from_recommendations(
+            ["Warning: high utilization detected"]
+        )
+        assert len(tasks) == 1
+        assert tasks[0].title == "Address high utilization"
+
+    def test_task_with_unknown_phase_falls_back_to_phase3(self):
+        """Tasks with a phase not in {1, 2, 3} should be grouped into phase 3."""
+        graph = _build_weak_graph()
+        planner = RemediationPlanner(graph)
+
+        # Monkey-patch _generate_tasks_from_recommendations to return a task
+        # with phase=99, which is not in the phase_groups dict {1, 2, 3}.
+        original_method = planner._generate_tasks_from_recommendations
+
+        def patched_method(recommendations):
+            tasks = original_method(recommendations)
+            # Add a task with an invalid phase number
+            tasks.append(PlanTask(
+                id="",
+                title="Custom task with unknown phase",
+                description="Task with phase outside {1, 2, 3}",
+                phase=99,
+                category="redundancy",
+                priority="medium",
+                required_role="SRE",
+                estimated_hours=4,
+                monthly_cost_increase=0,
+                one_time_cost=600,
+                resilience_score_delta=2.0,
+                risk_reduction_annual=10000.0,
+            ))
+            return tasks
+
+        planner._generate_tasks_from_recommendations = patched_method
+        plan = planner.plan()
+
+        # The task with phase=99 should end up in phase 3
+        phase3 = [p for p in plan.phases if p.phase_number == 3]
+        assert len(phase3) > 0
+        phase3_titles = [t.title for t in phase3[0].tasks]
+        assert "Custom task with unknown phase" in phase3_titles
+
+    def test_estimate_score_delta_scales_for_large_graphs(self):
+        """Score delta should be scaled down for graphs with > 5 components."""
+        graph = InfraGraph()
+        # Add 6 components to trigger the n > 5 branch
+        for i in range(6):
+            graph.add_component(Component(
+                id=f"comp-{i}",
+                name=f"Component {i}",
+                type=ComponentType.APP_SERVER,
+                replicas=1,
+            ))
+        planner = RemediationPlanner(graph)
+
+        # For 6 components: delta = base_delta * 5 / 6
+        delta = planner._estimate_score_delta("add_replica")
+        # base for add_replica is 5.0, scaled: 5.0 * 5/6 = ~4.17 -> rounded to 4.2
+        expected = round(5.0 * 5 / 6, 1)
+        assert delta == expected
+
+        # Compare with a small graph (<=5 components) - no scaling
+        small_graph = _build_single_component_graph()
+        small_planner = RemediationPlanner(small_graph)
+        small_delta = small_planner._estimate_score_delta("add_replica")
+        assert small_delta == 5.0
+        assert delta < small_delta

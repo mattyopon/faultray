@@ -7,10 +7,10 @@ reputation damage), and opportunity costs (customer churn).
 
 from __future__ import annotations
 
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from enum import Enum
 
-from infrasim.model.components import ComponentType, HealthStatus
+from infrasim.model.components import ComponentType
 from infrasim.model.graph import InfraGraph
 
 
@@ -182,7 +182,7 @@ class IncidentCostCalculator:
                 category=CostCategory.REGULATORY_FINE,
                 amount_usd=fine,
                 description="Potential regulatory fine (PCI/PII data involved)",
-                calculation=f"Baseline regulatory penalty",
+                calculation="Baseline regulatory penalty",
             ))
 
         total = sum(b.amount_usd for b in breakdowns)

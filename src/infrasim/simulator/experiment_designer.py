@@ -8,7 +8,6 @@ assertions, and rollback plans.
 from __future__ import annotations
 
 import copy
-import json
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
 from enum import Enum

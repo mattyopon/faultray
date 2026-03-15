@@ -56,7 +56,6 @@ def export_iac(
         # Export as Pulumi (Python)
         faultray export pulumi model.yaml --output ./pulumi/
     """
-    import json as json_lib
 
     from infrasim.remediation.iac_exporter import IaCExporter, IaCFormat
 
@@ -142,17 +141,17 @@ def export_iac(
 
     # Print summary
     console.print()
-    console.print(f"[bold]Export complete[/]")
+    console.print("[bold]Export complete[/]")
     console.print(f"  Format: [cyan]{result.format.value}[/]")
     console.print(f"  Files: {len(result.files)}")
     console.print(f"  Components: {len(graph.components)}")
 
     if result.warnings:
-        console.print(f"\n[yellow]Warnings:[/]")
+        console.print("\n[yellow]Warnings:[/]")
         for w in result.warnings:
             console.print(f"  - {w}")
 
     if result.unsupported_components:
-        console.print(f"\n[red]Unsupported components:[/]")
+        console.print("\n[red]Unsupported components:[/]")
         for u in result.unsupported_components:
             console.print(f"  - {u}")

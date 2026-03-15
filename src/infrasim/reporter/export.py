@@ -225,7 +225,7 @@ def export_sarif(report: SimulationReport) -> str:
                 "tool": {
                     "driver": {
                         "name": "FaultRay",
-                        "informationUri": "https://github.com/mattyopon/infrasim",
+                        "informationUri": "https://github.com/faultray/faultray",
                         "version": "2.1.0",
                         "rules": rules,
                     }

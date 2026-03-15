@@ -79,7 +79,7 @@ def report_command(
 
 def _generate_executive_report(graph, company_name: str, output: Path | None) -> None:
     """Generate the executive PDF-style HTML report."""
-    from infrasim.ai.analyzer import InfraSimAnalyzer
+    from infrasim.ai.analyzer import FaultRayAnalyzer
     from infrasim.reporter.executive_pdf import ExecutiveReportGenerator
     from infrasim.simulator.engine import SimulationEngine
 
@@ -88,7 +88,7 @@ def _generate_executive_report(graph, company_name: str, output: Path | None) ->
     sim_report = engine.run_all_defaults()
 
     console.print("[bold]Running AI analysis...[/]")
-    analyzer = InfraSimAnalyzer()
+    analyzer = FaultRayAnalyzer()
     ai_report = analyzer.analyze(graph, sim_report)
 
     console.print("[bold]Generating executive report...[/]")

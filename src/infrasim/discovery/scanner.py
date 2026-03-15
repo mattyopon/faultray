@@ -7,16 +7,15 @@ import socket
 
 import psutil
 
-logger = logging.getLogger(__name__)
-
 from infrasim.model.components import (
-    Capacity,
     Component,
     ComponentType,
     Dependency,
     ResourceMetrics,
 )
 from infrasim.model.graph import InfraGraph
+
+logger = logging.getLogger(__name__)
 
 # Well-known port to service type mappings
 PORT_SERVICE_MAP: dict[int, tuple[ComponentType, str]] = {

@@ -15,7 +15,6 @@ complete architecture blueprints with:
 
 from __future__ import annotations
 
-import copy
 import logging
 import math
 from dataclasses import dataclass, field
@@ -23,14 +22,11 @@ from enum import Enum
 
 from infrasim.model.components import (
     AutoScalingConfig,
-    CacheWarmingConfig,
     CircuitBreakerConfig,
     Component,
     ComponentType,
     Dependency,
     FailoverConfig,
-    RegionConfig,
-    RetryStrategy,
 )
 from infrasim.model.graph import InfraGraph
 
@@ -339,8 +335,7 @@ class ArchitectureAdvisor:
         # Missing circuit breakers on dependency edges
         for edge in graph.all_dependency_edges():
             if not edge.circuit_breaker.enabled:
-                target = graph.get_component(edge.target_id)
-                target_type = target.type.value if target else "unknown"
+                graph.get_component(edge.target_id)
                 wins.append(
                     ArchitectureChange(
                         change_type="modify_dependency",
@@ -738,7 +733,6 @@ class ArchitectureAdvisor:
                 arrow = "-->|CB|"
 
             # Check if this edge is for a replication relationship
-            dep_label = ""
             if edge.dependency_type == "requires" and not edge.circuit_breaker.enabled:
                 arrow = " --> "
 
@@ -896,7 +890,7 @@ class ArchitectureAdvisor:
     ) -> list[ArchitectureProposal]:
         """Build tiered proposals from quick wins to full redesign."""
         proposals: list[ArchitectureProposal] = []
-        target_score = _nines_to_score(target_nines)
+        _nines_to_score(target_nines)
 
         # Proposal 1: Quick Wins Only
         if quick_wins:

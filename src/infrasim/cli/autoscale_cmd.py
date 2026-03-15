@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import json as json_mod
 from pathlib import Path
 
 import typer
@@ -12,8 +11,8 @@ from infrasim.cli.main import (
     app,
     console,
     DEFAULT_MODEL_PATH,
-    SimulationEngine,
 )
+from infrasim.simulator.engine import SimulationEngine
 
 
 @app.command()
@@ -30,16 +29,16 @@ def autoscale(
 
     Examples:
         # K8s HPA YAML (default)
-        infrasim autoscale infra.yaml
+        faultray autoscale infra.yaml
 
         # Export to file
-        infrasim autoscale infra.yaml --export k8s --output hpa.yaml
+        faultray autoscale infra.yaml --export k8s --output hpa.yaml
 
         # AWS Auto Scaling Group JSON
-        infrasim autoscale infra.yaml --export aws
+        faultray autoscale infra.yaml --export aws
 
         # JSON summary
-        infrasim autoscale infra.yaml --json
+        faultray autoscale infra.yaml --json
     """
     from infrasim.simulator.autoscaling_engine import AutoScalingRecommendationEngine
 
@@ -104,19 +103,19 @@ def risk(
 
     Examples:
         # Basic risk analysis
-        infrasim risk infra.yaml
+        faultray risk infra.yaml
 
         # With custom revenue
-        infrasim risk infra.yaml --revenue 10000000
+        faultray risk infra.yaml --revenue 10000000
 
         # JSON output
-        infrasim risk infra.yaml --json
+        faultray risk infra.yaml --json
     """
     from infrasim.simulator.financial_risk import FinancialRiskEngine
 
     graph = _load_graph_for_analysis(DEFAULT_MODEL_PATH, yaml_file)
 
-    console.print(f"[cyan]Running simulation for risk analysis...[/]")
+    console.print("[cyan]Running simulation for risk analysis...[/]")
     sim_engine = SimulationEngine(graph)
     sim_report = sim_engine.run_all_defaults()
 
@@ -193,10 +192,10 @@ def carbon(
 
     Examples:
         # Basic analysis
-        infrasim carbon infra.yaml
+        faultray carbon infra.yaml
 
         # JSON output
-        infrasim carbon infra.yaml --json
+        faultray carbon infra.yaml --json
     """
     from infrasim.simulator.carbon_engine import CarbonEngine
 
@@ -257,13 +256,13 @@ def leaderboard(
 
     Examples:
         # View leaderboard
-        infrasim leaderboard
+        faultray leaderboard
 
         # Submit score
-        infrasim leaderboard infra.yaml --submit --team "SRE Team Alpha"
+        faultray leaderboard infra.yaml --submit --team "SRE Team Alpha"
 
         # JSON output
-        infrasim leaderboard --json
+        faultray leaderboard --json
     """
     from infrasim.api.leaderboard import get_leaderboard_store
 

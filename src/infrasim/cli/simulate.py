@@ -11,13 +11,13 @@ from rich.panel import Panel
 from infrasim.cli.main import (
     DEFAULT_MODEL_PATH,
     InfraGraph,
-    SimulationEngine,
     _print_ai_analysis,
     _print_dynamic_results,
     app,
     console,
-    print_simulation_report,
 )
+from infrasim.reporter.report import print_simulation_report
+from infrasim.simulator.engine import SimulationEngine
 
 
 def _dynamic_results_to_json(results: list) -> dict:
@@ -202,7 +202,7 @@ def simulate(
     """
     if not model.exists():
         console.print(f"[red]Model file not found: {model}[/]")
-        console.print("Run [cyan]infrasim scan[/] first to create a model.")
+        console.print("Run [cyan]faultray scan[/] first to create a model.")
         raise typer.Exit(1)
 
     # Load plugins if a directory is specified
@@ -260,10 +260,10 @@ def simulate(
     print_simulation_report(report, console)
 
     if analyze_flag:
-        from infrasim.ai.analyzer import InfraSimAnalyzer
+        from infrasim.ai.analyzer import FaultRayAnalyzer
 
         console.print("\n[cyan]Running AI analysis...[/]")
-        ai_analyzer = InfraSimAnalyzer()
+        ai_analyzer = FaultRayAnalyzer()
         ai_report = ai_analyzer.analyze(graph, report)
         _print_ai_analysis(ai_report, console)
 
@@ -371,7 +371,7 @@ def dynamic(
     """
     if not model.exists():
         console.print(f"[red]Model file not found: {model}[/]")
-        console.print("Run [cyan]infrasim scan[/] first to create a model.")
+        console.print("Run [cyan]faultray scan[/] first to create a model.")
         raise typer.Exit(1)
 
     # Validate step < duration

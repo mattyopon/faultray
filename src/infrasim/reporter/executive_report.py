@@ -132,7 +132,7 @@ def generate_executive_summary(
         results = getattr(static_report, "results", [])
         scenarios_tested += len(results)
         critical_findings = getattr(static_report, "critical_findings", [])
-        warnings = getattr(static_report, "warnings", [])
+        getattr(static_report, "warnings", [])
         passed = getattr(static_report, "passed", [])
         scenarios_passed += len(passed)
         if critical_findings:
@@ -233,8 +233,8 @@ def generate_executive_summary(
         )
     else:
         headline = (
-            f"Critical infrastructure risks identified -- "
-            f"immediate action recommended"
+            "Critical infrastructure risks identified -- "
+            "immediate action recommended"
         )
 
     # --- Top 3 risks ---

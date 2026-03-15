@@ -10,8 +10,7 @@ reports, and chaos engineering surveys to provide meaningful comparisons.
 from __future__ import annotations
 
 import logging
-import math
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 
 from infrasim.model.graph import InfraGraph
 

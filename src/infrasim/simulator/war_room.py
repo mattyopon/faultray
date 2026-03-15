@@ -12,17 +12,16 @@ Usage:
     print(f"MTTM: {report.time_to_mitigate_minutes}m")
 
 CLI:
-    infrasim war-room model.yaml --incident database_outage --team-size 4
+    faultray war-room model.yaml --incident database_outage --team-size 4
 """
 
 from __future__ import annotations
 
-import hashlib
 import logging
 import math
 from dataclasses import dataclass, field
 
-from infrasim.model.components import ComponentType, HealthStatus
+from infrasim.model.components import ComponentType
 from infrasim.model.graph import InfraGraph
 from infrasim.simulator.cascade import CascadeEngine
 from infrasim.simulator.scenarios import Fault, FaultType
@@ -558,7 +557,6 @@ class WarRoomSimulator:
         events: list[WarRoomEvent] = []
         current_time = 0.0
         target_name = target_comp.name if target_comp else "unknown"
-        target_id = target_comp.id if target_comp else "unknown"
 
         # Find role names
         ic_name = "Incident Commander"

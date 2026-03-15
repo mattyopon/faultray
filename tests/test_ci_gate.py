@@ -145,7 +145,7 @@ class TestCIGateGeneratorGitHub:
         parsed = yaml.safe_load(result)
         assert parsed is not None
         assert "name" in parsed
-        assert parsed["name"] == "ChaosProof Resilience Gate"
+        assert parsed["name"] == "FaultRay Resilience Gate"
 
     def test_contains_required_jobs(self) -> None:
         gen = CIGateGenerator()

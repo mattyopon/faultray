@@ -134,7 +134,7 @@ def plugin_create(
     path = manager.create_plugin_template(name, plugin_type, output_dir)
     console.print(f"[green]Created plugin template: {path}[/]")
     console.print("Edit the file to implement your plugin logic, then run:")
-    console.print(f"  faultray plugin list")
+    console.print("  faultray plugin list")
 
 
 @plugin_app.command("reload")

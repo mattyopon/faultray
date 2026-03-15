@@ -8,7 +8,7 @@ Provides sustainability scoring and green recommendations.
 from __future__ import annotations
 
 import logging
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 
 from infrasim.model.graph import InfraGraph
 

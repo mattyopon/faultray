@@ -1276,7 +1276,7 @@ class TestDatabaseExtended:
         """Test get_database_url with default path."""
         url = get_database_url()
         assert "sqlite+aiosqlite" in url
-        assert "infrasim.db" in url
+        assert "faultray.db" in url
 
     def test_get_database_url_custom_path(self, tmp_path):
         """Test get_database_url with custom path."""

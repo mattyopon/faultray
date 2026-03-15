@@ -1,10 +1,10 @@
-# ChaosProof Template: Data Pipeline
+# FaultRay Template: Data Pipeline
 #
 # Architecture: Ingestion API -> Message Queue -> Stream Processor -> Database + Object Storage
 # Use case: Real-time data ingestion and processing pipeline
 #
 # Load with:
-#   infrasim template use data-pipeline --output my-infra.yaml
+#   faultray template use data-pipeline --output my-infra.yaml
 
 schema_version: "3.0"
 

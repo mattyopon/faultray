@@ -362,18 +362,18 @@ class HistoryTracker:
 
         if latest.resilience_score < 50:
             parts.append(
-                "Score is below 50. Consider running 'infrasim auto-fix' "
+                "Score is below 50. Consider running 'faultray auto-fix' "
                 "to generate remediation code."
             )
         elif latest.resilience_score < 80:
             parts.append(
-                "Score is moderate. Run 'infrasim evaluate' for detailed analysis."
+                "Score is moderate. Run 'faultray evaluate' for detailed analysis."
             )
 
         if len(regressions) >= 3:
             parts.append(
                 f"Detected {len(regressions)} regressions. "
-                "Set up CI/CD baseline checks with 'infrasim simulate --baseline'."
+                "Set up CI/CD baseline checks with 'faultray simulate --baseline'."
             )
 
         return " ".join(parts)

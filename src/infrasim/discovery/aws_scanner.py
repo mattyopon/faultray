@@ -20,7 +20,6 @@ from infrasim.model.components import (
     Capacity,
     Component,
     ComponentType,
-    CostProfile,
     Dependency,
     FailoverConfig,
     RegionConfig,
@@ -31,7 +30,7 @@ from infrasim.model.graph import InfraGraph
 
 logger = logging.getLogger(__name__)
 
-# Mapping from AWS service to InfraSim ComponentType
+# Mapping from AWS service to FaultRay ComponentType
 AWS_TYPE_MAP: dict[str, ComponentType] = {
     "ec2": ComponentType.APP_SERVER,
     "rds": ComponentType.DATABASE,
@@ -207,7 +206,7 @@ class AWSScanner:
 
                         # Determine AZ / subnet
                         az = inst.get("Placement", {}).get("AvailabilityZone", "")
-                        subnet_id = inst.get("SubnetId", "")
+                        inst.get("SubnetId", "")
 
                         component = Component(
                             id=comp_id,
@@ -393,7 +392,7 @@ class AWSScanner:
                     num_nodes = sum(
                         len(ng.get("NodeGroupMembers", [])) for ng in node_groups
                     )
-                    multi_az = rg.get("MultiAZ", "") == "enabled"
+                    rg.get("MultiAZ", "") == "enabled"
 
                     component = Component(
                         id=comp_id,
@@ -1020,7 +1019,7 @@ class AWSScanner:
         # Check network segmentation using subnet info
         for comp_id, comp in graph.components.items():
             if comp_id.startswith("ec2-"):
-                instance_id = comp_id.replace("ec2-", "", 1)
+                comp_id.replace("ec2-", "", 1)
                 # Check if the component's subnet is private
                 for subnet_id, is_private in self._subnet_private.items():
                     if is_private:
@@ -1047,7 +1046,7 @@ class AWSScanner:
 def export_yaml(graph: InfraGraph, path: Path) -> None:
     """Export an InfraGraph to FaultRay YAML format.
 
-    Generates a YAML file compatible with ``infrasim load``.
+    Generates a YAML file compatible with ``faultray load``.
 
     Args:
         graph: The InfraGraph to export.

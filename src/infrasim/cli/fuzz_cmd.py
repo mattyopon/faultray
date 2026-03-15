@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import json
 from pathlib import Path
 
 import typer
@@ -37,10 +36,10 @@ def fuzz(
     discover novel failure modes in your infrastructure.
 
     Examples:
-        infrasim fuzz infra.yaml
-        infrasim fuzz infra.yaml --iterations 500
-        infrasim fuzz infra.yaml --iterations 200 --seed 123
-        infrasim fuzz infra.yaml --iterations 500 --json
+        faultray fuzz infra.yaml
+        faultray fuzz infra.yaml --iterations 500
+        faultray fuzz infra.yaml --iterations 200 --seed 123
+        faultray fuzz infra.yaml --iterations 500 --json
     """
     from infrasim.simulator.chaos_fuzzer import ChaosFuzzer
 

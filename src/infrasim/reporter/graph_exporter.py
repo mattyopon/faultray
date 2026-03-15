@@ -15,7 +15,7 @@ and dependency relationships.
 from __future__ import annotations
 
 import json
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from enum import Enum
 from typing import Any
 
@@ -124,7 +124,7 @@ def _node_label(comp: Component, options: DiagramOptions, graph: InfraGraph) -> 
     if options.show_health:
         icon = _HEALTH_ICONS.get(comp.health, "")
         if options.highlight_spof and _is_spof(comp, graph):
-            parts.append(f"\u26a0\ufe0f SPOF")
+            parts.append("\u26a0\ufe0f SPOF")
         else:
             parts.append(f"{icon} {comp.health.value}")
     return parts
@@ -174,7 +174,6 @@ class GraphExporter:
 
         # Collect health classes used
         used_classes: set[str] = set()
-        spof_used = False
 
         if options.group_by_type:
             groups: dict[ComponentType, list[Component]] = {}
@@ -190,7 +189,7 @@ class GraphExporter:
                         self._mermaid_node(comp, options, graph, used_classes, indent=8)
                     )
                     if options.highlight_spof and _is_spof(comp, graph):
-                        spof_used = True
+                        pass
                 lines.append("    end")
         else:
             for comp in components:
@@ -198,7 +197,7 @@ class GraphExporter:
                     self._mermaid_node(comp, options, graph, used_classes, indent=4)
                 )
                 if options.highlight_spof and _is_spof(comp, graph):
-                    spof_used = True
+                    pass
 
         # Edges
         for u, v, data in graph._graph.edges(data=True):

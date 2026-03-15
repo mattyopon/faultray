@@ -14,7 +14,7 @@ import html
 from datetime import datetime, timezone
 from pathlib import Path
 
-from infrasim.ai.analyzer import AIAnalysisReport, AIRecommendation
+from infrasim.ai.analyzer import AIAnalysisReport
 from infrasim.model.components import ComponentType, HealthStatus
 from infrasim.model.graph import InfraGraph
 from infrasim.simulator.engine import SimulationReport

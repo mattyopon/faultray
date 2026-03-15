@@ -11,7 +11,6 @@ Answers: "What's the cheapest way to achieve 99.99% uptime?"
 from __future__ import annotations
 
 import copy
-import itertools
 import logging
 import math
 from dataclasses import dataclass, field

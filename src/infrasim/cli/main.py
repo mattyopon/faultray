@@ -8,8 +8,6 @@ import typer
 from rich.console import Console
 
 from infrasim.model.graph import InfraGraph
-from infrasim.reporter.report import print_infrastructure_summary, print_simulation_report
-from infrasim.simulator.engine import SimulationEngine
 
 app = typer.Typer(
     name="faultray",
@@ -63,7 +61,7 @@ def _print_dynamic_results(results: list, con: Console) -> None:
     warning = sum(1 for r in results if getattr(r, "is_warning", False))
     passed = total - critical - warning
 
-    con.print(f"\n[bold]Dynamic Simulation Results[/]")
+    con.print("\n[bold]Dynamic Simulation Results[/]")
     con.print(
         f"  Total: [bold]{total}[/]  "
         f"[red]Critical: {critical}[/]  "
@@ -93,7 +91,7 @@ def _print_dynamic_results(results: list, con: Console) -> None:
         if recovery is not None:
             con.print(f"    Recovery time: {recovery}s")
         else:
-            con.print(f"    Recovery time: [red]no recovery[/]")
+            con.print("    Recovery time: [red]no recovery[/]")
         con.print(f"    Autoscaling events: {len(autoscale)}")
         con.print(f"    Failover events: {len(failover)}")
         con.print()
@@ -391,17 +389,17 @@ def _load_graph_for_analysis(
 
         if not yaml_file.exists():
             console.print(f"[red]Model file not found: {yaml_file}[/]")
-            console.print("[dim]Try: infrasim scan --aws  (auto-discover)[/]")
-            console.print("[dim]Or:  infrasim quickstart  (interactive builder)[/]")
-            console.print("[dim]Or:  infrasim demo        (demo infrastructure)[/]")
+            console.print("[dim]Try: faultray scan --aws  (auto-discover)[/]")
+            console.print("[dim]Or:  faultray quickstart  (interactive builder)[/]")
+            console.print("[dim]Or:  faultray demo        (demo infrastructure)[/]")
             raise typer.Exit(1)
         return load_yaml(yaml_file)
 
     if not model.exists():
         console.print(f"[red]Model file not found: {model}[/]")
-        console.print("[dim]Try: infrasim scan --aws  (auto-discover)[/]")
-        console.print("[dim]Or:  infrasim quickstart  (interactive builder)[/]")
-        console.print("[dim]Or:  infrasim demo        (demo infrastructure)[/]")
+        console.print("[dim]Try: faultray scan --aws  (auto-discover)[/]")
+        console.print("[dim]Or:  faultray quickstart  (interactive builder)[/]")
+        console.print("[dim]Or:  faultray demo        (demo infrastructure)[/]")
         raise typer.Exit(1)
 
     if str(model).endswith((".yaml", ".yml")):

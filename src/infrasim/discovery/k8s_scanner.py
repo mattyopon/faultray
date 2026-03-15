@@ -14,13 +14,11 @@ from dataclasses import dataclass, field
 
 from infrasim.model.components import (
     AutoScalingConfig,
-    Capacity,
     Component,
     ComponentType,
     Dependency,
     FailoverConfig,
     RegionConfig,
-    ResourceMetrics,
     SecurityProfile,
 )
 from infrasim.model.graph import InfraGraph
@@ -281,9 +279,8 @@ class K8sScanner:
                 self._service_selectors[svc_comp_id] = selector
 
                 # Determine port
-                port = 0
                 if svc.spec.ports:
-                    port = svc.spec.ports[0].port or 0
+                    svc.spec.ports[0].port or 0
         except Exception as exc:
             self._warnings.append(f"Service scan error: {exc}")
 
@@ -403,7 +400,6 @@ class K8sScanner:
                 pdbs = policy_v1.list_pod_disruption_budget_for_all_namespaces()
 
             for pdb in pdbs.items:
-                ns = pdb.metadata.namespace or "default"
                 selector = dict(pdb.spec.selector.match_labels or {}) if pdb.spec.selector and pdb.spec.selector.match_labels else {}
 
                 min_available = None

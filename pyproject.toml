@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "faultray"
-version = "1.2.0"
+version = "10.0.0"
 description = "FaultRay — Zero-risk infrastructure chaos engineering. Prove your availability ceiling mathematically."
 readme = "README.md"
 license = {text = "MIT"}
@@ -73,16 +73,14 @@ dev = [
 ]
 
 [project.urls]
-Homepage = "https://github.com/mattyopon/infrasim"
-Documentation = "https://github.com/mattyopon/infrasim#readme"
-Repository = "https://github.com/mattyopon/infrasim"
-Issues = "https://github.com/mattyopon/infrasim/issues"
-Changelog = "https://github.com/mattyopon/infrasim#changelog"
+Homepage = "https://github.com/mattyopon/faultray"
+Documentation = "https://github.com/mattyopon/faultray#readme"
+Repository = "https://github.com/mattyopon/faultray"
+Issues = "https://github.com/mattyopon/faultray/issues"
+Changelog = "https://github.com/mattyopon/faultray#changelog"
 
 [project.scripts]
 faultray = "infrasim.cli:app"
-chaosproof = "infrasim.cli:app"
-infrasim = "infrasim.cli:app"
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/infrasim"]
@@ -90,6 +88,9 @@ packages = ["src/infrasim"]
 [tool.ruff]
 target-version = "py311"
 line-length = 100
+
+[tool.ruff.lint.per-file-ignores]
+"src/infrasim/api/server.py" = ["E402"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

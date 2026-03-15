@@ -1,17 +1,16 @@
-"""AI-enhanced analysis layer for InfraSim simulation results.
+"""AI-enhanced analysis layer for FaultRay simulation results.
 
 Provides intelligent prioritization, natural language summaries,
 and remediation recommendations based on simulation results.
 
 Works in two modes:
 1. Built-in rules engine (no API key needed) -- always available
-2. LLM-enhanced (optional, requires INFRASIM_AI_API_KEY) -- future
+2. LLM-enhanced (optional, requires FAULTRAY_AI_API_KEY) -- future
 """
 
 from __future__ import annotations
 
-import os
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from typing import Protocol
 
 from infrasim.model.components import ComponentType, HealthStatus
@@ -108,7 +107,7 @@ def _nines_tier_label(nines: float) -> str:
         return "Poor (<2 nines -- significant downtime expected)"
 
 
-class InfraSimAnalyzer:
+class FaultRayAnalyzer:
     """Rule-based intelligent analyzer for simulation results.
 
     Provides SPOF detection, cascade analysis, capacity assessment,
@@ -386,8 +385,8 @@ class InfraSimAnalyzer:
                         else ""
                     )
                     + (
-                        f"Current disk usage is high -- consider log rotation "
-                        f"or data archival."
+                        "Current disk usage is high -- consider log rotation "
+                        "or data archival."
                         if comp.metrics.disk_percent > 70
                         else ""
                     )
@@ -579,10 +578,10 @@ class InfraSimAnalyzer:
     ) -> str:
         """Generate a 3-5 sentence natural language summary."""
         total_components = len(graph.components)
-        critical_count = len(simulation_report.critical_findings)
+        len(simulation_report.critical_findings)
         warning_count = len(simulation_report.warnings)
         spof_count = sum(1 for r in recommendations if r.category == "spof")
-        cascade_count = sum(1 for r in recommendations if r.category == "cascade")
+        sum(1 for r in recommendations if r.category == "cascade")
         critical_recs = sum(1 for r in recommendations if r.severity == "critical")
 
         # Opening sentence
@@ -634,3 +633,7 @@ class InfraSimAnalyzer:
             warnings_text = ""
 
         return opening + spof_detail + avail_detail + improvement + warnings_text
+
+
+# Backward-compatible alias
+InfraSimAnalyzer = FaultRayAnalyzer

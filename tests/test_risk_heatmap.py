@@ -7,6 +7,7 @@ from infrasim.model.components import (
     Component,
     ComponentType,
     Dependency,
+    ExternalSLAConfig,
     FailoverConfig,
     ResourceMetrics,
     SecurityProfile,
@@ -426,3 +427,172 @@ def test_blast_radius_score():
     # db failure cascades to app and lb
     # lb failure doesn't cascade to anything
     assert db_profile.risk_scores[RiskDimension.BLAST_RADIUS] > lb_profile.risk_scores[RiskDimension.BLAST_RADIUS]
+
+
+# ---------------------------------------------------------------------------
+# Edge cases for uncovered lines
+# ---------------------------------------------------------------------------
+
+
+def test_blast_radius_single_component_graph():
+    """A graph with only one component should have blast_radius = 0.0 (line 229)."""
+    graph = InfraGraph()
+    graph.add_component(Component(
+        id="solo",
+        name="Solo Service",
+        type=ComponentType.APP_SERVER,
+        replicas=1,
+    ))
+    engine = RiskHeatMapEngine()
+
+    profile = engine.get_component_risk(graph, "solo")
+    assert profile.risk_scores[RiskDimension.BLAST_RADIUS] == 0.0
+
+
+def test_depth_risk_zero_when_no_dependencies():
+    """Depth risk should be 0.0 when max graph depth is 0 (line 263)."""
+    graph = InfraGraph()
+    # Add two isolated components with no dependencies between them
+    graph.add_component(Component(
+        id="a", name="A", type=ComponentType.APP_SERVER, replicas=2,
+    ))
+    graph.add_component(Component(
+        id="b", name="B", type=ComponentType.DATABASE, replicas=2,
+    ))
+    engine = RiskHeatMapEngine()
+
+    profile = engine.get_component_risk(graph, "a")
+    assert profile.risk_scores[RiskDimension.DEPENDENCY_DEPTH] == 0.0
+
+
+def test_external_api_security_issue_factor():
+    """An EXTERNAL_API component with security risk > 0.5 should report
+    'external dependency' in security issues (line 312)."""
+    graph = InfraGraph()
+    graph.add_component(Component(
+        id="ext",
+        name="Payment API",
+        type=ComponentType.EXTERNAL_API,
+        replicas=1,
+        security=SecurityProfile(rate_limiting=False),
+    ))
+    engine = RiskHeatMapEngine()
+
+    profile = engine.get_component_risk(graph, "ext")
+    # EXTERNAL_API with no circuit breaker and no rate limiting should have
+    # security_risk = 1.0 (all three factors absent)
+    assert profile.risk_scores[RiskDimension.SECURITY] == 1.0
+    security_factors = [f for f in profile.risk_factors if "Security concerns" in f]
+    assert len(security_factors) == 1
+    assert "external dependency" in security_factors[0]
+
+
+def test_external_sla_risk():
+    """A component with external_sla should use provider_sla to compute
+    external dependency risk (lines 324, 327)."""
+    graph = InfraGraph()
+    graph.add_component(Component(
+        id="ext",
+        name="Partner API",
+        type=ComponentType.EXTERNAL_API,
+        replicas=1,
+        external_sla=ExternalSLAConfig(provider_sla=90.0),
+    ))
+    engine = RiskHeatMapEngine()
+
+    profile = engine.get_component_risk(graph, "ext")
+    # ext_risk starts at 1.0 (EXTERNAL_API), then max(1.0, 1.0 - 90/100) = max(1.0, 0.1) = 1.0
+    assert profile.risk_scores[RiskDimension.EXTERNAL_DEPENDENCY] == 1.0
+    assert any("External dependency" in f for f in profile.risk_factors)
+
+
+def test_external_sla_non_external_type():
+    """A non-EXTERNAL_API component with external_sla should still factor in
+    provider_sla (line 324) and trigger the ext factor (line 327)."""
+    graph = InfraGraph()
+    graph.add_component(Component(
+        id="db",
+        name="Managed DB",
+        type=ComponentType.DATABASE,
+        replicas=2,
+        external_sla=ExternalSLAConfig(provider_sla=90.0),
+    ))
+    engine = RiskHeatMapEngine()
+
+    profile = engine.get_component_risk(graph, "db")
+    # ext_risk starts at 0.0 (not EXTERNAL_API),
+    # then max(0.0, 1.0 - 90/100) = max(0.0, 0.1) = 0.1
+    # 0.1 is not > 0.5, so no factor. Use a low SLA to trigger line 327.
+    assert abs(profile.risk_scores[RiskDimension.EXTERNAL_DEPENDENCY] - 0.1) < 1e-9
+
+
+def test_external_sla_low_provider_sla_triggers_factor():
+    """A low provider SLA (< 50%) on a non-EXTERNAL_API should trigger the
+    external dependency factor (line 327)."""
+    graph = InfraGraph()
+    graph.add_component(Component(
+        id="svc",
+        name="Unreliable Service",
+        type=ComponentType.APP_SERVER,
+        replicas=2,
+        external_sla=ExternalSLAConfig(provider_sla=40.0),
+    ))
+    engine = RiskHeatMapEngine()
+
+    profile = engine.get_component_risk(graph, "svc")
+    # ext_risk = max(0.0, 1.0 - 40/100) = 0.6  (> 0.5 → factor appended)
+    assert profile.risk_scores[RiskDimension.EXTERNAL_DEPENDENCY] == 0.6
+    assert any("External dependency with limited control" in f for f in profile.risk_factors)
+
+
+def test_dfs_cycle_detection_in_depth():
+    """Cyclic dependencies should be handled without infinite recursion (line 422)."""
+    graph = InfraGraph()
+    graph.add_component(Component(
+        id="a", name="A", type=ComponentType.APP_SERVER, replicas=2,
+    ))
+    graph.add_component(Component(
+        id="b", name="B", type=ComponentType.APP_SERVER, replicas=2,
+    ))
+    # Create a cycle: a -> b -> a
+    graph.add_dependency(Dependency(source_id="a", target_id="b", dependency_type="requires"))
+    graph.add_dependency(Dependency(source_id="b", target_id="a", dependency_type="requires"))
+
+    engine = RiskHeatMapEngine()
+    # Should not infinite-loop; the _dfs visited-check returns early (line 422)
+    profile = engine.get_component_risk(graph, "a")
+    assert profile.risk_scores[RiskDimension.DEPENDENCY_DEPTH] >= 0.0
+    assert profile.risk_scores[RiskDimension.DEPENDENCY_DEPTH] <= 1.0
+
+
+def test_circuit_breaker_on_incoming_edge():
+    """A circuit breaker on an incoming edge should be detected (line 446)."""
+    graph = InfraGraph()
+    graph.add_component(Component(
+        id="app",
+        name="App Server",
+        type=ComponentType.APP_SERVER,
+        replicas=1,
+        security=SecurityProfile(rate_limiting=False),
+    ))
+    graph.add_component(Component(
+        id="lb",
+        name="Load Balancer",
+        type=ComponentType.LOAD_BALANCER,
+        replicas=2,
+        security=SecurityProfile(rate_limiting=False),
+    ))
+    # Circuit breaker on the edge FROM lb TO app (incoming to app)
+    # app has no outgoing edges with circuit breaker, so the outgoing loop
+    # won't find it; it must be found on the incoming edge (line 444-446).
+    graph.add_dependency(Dependency(
+        source_id="lb", target_id="app", dependency_type="requires",
+        circuit_breaker=CircuitBreakerConfig(enabled=True),
+    ))
+
+    engine = RiskHeatMapEngine()
+    profile = engine.get_component_risk(graph, "app")
+    # app has no outgoing dependencies, so _has_circuit_breaker checks
+    # incoming edges and finds the CB from lb->app → returns 1.0
+    # security_risk should be reduced by the circuit breaker factor
+    assert profile.risk_scores[RiskDimension.SECURITY] < 1.0

@@ -1,4 +1,4 @@
-"""Recovery Time Estimator engine for InfraSim / ChaosProof.
+"""Recovery Time Estimator engine for FaultRay.
 
 Estimates Mean Time To Recovery (MTTR) for each component based on:
 1. Component type (databases take longer to recover than stateless services)
@@ -18,7 +18,7 @@ from collections import deque
 from dataclasses import dataclass, field
 from typing import TYPE_CHECKING
 
-from infrasim.model.components import ComponentType, HealthStatus
+from infrasim.model.components import ComponentType
 from infrasim.model.graph import InfraGraph
 
 if TYPE_CHECKING:

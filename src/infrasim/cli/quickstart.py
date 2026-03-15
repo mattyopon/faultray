@@ -145,13 +145,13 @@ def quickstart(
         print_infrastructure_summary(graph, console)
 
         engine = SimulationEngine(graph)
-        results = engine.run()
+        results = engine.run_all_defaults()
         print_simulation_report(results, console)
 
         console.print(
             f"\n[bold green]Simulation complete![/] "
             f"{len(graph.components)} components, "
-            f"{len(results)} scenarios evaluated."
+            f"{len(results.results)} scenarios evaluated."
         )
 
     # ---- 4. Optionally open web dashboard ------------------------------------

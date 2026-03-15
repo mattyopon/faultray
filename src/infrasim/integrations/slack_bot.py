@@ -7,8 +7,6 @@ slack_sdk -- it builds JSON payloads (Slack Block Kit) directly.
 
 from __future__ import annotations
 
-import json
-import traceback
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any

@@ -16,18 +16,16 @@ from infrasim.model.components import (
     Capacity,
     Component,
     ComponentType,
-    CostProfile,
     Dependency,
     FailoverConfig,
     RegionConfig,
-    ResourceMetrics,
     SecurityProfile,
 )
 from infrasim.model.graph import InfraGraph
 
 logger = logging.getLogger(__name__)
 
-# Mapping from GCP service to InfraSim ComponentType
+# Mapping from GCP service to FaultRay ComponentType
 GCP_TYPE_MAP: dict[str, ComponentType] = {
     "compute": ComponentType.APP_SERVER,
     "cloud_sql": ComponentType.DATABASE,
@@ -159,7 +157,7 @@ class GCPScanner:
                     if inst.status != "RUNNING":
                         continue
 
-                    instance_id = str(inst.id)
+                    str(inst.id)
                     name = inst.name
                     zone_name = zone.split("/")[-1] if "/" in zone else zone
 
@@ -480,7 +478,7 @@ class GCPScanner:
                 versioning_enabled = bucket.versioning_enabled if hasattr(bucket, "versioning_enabled") else False
 
                 # Check default encryption
-                encryption = getattr(bucket, "default_kms_key_name", None)
+                getattr(bucket, "default_kms_key_name", None)
 
                 component = Component(
                     id=comp_id,

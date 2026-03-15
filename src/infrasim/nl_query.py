@@ -1,4 +1,4 @@
-"""Natural Language Query Engine for ChaosProof.
+"""Natural Language Query Engine for FaultRay.
 
 Parse natural language questions about infrastructure resilience and
 execute appropriate simulations. Rule-based NLP -- no LLM dependency.
@@ -17,7 +17,6 @@ from difflib import SequenceMatcher
 
 from infrasim.model.components import HealthStatus
 from infrasim.model.graph import InfraGraph
-from infrasim.simulator.cascade import CascadeChain
 from infrasim.simulator.engine import ScenarioResult, SimulationEngine
 from infrasim.simulator.scenarios import Fault, FaultType, Scenario
 
@@ -499,7 +498,7 @@ class NaturalLanguageEngine:
             nines = "< 99% (below two nines)"
 
         parts = [
-            f"Availability Assessment:",
+            "Availability Assessment:",
             f"  Estimated availability: {nines}",
             f"  Resilience score: {score:.1f}/100",
             f"  Total components: {total}",
@@ -598,7 +597,7 @@ class NaturalLanguageEngine:
         effects = worst_cascade.cascade.effects
         trigger = worst_cascade.cascade.trigger
         parts = [
-            f"Worst Cascade Failure Analysis:",
+            "Worst Cascade Failure Analysis:",
             f"  Trigger: {trigger}",
             f"  Risk score: {worst_score:.1f}/10",
             f"  Components affected: {len(effects)}",
@@ -648,11 +647,11 @@ class NaturalLanguageEngine:
                 parts.append(f"    - {e.component_name}: {e.reason}")
 
         if score >= 7:
-            parts.append(f"\n  CRITICAL: This is a high-risk scenario. Consider adding redundancy.")
+            parts.append("\n  CRITICAL: This is a high-risk scenario. Consider adding redundancy.")
         elif score >= 4:
-            parts.append(f"\n  WARNING: This scenario causes notable degradation.")
+            parts.append("\n  WARNING: This scenario causes notable degradation.")
         else:
-            parts.append(f"\n  This is a low-risk scenario with limited impact.")
+            parts.append("\n  This is a low-risk scenario with limited impact.")
 
         return "\n".join(parts)
 

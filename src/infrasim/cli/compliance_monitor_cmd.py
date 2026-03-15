@@ -6,7 +6,6 @@ from pathlib import Path
 
 import typer
 from rich.panel import Panel
-from rich.table import Table
 
 from infrasim.cli.main import app, console
 
@@ -45,9 +44,9 @@ def compliance_monitor(
     """Continuous compliance monitoring with snapshot tracking and trend analysis.
 
     Examples:
-        infrasim compliance-monitor infra.yaml --framework soc2 --snapshot
-        infrasim compliance-monitor infra.yaml --trend --days 90
-        infrasim compliance-monitor infra.yaml --framework dora --snapshot --store compliance.db
+        faultray compliance-monitor infra.yaml --framework soc2 --snapshot
+        faultray compliance-monitor infra.yaml --trend --days 90
+        faultray compliance-monitor infra.yaml --framework dora --snapshot --store compliance.db
     """
     from infrasim.model.loader import load_yaml
     from infrasim.simulator.compliance_monitor import (
@@ -84,7 +83,6 @@ def compliance_monitor(
         for fw in frameworks:
             snap = monitor.assess(graph, fw)
             if json_output:
-                import json as json_mod
                 data = {
                     "framework": fw.value,
                     "timestamp": snap.timestamp.isoformat(),

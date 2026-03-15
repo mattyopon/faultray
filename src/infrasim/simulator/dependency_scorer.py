@@ -1,4 +1,4 @@
-"""Dependency Impact Scorer for ChaosProof.
+"""Dependency Impact Scorer for FaultRay.
 
 Score each dependency edge by "cost if broken" -- quantify the impact of
 every single dependency in the infrastructure graph.
@@ -14,7 +14,6 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 
-from infrasim.model.components import HealthStatus
 from infrasim.model.graph import InfraGraph
 from infrasim.simulator.cascade import CascadeEngine
 from infrasim.simulator.engine import SimulationEngine

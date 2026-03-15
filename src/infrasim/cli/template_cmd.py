@@ -71,7 +71,7 @@ def template_list(
 
     console.print()
     console.print(table)
-    console.print(f"\n[dim]Use: faultray template info <id>  |  faultray template use <id> --output my-infra.yaml[/]")
+    console.print("\n[dim]Use: faultray template info <id>  |  faultray template use <id> --output my-infra.yaml[/]")
     console.print()
 
     # Also list YAML-based templates

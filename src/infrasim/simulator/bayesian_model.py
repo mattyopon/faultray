@@ -7,7 +7,7 @@ factors — no external ML dependencies required.
 
 from __future__ import annotations
 
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 
 from infrasim.model.graph import InfraGraph
 

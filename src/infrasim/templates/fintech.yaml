@@ -1,10 +1,10 @@
-# ChaosProof Template: Fintech / Banking Platform
+# FaultRay Template: Fintech / Banking Platform
 #
 # Architecture: WAF -> LB -> API -> DB Primary + DB Replica + Cache + Queue + HSM
 # Use case: Financial services platform with strict compliance (PCI DSS, SOC2)
 #
 # Load with:
-#   infrasim template use fintech --output my-infra.yaml
+#   faultray template use fintech --output my-infra.yaml
 
 schema_version: "3.0"
 

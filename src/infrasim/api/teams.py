@@ -7,7 +7,6 @@ Persists data using the existing SQLite database via SQLAlchemy async ORM.
 from __future__ import annotations
 
 import datetime as _dt
-import json
 import logging
 import uuid
 

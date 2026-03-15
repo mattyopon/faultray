@@ -1,7 +1,7 @@
 """Natural Language infrastructure definition CLI command.
 
 Provides the ``nl`` subcommand for converting plain-text infrastructure
-descriptions into ChaosProof YAML definitions.
+descriptions into FaultRay YAML definitions.
 
 Usage:
   faultray nl parse "3 web servers behind ALB, connected to Aurora"
@@ -13,13 +13,17 @@ Usage:
 
 from __future__ import annotations
 
-import sys
 from pathlib import Path
+from typing import TYPE_CHECKING
 
 import typer
+from rich.console import Console
 from rich.panel import Panel
 from rich.syntax import Syntax
 from rich.table import Table
+
+if TYPE_CHECKING:
+    from infrasim.ai.nl_to_infra import NLInfraParser, ParsedInfrastructure
 
 from infrasim.cli.main import app, console
 
@@ -55,7 +59,7 @@ def nl(
     """Convert natural language infrastructure descriptions to YAML.
 
     Describe your infrastructure in plain English or Japanese and get a
-    ChaosProof YAML definition automatically generated. No LLM API required.
+    FaultRay YAML definition automatically generated. No LLM API required.
 
     \b
     自然言語からインフラ定義(YAML)を自動生成します。
@@ -196,10 +200,8 @@ def _run_simulation(
     con: "Console",
 ) -> None:
     """Run simulation on parsed infrastructure."""
-    from infrasim.cli.main import (
-        SimulationEngine,
-        print_simulation_report,
-    )
+    from infrasim.reporter.report import print_simulation_report
+    from infrasim.simulator.engine import SimulationEngine
 
     con.print("\n[bold yellow]Running simulation...[/]\n")
 

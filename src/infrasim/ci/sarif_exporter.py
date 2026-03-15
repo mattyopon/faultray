@@ -1,4 +1,4 @@
-"""Export ChaosProof findings in SARIF format for GitHub Security integration.
+"""Export FaultRay findings in SARIF format for GitHub Security integration.
 
 SARIF (Static Analysis Results Interchange Format) is a standard JSON format
 for static analysis results. When uploaded to GitHub via the CodeQL action,
@@ -105,7 +105,7 @@ def _make_rule(rule_id: str, scenario_name: str, risk_score: float) -> dict:
             "text": scenario_name,
         },
         "fullDescription": {
-            "text": f"ChaosProof detected: {scenario_name} (risk score: {risk_score:.1f}/10)",
+            "text": f"FaultRay detected: {scenario_name} (risk score: {risk_score:.1f}/10)",
         },
         "defaultConfiguration": {
             "level": _risk_to_sarif_level(risk_score),

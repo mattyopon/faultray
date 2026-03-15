@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import json as json_mod
 from pathlib import Path
 
 import typer
@@ -70,10 +69,10 @@ def import_metrics(
     simulation results.
 
     Examples:
-        infrasim import-metrics infra.yaml --datadog --api-key <key> --app-key <key>
-        infrasim import-metrics infra.yaml --newrelic --api-key <key> --account-id <id>
-        infrasim import-metrics infra.yaml --grafana --grafana-url http://grafana:3000 --api-key <key> --dashboard-uid abc123
-        infrasim import-metrics infra.yaml --json-file metrics.json
+        faultray import-metrics infra.yaml --datadog --api-key <key> --app-key <key>
+        faultray import-metrics infra.yaml --newrelic --api-key <key> --account-id <id>
+        faultray import-metrics infra.yaml --grafana --grafana-url http://grafana:3000 --api-key <key> --dashboard-uid abc123
+        faultray import-metrics infra.yaml --json-file metrics.json
     """
     from infrasim.integrations.observability import ObservabilityHub
 
@@ -106,7 +105,7 @@ def import_metrics(
             raise typer.Exit(1)
 
         if not json_output:
-            console.print(f"[cyan]Importing metrics from Grafana...[/]")
+            console.print("[cyan]Importing metrics from Grafana...[/]")
 
         result = hub.import_from_grafana(grafana_url, api_key, dashboard_uid)
 

@@ -5,7 +5,6 @@ from __future__ import annotations
 from rich.console import Console
 from rich.panel import Panel
 from rich.table import Table
-from rich.text import Text
 from rich.tree import Tree
 
 from infrasim.model.components import HealthStatus
@@ -128,7 +127,7 @@ def _print_scenario_result(result: ScenarioResult, console: Console) -> None:
     console.print(f"    {result.scenario.description}")
 
     if result.cascade.effects:
-        tree = Tree(f"  [dim]Cascade path:[/]")
+        tree = Tree("  [dim]Cascade path:[/]")
         prev_time = 0
         for effect in result.cascade.effects:
             time_str = ""

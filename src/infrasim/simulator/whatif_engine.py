@@ -1,4 +1,4 @@
-"""What-if Analysis engine for InfraSim v4.0.
+"""What-if Analysis engine for FaultRay v4.0.
 
 Runs parametric sweeps over operational scenarios, varying one parameter
 at a time (MTTR, MTBF, traffic, replicas, maintenance duration) and
@@ -14,7 +14,7 @@ import logging
 import random
 from typing import Any
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel
 
 from infrasim.model.graph import InfraGraph
 import infrasim.simulator.ops_engine as ops_engine_mod
