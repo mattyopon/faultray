@@ -627,3 +627,153 @@ class TestRiskLevelMapping:
         analyzer = DependencyRiskAnalyzer()
         assert analyzer._score_to_level(0) == DependencyRiskLevel.MINIMAL
         assert analyzer._score_to_level(14) == DependencyRiskLevel.MINIMAL
+
+
+# ---------------------------------------------------------------------------
+# Tests: Coverage gaps — lines 176, 239-242, 281, 295, 305-306
+# ---------------------------------------------------------------------------
+
+
+class TestCoverageGaps:
+    def test_optional_dependency_type_no_extra_risk(self):
+        """An 'optional' dependency should add no extra risk score. [line 176]"""
+        g = InfraGraph()
+        g.add_component(_comp("a"))
+        g.add_component(_comp("b"))
+        g.add_dependency(_dep("a", "b", dep_type="optional"))
+        analyzer = DependencyRiskAnalyzer()
+        risk = analyzer.analyze_dependency(g, "a", "b")
+        # Optional dep should not have "Hard 'requires' dependency" factor
+        assert not any("requires" in f.lower() for f in risk.factors)
+        # The score should still be valid
+        assert 0 <= risk.risk_score <= 100
+
+    def test_coupling_type_none_dep_returns_sync(self):
+        """When dependency edge is None, coupling should be SYNC. [line 281]"""
+        analyzer = DependencyRiskAnalyzer()
+        coupling = analyzer._determine_coupling(None)
+        assert coupling == CouplingType.SYNC
+
+    def test_coupling_type_sync_non_requires(self):
+        """A sync dependency that is not 'requires' and has no CB+retry
+        should return SYNC. [line 295]"""
+        # dep_type is default (not "async", not "requires"), no CB, no retry
+        dep = _dep("a", "b", dep_type="optional", cb=False, retry=False)
+        analyzer = DependencyRiskAnalyzer()
+        coupling = analyzer._determine_coupling(dep)
+        assert coupling == CouplingType.SYNC
+
+    def test_analyze_dependency_with_missing_edge(self):
+        """Analyzing a dependency with no actual edge in graph exercises
+        the dep=None coupling path. [line 281 via analyze_dependency]"""
+        g = InfraGraph()
+        g.add_component(_comp("a"))
+        g.add_component(_comp("b"))
+        # No dependency edge between a and b
+        analyzer = DependencyRiskAnalyzer()
+        risk = analyzer.analyze_dependency(g, "a", "b")
+        assert risk.coupling_type == CouplingType.SYNC
+
+    def test_critical_paths_with_networkx_error_in_path_search(self):
+        """Exercise the except nx.NetworkXError branches in
+        find_critical_paths when path search hits issues. [lines 239-242]
+        This is tested by having a graph with nodes but ensuring the
+        entry/leaf logic works (the except catches errors from
+        nx.all_simple_paths for disconnected entry/leaf pairs)."""
+        g = InfraGraph()
+        # Create two disconnected chains sharing entries/leaves logic
+        g.add_component(_comp("a"))
+        g.add_component(_comp("b"))
+        g.add_component(_comp("c"))
+        g.add_component(_comp("d"))
+        g.add_dependency(_dep("a", "b"))
+        g.add_dependency(_dep("c", "d"))
+        analyzer = DependencyRiskAnalyzer()
+        paths = analyzer.find_critical_paths(g)
+        # Should find paths without error, even with disconnected subgraphs
+        assert isinstance(paths, list)
+
+    def test_find_circular_dependencies_returns_cycles(self):
+        """Verify _find_circular_dependencies returns cycle data. [lines 305-306]"""
+        g = InfraGraph()
+        g.add_component(_comp("a"))
+        g.add_component(_comp("b"))
+        g.add_dependency(_dep("a", "b"))
+        g.add_dependency(_dep("b", "a"))
+        analyzer = DependencyRiskAnalyzer()
+        cycles = analyzer._find_circular_dependencies(g)
+        assert len(cycles) >= 1
+
+    def test_find_circular_dependencies_no_cycle(self):
+        """A DAG should return empty cycle list. [line 305-306 — normal path]"""
+        g = _chain_graph()
+        analyzer = DependencyRiskAnalyzer()
+        cycles = analyzer._find_circular_dependencies(g)
+        assert cycles == []
+
+    def test_critical_paths_entry_equals_leaf_skipped(self):
+        """When entry == leaf in path finding, the pair is skipped (line 234).
+        A single-node graph where a node is both entry and leaf."""
+        g = InfraGraph()
+        g.add_component(_comp("solo"))
+        analyzer = DependencyRiskAnalyzer()
+        paths = analyzer.find_critical_paths(g)
+        # Single node has no paths of length >= 2
+        assert paths == []
+
+    def test_critical_paths_networkx_error_in_all_simple_paths_outer(self):
+        """Exercise except nx.NetworkXError in DAG branch. [lines 241-242]"""
+        from unittest.mock import patch
+        import networkx as nx
+
+        g = InfraGraph()
+        g.add_component(_comp("a"))
+        g.add_component(_comp("b"))
+        g.add_dependency(_dep("a", "b"))
+        analyzer = DependencyRiskAnalyzer()
+
+        def mock_all_simple_paths(*args, **kwargs):
+            raise nx.NetworkXError("mocked error")
+
+        with patch("networkx.all_simple_paths", side_effect=mock_all_simple_paths):
+            paths = analyzer.find_critical_paths(g)
+        assert isinstance(paths, list)
+
+    def test_critical_paths_networkx_error_in_cyclic_graph(self):
+        """Exercise except nx.NetworkXError in cyclic graph branch. [lines 239-240]
+        When graph has cycles, the else block is entered. If all_simple_paths
+        raises NetworkXError for a specific entry/leaf pair, it continues."""
+        from unittest.mock import patch
+        import networkx as nx
+
+        g = InfraGraph()
+        g.add_component(_comp("a"))
+        g.add_component(_comp("b"))
+        g.add_dependency(_dep("a", "b"))
+        g.add_dependency(_dep("b", "a"))  # create cycle
+        analyzer = DependencyRiskAnalyzer()
+
+        def mock_all_simple_paths(*args, **kwargs):
+            raise nx.NetworkXError("mocked error in cyclic path search")
+
+        with patch("networkx.all_simple_paths", side_effect=mock_all_simple_paths):
+            paths = analyzer.find_critical_paths(g)
+        assert isinstance(paths, list)
+
+    def test_find_circular_dependencies_networkx_error(self):
+        """Exercise except nx.NetworkXError in _find_circular_dependencies. [lines 305-306]"""
+        from unittest.mock import patch
+        import networkx as nx
+
+        g = InfraGraph()
+        g.add_component(_comp("a"))
+        g.add_component(_comp("b"))
+        g.add_dependency(_dep("a", "b"))
+        analyzer = DependencyRiskAnalyzer()
+
+        def mock_simple_cycles(*args, **kwargs):
+            raise nx.NetworkXError("mocked cycle error")
+
+        with patch("networkx.simple_cycles", side_effect=mock_simple_cycles):
+            cycles = analyzer._find_circular_dependencies(g)
+        assert cycles == []

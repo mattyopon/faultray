@@ -508,3 +508,50 @@ class TestEdgeCases:
         steps_text = " ".join(rec.steps).lower()
         assert "green" in steps_text
         assert "switch" in steps_text or "traffic" in steps_text
+
+
+# ---------------------------------------------------------------------------
+# Tests: Coverage gaps — lines 209, 222, 244, 464-473
+# ---------------------------------------------------------------------------
+
+
+class TestCoverageGaps:
+    def test_conservative_cache_gets_blue_green(self):
+        """Conservative tolerance + CACHE -> BLUE_GREEN. [line 209]"""
+        g = InfraGraph()
+        g.add_component(_comp("cache", "Cache", ComponentType.CACHE, replicas=3))
+        advisor = DeploymentStrategyAdvisor(g)
+        rec = advisor.recommend(g, "cache", RiskTolerance.CONSERVATIVE)
+        assert rec.strategy == DeploymentType.BLUE_GREEN
+
+    def test_aggressive_cache_gets_rolling_update(self):
+        """Aggressive tolerance + CACHE -> ROLLING_UPDATE. [line 222]"""
+        g = InfraGraph()
+        g.add_component(_comp("cache", "Cache", ComponentType.CACHE, replicas=3))
+        advisor = DeploymentStrategyAdvisor(g)
+        rec = advisor.recommend(g, "cache", RiskTolerance.AGGRESSIVE)
+        assert rec.strategy == DeploymentType.ROLLING_UPDATE
+
+    def test_ab_testing_steps(self):
+        """AB_TESTING strategy should generate specific steps. [lines 464-471]"""
+        g = InfraGraph()
+        g.add_component(_comp("api", "API", replicas=3))
+        advisor = DeploymentStrategyAdvisor(g)
+        steps = advisor._generate_steps(
+            DeploymentType.AB_TESTING, g.get_component("api")
+        )
+        steps_text = " ".join(steps).lower()
+        assert "variant" in steps_text or "traffic" in steps_text
+        assert "metrics" in steps_text or "analyze" in steps_text
+
+    def test_shadow_steps(self):
+        """SHADOW strategy should generate specific steps. [lines 472-479]"""
+        g = InfraGraph()
+        g.add_component(_comp("api", "API", replicas=3))
+        advisor = DeploymentStrategyAdvisor(g)
+        steps = advisor._generate_steps(
+            DeploymentType.SHADOW, g.get_component("api")
+        )
+        steps_text = " ".join(steps).lower()
+        assert "shadow" in steps_text
+        assert "mirror" in steps_text or "compare" in steps_text

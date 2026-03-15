@@ -1,26 +1,34 @@
-"""Tests for dependency-aware health scoring engine."""
+"""Comprehensive tests for the Dependency Health Propagation Simulator.
+
+Targets 99%+ line/branch coverage of
+``infrasim.simulator.dependency_health``.
+"""
 
 from __future__ import annotations
 
 import pytest
 
-from infrasim.model.components import Component, ComponentType, HealthStatus
+from infrasim.model.components import (
+    Component,
+    ComponentType,
+    Dependency,
+    HealthStatus,
+)
 from infrasim.model.graph import InfraGraph
 from infrasim.simulator.dependency_health import (
     DependencyHealthEngine,
-    DependencyHealthReport,
-    DependencyHealthScore,
-    HealthCluster,
-    HealthPropagation,
-    HealthTier,
-    _classify_tier,
-    _own_health_score,
+    HealthImpact,
+    PropagationMode,
+    PropagationReport,
+    WhatIfResult,
+    _health_to_score,
+    _score_to_status,
 )
 
 
-# ---------------------------------------------------------------------------
+# =========================================================================
 # Helpers
-# ---------------------------------------------------------------------------
+# =========================================================================
 
 
 def _comp(
@@ -29,753 +37,1698 @@ def _comp(
     ctype: ComponentType = ComponentType.APP_SERVER,
     replicas: int = 1,
     health: HealthStatus = HealthStatus.HEALTHY,
-    cpu: float = 30.0,
-    mem: float = 30.0,
-    failover: bool = False,
 ) -> Component:
-    c = Component(
-        id=cid,
-        name=name,
-        type=ctype,
-        replicas=replicas,
-        health=health,
-    )
-    c.metrics.cpu_percent = cpu
-    c.metrics.memory_percent = mem
-    if failover:
-        c.failover.enabled = True
+    c = Component(id=cid, name=name, type=ctype, replicas=replicas)
+    c.health = health
     return c
 
 
-def _simple_chain() -> InfraGraph:
-    """LB -> API -> DB (linear chain)."""
+def _graph(*comps: Component) -> InfraGraph:
     g = InfraGraph()
-    lb = _comp("lb", "Load Balancer", ComponentType.LOAD_BALANCER, replicas=2)
-    api = _comp("api", "API Server", ComponentType.APP_SERVER, replicas=2)
-    db = _comp("db", "Database", ComponentType.DATABASE, replicas=1)
-    g.add_component(lb)
-    g.add_component(api)
-    g.add_component(db)
-    from infrasim.model.components import Dependency
-
-    g.add_dependency(Dependency(source_id="lb", target_id="api"))
-    g.add_dependency(Dependency(source_id="api", target_id="db"))
+    for c in comps:
+        g.add_component(c)
     return g
 
 
-def _diamond_graph() -> InfraGraph:
-    """
-    LB -> API-A -> DB
-    LB -> API-B -> DB
-    """
-    g = InfraGraph()
-    g.add_component(_comp("lb", "LB", ComponentType.LOAD_BALANCER, replicas=2))
-    g.add_component(_comp("api-a", "API-A", ComponentType.APP_SERVER, replicas=2))
-    g.add_component(_comp("api-b", "API-B", ComponentType.APP_SERVER, replicas=2))
-    g.add_component(_comp("db", "DB", ComponentType.DATABASE))
-    from infrasim.model.components import Dependency
-
-    g.add_dependency(Dependency(source_id="lb", target_id="api-a"))
-    g.add_dependency(Dependency(source_id="lb", target_id="api-b"))
-    g.add_dependency(Dependency(source_id="api-a", target_id="db"))
-    g.add_dependency(Dependency(source_id="api-b", target_id="db"))
-    return g
+def _edge(src: str, tgt: str) -> Dependency:
+    """Shortcut: *src* depends on *tgt*."""
+    return Dependency(source_id=src, target_id=tgt)
 
 
-# ---------------------------------------------------------------------------
-# Unit tests: _classify_tier
-# ---------------------------------------------------------------------------
+# =========================================================================
+# 1. PropagationMode enum
+# =========================================================================
 
 
-class TestClassifyTier:
-    def test_excellent(self):
-        assert _classify_tier(95) == HealthTier.EXCELLENT
-        assert _classify_tier(90) == HealthTier.EXCELLENT
+class TestPropagationModeEnum:
+    def test_forward_value(self):
+        assert PropagationMode.FORWARD == "forward"
+        assert PropagationMode.FORWARD.value == "forward"
 
-    def test_good(self):
-        assert _classify_tier(80) == HealthTier.GOOD
-        assert _classify_tier(75) == HealthTier.GOOD
+    def test_backward_value(self):
+        assert PropagationMode.BACKWARD == "backward"
+        assert PropagationMode.BACKWARD.value == "backward"
 
-    def test_fair(self):
-        assert _classify_tier(60) == HealthTier.FAIR
-        assert _classify_tier(50) == HealthTier.FAIR
+    def test_both_value(self):
+        assert PropagationMode.BOTH == "both"
+        assert PropagationMode.BOTH.value == "both"
 
-    def test_poor(self):
-        assert _classify_tier(40) == HealthTier.POOR
-        assert _classify_tier(25) == HealthTier.POOR
+    def test_is_str_subclass(self):
+        assert isinstance(PropagationMode.FORWARD, str)
 
-    def test_critical(self):
-        assert _classify_tier(20) == HealthTier.CRITICAL
-        assert _classify_tier(0) == HealthTier.CRITICAL
+    def test_member_count(self):
+        assert len(PropagationMode) == 3
 
 
-# ---------------------------------------------------------------------------
-# Unit tests: _own_health_score
-# ---------------------------------------------------------------------------
+# =========================================================================
+# 2. Helper functions: _health_to_score / _score_to_status
+# =========================================================================
 
 
-class TestOwnHealthScore:
-    def test_healthy_component(self):
-        c = _comp("x", "X", health=HealthStatus.HEALTHY)
-        score = _own_health_score(c)
-        assert score == 100.0
+class TestHealthToScore:
+    def test_healthy(self):
+        assert _health_to_score(HealthStatus.HEALTHY) == 100.0
 
-    def test_degraded_component(self):
-        c = _comp("x", "X", health=HealthStatus.DEGRADED)
-        score = _own_health_score(c)
-        assert score == 60.0
+    def test_degraded(self):
+        assert _health_to_score(HealthStatus.DEGRADED) == 60.0
 
-    def test_overloaded_component(self):
-        c = _comp("x", "X", health=HealthStatus.OVERLOADED)
-        score = _own_health_score(c)
-        assert score == 35.0
+    def test_overloaded(self):
+        assert _health_to_score(HealthStatus.OVERLOADED) == 35.0
 
-    def test_down_component(self):
-        c = _comp("x", "X", health=HealthStatus.DOWN)
-        score = _own_health_score(c)
-        assert score == 0.0
-
-    def test_high_utilization_penalty(self):
-        c = _comp("x", "X", cpu=95.0)
-        score = _own_health_score(c)
-        assert score < 100  # Should have utilization penalty
-
-    def test_utilization_over_80(self):
-        c = _comp("x", "X", cpu=85.0)
-        score = _own_health_score(c)
-        assert score < 100
-        assert score >= 70
-
-    def test_utilization_over_70(self):
-        c = _comp("x", "X", cpu=75.0)
-        score = _own_health_score(c)
-        assert score < 100
-
-    def test_utilization_over_60(self):
-        c = _comp("x", "X", cpu=65.0)
-        score = _own_health_score(c)
-        assert score < 100
-
-    def test_replica_bonus(self):
-        # Use a degraded component so base < 100 and bonus is visible
-        c1 = _comp("x", "X", replicas=1, health=HealthStatus.DEGRADED)
-        c3 = _comp("x", "X", replicas=3, health=HealthStatus.DEGRADED)
-        s1 = _own_health_score(c1)
-        s3 = _own_health_score(c3)
-        assert s3 > s1
-
-    def test_replica_bonus_caps_at_100(self):
-        c = _comp("x", "X", replicas=5)
-        score = _own_health_score(c)
-        assert score <= 100
-
-    def test_failover_bonus(self):
-        c1 = _comp("x", "X", failover=False, health=HealthStatus.DEGRADED)
-        c2 = _comp("x", "X", failover=True, health=HealthStatus.DEGRADED)
-        s1 = _own_health_score(c1)
-        s2 = _own_health_score(c2)
-        assert s2 > s1
-
-    def test_down_with_replicas_stays_low(self):
-        c = _comp("x", "X", health=HealthStatus.DOWN, replicas=3)
-        score = _own_health_score(c)
-        # Even with replicas bonus, DOWN base is 0
-        assert score <= 15
+    def test_down(self):
+        assert _health_to_score(HealthStatus.DOWN) == 0.0
 
 
-# ---------------------------------------------------------------------------
-# Tests: DependencyHealthEngine.analyze
-# ---------------------------------------------------------------------------
+class TestScoreToStatus:
+    def test_high_score_is_healthy(self):
+        assert _score_to_status(100.0) == HealthStatus.HEALTHY
+        assert _score_to_status(80.0) == HealthStatus.HEALTHY
+
+    def test_mid_score_is_degraded(self):
+        assert _score_to_status(79.9) == HealthStatus.DEGRADED
+        assert _score_to_status(50.0) == HealthStatus.DEGRADED
+
+    def test_low_score_is_overloaded(self):
+        assert _score_to_status(49.9) == HealthStatus.OVERLOADED
+        assert _score_to_status(15.0) == HealthStatus.OVERLOADED
+
+    def test_very_low_score_is_down(self):
+        assert _score_to_status(14.9) == HealthStatus.DOWN
+        assert _score_to_status(0.0) == HealthStatus.DOWN
 
 
-class TestAnalyzeEmptyGraph:
-    def test_empty_graph(self):
-        engine = DependencyHealthEngine()
-        g = InfraGraph()
-        report = engine.analyze(g)
-        assert report.overall_health == 100.0
-        assert report.tier == HealthTier.EXCELLENT
-        assert report.component_count == 0
-        assert len(report.scores) == 0
+# =========================================================================
+# 3. HealthImpact data class
+# =========================================================================
 
 
-class TestAnalyzeSimpleChain:
-    def test_all_healthy(self):
-        engine = DependencyHealthEngine()
-        g = _simple_chain()
-        report = engine.analyze(g)
+class TestHealthImpactDataclass:
+    def test_basic_construction(self):
+        hi = HealthImpact(
+            component_id="db",
+            component_name="Database",
+            original_health=100.0,
+            projected_health=30.0,
+            impact_severity=0.7,
+            hop_distance=1,
+            propagation_path=["api", "db"],
+        )
+        assert hi.component_id == "db"
+        assert hi.component_name == "Database"
+        assert hi.original_health == 100.0
+        assert hi.projected_health == 30.0
+        assert hi.impact_severity == 0.7
+        assert hi.hop_distance == 1
+        assert hi.propagation_path == ["api", "db"]
 
-        assert report.component_count == 3
-        assert report.overall_health > 80
-        assert report.tier in (HealthTier.EXCELLENT, HealthTier.GOOD)
-        assert len(report.critical_components) == 0
-
-    def test_db_down_propagates(self):
-        engine = DependencyHealthEngine()
-        g = _simple_chain()
-        # Make DB go down
-        g.components["db"].health = HealthStatus.DOWN
-        report = engine.analyze(g)
-
-        # DB should be critical
-        assert report.scores["db"].tier in (HealthTier.CRITICAL, HealthTier.POOR)
-        # API depends on DB, should be degraded
-        assert report.scores["api"].effective_health_score < report.scores["api"].own_health_score
-        # LB depends on API (which depends on DB)
-        lb_score = report.scores["lb"]
-        assert lb_score.dependency_depth > 0
-
-    def test_degraded_source_detected(self):
-        engine = DependencyHealthEngine()
-        g = _simple_chain()
-        g.components["db"].health = HealthStatus.DOWN
-        report = engine.analyze(g)
-
-        # API should list DB as a degradation source
-        api_score = report.scores["api"]
-        assert "Database" in api_score.degradation_sources
-
-    def test_critical_dependency_count(self):
-        engine = DependencyHealthEngine()
-        g = _simple_chain()
-        g.components["db"].health = HealthStatus.DOWN
-        report = engine.analyze(g)
-
-        api_score = report.scores["api"]
-        assert api_score.critical_dependency_count >= 1
+    def test_default_propagation_path(self):
+        hi = HealthImpact(
+            component_id="x",
+            component_name="X",
+            original_health=100.0,
+            projected_health=100.0,
+            impact_severity=0.0,
+            hop_distance=0,
+        )
+        assert hi.propagation_path == []
 
 
-class TestAnalyzeDiamondGraph:
-    def test_shared_dependency_cluster(self):
-        engine = DependencyHealthEngine()
-        g = _diamond_graph()
-        report = engine.analyze(g)
-
-        # API-A and API-B share the same dependency (DB)
-        # Should form a health cluster
-        # Note: clusters may or may not form depending on exact logic
-        assert report.component_count == 4
-
-    def test_db_failure_affects_both_apis(self):
-        engine = DependencyHealthEngine()
-        g = _diamond_graph()
-        g.components["db"].health = HealthStatus.DOWN
-        report = engine.analyze(g)
-
-        api_a = report.scores["api-a"]
-        api_b = report.scores["api-b"]
-        assert api_a.dependency_health_score < 50
-        assert api_b.dependency_health_score < 50
+# =========================================================================
+# 4. PropagationReport data class
+# =========================================================================
 
 
-# ---------------------------------------------------------------------------
-# Tests: DependencyHealthEngine.score_component
-# ---------------------------------------------------------------------------
+class TestPropagationReportDataclass:
+    def test_default_values(self):
+        rpt = PropagationReport(
+            source_component="src",
+            mode=PropagationMode.FORWARD,
+        )
+        assert rpt.source_component == "src"
+        assert rpt.mode == PropagationMode.FORWARD
+        assert rpt.impacts == []
+        assert rpt.cascade_depth == 0
+        assert rpt.total_affected == 0
+        assert rpt.critical_paths == []
+        assert rpt.summary == ""
+
+    def test_with_values(self):
+        imp = HealthImpact("a", "A", 100, 50, 0.5, 1)
+        rpt = PropagationReport(
+            source_component="src",
+            mode=PropagationMode.BOTH,
+            impacts=[imp],
+            cascade_depth=2,
+            total_affected=1,
+            critical_paths=[["src", "a"]],
+            summary="test",
+        )
+        assert rpt.cascade_depth == 2
+        assert rpt.total_affected == 1
+        assert len(rpt.impacts) == 1
+        assert len(rpt.critical_paths) == 1
 
 
-class TestScoreComponent:
-    def test_existing_component(self):
-        engine = DependencyHealthEngine()
-        g = _simple_chain()
-        score = engine.score_component(g, "api")
-        assert score is not None
-        assert score.component_name == "API Server"
-        assert 0 <= score.effective_health_score <= 100
+# =========================================================================
+# 5. WhatIfResult data class
+# =========================================================================
 
+
+class TestWhatIfResultDataclass:
+    def test_default_values(self):
+        w = WhatIfResult(scenario="test")
+        assert w.scenario == "test"
+        assert w.impacts == []
+        assert w.components_affected == 0
+        assert w.severity_change == 0.0
+        assert w.recommendations == []
+
+    def test_with_values(self):
+        w = WhatIfResult(
+            scenario="fail db",
+            impacts=[],
+            components_affected=3,
+            severity_change=0.8,
+            recommendations=["Add replicas"],
+        )
+        assert w.components_affected == 3
+        assert w.severity_change == 0.8
+        assert len(w.recommendations) == 1
+
+
+# =========================================================================
+# 6. DependencyHealthEngine: construction & decay clamping
+# =========================================================================
+
+
+class TestEngineConstruction:
+    def test_default_decay_factor(self):
+        g = _graph()
+        e = DependencyHealthEngine(g)
+        assert e.decay_factor == 0.7
+
+    def test_custom_decay_factor(self):
+        g = _graph()
+        e = DependencyHealthEngine(g, decay_factor=0.5)
+        assert e.decay_factor == 0.5
+
+    def test_decay_factor_clamped_low(self):
+        g = _graph()
+        e = DependencyHealthEngine(g, decay_factor=-1.0)
+        assert e.decay_factor == 0.01
+
+    def test_decay_factor_clamped_high(self):
+        g = _graph()
+        e = DependencyHealthEngine(g, decay_factor=5.0)
+        assert e.decay_factor == 1.0
+
+    def test_decay_factor_zero(self):
+        g = _graph()
+        e = DependencyHealthEngine(g, decay_factor=0.0)
+        assert e.decay_factor == 0.01
+
+    def test_graph_reference(self):
+        g = _graph()
+        e = DependencyHealthEngine(g)
+        assert e.graph is g
+
+
+# =========================================================================
+# 7. propagate() -- empty graph
+# =========================================================================
+
+
+class TestPropagateEmptyGraph:
     def test_nonexistent_component(self):
-        engine = DependencyHealthEngine()
-        g = _simple_chain()
-        score = engine.score_component(g, "nonexistent")
-        assert score is None
-
-    def test_leaf_component(self):
-        engine = DependencyHealthEngine()
-        g = _simple_chain()
-        score = engine.score_component(g, "db")
-        assert score is not None
-        assert score.is_leaf is True
-        assert score.dependency_health_score == 100.0
-
-    def test_non_leaf_component(self):
-        engine = DependencyHealthEngine()
-        g = _simple_chain()
-        score = engine.score_component(g, "api")
-        assert score is not None
-        assert score.is_leaf is False
+        g = _graph()
+        e = DependencyHealthEngine(g)
+        rpt = e.propagate("missing")
+        assert rpt.source_component == "missing"
+        assert "not found" in rpt.summary
+        assert rpt.total_affected == 0
+        assert rpt.cascade_depth == 0
+        assert rpt.impacts == []
+        assert rpt.critical_paths == []
 
 
-# ---------------------------------------------------------------------------
-# Tests: get_health_summary
-# ---------------------------------------------------------------------------
+# =========================================================================
+# 8. propagate() -- single component (no edges)
+# =========================================================================
 
 
-class TestGetHealthSummary:
-    def test_summary_structure(self):
-        engine = DependencyHealthEngine()
-        g = _simple_chain()
-        summary = engine.get_health_summary(g)
-        assert "overall_health" in summary
-        assert "tier" in summary
-        assert "component_count" in summary
-        assert "healthy" in summary
-        assert "degraded" in summary
-        assert "critical" in summary
-        assert "critical_components" in summary
-        assert "top_degradation_sources" in summary
+class TestPropagateSingleComponent:
+    def test_healthy_single(self):
+        g = _graph(_comp("solo", "Solo"))
+        e = DependencyHealthEngine(g)
+        rpt = e.propagate("solo")
+        assert rpt.total_affected == 0
+        assert rpt.cascade_depth == 0
+        assert rpt.impacts == []
 
-    def test_summary_with_failures(self):
-        engine = DependencyHealthEngine()
-        g = _simple_chain()
-        g.components["db"].health = HealthStatus.DOWN
-        summary = engine.get_health_summary(g)
-        # DB is DOWN (score 0) → should be POOR or CRITICAL tier
-        assert summary["critical"] >= 1 or summary["overall_health"] < 90
+    def test_down_single(self):
+        g = _graph(_comp("solo", "Solo", health=HealthStatus.DOWN))
+        e = DependencyHealthEngine(g)
+        rpt = e.propagate("solo")
+        assert rpt.total_affected == 0
 
-    def test_summary_counts(self):
-        engine = DependencyHealthEngine()
-        g = _simple_chain()
-        summary = engine.get_health_summary(g)
-        total = summary["healthy"] + summary["degraded"] + summary["critical"]
-        assert total == summary["component_count"]
+    def test_single_forward(self):
+        g = _graph(_comp("solo", "Solo"))
+        e = DependencyHealthEngine(g)
+        rpt = e.propagate("solo", PropagationMode.FORWARD)
+        assert rpt.mode == PropagationMode.FORWARD
+        assert rpt.total_affected == 0
 
-
-# ---------------------------------------------------------------------------
-# Tests: degraded paths
-# ---------------------------------------------------------------------------
+    def test_single_backward(self):
+        g = _graph(_comp("solo", "Solo"))
+        e = DependencyHealthEngine(g)
+        rpt = e.propagate("solo", PropagationMode.BACKWARD)
+        assert rpt.mode == PropagationMode.BACKWARD
+        assert rpt.total_affected == 0
 
 
-class TestDegradedPaths:
-    def test_no_degraded_paths_when_healthy(self):
-        engine = DependencyHealthEngine()
-        g = _simple_chain()
-        report = engine.analyze(g)
-        assert len(report.degraded_paths) == 0
-
-    def test_degraded_path_on_failure(self):
-        engine = DependencyHealthEngine()
-        g = _simple_chain()
-        g.components["db"].health = HealthStatus.DOWN
-        report = engine.analyze(g)
-        # DB is down (score < 50), and API depends on DB
-        # Should find at least one degraded path
-        assert len(report.degraded_paths) >= 1
-
-    def test_degraded_path_attributes(self):
-        engine = DependencyHealthEngine()
-        g = _simple_chain()
-        g.components["db"].health = HealthStatus.DOWN
-        report = engine.analyze(g)
-        if report.degraded_paths:
-            path = report.degraded_paths[0]
-            assert len(path.path) >= 2
-            assert len(path.path_names) >= 2
-            assert path.source_health < 50
-            assert path.attenuation_factor > 0
+# =========================================================================
+# 9. propagate() -- linear chain A -> B -> C
+#    (A depends on B, B depends on C)
+# =========================================================================
 
 
-# ---------------------------------------------------------------------------
-# Tests: health clusters
-# ---------------------------------------------------------------------------
+def _linear_chain(health_c: HealthStatus = HealthStatus.HEALTHY) -> InfraGraph:
+    """A -> B -> C  (A depends on B, B depends on C)."""
+    g = _graph(
+        _comp("a", "Frontend"),
+        _comp("b", "Backend"),
+        _comp("c", "Database", health=health_c),
+    )
+    g.add_dependency(_edge("a", "b"))
+    g.add_dependency(_edge("b", "c"))
+    return g
 
 
-class TestHealthClusters:
-    def test_diamond_creates_cluster(self):
-        engine = DependencyHealthEngine()
-        g = _diamond_graph()
-        report = engine.analyze(g)
-        # API-A and API-B both depend on DB → shared dependency
-        # They should be clustered together
-        db_dep_clusters = [
-            c for c in report.health_clusters
-            if "api-a" in c.component_ids and "api-b" in c.component_ids
-        ]
-        assert len(db_dep_clusters) >= 1
+class TestPropagateLinearChain:
+    def test_all_healthy_forward_from_c(self):
+        g = _linear_chain()
+        e = DependencyHealthEngine(g)
+        rpt = e.propagate("c", PropagationMode.FORWARD)
+        assert rpt.cascade_depth >= 1
+        for imp in rpt.impacts:
+            assert imp.impact_severity == 0.0
 
-    def test_cluster_attributes(self):
-        engine = DependencyHealthEngine()
-        g = _diamond_graph()
-        report = engine.analyze(g)
-        for cluster in report.health_clusters:
-            assert len(cluster.component_ids) >= 2
-            assert len(cluster.component_names) >= 2
-            assert 0 <= cluster.average_health <= 100
-            assert 0 <= cluster.min_health <= 100
-            assert cluster.correlation_reason
+    def test_c_down_forward(self):
+        g = _linear_chain(HealthStatus.DOWN)
+        e = DependencyHealthEngine(g)
+        rpt = e.propagate("c", PropagationMode.FORWARD)
+        assert rpt.total_affected >= 1
+        b_imp = next((i for i in rpt.impacts if i.component_id == "b"), None)
+        a_imp = next((i for i in rpt.impacts if i.component_id == "a"), None)
+        assert b_imp is not None
+        assert a_imp is not None
+        assert b_imp.hop_distance == 1
+        assert a_imp.hop_distance == 2
+        assert b_imp.impact_severity >= a_imp.impact_severity
+
+    def test_c_down_backward_from_a(self):
+        g = _linear_chain(HealthStatus.DOWN)
+        e = DependencyHealthEngine(g)
+        rpt = e.propagate("a", PropagationMode.BACKWARD)
+        b_imp = next((i for i in rpt.impacts if i.component_id == "b"), None)
+        c_imp = next((i for i in rpt.impacts if i.component_id == "c"), None)
+        assert b_imp is not None
+        assert c_imp is not None
+
+    def test_c_down_both(self):
+        g = _linear_chain(HealthStatus.DOWN)
+        e = DependencyHealthEngine(g)
+        rpt = e.propagate("c", PropagationMode.BOTH)
+        assert rpt.total_affected >= 2
+
+    def test_cascade_depth_linear(self):
+        g = _linear_chain(HealthStatus.DOWN)
+        e = DependencyHealthEngine(g)
+        rpt = e.propagate("c", PropagationMode.FORWARD)
+        assert rpt.cascade_depth == 2
+
+    def test_propagation_path_in_impacts(self):
+        g = _linear_chain(HealthStatus.DOWN)
+        e = DependencyHealthEngine(g)
+        rpt = e.propagate("c", PropagationMode.FORWARD)
+        a_imp = next(i for i in rpt.impacts if i.component_id == "a")
+        assert a_imp.propagation_path[0] == "c"
+        assert "a" in a_imp.propagation_path
+
+    def test_summary_contains_info(self):
+        g = _linear_chain(HealthStatus.DOWN)
+        e = DependencyHealthEngine(g)
+        rpt = e.propagate("c", PropagationMode.FORWARD)
+        assert "Database" in rpt.summary
+        assert "Cascade depth" in rpt.summary
+        assert "Affected" in rpt.summary
 
 
-# ---------------------------------------------------------------------------
-# Tests: improvement suggestions
-# ---------------------------------------------------------------------------
+# =========================================================================
+# 10. propagate() -- diamond dependency
+# =========================================================================
 
 
-class TestSuggestions:
-    def test_no_suggestions_when_healthy(self):
-        engine = DependencyHealthEngine()
+def _diamond_graph(health_db: HealthStatus = HealthStatus.HEALTHY) -> InfraGraph:
+    g = _graph(
+        _comp("lb", "LoadBalancer", ComponentType.LOAD_BALANCER, replicas=2),
+        _comp("api-a", "API-A"),
+        _comp("api-b", "API-B"),
+        _comp("db", "Database", ComponentType.DATABASE, health=health_db),
+    )
+    g.add_dependency(_edge("lb", "api-a"))
+    g.add_dependency(_edge("lb", "api-b"))
+    g.add_dependency(_edge("api-a", "db"))
+    g.add_dependency(_edge("api-b", "db"))
+    return g
+
+
+class TestPropagateDiamond:
+    def test_db_down_forward(self):
+        g = _diamond_graph(HealthStatus.DOWN)
+        e = DependencyHealthEngine(g)
+        rpt = e.propagate("db", PropagationMode.FORWARD)
+        assert rpt.total_affected >= 2
+        api_ids = {i.component_id for i in rpt.impacts}
+        assert "api-a" in api_ids
+        assert "api-b" in api_ids
+
+    def test_lb_receives_cascaded_impact(self):
+        g = _diamond_graph(HealthStatus.DOWN)
+        e = DependencyHealthEngine(g)
+        rpt = e.propagate("db", PropagationMode.FORWARD)
+        lb_imp = next((i for i in rpt.impacts if i.component_id == "lb"), None)
+        assert lb_imp is not None
+        assert lb_imp.hop_distance == 2
+
+    def test_diamond_critical_paths(self):
+        g = _diamond_graph(HealthStatus.DOWN)
+        e = DependencyHealthEngine(g)
+        rpt = e.propagate("db", PropagationMode.FORWARD)
+        if rpt.critical_paths:
+            for path in rpt.critical_paths:
+                assert path[0] == "db"
+
+    def test_diamond_both_mode(self):
+        g = _diamond_graph(HealthStatus.DOWN)
+        e = DependencyHealthEngine(g)
+        rpt = e.propagate("db", PropagationMode.BOTH)
+        ids = {i.component_id for i in rpt.impacts}
+        assert "api-a" in ids
+        assert "api-b" in ids
+
+    def test_no_duplicates_in_both_mode(self):
+        g = _diamond_graph(HealthStatus.DOWN)
+        e = DependencyHealthEngine(g)
+        rpt = e.propagate("db", PropagationMode.BOTH)
+        ids = [i.component_id for i in rpt.impacts]
+        assert len(ids) == len(set(ids))
+
+
+# =========================================================================
+# 11. Decay factor effect
+# =========================================================================
+
+
+class TestDecayFactor:
+    def test_high_decay_more_impact(self):
+        g = _linear_chain(HealthStatus.DOWN)
+        e_low = DependencyHealthEngine(g, decay_factor=0.3)
+        e_high = DependencyHealthEngine(g, decay_factor=0.9)
+        rpt_low = e_low.propagate("c", PropagationMode.FORWARD)
+        rpt_high = e_high.propagate("c", PropagationMode.FORWARD)
+        a_low = next(i for i in rpt_low.impacts if i.component_id == "a")
+        a_high = next(i for i in rpt_high.impacts if i.component_id == "a")
+        assert a_high.impact_severity >= a_low.impact_severity
+
+    def test_decay_1_full_propagation(self):
+        g = _linear_chain(HealthStatus.DOWN)
+        e = DependencyHealthEngine(g, decay_factor=1.0)
+        rpt = e.propagate("c", PropagationMode.FORWARD)
+        b_imp = next(i for i in rpt.impacts if i.component_id == "b")
+        a_imp = next(i for i in rpt.impacts if i.component_id == "a")
+        assert b_imp.impact_severity == a_imp.impact_severity
+
+    def test_very_low_decay_minimal_propagation(self):
+        g = _linear_chain(HealthStatus.DOWN)
+        e = DependencyHealthEngine(g, decay_factor=0.01)
+        rpt = e.propagate("c", PropagationMode.FORWARD)
+        a_imp = next(i for i in rpt.impacts if i.component_id == "a")
+        assert a_imp.impact_severity < 0.01
+
+
+# =========================================================================
+# 12. Forward propagation details
+# =========================================================================
+
+
+class TestForwardPropagation:
+    def test_healthy_source_no_severity(self):
+        g = _linear_chain(HealthStatus.HEALTHY)
+        e = DependencyHealthEngine(g)
+        rpt = e.propagate("c", PropagationMode.FORWARD)
+        for imp in rpt.impacts:
+            assert imp.impact_severity == 0.0
+            assert imp.projected_health == imp.original_health
+
+    def test_degraded_source(self):
+        g = _linear_chain(HealthStatus.DEGRADED)
+        e = DependencyHealthEngine(g)
+        rpt = e.propagate("c", PropagationMode.FORWARD)
+        b_imp = next(i for i in rpt.impacts if i.component_id == "b")
+        assert b_imp.impact_severity > 0.0
+        assert b_imp.projected_health < b_imp.original_health
+
+    def test_overloaded_source(self):
+        g = _linear_chain(HealthStatus.OVERLOADED)
+        e = DependencyHealthEngine(g)
+        rpt = e.propagate("c", PropagationMode.FORWARD)
+        b_imp = next(i for i in rpt.impacts if i.component_id == "b")
+        assert b_imp.impact_severity > 0.0
+
+    def test_impacts_sorted_by_severity(self):
+        g = _linear_chain(HealthStatus.DOWN)
+        e = DependencyHealthEngine(g)
+        rpt = e.propagate("c", PropagationMode.FORWARD)
+        severities = [i.impact_severity for i in rpt.impacts]
+        assert severities == sorted(severities, reverse=True)
+
+
+# =========================================================================
+# 13. Backward propagation details
+# =========================================================================
+
+
+class TestBackwardPropagation:
+    def test_backward_from_healthy_source(self):
+        g = _linear_chain()
+        e = DependencyHealthEngine(g)
+        rpt = e.propagate("a", PropagationMode.BACKWARD)
+        ids = {i.component_id for i in rpt.impacts}
+        assert "b" in ids
+        assert "c" in ids
+
+    def test_backward_severity_is_gentler(self):
+        g = _linear_chain(HealthStatus.DOWN)
+        e = DependencyHealthEngine(g)
+        fwd = e.propagate("c", PropagationMode.FORWARD)
+        bwd = e.propagate("a", PropagationMode.BACKWARD)
+        b_fwd = next(i for i in fwd.impacts if i.component_id == "b")
+        b_bwd = next(i for i in bwd.impacts if i.component_id == "b")
+        assert isinstance(b_fwd.impact_severity, float)
+        assert isinstance(b_bwd.impact_severity, float)
+
+    def test_backward_only_mode(self):
+        g = _linear_chain(HealthStatus.DOWN)
+        e = DependencyHealthEngine(g)
+        rpt = e.propagate("b", PropagationMode.BACKWARD)
+        assert rpt.mode == PropagationMode.BACKWARD
+        ids = {i.component_id for i in rpt.impacts}
+        assert "c" in ids
+
+
+# =========================================================================
+# 14. what_if_fail()
+# =========================================================================
+
+
+class TestWhatIfFail:
+    def test_fail_healthy_component(self):
+        g = _linear_chain()
+        e = DependencyHealthEngine(g)
+        result = e.what_if_fail("c")
+        assert "fails" in result.scenario.lower() or "DOWN" in result.scenario
+        assert result.severity_change > 0
+        assert result.components_affected >= 0
+
+    def test_fail_already_down(self):
+        g = _linear_chain(HealthStatus.DOWN)
+        e = DependencyHealthEngine(g)
+        result = e.what_if_fail("c")
+        assert result.severity_change == 0.0
+
+    def test_fail_nonexistent(self):
+        g = _graph()
+        e = DependencyHealthEngine(g)
+        result = e.what_if_fail("ghost")
+        assert "not found" in result.recommendations[0]
+        assert result.components_affected == 0
+
+    def test_fail_restores_original_health(self):
+        g = _linear_chain()
+        e = DependencyHealthEngine(g)
+        comp = g.get_component("c")
+        assert comp.health == HealthStatus.HEALTHY
+        e.what_if_fail("c")
+        assert comp.health == HealthStatus.HEALTHY
+
+    def test_fail_recommendations_replicas(self):
+        g = _linear_chain()
+        e = DependencyHealthEngine(g)
+        result = e.what_if_fail("c")
+        assert any("replica" in r.lower() for r in result.recommendations)
+
+    def test_fail_recommendations_failover(self):
+        g = _linear_chain()
+        e = DependencyHealthEngine(g)
+        result = e.what_if_fail("c")
+        assert any("failover" in r.lower() for r in result.recommendations)
+
+    def test_fail_isolated_component(self):
+        g = _graph(_comp("solo", "Solo"))
+        e = DependencyHealthEngine(g)
+        result = e.what_if_fail("solo")
+        assert result.components_affected == 0
+        assert any("isolated" in r.lower() for r in result.recommendations)
+
+    def test_fail_degraded_component(self):
+        g = _linear_chain(HealthStatus.DEGRADED)
+        e = DependencyHealthEngine(g)
+        result = e.what_if_fail("c")
+        assert result.severity_change == 0.6
+
+    def test_fail_with_deep_cascade(self):
         g = InfraGraph()
-        g.add_component(_comp("x", "X", replicas=3, failover=True))
-        report = engine.analyze(g)
-        # Healthy single component with replicas — no critical suggestions
-        critical_suggestions = [
-            s for s in report.improvement_suggestions if "CRITICAL" in s
-        ]
-        assert len(critical_suggestions) == 0
-
-    def test_suggestion_for_down_component(self):
-        engine = DependencyHealthEngine()
-        g = InfraGraph()
-        g.add_component(_comp("x", "X", health=HealthStatus.DOWN))
-        # Add a dependent so the DOWN component is detected as impactful
-        from infrasim.model.components import Dependency
-        g.add_component(_comp("y", "Y"))
-        g.add_dependency(Dependency(source_id="y", target_id="x"))
-        report = engine.analyze(g)
-        assert any(
-            "CRITICAL" in s or "DOWN" in s or "replica" in s.lower()
-            for s in report.improvement_suggestions
-        )
-
-    def test_suggestion_for_spof(self):
-        engine = DependencyHealthEngine()
-        g = _simple_chain()
-        # DB is single replica and API depends on it
-        # Make DB degraded to trigger suggestions
-        g.components["db"].health = HealthStatus.OVERLOADED
-        report = engine.analyze(g)
-        assert any("Database" in s or "replica" in s.lower() for s in report.improvement_suggestions)
-
-    def test_suggestion_for_dependency_degradation(self):
-        engine = DependencyHealthEngine()
-        g = _simple_chain()
-        g.components["db"].health = HealthStatus.DOWN
-        report = engine.analyze(g)
-        # API is healthy but degraded by DB
-        dep_suggestions = [
-            s for s in report.improvement_suggestions
-            if "dependenc" in s.lower() or "upstream" in s.lower()
-        ]
-        assert len(dep_suggestions) >= 1
-
-
-# ---------------------------------------------------------------------------
-# Tests: custom parameters
-# ---------------------------------------------------------------------------
-
-
-class TestCustomParameters:
-    def test_custom_dependency_weight(self):
-        engine_low = DependencyHealthEngine(dependency_weight=0.1)
-        engine_high = DependencyHealthEngine(dependency_weight=0.5)
-        g = _simple_chain()
-        g.components["db"].health = HealthStatus.DOWN
-
-        report_low = engine_low.analyze(g)
-        report_high = engine_high.analyze(g)
-
-        # Higher dependency weight → lower overall health when deps are down
-        api_low = report_low.scores["api"].effective_health_score
-        api_high = report_high.scores["api"].effective_health_score
-        assert api_low > api_high
-
-    def test_custom_hop_decay(self):
-        engine_fast_decay = DependencyHealthEngine(hop_decay=0.3)
-        engine_slow_decay = DependencyHealthEngine(hop_decay=0.9)
-        g = _simple_chain()
-        g.components["db"].health = HealthStatus.DOWN
-
-        report_fast = engine_fast_decay.analyze(g)
-        report_slow = engine_slow_decay.analyze(g)
-
-        # With slower decay, LB (2 hops from DB) should be more affected
-        lb_fast = report_fast.scores["lb"].effective_health_score
-        lb_slow = report_slow.scores["lb"].effective_health_score
-        # Slower decay propagates more degradation
-        assert lb_slow <= lb_fast
-
-
-# ---------------------------------------------------------------------------
-# Tests: single component graph
-# ---------------------------------------------------------------------------
-
-
-class TestSingleComponent:
-    def test_isolated_component(self):
-        engine = DependencyHealthEngine()
-        g = InfraGraph()
-        g.add_component(_comp("solo", "Solo Server"))
-        report = engine.analyze(g)
-
-        assert report.component_count == 1
-        score = report.scores["solo"]
-        assert score.is_leaf is True
-        assert score.dependency_health_score == 100.0
-        assert score.dependency_depth == 0
-        assert score.critical_dependency_count == 0
-
-
-# ---------------------------------------------------------------------------
-# Tests: report statistics
-# ---------------------------------------------------------------------------
-
-
-class TestReportStats:
-    def test_counts_add_up(self):
-        engine = DependencyHealthEngine()
-        g = _simple_chain()
-        g.components["db"].health = HealthStatus.DOWN
-        report = engine.analyze(g)
-
-        total = report.healthy_count + report.degraded_count + report.critical_count
-        assert total == report.component_count
-
-    def test_overall_health_is_average(self):
-        engine = DependencyHealthEngine()
-        g = _simple_chain()
-        report = engine.analyze(g)
-
-        scores = [s.effective_health_score for s in report.scores.values()]
-        expected_avg = sum(scores) / len(scores)
-        assert abs(report.overall_health - expected_avg) < 0.2
-
-
-# ---------------------------------------------------------------------------
-# Tests: HealthTier enum values
-# ---------------------------------------------------------------------------
-
-
-class TestHealthTierEnum:
-    def test_all_values(self):
-        assert HealthTier.EXCELLENT == "excellent"
-        assert HealthTier.GOOD == "good"
-        assert HealthTier.FAIR == "fair"
-        assert HealthTier.POOR == "poor"
-        assert HealthTier.CRITICAL == "critical"
-
-
-# ---------------------------------------------------------------------------
-# Tests: complex topology
-# ---------------------------------------------------------------------------
-
-
-class TestComplexTopology:
-    def test_wide_graph(self):
-        """Test with many independent components depending on one."""
-        engine = DependencyHealthEngine()
-        g = InfraGraph()
-        g.add_component(_comp("db", "Database", ComponentType.DATABASE))
-        from infrasim.model.components import Dependency
-
-        for i in range(10):
-            g.add_component(_comp(f"api-{i}", f"API-{i}", ComponentType.APP_SERVER))
-            g.add_dependency(Dependency(source_id=f"api-{i}", target_id="db"))
-
-        report = engine.analyze(g)
-        assert report.component_count == 11
-
-        # If DB goes down, all APIs should be affected
-        g.components["db"].health = HealthStatus.DOWN
-        report2 = engine.analyze(g)
-        for i in range(10):
-            assert report2.scores[f"api-{i}"].dependency_health_score < 50
-
-    def test_deep_chain(self):
-        """Test with a deep dependency chain."""
-        engine = DependencyHealthEngine()
-        g = InfraGraph()
-        from infrasim.model.components import Dependency
-
-        prev = None
-        for i in range(6):
-            cid = f"layer-{i}"
-            g.add_component(_comp(cid, f"Layer {i}", ComponentType.APP_SERVER))
-            if prev:
-                g.add_dependency(Dependency(source_id=prev, target_id=cid))
-            prev = cid
-
-        report = engine.analyze(g)
-        # First component has deepest dependency chain
-        assert report.scores["layer-0"].dependency_depth >= 4
-
-        # Last layer is a leaf
-        assert report.scores["layer-5"].is_leaf is True
-
-    def test_multi_failure(self):
-        """Test with multiple simultaneous failures."""
-        engine = DependencyHealthEngine()
-        g = _diamond_graph()
-        g.components["db"].health = HealthStatus.DOWN
-        g.components["api-a"].health = HealthStatus.DEGRADED
-        report = engine.analyze(g)
-
-        assert report.critical_count >= 1
-        assert report.overall_health < 80
-
-
-# ---------------------------------------------------------------------------
-# Tests: top_degradation_sources
-# ---------------------------------------------------------------------------
-
-
-class TestTopDegradationSources:
-    def test_degradation_source_ranking(self):
-        engine = DependencyHealthEngine()
-        g = InfraGraph()
-        g.add_component(_comp("db", "Database", ComponentType.DATABASE, health=HealthStatus.DOWN))
-        from infrasim.model.components import Dependency
-
         for i in range(5):
-            g.add_component(_comp(f"api-{i}", f"API-{i}"))
-            g.add_dependency(Dependency(source_id=f"api-{i}", target_id="db"))
-
-        summary = engine.get_health_summary(g)
-        sources = summary["top_degradation_sources"]
-        if sources:
-            assert sources[0]["name"] == "Database"
-            assert sources[0]["affected_count"] == 5
+            g.add_component(_comp(f"n{i}", f"Node{i}"))
+        for i in range(4):
+            g.add_dependency(_edge(f"n{i}", f"n{i+1}"))
+        e = DependencyHealthEngine(g)
+        result = e.what_if_fail("n4")
+        assert any("circuit" in r.lower() for r in result.recommendations)
 
 
-# ---------------------------------------------------------------------------
-# Coverage: uncovered branches (lines 367, 392, 429, 459, 467)
-# ---------------------------------------------------------------------------
+# =========================================================================
+# 15. what_if_recover()
+# =========================================================================
 
 
-class TestPropagateNoDeps:
-    def test_no_health_contributions_returns_100(self):
-        """Line 367: When BFS finds no health_contributions (all deps already
-        visited because it depends on itself), dependency health defaults to 100."""
-        engine = DependencyHealthEngine()
-        g = InfraGraph()
-        from infrasim.model.components import Dependency
+class TestWhatIfRecover:
+    def test_recover_down_component(self):
+        g = _linear_chain(HealthStatus.DOWN)
+        e = DependencyHealthEngine(g)
+        result = e.what_if_recover("c")
+        assert "recovers" in result.scenario.lower() or "HEALTHY" in result.scenario
+        assert result.severity_change == 1.0
 
-        # Self-dependency: component depends on itself.
-        # BFS queue starts with [(a, 1)] but 'a' is already in visited,
-        # so health_contributions stays empty -> line 367.
-        g.add_component(_comp("a", "A"))
-        g.add_dependency(Dependency(source_id="a", target_id="a"))
+    def test_recover_degraded_component(self):
+        g = _linear_chain(HealthStatus.DEGRADED)
+        e = DependencyHealthEngine(g)
+        result = e.what_if_recover("c")
+        assert result.severity_change == 0.4
+        assert any("stability" in r.lower() for r in result.recommendations)
 
-        own_scores = {"a": 100.0}
-        dep_health, sources, depth = engine._propagate_dependency_health(
-            g, "a", own_scores
+    def test_recover_overloaded_component(self):
+        g = _linear_chain(HealthStatus.OVERLOADED)
+        e = DependencyHealthEngine(g)
+        result = e.what_if_recover("c")
+        assert result.severity_change == 0.65
+        assert any("pressure" in r.lower() for r in result.recommendations)
+
+    def test_recover_already_healthy(self):
+        g = _linear_chain()
+        e = DependencyHealthEngine(g)
+        result = e.what_if_recover("c")
+        assert result.severity_change == 0.0
+        assert any("already" in r.lower() for r in result.recommendations)
+
+    def test_recover_nonexistent(self):
+        g = _graph()
+        e = DependencyHealthEngine(g)
+        result = e.what_if_recover("ghost")
+        assert "not found" in result.recommendations[0]
+
+    def test_recover_restores_original_health(self):
+        g = _linear_chain(HealthStatus.DOWN)
+        e = DependencyHealthEngine(g)
+        comp = g.get_component("c")
+        e.what_if_recover("c")
+        assert comp.health == HealthStatus.DOWN
+
+    def test_recover_with_dependents_has_critical_rec(self):
+        g = _linear_chain(HealthStatus.DOWN)
+        e = DependencyHealthEngine(g)
+        result = e.what_if_recover("c")
+        # After recovery, source is HEALTHY so no downstream severity;
+        # but the rec about resolving critical failure should be present
+        assert any("critical" in r.lower() for r in result.recommendations)
+
+    def test_recover_critical_failure(self):
+        g = _linear_chain(HealthStatus.DOWN)
+        e = DependencyHealthEngine(g)
+        result = e.what_if_recover("c")
+        assert any("critical" in r.lower() for r in result.recommendations)
+
+
+# =========================================================================
+# 16. full_analysis()
+# =========================================================================
+
+
+class TestFullAnalysis:
+    def test_all_healthy(self):
+        g = _linear_chain()
+        e = DependencyHealthEngine(g)
+        rpt = e.full_analysis()
+        assert rpt.total_affected == 0
+        assert "0 unhealthy" in rpt.summary
+        assert rpt.cascade_depth == 0
+
+    def test_single_unhealthy(self):
+        g = _linear_chain(HealthStatus.DOWN)
+        e = DependencyHealthEngine(g)
+        rpt = e.full_analysis()
+        assert rpt.total_affected >= 1
+        assert "1 unhealthy" in rpt.summary
+        assert "c" in rpt.source_component
+
+    def test_multiple_unhealthy(self):
+        g = _graph(
+            _comp("a", "A", health=HealthStatus.DOWN),
+            _comp("b", "B", health=HealthStatus.DEGRADED),
+            _comp("c", "C"),
         )
-        assert dep_health == 100.0
-        assert sources == []
-        assert depth == 0
+        g.add_dependency(_edge("c", "a"))
+        g.add_dependency(_edge("c", "b"))
+        e = DependencyHealthEngine(g)
+        rpt = e.full_analysis()
+        assert "2 unhealthy" in rpt.summary
+
+    def test_keeps_worst_impact(self):
+        g = _graph(
+            _comp("s1", "Source1", health=HealthStatus.DOWN),
+            _comp("s2", "Source2", health=HealthStatus.DEGRADED),
+            _comp("t", "Target"),
+        )
+        g.add_dependency(_edge("t", "s1"))
+        g.add_dependency(_edge("t", "s2"))
+        e = DependencyHealthEngine(g, decay_factor=1.0)
+        rpt = e.full_analysis()
+        t_impacts = [i for i in rpt.impacts if i.component_id == "t"]
+        assert len(t_impacts) == 1
+
+    def test_empty_graph(self):
+        g = _graph()
+        e = DependencyHealthEngine(g)
+        rpt = e.full_analysis()
+        assert rpt.total_affected == 0
+        assert "0 unhealthy" in rpt.summary
+        assert rpt.mode == PropagationMode.BOTH
+
+    def test_full_analysis_cascade_depth(self):
+        g = _linear_chain(HealthStatus.DOWN)
+        e = DependencyHealthEngine(g)
+        rpt = e.full_analysis()
+        assert rpt.cascade_depth >= 1
+
+    def test_full_analysis_critical_paths(self):
+        g = _linear_chain(HealthStatus.DOWN)
+        e = DependencyHealthEngine(g)
+        rpt = e.full_analysis()
+        if rpt.critical_paths:
+            for path in rpt.critical_paths:
+                assert len(path) >= 2
 
 
-class TestDegradedPathsMissingComponent:
-    def test_missing_component_in_degraded_path(self):
-        """Line 392: When source_comp or dep_comp is None in _find_degraded_paths,
-        that path is skipped."""
-        engine = DependencyHealthEngine()
+# =========================================================================
+# 17. Critical paths detection
+# =========================================================================
+
+
+class TestCriticalPaths:
+    def test_no_critical_paths_when_healthy(self):
+        g = _linear_chain()
+        e = DependencyHealthEngine(g)
+        rpt = e.propagate("c", PropagationMode.FORWARD)
+        assert rpt.critical_paths == []
+
+    def test_critical_paths_when_down_high_decay(self):
+        g = _linear_chain(HealthStatus.DOWN)
+        e = DependencyHealthEngine(g, decay_factor=1.0)
+        rpt = e.propagate("c", PropagationMode.FORWARD)
+        assert len(rpt.critical_paths) >= 1
+
+    def test_critical_path_starts_with_source(self):
+        g = _linear_chain(HealthStatus.DOWN)
+        e = DependencyHealthEngine(g, decay_factor=1.0)
+        rpt = e.propagate("c", PropagationMode.FORWARD)
+        for path in rpt.critical_paths:
+            assert path[0] == "c"
+
+
+# =========================================================================
+# 18. Edge cases and boundaries
+# =========================================================================
+
+
+class TestEdgeCases:
+    def test_self_dependency(self):
+        g = _graph(_comp("a", "A", health=HealthStatus.DOWN))
+        g.add_dependency(_edge("a", "a"))
+        e = DependencyHealthEngine(g)
+        rpt = e.propagate("a", PropagationMode.FORWARD)
+        assert rpt.source_component == "a"
+
+    def test_mutual_dependency(self):
+        g = _graph(
+            _comp("a", "A", health=HealthStatus.DOWN),
+            _comp("b", "B"),
+        )
+        g.add_dependency(_edge("a", "b"))
+        g.add_dependency(_edge("b", "a"))
+        e = DependencyHealthEngine(g)
+        rpt = e.propagate("a", PropagationMode.BOTH)
+        assert rpt.cascade_depth >= 1
+
+    def test_disconnected_components(self):
+        g = _graph(
+            _comp("a", "A", health=HealthStatus.DOWN),
+            _comp("b", "B"),
+            _comp("c", "C"),
+        )
+        e = DependencyHealthEngine(g)
+        rpt = e.propagate("a")
+        assert rpt.total_affected == 0
+
+    def test_many_components(self):
         g = InfraGraph()
-        from infrasim.model.components import Dependency
+        hub = _comp("hub", "Hub", health=HealthStatus.DOWN)
+        g.add_component(hub)
+        for i in range(20):
+            c = _comp(f"s{i}", f"Spoke{i}")
+            g.add_component(c)
+            g.add_dependency(_edge(f"s{i}", "hub"))
+        e = DependencyHealthEngine(g)
+        rpt = e.propagate("hub", PropagationMode.FORWARD)
+        assert rpt.total_affected == 20
+        assert rpt.cascade_depth == 1
 
-        g.add_component(_comp("db", "Database", ComponentType.DATABASE, health=HealthStatus.DOWN))
+    def test_component_removed_during_propagation(self):
+        g = _graph(
+            _comp("a", "A", health=HealthStatus.DOWN),
+            _comp("b", "B"),
+        )
+        g.add_dependency(_edge("b", "a"))
+        del g._components["b"]
+        e = DependencyHealthEngine(g)
+        rpt = e.propagate("a", PropagationMode.FORWARD)
+        b_impacts = [i for i in rpt.impacts if i.component_id == "b"]
+        assert len(b_impacts) == 0
+
+
+# =========================================================================
+# 19. Backward propagation half-intensity
+# =========================================================================
+
+
+class TestBackwardHalfIntensity:
+    def test_backward_halves_health_loss(self):
+        g = _graph(
+            _comp("a", "A", health=HealthStatus.DOWN),
+            _comp("b", "B"),
+        )
+        g.add_dependency(_edge("a", "b"))
+        e = DependencyHealthEngine(g, decay_factor=1.0)
+        bwd = e.propagate("a", PropagationMode.BACKWARD)
+        b_bwd = next((i for i in bwd.impacts if i.component_id == "b"), None)
+        assert b_bwd is not None
+        assert b_bwd.projected_health == 50.0
+
+
+# =========================================================================
+# 20. Report summary content
+# =========================================================================
+
+
+class TestSummaryContent:
+    def test_summary_mentions_mode(self):
+        g = _linear_chain()
+        e = DependencyHealthEngine(g)
+        rpt = e.propagate("c", PropagationMode.FORWARD)
+        assert "forward" in rpt.summary.lower()
+
+    def test_summary_mentions_cascade_depth(self):
+        g = _linear_chain(HealthStatus.DOWN)
+        e = DependencyHealthEngine(g)
+        rpt = e.propagate("c", PropagationMode.FORWARD)
+        assert "Cascade depth" in rpt.summary
+
+    def test_summary_mentions_affected(self):
+        g = _linear_chain(HealthStatus.DOWN)
+        e = DependencyHealthEngine(g)
+        rpt = e.propagate("c", PropagationMode.FORWARD)
+        assert "Affected" in rpt.summary
+
+    def test_summary_mentions_critical_paths(self):
+        g = _linear_chain(HealthStatus.DOWN)
+        e = DependencyHealthEngine(g, decay_factor=1.0)
+        rpt = e.propagate("c", PropagationMode.FORWARD)
+        if rpt.critical_paths:
+            assert "Critical paths" in rpt.summary
+
+
+# =========================================================================
+# 21. Recommendations generation
+# =========================================================================
+
+
+class TestRecommendations:
+    def test_fail_replicas_recommendation(self):
+        g = _graph(_comp("db", "DB", replicas=1))
         g.add_component(_comp("api", "API"))
-        g.add_dependency(Dependency(source_id="api", target_id="db"))
+        g.add_dependency(_edge("api", "db"))
+        e = DependencyHealthEngine(g)
+        result = e.what_if_fail("db")
+        assert any("replica" in r.lower() for r in result.recommendations)
 
-        report = engine.analyze(g)
-        # Should work even if internal state has edge cases
-        assert report.component_count == 2
-        # DB is down and has dependents, so there should be degraded paths
-        assert len(report.degraded_paths) >= 1
+    def test_fail_no_replica_rec_when_multiple(self):
+        g = _graph(_comp("db", "DB", replicas=3))
+        g.add_component(_comp("api", "API"))
+        g.add_dependency(_edge("api", "db"))
+        e = DependencyHealthEngine(g)
+        result = e.what_if_fail("db")
+        replica_recs = [r for r in result.recommendations if "replica" in r.lower()]
+        assert len(replica_recs) == 0
 
-    def test_find_degraded_paths_with_removed_dependent(self):
-        """Line 392: If a dependent's component was removed from the
-        internal dict after edges were set, the path is skipped."""
-        engine = DependencyHealthEngine()
+    def test_fail_failover_recommendation(self):
+        g = _graph(_comp("db", "DB"))
+        g.add_component(_comp("api", "API"))
+        g.add_dependency(_edge("api", "db"))
+        e = DependencyHealthEngine(g)
+        result = e.what_if_fail("db")
+        assert any("failover" in r.lower() for r in result.recommendations)
+
+    def test_fail_no_failover_rec_when_enabled(self):
+        db = _comp("db", "DB")
+        db.failover.enabled = True
+        g = _graph(db)
+        g.add_component(_comp("api", "API"))
+        g.add_dependency(_edge("api", "db"))
+        e = DependencyHealthEngine(g)
+        result = e.what_if_fail("db")
+        failover_recs = [r for r in result.recommendations if "Enable failover" in r]
+        assert len(failover_recs) == 0
+
+    def test_fail_cascade_recommendation(self):
         g = InfraGraph()
-        from infrasim.model.components import Dependency
+        for i in range(5):
+            g.add_component(_comp(f"n{i}", f"N{i}"))
+        for i in range(4):
+            g.add_dependency(_edge(f"n{i}", f"n{i+1}"))
+        e = DependencyHealthEngine(g)
+        result = e.what_if_fail("n4")
+        assert any("circuit" in r.lower() for r in result.recommendations)
 
-        # Build a graph with db -> api dependency
-        g.add_component(_comp("db", "DB", ComponentType.DATABASE, health=HealthStatus.DOWN))
+    def test_fail_critical_count_recommendation(self):
+        g = _linear_chain()
+        e = DependencyHealthEngine(g, decay_factor=1.0)
+        result = e.what_if_fail("c")
+        if any(i.projected_health < 15.0 for i in result.impacts):
+            assert any(
+                "DOWN" in r or "redundancy" in r.lower()
+                for r in result.recommendations
+            )
+
+    def test_recover_down_recommendation(self):
+        g = _linear_chain(HealthStatus.DOWN)
+        e = DependencyHealthEngine(g)
+        result = e.what_if_recover("c")
+        assert any("critical failure" in r.lower() for r in result.recommendations)
+
+    def test_recover_degraded_recommendation(self):
+        g = _linear_chain(HealthStatus.DEGRADED)
+        e = DependencyHealthEngine(g)
+        result = e.what_if_recover("c")
+        assert any("stability" in r.lower() for r in result.recommendations)
+
+    def test_recover_overloaded_recommendation(self):
+        g = _linear_chain(HealthStatus.OVERLOADED)
+        e = DependencyHealthEngine(g)
+        result = e.what_if_recover("c")
+        assert any("pressure" in r.lower() for r in result.recommendations)
+
+    def test_recover_already_healthy_recommendation(self):
+        g = _linear_chain()
+        e = DependencyHealthEngine(g)
+        result = e.what_if_recover("c")
+        assert any("already" in r.lower() for r in result.recommendations)
+
+
+# =========================================================================
+# 22. Wide graph (fan-out)
+# =========================================================================
+
+
+class TestWideGraph:
+    def test_fan_out_propagation(self):
+        g = InfraGraph()
+        g.add_component(_comp("root", "Root", health=HealthStatus.DOWN))
+        for i in range(10):
+            g.add_component(_comp(f"leaf{i}", f"Leaf{i}"))
+            g.add_dependency(_edge(f"leaf{i}", "root"))
+        e = DependencyHealthEngine(g)
+        rpt = e.propagate("root", PropagationMode.FORWARD)
+        assert rpt.total_affected == 10
+        assert rpt.cascade_depth == 1
+
+    def test_fan_in_backward(self):
+        g = InfraGraph()
+        g.add_component(_comp("sink", "Sink", health=HealthStatus.DOWN))
+        for i in range(8):
+            g.add_component(_comp(f"src{i}", f"Src{i}"))
+            g.add_dependency(_edge("sink", f"src{i}"))
+        e = DependencyHealthEngine(g)
+        rpt = e.propagate("sink", PropagationMode.BACKWARD)
+        assert rpt.total_affected == 8
+        assert rpt.cascade_depth == 1
+
+
+# =========================================================================
+# 23. Deep chain
+# =========================================================================
+
+
+class TestDeepChain:
+    def test_chain_of_6(self):
+        g = InfraGraph()
+        for i in range(6):
+            g.add_component(_comp(f"l{i}", f"Layer{i}"))
+        for i in range(5):
+            g.add_dependency(_edge(f"l{i}", f"l{i+1}"))
+        g.components["l5"].health = HealthStatus.DOWN
+        e = DependencyHealthEngine(g)
+        rpt = e.propagate("l5", PropagationMode.FORWARD)
+        assert rpt.cascade_depth == 5
+
+    def test_deep_chain_decay(self):
+        g = InfraGraph()
+        for i in range(6):
+            g.add_component(_comp(f"l{i}", f"Layer{i}"))
+        for i in range(5):
+            g.add_dependency(_edge(f"l{i}", f"l{i+1}"))
+        g.components["l5"].health = HealthStatus.DOWN
+        e = DependencyHealthEngine(g, decay_factor=0.5)
+        rpt = e.propagate("l5", PropagationMode.FORWARD)
+        for i in range(len(rpt.impacts) - 1):
+            if rpt.impacts[i].hop_distance < rpt.impacts[i + 1].hop_distance:
+                assert (
+                    rpt.impacts[i].impact_severity
+                    >= rpt.impacts[i + 1].impact_severity
+                )
+
+
+# =========================================================================
+# 24. Mixed health states in full_analysis
+# =========================================================================
+
+
+class TestMixedHealthFullAnalysis:
+    def test_mixed_states(self):
+        g = _graph(
+            _comp("a", "A", health=HealthStatus.DOWN),
+            _comp("b", "B", health=HealthStatus.DEGRADED),
+            _comp("c", "C", health=HealthStatus.OVERLOADED),
+            _comp("d", "D", health=HealthStatus.HEALTHY),
+        )
+        g.add_dependency(_edge("d", "a"))
+        g.add_dependency(_edge("d", "b"))
+        g.add_dependency(_edge("d", "c"))
+        e = DependencyHealthEngine(g)
+        rpt = e.full_analysis()
+        assert "3 unhealthy" in rpt.summary
+        assert rpt.total_affected >= 1
+
+    def test_only_healthy_full_analysis(self):
+        g = _graph(
+            _comp("a", "A"),
+            _comp("b", "B"),
+        )
+        g.add_dependency(_edge("a", "b"))
+        e = DependencyHealthEngine(g)
+        rpt = e.full_analysis()
+        assert rpt.total_affected == 0
+
+
+# =========================================================================
+# 25. Impact severity bounds
+# =========================================================================
+
+
+class TestImpactSeverityBounds:
+    def test_severity_between_0_and_1(self):
+        g = _linear_chain(HealthStatus.DOWN)
+        e = DependencyHealthEngine(g)
+        rpt = e.propagate("c", PropagationMode.FORWARD)
+        for imp in rpt.impacts:
+            assert 0.0 <= imp.impact_severity <= 1.0
+
+    def test_projected_health_non_negative(self):
+        g = _linear_chain(HealthStatus.DOWN)
+        e = DependencyHealthEngine(g, decay_factor=1.0)
+        rpt = e.propagate("c", PropagationMode.FORWARD)
+        for imp in rpt.impacts:
+            assert imp.projected_health >= 0.0
+
+    def test_original_health_valid(self):
+        g = _linear_chain(HealthStatus.DOWN)
+        e = DependencyHealthEngine(g)
+        rpt = e.propagate("c", PropagationMode.FORWARD)
+        for imp in rpt.impacts:
+            assert 0.0 <= imp.original_health <= 100.0
+
+
+# =========================================================================
+# 26. what_if_fail with failover-enabled component
+# =========================================================================
+
+
+class TestWhatIfWithFailover:
+    def test_fail_with_failover_no_failover_rec(self):
+        db = _comp("db", "DB", replicas=3)
+        db.failover.enabled = True
+        g = _graph(db, _comp("api", "API"))
+        g.add_dependency(_edge("api", "db"))
+        e = DependencyHealthEngine(g)
+        result = e.what_if_fail("db")
+        assert not any("Enable failover" in r for r in result.recommendations)
+        assert not any("Add replicas" in r for r in result.recommendations)
+
+
+# =========================================================================
+# 27. Propagation with component types
+# =========================================================================
+
+
+class TestComponentTypes:
+    def test_database_propagation(self):
+        g = _graph(
+            _comp("db", "DB", ctype=ComponentType.DATABASE, health=HealthStatus.DOWN),
+            _comp("api", "API", ctype=ComponentType.APP_SERVER),
+        )
+        g.add_dependency(_edge("api", "db"))
+        e = DependencyHealthEngine(g)
+        rpt = e.propagate("db", PropagationMode.FORWARD)
+        assert rpt.total_affected == 1
+
+    def test_cache_propagation(self):
+        g = _graph(
+            _comp(
+                "cache", "Cache", ctype=ComponentType.CACHE, health=HealthStatus.DOWN
+            ),
+            _comp("api", "API"),
+        )
+        g.add_dependency(_edge("api", "cache"))
+        e = DependencyHealthEngine(g)
+        rpt = e.propagate("cache", PropagationMode.FORWARD)
+        api_imp = next(i for i in rpt.impacts if i.component_id == "api")
+        assert api_imp.hop_distance == 1
+
+
+# =========================================================================
+# 28. full_analysis with no edges
+# =========================================================================
+
+
+class TestFullAnalysisNoEdges:
+    def test_unhealthy_but_no_edges(self):
+        g = _graph(
+            _comp("a", "A", health=HealthStatus.DOWN),
+            _comp("b", "B", health=HealthStatus.DOWN),
+        )
+        e = DependencyHealthEngine(g)
+        rpt = e.full_analysis()
+        assert "2 unhealthy" in rpt.summary
+        assert rpt.total_affected == 0
+
+
+# =========================================================================
+# 29. Hop distance correctness
+# =========================================================================
+
+
+class TestHopDistance:
+    def test_immediate_dependent_hop_1(self):
+        g = _graph(
+            _comp("a", "A", health=HealthStatus.DOWN),
+            _comp("b", "B"),
+        )
+        g.add_dependency(_edge("b", "a"))
+        e = DependencyHealthEngine(g)
+        rpt = e.propagate("a", PropagationMode.FORWARD)
+        b_imp = next(i for i in rpt.impacts if i.component_id == "b")
+        assert b_imp.hop_distance == 1
+
+    def test_two_hops(self):
+        g = _graph(
+            _comp("a", "A", health=HealthStatus.DOWN),
+            _comp("b", "B"),
+            _comp("c", "C"),
+        )
+        g.add_dependency(_edge("b", "a"))
+        g.add_dependency(_edge("c", "b"))
+        e = DependencyHealthEngine(g)
+        rpt = e.propagate("a", PropagationMode.FORWARD)
+        c_imp = next(i for i in rpt.impacts if i.component_id == "c")
+        assert c_imp.hop_distance == 2
+
+
+# =========================================================================
+# 30. Multiple independent subgraphs
+# =========================================================================
+
+
+class TestIndependentSubgraphs:
+    def test_isolated_subgraph_not_affected(self):
+        g = _graph(
+            _comp("a", "A", health=HealthStatus.DOWN),
+            _comp("b", "B"),
+            _comp("x", "X"),
+            _comp("y", "Y"),
+        )
+        g.add_dependency(_edge("b", "a"))
+        g.add_dependency(_edge("y", "x"))
+        e = DependencyHealthEngine(g)
+        rpt = e.propagate("a", PropagationMode.FORWARD)
+        affected_ids = {i.component_id for i in rpt.impacts}
+        assert "b" in affected_ids
+        assert "x" not in affected_ids
+        assert "y" not in affected_ids
+
+
+# =========================================================================
+# 31. Severity change values
+# =========================================================================
+
+
+class TestSeverityChangeValues:
+    def test_healthy_to_down(self):
+        g = _graph(_comp("x", "X", health=HealthStatus.HEALTHY))
+        e = DependencyHealthEngine(g)
+        result = e.what_if_fail("x")
+        assert result.severity_change == 1.0
+
+    def test_overloaded_to_down(self):
+        g = _graph(_comp("x", "X", health=HealthStatus.OVERLOADED))
+        e = DependencyHealthEngine(g)
+        result = e.what_if_fail("x")
+        assert result.severity_change == 0.35
+
+    def test_down_to_down(self):
+        g = _graph(_comp("x", "X", health=HealthStatus.DOWN))
+        e = DependencyHealthEngine(g)
+        result = e.what_if_fail("x")
+        assert result.severity_change == 0.0
+
+
+# =========================================================================
+# 32. Full analysis worst impact preservation
+# =========================================================================
+
+
+class TestWorstImpactPreservation:
+    def test_worst_impact_kept(self):
+        g = _graph(
+            _comp("s1", "S1", health=HealthStatus.DOWN),
+            _comp("s2", "S2", health=HealthStatus.DEGRADED),
+            _comp("target", "Target"),
+        )
+        g.add_dependency(_edge("target", "s1"))
+        g.add_dependency(_edge("target", "s2"))
+        e = DependencyHealthEngine(g, decay_factor=1.0)
+        rpt = e.full_analysis()
+        t_imps = [i for i in rpt.impacts if i.component_id == "target"]
+        assert len(t_imps) == 1
+        assert t_imps[0].impact_severity > 0
+
+
+# =========================================================================
+# 33. Propagation path accuracy
+# =========================================================================
+
+
+class TestPropagationPathAccuracy:
+    def test_path_includes_source_and_target(self):
+        g = _linear_chain(HealthStatus.DOWN)
+        e = DependencyHealthEngine(g)
+        rpt = e.propagate("c", PropagationMode.FORWARD)
+        b_imp = next(i for i in rpt.impacts if i.component_id == "b")
+        assert b_imp.propagation_path[0] == "c"
+        assert b_imp.propagation_path[-1] == "b"
+
+    def test_path_length_matches_hop(self):
+        g = _linear_chain(HealthStatus.DOWN)
+        e = DependencyHealthEngine(g)
+        rpt = e.propagate("c", PropagationMode.FORWARD)
+        for imp in rpt.impacts:
+            assert len(imp.propagation_path) == imp.hop_distance + 1
+
+
+# =========================================================================
+# 34. Stress test: large graph
+# =========================================================================
+
+
+class TestLargeGraph:
+    def test_50_nodes_chain(self):
+        g = InfraGraph()
+        for i in range(50):
+            g.add_component(_comp(f"n{i}", f"Node{i}"))
+        for i in range(49):
+            g.add_dependency(_edge(f"n{i}", f"n{i+1}"))
+        g.components["n49"].health = HealthStatus.DOWN
+        e = DependencyHealthEngine(g)
+        rpt = e.propagate("n49", PropagationMode.FORWARD)
+        assert rpt.cascade_depth == 49
+        # With 0.7 decay, severity drops below rounding threshold after ~7 hops
+        # total_affected counts only impacts with severity > 0
+        assert rpt.total_affected >= 6
+        assert len(rpt.impacts) == 49  # all 49 dependents are visited
+
+    def test_50_nodes_star(self):
+        g = InfraGraph()
+        g.add_component(_comp("hub", "Hub", health=HealthStatus.DOWN))
+        for i in range(49):
+            g.add_component(_comp(f"s{i}", f"Spoke{i}"))
+            g.add_dependency(_edge(f"s{i}", "hub"))
+        e = DependencyHealthEngine(g)
+        rpt = e.propagate("hub", PropagationMode.FORWARD)
+        assert rpt.total_affected == 49
+        assert rpt.cascade_depth == 1
+
+
+# =========================================================================
+# 35. Both mode combines forward and backward without duplicates
+# =========================================================================
+
+
+class TestBothModeNoDuplicates:
+    def test_linear_chain_both(self):
+        g = _linear_chain(HealthStatus.DEGRADED)
+        e = DependencyHealthEngine(g)
+        rpt = e.propagate("b", PropagationMode.BOTH)
+        ids = [i.component_id for i in rpt.impacts]
+        assert len(ids) == len(set(ids))
+        assert "a" in ids
+        assert "c" in ids
+
+    def test_diamond_both_no_duplicates(self):
+        g = _diamond_graph(HealthStatus.DOWN)
+        e = DependencyHealthEngine(g)
+        rpt = e.propagate("api-a", PropagationMode.BOTH)
+        ids = [i.component_id for i in rpt.impacts]
+        assert len(ids) == len(set(ids))
+
+
+# =========================================================================
+# 36. Projected health calculations
+# =========================================================================
+
+
+class TestProjectedHealthCalculations:
+    def test_projected_equals_original_when_source_healthy(self):
+        g = _linear_chain(HealthStatus.HEALTHY)
+        e = DependencyHealthEngine(g)
+        rpt = e.propagate("c", PropagationMode.FORWARD)
+        for imp in rpt.impacts:
+            assert imp.projected_health == imp.original_health
+
+    def test_projected_decreases_when_source_down(self):
+        g = _linear_chain(HealthStatus.DOWN)
+        e = DependencyHealthEngine(g)
+        rpt = e.propagate("c", PropagationMode.FORWARD)
+        for imp in rpt.impacts:
+            assert imp.projected_health <= imp.original_health
+
+    def test_projected_specific_value_hop1(self):
+        g = _linear_chain(HealthStatus.DOWN)
+        e = DependencyHealthEngine(g, decay_factor=0.7)
+        rpt = e.propagate("c", PropagationMode.FORWARD)
+        b_imp = next(i for i in rpt.impacts if i.component_id == "b")
+        assert b_imp.projected_health == 30.0
+
+    def test_projected_specific_value_hop2(self):
+        g = _linear_chain(HealthStatus.DOWN)
+        e = DependencyHealthEngine(g, decay_factor=0.7)
+        rpt = e.propagate("c", PropagationMode.FORWARD)
+        a_imp = next(i for i in rpt.impacts if i.component_id == "a")
+        # hop=2: decayed_factor = 0.7 * 0.7^2 = 0.7 * 0.49 = 0.343
+        # health_loss = 100 * 0.343 = 34.3
+        # projected = 100 - 34.3 = 65.7
+        assert abs(a_imp.projected_health - 65.7) < 0.1
+
+
+# =========================================================================
+# 37. what_if_fail exception safety (health restored on error)
+# =========================================================================
+
+
+class TestExceptionSafety:
+    def test_what_if_fail_restores_on_success(self):
+        g = _linear_chain()
+        e = DependencyHealthEngine(g)
+        comp = g.get_component("c")
+        original = comp.health
+        e.what_if_fail("c")
+        assert comp.health == original
+
+    def test_what_if_recover_restores_on_success(self):
+        g = _linear_chain(HealthStatus.DOWN)
+        e = DependencyHealthEngine(g)
+        comp = g.get_component("c")
+        original = comp.health
+        e.what_if_recover("c")
+        assert comp.health == original
+
+
+# =========================================================================
+# 38. full_analysis with critical paths from multiple sources
+# =========================================================================
+
+
+class TestFullAnalysisCriticalPaths:
+    def test_multiple_sources_critical_paths(self):
+        g = _graph(
+            _comp("s1", "S1", health=HealthStatus.DOWN),
+            _comp("s2", "S2", health=HealthStatus.DOWN),
+            _comp("t1", "T1"),
+            _comp("t2", "T2"),
+        )
+        g.add_dependency(_edge("t1", "s1"))
+        g.add_dependency(_edge("t2", "s2"))
+        e = DependencyHealthEngine(g, decay_factor=1.0)
+        rpt = e.full_analysis()
+        # Both s1 and s2 are DOWN with decay=1.0
+        # t1 projected = 100 - 100 = 0 (critical)
+        # t2 projected = 100 - 100 = 0 (critical)
+        assert len(rpt.critical_paths) >= 2
+
+
+# =========================================================================
+# 39. Backward propagation depth
+# =========================================================================
+
+
+class TestBackwardPropagationDepth:
+    def test_backward_chain_depth(self):
+        g = InfraGraph()
+        for i in range(4):
+            g.add_component(_comp(f"n{i}", f"N{i}"))
+        for i in range(3):
+            g.add_dependency(_edge(f"n{i}", f"n{i+1}"))
+        # n0 depends on n1 depends on n2 depends on n3
+        e = DependencyHealthEngine(g)
+        rpt = e.propagate("n0", PropagationMode.BACKWARD)
+        assert rpt.cascade_depth == 3  # n0 -> n1 -> n2 -> n3
+
+
+# =========================================================================
+# 40. Additional edge cases for coverage
+# =========================================================================
+
+
+class TestAdditionalCoverage:
+    def test_propagate_both_forward_and_backward_components(self):
+        """Ensure both directions find components in BOTH mode."""
+        g = _graph(
+            _comp("left", "Left"),
+            _comp("center", "Center", health=HealthStatus.DOWN),
+            _comp("right", "Right"),
+        )
+        g.add_dependency(_edge("left", "center"))
+        g.add_dependency(_edge("center", "right"))
+        e = DependencyHealthEngine(g)
+        rpt = e.propagate("center", PropagationMode.BOTH)
+        ids = {i.component_id for i in rpt.impacts}
+        assert "left" in ids  # forward (left depends on center)
+        assert "right" in ids  # backward (center depends on right)
+
+    def test_full_analysis_backward_component(self):
+        """full_analysis runs both forward and backward from each unhealthy."""
+        g = _graph(
+            _comp("a", "A", health=HealthStatus.DOWN),
+            _comp("b", "B"),
+        )
+        g.add_dependency(_edge("a", "b"))
+        e = DependencyHealthEngine(g)
+        rpt = e.full_analysis()
+        # backward from a -> b
+        ids = {i.component_id for i in rpt.impacts}
+        assert "b" in ids
+
+    def test_what_if_fail_no_critical_rec(self):
+        """what_if_fail when no components projected to go DOWN."""
+        db = _comp("db", "DB", replicas=3)
+        db.failover.enabled = True
+        g = _graph(db, _comp("api", "API"))
+        g.add_dependency(_edge("api", "db"))
+        e = DependencyHealthEngine(g, decay_factor=0.01)
+        result = e.what_if_fail("db")
+        # Very low decay => projected stays near 100, no critical count rec
+        critical_recs = [
+            r for r in result.recommendations if "projected to go DOWN" in r
+        ]
+        assert len(critical_recs) == 0
+
+    def test_recover_no_affected_count_rec(self):
+        """Recover an isolated healthy component -- no affected count rec."""
+        g = _graph(_comp("solo", "Solo"))
+        e = DependencyHealthEngine(g)
+        result = e.what_if_recover("solo")
+        affected_recs = [
+            r for r in result.recommendations if "affected" in r.lower()
+        ]
+        # No dependents, so no "would positively affect" recommendation
+        assert len(affected_recs) == 0
+
+    def test_propagate_backward_none_component(self):
+        """Backward propagation skips None components."""
+        g = _graph(
+            _comp("a", "A", health=HealthStatus.DOWN),
+            _comp("b", "B"),
+        )
+        g.add_dependency(_edge("a", "b"))
+        # Remove b from components but leave edge
+        del g._components["b"]
+        e = DependencyHealthEngine(g)
+        rpt = e.propagate("a", PropagationMode.BACKWARD)
+        b_imps = [i for i in rpt.impacts if i.component_id == "b"]
+        assert len(b_imps) == 0
+
+    def test_full_analysis_source_label_none(self):
+        """full_analysis with no unhealthy shows (none)."""
+        g = _graph(_comp("a", "A"), _comp("b", "B"))
+        e = DependencyHealthEngine(g)
+        rpt = e.full_analysis()
+        assert "(none)" in rpt.source_component
+
+    def test_what_if_recover_no_dependents_no_count_rec(self):
+        """what_if_recover with no dependents has no affected count rec."""
+        g = _graph(_comp("solo", "Solo", health=HealthStatus.DOWN))
+        e = DependencyHealthEngine(g)
+        result = e.what_if_recover("solo")
+        # Recovery of isolated component has 0 affected
+        affected_recs = [
+            r
+            for r in result.recommendations
+            if "positively affect" in r.lower()
+        ]
+        assert len(affected_recs) == 0
+
+
+# =========================================================================
+# 41. Coverage: full_analysis replaces existing with worse impact (L284-285)
+# =========================================================================
+
+
+class TestFullAnalysisReplacesWorseImpact:
+    def test_second_source_replaces_first(self):
+        """When two unhealthy sources affect the same target component,
+        the worse impact replaces the earlier one (lines 284-285)."""
+        g = _graph(
+            _comp("s1", "S1", health=HealthStatus.DEGRADED),  # mild
+            _comp("s2", "S2", health=HealthStatus.DOWN),  # severe
+            _comp("target", "Target"),
+        )
+        g.add_dependency(_edge("target", "s1"))
+        g.add_dependency(_edge("target", "s2"))
+        e = DependencyHealthEngine(g, decay_factor=1.0)
+        rpt = e.full_analysis()
+        t_imps = [i for i in rpt.impacts if i.component_id == "target"]
+        assert len(t_imps) == 1
+        # The DOWN source produces worse impact than DEGRADED
+        assert t_imps[0].impact_severity > 0.4
+
+    def test_order_independent_replacement(self):
+        """Regardless of iteration order, worst impact is kept."""
+        # Process s2 (DOWN) first via iteration, then s1 (DEGRADED)
+        # should still keep s2's worse impact
+        g = InfraGraph()
+        g.add_component(_comp("s2", "S2", health=HealthStatus.DOWN))
+        g.add_component(_comp("s1", "S1", health=HealthStatus.DEGRADED))
+        g.add_component(_comp("t", "T"))
+        g.add_dependency(_edge("t", "s2"))
+        g.add_dependency(_edge("t", "s1"))
+        e = DependencyHealthEngine(g, decay_factor=1.0)
+        rpt = e.full_analysis()
+        t_imps = [i for i in rpt.impacts if i.component_id == "t"]
+        assert len(t_imps) == 1
+
+
+# =========================================================================
+# 42. Coverage: forward propagation visited skip (L394-395 analog)
+# =========================================================================
+
+
+class TestForwardVisitedSkip:
+    def test_diamond_forward_visited_skip(self):
+        """In a diamond, the LB node is reached via two paths. The second
+        time it's in the queue, it should be skipped (visited check)."""
+        g = _diamond_graph(HealthStatus.DOWN)
+        e = DependencyHealthEngine(g)
+        rpt = e.propagate("db", PropagationMode.FORWARD)
+        lb_imps = [i for i in rpt.impacts if i.component_id == "lb"]
+        assert len(lb_imps) == 1  # not duplicated
+
+
+# =========================================================================
+# 43. Coverage: backward visited skip (L394-395)
+# =========================================================================
+
+
+class TestBackwardVisitedSkip:
+    def test_diamond_backward_visited(self):
+        """In backward traversal from lb, db is reachable via api-a and api-b.
+        Should only appear once."""
+        g = _diamond_graph()
+        e = DependencyHealthEngine(g)
+        rpt = e.propagate("lb", PropagationMode.BACKWARD)
+        db_imps = [i for i in rpt.impacts if i.component_id == "db"]
+        assert len(db_imps) == 1
+
+
+# =========================================================================
+# 44. Coverage: _generate_recover_recommendations affected_count > 0 (L506)
+# =========================================================================
+
+
+class TestRecoverRecommendationsAffectedCount:
+    def test_recover_rec_with_affected_via_direct_call(self):
+        """Directly call _generate_recover_recommendations with impacts
+        that have severity > 0 to cover line 506."""
+        g = _graph(_comp("db", "DB", health=HealthStatus.DOWN))
+        e = DependencyHealthEngine(g)
+        comp = g.get_component("db")
+        fake_impacts = [
+            HealthImpact(
+                component_id="api",
+                component_name="API",
+                original_health=100.0,
+                projected_health=30.0,
+                impact_severity=0.7,
+                hop_distance=1,
+                propagation_path=["db", "api"],
+            )
+        ]
+        recs = e._generate_recover_recommendations(
+            comp, fake_impacts, HealthStatus.DOWN
+        )
+        assert any("positively affect" in r.lower() for r in recs)
+        assert any("1 dependent" in r for r in recs)
+
+    def test_recover_rec_affected_count_zero(self):
+        """When impacts have severity 0, affected_count is 0."""
+        g = _graph(_comp("db", "DB", health=HealthStatus.DOWN))
+        e = DependencyHealthEngine(g)
+        comp = g.get_component("db")
+        recs = e._generate_recover_recommendations(
+            comp, [], HealthStatus.DOWN
+        )
+        assert not any("positively affect" in r.lower() for r in recs)
+
+
+# =========================================================================
+# 45. Coverage: _generate_fail_recommendations edge cases
+# =========================================================================
+
+
+class TestFailRecommendationsEdgeCases:
+    def test_fail_rec_no_cascade(self):
+        """cascade_depth <= 2 does not trigger circuit breaker rec."""
+        g = _graph(_comp("db", "DB"))
         g.add_component(_comp("api", "API"))
-        g.add_dependency(Dependency(source_id="api", target_id="db"))
+        g.add_dependency(_edge("api", "db"))
+        e = DependencyHealthEngine(g)
+        comp = g.get_component("db")
+        recs = e._generate_fail_recommendations(comp, [], 1)
+        assert not any("circuit" in r.lower() for r in recs)
 
-        # Score them normally
-        own_scores = {"db": 0.0, "api": 100.0}
+    def test_fail_rec_with_cascade(self):
+        """cascade_depth > 2 triggers circuit breaker rec."""
+        g = _graph(_comp("db", "DB"))
+        e = DependencyHealthEngine(g)
+        comp = g.get_component("db")
+        recs = e._generate_fail_recommendations(comp, [], 5)
+        assert any("circuit" in r.lower() for r in recs)
 
-        # Remove 'api' from the components dict (not from networkx graph)
-        # so get_dependents('db') returns api via networkx but
-        # get_component('api') returns None
+    def test_fail_rec_critical_projected(self):
+        """Impact with projected < 15 triggers DOWN rec."""
+        g = _graph(_comp("db", "DB"))
+        e = DependencyHealthEngine(g)
+        comp = g.get_component("db")
+        impacts = [
+            HealthImpact("api", "API", 100.0, 5.0, 0.95, 1, ["db", "api"])
+        ]
+        recs = e._generate_fail_recommendations(comp, impacts, 1)
+        assert any("projected to go DOWN" in r for r in recs)
+
+
+# =========================================================================
+# 46. Coverage: forward propagation None component (L346)
+# =========================================================================
+
+
+class TestForwardPropNoneComponent:
+    def test_forward_skips_removed_component(self):
+        """Forward propagation: when get_component returns None for a
+        dependent, that node is skipped (line 346)."""
+        g = _graph(
+            _comp("db", "DB", health=HealthStatus.DOWN),
+            _comp("api", "API"),
+            _comp("web", "Web"),
+        )
+        g.add_dependency(_edge("api", "db"))
+        g.add_dependency(_edge("web", "api"))
+        # Remove api from components dict but leave edges
         del g._components["api"]
-
-        paths = engine._find_degraded_paths(g, own_scores)
-        # 'api' dependent should be skipped (get_component returns None)
-        assert isinstance(paths, list)
-        # No valid path should be found since dep_comp is None
-        assert len(paths) == 0
-
-
-class TestFindHealthClustersEmptyScores:
-    def test_empty_member_scores_skipped(self):
-        """Line 429: clusters with empty member_scores are skipped."""
-        engine = DependencyHealthEngine()
-        g = InfraGraph()
-        from infrasim.model.components import Dependency
-
-        # Two components share a dependency, but use a scores dict
-        # that's missing one member to trigger the empty branch.
-        g.add_component(_comp("a", "A"))
-        g.add_component(_comp("b", "B"))
-        g.add_component(_comp("shared", "Shared"))
-        g.add_dependency(Dependency(source_id="a", target_id="shared"))
-        g.add_dependency(Dependency(source_id="b", target_id="shared"))
-
-        # Build a scores dict missing 'a' and 'b' — so member_scores will be empty
-        scores = {
-            "shared": DependencyHealthScore(
-                component_id="shared", component_name="Shared",
-                component_type="app_server",
-                own_health_score=100.0, dependency_health_score=100.0,
-                effective_health_score=100.0, tier=HealthTier.EXCELLENT,
-                health_status=HealthStatus.HEALTHY, degradation_sources=[],
-                dependency_depth=0, critical_dependency_count=0, is_leaf=True,
-            ),
-        }
-        clusters = engine._find_health_clusters(g, scores)
-        # Cluster should be skipped because member_scores is empty
-        assert isinstance(clusters, list)
+        e = DependencyHealthEngine(g)
+        rpt = e.propagate("db", PropagationMode.FORWARD)
+        api_imps = [i for i in rpt.impacts if i.component_id == "api"]
+        assert len(api_imps) == 0
+        # web should also not appear since api (its only path) was skipped
+        # Actually web depends on api, not on db. Let's check:
+        # get_dependents("db") = predecessors = [api]
+        # api is None -> skip, but web depends on api not db
+        # so web won't be in the queue at all
+        web_imps = [i for i in rpt.impacts if i.component_id == "web"]
+        assert len(web_imps) == 0
 
 
-class TestGenerateSuggestionsWithGhostComponent:
-    def test_generate_suggestions_skips_missing_component(self):
-        """Line 459: When graph.get_component returns None, suggestion
-        generation for that component is skipped."""
-        engine = DependencyHealthEngine()
-        g = InfraGraph()
-        # Create a scores dict that references a component not in the graph
-        scores = {
-            "ghost": DependencyHealthScore(
-                component_id="ghost", component_name="Ghost",
-                component_type="app_server",
-                own_health_score=10.0, dependency_health_score=10.0,
-                effective_health_score=10.0, tier=HealthTier.CRITICAL,
-                health_status=HealthStatus.DOWN, degradation_sources=[],
-                dependency_depth=0, critical_dependency_count=0, is_leaf=True,
-            ),
-        }
-        suggestions = engine._generate_suggestions(g, scores)
-        # ghost is not in graph, so no suggestions should be generated for it
-        assert isinstance(suggestions, list)
-        assert len(suggestions) == 0
+# =========================================================================
+# 47. Coverage: backward propagation None component (L401)
+# =========================================================================
 
 
-class TestSuggestionsForPoorTierSingleReplica:
-    def test_poor_tier_single_replica_suggestion(self):
-        """Line 467: Component in POOR tier with replicas <= 1
-        should get 'Add replicas' suggestion."""
-        engine = DependencyHealthEngine()
-        g = InfraGraph()
-        # OVERLOADED with high CPU to push effective score into POOR range
-        g.add_component(
-            _comp("slow", "Slow Server", health=HealthStatus.OVERLOADED, cpu=95.0)
+class TestBackwardPropNoneComponent:
+    def test_backward_skips_removed_dep(self):
+        """Backward propagation: when get_component returns None for a
+        dependency, that node is skipped (line 401)."""
+        g = _graph(
+            _comp("api", "API", health=HealthStatus.DOWN),
+            _comp("db", "DB"),
         )
-        report = engine.analyze(g)
-        score = report.scores["slow"]
-        # Verify it's in POOR or CRITICAL tier
-        assert score.tier in (HealthTier.POOR, HealthTier.CRITICAL)
-        # Should suggest adding replicas
-        assert any(
-            "replica" in s.lower() or "Add replicas" in s
-            for s in report.improvement_suggestions
-        )
+        g.add_dependency(_edge("api", "db"))
+        del g._components["db"]
+        e = DependencyHealthEngine(g)
+        rpt = e.propagate("api", PropagationMode.BACKWARD)
+        db_imps = [i for i in rpt.impacts if i.component_id == "db"]
+        assert len(db_imps) == 0

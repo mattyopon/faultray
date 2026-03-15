@@ -1553,3 +1553,104 @@ class TestEstimateMttrEdgeCases:
         graph = InfraGraph()
         predictor = BlastRadiusPredictor(graph)
         assert predictor._estimate_mttr([]) == 0.0
+
+
+# ===========================================================================
+# Coverage gaps — lines 248, 252, 439, 478
+# ===========================================================================
+
+
+class TestCoverageGapsBFS:
+    """Test BFS depth limit and missing component handling."""
+
+    def test_bfs_depth_exceeds_max_depth(self):
+        """A chain deeper than _MAX_BFS_DEPTH should stop propagating
+        beyond that depth. [line 248]"""
+        from infrasim.simulator.blast_radius_predictor import _MAX_BFS_DEPTH
+
+        graph = InfraGraph()
+        # Create a chain of _MAX_BFS_DEPTH + 5 nodes
+        depth = _MAX_BFS_DEPTH + 5
+        for i in range(depth):
+            graph.add_component(_make_component(f"n{i}", f"Node{i}"))
+        for i in range(depth - 1):
+            graph.add_dependency(_make_dep(f"n{i+1}", f"n{i}"))
+
+        predictor = BlastRadiusPredictor(graph)
+        prediction = predictor.predict("n0")
+        # Components beyond depth _MAX_BFS_DEPTH should not be affected
+        affected_ids = {ac.component_id for ac in prediction.affected_components}
+        # The nodes right after the depth limit should NOT appear
+        # (nodes further than MAX_BFS_DEPTH hops from n0)
+        assert len(affected_ids) <= _MAX_BFS_DEPTH
+
+    def test_bfs_missing_component_in_graph(self):
+        """When a node exists in the networkx graph but not in components dict,
+        the BFS should skip it. [line 252]"""
+        from unittest.mock import patch
+
+        graph = InfraGraph()
+        graph.add_component(_make_component("root", "Root"))
+        graph.add_component(_make_component("child", "Child"))
+        graph.add_dependency(_make_dep("child", "root"))
+
+        predictor = BlastRadiusPredictor(graph)
+
+        # Mock get_component to return None for 'child' to simulate
+        # a component that exists in the graph edges but not in components dict
+        original_get = graph.get_component
+
+        def mock_get(comp_id):
+            if comp_id == "child":
+                return None
+            return original_get(comp_id)
+
+        with patch.object(graph, "get_component", side_effect=mock_get):
+            prediction = predictor.predict("root")
+        # child should not appear in affected list since get_component returns None
+        affected_ids = {ac.component_id for ac in prediction.affected_components}
+        assert "child" not in affected_ids
+
+
+class TestCoverageGapsImpact:
+    """Test user/revenue impact with empty graph components."""
+
+    def test_user_impact_empty_graph_components(self):
+        """When graph has 0 total_components, _estimate_user_impact
+        should return 0.0. [line 439]"""
+        graph = InfraGraph()
+        predictor = BlastRadiusPredictor(graph)
+        affected = [
+            AffectedComponent(
+                component_id="phantom",
+                component_name="Phantom",
+                impact_severity=ImpactSeverity.TOTAL_OUTAGE,
+                propagation_depth=1,
+                time_to_impact_seconds=0.0,
+                has_circuit_breaker=False,
+                has_failover=False,
+                mitigated=False,
+            )
+        ]
+        result = predictor._estimate_user_impact(affected)
+        assert result == 0.0
+
+    def test_revenue_impact_empty_graph_components(self):
+        """When graph has 0 total_components, _estimate_revenue_impact
+        should return 0.0. [line 478]"""
+        graph = InfraGraph()
+        predictor = BlastRadiusPredictor(graph)
+        affected = [
+            AffectedComponent(
+                component_id="phantom",
+                component_name="Phantom",
+                impact_severity=ImpactSeverity.TOTAL_OUTAGE,
+                propagation_depth=1,
+                time_to_impact_seconds=0.0,
+                has_circuit_breaker=False,
+                has_failover=False,
+                mitigated=False,
+            )
+        ]
+        result = predictor._estimate_revenue_impact(affected)
+        assert result == 0.0

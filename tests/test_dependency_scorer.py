@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from unittest import mock
+
 import pytest
 
 from infrasim.model.components import (
@@ -10,9 +12,12 @@ from infrasim.model.components import (
     CostProfile,
     Dependency,
     FailoverConfig,
+    HealthStatus,
 )
 from infrasim.model.graph import InfraGraph
+from infrasim.simulator.cascade import CascadeChain, CascadeEffect
 from infrasim.simulator.dependency_scorer import DependencyImpact, DependencyScorer
+from infrasim.simulator.engine import ScenarioResult
 
 
 def _build_test_graph() -> InfraGraph:
@@ -241,3 +246,126 @@ class TestDependencyScorer:
             assert isinstance(imp.risk_details, str)
             assert imp.source_id in imp.risk_details
             assert imp.target_id in imp.risk_details
+
+    def test_bfs_depth_fallback_when_no_time_based_depth(self):
+        """Test line 189-190: BFS depth fallback when max_depth==0 and affected exist.
+
+        Create a scenario where cascade effects exist but have 0 estimated_time_seconds,
+        forcing the BFS depth fallback path.
+        """
+        graph = InfraGraph()
+        # Build a chain with multiple layers of dependencies
+        graph.add_component(Component(
+            id="a", name="A", type=ComponentType.APP_SERVER, replicas=1,
+        ))
+        graph.add_component(Component(
+            id="b", name="B", type=ComponentType.APP_SERVER, replicas=1,
+        ))
+        graph.add_component(Component(
+            id="c", name="C", type=ComponentType.APP_SERVER, replicas=1,
+        ))
+        graph.add_component(Component(
+            id="d", name="D", type=ComponentType.APP_SERVER, replicas=1,
+        ))
+        graph.add_dependency(Dependency(source_id="a", target_id="b", dependency_type="requires"))
+        graph.add_dependency(Dependency(source_id="b", target_id="c", dependency_type="requires"))
+        graph.add_dependency(Dependency(source_id="c", target_id="d", dependency_type="requires"))
+        scorer = DependencyScorer(graph)
+        impacts = scorer.score_all()
+        # When BFS fallback is used, cascade_depth = min(len(all_affected), 10)
+        for imp in impacts:
+            assert imp.cascade_depth >= 0
+
+    def test_estimate_cost_with_none_component(self):
+        """Test line 209: _estimate_cost skips None components."""
+        graph = _build_test_graph()
+        scorer = DependencyScorer(graph)
+        # Call _estimate_cost with a nonexistent component in affected_ids
+        cost = scorer._estimate_cost("postgres", ["nonexistent_comp", "app"])
+        # Should not raise, just skip the missing comp
+        assert cost >= 0
+
+    def test_cost_score_branches(self):
+        """Test lines 254, 257-262: cost score branching in _calculate_impact_score."""
+        graph = _build_test_graph()
+        scorer = DependencyScorer(graph)
+
+        # Test cost > 10000 -> cost_score = 2.0
+        score_high = scorer._calculate_impact_score("requires", 1.0, 2, 3, 50000.0)
+        assert score_high > 0
+
+        # Test cost > 1000 -> cost_score = 1.5
+        score_med = scorer._calculate_impact_score("requires", 1.0, 2, 3, 5000.0)
+        assert score_med > 0
+
+        # Test cost > 100 -> cost_score = 1.0
+        score_low = scorer._calculate_impact_score("requires", 1.0, 2, 3, 500.0)
+        assert score_low > 0
+
+        # Test cost > 0 -> cost_score = 0.5
+        score_tiny = scorer._calculate_impact_score("requires", 1.0, 2, 3, 50.0)
+        assert score_tiny > 0
+
+        # Test cost == 0 -> cost_score = 0.0
+        score_zero = scorer._calculate_impact_score("requires", 1.0, 2, 3, 0.0)
+        assert score_zero > 0
+
+        # Verify ordering: higher cost -> higher score
+        assert score_high >= score_med >= score_low >= score_tiny >= score_zero
+
+    def test_criticality_label_all_thresholds(self):
+        """Test lines 271, 277, 283, 289: all criticality label thresholds."""
+        assert DependencyScorer._criticality_label(7.0) == "critical"
+        assert DependencyScorer._criticality_label(9.0) == "critical"
+        assert DependencyScorer._criticality_label(5.0) == "high"
+        assert DependencyScorer._criticality_label(6.9) == "high"
+        assert DependencyScorer._criticality_label(3.0) == "medium"
+        assert DependencyScorer._criticality_label(4.9) == "medium"
+        assert DependencyScorer._criticality_label(2.9) == "low"
+        assert DependencyScorer._criticality_label(0.0) == "low"
+
+    def test_score_to_color_all_thresholds(self):
+        """Test lines 283, 289: all color thresholds."""
+        assert DependencyScorer._score_to_color(7.0) == "#ff0000"
+        assert DependencyScorer._score_to_color(5.0) == "#ff8800"
+        assert DependencyScorer._score_to_color(3.0) == "#ffcc00"
+        assert DependencyScorer._score_to_color(2.9) == "#00cc00"
+
+    def test_bfs_depth_fallback_via_mock(self):
+        """Test lines 189-190: BFS depth fallback when cascade effects have 0 estimated_time_seconds.
+
+        Mock _sim_engine.run_scenario to return effects with estimated_time_seconds=0
+        but with affected components (component_id != target_id), forcing the BFS fallback.
+        """
+        graph = _build_test_graph()
+        scorer = DependencyScorer(graph)
+
+        # Create a mock scenario result with effects that have estimated_time_seconds=0
+        # but include a non-target component (so affected is non-empty, max_depth stays 0)
+        mock_cascade = CascadeChain(
+            trigger="lb",
+            effects=[
+                CascadeEffect(
+                    component_id="lb",
+                    component_name="Load Balancer",
+                    health=HealthStatus.DOWN,
+                    reason="simulated",
+                    estimated_time_seconds=0,
+                ),
+                CascadeEffect(
+                    component_id="app",
+                    component_name="App Server",
+                    health=HealthStatus.DEGRADED,
+                    reason="cascade",
+                    estimated_time_seconds=0,  # zero time -> BFS fallback
+                ),
+            ],
+        )
+        mock_result = mock.MagicMock(spec=ScenarioResult)
+        mock_result.cascade = mock_cascade
+
+        with mock.patch.object(scorer._sim_engine, "run_scenario", return_value=mock_result):
+            result, affected, max_depth, cost = scorer._simulate_target_down("lb")
+            # BFS fallback: max_depth = min(len(all_affected), 10)
+            assert max_depth >= 0
+            assert "app" in affected

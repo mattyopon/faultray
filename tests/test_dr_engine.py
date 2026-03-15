@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from types import SimpleNamespace
+
 import pytest
 
 from infrasim.model.components import (
@@ -306,6 +308,180 @@ class TestSimulateAll:
 # ---------------------------------------------------------------------------
 # RPO/RTO validation
 # ---------------------------------------------------------------------------
+
+
+class TestIsPrimary:
+    def test_is_primary_no_region_config(self):
+        """Test lines 77-80: _is_primary returns True for comp without region config."""
+        graph = InfraGraph()
+        graph.add_component(Component(
+            id="app",
+            name="App",
+            type=ComponentType.APP_SERVER,
+        ))
+        engine = DREngine(graph)
+        comp = graph.get_component("app")
+        assert engine._is_primary(comp) is True
+
+    def test_is_primary_with_non_primary(self, multi_region_graph):
+        """Test line 79: _is_primary returns False for DR region component."""
+        engine = DREngine(multi_region_graph)
+        comp = multi_region_graph.get_component("lb-dr")
+        assert engine._is_primary(comp) is False
+
+
+class TestRecoveryEstimation:
+    def test_recovery_with_mttr(self):
+        """Test line 118: recovery uses MTTR*60 when no failover and MTTR > 0."""
+        from infrasim.model.components import OperationalProfile
+        graph = InfraGraph()
+        graph.add_component(Component(
+            id="app",
+            name="App",
+            type=ComponentType.APP_SERVER,
+            replicas=1,
+            region=RegionConfig(region="us-east-1", availability_zone="us-east-1a"),
+            operational_profile=OperationalProfile(mttr_minutes=30.0),
+        ))
+        engine = DREngine(graph)
+        result = engine.simulate_az_failure("us-east-1a")
+        # MTTR = 30 min -> recovery = 30 * 60 = 1800s
+        assert result.estimated_recovery_seconds == 1800.0
+
+    def test_recovery_no_mttr_fallback(self):
+        """Test line 120: recovery defaults to 300s when no failover and MTTR is 0."""
+        from infrasim.model.components import OperationalProfile
+        graph = InfraGraph()
+        graph.add_component(Component(
+            id="app",
+            name="App",
+            type=ComponentType.APP_SERVER,
+            replicas=1,
+            region=RegionConfig(region="us-east-1", availability_zone="us-east-1a"),
+            operational_profile=OperationalProfile(mttr_minutes=0.0),
+        ))
+        engine = DREngine(graph)
+        result = engine.simulate_az_failure("us-east-1a")
+        # No failover, MTTR=0 -> recovery defaults to 300.0
+        assert result.estimated_recovery_seconds == 300.0
+
+    def test_empty_graph_availability(self):
+        """Test line 175: total==0 returns 100% availability for AZ failure."""
+        graph = InfraGraph()
+        engine = DREngine(graph)
+        result = engine.simulate_az_failure("us-east-1a")
+        assert result.availability_during_dr == 100.0
+
+    def test_region_failure_empty_graph(self):
+        """Test line 225: total==0 returns 100% for region failure."""
+        graph = InfraGraph()
+        engine = DREngine(graph)
+        result = engine.simulate_region_failure("us-east-1")
+        assert result.availability_during_dr == 100.0
+
+
+class TestIsPrimaryWithDR:
+    def test_is_primary_false_for_dr_component(self, multi_region_graph):
+        """Test line 80: _is_primary returns False for non-primary region."""
+        engine = DREngine(multi_region_graph)
+        # app-dr has is_primary=False
+        comp = multi_region_graph.get_component("app-dr")
+        assert engine._is_primary(comp) is False
+
+
+class TestNetworkPartitionRPO:
+    def test_partition_rpo_and_rto_violated(self):
+        """Test lines 308-311: RPO/RTO violation in network partition.
+
+        _estimate_data_loss_seconds uses max of all affected components:
+        - If rpo > 0: data_loss = rpo
+        - If failover: data_loss = 5
+        - Else: data_loss = 3600
+
+        To violate RPO, we need data_loss_seconds > component.rpo.
+        So we need one component with rpo=0 and no failover (gives 3600)
+        PLUS another component with a strict rpo (1s). The global max
+        data_loss_seconds = 3600, and 3600 > 1 -> rpo_met = False.
+        """
+        graph = InfraGraph()
+        # db-a: strict RPO/RTO, no failover
+        graph.add_component(Component(
+            id="db-a",
+            name="DB Primary",
+            type=ComponentType.DATABASE,
+            replicas=1,
+            region=RegionConfig(
+                region="us-east-1",
+                availability_zone="us-east-1a",
+                is_primary=True,
+                dr_target_region="us-west-2",
+                rpo_seconds=1,   # very strict RPO
+                rto_seconds=1,   # very strict RTO
+            ),
+        ))
+        # app-a: NO rpo set (rpo=0), no failover -> data_loss will be 3600s
+        graph.add_component(Component(
+            id="app-a",
+            name="App Primary",
+            type=ComponentType.APP_SERVER,
+            replicas=1,
+            region=RegionConfig(
+                region="us-east-1",
+                availability_zone="us-east-1a",
+                is_primary=True,
+                rpo_seconds=0,  # no RPO
+                rto_seconds=0,  # no RTO
+            ),
+        ))
+        graph.add_component(Component(
+            id="db-b",
+            name="DB DR",
+            type=ComponentType.DATABASE,
+            replicas=1,
+            region=RegionConfig(
+                region="us-west-2",
+                availability_zone="us-west-2a",
+                is_primary=False,
+            ),
+        ))
+        # Cross-region dependencies for both
+        graph.add_dependency(Dependency(
+            source_id="db-a", target_id="db-b", dependency_type="async",
+        ))
+        graph.add_dependency(Dependency(
+            source_id="app-a", target_id="db-b", dependency_type="async",
+        ))
+        engine = DREngine(graph)
+        result = engine.simulate_network_partition("us-east-1", "us-west-2")
+        # data_loss_seconds = max(1 from db-a rpo, 3600 from app-a no-failover) = 3600
+        # db-a: rpo=1, data_loss=3600 > 1 -> rpo_met = False (line 309)
+        assert result.rpo_met is False
+        # recovery_seconds = max(1800 from db-a MTTR, 1800 from app-a MTTR) = 1800
+        # db-a: rto=1, recovery=1800 > 1 -> rto_met = False (line 311)
+        assert result.rto_met is False
+
+    def test_partition_availability(self, multi_region_graph):
+        """Test line 295: availability during network partition."""
+        engine = DREngine(multi_region_graph)
+        result = engine.simulate_network_partition("us-east-1", "us-west-2")
+        assert 0 <= result.availability_during_dr <= 100.0
+
+    def test_partition_empty_graph_availability(self):
+        """Test line 295: network partition on empty graph gives 100% availability."""
+        graph = InfraGraph()
+        engine = DREngine(graph)
+        result = engine.simulate_network_partition("us-east-1", "us-west-2")
+        assert result.availability_during_dr == 100.0
+
+
+class TestIsPrimaryNoRegionAttr:
+    def test_is_primary_object_without_region(self):
+        """Test line 80: _is_primary returns True when object has no 'region' attribute."""
+        graph = InfraGraph()
+        engine = DREngine(graph)
+        # SimpleNamespace without 'region' attr -> getattr returns None -> return True
+        obj = SimpleNamespace(id="x", name="X")
+        assert engine._is_primary(obj) is True
 
 
 class TestRPORTO:

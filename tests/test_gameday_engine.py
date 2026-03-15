@@ -585,3 +585,299 @@ class TestMultiFault:
         # All injections should succeed (PASS or at worst produce details)
         for step in report.steps:
             assert step.outcome in ("PASS", "SKIP")
+
+
+# ---------------------------------------------------------------------------
+# Tests for specific fault types not yet covered
+# ---------------------------------------------------------------------------
+
+
+class TestAdditionalFaultTypes:
+    """Test fault types that may not have dedicated coverage."""
+
+    def test_memory_exhaustion_sets_down(self) -> None:
+        graph = _simple_graph()
+        engine = GameDayEngine(graph)
+        plan = GameDayPlan(
+            name="Memory Exhaustion",
+            steps=[
+                GameDayStep(
+                    time_offset_seconds=0,
+                    action="inject_fault",
+                    fault=Fault(
+                        target_component_id="app",
+                        fault_type=FaultType.MEMORY_EXHAUSTION,
+                        severity=1.0,
+                    ),
+                ),
+            ],
+        )
+        report = engine.execute(plan)
+        assert report.steps[0].health_snapshot["app"] == "down"
+        assert "memory" in report.steps[0].details.lower()
+
+    def test_disk_full_sets_down(self) -> None:
+        graph = _simple_graph()
+        engine = GameDayEngine(graph)
+        plan = GameDayPlan(
+            name="Disk Full",
+            steps=[
+                GameDayStep(
+                    time_offset_seconds=0,
+                    action="inject_fault",
+                    fault=Fault(
+                        target_component_id="db",
+                        fault_type=FaultType.DISK_FULL,
+                        severity=1.0,
+                    ),
+                ),
+            ],
+        )
+        report = engine.execute(plan)
+        assert report.steps[0].health_snapshot["db"] == "down"
+        assert "disk" in report.steps[0].details.lower()
+
+    def test_connection_pool_exhaustion_sets_degraded(self) -> None:
+        graph = _simple_graph()
+        engine = GameDayEngine(graph)
+        plan = GameDayPlan(
+            name="Conn Pool",
+            steps=[
+                GameDayStep(
+                    time_offset_seconds=0,
+                    action="inject_fault",
+                    fault=Fault(
+                        target_component_id="app",
+                        fault_type=FaultType.CONNECTION_POOL_EXHAUSTION,
+                        severity=0.8,
+                    ),
+                ),
+            ],
+        )
+        report = engine.execute(plan)
+        assert report.steps[0].health_snapshot["app"] == "degraded"
+        assert "connection" in report.steps[0].details.lower()
+
+    def test_network_partition_sets_down(self) -> None:
+        graph = _simple_graph()
+        engine = GameDayEngine(graph)
+        plan = GameDayPlan(
+            name="Network Partition",
+            steps=[
+                GameDayStep(
+                    time_offset_seconds=0,
+                    action="inject_fault",
+                    fault=Fault(
+                        target_component_id="db",
+                        fault_type=FaultType.NETWORK_PARTITION,
+                        severity=1.0,
+                    ),
+                ),
+            ],
+        )
+        report = engine.execute(plan)
+        assert report.steps[0].health_snapshot["db"] == "down"
+        assert "network" in report.steps[0].details.lower() or \
+               "partition" in report.steps[0].details.lower()
+
+    def test_traffic_spike_sets_overloaded(self) -> None:
+        graph = _simple_graph()
+        engine = GameDayEngine(graph)
+        plan = GameDayPlan(
+            name="Traffic Spike",
+            steps=[
+                GameDayStep(
+                    time_offset_seconds=0,
+                    action="inject_fault",
+                    fault=Fault(
+                        target_component_id="app",
+                        fault_type=FaultType.TRAFFIC_SPIKE,
+                        severity=0.9,
+                    ),
+                ),
+            ],
+        )
+        report = engine.execute(plan)
+        assert report.steps[0].health_snapshot["app"] == "overloaded"
+        assert "traffic" in report.steps[0].details.lower()
+
+    def test_cpu_saturation_low_severity_degraded(self) -> None:
+        graph = _simple_graph()
+        engine = GameDayEngine(graph)
+        plan = GameDayPlan(
+            name="CPU Low Severity",
+            steps=[
+                GameDayStep(
+                    time_offset_seconds=0,
+                    action="inject_fault",
+                    fault=Fault(
+                        target_component_id="app",
+                        fault_type=FaultType.CPU_SATURATION,
+                        severity=0.5,  # <= 0.8 -> DEGRADED
+                    ),
+                ),
+            ],
+        )
+        report = engine.execute(plan)
+        assert report.steps[0].health_snapshot["app"] == "degraded"
+
+
+# ---------------------------------------------------------------------------
+# Tests for verify_health edge cases
+# ---------------------------------------------------------------------------
+
+
+class TestHealthVerificationEdgeCases:
+    """Additional tests for verify_health edge cases."""
+
+    def test_expected_component_name_only_healthy(self) -> None:
+        """Generic check with component name (not colon format) for healthy component."""
+        graph = _simple_graph()
+        engine = GameDayEngine(graph)
+        plan = GameDayPlan(
+            name="Generic Check",
+            steps=[
+                GameDayStep(
+                    time_offset_seconds=0,
+                    action="verify_health",
+                    expected_outcome="app",  # Just component name, not status
+                ),
+            ],
+        )
+        report = engine.execute(plan)
+        assert report.steps[0].outcome == "PASS"
+
+    def test_expected_component_name_not_healthy(self) -> None:
+        """Generic check for a DOWN component should fail."""
+        graph = _simple_graph()
+        engine = GameDayEngine(graph)
+        plan = GameDayPlan(
+            name="Generic Fail",
+            steps=[
+                GameDayStep(
+                    time_offset_seconds=0,
+                    action="inject_fault",
+                    fault=Fault(
+                        target_component_id="db",
+                        fault_type=FaultType.COMPONENT_DOWN,
+                    ),
+                ),
+                GameDayStep(
+                    time_offset_seconds=10,
+                    action="verify_health",
+                    expected_outcome="db",  # db is DOWN, not healthy/degraded
+                ),
+            ],
+        )
+        report = engine.execute(plan)
+        assert report.steps[1].outcome == "FAIL"
+
+    def test_verify_component_mismatch_status(self) -> None:
+        """Verify comp:status where actual differs from expected should fail."""
+        graph = _simple_graph()
+        engine = GameDayEngine(graph)
+        plan = GameDayPlan(
+            name="Status Mismatch",
+            steps=[
+                GameDayStep(
+                    time_offset_seconds=0,
+                    action="verify_health",
+                    expected_outcome="app:down",  # app is actually healthy
+                ),
+            ],
+        )
+        report = engine.execute(plan)
+        assert report.steps[0].outcome == "FAIL"
+
+    def test_verify_no_expected_all_healthy(self) -> None:
+        """No expected outcome with all healthy components should pass."""
+        graph = _simple_graph()
+        engine = GameDayEngine(graph)
+        plan = GameDayPlan(
+            name="No Expected All Healthy",
+            steps=[
+                GameDayStep(
+                    time_offset_seconds=0,
+                    action="verify_health",
+                ),
+            ],
+        )
+        report = engine.execute(plan)
+        assert report.steps[0].outcome == "PASS"
+
+
+# ---------------------------------------------------------------------------
+# Tests for manual check edge cases
+# ---------------------------------------------------------------------------
+
+
+class TestManualCheckEdgeCases:
+    """Additional tests for manual_check edge cases."""
+
+    def test_manual_check_no_runbook(self) -> None:
+        """Manual check without runbook_step should still pass."""
+        graph = _simple_graph()
+        engine = GameDayEngine(graph)
+        plan = GameDayPlan(
+            name="Manual No Runbook",
+            steps=[
+                GameDayStep(
+                    time_offset_seconds=0,
+                    action="manual_check",
+                ),
+            ],
+        )
+        report = engine.execute(plan)
+        assert report.steps[0].outcome == "PASS"
+        assert "simulated" in report.steps[0].details.lower()
+
+    def test_manual_check_with_expected_outcome(self) -> None:
+        """Manual check with expected_outcome should include it in details."""
+        graph = _simple_graph()
+        engine = GameDayEngine(graph)
+        plan = GameDayPlan(
+            name="Manual Expected",
+            steps=[
+                GameDayStep(
+                    time_offset_seconds=0,
+                    action="manual_check",
+                    expected_outcome="All dashboards green",
+                ),
+            ],
+        )
+        report = engine.execute(plan)
+        assert report.steps[0].outcome == "PASS"
+        assert "Expected" in report.steps[0].details
+
+
+# ---------------------------------------------------------------------------
+# Tests for timeline building
+# ---------------------------------------------------------------------------
+
+
+class TestTimeline:
+    """Tests for timeline summary building."""
+
+    def test_empty_plan_timeline(self) -> None:
+        """Empty plan should produce 'No steps executed.' timeline."""
+        graph = _simple_graph()
+        engine = GameDayEngine(graph)
+        plan = GameDayPlan(name="Empty")
+        report = engine.execute(plan)
+        assert report.timeline_summary == "No steps executed."
+
+    def test_timeline_has_skip_marker(self) -> None:
+        """SKIP steps should have SKIP marker in timeline."""
+        graph = _simple_graph()
+        engine = GameDayEngine(graph)
+        plan = GameDayPlan(
+            name="With Skip",
+            steps=[
+                GameDayStep(
+                    time_offset_seconds=0,
+                    action="unknown_action",
+                ),
+            ],
+        )
+        report = engine.execute(plan)
+        assert "SKIP" in report.timeline_summary

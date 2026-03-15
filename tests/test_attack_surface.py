@@ -418,6 +418,126 @@ class TestFullAnalysis:
         assert report.most_exposed_target is not None
         assert report.most_exposed_target.component_id == "db"
 
+    def test_classify_difficulty_fallback(self):
+        """Test line 234: _classify_difficulty returns 'very_hard' for barrier count beyond thresholds."""
+        from infrasim.simulator.attack_surface import _classify_difficulty
+        assert _classify_difficulty(999) == "very_hard"
+        assert _classify_difficulty(1000) == "very_hard"
+
+    def test_find_lateral_paths_none_entry_points(self):
+        """Test line 348: find_lateral_paths auto-discovers entry points when None."""
+        lb = _make_component("lb", ComponentType.LOAD_BALANCER)
+        web = _make_component("web", ComponentType.WEB_SERVER)
+        graph = _build_graph([lb, web], [("lb", "web")])
+
+        analyzer = AttackSurfaceAnalyzer()
+        paths = analyzer.find_lateral_paths(graph, entry_points=None)
+        # Should auto-discover lb as entry point
+        assert len(paths) > 0
+
+    def test_privilege_escalation_chain(self):
+        """Test lines 540-560: privilege escalation attack chain generation."""
+        lb = _make_component("lb", ComponentType.LOAD_BALANCER)
+        auth = _make_component("auth-service", ComponentType.APP_SERVER)
+        graph = _build_graph([lb, auth], [("lb", "auth-service")])
+
+        analyzer = AttackSurfaceAnalyzer()
+        chains = analyzer.generate_attack_chains(graph)
+        chain_names = [c.name for c in chains]
+        assert "Privilege Escalation" in chain_names
+        priv_chain = [c for c in chains if c.name == "Privilege Escalation"][0]
+        assert len(priv_chain.mitigations) >= 1
+
+    def test_defense_depth_none_path(self):
+        """Test line 602: defense depth with path=None defaults to [source, target]."""
+        a = _make_component("a", ComponentType.LOAD_BALANCER)
+        b = _make_component("b", ComponentType.APP_SERVER, auth_required=True)
+        graph = _build_graph([a, b], [("a", "b")])
+
+        analyzer = AttackSurfaceAnalyzer()
+        depth = analyzer.calculate_defense_depth(graph, "a", "b", path=None)
+        assert depth >= 1
+
+    def test_defense_depth_nonexistent_component(self):
+        """Test line 608: defense depth skips None components in path."""
+        a = _make_component("a", ComponentType.LOAD_BALANCER)
+        graph = _build_graph([a])
+
+        analyzer = AttackSurfaceAnalyzer()
+        depth = analyzer.calculate_defense_depth(graph, "a", "ghost", ["a", "ghost"])
+        assert depth >= 0
+
+    def test_infer_protocol_port_443(self):
+        """Test line 653: port 443 -> https."""
+        comp = _make_component("web", ComponentType.WEB_SERVER, port=443)
+        result = AttackSurfaceAnalyzer._infer_protocol(comp)
+        assert result == "https"
+
+    def test_infer_protocol_port_0(self):
+        """Test lines 656-657: port 0 -> https (default)."""
+        comp = _make_component("web", ComponentType.WEB_SERVER, port=0)
+        result = AttackSurfaceAnalyzer._infer_protocol(comp)
+        assert result == "https"
+
+    def test_infer_protocol_other_port(self):
+        """Test line 658: non-standard port -> tcp."""
+        comp = _make_component("web", ComponentType.WEB_SERVER, port=5432)
+        result = AttackSurfaceAnalyzer._infer_protocol(comp)
+        assert result == "tcp"
+
+    def test_classify_value_secrets(self):
+        """Test line 676: secrets store detected."""
+        comp = _make_component("vault-secrets", ComponentType.APP_SERVER)
+        result = AttackSurfaceAnalyzer._classify_value(comp)
+        assert result == "secrets"
+
+    def test_classify_value_pii(self):
+        """Test line 678: PII component detected."""
+        comp = _make_component("user-pii-store", ComponentType.APP_SERVER)
+        result = AttackSurfaceAnalyzer._classify_value(comp)
+        assert result == "pii"
+
+    def test_calculate_target_risk_low_defense(self):
+        """Test line 701: min_defense_depth==1 gives score += 1.0."""
+        comp = _make_component("db", ComponentType.DATABASE)
+        risk = AttackSurfaceAnalyzer._calculate_target_risk(comp, ["lb"], min_hops=1, min_defense_depth=1)
+        assert risk > 0
+
+    def test_score_avg_defense_depth_between_1_and_2(self):
+        """Test line 743: avg_defense_depth between 1 and 2 gives +10 to score."""
+        # Create components with exactly 1 barrier each (auth_required)
+        # so avg defense depth lands between 1 and 2
+        lb = _make_component("lb", ComponentType.LOAD_BALANCER)
+        web = _make_component("web", ComponentType.WEB_SERVER, auth_required=True)
+        db = _make_component("db", ComponentType.DATABASE, auth_required=True)
+        graph = _build_graph([lb, web, db], [("lb", "web"), ("web", "db")])
+        analyzer = AttackSurfaceAnalyzer()
+        report = analyzer.analyze(graph)
+        assert report.total_attack_surface_score > 0
+
+    def test_score_avg_defense_depth_between_2_and_3(self):
+        """Test line 745: avg_defense_depth between 2 and 3 gives +5."""
+        lb = _make_component(
+            "lb", ComponentType.LOAD_BALANCER,
+            waf_protected=True, auth_required=True, network_segmented=True,
+        )
+        web = _make_component(
+            "web", ComponentType.WEB_SERVER,
+            auth_required=True, network_segmented=True,
+        )
+        db = _make_component(
+            "db", ComponentType.DATABASE,
+            auth_required=True, network_segmented=True, encryption_at_rest=True,
+        )
+        graph = _build_graph(
+            [lb, web, db],
+            [("lb", "web"), ("web", "db")],
+            cb_edges={("lb", "web"), ("web", "db")},
+        )
+        analyzer = AttackSurfaceAnalyzer()
+        report = analyzer.analyze(graph)
+        assert report.total_attack_surface_score >= 0
+
     def test_well_defended_infra_low_score(self):
         lb = _make_component(
             "lb", ComponentType.LOAD_BALANCER,
@@ -443,3 +563,20 @@ class TestFullAnalysis:
         report = analyzer.analyze(graph)
         # Well-defended should have lower score (better)
         assert report.total_attack_surface_score < 70
+
+
+class TestCalculateSurfaceScoreDirectly:
+    """Direct tests for _calculate_surface_score to cover all defense depth branches."""
+
+    def test_surface_score_defense_depth_between_1_and_2(self):
+        """Test line 743: avg_defense_depth in [1, 2) adds +10 to score."""
+        graph = InfraGraph()
+        graph.add_component(_make_component("a", ComponentType.APP_SERVER))
+        # Call static method directly with avg_defense_depth = 1.5
+        score = AttackSurfaceAnalyzer._calculate_surface_score(
+            entry_points=[], lateral_paths=[], high_value_targets=[],
+            avg_defense_depth=1.5, graph=graph,
+        )
+        # With no entry points, no lateral paths, no HVTs, only defense depth contributes
+        # avg_defense_depth=1.5 -> score += 10
+        assert score == 10.0

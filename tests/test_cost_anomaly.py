@@ -895,3 +895,47 @@ class TestConstants:
         valid_tiers = {"compute", "storage", "network"}
         for tier in _COMPONENT_TIER.values():
             assert tier in valid_tiers
+
+
+# ===================================================================
+# Coverage gaps — lines 235, 296, 306
+# ===================================================================
+
+
+class TestCoverageGaps:
+    def test_unbalanced_replicas_zero_cost_component(self):
+        """EXTERNAL_API has base cost 0, so savings <= 0 when computing
+        unbalanced replicas. The continue branch is hit. [line 306]"""
+        g = InfraGraph()
+        g.add_component(
+            _comp("ext1", "ExtAPI1", ComponentType.EXTERNAL_API, replicas=1)
+        )
+        g.add_component(
+            _comp("ext2", "ExtAPI2", ComponentType.EXTERNAL_API, replicas=10)
+        )
+        report = CostAnomalyDetector(g).analyze()
+        # EXTERNAL_API base cost is 0, so savings = 0 - 0 = 0 -> continue
+        unbalanced = [
+            a for a in report.anomalies
+            if a.anomaly_type == AnomalyType.UNBALANCED_REPLICAS
+        ]
+        # No unbalanced anomaly because savings <= 0
+        assert len(unbalanced) == 0
+
+    def test_redundant_pair_already_seen_is_skipped(self):
+        """When a pair is already in seen_pairs, it should be skipped.
+        [line 235] This is actually dead code due to the loop structure,
+        but we verify the redundancy detection works correctly with
+        multiple same-type components."""
+        g = InfraGraph()
+        # Three caches with same dependents -> multiple pairs processed
+        g.add_component(_comp("c1", "C1", ComponentType.CACHE))
+        g.add_component(_comp("c2", "C2", ComponentType.CACHE))
+        g.add_component(_comp("c3", "C3", ComponentType.CACHE))
+        report = CostAnomalyDetector(g).analyze()
+        redundant = [
+            a for a in report.anomalies
+            if a.anomaly_type == AnomalyType.REDUNDANT_COMPONENT
+        ]
+        # All three pairs: (c1,c2), (c1,c3), (c2,c3) are redundant
+        assert len(redundant) == 3

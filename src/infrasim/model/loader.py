@@ -7,6 +7,7 @@ from pathlib import Path
 
 import yaml
 
+from infrasim.errors import ValidationError
 from infrasim.model.components import (
     SCHEMA_VERSION,
     AutoScalingConfig,
@@ -66,7 +67,7 @@ def load_yaml(path: Path | str) -> InfraGraph:
 
     Raises:
         FileNotFoundError: If the YAML file does not exist.
-        ValueError: If required fields are missing or types are invalid.
+        ValidationError: If required fields are missing or types are invalid.
     """
     if isinstance(path, str):
         path = Path(path)
@@ -75,7 +76,7 @@ def load_yaml(path: Path | str) -> InfraGraph:
 
     raw = yaml.safe_load(path.read_text(encoding="utf-8"))
     if not isinstance(raw, dict):
-        raise ValueError(f"Expected a YAML mapping at the top level, got {type(raw).__name__}")
+        raise ValidationError(f"Expected a YAML mapping at the top level, got {type(raw).__name__}")
 
     _check_schema_version(raw)
 
@@ -84,15 +85,15 @@ def load_yaml(path: Path | str) -> InfraGraph:
     # --- Components -----------------------------------------------------------
     raw_components = raw.get("components", [])
     if not isinstance(raw_components, list):
-        raise ValueError("'components' must be a list")
+        raise ValidationError("'components' must be a list")
 
     for idx, entry in enumerate(raw_components):
         if not isinstance(entry, dict):
-            raise ValueError(f"Component entry {idx} must be a mapping")
+            raise ValidationError(f"Component entry {idx} must be a mapping")
 
         comp_id = entry.get("id")
         if not comp_id:
-            raise ValueError(f"Component entry {idx} is missing 'id'")
+            raise ValidationError(f"Component entry {idx} is missing 'id'")
 
         comp_name = entry.get("name", comp_id)
 
@@ -101,7 +102,7 @@ def load_yaml(path: Path | str) -> InfraGraph:
         try:
             comp_type = ComponentType(raw_type)
         except ValueError:
-            raise ValueError(
+            raise ValidationError(
                 f"Unknown component type '{raw_type}' for component '{comp_id}'. "
                 f"Valid types: {[t.value for t in ComponentType]}"
             )
@@ -132,7 +133,7 @@ def load_yaml(path: Path | str) -> InfraGraph:
 
         replicas = entry.get("replicas", 1)
         if not isinstance(replicas, int) or replicas < 1:
-            raise ValueError(
+            raise ValidationError(
                 f"Component '{comp_id}': replicas must be a positive integer, got {replicas}"
             )
 
@@ -192,25 +193,25 @@ def load_yaml(path: Path | str) -> InfraGraph:
     # --- Dependencies ---------------------------------------------------------
     raw_deps = raw.get("dependencies", [])
     if not isinstance(raw_deps, list):
-        raise ValueError("'dependencies' must be a list")
+        raise ValidationError("'dependencies' must be a list")
 
     known_ids = set(graph.components.keys())
 
     for idx, entry in enumerate(raw_deps):
         if not isinstance(entry, dict):
-            raise ValueError(f"Dependency entry {idx} must be a mapping")
+            raise ValidationError(f"Dependency entry {idx} must be a mapping")
 
         source_id = entry.get("source")
         target_id = entry.get("target")
         if not source_id or not target_id:
-            raise ValueError(f"Dependency entry {idx} is missing 'source' or 'target'")
+            raise ValidationError(f"Dependency entry {idx} is missing 'source' or 'target'")
 
         if source_id not in known_ids:
-            raise ValueError(
+            raise ValidationError(
                 f"Dependency entry {idx}: source '{source_id}' does not match any component id"
             )
         if target_id not in known_ids:
-            raise ValueError(
+            raise ValidationError(
                 f"Dependency entry {idx}: target '{target_id}' does not match any component id"
             )
 
@@ -224,7 +225,7 @@ def load_yaml(path: Path | str) -> InfraGraph:
         dep_type = entry.get("type", "requires")
         valid_dep_types = ("requires", "optional", "async")
         if dep_type not in valid_dep_types:
-            raise ValueError(
+            raise ValidationError(
                 f"Dependency entry {idx}: invalid type '{dep_type}'. "
                 f"Valid types: {list(valid_dep_types)}"
             )
@@ -247,7 +248,7 @@ def load_yaml(path: Path | str) -> InfraGraph:
     if not nx.is_directed_acyclic_graph(graph._graph):
         cycles = list(nx.simple_cycles(graph._graph))
         cycle_str = " -> ".join(cycles[0] + [cycles[0][0]]) if cycles else "unknown"
-        raise ValueError(
+        raise ValidationError(
             f"Circular dependency detected: {cycle_str}. "
             f"Infrastructure graph must be a DAG."
         )

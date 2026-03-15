@@ -529,6 +529,159 @@ class TestRecommendations:
 # 20. SecurityProfile field on Component model
 # ---------------------------------------------------------------------------
 
+class TestDefenseEffectivenessEdgeCases:
+    def test_nonexistent_component_defense(self):
+        """Test line 252: _compute_defense_effectiveness returns 0 for None component."""
+        g = InfraGraph()
+        engine = SecurityResilienceEngine(g)
+        result = engine._compute_defense_effectiveness("ghost", AttackType.RANSOMWARE)
+        assert result == 0.0
+
+    def test_network_segmented_supply_chain(self):
+        """Test line 271: network segmentation adds 0.40 mitigation for supply_chain."""
+        comp = _make_component("app", network_segmented=True)
+        g = _simple_graph([comp])
+        engine = SecurityResilienceEngine(g)
+        eff = engine._compute_defense_effectiveness("app", AttackType.SUPPLY_CHAIN)
+        assert eff >= 0.40
+
+    def test_network_segmented_insider_threat(self):
+        """Test line 271: network segmentation adds mitigation for insider_threat."""
+        comp = _make_component("app", network_segmented=True)
+        g = _simple_graph([comp])
+        engine = SecurityResilienceEngine(g)
+        eff = engine._compute_defense_effectiveness("app", AttackType.INSIDER_THREAT)
+        assert eff >= 0.40
+
+    def test_network_segmented_zero_day(self):
+        """Test line 271: network segmentation adds mitigation for zero_day."""
+        comp = _make_component("app", network_segmented=True)
+        g = _simple_graph([comp])
+        engine = SecurityResilienceEngine(g)
+        eff = engine._compute_defense_effectiveness("app", AttackType.ZERO_DAY)
+        assert eff >= 0.40
+
+
+class TestLateralMovementNeighborSkips:
+    def test_none_neighbour_skipped(self):
+        """Test line 315: _simulate_lateral_movement skips None neighbours."""
+        a = _make_component("a")
+        g = _simple_graph([a])
+        engine = SecurityResilienceEngine(g)
+        result = engine.simulate_attack(AttackType.SUPPLY_CHAIN, "a")
+        assert result.blast_radius == 1  # only itself
+
+    def test_recommendations_nonexistent_entry(self):
+        """Test line 380: _generate_recommendations returns empty for None entry."""
+        g = InfraGraph()
+        engine = SecurityResilienceEngine(g)
+        recs = engine._generate_recommendations("ghost", AttackType.RANSOMWARE, [])
+        assert recs == []
+
+
+class TestLateralMovementSkipsNone:
+    def test_neighbour_none_in_lateral_movement(self):
+        """Test line 315: lateral movement skips neighbour when get_component returns None.
+
+        This is a guard clause that's hard to trigger directly because the graph
+        shouldn't have inconsistent references. But we can verify the function
+        handles this via mock.
+        """
+        import unittest.mock as mock
+        a = _make_component("a")
+        b = _make_component("b")
+        g = _simple_graph([a, b], deps=[("a", "b")])
+        engine = SecurityResilienceEngine(g)
+
+        # Mock get_component to return None for "b"
+        original = g.get_component
+        def patched(cid):
+            if cid == "b":
+                return None
+            return original(cid)
+        with mock.patch.object(g, "get_component", side_effect=patched):
+            result = engine.simulate_attack(AttackType.SUPPLY_CHAIN, "a")
+        # b was None, so lateral movement couldn't reach it
+        assert "b" not in result.compromised_components
+
+
+class TestScoreBreakdownRecovery:
+    def test_backup_frequency_scoring(self):
+        """Test lines 495-500: backup frequency scoring branches."""
+        # Hourly backup -> score 10
+        comp_hourly = _make_component(
+            "db-1h", ctype=ComponentType.DATABASE,
+            backup_enabled=True, backup_frequency_hours=1.0,
+        )
+        g1 = _simple_graph([comp_hourly])
+        e1 = SecurityResilienceEngine(g1)
+        r1 = e1.simulate_all_attacks()
+
+        # Weekly backup -> lower score
+        comp_weekly = _make_component(
+            "db-168h", ctype=ComponentType.DATABASE,
+            backup_enabled=True, backup_frequency_hours=168.0,
+        )
+        g2 = _simple_graph([comp_weekly])
+        e2 = SecurityResilienceEngine(g2)
+        r2 = e2.simulate_all_attacks()
+
+        assert r1.score_breakdown["recovery"] >= r2.score_breakdown["recovery"]
+
+    def test_backup_frequency_very_rare(self):
+        """Test line 500: backup_frequency > 168h -> freq_score 0."""
+        comp = _make_component(
+            "db", ctype=ComponentType.DATABASE,
+            backup_enabled=True, backup_frequency_hours=200.0,
+        )
+        g = _simple_graph([comp])
+        engine = SecurityResilienceEngine(g)
+        report = engine.simulate_all_attacks()
+        # Should still produce valid scores
+        assert "recovery" in report.score_breakdown
+
+    def test_backup_freq_between_1_and_24(self):
+        """Test line 496: backup freq between 1 and 24 hours gets interpolated score."""
+        comp = _make_component(
+            "db", ctype=ComponentType.DATABASE,
+            backup_enabled=True, backup_frequency_hours=12.0,
+        )
+        g = _simple_graph([comp])
+        engine = SecurityResilienceEngine(g)
+        report = engine.simulate_all_attacks()
+        assert report.score_breakdown["recovery"] > 0
+
+    def test_patch_sla_between_72_and_720(self):
+        """Test line 513: patch SLA between 72 and 720 hours gets interpolated score."""
+        comp = _make_component(
+            "app", patch_sla_hours=200.0,
+        )
+        g = _simple_graph([comp])
+        engine = SecurityResilienceEngine(g)
+        report = engine.simulate_all_attacks()
+        assert "recovery" in report.score_breakdown
+
+    def test_patch_sla_scoring_tiers(self):
+        """Test lines 512-515: patch SLA scoring branches."""
+        # Fast patching (24h)
+        comp_fast = _make_component(
+            "app-fast", patch_sla_hours=24.0,
+        )
+        g1 = _simple_graph([comp_fast])
+        e1 = SecurityResilienceEngine(g1)
+        r1 = e1.simulate_all_attacks()
+
+        # Slow patching (720h+)
+        comp_slow = _make_component(
+            "app-slow", patch_sla_hours=1000.0,
+        )
+        g2 = _simple_graph([comp_slow])
+        e2 = SecurityResilienceEngine(g2)
+        r2 = e2.simulate_all_attacks()
+
+        assert r1.score_breakdown["recovery"] >= r2.score_breakdown["recovery"]
+
+
 class TestSecurityProfileOnComponent:
     def test_component_has_default_security(self):
         comp = Component(id="x", name="x", type=ComponentType.APP_SERVER)
