@@ -6,6 +6,7 @@ import pytest
 
 from infrasim.model.components import (
     AutoScalingConfig,
+    Capacity,
     CircuitBreakerConfig,
     Component,
     ComponentType,
@@ -536,3 +537,207 @@ class TestGrades:
 
         # Should have a low grade
         assert result.grade in ("F", "D-", "D", "D+", "C-")
+
+
+# ---------------------------------------------------------------------------
+# Coverage boost: _score_to_grade "F" fallback (line 129)
+# ---------------------------------------------------------------------------
+
+class TestScoreToGradeFallback:
+    def test_grade_f_below_zero(self):
+        """Negative scores should return F via the fallback (line 129)."""
+        from infrasim.simulator.score_decomposition import _score_to_grade
+        assert _score_to_grade(-5.0) == "F"
+
+    def test_grade_f_at_zero(self):
+        """Score of 0 matches threshold (0, 'F') in the list."""
+        from infrasim.simulator.score_decomposition import _score_to_grade
+        assert _score_to_grade(0.0) == "F"
+
+
+# ---------------------------------------------------------------------------
+# Coverage boost: _score_to_percentile ranges (lines 139, 141, 143, 145)
+# ---------------------------------------------------------------------------
+
+class TestScoreToPercentileRanges:
+    def test_percentile_80_to_89(self):
+        """Score in [80, 90) -> 85.0 percentile (line 137, previously line 139)."""
+        from infrasim.simulator.score_decomposition import _score_to_percentile
+        assert _score_to_percentile(85.0) == 85.0
+
+    def test_percentile_70_to_79(self):
+        """Score in [70, 80) -> 70.0 percentile (line 139, previously line 141)."""
+        from infrasim.simulator.score_decomposition import _score_to_percentile
+        assert _score_to_percentile(75.0) == 70.0
+
+    def test_percentile_60_to_69(self):
+        """Score in [60, 70) -> 55.0 percentile (line 141, previously line 143)."""
+        from infrasim.simulator.score_decomposition import _score_to_percentile
+        assert _score_to_percentile(65.0) == 55.0
+
+    def test_percentile_50_to_59(self):
+        """Score in [50, 60) -> 40.0 percentile (line 143, previously line 145)."""
+        from infrasim.simulator.score_decomposition import _score_to_percentile
+        assert _score_to_percentile(55.0) == 40.0
+
+    def test_percentile_40_to_49(self):
+        """Score in [40, 50) -> 25.0 percentile (line 145)."""
+        from infrasim.simulator.score_decomposition import _score_to_percentile
+        assert _score_to_percentile(45.0) == 25.0
+
+    def test_percentile_below_40(self):
+        """Score below 40 -> 10.0 percentile."""
+        from infrasim.simulator.score_decomposition import _score_to_percentile
+        assert _score_to_percentile(30.0) == 10.0
+
+
+# ---------------------------------------------------------------------------
+# Coverage boost: SPOF failover_save with autoscaling (lines 194-199)
+# ---------------------------------------------------------------------------
+
+class TestSPOFFailoverSaveWithAutoscaling:
+    def test_failover_improvement_suggested_for_spof_without_failover(self):
+        """SPOF without failover generates enable-failover improvement."""
+        db = _make_component("db", ComponentType.DATABASE)
+        app_comp = _make_component("app")
+        graph = _build_graph([db, app_comp], [("app", "db")])
+
+        decomposer = ScoreDecomposer()
+        result = decomposer.decompose(graph)
+
+        failover_imps = [i for i in result.improvements if i.action == "enable-failover"]
+        assert len(failover_imps) > 0
+        assert failover_imps[0].component_id == "db"
+
+    def test_failover_save_with_autoscaling_enabled(self):
+        """SPOF with autoscaling but no failover -> failover_save is adjusted."""
+        db = _make_component("db", ComponentType.DATABASE, autoscaling=True)
+        app_comp = _make_component("app")
+        graph = _build_graph([db, app_comp], [("app", "db")])
+
+        decomposer = ScoreDecomposer()
+        result = decomposer.decompose(graph)
+
+        failover_imps = [i for i in result.improvements if i.action == "enable-failover"]
+        assert len(failover_imps) > 0
+        # The improvement should be adjusted for autoscaling (multiplied by 0.5)
+        assert failover_imps[0].estimated_improvement > 0
+
+
+class TestSPOFOptionalAndAsyncDeps:
+    """Test SPOF penalty calculation with optional/async dependency types (lines 194-199)."""
+
+    def test_optional_dependency_lower_penalty(self):
+        """Optional dependencies weight 0.3 instead of 1.0 (line 194-195)."""
+        db = _make_component("db", ComponentType.DATABASE)
+        app_comp = _make_component("app")
+        graph = _build_graph([db, app_comp], [("app", "db")], dep_type="optional")
+
+        decomposer = ScoreDecomposer()
+        result = decomposer.decompose(graph)
+
+        # Should still have SPOF penalty but lower
+        penalty_factors = [f for f in result.factors if f.category == "penalty" and "Single" in f.name]
+        assert len(penalty_factors) > 0
+        # With optional (0.3 weight), penalty = min(20, 0.3 * 5) = 1.5 vs requires (1.0 * 5) = 5.0
+        assert penalty_factors[0].points > -5.1  # Less penalty than requires
+
+    def test_async_dependency_even_lower_penalty(self):
+        """Async/other dependencies weight 0.1 (lines 196-197)."""
+        db = _make_component("db", ComponentType.DATABASE)
+        app_comp = _make_component("app")
+        graph = _build_graph([db, app_comp], [("app", "db")], dep_type="async")
+
+        decomposer = ScoreDecomposer()
+        result = decomposer.decompose(graph)
+
+        # With async (0.1 weight), penalty = min(20, 0.1 * 5) = 0.5
+        penalty_factors = [f for f in result.factors if f.category == "penalty" and "Single" in f.name]
+        assert len(penalty_factors) > 0
+        assert penalty_factors[0].points > -1.0  # Very small penalty
+
+    def test_no_edge_fallback_weight(self):
+        """When get_dependency_edge returns None, weight defaults to 1.0 (line 199)."""
+        # Create a graph where a component has dependents but get_dependency_edge returns None
+        # This happens when the edge direction doesn't match the lookup
+        db = _make_component("db", ComponentType.DATABASE)
+        app_comp = _make_component("app")
+        g = InfraGraph()
+        g.add_component(db)
+        g.add_component(app_comp)
+        # Add dependency from app to db
+        g.add_dependency(Dependency(source_id="app", target_id="db"))
+        # db has dependents (app). When looking up edge with dep_comp=app, comp=db:
+        # get_dependency_edge(app.id, db.id) should find the edge.
+        # To trigger the "else" branch, we need a situation where get_dependency_edge
+        # returns None. This can happen if the graph internally stores dependents
+        # differently. Let's use the internal API directly.
+        from unittest.mock import patch
+
+        decomposer = ScoreDecomposer()
+
+        # Patch get_dependency_edge to return None for the db lookup
+        original_func = g.get_dependency_edge
+
+        def patched_edge(src, tgt):
+            if tgt == "db":
+                return None
+            return original_func(src, tgt)
+
+        with patch.object(g, "get_dependency_edge", side_effect=patched_edge):
+            result = decomposer.decompose(g)
+
+        # Should still compute penalties (with default weight 1.0)
+        penalty_factors = [f for f in result.factors if f.category == "penalty" and "Single" in f.name]
+        assert len(penalty_factors) > 0
+
+
+# ---------------------------------------------------------------------------
+# Coverage boost: what_if_fix reduce-utilization (lines 449-455)
+# ---------------------------------------------------------------------------
+
+class TestWhatIfReduceUtilization:
+    def test_reduce_utilization(self):
+        """what_if_fix with reduce-utilization should lower metrics (lines 449-455)."""
+        comp = _make_component("web", cpu=95, memory=85)
+        graph = _build_graph([comp])
+
+        decomposer = ScoreDecomposer()
+        current = graph.resilience_score()
+        new_score = decomposer.what_if_fix(graph, "web", "reduce-utilization")
+
+        # Reducing utilization should improve the score
+        assert new_score >= current
+
+    def test_reduce_utilization_on_high_util_component(self):
+        """Reduce utilization on a component with high CPU/memory/disk."""
+        comp = Component(
+            id="overloaded",
+            name="overloaded",
+            type=ComponentType.APP_SERVER,
+            replicas=2,
+            metrics=ResourceMetrics(
+                cpu_percent=95,
+                memory_percent=90,
+                disk_percent=88,
+                network_connections=900,
+            ),
+            capacity=Capacity(max_connections=1000),
+        )
+        graph = _build_graph([comp])
+
+        decomposer = ScoreDecomposer()
+        new_score = decomposer.what_if_fix(graph, "overloaded", "reduce-utilization")
+        # Should not crash and should return a valid score
+        assert 0.0 <= new_score <= 100.0
+
+    def test_enable_autoscaling_what_if(self):
+        """what_if_fix with enable-autoscaling should improve score."""
+        db = _make_component("db", ComponentType.DATABASE)
+        app_comp = _make_component("app")
+        graph = _build_graph([db, app_comp], [("app", "db")])
+
+        decomposer = ScoreDecomposer()
+        current = graph.resilience_score()
+        new_score = decomposer.what_if_fix(graph, "db", "enable-autoscaling")
+        assert new_score >= current

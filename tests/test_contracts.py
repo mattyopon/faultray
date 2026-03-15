@@ -218,6 +218,47 @@ class TestContractLoadSave:
         with pytest.raises(ValueError, match="missing 'type'"):
             engine.load_contract(path)
 
+    def test_load_rules_not_list(self, tmp_path):
+        """Rules field must be a list, not a scalar."""
+        data = {"rules": "not_a_list"}
+        path = _write_yaml(data, tmp_path)
+        engine = ContractEngine()
+        with pytest.raises(ValueError, match="'rules' must be a list"):
+            engine.load_contract(path)
+
+    def test_load_rule_entry_not_mapping(self, tmp_path):
+        """Each rule entry must be a mapping."""
+        data = {"rules": ["just_a_string"]}
+        path = _write_yaml(data, tmp_path)
+        engine = ContractEngine()
+        with pytest.raises(ValueError, match="Rule entry 0 must be a mapping"):
+            engine.load_contract(path)
+
+    def test_save_with_non_default_operator(self, tmp_path):
+        """Save a contract with a non-default operator to verify operator serialization."""
+        contract = ResilienceContract(
+            name="Custom Op",
+            version="1.0",
+            description="test",
+            rules=[
+                ContractRule(
+                    rule_type="min_score",
+                    target="myapp",
+                    operator=">",  # differs from default ">="
+                    value=80,
+                    description="Score > 80",
+                ),
+            ],
+        )
+        engine = ContractEngine()
+        path = tmp_path / "out.yaml"
+        engine.save_contract(contract, path)
+
+        # Reload and verify the operator was preserved
+        loaded = engine.load_contract(path)
+        assert loaded.rules[0].operator == ">"
+        assert loaded.rules[0].target == "myapp"
+
 
 # ---------------------------------------------------------------------------
 # ContractEngine - validate
@@ -634,10 +675,88 @@ class TestContractDiff:
         changes = engine.diff_contracts(old, new)
         assert any("value 50 -> 75" in c for c in changes)
 
+    def test_diff_severity_change(self):
+        """Diff should detect severity changes."""
+        engine = ContractEngine()
+        old = ResilienceContract(
+            name="C", version="1.0", description="", rules=[
+                ContractRule(
+                    rule_type="min_score", target=None, operator=">=",
+                    value=75, description="Score", severity="error",
+                ),
+            ],
+        )
+        new = ResilienceContract(
+            name="C", version="1.0", description="", rules=[
+                ContractRule(
+                    rule_type="min_score", target=None, operator=">=",
+                    value=75, description="Score", severity="warning",
+                ),
+            ],
+        )
+        changes = engine.diff_contracts(old, new)
+        assert any("severity error -> warning" in c for c in changes)
+
+    def test_diff_operator_change(self):
+        """Diff should detect operator changes."""
+        engine = ContractEngine()
+        old = ResilienceContract(
+            name="C", version="1.0", description="", rules=[
+                ContractRule(
+                    rule_type="min_score", target=None, operator=">=",
+                    value=75, description="Score",
+                ),
+            ],
+        )
+        new = ResilienceContract(
+            name="C", version="1.0", description="", rules=[
+                ContractRule(
+                    rule_type="min_score", target=None, operator=">",
+                    value=75, description="Score",
+                ),
+            ],
+        )
+        changes = engine.diff_contracts(old, new)
+        assert any("operator >= -> >" in c for c in changes)
+
 
 # ---------------------------------------------------------------------------
 # Helper function tests
 # ---------------------------------------------------------------------------
+
+class TestCompareOperator:
+    """Tests for the _compare helper function."""
+
+    def test_compare_eq(self):
+        from infrasim.contracts.engine import _compare
+        assert _compare(5.0, "==", 5.0) is True
+        assert _compare(5.0, "==", 6.0) is False
+
+    def test_compare_neq(self):
+        from infrasim.contracts.engine import _compare
+        assert _compare(5.0, "!=", 6.0) is True
+        assert _compare(5.0, "!=", 5.0) is False
+
+    def test_compare_gt(self):
+        from infrasim.contracts.engine import _compare
+        assert _compare(6.0, ">", 5.0) is True
+        assert _compare(5.0, ">", 5.0) is False
+
+    def test_compare_lt(self):
+        from infrasim.contracts.engine import _compare
+        assert _compare(4.0, "<", 5.0) is True
+        assert _compare(5.0, "<", 5.0) is False
+
+    def test_compare_gte(self):
+        from infrasim.contracts.engine import _compare
+        assert _compare(5.0, ">=", 5.0) is True
+        assert _compare(4.0, ">=", 5.0) is False
+
+    def test_compare_lte(self):
+        from infrasim.contracts.engine import _compare
+        assert _compare(5.0, "<=", 5.0) is True
+        assert _compare(6.0, "<=", 5.0) is False
+
 
 class TestHelpers:
     def test_count_spofs_simple(self):
@@ -765,6 +884,328 @@ class TestAdvancedRules:
         )
         result = engine.validate(graph, contract)
         assert result.passed is True
+
+    def test_validate_no_rules(self):
+        """Contract with no rules should pass with 100% compliance."""
+        graph = _simple_graph()
+        engine = ContractEngine()
+        contract = ResilienceContract(
+            name="Empty Rules",
+            version="1.0",
+            description="",
+            rules=[],
+        )
+        result = engine.validate(graph, contract)
+        assert result.passed is True
+        assert result.score == 100.0
+
+    def test_validate_required_pattern_autoscaling(self):
+        """Check required_pattern for autoscaling."""
+        graph = _simple_graph()  # no autoscaling on any component
+        engine = ContractEngine()
+        contract = ResilienceContract(
+            name="AS Required",
+            version="1.0",
+            description="",
+            rules=[
+                ContractRule(
+                    rule_type="required_pattern",
+                    target="*",
+                    operator=">=",
+                    value="autoscaling",
+                    description="Autoscaling required",
+                ),
+            ],
+        )
+        result = engine.validate(graph, contract)
+        assert len(result.violations) > 0 or len(result.warnings) > 0
+        all_issues = result.violations + result.warnings
+        assert any("autoscaling" in v.message.lower() for v in all_issues)
+
+    def test_validate_required_pattern_failover(self):
+        """Check required_pattern for failover."""
+        graph = _simple_graph()  # no failover
+        engine = ContractEngine()
+        contract = ResilienceContract(
+            name="FO Required",
+            version="1.0",
+            description="",
+            rules=[
+                ContractRule(
+                    rule_type="required_pattern",
+                    target="*",
+                    operator=">=",
+                    value="failover",
+                    description="Failover required",
+                ),
+            ],
+        )
+        result = engine.validate(graph, contract)
+        all_issues = result.violations + result.warnings
+        assert any("failover" in v.message.lower() for v in all_issues)
+
+    def test_validate_required_pattern_retry(self):
+        """Check required_pattern for retry strategy."""
+        graph = _simple_graph()  # no retry strategies
+        engine = ContractEngine()
+        contract = ResilienceContract(
+            name="Retry Required",
+            version="1.0",
+            description="",
+            rules=[
+                ContractRule(
+                    rule_type="required_pattern",
+                    target="*",
+                    operator=">=",
+                    value="retry",
+                    description="Retry required",
+                ),
+            ],
+        )
+        result = engine.validate(graph, contract)
+        all_issues = result.violations + result.warnings
+        assert any("retry" in v.message.lower() for v in all_issues)
+
+    def test_validate_required_pattern_unknown(self):
+        """Unknown pattern should log a warning and return no violations."""
+        graph = _simple_graph()
+        engine = ContractEngine()
+        contract = ResilienceContract(
+            name="Unknown Pattern",
+            version="1.0",
+            description="",
+            rules=[
+                ContractRule(
+                    rule_type="required_pattern",
+                    target="*",
+                    operator=">=",
+                    value="nonexistent_pattern",
+                    description="Unknown pattern",
+                ),
+            ],
+        )
+        result = engine.validate(graph, contract)
+        # Unknown pattern produces no violations
+        assert result.passed is True
+
+    def test_validate_sla_target_pass(self):
+        """SLA target that is achievable should pass."""
+        graph = _resilient_graph()
+        engine = ContractEngine()
+        contract = ResilienceContract(
+            name="SLA OK",
+            version="1.0",
+            description="",
+            rules=[
+                ContractRule(
+                    rule_type="sla_target",
+                    target=None,
+                    operator=">=",
+                    value=99.0,  # very achievable
+                    description="Two nines SLA",
+                ),
+            ],
+        )
+        result = engine.validate(graph, contract)
+        assert result.passed is True
+
+    def test_validate_max_critical_findings_pass(self):
+        """Max critical findings with a generous threshold should pass."""
+        graph = _resilient_graph()
+        engine = ContractEngine()
+        contract = ResilienceContract(
+            name="CF OK",
+            version="1.0",
+            description="",
+            rules=[
+                ContractRule(
+                    rule_type="max_critical_findings",
+                    target=None,
+                    operator="<=",
+                    value=100,  # very generous
+                    description="Generous critical findings limit",
+                ),
+            ],
+        )
+        result = engine.validate(graph, contract)
+        assert result.passed is True
+
+    def test_validate_min_replicas_with_prefix_match(self):
+        """min_replicas with target that matches as prefix (e.g., 'server' matches 'app_server')."""
+        graph = _simple_graph()
+        engine = ContractEngine()
+        contract = ResilienceContract(
+            name="Prefix",
+            version="1.0",
+            description="",
+            rules=[
+                ContractRule(
+                    rule_type="min_replicas",
+                    target="server",  # prefix matches app_server
+                    operator=">=",
+                    value=5,
+                    description="Server replicas >= 5",
+                ),
+            ],
+        )
+        result = engine.validate(graph, contract)
+        # app is app_server with 3 replicas, should fail
+        assert result.passed is False
+        assert any("app" in v.component_id for v in result.violations)
+
+    def test_validate_min_replicas_nonmatching_prefix(self):
+        """min_replicas with a prefix that matches nothing should pass."""
+        graph = _simple_graph()
+        engine = ContractEngine()
+        contract = ResilienceContract(
+            name="No Match",
+            version="1.0",
+            description="",
+            rules=[
+                ContractRule(
+                    rule_type="min_replicas",
+                    target="nonexistent_type",
+                    operator=">=",
+                    value=5,
+                    description="No components match",
+                ),
+            ],
+        )
+        result = engine.validate(graph, contract)
+        assert result.passed is True
+
+    def test_validate_required_failover_prefix_match(self):
+        """required_failover with a prefix target should match components."""
+        graph = _simple_graph()
+        engine = ContractEngine()
+        contract = ResilienceContract(
+            name="FO Prefix",
+            version="1.0",
+            description="",
+            rules=[
+                ContractRule(
+                    rule_type="required_failover",
+                    target="server",  # matches app_server
+                    operator=">=",
+                    value=True,
+                    description="Servers need failover",
+                ),
+            ],
+        )
+        result = engine.validate(graph, contract)
+        assert result.passed is False
+
+    def test_validate_required_failover_nonmatching_prefix(self):
+        """required_failover with a non-matching prefix passes."""
+        graph = _simple_graph()
+        engine = ContractEngine()
+        contract = ResilienceContract(
+            name="FO NoMatch",
+            version="1.0",
+            description="",
+            rules=[
+                ContractRule(
+                    rule_type="required_failover",
+                    target="nonexistent",
+                    operator=">=",
+                    value=True,
+                    description="No match",
+                ),
+            ],
+        )
+        result = engine.validate(graph, contract)
+        assert result.passed is True
+
+    def test_validate_required_health_check_prefix_match(self):
+        """required_health_check with prefix target matching."""
+        graph = _simple_graph()
+        engine = ContractEngine()
+        contract = ResilienceContract(
+            name="HC Prefix",
+            version="1.0",
+            description="",
+            rules=[
+                ContractRule(
+                    rule_type="required_health_check",
+                    target="server",  # matches app_server
+                    operator=">=",
+                    value=True,
+                    description="Servers need health checks",
+                ),
+            ],
+        )
+        result = engine.validate(graph, contract)
+        assert result.passed is False
+
+    def test_validate_required_health_check_nonmatching_prefix(self):
+        """required_health_check with non-matching prefix passes."""
+        graph = _simple_graph()
+        engine = ContractEngine()
+        contract = ResilienceContract(
+            name="HC NoMatch",
+            version="1.0",
+            description="",
+            rules=[
+                ContractRule(
+                    rule_type="required_health_check",
+                    target="xyz_nonexistent",
+                    operator=">=",
+                    value=True,
+                    description="No match",
+                ),
+            ],
+        )
+        result = engine.validate(graph, contract)
+        assert result.passed is True
+
+    def test_validate_required_health_check_by_component_type(self):
+        """required_health_check with exact ComponentType as target filters by type."""
+        graph = _simple_graph()
+        engine = ContractEngine()
+        # Target "database" is a valid ComponentType - should only check DB components
+        contract = ResilienceContract(
+            name="HC DB Only",
+            version="1.0",
+            description="",
+            rules=[
+                ContractRule(
+                    rule_type="required_health_check",
+                    target="database",
+                    operator=">=",
+                    value=True,
+                    description="DB needs health checks",
+                ),
+            ],
+        )
+        result = engine.validate(graph, contract)
+        # DB has no health checks in simple_graph
+        assert result.passed is False
+        # Should only have violations for DB, not app/lb
+        for v in result.violations:
+            assert v.component_id == "db"
+
+    def test_validate_unknown_rule_type_handler(self):
+        """Unknown rule type handler returns empty violations via _check_rule."""
+        from unittest.mock import patch
+        graph = _simple_graph()
+        engine = ContractEngine()
+        # Create a rule with a valid rule_type but then mock _RULE_HANDLERS to miss it
+        rule = ContractRule(
+            rule_type="min_score",
+            target=None,
+            operator=">=",
+            value=0,
+            description="test",
+        )
+        # Temporarily change rule_type after validation
+        rule.rule_type = "unknown_handler"  # bypass __post_init__ by directly setting
+        violations = engine._check_rule(graph, rule)
+        assert violations == []
+
+    def test_compare_fallback_invalid_operator(self):
+        """_compare with invalid operator returns False."""
+        from infrasim.contracts.engine import _compare
+        assert _compare(5.0, "??", 5.0) is False
 
 
 # ---------------------------------------------------------------------------

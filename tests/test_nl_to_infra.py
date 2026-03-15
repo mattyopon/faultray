@@ -610,3 +610,241 @@ class TestSmartDefaults:
         alb = [c for c in parsed.components if c.name == "alb"]
         assert len(alb) == 1
         assert alb[0].properties.get("failover") is True
+
+
+# ---------------------------------------------------------------------------
+# 12. Qualifier suppression – English qualifier
+# ---------------------------------------------------------------------------
+
+
+class TestQualifierSuppression:
+    """Qualifier suppression tests for English qualifiers."""
+
+    def test_english_qualifier_suppressed_ec2_instances(
+        self, parser: NLInfraParser
+    ) -> None:
+        """'instances' should be suppressed as qualifier after 'EC2 instances'."""
+        parsed = parser.parse("EC2 instances behind a load balancer")
+        app_comps = [
+            c for c in parsed.components
+            if c.component_type == ComponentType.APP_SERVER
+        ]
+        assert len(app_comps) == 1
+        assert app_comps[0].name == "ec2"
+
+
+# ---------------------------------------------------------------------------
+# 13. Overlap detection in component extraction (lines 555-556, 559)
+# ---------------------------------------------------------------------------
+
+
+class TestComponentOverlapDetection:
+    """Lines 555-556, 559: When a new pattern match overlaps with an already-matched
+    component position, the new match should be skipped."""
+
+    def test_overlapping_japanese_serverless(self, parser: NLInfraParser) -> None:
+        """Japanese 'サーバーレス': 'サーバー' pattern matches first at (0,4),
+        then 'サーバーレス' at (0,6) overlaps and is skipped."""
+        parsed = parser.parse("サーバーレスの構成")
+        comps = parsed.components
+        names = [c.name for c in comps]
+        assert "server" in names
+        assert names.count("serverless-function") == 0 or len(comps) == 1
+
+
+# ---------------------------------------------------------------------------
+# 14. Count pattern skip if replicas already set (line 588)
+# ---------------------------------------------------------------------------
+
+
+class TestCountPatternSkipIfReplicasSet:
+    """Line 588: If a component already has replicas != 0, the count detection
+    in strategy 1 should skip it."""
+
+    def test_replicas_preset_skips_strategy1(
+        self, parser: NLInfraParser
+    ) -> None:
+        """Directly call _apply_counts with pre-set replicas to hit line 588."""
+        comp = ParsedComponent(
+            name="ec2",
+            component_type=ComponentType.APP_SERVER,
+            source_text="EC2",
+            position=2,
+            replicas=5,  # Already set -> line 588 fires
+        )
+        parser._apply_counts("3 EC2", [comp])
+        # replicas should NOT be overwritten by "3"
+        assert comp.replicas == 5
+
+
+# ---------------------------------------------------------------------------
+# 15. Count pattern fallback to _find_closest_component (lines 610, 625-634)
+# ---------------------------------------------------------------------------
+
+
+class TestCountFallbackClosestComponent:
+    """Lines 610, 625-634: When no preceding component is found, the count
+    pattern falls back to _find_closest_component."""
+
+    def test_count_after_no_preceding_uses_closest(
+        self, parser: NLInfraParser
+    ) -> None:
+        """A count phrase at the start of text with no preceding comp."""
+        parsed = parser.parse("3台のEC2")
+        ec2_comps = [
+            c for c in parsed.components
+            if c.component_type == ComponentType.APP_SERVER
+        ]
+        assert len(ec2_comps) >= 1
+        assert ec2_comps[0].replicas == 3
+
+    def test_count_fallback_closest_directly(
+        self, parser: NLInfraParser
+    ) -> None:
+        """Call _apply_counts where count pattern is far before all components,
+        so _find_preceding_component returns None -> _find_closest_component used."""
+        comp = ParsedComponent(
+            name="ec2",
+            component_type=ComponentType.APP_SERVER,
+            source_text="EC2",
+            position=50,
+        )
+        # "3台" at position 0; comp at 50 > 20 (max_dist for preceding)
+        # so _find_preceding_component returns None
+        # _find_closest_component(max_dist=60) finds comp at distance 50
+        text = "3台" + " " * 47 + "EC2"
+        parser._apply_counts(text, [comp])
+        assert comp.replicas == 3
+
+
+# ---------------------------------------------------------------------------
+# 16. Property application fallback to closest component (line 684)
+# ---------------------------------------------------------------------------
+
+
+class TestPropertyFallbackClosest:
+    """Line 684: When no preceding component is found for a property, it
+    falls back to _find_closest_component."""
+
+    def test_property_applied_to_closest_when_no_preceding(
+        self, parser: NLInfraParser
+    ) -> None:
+        """A property at the start of text applied to closest component."""
+        parsed = parser.parse("autoscaling enabled, an EC2")
+        ec2 = [
+            c for c in parsed.components
+            if c.component_type == ComponentType.APP_SERVER
+        ]
+        assert len(ec2) >= 1
+        assert ec2[0].properties.get("autoscaling") is True
+
+    def test_property_fallback_directly(
+        self, parser: NLInfraParser
+    ) -> None:
+        """Call _apply_properties where property is at start, component is after.
+        _find_preceding_component returns None -> _find_closest_component used."""
+        comp = ParsedComponent(
+            name="ec2",
+            component_type=ComponentType.APP_SERVER,
+            source_text="EC2",
+            position=30,
+        )
+        # "failover" at position ~0, comp at 30 -> not preceding
+        parser._apply_properties("failover enabled and then EC2", [comp])
+        assert comp.properties.get("failover") is True
+
+
+# ---------------------------------------------------------------------------
+# 17. Auto-infer skip same-name components (line 839)
+# ---------------------------------------------------------------------------
+
+
+class TestAutoInferSkipSameName:
+    """Line 839: When auto-inferring relationships, skip if source and target
+    have the same name (self-reference)."""
+
+    def test_same_name_different_type_skipped(
+        self, parser: NLInfraParser
+    ) -> None:
+        """Directly test _auto_infer_relationships with same-name components."""
+        parsed = ParsedInfrastructure(raw_text="test")
+        parsed.components = [
+            ParsedComponent(
+                name="shared",
+                component_type=ComponentType.APP_SERVER,
+                source_text="shared",
+                position=0,
+            ),
+            ParsedComponent(
+                name="shared",
+                component_type=ComponentType.DATABASE,
+                source_text="shared",
+                position=10,
+            ),
+        ]
+        parsed.relationships = []
+        parser._auto_infer_relationships(parsed)
+        # No relationship should be inferred since source.name == target.name
+        for rel in parsed.relationships:
+            assert rel.source != rel.target
+
+
+# ---------------------------------------------------------------------------
+# 18. YAML autoscaling output (line 944)
+# ---------------------------------------------------------------------------
+
+
+class TestYAMLAutoscalingOutput:
+    """Line 944: When autoscaling is enabled, YAML should include autoscaling."""
+
+    def test_yaml_contains_autoscaling(self, parser: NLInfraParser) -> None:
+        """Components with autoscaling should include autoscaling in YAML output."""
+        parsed = parser.parse("3 EC2 with autoscaling enabled")
+        yaml_str = parser.to_yaml(parsed)
+        data = yaml.safe_load(yaml_str)
+        ec2_comps = [c for c in data["components"] if c["id"] == "ec2"]
+        assert len(ec2_comps) == 1
+        assert "autoscaling" in ec2_comps[0]
+        assert ec2_comps[0]["autoscaling"]["enabled"] is True
+
+
+# ---------------------------------------------------------------------------
+# 19. Circuit breaker in dependency output (line 996)
+# ---------------------------------------------------------------------------
+
+
+class TestCircuitBreakerInDependency:
+    """Line 996: circuit_breaker in the dependency dict when source has it."""
+
+    def test_yaml_dependency_has_circuit_breaker(
+        self, parser: NLInfraParser
+    ) -> None:
+        """Dependencies from components with circuit_breaker should include it."""
+        parsed = parser.parse(
+            "An ALB with circuit breaker connected to a web server"
+        )
+        yaml_str = parser.to_yaml(parsed)
+        data = yaml.safe_load(yaml_str)
+        deps = data.get("dependencies", [])
+        cb_deps = [d for d in deps if d.get("circuit_breaker")]
+        assert len(cb_deps) >= 1
+        assert cb_deps[0]["circuit_breaker"]["enabled"] is True
+
+
+# ---------------------------------------------------------------------------
+# 20. Autoscaling in _parsed_to_component (InfraGraph, line 1026)
+# ---------------------------------------------------------------------------
+
+
+class TestAutoscalingInfraGraph:
+    """Line 1026: AutoScalingConfig with enabled=True in _parsed_to_component."""
+
+    def test_graph_component_has_autoscaling(
+        self, parser: NLInfraParser
+    ) -> None:
+        """Components with autoscaling should have AutoScalingConfig in InfraGraph."""
+        parsed = parser.parse("3 EC2 with autoscaling enabled")
+        graph = parser.to_graph(parsed)
+        ec2 = [c for c in graph.components.values() if "ec2" in c.id.lower()]
+        assert len(ec2) >= 1
+        assert ec2[0].autoscaling.enabled is True

@@ -618,3 +618,320 @@ class TestFullDetection:
                 c1 = report.most_anomalous_components[i]
                 c2 = report.most_anomalous_components[i + 1]
                 assert anomaly_counts.get(c1, 0) >= anomaly_counts.get(c2, 0)
+
+
+# ---------------------------------------------------------------------------
+# Additional tests for 99%+ coverage
+# ---------------------------------------------------------------------------
+
+
+class TestReplicaAnomaliesSingleComponent:
+    """Cover detect_replica_anomalies with < 2 components (line 201)."""
+
+    def test_replica_anomalies_single_component(self):
+        graph = InfraGraph()
+        graph.add_component(Component(
+            id="app", name="App", type=ComponentType.APP_SERVER, replicas=1,
+        ))
+        detector = AnomalyDetector()
+        anomalies = detector.detect_replica_anomalies(graph)
+        assert len(anomalies) == 0  # Not enough components for comparison
+
+
+class TestReplicaUnderProvisioned:
+    """Cover the UNDER_PROVISIONED branch (line 237)."""
+
+    def test_under_provisioned_single_replica_many_dependents(self):
+        """Component with replicas=1, >= 2 dependents, no failover,
+        but z-score NOT < -1.5 (not a statistical outlier)."""
+        graph = InfraGraph()
+        # Make a component with replicas=1 that has 2+ dependents
+        # but the z-score is NOT < -1.5 (i.e., other components also have low replicas)
+        graph.add_component(Component(
+            id="db", name="DB", type=ComponentType.DATABASE,
+            replicas=1,
+        ))
+        graph.add_component(Component(
+            id="app1", name="App1", type=ComponentType.APP_SERVER,
+            replicas=1,
+        ))
+        graph.add_component(Component(
+            id="app2", name="App2", type=ComponentType.APP_SERVER,
+            replicas=2,
+        ))
+        graph.add_dependency(Dependency(
+            source_id="app1", target_id="db", dependency_type="requires",
+        ))
+        graph.add_dependency(Dependency(
+            source_id="app2", target_id="db", dependency_type="requires",
+        ))
+
+        detector = AnomalyDetector()
+        anomalies = detector.detect_replica_anomalies(graph)
+
+        # db has replicas=1, num_dependents=2, no failover
+        # With replicas [1, 1, 2], mean=1.33, std=0.47
+        # z for db = (1 - 1.33) / 0.47 = -0.71 -> NOT < -1.5
+        # So it should hit the elif (UNDER_PROVISIONED) branch
+        under = [a for a in anomalies if a.anomaly_type == AnomalyType.UNDER_PROVISIONED]
+        assert len(under) >= 1
+        assert any(a.component_id == "db" for a in under)
+
+
+class TestUtilizationSkipZero:
+    """Cover the util <= 0.0 continue branch (line 277)."""
+
+    def test_skip_zero_utilization_components(self):
+        graph = InfraGraph()
+        # 3 components with utilization, 1 with zero
+        graph.add_component(Component(
+            id="app1", name="App1", type=ComponentType.APP_SERVER,
+            replicas=2, metrics=ResourceMetrics(cpu_percent=50.0),
+        ))
+        graph.add_component(Component(
+            id="app2", name="App2", type=ComponentType.APP_SERVER,
+            replicas=2, metrics=ResourceMetrics(cpu_percent=55.0),
+        ))
+        graph.add_component(Component(
+            id="app3", name="App3", type=ComponentType.APP_SERVER,
+            replicas=2, metrics=ResourceMetrics(cpu_percent=45.0),
+        ))
+        graph.add_component(Component(
+            id="no_util", name="NoUtil", type=ComponentType.APP_SERVER,
+            replicas=2,
+            # No metrics -> utilization = 0.0 -> should be skipped
+        ))
+
+        detector = AnomalyDetector()
+        anomalies = detector.detect_utilization_anomalies(graph)
+        # no_util should not appear in anomalies (skipped at line 277)
+        no_util_anomalies = [a for a in anomalies if a.component_id == "no_util"]
+        assert len(no_util_anomalies) == 0
+
+
+class TestUtilizationOverProvisioned:
+    """Cover the over-provisioned branch (lines 301-302)."""
+
+    def test_detects_over_provisioned_component(self):
+        """Component with very low utilization should be flagged as over-provisioned."""
+        graph = InfraGraph()
+        # 3 normal components + 1 very low utilization
+        graph.add_component(Component(
+            id="app1", name="App1", type=ComponentType.APP_SERVER,
+            replicas=2, metrics=ResourceMetrics(cpu_percent=70.0),
+        ))
+        graph.add_component(Component(
+            id="app2", name="App2", type=ComponentType.APP_SERVER,
+            replicas=2, metrics=ResourceMetrics(cpu_percent=75.0),
+        ))
+        graph.add_component(Component(
+            id="app3", name="App3", type=ComponentType.APP_SERVER,
+            replicas=2, metrics=ResourceMetrics(cpu_percent=80.0),
+        ))
+        graph.add_component(Component(
+            id="idle", name="Idle", type=ComponentType.APP_SERVER,
+            replicas=2, metrics=ResourceMetrics(cpu_percent=5.0),
+        ))
+
+        detector = AnomalyDetector()
+        anomalies = detector.detect_utilization_anomalies(graph)
+
+        over_provisioned = [
+            a for a in anomalies
+            if a.anomaly_type == AnomalyType.OVER_PROVISIONED
+        ]
+        assert len(over_provisioned) >= 1
+        assert any(a.component_id == "idle" for a in over_provisioned)
+
+
+class TestConfigInconsistenciesSingleComponent:
+    """Cover detect_config_inconsistencies with < 2 components (line 329)."""
+
+    def test_config_inconsistencies_single_component(self):
+        graph = InfraGraph()
+        graph.add_component(Component(
+            id="app", name="App", type=ComponentType.APP_SERVER, replicas=1,
+        ))
+        detector = AnomalyDetector()
+        anomalies = detector.detect_config_inconsistencies(graph)
+        assert len(anomalies) == 0
+
+
+class TestAutoscalingInconsistency:
+    """Cover autoscaling inconsistency detection (lines 373-375)."""
+
+    def test_detects_autoscaling_inconsistency(self):
+        """Most components have autoscaling but one doesn't."""
+        graph = InfraGraph()
+        graph.add_component(Component(
+            id="app1", name="App1", type=ComponentType.APP_SERVER,
+            replicas=2, autoscaling=AutoScalingConfig(enabled=True),
+        ))
+        graph.add_component(Component(
+            id="app2", name="App2", type=ComponentType.APP_SERVER,
+            replicas=2, autoscaling=AutoScalingConfig(enabled=True),
+        ))
+        graph.add_component(Component(
+            id="app3", name="App3", type=ComponentType.APP_SERVER,
+            replicas=2,
+            # No autoscaling - inconsistent with peers
+        ))
+        detector = AnomalyDetector()
+        anomalies = detector.detect_config_inconsistencies(graph)
+        as_issues = [
+            a for a in anomalies
+            if a.anomaly_type == AnomalyType.CONFIG_INCONSISTENCY
+            and "autoscaling" in a.description.lower()
+        ]
+        assert len(as_issues) >= 1
+        assert any(a.component_id == "app3" for a in as_issues)
+
+
+class TestCircuitBreakerInconsistency:
+    """Cover circuit breaker inconsistency detection (lines 402-407)."""
+
+    def test_detects_circuit_breaker_inconsistency(self):
+        """Most edges have CB but one doesn't."""
+        graph = InfraGraph()
+        graph.add_component(Component(
+            id="app1", name="App1", type=ComponentType.APP_SERVER, replicas=2,
+        ))
+        graph.add_component(Component(
+            id="app2", name="App2", type=ComponentType.APP_SERVER, replicas=2,
+        ))
+        graph.add_component(Component(
+            id="db", name="DB", type=ComponentType.DATABASE, replicas=2,
+        ))
+        # 2 edges with CB, 1 without
+        graph.add_dependency(Dependency(
+            source_id="app1", target_id="db", dependency_type="requires",
+            circuit_breaker=CircuitBreakerConfig(enabled=True),
+        ))
+        graph.add_dependency(Dependency(
+            source_id="app2", target_id="db", dependency_type="requires",
+            circuit_breaker=CircuitBreakerConfig(enabled=True),
+        ))
+        graph.add_dependency(Dependency(
+            source_id="app1", target_id="app2", dependency_type="optional",
+            # No circuit breaker - inconsistent
+        ))
+
+        detector = AnomalyDetector()
+        anomalies = detector.detect_config_inconsistencies(graph)
+        cb_issues = [
+            a for a in anomalies
+            if a.anomaly_type == AnomalyType.CONFIG_INCONSISTENCY
+            and "circuit" in a.description.lower()
+        ]
+        assert len(cb_issues) >= 1
+
+
+class TestDependencyAnomalyEdgeCases:
+    """Cover dependency anomaly edge cases."""
+
+    def test_dependency_anomalies_empty_graph(self):
+        """Direct call to detect_dependency_anomalies with empty graph (line 467)."""
+        graph = InfraGraph()
+        detector = AnomalyDetector()
+        anomalies = detector.detect_dependency_anomalies(graph)
+        assert len(anomalies) == 0
+
+    def test_dependency_anomalies_uniform_dependents(self):
+        """All components have same number of dependents -> std=0 -> z=0 (line 485)."""
+        graph = InfraGraph()
+        # Create a ring: each has exactly 1 dependent
+        for i in range(4):
+            graph.add_component(Component(
+                id=f"svc{i}", name=f"Service{i}", type=ComponentType.APP_SERVER,
+                replicas=2,
+            ))
+        for i in range(4):
+            graph.add_dependency(Dependency(
+                source_id=f"svc{i}", target_id=f"svc{(i+1) % 4}",
+                dependency_type="requires",
+            ))
+
+        detector = AnomalyDetector()
+        anomalies = detector.detect_dependency_anomalies(graph)
+        # With std=0, no hub should be detected (z=0 for all)
+        hubs = [a for a in anomalies if "hub" in a.description.lower()]
+        assert len(hubs) == 0
+
+
+class TestCircularDependencyDetection:
+    """Cover circular dependency detection (lines 537-560)."""
+
+    def test_detects_circular_dependency(self):
+        """Graph with a cycle should produce circular dependency anomalies."""
+        graph = InfraGraph()
+        graph.add_component(Component(
+            id="a", name="ServiceA", type=ComponentType.APP_SERVER, replicas=2,
+        ))
+        graph.add_component(Component(
+            id="b", name="ServiceB", type=ComponentType.APP_SERVER, replicas=2,
+        ))
+        graph.add_component(Component(
+            id="c", name="ServiceC", type=ComponentType.APP_SERVER, replicas=2,
+        ))
+        # Create a cycle: a -> b -> c -> a
+        graph.add_dependency(Dependency(
+            source_id="a", target_id="b", dependency_type="requires",
+        ))
+        graph.add_dependency(Dependency(
+            source_id="b", target_id="c", dependency_type="requires",
+        ))
+        graph.add_dependency(Dependency(
+            source_id="c", target_id="a", dependency_type="requires",
+        ))
+
+        detector = AnomalyDetector()
+        anomalies = detector.detect_dependency_anomalies(graph)
+
+        circular = [
+            a for a in anomalies
+            if a.anomaly_type == AnomalyType.DEPENDENCY_ANOMALY
+            and "circular" in a.description.lower()
+        ]
+        assert len(circular) >= 1
+
+
+class TestCapacityMismatchSingleComponent:
+    """Cover detect_capacity_mismatches with < 2 components (line 570)."""
+
+    def test_capacity_mismatches_single_component(self):
+        graph = InfraGraph()
+        graph.add_component(Component(
+            id="app", name="App", type=ComponentType.APP_SERVER, replicas=1,
+        ))
+        detector = AnomalyDetector()
+        anomalies = detector.detect_capacity_mismatches(graph)
+        assert len(anomalies) == 0
+
+
+class TestCircularDependencyExceptionHandling:
+    """Cover the except block in cycle detection (lines 559-560)."""
+
+    def test_cycle_detection_exception_handled(self, monkeypatch):
+        """When nx.simple_cycles raises, the exception should be swallowed."""
+        from unittest.mock import patch
+        import networkx as nx
+
+        graph = InfraGraph()
+        graph.add_component(Component(
+            id="a", name="A", type=ComponentType.APP_SERVER, replicas=2,
+        ))
+        graph.add_component(Component(
+            id="b", name="B", type=ComponentType.APP_SERVER, replicas=2,
+        ))
+        graph.add_dependency(Dependency(
+            source_id="a", target_id="b", dependency_type="requires",
+        ))
+
+        # Mock nx.simple_cycles to raise an exception
+        with patch("networkx.simple_cycles", side_effect=RuntimeError("graph error")):
+            detector = AnomalyDetector()
+            anomalies = detector.detect_dependency_anomalies(graph)
+
+        # Should not raise, and circular anomalies should be empty
+        circular = [a for a in anomalies if "circular" in a.description.lower()]
+        assert len(circular) == 0

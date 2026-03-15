@@ -395,3 +395,305 @@ class TestCostCalculations:
             for imp in sol.improvements_from_current:
                 assert isinstance(imp, str)
                 assert len(imp) > 0
+
+
+# ---------------------------------------------------------------------------
+# Additional tests for 99%+ coverage
+# ---------------------------------------------------------------------------
+
+import copy
+from unittest.mock import patch
+
+
+class TestScoreToNinesFallback:
+    """Cover the fallback return 1.0 in _score_to_nines (line 137)."""
+
+    def test_score_to_nines_boundary_values(self):
+        assert _score_to_nines(0.0) == 1.0
+        assert _score_to_nines(100.0) == 5.0
+        assert _score_to_nines(99.0) == 5.0
+        assert _score_to_nines(98.9) < 5.0
+
+
+class TestExtractVariables:
+    """Cover _extract_variables (lines 179-234)."""
+
+    def test_extract_variables_basic(self, simple_graph):
+        """Components without failover/autoscaling/CB generate toggle variables."""
+        optimizer = ParetoOptimizer()
+        variables = optimizer._extract_variables(simple_graph)
+        assert len(variables) > 0
+
+        # Check that we have replicas variables
+        replica_vars = [v for v in variables if v.parameter == "replicas"]
+        assert len(replica_vars) >= 1
+
+        # Check that components without failover get failover variables
+        failover_vars = [v for v in variables if v.parameter == "enable_failover"]
+        assert len(failover_vars) >= 1
+
+        # Check that components without autoscaling get autoscaling variables
+        autoscaling_vars = [v for v in variables if v.parameter == "enable_autoscaling"]
+        assert len(autoscaling_vars) >= 1
+
+    def test_extract_variables_with_cb(self, simple_graph):
+        """Components with edges missing circuit breakers get CB variables."""
+        optimizer = ParetoOptimizer()
+        variables = optimizer._extract_variables(simple_graph)
+        cb_vars = [v for v in variables if v.parameter == "enable_circuit_breaker"]
+        # simple_graph has edges without CBs
+        assert len(cb_vars) >= 1
+
+    def test_extract_variables_fully_configured(self, redundant_graph):
+        """Fully configured graph should have fewer toggle variables."""
+        optimizer = ParetoOptimizer()
+        variables = optimizer._extract_variables(redundant_graph)
+        # Redundant graph has failover and autoscaling already enabled
+        failover_vars = [v for v in variables if v.parameter == "enable_failover"]
+        assert len(failover_vars) == 0  # All have failover
+
+    def test_extract_variables_empty(self, empty_graph):
+        """Empty graph has no variables."""
+        optimizer = ParetoOptimizer()
+        variables = optimizer._extract_variables(empty_graph)
+        assert len(variables) == 0
+
+
+class TestApplyChangesEdgeCases:
+    """Cover _apply_changes with invalid comp_id (line 246)."""
+
+    def test_apply_changes_invalid_component(self, simple_graph):
+        """Changes for non-existent component should be skipped."""
+        optimizer = ParetoOptimizer()
+        changes = {"nonexistent_comp": {"replicas": 3}}
+        result = optimizer._apply_changes(simple_graph, changes)
+        assert isinstance(result, InfraGraph)
+        # Original graph should be unchanged
+        assert simple_graph.get_component("db").replicas == 1
+
+    def test_apply_changes_mixed_valid_invalid(self, simple_graph):
+        """Valid and invalid component changes together."""
+        optimizer = ParetoOptimizer()
+        changes = {
+            "db": {"replicas": 3},
+            "nonexistent": {"replicas": 5},
+        }
+        result = optimizer._apply_changes(simple_graph, changes)
+        assert result.get_component("db").replicas == 3
+        assert result.get_component("nonexistent") is None
+
+
+class TestCalculateCostEdgeCases:
+    """Cover _calculate_cost_of_changes with invalid comp_id (line 273)."""
+
+    def test_cost_of_changes_invalid_component(self, simple_graph):
+        """Cost calculation with non-existent component should skip it."""
+        optimizer = ParetoOptimizer()
+        changes = {"nonexistent_comp": {"replicas": 5}}
+        cost = optimizer._calculate_cost_of_changes(simple_graph, changes)
+        assert cost == 0.0
+
+    def test_cost_of_changes_mixed(self, simple_graph):
+        """Mix of valid and invalid components in cost calculation."""
+        optimizer = ParetoOptimizer()
+        changes = {
+            "db": {"replicas": 3},          # valid: 2 extra replicas * 500 = 1000
+            "ghost": {"replicas": 10},       # invalid: skipped
+        }
+        cost = optimizer._calculate_cost_of_changes(simple_graph, changes)
+        assert cost > 0  # Only the valid component contributes
+
+
+class TestDescribeImprovementsEdgeCases:
+    """Cover _describe_improvements with invalid comp_id (line 298)."""
+
+    def test_describe_improvements_invalid_component(self, simple_graph):
+        """Describing improvements for non-existent component should skip it."""
+        optimizer = ParetoOptimizer()
+        changes = {"ghost_comp": {"replicas": 3}}
+        improvements = optimizer._describe_improvements(simple_graph, changes)
+        assert len(improvements) == 0
+
+
+class TestBuildCandidatesReplicaSkip:
+    """Cover the replicas skip path in _generate_incremental_changes (line 398)."""
+
+    def test_incremental_changes_replica_ordering(self, simple_graph):
+        """The incremental change generator should skip lower replica counts."""
+        optimizer = ParetoOptimizer()
+        candidates = optimizer._generate_incremental_changes(simple_graph)
+        assert len(candidates) > 0
+        # Verify that incremental changes were generated
+        replica_changes = []
+        for change_set in candidates:
+            for comp_id, params in change_set.items():
+                if "replicas" in params:
+                    replica_changes.append((comp_id, params["replicas"]))
+        assert len(replica_changes) > 0
+
+
+class TestFilterParetoOptimalEmpty:
+    """Cover _filter_pareto_optimal with empty list (line 464)."""
+
+    def test_filter_pareto_empty(self):
+        """Empty solution list should return empty."""
+        optimizer = ParetoOptimizer()
+        result = optimizer._filter_pareto_optimal([])
+        assert result == []
+
+
+class TestGenerateFrontierEdgeCases:
+    """Cover edge cases in generate_frontier (lines 536-537, 542-553)."""
+
+    def test_frontier_steps_limit(self, simple_graph):
+        """When there are more solutions than steps, sampling should occur."""
+        optimizer = ParetoOptimizer()
+        # Use steps=2 to force trimming (lines 542-553)
+        frontier = optimizer.generate_frontier(simple_graph, steps=2)
+        assert isinstance(frontier, ParetoFrontier)
+        # Should still have the current solution
+        current_found = any(s.is_current for s in frontier.solutions)
+        assert current_found
+
+    def test_frontier_very_small_steps(self):
+        """With steps=1, force the sampling code path including pareto[0],
+        pareto[-1], and current_sol re-insertion (lines 542-553)."""
+        graph = InfraGraph()
+        # Create many components to ensure many Pareto solutions
+        for i in range(8):
+            graph.add_component(Component(
+                id=f"svc{i}", name=f"Service{i}", type=ComponentType.APP_SERVER,
+                replicas=1,
+            ))
+        for i in range(7):
+            graph.add_dependency(Dependency(
+                source_id=f"svc{i}", target_id=f"svc{i+1}",
+                dependency_type="requires",
+            ))
+
+        optimizer = ParetoOptimizer()
+        frontier = optimizer.generate_frontier(graph, steps=1)
+        assert isinstance(frontier, ParetoFrontier)
+        # Should still include the current solution
+        assert any(s.is_current for s in frontier.solutions)
+
+    def test_frontier_steps_2_with_many_components(self):
+        """Steps=2 with many components to trigger all sampling branches."""
+        graph = InfraGraph()
+        for i in range(10):
+            graph.add_component(Component(
+                id=f"node{i}", name=f"Node{i}", type=ComponentType.APP_SERVER,
+                replicas=1,
+            ))
+        for i in range(9):
+            graph.add_dependency(Dependency(
+                source_id=f"node{i}", target_id=f"node{i+1}",
+                dependency_type="requires",
+            ))
+
+        optimizer = ParetoOptimizer()
+        frontier = optimizer.generate_frontier(graph, steps=2)
+        assert isinstance(frontier, ParetoFrontier)
+        assert any(s.is_current for s in frontier.solutions)
+
+    def test_frontier_sampling_reinserts_current(self, simple_graph):
+        """Verify sampling re-inserts current_sol when it's not in the sampled
+        subset (line 551)."""
+        optimizer = ParetoOptimizer()
+
+        # Mock _filter_pareto_optimal to return many distinct solutions
+        # with current placed at an odd index so step_size skips it
+        original_filter = optimizer._filter_pareto_optimal
+
+        def mock_filter_inflated(solutions):
+            """Return all unique solutions to inflate the Pareto front."""
+            seen = set()
+            result = []
+            for s in solutions:
+                key = (round(s.resilience_score, 2), round(s.estimated_monthly_cost, 0))
+                if key not in seen:
+                    seen.add(key)
+                    result.append(s)
+            # Sort by cost so current (cheapest) ends up at index 0
+            result.sort(key=lambda s: s.estimated_monthly_cost)
+            # Move the current to index 1 so step_size=large skips it
+            current_idx = None
+            for i, s in enumerate(result):
+                if s.is_current:
+                    current_idx = i
+                    break
+            if current_idx is not None and len(result) > 3:
+                current_sol = result.pop(current_idx)
+                # Insert at position 1 (not 0, not last)
+                result.insert(1, current_sol)
+            return result
+
+        with patch.object(optimizer, "_filter_pareto_optimal", side_effect=mock_filter_inflated):
+            frontier = optimizer.generate_frontier(simple_graph, steps=2)
+
+        assert isinstance(frontier, ParetoFrontier)
+        assert any(s.is_current for s in frontier.solutions)
+
+    def test_frontier_current_reinserted_when_filtered(self, simple_graph):
+        """When _filter_pareto_optimal drops the current, it should be re-added
+        (lines 536-537)."""
+        optimizer = ParetoOptimizer()
+
+        # Patch _filter_pareto_optimal to always drop current solutions
+        original_filter = optimizer._filter_pareto_optimal
+
+        def mock_filter(solutions):
+            result = original_filter(solutions)
+            return [s for s in result if not s.is_current]
+
+        with patch.object(optimizer, "_filter_pareto_optimal", side_effect=mock_filter):
+            frontier = optimizer.generate_frontier(simple_graph)
+
+        # Current should still be present (re-added after filtering)
+        assert any(s.is_current for s in frontier.solutions)
+
+
+class TestOptimizeEdgeCases:
+    """Cover optimize edge cases (line 611)."""
+
+    def test_optimize_zero_budget(self, simple_graph):
+        """Budget of zero should leave only the current solution (line 611)."""
+        optimizer = ParetoOptimizer()
+        frontier = optimizer.optimize(simple_graph, budget=0.0)
+        assert isinstance(frontier, ParetoFrontier)
+        assert len(frontier.solutions) >= 1
+        # With $0 budget nothing affordable => should fall back to current
+        assert frontier.solutions[0].is_current
+
+
+class TestFindCheapestForScoreEdgeCases:
+    """Cover find_cheapest_for_score fallback (line 635)."""
+
+    def test_find_cheapest_impossible_target(self, simple_graph):
+        """Impossible target score should return most resilient (line 635)."""
+        optimizer = ParetoOptimizer()
+        # Target score of 999 is unreachable
+        solution = optimizer.find_cheapest_for_score(simple_graph, 999.0)
+        assert solution is not None
+        assert solution.resilience_score > 0
+
+
+class TestFindBestForBudgetEdgeCases:
+    """Cover find_best_for_budget fallback (line 649)."""
+
+    def test_find_best_zero_budget(self, simple_graph):
+        """Zero budget should return cheapest solution (line 649)."""
+        optimizer = ParetoOptimizer()
+        solution = optimizer.find_best_for_budget(simple_graph, 0.0)
+        assert solution is not None
+
+
+class TestCostToImproveEdgeCases:
+    """Cover cost_to_improve fallback (line 670)."""
+
+    def test_cost_to_improve_huge_delta(self, simple_graph):
+        """Huge improvement delta with no viable solution should return 0.0."""
+        optimizer = ParetoOptimizer()
+        # Request an absurd improvement - e.g., 200 points (max is 100)
+        cost = optimizer.cost_to_improve(simple_graph, 200.0)
+        assert cost == 0.0

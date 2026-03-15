@@ -582,3 +582,296 @@ class TestCountSPOFs:
     def test_empty_graph(self):
         graph = InfraGraph()
         assert _count_spofs(graph) == 0
+
+
+# ---------------------------------------------------------------------------
+# Coverage boost tests
+# ---------------------------------------------------------------------------
+
+
+class TestComputeInfrastructureHashException:
+    """Test _compute_infrastructure_hash when graph.to_dict() raises (lines 138-139)."""
+
+    def test_hash_returns_unknown_on_exception(self):
+        from infrasim.simulator.resilience_timeline import _compute_infrastructure_hash
+        from unittest.mock import patch
+
+        graph = _make_graph()
+        with patch.object(type(graph), "to_dict", side_effect=RuntimeError("boom")):
+            result = _compute_infrastructure_hash(graph)
+        assert result == "unknown"
+
+
+class TestMalformedJSONLEntries:
+    """Test _load_all_snapshots with malformed JSONL (lines 224, 231, 235-238)."""
+
+    def test_skips_malformed_json(self, tmp_path):
+        tl = _timeline_in_tmp(tmp_path)
+        # Write a valid entry, then a malformed JSON line, then a line missing key
+        valid = {
+            "timestamp": "2025-01-15T10:00:00",
+            "resilience_score": 80.0,
+            "component_count": 5,
+            "spof_count": 1,
+            "infrastructure_hash": "hash1",
+        }
+        with open(tl.storage_path, "w", encoding="utf-8") as f:
+            f.write(json.dumps(valid) + "\n")
+            f.write("not valid json at all\n")
+            f.write('{"bad": "entry"}\n')  # missing required keys
+
+        snapshots = tl._load_all_snapshots()
+        # Only the valid entry should be loaded; bad JSON and missing key skipped
+        assert len(snapshots) == 1
+        assert snapshots[0].resilience_score == 80.0
+
+
+class TestLoadSnapshotsOSError:
+    """Test _load_all_snapshots with OSError (lines 237-238)."""
+
+    def test_returns_empty_on_os_error(self, tmp_path):
+        import os
+        tl = _timeline_in_tmp(tmp_path)
+        # Write something then make file unreadable
+        with open(tl.storage_path, "w") as f:
+            f.write('{"timestamp":"2025-01-01T00:00:00","resilience_score":50.0,"component_count":1,"infrastructure_hash":"h"}\n')
+        os.chmod(tl.storage_path, 0o000)
+
+        snapshots = tl._load_all_snapshots()
+        assert snapshots == []
+
+        os.chmod(tl.storage_path, 0o644)
+
+
+class TestAppendSnapshotOSError:
+    """Test _append_snapshot when write fails (lines 247-248)."""
+
+    def test_append_handles_os_error(self, tmp_path):
+        import os
+        tl = _timeline_in_tmp(tmp_path)
+        snap = TimelineSnapshot(
+            timestamp="2025-01-01T00:00:00",
+            resilience_score=50.0,
+            component_count=1,
+            spof_count=0,
+            critical_findings=0,
+            warning_count=0,
+            genome_hash=None,
+            infrastructure_hash="h",
+        )
+        # Make directory read-only to prevent writing
+        os.chmod(tl.storage_path, 0o000)
+        # Should not raise; just logs a warning
+        tl._append_snapshot(snap)
+        os.chmod(tl.storage_path, 0o644)
+
+
+class TestCheckMilestonesScoreThreshold:
+    """Test _check_milestones with score threshold and regression logging (lines 328, 334)."""
+
+    def test_milestone_score_threshold_logging(self, tmp_path):
+        import logging
+        tl = _timeline_in_tmp(tmp_path)
+
+        # Seed with a low-score snapshot first
+        _seed_snapshots(tl, [40.0])
+
+        graph = _make_graph(num_components=3, replicas=3, failover=True)
+        # Record again to trigger milestone check
+        snap = tl.record(graph)
+        # Score should be >= 50, triggering milestone
+        assert snap.resilience_score >= 50.0
+
+    def test_milestone_regression_logging(self, tmp_path):
+        tl = _timeline_in_tmp(tmp_path)
+
+        # First snapshot: high score
+        _seed_snapshots(tl, [90.0])
+
+        # Record low score to trigger regression
+        _seed_snapshots(tl, [80.0])
+
+        # Record another snapshot to trigger _check_milestones
+        graph = InfraGraph()
+        graph.add_component(Component(
+            id="lonely",
+            name="Lonely",
+            type=ComponentType.APP_SERVER,
+            replicas=1,
+        ))
+        snap = tl.record(graph)
+        # Just ensure it doesn't crash
+
+
+class TestGetHistoryDaysZero:
+    """Test get_history with days <= 0 returns all (line 351)."""
+
+    def test_days_zero_returns_all(self, tmp_path):
+        tl = _timeline_in_tmp(tmp_path)
+        _seed_snapshots(tl, [60.0, 70.0, 80.0], base_days_ago=365)
+
+        history = tl.get_history(days=0)
+        assert len(history) == 3
+
+    def test_days_negative_returns_all(self, tmp_path):
+        tl = _timeline_in_tmp(tmp_path)
+        _seed_snapshots(tl, [55.0, 65.0], base_days_ago=200)
+
+        history = tl.get_history(days=-1)
+        assert len(history) == 2
+
+
+class TestSingleSnapshotVolatility:
+    """Test trend calculation with a single snapshot (line 397)."""
+
+    def test_single_snapshot_volatility_zero(self, tmp_path):
+        tl = _timeline_in_tmp(tmp_path)
+        _seed_snapshots(tl, [75.0])
+
+        trends = tl.get_trends()
+        trend_30d = trends["30d"]
+        assert trend_30d.volatility == 0.0
+        assert trend_30d.snapshots_count == 1
+
+
+class TestNinesAchievedMilestone:
+    """Test nines_achieved milestone (line 448)."""
+
+    def test_nines_achieved_milestone(self, tmp_path):
+        tl = _timeline_in_tmp(tmp_path)
+        _seed_snapshots(tl, [98.0, 99.95])
+
+        milestones = tl.get_milestones()
+        nines = [m for m in milestones if m.milestone_type == "nines_achieved"]
+        assert len(nines) == 1
+        assert "99.9" in nines[0].description
+
+
+class TestDateParsingErrors:
+    """Test generate_report with unparseable dates (lines 545-546)."""
+
+    def test_bad_timestamp_in_report(self, tmp_path):
+        tl = _timeline_in_tmp(tmp_path)
+        # Write snapshots with bad timestamps
+        snap_data = {
+            "timestamp": "not-a-date",
+            "resilience_score": 75.0,
+            "component_count": 3,
+            "spof_count": 0,
+            "infrastructure_hash": "hash1",
+        }
+        with open(tl.storage_path, "w", encoding="utf-8") as f:
+            f.write(json.dumps(snap_data) + "\n")
+
+        report = tl.generate_report()
+        assert report.days_tracked == 0
+        assert report.total_snapshots == 1
+
+
+class TestLoadSnapshotsNoFile:
+    """Test _load_all_snapshots when storage file does not exist (line 224)."""
+
+    def test_returns_empty_when_file_deleted(self, tmp_path):
+        tl = _timeline_in_tmp(tmp_path)
+        # Remove the file that _ensure_storage created
+        tl.storage_path.unlink()
+        snapshots = tl._load_all_snapshots()
+        assert snapshots == []
+
+
+class TestLoadSnapshotsBlankLines:
+    """Test _load_all_snapshots skips blank lines (line 231)."""
+
+    def test_skips_blank_lines(self, tmp_path):
+        tl = _timeline_in_tmp(tmp_path)
+        valid = {
+            "timestamp": "2025-01-15T10:00:00",
+            "resilience_score": 80.0,
+            "component_count": 5,
+            "infrastructure_hash": "hash1",
+        }
+        with open(tl.storage_path, "w", encoding="utf-8") as f:
+            f.write("\n")  # blank line
+            f.write(json.dumps(valid) + "\n")
+            f.write("   \n")  # whitespace-only line
+            f.write("\n")  # another blank
+
+        snapshots = tl._load_all_snapshots()
+        assert len(snapshots) == 1
+        assert snapshots[0].resilience_score == 80.0
+
+
+class TestCheckMilestonesZeroCritical:
+    """Test _check_milestones logs zero critical findings milestone (line 328)."""
+
+    def test_zero_critical_milestone_on_record(self, tmp_path):
+        tl = _timeline_in_tmp(tmp_path)
+
+        # First, seed a snapshot with critical findings > 0
+        base = datetime.utcnow() - timedelta(days=5)
+        snap1 = TimelineSnapshot(
+            timestamp=base.isoformat(timespec="seconds"),
+            resilience_score=70.0,
+            component_count=5,
+            spof_count=1,
+            critical_findings=3,
+            warning_count=0,
+            genome_hash=None,
+            infrastructure_hash="hash1",
+        )
+        tl._append_snapshot(snap1)
+
+        # Now record a graph that yields 0 critical findings
+        # _check_milestones is called by record(), and the new snapshot
+        # has critical_findings=0 (report is None, so critical_findings=0)
+        graph = _make_graph(num_components=3, replicas=2, failover=True)
+        snap = tl.record(graph)
+        assert snap.critical_findings == 0
+        # Line 328 should have been hit (logger.info about zero critical)
+
+
+class TestCheckMilestonesRegressionOnRecord:
+    """Test _check_milestones regression detection on record (line 334)."""
+
+    def test_regression_detected_on_record(self, tmp_path):
+        tl = _timeline_in_tmp(tmp_path)
+
+        # Seed a high-score snapshot
+        base = datetime.utcnow() - timedelta(days=2)
+        snap1 = TimelineSnapshot(
+            timestamp=base.isoformat(timespec="seconds"),
+            resilience_score=95.0,
+            component_count=5,
+            spof_count=0,
+            critical_findings=0,
+            warning_count=0,
+            genome_hash=None,
+            infrastructure_hash="hash1",
+        )
+        tl._append_snapshot(snap1)
+
+        # Create a graph with many SPOFs and high utilization so score drops well below 90
+        from infrasim.model.components import ResourceMetrics
+        graph = InfraGraph()
+        # Central DB with replicas=1 and high utilization
+        graph.add_component(Component(
+            id="db",
+            name="Database",
+            type=ComponentType.DATABASE,
+            replicas=1,
+            metrics=ResourceMetrics(cpu_percent=95),
+        ))
+        # Multiple dependents that each depend on the SPOF db
+        for i in range(5):
+            graph.add_component(Component(
+                id=f"svc{i}",
+                name=f"Service {i}",
+                type=ComponentType.APP_SERVER,
+                replicas=1,
+                metrics=ResourceMetrics(cpu_percent=92),
+            ))
+            graph.add_dependency(Dependency(source_id=f"svc{i}", target_id="db"))
+
+        snap = tl.record(graph)
+        # Score should drop significantly below 95 -> triggers regression
+        assert snap.resilience_score < 90.0

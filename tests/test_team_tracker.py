@@ -441,3 +441,322 @@ class TestIntegration:
 
         history = tracker.get_team_history(teams[0].team_name)
         assert len(history) == 1
+
+
+# ---------------------------------------------------------------------------
+# Coverage boost tests
+# ---------------------------------------------------------------------------
+
+
+class TestAutoAssignOtherTeam:
+    """Test the 'other' team fallback in auto_assign_teams (line 116)."""
+
+    def test_auto_assign_other_team_for_custom_type(self):
+        """Component with unmatched name and CUSTOM type goes to 'other'."""
+        graph = InfraGraph()
+        graph.add_component(Component(
+            id="mystery",
+            name="Mystery Box",
+            type=ComponentType.CUSTOM,
+            replicas=1,
+        ))
+        mapping = auto_assign_teams(graph)
+        assert "mystery" in mapping.get("other", [])
+
+
+class TestMostImprovedPositiveCheck:
+    """Test that most_improved requires a positive improvement (line 341)."""
+
+    def test_most_improved_when_scores_improve(self, sample_graph, team_mapping, tmp_path):
+        """Record a snapshot with current scores, then improve graph so leaderboard detects improvement."""
+        tracker = TeamTracker(history_path=tmp_path / "team_history.jsonl")
+
+        # Record baseline snapshot with lower-scoring graph
+        # Create a weaker graph first (fewer replicas, no failover)
+        weak_graph = InfraGraph()
+        for comp_id, comp in sample_graph.components.items():
+            c_dict = comp.model_dump()
+            # Make everything weaker
+            c_dict["replicas"] = 1
+            c_dict["failover"]["enabled"] = False
+            c_dict["autoscaling"]["enabled"] = False
+            weak_graph.add_component(Component(**c_dict))
+        for edge in sample_graph.all_dependency_edges():
+            weak_graph.add_dependency(Dependency(**edge.model_dump()))
+
+        # Record the weak graph as history
+        tracker.record_snapshot(weak_graph, team_mapping)
+
+        # Now check leaderboard with the stronger sample_graph
+        # The improved graph should have higher scores, so most_improved should be set
+        lb = tracker.get_leaderboard(sample_graph, team_mapping)
+        # most_improved should be a string (some team improved)
+        assert isinstance(lb.most_improved, str)
+        assert lb.most_improved != ""
+
+    def test_most_improved_none_when_no_improvement(self, sample_graph, team_mapping, tmp_path):
+        """When scores don't change, most_improved should be None."""
+        tracker = TeamTracker(history_path=tmp_path / "team_history.jsonl")
+        tracker.record_snapshot(sample_graph, team_mapping)
+        # Same graph -> no improvement
+        lb = tracker.get_leaderboard(sample_graph, team_mapping)
+        assert lb.most_improved is None
+
+
+class TestHistoryParsingErrors:
+    """Test get_team_history with malformed entries (lines 385-386)."""
+
+    def test_history_with_bad_timestamp(self, tmp_path):
+        """Entry with invalid timestamp triggers ValueError -> skipped (line 385)."""
+        from datetime import datetime
+        tracker = TeamTracker(history_path=tmp_path / "team_history.jsonl")
+        valid_entry = {
+            "timestamp": datetime.now().isoformat(),
+            "team_name": "platform",
+            "metrics": {
+                "team_name": "platform",
+                "components_owned": ["lb"],
+                "resilience_score": 80.0,
+                "spof_count": 0,
+                "critical_findings": 0,
+                "failover_coverage": 100.0,
+                "circuit_breaker_coverage": 50.0,
+                "sre_maturity_level": 3,
+                "annual_risk_estimate": 0.0,
+            },
+        }
+        bad_timestamp_entry = {
+            "timestamp": "not-a-date",
+            "team_name": "platform",
+            "metrics": {
+                "team_name": "platform",
+                "components_owned": ["lb"],
+                "resilience_score": 50.0,
+                "spof_count": 0,
+                "critical_findings": 0,
+                "failover_coverage": 0.0,
+                "circuit_breaker_coverage": 0.0,
+                "sre_maturity_level": 1,
+                "annual_risk_estimate": 0.0,
+            },
+        }
+        with open(tmp_path / "team_history.jsonl", "w") as f:
+            f.write(json.dumps(valid_entry) + "\n")
+            f.write(json.dumps(bad_timestamp_entry) + "\n")
+
+        history = tracker.get_team_history("platform")
+        # Valid entry loaded, bad timestamp skipped
+        assert len(history) == 1
+        assert history[0].team_name == "platform"
+
+    def test_history_with_missing_key(self, tmp_path):
+        """Entry missing the 'timestamp' key triggers KeyError -> skipped (line 386)."""
+        tracker = TeamTracker(history_path=tmp_path / "team_history.jsonl")
+        # Entry completely missing 'timestamp' key -> KeyError on entry["timestamp"]
+        missing_key_entry = {
+            "team_name": "platform",
+            "metrics": {
+                "team_name": "platform",
+                "components_owned": ["lb"],
+                "resilience_score": 50.0,
+                "spof_count": 0,
+                "critical_findings": 0,
+                "failover_coverage": 0.0,
+                "circuit_breaker_coverage": 0.0,
+                "sre_maturity_level": 1,
+                "annual_risk_estimate": 0.0,
+            },
+        }
+        with open(tmp_path / "team_history.jsonl", "w") as f:
+            f.write(json.dumps(missing_key_entry) + "\n")
+
+        history = tracker.get_team_history("platform")
+        assert history == []
+
+
+class TestCalculateTeamScoreEdgeCases:
+    """Test _calculate_team_score internal helper edge cases."""
+
+    def test_empty_component_ids(self, tmp_path):
+        """Empty component_ids should return 0.0 (line 406)."""
+        tracker = TeamTracker(history_path=tmp_path / "team_history.jsonl")
+        graph = InfraGraph()
+        score = tracker._calculate_team_score(graph, [])
+        assert score == 0.0
+
+    def test_failover_reduces_penalty(self, tmp_path):
+        """Failover enabled on SPOF component reduces penalty (line 418)."""
+        tracker = TeamTracker(history_path=tmp_path / "team_history.jsonl")
+        graph = InfraGraph()
+        # SPOF with failover
+        graph.add_component(Component(
+            id="db",
+            name="Database",
+            type=ComponentType.DATABASE,
+            replicas=1,
+            failover=FailoverConfig(enabled=True),
+        ))
+        graph.add_component(Component(
+            id="app",
+            name="App",
+            type=ComponentType.APP_SERVER,
+            replicas=2,
+        ))
+        graph.add_dependency(Dependency(source_id="app", target_id="db"))
+
+        score_with_failover = tracker._calculate_team_score(graph, ["db", "app"])
+
+        # Without failover
+        graph2 = InfraGraph()
+        graph2.add_component(Component(
+            id="db",
+            name="Database",
+            type=ComponentType.DATABASE,
+            replicas=1,
+        ))
+        graph2.add_component(Component(
+            id="app",
+            name="App",
+            type=ComponentType.APP_SERVER,
+            replicas=2,
+        ))
+        graph2.add_dependency(Dependency(source_id="app", target_id="db"))
+        score_without_failover = tracker._calculate_team_score(graph2, ["db", "app"])
+
+        assert score_with_failover > score_without_failover
+
+    def test_autoscaling_reduces_penalty(self, tmp_path):
+        """Autoscaling on SPOF reduces penalty (line 420)."""
+        tracker = TeamTracker(history_path=tmp_path / "team_history.jsonl")
+        graph = InfraGraph()
+        graph.add_component(Component(
+            id="db",
+            name="Database",
+            type=ComponentType.DATABASE,
+            replicas=1,
+            autoscaling=AutoScalingConfig(enabled=True, min_replicas=1, max_replicas=5),
+        ))
+        graph.add_component(Component(
+            id="app",
+            name="App",
+            type=ComponentType.APP_SERVER,
+            replicas=2,
+        ))
+        graph.add_dependency(Dependency(source_id="app", target_id="db"))
+
+        score_with_as = tracker._calculate_team_score(graph, ["db", "app"])
+
+        graph2 = InfraGraph()
+        graph2.add_component(Component(
+            id="db",
+            name="Database",
+            type=ComponentType.DATABASE,
+            replicas=1,
+        ))
+        graph2.add_component(Component(
+            id="app",
+            name="App",
+            type=ComponentType.APP_SERVER,
+            replicas=2,
+        ))
+        graph2.add_dependency(Dependency(source_id="app", target_id="db"))
+        score_without_as = tracker._calculate_team_score(graph2, ["db", "app"])
+
+        assert score_with_as > score_without_as
+
+    def test_high_utilization_penalty_above_90(self, tmp_path):
+        """Utilization >90% should penalize score by 10 (line 426)."""
+        tracker = TeamTracker(history_path=tmp_path / "team_history.jsonl")
+        from infrasim.model.components import ResourceMetrics
+
+        graph = InfraGraph()
+        graph.add_component(Component(
+            id="web",
+            name="Web",
+            type=ComponentType.APP_SERVER,
+            replicas=2,
+            metrics=ResourceMetrics(cpu_percent=95),
+        ))
+        score = tracker._calculate_team_score(graph, ["web"])
+        assert score < 100.0
+        assert score == 90.0  # 100 - 10
+
+    def test_high_utilization_penalty_above_80(self, tmp_path):
+        """Utilization >80% but <=90% should penalize score by 5 (line 428)."""
+        tracker = TeamTracker(history_path=tmp_path / "team_history.jsonl")
+        from infrasim.model.components import ResourceMetrics
+
+        graph = InfraGraph()
+        graph.add_component(Component(
+            id="web",
+            name="Web",
+            type=ComponentType.APP_SERVER,
+            replicas=2,
+            metrics=ResourceMetrics(cpu_percent=85),
+        ))
+        score = tracker._calculate_team_score(graph, ["web"])
+        assert score == 95.0  # 100 - 5
+
+    def test_cb_coverage_penalty(self, tmp_path):
+        """CB coverage below 50% should apply penalty (line 443)."""
+        tracker = TeamTracker(history_path=tmp_path / "team_history.jsonl")
+        graph = InfraGraph()
+        graph.add_component(Component(
+            id="app",
+            name="App",
+            type=ComponentType.APP_SERVER,
+            replicas=2,
+        ))
+        graph.add_component(Component(
+            id="db",
+            name="Database",
+            type=ComponentType.DATABASE,
+            replicas=2,
+        ))
+        graph.add_component(Component(
+            id="cache",
+            name="Cache",
+            type=ComponentType.CACHE,
+            replicas=2,
+        ))
+        # Two deps, neither with CB -> cb_ratio = 0 < 0.5 -> -10
+        graph.add_dependency(Dependency(
+            source_id="app", target_id="db",
+        ))
+        graph.add_dependency(Dependency(
+            source_id="app", target_id="cache",
+        ))
+
+        score = tracker._calculate_team_score(graph, ["app", "db", "cache"])
+        assert score == 90.0  # 100 - 10 (cb penalty)
+
+
+class TestHistoryLoadErrors:
+    """Test _load_history with OS errors and malformed JSON (lines 460-463)."""
+
+    def test_load_history_with_bad_json_lines(self, tmp_path):
+        tracker = TeamTracker(history_path=tmp_path / "team_history.jsonl")
+        with open(tmp_path / "team_history.jsonl", "w") as f:
+            f.write("not valid json\n")
+            f.write('{"team_name": "test"}\n')
+            f.write("also invalid\n")
+
+        entries = tracker._load_history()
+        # Should skip invalid lines and return the valid one
+        assert len(entries) == 1
+        assert entries[0]["team_name"] == "test"
+
+    def test_load_history_os_error(self, tmp_path):
+        """OSError when reading history file (line 462-463)."""
+        import os
+        tracker = TeamTracker(history_path=tmp_path / "team_history.jsonl")
+        # Create the file, then make it unreadable
+        with open(tmp_path / "team_history.jsonl", "w") as f:
+            f.write('{"test": true}\n')
+        os.chmod(tmp_path / "team_history.jsonl", 0o000)
+
+        entries = tracker._load_history()
+        assert entries == []
+
+        # Restore permissions for cleanup
+        os.chmod(tmp_path / "team_history.jsonl", 0o644)

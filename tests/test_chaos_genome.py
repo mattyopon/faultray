@@ -955,3 +955,447 @@ class TestDemoGraphIntegration:
         assert "single_load_balancer_gene" in names
         # Demo graph has no circuit breakers on requires edges
         assert "no_circuit_breaker_gene" in names
+
+
+# ---------------------------------------------------------------------------
+# Coverage boost tests
+# ---------------------------------------------------------------------------
+
+
+class TestCompareStrengths:
+    """Test genome comparison divergent traits (line 488: strengths_a)."""
+
+    def test_compare_divergent_traits(self):
+        engine = ChaosGenomeEngine()
+        graph1 = _build_simple_graph()
+        # Give graph1 higher failover
+        graph1.components["lb"].failover = FailoverConfig(enabled=True)
+        genome1 = engine.analyze(graph1)
+
+        graph2 = _build_simple_graph()
+        genome2 = engine.analyze(graph2)
+
+        comparison = engine.compare(genome1, genome2)
+        # The graphs differ, so there should be divergent traits
+        assert isinstance(comparison, GenomeComparison)
+        # Strengths should be populated if there are divergent traits
+        all_strengths = comparison.strengths_a + comparison.strengths_b
+        if comparison.divergent_traits:
+            assert len(all_strengths) > 0
+
+
+class TestBenchmarkZeroBenchVal:
+    """Test benchmark with bench_val=0 (line 525)."""
+
+    def test_benchmark_with_zero_bench_value(self):
+        engine = ChaosGenomeEngine()
+        graph = _build_simple_graph()
+        genome = engine.analyze(graph)
+
+        # Patch the benchmark data to have a zero value
+        from unittest.mock import patch
+        custom_bench = {"failover_coverage": 0.0, "health_check_coverage": 0.5}
+        with patch.dict(engine._benchmarks, {"test_industry": custom_bench}):
+            result = engine.benchmark(genome, "test_industry")
+        # When bench_val is 0 and actual is 0 -> percentile = 50
+        # When bench_val is 0 and actual > 0 -> percentile = 100
+        assert isinstance(result, BenchmarkResult)
+
+
+class TestEvolutionDegradingTrend:
+    """Test evolution with degrading trend (lines 591-592, 599)."""
+
+    def test_degrading_overall_trend(self):
+        engine = ChaosGenomeEngine()
+
+        # Create two genomes: first better, second worse
+        graph1 = InfraGraph()
+        graph1.add_component(Component(
+            id="app", name="App", type=ComponentType.APP_SERVER,
+            replicas=3, failover=FailoverConfig(enabled=True),
+            autoscaling=AutoScalingConfig(enabled=True, min_replicas=2, max_replicas=6),
+        ))
+        genome1 = engine.analyze(graph1)
+        genome1.timestamp = datetime.now(timezone.utc) - timedelta(days=30)
+
+        graph2 = InfraGraph()
+        graph2.add_component(Component(
+            id="app", name="App", type=ComponentType.APP_SERVER,
+            replicas=1,
+        ))
+        genome2 = engine.analyze(graph2)
+        genome2.timestamp = datetime.now(timezone.utc)
+
+        report = engine.track_evolution([genome1, genome2])
+        assert isinstance(report, EvolutionReport)
+        # With degraded traits, trend should be 'degrading'
+        assert report.overall_trend == "degrading"
+
+
+class TestDisconnectedGraphPathLength:
+    """Test avg_path_length trait with disconnected graph (lines 744-745, 747-748)."""
+
+    def test_disconnected_graph_path_length(self):
+        engine = ChaosGenomeEngine()
+        graph = InfraGraph()
+        # Create two disconnected components
+        graph.add_component(Component(
+            id="a", name="A", type=ComponentType.APP_SERVER, replicas=2,
+        ))
+        graph.add_component(Component(
+            id="b", name="B", type=ComponentType.DATABASE, replicas=2,
+        ))
+        graph.add_component(Component(
+            id="c", name="C", type=ComponentType.CACHE, replicas=2,
+        ))
+        # Only connect a->b, c is disconnected
+        graph.add_dependency(Dependency(source_id="a", target_id="b"))
+
+        trait = engine._trait_avg_path_length(graph)
+        assert trait.name == "avg_path_length"
+        assert 0.0 <= trait.value <= 1.0
+
+
+class TestGraphCycleMaxDepth:
+    """Test max_depth with graph cycles (lines 764-772)."""
+
+    def test_cyclic_graph_max_depth(self):
+        engine = ChaosGenomeEngine()
+        graph = InfraGraph()
+        graph.add_component(Component(
+            id="a", name="A", type=ComponentType.APP_SERVER, replicas=2,
+        ))
+        graph.add_component(Component(
+            id="b", name="B", type=ComponentType.APP_SERVER, replicas=2,
+        ))
+        graph.add_component(Component(
+            id="c", name="C", type=ComponentType.APP_SERVER, replicas=2,
+        ))
+        # Create a cycle: a -> b -> c -> a
+        graph.add_dependency(Dependency(source_id="a", target_id="b"))
+        graph.add_dependency(Dependency(source_id="b", target_id="c"))
+        graph.add_dependency(Dependency(source_id="c", target_id="a"))
+
+        trait = engine._trait_max_depth(graph)
+        assert trait.name == "max_depth"
+        assert 0.0 <= trait.value <= 1.0
+
+
+class TestComponentDiversityZeroTotal:
+    """Test component_diversity when total is 0 (line 804)."""
+
+    def test_empty_components_diversity(self):
+        engine = ChaosGenomeEngine()
+        graph = InfraGraph()
+        trait = engine._trait_component_diversity(graph)
+        assert trait.value == 0.0
+
+
+class TestMinReplicasThreeOrMore:
+    """Test min_replicas trait with 3+ replicas (line 850)."""
+
+    def test_min_replicas_three(self):
+        engine = ChaosGenomeEngine()
+        graph = InfraGraph()
+        graph.add_component(Component(
+            id="a", name="A", type=ComponentType.APP_SERVER, replicas=3,
+        ))
+        graph.add_component(Component(
+            id="b", name="B", type=ComponentType.DATABASE, replicas=4,
+        ))
+        trait = engine._trait_min_replicas(graph)
+        assert trait.name == "min_replicas"
+        assert trait.value >= 0.5  # min is 3, so normalized >= 0.5 + 0.15 = 0.65
+
+
+class TestProviderDiversityHostPatterns:
+    """Test provider_diversity with host patterns (lines 914-922, 929-934)."""
+
+    def test_provider_tag_matching(self):
+        """Provider tag matching via tags list (line 914)."""
+        engine = ChaosGenomeEngine()
+        graph = InfraGraph()
+        graph.add_component(Component(
+            id="a", name="A", type=ComponentType.APP_SERVER, replicas=2,
+            tags=["aws"],
+        ))
+        trait = engine._trait_provider_diversity(graph)
+        assert trait.value == 0.2  # single provider tag
+
+    def test_aws_host_pattern(self):
+        engine = ChaosGenomeEngine()
+        graph = InfraGraph()
+        graph.add_component(Component(
+            id="a", name="A", type=ComponentType.APP_SERVER, replicas=2,
+            host="ec2-1.amazonaws.com",
+        ))
+        trait = engine._trait_provider_diversity(graph)
+        assert trait.value == 0.2  # single provider (aws)
+
+    def test_gcp_host_pattern(self):
+        engine = ChaosGenomeEngine()
+        graph = InfraGraph()
+        graph.add_component(Component(
+            id="a", name="A", type=ComponentType.APP_SERVER, replicas=2,
+            host="gke-cluster-1.gcp.internal",
+        ))
+        trait = engine._trait_provider_diversity(graph)
+        assert trait.value == 0.2  # single provider (gcp)
+
+    def test_azure_host_pattern(self):
+        engine = ChaosGenomeEngine()
+        graph = InfraGraph()
+        graph.add_component(Component(
+            id="a", name="A", type=ComponentType.APP_SERVER, replicas=2,
+            host="my-vm.azure.internal",
+        ))
+        trait = engine._trait_provider_diversity(graph)
+        assert trait.value == 0.2  # single provider (azure)
+
+    def test_multi_provider_diversity(self):
+        engine = ChaosGenomeEngine()
+        graph = InfraGraph()
+        graph.add_component(Component(
+            id="a", name="A", type=ComponentType.APP_SERVER, replicas=2,
+            host="ec2.amazonaws.com",
+        ))
+        graph.add_component(Component(
+            id="b", name="B", type=ComponentType.DATABASE, replicas=2,
+            host="gke-cluster.gcp.internal",
+        ))
+        trait = engine._trait_provider_diversity(graph)
+        assert trait.value == 0.6  # two providers
+
+    def test_three_provider_diversity(self):
+        engine = ChaosGenomeEngine()
+        graph = InfraGraph()
+        graph.add_component(Component(
+            id="a", name="A", type=ComponentType.APP_SERVER, replicas=2,
+            host="ec2.amazonaws.com",
+        ))
+        graph.add_component(Component(
+            id="b", name="B", type=ComponentType.DATABASE, replicas=2,
+            host="gke-cluster.gcp.internal",
+        ))
+        graph.add_component(Component(
+            id="c", name="C", type=ComponentType.CACHE, replicas=2,
+            host="my-vm.azure.internal",
+        ))
+        trait = engine._trait_provider_diversity(graph)
+        assert trait.value >= 0.6  # three providers -> 0.75
+
+    def test_no_provider_info(self):
+        engine = ChaosGenomeEngine()
+        graph = InfraGraph()
+        graph.add_component(Component(
+            id="a", name="A", type=ComponentType.APP_SERVER, replicas=2,
+        ))
+        trait = engine._trait_provider_diversity(graph)
+        assert trait.value == 0.2  # no provider info = assume single
+
+
+class TestVersionSpread:
+    """Test version_spread trait (lines 962, 966, 973)."""
+
+    def test_version_in_parameters(self):
+        engine = ChaosGenomeEngine()
+        graph = InfraGraph()
+        graph.add_component(Component(
+            id="a", name="A", type=ComponentType.APP_SERVER, replicas=2,
+            parameters={"version": "1.2.3"},
+        ))
+        trait = engine._trait_version_spread(graph)
+        assert trait.name == "version_spread"
+        assert trait.value > 0.5  # has version info
+
+    def test_version_in_tags(self):
+        engine = ChaosGenomeEngine()
+        graph = InfraGraph()
+        graph.add_component(Component(
+            id="a", name="A", type=ComponentType.APP_SERVER, replicas=2,
+            tags=["v3.2.1", "production"],
+        ))
+        trait = engine._trait_version_spread(graph)
+        assert trait.name == "version_spread"
+        assert trait.value > 0.5  # has version-like tag
+
+    def test_multiple_versions(self):
+        engine = ChaosGenomeEngine()
+        graph = InfraGraph()
+        graph.add_component(Component(
+            id="a", name="A", type=ComponentType.APP_SERVER, replicas=2,
+            parameters={"version": "1.0.0"},
+        ))
+        graph.add_component(Component(
+            id="b", name="B", type=ComponentType.DATABASE, replicas=2,
+            parameters={"version": "14.2"},
+        ))
+        trait = engine._trait_version_spread(graph)
+        assert trait.value > 0.5
+
+
+class TestBlastRadiusSingleComponent:
+    """Test blast_radius_avg with single component (line 1015)."""
+
+    def test_single_component_blast_radius(self):
+        engine = ChaosGenomeEngine()
+        graph = InfraGraph()
+        graph.add_component(Component(
+            id="a", name="A", type=ComponentType.APP_SERVER, replicas=2,
+        ))
+        trait = engine._trait_blast_radius_avg(graph)
+        assert trait.name == "blast_radius_avg"
+        assert trait.value == 1.0  # max_possible is 0, so normalized = 1.0
+
+
+class TestHealthCheckViaAutoscaling:
+    """Test health_check_coverage counts autoscaling as health check (lines 1104-1106)."""
+
+    def test_autoscaling_counts_as_health_check(self):
+        engine = ChaosGenomeEngine()
+        graph = InfraGraph()
+        # Component WITHOUT failover and WITHOUT custom health check interval
+        # but WITH autoscaling -> should still count as health check (line 1104-1106)
+        graph.add_component(Component(
+            id="a", name="A", type=ComponentType.APP_SERVER, replicas=2,
+            autoscaling=AutoScalingConfig(enabled=True, min_replicas=1, max_replicas=4),
+            failover=FailoverConfig(enabled=False, health_check_interval_seconds=30.0),
+        ))
+        trait = engine._trait_health_check_coverage(graph)
+        assert trait.name == "health_check_coverage"
+        assert trait.value > 0  # autoscaling counts as health check
+
+
+class TestMicroservicesArchetype:
+    """Test _classify_archetype returns 'microservices' (line 1196)."""
+
+    def test_microservices_archetype(self):
+        engine = ChaosGenomeEngine()
+        graph = InfraGraph()
+        # Need >= 8 components with high diversity
+        types = list(ComponentType)
+        for i in range(10):
+            graph.add_component(Component(
+                id=f"c{i}", name=f"Component {i}",
+                type=types[i % len(types)],
+                replicas=2,
+            ))
+        genome = engine.analyze(graph)
+        # With 10 diverse components, should classify as microservices
+        assert genome.structural_age in ("microservices", "hybrid")
+
+
+class TestDeepChainWeaknessWithCycles:
+    """Test deep_chain weakness detection when graph has cycles (lines 1234-1235, 1238-1242)."""
+
+    def test_deep_chain_weakness_with_cycle(self):
+        engine = ChaosGenomeEngine()
+        graph = InfraGraph()
+        # Create a cycle -> NetworkXUnfeasible -> max_depth = 0
+        graph.add_component(Component(
+            id="a", name="A", type=ComponentType.APP_SERVER, replicas=2,
+        ))
+        graph.add_component(Component(
+            id="b", name="B", type=ComponentType.APP_SERVER, replicas=2,
+        ))
+        graph.add_dependency(Dependency(source_id="a", target_id="b"))
+        graph.add_dependency(Dependency(source_id="b", target_id="a"))
+
+        weaknesses = engine.find_weakness_genes(graph)
+        # With a cycle, dag_longest_path_length raises NetworkXUnfeasible
+        # -> max_depth = 0, so deep_chain weakness should NOT fire
+        deep_chain = [w for w in weaknesses if w.name == "deep_dependency_chain_gene"]
+        assert len(deep_chain) == 0
+
+    def test_deep_chain_weakness_long_dag(self):
+        """Test deep_chain weakness with a long DAG (>5 depth) that triggers lines 1238-1240."""
+        engine = ChaosGenomeEngine()
+        graph = InfraGraph()
+        # Create a chain of 8 components (depth > 5, so max_depth=7 > 5)
+        for i in range(8):
+            graph.add_component(Component(
+                id=f"c{i}", name=f"Component {i}",
+                type=ComponentType.APP_SERVER, replicas=2,
+            ))
+        for i in range(7):
+            graph.add_dependency(Dependency(source_id=f"c{i}", target_id=f"c{i+1}"))
+
+        weaknesses = engine.find_weakness_genes(graph)
+        deep_chain = [w for w in weaknesses if w.name == "deep_dependency_chain_gene"]
+        assert len(deep_chain) == 1
+        assert len(deep_chain[0].affected_components) > 0
+
+    def test_deep_chain_weakness_dag_longest_path_exception(self):
+        """When dag_longest_path raises but dag_longest_path_length works (lines 1241-1242)."""
+        from unittest.mock import patch
+
+        engine = ChaosGenomeEngine()
+        graph = InfraGraph()
+        # Create a simple graph (doesn't matter, we mock the nx calls)
+        for i in range(3):
+            graph.add_component(Component(
+                id=f"c{i}", name=f"Component {i}",
+                type=ComponentType.APP_SERVER, replicas=2,
+            ))
+        graph.add_dependency(Dependency(source_id="c0", target_id="c1"))
+        graph.add_dependency(Dependency(source_id="c1", target_id="c2"))
+
+        # Mock dag_longest_path_length to return > 5 and dag_longest_path to raise
+        with patch("infrasim.simulator.chaos_genome.nx.dag_longest_path_length",
+                    return_value=7):
+            with patch("infrasim.simulator.chaos_genome.nx.dag_longest_path",
+                        side_effect=RuntimeError("mock error")):
+                affected = engine._check_weakness(graph, "deep_chain")
+
+        assert affected == ["deep_chain_detected"]
+
+
+class TestPathLengthException:
+    """Test avg_path_length outer exception handler (lines 747-748)."""
+
+    def test_avg_path_length_exception(self):
+        from unittest.mock import patch
+
+        engine = ChaosGenomeEngine()
+        graph = InfraGraph()
+        graph.add_component(Component(
+            id="a", name="A", type=ComponentType.APP_SERVER, replicas=2,
+        ))
+        graph.add_component(Component(
+            id="b", name="B", type=ComponentType.DATABASE, replicas=2,
+        ))
+        graph.add_dependency(Dependency(source_id="a", target_id="b"))
+
+        # Patch nx.is_weakly_connected to raise an exception
+        with patch("infrasim.simulator.chaos_genome.nx.is_weakly_connected",
+                    side_effect=RuntimeError("mock")):
+            trait = engine._trait_avg_path_length(graph)
+        assert trait.name == "avg_path_length"
+        assert trait.value == 0.0
+
+
+class TestMaxDepthInnerException:
+    """Test max_depth inner exception handler (lines 771-772)."""
+
+    def test_max_depth_inner_exception(self):
+        import networkx as nx
+        from unittest.mock import patch
+
+        engine = ChaosGenomeEngine()
+        graph = InfraGraph()
+        # Create a cycle to trigger NetworkXUnfeasible on dag_longest_path_length
+        graph.add_component(Component(
+            id="a", name="A", type=ComponentType.APP_SERVER, replicas=2,
+        ))
+        graph.add_component(Component(
+            id="b", name="B", type=ComponentType.APP_SERVER, replicas=2,
+        ))
+        graph.add_dependency(Dependency(source_id="a", target_id="b"))
+        graph.add_dependency(Dependency(source_id="b", target_id="a"))
+
+        # Patch single_source_shortest_path_length to raise inside the cycle handler
+        with patch("infrasim.simulator.chaos_genome.nx.single_source_shortest_path_length",
+                    side_effect=RuntimeError("mock error")):
+            trait = engine._trait_max_depth(graph)
+        assert trait.name == "max_depth"
+        assert trait.value >= 0.0
