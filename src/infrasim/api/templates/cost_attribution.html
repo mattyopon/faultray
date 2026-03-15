@@ -1,0 +1,223 @@
+{% extends "base.html" %}
+{% set active_page = "cost_attribution" %}
+
+{% block title %}FaultRay - Cost Attribution{% endblock %}
+{% block page_title %}Failure Cost Attribution{% endblock %}
+{% block page_subtitle %}<span class="page-subtitle">Risk ownership by team, service, and component</span>{% endblock %}
+
+{% block content %}
+<div class="dashboard-grid">
+
+    <!-- Total Annual Risk -->
+    <div class="card">
+        <div class="card-header">
+            <h3>Total Annual Risk</h3>
+        </div>
+        <div class="card-body score-display">
+            <div style="text-align: center;">
+                {% if report %}
+                {% set risk = report.total_annual_risk %}
+                {% set risk_color = 'var(--green)' if risk < 100000 else ('var(--yellow)' if risk < 1000000 else 'var(--red)') %}
+                <div class="score-card-big-value" style="color: {{ risk_color }}; font-size: 48px;">
+                    ${{ "{:,.0f}".format(risk) }}
+                </div>
+                <div class="score-card-label" style="margin-top: 8px;">Estimated Annual Risk</div>
+                <div class="score-card-sub">Across {{ report.components|length }} components, {{ report.teams|length }} teams</div>
+                {% else %}
+                <div class="score-card-big-value" style="color: var(--text-muted); font-size: 48px;">--</div>
+                <div class="score-card-label">No data available</div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Team Risk Allocation (CSS conic-gradient pie chart) -->
+    <div class="card">
+        <div class="card-header">
+            <h3>Team Risk Allocation</h3>
+        </div>
+        <div class="card-body" style="display: flex; align-items: center; justify-content: center; gap: 24px; padding: 24px;">
+            {% if report and report.teams %}
+            {% set colors = ['#e94560', '#0984e3', '#f0a500', '#00b894', '#6c5ce7', '#fd79a8'] %}
+            <div style="width: 140px; height: 140px; border-radius: 50%;
+                background: conic-gradient(
+                    {% for team in report.teams %}
+                    {{ colors[loop.index0 % 6] }} {% if loop.index0 > 0 %}{{ (report.teams[:loop.index0]|map(attribute='percentage_of_total_risk')|sum) }}%{% else %}0%{% endif %} {{ (report.teams[:loop.index]|map(attribute='percentage_of_total_risk')|sum) }}%{% if not loop.last %},{% endif %}
+                    {% endfor %}
+                );
+                display: flex; align-items: center; justify-content: center;">
+                <div style="width: 80px; height: 80px; border-radius: 50%; background: var(--bg-card); display: flex; align-items: center; justify-content: center; flex-direction: column;">
+                    <span style="font-size: 12px; font-weight: 700; color: var(--text-primary);">{{ report.teams|length }}</span>
+                    <span style="font-size: 9px; color: var(--text-muted);">TEAMS</span>
+                </div>
+            </div>
+            <div style="display: flex; flex-direction: column; gap: 6px;">
+                {% for team in report.teams %}
+                <div style="display: flex; align-items: center; gap: 8px; font-size: 12px;">
+                    <span style="width: 10px; height: 10px; border-radius: 2px; background: {{ colors[loop.index0 % 6] }};"></span>
+                    <span style="color: var(--text-secondary);">{{ team.name }} ({{ team.percentage_of_total_risk|round(1) }}%)</span>
+                </div>
+                {% endfor %}
+            </div>
+            {% else %}
+            <div style="color: var(--text-muted); text-align: center;">No team data</div>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Component Cost Treemap -->
+    <div class="card" style="grid-column: span 2;">
+        <div class="card-header">
+            <h3>Component Risk Treemap</h3>
+        </div>
+        <div class="card-body" style="padding: 16px;">
+            {% if report and report.components %}
+            <div style="display: flex; flex-wrap: wrap; gap: 4px; min-height: 200px;">
+                {% set colors_map = {'backend': '#e94560', 'data': '#0984e3', 'infra': '#f0a500', 'platform': '#00b894', 'messaging': '#6c5ce7'} %}
+                {% for comp in report.components %}
+                {% if comp.percentage_of_total_risk > 0.5 %}
+                {% set size = [comp.percentage_of_total_risk * 3, 30]|max %}
+                {% set bg = colors_map.get(comp.team, '#6c5ce7') %}
+                <div style="
+                    flex: {{ size }} 1 0;
+                    min-width: 80px;
+                    min-height: 60px;
+                    background: {{ bg }}22;
+                    border: 1px solid {{ bg }}66;
+                    border-radius: 6px;
+                    padding: 8px;
+                    display: flex;
+                    flex-direction: column;
+                    justify-content: center;
+                    cursor: default;
+                    transition: transform 0.15s;
+                " title="{{ comp.name }}: ${{ '{:,.0f}'.format(comp.total_annual_risk) }} annual risk">
+                    <div style="font-size: 11px; font-weight: 600; color: var(--text-primary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
+                        {{ comp.id }}
+                    </div>
+                    <div style="font-size: 16px; font-weight: 700; color: {{ bg }};">
+                        ${{ "{:,.0f}".format(comp.total_annual_risk) }}
+                    </div>
+                    <div style="font-size: 10px; color: var(--text-muted);">
+                        {{ comp.team }} &middot; {{ comp.percentage_of_total_risk|round(1) }}%
+                    </div>
+                </div>
+                {% endif %}
+                {% endfor %}
+            </div>
+            {% else %}
+            <div style="color: var(--text-muted); text-align: center; padding: 40px;">No component data available</div>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- ROI Ranking Table -->
+    <div class="card" style="grid-column: span 2;">
+        <div class="card-header">
+            <h3>Improvement ROI Ranking</h3>
+        </div>
+        <div class="card-body" style="padding: 0;">
+            {% if report and report.components %}
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>Rank</th>
+                        <th>Component</th>
+                        <th>Team</th>
+                        <th>Annual Risk</th>
+                        <th>Direct Cost</th>
+                        <th>Cascade Cost</th>
+                        <th>ROI</th>
+                        <th>Priority</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for comp in report.components[:10] %}
+                    <tr>
+                        <td style="color: var(--text-muted);">{{ loop.index }}</td>
+                        <td style="font-weight: 600;">{{ comp.id }}</td>
+                        <td>{{ comp.team }}</td>
+                        <td style="font-weight: 600; color: {% if comp.total_annual_risk > 100000 %}var(--red){% elif comp.total_annual_risk > 10000 %}var(--yellow){% else %}var(--green){% endif %};">
+                            ${{ "{:,.0f}".format(comp.total_annual_risk) }}
+                        </td>
+                        <td>${{ "{:,.0f}".format(comp.direct_cost) }}</td>
+                        <td>${{ "{:,.0f}".format(comp.cascade_cost) }}</td>
+                        <td style="font-weight: 600;">{{ comp.improvement_roi|round(2) }}x</td>
+                        <td>
+                            {% if comp.improvement_roi > 5 %}
+                            <span style="background: var(--red); color: #fff; padding: 2px 8px; border-radius: 4px; font-size: 11px;">CRITICAL</span>
+                            {% elif comp.improvement_roi > 1 %}
+                            <span style="background: var(--yellow); color: #000; padding: 2px 8px; border-radius: 4px; font-size: 11px;">HIGH</span>
+                            {% else %}
+                            <span style="background: var(--green); color: #fff; padding: 2px 8px; border-radius: 4px; font-size: 11px;">NORMAL</span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+            {% else %}
+            <div style="color: var(--text-muted); text-align: center; padding: 40px;">No data available</div>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Team Budget Allocation -->
+    <div class="card">
+        <div class="card-header">
+            <h3>Budget Allocation</h3>
+        </div>
+        <div class="card-body" style="padding: 16px;">
+            {% if report and report.teams %}
+            {% set colors = ['#e94560', '#0984e3', '#f0a500', '#00b894', '#6c5ce7', '#fd79a8'] %}
+            {% for team in report.teams %}
+            <div style="margin-bottom: 12px;">
+                <div style="display: flex; justify-content: space-between; font-size: 13px; margin-bottom: 4px;">
+                    <span style="color: var(--text-secondary);">{{ team.name }}</span>
+                    <span style="font-weight: 600; color: var(--text-primary);">${{ "{:,.0f}".format(team.recommended_budget) }}</span>
+                </div>
+                <div style="height: 8px; background: var(--bg-hover); border-radius: 4px; overflow: hidden;">
+                    {% set max_budget = report.teams[0].recommended_budget if report.teams[0].recommended_budget > 0 else 1 %}
+                    <div style="height: 100%; width: {{ (team.recommended_budget / max_budget * 100)|round(1) }}%; background: {{ colors[loop.index0 % 6] }}; border-radius: 4px;"></div>
+                </div>
+            </div>
+            {% endfor %}
+            <div style="margin-top: 16px; padding-top: 12px; border-top: 1px solid var(--border-color);">
+                <div style="display: flex; justify-content: space-between; font-size: 14px; font-weight: 700;">
+                    <span>Total Recommended</span>
+                    <span style="color: var(--accent);">${{ "{:,.0f}".format(report.teams|map(attribute='recommended_budget')|sum) }}</span>
+                </div>
+            </div>
+            {% else %}
+            <div style="color: var(--text-muted); text-align: center;">No budget data</div>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Cost Reduction Opportunities -->
+    <div class="card">
+        <div class="card-header">
+            <h3>Reduction Opportunities</h3>
+        </div>
+        <div class="card-body" style="padding: 16px;">
+            {% if report and report.opportunities %}
+            {% for opp in report.opportunities %}
+            <div style="padding: 10px 0; {% if not loop.last %}border-bottom: 1px solid var(--border-color);{% endif %}">
+                <div style="display: flex; justify-content: space-between; align-items: center;">
+                    <div>
+                        <div style="font-size: 13px; font-weight: 600; color: var(--text-primary);">{{ opp.component }}</div>
+                        <div style="font-size: 11px; color: var(--text-muted);">{{ opp.action }}</div>
+                    </div>
+                    <div style="font-size: 14px; font-weight: 700; color: var(--green);">
+                        -${{ "{:,.0f}".format(opp.savings) }}
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+            {% else %}
+            <div style="color: var(--text-muted); text-align: center;">No opportunities found</div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

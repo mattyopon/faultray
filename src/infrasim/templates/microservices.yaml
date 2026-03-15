@@ -1,0 +1,334 @@
+# ChaosProof Template: Microservices Architecture
+#
+# Architecture: API Gateway -> Services (User/Order/Product) -> DB + Queue + Cache
+# Use case: Event-driven microservices with async communication
+#
+# Load with:
+#   infrasim template use microservices --output my-infra.yaml
+
+schema_version: "3.0"
+
+components:
+  - id: api-gateway
+    name: "API Gateway"
+    type: load_balancer
+    host: gw.svc.internal
+    port: 443
+    replicas: 3
+    capacity:
+      max_connections: 50000
+      max_rps: 100000
+    metrics:
+      cpu_percent: 18
+      memory_percent: 20
+      network_connections: 2000
+    autoscaling:
+      enabled: true
+      min_replicas: 2
+      max_replicas: 6
+    failover:
+      enabled: true
+      promotion_time_seconds: 5
+    security:
+      encryption_in_transit: true
+      waf_protected: true
+      rate_limiting: true
+      auth_required: true
+      log_enabled: true
+      ids_monitored: true
+    cost_profile:
+      hourly_infra_cost: 0.40
+    compliance_tags:
+      data_classification: internal
+      audit_logging: true
+
+  - id: user-service
+    name: "User Service"
+    type: app_server
+    host: user.svc.internal
+    port: 8080
+    replicas: 3
+    capacity:
+      max_connections: 3000
+      max_rps: 15000
+      connection_pool_size: 100
+      timeout_seconds: 10
+      max_memory_mb: 2048
+    metrics:
+      cpu_percent: 30
+      memory_percent: 40
+      network_connections: 400
+    autoscaling:
+      enabled: true
+      min_replicas: 2
+      max_replicas: 10
+    security:
+      encryption_in_transit: true
+      auth_required: true
+      log_enabled: true
+    cost_profile:
+      hourly_infra_cost: 0.35
+    compliance_tags:
+      data_classification: confidential
+      contains_pii: true
+
+  - id: order-service
+    name: "Order Service"
+    type: app_server
+    host: order.svc.internal
+    port: 8081
+    replicas: 3
+    capacity:
+      max_connections: 3000
+      max_rps: 12000
+      connection_pool_size: 100
+      timeout_seconds: 15
+      max_memory_mb: 2048
+    metrics:
+      cpu_percent: 35
+      memory_percent: 42
+      network_connections: 350
+    autoscaling:
+      enabled: true
+      min_replicas: 2
+      max_replicas: 10
+    security:
+      encryption_in_transit: true
+      auth_required: true
+      log_enabled: true
+    cost_profile:
+      hourly_infra_cost: 0.35
+    compliance_tags:
+      data_classification: confidential
+
+  - id: product-service
+    name: "Product Service"
+    type: app_server
+    host: product.svc.internal
+    port: 8082
+    replicas: 2
+    capacity:
+      max_connections: 5000
+      max_rps: 20000
+      connection_pool_size: 50
+      timeout_seconds: 10
+      max_memory_mb: 2048
+    metrics:
+      cpu_percent: 20
+      memory_percent: 30
+      network_connections: 600
+    autoscaling:
+      enabled: true
+      min_replicas: 2
+      max_replicas: 8
+    security:
+      encryption_in_transit: true
+      log_enabled: true
+    cost_profile:
+      hourly_infra_cost: 0.30
+    compliance_tags:
+      data_classification: internal
+
+  - id: user-db
+    name: "User Database (PostgreSQL)"
+    type: database
+    host: userdb.svc.internal
+    port: 5432
+    replicas: 2
+    capacity:
+      max_connections: 300
+      max_disk_gb: 100
+      max_memory_mb: 8192
+    metrics:
+      cpu_percent: 22
+      memory_percent: 50
+      disk_percent: 30
+      network_connections: 80
+    failover:
+      enabled: true
+      promotion_time_seconds: 20
+    security:
+      encryption_at_rest: true
+      encryption_in_transit: true
+      backup_enabled: true
+      backup_frequency_hours: 4
+      network_segmented: true
+      log_enabled: true
+    cost_profile:
+      hourly_infra_cost: 0.90
+    compliance_tags:
+      data_classification: confidential
+      contains_pii: true
+      audit_logging: true
+
+  - id: order-db
+    name: "Order Database (PostgreSQL)"
+    type: database
+    host: orderdb.svc.internal
+    port: 5432
+    replicas: 2
+    capacity:
+      max_connections: 300
+      max_disk_gb: 200
+      max_memory_mb: 8192
+    metrics:
+      cpu_percent: 28
+      memory_percent: 45
+      disk_percent: 40
+      network_connections: 90
+    failover:
+      enabled: true
+      promotion_time_seconds: 20
+    security:
+      encryption_at_rest: true
+      encryption_in_transit: true
+      backup_enabled: true
+      backup_frequency_hours: 4
+      network_segmented: true
+      log_enabled: true
+    cost_profile:
+      hourly_infra_cost: 0.90
+    compliance_tags:
+      data_classification: confidential
+      audit_logging: true
+
+  - id: message-queue
+    name: "RabbitMQ Message Queue"
+    type: queue
+    host: mq.svc.internal
+    port: 5672
+    replicas: 3
+    capacity:
+      max_connections: 5000
+    metrics:
+      cpu_percent: 15
+      memory_percent: 30
+      disk_percent: 20
+      network_connections: 200
+    failover:
+      enabled: true
+      promotion_time_seconds: 15
+    security:
+      encryption_in_transit: true
+      auth_required: true
+      network_segmented: true
+      log_enabled: true
+    cost_profile:
+      hourly_infra_cost: 0.45
+    compliance_tags:
+      data_classification: internal
+
+  - id: cache
+    name: "Redis Cache"
+    type: cache
+    host: cache.svc.internal
+    port: 6379
+    replicas: 2
+    capacity:
+      max_connections: 15000
+      max_memory_mb: 8192
+    metrics:
+      cpu_percent: 12
+      memory_percent: 60
+      network_connections: 500
+    failover:
+      enabled: true
+      promotion_time_seconds: 5
+    security:
+      encryption_in_transit: true
+      auth_required: true
+      network_segmented: true
+    cost_profile:
+      hourly_infra_cost: 0.50
+    compliance_tags:
+      data_classification: internal
+
+dependencies:
+  - source: api-gateway
+    target: user-service
+    type: requires
+    protocol: http
+    latency_ms: 2.0
+    circuit_breaker:
+      enabled: true
+      failure_threshold: 5
+      recovery_timeout_seconds: 30
+
+  - source: api-gateway
+    target: order-service
+    type: requires
+    protocol: http
+    latency_ms: 2.0
+    circuit_breaker:
+      enabled: true
+      failure_threshold: 5
+      recovery_timeout_seconds: 30
+
+  - source: api-gateway
+    target: product-service
+    type: requires
+    protocol: http
+    latency_ms: 2.0
+    circuit_breaker:
+      enabled: true
+      failure_threshold: 5
+      recovery_timeout_seconds: 30
+
+  - source: user-service
+    target: user-db
+    type: requires
+    protocol: tcp
+    port: 5432
+    latency_ms: 1.5
+    circuit_breaker:
+      enabled: true
+      failure_threshold: 3
+    retry_strategy:
+      enabled: true
+      max_retries: 3
+
+  - source: order-service
+    target: order-db
+    type: requires
+    protocol: tcp
+    port: 5432
+    latency_ms: 1.5
+    circuit_breaker:
+      enabled: true
+      failure_threshold: 3
+    retry_strategy:
+      enabled: true
+      max_retries: 3
+
+  - source: order-service
+    target: message-queue
+    type: async
+    protocol: amqp
+    port: 5672
+    latency_ms: 3.0
+    weight: 0.8
+    circuit_breaker:
+      enabled: true
+      failure_threshold: 5
+
+  - source: user-service
+    target: cache
+    type: optional
+    protocol: tcp
+    port: 6379
+    latency_ms: 0.5
+    weight: 0.6
+    circuit_breaker:
+      enabled: true
+      failure_threshold: 5
+
+  - source: product-service
+    target: cache
+    type: optional
+    protocol: tcp
+    port: 6379
+    latency_ms: 0.5
+    weight: 0.6
+    circuit_breaker:
+      enabled: true
+      failure_threshold: 5

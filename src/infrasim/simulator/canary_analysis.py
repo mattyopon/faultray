@@ -11,7 +11,7 @@ from __future__ import annotations
 
 import logging
 from dataclasses import dataclass, field
-from datetime import datetime
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
@@ -62,7 +62,7 @@ class CanaryResult:
     marginal_count: int
     summary: str
     recommendations: list[str]
-    timestamp: datetime = field(default_factory=datetime.utcnow)
+    timestamp: datetime = field(default_factory=lambda: datetime.now(timezone.utc))
 
     def to_dict(self) -> dict:
         return {

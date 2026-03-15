@@ -1,0 +1,359 @@
+# ChaosProof Template: Fintech / Banking Platform
+#
+# Architecture: WAF -> LB -> API -> DB Primary + DB Replica + Cache + Queue + HSM
+# Use case: Financial services platform with strict compliance (PCI DSS, SOC2)
+#
+# Load with:
+#   infrasim template use fintech --output my-infra.yaml
+
+schema_version: "3.0"
+
+components:
+  - id: waf
+    name: "Web Application Firewall"
+    type: custom
+    host: waf.bank.internal
+    port: 443
+    replicas: 3
+    capacity:
+      max_connections: 80000
+      max_rps: 150000
+    metrics:
+      cpu_percent: 12
+      memory_percent: 15
+      network_connections: 5000
+    failover:
+      enabled: true
+      promotion_time_seconds: 5
+    security:
+      encryption_in_transit: true
+      waf_protected: true
+      rate_limiting: true
+      ids_monitored: true
+      log_enabled: true
+    cost_profile:
+      hourly_infra_cost: 0.60
+    compliance_tags:
+      data_classification: internal
+      pci_scope: true
+      audit_logging: true
+      change_management: true
+
+  - id: lb
+    name: "Load Balancer (HAProxy)"
+    type: load_balancer
+    host: lb.bank.internal
+    port: 443
+    replicas: 2
+    capacity:
+      max_connections: 50000
+      max_rps: 80000
+    metrics:
+      cpu_percent: 15
+      memory_percent: 18
+      network_connections: 4000
+    failover:
+      enabled: true
+      promotion_time_seconds: 8
+    security:
+      encryption_in_transit: true
+      rate_limiting: true
+      log_enabled: true
+    cost_profile:
+      hourly_infra_cost: 0.35
+    compliance_tags:
+      data_classification: internal
+      pci_scope: true
+      audit_logging: true
+
+  - id: api-server
+    name: "Banking API (Java/Spring)"
+    type: app_server
+    host: api.bank.internal
+    port: 8443
+    replicas: 4
+    capacity:
+      max_connections: 5000
+      max_rps: 15000
+      connection_pool_size: 300
+      timeout_seconds: 10
+      max_memory_mb: 8192
+    metrics:
+      cpu_percent: 35
+      memory_percent: 55
+      network_connections: 1200
+    autoscaling:
+      enabled: true
+      min_replicas: 3
+      max_replicas: 12
+      scale_up_threshold: 60
+      scale_down_threshold: 25
+    security:
+      encryption_at_rest: true
+      encryption_in_transit: true
+      auth_required: true
+      network_segmented: true
+      log_enabled: true
+      ids_monitored: true
+    cost_profile:
+      hourly_infra_cost: 0.80
+      revenue_per_minute: 500.0
+    compliance_tags:
+      data_classification: restricted
+      pci_scope: true
+      contains_pii: true
+      audit_logging: true
+      change_management: true
+
+  - id: db-primary
+    name: "Primary Database (PostgreSQL)"
+    type: database
+    host: db-primary.bank.internal
+    port: 5432
+    replicas: 2
+    capacity:
+      max_connections: 500
+      max_disk_gb: 1000
+      max_memory_mb: 32768
+    metrics:
+      cpu_percent: 30
+      memory_percent: 60
+      disk_percent: 35
+      network_connections: 200
+    failover:
+      enabled: true
+      promotion_time_seconds: 15
+      health_check_interval_seconds: 3
+      failover_threshold: 2
+    region:
+      region: us-east-1
+      is_primary: true
+      dr_target_region: us-west-2
+      rpo_seconds: 30
+      rto_seconds: 300
+    security:
+      encryption_at_rest: true
+      encryption_in_transit: true
+      backup_enabled: true
+      backup_frequency_hours: 1
+      network_segmented: true
+      log_enabled: true
+      ids_monitored: true
+    cost_profile:
+      hourly_infra_cost: 3.00
+      data_loss_cost_per_gb: 50000.0
+    compliance_tags:
+      data_classification: restricted
+      pci_scope: true
+      contains_pii: true
+      audit_logging: true
+      change_management: true
+
+  - id: db-replica
+    name: "Read Replica Database"
+    type: database
+    host: db-replica.bank.internal
+    port: 5432
+    replicas: 2
+    capacity:
+      max_connections: 500
+      max_disk_gb: 1000
+      max_memory_mb: 32768
+    metrics:
+      cpu_percent: 20
+      memory_percent: 50
+      disk_percent: 34
+      network_connections: 150
+    region:
+      region: us-west-2
+      is_primary: false
+    security:
+      encryption_at_rest: true
+      encryption_in_transit: true
+      backup_enabled: true
+      backup_frequency_hours: 1
+      network_segmented: true
+      log_enabled: true
+    cost_profile:
+      hourly_infra_cost: 2.50
+    compliance_tags:
+      data_classification: restricted
+      pci_scope: true
+      contains_pii: true
+      audit_logging: true
+
+  - id: redis-cache
+    name: "Redis Cache (Encrypted)"
+    type: cache
+    host: cache.bank.internal
+    port: 6380
+    replicas: 3
+    capacity:
+      max_connections: 15000
+      max_memory_mb: 16384
+    metrics:
+      cpu_percent: 12
+      memory_percent: 50
+      network_connections: 800
+    failover:
+      enabled: true
+      promotion_time_seconds: 5
+    security:
+      encryption_at_rest: true
+      encryption_in_transit: true
+      auth_required: true
+      network_segmented: true
+      log_enabled: true
+    cost_profile:
+      hourly_infra_cost: 0.60
+    compliance_tags:
+      data_classification: confidential
+      pci_scope: true
+
+  - id: tx-queue
+    name: "Transaction Queue (Kafka)"
+    type: queue
+    host: kafka.bank.internal
+    port: 9093
+    replicas: 3
+    capacity:
+      max_connections: 10000
+      max_disk_gb: 500
+    metrics:
+      cpu_percent: 18
+      memory_percent: 40
+      disk_percent: 30
+      network_connections: 500
+    failover:
+      enabled: true
+      promotion_time_seconds: 10
+    security:
+      encryption_at_rest: true
+      encryption_in_transit: true
+      auth_required: true
+      network_segmented: true
+      log_enabled: true
+    cost_profile:
+      hourly_infra_cost: 0.70
+    compliance_tags:
+      data_classification: restricted
+      pci_scope: true
+      audit_logging: true
+
+  - id: hsm
+    name: "Hardware Security Module"
+    type: custom
+    host: hsm.bank.internal
+    port: 9443
+    replicas: 2
+    capacity:
+      max_connections: 1000
+      max_rps: 5000
+    metrics:
+      cpu_percent: 20
+      memory_percent: 15
+      network_connections: 100
+    failover:
+      enabled: true
+      promotion_time_seconds: 3
+    security:
+      encryption_at_rest: true
+      encryption_in_transit: true
+      auth_required: true
+      network_segmented: true
+      log_enabled: true
+      ids_monitored: true
+    cost_profile:
+      hourly_infra_cost: 2.00
+    compliance_tags:
+      data_classification: restricted
+      pci_scope: true
+      audit_logging: true
+      change_management: true
+
+dependencies:
+  - source: waf
+    target: lb
+    type: requires
+    protocol: http
+    latency_ms: 1.0
+    circuit_breaker:
+      enabled: true
+      failure_threshold: 3
+      recovery_timeout_seconds: 30
+
+  - source: lb
+    target: api-server
+    type: requires
+    protocol: http
+    latency_ms: 1.0
+    circuit_breaker:
+      enabled: true
+      failure_threshold: 3
+      recovery_timeout_seconds: 30
+
+  - source: api-server
+    target: db-primary
+    type: requires
+    protocol: tcp
+    port: 5432
+    latency_ms: 2.0
+    circuit_breaker:
+      enabled: true
+      failure_threshold: 2
+      recovery_timeout_seconds: 60
+    retry_strategy:
+      enabled: true
+      max_retries: 3
+      initial_delay_ms: 50
+      max_delay_ms: 5000
+
+  - source: api-server
+    target: db-replica
+    type: optional
+    protocol: tcp
+    port: 5432
+    latency_ms: 15.0
+    weight: 0.5
+
+  - source: api-server
+    target: redis-cache
+    type: optional
+    protocol: tcp
+    port: 6380
+    latency_ms: 0.5
+    weight: 0.7
+    circuit_breaker:
+      enabled: true
+      failure_threshold: 5
+      recovery_timeout_seconds: 15
+
+  - source: api-server
+    target: tx-queue
+    type: requires
+    protocol: tcp
+    port: 9093
+    latency_ms: 3.0
+    circuit_breaker:
+      enabled: true
+      failure_threshold: 3
+      recovery_timeout_seconds: 30
+    retry_strategy:
+      enabled: true
+      max_retries: 5
+      initial_delay_ms: 100
+
+  - source: api-server
+    target: hsm
+    type: requires
+    protocol: http
+    port: 9443
+    latency_ms: 5.0
+    circuit_breaker:
+      enabled: true
+      failure_threshold: 2
+      recovery_timeout_seconds: 30
+    retry_strategy:
+      enabled: true
+      max_retries: 2
+      initial_delay_ms: 200

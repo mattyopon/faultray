@@ -1,0 +1,208 @@
+{% extends "base.html" %}
+{% set active_page = "anomaly" %}
+
+{% block title %}FaultRay - Anomaly Detection{% endblock %}
+{% block page_title %}Anomaly Detection{% endblock %}
+{% block page_subtitle %}<span class="page-subtitle">Statistical outlier & anti-pattern analysis</span>{% endblock %}
+
+{% block content %}
+<div x-data="anomalyDetector()" x-init="init()">
+    {% if not has_data %}
+    <div class="empty-inline">
+        <h3>No Infrastructure Loaded</h3>
+        <p>Load infrastructure data to run anomaly detection.</p>
+    </div>
+    {% else %}
+    <!-- Summary Cards -->
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 16px; margin-bottom: 24px;">
+        <div class="card" style="padding: 16px; text-align: center;">
+            <div style="font-size: 0.8em; color: var(--text-secondary);">Components Analyzed</div>
+            <div style="font-size: 2em; font-weight: bold; color: var(--accent);" x-text="report.total_components_analyzed || 0"></div>
+        </div>
+        <div class="card" style="padding: 16px; text-align: center;">
+            <div style="font-size: 0.8em; color: var(--text-secondary);">Anomaly Rate</div>
+            <div style="font-size: 2em; font-weight: bold;"
+                 :style="`color: ${report.anomaly_rate > 50 ? '#e94560' : report.anomaly_rate > 20 ? '#f0a500' : '#00b894'}`"
+                 x-text="(report.anomaly_rate || 0).toFixed(1) + '%'"></div>
+        </div>
+        <div class="card" style="padding: 16px; text-align: center;">
+            <div style="font-size: 0.8em; color: var(--text-secondary);">Critical</div>
+            <div style="font-size: 2em; font-weight: bold; color: #e94560;" x-text="report.critical_count || 0"></div>
+        </div>
+        <div class="card" style="padding: 16px; text-align: center;">
+            <div style="font-size: 0.8em; color: var(--text-secondary);">Warnings</div>
+            <div style="font-size: 2em; font-weight: bold; color: #f0a500;" x-text="report.warning_count || 0"></div>
+        </div>
+        <div class="card" style="padding: 16px; text-align: center;">
+            <div style="font-size: 0.8em; color: var(--text-secondary);">Total Anomalies</div>
+            <div style="font-size: 2em; font-weight: bold; color: var(--text-primary);" x-text="report.anomalies ? report.anomalies.length : 0"></div>
+        </div>
+    </div>
+
+    <!-- Filters -->
+    <div class="card" style="padding: 12px 16px; margin-bottom: 20px; display: flex; gap: 16px; align-items: center; flex-wrap: wrap;">
+        <span style="font-size: 0.85em; color: var(--text-secondary);">Filter:</span>
+        <select x-model="typeFilter" @change="applyFilters()"
+                style="padding: 6px 10px; background: var(--bg-tertiary); border: 1px solid var(--border); border-radius: 4px; color: var(--text-primary); font-size: 0.85em;">
+            <option value="">All Types</option>
+            <option value="replica_outlier">Replica Outlier</option>
+            <option value="utilization_outlier">Utilization Outlier</option>
+            <option value="config_inconsistency">Config Inconsistency</option>
+            <option value="dependency_anomaly">Dependency Anomaly</option>
+            <option value="capacity_mismatch">Capacity Mismatch</option>
+            <option value="security_inconsistency">Security Inconsistency</option>
+            <option value="over_provisioned">Over-Provisioned</option>
+            <option value="under_provisioned">Under-Provisioned</option>
+        </select>
+        <select x-model="severityFilter" @change="applyFilters()"
+                style="padding: 6px 10px; background: var(--bg-tertiary); border: 1px solid var(--border); border-radius: 4px; color: var(--text-primary); font-size: 0.85em;">
+            <option value="">All Severities</option>
+            <option value="critical">Critical</option>
+            <option value="warning">Warning</option>
+            <option value="info">Info</option>
+        </select>
+        <span style="font-size: 0.8em; color: var(--text-secondary);"
+              x-text="filteredAnomalies.length + ' anomalies shown'"></span>
+    </div>
+
+    <!-- Health Overview -->
+    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 20px;">
+        <div class="card" style="padding: 16px;">
+            <h4 style="margin-top: 0; color: #00b894;">Healthiest Components</h4>
+            <template x-if="report.healthiest_components && report.healthiest_components.length > 0">
+                <div>
+                    <template x-for="comp in report.healthiest_components" :key="comp">
+                        <div style="padding: 6px 10px; margin-bottom: 4px; background: rgba(0,184,148,0.1); border-left: 3px solid #00b894; border-radius: 4px; font-size: 0.85em;">
+                            <span x-text="comp"></span>
+                        </div>
+                    </template>
+                </div>
+            </template>
+            <template x-if="!report.healthiest_components || report.healthiest_components.length === 0">
+                <p style="color: var(--text-secondary); font-size: 0.85em;">No completely healthy components found.</p>
+            </template>
+        </div>
+        <div class="card" style="padding: 16px;">
+            <h4 style="margin-top: 0; color: #e94560;">Most Anomalous Components</h4>
+            <template x-if="report.most_anomalous_components && report.most_anomalous_components.length > 0">
+                <div>
+                    <template x-for="comp in report.most_anomalous_components" :key="comp">
+                        <div style="padding: 6px 10px; margin-bottom: 4px; background: rgba(233,69,96,0.1); border-left: 3px solid #e94560; border-radius: 4px; font-size: 0.85em;">
+                            <span x-text="comp"></span>
+                        </div>
+                    </template>
+                </div>
+            </template>
+            <template x-if="!report.most_anomalous_components || report.most_anomalous_components.length === 0">
+                <p style="color: var(--text-secondary); font-size: 0.85em;">No anomalous components detected.</p>
+            </template>
+        </div>
+    </div>
+
+    <!-- Anomalies List -->
+    <div class="card" style="padding: 20px;">
+        <h3 style="margin-top: 0;">Detected Anomalies</h3>
+        <template x-if="filteredAnomalies.length === 0">
+            <div style="text-align: center; padding: 40px; color: var(--text-secondary);">
+                <p style="font-size: 1.2em; color: #00b894;">No anomalies detected!</p>
+                <p>Your infrastructure configuration looks healthy.</p>
+            </div>
+        </template>
+        <template x-for="(anomaly, idx) in filteredAnomalies" :key="idx">
+            <div style="margin-bottom: 12px; padding: 14px; border-radius: 8px; border-left: 4px solid;"
+                 :style="`border-color: ${anomaly.severity === 'critical' ? '#e94560' : anomaly.severity === 'warning' ? '#f0a500' : '#4a5568'}; background: var(--bg-tertiary);`"
+                 @click="toggleDetail(idx)"
+                 style="cursor: pointer;">
+                <div style="display: flex; justify-content: space-between; align-items: flex-start;">
+                    <div style="flex: 1;">
+                        <div style="display: flex; gap: 8px; align-items: center; margin-bottom: 6px;">
+                            <span style="padding: 2px 8px; border-radius: 4px; font-size: 0.75em; font-weight: bold; text-transform: uppercase;"
+                                  :style="`background: ${anomaly.severity === 'critical' ? 'rgba(233,69,96,0.2)' : anomaly.severity === 'warning' ? 'rgba(240,165,0,0.2)' : 'rgba(74,85,104,0.2)'}; color: ${anomaly.severity === 'critical' ? '#e94560' : anomaly.severity === 'warning' ? '#f0a500' : '#a0aec0'};`"
+                                  x-text="anomaly.severity"></span>
+                            <span style="font-size: 0.8em; color: var(--text-secondary);"
+                                  x-text="anomaly.type.replace(/_/g, ' ')"></span>
+                        </div>
+                        <div style="font-weight: 600; margin-bottom: 4px;">
+                            <span style="color: var(--accent);" x-text="anomaly.component_name"></span>
+                        </div>
+                        <div style="font-size: 0.9em; color: var(--text-secondary);" x-text="anomaly.description"></div>
+                    </div>
+                    <div style="text-align: right; min-width: 80px;">
+                        <template x-if="anomaly.z_score !== null">
+                            <div>
+                                <div style="font-size: 0.7em; color: var(--text-secondary);">z-score</div>
+                                <div style="font-size: 1.1em; font-weight: bold;"
+                                     :style="`color: ${Math.abs(anomaly.z_score) > 2 ? '#e94560' : '#f0a500'}`"
+                                     x-text="anomaly.z_score.toFixed(2)"></div>
+                            </div>
+                        </template>
+                        <div style="font-size: 0.7em; color: var(--text-secondary); margin-top: 4px;">
+                            confidence: <span x-text="(anomaly.confidence * 100).toFixed(0) + '%'"></span>
+                        </div>
+                    </div>
+                </div>
+                <!-- Expandable detail -->
+                <div x-show="expandedIdx === idx" x-transition style="margin-top: 12px; padding-top: 12px; border-top: 1px solid var(--border);">
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 10px;">
+                        <div>
+                            <div style="font-size: 0.75em; color: var(--text-secondary);">Expected</div>
+                            <div style="font-size: 0.9em;" x-text="anomaly.expected_value"></div>
+                        </div>
+                        <div>
+                            <div style="font-size: 0.75em; color: var(--text-secondary);">Actual</div>
+                            <div style="font-size: 0.9em;" x-text="anomaly.actual_value"></div>
+                        </div>
+                    </div>
+                    <template x-if="anomaly.recommendation">
+                        <div style="padding: 10px; background: rgba(0,184,148,0.1); border-radius: 6px;">
+                            <div style="font-size: 0.75em; color: #00b894; font-weight: bold; margin-bottom: 4px;">Recommendation</div>
+                            <div style="font-size: 0.85em;" x-text="anomaly.recommendation"></div>
+                        </div>
+                    </template>
+                </div>
+            </div>
+        </template>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+function anomalyDetector() {
+    return {
+        report: {},
+        filteredAnomalies: [],
+        typeFilter: '',
+        severityFilter: '',
+        expandedIdx: null,
+
+        async init() {
+            try {
+                const resp = await fetch('/api/anomalies');
+                this.report = await resp.json();
+                this.filteredAnomalies = this.report.anomalies || [];
+            } catch (e) {
+                console.error('Failed to load anomaly data:', e);
+            }
+        },
+
+        applyFilters() {
+            let filtered = this.report.anomalies || [];
+            if (this.typeFilter) {
+                filtered = filtered.filter(a => a.type === this.typeFilter);
+            }
+            if (this.severityFilter) {
+                filtered = filtered.filter(a => a.severity === this.severityFilter);
+            }
+            this.filteredAnomalies = filtered;
+            this.expandedIdx = null;
+        },
+
+        toggleDetail(idx) {
+            this.expandedIdx = this.expandedIdx === idx ? null : idx;
+        }
+    };
+}
+</script>
+{% endblock %}

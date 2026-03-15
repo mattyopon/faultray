@@ -9,10 +9,13 @@ Supported frameworks: DORA, SOC2, ISO 27001, PCI DSS, NIST CSF, HIPAA
 
 from __future__ import annotations
 
+import json
 import logging
+import sqlite3
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
 from enum import Enum
+from pathlib import Path
 from typing import Callable
 
 from infrasim.model.components import ComponentType
@@ -371,7 +374,8 @@ class ComplianceMonitor:
     state. Supports DORA, SOC2, ISO 27001, PCI DSS, NIST CSF, and HIPAA.
     """
 
-    def __init__(self) -> None:
+    def __init__(self, store_path: Path | None = None) -> None:
+        self._store_path = store_path
         self._history: dict[ComplianceFramework, list[ComplianceSnapshot]] = {
             fw: [] for fw in ComplianceFramework
         }
@@ -383,6 +387,10 @@ class ComplianceMonitor:
             ComplianceFramework.NIST_CSF: self._build_nist_csf_controls(),
             ComplianceFramework.HIPAA: _build_hipaa_controls(),
         }
+        # Initialise SQLite store and load existing history if store_path given
+        if self._store_path is not None:
+            self._init_store()
+            self._load_history_from_store()
 
     # ------------------------------------------------------------------
     # Additional framework control builders
@@ -1200,6 +1208,8 @@ class ComplianceMonitor:
         for fw in ComplianceFramework:
             snapshot = self.assess(graph, fw)
             self._history[fw].append(snapshot)
+            if self._store_path is not None:
+                self._persist_snapshot(snapshot)
 
     def get_trends(self, framework: ComplianceFramework) -> ComplianceTrend:
         """Analyze compliance trends for a framework based on recorded history."""
@@ -1406,3 +1416,132 @@ class ComplianceMonitor:
                 "risk_areas": self.get_trends(framework).risk_areas,
             },
         }
+
+    # ------------------------------------------------------------------
+    # SQLite persistence
+    # ------------------------------------------------------------------
+
+    def _init_store(self) -> None:
+        """Create SQLite tables if they do not exist."""
+        if self._store_path is None:
+            return
+        self._store_path.parent.mkdir(parents=True, exist_ok=True)
+        conn = sqlite3.connect(str(self._store_path))
+        try:
+            conn.execute("""
+                CREATE TABLE IF NOT EXISTS compliance_snapshots (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    timestamp TEXT NOT NULL,
+                    framework TEXT NOT NULL,
+                    total_controls INTEGER NOT NULL,
+                    compliant INTEGER NOT NULL,
+                    partial INTEGER NOT NULL,
+                    non_compliant INTEGER NOT NULL,
+                    compliance_percentage REAL NOT NULL,
+                    controls_json TEXT NOT NULL
+                )
+            """)
+            conn.commit()
+        finally:
+            conn.close()
+
+    def _persist_snapshot(self, snapshot: ComplianceSnapshot) -> None:
+        """Write a single snapshot to the SQLite store."""
+        if self._store_path is None:
+            return
+        controls_data = []
+        for c in snapshot.controls:
+            controls_data.append({
+                "control_id": c.control_id,
+                "framework": c.framework.value,
+                "title": c.title,
+                "description": c.description,
+                "status": c.status.value,
+                "evidence": c.evidence,
+                "gaps": c.gaps,
+                "remediation": c.remediation,
+                "last_assessed": c.last_assessed.isoformat(),
+                "risk_if_non_compliant": c.risk_if_non_compliant,
+            })
+        conn = sqlite3.connect(str(self._store_path))
+        try:
+            conn.execute(
+                """INSERT INTO compliance_snapshots
+                   (timestamp, framework, total_controls, compliant, partial,
+                    non_compliant, compliance_percentage, controls_json)
+                   VALUES (?, ?, ?, ?, ?, ?, ?, ?)""",
+                (
+                    snapshot.timestamp.isoformat(),
+                    snapshot.framework.value,
+                    snapshot.total_controls,
+                    snapshot.compliant,
+                    snapshot.partial,
+                    snapshot.non_compliant,
+                    snapshot.compliance_percentage,
+                    json.dumps(controls_data),
+                ),
+            )
+            conn.commit()
+        finally:
+            conn.close()
+
+    def _load_history_from_store(self) -> None:
+        """Load all stored snapshots from SQLite into in-memory history."""
+        if self._store_path is None or not self._store_path.exists():
+            return
+        conn = sqlite3.connect(str(self._store_path))
+        try:
+            cursor = conn.execute(
+                "SELECT timestamp, framework, total_controls, compliant, "
+                "partial, non_compliant, compliance_percentage, controls_json "
+                "FROM compliance_snapshots ORDER BY id ASC"
+            )
+            for row in cursor:
+                ts = datetime.fromisoformat(row[0])
+                try:
+                    fw = ComplianceFramework(row[1])
+                except ValueError:
+                    continue
+                controls_raw = json.loads(row[7])
+                controls: list[ComplianceControl] = []
+                for cd in controls_raw:
+                    try:
+                        ctrl_fw = ComplianceFramework(cd.get("framework", fw.value))
+                    except ValueError:
+                        ctrl_fw = fw
+                    try:
+                        ctrl_status = ControlStatus(cd.get("status", "unknown"))
+                    except ValueError:
+                        ctrl_status = ControlStatus.UNKNOWN
+                    controls.append(ComplianceControl(
+                        control_id=cd.get("control_id", ""),
+                        framework=ctrl_fw,
+                        title=cd.get("title", ""),
+                        description=cd.get("description", ""),
+                        status=ctrl_status,
+                        evidence=cd.get("evidence", []),
+                        gaps=cd.get("gaps", []),
+                        remediation=cd.get("remediation", []),
+                        last_assessed=datetime.fromisoformat(cd["last_assessed"])
+                        if "last_assessed" in cd else ts,
+                        risk_if_non_compliant=cd.get("risk_if_non_compliant", ""),
+                    ))
+                snapshot = ComplianceSnapshot(
+                    timestamp=ts,
+                    framework=fw,
+                    total_controls=row[2],
+                    compliant=row[3],
+                    partial=row[4],
+                    non_compliant=row[5],
+                    compliance_percentage=row[6],
+                    controls=controls,
+                )
+                self._history[fw].append(snapshot)
+        finally:
+            conn.close()
+
+    def get_stored_snapshot_count(self, framework: ComplianceFramework | None = None) -> int:
+        """Return the number of snapshots stored (all frameworks or one)."""
+        if framework is None:
+            return sum(len(v) for v in self._history.values())
+        return len(self._history.get(framework, []))

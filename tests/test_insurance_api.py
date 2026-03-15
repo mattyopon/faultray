@@ -31,10 +31,13 @@ from infrasim.model.graph import InfraGraph
 
 @pytest.fixture(autouse=True)
 def _reset_graph():
-    """Reset server graph state before/after each test."""
+    """Reset server graph state and rate limiter before/after each test."""
+    import infrasim.api.server as _srv
     set_graph(None)
+    _srv._rate_limiter.requests.clear()
     yield
     set_graph(None)
+    _srv._rate_limiter.requests.clear()
 
 
 @pytest.fixture

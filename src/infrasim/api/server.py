@@ -330,11 +330,117 @@ async def dashboard(request: Request):
     if _last_report is not None:
         report_data = _report_to_dict(_last_report)
 
+    # Build enhanced dashboard context
+    total_comps = max(len(graph.components), 1)
+    failover_count = sum(1 for c in graph.components.values() if c.failover.enabled)
+    autoscale_count = sum(1 for c in graph.components.values() if c.autoscaling.enabled)
+    monitoring_count = sum(
+        1 for c in graph.components.values()
+        if c.failover.health_check_interval_seconds > 0
+    )
+    cb_count = 0
+    for edge in graph.all_dependency_edges():
+        if edge.circuit_breaker.enabled:
+            cb_count += 1
+    total_edges = max(summary.get("total_dependencies", 1), 1)
+
+    failover_pct = round(failover_count / total_comps * 100)
+    autoscale_pct = round(autoscale_count / total_comps * 100)
+    monitoring_pct = round(monitoring_count / total_comps * 100)
+    cb_pct = round(cb_count / total_edges * 100)
+
+    res_score = summary.get("resilience_score", 0)
+    sla = _estimate_availability(res_score)
+
+    spof_count = 0
+    for comp in graph.components.values():
+        dependents = graph.get_dependents(comp.id)
+        if comp.replicas <= 1 and len(dependents) > 0 and not comp.failover.enabled:
+            spof_count += 1
+
+    maturity_points = 0
+    if res_score >= 40:
+        maturity_points += 1
+    if failover_pct >= 30:
+        maturity_points += 1
+    if monitoring_pct >= 50:
+        maturity_points += 1
+    if cb_pct >= 20:
+        maturity_points += 1
+    if spof_count == 0:
+        maturity_points += 1
+    sre_maturity = max(1, min(5, maturity_points))
+
+    risk_dist = {"critical": 0, "high": 0, "medium": 0, "low": 0}
+    if report_data:
+        risk_dist["critical"] = report_data.get("critical_count", 0)
+        risk_dist["high"] = report_data.get("warning_count", 0)
+        risk_dist["low"] = report_data.get("passed_count", 0)
+
+    compliance_scores = {}
+    for fw in ["soc2", "hipaa", "iso27001", "pci-dss"]:
+        enc_count = sum(
+            1 for c in graph.components.values()
+            if c.security.encryption_at_rest or c.security.encryption_in_transit
+        )
+        backup_count = sum(1 for c in graph.components.values() if c.security.backup_enabled)
+        base = round(
+            (enc_count + backup_count + failover_count + monitoring_count)
+            / max(total_comps * 4, 1) * 100
+        )
+        compliance_scores[fw] = min(100, max(0, base))
+
+    recent_activity: list[dict] = []
+    if report_data:
+        recent_activity.append({
+            "type": "sim",
+            "message": f"Simulation completed: {report_data['total_scenarios']} scenarios",
+            "time": "latest",
+        })
+        if report_data["critical_count"] > 0:
+            recent_activity.append({
+                "type": "alert",
+                "message": f"{report_data['critical_count']} critical findings detected",
+                "time": "latest",
+            })
+        recent_activity.append({
+            "type": "score",
+            "message": f"Resilience score: {report_data['resilience_score']}",
+            "time": "latest",
+        })
+
+    sparkline = "_ _ _ _"
+    if res_score >= 80:
+        sparkline = "_ - ~ ^"
+    elif res_score >= 60:
+        sparkline = "_ _ - ~"
+    elif res_score >= 40:
+        sparkline = "v _ _ -"
+
+    dashboard_data = {
+        "resilience_score": res_score,
+        "sla_estimate": sla,
+        "spof_count": spof_count,
+        "sre_maturity_level": sre_maturity,
+        "risk_distribution": risk_dist,
+        "component_breakdown": summary.get("component_types", {}),
+        "compliance_scores": compliance_scores,
+        "recent_activity": recent_activity,
+        "sparkline": sparkline,
+        "quick_stats": {
+            "failover_pct": failover_pct,
+            "circuit_breaker_pct": cb_pct,
+            "autoscaling_pct": autoscale_pct,
+            "monitoring_pct": monitoring_pct,
+        },
+    }
+
     return templates.TemplateResponse("dashboard.html", {
         "request": request,
         "summary": summary,
         "has_data": len(graph.components) > 0,
         "report": report_data,
+        "dashboard": type("D", (), dashboard_data)(),
     })
 
 
@@ -2042,4 +2148,710 @@ async def api_risk_heatmap(user=Depends(_require_permission("view_results"))):
     return JSONResponse(data.to_dict())
 
 
+@app.get("/cost-attribution", response_class=HTMLResponse)
+async def cost_attribution_page(request: Request):
+    """Cost attribution dashboard page."""
+    graph = get_graph()
+    report_data = None
+    if graph.components:
+        try:
+            from infrasim.simulator.cost_attribution import (
+                CostAttributionEngine,
+                CostModel,
+            )
+
+            cost_model = CostModel(revenue_per_hour=10_000.0)
+            engine = CostAttributionEngine()
+            report = engine.analyze(graph, cost_model)
+            report_data = {
+                "total_annual_risk": report.total_annual_risk,
+                "components": [
+                    {
+                        "id": p.component_id,
+                        "name": p.component_name,
+                        "team": p.owner_team,
+                        "direct_cost": p.direct_cost,
+                        "cascade_cost": p.cascade_cost,
+                        "total_annual_risk": p.total_annual_risk,
+                        "percentage_of_total_risk": p.percentage_of_total_risk,
+                        "improvement_roi": p.improvement_roi,
+                    }
+                    for p in report.component_profiles
+                ],
+                "teams": [
+                    {
+                        "name": t.team_name,
+                        "total_annual_risk": t.total_annual_risk,
+                        "percentage_of_total_risk": t.percentage_of_total_risk,
+                        "recommended_budget": t.recommended_budget,
+                        "component_count": len(t.owned_components),
+                    }
+                    for t in report.team_profiles
+                ],
+                "opportunities": [
+                    {"component": o[0], "savings": o[1], "action": o[2]}
+                    for o in report.cost_reduction_opportunities[:5]
+                ],
+            }
+        except Exception:
+            logger.warning("Cost attribution analysis failed", exc_info=True)
+
+    return templates.TemplateResponse("cost_attribution.html", {
+        "request": request,
+        "has_data": len(graph.components) > 0,
+        "active_page": "cost_attribution",
+        "report": report_data,
+    })
+
+
+@app.get("/api/cost-attribution", response_class=JSONResponse)
+async def api_cost_attribution(
+    revenue_per_hour: float = 10_000.0,
+    user=Depends(_require_permission("view_results")),
+):
+    """Get failure cost attribution analysis."""
+    graph = get_graph()
+    if not graph.components:
+        return JSONResponse({
+            "total_annual_risk": 0,
+            "components": [],
+            "teams": [],
+            "cost_reduction_opportunities": [],
+            "budget_allocation": {},
+        })
+
+    from infrasim.simulator.cost_attribution import (
+        CostAttributionEngine,
+        CostModel,
+    )
+
+    cost_model = CostModel(revenue_per_hour=revenue_per_hour)
+    engine = CostAttributionEngine()
+    report = engine.analyze(graph, cost_model)
+
+    return JSONResponse({
+        "total_annual_risk": report.total_annual_risk,
+        "currency": cost_model.currency,
+        "components": [
+            {
+                "id": p.component_id,
+                "name": p.component_name,
+                "team": p.owner_team,
+                "annual_failure_probability": p.annual_failure_probability,
+                "estimated_downtime_hours": p.estimated_downtime_hours,
+                "direct_cost": p.direct_cost,
+                "cascade_cost": p.cascade_cost,
+                "total_annual_risk": p.total_annual_risk,
+                "percentage_of_total_risk": p.percentage_of_total_risk,
+                "improvement_roi": p.improvement_roi,
+            }
+            for p in report.component_profiles
+        ],
+        "teams": [
+            {
+                "name": t.team_name,
+                "owned_components": t.owned_components,
+                "total_annual_risk": t.total_annual_risk,
+                "highest_risk_component": t.highest_risk_component,
+                "percentage_of_total_risk": t.percentage_of_total_risk,
+                "recommended_budget": t.recommended_budget,
+            }
+            for t in report.team_profiles
+        ],
+        "cost_reduction_opportunities": [
+            {"component": o[0], "savings": o[1], "action": o[2]}
+            for o in report.cost_reduction_opportunities
+        ],
+        "budget_allocation": report.budget_allocation,
+    })
+
+
+# ---------------------------------------------------------------------------
+# Topology Diff endpoints
+# ---------------------------------------------------------------------------
+
+
+@app.get("/topology-diff", response_class=HTMLResponse)
+async def topology_diff_page(request: Request):
+    """Topology Diff page - compare two infrastructure YAML files."""
+    return templates.TemplateResponse("topology_diff.html", {
+        "request": request,
+        "has_data": True,  # Always accessible (uses file upload)
+        "active_page": "topology_diff",
+    })
+
+
+@app.post("/api/topology-diff")
+async def topology_diff_api(request: Request):
+    """Compare two uploaded YAML files and return diff results."""
+    import tempfile
+
+    from fastapi import UploadFile
+
+    form = await request.form()
+    before_file = form.get("before_file")
+    after_file = form.get("after_file")
+
+    if not before_file or not after_file:
+        return JSONResponse({"error": "Both before_file and after_file are required"}, status_code=400)
+
+    try:
+        before_content = await before_file.read()
+        after_content = await after_file.read()
+
+        # Write to temp files for the loader
+        with tempfile.NamedTemporaryFile(suffix=".yaml", delete=False, mode="wb") as bf:
+            bf.write(before_content)
+            before_path = Path(bf.name)
+
+        with tempfile.NamedTemporaryFile(suffix=".yaml", delete=False, mode="wb") as af:
+            af.write(after_content)
+            after_path = Path(af.name)
+
+        from infrasim.reporter.topology_diff import TopologyDiffer
+
+        differ = TopologyDiffer()
+        result = differ.diff_files(before_path, after_path)
+        mermaid_code = differ.to_mermaid(result)
+
+        # Cleanup temp files
+        before_path.unlink(missing_ok=True)
+        after_path.unlink(missing_ok=True)
+
+        return JSONResponse({
+            "diff": result.to_dict(),
+            "mermaid": mermaid_code,
+        })
+    except Exception as e:
+        logger.exception("Topology diff failed")
+        return JSONResponse({"error": str(e)}, status_code=400)
+
+
+# ---------------------------------------------------------------------------
+# What-If Analysis endpoints
+# ---------------------------------------------------------------------------
+
+
+@app.get("/whatif", response_class=HTMLResponse)
+async def whatif_page(request: Request):
+    """Interactive what-if analysis page."""
+    graph = get_graph()
+    return templates.TemplateResponse("whatif.html", {
+        "request": request,
+        "has_data": len(graph.components) > 0,
+        "active_page": "whatif",
+    })
+
+
+@app.get("/api/whatif/components")
+async def whatif_components():
+    """Return current components with their parameters for the what-if UI."""
+    graph = get_graph()
+    if not graph.components:
+        return JSONResponse({"components": {}, "baseline_score": 0, "spof_count": 0})
+
+    components = {}
+    for comp_id, comp in graph.components.items():
+        # Check if any edge targeting this component has circuit breakers
+        has_cb = False
+        for edge in graph.all_dependency_edges():
+            if edge.target_id == comp_id and edge.circuit_breaker.enabled:
+                has_cb = True
+                break
+
+        components[comp_id] = {
+            "name": comp.name,
+            "type": comp.type.value,
+            "replicas": comp.replicas,
+            "circuit_breaker": has_cb,
+            "autoscaling": comp.autoscaling.enabled,
+            "failover": comp.failover.enabled,
+            "health_check": comp.failover.health_check_interval_seconds > 0,
+        }
+
+    score = graph.resilience_score()
+
+    # Count SPOFs
+    spof_count = 0
+    for comp in graph.components.values():
+        dependents = graph.get_dependents(comp.id)
+        if comp.replicas <= 1 and len(dependents) > 0 and not comp.failover.enabled:
+            spof_count += 1
+
+    # Availability estimate
+    avail = _estimate_availability(score)
+
+    # Recommendations from v2 score
+    v2 = graph.resilience_score_v2()
+    recs = v2.get("recommendations", [])[:5]
+
+    return JSONResponse({
+        "components": components,
+        "baseline_score": round(score, 1),
+        "spof_count": spof_count,
+        "availability_estimate": avail,
+        "recommendations": recs,
+    })
+
+
+@app.post("/api/whatif/calculate")
+async def whatif_calculate(request: Request):
+    """Calculate resilience for modified parameters.
+
+    Body: {"modifications": {"component_id": {"replicas": 3, "circuit_breaker": true, ...}}}
+    Returns: {"resilience_score": 85.0, "delta": +12.5, "spof_count": 0, ...}
+    """
+    import copy
+
+    graph = get_graph()
+    if not graph.components:
+        return JSONResponse({"error": "No infrastructure loaded"}, status_code=400)
+
+    body = await request.json()
+    modifications = body.get("modifications", {})
+
+    baseline_score = graph.resilience_score()
+
+    # Create a deep copy and apply modifications
+    modified_graph = copy.deepcopy(graph)
+
+    for comp_id, mods in modifications.items():
+        comp = modified_graph.get_component(comp_id)
+        if not comp:
+            continue
+
+        if "replicas" in mods:
+            comp.replicas = max(1, int(mods["replicas"]))
+
+        if "autoscaling" in mods:
+            comp.autoscaling.enabled = bool(mods["autoscaling"])
+            if comp.autoscaling.enabled and comp.autoscaling.max_replicas <= comp.replicas:
+                comp.autoscaling.max_replicas = comp.replicas * 2
+
+        if "failover" in mods:
+            comp.failover.enabled = bool(mods["failover"])
+
+        if "health_check" in mods:
+            if bool(mods["health_check"]):
+                comp.failover.health_check_interval_seconds = 10.0
+            else:
+                comp.failover.health_check_interval_seconds = 0.0
+
+        if "circuit_breaker" in mods:
+            # Apply circuit breaker to all edges targeting this component
+            for u, v, data in modified_graph._graph.edges(data=True):
+                dep = data.get("dependency")
+                if dep and dep.target_id == comp_id:
+                    dep.circuit_breaker.enabled = bool(mods["circuit_breaker"])
+
+    new_score = modified_graph.resilience_score()
+    delta = round(new_score - baseline_score, 1)
+
+    # Count SPOFs in modified graph
+    spof_count = 0
+    for comp in modified_graph.components.values():
+        dependents = modified_graph.get_dependents(comp.id)
+        if comp.replicas <= 1 and len(dependents) > 0 and not comp.failover.enabled:
+            spof_count += 1
+
+    avail = _estimate_availability(new_score)
+
+    # Get updated recommendations
+    v2 = modified_graph.resilience_score_v2()
+    recs = v2.get("recommendations", [])[:5]
+
+    return JSONResponse({
+        "resilience_score": round(new_score, 1),
+        "delta": delta,
+        "spof_count": spof_count,
+        "availability_estimate": avail,
+        "recommendations": recs,
+    })
+
+
+@app.post("/api/whatif/export")
+async def whatif_export(request: Request):
+    """Export modified infrastructure as YAML."""
+    import copy
+
+    import yaml
+
+    graph = get_graph()
+    if not graph.components:
+        return JSONResponse({"error": "No infrastructure loaded"}, status_code=400)
+
+    body = await request.json()
+    modifications = body.get("modifications", {})
+
+    modified_graph = copy.deepcopy(graph)
+
+    for comp_id, mods in modifications.items():
+        comp = modified_graph.get_component(comp_id)
+        if not comp:
+            continue
+
+        if "replicas" in mods:
+            comp.replicas = max(1, int(mods["replicas"]))
+        if "autoscaling" in mods:
+            comp.autoscaling.enabled = bool(mods["autoscaling"])
+        if "failover" in mods:
+            comp.failover.enabled = bool(mods["failover"])
+        if "circuit_breaker" in mods:
+            for u, v, data in modified_graph._graph.edges(data=True):
+                dep = data.get("dependency")
+                if dep and dep.target_id == comp_id:
+                    dep.circuit_breaker.enabled = bool(mods["circuit_breaker"])
+
+    # Convert to YAML
+    export_dict = modified_graph.to_dict()
+    yaml_content = yaml.dump(export_dict, default_flow_style=False, allow_unicode=True)
+
+    return Response(
+        content=yaml_content,
+        media_type="application/x-yaml",
+        headers={"Content-Disposition": "attachment; filename=whatif-modified.yaml"},
+    )
+
+
+def _estimate_availability(score: float) -> str:
+    """Estimate availability nines from resilience score."""
+    if score >= 95:
+        return "99.99"
+    elif score >= 85:
+        return "99.95"
+    elif score >= 75:
+        return "99.9"
+    elif score >= 60:
+        return "99.5"
+    elif score >= 40:
+        return "99.0"
+    else:
+        return "95.0"
+
+
+# ---------------------------------------------------------------------------
+# Pareto Optimizer routes
+# ---------------------------------------------------------------------------
+
+
+@app.get("/optimizer", response_class=HTMLResponse)
+async def optimizer_page(request: Request):
+    """Pareto Optimizer page."""
+    graph = get_graph()
+    return templates.TemplateResponse("optimizer.html", {
+        "request": request,
+        "has_data": bool(graph and graph.components),
+        "active_page": "optimizer",
+    })
+
+
+@app.get("/api/optimize", response_class=JSONResponse)
+async def api_optimize(
+    request: Request,
+    budget: float | None = None,
+    target_score: float | None = None,
+):
+    """Run Pareto optimization and return frontier data."""
+    graph = get_graph()
+    if not graph or not graph.components:
+        return JSONResponse({"solutions": [], "current": {}, "cost_to_next_nine": 0})
+
+    from infrasim.simulator.pareto_optimizer import ParetoOptimizer
+
+    optimizer = ParetoOptimizer()
+
+    if budget is not None:
+        solution = optimizer.find_best_for_budget(graph, budget)
+        return JSONResponse({
+            "solutions": [{
+                "resilience_score": solution.resilience_score,
+                "estimated_monthly_cost": solution.estimated_monthly_cost,
+                "availability_nines": solution.availability_nines,
+                "spof_count": solution.spof_count,
+                "is_current": solution.is_current,
+                "improvements": solution.improvements_from_current,
+                "variables": solution.variables,
+            }],
+            "current": {},
+            "cost_to_next_nine": 0,
+        })
+
+    if target_score is not None:
+        solution = optimizer.find_cheapest_for_score(graph, target_score)
+        return JSONResponse({
+            "solutions": [{
+                "resilience_score": solution.resilience_score,
+                "estimated_monthly_cost": solution.estimated_monthly_cost,
+                "availability_nines": solution.availability_nines,
+                "spof_count": solution.spof_count,
+                "is_current": solution.is_current,
+                "improvements": solution.improvements_from_current,
+                "variables": solution.variables,
+            }],
+            "current": {},
+            "cost_to_next_nine": 0,
+        })
+
+    frontier = optimizer.generate_frontier(graph)
+    return JSONResponse({
+        "solutions": [
+            {
+                "resilience_score": s.resilience_score,
+                "estimated_monthly_cost": s.estimated_monthly_cost,
+                "availability_nines": s.availability_nines,
+                "spof_count": s.spof_count,
+                "is_current": s.is_current,
+                "improvements": s.improvements_from_current,
+                "variables": s.variables,
+            }
+            for s in frontier.solutions
+        ],
+        "current": {
+            "resilience_score": frontier.current_solution.resilience_score,
+            "estimated_monthly_cost": frontier.current_solution.estimated_monthly_cost,
+            "availability_nines": frontier.current_solution.availability_nines,
+        },
+        "cost_to_next_nine": frontier.cost_to_next_nine,
+    })
+
+
+# ---------------------------------------------------------------------------
+# Anomaly Detection routes
+# ---------------------------------------------------------------------------
+
+
+@app.get("/anomaly", response_class=HTMLResponse)
+async def anomaly_page(request: Request):
+    """Anomaly Detection page."""
+    graph = get_graph()
+    return templates.TemplateResponse("anomaly.html", {
+        "request": request,
+        "has_data": bool(graph and graph.components),
+        "active_page": "anomaly",
+    })
+
+
+@app.get("/api/anomalies", response_class=JSONResponse)
+async def api_anomalies(
+    request: Request,
+    anomaly_type: str | None = None,
+    severity: str | None = None,
+):
+    """Run anomaly detection and return results."""
+    graph = get_graph()
+    if not graph or not graph.components:
+        return JSONResponse({
+            "total_components_analyzed": 0,
+            "anomaly_rate": 0.0,
+            "critical_count": 0,
+            "warning_count": 0,
+            "healthiest_components": [],
+            "most_anomalous_components": [],
+            "anomalies": [],
+        })
+
+    from infrasim.simulator.anomaly_detector import AnomalyDetector, AnomalyType
+
+    detector = AnomalyDetector()
+    report = detector.detect(graph)
+
+    anomalies = report.anomalies
+
+    if anomaly_type:
+        try:
+            target_type = AnomalyType(anomaly_type)
+            anomalies = [a for a in anomalies if a.anomaly_type == target_type]
+        except ValueError:
+            pass
+
+    if severity:
+        anomalies = [a for a in anomalies if a.severity == severity]
+
+    return JSONResponse({
+        "total_components_analyzed": report.total_components_analyzed,
+        "anomaly_rate": report.anomaly_rate,
+        "critical_count": report.critical_count,
+        "warning_count": report.warning_count,
+        "healthiest_components": report.healthiest_components,
+        "most_anomalous_components": report.most_anomalous_components,
+        "anomalies": [
+            {
+                "type": a.anomaly_type.value,
+                "component_id": a.component_id,
+                "component_name": a.component_name,
+                "severity": a.severity,
+                "description": a.description,
+                "expected_value": a.expected_value,
+                "actual_value": a.actual_value,
+                "z_score": a.z_score,
+                "recommendation": a.recommendation,
+                "confidence": a.confidence,
+            }
+            for a in anomalies
+        ],
+    })
+
+
 app.include_router(_v1_router)
+
+
+# ---------------------------------------------------------------------------
+# API Documentation page
+# ---------------------------------------------------------------------------
+
+@app.get("/api-docs", response_class=HTMLResponse)
+async def api_docs_page(request: Request):
+    """Interactive API documentation."""
+    return templates.TemplateResponse("api_docs.html", {
+        "request": request,
+    })
+
+
+# ---------------------------------------------------------------------------
+# API Health, Versioning & Dashboard Summary (v2)
+# ---------------------------------------------------------------------------
+
+@app.get("/api/health", response_class=JSONResponse)
+async def health_check():
+    """Return API health status, version, uptime, and component count."""
+    from infrasim.api.api_versioning import health_checker
+
+    graph = get_graph()
+    component_count = len(graph.components) if graph else 0
+    return JSONResponse(health_checker.check(component_count))
+
+
+@app.get("/api/versions", response_class=JSONResponse)
+async def api_versions():
+    """List available API versions and their lifecycle status."""
+    from infrasim.api.api_versioning import list_versions
+
+    return JSONResponse({"versions": list_versions()})
+
+
+@app.get("/api/dashboard/summary", response_class=JSONResponse)
+async def dashboard_summary():
+    """Aggregated dashboard data for the enhanced V2 dashboard."""
+    graph = get_graph()
+    summary = graph.summary()
+
+    # Resilience score
+    res_score = summary.get("resilience_score", 0)
+
+    # SLA estimate
+    sla = _estimate_availability(res_score)
+
+    # SPOF count
+    spof_count = 0
+    for comp in graph.components.values():
+        dependents = graph.get_dependents(comp.id)
+        if comp.replicas <= 1 and len(dependents) > 0 and not comp.failover.enabled:
+            spof_count += 1
+
+    # SRE Maturity heuristic (L1-L5 based on resilience features)
+    total_comps = max(len(graph.components), 1)
+
+    failover_count = sum(1 for c in graph.components.values() if c.failover.enabled)
+    autoscale_count = sum(1 for c in graph.components.values() if c.autoscaling.enabled)
+    monitoring_count = sum(
+        1 for c in graph.components.values()
+        if c.failover.health_check_interval_seconds > 0
+    )
+
+    # Count circuit breakers across edges
+    cb_count = 0
+    for edge in graph.all_dependency_edges():
+        if edge.circuit_breaker.enabled:
+            cb_count += 1
+    total_edges = max(summary.get("total_dependencies", 1), 1)
+
+    failover_pct = round(failover_count / total_comps * 100)
+    autoscale_pct = round(autoscale_count / total_comps * 100)
+    monitoring_pct = round(monitoring_count / total_comps * 100)
+    cb_pct = round(cb_count / total_edges * 100)
+
+    maturity_points = 0
+    if res_score >= 40:
+        maturity_points += 1
+    if failover_pct >= 30:
+        maturity_points += 1
+    if monitoring_pct >= 50:
+        maturity_points += 1
+    if cb_pct >= 20:
+        maturity_points += 1
+    if spof_count == 0:
+        maturity_points += 1
+    sre_maturity = max(1, min(5, maturity_points))
+
+    # Risk distribution from last report
+    risk_dist = {"critical": 0, "high": 0, "medium": 0, "low": 0}
+    if _last_report is not None:
+        report_d = _report_to_dict(_last_report)
+        risk_dist["critical"] = report_d.get("critical_count", 0)
+        risk_dist["high"] = report_d.get("warning_count", 0)
+        risk_dist["low"] = report_d.get("passed_count", 0)
+
+    # Component breakdown
+    comp_breakdown = summary.get("component_types", {})
+
+    # Compliance scores (lightweight from available data)
+    compliance_scores = {}
+    for fw in ["soc2", "hipaa", "iso27001", "pci-dss"]:
+        enc_count = sum(
+            1 for c in graph.components.values()
+            if c.security.encryption_at_rest or c.security.encryption_in_transit
+        )
+        backup_count = sum(1 for c in graph.components.values() if c.security.backup_enabled)
+        base = round(
+            (enc_count + backup_count + failover_count + monitoring_count)
+            / max(total_comps * 4, 1) * 100
+        )
+        compliance_scores[fw] = min(100, max(0, base))
+
+    # Recent activity from last report
+    recent_activity: list[dict] = []
+    if _last_report is not None:
+        rd = _report_to_dict(_last_report)
+        recent_activity.append({
+            "type": "sim",
+            "message": f"Simulation completed: {rd['total_scenarios']} scenarios",
+            "time": "latest",
+        })
+        if rd["critical_count"] > 0:
+            recent_activity.append({
+                "type": "alert",
+                "message": f"{rd['critical_count']} critical findings detected",
+                "time": "latest",
+            })
+        recent_activity.append({
+            "type": "score",
+            "message": f"Resilience score: {rd['resilience_score']}",
+            "time": "latest",
+        })
+
+    # Sparkline (simplified trend indicator)
+    sparkline = "_ _ _ _"
+    if res_score >= 80:
+        sparkline = "_ - ~ ^"
+    elif res_score >= 60:
+        sparkline = "_ _ - ~"
+    elif res_score >= 40:
+        sparkline = "v _ _ -"
+
+    return JSONResponse({
+        "resilience_score": res_score,
+        "sla_estimate": sla,
+        "spof_count": spof_count,
+        "sre_maturity_level": sre_maturity,
+        "risk_distribution": risk_dist,
+        "component_breakdown": comp_breakdown,
+        "compliance_scores": compliance_scores,
+        "recent_activity": recent_activity,
+        "sparkline": sparkline,
+        "quick_stats": {
+            "failover_pct": failover_pct,
+            "circuit_breaker_pct": cb_pct,
+            "autoscaling_pct": autoscale_pct,
+            "monitoring_pct": monitoring_pct,
+        },
+    })

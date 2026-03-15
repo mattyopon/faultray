@@ -26,7 +26,7 @@ from __future__ import annotations
 
 import logging
 from dataclasses import dataclass, field
-from datetime import datetime
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
@@ -118,7 +118,7 @@ class ContractValidationResult:
     violations: list[ContractViolation]
     warnings: list[ContractViolation]
     score: float  # compliance percentage (0-100)
-    timestamp: datetime = field(default_factory=datetime.utcnow)
+    timestamp: datetime = field(default_factory=lambda: datetime.now(timezone.utc))
 
     def to_dict(self) -> dict:
         """Serialize to a plain dict for JSON output."""
@@ -430,7 +430,7 @@ class ContractEngine:
             ))
 
         # Max blast radius
-        blast_values = {"relaxed": 0.5, "standard": 0.3, "strict": 0.2}
+        blast_values = {"relaxed": 0.7, "standard": 0.3, "strict": 0.2}
         rules.append(ContractRule(
             rule_type="max_blast_radius",
             target=None,
@@ -478,7 +478,7 @@ class ContractEngine:
             metadata={
                 "generated": True,
                 "strictness": strictness,
-                "generated_at": datetime.utcnow().isoformat(),
+                "generated_at": datetime.now(timezone.utc).isoformat(),
             },
         )
 
