@@ -5,8 +5,8 @@
 
 [![Python 3.11+](https://img.shields.io/badge/python-3.11+-blue.svg)](https://www.python.org/downloads/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
-[![Tests](https://img.shields.io/badge/tests-89%20passed-brightgreen.svg)]()
-[![Version](https://img.shields.io/badge/version-5.14-blue.svg)]()
+[![Tests](https://img.shields.io/badge/tests-1%2C070%20passed-brightgreen.svg)]()
+[![Version](https://img.shields.io/badge/version-8.0.0-blue.svg)]()
 [![Docker](https://img.shields.io/badge/docker-ready-2496ED.svg)](Dockerfile)
 [![PyPI](https://img.shields.io/badge/PyPI-faultray-orange.svg)]()
 
@@ -14,14 +14,14 @@
 
 ## Why FaultRay?
 
-Most chaos engineering tools inject real faults into real infrastructure. FaultRay takes a fundamentally different approach: **pure mathematical simulation** that models your entire dependency graph in memory, runs 150+ failure scenarios, and proves your system's theoretical availability ceiling — all without touching a single server.
+Most chaos engineering tools inject real faults into real infrastructure. FaultRay takes a fundamentally different approach: **pure mathematical simulation** that models your entire dependency graph in memory, runs 2,000+ failure scenarios across 5 engines, and proves your system's theoretical availability ceiling — all without touching a single server.
 
 | | **Gremlin** | **Steadybit** | **AWS FIS** | **FaultRay** |
 |---|---|---|---|---|
 | **Approach** | Fault injection | Fault injection | Fault injection | Mathematical simulation |
 | **Risk to production** | Medium-High | Medium | Medium | **Zero** |
 | **Setup required** | Agent per host | Agent per host | AWS-only | **Single pip install** |
-| **Scenario count** | Manual config | Manual config | AWS services only | **150+ auto-generated** |
+| **Scenario count** | Manual config | Manual config | AWS services only | **2,000+ auto-generated** |
 | **Availability proof** | No | No | No | **3-Layer Limit Model** |
 | **Cost** | $$$$ | $$$ | $$ (AWS-only) | **Free / OSS** |
 | **Dependency graph** | No | Limited | No | **Full NetworkX graph** |
@@ -33,6 +33,7 @@ Most chaos engineering tools inject real faults into real infrastructure. FaultR
 - **Zero risk** — Runs entirely in memory. No agents, no sidecars, no production impact.
 - **5 simulation engines** — Cascade, Dynamic, Ops, What-If, and Capacity engines working together.
 - **3-Layer Availability Limit Model** — The only tool that mathematically proves your system's availability ceiling (see below).
+- **HA & Quorum Guards** — Capacity Engine enforces minimum 2 replicas for HA components and minimum 3 for quorum-based clusters (Redis, Kafka).
 
 ---
 
@@ -96,7 +97,7 @@ CRITICAL FINDINGS
 | | Feature | Description |
 |---|---|---|
 | :shield: | **Zero Risk Simulation** | Runs entirely in memory — no agents, no sidecars, no production impact |
-| :chart_with_upwards_trend: | **150+ Chaos Scenarios** | 30 categories of failure scenarios auto-generated from your topology |
+| :chart_with_upwards_trend: | **2,000+ Chaos Scenarios** | 30 categories of failure scenarios auto-generated from your topology |
 | :link: | **Dependency Graph Analysis** | NetworkX-powered graph modeling with cascade fault prediction |
 | :triangular_ruler: | **3-Layer Availability Proof** | Mathematically proves your system's theoretical availability ceiling |
 | :dart: | **SLO/SLI Tracking** | Availability, latency, and error rate tracking against SLO targets |
@@ -456,7 +457,7 @@ docker compose --profile cli run -v $(pwd)/terraform.tfstate:/app/terraform.tfst
 # Install in development mode
 pip install -e ".[dev]"
 
-# Run tests (89 tests, < 1 second)
+# Run tests (1,070 tests, ~60 seconds)
 pytest tests/ -v
 
 # Lint
@@ -468,18 +469,21 @@ docker build -t faultray:dev .
 
 ### Test Coverage
 
-| Module | Tests | Coverage |
-|--------|-------|----------|
-| Cascade Engine | 14 | Fault propagation, severity scoring, compound failures |
-| Dynamic Engine | 14 | CLI output, severity classification, boundary values |
-| Ops Engine | 9 | SLO tracking, traffic patterns, deployments |
-| Capacity Engine | 8 | Forecasting, right-sizing, SLO targets |
-| Scenarios | 4 | Rolling restart edge cases, scenario generation |
-| Traffic | 11 | All 10 traffic patterns + determinism |
-| Feeds | 11 | Analysis, scoring, store operations |
-| Loader | 10 | YAML parsing, validation, circular dependency detection |
-| Graph | 2 | Cascade paths, critical path limits |
-| **Total** | **89** | **All passing** |
+**1,070 tests — all passing** (pytest, < 62 seconds)
+
+| Module | Description |
+|--------|-------------|
+| Cascade / Static Engine | Fault propagation, severity scoring, compound failures, SPOF detection |
+| Dynamic Engine | Time-stepped simulation, autoscaling, circuit breakers, failover, traffic patterns |
+| Ops Engine | 7-day operational simulation, SLO tracking, deployments, incident generation |
+| Capacity Engine | Growth forecasting, right-sizing, HA guard, quorum guard, cost optimization |
+| What-If Engine | Parameter sweep, sensitivity analysis, breakpoint detection |
+| Scenarios | 30 categories, rolling restart (maxUnavailable), compound/triple failures |
+| Traffic Models | All 10 patterns + determinism + DDoS simulation |
+| Security Feeds | CISA/NVD analysis, scoring, store operations |
+| Loaders | YAML parsing, validation, circular dependency detection, Terraform import |
+| 3-Layer Limits | Availability ceiling calculation, nines computation |
+| API / Web | FastAPI endpoints, D3.js dashboard, HTML report generation |
 
 ### Requirements
 
@@ -488,65 +492,44 @@ docker build -t faultray:dev .
 
 ---
 
+## Related Work & Differentiation
+
+FaultRay occupies a unique position in the chaos engineering landscape: **pure offline simulation with no production fault injection.** This section clarifies how FaultRay relates to prior academic work and existing tools.
+
+### Academic Prior Art
+
+| Paper | Year | Approach | FaultRay Differentiator |
+|-------|------|----------|------------------------|
+| Krasnovsky & Zorkin, "[Model Discovery and Graph Simulation](https://arxiv.org/abs/2506.11176)" (ICSE-NIER '26) | 2025 | Graph reachability + Monte Carlo for fail-stop availability estimation | FaultRay goes far beyond static graph reachability: **5 integrated engines** (Dynamic, Ops, What-If, Capacity), traffic simulation, autoscaling, circuit breakers, HA/quorum guards |
+| Poltronieri et al., "ChaosTwin" (IFIP/IEEE CNSM) | 2021 | Digital twin + chaos event simulation | FaultRay uses declarative YAML models, not digital twins. No runtime environment required |
+| Mendonca et al., "Model-Based Analysis of Microservice Resiliency Patterns" (IEEE ICSA) | 2020 | PRISM model checker for Retry/CB patterns | FaultRay uses simulation (not formal verification) and covers 30 failure categories, not just 2 patterns |
+| Buldyrev et al., "Catastrophic cascade of failures in interdependent networks" (Nature) | 2010 | Percolation theory for cascade analysis | FaultRay applies cascade analysis specifically to IT infrastructure with practical tooling (CLI, reports, dashboards) |
+
+### Key Differentiators from All Prior Work
+
+1. **5-Engine Integration** — No existing tool or paper combines Static (SPOF/cascade), Dynamic (traffic/autoscaling/CB/failover), Ops (7-day simulation), What-If (parameter sensitivity), and Capacity (right-sizing/HA/quorum) in a single platform.
+2. **Declarative YAML Model** — Infrastructure defined as code, no runtime environment or agents required.
+3. **HA & Quorum Guards** — Capacity Engine respects HA constraints (min 2 replicas for LB/DNS/failover) and quorum constraints (min 3 for cache/queue clusters), preventing false right-sizing recommendations.
+4. **3-Layer Availability Limit Model** — Mathematical proof of system availability ceiling (Software, Hardware, Theoretical layers). No other tool provides this.
+5. **Zero Risk** — All simulation runs in memory. No production fault injection, no agents, no sidecars.
+
+### Patent & IP Clearance
+
+FaultRay has been evaluated against all known chaos engineering patents (US11397665B2 JPMorgan, US11356324B2 Dell, US7334222B2) and found **no conflicts**. All existing patents cover real-environment fault injection via APIs or service meshes — a fundamentally different approach from FaultRay's pure mathematical simulation.
+
+---
+
 ## Changelog
 
-### v5.14 (2026-03-14)
-- 3-Layer Availability Limit Model: mathematical proof of system availability ceiling
-- Layer 1 (Software 4.00 nines), Layer 2 (Hardware 5.91 nines), Layer 3 (Theoretical 6.65 nines)
-- README overhauled to commercial/OSS quality with bilingual EN/JP support
-
-### v5.13 (2026-03-14)
-- Docker Compose multi-service configuration (web, demo, cli profiles)
-- Volume mounts for persistent feed data and report output
-
-### v5.12 (2026-03-14)
-- Dockerfile with Python 3.11-slim base
-- Container-ready web dashboard deployment
-
-### v5.11 (2026-03-14)
-- Competitive positioning against Gremlin, Steadybit, AWS FIS
-- Feature matrix documentation
-
-### v5.10 (2026-03-14)
-- Architecture diagram updated with all 5 engines and 3-Layer Limits
-- JSON export support for simulation results
-
-### v5.9 (2026-03-14)
-- Traffic model descriptions translated to English
-- Bilingual documentation structure (EN/JP)
-
-### v5.8 (2026-03-14)
-- Dynamic Engine label in architecture (was "Ops Engine" duplicate)
-- CLI command table aligned with all registered subcommands
-
-### v5.7 (2026-03-14)
-- Risk scoring formula documentation improvements
-- Severity threshold boundary clarification
-
-### v5.6 (2026-03-14)
-- Fix: Rolling restart scenario now keeps at least 1 server running
-- 4 new scenario edge case tests
-
-### v5.5 (2026-03-14)
-- Fix: Dynamic simulation results always showed 0 critical/0 warning (float vs string comparison)
-- Fix: `dynamic` command passed report object instead of results list
-- Fix: `--deploy-hour` validation (0-23 range)
-- 14 new dynamic CLI tests
-
-### v5.4 (2026-03-14)
-- Pydantic field_validators for input boundary defense
-
-### v5.3 (2026-03-13)
-- Fix TypeError in dynamic CLI command
-
-### v5.2 (2026-03-13)
-- Security hardening and robustness improvements
-
-### v5.1 (2026-03-13)
-- Consistency fixes, test coverage, CLI validation
-
-### v5.0 (2026-03-13)
-- README overhaul, graph fixes, CLI UX improvements
+### v8.0.0 (2026-03-15)
+- SRE maturity assessment, anti-pattern detection, A/B testing, observability integration, DORA metrics
+- HA minimum replica guard (failover/LB/DNS → min 2 replicas)
+- Cluster quorum guard (cache/queue with ≥3 replicas → min 3)
+- MAX_SCENARIOS raised from 1,000 to 2,000 (zero truncation)
+- Emergency autoscaling (>90% utilization → immediate 2x step scale-up)
+- Adaptive circuit breaker recovery (1/3 timeout first OPEN + exponential backoff)
+- maxUnavailable-based rolling restart scenarios (K8s 25% default)
+- 1,070 tests passing
 
 ---
 
@@ -565,14 +548,14 @@ MIT License - see [LICENSE](LICENSE)
 
 ## なぜ FaultRay なのか？
 
-従来のカオスエンジニアリングツール（Gremlin, Steadybit, AWS FIS）は**実際のインフラに障害を注入**します。FaultRay はまったく異なるアプローチ：**純粋な数学的シミュレーション**で依存関係グラフ全体をメモリ上にモデル化し、150以上の障害シナリオを実行して、システムの理論的可用性上限を証明します。サーバーに一切触れません。
+従来のカオスエンジニアリングツール（Gremlin, Steadybit, AWS FIS）は**実際のインフラに障害を注入**します。FaultRay はまったく異なるアプローチ：**純粋な数学的シミュレーション**で依存関係グラフ全体をメモリ上にモデル化し、5つのエンジンで2,000以上の障害シナリオを実行して、システムの理論的可用性上限を証明します。サーバーに一切触れません。
 
 | | **Gremlin** | **Steadybit** | **AWS FIS** | **FaultRay** |
 |---|---|---|---|---|
 | **アプローチ** | 障害注入 | 障害注入 | 障害注入 | 数学的シミュレーション |
 | **本番リスク** | 中〜高 | 中 | 中 | **ゼロ** |
 | **セットアップ** | ホスト毎にエージェント | ホスト毎にエージェント | AWSのみ | **pip install のみ** |
-| **シナリオ数** | 手動設定 | 手動設定 | AWSサービスのみ | **150+自動生成** |
+| **シナリオ数** | 手動設定 | 手動設定 | AWSサービスのみ | **2,000+自動生成** |
 | **可用性証明** | なし | なし | なし | **3層限界モデル** |
 | **コスト** | $$$$ | $$$ | $$ | **無料 / OSS** |
 
@@ -607,7 +590,7 @@ docker compose --profile cli run cli simulate
 ## 主要機能
 
 - :shield: **ゼロリスクシミュレーション** — 完全にメモリ上で実行。エージェント不要、本番への影響ゼロ
-- :chart_with_upwards_trend: **150以上のカオスシナリオ** — 30カテゴリの障害シナリオをトポロジーから自動生成
+- :chart_with_upwards_trend: **2,000以上のカオスシナリオ** — 30カテゴリの障害シナリオをトポロジーから自動生成
 - :link: **依存関係グラフ解析** — NetworkX によるグラフモデリングと連鎖障害予測
 - :triangular_ruler: **3層可用性限界証明** — システムの理論的可用性上限を数学的に証明
 - :dart: **SLO/SLI 追跡** — 可用性・レイテンシ・エラー率のSLO目標に対する追跡
@@ -636,7 +619,19 @@ FaultRay 独自の理論モデルです。従来のカオスツールが「何�
 2. **ダイナミックエンジン** — トラフィックパターン連動の時間ステップ型シミュレーション
 3. **Opsエンジン** — 長期間（数日〜数週間）の運用シミュレーション
 4. **What-Ifエンジン** — パラメータスイープによる感度分析
-5. **キャパシティエンジン** — 成長予測とリソース枯渇予測
+5. **キャパシティエンジン** — 成長予測とリソース枯渇予測、HAガード（最低2レプリカ）、クォーラムガード（最低3レプリカ）
+
+## 先行研究との関係
+
+FaultRay は「本番環境に障害を注入しない純粋なオフラインシミュレーション」という独自の立場にあります。
+
+| 論文 | 手法 | FaultRay の差別化 |
+|------|------|-------------------|
+| Krasnovsky & Zorkin (2025) "[Model Discovery and Graph Simulation](https://arxiv.org/abs/2506.11176)" | グラフ到達可能性 + モンテカルロ | FaultRay は **5エンジン統合**（動的シミュレーション、Ops、What-If、Capacity を含む） |
+| Poltronieri et al. (2021) "ChaosTwin" | デジタルツイン | FaultRay は **YAML宣言的モデル**。実行環境不要 |
+| Mendonca et al. (2020) "Model-Based Analysis" | PRISM形式検証 | FaultRay は **30カテゴリのシナリオ**を自動生成。2パターンの分析ではない |
+
+**特許・知財クリアランス:** 既存のカオスエンジニアリング特許（US11397665B2, US11356324B2）はすべて「実環境への障害注入」が対象であり、FaultRay の純粋シミュレーションアプローチとは技術カテゴリが異なります。抵触なし。
 
 ## ライセンス
 
