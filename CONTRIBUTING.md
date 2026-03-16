@@ -1,81 +1,108 @@
 # Contributing to FaultRay
 
-Thank you for your interest in contributing to FaultRay!
+Thank you for your interest in contributing to FaultRay! This document provides guidelines and information for contributors.
 
-# FaultRay へのコントリビューション
+## Getting Started
 
-FaultRay への貢献に興味を持っていただきありがとうございます！
+### Prerequisites
+- Python 3.11+
+- Git
 
-## Quick Start / クイックスタート
+### Development Setup
 
 ```bash
-# Clone the repository
-git clone https://github.com/mattyopon/infrasim.git
+git clone https://github.com/mattyopon/faultray.git
 cd faultray
-
-# Create virtual environment
-python -m venv .venv
-source .venv/bin/activate  # Linux/Mac
-# .venv\Scripts\activate   # Windows
-
-# Install in development mode
 pip install -e ".[dev]"
-
-# Run tests
-pytest tests/ -v
-
-# Run linter
-ruff check src/ tests/
-
-# Run the demo
-faultray demo
 ```
 
-## Development Guidelines / 開発ガイドライン
+### Running Tests
 
-### Code Style
-- Python 3.11+
-- Linter: ruff
-- Type hints required for public functions
-- Docstrings for public classes and functions
+```bash
+# Run all tests
+pytest
 
-### Testing
-- All new features must include tests
-- Run `pytest tests/ -v` before submitting
-- Target: maintain 89+ test coverage
+# Run with coverage
+pytest --cov=faultray --cov-report=html
 
-### Commit Messages
-- Use conventional commits: `feat:`, `fix:`, `docs:`, `test:`, `refactor:`
-- Include version bump in feat/fix commits (e.g., `feat: FaultRay vX.Y - description`)
+# Run specific test file
+pytest tests/test_engine.py -v
+
+# Lint
+ruff check src/ tests/
+```
+
+## How to Contribute
+
+### Reporting Bugs
+1. Check [existing issues](https://github.com/mattyopon/faultray/issues) first
+2. Use the bug report template
+3. Include: Python version, OS, FaultRay version, steps to reproduce
+
+### Suggesting Features
+1. Open a [feature request](https://github.com/mattyopon/faultray/issues/new)
+2. Describe the use case and expected behavior
 
 ### Pull Requests
 1. Fork the repository
-2. Create a feature branch (`git checkout -b feat/my-feature`)
-3. Make your changes with tests
-4. Run `pytest` and `ruff check`
-5. Submit a PR with a clear description
+2. Create a feature branch (`git checkout -b feature/amazing-feature`)
+3. Write tests for new functionality
+4. Ensure all tests pass (`pytest`)
+5. Ensure code passes linting (`ruff check src/ tests/`)
+6. Commit with clear messages
+7. Open a Pull Request
 
-## Architecture Overview / アーキテクチャ概要
+### Code Style
+- Follow PEP 8
+- Use type hints for all function signatures
+- Maximum line length: 100 characters
+- Use `ruff` for linting
+
+### Commit Messages
+- Use conventional commits: `feat:`, `fix:`, `docs:`, `test:`, `refactor:`
+- Example: `feat: add multi-region DR simulation engine`
+
+## Project Structure
 
 ```
-src/infrasim/
-├── cli.py              # CLI entry point (Typer)
-├── model/              # Infrastructure graph model (NetworkX)
-├── simulator/          # 5 simulation engines
-│   ├── engine.py       # Static simulation orchestrator
-│   ├── cascade.py      # Cascade failure propagation
-│   ├── scenarios.py    # 30-category scenario generator
-│   ├── dynamic_engine.py  # Time-stepped simulation
-│   ├── ops_engine.py   # Multi-day operational simulation
-│   ├── traffic.py      # 10 traffic pattern models
-│   ├── whatif_engine.py # Parameter sweep analysis
-│   └── capacity_engine.py # Capacity planning
-├── discovery/          # Infrastructure discovery
-├── feeds/              # Security news feed integration
-├── api/                # FastAPI web dashboard
-└── reporter/           # Report generation (HTML, CLI)
+src/faultray/
+├── cli/           # CLI commands (Typer)
+├── api/           # Web dashboard (FastAPI)
+├── simulator/     # 215+ simulation modules
+├── integrations/  # External service integrations
+├── ai/            # AI-powered analysis
+├── feeds/         # Security feed processing
+├── contracts/     # SLA/SLO validation
+└── reporter/      # Report generation
 ```
 
-## License / ライセンス
+## Code of Conduct
 
-MIT License — see [LICENSE](LICENSE) for details.
+Please read our [Code of Conduct](CODE_OF_CONDUCT.md) before contributing.
+
+---
+
+# FaultRay への貢献（日本語）
+
+FaultRayへの貢献に興味をお持ちいただきありがとうございます！
+
+## 開発環境のセットアップ
+
+```bash
+git clone https://github.com/mattyopon/faultray.git
+cd faultray
+pip install -e ".[dev]"
+pytest  # テスト実行
+```
+
+## 貢献の方法
+
+- **バグ報告**: [Issues](https://github.com/mattyopon/faultray/issues)でバグを報告
+- **機能提案**: Feature Requestを作成
+- **プルリクエスト**: fork → ブランチ作成 → テスト → PR
+
+## コードスタイル
+- PEP 8準拠
+- 全関数に型ヒント
+- 最大行長: 100文字
+- `ruff`でリンティング

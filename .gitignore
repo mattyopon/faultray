@@ -9,8 +9,11 @@ build/
 !examples/*.json
 .ruff_cache/
 .pytest_cache/
-infrasim-model.json
+faultray-model.json
 *.docx
 .claude/worktrees/
 .coverage
 *.db
+.env
+htmlcov/
+.mypy_cache/

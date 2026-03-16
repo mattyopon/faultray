@@ -13,7 +13,7 @@ authors = [
     {name = "Yutaro Maeda", email = "mattyopon@gmail.com"},
 ]
 classifiers = [
-    "Development Status :: 4 - Beta",
+    "Development Status :: 5 - Production/Stable",
     "Intended Audience :: Developers",
     "Intended Audience :: System Administrators",
     "License :: OSI Approved :: MIT License",
@@ -23,9 +23,14 @@ classifiers = [
     "Topic :: System :: Systems Administration",
     "Topic :: Software Development :: Testing",
     "Topic :: System :: Networking",
+    "Framework :: FastAPI",
+    "Environment :: Console",
+    "Environment :: Web Environment",
+    "Operating System :: OS Independent",
+    "Topic :: System :: Monitoring",
     "Typing :: Typed",
 ]
-keywords = ["chaos-engineering", "sre", "devops", "infrastructure", "simulation", "reliability", "slo"]
+keywords = ["chaos-engineering", "sre", "devops", "infrastructure", "simulation", "reliability", "slo", "fault-injection", "resilience-testing", "availability", "disaster-recovery", "incident-response", "terraform", "prometheus", "dora-compliance"]
 dependencies = [
     "typer>=0.15",
     "rich>=13.0",
@@ -73,24 +78,24 @@ dev = [
 ]
 
 [project.urls]
-Homepage = "https://github.com/mattyopon/faultray"
-Documentation = "https://github.com/mattyopon/faultray#readme"
+Homepage = "https://faultray.com"
+Documentation = "https://github.com/mattyopon/faultray/tree/main/docs"
 Repository = "https://github.com/mattyopon/faultray"
 Issues = "https://github.com/mattyopon/faultray/issues"
-Changelog = "https://github.com/mattyopon/faultray#changelog"
+Changelog = "https://github.com/mattyopon/faultray/blob/main/CHANGELOG.md"
 
 [project.scripts]
-faultray = "infrasim.cli:app"
+faultray = "faultray.cli:app"
 
 [tool.hatch.build.targets.wheel]
-packages = ["src/infrasim"]
+packages = ["src/faultray"]
 
 [tool.ruff]
 target-version = "py311"
 line-length = 100
 
 [tool.ruff.lint.per-file-ignores]
-"src/infrasim/api/server.py" = ["E402"]
+"src/faultray/api/server.py" = ["E402"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
@@ -98,4 +103,4 @@ asyncio_mode = "auto"
 
 [tool.coverage.run]
 concurrency = ["thread", "greenlet"]
-source = ["src/infrasim"]
+source = ["src/faultray"]
