@@ -1,0 +1,196 @@
+{
+  "total_incidents": 18,
+  "avg_precision": 1.0,
+  "avg_recall": 0.499,
+  "avg_f1": 0.626,
+  "avg_severity_accuracy": 0.517,
+  "avg_downtime_mae_minutes": 3156.72,
+  "avg_confidence": 0.479,
+  "calibration": {
+    "downtime_bias_correction": 3156.72,
+    "dependency_weight_threshold_reduction": 0.1,
+    "severity_bias_correction": 4.47
+  },
+  "per_incident": [
+    {
+      "incident_id": "aws-us-east-1-2021-12",
+      "component": "app_server",
+      "precision": 1.0,
+      "recall": 0.143,
+      "f1": 0.25,
+      "severity_accuracy": 0.21,
+      "downtime_mae": 655.0,
+      "confidence": 0.188
+    },
+    {
+      "incident_id": "aws-s3-2017-02",
+      "component": "s3_storage",
+      "precision": 1.0,
+      "recall": 0.75,
+      "f1": 0.857,
+      "severity_accuracy": 0.7,
+      "downtime_mae": 299.5,
+      "confidence": 0.639
+    },
+    {
+      "incident_id": "meta-bgp-2021-10",
+      "component": "dns_resolver",
+      "precision": 1.0,
+      "recall": 0.5,
+      "f1": 0.667,
+      "severity_accuracy": 0.34,
+      "downtime_mae": 355.0,
+      "confidence": 0.435
+    },
+    {
+      "incident_id": "cloudflare-2022-06",
+      "component": "cdn",
+      "precision": 1.0,
+      "recall": 0.667,
+      "f1": 0.8,
+      "severity_accuracy": 0.97,
+      "downtime_mae": 119.5,
+      "confidence": 0.691
+    },
+    {
+      "incident_id": "gcp-2019-06",
+      "component": "gce_instance",
+      "precision": 1.0,
+      "recall": 0.333,
+      "f1": 0.5,
+      "severity_accuracy": 0.34,
+      "downtime_mae": 260.0,
+      "confidence": 0.352
+    },
+    {
+      "incident_id": "azure-2023-01",
+      "component": "azure_vm",
+      "precision": 1.0,
+      "recall": 0.5,
+      "f1": 0.667,
+      "severity_accuracy": 0.5,
+      "downtime_mae": 539.5,
+      "confidence": 0.483
+    },
+    {
+      "incident_id": "github-ddos-2018",
+      "component": "cdn",
+      "precision": 1.0,
+      "recall": 0.333,
+      "f1": 0.5,
+      "severity_accuracy": 0.74,
+      "downtime_mae": 15.0,
+      "confidence": 0.622
+    },
+    {
+      "incident_id": "fastly-2021-06",
+      "component": "cdn",
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1": 1.0,
+      "severity_accuracy": 0.9,
+      "downtime_mae": 48.5,
+      "confidence": 0.808
+    },
+    {
+      "incident_id": "crowdstrike-2024-07",
+      "component": "app_server",
+      "precision": 1.0,
+      "recall": 0.333,
+      "f1": 0.5,
+      "severity_accuracy": 0.34,
+      "downtime_mae": 1435.0,
+      "confidence": 0.352
+    },
+    {
+      "incident_id": "aws-dynamodb-2015-09",
+      "component": "dynamo_db",
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1": 1.0,
+      "severity_accuracy": 0.7,
+      "downtime_mae": 299.5,
+      "confidence": 0.71
+    },
+    {
+      "incident_id": "gcp-lb-2021-11",
+      "component": "main_lb",
+      "precision": 1.0,
+      "recall": 0.5,
+      "f1": 0.667,
+      "severity_accuracy": 0.74,
+      "downtime_mae": 145.0,
+      "confidence": 0.555
+    },
+    {
+      "incident_id": "dyn-ddos-2016-10",
+      "component": "dns_resolver",
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1": 1.0,
+      "severity_accuracy": 0.34,
+      "downtime_mae": 475.0,
+      "confidence": 0.602
+    },
+    {
+      "incident_id": "aws-kinesis-2020-11",
+      "component": "lambda_fn",
+      "precision": 1.0,
+      "recall": 0.25,
+      "f1": 0.4,
+      "severity_accuracy": 0.3,
+      "downtime_mae": 595.0,
+      "confidence": 0.29
+    },
+    {
+      "incident_id": "slack-2022-02",
+      "component": "primary_db",
+      "precision": 1.0,
+      "recall": 0.5,
+      "f1": 0.667,
+      "severity_accuracy": 0.9,
+      "downtime_mae": 299.5,
+      "confidence": 0.603
+    },
+    {
+      "incident_id": "aws-ebs-2011-04",
+      "component": "app_server",
+      "precision": 1.0,
+      "recall": 0.333,
+      "f1": 0.5,
+      "severity_accuracy": 0.34,
+      "downtime_mae": 2875.0,
+      "confidence": 0.352
+    },
+    {
+      "incident_id": "roblox-2021-10",
+      "component": "app_server",
+      "precision": 1.0,
+      "recall": 0.25,
+      "f1": 0.4,
+      "severity_accuracy": 0.3,
+      "downtime_mae": 4375.0,
+      "confidence": 0.29
+    },
+    {
+      "incident_id": "azure-ad-2021-03",
+      "component": "azure_vm",
+      "precision": 1.0,
+      "recall": 0.25,
+      "f1": 0.4,
+      "severity_accuracy": 0.3,
+      "downtime_mae": 835.0,
+      "confidence": 0.29
+    },
+    {
+      "incident_id": "ovh-fire-2021-03",
+      "component": "app_server",
+      "precision": 1.0,
+      "recall": 0.333,
+      "f1": 0.5,
+      "severity_accuracy": 0.34,
+      "downtime_mae": 43195.0,
+      "confidence": 0.352
+    }
+  ]
+}
