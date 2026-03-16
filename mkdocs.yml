@@ -38,3 +38,6 @@ nav:
     - Compliance: enterprise/compliance.md
     - Insurance Scoring: enterprise/insurance.md
     - RBAC: enterprise/rbac.md
+  - Legal:
+    - Terms of Service: legal/terms-of-service.md
+    - Privacy Policy: legal/privacy-policy.md

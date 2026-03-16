@@ -10,7 +10,7 @@ import hashlib
 import json
 import sqlite3
 from dataclasses import dataclass, field
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from typing import Any
 
@@ -103,7 +103,7 @@ class HistoryTracker:
         Returns:
             The recorded HistoryEntry.
         """
-        now = datetime.utcnow().isoformat(timespec="seconds")
+        now = datetime.now(timezone.utc).isoformat(timespec="seconds")
 
         # Resilience score v1
         resilience_score = graph.resilience_score()
@@ -180,7 +180,7 @@ class HistoryTracker:
         Returns:
             List of HistoryEntry objects ordered by timestamp ascending.
         """
-        cutoff = (datetime.utcnow() - timedelta(days=days)).isoformat(
+        cutoff = (datetime.now(timezone.utc) - timedelta(days=days)).isoformat(
             timespec="seconds"
         )
         with self._connect() as conn:
@@ -238,7 +238,7 @@ class HistoryTracker:
         worst_score = min(scores)
 
         # Calculate 30-day change
-        now = datetime.utcnow()
+        now = datetime.now(timezone.utc)
         cutoff_30d = (now - timedelta(days=30)).isoformat(timespec="seconds")
         recent_entries = [e for e in entries if e.timestamp >= cutoff_30d]
 

@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import csv
 import json
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from unittest.mock import MagicMock
 
@@ -69,7 +69,7 @@ def _seed_snapshots(
     critical_findings: int = 0,
 ) -> None:
     """Write snapshot entries directly to the JSONL file."""
-    base = datetime.utcnow() - timedelta(days=base_days_ago)
+    base = datetime.now(timezone.utc) - timedelta(days=base_days_ago)
     for i, score in enumerate(scores):
         ts = (base + timedelta(days=i * 2)).isoformat(timespec="seconds")
         snap = TimelineSnapshot(
@@ -347,7 +347,7 @@ class TestMilestones:
         tl = _timeline_in_tmp(tmp_path)
 
         # First snapshot with critical findings
-        base = datetime.utcnow() - timedelta(days=5)
+        base = datetime.now(timezone.utc) - timedelta(days=5)
         snap1 = TimelineSnapshot(
             timestamp=base.isoformat(timespec="seconds"),
             resilience_score=70.0,
@@ -808,7 +808,7 @@ class TestCheckMilestonesZeroCritical:
         tl = _timeline_in_tmp(tmp_path)
 
         # First, seed a snapshot with critical findings > 0
-        base = datetime.utcnow() - timedelta(days=5)
+        base = datetime.now(timezone.utc) - timedelta(days=5)
         snap1 = TimelineSnapshot(
             timestamp=base.isoformat(timespec="seconds"),
             resilience_score=70.0,
@@ -837,7 +837,7 @@ class TestCheckMilestonesRegressionOnRecord:
         tl = _timeline_in_tmp(tmp_path)
 
         # Seed a high-score snapshot
-        base = datetime.utcnow() - timedelta(days=2)
+        base = datetime.now(timezone.utc) - timedelta(days=2)
         snap1 = TimelineSnapshot(
             timestamp=base.isoformat(timespec="seconds"),
             resilience_score=95.0,

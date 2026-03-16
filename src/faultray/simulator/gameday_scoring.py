@@ -9,7 +9,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 from enum import Enum
-from datetime import datetime
+from datetime import datetime, timezone
 
 from faultray.model.graph import InfraGraph
 
@@ -225,7 +225,7 @@ class GameDayScoringEngine:
         # Generate feedback
         scenario.feedback = self._generate_feedback(scenario)
         scenario.status = ScenarioStatus.COMPLETED
-        scenario.end_time = datetime.utcnow().isoformat()
+        scenario.end_time = datetime.now(timezone.utc).isoformat()
 
         return scenario
 
@@ -258,7 +258,7 @@ class GameDayScoringEngine:
             "score": scenario.final_score,
             "max": scenario.max_total_points,
             "grade": scenario.grade,
-            "timestamp": datetime.utcnow().isoformat(),
+            "timestamp": datetime.now(timezone.utc).isoformat(),
         })
 
         # Update trend

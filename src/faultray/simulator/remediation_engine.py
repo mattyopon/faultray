@@ -8,7 +8,7 @@ and rollback planning.
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from datetime import datetime
+from datetime import datetime, timezone
 from enum import Enum
 
 from faultray.model.components import Component, ComponentType, HealthStatus
@@ -82,7 +82,7 @@ class RemediationPlan:
     rollback_plan: list[str]
     affected_components: list[str]
     created_at: str = field(
-        default_factory=lambda: datetime.utcnow().isoformat()
+        default_factory=lambda: datetime.now(timezone.utc).isoformat()
     )
 
 

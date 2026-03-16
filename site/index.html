@@ -3,656 +3,1041 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>FaultRay — Zero-Risk Infrastructure Chaos Engineering</title>
+  <title>FaultRay - Zero-Risk Infrastructure Resilience Testing</title>
 
   <!-- SEO -->
-  <meta name="description" content="FaultRay — Zero-risk infrastructure chaos engineering. Simulate 2,000+ failure scenarios and prove your system's availability ceiling mathematically. No production risk. Free and open source.">
-  <meta name="keywords" content="chaos engineering, infrastructure testing, availability, SRE, DevOps, simulation, fault injection, resilience testing, SLO, disaster recovery, compliance, SOC 2, ISO 27001, PCI DSS, DORA">
-  <meta name="author" content="FaultRay">
+  <meta name="description" content="FaultRay: Simulate 2,000+ failure scenarios from a YAML file. No production access needed. Prove your infrastructure's availability ceiling with mathematical proof.">
+  <meta name="keywords" content="chaos engineering, infrastructure testing, resilience testing, availability, SRE, DevOps, simulation, fault injection, SLO, disaster recovery, DORA compliance, SOC 2, ISO 27001">
+  <meta name="author" content="FaultRay Contributors">
   <meta name="robots" content="index, follow">
-  <link rel="canonical" href="https://faultray.com">
 
   <!-- Open Graph -->
-  <meta property="og:title" content="FaultRay — Zero-Risk Infrastructure Chaos Engineering">
-  <meta property="og:description" content="Simulate 2,000+ failure scenarios and prove your system's availability ceiling mathematically. No production risk.">
+  <meta property="og:title" content="FaultRay - Zero-Risk Infrastructure Resilience Testing">
+  <meta property="og:description" content="Simulate 2,000+ failure scenarios from a YAML file. No production access needed. Mathematical proof of your SLA.">
   <meta property="og:type" content="website">
-  <meta property="og:url" content="https://faultray.com">
   <meta property="og:site_name" content="FaultRay">
   <meta property="og:locale" content="en_US">
 
   <!-- Twitter Card -->
   <meta name="twitter:card" content="summary_large_image">
-  <meta name="twitter:title" content="FaultRay — Zero-Risk Chaos Engineering">
-  <meta name="twitter:description" content="Simulate 2,000+ failure scenarios. Prove availability mathematically. Zero production risk.">
-  <meta name="twitter:site" content="@faultray">
+  <meta name="twitter:title" content="FaultRay - Zero-Risk Infrastructure Resilience Testing">
+  <meta name="twitter:description" content="Simulate 2,000+ failure scenarios from a YAML file. No production access needed.">
 
-  <!-- Favicon & Preconnect -->
+  <!-- Favicon -->
   <link rel="icon" href="favicon.svg" type="image/svg+xml">
-  <link rel="preconnect" href="https://img.shields.io">
-  <link rel="stylesheet" href="style.css">
 
-  <!-- Structured Data: SoftwareApplication -->
-  <script type="application/ld+json">
-  {
-    "@context": "https://schema.org",
-    "@type": "SoftwareApplication",
-    "name": "FaultRay",
-    "applicationCategory": "DeveloperApplication",
-    "operatingSystem": "Linux, macOS, Windows",
-    "offers": {
-      "@type": "Offer",
-      "price": "0",
-      "priceCurrency": "USD"
-    },
-    "description": "Zero-risk infrastructure chaos engineering. Simulate 2,000+ failure scenarios and prove your system's availability ceiling mathematically.",
-    "url": "https://faultray.com",
-    "downloadUrl": "https://pypi.org/project/faultray/",
-    "softwareVersion": "10.2.0",
-    "author": {
-      "@type": "Organization",
-      "name": "FaultRay",
-      "url": "https://faultray.com"
-    },
-    "license": "https://opensource.org/licenses/MIT",
-    "programmingLanguage": "Python"
-  }
-  </script>
+  <style>
+    /* ============================================
+       CSS Reset & Custom Properties
+       ============================================ */
+    *, *::before, *::after {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
 
-  <!-- Structured Data: Organization -->
-  <script type="application/ld+json">
-  {
-    "@context": "https://schema.org",
-    "@type": "Organization",
-    "name": "FaultRay",
-    "url": "https://faultray.com",
-    "logo": "https://faultray.com/favicon.svg",
-    "sameAs": [
-      "https://github.com/mattyopon/faultray",
-      "https://pypi.org/project/faultray/"
-    ]
-  }
-  </script>
+    :root {
+      --bg-primary: #0a0e1a;
+      --bg-secondary: #0f1424;
+      --bg-card: #111827;
+      --bg-card-hover: #1a2035;
+      --border: #1e293b;
+      --border-subtle: #1a2035;
+      --text-primary: #f1f5f9;
+      --text-secondary: #94a3b8;
+      --text-muted: #64748b;
+      --gold: #FFD700;
+      --gold-dim: #b8960a;
+      --green: #10B981;
+      --green-dim: #059669;
+      --red: #ef4444;
+      --blue: #3b82f6;
+      --purple: #8b5cf6;
+      --font-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+      --font-mono: "SF Mono", "Cascadia Code", "Fira Code", Consolas, "Liberation Mono", Menlo, monospace;
+      --radius-sm: 6px;
+      --radius-md: 10px;
+      --radius-lg: 16px;
+      --max-width: 1200px;
+      --transition: 0.2s ease;
+    }
+
+    html {
+      scroll-behavior: smooth;
+      -webkit-text-size-adjust: 100%;
+    }
+
+    body {
+      font-family: var(--font-sans);
+      background: var(--bg-primary);
+      color: var(--text-primary);
+      line-height: 1.6;
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+      overflow-x: hidden;
+    }
+
+    a { color: inherit; text-decoration: none; }
+    ul { list-style: none; }
+    button { cursor: pointer; border: none; background: none; font: inherit; color: inherit; }
+
+    .container {
+      width: 100%;
+      max-width: var(--max-width);
+      margin: 0 auto;
+      padding: 0 24px;
+    }
+
+    /* ============================================
+       Navigation
+       ============================================ */
+    .nav {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      z-index: 1000;
+      background: rgba(10, 14, 26, 0.85);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      border-bottom: 1px solid transparent;
+      transition: border-color var(--transition), background var(--transition);
+    }
+
+    .nav.scrolled {
+      border-bottom-color: var(--border);
+      background: rgba(10, 14, 26, 0.95);
+    }
+
+    .nav-inner {
+      max-width: var(--max-width);
+      margin: 0 auto;
+      padding: 0 24px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      height: 64px;
+    }
+
+    .nav-logo {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-size: 1.25rem;
+      font-weight: 800;
+      color: var(--text-primary);
+      letter-spacing: -0.02em;
+    }
+
+    .nav-logo .ray { color: var(--gold); }
+
+    .nav-links {
+      display: flex;
+      align-items: center;
+      gap: 28px;
+    }
+
+    .nav-links a {
+      font-size: 0.875rem;
+      color: var(--text-secondary);
+      font-weight: 500;
+      transition: color var(--transition);
+    }
+
+    .nav-links a:hover { color: var(--text-primary); }
+
+    .nav-toggle {
+      display: none;
+      flex-direction: column;
+      gap: 5px;
+      padding: 4px;
+    }
+
+    .nav-toggle span {
+      display: block;
+      width: 22px;
+      height: 2px;
+      background: var(--text-secondary);
+      border-radius: 2px;
+      transition: transform var(--transition), opacity var(--transition);
+    }
+
+    /* ============================================
+       Buttons
+       ============================================ */
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 13px 28px;
+      font-size: 0.9375rem;
+      font-weight: 600;
+      border-radius: var(--radius-md);
+      transition: all var(--transition);
+      white-space: nowrap;
+    }
+
+    .btn-primary {
+      background: var(--gold);
+      color: #0a0e1a;
+      box-shadow: 0 0 24px rgba(255, 215, 0, 0.2);
+    }
+
+    .btn-primary:hover {
+      background: #ffe44d;
+      box-shadow: 0 0 32px rgba(255, 215, 0, 0.35);
+      transform: translateY(-2px);
+    }
+
+    .btn-secondary {
+      background: transparent;
+      color: var(--text-primary);
+      border: 1px solid var(--border);
+    }
+
+    .btn-secondary:hover {
+      border-color: var(--text-muted);
+      background: rgba(255, 255, 255, 0.03);
+      transform: translateY(-2px);
+    }
+
+    /* ============================================
+       Hero Section
+       ============================================ */
+    .hero {
+      position: relative;
+      padding: 160px 0 100px;
+      overflow: hidden;
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+    }
+
+    .hero-bg {
+      position: absolute;
+      inset: 0;
+      background-image:
+        linear-gradient(rgba(255, 215, 0, 0.03) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255, 215, 0, 0.03) 1px, transparent 1px);
+      background-size: 60px 60px;
+      mask-image: radial-gradient(ellipse at center, black 30%, transparent 70%);
+      -webkit-mask-image: radial-gradient(ellipse at center, black 30%, transparent 70%);
+    }
+
+    .hero-glow {
+      position: absolute;
+      top: -200px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 800px;
+      height: 800px;
+      background: radial-gradient(circle, rgba(255, 215, 0, 0.06) 0%, transparent 60%);
+      pointer-events: none;
+    }
+
+    .hero-content {
+      text-align: center;
+      position: relative;
+      z-index: 1;
+    }
+
+    .hero-badge {
+      display: inline-block;
+      padding: 6px 16px;
+      font-size: 0.8125rem;
+      font-weight: 500;
+      color: var(--gold);
+      border: 1px solid rgba(255, 215, 0, 0.25);
+      border-radius: 100px;
+      background: rgba(255, 215, 0, 0.05);
+      margin-bottom: 32px;
+      letter-spacing: 0.03em;
+    }
+
+    .hero-logo {
+      margin-bottom: 8px;
+    }
+
+    .hero-logo svg {
+      width: 72px;
+      height: 72px;
+    }
+
+    .hero-title {
+      font-size: clamp(3rem, 10vw, 5.5rem);
+      font-weight: 800;
+      letter-spacing: -0.04em;
+      line-height: 1;
+      margin-bottom: 16px;
+    }
+
+    .hero-title .fault { color: var(--text-primary); }
+    .hero-title .ray { color: var(--gold); }
+
+    .hero-tagline {
+      font-size: clamp(1.125rem, 3vw, 1.5rem);
+      color: var(--green);
+      font-weight: 600;
+      margin-bottom: 16px;
+      letter-spacing: -0.01em;
+    }
+
+    .hero-subtitle {
+      font-size: clamp(1rem, 2vw, 1.125rem);
+      color: var(--text-secondary);
+      max-width: 640px;
+      margin: 0 auto 40px;
+      line-height: 1.7;
+    }
+
+    .hero-ctas {
+      display: flex;
+      gap: 16px;
+      justify-content: center;
+      flex-wrap: wrap;
+    }
+
+    /* ============================================
+       Section Utilities
+       ============================================ */
+    .section { padding: 100px 0; }
+    .section-alt { background: var(--bg-secondary); }
+
+    .section-header {
+      text-align: center;
+      margin-bottom: 64px;
+    }
+
+    .section-title {
+      font-size: clamp(1.75rem, 4vw, 2.5rem);
+      font-weight: 700;
+      letter-spacing: -0.02em;
+      margin-bottom: 12px;
+    }
+
+    .section-subtitle {
+      font-size: 1.125rem;
+      color: var(--text-secondary);
+      max-width: 560px;
+      margin: 0 auto;
+    }
+
+    /* ============================================
+       Feature Cards (3 pillars)
+       ============================================ */
+    .features-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 24px;
+    }
+
+    .feature-card {
+      padding: 36px 32px;
+      border-radius: var(--radius-lg);
+      border: 1px solid var(--border);
+      background: var(--bg-card);
+      transition: all var(--transition);
+    }
+
+    .feature-card:hover {
+      border-color: rgba(255, 215, 0, 0.3);
+      background: var(--bg-card-hover);
+      transform: translateY(-4px);
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4), 0 0 40px rgba(255, 215, 0, 0.06);
+    }
+
+    .feature-icon {
+      width: 56px;
+      height: 56px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: var(--radius-md);
+      margin-bottom: 20px;
+    }
+
+    .feature-icon--green {
+      background: rgba(16, 185, 129, 0.1);
+      border: 1px solid rgba(16, 185, 129, 0.15);
+    }
+
+    .feature-icon--gold {
+      background: rgba(255, 215, 0, 0.08);
+      border: 1px solid rgba(255, 215, 0, 0.12);
+    }
+
+    .feature-icon--blue {
+      background: rgba(59, 130, 246, 0.1);
+      border: 1px solid rgba(59, 130, 246, 0.15);
+    }
+
+    .feature-card h3 {
+      font-size: 1.25rem;
+      font-weight: 700;
+      margin-bottom: 10px;
+    }
+
+    .feature-card p {
+      font-size: 0.9375rem;
+      color: var(--text-secondary);
+      line-height: 1.7;
+    }
+
+    /* ============================================
+       How It Works (3 Steps)
+       ============================================ */
+    .steps-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 32px;
+      position: relative;
+    }
+
+    .step {
+      position: relative;
+      text-align: center;
+    }
+
+    .step-number {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 48px;
+      height: 48px;
+      border-radius: 50%;
+      background: rgba(255, 215, 0, 0.1);
+      border: 2px solid rgba(255, 215, 0, 0.3);
+      color: var(--gold);
+      font-weight: 800;
+      font-size: 1.125rem;
+      margin-bottom: 20px;
+    }
+
+    .step h3 {
+      font-size: 1.125rem;
+      font-weight: 700;
+      margin-bottom: 12px;
+    }
+
+    .step p {
+      font-size: 0.9375rem;
+      color: var(--text-secondary);
+      line-height: 1.6;
+      margin-bottom: 16px;
+    }
+
+    .step-code {
+      display: block;
+      padding: 12px 16px;
+      background: #0d1117;
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      font-family: var(--font-mono);
+      font-size: 0.8125rem;
+      color: var(--green);
+      text-align: left;
+      overflow-x: auto;
+    }
+
+    .step-connector {
+      display: none;
+    }
+
+    @media (min-width: 769px) {
+      .step-connector {
+        display: block;
+        position: absolute;
+        top: 24px;
+        right: -16px;
+        width: 32px;
+        height: 2px;
+        background: linear-gradient(90deg, rgba(255, 215, 0, 0.3), rgba(255, 215, 0, 0.05));
+      }
+    }
+
+    /* ============================================
+       Use Cases
+       ============================================ */
+    .usecases-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 20px;
+    }
+
+    .usecase-card {
+      padding: 28px 24px;
+      border-radius: var(--radius-lg);
+      border: 1px solid var(--border);
+      background: var(--bg-card);
+      transition: all var(--transition);
+    }
+
+    .usecase-card:hover {
+      border-color: rgba(255, 215, 0, 0.25);
+      transform: translateY(-3px);
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+    }
+
+    .usecase-icon {
+      font-size: 2rem;
+      margin-bottom: 14px;
+      line-height: 1;
+    }
+
+    .usecase-card h4 {
+      font-size: 1rem;
+      font-weight: 700;
+      margin-bottom: 8px;
+      color: var(--gold);
+    }
+
+    .usecase-card p {
+      font-size: 0.875rem;
+      color: var(--text-secondary);
+      line-height: 1.6;
+    }
+
+    /* ============================================
+       Pricing
+       ============================================ */
+    .pricing-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 24px;
+      align-items: stretch;
+    }
+
+    .pricing-card {
+      padding: 36px 28px;
+      border-radius: var(--radius-lg);
+      border: 1px solid var(--border);
+      background: var(--bg-card);
+      display: flex;
+      flex-direction: column;
+      transition: all var(--transition);
+      position: relative;
+    }
+
+    .pricing-card:hover {
+      transform: translateY(-4px);
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+    }
+
+    .pricing-card--popular {
+      border-color: var(--gold);
+      background: linear-gradient(180deg, rgba(255, 215, 0, 0.04) 0%, var(--bg-card) 40%);
+      box-shadow: 0 0 40px rgba(255, 215, 0, 0.08);
+    }
+
+    .pricing-card--popular:hover {
+      box-shadow: 0 0 40px rgba(255, 215, 0, 0.12), 0 8px 32px rgba(0, 0, 0, 0.4);
+    }
+
+    .pricing-popular-badge {
+      position: absolute;
+      top: -12px;
+      left: 50%;
+      transform: translateX(-50%);
+      padding: 4px 16px;
+      font-size: 0.6875rem;
+      font-weight: 700;
+      color: #0a0e1a;
+      background: var(--gold);
+      border-radius: 100px;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      white-space: nowrap;
+    }
+
+    .pricing-tier {
+      font-size: 1.25rem;
+      font-weight: 700;
+      margin-bottom: 8px;
+    }
+
+    .pricing-desc {
+      font-size: 0.875rem;
+      color: var(--text-muted);
+      margin-bottom: 16px;
+    }
+
+    .pricing-price {
+      display: flex;
+      align-items: baseline;
+      gap: 2px;
+      margin-bottom: 24px;
+    }
+
+    .pricing-currency {
+      font-size: 1.25rem;
+      font-weight: 600;
+      color: var(--text-secondary);
+    }
+
+    .pricing-amount {
+      font-size: 2.5rem;
+      font-weight: 800;
+      letter-spacing: -0.03em;
+    }
+
+    .pricing-period {
+      font-size: 0.875rem;
+      color: var(--text-muted);
+      margin-left: 4px;
+    }
+
+    .pricing-features {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      margin-bottom: 32px;
+      flex-grow: 1;
+    }
+
+    .pricing-features li {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-size: 0.875rem;
+      color: var(--text-secondary);
+    }
+
+    .pricing-features li svg { flex-shrink: 0; }
+
+    .pricing-btn {
+      width: 100%;
+      justify-content: center;
+      margin-top: auto;
+    }
+
+    /* ============================================
+       Getting Started
+       ============================================ */
+    .getting-started-content {
+      max-width: 720px;
+      margin: 0 auto;
+    }
+
+    .code-block {
+      border-radius: var(--radius-md);
+      overflow: hidden;
+      border: 1px solid var(--border);
+      background: #0d1117;
+      margin-bottom: 24px;
+    }
+
+    .code-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 10px 16px;
+      background: #161b22;
+      border-bottom: 1px solid var(--border);
+      font-size: 0.75rem;
+      color: var(--text-muted);
+    }
+
+    .code-copy {
+      font-size: 0.75rem;
+      color: var(--text-muted);
+      padding: 4px 10px;
+      border-radius: var(--radius-sm);
+      border: 1px solid var(--border);
+      transition: all var(--transition);
+      background: transparent;
+    }
+
+    .code-copy:hover {
+      color: var(--text-primary);
+      border-color: var(--text-muted);
+    }
+
+    .code-copy.copied {
+      color: var(--green);
+      border-color: var(--green);
+    }
+
+    .code-block pre {
+      padding: 20px;
+      overflow-x: auto;
+      font-family: var(--font-mono);
+      font-size: 0.8125rem;
+      line-height: 1.8;
+    }
+
+    .code-block code { font-family: var(--font-mono); }
+
+    .code-prompt { color: var(--green); user-select: none; }
+    .code-comment { color: var(--text-muted); }
+    .code-key { color: var(--blue); }
+    .code-str { color: var(--green); }
+    .code-num { color: var(--gold); }
+    .code-output { color: var(--text-muted); display: block; }
+    .code-output--green { color: var(--green); }
+    .code-output--gold { color: var(--gold); }
+
+    /* ============================================
+       Footer
+       ============================================ */
+    .footer {
+      padding: 48px 0 32px;
+      border-top: 1px solid var(--border);
+    }
+
+    .footer-grid {
+      display: grid;
+      grid-template-columns: 2fr 1fr 1fr 1fr;
+      gap: 48px;
+      margin-bottom: 40px;
+    }
+
+    .footer-logo {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-weight: 800;
+      font-size: 1.125rem;
+      margin-bottom: 12px;
+      letter-spacing: -0.02em;
+    }
+
+    .footer-logo .ray { color: var(--gold); }
+
+    .footer-desc {
+      font-size: 0.875rem;
+      color: var(--text-muted);
+      line-height: 1.6;
+      max-width: 300px;
+    }
+
+    .footer-links h4 {
+      font-size: 0.8125rem;
+      font-weight: 700;
+      color: var(--text-secondary);
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      margin-bottom: 16px;
+    }
+
+    .footer-links ul {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .footer-links a {
+      font-size: 0.875rem;
+      color: var(--text-muted);
+      transition: color var(--transition);
+    }
+
+    .footer-links a:hover { color: var(--text-primary); }
+
+    .footer-bottom {
+      padding-top: 24px;
+      border-top: 1px solid var(--border);
+      text-align: center;
+    }
+
+    .footer-bottom p {
+      font-size: 0.8125rem;
+      color: var(--text-muted);
+    }
+
+    /* ============================================
+       Responsive
+       ============================================ */
+    @media (max-width: 1024px) {
+      .features-grid { grid-template-columns: 1fr; max-width: 520px; margin: 0 auto; }
+      .usecases-grid { grid-template-columns: repeat(2, 1fr); }
+      .pricing-grid { grid-template-columns: 1fr; max-width: 420px; margin: 0 auto; }
+      .steps-grid { grid-template-columns: 1fr; max-width: 480px; margin: 0 auto; gap: 40px; }
+      .footer-grid { grid-template-columns: 1fr 1fr; gap: 32px; }
+    }
+
+    @media (max-width: 768px) {
+      .nav-links {
+        display: none;
+        position: absolute;
+        top: 64px;
+        left: 0;
+        right: 0;
+        flex-direction: column;
+        background: rgba(10, 14, 26, 0.98);
+        backdrop-filter: blur(16px);
+        padding: 24px;
+        gap: 20px;
+        border-bottom: 1px solid var(--border);
+      }
+
+      .nav-links.open { display: flex; }
+      .nav-toggle { display: flex; }
+
+      .nav-toggle.active span:nth-child(1) { transform: rotate(45deg) translate(5px, 5px); }
+      .nav-toggle.active span:nth-child(2) { opacity: 0; }
+      .nav-toggle.active span:nth-child(3) { transform: rotate(-45deg) translate(5px, -5px); }
+
+      .hero {
+        padding: 120px 0 60px;
+        min-height: auto;
+      }
+
+      .hero-ctas {
+        flex-direction: column;
+        align-items: center;
+      }
+
+      .usecases-grid { grid-template-columns: 1fr; }
+      .footer-grid { grid-template-columns: 1fr; gap: 32px; }
+      .section { padding: 64px 0; }
+    }
+
+    @media (max-width: 480px) {
+      .container { padding: 0 16px; }
+      .hero-title { font-size: 2.5rem; }
+      .section-title { font-size: 1.5rem; }
+      .feature-card { padding: 24px; }
+      .pricing-card { padding: 28px 20px; }
+    }
+
+    /* ============================================
+       Animations
+       ============================================ */
+    @keyframes fadeInUp {
+      from { opacity: 0; transform: translateY(24px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .animate-on-scroll {
+      opacity: 0;
+      transform: translateY(24px);
+      transition: opacity 0.6s ease, transform 0.6s ease;
+    }
+
+    .animate-on-scroll.visible {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  </style>
 </head>
 <body>
-  <!-- Navigation -->
+
+  <!-- ==================== Navigation ==================== -->
   <nav class="nav" id="nav">
     <div class="nav-inner">
       <a href="#" class="nav-logo">
-        <svg class="nav-logo-icon" width="28" height="28" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <svg width="28" height="28" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
           <path d="M50 5L90 25V75L50 95L10 75V25L50 5Z" stroke="#FFD700" stroke-width="6" fill="none"/>
           <path d="M50 20L75 33V67L50 80L25 67V33L50 20Z" fill="#FFD700" fill-opacity="0.15" stroke="#FFD700" stroke-width="3"/>
           <path d="M38 45L48 55L62 38" stroke="#10B981" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/>
         </svg>
-        <span>FaultRay</span>
+        <span>Fault<span class="ray">Ray</span></span>
       </a>
       <button class="nav-toggle" id="nav-toggle" aria-label="Toggle navigation">
         <span></span><span></span><span></span>
       </button>
       <ul class="nav-links" id="nav-links">
         <li><a href="#features">Features</a></li>
-        <li><a href="#comparison">Compare</a></li>
-        <li><a href="#model">3-Layer Model</a></li>
-        <li><a href="#quickstart">Quick Start</a></li>
+        <li><a href="#how-it-works">How It Works</a></li>
+        <li><a href="#use-cases">Use Cases</a></li>
         <li><a href="#pricing">Pricing</a></li>
-        <li><a href="https://github.com/mattyopon/faultray" class="nav-link-github" target="_blank" rel="noopener">GitHub</a></li>
+        <li><a href="#getting-started">Get Started</a></li>
+        <li><a href="https://github.com/mattyopon/faultray" target="_blank" rel="noopener" class="btn btn-secondary" style="padding: 7px 16px; font-size: 0.8125rem;">GitHub</a></li>
       </ul>
     </div>
   </nav>
 
-  <!-- Hero Section -->
+  <!-- ==================== Hero ==================== -->
   <section class="hero" id="hero">
-    <div class="hero-bg-grid"></div>
+    <div class="hero-bg"></div>
+    <div class="hero-glow"></div>
     <div class="container">
       <div class="hero-content">
         <div class="hero-badge">Open Source &middot; MIT License</div>
+        <div class="hero-logo">
+          <svg width="72" height="72" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M50 5L90 25V75L50 95L10 75V25L50 5Z" stroke="#FFD700" stroke-width="5" fill="none"/>
+            <path d="M50 20L75 33V67L50 80L25 67V33L50 20Z" fill="#FFD700" fill-opacity="0.1" stroke="#FFD700" stroke-width="2.5"/>
+            <path d="M38 45L48 55L62 38" stroke="#10B981" stroke-width="5.5" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </div>
         <h1 class="hero-title">
-          <span class="hero-title-fault">Fault</span><span class="hero-title-ray">Ray</span>
+          <span class="fault">Fault</span><span class="ray">Ray</span>
         </h1>
-        <p class="hero-tagline">Zero-Risk Infrastructure Chaos Engineering</p>
-        <p class="hero-subtitle">Prove your system's availability ceiling mathematically &mdash; without touching production.</p>
-        <div class="hero-cta">
-          <a href="#quickstart" class="btn btn-primary">
+        <p class="hero-tagline">Zero-Risk Infrastructure Resilience Testing</p>
+        <p class="hero-subtitle">
+          Simulate 2,000+ failure scenarios from a YAML file.<br>
+          No production access needed.
+        </p>
+        <div class="hero-ctas">
+          <a href="#getting-started" class="btn btn-primary">
             <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor"><path d="M6 2v4H2v4h4v4l8-6-8-6z"/></svg>
-            Get Started (pip install)
+            Get Started
           </a>
-          <a href="https://faultray.com/demo" class="btn btn-secondary" target="_blank" rel="noopener">
-            <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="8" cy="8" r="6"/><polygon points="6.5,5 11,8 6.5,11" fill="currentColor"/></svg>
-            Live Demo
+          <a href="https://github.com/mattyopon/faultray" target="_blank" rel="noopener" class="btn btn-secondary">
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"/></svg>
+            View on GitHub
           </a>
-        </div>
-        <div class="hero-terminal">
-          <div class="terminal">
-            <div class="terminal-header">
-              <span class="terminal-dot terminal-dot--red"></span>
-              <span class="terminal-dot terminal-dot--yellow"></span>
-              <span class="terminal-dot terminal-dot--green"></span>
-              <span class="terminal-title">terminal</span>
-            </div>
-            <div class="terminal-body">
-              <div class="terminal-line terminal-line--1">
-                <span class="terminal-prompt">$</span>
-                <span class="terminal-cmd" id="cmd1">pip install faultray</span>
-              </div>
-              <div class="terminal-line terminal-line--2">
-                <span class="terminal-output">Successfully installed faultray-10.0.0</span>
-              </div>
-              <div class="terminal-line terminal-line--3">
-                <span class="terminal-prompt">$</span>
-                <span class="terminal-cmd" id="cmd2">faultray demo</span>
-              </div>
-              <div class="terminal-line terminal-line--4">
-                <span class="terminal-output terminal-output--gold">Running 2,000+ chaos scenarios...</span>
-              </div>
-              <div class="terminal-line terminal-line--5">
-                <span class="terminal-output terminal-output--green">Availability Ceiling: 99.9991% (4.05 nines)</span>
-              </div>
-              <div class="terminal-line terminal-line--6">
-                <span class="terminal-output terminal-output--green">3-Layer Analysis: Software=4.00 | Hardware=5.91 | Theoretical=6.65</span>
-              </div>
-              <div class="terminal-line terminal-line--7">
-                <span class="terminal-output">Report saved: faultray-report.html</span>
-              </div>
-              <div class="terminal-cursor"></div>
-            </div>
-          </div>
         </div>
       </div>
     </div>
   </section>
 
-  <!-- Problem / Solution -->
-  <section class="problem-solution" id="problem-solution">
-    <div class="container">
-      <div class="ps-grid">
-        <div class="ps-card ps-card--problem">
-          <div class="ps-icon ps-icon--problem">
-            <svg width="32" height="32" viewBox="0 0 32 32" fill="none" stroke="#ef4444" stroke-width="2.5"><circle cx="16" cy="16" r="13"/><line x1="16" y1="10" x2="16" y2="18"/><circle cx="16" cy="22" r="1.5" fill="#ef4444" stroke="none"/></svg>
-          </div>
-          <h2>The Problem</h2>
-          <p class="ps-lead">Existing chaos tools inject <strong>real faults</strong> into your infrastructure.</p>
-          <ul class="ps-list">
-            <li>
-              <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="#ef4444" stroke-width="2"><line x1="4" y1="4" x2="12" y2="12"/><line x1="12" y1="4" x2="4" y2="12"/></svg>
-              Requires production or staging environment
-            </li>
-            <li>
-              <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="#ef4444" stroke-width="2"><line x1="4" y1="4" x2="12" y2="12"/><line x1="12" y1="4" x2="4" y2="12"/></svg>
-              Risk of real outages during testing
-            </li>
-            <li>
-              <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="#ef4444" stroke-width="2"><line x1="4" y1="4" x2="12" y2="12"/><line x1="12" y1="4" x2="4" y2="12"/></svg>
-              Expensive infrastructure costs
-            </li>
-            <li>
-              <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="#ef4444" stroke-width="2"><line x1="4" y1="4" x2="12" y2="12"/><line x1="12" y1="4" x2="4" y2="12"/></svg>
-              Complex setup and teardown
-            </li>
-            <li>
-              <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="#ef4444" stroke-width="2"><line x1="4" y1="4" x2="12" y2="12"/><line x1="12" y1="4" x2="4" y2="12"/></svg>
-              No mathematical availability proof
-            </li>
-          </ul>
-        </div>
-        <div class="ps-card ps-card--solution">
-          <div class="ps-icon ps-icon--solution">
-            <svg width="32" height="32" viewBox="0 0 32 32" fill="none" stroke="#10B981" stroke-width="2.5"><circle cx="16" cy="16" r="13"/><polyline points="10,16 14,20 22,12"/></svg>
-          </div>
-          <h2>The Solution</h2>
-          <p class="ps-lead">FaultRay uses <strong>pure mathematical simulation</strong>.</p>
-          <ul class="ps-list">
-            <li>
-              <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="#10B981" stroke-width="2"><polyline points="3,8 6.5,11.5 13,5"/></svg>
-              Zero risk &mdash; no real faults injected
-            </li>
-            <li>
-              <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="#10B981" stroke-width="2"><polyline points="3,8 6.5,11.5 13,5"/></svg>
-              Zero cost &mdash; runs on a laptop
-            </li>
-            <li>
-              <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="#10B981" stroke-width="2"><polyline points="3,8 6.5,11.5 13,5"/></svg>
-              Instant results in seconds
-            </li>
-            <li>
-              <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="#10B981" stroke-width="2"><polyline points="3,8 6.5,11.5 13,5"/></svg>
-              Works from YAML topology alone
-            </li>
-            <li>
-              <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="#10B981" stroke-width="2"><polyline points="3,8 6.5,11.5 13,5"/></svg>
-              Mathematically proven availability ceiling
-            </li>
-          </ul>
-        </div>
-      </div>
-    </div>
-  </section>
-
-  <!-- Features Grid -->
-  <section class="features" id="features">
+  <!-- ==================== Features (3 Cards) ==================== -->
+  <section class="section section-alt" id="features">
     <div class="container">
       <div class="section-header">
-        <h2 class="section-title">Everything You Need</h2>
-        <p class="section-subtitle">Six pillars of zero-risk chaos engineering</p>
+        <h2 class="section-title">Why FaultRay?</h2>
+        <p class="section-subtitle">Three pillars that make infrastructure resilience testing safe, fast, and provable.</p>
       </div>
       <div class="features-grid">
-        <div class="feature-card">
-          <div class="feature-icon">
-            <svg width="36" height="36" viewBox="0 0 36 36" fill="none"><rect x="3" y="3" width="30" height="30" rx="4" stroke="#FFD700" stroke-width="2"/><path d="M10 18h4l3-8 4 16 3-8h4" stroke="#10B981" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        <div class="feature-card animate-on-scroll">
+          <div class="feature-icon feature-icon--green">
+            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#10B981" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+              <polyline points="9 12 11 14 15 10"/>
+            </svg>
           </div>
-          <h3>5 Simulation Engines</h3>
-          <p>Network, process, resource, dependency, and latency chaos engines powered by Monte Carlo, Markov chains, and queuing theory.</p>
+          <h3>Zero Risk</h3>
+          <p>Simulate entirely in-memory. No agents installed on your servers, no production access required, no chance of real outages. Pure mathematical simulation that runs on your laptop.</p>
         </div>
-        <div class="feature-card">
-          <div class="feature-icon">
-            <svg width="36" height="36" viewBox="0 0 36 36" fill="none"><circle cx="18" cy="18" r="14" stroke="#FFD700" stroke-width="2"/><path d="M12 18h12M18 12v12" stroke="#FFD700" stroke-width="2" stroke-linecap="round"/><text x="18" y="22" text-anchor="middle" font-size="10" fill="#FFD700" font-weight="bold">2K+</text></svg>
+        <div class="feature-card animate-on-scroll">
+          <div class="feature-icon feature-icon--gold">
+            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#FFD700" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/>
+            </svg>
           </div>
-          <h3>2,000+ Auto-Generated Scenarios</h3>
-          <p>From single-node failures to cascading multi-region outages. Every scenario is generated from your topology YAML.</p>
+          <h3>2,000+ Scenarios</h3>
+          <p>Auto-generated from your topology YAML. Single-component failures, cascading outages, traffic spikes, network partitions, and multi-region disasters -- all covered automatically.</p>
         </div>
-        <div class="feature-card">
-          <div class="feature-icon">
-            <svg width="36" height="36" viewBox="0 0 36 36" fill="none"><rect x="6" y="24" width="24" height="6" rx="2" stroke="#FFD700" stroke-width="2"/><rect x="10" y="16" width="16" height="6" rx="2" stroke="#FFD700" stroke-width="2"/><rect x="14" y="8" width="8" height="6" rx="2" stroke="#FFD700" stroke-width="2"/><line x1="18" y1="14" x2="18" y2="16" stroke="#FFD700" stroke-width="2"/><line x1="18" y1="22" x2="18" y2="24" stroke="#FFD700" stroke-width="2"/></svg>
+        <div class="feature-card animate-on-scroll">
+          <div class="feature-icon feature-icon--blue">
+            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#3b82f6" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <rect x="2" y="3" width="20" height="14" rx="2" ry="2"/>
+              <line x1="8" y1="21" x2="16" y2="21"/>
+              <line x1="12" y1="17" x2="12" y2="21"/>
+              <path d="M6 10h4l2-4 2 4h4" stroke-linejoin="round"/>
+            </svg>
           </div>
-          <h3>3-Layer Availability Model</h3>
-          <p>The only tool that separates Software, Hardware, and Theoretical limits to reveal your true availability ceiling.</p>
-        </div>
-        <div class="feature-card">
-          <div class="feature-icon">
-            <svg width="36" height="36" viewBox="0 0 36 36" fill="none"><circle cx="18" cy="14" r="8" stroke="#FFD700" stroke-width="2"/><path d="M8 30c0-5.5 4.5-10 10-10s10 4.5 10 10" stroke="#FFD700" stroke-width="2" stroke-linecap="round"/><circle cx="18" cy="14" r="3" fill="#FFD700" fill-opacity="0.3" stroke="#FFD700" stroke-width="1.5"/></svg>
-          </div>
-          <h3>AI-Powered Analysis</h3>
-          <p>Claude-driven root cause analysis and actionable improvement recommendations ranked by impact and cost.</p>
-        </div>
-        <div class="feature-card">
-          <div class="feature-icon">
-            <svg width="36" height="36" viewBox="0 0 36 36" fill="none"><rect x="5" y="5" width="26" height="26" rx="3" stroke="#FFD700" stroke-width="2"/><path d="M11 18l4 4 8-8" stroke="#10B981" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/><line x1="5" y1="12" x2="31" y2="12" stroke="#FFD700" stroke-width="2"/></svg>
-          </div>
-          <h3>DORA Compliance Reports</h3>
-          <p>Generate audit-ready Digital Operational Resilience Act reports with evidence trails and risk assessments.</p>
-        </div>
-        <div class="feature-card">
-          <div class="feature-icon">
-            <svg width="36" height="36" viewBox="0 0 36 36" fill="none"><path d="M18 4L32 12V24L18 32L4 24V12L18 4Z" stroke="#FFD700" stroke-width="2"/><path d="M18 14L24 17.5V24.5L18 28L12 24.5V17.5L18 14Z" stroke="#FFD700" stroke-width="1.5" fill="#FFD700" fill-opacity="0.1"/><circle cx="18" cy="21" r="2" fill="#10B981"/></svg>
-          </div>
-          <h3>Security Feed Integration</h3>
-          <p>Automatically incorporate CVE data and NVD feeds to simulate vulnerability-triggered cascading failures.</p>
+          <h3>Mathematical Proof</h3>
+          <p>The N-Layer Availability Model proves your SLA is achievable -- or identifies exactly why it is not. Separate Software, Hardware, and Theoretical limits to find your true ceiling.</p>
         </div>
       </div>
     </div>
   </section>
 
-  <!-- Comparison Table -->
-  <section class="comparison" id="comparison">
+  <!-- ==================== How It Works (3 Steps) ==================== -->
+  <section class="section" id="how-it-works">
     <div class="container">
       <div class="section-header">
-        <h2 class="section-title">How We Compare</h2>
-        <p class="section-subtitle">FaultRay takes a fundamentally different approach</p>
+        <h2 class="section-title">How It Works</h2>
+        <p class="section-subtitle">From zero to resilience proof in three steps</p>
       </div>
-      <div class="table-wrapper">
-        <table class="comparison-table">
-          <thead>
-            <tr>
-              <th></th>
-              <th class="comparison-highlight">
-                <span class="comparison-badge">Recommended</span>
-                FaultRay
-              </th>
-              <th>Gremlin</th>
-              <th>Steadybit</th>
-              <th>AWS FIS</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr>
-              <td class="comparison-label">Approach</td>
-              <td class="comparison-highlight-cell">Mathematical Simulation</td>
-              <td>Real Fault Injection</td>
-              <td>Real Fault Injection</td>
-              <td>Real Fault Injection</td>
-            </tr>
-            <tr>
-              <td class="comparison-label">Production Risk</td>
-              <td class="comparison-highlight-cell">
-                <span class="badge badge--green">Zero</span>
-              </td>
-              <td><span class="badge badge--red">High</span></td>
-              <td><span class="badge badge--yellow">Medium</span></td>
-              <td><span class="badge badge--red">High</span></td>
-            </tr>
-            <tr>
-              <td class="comparison-label">Setup Time</td>
-              <td class="comparison-highlight-cell">
-                <span class="badge badge--green">5 minutes</span>
-              </td>
-              <td><span class="badge badge--yellow">Days</span></td>
-              <td><span class="badge badge--yellow">Hours</span></td>
-              <td><span class="badge badge--yellow">Hours</span></td>
-            </tr>
-            <tr>
-              <td class="comparison-label">Scenarios</td>
-              <td class="comparison-highlight-cell">2,000+ auto-generated</td>
-              <td>Manual configuration</td>
-              <td>Template-based</td>
-              <td>AWS services only</td>
-            </tr>
-            <tr>
-              <td class="comparison-label">Availability Proof</td>
-              <td class="comparison-highlight-cell">
-                <svg width="18" height="18" viewBox="0 0 18 18" fill="none"><polyline points="4,9 7.5,12.5 14,6" stroke="#10B981" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
-                3-Layer Mathematical
-              </td>
-              <td>
-                <svg width="18" height="18" viewBox="0 0 18 18" fill="none"><line x1="5" y1="5" x2="13" y2="13" stroke="#ef4444" stroke-width="2.5" stroke-linecap="round"/><line x1="13" y1="5" x2="5" y2="13" stroke="#ef4444" stroke-width="2.5" stroke-linecap="round"/></svg>
-                No
-              </td>
-              <td>
-                <svg width="18" height="18" viewBox="0 0 18 18" fill="none"><line x1="5" y1="5" x2="13" y2="13" stroke="#ef4444" stroke-width="2.5" stroke-linecap="round"/><line x1="13" y1="5" x2="5" y2="13" stroke="#ef4444" stroke-width="2.5" stroke-linecap="round"/></svg>
-                No
-              </td>
-              <td>
-                <svg width="18" height="18" viewBox="0 0 18 18" fill="none"><line x1="5" y1="5" x2="13" y2="13" stroke="#ef4444" stroke-width="2.5" stroke-linecap="round"/><line x1="13" y1="5" x2="5" y2="13" stroke="#ef4444" stroke-width="2.5" stroke-linecap="round"/></svg>
-                No
-              </td>
-            </tr>
-            <tr>
-              <td class="comparison-label">Starting Cost</td>
-              <td class="comparison-highlight-cell">
-                <span class="badge badge--green">Free / OSS</span>
-              </td>
-              <td><span class="badge badge--red">$10,000+/yr</span></td>
-              <td><span class="badge badge--yellow">$5,000+/yr</span></td>
-              <td><span class="badge badge--yellow">Pay per use</span></td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
-    </div>
-  </section>
-
-  <!-- 3-Layer Availability Limit Model -->
-  <section class="model" id="model">
-    <div class="container">
-      <div class="section-header">
-        <h2 class="section-title">3-Layer Availability Limit Model</h2>
-        <p class="section-subtitle">The only tool that proves your availability ceiling</p>
-      </div>
-      <div class="model-visual">
-        <div class="model-layers">
-          <div class="model-layer model-layer--theoretical">
-            <div class="model-layer-inner">
-              <div class="model-layer-label">Theoretical Limit</div>
-              <div class="model-layer-nines">6.65 nines</div>
-              <div class="model-layer-pct">99.999978%</div>
-              <p class="model-layer-desc">Mathematical upper bound assuming perfect software and ideal hardware</p>
-            </div>
-          </div>
-          <div class="model-layer model-layer--hardware">
-            <div class="model-layer-inner">
-              <div class="model-layer-label">Hardware Limit</div>
-              <div class="model-layer-nines">5.91 nines</div>
-              <div class="model-layer-pct">99.99988%</div>
-              <p class="model-layer-desc">Constrained by physical components: disk MTBF, network gear, power systems</p>
-            </div>
-          </div>
-          <div class="model-layer model-layer--software">
-            <div class="model-layer-inner">
-              <div class="model-layer-label">Software Limit</div>
-              <div class="model-layer-nines">4.00 nines</div>
-              <div class="model-layer-pct">99.99%</div>
-              <p class="model-layer-desc">Your actual ceiling: deploy pipelines, config errors, dependency failures</p>
-            </div>
-          </div>
+      <div class="steps-grid">
+        <div class="step animate-on-scroll">
+          <div class="step-number">1</div>
+          <div class="step-connector"></div>
+          <h3>Define Your Infrastructure</h3>
+          <p>Describe your topology in a simple YAML file. Services, dependencies, replicas, and regions.</p>
+          <code class="step-code">
+# infra.yaml<br>
+topology:<br>
+&nbsp;&nbsp;name: my-platform<br>
+&nbsp;&nbsp;services:<br>
+&nbsp;&nbsp;&nbsp;&nbsp;- name: api-gateway<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;replicas: 3<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;dependencies: [auth, db]
+          </code>
         </div>
-        <div class="model-insight">
-          <div class="model-insight-card">
-            <h3>Why This Matters</h3>
-            <p>Most teams chase hardware nines while their software layer caps availability at 4 nines. FaultRay reveals exactly where your bottleneck lives so you invest in the right layer.</p>
-            <div class="model-insight-example">
-              <code>faultray analyze --topology infra.yaml --output 3-layer</code>
-            </div>
-          </div>
+        <div class="step animate-on-scroll">
+          <div class="step-number">2</div>
+          <div class="step-connector"></div>
+          <h3>Run Simulation</h3>
+          <p>A single command triggers 2,000+ chaos scenarios against your topology. Takes seconds, not hours.</p>
+          <code class="step-code">
+<span style="color: var(--green);">$</span> faultray simulate \<br>
+&nbsp;&nbsp;&nbsp;&nbsp;--topology infra.yaml \<br>
+&nbsp;&nbsp;&nbsp;&nbsp;--scenarios all<br>
+<span style="color: var(--gold);">Running 2,147 scenarios...</span><br>
+<span style="color: var(--green);">Done in 6.2s</span>
+          </code>
+        </div>
+        <div class="step animate-on-scroll">
+          <div class="step-number">3</div>
+          <h3>Get Results</h3>
+          <p>Resilience score, SPOF analysis, cascade maps, compliance reports, and financial risk quantification.</p>
+          <code class="step-code">
+<span style="color: var(--green);">$</span> faultray report<br>
+<span style="color: var(--text-muted);">Availability: 99.991% (3.95 nines)</span><br>
+<span style="color: var(--text-muted);">SPOFs found: 2</span><br>
+<span style="color: var(--text-muted);">Cascade risk: LOW</span><br>
+<span style="color: var(--green);">Report saved: report.html</span>
+          </code>
         </div>
       </div>
     </div>
   </section>
 
-  <!-- Quick Start -->
-  <section class="quickstart" id="quickstart">
-    <div class="container">
-      <div class="section-header">
-        <h2 class="section-title">Quick Start</h2>
-        <p class="section-subtitle">From zero to availability proof in 3 steps</p>
-      </div>
-      <div class="quickstart-steps">
-        <div class="quickstart-step">
-          <div class="quickstart-step-number">1</div>
-          <h3>Install</h3>
-          <div class="code-block">
-            <div class="code-header">
-              <span>Terminal</span>
-              <button class="code-copy" data-code="pip install faultray" aria-label="Copy to clipboard">Copy</button>
-            </div>
-            <pre><code><span class="code-prompt">$</span> pip install faultray</code></pre>
-          </div>
-        </div>
-        <div class="quickstart-step">
-          <div class="quickstart-step-number">2</div>
-          <h3>Define Your Topology</h3>
-          <div class="code-block">
-            <div class="code-header">
-              <span>infra.yaml</span>
-              <button class="code-copy" data-code="topology:
-  name: my-saas-platform
-  regions:
-    - name: us-east-1
-      zones: [a, b, c]
-  services:
-    - name: api-gateway
-      replicas: 3
-      dependencies: [auth, database]
-    - name: auth
-      replicas: 2
-      dependencies: [database, cache]
-    - name: database
-      type: rds-multi-az
-      replicas: 2
-    - name: cache
-      type: elasticache
-      replicas: 3" aria-label="Copy to clipboard">Copy</button>
-            </div>
-            <pre><code><span class="code-key">topology</span>:
-  <span class="code-key">name</span>: <span class="code-str">my-saas-platform</span>
-  <span class="code-key">regions</span>:
-    - <span class="code-key">name</span>: <span class="code-str">us-east-1</span>
-      <span class="code-key">zones</span>: <span class="code-str">[a, b, c]</span>
-  <span class="code-key">services</span>:
-    - <span class="code-key">name</span>: <span class="code-str">api-gateway</span>
-      <span class="code-key">replicas</span>: <span class="code-num">3</span>
-      <span class="code-key">dependencies</span>: <span class="code-str">[auth, database]</span>
-    - <span class="code-key">name</span>: <span class="code-str">auth</span>
-      <span class="code-key">replicas</span>: <span class="code-num">2</span>
-      <span class="code-key">dependencies</span>: <span class="code-str">[database, cache]</span>
-    - <span class="code-key">name</span>: <span class="code-str">database</span>
-      <span class="code-key">type</span>: <span class="code-str">rds-multi-az</span>
-      <span class="code-key">replicas</span>: <span class="code-num">2</span>
-    - <span class="code-key">name</span>: <span class="code-str">cache</span>
-      <span class="code-key">type</span>: <span class="code-str">elasticache</span>
-      <span class="code-key">replicas</span>: <span class="code-num">3</span></code></pre>
-          </div>
-        </div>
-        <div class="quickstart-step">
-          <div class="quickstart-step-number">3</div>
-          <h3>Run Analysis</h3>
-          <div class="code-block">
-            <div class="code-header">
-              <span>Terminal</span>
-              <button class="code-copy" data-code="faultray run --topology infra.yaml --scenarios all
-faultray report --format html --output report.html
-faultray dashboard" aria-label="Copy to clipboard">Copy</button>
-            </div>
-            <pre><code><span class="code-prompt">$</span> faultray run --topology infra.yaml --scenarios all
-<span class="code-output">Running 2,000+ scenarios across 5 engines...</span>
-<span class="code-output code-output--green">Completed in 8.3s | Pass: 147 | Fail: 5</span>
-
-<span class="code-prompt">$</span> faultray report --format html --output report.html
-<span class="code-output">Report saved: report.html</span>
-
-<span class="code-prompt">$</span> faultray dashboard
-<span class="code-output code-output--gold">Dashboard running at http://localhost:8550</span></code></pre>
-          </div>
-        </div>
-      </div>
-      <div class="quickstart-dashboard">
-        <div class="dashboard-mockup">
-          <div class="dashboard-header">
-            <div class="dashboard-dots">
-              <span class="terminal-dot terminal-dot--red"></span>
-              <span class="terminal-dot terminal-dot--yellow"></span>
-              <span class="terminal-dot terminal-dot--green"></span>
-            </div>
-            <span class="dashboard-url">localhost:8550/dashboard</span>
-          </div>
-          <div class="dashboard-body">
-            <div class="dashboard-sidebar">
-              <div class="dashboard-nav-item active">Overview</div>
-              <div class="dashboard-nav-item">Scenarios</div>
-              <div class="dashboard-nav-item">3-Layer</div>
-              <div class="dashboard-nav-item">Reports</div>
-            </div>
-            <div class="dashboard-main">
-              <div class="dashboard-stats">
-                <div class="dashboard-stat">
-                  <div class="dashboard-stat-value dashboard-stat--green">99.99%</div>
-                  <div class="dashboard-stat-label">Availability</div>
-                </div>
-                <div class="dashboard-stat">
-                  <div class="dashboard-stat-value">2,000+</div>
-                  <div class="dashboard-stat-label">Scenarios</div>
-                </div>
-                <div class="dashboard-stat">
-                  <div class="dashboard-stat-value dashboard-stat--green">147</div>
-                  <div class="dashboard-stat-label">Passed</div>
-                </div>
-                <div class="dashboard-stat">
-                  <div class="dashboard-stat-value dashboard-stat--red">5</div>
-                  <div class="dashboard-stat-label">Failed</div>
-                </div>
-              </div>
-              <div class="dashboard-chart">
-                <div class="dashboard-chart-title">Availability by Layer</div>
-                <div class="dashboard-bars">
-                  <div class="dashboard-bar-row">
-                    <span class="dashboard-bar-label">Software</span>
-                    <div class="dashboard-bar-track">
-                      <div class="dashboard-bar-fill dashboard-bar--software" style="width: 60%"></div>
-                    </div>
-                    <span class="dashboard-bar-value">4.00</span>
-                  </div>
-                  <div class="dashboard-bar-row">
-                    <span class="dashboard-bar-label">Hardware</span>
-                    <div class="dashboard-bar-track">
-                      <div class="dashboard-bar-fill dashboard-bar--hardware" style="width: 89%"></div>
-                    </div>
-                    <span class="dashboard-bar-value">5.91</span>
-                  </div>
-                  <div class="dashboard-bar-row">
-                    <span class="dashboard-bar-label">Theoretical</span>
-                    <div class="dashboard-bar-track">
-                      <div class="dashboard-bar-fill dashboard-bar--theoretical" style="width: 100%"></div>
-                    </div>
-                    <span class="dashboard-bar-value">6.65</span>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-  </section>
-
-  <!-- Numbers -->
-  <section class="numbers" id="numbers">
-    <div class="container">
-      <div class="section-header">
-        <h2 class="section-title">Built for Production</h2>
-        <p class="section-subtitle">Battle-tested reliability you can count on</p>
-      </div>
-      <div class="numbers-grid">
-        <div class="number-card">
-          <div class="number-value">19,757+</div>
-          <div class="number-label">Tests Passing</div>
-        </div>
-        <div class="number-card">
-          <div class="number-value">2,000+</div>
-          <div class="number-label">Chaos Scenarios</div>
-        </div>
-        <div class="number-card">
-          <div class="number-value">216</div>
-          <div class="number-label">Simulator Modules</div>
-        </div>
-        <div class="number-card">
-          <div class="number-value">5</div>
-          <div class="number-label">Simulation Engines</div>
-        </div>
-        <div class="number-card">
-          <div class="number-value">30</div>
-          <div class="number-label">Failure Categories</div>
-        </div>
-        <div class="number-card">
-          <div class="number-value">0</div>
-          <div class="number-label">Production Risk</div>
-        </div>
-      </div>
-    </div>
-  </section>
-
-  <!-- Use Cases -->
-  <section class="usecases" id="usecases">
+  <!-- ==================== Use Cases ==================== -->
+  <section class="section section-alt" id="use-cases">
     <div class="container">
       <div class="section-header">
         <h2 class="section-title">Use Cases</h2>
-        <p class="section-subtitle">How teams use FaultRay</p>
+        <p class="section-subtitle">How engineering teams use FaultRay across industries</p>
       </div>
       <div class="usecases-grid">
-        <div class="usecase-card">
-          <h3>Pre-Deploy Validation</h3>
-          <p>Run chaos simulations in CI/CD before every deployment. Catch availability regressions before they hit production.</p>
+        <div class="usecase-card animate-on-scroll">
+          <div class="usecase-icon">
+            <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#3b82f6" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
+          </div>
+          <h4>DORA Compliance</h4>
+          <p>Generate audit-ready Digital Operational Resilience Act reports with evidence trails for EU financial regulation.</p>
         </div>
-        <div class="usecase-card">
-          <h3>Architecture Reviews</h3>
-          <p>Evaluate infrastructure designs against 2,000+ failure scenarios. Make data-driven architecture decisions.</p>
+        <div class="usecase-card animate-on-scroll">
+          <div class="usecase-icon">
+            <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#10B981" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2"/><rect x="9" y="3" width="6" height="4" rx="1"/><path d="M9 14l2 2 4-4"/></svg>
+          </div>
+          <h4>SLA Validation</h4>
+          <p>Mathematically prove your availability target is achievable. Show customers and stakeholders hard numbers, not assumptions.</p>
         </div>
-        <div class="usecase-card">
-          <h3>DORA Compliance</h3>
-          <p>Generate audit-ready resilience reports for Digital Operational Resilience Act compliance.</p>
+        <div class="usecase-card animate-on-scroll">
+          <div class="usecase-icon">
+            <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#FFD700" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/><line x1="14" y1="4" x2="10" y2="20"/></svg>
+          </div>
+          <h4>CI/CD Resilience Gate</h4>
+          <p>Run chaos simulations in your pipeline before every deployment. Catch availability regressions before production.</p>
         </div>
-        <div class="usecase-card">
-          <h3>Terraform Plan Analysis</h3>
-          <p>Analyze Terraform plans for resilience impact before applying infrastructure changes.</p>
+        <div class="usecase-card animate-on-scroll">
+          <div class="usecase-icon">
+            <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#ef4444" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/></svg>
+          </div>
+          <h4>Financial Risk (VaR95)</h4>
+          <p>Quantify potential financial loss from infrastructure failures. Calculate Value at Risk for downtime scenarios.</p>
         </div>
       </div>
     </div>
   </section>
 
-  <!-- Pricing -->
-  <section class="pricing" id="pricing">
+  <!-- ==================== Pricing ==================== -->
+  <section class="section" id="pricing">
     <div class="container">
       <div class="section-header">
         <h2 class="section-title">Pricing</h2>
-        <p class="section-subtitle">Start free. Scale as you grow.</p>
+        <p class="section-subtitle">Start free. Scale when you need to.</p>
       </div>
       <div class="pricing-grid">
-        <div class="pricing-card">
-          <div class="pricing-tier">Community</div>
+        <!-- Free -->
+        <div class="pricing-card animate-on-scroll">
+          <div class="pricing-tier">Free</div>
+          <div class="pricing-desc">For individual engineers and open source projects</div>
           <div class="pricing-price">
             <span class="pricing-amount">Free</span>
             <span class="pricing-period">forever</span>
           </div>
-          <p class="pricing-desc">Perfect for individual engineers and open source projects.</p>
           <ul class="pricing-features">
             <li>
               <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><polyline points="3,8 6.5,11.5 13,5" stroke="#10B981" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
-              CLI tool
+              Full CLI tool
             </li>
             <li>
               <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><polyline points="3,8 6.5,11.5 13,5" stroke="#10B981" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
@@ -664,32 +1049,33 @@ faultray dashboard" aria-label="Copy to clipboard">Copy</button>
             </li>
             <li>
               <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><polyline points="3,8 6.5,11.5 13,5" stroke="#10B981" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
-              HTML reports
+              N-Layer Availability Model
             </li>
             <li>
               <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><polyline points="3,8 6.5,11.5 13,5" stroke="#10B981" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
-              3-Layer model
+              HTML reports
             </li>
             <li>
               <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><polyline points="3,8 6.5,11.5 13,5" stroke="#10B981" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
               Community support
             </li>
           </ul>
-          <a href="#quickstart" class="btn btn-secondary pricing-btn">Get Started</a>
+          <a href="#getting-started" class="btn btn-secondary pricing-btn">Get Started</a>
         </div>
-        <div class="pricing-card pricing-card--popular">
+        <!-- Pro -->
+        <div class="pricing-card pricing-card--popular animate-on-scroll">
           <div class="pricing-popular-badge">Most Popular</div>
-          <div class="pricing-tier">Team</div>
+          <div class="pricing-tier">Pro</div>
+          <div class="pricing-desc">For teams that need collaboration and CI integration</div>
           <div class="pricing-price">
             <span class="pricing-currency">$</span>
-            <span class="pricing-amount">500</span>
+            <span class="pricing-amount">49</span>
             <span class="pricing-period">/month</span>
           </div>
-          <p class="pricing-desc">For engineering teams that need collaboration and CI integration.</p>
           <ul class="pricing-features">
             <li>
               <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><polyline points="3,8 6.5,11.5 13,5" stroke="#10B981" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
-              Everything in Community
+              Everything in Free
             </li>
             <li>
               <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><polyline points="3,8 6.5,11.5 13,5" stroke="#10B981" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
@@ -697,70 +1083,35 @@ faultray dashboard" aria-label="Copy to clipboard">Copy</button>
             </li>
             <li>
               <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><polyline points="3,8 6.5,11.5 13,5" stroke="#10B981" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
-              GitHub App integration
-            </li>
-            <li>
-              <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><polyline points="3,8 6.5,11.5 13,5" stroke="#10B981" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
-              PDF export
-            </li>
-            <li>
-              <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><polyline points="3,8 6.5,11.5 13,5" stroke="#10B981" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
-              Team collaboration
-            </li>
-            <li>
-              <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><polyline points="3,8 6.5,11.5 13,5" stroke="#10B981" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
-              Email support
-            </li>
-          </ul>
-          <a href="#quickstart" class="btn btn-primary pricing-btn">Start Free Trial</a>
-        </div>
-        <div class="pricing-card">
-          <div class="pricing-tier">Business</div>
-          <div class="pricing-price">
-            <span class="pricing-currency">$</span>
-            <span class="pricing-amount">2,000</span>
-            <span class="pricing-period">/month</span>
-          </div>
-          <p class="pricing-desc">For organizations needing AI analysis and compliance reports.</p>
-          <ul class="pricing-features">
-            <li>
-              <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><polyline points="3,8 6.5,11.5 13,5" stroke="#10B981" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
-              Everything in Team
-            </li>
-            <li>
-              <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><polyline points="3,8 6.5,11.5 13,5" stroke="#10B981" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
               AI-powered analysis
             </li>
             <li>
               <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><polyline points="3,8 6.5,11.5 13,5" stroke="#10B981" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
-              Prometheus integration
+              GitHub App integration
             </li>
             <li>
               <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><polyline points="3,8 6.5,11.5 13,5" stroke="#10B981" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
-              3-Layer PDF reports
-            </li>
-            <li>
-              <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><polyline points="3,8 6.5,11.5 13,5" stroke="#10B981" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
-              Custom scenarios
+              DORA compliance reports
             </li>
             <li>
               <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><polyline points="3,8 6.5,11.5 13,5" stroke="#10B981" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
               Priority support
             </li>
           </ul>
-          <a href="#quickstart" class="btn btn-secondary pricing-btn">Contact Sales</a>
+          <a href="#getting-started" class="btn btn-primary pricing-btn">Start Free Trial</a>
         </div>
-        <div class="pricing-card">
+        <!-- Enterprise -->
+        <div class="pricing-card animate-on-scroll">
           <div class="pricing-tier">Enterprise</div>
+          <div class="pricing-desc">For organizations with strict compliance requirements</div>
           <div class="pricing-price">
             <span class="pricing-amount">Custom</span>
             <span class="pricing-period">contact us</span>
           </div>
-          <p class="pricing-desc">For enterprises with strict compliance and security requirements.</p>
           <ul class="pricing-features">
             <li>
               <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><polyline points="3,8 6.5,11.5 13,5" stroke="#10B981" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
-              Everything in Business
+              Everything in Pro
             </li>
             <li>
               <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><polyline points="3,8 6.5,11.5 13,5" stroke="#10B981" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
@@ -768,7 +1119,7 @@ faultray dashboard" aria-label="Copy to clipboard">Copy</button>
             </li>
             <li>
               <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><polyline points="3,8 6.5,11.5 13,5" stroke="#10B981" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
-              DORA compliance
+              Custom compliance frameworks
             </li>
             <li>
               <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><polyline points="3,8 6.5,11.5 13,5" stroke="#10B981" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
@@ -776,45 +1127,120 @@ faultray dashboard" aria-label="Copy to clipboard">Copy</button>
             </li>
             <li>
               <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><polyline points="3,8 6.5,11.5 13,5" stroke="#10B981" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
-              Dedicated support
+              On-premise deployment
             </li>
             <li>
               <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><polyline points="3,8 6.5,11.5 13,5" stroke="#10B981" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
-              On-premise deployment
+              Dedicated support
             </li>
           </ul>
-          <a href="mailto:enterprise@faultray.com" class="btn btn-secondary pricing-btn">Contact Us</a>
+          <a href="mailto:enterprise@faultray.com" class="btn btn-secondary pricing-btn">Contact Sales</a>
         </div>
       </div>
     </div>
   </section>
 
-  <!-- Footer -->
+  <!-- ==================== Getting Started ==================== -->
+  <section class="section section-alt" id="getting-started">
+    <div class="container">
+      <div class="section-header">
+        <h2 class="section-title">Getting Started</h2>
+        <p class="section-subtitle">Up and running in under a minute</p>
+      </div>
+      <div class="getting-started-content">
+        <!-- Install -->
+        <div class="code-block">
+          <div class="code-header">
+            <span>Install</span>
+            <button class="code-copy" data-code="pip install faultray" aria-label="Copy to clipboard">Copy</button>
+          </div>
+          <pre><code><span class="code-prompt">$ </span>pip install faultray</code></pre>
+        </div>
+
+        <!-- Create topology -->
+        <div class="code-block">
+          <div class="code-header">
+            <span>infra.yaml</span>
+            <button class="code-copy" data-code="topology:
+  name: my-saas-platform
+  regions:
+    - name: us-east-1
+      zones: [a, b, c]
+  services:
+    - name: api-gateway
+      replicas: 3
+      dependencies: [auth-service, database]
+    - name: auth-service
+      replicas: 2
+      dependencies: [database, cache]
+    - name: database
+      type: rds-multi-az
+      replicas: 2
+    - name: cache
+      type: elasticache
+      replicas: 3" aria-label="Copy to clipboard">Copy</button>
+          </div>
+          <pre><code><span class="code-key">topology</span>:
+  <span class="code-key">name</span>: <span class="code-str">my-saas-platform</span>
+  <span class="code-key">regions</span>:
+    - <span class="code-key">name</span>: <span class="code-str">us-east-1</span>
+      <span class="code-key">zones</span>: <span class="code-str">[a, b, c]</span>
+  <span class="code-key">services</span>:
+    - <span class="code-key">name</span>: <span class="code-str">api-gateway</span>
+      <span class="code-key">replicas</span>: <span class="code-num">3</span>
+      <span class="code-key">dependencies</span>: <span class="code-str">[auth-service, database]</span>
+    - <span class="code-key">name</span>: <span class="code-str">auth-service</span>
+      <span class="code-key">replicas</span>: <span class="code-num">2</span>
+      <span class="code-key">dependencies</span>: <span class="code-str">[database, cache]</span>
+    - <span class="code-key">name</span>: <span class="code-str">database</span>
+      <span class="code-key">type</span>: <span class="code-str">rds-multi-az</span>
+      <span class="code-key">replicas</span>: <span class="code-num">2</span>
+    - <span class="code-key">name</span>: <span class="code-str">cache</span>
+      <span class="code-key">type</span>: <span class="code-str">elasticache</span>
+      <span class="code-key">replicas</span>: <span class="code-num">3</span></code></pre>
+        </div>
+
+        <!-- Run -->
+        <div class="code-block">
+          <div class="code-header">
+            <span>Run simulation</span>
+            <button class="code-copy" data-code="faultray simulate --topology infra.yaml --scenarios all
+faultray report --format html --output report.html" aria-label="Copy to clipboard">Copy</button>
+          </div>
+          <pre><code><span class="code-prompt">$ </span>faultray simulate --topology infra.yaml --scenarios all
+<span class="code-output code-output--gold">Running 2,147 scenarios across 5 engines...</span>
+<span class="code-output code-output--green">Completed in 6.2s | Pass: 2,142 | Fail: 5</span>
+<span class="code-output">Availability Ceiling: 99.991% (3.95 nines)</span>
+
+<span class="code-prompt">$ </span>faultray report --format html --output report.html
+<span class="code-output code-output--green">Report saved: report.html</span></code></pre>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ==================== Footer ==================== -->
   <footer class="footer">
     <div class="container">
       <div class="footer-grid">
         <div class="footer-brand">
-          <a href="#" class="footer-logo">
-            <svg class="nav-logo-icon" width="24" height="24" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <div class="footer-logo">
+            <svg width="22" height="22" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
               <path d="M50 5L90 25V75L50 95L10 75V25L50 5Z" stroke="#FFD700" stroke-width="6" fill="none"/>
               <path d="M50 20L75 33V67L50 80L25 67V33L50 20Z" fill="#FFD700" fill-opacity="0.15" stroke="#FFD700" stroke-width="3"/>
               <path d="M38 45L48 55L62 38" stroke="#10B981" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/>
             </svg>
-            FaultRay
-          </a>
-          <p class="footer-desc">Zero-risk infrastructure chaos engineering. Prove your availability ceiling mathematically.</p>
-          <div class="footer-badge">
-            <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><circle cx="7" cy="7" r="6" stroke="#ef4444" stroke-width="1.5"/><circle cx="7" cy="7" r="2" fill="#ef4444"/></svg>
-            Made in Tokyo
+            <span>Fault<span class="ray">Ray</span></span>
           </div>
+          <p class="footer-desc">Zero-risk infrastructure resilience testing. Prove your availability ceiling mathematically.</p>
         </div>
         <div class="footer-links">
           <h4>Product</h4>
           <ul>
             <li><a href="#features">Features</a></li>
-            <li><a href="#comparison">Comparison</a></li>
+            <li><a href="#how-it-works">How It Works</a></li>
             <li><a href="#pricing">Pricing</a></li>
-            <li><a href="#quickstart">Quick Start</a></li>
+            <li><a href="#getting-started">Get Started</a></li>
           </ul>
         </div>
         <div class="footer-links">
@@ -822,7 +1248,6 @@ faultray dashboard" aria-label="Copy to clipboard">Copy</button>
           <ul>
             <li><a href="https://github.com/mattyopon/faultray" target="_blank" rel="noopener">GitHub</a></li>
             <li><a href="https://pypi.org/project/faultray/" target="_blank" rel="noopener">PyPI</a></li>
-            <li><a href="https://faultray.com/demo" target="_blank" rel="noopener">Live Demo</a></li>
             <li><a href="https://github.com/mattyopon/faultray/blob/main/docs/" target="_blank" rel="noopener">Documentation</a></li>
           </ul>
         </div>
@@ -835,11 +1260,131 @@ faultray dashboard" aria-label="Copy to clipboard">Copy</button>
         </div>
       </div>
       <div class="footer-bottom">
-        <p>&copy; 2026 FaultRay. Open source under the MIT License.</p>
+        <p>&copy; 2025-2026 FaultRay Contributors. Open source under the MIT License.</p>
       </div>
     </div>
   </footer>
 
-  <script src="script.js"></script>
+  <!-- ==================== Inline JavaScript ==================== -->
+  <script>
+    (function () {
+      "use strict";
+
+      // --- Navbar scroll effect ---
+      var nav = document.getElementById("nav");
+      function onScroll() {
+        if (window.scrollY > 20) {
+          nav.classList.add("scrolled");
+        } else {
+          nav.classList.remove("scrolled");
+        }
+      }
+      window.addEventListener("scroll", onScroll, { passive: true });
+      onScroll();
+
+      // --- Mobile nav toggle ---
+      var navToggle = document.getElementById("nav-toggle");
+      var navLinks = document.getElementById("nav-links");
+      if (navToggle && navLinks) {
+        navToggle.addEventListener("click", function () {
+          navToggle.classList.toggle("active");
+          navLinks.classList.toggle("open");
+        });
+        var links = navLinks.querySelectorAll("a");
+        for (var i = 0; i < links.length; i++) {
+          links[i].addEventListener("click", function () {
+            navToggle.classList.remove("active");
+            navLinks.classList.remove("open");
+          });
+        }
+      }
+
+      // --- Copy buttons ---
+      var copyButtons = document.querySelectorAll(".code-copy");
+      for (var j = 0; j < copyButtons.length; j++) {
+        copyButtons[j].addEventListener("click", function () {
+          var btn = this;
+          var code = btn.getAttribute("data-code");
+          if (navigator.clipboard && navigator.clipboard.writeText) {
+            navigator.clipboard.writeText(code).then(function () {
+              showCopied(btn);
+            });
+          } else {
+            var textarea = document.createElement("textarea");
+            textarea.value = code;
+            textarea.style.position = "fixed";
+            textarea.style.opacity = "0";
+            document.body.appendChild(textarea);
+            textarea.select();
+            try { document.execCommand("copy"); showCopied(btn); } catch (e) {}
+            document.body.removeChild(textarea);
+          }
+        });
+      }
+
+      function showCopied(btn) {
+        var original = btn.textContent;
+        btn.textContent = "Copied!";
+        btn.classList.add("copied");
+        setTimeout(function () {
+          btn.textContent = original;
+          btn.classList.remove("copied");
+        }, 2000);
+      }
+
+      // --- Smooth scroll for anchor links ---
+      var anchorLinks = document.querySelectorAll('a[href^="#"]');
+      for (var k = 0; k < anchorLinks.length; k++) {
+        anchorLinks[k].addEventListener("click", function (e) {
+          var href = this.getAttribute("href");
+          if (href === "#") return;
+          var target = document.querySelector(href);
+          if (target) {
+            e.preventDefault();
+            var navHeight = nav ? nav.offsetHeight : 0;
+            var targetPos = target.getBoundingClientRect().top + window.pageYOffset - navHeight;
+            window.scrollTo({ top: targetPos, behavior: "smooth" });
+            if (history.pushState) {
+              history.pushState(null, null, href);
+            }
+          }
+        });
+      }
+
+      // --- Intersection Observer for scroll animations ---
+      if ("IntersectionObserver" in window) {
+        var animateElements = document.querySelectorAll(".animate-on-scroll");
+        var observer = new IntersectionObserver(
+          function (entries) {
+            entries.forEach(function (entry) {
+              if (entry.isIntersecting) {
+                var el = entry.target;
+                var parent = el.parentElement;
+                var siblings = parent ? parent.children : [];
+                var index = 0;
+                for (var n = 0; n < siblings.length; n++) {
+                  if (siblings[n] === el) { index = n; break; }
+                }
+                setTimeout(function () {
+                  el.classList.add("visible");
+                }, index * 120);
+                observer.unobserve(el);
+              }
+            });
+          },
+          { threshold: 0.1, rootMargin: "0px 0px -40px 0px" }
+        );
+        for (var p = 0; p < animateElements.length; p++) {
+          observer.observe(animateElements[p]);
+        }
+      } else {
+        // Fallback: show everything
+        var all = document.querySelectorAll(".animate-on-scroll");
+        for (var q = 0; q < all.length; q++) {
+          all[q].classList.add("visible");
+        }
+      }
+    })();
+  </script>
 </body>
 </html>

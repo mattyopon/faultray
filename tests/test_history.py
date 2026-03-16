@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import json
 import sqlite3
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from unittest.mock import MagicMock, patch
 
@@ -164,7 +164,7 @@ class TestGetHistory:
         graph = _make_graph()
 
         # Insert an old entry directly
-        old_date = (datetime.utcnow() - timedelta(days=200)).isoformat(timespec="seconds")
+        old_date = (datetime.now(timezone.utc) - timedelta(days=200)).isoformat(timespec="seconds")
         conn = sqlite3.connect(str(tracker.db_path))
         conn.execute(
             """INSERT INTO history
@@ -218,7 +218,7 @@ class TestAnalyzeTrend:
 
         # Insert entries with increasing scores
         conn = sqlite3.connect(str(tracker.db_path))
-        base = datetime.utcnow() - timedelta(days=20)
+        base = datetime.now(timezone.utc) - timedelta(days=20)
         for i in range(5):
             ts = (base + timedelta(days=i * 5)).isoformat(timespec="seconds")
             score = 50.0 + i * 5.0  # 50, 55, 60, 65, 70
@@ -240,7 +240,7 @@ class TestAnalyzeTrend:
         tracker = _tracker_in_tmp(tmp_path)
 
         conn = sqlite3.connect(str(tracker.db_path))
-        base = datetime.utcnow() - timedelta(days=20)
+        base = datetime.now(timezone.utc) - timedelta(days=20)
         for i in range(5):
             ts = (base + timedelta(days=i * 5)).isoformat(timespec="seconds")
             score = 80.0 - i * 5.0  # 80, 75, 70, 65, 60
@@ -262,7 +262,7 @@ class TestAnalyzeTrend:
         tracker = _tracker_in_tmp(tmp_path)
 
         conn = sqlite3.connect(str(tracker.db_path))
-        base = datetime.utcnow() - timedelta(days=10)
+        base = datetime.now(timezone.utc) - timedelta(days=10)
         scores = [80.0, 82.0, 70.0, 72.0, 60.0]  # Two regressions: 82->70, 72->60
         for i, score in enumerate(scores):
             ts = (base + timedelta(days=i * 2)).isoformat(timespec="seconds")
@@ -283,7 +283,7 @@ class TestAnalyzeTrend:
         tracker = _tracker_in_tmp(tmp_path)
 
         conn = sqlite3.connect(str(tracker.db_path))
-        base = datetime.utcnow() - timedelta(days=10)
+        base = datetime.now(timezone.utc) - timedelta(days=10)
         scores = [60.0, 85.0, 40.0, 90.0, 70.0]
         for i, score in enumerate(scores):
             ts = (base + timedelta(days=i * 2)).isoformat(timespec="seconds")
@@ -320,7 +320,7 @@ class TestGetRegressions:
         tracker = _tracker_in_tmp(tmp_path)
 
         conn = sqlite3.connect(str(tracker.db_path))
-        base = datetime.utcnow() - timedelta(days=5)
+        base = datetime.now(timezone.utc) - timedelta(days=5)
         # 80 -> 75 = -5 (regression), 75 -> 60 = -15 (regression)
         scores = [80.0, 75.0, 60.0]
         for i, score in enumerate(scores):
@@ -392,7 +392,7 @@ class TestRecommendations:
         tracker = _tracker_in_tmp(tmp_path)
 
         conn = sqlite3.connect(str(tracker.db_path))
-        ts = datetime.utcnow().isoformat(timespec="seconds")
+        ts = datetime.now(timezone.utc).isoformat(timespec="seconds")
         conn.execute(
             """INSERT INTO history
             (timestamp, resilience_score, resilience_score_v2, security_score,
@@ -410,7 +410,7 @@ class TestRecommendations:
         tracker = _tracker_in_tmp(tmp_path)
 
         conn = sqlite3.connect(str(tracker.db_path))
-        ts = datetime.utcnow().isoformat(timespec="seconds")
+        ts = datetime.now(timezone.utc).isoformat(timespec="seconds")
         conn.execute(
             """INSERT INTO history
             (timestamp, resilience_score, resilience_score_v2, security_score,

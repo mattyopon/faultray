@@ -16,3 +16,8 @@ deliverables/
 HANDOFF_*.md
 LAUNCH.md
 .env
+tests/
+docs/
+.venv/
+.mypy_cache/
+htmlcov/

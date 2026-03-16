@@ -1,6 +1,9 @@
 name: Release
 
 on:
+  push:
+    tags:
+      - "v*"
   release:
     types: [published]
 
@@ -19,8 +22,25 @@ jobs:
       - run: pip install -e ".[dev]"
       - run: pytest -x --tb=short
 
+  extract-version:
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.get_version.outputs.version }}
+    steps:
+      - name: Extract version from tag or release
+        id: get_version
+        run: |
+          if [ "${{ github.event_name }}" = "push" ]; then
+            VERSION="${GITHUB_REF#refs/tags/v}"
+          else
+            VERSION="${{ github.event.release.tag_name }}"
+            VERSION="${VERSION#v}"
+          fi
+          echo "version=${VERSION}" >> "$GITHUB_OUTPUT"
+          echo "Extracted version: ${VERSION}"
+
   publish-pypi:
-    needs: test
+    needs: [test, extract-version]
     runs-on: ubuntu-latest
     environment: pypi
     permissions:
@@ -32,25 +52,29 @@ jobs:
           python-version: "3.12"
       - run: pip install build
       - run: python -m build
-      - uses: pypa/gh-action-pypi-publish@release/v1
+      # TODO: 特許出願後に secrets.PYPI_API_TOKEN を設定して有効化
+      # - uses: pypa/gh-action-pypi-publish@release/v1
 
   publish-docker:
-    needs: test
+    needs: [test, extract-version]
     runs-on: ubuntu-latest
     permissions:
       packages: write
       contents: read
     steps:
       - uses: actions/checkout@v4
-      - uses: docker/login-action@v3
-        with:
-          registry: ghcr.io
-          username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
-      - uses: docker/build-push-action@v5
-        with:
-          context: .
-          push: true
-          tags: |
-            ghcr.io/${{ github.repository }}:${{ github.event.release.tag_name }}
-            ghcr.io/${{ github.repository }}:latest
+      # TODO: 特許出願後に secrets.GITHUB_TOKEN を設定して有効化
+      # - uses: docker/login-action@v3
+      #   with:
+      #     registry: ghcr.io
+      #     username: ${{ github.actor }}
+      #     password: ${{ secrets.GITHUB_TOKEN }}
+      # - uses: docker/build-push-action@v5
+      #   with:
+      #     context: .
+      #     push: true
+      #     tags: |
+      #       ghcr.io/${{ github.repository }}:v${{ needs.extract-version.outputs.version }}
+      #       ghcr.io/${{ github.repository }}:latest
+      - name: Build Docker image (dry-run)
+        run: docker build -t faultray:v${{ needs.extract-version.outputs.version }} .

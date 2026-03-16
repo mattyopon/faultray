@@ -19,7 +19,7 @@ import json
 import logging
 import math
 from dataclasses import dataclass, field
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from typing import Any
 
@@ -265,7 +265,7 @@ class ResilienceTimeline:
         Returns:
             The recorded TimelineSnapshot.
         """
-        now = datetime.utcnow().isoformat(timespec="seconds")
+        now = datetime.now(timezone.utc).isoformat(timespec="seconds")
         resilience_score = graph.resilience_score()
         component_count = len(graph.components)
         spof_count = _count_spofs(graph)
@@ -350,7 +350,7 @@ class ResilienceTimeline:
         if days <= 0:
             return all_snapshots
 
-        cutoff = (datetime.utcnow() - timedelta(days=days)).isoformat(
+        cutoff = (datetime.now(timezone.utc) - timedelta(days=days)).isoformat(
             timespec="seconds"
         )
         return [s for s in all_snapshots if s.timestamp >= cutoff]
