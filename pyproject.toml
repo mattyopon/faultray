@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "faultray"
-version = "10.0.0"
+version = "10.1.0"
 description = "FaultRay — Zero-risk infrastructure chaos engineering. Prove your availability ceiling mathematically."
 readme = "README.md"
 license = {text = "MIT"}
