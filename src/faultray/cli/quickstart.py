@@ -38,6 +38,11 @@ _INFRA_TEMPLATES: dict[str, dict[str, str]] = {
         "label": "Simple Web App (Demo)",
         "description": "Nginx LB, App Servers, PostgreSQL, Redis, RabbitMQ",
     },
+    "hybrid": {
+        "file": "hybrid-onprem-cloud.yaml",
+        "label": "Hybrid On-Premise + Cloud (Enterprise)",
+        "description": "F5 LB, Tomcat, Oracle RAC (on-prem) + ALB, EC2, RDS, ElastiCache (AWS) via VPN",
+    },
 }
 
 
@@ -51,7 +56,7 @@ def quickstart(
     template: str = typer.Option(
         "",
         "--template", "-t",
-        help="Template name (fintech/ecommerce/healthcare/saas/web-app). Skips interactive prompt.",
+        help="Template name (fintech/ecommerce/healthcare/saas/web-app/hybrid). Skips interactive prompt.",
     ),
     run_sim: bool = typer.Option(
         True,
@@ -102,7 +107,7 @@ def quickstart(
             console.print(f"     {t['description']}\n")
 
         choice = typer.prompt(
-            "Select a template (1-5)",
+            "Select a template (1-6)",
             default="5",
         )
         try:

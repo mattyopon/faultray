@@ -1,0 +1,385 @@
+# FaultRay Template: Hybrid On-Premise + AWS Cloud
+#
+# Architecture: On-premise (F5, Tomcat, Oracle RAC, NetApp) + AWS (ALB, EC2, RDS, ElastiCache)
+#               connected via Site-to-Site VPN
+# Use case: Enterprise hybrid architecture with on-premise core systems and AWS cloud services
+#
+# Load with:
+#   faultray template use hybrid --output my-infra.yaml
+#   faultray load my-infra.yaml
+
+schema_version: "3.0"
+
+components:
+  # === On-Premise Data Center ===
+
+  - id: onprem_lb
+    name: "F5 BIG-IP Load Balancer"
+    type: load_balancer
+    host: f5-lb.internal
+    port: 443
+    replicas: 2
+    region:
+      region: "onprem-dc1"
+    capacity:
+      max_connections: 50000
+      max_rps: 100000
+    metrics:
+      cpu_percent: 18
+      memory_percent: 22
+      network_connections: 1200
+    failover:
+      enabled: true
+      promotion_time_seconds: 10
+      health_check_interval_seconds: 5
+    security:
+      encryption_in_transit: true
+      waf_protected: true
+      rate_limiting: true
+      log_enabled: true
+    cost_profile:
+      hourly_infra_cost: 2.50
+      revenue_per_minute: 200.0
+
+  - id: onprem_app_1
+    name: "Tomcat App Server"
+    type: app_server
+    host: tomcat-1.internal
+    port: 8080
+    replicas: 3
+    region:
+      region: "onprem-dc1"
+    capacity:
+      max_connections: 3000
+      max_rps: 15000
+      connection_pool_size: 300
+      timeout_seconds: 30
+      max_memory_mb: 8192
+    metrics:
+      cpu_percent: 40
+      memory_percent: 55
+      network_connections: 600
+    security:
+      encryption_in_transit: true
+      auth_required: true
+      log_enabled: true
+    cost_profile:
+      hourly_infra_cost: 1.00
+
+  - id: onprem_db
+    name: "Oracle RAC Database"
+    type: database
+    host: oracle-rac.internal
+    port: 1521
+    replicas: 2
+    region:
+      region: "onprem-dc1"
+    capacity:
+      max_connections: 1000
+      max_disk_gb: 2000
+      max_memory_mb: 65536
+    metrics:
+      cpu_percent: 35
+      memory_percent: 60
+      disk_percent: 45
+      network_connections: 250
+    failover:
+      enabled: true
+      promotion_time_seconds: 30
+      health_check_interval_seconds: 10
+    security:
+      encryption_at_rest: true
+      encryption_in_transit: true
+      backup_enabled: true
+      backup_frequency_hours: 4
+      network_segmented: true
+      log_enabled: true
+    cost_profile:
+      hourly_infra_cost: 5.00
+    compliance_tags:
+      data_classification: confidential
+      contains_pii: true
+      audit_logging: true
+
+  - id: onprem_storage
+    name: "NetApp NAS Storage"
+    type: storage
+    host: netapp.internal
+    port: 2049
+    replicas: 1
+    region:
+      region: "onprem-dc1"
+    capacity:
+      max_disk_gb: 10000
+    metrics:
+      disk_percent: 40
+    security:
+      encryption_at_rest: true
+      backup_enabled: true
+      backup_frequency_hours: 12
+      network_segmented: true
+    cost_profile:
+      hourly_infra_cost: 0.80
+
+  # === AWS Cloud ===
+
+  - id: aws_alb
+    name: "AWS ALB"
+    type: load_balancer
+    host: alb.us-east-1.elb.amazonaws.com
+    port: 443
+    replicas: 2
+    region:
+      region: "us-east-1"
+    capacity:
+      max_connections: 100000
+      max_rps: 200000
+    metrics:
+      cpu_percent: 10
+      memory_percent: 12
+      network_connections: 2000
+    failover:
+      enabled: true
+      promotion_time_seconds: 5
+    security:
+      encryption_in_transit: true
+      waf_protected: true
+      rate_limiting: true
+      log_enabled: true
+    cost_profile:
+      hourly_infra_cost: 0.50
+
+  - id: aws_app
+    name: "EC2 App Server"
+    type: app_server
+    host: ec2-app.internal
+    port: 8080
+    replicas: 2
+    region:
+      region: "us-east-1"
+    capacity:
+      max_connections: 5000
+      max_rps: 20000
+      connection_pool_size: 400
+      timeout_seconds: 30
+      max_memory_mb: 16384
+    metrics:
+      cpu_percent: 30
+      memory_percent: 40
+      network_connections: 800
+    autoscaling:
+      enabled: true
+      min_replicas: 2
+      max_replicas: 8
+      scale_up_threshold: 70
+      scale_down_threshold: 30
+    security:
+      encryption_in_transit: true
+      auth_required: true
+      log_enabled: true
+    cost_profile:
+      hourly_infra_cost: 0.80
+
+  - id: aws_rds
+    name: "RDS PostgreSQL"
+    type: database
+    host: rds.us-east-1.rds.amazonaws.com
+    port: 5432
+    replicas: 2
+    region:
+      region: "us-east-1"
+    capacity:
+      max_connections: 500
+      max_disk_gb: 500
+      max_memory_mb: 32768
+    metrics:
+      cpu_percent: 20
+      memory_percent: 45
+      disk_percent: 30
+      network_connections: 150
+    failover:
+      enabled: true
+      promotion_time_seconds: 60
+      health_check_interval_seconds: 10
+    security:
+      encryption_at_rest: true
+      encryption_in_transit: true
+      backup_enabled: true
+      backup_frequency_hours: 1
+      network_segmented: true
+      log_enabled: true
+    cost_profile:
+      hourly_infra_cost: 2.00
+    compliance_tags:
+      data_classification: confidential
+      contains_pii: true
+      audit_logging: true
+
+  - id: aws_cache
+    name: "ElastiCache Redis"
+    type: cache
+    host: redis.cache.amazonaws.com
+    port: 6379
+    replicas: 2
+    region:
+      region: "us-east-1"
+    capacity:
+      max_connections: 20000
+      max_memory_mb: 13312
+    metrics:
+      cpu_percent: 8
+      memory_percent: 50
+      network_connections: 400
+    failover:
+      enabled: true
+      promotion_time_seconds: 15
+    security:
+      encryption_at_rest: true
+      encryption_in_transit: true
+      auth_required: true
+      network_segmented: true
+    cost_profile:
+      hourly_infra_cost: 0.40
+
+  # === Connectivity ===
+
+  - id: vpn_connection
+    name: "AWS Site-to-Site VPN"
+    type: external_api
+    host: vpn-endpoint.amazonaws.com
+    port: 443
+    replicas: 2
+    region:
+      region: "us-east-1"
+    capacity:
+      max_connections: 1000
+      max_rps: 50000
+    metrics:
+      cpu_percent: 5
+      network_connections: 200
+    failover:
+      enabled: true
+      promotion_time_seconds: 15
+    network:
+      rtt_ms: 20.0
+      packet_loss_rate: 0.001
+      jitter_ms: 5.0
+    security:
+      encryption_in_transit: true
+      log_enabled: true
+    cost_profile:
+      hourly_infra_cost: 0.10
+
+dependencies:
+  # On-premise flow
+  - source: onprem_lb
+    target: onprem_app_1
+    type: requires
+    protocol: http
+    latency_ms: 1.0
+    circuit_breaker:
+      enabled: true
+      failure_threshold: 5
+      recovery_timeout_seconds: 30
+
+  - source: onprem_app_1
+    target: onprem_db
+    type: requires
+    protocol: tcp
+    port: 1521
+    latency_ms: 2.0
+    circuit_breaker:
+      enabled: true
+      failure_threshold: 3
+      recovery_timeout_seconds: 60
+    retry_strategy:
+      enabled: true
+      max_retries: 3
+      initial_delay_ms: 100
+
+  - source: onprem_app_1
+    target: onprem_storage
+    type: optional
+    protocol: tcp
+    port: 2049
+    latency_ms: 1.5
+    weight: 0.5
+
+  # AWS flow
+  - source: aws_alb
+    target: aws_app
+    type: requires
+    protocol: http
+    latency_ms: 1.0
+    circuit_breaker:
+      enabled: true
+      failure_threshold: 5
+      recovery_timeout_seconds: 30
+
+  - source: aws_app
+    target: aws_rds
+    type: requires
+    protocol: tcp
+    port: 5432
+    latency_ms: 2.0
+    circuit_breaker:
+      enabled: true
+      failure_threshold: 3
+      recovery_timeout_seconds: 60
+    retry_strategy:
+      enabled: true
+      max_retries: 3
+      initial_delay_ms: 100
+
+  - source: aws_app
+    target: aws_cache
+    type: optional
+    protocol: tcp
+    port: 6379
+    latency_ms: 0.5
+    weight: 0.7
+    circuit_breaker:
+      enabled: true
+      failure_threshold: 5
+      recovery_timeout_seconds: 15
+
+  # Cross-environment (via VPN)
+  - source: aws_app
+    target: vpn_connection
+    type: requires
+    protocol: tcp
+    latency_ms: 10.0
+
+  - source: vpn_connection
+    target: onprem_db
+    type: requires
+    protocol: tcp
+    port: 1521
+    latency_ms: 20.0
+    weight: 0.9
+    circuit_breaker:
+      enabled: true
+      failure_threshold: 3
+      recovery_timeout_seconds: 120
+    retry_strategy:
+      enabled: true
+      max_retries: 2
+      initial_delay_ms: 500
+
+  - source: onprem_app_1
+    target: vpn_connection
+    type: requires
+    protocol: tcp
+    latency_ms: 10.0
+
+  - source: vpn_connection
+    target: aws_rds
+    type: optional
+    protocol: tcp
+    port: 5432
+    latency_ms: 20.0
+    weight: 0.6
+    circuit_breaker:
+      enabled: true
+      failure_threshold: 3
+      recovery_timeout_seconds: 120

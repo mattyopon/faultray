@@ -15,6 +15,7 @@ TEMPLATES: dict[str, str] = {
     "data-pipeline": "data_pipeline.yaml",
     "ecommerce": "ecommerce.yaml",
     "fintech": "fintech.yaml",
+    "hybrid": "hybrid-onprem-cloud.yaml",
 }
 
 
