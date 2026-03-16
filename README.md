@@ -117,6 +117,7 @@ CRITICAL FINDINGS
 | :mag: | **Multiple Discovery** | Local scan, Prometheus, Terraform, YAML |
 | :moneybag: | **Cost Impact Engine** | Quantify downtime costs, SLA penalties, and ROI of resilience improvements |
 | :shield: | **Security Resilience Engine** | Assess security posture against 8 threat categories with control gap analysis |
+| :earth_americas: | **Multi-Region DR** | Evaluate DR strategies, simulate failover, compare RTO/RPO across regions |
 
 ---
 
@@ -126,7 +127,7 @@ CRITICAL FINDINGS
 |---|---|
 | Multi-tenant Dashboard | OAuth2 (GitHub/Google) + API key authentication with role-based access |
 | CI/CD Integration | GitHub Actions marketplace action for pre-deploy chaos validation |
-| DORA Compliance | Audit-ready reports for Digital Operational Resilience Act |
+| Compliance Engine | SOC 2, ISO 27001, PCI DSS, DORA, HIPAA, GDPR gap analysis with remediation |
 | Terraform Integration | Import from tfstate, analyze tf plan impact before apply |
 | Prometheus Discovery | Auto-discover infrastructure from Prometheus targets |
 | Slack & PagerDuty | Real-time notification of critical findings |
@@ -580,6 +581,8 @@ FaultRayは、純粋な数学的シミュレーションによるゼロリスク
 - **セキュリティフィード** — CVE/NVD/CISAからシナリオを自動生成
 - **コスト影響エンジン** — ダウンタイムコスト、SLAペナルティ、改善ROIを定量化
 - **セキュリティ耐性エンジン** — 8種の脅威カテゴリに対するセキュリティ態勢を評価
+- **コンプライアンスエンジン** — SOC 2/ISO 27001/PCI DSS/DORA/HIPAA/GDPR準拠評価
+- **マルチリージョンDR** — DR戦略の評価、フェイルオーバーシミュレーション、RTO/RPO比較
 
 ### クイックスタート
 
