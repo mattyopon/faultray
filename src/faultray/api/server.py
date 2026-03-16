@@ -199,6 +199,163 @@ from faultray.api.leaderboard import leaderboard_router
 app.include_router(leaderboard_router)
 
 
+# ---------------------------------------------------------------------------
+# Stripe Billing routes
+# ---------------------------------------------------------------------------
+
+from faultray.api.billing import (
+    PricingTier as _PricingTier,
+    TIER_LIMITS as _TIER_LIMITS,
+    StripeManager as _StripeManager,
+    UsageTracker as _UsageTracker,
+    _stripe_available,
+)
+
+_stripe_mgr = _StripeManager()
+
+
+@app.post("/api/billing/checkout", response_class=JSONResponse)
+async def billing_checkout(request: Request):
+    """Create a Stripe Checkout Session and return the redirect URL."""
+    if not _stripe_mgr.enabled:
+        return JSONResponse(
+            {"error": "Billing is not configured. Running in free-tier mode."},
+            status_code=503,
+        )
+
+    body = await request.json()
+    tier_str = body.get("tier", "pro")
+    team_id = body.get("team_id", "")
+    success_url = body.get("success_url", str(request.base_url) + "billing?status=success")
+    cancel_url = body.get("cancel_url", str(request.base_url) + "billing?status=cancelled")
+
+    if not team_id:
+        return JSONResponse({"error": "team_id is required"}, status_code=400)
+
+    try:
+        tier = _PricingTier(tier_str)
+    except ValueError:
+        return JSONResponse(
+            {"error": f"Invalid tier: {tier_str}. Choose pro or enterprise."},
+            status_code=400,
+        )
+
+    if tier == _PricingTier.FREE:
+        return JSONResponse(
+            {"error": "Cannot purchase the free tier."},
+            status_code=400,
+        )
+
+    try:
+        url = await _stripe_mgr.create_checkout_session(
+            tier=tier,
+            team_id=team_id,
+            success_url=success_url,
+            cancel_url=cancel_url,
+        )
+        return JSONResponse({"checkout_url": url})
+    except Exception as exc:
+        logger.error("Checkout session creation failed: %s", exc, exc_info=True)
+        return JSONResponse({"error": str(exc)}, status_code=500)
+
+
+@app.post("/api/webhooks/stripe")
+async def stripe_webhook(request: Request):
+    """Receive and process Stripe webhook events."""
+    if not _stripe_mgr.enabled:
+        return JSONResponse({"error": "Stripe is not configured"}, status_code=503)
+
+    payload = await request.body()
+    sig_header = request.headers.get("stripe-signature", "")
+
+    try:
+        event_data = await _stripe_mgr.handle_webhook_event(payload, sig_header)
+        await _stripe_mgr.persist_webhook_event(event_data)
+        return JSONResponse({"status": "ok", "event_type": event_data.get("event_type")})
+    except ValueError as exc:
+        logger.warning("Invalid Stripe webhook payload: %s", exc)
+        return JSONResponse({"error": "Invalid payload"}, status_code=400)
+    except Exception as exc:
+        logger.error("Stripe webhook processing failed: %s", exc, exc_info=True)
+        return JSONResponse({"error": "Webhook processing failed"}, status_code=400)
+
+
+@app.get("/api/billing/portal", response_class=JSONResponse)
+async def billing_portal(request: Request, team_id: str = ""):
+    """Return a Stripe Customer Portal URL for subscription management."""
+    if not _stripe_mgr.enabled:
+        return JSONResponse(
+            {"error": "Billing is not configured. Running in free-tier mode."},
+            status_code=503,
+        )
+
+    if not team_id:
+        return JSONResponse({"error": "team_id query parameter is required"}, status_code=400)
+
+    sub = await _stripe_mgr.get_subscription(team_id)
+    if sub is None or not sub.get("stripe_customer_id"):
+        return JSONResponse(
+            {"error": "No active subscription found for this team."},
+            status_code=404,
+        )
+
+    return_url = str(request.base_url) + "billing"
+
+    try:
+        url = await _stripe_mgr.create_customer_portal_session(
+            customer_id=sub["stripe_customer_id"],
+            return_url=return_url,
+        )
+        return JSONResponse({"portal_url": url})
+    except Exception as exc:
+        logger.error("Customer portal creation failed: %s", exc, exc_info=True)
+        return JSONResponse({"error": str(exc)}, status_code=500)
+
+
+@app.get("/api/billing/usage", response_class=JSONResponse)
+async def billing_usage(team_id: str = ""):
+    """Return current usage stats and tier information for a team."""
+    if not team_id:
+        return JSONResponse({"error": "team_id query parameter is required"}, status_code=400)
+
+    tracker = _UsageTracker(db_session_factory=None)
+    usage = await tracker.get_usage(team_id)
+
+    # Include current component count from loaded graph
+    graph = get_graph()
+    usage["component_count"] = len(graph.components) if graph and graph.components else 0
+
+    # Augment with Stripe billing status
+    usage["stripe_enabled"] = _stripe_mgr.enabled
+    if _stripe_mgr.enabled:
+        sub = await _stripe_mgr.get_subscription(team_id)
+        usage["subscription"] = sub
+
+    return JSONResponse(usage)
+
+
+@app.get("/billing", response_class=HTMLResponse)
+async def billing_page(request: Request):
+    """Billing management page."""
+    return templates.TemplateResponse("billing.html", {
+        "request": request,
+        "has_data": True,
+        "stripe_enabled": _stripe_mgr.enabled,
+        "tiers": {
+            tier.value: {
+                "max_components": limits.max_components,
+                "max_simulations_per_month": limits.max_simulations_per_month,
+                "compliance_reports": limits.compliance_reports,
+                "insurance_api": limits.insurance_api,
+                "custom_sso": limits.custom_sso,
+                "support_sla": limits.support_sla,
+            }
+            for tier, limits in _TIER_LIMITS.items()
+        },
+        "active_page": "billing",
+    })
+
+
 app.mount("/static", StaticFiles(directory=str(BASE_DIR / "static")), name="static")
 
 

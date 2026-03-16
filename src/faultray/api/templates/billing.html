@@ -1,0 +1,692 @@
+{% extends "base.html" %}
+{% set active_page = "billing" %}
+
+{% block title %}FaultRay - Billing{% endblock %}
+{% block page_title %}Billing & Plans{% endblock %}
+{% block page_subtitle %}<span class="page-subtitle">Manage your subscription and usage</span>{% endblock %}
+
+{% block content %}
+<style>
+/* ── Billing Page Styles ────────────────────────── */
+.billing-layout { max-width: 1200px; }
+
+/* Current plan section */
+.plan-overview {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 1.25rem;
+}
+.plan-stat {
+    padding: 1rem;
+    background: var(--bg-dark);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+}
+.plan-stat-label {
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: var(--text-secondary);
+    margin-bottom: 0.25rem;
+}
+.plan-stat-value {
+    font-size: 1.4rem;
+    font-weight: 700;
+    color: var(--text-primary);
+}
+
+/* Usage meter / progress bar */
+.usage-meter {
+    margin-top: 0.5rem;
+}
+.usage-bar-track {
+    width: 100%;
+    height: 8px;
+    background: var(--border);
+    border-radius: 4px;
+    overflow: hidden;
+}
+.usage-bar-fill {
+    height: 100%;
+    border-radius: 4px;
+    transition: width 0.4s ease;
+}
+.usage-bar-label {
+    display: flex;
+    justify-content: space-between;
+    font-size: 0.7rem;
+    color: var(--text-secondary);
+    margin-top: 4px;
+}
+
+/* Pricing grid */
+.pricing-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 1.25rem;
+}
+@media (max-width: 900px) { .pricing-grid { grid-template-columns: 1fr; } }
+
+.pricing-card {
+    border: 2px solid var(--border);
+    border-radius: var(--radius-lg);
+    padding: 1.5rem;
+    display: flex;
+    flex-direction: column;
+    transition: border-color var(--transition), box-shadow var(--transition);
+    position: relative;
+}
+.pricing-card:hover {
+    border-color: var(--border-light);
+}
+.pricing-card.pricing-current {
+    border-color: var(--blue);
+    box-shadow: 0 0 0 1px var(--blue), 0 4px 16px rgba(59, 130, 246, 0.12);
+}
+.pricing-card.pricing-popular {
+    border-color: var(--highlight);
+    box-shadow: 0 0 0 1px var(--highlight), 0 4px 16px rgba(233, 69, 96, 0.12);
+}
+.pricing-popular-badge {
+    position: absolute;
+    top: -10px;
+    right: 16px;
+    background: var(--highlight);
+    color: #fff;
+    font-size: 0.65rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    padding: 3px 10px;
+    border-radius: 10px;
+}
+.pricing-tier-name {
+    font-size: 1.1rem;
+    font-weight: 700;
+    color: var(--text-primary);
+    text-transform: capitalize;
+    margin-bottom: 0.25rem;
+}
+.pricing-price {
+    font-size: 2rem;
+    font-weight: 800;
+    color: var(--text-primary);
+    margin: 0.5rem 0;
+}
+.pricing-price .price-period {
+    font-size: 0.85rem;
+    font-weight: 400;
+    color: var(--text-secondary);
+}
+
+/* Feature list in pricing card */
+.pricing-features {
+    list-style: none;
+    padding: 0;
+    margin: 1rem 0;
+    flex: 1;
+}
+.pricing-features li {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 0;
+    font-size: 0.85rem;
+    color: var(--text-secondary);
+    border-bottom: 1px solid var(--border);
+}
+.pricing-features li:last-child { border-bottom: none; }
+.pricing-features .feat-yes { color: var(--green); }
+.pricing-features .feat-no { color: var(--text-muted); }
+.pricing-features .feat-label { flex: 1; }
+
+/* Usage detail section */
+.usage-detail-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1.25rem;
+}
+@media (max-width: 768px) { .usage-detail-grid { grid-template-columns: 1fr; } }
+
+.usage-card {
+    padding: 1rem;
+    background: var(--bg-dark);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+}
+.usage-card-title {
+    font-size: 0.8rem;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: var(--text-secondary);
+    margin-bottom: 0.75rem;
+}
+.usage-big-number {
+    font-size: 2rem;
+    font-weight: 800;
+    color: var(--text-primary);
+}
+.usage-big-sub {
+    font-size: 0.8rem;
+    color: var(--text-secondary);
+}
+
+/* Manage section */
+.manage-actions {
+    display: flex;
+    gap: 0.75rem;
+    flex-wrap: wrap;
+    margin-top: 1rem;
+}
+.btn-danger {
+    background: transparent;
+    border: 1px solid var(--red);
+    color: var(--red);
+}
+.btn-danger:hover {
+    background: var(--red-dim);
+}
+
+/* Stripe not configured notice */
+.stripe-notice {
+    padding: 0.75rem 1rem;
+    background: var(--bg-dark);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    font-size: 0.85rem;
+    color: var(--text-secondary);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+.stripe-notice code {
+    background: var(--bg-card);
+    padding: 2px 6px;
+    border-radius: 3px;
+    font-size: 0.8rem;
+    color: var(--highlight);
+}
+</style>
+
+<div class="billing-layout" x-data="billingApp()">
+
+<!-- ═══ Current Plan Overview ══════════════════════════════ -->
+<div class="card card-wide">
+    <div class="card-header">
+        <h3>Current Plan</h3>
+        <span class="badge" :class="tierBadgeClass" x-text="currentTier.toUpperCase()"></span>
+    </div>
+    <div class="card-body">
+        <div class="plan-overview">
+            <!-- Simulations usage -->
+            <div class="plan-stat">
+                <div class="plan-stat-label">Simulations This Month</div>
+                <div class="plan-stat-value" x-text="simulationsThisMonth"></div>
+                <div class="usage-meter">
+                    <div class="usage-bar-track">
+                        <div class="usage-bar-fill" :style="simBarStyle"></div>
+                    </div>
+                    <div class="usage-bar-label">
+                        <span x-text="simulationsThisMonth + ' used'"></span>
+                        <span x-text="simulationLimit === -1 ? 'Unlimited' : simulationLimit + ' limit'"></span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Components usage -->
+            <div class="plan-stat">
+                <div class="plan-stat-label">Components</div>
+                <div class="plan-stat-value" x-text="componentLimitText"></div>
+                <div class="usage-meter">
+                    <div class="usage-bar-track">
+                        <div class="usage-bar-fill" :style="compBarStyle"></div>
+                    </div>
+                    <div class="usage-bar-label">
+                        <span x-text="componentCount + ' in use'"></span>
+                        <span x-text="componentLimit === -1 ? 'Unlimited' : componentLimit + ' limit'"></span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Support SLA -->
+            <div class="plan-stat">
+                <div class="plan-stat-label">Support Level</div>
+                <div class="plan-stat-value" x-text="supportSla" style="font-size: 1.1rem;"></div>
+            </div>
+
+            <!-- Subscription status -->
+            <div class="plan-stat">
+                <div class="plan-stat-label">Subscription Status</div>
+                <div class="plan-stat-value" style="font-size: 1.1rem;">
+                    <template x-if="currentTier === 'free'">
+                        <span style="color: var(--text-secondary);">Free Tier</span>
+                    </template>
+                    <template x-if="currentTier !== 'free'">
+                        <span style="color: var(--green);">Active</span>
+                    </template>
+                </div>
+                <template x-if="expiresAt">
+                    <div style="font-size: 0.75rem; color: var(--text-secondary); margin-top: 4px;">
+                        Renews: <span x-text="expiresAt"></span>
+                    </div>
+                </template>
+            </div>
+        </div>
+
+        {% if not stripe_enabled %}
+        <div class="stripe-notice" style="margin-top: 1rem;">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
+            </svg>
+            Stripe is not configured. Set <code>STRIPE_SECRET_KEY</code> to enable billing features.
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- ═══ Plan Comparison Table ═════════════════════════════ -->
+<div class="card card-wide" style="margin-top: 16px;">
+    <div class="card-header">
+        <h3>Compare Plans</h3>
+    </div>
+    <div class="card-body">
+        <div class="pricing-grid">
+            <!-- Free Tier -->
+            <div class="pricing-card" :class="{ 'pricing-current': currentTier === 'free' }">
+                <div class="pricing-tier-name">Free</div>
+                <div class="pricing-price">$0 <span class="price-period">/ forever</span></div>
+                <ul class="pricing-features" role="list">
+                    <li>
+                        <span class="feat-label">Components</span>
+                        <span>{{ tiers.free.max_components }}</span>
+                    </li>
+                    <li>
+                        <span class="feat-label">Simulations / month</span>
+                        <span>{{ tiers.free.max_simulations_per_month }}</span>
+                    </li>
+                    <li>
+                        <span class="feat-label">Compliance Reports</span>
+                        <span class="feat-no" aria-label="Not included">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                        </span>
+                    </li>
+                    <li>
+                        <span class="feat-label">Insurance API</span>
+                        <span class="feat-no" aria-label="Not included">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                        </span>
+                    </li>
+                    <li>
+                        <span class="feat-label">Custom SSO</span>
+                        <span class="feat-no" aria-label="Not included">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                        </span>
+                    </li>
+                    <li>
+                        <span class="feat-label">Support</span>
+                        <span>Community</span>
+                    </li>
+                </ul>
+                <template x-if="currentTier === 'free'">
+                    <button class="btn btn-sm btn-outline" disabled>Current Plan</button>
+                </template>
+            </div>
+
+            <!-- Pro Tier -->
+            <div class="pricing-card" :class="{ 'pricing-current': currentTier === 'pro', 'pricing-popular': currentTier !== 'pro' }">
+                <template x-if="currentTier !== 'pro'">
+                    <div class="pricing-popular-badge">Most Popular</div>
+                </template>
+                <div class="pricing-tier-name">Pro</div>
+                <div class="pricing-price">$299 <span class="price-period">/ month</span></div>
+                <ul class="pricing-features" role="list">
+                    <li>
+                        <span class="feat-label">Components</span>
+                        <span>{{ tiers.pro.max_components }}</span>
+                    </li>
+                    <li>
+                        <span class="feat-label">Simulations / month</span>
+                        <span>Unlimited</span>
+                    </li>
+                    <li>
+                        <span class="feat-label">Compliance Reports</span>
+                        <span class="feat-yes" aria-label="Included">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>
+                        </span>
+                    </li>
+                    <li>
+                        <span class="feat-label">Insurance API</span>
+                        <span class="feat-no" aria-label="Not included">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                        </span>
+                    </li>
+                    <li>
+                        <span class="feat-label">Custom SSO</span>
+                        <span class="feat-no" aria-label="Not included">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                        </span>
+                    </li>
+                    <li>
+                        <span class="feat-label">Support</span>
+                        <span>Email (24h SLA)</span>
+                    </li>
+                </ul>
+                {% if stripe_enabled %}
+                <button
+                    class="btn btn-sm btn-accent"
+                    @click="checkout('pro')"
+                    :disabled="currentTier === 'pro'"
+                    x-text="currentTier === 'pro' ? 'Current Plan' : 'Upgrade to Pro'"
+                    aria-label="Upgrade to Pro plan"
+                ></button>
+                {% else %}
+                <button class="btn btn-sm btn-accent" disabled x-text="currentTier === 'pro' ? 'Current Plan' : 'Upgrade to Pro'"></button>
+                {% endif %}
+            </div>
+
+            <!-- Enterprise Tier -->
+            <div class="pricing-card" :class="{ 'pricing-current': currentTier === 'enterprise' }">
+                <div class="pricing-tier-name">Enterprise</div>
+                <div class="pricing-price">Custom <span class="price-period">/ contact us</span></div>
+                <ul class="pricing-features" role="list">
+                    <li>
+                        <span class="feat-label">Components</span>
+                        <span>Unlimited</span>
+                    </li>
+                    <li>
+                        <span class="feat-label">Simulations / month</span>
+                        <span>Unlimited</span>
+                    </li>
+                    <li>
+                        <span class="feat-label">Compliance Reports</span>
+                        <span class="feat-yes" aria-label="Included">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>
+                        </span>
+                    </li>
+                    <li>
+                        <span class="feat-label">Insurance API</span>
+                        <span class="feat-yes" aria-label="Included">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>
+                        </span>
+                    </li>
+                    <li>
+                        <span class="feat-label">Custom SSO</span>
+                        <span class="feat-yes" aria-label="Included">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>
+                        </span>
+                    </li>
+                    <li>
+                        <span class="feat-label">Support</span>
+                        <span>Dedicated (1h SLA)</span>
+                    </li>
+                </ul>
+                <template x-if="currentTier === 'enterprise'">
+                    <button class="btn btn-sm btn-outline" disabled>Current Plan</button>
+                </template>
+                <template x-if="currentTier !== 'enterprise'">
+                    {% if stripe_enabled %}
+                    <a href="mailto:sales@faultray.io?subject=FaultRay%20Enterprise%20Inquiry" class="btn btn-sm btn-outline" style="text-align: center;" aria-label="Contact sales for Enterprise plan">Contact Sales</a>
+                    {% else %}
+                    <a href="mailto:sales@faultray.io?subject=FaultRay%20Enterprise%20Inquiry" class="btn btn-sm btn-outline" style="text-align: center;" aria-label="Contact sales for Enterprise plan">Contact Sales</a>
+                    {% endif %}
+                </template>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ═══ Usage Details ═════════════════════════════════════ -->
+<div class="card card-wide" style="margin-top: 16px;">
+    <div class="card-header">
+        <h3>Usage Details</h3>
+        <span class="badge badge-info" x-text="currentMonthLabel"></span>
+    </div>
+    <div class="card-body">
+        <div class="usage-detail-grid">
+            <!-- Simulations usage detail -->
+            <div class="usage-card">
+                <div class="usage-card-title">Monthly Simulations</div>
+                <div style="display: flex; align-items: baseline; gap: 8px;">
+                    <div class="usage-big-number" x-text="simulationsThisMonth"></div>
+                    <div class="usage-big-sub" x-text="simulationLimit === -1 ? '/ Unlimited' : '/ ' + simulationLimit"></div>
+                </div>
+                <div class="usage-meter" style="margin-top: 0.75rem;">
+                    <div class="usage-bar-track" style="height: 12px;">
+                        <div class="usage-bar-fill" :style="simBarStyleLarge"></div>
+                    </div>
+                </div>
+                <div style="margin-top: 0.5rem; font-size: 0.8rem; color: var(--text-secondary);" x-text="simUsagePercent"></div>
+            </div>
+
+            <!-- Components usage detail -->
+            <div class="usage-card">
+                <div class="usage-card-title">Component Usage</div>
+                <div style="display: flex; align-items: baseline; gap: 8px;">
+                    <div class="usage-big-number" x-text="componentCount"></div>
+                    <div class="usage-big-sub" x-text="componentLimit === -1 ? '/ Unlimited' : '/ ' + componentLimit"></div>
+                </div>
+                <div class="usage-meter" style="margin-top: 0.75rem;">
+                    <div class="usage-bar-track" style="height: 12px;">
+                        <div class="usage-bar-fill" :style="compBarStyleLarge"></div>
+                    </div>
+                </div>
+                <div style="margin-top: 0.5rem; font-size: 0.8rem; color: var(--text-secondary);" x-text="compUsagePercent"></div>
+            </div>
+
+            <!-- Feature availability -->
+            <div class="usage-card">
+                <div class="usage-card-title">Feature Access</div>
+                <div style="display: flex; flex-direction: column; gap: 8px; margin-top: 4px;">
+                    <div style="display: flex; align-items: center; gap: 8px;">
+                        <template x-if="features.compliance_reports">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--green)" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>
+                        </template>
+                        <template x-if="!features.compliance_reports">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--text-muted)" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                        </template>
+                        <span :style="features.compliance_reports ? 'color: var(--text-primary)' : 'color: var(--text-muted)'">Compliance Reports</span>
+                    </div>
+                    <div style="display: flex; align-items: center; gap: 8px;">
+                        <template x-if="features.insurance_api">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--green)" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>
+                        </template>
+                        <template x-if="!features.insurance_api">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--text-muted)" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                        </template>
+                        <span :style="features.insurance_api ? 'color: var(--text-primary)' : 'color: var(--text-muted)'">Insurance API</span>
+                    </div>
+                    <div style="display: flex; align-items: center; gap: 8px;">
+                        <template x-if="features.custom_sso">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--green)" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>
+                        </template>
+                        <template x-if="!features.custom_sso">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--text-muted)" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                        </template>
+                        <span :style="features.custom_sso ? 'color: var(--text-primary)' : 'color: var(--text-muted)'">Custom SSO</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Support info -->
+            <div class="usage-card">
+                <div class="usage-card-title">Support Level</div>
+                <div style="margin-top: 4px;">
+                    <div style="font-size: 1.1rem; font-weight: 600; color: var(--text-primary);" x-text="supportSla"></div>
+                    <div style="margin-top: 8px; font-size: 0.8rem; color: var(--text-secondary);">
+                        <template x-if="currentTier === 'free'">
+                            <span>Get help from the community forums and documentation.</span>
+                        </template>
+                        <template x-if="currentTier === 'pro'">
+                            <span>Email support with 24-hour response time guarantee.</span>
+                        </template>
+                        <template x-if="currentTier === 'enterprise'">
+                            <span>Dedicated support engineer with 1-hour response time.</span>
+                        </template>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ═══ Subscription Management ═══════════════════════════ -->
+<div class="card card-wide" style="margin-top: 16px;">
+    <div class="card-header">
+        <h3>Subscription Management</h3>
+    </div>
+    <div class="card-body">
+        {% if stripe_enabled %}
+        <p style="font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 1rem;">
+            Manage your payment methods, invoices, and subscription settings through the Stripe customer portal.
+        </p>
+        <div class="manage-actions">
+            <button class="btn btn-sm btn-outline" @click="openPortal()" aria-label="Manage subscription in Stripe portal">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <rect x="1" y="4" width="22" height="16" rx="2" ry="2"/><line x1="1" y1="10" x2="23" y2="10"/>
+                </svg>
+                Manage Subscription
+            </button>
+            <template x-if="currentTier !== 'free'">
+                <button class="btn btn-sm btn-danger" @click="cancelSub()" aria-label="Cancel subscription">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/>
+                    </svg>
+                    Cancel Subscription
+                </button>
+            </template>
+        </div>
+        {% else %}
+        <div class="stripe-notice">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
+            </svg>
+            Billing management requires Stripe configuration. Set <code>STRIPE_SECRET_KEY</code> environment variable to enable subscription management.
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+</div><!-- /.billing-layout -->
+
+<script>
+function billingApp() {
+    return {
+        currentTier: 'free',
+        teamId: new URLSearchParams(window.location.search).get('team_id') || 'default',
+        simulationsThisMonth: 0,
+        simulationLimit: 10,
+        componentLimit: 5,
+        componentCount: 0,
+        supportSla: 'Community',
+        expiresAt: '',
+        features: { compliance_reports: false, insurance_api: false, custom_sso: false },
+
+        get tierBadgeClass() {
+            const m = { free: 'badge-info', pro: 'badge-passed', enterprise: 'badge-warning' };
+            return m[this.currentTier] || 'badge-info';
+        },
+        get componentLimitText() {
+            return this.componentLimit === -1 ? 'Unlimited' : String(this.componentLimit);
+        },
+        get currentMonthLabel() {
+            const d = new Date();
+            return d.toLocaleString('en-US', { month: 'long', year: 'numeric' });
+        },
+
+        // Simulation usage bar (small)
+        get simBarStyle() {
+            if (this.simulationLimit === -1) return 'width: 5%; background: var(--green);';
+            const pct = Math.min(100, (this.simulationsThisMonth / this.simulationLimit) * 100);
+            const color = pct >= 90 ? 'var(--red)' : pct >= 70 ? 'var(--yellow)' : 'var(--green)';
+            return 'width: ' + pct + '%; background: ' + color + ';';
+        },
+        // Simulation usage bar (large)
+        get simBarStyleLarge() {
+            if (this.simulationLimit === -1) return 'width: 5%; background: var(--green); border-radius: 6px;';
+            const pct = Math.min(100, (this.simulationsThisMonth / this.simulationLimit) * 100);
+            const color = pct >= 90 ? 'var(--red)' : pct >= 70 ? 'var(--yellow)' : 'var(--green)';
+            return 'width: ' + pct + '%; background: ' + color + '; border-radius: 6px;';
+        },
+        get simUsagePercent() {
+            if (this.simulationLimit === -1) return this.simulationsThisMonth + ' simulations run (Unlimited plan)';
+            const pct = Math.round((this.simulationsThisMonth / this.simulationLimit) * 100);
+            return pct + '% of monthly limit used';
+        },
+
+        // Component usage bar (small)
+        get compBarStyle() {
+            if (this.componentLimit === -1) return 'width: 5%; background: var(--green);';
+            const pct = this.componentLimit > 0 ? Math.min(100, (this.componentCount / this.componentLimit) * 100) : 0;
+            const color = pct >= 90 ? 'var(--red)' : pct >= 70 ? 'var(--yellow)' : 'var(--blue)';
+            return 'width: ' + pct + '%; background: ' + color + ';';
+        },
+        // Component usage bar (large)
+        get compBarStyleLarge() {
+            if (this.componentLimit === -1) return 'width: 5%; background: var(--blue); border-radius: 6px;';
+            const pct = this.componentLimit > 0 ? Math.min(100, (this.componentCount / this.componentLimit) * 100) : 0;
+            const color = pct >= 90 ? 'var(--red)' : pct >= 70 ? 'var(--yellow)' : 'var(--blue)';
+            return 'width: ' + pct + '%; background: ' + color + '; border-radius: 6px;';
+        },
+        get compUsagePercent() {
+            if (this.componentLimit === -1) return this.componentCount + ' components in use (Unlimited plan)';
+            const pct = this.componentLimit > 0 ? Math.round((this.componentCount / this.componentLimit) * 100) : 0;
+            return pct + '% of component limit used';
+        },
+
+        async init() {
+            try {
+                const r = await fetch('/api/billing/usage?team_id=' + encodeURIComponent(this.teamId));
+                if (r.ok) {
+                    const d = await r.json();
+                    this.currentTier = d.tier || 'free';
+                    this.simulationsThisMonth = d.simulations_this_month || 0;
+                    this.simulationLimit = d.simulation_limit ?? 10;
+                    this.componentLimit = d.component_limit ?? 5;
+                    this.componentCount = d.component_count || 0;
+                    this.supportSla = (d.features?.support_sla || 'community').replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
+                    this.features = d.features || this.features;
+                    if (d.subscription?.expires_at) {
+                        this.expiresAt = new Date(d.subscription.expires_at).toLocaleDateString('en-US', {
+                            year: 'numeric', month: 'short', day: 'numeric'
+                        });
+                    }
+                }
+            } catch (e) {
+                console.warn('Could not load billing data', e);
+            }
+        },
+
+        async checkout(tier) {
+            try {
+                const r = await fetch('/api/billing/checkout', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ tier, team_id: this.teamId }),
+                });
+                const d = await r.json();
+                if (d.checkout_url) window.location.href = d.checkout_url;
+                else alert(d.error || 'Could not start checkout');
+            } catch (e) {
+                alert('Checkout error: ' + e.message);
+            }
+        },
+
+        async openPortal() {
+            try {
+                const r = await fetch('/api/billing/portal?team_id=' + encodeURIComponent(this.teamId));
+                const d = await r.json();
+                if (d.portal_url) window.location.href = d.portal_url;
+                else alert(d.error || 'Could not open billing portal');
+            } catch (e) {
+                alert('Portal error: ' + e.message);
+            }
+        },
+
+        async cancelSub() {
+            if (!confirm('Are you sure you want to cancel your subscription? You will be downgraded to the Free tier at the end of the current billing period.')) return;
+            this.openPortal();
+        },
+    };
+}
+</script>
+{% endblock %}

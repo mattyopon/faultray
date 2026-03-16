@@ -39,6 +39,12 @@ def scan(
     save_yaml: Path | None = typer.Option(
         None, "--save-yaml", help="Export discovered model as YAML to this path"
     ),
+    infer_hidden: bool = typer.Option(
+        False, "--infer-hidden", help="Run ML dependency inference to detect hidden dependencies"
+    ),
+    infer_confidence: float = typer.Option(
+        0.7, "--infer-confidence", help="Minimum confidence threshold for inferred dependencies (0.0-1.0)"
+    ),
 ) -> None:
     """Discover infrastructure and build model.
 
@@ -66,6 +72,9 @@ def scan(
 
         # Scan and export as YAML
         faultray scan --aws --save-yaml infra.yaml
+
+        # Scan with ML-based hidden dependency inference
+        faultray scan --aws --infer-hidden --infer-confidence 0.6
     """
     if aws:
         from faultray.discovery.aws_scanner import AWSScanner
@@ -172,6 +181,29 @@ def scan(
     else:
         console.print("[cyan]Scanning local infrastructure...[/]")
         graph = scan_local(hostname=hostname)
+
+    if infer_hidden:
+        from faultray.discovery.ml_dependency_inference import DependencyInferenceEngine
+
+        console.print("[cyan]Running ML dependency inference...[/]")
+        engine = DependencyInferenceEngine()
+        inferred = engine.infer_all(graph)
+        if inferred:
+            added = engine.apply_inferred(graph, inferred, min_confidence=infer_confidence)
+            console.print(
+                f"[green]ML inference: {len(inferred)} candidates found, "
+                f"{added} dependencies added (confidence >= {infer_confidence})[/]"
+            )
+            for dep in inferred[:5]:
+                style = "green" if dep.confidence >= infer_confidence else "dim"
+                console.print(
+                    f"  [{style}]{dep.source_id} -> {dep.target_id} "
+                    f"(confidence={dep.confidence:.2f}, method={dep.inference_method})[/]"
+                )
+            if len(inferred) > 5:
+                console.print(f"  [dim]... and {len(inferred) - 5} more[/]")
+        else:
+            console.print("[yellow]No hidden dependencies inferred.[/]")
 
     print_infrastructure_summary(graph, console)
 
