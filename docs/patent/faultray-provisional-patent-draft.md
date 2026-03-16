@@ -879,6 +879,293 @@ The introduction of shared infrastructure dependency modeling produced a signifi
 
 The recall improvement from 0.499 to 1.000 demonstrates that shared infrastructure dependency modeling eliminates the systematic underprediction of failure scope that occurs when using explicit service-to-service dependencies alone. The perfect precision and recall indicate that the system correctly identifies all affected components without false positives when shared infrastructure nodes are present. The severity accuracy of 0.819 and prediction confidence of 0.756 reflect the remaining challenges in precisely estimating severity magnitude and incident duration, which depend on factors beyond dependency graph topology (e.g., provider response time, incident complexity).
 
+### 4.27 Agent-Based Model (ABM) Simulation Engine
+
+The system provides an agent-based model (ABM) simulation engine that models each infrastructure component as an independent, autonomous agent capable of observing the health states of its neighboring components and making probabilistic decisions about its own state transitions. Unlike the deterministic breadth-first search (BFS) cascade engine described in Section 4.2, which computes a single deterministic propagation path, the ABM engine discovers **emergent failure patterns** — cascading behaviors that arise from the concurrent interaction of many independent agents and cannot be predicted by graph traversal alone.
+
+#### 4.27.1 Agent Construction
+
+Each component in the directed graph topology is converted into an autonomous agent with the following attributes:
+
+- **component_id:** A unique identifier linking the agent to its corresponding graph node.
+- **state:** One of four health states — `HEALTHY`, `DEGRADED`, `OVERLOADED`, or `DOWN` — initialized to `HEALTHY` at the start of each simulation run.
+- **neighbors:** A mapping of neighboring component identifiers to dependency metadata, including both forward dependencies (components this agent depends on) and reverse dependencies (components that depend on this agent, modeled as `dependent` type with weight 0.5). This bidirectional awareness enables the agent to model upstream back-pressure effects.
+- **metrics:** Simulated resource metrics derived from the component's current state, including CPU utilization, memory utilization, disk utilization, network connections, and maximum connection capacity.
+- **rules:** An ordered list of decision rules, each specifying a condition, a target state, and a priority. Rules are evaluated in descending priority order. The default rule set comprises four rules:
+  - `required_dependency_down` (priority 100): Transitions the agent to `DOWN` if any required dependency has been in the `DOWN` state for a number of consecutive steps equal to or exceeding the agent's `timeout_steps` threshold.
+  - `cpu_saturation` (priority 70): Transitions the agent to `OVERLOADED` if the agent's CPU utilization exceeds 90%.
+  - `optional_dependency_down` (priority 50): Transitions the agent to `DEGRADED` if any optional dependency is `DOWN`.
+  - `probabilistic_cascade` (priority 30): A stochastic rule that models retry storms, back-pressure propagation, and emergent load amplification. The probability of transitioning to `DEGRADED` is computed as `P = (unhealthy_neighbors / total_neighbors) × 0.4`, where `unhealthy_neighbors` is the count of neighbors in `DOWN` or `OVERLOADED` state. This probabilistic element is the key differentiator from deterministic BFS: it enables the discovery of failure patterns that depend on the density and distribution of unhealthy neighbors rather than on explicit dependency edges.
+- **timeout_steps:** Derived from the component's configured timeout in seconds divided by 5 (each simulation step represents approximately 5 seconds of real time), with a minimum of 1.
+
+#### 4.27.2 Synchronous Discrete-Time Simulation
+
+The ABM simulation proceeds in discrete time steps using a **synchronous update** scheme:
+
+1. **Fault injection:** The target component's agent is set to `DOWN` and remains pinned in that state for the entire simulation.
+2. **Snapshot capture:** At the beginning of each step, a read-only snapshot of all agent states is captured. All agents read from this snapshot, ensuring that the order of agent evaluation does not affect the outcome.
+3. **Rule evaluation:** Each non-pinned agent evaluates its rules against the snapshot. The worst matching state (highest severity among `HEALTHY` < `DEGRADED` < `OVERLOADED` < `DOWN`) becomes the agent's next state.
+4. **State application:** All computed next states are applied simultaneously after all agents have been evaluated.
+5. **Convergence detection:** The simulation terminates when the global state snapshot remains unchanged for two consecutive steps, or when a maximum step limit (default 50) is reached.
+
+For multi-fault scenarios, multiple agents are pinned to `DOWN` simultaneously before the simulation loop begins.
+
+#### 4.27.3 Emergent Pattern Detection
+
+After simulation convergence, the ABM engine compares its results against a naive BFS prediction (the transitive closure of required dependencies from the fault target) to identify emergent patterns:
+
+- **Emergent cascade:** Components affected by the ABM simulation but not predicted by BFS. These represent failure propagation through probabilistic back-pressure and retry storm effects that pure graph traversal cannot capture.
+- **Resilience discovery:** Components predicted to fail by BFS but remaining healthy in the ABM simulation. These represent cases where timeout buffers, low propagation probability, or partial load shedding prevented cascading failure.
+
+#### 4.27.4 Severity Computation
+
+The ABM engine computes a severity score in the range `[0.0, 10.0]` using a formula consistent with the CascadeEngine:
+
+```
+impact_score = (down_count × 1.0 + overloaded_count × 0.5 + degraded_count × 0.25) / affected_count
+spread_score = affected_count / total_agents
+severity = impact_score × spread_score × 10.0
+```
+
+Severity caps are applied: single-component impact is capped at 3.0, spread below 30% is capped at 6.0, and degradation-only scenarios are capped at 4.0.
+
+#### 4.27.5 Comparative Analysis with BFS Cascade Engine
+
+The ABM engine provides a `compare_with_cascade` method that quantifies the agreement between ABM and BFS predictions:
+
+- `bfs_only`: Components affected by BFS but not ABM.
+- `abm_only`: Components affected by ABM but not BFS.
+- `both`: Components affected by both methods.
+- `agreement_ratio`: The Jaccard similarity `|both| / |bfs_only ∪ abm_only ∪ both|`, indicating the degree of overlap between the two prediction methods.
+
+This comparative analysis is valuable for identifying scenarios where deterministic BFS may be over- or under-predicting failure scope, and for calibrating the probabilistic parameters of the ABM engine.
+
+### 4.28 Reinforcement Learning-Based Scenario Generation
+
+The system provides a reinforcement learning (RL) scenario generator that treats the FaultRay simulation engine as an RL environment and uses tabular Q-learning to autonomously discover the most impactful failure scenarios. Rather than relying on predefined scenario generation rules (as described in Section 4.3), the RL agent learns through trial and error which components to fail, in what combination, and with which fault types, in order to maximize cascade damage.
+
+#### 4.28.1 Environment Formulation
+
+The RL environment is defined as follows:
+
+- **State space:** Each state is an immutable snapshot of all component health statuses, encoded as a frozenset of `(component_id, health_status)` pairs. The initial state has all components in `healthy` status. States are serialized to deterministic string keys for Q-table indexing.
+- **Action space:** Each action represents the injection of a specific fault type on a specific component. The full action space is the Cartesian product of all component identifiers and all fault types (`COMPONENT_DOWN`, `LATENCY_SPIKE`, `CPU_SATURATION`, `MEMORY_EXHAUSTION`, `DISK_FULL`, `CONNECTION_POOL_EXHAUSTION`, `NETWORK_PARTITION`), yielding `|components| × 7` possible actions.
+- **Transition function:** Executing an action invokes the CascadeEngine to simulate fault propagation. The resulting cascade effects update the state by replacing affected component health statuses.
+- **Reward signal:** The cascade severity score (range `[0.0, 10.0]`) returned by the CascadeEngine serves as the immediate reward. Higher cascade severity corresponds to higher reward, incentivizing the agent to discover maximally damaging fault combinations.
+
+#### 4.28.2 Q-Learning Algorithm
+
+The agent employs an **ε-greedy tabular Q-learning** algorithm with the following update rule:
+
+```
+Q[s][a] ← Q[s][a] + α × (r + γ × max_a' Q[s'][a'] − Q[s][a])
+```
+
+Where:
+- `Q[s][a]` is the estimated value of taking action `a` in state `s`.
+- `α` (learning rate, default 0.1) controls the speed of learning.
+- `γ` (discount factor, default 0.9) balances immediate versus future rewards.
+- `r` is the immediate reward (cascade severity).
+- `max_a' Q[s'][a']` is the maximum Q-value achievable from the next state.
+- `ε` (exploration rate, default 0.3, decayed by factor 0.995 per episode to a minimum of 0.05) governs the exploration-exploitation tradeoff.
+
+Each training episode consists of up to `max_steps_per_episode` (default 5) sequential fault injections starting from the all-healthy initial state. Over hundreds of episodes, the Q-table converges to encode a policy mapping infrastructure states to the most damaging actions.
+
+#### 4.28.3 Scenario Generation from Learned Policy
+
+After training, the learned policy is exploited to generate high-impact scenarios through two complementary strategies:
+
+1. **Greedy policy replay:** Starting from the initial state, the agent greedily selects the highest-Q-value action at each step (ε = 0), building a multi-fault scenario of increasing severity. Partial scenarios at each step depth (1-fault, 2-fault, ..., N-fault) are recorded and evaluated through the full simulation engine.
+
+2. **Top-K single-fault extraction:** The Q-values for the initial state are ranked, and the top-K highest-valued actions are extracted as single-fault scenarios. Each scenario is evaluated through the simulation engine to obtain its actual severity score.
+
+All discovered scenarios are ranked by severity, and the top-K are returned as `RLDiscovery` objects containing the `Scenario`, severity score, and discovery method provenance.
+
+#### 4.28.4 Novel Aspects
+
+The RL scenario generation method is novel in that it:
+- Uses the infrastructure simulation engine itself as the RL environment, creating a self-contained feedback loop that requires no external data or historical incident records.
+- Discovers multi-step correlated failure scenarios that rule-based generators cannot enumerate due to combinatorial explosion.
+- Produces a reusable Q-table (policy) that encodes learned knowledge about infrastructure vulnerabilities, enabling rapid scenario generation for subsequent analysis cycles without retraining.
+
+### 4.29 Graph Neural Network (GNN) Cascade Prediction
+
+The system provides a Graph Neural Network (GNN) cascade predictor that learns to predict failure cascade patterns directly from the infrastructure topology structure. This implements the alternative embodiment described in Section 5.8 and the method claimed in Claim 17, using a Message Passing Neural Network (MPNN) architecture.
+
+#### 4.29.1 Architecture
+
+The GNN cascade predictor employs a multi-layer MPNN architecture with the following components:
+
+- **Input layer:** Each node (infrastructure component) is represented by a 14-dimensional feature vector:
+  - 4 metric features: CPU utilization / 100, memory utilization / 100, disk utilization / 100, min(network_connections / 1000, 1.0).
+  - 10 component type features: One-hot encoding over the 10 infrastructure component types (load_balancer, web_server, app_server, database, cache, message_queue, api_gateway, cdn, dns, external_api).
+
+- **Edge features:** Each dependency edge is represented by a 4-dimensional feature vector:
+  - 3 dependency type features: One-hot encoding over dependency types (requires, optional, async).
+  - 1 weight feature: The dependency weight value.
+
+- **Message passing layers:** The network performs `num_layers` (default 2) rounds of message passing. At each layer, for each node `v`:
+
+```
+h_v^{(l+1)} = σ(W_self^{(l)} · h_v^{(l)} + Σ_{u ∈ N(v)} W_msg^{(l)} · h_u^{(l)} · edge_weight(u,v) + b^{(l)})
+```
+
+Where:
+  - `W_self^{(l)}` is the self-transformation weight matrix (hidden_dim × input_dim).
+  - `W_msg^{(l)}` is the message weight matrix (hidden_dim × input_dim).
+  - `edge_weight(u,v)` is the scalar dependency weight between nodes `u` and `v`.
+  - `b^{(l)}` is the bias vector.
+  - `σ` is the ReLU activation function.
+  - `N(v)` is the set of neighbors of node `v` (bidirectional — both dependencies and dependents).
+
+- **Output head:** A linear layer maps each node's final hidden state to a scalar logit, followed by a sigmoid activation to produce a failure probability in `[0, 1]`:
+
+```
+P(fail_v) = sigmoid(w_out · h_v^{(L)} + b_out)
+```
+
+#### 4.29.2 Self-Supervised Training Data Generation
+
+Training data is generated automatically by running the rule-based CascadeEngine on random single-fault scenarios:
+
+1. For each of `n_scenarios` (default 200) training examples, a random component and random fault type are selected.
+2. The CascadeEngine simulates the fault and records which components end up in `DOWN`, `OVERLOADED`, or `DEGRADED` states.
+3. Each training example is a pair `(failed_component_id, [affected_component_ids])`.
+4. Binary labels are constructed: `1.0` for affected components, `0.0` for unaffected components.
+5. The failed component's input features are modified (CPU and memory set to 1.0) to signal the fault injection point.
+
+This self-supervised approach means the GNN learns to approximate the CascadeEngine's behavior from its own outputs, then generalizes to predict **non-obvious cascade patterns** that the rule-based engine might miss due to the GNN's ability to capture higher-order structural relationships in the graph.
+
+#### 4.29.3 Training Procedure
+
+The GNN is trained using binary cross-entropy (BCE) loss and stochastic gradient descent (SGD):
+
+**Loss function:**
+```
+L = -(1/N) × Σ_v [y_v × log(p_v) + (1 - y_v) × log(1 - p_v)]
+```
+
+Where `y_v` is the binary label and `p_v` is the predicted failure probability for node `v`.
+
+**Weight updates:**
+- Output head weights are updated using the exact gradient: `∂L/∂w_out = (1/N) × Σ_v (p_v - y_v) × h_v`.
+- Message passing layer weights are updated using a simplified node-level gradient propagation scheme that back-propagates the output error signal through the output head weights to the GNN layer parameters.
+- Weight matrices are initialized using Xavier-scale initialization: `U(-limit, limit)` where `limit = scale × √(6 / (fan_in + fan_out))`.
+
+#### 4.29.4 Prediction and Confidence
+
+Given a failed component, the trained GNN predicts the failure probability for every component in the infrastructure:
+
+- The failed component's features are modified to signal fault injection.
+- The message passing forward pass is executed.
+- Each node receives a failure probability and a confidence score computed as `confidence = |probability - 0.5| × 2.0`, reflecting how decisive the prediction is (higher confidence when probability is far from the decision boundary).
+- Predictions are sorted by failure probability in descending order.
+
+#### 4.29.5 Novel Aspects
+
+The GNN cascade predictor is novel in that it:
+- Learns structural patterns in the infrastructure topology graph that influence failure propagation but are not captured by explicit dependency traversal rules.
+- Uses self-supervised training from the system's own CascadeEngine results, requiring no external training data or labeled historical incidents.
+- Operates entirely within the Python standard library (no external ML framework dependencies), implementing matrix operations, activation functions, and gradient computation from first principles.
+- Provides per-component failure probability predictions with confidence scores, enabling risk-ranked prioritization of infrastructure hardening efforts.
+
+### 4.30 ML-Based Failure Prediction from Infrastructure Metrics
+
+The system provides a machine learning-based failure predictor that estimates the probability of upcoming component failures from current infrastructure metric observations. This predictor uses logistic regression trained on synthetic data generated by the system's own simulation engines, enabling predictive failure analysis without requiring historical production incident data.
+
+#### 4.30.1 Feature Extraction
+
+Each infrastructure component's current state is encoded as a 5-dimensional normalized feature vector:
+
+```
+x = [cpu/100, memory/100, disk/100, connections/max_connections, utilization/100]
+```
+
+Where:
+- `cpu`, `memory`, `disk` are the component's current resource utilization percentages.
+- `connections` is the current active network connection count, normalized by the component's maximum connection capacity.
+- `utilization` is the component's overall utilization score (a composite metric derived from resource usage and capacity).
+
+#### 4.30.2 Logistic Regression Model
+
+The failure predictor employs a logistic regression model:
+
+```
+P(failure) = sigmoid(w · x + b) = 1 / (1 + exp(-(w · x + b)))
+```
+
+Where `w` is a 5-dimensional weight vector and `b` is a scalar bias, both learned during training.
+
+#### 4.30.3 Synthetic Training Data Generation
+
+Training data is synthesized by running the CascadeEngine on random fault scenarios with metric perturbation:
+
+1. For each of `n_samples` (default 500) training examples:
+   a. A random component and random fault type are selected from `COMPONENT_DOWN`, `CPU_SATURATION`, `MEMORY_EXHAUSTION`, `DISK_FULL`, and `CONNECTION_POOL_EXHAUSTION`.
+   b. The component's metrics are extracted and perturbed with Gaussian noise (σ = 0.15) to introduce training variety.
+   c. The CascadeEngine simulates the fault injection.
+   d. If the target component ends up in `DOWN` state, the label is `1.0` (failure); otherwise `0.0`.
+2. For positive (failure) samples, features are further biased toward high utilization (additive uniform noise in `[0.1, 0.4]`) to model the pre-failure stress signature.
+3. For negative (non-failure) samples, features are biased toward normal utilization (subtractive uniform noise in `[0.0, 0.2]`).
+
+This data augmentation strategy ensures the model learns to associate high resource utilization patterns with impending failure, even though the simulation engine does not explicitly model gradual degradation.
+
+#### 4.30.4 Training Procedure
+
+The model is trained using stochastic gradient descent (SGD) on binary cross-entropy loss:
+
+**Loss function:**
+```
+L = -[y × log(p) + (1 - y) × log(1 - p)]
+```
+
+**Gradient with respect to weights:**
+```
+∂L/∂w_k = (p - y) × x_k
+∂L/∂b = (p - y)
+```
+
+**Update rule (per-sample SGD):**
+```
+w_k ← w_k - lr × (p - y) × x_k
+b ← b - lr × (p - y)
+```
+
+Where `lr` (learning rate, default 0.01) controls the step size and training runs for a configurable number of epochs (default 200).
+
+#### 4.30.5 Prediction Output
+
+For each component, the predictor outputs:
+
+- **failure_probability:** The sigmoid output in `[0, 1]`, representing the estimated probability of failure.
+- **risk_level:** A categorical classification derived from the probability:
+  - `critical`: probability ≥ 0.8
+  - `high`: probability ≥ 0.6
+  - `medium`: probability ≥ 0.3
+  - `low`: probability < 0.3
+- **time_to_failure_minutes:** An estimated time to failure computed from the current utilization level and the failure probability:
+  - Critical (p > 0.8): `max(1, (1 - utilization/100) × 60)` minutes.
+  - High (p > 0.5): `max(10, (1 - utilization/100) × 360)` minutes.
+  - Low (p ≤ 0.5): `max(60, (1 - utilization/100) × 1440)` minutes.
+
+The `predict_all` method generates a `PredictorReport` containing predictions for every component sorted by failure probability, a list of high-risk component identifiers, and the model's training accuracy.
+
+#### 4.30.6 Model Evaluation
+
+The predictor provides an evaluation method that computes classification metrics on a held-out test set (generated using the same synthetic data pipeline):
+
+- **Accuracy:** `(TP + TN) / (TP + TN + FP + FN)`
+- **Precision:** `TP / (TP + FP)`
+- **Recall:** `TP / (TP + FN)`
+
+#### 4.30.7 Novel Aspects
+
+The ML failure predictor is novel in that it:
+- Trains entirely on synthetic data generated by the system's own simulation engines, eliminating the cold-start problem inherent in ML-based failure prediction systems that require historical production data.
+- Bridges the gap between simulation-based resilience analysis (which evaluates "what would happen if component X fails") and predictive analytics (which estimates "which component is most likely to fail next").
+- Operates entirely within the Python standard library, implementing logistic regression, sigmoid activation, and SGD optimization from first principles without external ML framework dependencies.
+- Provides actionable output (risk level, time-to-failure estimate) that enables proactive infrastructure hardening before failures occur.
+
 ## 5. ALTERNATIVE EMBODIMENTS AND EXTENSIONS
 
 ### 5.1 Machine Learning-Enhanced Scenario Generation
@@ -939,6 +1226,8 @@ In an alternative embodiment, the system performs multi-objective optimization t
 - Budget allocation optimization across multiple infrastructure investments
 
 ### 5.8 Graph Neural Network-Based Topology Analysis
+
+**Note:** This embodiment has been implemented. See Section 4.29 for the detailed description of the GNN cascade predictor, including MPNN architecture, self-supervised training from CascadeEngine results, and per-component failure probability prediction with confidence scores.
 
 In an alternative embodiment, the graph-based topology model is analyzed using graph neural network (GNN) techniques:
 - GNN-based failure propagation prediction that captures non-obvious cascade patterns
@@ -1026,7 +1315,7 @@ In an alternative embodiment, the system continuously compares simulation predic
 
 **Claim 16.** The method of Claim 1, further comprising performing multi-objective optimization between cost constraints and resilience score to identify Pareto-optimal infrastructure configurations.
 
-**Claim 17.** The method of Claim 1, wherein the cascade propagation analysis is performed using a graph neural network trained on simulation results.
+**Claim 17.** The method of Claim 1, wherein the cascade propagation analysis is performed using a graph neural network trained on simulation results. **[Now implemented — see Section 4.29]**
 
 **Claim 18.** The method of Claim 1, further comprising validating simulation predictions against historical incident data and automatically calibrating simulation parameters based on backtest accuracy.
 
@@ -1063,6 +1352,25 @@ In an alternative embodiment, the system continuously compares simulation predic
 - (b) dynamically injecting shared infrastructure nodes into the directed graph topology model, wherein all service components are connected to the appropriate shared node via required dependencies with weight 1.0, such that the shared node represents an implicit common dependency not declared in the explicit service-level topology;
 - (c) using the shared infrastructure node as the fault injection point for cascade simulation, thereby modeling correlated multi-service failures that originate from a common shared dependency and propagate simultaneously to all dependent service components; and
 - (d) applying intelligent root cause routing that automatically selects the appropriate shared infrastructure node based on keyword analysis of the incident description, with a fallback heuristic that routes to the shared network node when three or more services are concurrently affected, enabling fully automated backtest execution against historical incident databases without manual incident classification.
+
+**Claim 32.** The method of Claim 1, further comprising an agent-based model (ABM) simulation engine that:
+- (a) models each infrastructure component as an independent autonomous agent possessing a set of prioritized decision rules, a health state selected from HEALTHY, DEGRADED, OVERLOADED, and DOWN, and awareness of the health states of neighboring agents through both forward dependencies and reverse dependencies;
+- (b) simulates fault propagation using synchronous discrete-time steps, wherein at each step all agents simultaneously evaluate their rules against a read-only snapshot of the previous step's global state and transition to the worst matching state;
+- (c) incorporates a probabilistic cascade rule wherein the probability of an agent transitioning to DEGRADED state is computed as `P = (unhealthy_neighbors / total_neighbors) × 0.4`, modeling retry storms, back-pressure propagation, and emergent load amplification that deterministic graph traversal cannot capture;
+- (d) detects convergence when the global state remains unchanged for two consecutive steps; and
+- (e) identifies emergent failure patterns by comparing the set of affected agents against the transitive closure predicted by breadth-first search, thereby discovering both unexpected cascade propagation paths and previously unknown resilience properties.
+
+**Claim 33.** The method of Claim 1, further comprising a reinforcement learning-based scenario generation method that:
+- (a) formulates the infrastructure simulation engine as a reinforcement learning environment, wherein states are immutable snapshots of all component health statuses, actions are fault injections parameterized by target component and fault type, transitions are computed by the cascade simulation engine, and the reward signal is the cascade severity score;
+- (b) trains a tabular Q-learning agent using the update rule `Q[s][a] ← Q[s][a] + α × (r + γ × max Q[s'] − Q[s][a])` with ε-greedy exploration that decays from an initial exploration rate toward a minimum exploitation rate over successive training episodes;
+- (c) generates high-impact failure scenarios by replaying the learned greedy policy from the initial all-healthy state to build multi-fault scenarios of increasing severity, and by extracting the top-K highest-Q-value single-fault actions from the initial state; and
+- (d) produces a reusable Q-table encoding learned knowledge about infrastructure vulnerabilities that enables rapid scenario generation for subsequent analysis cycles without retraining.
+
+**Claim 34.** The method of Claim 1, further comprising a machine learning-based failure prediction method that:
+- (a) extracts a normalized feature vector from each infrastructure component's current metrics, comprising CPU utilization, memory utilization, disk utilization, connection pool saturation, and overall utilization;
+- (b) trains a logistic regression model `P(failure) = sigmoid(w · x + b)` using stochastic gradient descent on binary cross-entropy loss, wherein training data is synthetically generated by running the cascade simulation engine on random fault scenarios with metric perturbation, and positive samples are augmented with high-utilization bias to model pre-failure stress signatures;
+- (c) predicts, for each component, a failure probability, a categorical risk level (critical, high, medium, or low), and an estimated time to failure derived from the current utilization trajectory; and
+- (d) generates an infrastructure-wide prediction report ranking all components by failure probability to enable proactive infrastructure hardening before failures occur.
 
 ---
 
@@ -1101,6 +1409,10 @@ Key implementation files corresponding to the described components:
 - Backtest Execution Script: `scripts/run_backtest_report.py` (shared infrastructure modeling, graph construction, 18-incident backtest with JSON/Markdown report generation)
 - Interactive Topology Wizard: `src/faultray/cli/init_cmd.py` (step-by-step interactive infrastructure definition with environment type, cloud provider, component selection, and automatic YAML generation)
 - Hybrid Infrastructure Template: `src/faultray/templates/hybrid-onprem-cloud.yaml` (on-premise plus AWS hybrid topology connected via VPN)
+- ABM Engine: `src/faultray/simulator/abm_engine.py` (ABMEngine class — agent-based model with autonomous agents, synchronous discrete-time simulation, probabilistic cascade rules, emergent pattern detection)
+- RL Scenario Generator: `src/faultray/simulator/rl_scenario_generator.py` (RLScenarioGenerator class — Q-learning agent, ε-greedy exploration, greedy policy replay, top-K scenario extraction)
+- GNN Cascade Predictor: `src/faultray/simulator/gnn_engine.py` (GNNCascadePredictor class — MPNN architecture, self-supervised training from CascadeEngine, per-node failure probability prediction)
+- ML Failure Predictor: `src/faultray/simulator/ml_failure_predictor.py` (MLFailurePredictor class — logistic regression, synthetic training data generation, risk-level classification, time-to-failure estimation)
 
 ---
 
