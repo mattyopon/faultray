@@ -64,7 +64,7 @@ The invention provides a computer-implemented system and method comprising:
 
 2. **An automated fault scenario generation engine** that algorithmically generates a comprehensive set of failure scenarios from the topology model, including single-component failures, pairwise combinations, triple failures, component-type-specific faults, traffic spike scenarios at multiple magnitudes, and specialized scenarios based on component semantics (database replication lag, cache stampede, queue backpressure, etc.), producing 2,000 or more distinct scenarios from a typical topology.
 
-3. **A multi-engine simulation architecture** comprising thirteen complementary simulation engines:
+3. **A multi-engine simulation architecture** comprising twenty-three complementary simulation engines:
    - A **Cascade Engine** that propagates failure effects through the dependency graph using breadth-first search (BFS), computing severity scores based on impact and spread metrics, and modeling dependency-type-aware propagation (required vs. optional vs. asynchronous dependencies)
    - A **Dynamic Engine** that executes time-stepped simulations with traffic pattern injection, autoscaling response modeling, circuit breaker activation, failover sequence simulation, and latency cascade tracking
    - An **Operations Engine** that simulates multi-day operational scenarios incorporating MTBF/MTTR-based stochastic event generation, deployment events, and gradual degradation patterns
@@ -78,6 +78,16 @@ The invention provides a computer-implemented system and method comprising:
    - A **Survival Analysis Engine** that estimates remaining useful life using Kaplan-Meier survival curves, Weibull distribution fitting, and hazard function computation
    - A **Petri Net Engine** that models concurrent failure propagation using Place/Transition nets with reachability analysis and deadlock detection
    - A **Cellular Automata Engine** that models deterministic failure propagation using threshold-based local rules with pattern classification (stable/oscillating/chaotic)
+   - A **System Dynamics Engine** that models component health as continuous-valued stocks governed by ordinary differential equations with degradation and recovery flows, using Euler integration to capture smooth degradation curves, tipping-point thresholds, and recovery trajectories invisible to discrete-state models
+   - An **RNN/LSTM Failure Predictor** that captures temporal dependencies in infrastructure metric time-series using recurrent neural networks (Simple RNN and LSTM variants), trained on simulation-synthesized data rather than production logs
+   - A **Simulated Annealing Optimizer** that discovers worst-case failure scenarios through single-solution metaheuristic search with Metropolis acceptance criterion and geometric cooling schedule
+   - A **Reliability Block Diagram (RBD) Analyzer** that computes system-level availability from series and parallel block compositions derived from the infrastructure dependency graph
+   - An **Event Tree Analysis (ETA) Engine** that performs inductive forward risk assessment from initiating events through automatically generated safety barrier branches
+   - An **Extreme Value Theory (EVT) Analyzer** that fits a Generalised Extreme Value distribution to cascade severity block-maxima for return level computation and tail-risk probability estimation
+   - A **Model Checker** that performs exhaustive state-space exploration with CTL temporal-logic property verification (AG, EF, AF operators) and counterexample generation
+   - A **Random Forest Predictor** that uses bagged decision tree ensembles with feature sub-sampling to capture non-linear failure prediction boundaries
+   - An **Anomaly Autoencoder** that performs unsupervised anomaly detection via reconstruction error on simulation-synthesized normal data, requiring no labeled failure examples
+   - A **Transformer Predictor** that uses self-attention to predict failure probability from metric time-series with parallel processing and attention-weight interpretability
 
 4. **A multi-layer availability limit model** (the "N-Layer Model") that computes mathematically distinct availability ceilings:
    - **Layer 1 (Software Limit):** Accounts for deployment downtime frequency, human error rate, and configuration drift probability. Computed as: `A_sw = 1 - (deploy_frequency × avg_deploy_downtime / period + human_error_rate + config_drift_rate)`, bounded by the hardware limit.
@@ -1550,6 +1560,389 @@ The CA engine is complementary to the ABM engine (Section 4.27) in the following
 - The CA engine's pattern classification (stable/oscillating/chaotic) provides qualitative insight into failure dynamics that the ABM engine does not produce.
 - Both engines use synchronous update (all cells/agents evaluate simultaneously from a snapshot), but they differ in whether the transition function is deterministic (CA) or stochastic (ABM).
 
+### 4.39 System Dynamics (Stock-and-Flow) Engine
+
+The system provides a System Dynamics engine that models infrastructure component health as continuous-valued stocks governed by ordinary differential equations (ODEs), with degradation and recovery expressed as continuous flows. This approach fills a fundamental paradigm gap in the FaultRay multi-engine architecture: whereas the ABM engine (Section 4.27) models components as discrete autonomous agents with rule-based behavior, the DES engine (Section 4.33) processes discrete time-stamped events, and the Cellular Automata engine (Section 4.38) uses discrete state transitions on a grid, the System Dynamics engine treats health as a *continuous* variable evolving under smooth differential equations, enabling analysis of degradation velocity, tipping-point thresholds, and recovery trajectories that are invisible to discrete-state models.
+
+#### 4.39.1 Stock-and-Flow Formulation
+
+Each infrastructure component $i$ is modeled as a *stock* $H_i(t) \in [0.0, 1.0]$ representing the component's health level at time $t$. The health stock evolves according to three *flows*:
+
+$$\frac{dH_i}{dt} = r_i - d_i - \sum_{j \in \text{deps}(i)} c_{ji}$$
+
+where:
+- $r_i$ is the **recovery rate** — the rate at which a healthy component self-heals or absorbs transient stress;
+- $d_i$ is the **degradation rate** — the background wear or load-induced degradation;
+- $c_{ji}$ is the **cascade impact** from each dependency $j$ that component $i$ relies on, computed as $c_{ji} = w_c \times (1 - H_j(t))$, where $w_c$ is a cascade weight parameter and the impact grows as the dependency's health decreases.
+
+Cascade impact is further modulated by dependency type: `optional` dependencies carry a 0.3× multiplier and `async` dependencies carry a 0.1× multiplier, reflecting the reduced coupling of non-critical dependency types.
+
+#### 4.39.2 Euler Integration
+
+The continuous ODE is approximated using forward Euler integration with configurable time-step width $dt$:
+
+$$H_i(t + dt) = H_i(t) + \frac{dH_i}{dt} \times dt$$
+
+The result is clamped to $[0.0, 1.0]$ at each step. The faulted (initially failed) component is held at $H = 0.0$ throughout the simulation (modeling a hard failure), while all other components start at $H = 1.0$ and evolve under the ODE.
+
+#### 4.39.3 Severity Computation
+
+The engine computes an overall severity score (0.0–10.0) from the time-series of health values across all components:
+
+$$\text{severity} = \left(\text{avg\_degradation} \times 0.6 + \text{spread} \times 0.4\right) \times 10$$
+
+where $\text{avg\_degradation}$ is the average depth of degradation ($1 - \min(H_i)$) across all components, and $\text{spread}$ is the fraction of components whose health dropped below 0.5 at any point during the simulation.
+
+#### 4.39.4 Differentiation from Other Engines
+
+| Aspect | ABM (Section 4.27) | DES (Section 4.33) | CA (Section 4.38) | System Dynamics |
+|--------|---------------------|---------------------|---------------------|-----------------|
+| State representation | Discrete {HEALTHY, DEGRADED, OVERLOADED, DOWN} | Discrete event-driven state | Discrete {0,1,2,3} | Continuous $[0.0, 1.0]$ |
+| Update mechanism | Probabilistic rules | Event priority queue | Deterministic threshold | ODE integration |
+| Temporal model | Discrete steps | Asynchronous events | Synchronous generations | Continuous time |
+| Granularity | Coarse (4 states) | Event-resolution | Coarse (4 states) | Arbitrary precision |
+| Unique insight | Emergent patterns | Exact timing | Pattern classification | Degradation velocity, tipping points |
+
+The continuous-valued representation enables the System Dynamics engine to detect phenomena such as: (a) slow degradation trends that have not yet crossed a discrete-state threshold but are on a trajectory toward failure; (b) the exact health level at which cascade effects become self-reinforcing (tipping point); and (c) the recovery rate required to stabilize a degrading system before it reaches a failure state.
+
+### 4.40 RNN/LSTM Time-Series Failure Prediction
+
+The system provides recurrent neural network (RNN) and Long Short-Term Memory (LSTM) predictors that consume sequences of infrastructure metric snapshots and predict failure probability by capturing temporal dependencies across the sequence. Unlike the logistic regression predictor (Section 4.30) which treats each observation as an independent, static feature vector, the RNN/LSTM predictor models *time-series dynamics* — learning patterns such as "CPU utilization rising for three consecutive observation windows precedes an out-of-memory failure" that a memoryless classifier would miss.
+
+#### 4.40.1 Simple RNN Architecture
+
+The Simple RNN (Elman network) computes a hidden state $h_t$ at each time-step $t$ from the current input $x_t$ and the previous hidden state $h_{t-1}$:
+
+$$h_t = \tanh(W_{hh} \cdot h_{t-1} + W_{xh} \cdot x_t + b_h)$$
+
+The final hidden state $h_T$ is passed through a linear output layer with sigmoid activation to produce a scalar failure probability:
+
+$$y = \sigma(W_{hy} \cdot h_T + b_y)$$
+
+This architecture is computationally efficient and sufficient for short metric sequences (10–20 time-steps).
+
+#### 4.40.2 LSTM Architecture
+
+The LSTM variant addresses the vanishing-gradient problem of vanilla RNNs by introducing gated memory cells that selectively retain or discard information:
+
+$$f_t = \sigma(W_f \cdot [h_{t-1}, x_t] + b_f) \quad \text{(forget gate)}$$
+$$i_t = \sigma(W_i \cdot [h_{t-1}, x_t] + b_i) \quad \text{(input gate)}$$
+$$\tilde{c}_t = \tanh(W_g \cdot [h_{t-1}, x_t] + b_g) \quad \text{(candidate cell)}$$
+$$o_t = \sigma(W_o \cdot [h_{t-1}, x_t] + b_o) \quad \text{(output gate)}$$
+$$c_t = f_t \odot c_{t-1} + i_t \odot \tilde{c}_t$$
+$$h_t = o_t \odot \tanh(c_t)$$
+
+The forget gate bias is initialized to 1.0 (Jozefowicz et al., 2015), encouraging the LSTM to retain information by default. The gating mechanism enables the LSTM to model long-range temporal dependencies (e.g., a gradual disk fill rate over dozens of observation windows) that the simple RNN cannot reliably capture.
+
+#### 4.40.3 Training on Simulation-Synthesized Data
+
+A critical differentiating aspect of the FaultRay RNN/LSTM predictor is that training data is *synthetically generated from the in-memory simulation model*, not collected from real production logs. The data generation process:
+
+1. Selects a random component from the infrastructure graph as a seed;
+2. Extracts base metric values (CPU%, memory%, disk%) from the component's current configuration;
+3. Generates a metric time-series of configurable length by applying either an upward trend (simulating resource exhaustion leading to failure) or a stable/declining trend (simulating normal operation);
+4. Labels the sequence as positive (failure) or negative (normal) based on the applied trend.
+
+This simulation-synthesized training approach enables the predictor to learn failure patterns from a rich corpus of generated scenarios without requiring access to historical production data, making it applicable to infrastructure that has not yet experienced failures or for which no historical telemetry is available.
+
+#### 4.40.4 Differentiation from Prior Art
+
+**Differentiation from NEC Corporation (US20170293542A1) — "Anomaly detection in streams of short text using LSTM networks":** The NEC patent applies LSTM to real-world operational log data streams for anomaly detection on production systems. The FaultRay RNN/LSTM predictor differs fundamentally in that: (a) it is trained exclusively on *simulation-synthesized data* generated from the in-memory infrastructure model, requiring no access to real production logs or telemetry; (b) prediction is performed *on the in-memory simulation model* to evaluate hypothetical infrastructure configurations before deployment, rather than monitoring a live production system; and (c) the predictor operates as one component of a multi-engine simulation architecture where simulation results from other engines (Cascade, Dynamic, Operations) serve as ground truth for training data generation.
+
+**Differentiation from logistic regression predictor (Section 4.30):** The logistic regression predictor treats each component snapshot as an independent feature vector, discarding temporal ordering. The RNN/LSTM predictor consumes the *ordered sequence* of snapshots, enabling it to detect failure-predictive temporal patterns (monotonic resource increase, oscillatory instability, sudden slope changes) that are invisible to a memoryless classifier.
+
+### 4.41 Simulated Annealing Scenario Optimizer
+
+The system provides a Simulated Annealing (SA) optimizer that discovers worst-case failure scenarios through single-solution metaheuristic search over the fault-scenario space. Unlike the Genetic Algorithm optimizer (Section 4.34) which evolves a *population* of candidate solutions through crossover and mutation, and the Reinforcement Learning scenario generator (Section 4.28) which learns a sequential fault-injection policy through trial-and-error, the SA optimizer maintains a *single candidate solution* and performs local perturbation (bit-flip), accepting worse solutions with a probability governed by the Metropolis criterion that decreases as the system "cools."
+
+#### 4.41.1 Search Space and Objective
+
+The search space is the set of all binary vectors of length $N$ (where $N$ is the number of infrastructure components), where a 1 indicates that the corresponding component is faulted. The objective is to maximize the estimated cascade severity, computed by counting the transitive dependents affected by each faulted component, weighted by dependency type and cross-fault interactions.
+
+#### 4.41.2 Metropolis Acceptance Criterion
+
+At each iteration, a neighbor solution is generated by flipping one random bit in the current solution. The neighbor is accepted or rejected according to:
+
+- If the neighbor has higher severity (improvement): always accept.
+- If the neighbor has lower severity (worsening): accept with probability $P = \exp(\Delta E / T)$, where $\Delta E = \text{neighbor\_cost} - \text{current\_cost}$ (negative for a worsening move) and $T$ is the current temperature.
+
+This probabilistic acceptance of worse solutions enables the optimizer to escape local optima in the early high-temperature phase, while the geometric cooling schedule $T(k) = T_0 \times \alpha^k$ (where $\alpha$ is the cooling rate, typically 0.995) ensures convergence to a near-optimal solution as the temperature approaches zero.
+
+#### 4.41.3 Differentiation from GA and RL Approaches
+
+| Aspect | GA (Section 4.34) | RL (Section 4.28) | Simulated Annealing |
+|--------|---------------------|---------------------|---------------------|
+| Search paradigm | Population-based evolution | Sequential policy learning | Single-solution neighborhood search |
+| Exploration mechanism | Crossover + mutation | ε-greedy exploration | Temperature-controlled acceptance |
+| Solution representation | Binary chromosome (same) | State-action pairs | Binary vector (same as GA) |
+| Knowledge persistence | Population diversity | Q-table | Best solution found |
+| Parallelism | Inherently parallel (population) | Sequential episodes | Sequential iterations |
+| Local optima escape | Crossover jumps | Exploration policy | Metropolis acceptance |
+
+The SA optimizer is complementary to the GA optimizer: GA explores the combinatorial space broadly through population diversity and crossover, while SA explores locally through neighborhood perturbation with controlled randomness. Running both optimizers and comparing results provides higher confidence that the true worst-case scenario has been identified.
+
+### 4.42 Reliability Block Diagram (RBD)
+
+The system provides a Reliability Block Diagram (RBD) analyzer that computes system-level availability from the composition of series and parallel blocks derived from the infrastructure dependency graph. Unlike the Fault Tree Analysis engine (Section 4.35) which uses AND/OR/VOTING gates on *failure events* (top-down deductive analysis), the RBD analyzer uses block connectivity patterns on *success paths* (bottom-up structural analysis), providing a complementary perspective on system reliability.
+
+#### 4.42.1 Component Availability Computation
+
+Individual component availability is derived from operational profile parameters:
+
+$$A_{\text{single}} = \frac{\text{MTBF}}{\text{MTBF} + \text{MTTR}}$$
+
+For components with parallel redundancy (replicas > 1 or failover enabled), effective availability is computed using the parallel redundancy formula:
+
+$$A_{\text{parallel}} = 1 - (1 - A_{\text{single}})^n$$
+
+where $n$ is the effective replica count (the maximum of the declared replica count and 2 when failover is enabled).
+
+#### 4.42.2 Series and Parallel Block Composition
+
+The RBD analyzer converts the infrastructure dependency graph into a block diagram:
+
+- **Series blocks:** Components connected by `requires` dependencies form a series chain. The path availability is the product of individual availabilities: $P_{\text{path}} = \prod_{i \in \text{path}} A_i$. All components in the chain must be operational for the path to succeed (weakest-link semantics).
+- **Parallel blocks:** Multiple independent paths between the same endpoints provide parallel redundancy. The system availability is: $A_{\text{system}} = 1 - \prod_{\text{paths}} (1 - P_{\text{path}})$. The system is operational if *any* path is operational.
+
+Critical paths are identified from the dependency graph using root-to-leaf traversal (up to 50 paths), and the overall system availability is computed as the parallel combination of all path availabilities.
+
+#### 4.42.3 Differentiation from Fault Tree Analysis (Section 4.35)
+
+| Aspect | FTA (Section 4.35) | RBD |
+|--------|---------------------|-----|
+| Analysis direction | Top-down deductive (from system failure to component failures) | Bottom-up structural (from component blocks to system availability) |
+| Modeling focus | Failure events and logic gates (OR/AND/VOTING) | Success paths and block connectivity |
+| Output | System failure probability, minimal cut sets | System availability, path availabilities, component contributions |
+| Question answered | "What combinations of failures cause system failure?" | "What is the system availability given component reliabilities?" |
+| Complementary insight | Identifies critical failure combinations | Quantifies availability impact of redundancy configurations |
+
+### 4.43 Event Tree Analysis (ETA)
+
+The system provides an Event Tree Analysis (ETA) engine that performs inductive forward risk assessment starting from an initiating event (e.g., a component failure) and tracing forward through a sequence of safety barriers or mitigation functions, each of which can succeed or fail. This is the *inductive complement* to Fault Tree Analysis (Section 4.35) which works *deductively* backward from a top event.
+
+#### 4.43.1 Event Tree Construction
+
+Given an initiating event (identified by component ID), the ETA engine automatically generates branching safety functions from the infrastructure topology:
+
+1. **Circuit Breaker Activation:** Success probability derived from the ratio of dependents that have circuit breakers configured on their edges to the failing component.
+2. **Failover to Standby:** High success probability (0.95) when failover is enabled; low probability (0.10) when not configured.
+3. **Autoscaling Response:** Present when autoscaling is enabled, with success probability 0.85 reflecting the typical response time lag.
+4. **Replica Redundancy:** Present when replicas > 1, with success probability $1 - (0.01)^{\text{replicas}}$ reflecting the probability that at least one replica survives.
+
+#### 4.43.2 Outcome Enumeration
+
+The engine enumerates all $2^n$ combinations of success/failure across $n$ safety barriers, computing the combined probability of each outcome path as the product of the individual barrier probabilities along that path. Each outcome is classified by severity:
+
+- **Low:** All barriers succeeded ($0$ failures).
+- **Medium:** Up to half the barriers failed.
+- **High:** More than half but not all barriers failed.
+- **Critical:** All barriers failed.
+
+The total risk is computed as $\text{Risk} = \sum_i P_i \times W_i$, where $P_i$ is the outcome probability and $W_i$ is the severity weight (low=1, medium=3, high=7, critical=10).
+
+#### 4.43.3 Differentiation from Fault Tree Analysis
+
+| Aspect | FTA (Section 4.35) | ETA |
+|--------|---------------------|-----|
+| Direction | Top-down deductive (backward from top event) | Bottom-up inductive (forward from initiating event) |
+| Question answered | "What causes system failure?" | "What happens after a component fails?" |
+| Output | Failure probability, minimal cut sets | Outcome probability distribution, total risk |
+| Gate model | AND/OR/VOTING logic gates | Binary success/failure branches |
+| Use case | Identifying root cause combinations | Evaluating effectiveness of safety barriers |
+
+### 4.44 Extreme Value Theory (EVT)
+
+The system provides an Extreme Value Theory analyzer that fits a Generalised Extreme Value (GEV) distribution to block-maxima of cascade severity data, enabling Return Level analysis and tail-risk probability estimation. Unlike the Survival Analysis engine (Section 4.36) which models the *time until failure* (answering "when will it fail?"), the EVT analyzer models the *magnitude of the worst outcomes* (answering "how bad can the worst case get?") — fundamentally different questions requiring fundamentally different statistical frameworks.
+
+#### 4.44.1 GEV Distribution
+
+The Generalised Extreme Value distribution unifies the three classical extreme value distributions (Gumbel, Fréchet, Weibull) via the shape parameter $\xi$:
+
+$$F(x) = \exp\left(-\left[1 + \xi \frac{x - \mu}{\sigma}\right]^{-1/\xi}\right)$$
+
+where $\mu$ is the location parameter, $\sigma > 0$ is the scale parameter, and $\xi$ is the shape parameter:
+- $\xi > 0$: Fréchet distribution (heavy tail — extreme failures can be arbitrarily severe)
+- $\xi = 0$: Gumbel distribution (light exponential tail)
+- $\xi < 0$: Weibull distribution (bounded upper tail — there is a maximum possible severity)
+
+Parameters are estimated via the Method of Moments: $\sigma \approx \text{std} \times \sqrt{6} / \pi$, $\mu \approx \text{mean} - \sigma \times \gamma$ (where $\gamma \approx 0.5772$ is the Euler–Mascheroni constant), and $\xi$ is estimated from the skewness of the observed data.
+
+#### 4.44.2 Return Level Computation
+
+The Return Level $x_T$ for a return period $T$ represents the severity level expected to be exceeded once every $T$ observation windows:
+
+$$x_T = \mu + \frac{\sigma}{\xi}\left((-\log(1 - 1/T))^{-\xi} - 1\right)$$
+
+For the Gumbel case ($\xi = 0$): $x_T = \mu - \sigma \log(-\log(1 - 1/T))$.
+
+This enables infrastructure operators to answer questions such as "what cascade severity should we expect to encounter once every 100 simulation windows?" — a tail-risk metric that is not available from any of the other simulation engines.
+
+#### 4.44.3 Tail-Risk Probability
+
+The exceedance probability $P(X > x)$ for a given severity threshold $x$ is computed as:
+
+$$P(X > x) = 1 - F(x)$$
+
+This enables estimation of the probability that a cascade event will exceed a specific severity threshold, supporting risk-informed infrastructure investment decisions.
+
+#### 4.44.4 Differentiation from Survival Analysis (Section 4.36)
+
+| Aspect | Survival Analysis (Section 4.36) | EVT |
+|--------|-----------------------------------|-----|
+| Question answered | "When will it fail?" | "How severe will the worst failure be?" |
+| Distribution | Weibull (time-to-event) | GEV (block-maxima magnitude) |
+| Input data | Component MTBF, degradation patterns | Maximum cascade severity per observation window |
+| Output | Remaining useful life, hazard rate | Return levels, tail-risk probabilities |
+| Risk perspective | Temporal (time-to-failure) | Magnitude (worst-case severity) |
+
+### 4.45 Model Checking (Formal Verification)
+
+The system provides a model checker that performs exhaustive state-space exploration with CTL-like (Computation Tree Logic) temporal property verification. Unlike the Petri Net engine (Section 4.37) which models concurrency via token flow and verifies reachability properties, the model checker operates on explicit state tuples and supports temporal-logic property checking (AG, EF, AF) that go beyond simple reachability, providing a more expressive formal verification capability.
+
+#### 4.45.1 State Space Construction
+
+The model checker enumerates the reachable state space of the infrastructure graph by breadth-first search (BFS). Each state is a tuple assigning a health status (HEALTHY or DOWN) to every component. Transitions model failure propagation: when a component is DOWN, its dependents connected via `requires` dependencies (with replica count ≤ 1) may also transition to DOWN. The cascade propagation is computed iteratively until a fixed point is reached.
+
+The state space is bounded by a configurable maximum state count (default 10,000) to prevent combinatorial explosion while still providing useful verification results.
+
+#### 4.45.2 CTL Temporal-Logic Properties
+
+Three CTL operators are supported, each answering a distinct formal verification question about the infrastructure:
+
+- **AG(p)** — "Always Globally": Property $p$ holds in *all* reachable states. Example: AG(database ≠ DOWN) — "the database never fails in any scenario." A counterexample is a path from the initial state to a state that violates $p$.
+- **EF(p)** — "Exists Finally": There *exists* a reachable state where $p$ holds. Example: EF(all\_services = DOWN) — "is it possible for all services to go down simultaneously?" A witness is a path from the initial state to a satisfying state.
+- **AF(p)** — "Always Finally": On *all* paths, $p$ *eventually* holds. Example: AF(web\_server = DOWN) — "will the web server inevitably fail in every scenario?" Approximated by verifying that all terminal states (no successors) satisfy $p$.
+
+Each verification returns a result comprising the property name, satisfaction status, number of states explored, and a counterexample (or witness) path when applicable.
+
+#### 4.45.3 Counterexample Generation
+
+When a property is violated (AG) or witnessed (EF), the model checker produces a path of states from the initial (all-healthy) state to the violating/witnessing state via BFS, providing a concrete execution trace that demonstrates the property violation. This trace identifies the exact sequence of component failures that leads to the undesired state.
+
+#### 4.45.4 Differentiation from Petri Net (Section 4.37)
+
+| Aspect | Petri Net (Section 4.37) | Model Checker |
+|--------|--------------------------|---------------|
+| Formalism | Place/Transition net (tokens) | Explicit state tuples |
+| Property types | Reachability, deadlock detection | Temporal logic (AG, EF, AF) |
+| Expressiveness | "Can state X be reached?" | "Does property P hold on all/some paths always/eventually?" |
+| Concurrency model | Token flow (inherently concurrent) | State enumeration (explicit) |
+| Output | Reachable markings, deadlock states | Satisfaction result + counterexample paths |
+
+The model checker's temporal-logic capability enables verification of properties that combine universal/existential quantification over paths with always/eventually quantification over time — a strictly more expressive query language than the reachability queries supported by the Petri Net engine.
+
+### 4.46 Random Forest Failure Predictor
+
+The system provides a Random Forest predictor that uses an ensemble of bagged decision trees with feature sub-sampling to predict component failure probability from infrastructure metrics. Unlike the logistic regression predictor (Section 4.30) which fits a linear decision boundary in the feature space, the Random Forest captures non-linear interactions and complex decision boundaries without explicit feature engineering.
+
+#### 4.46.1 Decision Tree Construction
+
+Each tree in the forest is trained by recursively splitting the feature space to maximize information gain (reduction in entropy):
+
+$$\text{Gain} = H(\text{parent}) - \sum_{\text{children}} \frac{|S_c|}{|S|} H(S_c)$$
+
+where $H(S) = -\sum_k p_k \log_2(p_k)$ is the entropy of label distribution in set $S$. Splits are selected from a random subset of features at each node (feature sub-sampling), and trees are grown to a configurable maximum depth.
+
+#### 4.46.2 Bagging and Feature Sub-Sampling
+
+The Random Forest achieves variance reduction through two sources of randomness:
+
+1. **Bootstrap aggregation (bagging):** Each tree is trained on a bootstrap sample (random sampling with replacement) of the training data, so each tree sees a different subset of examples.
+2. **Feature sub-sampling:** At each split, only a random subset of $\sqrt{d}$ features (where $d$ is the total feature count) is considered, de-correlating the trees.
+
+Final predictions are the average of all tree predictions, providing a smoothed probability estimate with lower variance than any individual tree.
+
+#### 4.46.3 Training on Simulation-Synthesized Data
+
+As with the RNN/LSTM predictor (Section 4.40), training data is synthetically generated from the in-memory infrastructure model. The feature vector comprises CPU utilization, memory utilization, disk utilization, connection pool saturation, and replica count (all normalized to [0, 1]). Labels are generated using a weighted risk score with stochastic threshold.
+
+#### 4.46.4 Differentiation from Logistic Regression (Section 4.30)
+
+| Aspect | Logistic Regression (Section 4.30) | Random Forest |
+|--------|--------------------------------------|---------------|
+| Decision boundary | Linear hyperplane | Arbitrary non-linear |
+| Feature interactions | Must be manually engineered | Automatically captured by tree splits |
+| Model type | Single model (low variance, potential high bias) | Ensemble (low bias, reduced variance) |
+| Interpretability | Feature weight vector | Feature importance from split frequency |
+| Overfitting risk | Low (linear constraint) | Controlled by bagging + depth limit |
+
+### 4.47 Autoencoder Anomaly Detection
+
+The system provides an autoencoder neural network for unsupervised anomaly detection in infrastructure metrics. Unlike the ML Failure Predictor (Section 4.30) and Random Forest (Section 4.46) which require labeled failure data (supervised learning), the autoencoder learns to reconstruct *normal* metric patterns and flags samples with high reconstruction error as anomalies, requiring *only normal data* for training (unsupervised learning).
+
+#### 4.47.1 Architecture
+
+The autoencoder consists of:
+
+- **Encoder:** A linear layer mapping from input dimension $d$ to a lower-dimensional hidden representation of dimension $h$ ($h < d$), followed by ReLU activation. The encoder compresses the input, forcing the network to learn a compact representation of normal patterns.
+- **Decoder:** A linear layer mapping from the hidden dimension $h$ back to the input dimension $d$, followed by sigmoid activation (bounding outputs to [0, 1]).
+
+The bottleneck architecture (input → compressed → reconstructed) forces the network to learn the essential structure of normal data. Anomalous patterns, which differ from the training distribution, are reconstructed poorly, producing high reconstruction error.
+
+#### 4.47.2 Anomaly Detection via Reconstruction Error
+
+Training minimizes the mean squared reconstruction error on normal data:
+
+$$\text{MSE} = \frac{1}{d} \sum_{i=1}^{d} (x_i - \hat{x}_i)^2$$
+
+At inference time, the anomaly threshold is set at the configured percentile (default 95th) of training reconstruction errors. Samples exceeding this threshold are classified as anomalous.
+
+#### 4.47.3 Training on Simulation-Synthesized Data
+
+The autoencoder is trained on normal-state metric vectors generated from the in-memory infrastructure model. This enables anomaly detection on infrastructure configurations that have not yet been deployed to production, identifying metric patterns that deviate from the expected baseline.
+
+#### 4.47.4 Differentiation from Prior Art
+
+**Differentiation from Amazon Technologies (US11374952B1) — "Autoencoder-based anomaly detection for cloud infrastructure":** The Amazon patent applies autoencoder anomaly detection to *real-time monitoring data from production cloud infrastructure* for operational anomaly detection. The FaultRay autoencoder differs fundamentally in that: (a) it is trained on *simulation-synthesized normal data* generated from the in-memory infrastructure model, not real production telemetry; (b) anomaly detection is performed *on the in-memory simulation model* to evaluate hypothetical infrastructure configurations before deployment, identifying anomalous metric patterns that *would* occur under simulated fault conditions; and (c) the autoencoder operates as one component of a multi-engine architecture where "normal" baseline data is derived from non-faulted simulation states, enabling anomaly detection without access to any production environment.
+
+**Differentiation from supervised predictors (Sections 4.30, 4.46):** Supervised predictors require labeled failure examples; the autoencoder requires only normal data, making it applicable when failure examples are scarce or unavailable (e.g., for newly designed infrastructure that has never experienced failures).
+
+### 4.48 Transformer/Attention Failure Propagation Predictor
+
+The system provides a single-layer Transformer predictor that uses self-attention to predict failure probability from metric time-series. Unlike the RNN/LSTM predictor (Section 4.40) which processes time-steps sequentially and suffers from information compression over long sequences, the Transformer processes all time-steps in parallel via attention, directly capturing long-range dependencies without the sequential bottleneck and vanishing-gradient issues inherent in recurrent architectures.
+
+#### 4.48.1 Architecture
+
+The Transformer predictor comprises five stages:
+
+1. **Input Projection:** Raw feature vectors ($d_{\text{input}}$ dimensions per time-step) are projected to the model dimension ($d_{\text{model}}$) via a learned linear transformation $W_{\text{embed}}$.
+
+2. **Positional Encoding:** Sinusoidal positional encodings are added to the projected embeddings, injecting positional information since the attention mechanism is permutation-invariant:
+
+$$\text{PE}(\text{pos}, 2i) = \sin\left(\frac{\text{pos}}{10000^{2i/d_{\text{model}}}}\right)$$
+$$\text{PE}(\text{pos}, 2i+1) = \cos\left(\frac{\text{pos}}{10000^{2i/d_{\text{model}}}}\right)$$
+
+3. **Self-Attention:** The core attention computation allows each time-step to attend to all other time-steps:
+
+$$\text{Attention}(Q, K, V) = \text{softmax}\left(\frac{QK^T}{\sqrt{d_k}}\right) \cdot V$$
+
+where $Q = X \cdot W_Q$, $K = X \cdot W_K$, $V = X \cdot W_V$ are learned linear projections of the input sequence. The scaling factor $\sqrt{d_k}$ prevents the dot products from growing large and producing near-deterministic softmax distributions.
+
+4. **Feed-Forward Network:** A two-layer MLP with ReLU activation: $\text{FFN}(x) = W_2 \cdot \max(0, W_1 \cdot x + b_1) + b_2$. Residual connections and layer normalization are applied after both the attention and FFN sub-layers.
+
+5. **Output:** Mean pooling over the sequence dimension followed by a linear + sigmoid layer produces the scalar failure probability.
+
+#### 4.48.2 Attention Interpretability
+
+The attention weight matrix ($T \times T$ where $T$ is the sequence length) is exposed for inspection, showing which time-steps the model considers most informative for the failure prediction. This provides an interpretability advantage: operators can identify *when* in the metric history the most predictive signal occurs (e.g., "the model attends most strongly to time-steps 7–9, suggesting that the metric spike at that point was the dominant failure indicator").
+
+#### 4.48.3 Training on Simulation-Synthesized Data
+
+As with the RNN/LSTM predictor, training data is synthetically generated from the in-memory simulation model. The output layer weights are updated using analytical gradient descent on binary cross-entropy loss.
+
+#### 4.48.4 Differentiation from RNN/LSTM (Section 4.40)
+
+| Aspect | RNN/LSTM (Section 4.40) | Transformer |
+|--------|--------------------------|-------------|
+| Processing order | Sequential (left-to-right) | Parallel (all positions simultaneously) |
+| Long-range dependencies | Compressed through hidden state (lossy) | Direct attention (lossless) |
+| Gradient flow | Through time (vanishing gradient risk) | Direct (no vanishing gradient) |
+| Positional awareness | Implicit from recurrence | Explicit positional encoding |
+| Interpretability | Hidden state is opaque | Attention weights are inspectable |
+| Computational complexity | $O(T \times d^2)$ sequential | $O(T^2 \times d)$ parallelizable |
+
+The Transformer's quadratic complexity in sequence length ($T^2$) is acceptable for the typical infrastructure monitoring sequence lengths (10–50 time-steps) used in FaultRay, while its ability to capture long-range dependencies and provide attention-based interpretability makes it the preferred architecture for scenarios where understanding *which* time-steps drive the prediction is as important as the prediction itself.
+
 ## 5. ALTERNATIVE EMBODIMENTS AND EXTENSIONS
 
 ### 5.1 Machine Learning-Enhanced Scenario Generation
@@ -1804,6 +2197,66 @@ In an alternative embodiment, the system continuously compares simulation predic
 - (c) classifies the observed failure propagation dynamics as stable (convergent), oscillating (repeating cycle of length 2-5), or chaotic (no detected pattern), providing qualitative characterization of failure behavior; and
 - (d) produces fully deterministic, reproducible results suitable for formal analysis, complementing the agent-based model's stochastic approach with a deterministic counterpart that identifies the exact conditions under which failures propagate.
 
+**Claim 43.** The method of Claim 1, further comprising a System Dynamics simulation method that:
+- (a) models each infrastructure component's health as a continuous-valued stock $H_i(t) \in [0.0, 1.0]$ governed by an ordinary differential equation $dH_i/dt = r_i - d_i - \sum_{j \in \text{deps}(i)} c_{ji}$, where $r_i$ is the recovery rate, $d_i$ is the degradation rate, and $c_{ji}$ is the cascade impact from dependency $j$ modulated by dependency type;
+- (b) integrates the health dynamics using forward Euler approximation with configurable time-step width, producing a continuous time-series of health values for each component;
+- (c) detects degradation velocity, tipping-point thresholds, and recovery trajectories from the continuous health evolution, capturing phenomena that discrete-state models (ABM, CA, DES) cannot represent; and
+- (d) computes an overall severity score from the average degradation depth and spread fraction across all components.
+
+**Claim 44.** The method of Claim 1, further comprising an RNN/LSTM time-series failure prediction method that:
+- (a) constructs a recurrent neural network comprising either a simple RNN cell computing $h_t = \tanh(W_{hh} \cdot h_{t-1} + W_{xh} \cdot x_t + b_h)$ or an LSTM cell with forget, input, and output gates, followed by a sigmoid output layer;
+- (b) generates training data synthetically from the in-memory simulation model by extracting base metrics from infrastructure components and applying trend injection to simulate resource exhaustion sequences, rather than requiring historical production log data;
+- (c) predicts failure probability from an ordered sequence of infrastructure metric snapshots, capturing temporal dependencies such as monotonic resource increase and oscillatory instability that memoryless classifiers cannot detect; and
+- (d) operates entirely on the in-memory simulation model, differentiating from prior art LSTM-based anomaly detection systems (such as US20170293542A1) that require real-world operational data streams.
+
+**Claim 45.** The method of Claim 1, further comprising a Simulated Annealing scenario optimization method that:
+- (a) represents each candidate failure scenario as a binary vector of length $N$ (number of infrastructure components), where 1 indicates a faulted component;
+- (b) generates neighbor solutions by single-bit-flip perturbation and accepts or rejects each neighbor according to the Metropolis criterion $P = \exp(\Delta E / T)$, where $\Delta E$ is the change in cascade severity and $T$ is the current temperature;
+- (c) applies a geometric cooling schedule $T(k) = T_0 \times \alpha^k$ to transition from exploratory search (high temperature, frequent acceptance of worse solutions) to exploitative refinement (low temperature, convergence to near-optimal solution); and
+- (d) discovers worst-case failure scenarios through single-solution neighborhood search, complementing the population-based Genetic Algorithm (Claim 38) and sequential Reinforcement Learning (Claim 33) approaches with a distinct metaheuristic that trades population diversity for deeper local exploration.
+
+**Claim 46.** The method of Claim 1, further comprising a Reliability Block Diagram (RBD) analysis method that:
+- (a) computes per-component availability from MTBF and MTTR as $A = \text{MTBF} / (\text{MTBF} + \text{MTTR})$, with parallel redundancy modeled as $A_{\text{parallel}} = 1 - (1 - A_{\text{single}})^n$ for components with $n$ replicas or failover enabled;
+- (b) identifies critical paths through the infrastructure dependency graph and models each path as a series block with path availability $P_{\text{path}} = \prod_{i \in \text{path}} A_i$;
+- (c) computes system-level availability as the parallel combination of all critical path availabilities: $A_{\text{system}} = 1 - \prod_{\text{paths}} (1 - P_{\text{path}})$; and
+- (d) provides a structural availability perspective based on block connectivity patterns, complementing the Fault Tree Analysis (Claim 39) which operates on failure event logic gates, by analyzing success paths rather than failure combinations.
+
+**Claim 47.** The method of Claim 1, further comprising an Event Tree Analysis (ETA) method that:
+- (a) starting from an initiating event (component failure), automatically generates branching safety functions from the infrastructure topology, including circuit breaker activation, failover, autoscaling response, and replica redundancy, each with probability parameters derived from the component's configuration;
+- (b) enumerates all $2^n$ outcome paths through the event tree (where $n$ is the number of safety barriers), computing combined probability for each path as the product of individual barrier success/failure probabilities;
+- (c) classifies each outcome by severity based on the number of barrier failures and computes total risk as the probability-weighted sum of severity scores; and
+- (d) performs inductive forward risk assessment from an initiating event, complementing the deductive backward analysis of Fault Tree Analysis (Claim 39) which traces backward from a top event to identify root cause combinations.
+
+**Claim 48.** The method of Claim 1, further comprising an Extreme Value Theory (EVT) analysis method that:
+- (a) fits a Generalised Extreme Value (GEV) distribution $F(x) = \exp(-(1 + \xi(x-\mu)/\sigma)^{-1/\xi})$ to block-maxima of cascade severity data, estimating location ($\mu$), scale ($\sigma$), and shape ($\xi$) parameters via the Method of Moments;
+- (b) computes Return Levels $x_T = \mu + (\sigma/\xi)((-\log(1-1/T))^{-\xi} - 1)$ for configurable return periods, quantifying the cascade severity expected to be exceeded once every $T$ observation windows;
+- (c) computes tail-risk exceedance probabilities $P(X > x) = 1 - F(x)$ for configurable severity thresholds; and
+- (d) models the *magnitude of extreme failures* rather than the *time until failure*, differentiating from Survival Analysis (Claim 40) which estimates component lifetime using Weibull distributions, by applying extreme value statistics to the upper tail of the cascade severity distribution.
+
+**Claim 49.** The method of Claim 1, further comprising a model checking formal verification method that:
+- (a) constructs a finite state space by BFS enumeration of all reachable infrastructure states, where each state assigns a health status to every component and transitions model failure propagation through `requires` dependencies;
+- (b) verifies CTL temporal-logic properties against the state space, including: AG(p) — property $p$ holds in all reachable states ("always globally"); EF(p) — there exists a path where $p$ eventually holds ("exists finally"); AF(p) — on all paths, $p$ eventually holds ("always finally");
+- (c) generates counterexample (or witness) paths via BFS from the initial state to a violating (or satisfying) state, providing concrete execution traces that demonstrate property violations; and
+- (d) provides temporal-logic property verification with strictly greater expressiveness than the reachability analysis of the Petri Net engine (Claim 41), supporting quantification over paths (universal/existential) combined with temporal quantification (always/eventually).
+
+**Claim 50.** The method of Claim 1, further comprising a Random Forest failure prediction method that:
+- (a) constructs an ensemble of decision trees, each trained on a bootstrap sample of synthetically generated training data, with information gain (entropy reduction) as the split criterion and random feature sub-sampling at each node;
+- (b) generates training data from the in-memory infrastructure model by extracting normalized metric features (CPU, memory, disk, connections, replicas) and generating labels using a weighted risk score with stochastic threshold;
+- (c) predicts failure probability as the average prediction across all trees in the ensemble, producing a smoothed estimate with lower variance than any individual tree; and
+- (d) captures non-linear decision boundaries and feature interactions without explicit feature engineering, differentiating from the logistic regression predictor (Claim 34) which is limited to linear separability in the feature space.
+
+**Claim 51.** The method of Claim 1, further comprising an autoencoder anomaly detection method that:
+- (a) trains an encoder-decoder neural network to minimize reconstruction error on normal-state metric vectors generated from the in-memory infrastructure model, where the encoder maps input features to a lower-dimensional bottleneck representation and the decoder reconstructs the original features;
+- (b) computes an anomaly threshold from the configured percentile (default 95th) of training-set reconstruction errors;
+- (c) classifies new metric observations as anomalous when their reconstruction error exceeds the learned threshold, enabling unsupervised anomaly detection that requires only normal data and no labeled failure examples; and
+- (d) operates entirely on simulation-synthesized data from the in-memory model, differentiating from prior art autoencoder anomaly detection systems (such as US11374952B1) that operate on real-time production monitoring telemetry, by detecting anomalous patterns that *would* occur under simulated fault conditions without access to any production environment.
+
+**Claim 52.** The method of Claim 1, further comprising a Transformer-based failure prediction method that:
+- (a) projects input metric sequences to a model embedding space, adds sinusoidal positional encodings, and applies self-attention $\text{Attention}(Q,K,V) = \text{softmax}(QK^T/\sqrt{d_k}) \cdot V$ to compute context-aware representations of each time-step, followed by a feed-forward network with residual connections and layer normalization;
+- (b) mean-pools over the sequence dimension and applies a sigmoid output layer to produce a scalar failure probability;
+- (c) exposes the attention weight matrix for interpretability, showing which time-steps in the metric history the model considers most informative for the failure prediction; and
+- (d) processes all time-steps in parallel via attention, directly capturing long-range temporal dependencies without the sequential processing bottleneck and vanishing-gradient issues of recurrent architectures (Claim 44), while providing attention-based interpretability that recurrent models cannot offer.
+
 ---
 
 ## APPENDIX A: Implementation Reference
@@ -1853,6 +2306,11 @@ Key implementation files corresponding to the described components:
 - Survival Analysis Engine: `src/faultray/simulator/survival_engine.py` (SurvivalEngine class — Kaplan-Meier estimation, Weibull distribution fitting, hazard function computation, remaining useful life prediction)
 - Petri Net Engine: `src/faultray/simulator/petri_net_engine.py` (PetriNetEngine class — Place/Transition net construction, token-based simulation, reachability analysis via BFS, deadlock detection)
 - Cellular Automata Engine: `src/faultray/simulator/cellular_automata_engine.py` (CAEngine class — deterministic threshold rules, synchronous grid update, pattern classification as stable/oscillating/chaotic)
+- System Dynamics Engine: `src/faultray/simulator/system_dynamics_engine.py` (SystemDynamicsEngine class — continuous-valued stock-and-flow health modeling, Euler integration of ODE, degradation velocity and tipping-point analysis)
+- RNN/LSTM Failure Predictor: `src/faultray/simulator/rnn_predictor.py` (RNNFailurePredictor class — SimpleRNN and LSTM cells, time-series failure prediction from simulation-synthesized sequences, output-layer SGD training)
+- Simulated Annealing / Random Forest / Autoencoder: `src/faultray/simulator/optimization_engines.py` (SimulatedAnnealingOptimizer class — Metropolis criterion, geometric cooling; RandomForestPredictor class — bagged decision tree ensemble with feature sub-sampling; AnomalyAutoencoder class — encoder-decoder anomaly detection via reconstruction error)
+- Formal Methods (RBD / ETA / Model Checker): `src/faultray/simulator/formal_methods_engine.py` (ReliabilityBlockDiagram class — series/parallel availability; EventTreeAnalysis class — inductive forward risk assessment; SimpleModelChecker class — exhaustive state-space CTL verification with AG/EF/AF operators)
+- Advanced ML (EVT / Transformer): `src/faultray/simulator/advanced_ml_engines.py` (ExtremeValueAnalyzer class — GEV distribution fitting, return level computation, tail-risk probability; SimpleTransformerPredictor class — self-attention, positional encoding, attention-interpretable failure prediction)
 
 ---
 
@@ -1869,6 +2327,9 @@ The following table summarizes the key differences between the present invention
 | Netflix Chaos Monkey (2011) | Random VM termination in production | Present invention requires no production access and tests all combinations exhaustively |
 | AWS Fault Injection Simulator (2021) | Managed fault injection into AWS resources | Present invention is cloud-agnostic and operates without cloud resource access |
 | Gremlin SaaS | Agent-based fault injection platform | Present invention is agentless and operates on topology models, not real infrastructure |
+| US20170293542A1 (NEC) — LSTM anomaly detection in operational log streams | Applies LSTM networks to real-world operational log data for anomaly detection on production systems | Present invention trains RNN/LSTM models on *simulation-synthesized data* generated from the in-memory infrastructure model, not real production logs; prediction is performed on the simulation model to evaluate hypothetical configurations before deployment, not to monitor live systems |
+| US11374952B1 (Amazon) — Autoencoder anomaly detection for cloud infrastructure | Applies autoencoder reconstruction-error-based anomaly detection to real-time production monitoring telemetry | Present invention trains autoencoders on *simulation-synthesized normal data* from the in-memory model, not production telemetry; anomaly detection evaluates hypothetical fault conditions on the simulation model before deployment, not real-time operational data |
+| US10048996B1 (Amazon) — ML-based failure prediction for data center infrastructure | Applies machine learning to real data center metrics for predictive maintenance of physical infrastructure | Present invention operates entirely on in-memory simulation models without access to real infrastructure; ML models are trained on synthetically generated data from the simulation engine, enabling failure prediction for infrastructure that has not yet been deployed or experienced real failures |
 
 ---
 
