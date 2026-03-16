@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import pytest
 
-from infrasim.model.components import (
+from faultray.model.components import (
     Component,
     ComponentType,
     Dependency,
@@ -12,15 +12,15 @@ from infrasim.model.components import (
     HealthStatus,
     OperationalProfile,
 )
-from infrasim.model.graph import InfraGraph
-from infrasim.simulator.gameday_engine import (
+from faultray.model.graph import InfraGraph
+from faultray.simulator.gameday_engine import (
     GameDayEngine,
     GameDayPlan,
     GameDayReport,
     GameDayStep,
     GameDayStepResult,
 )
-from infrasim.simulator.scenarios import Fault, FaultType
+from faultray.simulator.scenarios import Fault, FaultType
 
 
 # ---------------------------------------------------------------------------

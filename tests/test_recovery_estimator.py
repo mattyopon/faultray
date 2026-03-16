@@ -9,14 +9,14 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field as dc_field
 
-from infrasim.model.components import (
+from faultray.model.components import (
     Component,
     ComponentType,
     Dependency,
     ResourceMetrics,
 )
-from infrasim.model.graph import InfraGraph
-from infrasim.simulator.recovery_estimator import (
+from faultray.model.graph import InfraGraph
+from faultray.simulator.recovery_estimator import (
     ComponentRecovery,
     RecoveryEstimator,
     RecoveryImprovement,
@@ -26,9 +26,9 @@ from infrasim.simulator.recovery_estimator import (
     _CASCADE_DELAY_PER_LEVEL,
     _dependency_depth,
 )
-from infrasim.simulator.scenarios import Fault, FaultType, Scenario
-from infrasim.simulator.engine import ScenarioResult
-from infrasim.simulator.cascade import CascadeChain
+from faultray.simulator.scenarios import Fault, FaultType, Scenario
+from faultray.simulator.engine import ScenarioResult
+from faultray.simulator.cascade import CascadeChain
 
 
 # ---------------------------------------------------------------------------

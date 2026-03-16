@@ -10,8 +10,8 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-from infrasim.model.components import ComponentType
-from infrasim.model.graph import InfraGraph
+from faultray.model.components import ComponentType
+from faultray.model.graph import InfraGraph
 
 
 # ---------------------------------------------------------------------------
@@ -20,7 +20,7 @@ from infrasim.model.graph import InfraGraph
 
 def _make_scanner(subscription_id: str = "sub-123", resource_group: str | None = None):
     """Import and instantiate AzureScanner."""
-    from infrasim.discovery.azure_scanner import AzureScanner
+    from faultray.discovery.azure_scanner import AzureScanner
     return AzureScanner(subscription_id=subscription_id, resource_group=resource_group)
 
 
@@ -208,7 +208,7 @@ class TestAzureLibCheck:
     """Test graceful handling of missing azure-identity."""
 
     def test_missing_azure_identity_raises(self):
-        from infrasim.discovery.azure_scanner import _check_azure_libs
+        from faultray.discovery.azure_scanner import _check_azure_libs
 
         with patch.dict(sys.modules, {"azure": None, "azure.identity": None}):
             with pytest.raises(RuntimeError, match="azure-identity"):
@@ -487,7 +487,7 @@ class TestInferDependencies:
             graph = InfraGraph()
 
             # Add LB and App Server manually
-            from infrasim.model.components import Component
+            from faultray.model.components import Component
             graph.add_component(Component(
                 id="azlb-lb1", name="lb1", type=ComponentType.LOAD_BALANCER, port=443,
             ))
@@ -510,7 +510,7 @@ class TestInferDependencies:
             scanner = _make_scanner()
             graph = InfraGraph()
 
-            from infrasim.model.components import Component
+            from faultray.model.components import Component
             graph.add_component(Component(
                 id="azapp-app1", name="app1", type=ComponentType.APP_SERVER, port=443,
             ))
@@ -531,7 +531,7 @@ class TestDetectSecurity:
         scanner = _make_scanner()
         graph = InfraGraph()
 
-        from infrasim.model.components import Component
+        from faultray.model.components import Component
         graph.add_component(Component(
             id="azapp-app1", name="app1", type=ComponentType.APP_SERVER, port=443,
         ))
@@ -543,7 +543,7 @@ class TestDetectSecurity:
         scanner = _make_scanner()
         graph = InfraGraph()
 
-        from infrasim.model.components import Component
+        from faultray.model.components import Component
         graph.add_component(Component(
             id="azsql-db1", name="db1", type=ComponentType.DATABASE, port=1433,
             tags=["azure_sql"],
@@ -601,13 +601,13 @@ class TestExtractResourceGroup:
     """Test resource group extraction from resource ID."""
 
     def test_extracts_resource_group(self):
-        from infrasim.discovery.azure_scanner import _extract_resource_group
+        from faultray.discovery.azure_scanner import _extract_resource_group
 
         rid = "/subscriptions/sub-123/resourceGroups/my-rg/providers/Microsoft.Sql/servers/srv1"
         assert _extract_resource_group(rid) == "my-rg"
 
     def test_returns_empty_for_invalid_id(self):
-        from infrasim.discovery.azure_scanner import _extract_resource_group
+        from faultray.discovery.azure_scanner import _extract_resource_group
 
         assert _extract_resource_group("") == ""
         assert _extract_resource_group("/subscriptions/sub-123") == ""

@@ -4,9 +4,9 @@ from __future__ import annotations
 
 import pytest
 
-from infrasim.model.components import Component, ComponentType, Dependency, HealthStatus
-from infrasim.model.graph import InfraGraph
-from infrasim.simulator.change_risk import (
+from faultray.model.components import Component, ComponentType, Dependency, HealthStatus
+from faultray.model.graph import InfraGraph
+from faultray.simulator.change_risk import (
     BatchRiskAssessment,
     ChangeCategory,
     ChangeRiskAssessment,

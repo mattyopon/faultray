@@ -7,7 +7,7 @@ from pathlib import Path
 
 import pytest
 
-from infrasim.integrations.terraform_provider import (
+from faultray.integrations.terraform_provider import (
     TerraformFaultRayProvider,
     TerraformPlanAnalysis,
 )

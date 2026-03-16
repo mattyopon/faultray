@@ -8,13 +8,13 @@ from unittest.mock import AsyncMock, MagicMock, patch
 import httpx
 import pytest
 
-from infrasim.discovery.prometheus import (
+from faultray.discovery.prometheus import (
     PrometheusClient,
     _parse_instance,
     _safe_float,
 )
-from infrasim.model.components import Component, ComponentType, ResourceMetrics
-from infrasim.model.graph import InfraGraph
+from faultray.model.components import Component, ComponentType, ResourceMetrics
+from faultray.model.graph import InfraGraph
 
 
 # ---------------------------------------------------------------------------
@@ -168,7 +168,7 @@ class TestPrometheusClientQueries:
         mock_http_client.__aenter__ = AsyncMock(return_value=mock_http_client)
         mock_http_client.__aexit__ = AsyncMock(return_value=False)
 
-        with patch("infrasim.discovery.prometheus.httpx.AsyncClient", return_value=mock_http_client):
+        with patch("faultray.discovery.prometheus.httpx.AsyncClient", return_value=mock_http_client):
             results = await client.query("up")
 
         assert len(results) == 1
@@ -188,7 +188,7 @@ class TestPrometheusClientQueries:
         mock_http_client.__aenter__ = AsyncMock(return_value=mock_http_client)
         mock_http_client.__aexit__ = AsyncMock(return_value=False)
 
-        with patch("infrasim.discovery.prometheus.httpx.AsyncClient", return_value=mock_http_client):
+        with patch("faultray.discovery.prometheus.httpx.AsyncClient", return_value=mock_http_client):
             with pytest.raises(RuntimeError, match="Prometheus query failed"):
                 await client.query("bad{query")
 
@@ -209,7 +209,7 @@ class TestPrometheusClientQueries:
         mock_http_client.__aenter__ = AsyncMock(return_value=mock_http_client)
         mock_http_client.__aexit__ = AsyncMock(return_value=False)
 
-        with patch("infrasim.discovery.prometheus.httpx.AsyncClient", return_value=mock_http_client):
+        with patch("faultray.discovery.prometheus.httpx.AsyncClient", return_value=mock_http_client):
             targets = await client.get_targets()
 
         assert len(targets) == 2
@@ -229,7 +229,7 @@ class TestPrometheusClientQueries:
         mock_http_client.__aenter__ = AsyncMock(return_value=mock_http_client)
         mock_http_client.__aexit__ = AsyncMock(return_value=False)
 
-        with patch("infrasim.discovery.prometheus.httpx.AsyncClient", return_value=mock_http_client):
+        with patch("faultray.discovery.prometheus.httpx.AsyncClient", return_value=mock_http_client):
             with pytest.raises(RuntimeError, match="Failed to fetch targets"):
                 await client.get_targets()
 
@@ -242,7 +242,7 @@ class TestPrometheusClientQueries:
         mock_http_client.__aenter__ = AsyncMock(return_value=mock_http_client)
         mock_http_client.__aexit__ = AsyncMock(return_value=False)
 
-        with patch("infrasim.discovery.prometheus.httpx.AsyncClient", return_value=mock_http_client):
+        with patch("faultray.discovery.prometheus.httpx.AsyncClient", return_value=mock_http_client):
             with pytest.raises(httpx.ConnectError):
                 await client.query("up")
 

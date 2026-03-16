@@ -14,7 +14,7 @@ from unittest.mock import AsyncMock, patch
 import httpx
 import pytest
 
-from infrasim.model.components import (
+from faultray.model.components import (
     AutoScalingConfig,
     Capacity,
     CircuitBreakerConfig,
@@ -29,7 +29,7 @@ from infrasim.model.components import (
     RetryStrategy,
     SLOTarget,
 )
-from infrasim.model.graph import InfraGraph
+from faultray.model.graph import InfraGraph
 
 
 # ===================================================================
@@ -53,7 +53,7 @@ class TestLoaderCoverageGaps:
 
     def test_non_mapping_yaml_raises(self):
         """Line 54: top-level YAML is not a mapping (e.g. a list)."""
-        from infrasim.model.loader import load_yaml
+        from faultray.model.loader import load_yaml
 
         path = _write_yaml("- item1\n- item2\n")
         with pytest.raises(ValueError, match="YAML mapping"):
@@ -61,7 +61,7 @@ class TestLoaderCoverageGaps:
 
     def test_components_not_a_list(self):
         """Line 61: 'components' is a string instead of a list."""
-        from infrasim.model.loader import load_yaml
+        from faultray.model.loader import load_yaml
 
         path = _write_yaml("components: not_a_list\ndependencies: []\n")
         with pytest.raises(ValueError, match="must be a list"):
@@ -69,7 +69,7 @@ class TestLoaderCoverageGaps:
 
     def test_component_entry_not_a_mapping(self):
         """Line 65: component entry is a scalar, not a dict."""
-        from infrasim.model.loader import load_yaml
+        from faultray.model.loader import load_yaml
 
         path = _write_yaml("components:\n  - just_a_string\ndependencies: []\n")
         with pytest.raises(ValueError, match="must be a mapping"):
@@ -77,7 +77,7 @@ class TestLoaderCoverageGaps:
 
     def test_operational_profile_with_degradation(self):
         """Lines 100-103: operational_profile with nested degradation."""
-        from infrasim.model.loader import load_yaml
+        from faultray.model.loader import load_yaml
 
         path = _write_yaml("""
 components:
@@ -100,7 +100,7 @@ dependencies: []
 
     def test_dependencies_not_a_list(self):
         """Line 145: 'dependencies' is a string instead of a list."""
-        from infrasim.model.loader import load_yaml
+        from faultray.model.loader import load_yaml
 
         path = _write_yaml("""
 components:
@@ -114,7 +114,7 @@ dependencies: not_a_list
 
     def test_dependency_entry_not_a_mapping(self):
         """Line 151: dependency entry is a scalar."""
-        from infrasim.model.loader import load_yaml
+        from faultray.model.loader import load_yaml
 
         path = _write_yaml("""
 components:
@@ -129,7 +129,7 @@ dependencies:
 
     def test_dependency_missing_source_or_target(self):
         """Line 156: dependency with missing 'source' or 'target'."""
-        from infrasim.model.loader import load_yaml
+        from faultray.model.loader import load_yaml
 
         path = _write_yaml("""
 components:
@@ -144,7 +144,7 @@ dependencies:
 
     def test_dependency_unknown_target(self):
         """Line 163: dependency with unknown target raises ValueError."""
-        from infrasim.model.loader import load_yaml
+        from faultray.model.loader import load_yaml
 
         path = _write_yaml("""
 components:
@@ -161,7 +161,7 @@ dependencies:
 
     def test_load_yaml_with_ops(self):
         """Lines 224-232: load_yaml_with_ops parses slos and operational_simulation."""
-        from infrasim.model.loader import load_yaml_with_ops
+        from faultray.model.loader import load_yaml_with_ops
 
         path = _write_yaml("""
 components:
@@ -376,7 +376,7 @@ class TestFeedsAnalyzerCoverageGaps:
 
     def test_regex_error_falls_back_to_literal(self):
         """Lines 298-301: Invalid regex in keyword falls back to literal match."""
-        from infrasim.feeds.analyzer import _match_keywords
+        from faultray.feeds.analyzer import _match_keywords
 
         # Use an invalid regex pattern (unmatched bracket)
         result = _match_keywords("test [bad regex string", ["[bad"])
@@ -384,8 +384,8 @@ class TestFeedsAnalyzerCoverageGaps:
 
     def test_negative_keywords_block_match(self):
         """Line 320: article matching negative keywords is skipped."""
-        from infrasim.feeds.analyzer import analyze_articles, IncidentPattern, INCIDENT_PATTERNS
-        from infrasim.feeds.fetcher import FeedArticle
+        from faultray.feeds.analyzer import analyze_articles, IncidentPattern, INCIDENT_PATTERNS
+        from faultray.feeds.fetcher import FeedArticle
 
         # Create an article that matches DDoS but has negative keywords
         article = FeedArticle(
@@ -396,7 +396,7 @@ class TestFeedsAnalyzerCoverageGaps:
             source_name="test",
         )
         # Manually test with a pattern that has negative keywords
-        from infrasim.feeds.analyzer import _match_keywords
+        from faultray.feeds.analyzer import _match_keywords
 
         pattern = IncidentPattern(
             id="test_neg",
@@ -411,8 +411,8 @@ class TestFeedsAnalyzerCoverageGaps:
 
     def test_dedup_by_article_and_pattern(self):
         """Line 333: duplicate article+pattern is skipped."""
-        from infrasim.feeds.analyzer import analyze_articles
-        from infrasim.feeds.fetcher import FeedArticle
+        from faultray.feeds.analyzer import analyze_articles
+        from faultray.feeds.fetcher import FeedArticle
 
         # Same article twice
         article = FeedArticle(
@@ -432,13 +432,13 @@ class TestFeedsAnalyzerCoverageGaps:
 
     def test_incidents_to_scenarios_dedup_scenario_id(self):
         """Line 377: duplicate scenario IDs are skipped."""
-        from infrasim.feeds.analyzer import (
+        from faultray.feeds.analyzer import (
             AnalyzedIncident,
             IncidentPattern,
             incidents_to_scenarios,
         )
-        from infrasim.feeds.fetcher import FeedArticle
-        from infrasim.simulator.scenarios import FaultType
+        from faultray.feeds.fetcher import FeedArticle
+        from faultray.simulator.scenarios import FaultType
 
         article = FeedArticle(
             title="DDoS attack", link="https://example.com/a",
@@ -460,13 +460,13 @@ class TestFeedsAnalyzerCoverageGaps:
 
     def test_incidents_to_scenarios_fallback_targets(self):
         """Line 387: component_types specified but none match -> falls back."""
-        from infrasim.feeds.analyzer import (
+        from faultray.feeds.analyzer import (
             AnalyzedIncident,
             IncidentPattern,
             incidents_to_scenarios,
         )
-        from infrasim.feeds.fetcher import FeedArticle
-        from infrasim.simulator.scenarios import FaultType
+        from faultray.feeds.fetcher import FeedArticle
+        from faultray.simulator.scenarios import FaultType
 
         article = FeedArticle(
             title="Redis failure", link="https://example.com/r",
@@ -497,12 +497,12 @@ class TestFeedsAnalyzerCoverageGaps:
 
     def test_incidents_to_scenarios_empty_faults_skipped(self):
         """Line 402: incident with no fault_types produces no faults -> skipped."""
-        from infrasim.feeds.analyzer import (
+        from faultray.feeds.analyzer import (
             AnalyzedIncident,
             IncidentPattern,
             incidents_to_scenarios,
         )
-        from infrasim.feeds.fetcher import FeedArticle
+        from faultray.feeds.fetcher import FeedArticle
 
         article = FeedArticle(
             title="Test", link="https://example.com/t",
@@ -531,8 +531,8 @@ class TestStoreCoverageGaps:
 
     def test_save_with_articles_meta(self, tmp_path):
         """Line 87: articles_meta is provided and merged."""
-        from infrasim.feeds.store import save_feed_scenarios, load_store_raw
-        from infrasim.simulator.scenarios import Fault, FaultType, Scenario
+        from faultray.feeds.store import save_feed_scenarios, load_store_raw
+        from faultray.simulator.scenarios import Fault, FaultType, Scenario
 
         store_path = tmp_path / "test-store.json"
         scenario = Scenario(
@@ -547,7 +547,7 @@ class TestStoreCoverageGaps:
 
     def test_load_feed_scenarios_malformed_entry(self, tmp_path):
         """Lines 108-110: malformed scenario entry is skipped with warning."""
-        from infrasim.feeds.store import load_feed_scenarios
+        from faultray.feeds.store import load_feed_scenarios
 
         store_path = tmp_path / "test-store.json"
         # Write malformed data (missing required 'faults' key)
@@ -561,7 +561,7 @@ class TestStoreCoverageGaps:
 
     def test_load_store_raw_invalid_json(self, tmp_path):
         """Lines 120-122: corrupt JSON file returns empty store."""
-        from infrasim.feeds.store import load_store_raw
+        from faultray.feeds.store import load_store_raw
 
         store_path = tmp_path / "bad.json"
         store_path.write_text("{not valid json")
@@ -580,9 +580,9 @@ class TestComplianceCoverageGaps:
 
     def test_dora_report_spof_critical_risk(self, tmp_path):
         """Lines 103-104: SPOF with util > 50 => risk_level 'Critical'."""
-        from infrasim.ai.analyzer import InfraSimAnalyzer
-        from infrasim.reporter.compliance import generate_dora_report
-        from infrasim.simulator.engine import SimulationEngine
+        from faultray.ai.analyzer import FaultRayAnalyzer
+        from faultray.reporter.compliance import generate_dora_report
+        from faultray.simulator.engine import SimulationEngine
 
         graph = InfraGraph()
         # Component with utilization > 50 AND is SPOF
@@ -600,7 +600,7 @@ class TestComplianceCoverageGaps:
 
         engine = SimulationEngine(graph)
         sim_report = engine.run_all_defaults()
-        analyzer = InfraSimAnalyzer()
+        analyzer = FaultRayAnalyzer()
         ai_report = analyzer.analyze(graph, sim_report)
 
         output = tmp_path / "dora-critical.html"
@@ -610,9 +610,9 @@ class TestComplianceCoverageGaps:
 
     def test_dora_report_high_utilization_non_spof(self, tmp_path):
         """Lines 102-104: non-SPOF component with util > 80 => 'High' risk."""
-        from infrasim.ai.analyzer import InfraSimAnalyzer
-        from infrasim.reporter.compliance import generate_dora_report
-        from infrasim.simulator.engine import SimulationEngine
+        from faultray.ai.analyzer import FaultRayAnalyzer
+        from faultray.reporter.compliance import generate_dora_report
+        from faultray.simulator.engine import SimulationEngine
 
         graph = InfraGraph()
         # Multi-replica (not SPOF) but very high utilization > 80%
@@ -623,7 +623,7 @@ class TestComplianceCoverageGaps:
         ))
         engine = SimulationEngine(graph)
         sim_report = engine.run_all_defaults()
-        analyzer = InfraSimAnalyzer()
+        analyzer = FaultRayAnalyzer()
         ai_report = analyzer.analyze(graph, sim_report)
 
         output = tmp_path / "dora-high-util.html"
@@ -634,9 +634,9 @@ class TestComplianceCoverageGaps:
 
     def test_dora_report_medium_utilization_risk(self, tmp_path):
         """Lines 106-107: util > 60 but not SPOF => 'Medium' risk."""
-        from infrasim.ai.analyzer import InfraSimAnalyzer
-        from infrasim.reporter.compliance import generate_dora_report
-        from infrasim.simulator.engine import SimulationEngine
+        from faultray.ai.analyzer import FaultRayAnalyzer
+        from faultray.reporter.compliance import generate_dora_report
+        from faultray.simulator.engine import SimulationEngine
 
         graph = InfraGraph()
         graph.add_component(Component(
@@ -646,7 +646,7 @@ class TestComplianceCoverageGaps:
         ))
         engine = SimulationEngine(graph)
         sim_report = engine.run_all_defaults()
-        analyzer = InfraSimAnalyzer()
+        analyzer = FaultRayAnalyzer()
         ai_report = analyzer.analyze(graph, sim_report)
 
         output = tmp_path / "dora-medium.html"
@@ -656,9 +656,9 @@ class TestComplianceCoverageGaps:
 
     def test_dora_report_with_external_api(self, tmp_path):
         """Lines 142-145: external API component appears in third-party section."""
-        from infrasim.ai.analyzer import InfraSimAnalyzer
-        from infrasim.reporter.compliance import generate_dora_report
-        from infrasim.simulator.engine import SimulationEngine
+        from faultray.ai.analyzer import FaultRayAnalyzer
+        from faultray.reporter.compliance import generate_dora_report
+        from faultray.simulator.engine import SimulationEngine
 
         graph = InfraGraph()
         graph.add_component(Component(
@@ -674,7 +674,7 @@ class TestComplianceCoverageGaps:
 
         engine = SimulationEngine(graph)
         sim_report = engine.run_all_defaults()
-        analyzer = InfraSimAnalyzer()
+        analyzer = FaultRayAnalyzer()
         ai_report = analyzer.analyze(graph, sim_report)
 
         output = tmp_path / "dora-ext.html"
@@ -693,10 +693,10 @@ class TestExportCoverageGaps:
 
     def test_export_csv_empty_report(self, tmp_path):
         """Line 41: CSV export with no cascade effects generates header-only row."""
-        from infrasim.reporter.export import export_csv
-        from infrasim.simulator.cascade import CascadeChain
-        from infrasim.simulator.engine import ScenarioResult, SimulationReport
-        from infrasim.simulator.scenarios import Fault, FaultType, Scenario
+        from faultray.reporter.export import export_csv
+        from faultray.simulator.cascade import CascadeChain
+        from faultray.simulator.engine import ScenarioResult, SimulationReport
+        from faultray.simulator.scenarios import Fault, FaultType, Scenario
 
         scenario = Scenario(
             id="s1", name="S1", description="Empty test",
@@ -717,8 +717,8 @@ class TestExportCoverageGaps:
 
     def test_export_csv_no_results(self, tmp_path):
         """Line 68: CSV export with zero results writes header only."""
-        from infrasim.reporter.export import export_csv
-        from infrasim.simulator.engine import SimulationReport
+        from faultray.reporter.export import export_csv
+        from faultray.simulator.engine import SimulationReport
 
         report = SimulationReport(results=[], resilience_score=100.0)
         path = tmp_path / "empty.csv"
@@ -738,8 +738,8 @@ class TestEngineCoverageGaps:
 
     def test_run_scenario_no_faults_no_traffic(self):
         """Lines 92-96: scenario with no traffic spike and no faults."""
-        from infrasim.simulator.engine import SimulationEngine
-        from infrasim.simulator.scenarios import Scenario
+        from faultray.simulator.engine import SimulationEngine
+        from faultray.simulator.scenarios import Scenario
 
         graph = InfraGraph()
         graph.add_component(Component(
@@ -756,7 +756,7 @@ class TestEngineCoverageGaps:
 
     def test_run_all_defaults_plugin_failure(self):
         """Lines 142-149: plugin that throws exception is caught."""
-        from infrasim.simulator.engine import SimulationEngine
+        from faultray.simulator.engine import SimulationEngine
 
         graph = InfraGraph()
         graph.add_component(Component(
@@ -769,7 +769,7 @@ class TestEngineCoverageGaps:
             def generate_scenarios(self, graph, ids, comps):
                 raise RuntimeError("Plugin exploded")
 
-        with patch("infrasim.plugins.registry.PluginRegistry") as MockRegistry:
+        with patch("faultray.plugins.registry.PluginRegistry") as MockRegistry:
             MockRegistry.get_scenario_plugins.return_value = [BadPlugin()]
             # Should not crash
             report = engine.run_all_defaults(include_feed=False, include_plugins=True)
@@ -777,8 +777,8 @@ class TestEngineCoverageGaps:
 
     def test_run_scenarios_truncates_over_limit(self):
         """Lines 156-161: scenario count exceeds MAX_SCENARIOS."""
-        from infrasim.simulator.engine import SimulationEngine, MAX_SCENARIOS
-        from infrasim.simulator.scenarios import Fault, FaultType, Scenario
+        from faultray.simulator.engine import SimulationEngine, MAX_SCENARIOS
+        from faultray.simulator.scenarios import Fault, FaultType, Scenario
 
         graph = InfraGraph()
         graph.add_component(Component(
@@ -833,7 +833,7 @@ class TestOpsEngineCoverageGaps:
 
     def test_degradation_triggers_oom(self):
         """Lines 1688-1704: memory leak causes OOM event."""
-        from infrasim.simulator.ops_engine import (
+        from faultray.simulator.ops_engine import (
             OpsScenario,
             OpsSimulationEngine,
             OpsEventType,
@@ -861,7 +861,7 @@ class TestOpsEngineCoverageGaps:
 
     def test_degradation_triggers_disk_full(self):
         """Lines 1733-1749: disk fill causes DISK_FULL event."""
-        from infrasim.simulator.ops_engine import (
+        from faultray.simulator.ops_engine import (
             OpsScenario,
             OpsSimulationEngine,
             OpsEventType,
@@ -898,7 +898,7 @@ class TestOpsEngineCoverageGaps:
 
     def test_degradation_triggers_conn_pool_exhaustion(self):
         """Lines 1778-1798: connection leak exhausts pool."""
-        from infrasim.simulator.ops_engine import (
+        from faultray.simulator.ops_engine import (
             OpsScenario,
             OpsSimulationEngine,
             OpsEventType,
@@ -939,12 +939,12 @@ class TestOpsEngineCoverageGaps:
 
     def test_autoscaling_scale_up_and_down(self):
         """Lines 944-983: autoscaling scales up on high util and down on low."""
-        from infrasim.simulator.ops_engine import (
+        from faultray.simulator.ops_engine import (
             OpsScenario,
             OpsSimulationEngine,
             TimeUnit,
         )
-        from infrasim.simulator.traffic import create_diurnal_weekly
+        from faultray.simulator.traffic import create_diurnal_weekly
 
         graph = InfraGraph()
         graph.add_component(Component(
@@ -983,13 +983,13 @@ class TestOpsEngineCoverageGaps:
 
     def test_time_unit_minute(self):
         """Line 1250: TimeUnit.MINUTE converts to 60 seconds."""
-        from infrasim.simulator.ops_engine import OpsSimulationEngine, TimeUnit
+        from faultray.simulator.ops_engine import OpsSimulationEngine, TimeUnit
 
         assert OpsSimulationEngine._time_unit_to_seconds(TimeUnit.MINUTE) == 60
 
     def test_time_unit_fallback(self):
         """Line 1255: unknown TimeUnit returns default 300."""
-        from infrasim.simulator.ops_engine import OpsSimulationEngine
+        from faultray.simulator.ops_engine import OpsSimulationEngine
 
         # Use a mock value that doesn't match any case
         result = OpsSimulationEngine._time_unit_to_seconds("unknown")
@@ -998,7 +998,7 @@ class TestOpsEngineCoverageGaps:
     def test_slo_tracker_budget_and_burn_rate(self):
         """Lines 607, 640, 647, 652, 658, 676, 684, 689, 697, 700:
         SLOTracker helper methods."""
-        from infrasim.simulator.ops_engine import SLOTracker, _OpsComponentState
+        from faultray.simulator.ops_engine import SLOTracker, _OpsComponentState
 
         graph = InfraGraph()
         graph.add_component(Component(
@@ -1050,7 +1050,7 @@ class TestOpsEngineCoverageGaps:
 
     def test_slo_tracker_estimate_latency(self):
         """Line 607: _estimate_latency with zero utilization."""
-        from infrasim.simulator.ops_engine import SLOTracker
+        from faultray.simulator.ops_engine import SLOTracker
 
         graph = InfraGraph()
         graph.add_component(Component(
@@ -1062,7 +1062,7 @@ class TestOpsEngineCoverageGaps:
 
     def test_default_deploy_targets_no_app_servers(self):
         """Line 1060: graph with no app_server or web_server components."""
-        from infrasim.simulator.ops_engine import OpsSimulationEngine, TimeUnit
+        from faultray.simulator.ops_engine import OpsSimulationEngine, TimeUnit
 
         graph = InfraGraph()
         graph.add_component(Component(
@@ -1074,7 +1074,7 @@ class TestOpsEngineCoverageGaps:
 
     def test_dependency_propagation_optional_down(self):
         """Lines 324-328: optional dependency DOWN -> DEGRADED propagation."""
-        from infrasim.simulator.ops_engine import SLOTracker, _OpsComponentState
+        from faultray.simulator.ops_engine import SLOTracker, _OpsComponentState
 
         graph = InfraGraph()
         graph.add_component(Component(
@@ -1104,7 +1104,7 @@ class TestOpsEngineCoverageGaps:
 
     def test_default_degradation_unknown_type(self):
         """Lines 1664-1666: component type not in _DEFAULT_DEGRADATION."""
-        from infrasim.simulator.ops_engine import (
+        from faultray.simulator.ops_engine import (
             OpsScenario,
             OpsSimulationEngine,
             TimeUnit,
@@ -1136,8 +1136,8 @@ class TestOpsEngineCoverageGaps:
         """Lines 379, 394-396, 411-413, 417-419, 450, 452-464:
         Tier-aware availability with failover-enabled components, including
         micro-penalty calculation and standalone failover branches."""
-        from infrasim.model.components import FailoverConfig
-        from infrasim.simulator.ops_engine import SLOTracker, _OpsComponentState
+        from faultray.model.components import FailoverConfig
+        from faultray.simulator.ops_engine import SLOTracker, _OpsComponentState
 
         graph = InfraGraph()
         # Create a tier of 2 members with failover, both DOWN
@@ -1215,8 +1215,8 @@ class TestOpsEngineCoverageGaps:
     def test_slo_tracker_micro_penalty_with_measurements(self):
         """Lines 450, 452-464: micro-penalty calculation when there are
         previous measurements (uses step_window from measurements diff)."""
-        from infrasim.model.components import FailoverConfig
-        from infrasim.simulator.ops_engine import SLOTracker, _OpsComponentState, SLIDataPoint
+        from faultray.model.components import FailoverConfig
+        from faultray.simulator.ops_engine import SLOTracker, _OpsComponentState, SLIDataPoint
 
         graph = InfraGraph()
         graph.add_component(Component(
@@ -1248,8 +1248,8 @@ class TestOpsEngineCoverageGaps:
 
     def test_slo_tracker_gc_jitter_penalty(self):
         """Lines 473, 479: network + runtime jitter with GC pauses."""
-        from infrasim.model.components import RuntimeJitter
-        from infrasim.simulator.ops_engine import SLOTracker, _OpsComponentState
+        from faultray.model.components import RuntimeJitter
+        from faultray.simulator.ops_engine import SLOTracker, _OpsComponentState
 
         graph = InfraGraph()
         graph.add_component(Component(
@@ -1276,7 +1276,7 @@ class TestOpsEngineCoverageGaps:
     def test_slo_violation_tracking_latency_and_error_rate(self):
         """Lines 519, 529-543: SLO violation tracking for latency_p99 and
         error_rate metrics when recording SLI points."""
-        from infrasim.simulator.ops_engine import SLOTracker, _OpsComponentState
+        from faultray.simulator.ops_engine import SLOTracker, _OpsComponentState
 
         graph = InfraGraph()
         graph.add_component(Component(
@@ -1323,7 +1323,7 @@ class TestOpsEngineCoverageGaps:
     def test_budget_consumed_single_violation(self):
         """Lines 652, 658: budget consumed with a single violation entry
         (total_count == 1, falls to 300 default time span)."""
-        from infrasim.simulator.ops_engine import SLOTracker
+        from faultray.simulator.ops_engine import SLOTracker
 
         graph = InfraGraph()
         graph.add_component(Component(
@@ -1343,7 +1343,7 @@ class TestOpsEngineCoverageGaps:
     def test_burn_rate_non_availability_metric(self):
         """Lines 697, 700: burn rate calculation for non-availability metric
         (uses 0.001 allowed ratio) and zero allowed ratio."""
-        from infrasim.simulator.ops_engine import SLOTracker
+        from faultray.simulator.ops_engine import SLOTracker
 
         graph = InfraGraph()
         graph.add_component(Component(
@@ -1374,7 +1374,7 @@ class TestOpsEngineCoverageGaps:
     def test_burn_rate_empty_recent_window(self):
         """Lines 684, 689: burn rate with violations that are all outside the
         recent window."""
-        from infrasim.simulator.ops_engine import SLOTracker
+        from faultray.simulator.ops_engine import SLOTracker
 
         graph = InfraGraph()
         graph.add_component(Component(
@@ -1393,7 +1393,7 @@ class TestOpsEngineCoverageGaps:
 
     def test_graceful_restart_memory(self):
         """Lines 1707-1721: graceful restart for memory at 80% threshold."""
-        from infrasim.simulator.ops_engine import (
+        from faultray.simulator.ops_engine import (
             OpsScenario,
             OpsSimulationEngine,
             OpsEventType,
@@ -1441,7 +1441,7 @@ class TestOpsEngineCoverageGaps:
 
     def test_graceful_restart_disk(self):
         """Lines 1752-1766: disk cleanup at 80% threshold."""
-        from infrasim.simulator.ops_engine import (
+        from faultray.simulator.ops_engine import (
             OpsScenario,
             OpsSimulationEngine,
             OpsEventType,
@@ -1487,7 +1487,7 @@ class TestOpsEngineCoverageGaps:
 
     def test_graceful_restart_connections(self):
         """Lines 1801-1815: connection drain + graceful restart at 80% threshold."""
-        from infrasim.simulator.ops_engine import (
+        from faultray.simulator.ops_engine import (
             OpsScenario,
             OpsSimulationEngine,
             OpsEventType,
@@ -1533,7 +1533,7 @@ class TestOpsEngineCoverageGaps:
 
     def test_default_mttr_fallback(self):
         """Line 1397: default MTTR when mttr_minutes is 0."""
-        from infrasim.simulator.ops_engine import (
+        from faultray.simulator.ops_engine import (
             OpsScenario,
             OpsSimulationEngine,
             TimeUnit,
@@ -1566,7 +1566,7 @@ class TestOpsEngineCoverageGaps:
 
     def test_error_budget_status_full_computation(self):
         """Lines 549-586: Full error_budget_status computation through record()."""
-        from infrasim.simulator.ops_engine import SLOTracker, _OpsComponentState
+        from faultray.simulator.ops_engine import SLOTracker, _OpsComponentState
 
         graph = InfraGraph()
         graph.add_component(Component(
@@ -1613,7 +1613,7 @@ class TestCapacityEngineCoverageGaps:
 
     def test_forecast_with_simulation(self):
         """Lines 216-257: forecast_with_simulation runs ops sim."""
-        from infrasim.simulator.capacity_engine import CapacityPlanningEngine
+        from faultray.simulator.capacity_engine import CapacityPlanningEngine
 
         graph = InfraGraph()
         graph.add_component(Component(
@@ -1647,7 +1647,7 @@ class TestCapacityEngineCoverageGaps:
 
     def test_component_utilization_fallback_single_replica(self):
         """Lines 281-291: type-based utilization with replica adjustments."""
-        from infrasim.simulator.capacity_engine import CapacityPlanningEngine
+        from faultray.simulator.capacity_engine import CapacityPlanningEngine
 
         graph = InfraGraph()
         # Single replica app server with 0 utilization
@@ -1663,7 +1663,7 @@ class TestCapacityEngineCoverageGaps:
 
     def test_component_utilization_many_replicas(self):
         """Lines 288-289: 5+ replicas reduces utilization estimate."""
-        from infrasim.simulator.capacity_engine import CapacityPlanningEngine
+        from faultray.simulator.capacity_engine import CapacityPlanningEngine
 
         graph = InfraGraph()
         graph.add_component(Component(
@@ -1678,21 +1678,21 @@ class TestCapacityEngineCoverageGaps:
 
     def test_months_to_capacity_at_threshold(self):
         """Line 347: current_util at 0 returns inf."""
-        from infrasim.simulator.capacity_engine import CapacityPlanningEngine
+        from faultray.simulator.capacity_engine import CapacityPlanningEngine
 
         result = CapacityPlanningEngine._months_to_capacity(0.0, 0.10)
         assert result == float("inf")
 
     def test_replicas_needed_zero_utilization(self):
         """Line 377: zero utilization returns current replicas."""
-        from infrasim.simulator.capacity_engine import CapacityPlanningEngine
+        from faultray.simulator.capacity_engine import CapacityPlanningEngine
 
         result = CapacityPlanningEngine._replicas_needed(3, 0.0, 0.10, 12)
         assert result == 3
 
     def test_estimate_burn_rate_high_utilization(self):
         """Line 420: high utilization components increase burn rate."""
-        from infrasim.simulator.capacity_engine import CapacityPlanningEngine
+        from faultray.simulator.capacity_engine import CapacityPlanningEngine
 
         graph = InfraGraph()
         graph.add_component(Component(
@@ -1707,7 +1707,7 @@ class TestCapacityEngineCoverageGaps:
 
     def test_error_budget_exhausted_status(self):
         """Line 476: budget exhausted status."""
-        from infrasim.simulator.capacity_engine import CapacityPlanningEngine
+        from faultray.simulator.capacity_engine import CapacityPlanningEngine
 
         # Very high burn rate to exhaust budget
         eb = CapacityPlanningEngine._build_error_budget_forecast(
@@ -1718,7 +1718,7 @@ class TestCapacityEngineCoverageGaps:
 
     def test_error_budget_critical_status(self):
         """Line 480: budget critical (projected > 100%)."""
-        from infrasim.simulator.capacity_engine import CapacityPlanningEngine
+        from faultray.simulator.capacity_engine import CapacityPlanningEngine
 
         eb = CapacityPlanningEngine._build_error_budget_forecast(
             slo_target=99.9,
@@ -1728,7 +1728,7 @@ class TestCapacityEngineCoverageGaps:
 
     def test_error_budget_warning_status(self):
         """Line 480: budget warning (projected > 50%)."""
-        from infrasim.simulator.capacity_engine import CapacityPlanningEngine
+        from faultray.simulator.capacity_engine import CapacityPlanningEngine
 
         eb = CapacityPlanningEngine._build_error_budget_forecast(
             slo_target=99.9,
@@ -1738,7 +1738,7 @@ class TestCapacityEngineCoverageGaps:
 
     def test_error_budget_zero_burn_rate(self):
         """Line 466: zero burn rate => days_to_exhaustion is None."""
-        from infrasim.simulator.capacity_engine import CapacityPlanningEngine
+        from faultray.simulator.capacity_engine import CapacityPlanningEngine
 
         eb = CapacityPlanningEngine._build_error_budget_forecast(
             slo_target=99.9, burn_rate_per_day=0.0,
@@ -1748,7 +1748,7 @@ class TestCapacityEngineCoverageGaps:
 
     def test_generate_recommendations_error_budget_exhausted(self):
         """Lines 546, 557: recommendations for exhausted/critical error budget."""
-        from infrasim.simulator.capacity_engine import (
+        from faultray.simulator.capacity_engine import (
             CapacityPlanningEngine,
             CapacityForecast,
             ErrorBudgetForecast,
@@ -1783,14 +1783,14 @@ class TestCapacityEngineCoverageGaps:
 
     def test_cost_increase_empty_forecasts(self):
         """Line 601: empty forecasts returns 0.0."""
-        from infrasim.simulator.capacity_engine import CapacityPlanningEngine
+        from faultray.simulator.capacity_engine import CapacityPlanningEngine
 
         result = CapacityPlanningEngine._estimate_cost_increase([])
         assert result == 0.0
 
     def test_cost_increase_zero_current(self):
         """Line 607: zero total_current returns 0.0."""
-        from infrasim.simulator.capacity_engine import (
+        from faultray.simulator.capacity_engine import (
             CapacityPlanningEngine,
             CapacityForecast,
         )
@@ -1821,7 +1821,7 @@ class TestTerraformCoverageGaps:
 
     def test_load_tf_state_cmd_success(self):
         """Lines 171-182: load_tf_state_cmd with successful terraform show."""
-        from infrasim.discovery.terraform import load_tf_state_cmd
+        from faultray.discovery.terraform import load_tf_state_cmd
 
         state = {
             "values": {
@@ -1834,7 +1834,7 @@ class TestTerraformCoverageGaps:
                 },
             },
         }
-        with patch("infrasim.discovery.terraform.subprocess.run") as mock_run:
+        with patch("faultray.discovery.terraform.subprocess.run") as mock_run:
             mock_run.return_value.returncode = 0
             mock_run.return_value.stdout = json.dumps(state)
             graph = load_tf_state_cmd()
@@ -1842,9 +1842,9 @@ class TestTerraformCoverageGaps:
 
     def test_load_tf_state_cmd_failure(self):
         """Lines 178-179: terraform show fails with non-zero exit."""
-        from infrasim.discovery.terraform import load_tf_state_cmd
+        from faultray.discovery.terraform import load_tf_state_cmd
 
-        with patch("infrasim.discovery.terraform.subprocess.run") as mock_run:
+        with patch("faultray.discovery.terraform.subprocess.run") as mock_run:
             mock_run.return_value.returncode = 1
             mock_run.return_value.stderr = "Error: No state"
             with pytest.raises(RuntimeError, match="terraform show failed"):
@@ -1852,10 +1852,10 @@ class TestTerraformCoverageGaps:
 
     def test_load_tf_plan_cmd_success(self):
         """Lines 187-201: load_tf_plan_cmd with successful terraform show."""
-        from infrasim.discovery.terraform import load_tf_plan_cmd
+        from faultray.discovery.terraform import load_tf_plan_cmd
 
         plan = {"resource_changes": []}
-        with patch("infrasim.discovery.terraform.subprocess.run") as mock_run:
+        with patch("faultray.discovery.terraform.subprocess.run") as mock_run:
             mock_run.return_value.returncode = 0
             mock_run.return_value.stdout = json.dumps(plan)
             result = load_tf_plan_cmd(plan_file=Path("/tmp/plan.out"))
@@ -1864,9 +1864,9 @@ class TestTerraformCoverageGaps:
 
     def test_load_tf_plan_cmd_failure(self):
         """Lines 197-198: terraform plan show fails."""
-        from infrasim.discovery.terraform import load_tf_plan_cmd
+        from faultray.discovery.terraform import load_tf_plan_cmd
 
-        with patch("infrasim.discovery.terraform.subprocess.run") as mock_run:
+        with patch("faultray.discovery.terraform.subprocess.run") as mock_run:
             mock_run.return_value.returncode = 1
             mock_run.return_value.stderr = "Error: Invalid plan"
             with pytest.raises(RuntimeError, match="terraform show failed"):
@@ -1874,7 +1874,7 @@ class TestTerraformCoverageGaps:
 
     def test_estimate_connections_database(self):
         """Line 362: _estimate_connections returns default for unknown size."""
-        from infrasim.discovery.terraform import _estimate_connections
+        from faultray.discovery.terraform import _estimate_connections
 
         # Unknown instance class
         result = _estimate_connections("db.custom.whatever", ComponentType.DATABASE)
@@ -1882,7 +1882,7 @@ class TestTerraformCoverageGaps:
 
     def test_find_references_in_nested_values(self):
         """Lines 433, 443, 452-454: recursive reference search in values."""
-        from infrasim.discovery.terraform import parse_tf_state
+        from faultray.discovery.terraform import parse_tf_state
 
         state = {
             "values": {
@@ -1928,7 +1928,7 @@ class TestWebhooksCoverageGaps:
     @pytest.mark.asyncio
     async def test_pagerduty_network_error(self):
         """Lines 89-91: PagerDuty fails due to network error."""
-        from infrasim.integrations.webhooks import send_pagerduty_event
+        from faultray.integrations.webhooks import send_pagerduty_event
 
         report = {
             "resilience_score": 30,
@@ -1936,7 +1936,7 @@ class TestWebhooksCoverageGaps:
             "warning_count": 1,
             "passed_count": 3,
         }
-        with patch("infrasim.integrations.webhooks.httpx.AsyncClient") as MockClient:
+        with patch("faultray.integrations.webhooks.httpx.AsyncClient") as MockClient:
             client_instance = AsyncMock()
             client_instance.post.side_effect = httpx.ConnectError("refused")
             MockClient.return_value.__aenter__ = AsyncMock(return_value=client_instance)
@@ -1955,68 +1955,68 @@ class TestAIAnalyzerCoverageGaps:
 
     def test_score_to_nines_boundary_60(self):
         """Line 84: score == 60 maps to 2.5 nines."""
-        from infrasim.ai.analyzer import _score_to_nines
+        from faultray.ai.analyzer import _score_to_nines
 
         assert _score_to_nines(60) == 2.5
 
     def test_score_to_nines_boundary_90(self):
         """Line 84: score between 90-94 maps to 4.0 nines."""
-        from infrasim.ai.analyzer import _score_to_nines
+        from faultray.ai.analyzer import _score_to_nines
 
         assert _score_to_nines(90) == 4.0
         assert _score_to_nines(94) == 4.0
 
     def test_score_to_nines_boundary_50(self):
         """Line 84: score of 50 maps to 2.0."""
-        from infrasim.ai.analyzer import _score_to_nines
+        from faultray.ai.analyzer import _score_to_nines
 
         assert _score_to_nines(50) == 2.0
 
     def test_score_to_nines_boundary_30(self):
         """Line 84: score of 30 maps to 1.5."""
-        from infrasim.ai.analyzer import _score_to_nines
+        from faultray.ai.analyzer import _score_to_nines
 
         assert _score_to_nines(30) == 1.5
 
     def test_nines_tier_label_basic(self):
         """Line 102: tier label for 2.5 nines."""
-        from infrasim.ai.analyzer import _nines_tier_label
+        from faultray.ai.analyzer import _nines_tier_label
 
         label = _nines_tier_label(2.5)
         assert "Basic" in label
 
     def test_nines_tier_label_low(self):
         """Line 102: tier label for 2.0 nines."""
-        from infrasim.ai.analyzer import _nines_tier_label
+        from faultray.ai.analyzer import _nines_tier_label
 
         label = _nines_tier_label(2.0)
         assert "Low" in label
 
     def test_nines_tier_label_standard(self):
         """Line 125: tier label for 3.0 nines."""
-        from infrasim.ai.analyzer import _nines_tier_label
+        from faultray.ai.analyzer import _nines_tier_label
 
         label = _nines_tier_label(3.0)
         assert "Standard" in label
 
     def test_nines_tier_label_excellent(self):
         """Tier label for 4.5+ nines."""
-        from infrasim.ai.analyzer import _nines_tier_label
+        from faultray.ai.analyzer import _nines_tier_label
 
         label = _nines_tier_label(4.5)
         assert "Excellent" in label
 
     def test_nines_tier_label_good(self):
         """Tier label for 3.5 nines."""
-        from infrasim.ai.analyzer import _nines_tier_label
+        from faultray.ai.analyzer import _nines_tier_label
 
         label = _nines_tier_label(3.5)
         assert "Good" in label
 
     def test_cascade_amplifier_pct_over_50_critical(self):
         """Line 213: cascade affecting > 50% of system gets 'critical' severity."""
-        from infrasim.ai.analyzer import InfraSimAnalyzer
-        from infrasim.simulator.engine import SimulationEngine
+        from faultray.ai.analyzer import FaultRayAnalyzer
+        from faultray.simulator.engine import SimulationEngine
 
         graph = InfraGraph()
         # 3 components; DB failure affects svc-a and svc-b (66% > 50%)
@@ -2028,7 +2028,7 @@ class TestAIAnalyzerCoverageGaps:
 
         engine = SimulationEngine(graph)
         report = engine.run_all_defaults()
-        analyzer = InfraSimAnalyzer()
+        analyzer = FaultRayAnalyzer()
         ai_report = analyzer.analyze(graph, report)
 
         cascade_recs = [r for r in ai_report.recommendations if r.category == "cascade"]
@@ -2038,8 +2038,8 @@ class TestAIAnalyzerCoverageGaps:
 
     def test_disk_bottleneck_adds_log_rotation_advice(self):
         """Line 415: high disk_percent adds log rotation recommendation."""
-        from infrasim.ai.analyzer import InfraSimAnalyzer
-        from infrasim.simulator.engine import SimulationEngine
+        from faultray.ai.analyzer import FaultRayAnalyzer
+        from faultray.simulator.engine import SimulationEngine
 
         graph = InfraGraph()
         graph.add_component(Component(
@@ -2049,7 +2049,7 @@ class TestAIAnalyzerCoverageGaps:
         ))
         engine = SimulationEngine(graph)
         report = engine.run_all_defaults()
-        analyzer = InfraSimAnalyzer()
+        analyzer = FaultRayAnalyzer()
         ai_report = analyzer.analyze(graph, report)
 
         cap_recs = [r for r in ai_report.recommendations if r.category == "capacity"]
@@ -2059,9 +2059,9 @@ class TestAIAnalyzerCoverageGaps:
 
     def test_upgrade_path_highest_tier(self):
         """Line 509: already at highest tier returns maintenance message."""
-        from infrasim.ai.analyzer import InfraSimAnalyzer
+        from faultray.ai.analyzer import FaultRayAnalyzer
 
-        analyzer = InfraSimAnalyzer()
+        analyzer = FaultRayAnalyzer()
         # Call _generate_upgrade_path directly with current_nines >= 5.0
         # (which is the highest tier in the list), so next_tier is None.
         result = analyzer._generate_upgrade_path(
@@ -2073,8 +2073,8 @@ class TestAIAnalyzerCoverageGaps:
 
     def test_top_risks_no_critical_fills_with_high(self):
         """Line 558: when < 3 critical risks, high-severity fills up."""
-        from infrasim.ai.analyzer import InfraSimAnalyzer
-        from infrasim.simulator.engine import SimulationEngine
+        from faultray.ai.analyzer import FaultRayAnalyzer
+        from faultray.simulator.engine import SimulationEngine
 
         graph = InfraGraph()
         graph.add_component(Component(
@@ -2092,7 +2092,7 @@ class TestAIAnalyzerCoverageGaps:
 
         engine = SimulationEngine(graph)
         report = engine.run_all_defaults()
-        analyzer = InfraSimAnalyzer()
+        analyzer = FaultRayAnalyzer()
         ai_report = analyzer.analyze(graph, report)
 
         # Should have risks filled with high-severity items

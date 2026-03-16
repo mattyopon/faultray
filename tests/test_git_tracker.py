@@ -10,7 +10,7 @@ from pathlib import Path
 import pytest
 import yaml
 
-from infrasim.integrations.git_tracker import ArchitectureChange, GitArchitectureTracker
+from faultray.integrations.git_tracker import ArchitectureChange, GitArchitectureTracker
 
 
 def _create_test_repo(tmp_path: Path) -> Path:
@@ -42,7 +42,7 @@ def _create_test_repo(tmp_path: Path) -> Path:
             {"source_id": "app", "target_id": "db", "dependency_type": "requires"},
         ],
     }
-    model_file = repo_path / "infrasim-model.yaml"
+    model_file = repo_path / "faultray-model.yaml"
     model_file.write_text(yaml.dump(model_v1), encoding="utf-8")
     _git(["add", "."])
     _git(["commit", "-m", "Initial infrastructure"])
@@ -88,7 +88,7 @@ class TestGitArchitectureTracker:
     def test_track_history_returns_changes(self, tmp_path):
         """Test that track_history returns a list of changes."""
         repo_path = _create_test_repo(tmp_path)
-        tracker = GitArchitectureTracker(repo_path, "infrasim-model.yaml")
+        tracker = GitArchitectureTracker(repo_path, "faultray-model.yaml")
 
         changes = tracker.track_history(commits=10)
 
@@ -100,7 +100,7 @@ class TestGitArchitectureTracker:
     def test_changes_newest_first(self, tmp_path):
         """Test that changes are returned newest first."""
         repo_path = _create_test_repo(tmp_path)
-        tracker = GitArchitectureTracker(repo_path, "infrasim-model.yaml")
+        tracker = GitArchitectureTracker(repo_path, "faultray-model.yaml")
 
         changes = tracker.track_history()
 
@@ -111,7 +111,7 @@ class TestGitArchitectureTracker:
     def test_components_added_tracked(self, tmp_path):
         """Test that added components are tracked."""
         repo_path = _create_test_repo(tmp_path)
-        tracker = GitArchitectureTracker(repo_path, "infrasim-model.yaml")
+        tracker = GitArchitectureTracker(repo_path, "faultray-model.yaml")
 
         changes = tracker.track_history()
 
@@ -124,7 +124,7 @@ class TestGitArchitectureTracker:
     def test_components_removed_tracked(self, tmp_path):
         """Test that removed components are tracked."""
         repo_path = _create_test_repo(tmp_path)
-        tracker = GitArchitectureTracker(repo_path, "infrasim-model.yaml")
+        tracker = GitArchitectureTracker(repo_path, "faultray-model.yaml")
 
         changes = tracker.track_history()
 
@@ -137,7 +137,7 @@ class TestGitArchitectureTracker:
     def test_score_delta_computed(self, tmp_path):
         """Test that score deltas are computed."""
         repo_path = _create_test_repo(tmp_path)
-        tracker = GitArchitectureTracker(repo_path, "infrasim-model.yaml")
+        tracker = GitArchitectureTracker(repo_path, "faultray-model.yaml")
 
         changes = tracker.track_history()
 
@@ -152,7 +152,7 @@ class TestGitArchitectureTracker:
     def test_find_regression_commit(self, tmp_path):
         """Test finding the regression commit."""
         repo_path = _create_test_repo(tmp_path)
-        tracker = GitArchitectureTracker(repo_path, "infrasim-model.yaml")
+        tracker = GitArchitectureTracker(repo_path, "faultray-model.yaml")
 
         regression = tracker.find_regression_commit()
 
@@ -167,7 +167,7 @@ class TestGitArchitectureTracker:
     def test_get_current_score(self, tmp_path):
         """Test getting the current model's resilience score."""
         repo_path = _create_test_repo(tmp_path)
-        tracker = GitArchitectureTracker(repo_path, "infrasim-model.yaml")
+        tracker = GitArchitectureTracker(repo_path, "faultray-model.yaml")
 
         score = tracker.get_current_score()
         assert isinstance(score, float)
@@ -212,14 +212,14 @@ class TestGitArchitectureTracker:
             capture_output=True,
         )
 
-        tracker = GitArchitectureTracker(repo_path, "infrasim-model.yaml")
+        tracker = GitArchitectureTracker(repo_path, "faultray-model.yaml")
         changes = tracker.track_history()
         assert changes == []
 
     def test_commit_hash_is_set(self, tmp_path):
         """Test that commit hashes are populated."""
         repo_path = _create_test_repo(tmp_path)
-        tracker = GitArchitectureTracker(repo_path, "infrasim-model.yaml")
+        tracker = GitArchitectureTracker(repo_path, "faultray-model.yaml")
 
         changes = tracker.track_history()
         for change in changes:
@@ -228,7 +228,7 @@ class TestGitArchitectureTracker:
     def test_commit_date_is_set(self, tmp_path):
         """Test that commit dates are populated."""
         repo_path = _create_test_repo(tmp_path)
-        tracker = GitArchitectureTracker(repo_path, "infrasim-model.yaml")
+        tracker = GitArchitectureTracker(repo_path, "faultray-model.yaml")
 
         changes = tracker.track_history()
         for change in changes:
@@ -269,7 +269,7 @@ class TestGitArchitectureTracker:
     def test_dependency_count_tracked(self, tmp_path):
         """Test that dependency counts are tracked in changes."""
         repo_path = _create_test_repo(tmp_path)
-        tracker = GitArchitectureTracker(repo_path, "infrasim-model.yaml")
+        tracker = GitArchitectureTracker(repo_path, "faultray-model.yaml")
 
         changes = tracker.track_history()
         for change in changes:
@@ -278,7 +278,7 @@ class TestGitArchitectureTracker:
     def test_max_commits_respected(self, tmp_path):
         """Test that commits parameter limits the analysis."""
         repo_path = _create_test_repo(tmp_path)
-        tracker = GitArchitectureTracker(repo_path, "infrasim-model.yaml")
+        tracker = GitArchitectureTracker(repo_path, "faultray-model.yaml")
 
         changes = tracker.track_history(commits=2)
         assert len(changes) <= 2

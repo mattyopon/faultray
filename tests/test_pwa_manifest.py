@@ -11,14 +11,14 @@ import pytest
 STATIC_DIR = (
     Path(__file__).resolve().parent.parent
     / "src"
-    / "infrasim"
+    / "faultray"
     / "api"
     / "static"
 )
 TEMPLATE_DIR = (
     Path(__file__).resolve().parent.parent
     / "src"
-    / "infrasim"
+    / "faultray"
     / "api"
     / "templates"
 )

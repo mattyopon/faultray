@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import pytest
 
-from infrasim.licensing import (
+from faultray.licensing import (
     FEATURE_GATES,
     FeatureTier,
     check_feature,

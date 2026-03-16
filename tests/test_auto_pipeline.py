@@ -8,7 +8,7 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-from infrasim.model.components import (
+from faultray.model.components import (
     AutoScalingConfig,
     Component,
     ComponentType,
@@ -16,8 +16,8 @@ from infrasim.model.components import (
     FailoverConfig,
     SecurityProfile,
 )
-from infrasim.model.graph import InfraGraph
-from infrasim.remediation.auto_pipeline import (
+from faultray.model.graph import InfraGraph
+from faultray.remediation.auto_pipeline import (
     AutoRemediationPipeline,
     PipelineResult,
     PipelineStep,

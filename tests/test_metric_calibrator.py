@@ -6,9 +6,9 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-from infrasim.discovery.metric_calibrator import CalibrationResult, MetricCalibrator
-from infrasim.model.components import Component, ComponentType, ResourceMetrics
-from infrasim.model.graph import InfraGraph
+from faultray.discovery.metric_calibrator import CalibrationResult, MetricCalibrator
+from faultray.model.components import Component, ComponentType, ResourceMetrics
+from faultray.model.graph import InfraGraph
 
 
 # ---------------------------------------------------------------------------

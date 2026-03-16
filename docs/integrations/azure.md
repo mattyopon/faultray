@@ -53,7 +53,7 @@ faultray scan --provider azure --resource-group my-rg --output azure.json
 ## Example
 
 ```python
-from infrasim.scanners import AzureScanner
+from faultray.scanners import AzureScanner
 
 scanner = AzureScanner(subscription_id="my-subscription-id")
 graph = scanner.scan()

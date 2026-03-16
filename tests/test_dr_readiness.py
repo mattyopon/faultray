@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import pytest
 
-from infrasim.model.components import (
+from faultray.model.components import (
     AutoScalingConfig,
     CircuitBreakerConfig,
     ComplianceTags,
@@ -17,8 +17,8 @@ from infrasim.model.components import (
     RegionConfig,
     SecurityProfile,
 )
-from infrasim.model.graph import InfraGraph
-from infrasim.simulator.dr_readiness import (
+from faultray.model.graph import InfraGraph
+from faultray.simulator.dr_readiness import (
     DRCapability,
     DRReadinessReport,
     DRReadinessScorer,

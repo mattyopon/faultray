@@ -9,15 +9,15 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-from infrasim.integrations.observability import MetricImportResult, ObservabilityHub
-from infrasim.model.components import (
+from faultray.integrations.observability import MetricImportResult, ObservabilityHub
+from faultray.model.components import (
     Capacity,
     Component,
     ComponentType,
     Dependency,
     ResourceMetrics,
 )
-from infrasim.model.graph import InfraGraph
+from faultray.model.graph import InfraGraph
 
 
 # ---------------------------------------------------------------------------

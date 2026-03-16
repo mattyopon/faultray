@@ -8,13 +8,13 @@ from __future__ import annotations
 
 import pytest
 
-from infrasim.model.components import (
+from faultray.model.components import (
     Component,
     ComponentType,
     HealthStatus,
 )
-from infrasim.model.graph import InfraGraph
-from infrasim.simulator.compliance_gap import (
+from faultray.model.graph import InfraGraph
+from faultray.simulator.compliance_gap import (
     ComplianceFramework,
     ComplianceGap,
     ComplianceGapAnalyzer,

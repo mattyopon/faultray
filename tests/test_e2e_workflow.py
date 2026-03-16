@@ -13,9 +13,9 @@ from pathlib import Path
 import pytest
 from typer.testing import CliRunner
 
-from infrasim.cli import app
-from infrasim.model.demo import create_demo_graph
-from infrasim.model.graph import InfraGraph
+from faultray.cli import app
+from faultray.model.demo import create_demo_graph
+from faultray.model.graph import InfraGraph
 
 runner = CliRunner()
 
@@ -350,9 +350,9 @@ class TestFinancialAnalysisFlow:
 
     def test_cost_to_report_flow(self, tmp_path: Path):
         """Run cost engine, then financial risk analysis."""
-        from infrasim.simulator.engine import SimulationEngine
-        from infrasim.simulator.cost_engine import CostImpactEngine
-        from infrasim.simulator.financial_risk import FinancialRiskEngine
+        from faultray.simulator.engine import SimulationEngine
+        from faultray.simulator.cost_engine import CostImpactEngine
+        from faultray.simulator.financial_risk import FinancialRiskEngine
 
         graph = create_demo_graph()
         engine = SimulationEngine(graph)
@@ -408,7 +408,7 @@ class TestMultiEngineConsistency:
 
     def test_security_score_within_bounds(self):
         """Security score should be bounded 0-100."""
-        from infrasim.simulator.security_engine import SecurityResilienceEngine
+        from faultray.simulator.security_engine import SecurityResilienceEngine
 
         graph = create_demo_graph()
         engine = SecurityResilienceEngine(graph)
@@ -417,8 +417,8 @@ class TestMultiEngineConsistency:
 
     def test_cost_reflects_simulation_findings(self):
         """Cost analysis should reflect simulation severity."""
-        from infrasim.simulator.engine import SimulationEngine
-        from infrasim.simulator.cost_engine import CostImpactEngine
+        from faultray.simulator.engine import SimulationEngine
+        from faultray.simulator.cost_engine import CostImpactEngine
 
         graph = create_demo_graph()
         engine = SimulationEngine(graph)
@@ -432,7 +432,7 @@ class TestMultiEngineConsistency:
 
     def test_five_layer_model_ordering(self):
         """5-layer model layers should be ordered correctly."""
-        from infrasim.simulator.availability_model import compute_five_layer_model
+        from faultray.simulator.availability_model import compute_five_layer_model
 
         graph = create_demo_graph()
         result = compute_five_layer_model(graph)
@@ -459,7 +459,7 @@ class TestSerializationRoundtrip:
 
     def test_json_roundtrip(self, tmp_path: Path):
         """Graph saved and reloaded should produce identical simulation results."""
-        from infrasim.simulator.engine import SimulationEngine
+        from faultray.simulator.engine import SimulationEngine
 
         graph1 = create_demo_graph()
         model_path = tmp_path / "roundtrip.json"
@@ -487,8 +487,8 @@ class TestSerializationRoundtrip:
     def test_yaml_roundtrip(self, tmp_path: Path):
         """YAML model loaded should produce valid simulation results."""
         yaml_path = _save_demo_yaml(tmp_path)
-        from infrasim.model.loader import load_yaml
-        from infrasim.simulator.engine import SimulationEngine
+        from faultray.model.loader import load_yaml
+        from faultray.simulator.engine import SimulationEngine
 
         graph = load_yaml(yaml_path)
         assert len(graph.components) == 3
@@ -612,9 +612,9 @@ class TestTemplateToSimulationFlow:
 
     def test_all_templates_load_and_simulate(self):
         """Every template should load and produce simulation results."""
-        from infrasim.templates import TEMPLATES, get_template_path
-        from infrasim.model.loader import load_yaml
-        from infrasim.simulator.engine import SimulationEngine
+        from faultray.templates import TEMPLATES, get_template_path
+        from faultray.model.loader import load_yaml
+        from faultray.simulator.engine import SimulationEngine
 
         for name in TEMPLATES:
             template_path = get_template_path(name)
@@ -634,8 +634,8 @@ class TestTemplateToSimulationFlow:
 
     def test_template_yaml_files_loadable(self):
         """All template YAML files should load without error."""
-        from infrasim.templates import TEMPLATES, get_template_path
-        from infrasim.model.loader import load_yaml
+        from faultray.templates import TEMPLATES, get_template_path
+        from faultray.model.loader import load_yaml
 
         for name in TEMPLATES:
             path = get_template_path(name)

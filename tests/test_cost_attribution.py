@@ -2,7 +2,7 @@
 
 from unittest.mock import patch
 
-from infrasim.model.components import (
+from faultray.model.components import (
     AutoScalingConfig,
     Capacity,
     Component,
@@ -12,8 +12,8 @@ from infrasim.model.components import (
     OperationalProfile,
     ResourceMetrics,
 )
-from infrasim.model.graph import InfraGraph
-from infrasim.simulator.cost_attribution import (
+from faultray.model.graph import InfraGraph
+from faultray.simulator.cost_attribution import (
     ComponentCostProfile,
     CostAttributionEngine,
     CostAttributionReport,

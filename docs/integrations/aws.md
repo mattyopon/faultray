@@ -58,7 +58,7 @@ FaultRay scans the following AWS services:
 ## Example
 
 ```python
-from infrasim.scanners import AWSScanner
+from faultray.scanners import AWSScanner
 
 scanner = AWSScanner(
     profile="production",

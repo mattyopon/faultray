@@ -1,6 +1,6 @@
 """Tests for the FMEA (Failure Mode & Effects Analysis) engine."""
 
-from infrasim.model.components import (
+from faultray.model.components import (
     AutoScalingConfig,
     Capacity,
     CircuitBreakerConfig,
@@ -10,8 +10,8 @@ from infrasim.model.components import (
     FailoverConfig,
     ResourceMetrics,
 )
-from infrasim.model.graph import InfraGraph
-from infrasim.simulator.fmea_engine import FMEAEngine, FMEAReport, FailureMode
+from faultray.model.graph import InfraGraph
+from faultray.simulator.fmea_engine import FMEAEngine, FMEAReport, FailureMode
 
 
 def _build_test_graph() -> InfraGraph:
@@ -387,7 +387,7 @@ def test_identify_controls_none_component():
 
 def test_identify_controls_with_retry_strategy():
     """Test lines 453-454: _identify_controls finds retry strategies."""
-    from infrasim.model.components import RetryStrategy
+    from faultray.model.components import RetryStrategy
     graph = InfraGraph()
     graph.add_component(Component(
         id="app", name="App", type=ComponentType.APP_SERVER, replicas=1,

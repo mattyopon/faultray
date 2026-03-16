@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import pytest
 
-from infrasim.model.components import (
+from faultray.model.components import (
     AutoScalingConfig,
     CircuitBreakerConfig,
     Component,
@@ -17,8 +17,8 @@ from infrasim.model.components import (
     SecurityProfile,
     ComplianceTags,
 )
-from infrasim.model.graph import InfraGraph
-from infrasim.simulator.fitness_functions import (
+from faultray.model.graph import InfraGraph
+from faultray.simulator.fitness_functions import (
     FitnessCategory,
     FitnessEvaluator,
     FitnessGrade,

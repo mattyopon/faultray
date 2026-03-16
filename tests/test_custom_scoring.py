@@ -6,7 +6,7 @@ from pathlib import Path
 
 import pytest
 
-from infrasim.model.components import (
+from faultray.model.components import (
     AutoScalingConfig,
     Capacity,
     CircuitBreakerConfig,
@@ -17,8 +17,8 @@ from infrasim.model.components import (
     ResourceMetrics,
     SecurityProfile,
 )
-from infrasim.model.graph import InfraGraph
-from infrasim.scoring import (
+from faultray.model.graph import InfraGraph
+from faultray.scoring import (
     CustomScoringEngine,
     CustomScoringResult,
     ScoringRule,
@@ -529,13 +529,13 @@ class TestFilterComponentsByType:
     """Tests for _filter_components_by_type helper."""
 
     def test_unknown_type_returns_empty(self):
-        from infrasim.scoring import _filter_components_by_type
+        from faultray.scoring import _filter_components_by_type
         graph = _make_graph(_make_component("app1"))
         result = _filter_components_by_type(graph, "nonexistent_type")
         assert result == []
 
     def test_empty_type_returns_all(self):
-        from infrasim.scoring import _filter_components_by_type
+        from faultray.scoring import _filter_components_by_type
         graph = _make_graph(
             _make_component("app1"),
             _make_component("db1", ComponentType.DATABASE),

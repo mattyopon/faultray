@@ -7,8 +7,8 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
-from infrasim.discovery.prometheus_monitor import PrometheusMonitor
-from infrasim.model.graph import InfraGraph
+from faultray.discovery.prometheus_monitor import PrometheusMonitor
+from faultray.model.graph import InfraGraph
 
 
 # ---------------------------------------------------------------------------

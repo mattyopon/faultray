@@ -1,6 +1,6 @@
 """Tests for the Chaos Monkey random failure injection simulator."""
 
-from infrasim.model.components import (
+from faultray.model.components import (
     AutoScalingConfig,
     Capacity,
     CircuitBreakerConfig,
@@ -10,8 +10,8 @@ from infrasim.model.components import (
     FailoverConfig,
     ResourceMetrics,
 )
-from infrasim.model.graph import InfraGraph
-from infrasim.simulator.chaos_monkey import (
+from faultray.model.graph import InfraGraph
+from faultray.simulator.chaos_monkey import (
     ChaosLevel,
     ChaosMonkey,
     ChaosMonkeyConfig,

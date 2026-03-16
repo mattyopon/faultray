@@ -1,4 +1,4 @@
-"""Edge case and boundary value tests for InfraSim core modules.
+"""Edge case and boundary value tests for FaultRay core modules.
 
 Tests scenarios that standard unit tests typically miss:
 1. InfraGraph edge cases (empty, large, circular, self-ref, duplicates, invalid replicas)
@@ -17,16 +17,16 @@ import time
 import pytest
 from pydantic import ValidationError
 
-from infrasim.model.components import (
+from faultray.model.components import (
     Component,
     ComponentType,
     Dependency,
     HealthStatus,
 )
-from infrasim.model.graph import InfraGraph
-from infrasim.simulator.cascade import CascadeChain, CascadeEffect, CascadeEngine
-from infrasim.simulator.engine import SimulationEngine
-from infrasim.simulator.scenarios import Fault, FaultType, Scenario
+from faultray.model.graph import InfraGraph
+from faultray.simulator.cascade import CascadeChain, CascadeEffect, CascadeEngine
+from faultray.simulator.engine import SimulationEngine
+from faultray.simulator.scenarios import Fault, FaultType, Scenario
 
 
 # ---------------------------------------------------------------------------
@@ -321,7 +321,7 @@ class TestResilienceScoreBoundaries:
     def test_score_always_in_range_high_utilization(self):
         """High utilization should penalize but not exceed [0, 100]."""
         graph = InfraGraph()
-        from infrasim.model.components import ResourceMetrics
+        from faultray.model.components import ResourceMetrics
         for i in range(10):
             metrics = ResourceMetrics(cpu_percent=95.0, memory_percent=95.0)
             c = _make_component(cid=f"u{i}", name=f"Util-{i}", replicas=1)
@@ -353,7 +353,7 @@ class TestResilienceScoreBoundaries:
 
     def test_resilience_score_v2_all_redundant_with_cb(self):
         """Fully redundant graph with circuit breakers => high score."""
-        from infrasim.model.components import (
+        from faultray.model.components import (
             AutoScalingConfig,
             CircuitBreakerConfig,
             FailoverConfig,
@@ -723,20 +723,20 @@ class TestInputValidation:
 
     def test_nan_in_resource_metrics(self):
         """NaN in cpu_percent should be storable (Pydantic allows float NaN)."""
-        from infrasim.model.components import ResourceMetrics
+        from faultray.model.components import ResourceMetrics
         metrics = ResourceMetrics(cpu_percent=float("nan"))
         assert math.isnan(metrics.cpu_percent)
 
     def test_infinity_in_resource_metrics(self):
         """Infinity in numeric metrics should be storable."""
-        from infrasim.model.components import ResourceMetrics
+        from faultray.model.components import ResourceMetrics
         metrics = ResourceMetrics(cpu_percent=float("inf"), memory_percent=float("-inf"))
         assert math.isinf(metrics.cpu_percent)
         assert math.isinf(metrics.memory_percent)
 
     def test_nan_utilization_computation(self):
         """Utilization with NaN metrics should not crash."""
-        from infrasim.model.components import ResourceMetrics
+        from faultray.model.components import ResourceMetrics
         c = _make_component(cid="nan", name="NaN")
         c.metrics = ResourceMetrics(cpu_percent=float("nan"))
         # utilization() uses max() on a list of factors; NaN propagates but
@@ -746,14 +746,14 @@ class TestInputValidation:
 
     def test_infinity_capacity_fields(self):
         """Infinity in capacity fields should not crash scoring."""
-        from infrasim.model.components import Capacity
+        from faultray.model.components import Capacity
         c = _make_component(cid="inf", name="Inf")
         c.capacity = Capacity(max_connections=sys.maxsize, max_rps=sys.maxsize)
         assert c.capacity.max_connections == sys.maxsize
 
     def test_zero_capacity_fields(self):
         """Zero in capacity fields should not cause division by zero."""
-        from infrasim.model.components import Capacity
+        from faultray.model.components import Capacity
         c = _make_component(cid="zero-cap", name="ZeroCap")
         c.capacity = Capacity(max_connections=0, max_rps=0, connection_pool_size=0)
         util = c.utilization()
@@ -924,7 +924,7 @@ class TestCrossCuttingEdgeCases:
 
     def test_scenario_result_classification(self):
         """ScenarioResult is_critical / is_warning classification boundaries."""
-        from infrasim.simulator.engine import ScenarioResult
+        from faultray.simulator.engine import ScenarioResult
 
         scenario = _make_scenario()
         chain = CascadeChain(trigger="test", total_components=1)
@@ -955,7 +955,7 @@ class TestCrossCuttingEdgeCases:
 
     def test_simulation_report_categorization(self):
         """SimulationReport correctly categorizes results into passed/warnings/critical."""
-        from infrasim.simulator.engine import ScenarioResult, SimulationReport
+        from faultray.simulator.engine import ScenarioResult, SimulationReport
 
         chain = CascadeChain(trigger="t", total_components=1)
         results = [

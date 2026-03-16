@@ -38,8 +38,8 @@ Each compliance report includes:
 ## Example: SOC 2 Type II
 
 ```python
-from infrasim import SimulationEngine
-from infrasim.compliance import SOC2Reporter
+from faultray import SimulationEngine
+from faultray.compliance import SOC2Reporter
 
 engine = SimulationEngine(graph)
 results = engine.simulate()

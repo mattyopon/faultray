@@ -2,7 +2,7 @@
 
 import pytest
 
-from infrasim.model.components import (
+from faultray.model.components import (
     AutoScalingConfig,
     Capacity,
     Component,
@@ -13,10 +13,10 @@ from infrasim.model.components import (
     ResourceMetrics,
     SLOTarget,
 )
-from infrasim.model.graph import InfraGraph
-from infrasim.simulator.ops_engine import OpsScenario, OpsSimulationResult, TimeUnit
-from infrasim.simulator.traffic import create_diurnal_weekly
-from infrasim.simulator.whatif_engine import (
+from faultray.model.graph import InfraGraph
+from faultray.simulator.ops_engine import OpsScenario, OpsSimulationResult, TimeUnit
+from faultray.simulator.traffic import create_diurnal_weekly
+from faultray.simulator.whatif_engine import (
     MultiWhatIfResult,
     MultiWhatIfScenario,
     WhatIfEngine,

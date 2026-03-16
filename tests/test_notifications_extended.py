@@ -8,7 +8,7 @@ from unittest.mock import AsyncMock, MagicMock, patch
 import httpx
 import pytest
 
-from infrasim.integrations.webhooks import (
+from faultray.integrations.webhooks import (
     NotificationConfig,
     SmtpConfig,
     notify_by_severity,
@@ -66,7 +66,7 @@ class TestTeamsNotification:
     async def test_teams_success(self, report_summary_critical):
         """Teams notification should return True on success."""
         mock_response = httpx.Response(200)
-        with patch("infrasim.integrations.webhooks.httpx.AsyncClient") as MockClient:
+        with patch("faultray.integrations.webhooks.httpx.AsyncClient") as MockClient:
             client_instance = AsyncMock()
             client_instance.post.return_value = mock_response
             MockClient.return_value.__aenter__ = AsyncMock(return_value=client_instance)
@@ -93,7 +93,7 @@ class TestTeamsNotification:
     async def test_teams_no_critical(self, report_summary_clean):
         """Teams card without critical findings should have 2 body blocks."""
         mock_response = httpx.Response(200)
-        with patch("infrasim.integrations.webhooks.httpx.AsyncClient") as MockClient:
+        with patch("faultray.integrations.webhooks.httpx.AsyncClient") as MockClient:
             client_instance = AsyncMock()
             client_instance.post.return_value = mock_response
             MockClient.return_value.__aenter__ = AsyncMock(return_value=client_instance)
@@ -112,7 +112,7 @@ class TestTeamsNotification:
     @pytest.mark.asyncio
     async def test_teams_failure(self, report_summary_critical):
         """Teams notification should return False on error."""
-        with patch("infrasim.integrations.webhooks.httpx.AsyncClient") as MockClient:
+        with patch("faultray.integrations.webhooks.httpx.AsyncClient") as MockClient:
             client_instance = AsyncMock()
             client_instance.post.side_effect = httpx.ConnectError("refused")
             MockClient.return_value.__aenter__ = AsyncMock(return_value=client_instance)
@@ -142,7 +142,7 @@ class TestEmailNotification:
             from_address="test@test.com",
         )
 
-        with patch("infrasim.integrations.webhooks.smtplib.SMTP") as MockSMTP:
+        with patch("faultray.integrations.webhooks.smtplib.SMTP") as MockSMTP:
             mock_server = MagicMock()
             MockSMTP.return_value = mock_server
 
@@ -162,7 +162,7 @@ class TestEmailNotification:
         """send_email with use_tls=False should skip starttls."""
         config = SmtpConfig(host="smtp.test.com", port=25, use_tls=False)
 
-        with patch("infrasim.integrations.webhooks.smtplib.SMTP") as MockSMTP:
+        with patch("faultray.integrations.webhooks.smtplib.SMTP") as MockSMTP:
             mock_server = MagicMock()
             MockSMTP.return_value = mock_server
 
@@ -185,7 +185,7 @@ class TestEmailNotification:
         """send_email should return False on SMTP error."""
         config = SmtpConfig(host="nonexistent.invalid")
 
-        with patch("infrasim.integrations.webhooks.smtplib.SMTP") as MockSMTP:
+        with patch("faultray.integrations.webhooks.smtplib.SMTP") as MockSMTP:
             MockSMTP.side_effect = smtplib.SMTPConnectError(421, "Connection refused")
 
             result = send_email(config, ["test@test.com"], "Test", "Body")
@@ -200,7 +200,7 @@ class TestEmailNotification:
             "password": "pass",
         }
 
-        with patch("infrasim.integrations.webhooks.smtplib.SMTP") as MockSMTP:
+        with patch("faultray.integrations.webhooks.smtplib.SMTP") as MockSMTP:
             mock_server = MagicMock()
             MockSMTP.return_value = mock_server
 
@@ -218,7 +218,7 @@ class TestOpsGenieNotification:
     async def test_opsgenie_success(self):
         """OpsGenie alert should return True on 202."""
         mock_response = httpx.Response(202)
-        with patch("infrasim.integrations.webhooks.httpx.AsyncClient") as MockClient:
+        with patch("faultray.integrations.webhooks.httpx.AsyncClient") as MockClient:
             client_instance = AsyncMock()
             client_instance.post.return_value = mock_response
             MockClient.return_value.__aenter__ = AsyncMock(return_value=client_instance)
@@ -244,7 +244,7 @@ class TestOpsGenieNotification:
     async def test_opsgenie_invalid_priority_defaults(self):
         """Invalid priority should default to P3."""
         mock_response = httpx.Response(202)
-        with patch("infrasim.integrations.webhooks.httpx.AsyncClient") as MockClient:
+        with patch("faultray.integrations.webhooks.httpx.AsyncClient") as MockClient:
             client_instance = AsyncMock()
             client_instance.post.return_value = mock_response
             MockClient.return_value.__aenter__ = AsyncMock(return_value=client_instance)
@@ -260,7 +260,7 @@ class TestOpsGenieNotification:
     @pytest.mark.asyncio
     async def test_opsgenie_failure(self):
         """OpsGenie alert should return False on error."""
-        with patch("infrasim.integrations.webhooks.httpx.AsyncClient") as MockClient:
+        with patch("faultray.integrations.webhooks.httpx.AsyncClient") as MockClient:
             client_instance = AsyncMock()
             client_instance.post.side_effect = httpx.TimeoutException("timeout")
             MockClient.return_value.__aenter__ = AsyncMock(return_value=client_instance)
@@ -284,8 +284,8 @@ class TestNotifyBySeverity:
             slack_webhook="https://slack.test/webhook",
         )
 
-        with patch("infrasim.integrations.webhooks.send_pagerduty_event", new_callable=AsyncMock) as mock_pd, \
-             patch("infrasim.integrations.webhooks.send_slack_notification", new_callable=AsyncMock) as mock_slack:
+        with patch("faultray.integrations.webhooks.send_pagerduty_event", new_callable=AsyncMock) as mock_pd, \
+             patch("faultray.integrations.webhooks.send_slack_notification", new_callable=AsyncMock) as mock_slack:
             mock_pd.return_value = True
             mock_slack.return_value = True
 
@@ -304,8 +304,8 @@ class TestNotifyBySeverity:
             slack_webhook="https://slack.test/webhook",
         )
 
-        with patch("infrasim.integrations.webhooks.send_pagerduty_event", new_callable=AsyncMock) as mock_pd, \
-             patch("infrasim.integrations.webhooks.send_slack_notification", new_callable=AsyncMock) as mock_slack:
+        with patch("faultray.integrations.webhooks.send_pagerduty_event", new_callable=AsyncMock) as mock_pd, \
+             patch("faultray.integrations.webhooks.send_slack_notification", new_callable=AsyncMock) as mock_slack:
             mock_slack.return_value = True
 
             statuses = await notify_by_severity(report_summary_warning, config)
@@ -322,7 +322,7 @@ class TestNotifyBySeverity:
             smtp=SmtpConfig(host="smtp.test.com"),
         )
 
-        with patch("infrasim.integrations.webhooks.send_email") as mock_email:
+        with patch("faultray.integrations.webhooks.send_email") as mock_email:
             mock_email.return_value = True
 
             statuses = await notify_by_severity(report_summary_clean, config)

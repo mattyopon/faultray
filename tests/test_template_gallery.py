@@ -5,8 +5,8 @@ from __future__ import annotations
 import pytest
 import yaml
 
-from infrasim.model.graph import InfraGraph
-from infrasim.templates.gallery import (
+from faultray.model.graph import InfraGraph
+from faultray.templates.gallery import (
     GALLERY_TEMPLATES,
     InfraTemplate,
     TemplateCategory,
@@ -235,7 +235,7 @@ class TestTemplateYAMLExport:
     )
     def test_yaml_loadable_by_loader(self, template_id: str, tmp_path):
         """Exported YAML must be loadable by the standard YAML loader."""
-        from infrasim.model.loader import load_yaml
+        from faultray.model.loader import load_yaml
 
         yaml_str = self.gallery.to_yaml(template_id)
         yaml_file = tmp_path / f"{template_id}.yaml"
@@ -258,7 +258,7 @@ class TestTemplateComparison:
 
     def _make_simple_graph(self) -> InfraGraph:
         """Create a simple test graph."""
-        from infrasim.model.components import Component, ComponentType, Dependency
+        from faultray.model.components import Component, ComponentType, Dependency
 
         graph = InfraGraph()
         graph.add_component(Component(

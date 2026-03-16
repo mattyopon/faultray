@@ -2,7 +2,7 @@
 
 import math
 
-from infrasim.simulator.traffic import (
+from faultray.simulator.traffic import (
     TrafficPattern,
     TrafficPatternType,
     create_ddos_volumetric,

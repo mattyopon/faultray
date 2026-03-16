@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import pytest
 
-from infrasim.model.components import (
+from faultray.model.components import (
     AutoScalingConfig,
     CircuitBreakerConfig,
     Component,
@@ -13,8 +13,8 @@ from infrasim.model.components import (
     FailoverConfig,
     ResourceMetrics,
 )
-from infrasim.model.graph import InfraGraph
-from infrasim.simulator.pareto_optimizer import (
+from faultray.model.graph import InfraGraph
+from faultray.simulator.pareto_optimizer import (
     COST_PER_REPLICA,
     ParetoFrontier,
     ParetoOptimizer,

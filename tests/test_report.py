@@ -7,18 +7,18 @@ from io import StringIO
 import pytest
 from rich.console import Console
 
-from infrasim.model.components import HealthStatus
-from infrasim.model.demo import create_demo_graph
-from infrasim.reporter.report import (
+from faultray.model.components import HealthStatus
+from faultray.model.demo import create_demo_graph
+from faultray.reporter.report import (
     _health_color,
     _health_icon,
     _risk_label,
     print_infrastructure_summary,
     print_simulation_report,
 )
-from infrasim.simulator.cascade import CascadeChain, CascadeEffect
-from infrasim.simulator.engine import ScenarioResult, SimulationEngine, SimulationReport
-from infrasim.simulator.scenarios import Fault, FaultType, Scenario
+from faultray.simulator.cascade import CascadeChain, CascadeEffect
+from faultray.simulator.engine import ScenarioResult, SimulationEngine, SimulationReport
+from faultray.simulator.scenarios import Fault, FaultType, Scenario
 
 
 # ---------------------------------------------------------------------------

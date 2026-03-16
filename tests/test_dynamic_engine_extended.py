@@ -2,7 +2,7 @@
 
 import pytest
 
-from infrasim.model.components import (
+from faultray.model.components import (
     AutoScalingConfig,
     CacheWarmingConfig,
     Capacity,
@@ -15,9 +15,9 @@ from infrasim.model.components import (
     ResourceMetrics,
     SingleflightConfig,
 )
-from infrasim.model.graph import InfraGraph
-from infrasim.simulator.cascade import CascadeEffect
-from infrasim.simulator.dynamic_engine import (
+from faultray.model.graph import InfraGraph
+from faultray.simulator.cascade import CascadeEffect
+from faultray.simulator.dynamic_engine import (
     DynamicScenario,
     DynamicScenarioResult,
     DynamicSimulationEngine,
@@ -26,8 +26,8 @@ from infrasim.simulator.dynamic_engine import (
     _CircuitBreakerDynamicState,
     _ComponentDynamicState,
 )
-from infrasim.simulator.scenarios import Fault, FaultType
-from infrasim.simulator.traffic import TrafficPattern, TrafficPatternType
+from faultray.simulator.scenarios import Fault, FaultType
+from faultray.simulator.traffic import TrafficPattern, TrafficPatternType
 
 
 # ---------------------------------------------------------------------------
@@ -1266,7 +1266,7 @@ def test_report_resilience_score_calculation():
 
 def test_component_snapshot_defaults():
     """ComponentSnapshot should have correct defaults."""
-    from infrasim.simulator.dynamic_engine import ComponentSnapshot
+    from faultray.simulator.dynamic_engine import ComponentSnapshot
     snap = ComponentSnapshot(
         component_id="app",
         health=HealthStatus.HEALTHY,
@@ -1280,7 +1280,7 @@ def test_component_snapshot_defaults():
 
 def test_component_snapshot_with_failover():
     """ComponentSnapshot should track failover state."""
-    from infrasim.simulator.dynamic_engine import ComponentSnapshot
+    from faultray.simulator.dynamic_engine import ComponentSnapshot
     snap = ComponentSnapshot(
         component_id="db",
         health=HealthStatus.DOWN,
@@ -1300,7 +1300,7 @@ def test_component_snapshot_with_failover():
 
 def test_timestep_snapshot_defaults():
     """TimeStepSnapshot should have correct defaults."""
-    from infrasim.simulator.dynamic_engine import TimeStepSnapshot
+    from faultray.simulator.dynamic_engine import TimeStepSnapshot
     ts = TimeStepSnapshot(time_seconds=10)
     assert ts.time_seconds == 10
     assert ts.component_states == {}

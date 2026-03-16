@@ -6,7 +6,7 @@ from unittest import mock
 
 import pytest
 
-from infrasim.model.components import (
+from faultray.model.components import (
     Component,
     ComponentType,
     CostProfile,
@@ -14,10 +14,10 @@ from infrasim.model.components import (
     FailoverConfig,
     HealthStatus,
 )
-from infrasim.model.graph import InfraGraph
-from infrasim.simulator.cascade import CascadeChain, CascadeEffect
-from infrasim.simulator.dependency_scorer import DependencyImpact, DependencyScorer
-from infrasim.simulator.engine import ScenarioResult
+from faultray.model.graph import InfraGraph
+from faultray.simulator.cascade import CascadeChain, CascadeEffect
+from faultray.simulator.dependency_scorer import DependencyImpact, DependencyScorer
+from faultray.simulator.engine import ScenarioResult
 
 
 def _build_test_graph() -> InfraGraph:

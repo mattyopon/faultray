@@ -5,9 +5,9 @@ from __future__ import annotations
 import pytest
 from fastapi.testclient import TestClient
 
-from infrasim.api.server import app, build_demo_graph, get_graph, set_graph
-from infrasim.model.demo import create_demo_graph
-from infrasim.model.graph import InfraGraph
+from faultray.api.server import app, build_demo_graph, get_graph, set_graph
+from faultray.model.demo import create_demo_graph
+from faultray.model.graph import InfraGraph
 
 
 @pytest.fixture(autouse=True)

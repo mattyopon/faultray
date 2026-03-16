@@ -13,7 +13,7 @@ import random
 
 import pytest
 
-from infrasim.model.components import (
+from faultray.model.components import (
     Capacity,
     Component,
     ComponentType,
@@ -25,8 +25,8 @@ from infrasim.model.components import (
     ResourceMetrics,
     RuntimeJitter,
 )
-from infrasim.model.graph import InfraGraph
-from infrasim.simulator.ops_engine import OpsSimulationEngine, _OpsComponentState, SLOTracker
+from faultray.model.graph import InfraGraph
+from faultray.simulator.ops_engine import OpsSimulationEngine, _OpsComponentState, SLOTracker
 
 
 # ---------------------------------------------------------------------------

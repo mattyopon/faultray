@@ -7,17 +7,17 @@ from pathlib import Path
 import pytest
 from typer.testing import CliRunner
 
-from infrasim.cli import app
-from infrasim.model.components import HealthStatus
-from infrasim.model.demo import create_demo_graph
-from infrasim.reporter.pdf_report import (
+from faultray.cli import app
+from faultray.model.components import HealthStatus
+from faultray.model.demo import create_demo_graph
+from faultray.reporter.pdf_report import (
     export_markdown,
     generate_pdf_ready_html,
     save_pdf_ready_html,
 )
-from infrasim.simulator.cascade import CascadeChain, CascadeEffect
-from infrasim.simulator.engine import ScenarioResult, SimulationEngine, SimulationReport
-from infrasim.simulator.scenarios import Fault, FaultType, Scenario
+from faultray.simulator.cascade import CascadeChain, CascadeEffect
+from faultray.simulator.engine import ScenarioResult, SimulationEngine, SimulationReport
+from faultray.simulator.scenarios import Fault, FaultType, Scenario
 
 runner = CliRunner()
 
@@ -74,7 +74,7 @@ class TestPdfReadyHtml:
 
     def test_contains_original_html_content(self, demo_report, demo_graph):
         html = generate_pdf_ready_html(demo_report, demo_graph)
-        assert "FaultRay" in html or "InfraSim" in html
+        assert "FaultRay" in html or "FaultRay" in html
         assert "</html>" in html
 
     def test_save_pdf_ready_html(self, demo_report, demo_graph, tmp_path):

@@ -1,4 +1,4 @@
-"""Comprehensive tests for infrasim.simulator.engine — SimulationEngine, ScenarioResult, SimulationReport."""
+"""Comprehensive tests for faultray.simulator.engine — SimulationEngine, ScenarioResult, SimulationReport."""
 
 from __future__ import annotations
 
@@ -9,7 +9,7 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-from infrasim.model.components import (
+from faultray.model.components import (
     Capacity,
     Component,
     ComponentType,
@@ -17,16 +17,16 @@ from infrasim.model.components import (
     HealthStatus,
     ResourceMetrics,
 )
-from infrasim.model.graph import InfraGraph
-from infrasim.simulator.cascade import CascadeChain, CascadeEffect, CascadeEngine
-from infrasim.simulator.engine import (
+from faultray.model.graph import InfraGraph
+from faultray.simulator.cascade import CascadeChain, CascadeEffect, CascadeEngine
+from faultray.simulator.engine import (
     MAX_SCENARIOS,
     SimulationEngine,
     SimulationReport,
     ScenarioResult,
     _CHECKPOINT_INTERVAL,
 )
-from infrasim.simulator.scenarios import Fault, FaultType, Scenario
+from faultray.simulator.scenarios import Fault, FaultType, Scenario
 
 
 # ---------------------------------------------------------------------------
@@ -510,7 +510,7 @@ class TestRunAllDefaults:
         )
         assert len(report.results) <= 5
 
-    @patch("infrasim.feeds.store.load_feed_scenarios")
+    @patch("faultray.feeds.store.load_feed_scenarios")
     def test_feed_scenarios_included(self, mock_load):
         engine, graph = self._engine_with_graph()
         feed_scenario = _scenario(
@@ -521,7 +521,7 @@ class TestRunAllDefaults:
         report = engine.run_all_defaults(include_feed=True, include_plugins=False)
         assert report.total_generated > 0
 
-    @patch("infrasim.feeds.store.load_feed_scenarios")
+    @patch("faultray.feeds.store.load_feed_scenarios")
     def test_feed_scenarios_filtered_by_graph(self, mock_load):
         """Feed scenarios with targets not in graph are excluded."""
         engine, graph = self._engine_with_graph()
@@ -540,14 +540,14 @@ class TestRunAllDefaults:
         # The bad scenario should be filtered out but good one kept
         assert report.total_generated > 0
 
-    @patch("infrasim.feeds.store.load_feed_scenarios")
+    @patch("faultray.feeds.store.load_feed_scenarios")
     def test_feed_returns_empty(self, mock_load):
         engine, _ = self._engine_with_graph()
         mock_load.return_value = []
         report = engine.run_all_defaults(include_feed=True, include_plugins=False)
         assert len(report.results) > 0
 
-    @patch("infrasim.feeds.store.load_feed_scenarios")
+    @patch("faultray.feeds.store.load_feed_scenarios")
     def test_feed_returns_none(self, mock_load):
         engine, _ = self._engine_with_graph()
         mock_load.return_value = None
@@ -561,7 +561,7 @@ class TestRunAllDefaults:
         report = engine.run_all_defaults(include_feed=False, include_plugins=True)
         assert isinstance(report, SimulationReport)
 
-    @patch("infrasim.plugins.registry.PluginRegistry")
+    @patch("faultray.plugins.registry.PluginRegistry")
     def test_plugin_scenario_generation_failure(self, mock_registry):
         """Plugin that fails to generate scenarios should not crash engine."""
         engine, _ = self._engine_with_graph()
@@ -573,7 +573,7 @@ class TestRunAllDefaults:
         report = engine.run_all_defaults(include_feed=False, include_plugins=True)
         assert isinstance(report, SimulationReport)
 
-    @patch("infrasim.plugins.registry.PluginRegistry")
+    @patch("faultray.plugins.registry.PluginRegistry")
     def test_plugin_engine_failure(self, mock_registry):
         """Engine plugin that fails should not crash."""
         engine, _ = self._engine_with_graph()
@@ -585,7 +585,7 @@ class TestRunAllDefaults:
         report = engine.run_all_defaults(include_feed=False, include_plugins=True)
         assert isinstance(report, SimulationReport)
 
-    @patch("infrasim.plugins.registry.PluginRegistry")
+    @patch("faultray.plugins.registry.PluginRegistry")
     def test_plugin_engine_results_merged(self, mock_registry):
         """Engine plugin results are merged into report."""
         engine, _ = self._engine_with_graph()
@@ -597,7 +597,7 @@ class TestRunAllDefaults:
         report = engine.run_all_defaults(include_feed=False, include_plugins=True)
         assert "good-engine" in report.engine_plugin_results
 
-    @patch("infrasim.plugins.registry.PluginRegistry")
+    @patch("faultray.plugins.registry.PluginRegistry")
     def test_plugin_engine_returns_none(self, mock_registry):
         """Engine plugin that returns None should not add to results."""
         engine, _ = self._engine_with_graph()
@@ -609,7 +609,7 @@ class TestRunAllDefaults:
         report = engine.run_all_defaults(include_feed=False, include_plugins=True)
         assert "none-engine" not in report.engine_plugin_results
 
-    @patch("infrasim.plugins.registry.PluginRegistry")
+    @patch("faultray.plugins.registry.PluginRegistry")
     def test_plugin_scenario_added_to_list(self, mock_registry):
         """Plugin-generated scenarios are added to the scenario list."""
         engine, _ = self._engine_with_graph()
@@ -622,7 +622,7 @@ class TestRunAllDefaults:
         report = engine.run_all_defaults(include_feed=False, include_plugins=True)
         assert report.total_generated > 0
 
-    @patch("infrasim.plugins.registry.PluginRegistry")
+    @patch("faultray.plugins.registry.PluginRegistry")
     def test_plugin_returns_empty(self, mock_registry):
         good_plugin = MagicMock()
         good_plugin.generate_scenarios.return_value = []
@@ -835,9 +835,9 @@ class TestPluginImportErrors:
         """Force ImportError on scenario plugin import (lines 189-190)."""
         engine = self._engine()
         import sys
-        real_module = sys.modules.get("infrasim.plugins.registry")
+        real_module = sys.modules.get("faultray.plugins.registry")
         # Temporarily remove the module to force ImportError
-        sys.modules["infrasim.plugins.registry"] = None  # forces ImportError
+        sys.modules["faultray.plugins.registry"] = None  # forces ImportError
         try:
             report = engine.run_all_defaults(
                 include_feed=False, include_plugins=True
@@ -845,9 +845,9 @@ class TestPluginImportErrors:
             assert isinstance(report, SimulationReport)
         finally:
             if real_module is not None:
-                sys.modules["infrasim.plugins.registry"] = real_module
+                sys.modules["faultray.plugins.registry"] = real_module
             else:
-                sys.modules.pop("infrasim.plugins.registry", None)
+                sys.modules.pop("faultray.plugins.registry", None)
 
     def test_engine_plugins_import_error(self):
         """Force ImportError on engine plugin import (lines 212-213).
@@ -859,7 +859,7 @@ class TestPluginImportErrors:
         call_count = [0]
 
         def patched_import(name, *args, **kwargs):
-            if name == "infrasim.plugins.registry":
+            if name == "faultray.plugins.registry":
                 call_count[0] += 1
                 if call_count[0] == 1:
                     # First import (scenario plugins) succeeds with empty returns

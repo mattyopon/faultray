@@ -7,7 +7,7 @@ from datetime import datetime, timedelta, timezone
 
 import pytest
 
-from infrasim.model.components import (
+from faultray.model.components import (
     AutoScalingConfig,
     Capacity,
     CircuitBreakerConfig,
@@ -18,9 +18,9 @@ from infrasim.model.components import (
     RegionConfig,
     ResourceMetrics,
 )
-from infrasim.model.demo import create_demo_graph
-from infrasim.model.graph import InfraGraph
-from infrasim.simulator.chaos_genome import (
+from faultray.model.demo import create_demo_graph
+from faultray.model.graph import InfraGraph
+from faultray.simulator.chaos_genome import (
     INDUSTRY_BENCHMARKS,
     TRAIT_CATEGORIES,
     BenchmarkResult,
@@ -1101,7 +1101,7 @@ class TestComponentDiversityZeroTotal:
             id="a", name="A", type=ComponentType.APP_SERVER, replicas=2,
         ))
         # Mock Counter to return an empty counter so total == 0
-        with patch("infrasim.simulator.chaos_genome.Counter", return_value=Counter()):
+        with patch("faultray.simulator.chaos_genome.Counter", return_value=Counter()):
             trait = engine._trait_component_diversity(graph)
         assert trait.value == 0.0
 
@@ -1356,9 +1356,9 @@ class TestDeepChainWeaknessWithCycles:
         graph.add_dependency(Dependency(source_id="c1", target_id="c2"))
 
         # Mock dag_longest_path_length to return > 5 and dag_longest_path to raise
-        with patch("infrasim.simulator.chaos_genome.nx.dag_longest_path_length",
+        with patch("faultray.simulator.chaos_genome.nx.dag_longest_path_length",
                     return_value=7):
-            with patch("infrasim.simulator.chaos_genome.nx.dag_longest_path",
+            with patch("faultray.simulator.chaos_genome.nx.dag_longest_path",
                         side_effect=RuntimeError("mock error")):
                 affected = engine._check_weakness(graph, "deep_chain")
 
@@ -1382,7 +1382,7 @@ class TestPathLengthException:
         graph.add_dependency(Dependency(source_id="a", target_id="b"))
 
         # Patch nx.is_weakly_connected to raise an exception
-        with patch("infrasim.simulator.chaos_genome.nx.is_weakly_connected",
+        with patch("faultray.simulator.chaos_genome.nx.is_weakly_connected",
                     side_effect=RuntimeError("mock")):
             trait = engine._trait_avg_path_length(graph)
         assert trait.name == "avg_path_length"
@@ -1409,7 +1409,7 @@ class TestMaxDepthInnerException:
         graph.add_dependency(Dependency(source_id="b", target_id="a"))
 
         # Patch single_source_shortest_path_length to raise inside the cycle handler
-        with patch("infrasim.simulator.chaos_genome.nx.single_source_shortest_path_length",
+        with patch("faultray.simulator.chaos_genome.nx.single_source_shortest_path_length",
                     side_effect=RuntimeError("mock error")):
             trait = engine._trait_max_depth(graph)
         assert trait.name == "max_depth"

@@ -7,7 +7,7 @@ from unittest.mock import patch
 
 import pytest
 
-from infrasim.api.oauth import (
+from faultray.api.oauth import (
     GITHUB_AUTHORIZE_URL,
     GOOGLE_AUTHORIZE_URL,
     OAuthConfig,
@@ -22,9 +22,9 @@ from infrasim.api.oauth import (
 class TestOAuthConfigFromEnv:
     def test_github_config_from_env(self):
         env = {
-            "INFRASIM_OAUTH_GITHUB_CLIENT_ID": "gh-client-id",
-            "INFRASIM_OAUTH_GITHUB_CLIENT_SECRET": "gh-client-secret",
-            "INFRASIM_OAUTH_GITHUB_REDIRECT_URI": "http://example.com/callback",
+            "FAULTRAY_OAUTH_GITHUB_CLIENT_ID": "gh-client-id",
+            "FAULTRAY_OAUTH_GITHUB_CLIENT_SECRET": "gh-client-secret",
+            "FAULTRAY_OAUTH_GITHUB_REDIRECT_URI": "http://example.com/callback",
         }
         with patch.dict(os.environ, env, clear=False):
             config = OAuthConfig.from_env("github")
@@ -36,8 +36,8 @@ class TestOAuthConfigFromEnv:
 
     def test_google_config_from_env(self):
         env = {
-            "INFRASIM_OAUTH_GOOGLE_CLIENT_ID": "ggl-id",
-            "INFRASIM_OAUTH_GOOGLE_CLIENT_SECRET": "ggl-secret",
+            "FAULTRAY_OAUTH_GOOGLE_CLIENT_ID": "ggl-id",
+            "FAULTRAY_OAUTH_GOOGLE_CLIENT_SECRET": "ggl-secret",
         }
         with patch.dict(os.environ, env, clear=False):
             config = OAuthConfig.from_env("google")
@@ -49,38 +49,38 @@ class TestOAuthConfigFromEnv:
 
     def test_missing_client_id_returns_none(self):
         env = {
-            "INFRASIM_OAUTH_GITHUB_CLIENT_SECRET": "secret-only",
+            "FAULTRAY_OAUTH_GITHUB_CLIENT_SECRET": "secret-only",
         }
         with patch.dict(os.environ, env, clear=False):
             # Remove CLIENT_ID if it happens to exist
-            os.environ.pop("INFRASIM_OAUTH_GITHUB_CLIENT_ID", None)
+            os.environ.pop("FAULTRAY_OAUTH_GITHUB_CLIENT_ID", None)
             config = OAuthConfig.from_env("github")
             assert config is None
 
     def test_missing_client_secret_returns_none(self):
         env = {
-            "INFRASIM_OAUTH_GITHUB_CLIENT_ID": "id-only",
+            "FAULTRAY_OAUTH_GITHUB_CLIENT_ID": "id-only",
         }
         with patch.dict(os.environ, env, clear=False):
-            os.environ.pop("INFRASIM_OAUTH_GITHUB_CLIENT_SECRET", None)
+            os.environ.pop("FAULTRAY_OAUTH_GITHUB_CLIENT_SECRET", None)
             config = OAuthConfig.from_env("github")
             assert config is None
 
     def test_completely_missing_env_returns_none(self):
         # Ensure vars are not set
         for key in list(os.environ):
-            if key.startswith("INFRASIM_OAUTH_"):
+            if key.startswith("FAULTRAY_OAUTH_"):
                 os.environ.pop(key, None)
         config = OAuthConfig.from_env("github")
         assert config is None
 
     def test_default_redirect_uri(self):
         env = {
-            "INFRASIM_OAUTH_GITHUB_CLIENT_ID": "id",
-            "INFRASIM_OAUTH_GITHUB_CLIENT_SECRET": "secret",
+            "FAULTRAY_OAUTH_GITHUB_CLIENT_ID": "id",
+            "FAULTRAY_OAUTH_GITHUB_CLIENT_SECRET": "secret",
         }
         with patch.dict(os.environ, env, clear=False):
-            os.environ.pop("INFRASIM_OAUTH_GITHUB_REDIRECT_URI", None)
+            os.environ.pop("FAULTRAY_OAUTH_GITHUB_REDIRECT_URI", None)
             config = OAuthConfig.from_env("github")
             assert config is not None
             assert config.redirect_uri == "http://localhost:8000/auth/callback"

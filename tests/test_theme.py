@@ -2,7 +2,7 @@
 
 import pytest
 
-from infrasim.theme import (
+from faultray.theme import (
     HEALTH_COLORS,
     SCORE_COLORS,
     SEVERITY_COLORS,

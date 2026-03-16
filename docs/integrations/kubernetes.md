@@ -66,7 +66,7 @@ FaultRay evaluates Kubernetes-specific resilience factors:
 ## Example
 
 ```python
-from infrasim.scanners import K8sScanner
+from faultray.scanners import K8sScanner
 
 scanner = K8sScanner(namespace="production")
 graph = scanner.scan()

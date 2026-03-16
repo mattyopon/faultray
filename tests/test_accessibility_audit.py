@@ -18,8 +18,8 @@ import pytest
 
 # ── HTML template accessibility ───────────────────────────────────────────
 
-_API_TEMPLATE_DIR = Path(__file__).resolve().parent.parent / "src" / "infrasim" / "api" / "templates"
-_REPORTER_TEMPLATE_DIR = Path(__file__).resolve().parent.parent / "src" / "infrasim" / "reporter" / "templates"
+_API_TEMPLATE_DIR = Path(__file__).resolve().parent.parent / "src" / "faultray" / "api" / "templates"
+_REPORTER_TEMPLATE_DIR = Path(__file__).resolve().parent.parent / "src" / "faultray" / "reporter" / "templates"
 
 
 def _all_html_templates() -> list[Path]:
@@ -156,7 +156,7 @@ def test_cli_output_works_without_color():
     os.environ["NO_COLOR"] = "1"
     try:
         from typer.testing import CliRunner
-        from infrasim.cli import app
+        from faultray.cli import app
 
         runner = CliRunner()
         result = runner.invoke(app, ["demo"])
@@ -180,7 +180,7 @@ def test_cli_output_works_without_color():
 def test_error_messages_are_actionable():
     """Error messages should tell user what to do, not just what went wrong."""
     from typer.testing import CliRunner
-    from infrasim.cli import app
+    from faultray.cli import app
 
     runner = CliRunner()
     result = runner.invoke(app, ["simulate", "--model", "/nonexistent/file.json"])
@@ -198,7 +198,7 @@ def test_error_messages_are_actionable():
 def test_help_text_has_examples():
     """Key commands should have usage examples in their help text."""
     from typer.testing import CliRunner
-    from infrasim.cli import app
+    from faultray.cli import app
 
     runner = CliRunner()
     commands_to_check = ["simulate", "evaluate", "scan", "plan"]
@@ -211,7 +211,7 @@ def test_help_text_has_examples():
             "example" in output
             or "usage" in output
             or "faultray" in output
-            or "infrasim" in output
+            or "faultray" in output
             or "$" in result.output  # shell prompt example
         )
         if not has_example:
@@ -228,8 +228,8 @@ def test_help_text_has_examples():
 def test_json_output_is_valid():
     """Commands with --json should produce valid JSON."""
     from typer.testing import CliRunner
-    from infrasim.cli import app
-    from infrasim.model.demo import create_demo_graph
+    from faultray.cli import app
+    from faultray.model.demo import create_demo_graph
 
     runner = CliRunner()
 
@@ -281,7 +281,7 @@ def _assert_contains_valid_json(output: str, context: str) -> None:
 
 def test_i18n_japanese_messages():
     """Japanese messages should be available and correct."""
-    from infrasim.i18n import get_language, set_language, t
+    from faultray.i18n import get_language, set_language, t
 
     original_lang = get_language()
     try:
@@ -307,7 +307,7 @@ def test_i18n_japanese_messages():
 
 def test_i18n_fallback_to_english():
     """Unknown language should fall back to English."""
-    from infrasim.i18n import get_language, set_language, t
+    from faultray.i18n import get_language, set_language, t
 
     original_lang = get_language()
     try:
@@ -322,7 +322,7 @@ def test_i18n_fallback_to_english():
 
 def test_i18n_unknown_key_returns_key():
     """Unknown translation key should return the key itself."""
-    from infrasim.i18n import t
+    from faultray.i18n import t
 
     result = t("nonexistent_key_xyz_12345")
     assert result == "nonexistent_key_xyz_12345"
@@ -333,9 +333,9 @@ def test_i18n_unknown_key_returns_key():
 
 def test_html_report_has_semantic_structure():
     """Generated HTML report should use semantic HTML elements."""
-    from infrasim.model.demo import create_demo_graph
-    from infrasim.reporter.html_report import generate_html_report
-    from infrasim.simulator.engine import SimulationEngine
+    from faultray.model.demo import create_demo_graph
+    from faultray.reporter.html_report import generate_html_report
+    from faultray.simulator.engine import SimulationEngine
 
     graph = create_demo_graph()
     engine = SimulationEngine(graph)

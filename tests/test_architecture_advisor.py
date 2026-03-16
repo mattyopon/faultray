@@ -6,7 +6,7 @@ import json
 
 import pytest
 
-from infrasim.ai.architecture_advisor import (
+from faultray.ai.architecture_advisor import (
     ArchitectureAdvisor,
     ArchitectureChange,
     ArchitecturePattern,
@@ -15,7 +15,7 @@ from infrasim.ai.architecture_advisor import (
     _nines_to_score,
     _score_to_nines,
 )
-from infrasim.model.components import (
+from faultray.model.components import (
     AutoScalingConfig,
     CircuitBreakerConfig,
     Component,
@@ -25,7 +25,7 @@ from infrasim.model.components import (
     RegionConfig,
     SecurityProfile,
 )
-from infrasim.model.graph import InfraGraph
+from faultray.model.graph import InfraGraph
 
 
 # ---------------------------------------------------------------------------

@@ -7,7 +7,7 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-from infrasim.discovery.scanner import (
+from faultray.discovery.scanner import (
     PORT_SERVICE_MAP,
     detect_component_type,
     scan_established_connections,
@@ -15,7 +15,7 @@ from infrasim.discovery.scanner import (
     scan_local,
     scan_system_metrics,
 )
-from infrasim.model.components import ComponentType, ResourceMetrics
+from faultray.model.components import ComponentType, ResourceMetrics
 
 
 # ---------------------------------------------------------------------------
@@ -140,7 +140,7 @@ class TestDetectComponentType:
 class TestScanListeningServices:
     """Tests for scan_listening_services() with mocked psutil."""
 
-    @patch("infrasim.discovery.scanner.psutil")
+    @patch("faultray.discovery.scanner.psutil")
     def test_discovers_listening_services(self, mock_psutil):
         mock_proc = MagicMock()
         mock_proc.name.return_value = "postgres"
@@ -163,7 +163,7 @@ class TestScanListeningServices:
         assert 6379 in ports
         assert services[0]["port"] < services[1]["port"]  # sorted
 
-    @patch("infrasim.discovery.scanner.psutil")
+    @patch("faultray.discovery.scanner.psutil")
     def test_deduplicates_ports(self, mock_psutil):
         mock_proc = MagicMock()
         mock_proc.name.return_value = "nginx"
@@ -179,7 +179,7 @@ class TestScanListeningServices:
         services = scan_listening_services()
         assert len(services) == 1
 
-    @patch("infrasim.discovery.scanner.psutil")
+    @patch("faultray.discovery.scanner.psutil")
     def test_handles_no_such_process(self, mock_psutil):
         NoSuchProcess = type("NoSuchProcess", (Exception,), {})
         mock_psutil.NoSuchProcess = NoSuchProcess
@@ -193,7 +193,7 @@ class TestScanListeningServices:
         assert len(services) == 1
         assert services[0]["process"] == ""
 
-    @patch("infrasim.discovery.scanner.psutil")
+    @patch("faultray.discovery.scanner.psutil")
     def test_handles_access_denied(self, mock_psutil):
         AccessDenied = type("AccessDenied", (Exception,), {})
         mock_psutil.NoSuchProcess = type("NoSuchProcess", (Exception,), {})
@@ -207,7 +207,7 @@ class TestScanListeningServices:
         assert len(services) == 1
         assert services[0]["process"] == ""
 
-    @patch("infrasim.discovery.scanner.psutil")
+    @patch("faultray.discovery.scanner.psutil")
     def test_no_pid(self, mock_psutil):
         mock_psutil.net_connections.return_value = [
             _fake_conn("LISTEN", "0.0.0.0", 9090, pid=None),
@@ -229,7 +229,7 @@ class TestScanListeningServices:
 class TestScanEstablishedConnections:
     """Tests for scan_established_connections() with mocked psutil."""
 
-    @patch("infrasim.discovery.scanner.psutil")
+    @patch("faultray.discovery.scanner.psutil")
     def test_discovers_established_connections(self, mock_psutil):
         mock_psutil.net_connections.return_value = [
             _fake_conn("ESTABLISHED", "10.0.0.1", 45678, raddr=("10.0.0.2", 5432), pid=100),
@@ -244,7 +244,7 @@ class TestScanEstablishedConnections:
         assert 5432 in remote_ports
         assert 6379 in remote_ports
 
-    @patch("infrasim.discovery.scanner.psutil")
+    @patch("faultray.discovery.scanner.psutil")
     def test_skips_no_raddr(self, mock_psutil):
         mock_psutil.net_connections.return_value = [
             _fake_conn("ESTABLISHED", "10.0.0.1", 45678, raddr=None, pid=100),
@@ -253,7 +253,7 @@ class TestScanEstablishedConnections:
         connections = scan_established_connections()
         assert len(connections) == 0
 
-    @patch("infrasim.discovery.scanner.psutil")
+    @patch("faultray.discovery.scanner.psutil")
     def test_deduplicates_connections(self, mock_psutil):
         mock_psutil.net_connections.return_value = [
             _fake_conn("ESTABLISHED", "10.0.0.1", 45678, raddr=("10.0.0.2", 5432), pid=100),
@@ -272,7 +272,7 @@ class TestScanEstablishedConnections:
 class TestScanSystemMetrics:
     """Tests for scan_system_metrics() with mocked psutil."""
 
-    @patch("infrasim.discovery.scanner.psutil")
+    @patch("faultray.discovery.scanner.psutil")
     def test_returns_resource_metrics(self, mock_psutil):
         mock_psutil.cpu_percent.return_value = 35.5
         mock_psutil.virtual_memory.return_value = MagicMock(
@@ -304,10 +304,10 @@ class TestScanSystemMetrics:
 class TestScanLocal:
     """Tests for scan_local() with fully mocked psutil."""
 
-    @patch("infrasim.discovery.scanner.scan_established_connections")
-    @patch("infrasim.discovery.scanner.scan_system_metrics")
-    @patch("infrasim.discovery.scanner.scan_listening_services")
-    @patch("infrasim.discovery.scanner.socket")
+    @patch("faultray.discovery.scanner.scan_established_connections")
+    @patch("faultray.discovery.scanner.scan_system_metrics")
+    @patch("faultray.discovery.scanner.scan_listening_services")
+    @patch("faultray.discovery.scanner.socket")
     def test_scan_local_builds_graph(
         self, mock_socket, mock_listening, mock_metrics, mock_established,
     ):
@@ -364,10 +364,10 @@ class TestScanLocal:
         assert pg_id in dep_ids
         assert redis_id in dep_ids
 
-    @patch("infrasim.discovery.scanner.scan_established_connections")
-    @patch("infrasim.discovery.scanner.scan_system_metrics")
-    @patch("infrasim.discovery.scanner.scan_listening_services")
-    @patch("infrasim.discovery.scanner.socket")
+    @patch("faultray.discovery.scanner.scan_established_connections")
+    @patch("faultray.discovery.scanner.scan_system_metrics")
+    @patch("faultray.discovery.scanner.scan_listening_services")
+    @patch("faultray.discovery.scanner.socket")
     def test_scan_local_custom_hostname(
         self, mock_socket, mock_listening, mock_metrics, mock_established,
     ):
@@ -393,10 +393,10 @@ class TestScanLocal:
         assert comp is not None
         assert comp.host == "myserver"
 
-    @patch("infrasim.discovery.scanner.scan_established_connections")
-    @patch("infrasim.discovery.scanner.scan_system_metrics")
-    @patch("infrasim.discovery.scanner.scan_listening_services")
-    @patch("infrasim.discovery.scanner.socket")
+    @patch("faultray.discovery.scanner.scan_established_connections")
+    @patch("faultray.discovery.scanner.scan_system_metrics")
+    @patch("faultray.discovery.scanner.scan_listening_services")
+    @patch("faultray.discovery.scanner.socket")
     def test_scan_local_no_self_dependency(
         self, mock_socket, mock_listening, mock_metrics, mock_established,
     ):
@@ -421,10 +421,10 @@ class TestScanLocal:
         # Should not have a self-dependency
         assert all(d.id != comp_id for d in deps)
 
-    @patch("infrasim.discovery.scanner.scan_established_connections")
-    @patch("infrasim.discovery.scanner.scan_system_metrics")
-    @patch("infrasim.discovery.scanner.scan_listening_services")
-    @patch("infrasim.discovery.scanner.socket")
+    @patch("faultray.discovery.scanner.scan_established_connections")
+    @patch("faultray.discovery.scanner.scan_system_metrics")
+    @patch("faultray.discovery.scanner.scan_listening_services")
+    @patch("faultray.discovery.scanner.socket")
     def test_scan_local_empty(
         self, mock_socket, mock_listening, mock_metrics, mock_established,
     ):

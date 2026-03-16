@@ -12,8 +12,8 @@ from pathlib import Path
 
 import pytest
 
-from infrasim.model.demo import create_demo_graph
-from infrasim.model.graph import InfraGraph
+from faultray.model.demo import create_demo_graph
+from faultray.model.graph import InfraGraph
 
 
 # ---------------------------------------------------------------------------
@@ -27,7 +27,7 @@ def _demo_graph() -> InfraGraph:
 
 def _run_simulation(graph: InfraGraph):
     """Run a simulation and return the report."""
-    from infrasim.simulator.engine import SimulationEngine
+    from faultray.simulator.engine import SimulationEngine
 
     engine = SimulationEngine(graph)
     return engine.run_all_defaults()
@@ -39,7 +39,7 @@ def _run_simulation(graph: InfraGraph):
 
 class TestBacktestEngine:
     def test_backtest_basic(self):
-        from infrasim.simulator.backtest_engine import BacktestEngine, RealIncident
+        from faultray.simulator.backtest_engine import BacktestEngine, RealIncident
 
         graph = _demo_graph()
         engine = BacktestEngine(graph)
@@ -66,7 +66,7 @@ class TestBacktestEngine:
         assert isinstance(result.f1_score, float)
 
     def test_backtest_unknown_component(self):
-        from infrasim.simulator.backtest_engine import BacktestEngine, RealIncident
+        from faultray.simulator.backtest_engine import BacktestEngine, RealIncident
 
         graph = _demo_graph()
         engine = BacktestEngine(graph)
@@ -88,7 +88,7 @@ class TestBacktestEngine:
         assert results[0].details.get("skipped") is True
 
     def test_backtest_empty_incidents(self):
-        from infrasim.simulator.backtest_engine import BacktestEngine
+        from faultray.simulator.backtest_engine import BacktestEngine
 
         graph = _demo_graph()
         engine = BacktestEngine(graph)
@@ -96,7 +96,7 @@ class TestBacktestEngine:
         assert results == []
 
     def test_backtest_multiple_incidents(self):
-        from infrasim.simulator.backtest_engine import BacktestEngine, RealIncident
+        from faultray.simulator.backtest_engine import BacktestEngine, RealIncident
 
         graph = _demo_graph()
         engine = BacktestEngine(graph)
@@ -127,7 +127,7 @@ class TestBacktestEngine:
             assert 0.0 <= r.recall <= 1.0
 
     def test_backtest_perfect_prediction(self):
-        from infrasim.simulator.backtest_engine import BacktestEngine, RealIncident
+        from faultray.simulator.backtest_engine import BacktestEngine, RealIncident
 
         graph = _demo_graph()
         engine = BacktestEngine(graph)
@@ -154,7 +154,7 @@ class TestBacktestEngine:
         assert results[0].recall == pytest.approx(1.0)
 
     def test_backtest_summary(self):
-        from infrasim.simulator.backtest_engine import BacktestEngine, RealIncident
+        from faultray.simulator.backtest_engine import BacktestEngine, RealIncident
 
         graph = _demo_graph()
         engine = BacktestEngine(graph)
@@ -180,7 +180,7 @@ class TestBacktestEngine:
         assert summary["results"][0]["incident_id"] == "INC-S1"
 
     def test_backtest_summary_empty(self):
-        from infrasim.simulator.backtest_engine import BacktestEngine
+        from faultray.simulator.backtest_engine import BacktestEngine
 
         graph = _demo_graph()
         engine = BacktestEngine(graph)
@@ -189,7 +189,7 @@ class TestBacktestEngine:
         assert summary["avg_f1"] == 0.0
 
     def test_backtest_load_incidents(self, tmp_path):
-        from infrasim.simulator.backtest_engine import BacktestEngine, RealIncident
+        from faultray.simulator.backtest_engine import BacktestEngine, RealIncident
 
         data = [
             {
@@ -215,7 +215,7 @@ class TestBacktestEngine:
 
 class TestFinancialRiskEngine:
     def test_analyze_basic(self):
-        from infrasim.simulator.financial_risk import FinancialRiskEngine
+        from faultray.simulator.financial_risk import FinancialRiskEngine
 
         graph = _demo_graph()
         report = _run_simulation(graph)
@@ -229,7 +229,7 @@ class TestFinancialRiskEngine:
         assert result.annual_revenue_usd > 0
 
     def test_analyze_with_custom_revenue(self):
-        from infrasim.simulator.financial_risk import FinancialRiskEngine
+        from faultray.simulator.financial_risk import FinancialRiskEngine
 
         graph = _demo_graph()
         report = _run_simulation(graph)
@@ -240,7 +240,7 @@ class TestFinancialRiskEngine:
         assert result.expected_annual_loss >= 0
 
     def test_analyze_to_dict(self):
-        from infrasim.simulator.financial_risk import FinancialRiskEngine
+        from faultray.simulator.financial_risk import FinancialRiskEngine
 
         graph = _demo_graph()
         report = _run_simulation(graph)
@@ -255,7 +255,7 @@ class TestFinancialRiskEngine:
         assert isinstance(d["scenarios"], list)
 
     def test_analyze_scenarios_populated(self):
-        from infrasim.simulator.financial_risk import FinancialRiskEngine
+        from faultray.simulator.financial_risk import FinancialRiskEngine
 
         graph = _demo_graph()
         report = _run_simulation(graph)
@@ -271,7 +271,7 @@ class TestFinancialRiskEngine:
                 assert isinstance(s.business_loss_usd, float)
 
     def test_analyze_zero_revenue(self):
-        from infrasim.simulator.financial_risk import FinancialRiskEngine
+        from faultray.simulator.financial_risk import FinancialRiskEngine
 
         graph = _demo_graph()
         report = _run_simulation(graph)
@@ -289,7 +289,7 @@ class TestFinancialRiskEngine:
 
 class TestCarbonEngine:
     def test_analyze_basic(self):
-        from infrasim.simulator.carbon_engine import CarbonEngine
+        from faultray.simulator.carbon_engine import CarbonEngine
 
         graph = _demo_graph()
         engine = CarbonEngine(graph)
@@ -301,7 +301,7 @@ class TestCarbonEngine:
         assert len(result.per_component) > 0
 
     def test_analyze_car_equivalent(self):
-        from infrasim.simulator.carbon_engine import CarbonEngine
+        from faultray.simulator.carbon_engine import CarbonEngine
 
         graph = _demo_graph()
         engine = CarbonEngine(graph)
@@ -311,7 +311,7 @@ class TestCarbonEngine:
         assert result.equivalent_car_km >= 0
 
     def test_analyze_sustainability_score(self):
-        from infrasim.simulator.carbon_engine import CarbonEngine
+        from faultray.simulator.carbon_engine import CarbonEngine
 
         graph = _demo_graph()
         engine = CarbonEngine(graph)
@@ -321,7 +321,7 @@ class TestCarbonEngine:
         assert 0 <= result.sustainability_score <= 100
 
     def test_analyze_recommendations(self):
-        from infrasim.simulator.carbon_engine import CarbonEngine
+        from faultray.simulator.carbon_engine import CarbonEngine
 
         graph = _demo_graph()
         engine = CarbonEngine(graph)
@@ -330,7 +330,7 @@ class TestCarbonEngine:
         assert isinstance(result.green_recommendations, list)
 
     def test_analyze_to_dict(self):
-        from infrasim.simulator.carbon_engine import CarbonEngine
+        from faultray.simulator.carbon_engine import CarbonEngine
 
         graph = _demo_graph()
         engine = CarbonEngine(graph)
@@ -343,7 +343,7 @@ class TestCarbonEngine:
         assert "sustainability_score" in d
 
     def test_analyze_empty_graph(self):
-        from infrasim.simulator.carbon_engine import CarbonEngine
+        from faultray.simulator.carbon_engine import CarbonEngine
 
         graph = InfraGraph()
         engine = CarbonEngine(graph)
@@ -359,7 +359,7 @@ class TestCarbonEngine:
 
 class TestChangeVelocityAnalyzer:
     def test_analyze_defaults(self):
-        from infrasim.simulator.change_velocity import ChangeVelocityAnalyzer
+        from faultray.simulator.change_velocity import ChangeVelocityAnalyzer
 
         graph = _demo_graph()
         analyzer = ChangeVelocityAnalyzer(graph)
@@ -371,7 +371,7 @@ class TestChangeVelocityAnalyzer:
         assert isinstance(result.optimal_deploy_frequency, (int, float))
 
     def test_analyze_elite_profile(self):
-        from infrasim.simulator.change_velocity import ChangeVelocityAnalyzer
+        from faultray.simulator.change_velocity import ChangeVelocityAnalyzer
 
         graph = _demo_graph()
         analyzer = ChangeVelocityAnalyzer(graph)
@@ -385,7 +385,7 @@ class TestChangeVelocityAnalyzer:
         assert result.dora_classification == "Elite"
 
     def test_analyze_low_profile(self):
-        from infrasim.simulator.change_velocity import ChangeVelocityAnalyzer
+        from faultray.simulator.change_velocity import ChangeVelocityAnalyzer
 
         graph = _demo_graph()
         analyzer = ChangeVelocityAnalyzer(graph)
@@ -399,7 +399,7 @@ class TestChangeVelocityAnalyzer:
         assert result.dora_classification == "Low"
 
     def test_analyze_recommendations(self):
-        from infrasim.simulator.change_velocity import ChangeVelocityAnalyzer
+        from faultray.simulator.change_velocity import ChangeVelocityAnalyzer
 
         graph = _demo_graph()
         analyzer = ChangeVelocityAnalyzer(graph)
@@ -408,7 +408,7 @@ class TestChangeVelocityAnalyzer:
         assert isinstance(result.recommendations, list)
 
     def test_analyze_dora_scores(self):
-        from infrasim.simulator.change_velocity import ChangeVelocityAnalyzer
+        from faultray.simulator.change_velocity import ChangeVelocityAnalyzer
 
         graph = _demo_graph()
         analyzer = ChangeVelocityAnalyzer(graph)
@@ -417,7 +417,7 @@ class TestChangeVelocityAnalyzer:
         assert isinstance(result.dora_scores, dict)
 
     def test_analyze_downtime_estimate(self):
-        from infrasim.simulator.change_velocity import ChangeVelocityAnalyzer
+        from faultray.simulator.change_velocity import ChangeVelocityAnalyzer
 
         graph = _demo_graph()
         analyzer = ChangeVelocityAnalyzer(graph)
@@ -427,7 +427,7 @@ class TestChangeVelocityAnalyzer:
         assert result.estimated_downtime_minutes_per_week >= 0
 
     def test_analyze_empty_graph(self):
-        from infrasim.simulator.change_velocity import ChangeVelocityAnalyzer
+        from faultray.simulator.change_velocity import ChangeVelocityAnalyzer
 
         graph = InfraGraph()
         analyzer = ChangeVelocityAnalyzer(graph)
@@ -442,7 +442,7 @@ class TestChangeVelocityAnalyzer:
 
 class TestFailureBudgetAllocator:
     def test_allocate_basic(self):
-        from infrasim.simulator.failure_budget import FailureBudgetAllocator
+        from faultray.simulator.failure_budget import FailureBudgetAllocator
 
         graph = _demo_graph()
         allocator = FailureBudgetAllocator(graph)
@@ -453,7 +453,7 @@ class TestFailureBudgetAllocator:
         assert len(report.allocations) == len(graph.components)
 
     def test_allocate_slo_target(self):
-        from infrasim.simulator.failure_budget import FailureBudgetAllocator
+        from faultray.simulator.failure_budget import FailureBudgetAllocator
 
         graph = _demo_graph()
         allocator = FailureBudgetAllocator(graph, slo_target=99.99)
@@ -466,7 +466,7 @@ class TestFailureBudgetAllocator:
         assert report.total_budget_minutes < report2.total_budget_minutes
 
     def test_allocate_window_days(self):
-        from infrasim.simulator.failure_budget import FailureBudgetAllocator
+        from faultray.simulator.failure_budget import FailureBudgetAllocator
 
         graph = _demo_graph()
         allocator = FailureBudgetAllocator(graph, window_days=7)
@@ -476,7 +476,7 @@ class TestFailureBudgetAllocator:
         assert report.total_budget_minutes > 0
 
     def test_allocate_has_service_fields(self):
-        from infrasim.simulator.failure_budget import FailureBudgetAllocator
+        from faultray.simulator.failure_budget import FailureBudgetAllocator
 
         graph = _demo_graph()
         allocator = FailureBudgetAllocator(graph)
@@ -490,7 +490,7 @@ class TestFailureBudgetAllocator:
             assert isinstance(alloc.risk_weight, float)
 
     def test_allocate_empty_graph(self):
-        from infrasim.simulator.failure_budget import FailureBudgetAllocator
+        from faultray.simulator.failure_budget import FailureBudgetAllocator
 
         graph = InfraGraph()
         allocator = FailureBudgetAllocator(graph)
@@ -500,7 +500,7 @@ class TestFailureBudgetAllocator:
         assert len(report.allocations) == 0
 
     def test_allocate_budgets_sum_to_total(self):
-        from infrasim.simulator.failure_budget import FailureBudgetAllocator
+        from faultray.simulator.failure_budget import FailureBudgetAllocator
 
         graph = _demo_graph()
         allocator = FailureBudgetAllocator(graph)
@@ -510,7 +510,7 @@ class TestFailureBudgetAllocator:
         assert total_allocated == pytest.approx(report.total_budget_minutes, rel=0.01)
 
     def test_allocate_rebalance_suggestions(self):
-        from infrasim.simulator.failure_budget import FailureBudgetAllocator
+        from faultray.simulator.failure_budget import FailureBudgetAllocator
 
         graph = _demo_graph()
         allocator = FailureBudgetAllocator(graph)
@@ -527,7 +527,7 @@ class TestFailureBudgetAllocator:
 
 class TestCostOptimizer:
     def test_optimize_basic(self):
-        from infrasim.simulator.cost_optimizer import CostOptimizer
+        from faultray.simulator.cost_optimizer import CostOptimizer
 
         graph = _demo_graph()
         optimizer = CostOptimizer(graph)
@@ -539,7 +539,7 @@ class TestCostOptimizer:
         assert isinstance(report.savings_percent, (int, float))
 
     def test_optimize_resilience_scores(self):
-        from infrasim.simulator.cost_optimizer import CostOptimizer
+        from faultray.simulator.cost_optimizer import CostOptimizer
 
         graph = _demo_graph()
         optimizer = CostOptimizer(graph)
@@ -549,7 +549,7 @@ class TestCostOptimizer:
         assert isinstance(report.resilience_after, float)
 
     def test_optimize_suggestions(self):
-        from infrasim.simulator.cost_optimizer import CostOptimizer
+        from faultray.simulator.cost_optimizer import CostOptimizer
 
         graph = _demo_graph()
         optimizer = CostOptimizer(graph)
@@ -563,7 +563,7 @@ class TestCostOptimizer:
             assert isinstance(s.risk_level, str)
 
     def test_optimize_min_score(self):
-        from infrasim.simulator.cost_optimizer import CostOptimizer
+        from faultray.simulator.cost_optimizer import CostOptimizer
 
         graph = _demo_graph()
         optimizer = CostOptimizer(graph, min_resilience_score=90.0)
@@ -573,7 +573,7 @@ class TestCostOptimizer:
         assert report.resilience_after >= 0  # may not always reach target
 
     def test_optimize_empty_graph(self):
-        from infrasim.simulator.cost_optimizer import CostOptimizer
+        from faultray.simulator.cost_optimizer import CostOptimizer
 
         graph = InfraGraph()
         optimizer = CostOptimizer(graph)
@@ -589,7 +589,7 @@ class TestCostOptimizer:
 
 class TestWarRoomSimulator:
     def test_simulate_database_outage(self):
-        from infrasim.simulator.war_room import WarRoomSimulator
+        from faultray.simulator.war_room import WarRoomSimulator
 
         graph = _demo_graph()
         sim = WarRoomSimulator(graph)
@@ -603,7 +603,7 @@ class TestWarRoomSimulator:
         assert isinstance(report.time_to_recover_minutes, float)
 
     def test_simulate_network_partition(self):
-        from infrasim.simulator.war_room import WarRoomSimulator
+        from faultray.simulator.war_room import WarRoomSimulator
 
         graph = _demo_graph()
         sim = WarRoomSimulator(graph)
@@ -613,7 +613,7 @@ class TestWarRoomSimulator:
         assert report.total_duration_minutes > 0
 
     def test_simulate_ddos_attack(self):
-        from infrasim.simulator.war_room import WarRoomSimulator
+        from faultray.simulator.war_room import WarRoomSimulator
 
         graph = _demo_graph()
         sim = WarRoomSimulator(graph)
@@ -623,7 +623,7 @@ class TestWarRoomSimulator:
         assert len(report.phases) > 0
 
     def test_simulate_cascading_failure(self):
-        from infrasim.simulator.war_room import WarRoomSimulator
+        from faultray.simulator.war_room import WarRoomSimulator
 
         graph = _demo_graph()
         sim = WarRoomSimulator(graph)
@@ -632,7 +632,7 @@ class TestWarRoomSimulator:
         assert len(report.phases) > 0
 
     def test_simulate_has_phases(self):
-        from infrasim.simulator.war_room import WarRoomSimulator
+        from faultray.simulator.war_room import WarRoomSimulator
 
         graph = _demo_graph()
         sim = WarRoomSimulator(graph)
@@ -644,7 +644,7 @@ class TestWarRoomSimulator:
             assert isinstance(phase.duration_minutes, float)
 
     def test_simulate_has_events(self):
-        from infrasim.simulator.war_room import WarRoomSimulator
+        from faultray.simulator.war_room import WarRoomSimulator
 
         graph = _demo_graph()
         sim = WarRoomSimulator(graph)
@@ -656,7 +656,7 @@ class TestWarRoomSimulator:
             assert isinstance(event.description, str)
 
     def test_simulate_has_lessons(self):
-        from infrasim.simulator.war_room import WarRoomSimulator
+        from faultray.simulator.war_room import WarRoomSimulator
 
         graph = _demo_graph()
         sim = WarRoomSimulator(graph)
@@ -665,7 +665,7 @@ class TestWarRoomSimulator:
         assert isinstance(report.lessons_learned, list)
 
     def test_simulate_score(self):
-        from infrasim.simulator.war_room import WarRoomSimulator
+        from faultray.simulator.war_room import WarRoomSimulator
 
         graph = _demo_graph()
         sim = WarRoomSimulator(graph)
@@ -675,7 +675,7 @@ class TestWarRoomSimulator:
         assert 0 <= report.score <= 100
 
     def test_available_incidents(self):
-        from infrasim.simulator.war_room import WarRoomSimulator
+        from faultray.simulator.war_room import WarRoomSimulator
 
         graph = _demo_graph()
         sim = WarRoomSimulator(graph)
@@ -686,7 +686,7 @@ class TestWarRoomSimulator:
         assert "database_outage" in incidents
 
     def test_simulate_with_team_size(self):
-        from infrasim.simulator.war_room import WarRoomSimulator
+        from faultray.simulator.war_room import WarRoomSimulator
 
         graph = _demo_graph()
         sim = WarRoomSimulator(graph)
@@ -698,7 +698,7 @@ class TestWarRoomSimulator:
         assert report_large.total_duration_minutes > 0
 
     def test_simulate_security_breach(self):
-        from infrasim.simulator.war_room import WarRoomSimulator
+        from faultray.simulator.war_room import WarRoomSimulator
 
         graph = _demo_graph()
         sim = WarRoomSimulator(graph)
@@ -707,7 +707,7 @@ class TestWarRoomSimulator:
         assert report.total_duration_minutes > 0
 
     def test_simulate_deployment_rollback(self):
-        from infrasim.simulator.war_room import WarRoomSimulator
+        from faultray.simulator.war_room import WarRoomSimulator
 
         graph = _demo_graph()
         sim = WarRoomSimulator(graph)
@@ -716,7 +716,7 @@ class TestWarRoomSimulator:
         assert report.total_duration_minutes > 0
 
     def test_simulate_data_corruption(self):
-        from infrasim.simulator.war_room import WarRoomSimulator
+        from faultray.simulator.war_room import WarRoomSimulator
 
         graph = _demo_graph()
         sim = WarRoomSimulator(graph)
@@ -725,7 +725,7 @@ class TestWarRoomSimulator:
         assert report.total_duration_minutes > 0
 
     def test_simulate_cloud_region_failure(self):
-        from infrasim.simulator.war_room import WarRoomSimulator
+        from faultray.simulator.war_room import WarRoomSimulator
 
         graph = _demo_graph()
         sim = WarRoomSimulator(graph)
@@ -740,7 +740,7 @@ class TestWarRoomSimulator:
 
 class TestEnvironmentComparator:
     def test_compare_two_environments(self):
-        from infrasim.simulator.env_comparator import EnvironmentComparator
+        from faultray.simulator.env_comparator import EnvironmentComparator
 
         g1 = _demo_graph()
         g2 = _demo_graph()
@@ -751,7 +751,7 @@ class TestEnvironmentComparator:
         assert len(result.environments) == 2
 
     def test_compare_profile_fields(self):
-        from infrasim.simulator.env_comparator import EnvironmentComparator
+        from faultray.simulator.env_comparator import EnvironmentComparator
 
         g1 = _demo_graph()
         g2 = _demo_graph()
@@ -766,7 +766,7 @@ class TestEnvironmentComparator:
             assert isinstance(env.component_count, int)
 
     def test_compare_identical_environments(self):
-        from infrasim.simulator.env_comparator import EnvironmentComparator
+        from faultray.simulator.env_comparator import EnvironmentComparator
 
         g1 = _demo_graph()
         g2 = _demo_graph()
@@ -777,7 +777,7 @@ class TestEnvironmentComparator:
         assert result.parity_score >= 80
 
     def test_compare_drift_detection(self):
-        from infrasim.simulator.env_comparator import EnvironmentComparator
+        from faultray.simulator.env_comparator import EnvironmentComparator
 
         g1 = _demo_graph()
         g2 = InfraGraph()  # empty graph = very different
@@ -788,7 +788,7 @@ class TestEnvironmentComparator:
         assert isinstance(result.drift_details, list)
 
     def test_compare_recommendations(self):
-        from infrasim.simulator.env_comparator import EnvironmentComparator
+        from faultray.simulator.env_comparator import EnvironmentComparator
 
         g1 = _demo_graph()
         g2 = _demo_graph()
@@ -798,7 +798,7 @@ class TestEnvironmentComparator:
         assert isinstance(result.recommendations, list)
 
     def test_compare_single_env_returns_empty(self):
-        from infrasim.simulator.env_comparator import EnvironmentComparator
+        from faultray.simulator.env_comparator import EnvironmentComparator
 
         g1 = _demo_graph()
         comp = EnvironmentComparator()
@@ -807,7 +807,7 @@ class TestEnvironmentComparator:
         assert len(result.environments) == 0
 
     def test_compare_three_environments(self):
-        from infrasim.simulator.env_comparator import EnvironmentComparator
+        from faultray.simulator.env_comparator import EnvironmentComparator
 
         g1 = _demo_graph()
         g2 = _demo_graph()
@@ -825,7 +825,7 @@ class TestEnvironmentComparator:
 
 class TestSimulationEngineExtra:
     def test_run_all_defaults(self):
-        from infrasim.simulator.engine import SimulationEngine
+        from faultray.simulator.engine import SimulationEngine
 
         graph = _demo_graph()
         engine = SimulationEngine(graph)
@@ -838,7 +838,7 @@ class TestSimulationEngineExtra:
         assert isinstance(report.passed, list)
 
     def test_empty_graph_simulation(self):
-        from infrasim.simulator.engine import SimulationEngine
+        from faultray.simulator.engine import SimulationEngine
 
         graph = InfraGraph()
         engine = SimulationEngine(graph)
@@ -853,7 +853,7 @@ class TestSimulationEngineExtra:
 
 class TestRemediationPlanner:
     def test_plan_basic(self):
-        from infrasim.simulator.planner import RemediationPlanner
+        from faultray.simulator.planner import RemediationPlanner
 
         graph = _demo_graph()
         planner = RemediationPlanner(graph)
@@ -865,7 +865,7 @@ class TestRemediationPlanner:
         assert isinstance(plan.total_budget, (int, float))
 
     def test_plan_to_dict(self):
-        from infrasim.simulator.planner import RemediationPlanner
+        from faultray.simulator.planner import RemediationPlanner
 
         graph = _demo_graph()
         planner = RemediationPlanner(graph)
@@ -877,7 +877,7 @@ class TestRemediationPlanner:
         assert "phases" in d
 
     def test_plan_with_budget(self):
-        from infrasim.simulator.planner import RemediationPlanner
+        from faultray.simulator.planner import RemediationPlanner
 
         graph = _demo_graph()
         planner = RemediationPlanner(graph)

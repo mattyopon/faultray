@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import pytest
 
-from infrasim.i18n import MESSAGES, available_languages, get_language, set_language, t
+from faultray.i18n import MESSAGES, available_languages, get_language, set_language, t
 
 
 @pytest.fixture(autouse=True)

@@ -7,7 +7,7 @@ from datetime import timedelta
 
 import pytest
 
-from infrasim.model.components import (
+from faultray.model.components import (
     AutoScalingConfig,
     Component,
     ComponentType,
@@ -16,8 +16,8 @@ from infrasim.model.components import (
     FailoverConfig,
     OperationalProfile,
 )
-from infrasim.model.graph import InfraGraph
-from infrasim.simulator.sla_validator import (
+from faultray.model.graph import InfraGraph
+from faultray.simulator.sla_validator import (
     COMPONENT_AVAILABILITY,
     PenaltyTier,
     SLAImprovement,

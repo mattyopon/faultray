@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import pytest
 
-from infrasim.model.components import (
+from faultray.model.components import (
     CircuitBreakerConfig,
     Component,
     ComponentType,
@@ -12,8 +12,8 @@ from infrasim.model.components import (
     FailoverConfig,
     SecurityProfile,
 )
-from infrasim.model.graph import InfraGraph
-from infrasim.simulator.attack_surface import (
+from faultray.model.graph import InfraGraph
+from faultray.simulator.attack_surface import (
     AttackChain,
     AttackSurfaceAnalyzer,
     AttackSurfaceReport,
@@ -420,7 +420,7 @@ class TestFullAnalysis:
 
     def test_classify_difficulty_fallback(self):
         """Test line 234: _classify_difficulty returns 'very_hard' for barrier count beyond thresholds."""
-        from infrasim.simulator.attack_surface import _classify_difficulty
+        from faultray.simulator.attack_surface import _classify_difficulty
         assert _classify_difficulty(999) == "very_hard"
         assert _classify_difficulty(1000) == "very_hard"
 

@@ -4,15 +4,15 @@ from __future__ import annotations
 
 import pytest
 
-from infrasim.model.components import (
+from faultray.model.components import (
     AutoScalingConfig,
     Component,
     ComponentType,
     Dependency,
     FailoverConfig,
 )
-from infrasim.model.graph import InfraGraph
-from infrasim.remediation.iac_exporter import (
+from faultray.model.graph import InfraGraph
+from faultray.remediation.iac_exporter import (
     IaCExporter,
     IaCExportResult,
     IaCFormat,

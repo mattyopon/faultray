@@ -6,9 +6,9 @@ from datetime import datetime, timedelta
 
 import pytest
 
-from infrasim.model.components import Component, ComponentType, Dependency, HealthStatus
-from infrasim.model.graph import InfraGraph
-from infrasim.simulator.alert_correlator import (
+from faultray.model.components import Component, ComponentType, Dependency, HealthStatus
+from faultray.model.graph import InfraGraph
+from faultray.simulator.alert_correlator import (
     Alert,
     AlertCluster,
     AlertCorrelator,

@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import pytest
 
-from infrasim.model.components import (
+from faultray.model.components import (
     Component,
     ComponentType,
     FailoverConfig,
@@ -14,8 +14,8 @@ from infrasim.model.components import (
     Capacity,
     Dependency,
 )
-from infrasim.model.graph import InfraGraph
-from infrasim.simulator.chaos_recommender import (
+from faultray.model.graph import InfraGraph
+from faultray.simulator.chaos_recommender import (
     ChaosExperiment,
     ChaosRecommender,
     Confidence,

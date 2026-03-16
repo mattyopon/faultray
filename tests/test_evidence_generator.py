@@ -8,7 +8,7 @@ from pathlib import Path
 
 import pytest
 
-from infrasim.model.components import (
+from faultray.model.components import (
     AutoScalingConfig,
     Component,
     ComponentType,
@@ -19,8 +19,8 @@ from infrasim.model.components import (
     ResourceMetrics,
     SecurityProfile,
 )
-from infrasim.model.graph import InfraGraph
-from infrasim.reporter.evidence_generator import (
+from faultray.model.graph import InfraGraph
+from faultray.reporter.evidence_generator import (
     CONTROL_MAPPINGS,
     EvidenceGenerator,
     EvidenceItem,

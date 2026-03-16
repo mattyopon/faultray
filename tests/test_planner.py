@@ -6,7 +6,7 @@ import math
 
 import pytest
 
-from infrasim.model.components import (
+from faultray.model.components import (
     AutoScalingConfig,
     Capacity,
     CircuitBreakerConfig,
@@ -18,8 +18,8 @@ from infrasim.model.components import (
     ResourceMetrics,
     SecurityProfile,
 )
-from infrasim.model.graph import InfraGraph
-from infrasim.simulator.planner import (
+from faultray.model.graph import InfraGraph
+from faultray.simulator.planner import (
     TASK_ESTIMATES,
     PlanTask,
     RemediationPhase,

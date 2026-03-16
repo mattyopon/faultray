@@ -3,7 +3,7 @@ from __future__ import annotations
 
 import pytest
 
-from infrasim.model.components import (
+from faultray.model.components import (
     AutoScalingConfig,
     CircuitBreakerConfig,
     Component,
@@ -12,7 +12,7 @@ from infrasim.model.components import (
     FailoverConfig,
     ResourceMetrics,
 )
-from infrasim.model.graph import InfraGraph
+from faultray.model.graph import InfraGraph
 
 
 # ---------------------------------------------------------------------------

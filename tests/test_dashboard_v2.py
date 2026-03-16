@@ -5,15 +5,15 @@ from __future__ import annotations
 import pytest
 from fastapi.testclient import TestClient
 
-from infrasim.api.server import app, set_graph
-from infrasim.model.demo import create_demo_graph
-from infrasim.model.graph import InfraGraph
+from faultray.api.server import app, set_graph
+from faultray.model.demo import create_demo_graph
+from faultray.model.graph import InfraGraph
 
 
 @pytest.fixture(autouse=True)
 def _reset_graph():
     """Reset the server graph state, last report, and rate limiter before and after each test."""
-    import infrasim.api.server as _srv
+    import faultray.api.server as _srv
     set_graph(None)
     _srv._last_report = None
     _srv._rate_limiter.requests.clear()

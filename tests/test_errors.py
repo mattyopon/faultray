@@ -1,9 +1,9 @@
-"""Tests for the ChaosProof exception hierarchy."""
+"""Tests for the FaultRay exception hierarchy."""
 
 import pytest
 
-from infrasim.errors import (
-    ChaosProofError,
+from faultray.errors import (
+    FaultRayError,
     ComponentNotFoundError,
     ConfigurationError,
     ExternalServiceError,
@@ -14,7 +14,7 @@ from infrasim.errors import (
 
 
 class TestExceptionHierarchy:
-    """Verify all custom exceptions inherit from ChaosProofError."""
+    """Verify all custom exceptions inherit from FaultRayError."""
 
     @pytest.mark.parametrize(
         "exc_class",
@@ -27,13 +27,13 @@ class TestExceptionHierarchy:
             PluginError,
         ],
     )
-    def test_inherits_from_chaosproof_error(self, exc_class):
-        assert issubclass(exc_class, ChaosProofError)
+    def test_inherits_from_faultray_error(self, exc_class):
+        assert issubclass(exc_class, FaultRayError)
 
     @pytest.mark.parametrize(
         "exc_class",
         [
-            ChaosProofError,
+            FaultRayError,
             ComponentNotFoundError,
             ValidationError,
             ConfigurationError,
@@ -65,7 +65,7 @@ class TestBackwardCompatibility:
         assert issubclass(SimulationError, RuntimeError)
 
     def test_plugin_error_is_not_stdlib_subtype(self):
-        # PluginError only extends ChaosProofError, not a stdlib exception
+        # PluginError only extends FaultRayError, not a stdlib exception
         assert not issubclass(PluginError, ValueError)
         assert not issubclass(PluginError, KeyError)
         assert not issubclass(PluginError, RuntimeError)
@@ -74,8 +74,8 @@ class TestBackwardCompatibility:
 class TestExceptionMessages:
     """Verify exceptions preserve their messages."""
 
-    def test_chaosproof_error_message(self):
-        exc = ChaosProofError("base error")
+    def test_faultray_error_message(self):
+        exc = FaultRayError("base error")
         assert str(exc) == "base error"
 
     def test_component_not_found_error_message(self):
@@ -108,12 +108,12 @@ class TestIsinstanceChecks:
 
     def test_catch_specific_as_base(self):
         exc = ComponentNotFoundError("missing")
-        assert isinstance(exc, ChaosProofError)
+        assert isinstance(exc, FaultRayError)
         assert isinstance(exc, Exception)
 
     def test_catch_validation_as_base(self):
         exc = ValidationError("bad input")
-        assert isinstance(exc, ChaosProofError)
+        assert isinstance(exc, FaultRayError)
 
     def test_catch_validation_as_value_error(self):
         exc = ValidationError("bad input")
@@ -128,7 +128,7 @@ class TestIsinstanceChecks:
         assert isinstance(exc, RuntimeError)
 
     def test_base_is_not_subclass(self):
-        exc = ChaosProofError("generic")
+        exc = FaultRayError("generic")
         assert not isinstance(exc, ComponentNotFoundError)
         assert not isinstance(exc, ValidationError)
 
@@ -142,11 +142,11 @@ class TestRaiseAndCatch:
     """Verify raise/catch patterns work as expected."""
 
     def test_raise_component_not_found_catch_base(self):
-        with pytest.raises(ChaosProofError):
+        with pytest.raises(FaultRayError):
             raise ComponentNotFoundError("comp-123")
 
     def test_raise_validation_catch_base(self):
-        with pytest.raises(ChaosProofError):
+        with pytest.raises(FaultRayError):
             raise ValidationError("bad param")
 
     def test_raise_validation_catch_value_error(self):
@@ -158,7 +158,7 @@ class TestRaiseAndCatch:
             raise ExternalServiceError("timeout")
 
     def test_raise_external_service_catch_base(self):
-        with pytest.raises(ChaosProofError):
+        with pytest.raises(FaultRayError):
             raise ExternalServiceError("timeout")
 
     def test_raise_specific_catch_specific(self):

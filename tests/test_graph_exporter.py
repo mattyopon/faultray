@@ -6,7 +6,7 @@ import json
 
 import pytest
 
-from infrasim.model.components import (
+from faultray.model.components import (
     AutoScalingConfig,
     Component,
     ComponentType,
@@ -15,8 +15,8 @@ from infrasim.model.components import (
     HealthStatus,
     ResourceMetrics,
 )
-from infrasim.model.graph import InfraGraph
-from infrasim.reporter.graph_exporter import (
+from faultray.model.graph import InfraGraph
+from faultray.reporter.graph_exporter import (
     DiagramFormat,
     DiagramOptions,
     GraphExporter,

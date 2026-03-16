@@ -6,9 +6,9 @@ from datetime import datetime, timedelta, timezone
 
 import pytest
 
-from infrasim.model.components import Component, ComponentType, Dependency, HealthStatus
-from infrasim.model.graph import InfraGraph
-from infrasim.simulator.incident_timeline import (
+from faultray.model.components import Component, ComponentType, Dependency, HealthStatus
+from faultray.model.graph import InfraGraph
+from faultray.simulator.incident_timeline import (
     EventType,
     IncidentTimeline,
     IncidentTimelineBuilder,

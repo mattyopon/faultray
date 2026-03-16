@@ -8,7 +8,7 @@ from pathlib import Path
 import pytest
 import yaml
 
-from infrasim.contracts.engine import (
+from faultray.contracts.engine import (
     ContractEngine,
     ContractRule,
     ContractValidationResult,
@@ -16,7 +16,7 @@ from infrasim.contracts.engine import (
     ResilienceContract,
     _count_spofs,
 )
-from infrasim.model.components import (
+from faultray.model.components import (
     AutoScalingConfig,
     CircuitBreakerConfig,
     Component,
@@ -24,7 +24,7 @@ from infrasim.model.components import (
     Dependency,
     FailoverConfig,
 )
-from infrasim.model.graph import InfraGraph
+from faultray.model.graph import InfraGraph
 
 
 # ---------------------------------------------------------------------------
@@ -728,32 +728,32 @@ class TestCompareOperator:
     """Tests for the _compare helper function."""
 
     def test_compare_eq(self):
-        from infrasim.contracts.engine import _compare
+        from faultray.contracts.engine import _compare
         assert _compare(5.0, "==", 5.0) is True
         assert _compare(5.0, "==", 6.0) is False
 
     def test_compare_neq(self):
-        from infrasim.contracts.engine import _compare
+        from faultray.contracts.engine import _compare
         assert _compare(5.0, "!=", 6.0) is True
         assert _compare(5.0, "!=", 5.0) is False
 
     def test_compare_gt(self):
-        from infrasim.contracts.engine import _compare
+        from faultray.contracts.engine import _compare
         assert _compare(6.0, ">", 5.0) is True
         assert _compare(5.0, ">", 5.0) is False
 
     def test_compare_lt(self):
-        from infrasim.contracts.engine import _compare
+        from faultray.contracts.engine import _compare
         assert _compare(4.0, "<", 5.0) is True
         assert _compare(5.0, "<", 5.0) is False
 
     def test_compare_gte(self):
-        from infrasim.contracts.engine import _compare
+        from faultray.contracts.engine import _compare
         assert _compare(5.0, ">=", 5.0) is True
         assert _compare(4.0, ">=", 5.0) is False
 
     def test_compare_lte(self):
-        from infrasim.contracts.engine import _compare
+        from faultray.contracts.engine import _compare
         assert _compare(5.0, "<=", 5.0) is True
         assert _compare(6.0, "<=", 5.0) is False
 
@@ -1204,7 +1204,7 @@ class TestAdvancedRules:
 
     def test_compare_fallback_invalid_operator(self):
         """_compare with invalid operator returns False."""
-        from infrasim.contracts.engine import _compare
+        from faultray.contracts.engine import _compare
         assert _compare(5.0, "??", 5.0) is False
 
 

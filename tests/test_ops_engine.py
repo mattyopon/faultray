@@ -1,6 +1,6 @@
 """Tests for operational simulation engine."""
 
-from infrasim.model.components import (
+from faultray.model.components import (
     Capacity,
     Component,
     ComponentType,
@@ -10,15 +10,15 @@ from infrasim.model.components import (
     ResourceMetrics,
     SLOTarget,
 )
-from infrasim.model.graph import InfraGraph
-from infrasim.simulator.ops_engine import (
+from faultray.model.graph import InfraGraph
+from faultray.simulator.ops_engine import (
     OpsScenario,
     OpsSimulationEngine,
     OpsSimulationResult,
     SLOTracker,
     TimeUnit,
 )
-from infrasim.simulator.traffic import create_diurnal_weekly
+from faultray.simulator.traffic import create_diurnal_weekly
 
 
 def _build_ops_graph() -> InfraGraph:
@@ -220,7 +220,7 @@ def test_optional_dependency_propagation():
 
 def test_ops_default_time_unit_override():
     """run_default_ops_scenarios respects time_unit_override."""
-    from infrasim.model.demo import create_demo_graph
+    from faultray.model.demo import create_demo_graph
 
     graph = create_demo_graph()
     engine = OpsSimulationEngine(graph)
@@ -239,7 +239,7 @@ def test_time_unit_to_seconds():
 
 def test_slo_tracker_record_and_error_budget():
     """SLO tracker should record measurements and compute error budget status."""
-    from infrasim.simulator.ops_engine import _OpsComponentState
+    from faultray.simulator.ops_engine import _OpsComponentState
 
     graph = InfraGraph()
     graph.add_component(Component(
@@ -276,7 +276,7 @@ def test_slo_tracker_record_and_error_budget():
 
 def test_slo_tracker_latency_and_error_rate_violations():
     """SLO tracker should track latency and error_rate SLO violations."""
-    from infrasim.simulator.ops_engine import _OpsComponentState
+    from faultray.simulator.ops_engine import _OpsComponentState
 
     graph = InfraGraph()
     graph.add_component(Component(
@@ -311,8 +311,8 @@ def test_slo_tracker_latency_and_error_rate_violations():
 
 def test_slo_tracker_dependency_propagation():
     """SLO tracker should propagate downstream health via dependencies."""
-    from infrasim.simulator.ops_engine import _OpsComponentState
-    from infrasim.model.components import Dependency
+    from faultray.simulator.ops_engine import _OpsComponentState
+    from faultray.model.components import Dependency
 
     graph = InfraGraph()
     graph.add_component(Component(
@@ -349,8 +349,8 @@ def test_slo_tracker_dependency_propagation():
 
 def test_optional_dependency_propagation_degraded():
     """Optional dependency DOWN should only degrade (not down) the dependent."""
-    from infrasim.simulator.ops_engine import _OpsComponentState
-    from infrasim.model.components import Dependency
+    from faultray.simulator.ops_engine import _OpsComponentState
+    from faultray.model.components import Dependency
 
     graph = InfraGraph()
     graph.add_component(Component(
@@ -385,7 +385,7 @@ def test_optional_dependency_propagation_degraded():
 
 def test_ops_scenario_with_degradation():
     """Scenario with degradation enabled should produce degradation events."""
-    from infrasim.model.components import Dependency
+    from faultray.model.components import Dependency
 
     graph = InfraGraph()
     graph.add_component(Component(
@@ -429,7 +429,7 @@ def test_ops_scenario_with_degradation():
 
 def test_ops_scenario_with_maintenance():
     """Scenario with maintenance enabled should schedule maintenance events."""
-    from infrasim.model.components import Dependency
+    from faultray.model.components import Dependency
 
     graph = InfraGraph()
     graph.add_component(Component(
@@ -456,15 +456,15 @@ def test_ops_scenario_with_maintenance():
     result = engine.run_ops_scenario(scenario)
     assert isinstance(result, OpsSimulationResult)
     # Should have at least some maintenance events over 14 days
-    from infrasim.simulator.ops_engine import OpsEventType
+    from faultray.simulator.ops_engine import OpsEventType
     maint_events = [e for e in result.events if e.event_type == OpsEventType.MAINTENANCE]
     assert len(maint_events) > 0
 
 
 def test_ops_scenario_autoscaling():
     """Autoscaling should trigger during high-traffic periods."""
-    from infrasim.model.components import AutoScalingConfig, Dependency
-    from infrasim.simulator.traffic import create_growth_trend
+    from faultray.model.components import AutoScalingConfig, Dependency
+    from faultray.simulator.traffic import create_growth_trend
 
     graph = InfraGraph()
     graph.add_component(Component(
@@ -523,7 +523,7 @@ def test_slo_tracker_estimate_latency():
 
 def test_slo_tracker_tier_based_availability():
     """Tiered components should be treated as a single availability unit."""
-    from infrasim.simulator.ops_engine import _OpsComponentState
+    from faultray.simulator.ops_engine import _OpsComponentState
 
     graph = InfraGraph()
     # Create tiered components (same prefix, different numbers)
@@ -627,8 +627,8 @@ def test_ops_scenario_full_features():
 
 def test_degradation_oom_and_disk_full_events():
     """Test that degradation with small capacities generates OOM and disk-full events."""
-    from infrasim.model.components import DegradationConfig, Dependency
-    from infrasim.simulator.ops_engine import OpsEventType
+    from faultray.model.components import DegradationConfig, Dependency
+    from faultray.simulator.ops_engine import OpsEventType
 
     graph = InfraGraph()
     # Component with very small memory capacity and fast leak -> should OOM
@@ -682,8 +682,8 @@ def test_degradation_oom_and_disk_full_events():
 
 def test_degradation_no_type_defaults():
     """Component type not in _DEFAULT_DEGRADATION should use zero rates."""
-    from infrasim.model.components import Dependency
-    from infrasim.simulator.ops_engine import OpsEventType
+    from faultray.model.components import Dependency
+    from faultray.simulator.ops_engine import OpsEventType
 
     graph = InfraGraph()
     # CUSTOM type is not in _DEFAULT_DEGRADATION, so all rates should be 0
@@ -716,8 +716,8 @@ def test_degradation_no_type_defaults():
 
 def test_degradation_explicit_rates_override_defaults():
     """Explicitly set degradation rates should override type defaults."""
-    from infrasim.model.components import DegradationConfig
-    from infrasim.simulator.ops_engine import OpsEventType
+    from faultray.model.components import DegradationConfig
+    from faultray.simulator.ops_engine import OpsEventType
 
     graph = InfraGraph()
     # App server with explicit (non-zero) degradation rates
@@ -756,8 +756,8 @@ def test_degradation_explicit_rates_override_defaults():
 
 def test_slo_tracker_standalone_failover():
     """Standalone component with failover should get fractional availability impact."""
-    from infrasim.simulator.ops_engine import _OpsComponentState
-    from infrasim.model.components import FailoverConfig
+    from faultray.simulator.ops_engine import _OpsComponentState
+    from faultray.model.components import FailoverConfig
 
     graph = InfraGraph()
     graph.add_component(Component(
@@ -788,8 +788,8 @@ def test_slo_tracker_standalone_failover():
 
 def test_slo_tracker_multi_replica_failover():
     """Multi-replica component DOWN should have fractional availability impact."""
-    from infrasim.simulator.ops_engine import _OpsComponentState
-    from infrasim.model.components import FailoverConfig
+    from faultray.simulator.ops_engine import _OpsComponentState
+    from faultray.model.components import FailoverConfig
 
     graph = InfraGraph()
     graph.add_component(Component(
@@ -820,8 +820,8 @@ def test_slo_tracker_multi_replica_failover():
 
 def test_slo_tracker_micro_penalty_failover():
     """Micro-penalty from failover should reduce availability slightly."""
-    from infrasim.simulator.ops_engine import _OpsComponentState
-    from infrasim.model.components import FailoverConfig
+    from faultray.simulator.ops_engine import _OpsComponentState
+    from faultray.model.components import FailoverConfig
 
     graph = InfraGraph()
     graph.add_component(Component(
@@ -868,8 +868,8 @@ def test_slo_tracker_micro_penalty_failover():
 
 def test_tiered_components_all_down_with_failover():
     """All members of a real tier DOWN with failover should get fractional impact."""
-    from infrasim.simulator.ops_engine import _OpsComponentState
-    from infrasim.model.components import FailoverConfig
+    from faultray.simulator.ops_engine import _OpsComponentState
+    from faultray.model.components import FailoverConfig
 
     graph = InfraGraph()
     # Use IDs that match the tier regex: "web-1", "web-2" -> tier prefix "web"
@@ -918,7 +918,7 @@ def test_tiered_components_all_down_with_failover():
 
 def test_single_member_tier_becomes_standalone():
     """A single-member tier (matches regex but only 1 member) should move to standalone."""
-    from infrasim.simulator.ops_engine import _OpsComponentState
+    from faultray.simulator.ops_engine import _OpsComponentState
 
     graph = InfraGraph()
     # "cache-1" matches regex -> prefix "cache", but only one member -> standalone
@@ -955,8 +955,8 @@ def test_single_member_tier_becomes_standalone():
 
 def test_micro_penalty_with_history():
     """Micro-penalty calculation should use step_window from measurement history."""
-    from infrasim.simulator.ops_engine import _OpsComponentState
-    from infrasim.model.components import FailoverConfig
+    from faultray.simulator.ops_engine import _OpsComponentState
+    from faultray.model.components import FailoverConfig
 
     graph = InfraGraph()
     graph.add_component(Component(
@@ -997,8 +997,8 @@ def test_micro_penalty_with_history():
 
 def test_gc_pause_network_penalty():
     """GC pause frequency > 0 should contribute to network penalty."""
-    from infrasim.simulator.ops_engine import _OpsComponentState
-    from infrasim.model.components import RuntimeJitter
+    from faultray.simulator.ops_engine import _OpsComponentState
+    from faultray.model.components import RuntimeJitter
 
     graph = InfraGraph()
     graph.add_component(Component(
@@ -1029,7 +1029,7 @@ def test_gc_pause_network_penalty():
 
 def test_budget_consumed_single_violation():
     """_budget_consumed with single violation should use default 300s window."""
-    from infrasim.simulator.ops_engine import _OpsComponentState
+    from faultray.simulator.ops_engine import _OpsComponentState
 
     graph = InfraGraph()
     graph.add_component(Component(
@@ -1059,7 +1059,7 @@ def test_budget_consumed_single_violation():
 
 def test_burn_rate_100_percent_slo():
     """Burn rate with slo.target=100.0 should return inf for violations (allowed_ratio=0)."""
-    from infrasim.simulator.ops_engine import _OpsComponentState
+    from faultray.simulator.ops_engine import _OpsComponentState
 
     graph = InfraGraph()
     graph.add_component(Component(
@@ -1092,8 +1092,8 @@ def test_burn_rate_100_percent_slo():
 
 def test_graceful_restart_memory_degradation():
     """Memory leak reaching 80-99% should trigger graceful restart, not OOM."""
-    from infrasim.model.components import DegradationConfig
-    from infrasim.simulator.ops_engine import OpsEventType
+    from faultray.model.components import DegradationConfig
+    from faultray.simulator.ops_engine import OpsEventType
 
     graph = InfraGraph()
     # Slow leak rate with enough capacity to hit graceful restart threshold
@@ -1143,7 +1143,7 @@ def test_graceful_restart_memory_degradation():
 
 def test_default_mttr_fallback():
     """Component type not in _DEFAULT_MTTR_MINUTES should use 30.0 fallback."""
-    from infrasim.model.components import FailoverConfig
+    from faultray.model.components import FailoverConfig
 
     graph = InfraGraph()
     # CUSTOM type is not in _DEFAULT_MTTR_MINUTES

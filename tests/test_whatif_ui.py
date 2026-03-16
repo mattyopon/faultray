@@ -7,7 +7,7 @@ import json
 
 import pytest
 
-from infrasim.model.components import (
+from faultray.model.components import (
     AutoScalingConfig,
     Component,
     ComponentType,
@@ -15,7 +15,7 @@ from infrasim.model.components import (
     FailoverConfig,
     CircuitBreakerConfig,
 )
-from infrasim.model.graph import InfraGraph
+from faultray.model.graph import InfraGraph
 
 
 # ---------------------------------------------------------------------------
@@ -225,7 +225,7 @@ class TestAvailabilityEstimate:
     def test_estimate_availability_function(self):
         """Test the availability estimation helper."""
         # Import from server module
-        from infrasim.api.server import _estimate_availability
+        from faultray.api.server import _estimate_availability
 
         assert _estimate_availability(96) == "99.99"
         assert _estimate_availability(86) == "99.95"

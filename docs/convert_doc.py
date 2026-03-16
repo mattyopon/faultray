@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Convert InfraSim system document Markdown to formatted Word document."""
+"""Convert FaultRay system document Markdown to formatted Word document."""
 
 import re
 from pathlib import Path
@@ -11,8 +11,8 @@ from docx.enum.text import WD_ALIGN_PARAGRAPH
 from docx.oxml.ns import qn, nsdecls
 from docx.oxml import parse_xml
 
-INPUT_MD = Path(__file__).parent / "InfraSim_System_Document.md"
-OUTPUT_DOCX = Path(__file__).parent / "InfraSim_System_Document.docx"
+INPUT_MD = Path(__file__).parent / "FaultRay_System_Document.md"
+OUTPUT_DOCX = Path(__file__).parent / "FaultRay_System_Document.docx"
 
 # Theme colors
 NAVY = RGBColor(0x1A, 0x3C, 0x6E)

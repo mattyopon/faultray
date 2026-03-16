@@ -1,7 +1,7 @@
 """API contract tests — verify response shapes match expectations."""
 import pytest
 from httpx import AsyncClient, ASGITransport
-from infrasim.api.server import app as fastapi_app
+from faultray.api.server import app as fastapi_app
 
 
 @pytest.fixture

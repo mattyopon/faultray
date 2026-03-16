@@ -11,7 +11,7 @@ from fastapi.testclient import TestClient
 @pytest.fixture
 def client():
     """Create a test client for the FaultRay API."""
-    from infrasim.api.server import app
+    from faultray.api.server import app
     return TestClient(app, raise_server_exceptions=False)
 
 
@@ -74,10 +74,10 @@ class TestGetScoreAndStatus:
     """Test the internal score/status helper."""
 
     def test_no_infrastructure_returns_zero(self):
-        from infrasim.api.widget import _get_score_and_status
+        from faultray.api.widget import _get_score_and_status
 
-        with patch("infrasim.api.server._graph", None), \
-             patch("infrasim.api.server._last_report", None):
+        with patch("faultray.api.server._graph", None), \
+             patch("faultray.api.server._last_report", None):
             score, status, color = _get_score_and_status()
             assert score == 0.0
             assert status == "No infrastructure loaded"

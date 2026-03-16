@@ -8,7 +8,7 @@ from pathlib import Path
 
 import pytest
 
-from infrasim.sdk import FaultZero
+from faultray.sdk import FaultZero
 
 
 # ---------------------------------------------------------------------------
@@ -85,7 +85,7 @@ class TestFaultZeroConstruction:
         assert fz.component_count == 2
 
     def test_from_graph(self):
-        from infrasim.model.demo import create_demo_graph
+        from faultray.model.demo import create_demo_graph
 
         graph = create_demo_graph()
         fz = FaultZero(graph=graph)
@@ -122,7 +122,7 @@ class TestFaultZeroProperties:
         assert len(comps) == demo_fz.component_count
 
     def test_graph_property(self, demo_fz: FaultZero):
-        from infrasim.model.graph import InfraGraph
+        from faultray.model.graph import InfraGraph
 
         assert isinstance(demo_fz.graph, InfraGraph)
 
@@ -248,16 +248,16 @@ class TestFaultZeroRepr:
 
 
 # ---------------------------------------------------------------------------
-# Import test (from infrasim import FaultZero)
+# Import test (from faultray import FaultZero)
 # ---------------------------------------------------------------------------
 
 class TestFaultZeroImport:
     def test_import_from_package(self):
-        from infrasim import FaultZero as FZ
+        from faultray import FaultZero as FZ
 
         assert FZ is FaultZero
 
     def test_in_all(self):
-        import infrasim
+        import faultray
 
-        assert "FaultZero" in infrasim.__all__
+        assert "FaultZero" in faultray.__all__

@@ -10,7 +10,7 @@ import math
 
 import pytest
 
-from infrasim.model.components import (
+from faultray.model.components import (
     Capacity,
     Component,
     ComponentType,
@@ -18,8 +18,8 @@ from infrasim.model.components import (
     HealthStatus,
     ResourceMetrics,
 )
-from infrasim.model.graph import InfraGraph
-from infrasim.simulator.predictive_failure import (
+from faultray.model.graph import InfraGraph
+from faultray.simulator.predictive_failure import (
     FailurePattern,
     FailurePrediction,
     PatternMatch,
@@ -535,7 +535,7 @@ class TestPatternDetection:
 
     def test_dependency_chain_pattern(self):
         """Degraded component with >=2 dependents triggers DEPENDENCY_CHAIN."""
-        from infrasim.model.components import Dependency
+        from faultray.model.components import Dependency
 
         db = _comp("dc1", "DegradedDB", health=HealthStatus.DEGRADED, replicas=2, failover=True)
         app1 = _comp("dc2", "App1", replicas=2, failover=True)
@@ -549,7 +549,7 @@ class TestPatternDetection:
         assert FailurePattern.DEPENDENCY_CHAIN in pattern_types
 
     def test_dependency_chain_not_triggered_with_one_dependent(self):
-        from infrasim.model.components import Dependency
+        from faultray.model.components import Dependency
 
         db = _comp("dc4", "DegDB2", health=HealthStatus.DEGRADED, replicas=2, failover=True)
         app = _comp("dc5", "SingleApp", replicas=2, failover=True)
@@ -561,7 +561,7 @@ class TestPatternDetection:
         assert FailurePattern.DEPENDENCY_CHAIN not in pattern_types
 
     def test_dependency_chain_overloaded(self):
-        from infrasim.model.components import Dependency
+        from faultray.model.components import Dependency
 
         db = _comp("dc6", "OverDB", health=HealthStatus.OVERLOADED, replicas=2, failover=True)
         app1 = _comp("dc7", "A1", replicas=2, failover=True)
@@ -575,7 +575,7 @@ class TestPatternDetection:
         assert FailurePattern.DEPENDENCY_CHAIN in pattern_types
 
     def test_dependency_chain_down(self):
-        from infrasim.model.components import Dependency
+        from faultray.model.components import Dependency
 
         db = _comp("dc9", "DownDB", health=HealthStatus.DOWN, replicas=2, failover=True)
         app1 = _comp("dc10", "DA1", replicas=2, failover=True)

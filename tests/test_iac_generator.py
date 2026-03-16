@@ -7,7 +7,7 @@ from pathlib import Path
 
 import pytest
 
-from infrasim.model.components import (
+from faultray.model.components import (
     AutoScalingConfig,
     Component,
     ComponentType,
@@ -16,8 +16,8 @@ from infrasim.model.components import (
     RegionConfig,
     SecurityProfile,
 )
-from infrasim.model.graph import InfraGraph
-from infrasim.remediation.iac_generator import (
+from faultray.model.graph import InfraGraph
+from faultray.remediation.iac_generator import (
     IaCGenerator,
     RemediationFile,
     RemediationPlan,

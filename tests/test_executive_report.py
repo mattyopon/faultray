@@ -7,7 +7,7 @@ from pathlib import Path
 
 import pytest
 
-from infrasim.model.components import (
+from faultray.model.components import (
     ComplianceTags,
     Component,
     ComponentType,
@@ -17,8 +17,8 @@ from infrasim.model.components import (
     OperationalTeamConfig,
     SecurityProfile,
 )
-from infrasim.model.graph import InfraGraph
-from infrasim.reporter.executive_report import (
+from faultray.model.graph import InfraGraph
+from faultray.reporter.executive_report import (
     ExecutiveSummary,
     generate_executive_summary,
     render_executive_html,
@@ -112,7 +112,7 @@ class TestExecutiveSummaryGeneration:
         """Summary should incorporate static simulation results."""
         graph = _build_simple_graph()
 
-        from infrasim.simulator.engine import SimulationEngine
+        from faultray.simulator.engine import SimulationEngine
 
         engine = SimulationEngine(graph)
         static_report = engine.run_all_defaults()
@@ -125,8 +125,8 @@ class TestExecutiveSummaryGeneration:
         """Summary should include annual risk from cost report."""
         graph = _build_simple_graph()
 
-        from infrasim.simulator.cost_engine import CostImpactEngine
-        from infrasim.simulator.engine import SimulationEngine
+        from faultray.simulator.cost_engine import CostImpactEngine
+        from faultray.simulator.engine import SimulationEngine
 
         engine = SimulationEngine(graph)
         static_report = engine.run_all_defaults()
@@ -142,7 +142,7 @@ class TestExecutiveSummaryGeneration:
         """Summary should integrate compliance check results."""
         graph = _build_simple_graph()
 
-        from infrasim.simulator.compliance_engine import ComplianceEngine
+        from faultray.simulator.compliance_engine import ComplianceEngine
 
         compliance_engine = ComplianceEngine(graph)
         compliance_reports = compliance_engine.check_all()
@@ -175,7 +175,7 @@ class TestExecutiveSummaryGeneration:
         """Top risks should be populated from critical findings."""
         graph = _build_simple_graph()
 
-        from infrasim.simulator.engine import SimulationEngine
+        from faultray.simulator.engine import SimulationEngine
 
         engine = SimulationEngine(graph)
         static_report = engine.run_all_defaults()
@@ -440,7 +440,7 @@ class TestLoaderNewFields:
 
     def test_load_compliance_tags_from_yaml(self):
         """YAML with compliance_tags should populate correctly."""
-        from infrasim.model.loader import load_yaml
+        from faultray.model.loader import load_yaml
 
         path = _write_yaml("""
 components:
@@ -466,7 +466,7 @@ dependencies: []
 
     def test_load_team_from_yaml(self):
         """YAML with team config should populate correctly."""
-        from infrasim.model.loader import load_yaml
+        from faultray.model.loader import load_yaml
 
         path = _write_yaml("""
 components:
@@ -495,7 +495,7 @@ dependencies: []
 
     def test_load_security_from_yaml(self):
         """YAML with security fields should populate correctly."""
-        from infrasim.model.loader import load_yaml
+        from faultray.model.loader import load_yaml
 
         path = _write_yaml("""
 components:
@@ -520,7 +520,7 @@ dependencies: []
 
     def test_defaults_when_new_fields_omitted(self):
         """When new fields are omitted, defaults should be used."""
-        from infrasim.model.loader import load_yaml
+        from faultray.model.loader import load_yaml
 
         path = _write_yaml("""
 components:
@@ -540,7 +540,7 @@ dependencies: []
 
     def test_load_enhanced_cost_profile_from_yaml(self):
         """YAML with new cost_profile fields should populate correctly."""
-        from infrasim.model.loader import load_yaml
+        from faultray.model.loader import load_yaml
 
         path = _write_yaml("""
 components:
@@ -571,7 +571,7 @@ dependencies: []
 
     def test_load_all_new_fields_combined(self):
         """All new fields should load correctly when specified together."""
-        from infrasim.model.loader import load_yaml
+        from faultray.model.loader import load_yaml
 
         path = _write_yaml("""
 components:

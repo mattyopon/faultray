@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import pytest
 
-from infrasim.api.badge_generator import (
+from faultray.api.badge_generator import (
     BadgeGenerator,
     BadgeStyle,
     BadgeType,
@@ -14,14 +14,14 @@ from infrasim.api.badge_generator import (
     _score_to_grade,
     _spof_to_color,
 )
-from infrasim.model.components import (
+from faultray.model.components import (
     Component,
     ComponentType,
     Dependency,
     FailoverConfig,
     ResourceMetrics,
 )
-from infrasim.model.graph import InfraGraph
+from faultray.model.graph import InfraGraph
 
 
 # ---------------------------------------------------------------------------

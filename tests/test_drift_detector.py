@@ -8,7 +8,7 @@ from pathlib import Path
 
 import pytest
 
-from infrasim.model.components import (
+from faultray.model.components import (
     AutoScalingConfig,
     Capacity,
     CircuitBreakerConfig,
@@ -18,8 +18,8 @@ from infrasim.model.components import (
     FailoverConfig,
     SecurityProfile,
 )
-from infrasim.model.graph import InfraGraph
-from infrasim.simulator.drift_detector import (
+from faultray.model.graph import InfraGraph
+from faultray.simulator.drift_detector import (
     DriftBaseline,
     DriftDetector,
     DriftEvent,
@@ -1161,7 +1161,7 @@ class TestSerializeValueBranches:
 
     def test_serialize_non_serializable(self, detector: DriftDetector):
         """_serialize_value should str() non-standard types."""
-        from infrasim.simulator.drift_detector import _serialize_value
+        from faultray.simulator.drift_detector import _serialize_value
         result = _serialize_value(object())
         assert isinstance(result, str)
 

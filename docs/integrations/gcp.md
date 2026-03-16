@@ -50,7 +50,7 @@ faultray scan --provider gcp --project my-project-id --output gcp.json
 ## Example
 
 ```python
-from infrasim.scanners import GCPScanner
+from faultray.scanners import GCPScanner
 
 scanner = GCPScanner(project="my-project-id")
 graph = scanner.scan()

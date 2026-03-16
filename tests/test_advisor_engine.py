@@ -4,15 +4,15 @@ from __future__ import annotations
 
 import pytest
 
-from infrasim.model.components import (
+from faultray.model.components import (
     AutoScalingConfig,
     Component,
     ComponentType,
     Dependency,
     FailoverConfig,
 )
-from infrasim.model.graph import InfraGraph
-from infrasim.simulator.advisor_engine import (
+from faultray.model.graph import InfraGraph
+from faultray.simulator.advisor_engine import (
     AdvisorReport,
     ChaosAdvisorEngine,
     ChaosRecommendation,

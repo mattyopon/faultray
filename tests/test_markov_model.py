@@ -6,7 +6,7 @@ import math
 
 import pytest
 
-from infrasim.model.components import (
+from faultray.model.components import (
     Component,
     ComponentType,
     DegradationConfig,
@@ -14,8 +14,8 @@ from infrasim.model.components import (
     HealthStatus,
     OperationalProfile,
 )
-from infrasim.model.graph import InfraGraph
-from infrasim.simulator.markov_model import (
+from faultray.model.graph import InfraGraph
+from faultray.simulator.markov_model import (
     MarkovResult,
     _DEFAULT_MTBF,
     _build_transition_matrix,
@@ -657,7 +657,7 @@ class TestNinesEdgeCases:
 
         # Mock steady state so pi[DOWN] = 0, making availability = 1.0
         with patch(
-            "infrasim.simulator.markov_model._solve_steady_state",
+            "faultray.simulator.markov_model._solve_steady_state",
             return_value=[0.7, 0.3, 0.0],
         ):
             result = compute_markov_availability(
@@ -673,7 +673,7 @@ class TestNinesEdgeCases:
 
         # Mock _solve_steady_state to return pi = [0, 0, 1] (all DOWN)
         with patch(
-            "infrasim.simulator.markov_model._solve_steady_state",
+            "faultray.simulator.markov_model._solve_steady_state",
             return_value=[0.0, 0.0, 1.0],
         ):
             result = compute_markov_availability(
@@ -703,7 +703,7 @@ class TestMeanTimeInf:
             [0.0, 0.0, 1.0],  # DOWN is absorbing: p_stay = 1.0
         ]
         with patch(
-            "infrasim.simulator.markov_model._build_transition_matrix",
+            "faultray.simulator.markov_model._build_transition_matrix",
             return_value=mock_matrix,
         ):
             result = compute_markov_availability(
@@ -721,7 +721,7 @@ class TestMeanTimeInf:
             [0.5, 0.0, 0.5],
         ]
         with patch(
-            "infrasim.simulator.markov_model._build_transition_matrix",
+            "faultray.simulator.markov_model._build_transition_matrix",
             return_value=mock_matrix,
         ):
             result = compute_markov_availability(

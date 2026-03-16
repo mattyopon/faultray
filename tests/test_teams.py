@@ -5,8 +5,8 @@ from __future__ import annotations
 import pytest
 from fastapi.testclient import TestClient
 
-from infrasim.api.database import reset_engine
-from infrasim.api.server import app, set_graph
+from faultray.api.database import reset_engine
+from faultray.api.server import app, set_graph
 
 
 @pytest.fixture(autouse=True)

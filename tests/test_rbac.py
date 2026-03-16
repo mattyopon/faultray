@@ -9,14 +9,14 @@ import pytest_asyncio
 from fastapi import HTTPException
 from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
 
-from infrasim.api.auth import (
+from faultray.api.auth import (
     Role,
     ROLE_PERMISSIONS,
     generate_api_key,
     hash_api_key,
     require_permission,
 )
-from infrasim.api.database import Base, UserRow, reset_engine
+from faultray.api.database import Base, UserRow, reset_engine
 
 
 # ---------------------------------------------------------------------------
@@ -141,7 +141,7 @@ class TestRequirePermission:
         """When no users exist in DB, RBAC is opt-in — allow everything."""
         factory, engine = rbac_db
 
-        import infrasim.api.auth as auth_module
+        import faultray.api.auth as auth_module
         original_factory = auth_module.get_session_factory
         auth_module.get_session_factory = lambda: factory
 
@@ -159,7 +159,7 @@ class TestRequirePermission:
         factory, engine = rbac_db
         _, api_key = await _create_user(factory, "admin@test.com", "Admin", "admin")
 
-        import infrasim.api.auth as auth_module
+        import faultray.api.auth as auth_module
         original_factory = auth_module.get_session_factory
         auth_module.get_session_factory = lambda: factory
 
@@ -174,7 +174,7 @@ class TestRequirePermission:
             original_resolve = auth_module._resolve_user
 
             async def mock_resolve(req):
-                from infrasim.api.auth import get_current_user
+                from faultray.api.auth import get_current_user
                 creds = FakeCredentials(api_key)
                 return await get_current_user(req, creds)
 
@@ -193,7 +193,7 @@ class TestRequirePermission:
         factory, engine = rbac_db
         _, api_key = await _create_user(factory, "editor@test.com", "Editor", "editor")
 
-        import infrasim.api.auth as auth_module
+        import faultray.api.auth as auth_module
         original_factory = auth_module.get_session_factory
         auth_module.get_session_factory = lambda: factory
 
@@ -204,7 +204,7 @@ class TestRequirePermission:
             original_resolve = auth_module._resolve_user
 
             async def mock_resolve(req):
-                from infrasim.api.auth import get_current_user
+                from faultray.api.auth import get_current_user
                 creds = FakeCredentials(api_key)
                 return await get_current_user(req, creds)
 
@@ -223,7 +223,7 @@ class TestRequirePermission:
         factory, engine = rbac_db
         _, api_key = await _create_user(factory, "viewer@test.com", "Viewer", "viewer")
 
-        import infrasim.api.auth as auth_module
+        import faultray.api.auth as auth_module
         original_factory = auth_module.get_session_factory
         auth_module.get_session_factory = lambda: factory
 
@@ -234,7 +234,7 @@ class TestRequirePermission:
             original_resolve = auth_module._resolve_user
 
             async def mock_resolve(req):
-                from infrasim.api.auth import get_current_user
+                from faultray.api.auth import get_current_user
                 creds = FakeCredentials(api_key)
                 return await get_current_user(req, creds)
 
@@ -254,7 +254,7 @@ class TestRequirePermission:
         factory, engine = rbac_db
         _, api_key = await _create_user(factory, "viewer2@test.com", "Viewer2", "viewer")
 
-        import infrasim.api.auth as auth_module
+        import faultray.api.auth as auth_module
         original_factory = auth_module.get_session_factory
         auth_module.get_session_factory = lambda: factory
 
@@ -265,7 +265,7 @@ class TestRequirePermission:
             original_resolve = auth_module._resolve_user
 
             async def mock_resolve(req):
-                from infrasim.api.auth import get_current_user
+                from faultray.api.auth import get_current_user
                 creds = FakeCredentials(api_key)
                 return await get_current_user(req, creds)
 
@@ -284,7 +284,7 @@ class TestRequirePermission:
         factory, engine = rbac_db
         _, api_key = await _create_user(factory, "viewer3@test.com", "Viewer3", "viewer")
 
-        import infrasim.api.auth as auth_module
+        import faultray.api.auth as auth_module
         original_factory = auth_module.get_session_factory
         auth_module.get_session_factory = lambda: factory
 
@@ -295,7 +295,7 @@ class TestRequirePermission:
             original_resolve = auth_module._resolve_user
 
             async def mock_resolve(req):
-                from infrasim.api.auth import get_current_user
+                from faultray.api.auth import get_current_user
                 creds = FakeCredentials(api_key)
                 return await get_current_user(req, creds)
 
@@ -315,7 +315,7 @@ class TestRequirePermission:
         factory, engine = rbac_db
         _, api_key = await _create_user(factory, "editor2@test.com", "Editor2", "editor")
 
-        import infrasim.api.auth as auth_module
+        import faultray.api.auth as auth_module
         original_factory = auth_module.get_session_factory
         auth_module.get_session_factory = lambda: factory
 
@@ -326,7 +326,7 @@ class TestRequirePermission:
             original_resolve = auth_module._resolve_user
 
             async def mock_resolve(req):
-                from infrasim.api.auth import get_current_user
+                from faultray.api.auth import get_current_user
                 creds = FakeCredentials(api_key)
                 return await get_current_user(req, creds)
 
@@ -362,7 +362,7 @@ class TestRequirePermission:
         factory, engine = rbac_db
         _, api_key = await _create_user(factory, "admin2@test.com", "Admin2", "admin")
 
-        import infrasim.api.auth as auth_module
+        import faultray.api.auth as auth_module
         original_factory = auth_module.get_session_factory
         auth_module.get_session_factory = lambda: factory
 
@@ -374,7 +374,7 @@ class TestRequirePermission:
             original_resolve = auth_module._resolve_user
 
             async def mock_resolve(req):
-                from infrasim.api.auth import get_current_user
+                from faultray.api.auth import get_current_user
                 creds = FakeCredentials(api_key)
                 return await get_current_user(req, creds)
 

@@ -27,7 +27,7 @@ export function activate(context: vscode.ExtensionContext) {
 
 async function runScan() {
     const terminal = vscode.window.createTerminal('FaultZero');
-    terminal.sendText('chaosproof scan --output infrasim-model.json');
+    terminal.sendText('chaosproof scan --output faultray-model.json');
     terminal.show();
 }
 

@@ -5,7 +5,7 @@ from pathlib import Path
 
 import pytest
 
-from infrasim.model.loader import load_yaml
+from faultray.model.loader import load_yaml
 
 
 def _write_yaml(content: str) -> Path:
@@ -156,7 +156,7 @@ dependencies:
 def test_file_not_found():
     """Loading nonexistent file should raise FileNotFoundError."""
     with pytest.raises(FileNotFoundError):
-        load_yaml("/tmp/nonexistent-infrasim-test.yaml")
+        load_yaml("/tmp/nonexistent-faultray-test.yaml")
 
 
 def test_load_string_path():

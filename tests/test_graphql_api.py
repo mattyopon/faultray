@@ -5,8 +5,8 @@ from __future__ import annotations
 import pytest
 from fastapi.testclient import TestClient
 
-from infrasim.api.server import app, set_graph
-from infrasim.model.demo import create_demo_graph
+from faultray.api.server import app, set_graph
+from faultray.model.demo import create_demo_graph
 
 
 @pytest.fixture(autouse=True)
@@ -122,7 +122,7 @@ class TestGraphQLSimulation:
 
     def test_simulation_summary_null_without_run(self, demo_client):
         """simulationSummary should be None before any simulation has run."""
-        import infrasim.api.server as srv
+        import faultray.api.server as srv
         srv._last_report = None
 
         resp = demo_client.post(

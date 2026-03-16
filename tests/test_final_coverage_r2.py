@@ -12,7 +12,7 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-from infrasim.model.components import (
+from faultray.model.components import (
     Component,
     ComponentType,
     Dependency,
@@ -21,7 +21,7 @@ from infrasim.model.components import (
     OperationalProfile,
     SLOTarget,
 )
-from infrasim.model.graph import InfraGraph
+from faultray.model.graph import InfraGraph
 
 
 def _make_graph_with_two():
@@ -41,7 +41,7 @@ def _make_graph_with_two():
 class TestReportYellowScore:
     def test_print_infrastructure_summary_yellow_score(self):
         from rich.console import Console
-        from infrasim.reporter.report import print_infrastructure_summary
+        from faultray.reporter.report import print_infrastructure_summary
 
         g = _make_graph_with_two()
         # Monkeypatch summary to return score in yellow range
@@ -67,7 +67,7 @@ class TestReportYellowScore:
 
 class TestCascadeNoneInBFS:
     def test_latency_cascade_skips_none_component(self):
-        from infrasim.simulator.cascade import CascadeEngine
+        from faultray.simulator.cascade import CascadeEngine
 
         g = InfraGraph()
         c1 = Component(id="lb", name="lb", type=ComponentType.LOAD_BALANCER, host="h", port=80)
@@ -104,7 +104,7 @@ class TestCascadeNoneInBFS:
 
 class TestAnalyzerSkipFailoverSPOF:
     def test_spof_skips_failover_enabled(self):
-        from infrasim.ai.analyzer import InfraSimAnalyzer
+        from faultray.ai.analyzer import FaultRayAnalyzer
 
         g = InfraGraph()
         # Single replica with failover enabled - should skip in SPOF detection
@@ -119,7 +119,7 @@ class TestAnalyzerSkipFailoverSPOF:
         g.add_component(c2)
         g.add_dependency(Dependency(source_id="web", target_id="db", dependency_type="requires"))
 
-        analyzer = InfraSimAnalyzer()
+        analyzer = FaultRayAnalyzer()
         spofs = analyzer._detect_spofs(g)
         # db has failover so should NOT be flagged
         spof_ids = [r.component_id for r in spofs]
@@ -132,7 +132,7 @@ class TestAnalyzerSkipFailoverSPOF:
 
 class TestAnalyzerDedupProtections:
     def test_missing_protections_no_crash(self):
-        from infrasim.ai.analyzer import InfraSimAnalyzer
+        from faultray.ai.analyzer import FaultRayAnalyzer
 
         g = InfraGraph()
         c1 = Component(id="web", name="web", type=ComponentType.WEB_SERVER, host="h", port=80)
@@ -141,7 +141,7 @@ class TestAnalyzerDedupProtections:
         g.add_component(c2)
         g.add_dependency(Dependency(source_id="web", target_id="db", dependency_type="requires"))
 
-        analyzer = InfraSimAnalyzer()
+        analyzer = FaultRayAnalyzer()
         recs = analyzer._detect_missing_protections(g)
         # Should work without crash; at most 1 rec per edge pair
         assert isinstance(recs, list)
@@ -153,13 +153,13 @@ class TestAnalyzerDedupProtections:
 
 class TestFeedAnalyzerNegativeKeywords:
     def test_negative_keywords_cause_skip(self):
-        from infrasim.feeds.analyzer import (
+        from faultray.feeds.analyzer import (
             analyze_articles,
             IncidentPattern,
             INCIDENT_PATTERNS,
         )
-        from infrasim.feeds.fetcher import FeedArticle
-        from infrasim.simulator.scenarios import FaultType
+        from faultray.feeds.fetcher import FeedArticle
+        from faultray.simulator.scenarios import FaultType
 
         # Create a temporary pattern with negative keywords
         test_pattern = IncidentPattern(
@@ -173,7 +173,7 @@ class TestFeedAnalyzerNegativeKeywords:
         )
 
         # Monkeypatch INCIDENT_PATTERNS
-        import infrasim.feeds.analyzer as analyzer_mod
+        import faultray.feeds.analyzer as analyzer_mod
         original_patterns = analyzer_mod.INCIDENT_PATTERNS
 
         try:
@@ -200,7 +200,7 @@ class TestFeedAnalyzerNegativeKeywords:
 
 class TestTerraformNonDictValues:
     def test_find_references_returns_early_for_non_dict(self):
-        from infrasim.discovery.terraform import _find_references_in_values
+        from faultray.discovery.terraform import _find_references_in_values
 
         g = InfraGraph()
         c1 = Component(id="web", name="web", type=ComponentType.WEB_SERVER, host="h", port=80)
@@ -219,7 +219,7 @@ class TestTerraformNonDictValues:
 
 class TestTerraformValueReference:
     def test_find_references_creates_dependency(self):
-        from infrasim.discovery.terraform import _find_references_in_values
+        from faultray.discovery.terraform import _find_references_in_values
 
         g = InfraGraph()
         c1 = Component(id="web", name="web", type=ComponentType.WEB_SERVER, host="h", port=80)
@@ -241,7 +241,7 @@ class TestTerraformValueReference:
 
 class TestSLOTrackerBurnRateEmptyRecent:
     def test_burn_rate_negative_window_returns_zero(self):
-        from infrasim.simulator.ops_engine import SLOTracker
+        from faultray.simulator.ops_engine import SLOTracker
 
         g = InfraGraph()
         c1 = Component(
@@ -270,7 +270,7 @@ class TestSLOTrackerBurnRateEmptyRecent:
 class TestOpsEngineNoneGuards:
     def test_slo_tracker_record_ghost_component(self):
         """ops_engine lines 450, 473, 519: None comp in record()."""
-        from infrasim.simulator.ops_engine import SLOTracker, _OpsComponentState
+        from faultray.simulator.ops_engine import SLOTracker, _OpsComponentState
 
         g = InfraGraph()
         c1 = Component(
@@ -303,7 +303,7 @@ class TestOpsEngineNoneGuards:
 
     def test_ops_simulation_with_monkeypatched_none(self):
         """ops_engine line 825: get_component returns None in main loop."""
-        from infrasim.simulator.ops_engine import OpsSimulationEngine, OpsScenario
+        from faultray.simulator.ops_engine import OpsSimulationEngine, OpsScenario
 
         g = InfraGraph()
         c1 = Component(
@@ -338,7 +338,7 @@ class TestOpsEngineNoneGuards:
 
     def test_propagate_deps_with_missing_target(self):
         """ops_engine line 292: target_health is None."""
-        from infrasim.simulator.ops_engine import SLOTracker, _OpsComponentState
+        from faultray.simulator.ops_engine import SLOTracker, _OpsComponentState
 
         g = InfraGraph()
         c1 = Component(id="web", name="web", type=ComponentType.WEB_SERVER, host="h", port=80)
@@ -368,7 +368,7 @@ class TestOpsEngineNoneGuards:
 
 class TestDynamicEngineNoneComp:
     def test_generate_scenarios_ghost_component(self):
-        from infrasim.simulator.dynamic_engine import DynamicSimulationEngine
+        from faultray.simulator.dynamic_engine import DynamicSimulationEngine
 
         g = InfraGraph()
         c1 = Component(id="web", name="web", type=ComponentType.WEB_SERVER, host="h", port=80)
@@ -403,8 +403,8 @@ class TestDynamicEngineNoneComp:
 class TestHtmlReportPositionGuard:
     def test_generate_html_report_with_orphan(self):
         """Ensure components not in position dict are safely skipped."""
-        from infrasim.reporter.html_report import generate_html_report
-        from infrasim.simulator.engine import SimulationReport
+        from faultray.reporter.html_report import generate_html_report
+        from faultray.simulator.engine import SimulationReport
 
         g = InfraGraph()
         # Create components but one will be an orphan without layout position

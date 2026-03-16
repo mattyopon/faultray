@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import pytest
 
-from infrasim.model.components import (
+from faultray.model.components import (
     AutoScalingConfig,
     CircuitBreakerConfig,
     Component,
@@ -13,9 +13,9 @@ from infrasim.model.components import (
     FailoverConfig,
     RetryStrategy,
 )
-from infrasim.model.graph import InfraGraph
-from infrasim.simulator.ab_chaos import ABReport, ABResult, ChaosABTester
-from infrasim.simulator.scenarios import Fault, FaultType, Scenario
+from faultray.model.graph import InfraGraph
+from faultray.simulator.ab_chaos import ABReport, ABResult, ChaosABTester
+from faultray.simulator.scenarios import Fault, FaultType, Scenario
 
 
 # ---------------------------------------------------------------------------

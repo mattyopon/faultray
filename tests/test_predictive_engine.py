@@ -6,7 +6,7 @@ import math
 
 import pytest
 
-from infrasim.model.components import (
+from faultray.model.components import (
     Capacity,
     Component,
     ComponentType,
@@ -16,8 +16,8 @@ from infrasim.model.components import (
     OperationalProfile,
     ResourceMetrics,
 )
-from infrasim.model.graph import InfraGraph
-from infrasim.simulator.predictive_engine import (
+from faultray.model.graph import InfraGraph
+from faultray.simulator.predictive_engine import (
     FailureProbabilityForecast,
     PredictiveEngine,
     PredictiveReport,

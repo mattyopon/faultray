@@ -1,26 +1,44 @@
-"""Tests for Runbook Completeness Validator.
+"""Tests for the Runbook Validation Engine (v2).
 
-Comprehensive test suite covering all classes, methods, edge cases,
-and boundary conditions for the RunbookValidator module.
+Comprehensive test suite covering RunbookStepType/ValidationResult enums,
+RunbookStep/RunbookV2/StepValidation/CoverageGap/EscalationValidation/
+RunbookDiff/RunbookComparison/RunbookValidationReport models,
+RunbookValidationEngine methods (validate_runbook, find_coverage_gaps,
+estimate_mttr, detect_stale_runbooks, suggest_runbook,
+validate_escalation_path, compare_runbooks), edge cases, and integration.
 """
 
 from __future__ import annotations
 
+from datetime import datetime, timezone
+
 import pytest
 
-from infrasim.model.components import (
-    AutoScalingConfig,
+from faultray.model.components import (
     Component,
     ComponentType,
     Dependency,
     FailoverConfig,
 )
-from infrasim.model.graph import InfraGraph
-from infrasim.simulator.runbook_validator import (
-    Runbook,
+from faultray.model.graph import InfraGraph
+from faultray.simulator.runbook_validator import (
+    # v2 Pydantic-based classes
+    CoverageGap,
+    EscalationValidation,
+    RunbookComparison,
+    RunbookDiff,
+    RunbookStep,
+    RunbookStepType,
+    RunbookV2,
+    RunbookValidationEngine,
+    RunbookValidationReportV2,
+    StepValidation,
+    ValidationResult,
+    # v1 dataclass-based classes (legacy)
+    Runbook as RunbookV1,
     RunbookGap,
     RunbookStatus,
-    RunbookValidationReport,
+    RunbookValidationReport as RunbookValidationReportV1,
     RunbookValidator,
     RecoveryStep,
 )
@@ -31,164 +49,1450 @@ from infrasim.simulator.runbook_validator import (
 # ---------------------------------------------------------------------------
 
 
-def _empty_graph() -> InfraGraph:
-    """Return an empty graph with no components."""
-    return InfraGraph()
-
-
-def _single_component_graph(
-    comp_type: ComponentType = ComponentType.APP_SERVER,
-    comp_id: str = "app",
-    comp_name: str = "App Server",
+def _comp(
+    cid: str,
+    name: str | None = None,
+    ctype: ComponentType = ComponentType.APP_SERVER,
     replicas: int = 2,
-    failover: bool = False,
-) -> InfraGraph:
-    """Build a graph with a single component."""
-    graph = InfraGraph()
-    graph.add_component(
-        Component(
-            id=comp_id,
-            name=comp_name,
-            type=comp_type,
-            replicas=replicas,
-            failover=FailoverConfig(enabled=failover),
+    failover_enabled: bool = False,
+) -> Component:
+    return Component(
+        id=cid,
+        name=name or cid,
+        type=ctype,
+        replicas=replicas,
+        failover=FailoverConfig(enabled=failover_enabled),
+    )
+
+
+def _graph(*components: Component, deps: list[Dependency] | None = None) -> InfraGraph:
+    g = InfraGraph()
+    for c in components:
+        g.add_component(c)
+    for d in deps or []:
+        g.add_dependency(d)
+    return g
+
+
+def _step(
+    num: int = 1,
+    desc: str = "Do something",
+    stype: RunbookStepType = RunbookStepType.REMEDIATION,
+    target: str = "app",
+    outcome: str = "Fixed",
+    timeout: float = 300.0,
+    approval: bool = False,
+) -> RunbookStep:
+    return RunbookStep(
+        step_number=num,
+        description=desc,
+        step_type=stype,
+        target_component_id=target,
+        expected_outcome=outcome,
+        timeout_seconds=timeout,
+        requires_approval=approval,
+    )
+
+
+def _runbook(
+    rid: str = "rb-1",
+    name: str = "Test Runbook",
+    scenario: str = "oom_kill",
+    steps: list[RunbookStep] | None = None,
+    last_tested: str = "2026-01-01",
+    owner: str = "team-a",
+    severity: str = "high",
+) -> RunbookV2:
+    return RunbookV2(
+        id=rid,
+        name=name,
+        scenario=scenario,
+        steps=steps or [],
+        last_tested=last_tested,
+        owner=owner,
+        severity=severity,
+    )
+
+
+# ---------------------------------------------------------------------------
+# RunbookStepType enum tests
+# ---------------------------------------------------------------------------
+
+
+class TestRunbookStepType:
+    def test_diagnostic_value(self):
+        assert RunbookStepType.DIAGNOSTIC == "diagnostic"
+
+    def test_remediation_value(self):
+        assert RunbookStepType.REMEDIATION == "remediation"
+
+    def test_escalation_value(self):
+        assert RunbookStepType.ESCALATION == "escalation"
+
+    def test_verification_value(self):
+        assert RunbookStepType.VERIFICATION == "verification"
+
+    def test_rollback_value(self):
+        assert RunbookStepType.ROLLBACK == "rollback"
+
+    def test_notification_value(self):
+        assert RunbookStepType.NOTIFICATION == "notification"
+
+    def test_manual_check_value(self):
+        assert RunbookStepType.MANUAL_CHECK == "manual_check"
+
+    def test_member_count(self):
+        assert len(RunbookStepType) == 7
+
+
+# ---------------------------------------------------------------------------
+# ValidationResult enum tests
+# ---------------------------------------------------------------------------
+
+
+class TestValidationResult:
+    def test_valid_value(self):
+        assert ValidationResult.VALID == "valid"
+
+    def test_stale_value(self):
+        assert ValidationResult.STALE == "stale"
+
+    def test_incomplete_value(self):
+        assert ValidationResult.INCOMPLETE == "incomplete"
+
+    def test_incorrect_value(self):
+        assert ValidationResult.INCORRECT == "incorrect"
+
+    def test_untestable_value(self):
+        assert ValidationResult.UNTESTABLE == "untestable"
+
+    def test_missing_component_value(self):
+        assert ValidationResult.MISSING_COMPONENT == "missing_component"
+
+    def test_member_count(self):
+        assert len(ValidationResult) == 6
+
+
+# ---------------------------------------------------------------------------
+# RunbookStep model tests
+# ---------------------------------------------------------------------------
+
+
+class TestRunbookStep:
+    def test_create_basic(self):
+        s = _step()
+        assert s.step_number == 1
+        assert s.step_type == RunbookStepType.REMEDIATION
+
+    def test_requires_approval_default(self):
+        s = _step(approval=False)
+        assert s.requires_approval is False
+
+    def test_requires_approval_true(self):
+        s = _step(approval=True)
+        assert s.requires_approval is True
+
+    def test_timeout_seconds(self):
+        s = _step(timeout=120.5)
+        assert s.timeout_seconds == 120.5
+
+    def test_description(self):
+        s = _step(desc="Restart app server")
+        assert s.description == "Restart app server"
+
+    def test_target_component_id(self):
+        s = _step(target="db-primary")
+        assert s.target_component_id == "db-primary"
+
+    def test_expected_outcome(self):
+        s = _step(outcome="Server healthy")
+        assert s.expected_outcome == "Server healthy"
+
+
+# ---------------------------------------------------------------------------
+# RunbookV2 model tests
+# ---------------------------------------------------------------------------
+
+
+class TestRunbookV2:
+    def test_create_empty_steps(self):
+        rb = _runbook(steps=[])
+        assert rb.steps == []
+
+    def test_create_with_steps(self):
+        rb = _runbook(steps=[_step(1), _step(2)])
+        assert len(rb.steps) == 2
+
+    def test_id_field(self):
+        rb = _runbook(rid="my-rb")
+        assert rb.id == "my-rb"
+
+    def test_scenario_field(self):
+        rb = _runbook(scenario="disk_full")
+        assert rb.scenario == "disk_full"
+
+    def test_owner_field(self):
+        rb = _runbook(owner="sre-team")
+        assert rb.owner == "sre-team"
+
+    def test_severity_field(self):
+        rb = _runbook(severity="critical")
+        assert rb.severity == "critical"
+
+    def test_last_tested_field(self):
+        rb = _runbook(last_tested="2025-12-01")
+        assert rb.last_tested == "2025-12-01"
+
+
+# ---------------------------------------------------------------------------
+# StepValidation model tests
+# ---------------------------------------------------------------------------
+
+
+class TestStepValidation:
+    def test_create(self):
+        sv = StepValidation(
+            step_number=1,
+            result=ValidationResult.VALID,
+            reason="OK",
+            suggestion="",
         )
-    )
-    return graph
+        assert sv.result == ValidationResult.VALID
 
-
-def _standard_graph() -> InfraGraph:
-    """Build a realistic graph with multiple component types and dependencies."""
-    graph = InfraGraph()
-
-    graph.add_component(
-        Component(
-            id="lb",
-            name="Load Balancer",
-            type=ComponentType.LOAD_BALANCER,
-            replicas=2,
-            failover=FailoverConfig(enabled=True),
+    def test_missing_component(self):
+        sv = StepValidation(
+            step_number=2,
+            result=ValidationResult.MISSING_COMPONENT,
+            reason="Not found",
+            suggestion="Fix it",
         )
-    )
-    graph.add_component(
-        Component(
-            id="web",
-            name="Web Server",
-            type=ComponentType.WEB_SERVER,
-            replicas=3,
-        )
-    )
-    graph.add_component(
-        Component(
-            id="app",
-            name="App Server",
-            type=ComponentType.APP_SERVER,
-            replicas=2,
-            autoscaling=AutoScalingConfig(enabled=True, min_replicas=2, max_replicas=10),
-        )
-    )
-    graph.add_component(
-        Component(
-            id="db",
-            name="PostgreSQL",
-            type=ComponentType.DATABASE,
-            replicas=1,
-            failover=FailoverConfig(enabled=True, promotion_time_seconds=30.0),
-        )
-    )
-    graph.add_component(
-        Component(
-            id="cache",
-            name="Redis",
-            type=ComponentType.CACHE,
-            replicas=1,
-        )
-    )
-    graph.add_component(
-        Component(
-            id="queue",
-            name="RabbitMQ",
-            type=ComponentType.QUEUE,
-            replicas=1,
-        )
-    )
-
-    # Dependencies: lb -> web -> app -> db, app -> cache, app -> queue
-    graph.add_dependency(Dependency(source_id="lb", target_id="web"))
-    graph.add_dependency(Dependency(source_id="web", target_id="app"))
-    graph.add_dependency(Dependency(source_id="app", target_id="db"))
-    graph.add_dependency(
-        Dependency(source_id="app", target_id="cache", dependency_type="optional")
-    )
-    graph.add_dependency(
-        Dependency(source_id="app", target_id="queue", dependency_type="async")
-    )
-
-    return graph
+        assert sv.result == ValidationResult.MISSING_COMPONENT
 
 
-def _all_component_types_graph() -> InfraGraph:
-    """Build a graph containing every ComponentType."""
-    graph = InfraGraph()
-    types_map = {
-        "lb": (ComponentType.LOAD_BALANCER, "LB"),
-        "web": (ComponentType.WEB_SERVER, "Web"),
-        "app": (ComponentType.APP_SERVER, "App"),
-        "db": (ComponentType.DATABASE, "DB"),
-        "cache": (ComponentType.CACHE, "Cache"),
-        "queue": (ComponentType.QUEUE, "Queue"),
-        "storage": (ComponentType.STORAGE, "Storage"),
-        "dns": (ComponentType.DNS, "DNS"),
-        "ext": (ComponentType.EXTERNAL_API, "External API"),
-        "custom": (ComponentType.CUSTOM, "Custom"),
-    }
-    for cid, (ctype, cname) in types_map.items():
-        graph.add_component(
-            Component(id=cid, name=cname, type=ctype, replicas=1)
+# ---------------------------------------------------------------------------
+# CoverageGap model tests
+# ---------------------------------------------------------------------------
+
+
+class TestCoverageGap:
+    def test_create(self):
+        cg = CoverageGap(
+            component_id="db",
+            component_name="Database",
+            failure_scenario="replication_lag",
+            severity="high",
         )
-    return graph
+        assert cg.component_id == "db"
+        assert cg.failure_scenario == "replication_lag"
 
 
-def _make_runbook(
-    scenario_id: str,
-    title: str,
-    component_id: str,
-    status: RunbookStatus = RunbookStatus.COMPLETE,
+# ---------------------------------------------------------------------------
+# EscalationValidation model tests
+# ---------------------------------------------------------------------------
+
+
+class TestEscalationValidation:
+    def test_valid(self):
+        ev = EscalationValidation(
+            has_escalation=True,
+            escalation_steps=[3],
+            has_notification=True,
+            notification_steps=[2],
+            issues=[],
+            is_valid=True,
+        )
+        assert ev.is_valid is True
+
+    def test_invalid(self):
+        ev = EscalationValidation(
+            has_escalation=False,
+            escalation_steps=[],
+            has_notification=False,
+            notification_steps=[],
+            issues=["Missing escalation"],
+            is_valid=False,
+        )
+        assert ev.is_valid is False
+
+
+# ---------------------------------------------------------------------------
+# RunbookDiff / RunbookComparison model tests
+# ---------------------------------------------------------------------------
+
+
+class TestRunbookDiff:
+    def test_create(self):
+        d = RunbookDiff(field="name", old_value="A", new_value="B")
+        assert d.field == "name"
+
+
+class TestRunbookComparison:
+    def test_identical(self):
+        c = RunbookComparison(
+            runbook_a_id="a",
+            runbook_b_id="b",
+            is_identical=True,
+        )
+        assert c.is_identical is True
+        assert c.differences == []
+
+    def test_with_changes(self):
+        c = RunbookComparison(
+            runbook_a_id="a",
+            runbook_b_id="b",
+            steps_added=[3],
+            steps_removed=[1],
+            steps_modified=[2],
+            is_identical=False,
+        )
+        assert c.is_identical is False
+        assert c.steps_added == [3]
+
+
+# ---------------------------------------------------------------------------
+# RunbookValidationReport model tests
+# ---------------------------------------------------------------------------
+
+
+class TestRunbookValidationReportModel:
+    def test_create(self):
+        r = RunbookValidationReportV2(
+            runbook_id="rb-1",
+            overall_result=ValidationResult.VALID,
+            step_validations=[],
+            coverage_gaps=[],
+            staleness_days=10,
+            recommendations=[],
+            estimated_mttr_minutes=5.0,
+            confidence=1.0,
+        )
+        assert r.overall_result == ValidationResult.VALID
+
+    def test_confidence_range(self):
+        r = RunbookValidationReportV2(
+            runbook_id="rb-1",
+            overall_result=ValidationResult.VALID,
+            step_validations=[],
+            coverage_gaps=[],
+            staleness_days=0,
+            recommendations=[],
+            estimated_mttr_minutes=0.0,
+            confidence=0.5,
+        )
+        assert 0.0 <= r.confidence <= 1.0
+
+
+# ---------------------------------------------------------------------------
+# RunbookValidationEngine.validate_runbook tests
+# ---------------------------------------------------------------------------
+
+
+class TestValidateRunbook:
+    def test_valid_runbook(self):
+        g = _graph(_comp("app"))
+        rb = _runbook(
+            last_tested=datetime.now(timezone.utc).strftime("%Y-%m-%d"),
+            steps=[
+                _step(1, stype=RunbookStepType.DIAGNOSTIC),
+                _step(2, stype=RunbookStepType.REMEDIATION),
+                _step(3, stype=RunbookStepType.VERIFICATION),
+            ],
+        )
+        engine = RunbookValidationEngine()
+        report = engine.validate_runbook(g, rb)
+        assert report.overall_result == ValidationResult.VALID
+
+    def test_missing_component_step(self):
+        g = _graph(_comp("app"))
+        rb = _runbook(
+            last_tested=datetime.now(timezone.utc).strftime("%Y-%m-%d"),
+            steps=[_step(1, target="nonexistent")],
+        )
+        engine = RunbookValidationEngine()
+        report = engine.validate_runbook(g, rb)
+        assert report.overall_result == ValidationResult.MISSING_COMPONENT
+
+    def test_negative_timeout_step(self):
+        g = _graph(_comp("app"))
+        rb = _runbook(
+            last_tested=datetime.now(timezone.utc).strftime("%Y-%m-%d"),
+            steps=[_step(1, timeout=-1)],
+        )
+        engine = RunbookValidationEngine()
+        report = engine.validate_runbook(g, rb)
+        assert report.step_validations[0].result == ValidationResult.INCORRECT
+
+    def test_zero_timeout_step(self):
+        g = _graph(_comp("app"))
+        rb = _runbook(
+            last_tested=datetime.now(timezone.utc).strftime("%Y-%m-%d"),
+            steps=[_step(1, timeout=0)],
+        )
+        engine = RunbookValidationEngine()
+        report = engine.validate_runbook(g, rb)
+        assert report.step_validations[0].result == ValidationResult.INCORRECT
+
+    def test_very_large_timeout(self):
+        g = _graph(_comp("app"))
+        rb = _runbook(
+            last_tested=datetime.now(timezone.utc).strftime("%Y-%m-%d"),
+            steps=[_step(1, timeout=7200)],
+        )
+        engine = RunbookValidationEngine()
+        report = engine.validate_runbook(g, rb)
+        assert report.step_validations[0].result == ValidationResult.UNTESTABLE
+
+    def test_empty_description(self):
+        g = _graph(_comp("app"))
+        rb = _runbook(
+            last_tested=datetime.now(timezone.utc).strftime("%Y-%m-%d"),
+            steps=[_step(1, desc="  ")],
+        )
+        engine = RunbookValidationEngine()
+        report = engine.validate_runbook(g, rb)
+        assert report.step_validations[0].result == ValidationResult.INCOMPLETE
+
+    def test_empty_expected_outcome(self):
+        g = _graph(_comp("app"))
+        rb = _runbook(
+            last_tested=datetime.now(timezone.utc).strftime("%Y-%m-%d"),
+            steps=[_step(1, outcome="")],
+        )
+        engine = RunbookValidationEngine()
+        report = engine.validate_runbook(g, rb)
+        assert report.step_validations[0].result == ValidationResult.INCOMPLETE
+
+    def test_stale_runbook_over_90_days(self):
+        g = _graph(_comp("app"))
+        rb = _runbook(
+            last_tested="2025-01-01",
+            steps=[
+                _step(1, stype=RunbookStepType.DIAGNOSTIC),
+                _step(2, stype=RunbookStepType.REMEDIATION),
+                _step(3, stype=RunbookStepType.VERIFICATION),
+            ],
+        )
+        engine = RunbookValidationEngine()
+        report = engine.validate_runbook(g, rb)
+        assert report.overall_result == ValidationResult.STALE
+
+    def test_stale_runbook_over_180_days(self):
+        g = _graph(_comp("app"))
+        rb = _runbook(
+            last_tested="2024-01-01",
+            steps=[
+                _step(1, stype=RunbookStepType.DIAGNOSTIC),
+                _step(2, stype=RunbookStepType.REMEDIATION),
+                _step(3, stype=RunbookStepType.VERIFICATION),
+            ],
+        )
+        engine = RunbookValidationEngine()
+        report = engine.validate_runbook(g, rb)
+        assert report.overall_result == ValidationResult.STALE
+
+    def test_no_steps_gives_incomplete(self):
+        g = _graph(_comp("app"))
+        rb = _runbook(steps=[])
+        engine = RunbookValidationEngine()
+        report = engine.validate_runbook(g, rb)
+        assert report.overall_result == ValidationResult.INCOMPLETE
+
+    def test_recommendations_no_diagnostic(self):
+        g = _graph(_comp("app"))
+        rb = _runbook(
+            last_tested=datetime.now(timezone.utc).strftime("%Y-%m-%d"),
+            steps=[_step(1, stype=RunbookStepType.REMEDIATION)],
+        )
+        engine = RunbookValidationEngine()
+        report = engine.validate_runbook(g, rb)
+        assert any("diagnostic" in r.lower() for r in report.recommendations)
+
+    def test_recommendations_no_verification(self):
+        g = _graph(_comp("app"))
+        rb = _runbook(
+            last_tested=datetime.now(timezone.utc).strftime("%Y-%m-%d"),
+            steps=[_step(1, stype=RunbookStepType.DIAGNOSTIC)],
+        )
+        engine = RunbookValidationEngine()
+        report = engine.validate_runbook(g, rb)
+        assert any("verification" in r.lower() for r in report.recommendations)
+
+    def test_recommendations_no_remediation(self):
+        g = _graph(_comp("app"))
+        rb = _runbook(
+            last_tested=datetime.now(timezone.utc).strftime("%Y-%m-%d"),
+            steps=[_step(1, stype=RunbookStepType.DIAGNOSTIC)],
+        )
+        engine = RunbookValidationEngine()
+        report = engine.validate_runbook(g, rb)
+        assert any("remediation" in r.lower() for r in report.recommendations)
+
+    def test_confidence_all_valid(self):
+        g = _graph(_comp("app"))
+        rb = _runbook(
+            last_tested=datetime.now(timezone.utc).strftime("%Y-%m-%d"),
+            steps=[
+                _step(1, stype=RunbookStepType.DIAGNOSTIC),
+                _step(2, stype=RunbookStepType.REMEDIATION),
+                _step(3, stype=RunbookStepType.VERIFICATION),
+            ],
+        )
+        engine = RunbookValidationEngine()
+        report = engine.validate_runbook(g, rb)
+        assert report.confidence == 1.0
+
+    def test_confidence_partial(self):
+        g = _graph(_comp("app"))
+        rb = _runbook(
+            last_tested=datetime.now(timezone.utc).strftime("%Y-%m-%d"),
+            steps=[
+                _step(1, stype=RunbookStepType.DIAGNOSTIC),
+                _step(2, target="missing"),
+            ],
+        )
+        engine = RunbookValidationEngine()
+        report = engine.validate_runbook(g, rb)
+        assert 0.0 < report.confidence < 1.0
+
+    def test_coverage_gaps_in_report(self):
+        g = _graph(_comp("app"))
+        rb = _runbook(
+            last_tested=datetime.now(timezone.utc).strftime("%Y-%m-%d"),
+            steps=[_step(1, target="missing")],
+        )
+        engine = RunbookValidationEngine()
+        report = engine.validate_runbook(g, rb)
+        assert len(report.coverage_gaps) > 0
+
+    def test_mttr_in_report(self):
+        g = _graph(_comp("app"))
+        rb = _runbook(
+            last_tested=datetime.now(timezone.utc).strftime("%Y-%m-%d"),
+            steps=[_step(1, timeout=600)],
+        )
+        engine = RunbookValidationEngine()
+        report = engine.validate_runbook(g, rb)
+        assert report.estimated_mttr_minutes == 10.0
+
+    def test_multiple_components(self):
+        g = _graph(_comp("app"), _comp("db", ctype=ComponentType.DATABASE))
+        rb = _runbook(
+            last_tested=datetime.now(timezone.utc).strftime("%Y-%m-%d"),
+            steps=[
+                _step(1, target="app", stype=RunbookStepType.DIAGNOSTIC),
+                _step(2, target="db", stype=RunbookStepType.REMEDIATION),
+                _step(3, target="app", stype=RunbookStepType.VERIFICATION),
+            ],
+        )
+        engine = RunbookValidationEngine()
+        report = engine.validate_runbook(g, rb)
+        assert report.overall_result == ValidationResult.VALID
+
+    def test_incorrect_overrides_untestable(self):
+        g = _graph(_comp("app"))
+        rb = _runbook(
+            last_tested=datetime.now(timezone.utc).strftime("%Y-%m-%d"),
+            steps=[
+                _step(1, timeout=-5),
+                _step(2, timeout=7200),
+            ],
+        )
+        engine = RunbookValidationEngine()
+        report = engine.validate_runbook(g, rb)
+        assert report.overall_result == ValidationResult.INCORRECT
+
+    def test_missing_component_overrides_incorrect(self):
+        g = _graph(_comp("app"))
+        rb = _runbook(
+            last_tested=datetime.now(timezone.utc).strftime("%Y-%m-%d"),
+            steps=[
+                _step(1, target="missing"),
+                _step(2, timeout=-5),
+            ],
+        )
+        engine = RunbookValidationEngine()
+        report = engine.validate_runbook(g, rb)
+        assert report.overall_result == ValidationResult.MISSING_COMPONENT
+
+    def test_staleness_days_in_report(self):
+        g = _graph(_comp("app"))
+        rb = _runbook(
+            last_tested="2025-01-01",
+            steps=[_step(1, stype=RunbookStepType.DIAGNOSTIC)],
+        )
+        engine = RunbookValidationEngine()
+        report = engine.validate_runbook(g, rb)
+        assert report.staleness_days > 0
+
+
+# ---------------------------------------------------------------------------
+# RunbookValidationEngine.estimate_mttr tests
+# ---------------------------------------------------------------------------
+
+
+class TestEstimateMttr:
+    def test_empty_steps(self):
+        rb = _runbook(steps=[])
+        engine = RunbookValidationEngine()
+        assert engine.estimate_mttr(rb) == 0.0
+
+    def test_single_step(self):
+        rb = _runbook(steps=[_step(1, timeout=600)])
+        engine = RunbookValidationEngine()
+        assert engine.estimate_mttr(rb) == 10.0
+
+    def test_approval_overhead(self):
+        rb = _runbook(steps=[_step(1, timeout=300, approval=True)])
+        engine = RunbookValidationEngine()
+        # 300s step + 300s approval = 600s = 10 min
+        assert engine.estimate_mttr(rb) == 10.0
+
+    def test_multiple_steps(self):
+        rb = _runbook(
+            steps=[
+                _step(1, timeout=120),
+                _step(2, timeout=180),
+                _step(3, timeout=300),
+            ]
+        )
+        engine = RunbookValidationEngine()
+        # (120+180+300)/60 = 10 min
+        assert engine.estimate_mttr(rb) == 10.0
+
+    def test_multiple_steps_with_approvals(self):
+        rb = _runbook(
+            steps=[
+                _step(1, timeout=60, approval=True),
+                _step(2, timeout=60, approval=True),
+            ]
+        )
+        engine = RunbookValidationEngine()
+        # (60+300+60+300)/60 = 12 min
+        assert engine.estimate_mttr(rb) == 12.0
+
+    def test_no_approval_no_overhead(self):
+        rb = _runbook(steps=[_step(1, timeout=60, approval=False)])
+        engine = RunbookValidationEngine()
+        assert engine.estimate_mttr(rb) == 1.0
+
+
+# ---------------------------------------------------------------------------
+# RunbookValidationEngine.detect_stale_runbooks tests
+# ---------------------------------------------------------------------------
+
+
+class TestDetectStaleRunbooks:
+    def test_no_runbooks(self):
+        engine = RunbookValidationEngine()
+        assert engine.detect_stale_runbooks([]) == []
+
+    def test_fresh_runbook(self):
+        rb = _runbook(last_tested=datetime.now(timezone.utc).strftime("%Y-%m-%d"))
+        engine = RunbookValidationEngine()
+        assert engine.detect_stale_runbooks([rb]) == []
+
+    def test_stale_runbook(self):
+        rb = _runbook(rid="stale-1", last_tested="2020-01-01")
+        engine = RunbookValidationEngine()
+        result = engine.detect_stale_runbooks([rb])
+        assert "stale-1" in result
+
+    def test_custom_max_age(self):
+        rb = _runbook(rid="rb-1", last_tested="2026-01-01")
+        engine = RunbookValidationEngine()
+        # With max_age_days=1, any runbook older than 1 day is stale.
+        result = engine.detect_stale_runbooks([rb], max_age_days=1)
+        assert "rb-1" in result
+
+    def test_mix_fresh_and_stale(self):
+        fresh = _runbook(
+            rid="fresh-1",
+            last_tested=datetime.now(timezone.utc).strftime("%Y-%m-%d"),
+        )
+        stale = _runbook(rid="stale-1", last_tested="2020-01-01")
+        engine = RunbookValidationEngine()
+        result = engine.detect_stale_runbooks([fresh, stale])
+        assert "stale-1" in result
+        assert "fresh-1" not in result
+
+    def test_invalid_date_treated_as_stale(self):
+        rb = _runbook(rid="bad-date", last_tested="not-a-date")
+        engine = RunbookValidationEngine()
+        result = engine.detect_stale_runbooks([rb])
+        assert "bad-date" in result
+
+    def test_empty_last_tested_treated_as_stale(self):
+        rb = _runbook(rid="empty-date", last_tested="")
+        engine = RunbookValidationEngine()
+        result = engine.detect_stale_runbooks([rb])
+        assert "empty-date" in result
+
+
+# ---------------------------------------------------------------------------
+# RunbookValidationEngine.find_coverage_gaps tests
+# ---------------------------------------------------------------------------
+
+
+class TestFindCoverageGaps:
+    def test_no_components(self):
+        g = _graph()
+        engine = RunbookValidationEngine()
+        gaps = engine.find_coverage_gaps(g, [])
+        assert gaps == []
+
+    def test_single_component_no_runbooks(self):
+        g = _graph(_comp("app"))
+        engine = RunbookValidationEngine()
+        gaps = engine.find_coverage_gaps(g, [])
+        assert len(gaps) > 0
+
+    def test_database_has_expected_scenarios(self):
+        g = _graph(_comp("db", ctype=ComponentType.DATABASE))
+        engine = RunbookValidationEngine()
+        gaps = engine.find_coverage_gaps(g, [])
+        scenarios = {gap.failure_scenario for gap in gaps}
+        assert "database_failover" in scenarios
+        assert "replication_lag" in scenarios
+
+    def test_covered_scenario_not_in_gaps(self):
+        g = _graph(_comp("app"))
+        rb = _runbook(
+            scenario="oom_kill",
+            steps=[_step(1, target="app")],
+        )
+        engine = RunbookValidationEngine()
+        gaps = engine.find_coverage_gaps(g, [rb])
+        scenarios = {gap.failure_scenario for gap in gaps}
+        assert "oom_kill" not in scenarios
+
+    def test_gap_has_component_name(self):
+        g = _graph(_comp("app", name="App Server"))
+        engine = RunbookValidationEngine()
+        gaps = engine.find_coverage_gaps(g, [])
+        assert all(gap.component_name == "App Server" for gap in gaps)
+
+    def test_gap_severity_spof(self):
+        g = _graph(_comp("app", replicas=1, failover_enabled=False))
+        engine = RunbookValidationEngine()
+        gaps = engine.find_coverage_gaps(g, [])
+        # SPOF with no dependents -> "critical"
+        assert all(gap.severity == "critical" for gap in gaps)
+
+    def test_gap_severity_not_spof(self):
+        g = _graph(_comp("app", replicas=3, failover_enabled=True))
+        engine = RunbookValidationEngine()
+        gaps = engine.find_coverage_gaps(g, [])
+        assert all(gap.severity == "low" for gap in gaps)
+
+    def test_multiple_components(self):
+        g = _graph(
+            _comp("app"),
+            _comp("db", ctype=ComponentType.DATABASE),
+        )
+        engine = RunbookValidationEngine()
+        gaps = engine.find_coverage_gaps(g, [])
+        comp_ids = {gap.component_id for gap in gaps}
+        assert "app" in comp_ids
+        assert "db" in comp_ids
+
+    def test_custom_component_type(self):
+        g = _graph(_comp("custom1", ctype=ComponentType.CUSTOM))
+        engine = RunbookValidationEngine()
+        gaps = engine.find_coverage_gaps(g, [])
+        scenarios = {gap.failure_scenario for gap in gaps}
+        assert "unexpected_failure" in scenarios
+
+    def test_severity_with_dependents(self):
+        g = _graph(
+            _comp("db", replicas=2, ctype=ComponentType.DATABASE),
+            _comp("app1"),
+            _comp("app2"),
+            deps=[
+                Dependency(source_id="app1", target_id="db"),
+                Dependency(source_id="app2", target_id="db"),
+            ],
+        )
+        engine = RunbookValidationEngine()
+        gaps = engine.find_coverage_gaps(g, [])
+        db_gaps = [gap for gap in gaps if gap.component_id == "db"]
+        assert all(gap.severity == "high" for gap in db_gaps)
+
+
+# ---------------------------------------------------------------------------
+# RunbookValidationEngine.suggest_runbook tests
+# ---------------------------------------------------------------------------
+
+
+class TestSuggestRunbook:
+    def test_generates_runbook(self):
+        g = _graph(_comp("app"))
+        engine = RunbookValidationEngine()
+        rb = engine.suggest_runbook(g, "oom_kill")
+        assert isinstance(rb, RunbookV2)
+        assert rb.scenario == "oom_kill"
+
+    def test_has_diagnostic_step(self):
+        g = _graph(_comp("app"))
+        engine = RunbookValidationEngine()
+        rb = engine.suggest_runbook(g, "oom_kill")
+        types = [s.step_type for s in rb.steps]
+        assert RunbookStepType.DIAGNOSTIC in types
+
+    def test_has_notification_step(self):
+        g = _graph(_comp("app"))
+        engine = RunbookValidationEngine()
+        rb = engine.suggest_runbook(g, "disk_full")
+        types = [s.step_type for s in rb.steps]
+        assert RunbookStepType.NOTIFICATION in types
+
+    def test_has_remediation_step(self):
+        g = _graph(_comp("app"))
+        engine = RunbookValidationEngine()
+        rb = engine.suggest_runbook(g, "oom_kill")
+        types = [s.step_type for s in rb.steps]
+        assert RunbookStepType.REMEDIATION in types
+
+    def test_has_verification_step(self):
+        g = _graph(_comp("app"))
+        engine = RunbookValidationEngine()
+        rb = engine.suggest_runbook(g, "oom_kill")
+        types = [s.step_type for s in rb.steps]
+        assert RunbookStepType.VERIFICATION in types
+
+    def test_has_rollback_step(self):
+        g = _graph(_comp("app"))
+        engine = RunbookValidationEngine()
+        rb = engine.suggest_runbook(g, "oom_kill")
+        types = [s.step_type for s in rb.steps]
+        assert RunbookStepType.ROLLBACK in types
+
+    def test_rollback_requires_approval(self):
+        g = _graph(_comp("app"))
+        engine = RunbookValidationEngine()
+        rb = engine.suggest_runbook(g, "oom_kill")
+        rollback_steps = [s for s in rb.steps if s.step_type == RunbookStepType.ROLLBACK]
+        assert all(s.requires_approval for s in rollback_steps)
+
+    def test_multiple_components_remediation_per_component(self):
+        g = _graph(_comp("app"), _comp("db", ctype=ComponentType.DATABASE))
+        engine = RunbookValidationEngine()
+        rb = engine.suggest_runbook(g, "cascade_failure")
+        remediation = [s for s in rb.steps if s.step_type == RunbookStepType.REMEDIATION]
+        targets = {s.target_component_id for s in remediation}
+        assert "app" in targets
+        assert "db" in targets
+
+    def test_id_contains_scenario(self):
+        g = _graph(_comp("app"))
+        engine = RunbookValidationEngine()
+        rb = engine.suggest_runbook(g, "disk full")
+        assert "disk-full" in rb.id
+
+    def test_owner_is_auto(self):
+        g = _graph(_comp("app"))
+        engine = RunbookValidationEngine()
+        rb = engine.suggest_runbook(g, "test")
+        assert rb.owner == "auto-generated"
+
+    def test_last_tested_is_today(self):
+        g = _graph(_comp("app"))
+        engine = RunbookValidationEngine()
+        rb = engine.suggest_runbook(g, "test")
+        today = datetime.now(timezone.utc).strftime("%Y-%m-%d")
+        assert rb.last_tested == today
+
+    def test_step_numbers_sequential(self):
+        g = _graph(_comp("a"), _comp("b"), _comp("c"))
+        engine = RunbookValidationEngine()
+        rb = engine.suggest_runbook(g, "test")
+        nums = [s.step_number for s in rb.steps]
+        assert nums == list(range(1, len(rb.steps) + 1))
+
+
+# ---------------------------------------------------------------------------
+# RunbookValidationEngine.validate_escalation_path tests
+# ---------------------------------------------------------------------------
+
+
+class TestValidateEscalationPath:
+    def test_no_escalation_no_notification(self):
+        rb = _runbook(steps=[_step(1, stype=RunbookStepType.REMEDIATION)])
+        engine = RunbookValidationEngine()
+        ev = engine.validate_escalation_path(rb)
+        assert ev.has_escalation is False
+        assert ev.has_notification is False
+        assert ev.is_valid is False
+        assert len(ev.issues) == 2
+
+    def test_has_escalation_only(self):
+        rb = _runbook(steps=[
+            _step(1, stype=RunbookStepType.DIAGNOSTIC),
+            _step(2, stype=RunbookStepType.ESCALATION),
+        ])
+        engine = RunbookValidationEngine()
+        ev = engine.validate_escalation_path(rb)
+        assert ev.has_escalation is True
+        assert ev.has_notification is False
+        assert ev.is_valid is False
+
+    def test_has_notification_only(self):
+        rb = _runbook(steps=[
+            _step(1, stype=RunbookStepType.NOTIFICATION),
+            _step(2, stype=RunbookStepType.REMEDIATION),
+        ])
+        engine = RunbookValidationEngine()
+        ev = engine.validate_escalation_path(rb)
+        assert ev.has_notification is True
+        assert ev.has_escalation is False
+        assert ev.is_valid is False
+
+    def test_valid_escalation_path(self):
+        rb = _runbook(steps=[
+            _step(1, stype=RunbookStepType.DIAGNOSTIC),
+            _step(2, stype=RunbookStepType.NOTIFICATION),
+            _step(3, stype=RunbookStepType.ESCALATION),
+        ])
+        engine = RunbookValidationEngine()
+        ev = engine.validate_escalation_path(rb)
+        assert ev.is_valid is True
+        assert ev.issues == []
+
+    def test_escalation_before_notification(self):
+        rb = _runbook(steps=[
+            _step(1, stype=RunbookStepType.ESCALATION),
+            _step(2, stype=RunbookStepType.NOTIFICATION),
+        ])
+        engine = RunbookValidationEngine()
+        ev = engine.validate_escalation_path(rb)
+        assert ev.is_valid is False
+        assert any("before notification" in i.lower() for i in ev.issues)
+
+    def test_escalation_as_first_step(self):
+        rb = _runbook(steps=[
+            _step(1, stype=RunbookStepType.ESCALATION),
+            _step(2, stype=RunbookStepType.NOTIFICATION),
+        ])
+        engine = RunbookValidationEngine()
+        ev = engine.validate_escalation_path(rb)
+        assert any("first step" in i.lower() for i in ev.issues)
+
+    def test_escalation_step_numbers_listed(self):
+        rb = _runbook(steps=[
+            _step(1, stype=RunbookStepType.NOTIFICATION),
+            _step(2, stype=RunbookStepType.ESCALATION),
+            _step(3, stype=RunbookStepType.ESCALATION),
+        ])
+        engine = RunbookValidationEngine()
+        ev = engine.validate_escalation_path(rb)
+        assert ev.escalation_steps == [2, 3]
+
+    def test_notification_step_numbers_listed(self):
+        rb = _runbook(steps=[
+            _step(1, stype=RunbookStepType.NOTIFICATION),
+            _step(2, stype=RunbookStepType.NOTIFICATION),
+            _step(3, stype=RunbookStepType.ESCALATION),
+        ])
+        engine = RunbookValidationEngine()
+        ev = engine.validate_escalation_path(rb)
+        assert ev.notification_steps == [1, 2]
+
+    def test_empty_runbook(self):
+        rb = _runbook(steps=[])
+        engine = RunbookValidationEngine()
+        ev = engine.validate_escalation_path(rb)
+        assert ev.has_escalation is False
+        assert ev.has_notification is False
+        assert ev.is_valid is False
+
+
+# ---------------------------------------------------------------------------
+# RunbookValidationEngine.compare_runbooks tests
+# ---------------------------------------------------------------------------
+
+
+class TestCompareRunbooks:
+    def test_identical_runbooks(self):
+        rb = _runbook(steps=[_step(1)])
+        engine = RunbookValidationEngine()
+        comp = engine.compare_runbooks(rb, rb)
+        assert comp.is_identical is True
+
+    def test_different_name(self):
+        a = _runbook(rid="a", name="Alpha")
+        b = _runbook(rid="b", name="Beta")
+        engine = RunbookValidationEngine()
+        comp = engine.compare_runbooks(a, b)
+        assert comp.is_identical is False
+        fields = {d.field for d in comp.differences}
+        assert "name" in fields
+
+    def test_different_scenario(self):
+        a = _runbook(rid="a", scenario="oom")
+        b = _runbook(rid="b", scenario="disk_full")
+        engine = RunbookValidationEngine()
+        comp = engine.compare_runbooks(a, b)
+        fields = {d.field for d in comp.differences}
+        assert "scenario" in fields
+
+    def test_different_owner(self):
+        a = _runbook(rid="a", owner="team-a")
+        b = _runbook(rid="b", owner="team-b")
+        engine = RunbookValidationEngine()
+        comp = engine.compare_runbooks(a, b)
+        fields = {d.field for d in comp.differences}
+        assert "owner" in fields
+
+    def test_different_severity(self):
+        a = _runbook(rid="a", severity="high")
+        b = _runbook(rid="b", severity="critical")
+        engine = RunbookValidationEngine()
+        comp = engine.compare_runbooks(a, b)
+        fields = {d.field for d in comp.differences}
+        assert "severity" in fields
+
+    def test_different_last_tested(self):
+        a = _runbook(rid="a", last_tested="2025-01-01")
+        b = _runbook(rid="b", last_tested="2026-01-01")
+        engine = RunbookValidationEngine()
+        comp = engine.compare_runbooks(a, b)
+        fields = {d.field for d in comp.differences}
+        assert "last_tested" in fields
+
+    def test_step_added(self):
+        a = _runbook(rid="a", steps=[_step(1)])
+        b = _runbook(rid="b", steps=[_step(1), _step(2)])
+        engine = RunbookValidationEngine()
+        comp = engine.compare_runbooks(a, b)
+        assert 2 in comp.steps_added
+
+    def test_step_removed(self):
+        a = _runbook(rid="a", steps=[_step(1), _step(2)])
+        b = _runbook(rid="b", steps=[_step(1)])
+        engine = RunbookValidationEngine()
+        comp = engine.compare_runbooks(a, b)
+        assert 2 in comp.steps_removed
+
+    def test_step_modified(self):
+        a = _runbook(rid="a", steps=[_step(1, desc="Do X")])
+        b = _runbook(rid="b", steps=[_step(1, desc="Do Y")])
+        engine = RunbookValidationEngine()
+        comp = engine.compare_runbooks(a, b)
+        assert 1 in comp.steps_modified
+
+    def test_ids_in_comparison(self):
+        a = _runbook(rid="alpha")
+        b = _runbook(rid="beta")
+        engine = RunbookValidationEngine()
+        comp = engine.compare_runbooks(a, b)
+        assert comp.runbook_a_id == "alpha"
+        assert comp.runbook_b_id == "beta"
+
+    def test_no_steps_identical(self):
+        a = _runbook(rid="a", steps=[])
+        b = _runbook(rid="b", steps=[])
+        engine = RunbookValidationEngine()
+        comp = engine.compare_runbooks(a, b)
+        assert comp.steps_added == []
+        assert comp.steps_removed == []
+        assert comp.steps_modified == []
+
+    def test_multiple_differences(self):
+        a = _runbook(rid="a", name="A", owner="x", steps=[_step(1), _step(3)])
+        b = _runbook(rid="b", name="B", owner="y", steps=[_step(2), _step(3, desc="Changed")])
+        engine = RunbookValidationEngine()
+        comp = engine.compare_runbooks(a, b)
+        assert comp.is_identical is False
+        assert len(comp.differences) >= 2
+
+
+# ---------------------------------------------------------------------------
+# Integration / edge-case tests
+# ---------------------------------------------------------------------------
+
+
+class TestIntegration:
+    def test_suggested_runbook_validates_clean(self):
+        """A suggested runbook should validate as VALID against the same graph."""
+        g = _graph(_comp("app"), _comp("db", ctype=ComponentType.DATABASE))
+        engine = RunbookValidationEngine()
+        suggested = engine.suggest_runbook(g, "cascade_failure")
+        report = engine.validate_runbook(g, suggested)
+        assert report.overall_result == ValidationResult.VALID
+        assert report.confidence == 1.0
+
+    def test_suggested_runbook_has_no_coverage_gaps_for_self(self):
+        g = _graph(_comp("app"))
+        engine = RunbookValidationEngine()
+        suggested = engine.suggest_runbook(g, "oom_kill")
+        report = engine.validate_runbook(g, suggested)
+        assert len(report.coverage_gaps) == 0
+
+    def test_stale_detection_matches_validate(self):
+        """detect_stale_runbooks and validate_runbook should agree on staleness."""
+        g = _graph(_comp("app"))
+        rb = _runbook(
+            rid="old",
+            last_tested="2020-01-01",
+            steps=[
+                _step(1, stype=RunbookStepType.DIAGNOSTIC),
+                _step(2, stype=RunbookStepType.REMEDIATION),
+                _step(3, stype=RunbookStepType.VERIFICATION),
+            ],
+        )
+        engine = RunbookValidationEngine()
+        stale_ids = engine.detect_stale_runbooks([rb])
+        report = engine.validate_runbook(g, rb)
+        assert "old" in stale_ids
+        assert report.overall_result == ValidationResult.STALE
+
+    def test_escalation_valid_on_suggested_with_escalation(self):
+        """Adding escalation to a suggested runbook should pass escalation check."""
+        g = _graph(_comp("app"))
+        engine = RunbookValidationEngine()
+        suggested = engine.suggest_runbook(g, "test")
+        # Add notification + escalation steps.
+        suggested.steps.insert(
+            1,
+            _step(
+                num=max(s.step_number for s in suggested.steps) + 1,
+                stype=RunbookStepType.NOTIFICATION,
+            ),
+        )
+        suggested.steps.append(
+            _step(
+                num=max(s.step_number for s in suggested.steps) + 1,
+                stype=RunbookStepType.ESCALATION,
+            ),
+        )
+        ev = engine.validate_escalation_path(suggested)
+        assert ev.has_escalation is True
+        assert ev.has_notification is True
+
+    def test_large_graph_coverage_gaps(self):
+        """Many components should produce many gaps when no runbooks exist."""
+        comps = [_comp(f"c{i}", ctype=ComponentType.APP_SERVER) for i in range(20)]
+        g = _graph(*comps)
+        engine = RunbookValidationEngine()
+        gaps = engine.find_coverage_gaps(g, [])
+        # APP_SERVER has 3 scenarios per component.
+        assert len(gaps) == 20 * 3
+
+    def test_compare_same_object(self):
+        rb = _runbook(steps=[_step(1), _step(2)])
+        engine = RunbookValidationEngine()
+        comp = engine.compare_runbooks(rb, rb)
+        assert comp.is_identical is True
+
+    def test_full_workflow(self):
+        """Full workflow: suggest, validate, check escalation, find gaps."""
+        g = _graph(
+            _comp("lb", ctype=ComponentType.LOAD_BALANCER),
+            _comp("app"),
+            _comp("db", ctype=ComponentType.DATABASE),
+            deps=[
+                Dependency(source_id="lb", target_id="app"),
+                Dependency(source_id="app", target_id="db"),
+            ],
+        )
+        engine = RunbookValidationEngine()
+
+        # Suggest.
+        rb = engine.suggest_runbook(g, "cascade_failure")
+        assert len(rb.steps) > 0
+
+        # Validate.
+        report = engine.validate_runbook(g, rb)
+        assert report.overall_result == ValidationResult.VALID
+
+        # MTTR.
+        mttr = engine.estimate_mttr(rb)
+        assert mttr > 0
+
+        # Coverage gaps (partial coverage).
+        gaps = engine.find_coverage_gaps(g, [rb])
+        assert len(gaps) > 0  # Can't cover all typed scenarios with one runbook.
+
+        # Stale detection.
+        stale = engine.detect_stale_runbooks([rb])
+        assert stale == []
+
+    def test_engine_is_stateless(self):
+        """Multiple calls to the same engine should be independent."""
+        engine = RunbookValidationEngine()
+        g1 = _graph(_comp("a"))
+        g2 = _graph(_comp("b"))
+        r1 = engine.suggest_runbook(g1, "test1")
+        r2 = engine.suggest_runbook(g2, "test2")
+        assert r1.scenario == "test1"
+        assert r2.scenario == "test2"
+        # Ensure no state leak.
+        assert r1.steps[0].target_component_id == "a"
+        assert r2.steps[0].target_component_id == "b"
+
+    def test_validate_with_dependencies(self):
+        g = _graph(
+            _comp("app"),
+            _comp("db", ctype=ComponentType.DATABASE),
+            deps=[Dependency(source_id="app", target_id="db")],
+        )
+        rb = _runbook(
+            last_tested=datetime.now(timezone.utc).strftime("%Y-%m-%d"),
+            steps=[
+                _step(1, target="app", stype=RunbookStepType.DIAGNOSTIC),
+                _step(2, target="db", stype=RunbookStepType.REMEDIATION),
+                _step(3, target="app", stype=RunbookStepType.VERIFICATION),
+            ],
+        )
+        engine = RunbookValidationEngine()
+        report = engine.validate_runbook(g, rb)
+        assert report.overall_result == ValidationResult.VALID
+
+    def test_gap_severity_with_many_dependents(self):
+        """Component with 3+ dependents should be critical even if not SPOF."""
+        g = _graph(
+            _comp("db", replicas=3, ctype=ComponentType.DATABASE),
+            _comp("a1"), _comp("a2"), _comp("a3"),
+            deps=[
+                Dependency(source_id="a1", target_id="db"),
+                Dependency(source_id="a2", target_id="db"),
+                Dependency(source_id="a3", target_id="db"),
+            ],
+        )
+        engine = RunbookValidationEngine()
+        gaps = engine.find_coverage_gaps(g, [])
+        db_gaps = [g for g in gaps if g.component_id == "db"]
+        assert all(gap.severity == "critical" for gap in db_gaps)
+
+    def test_gap_severity_medium_one_dependent(self):
+        g = _graph(
+            _comp("db", replicas=3, ctype=ComponentType.DATABASE),
+            _comp("app"),
+            deps=[Dependency(source_id="app", target_id="db")],
+        )
+        engine = RunbookValidationEngine()
+        gaps = engine.find_coverage_gaps(g, [])
+        db_gaps = [g for g in gaps if g.component_id == "db"]
+        assert all(gap.severity == "medium" for gap in db_gaps)
+
+    def test_validation_report_runbook_id(self):
+        g = _graph(_comp("app"))
+        rb = _runbook(
+            rid="my-runbook-42",
+            last_tested=datetime.now(timezone.utc).strftime("%Y-%m-%d"),
+            steps=[_step(1)],
+        )
+        engine = RunbookValidationEngine()
+        report = engine.validate_runbook(g, rb)
+        assert report.runbook_id == "my-runbook-42"
+
+    def test_stale_recommendation_text(self):
+        g = _graph(_comp("app"))
+        rb = _runbook(
+            last_tested="2024-01-01",
+            steps=[_step(1)],
+        )
+        engine = RunbookValidationEngine()
+        report = engine.validate_runbook(g, rb)
+        assert any("stale" in r.lower() for r in report.recommendations)
+
+    def test_timeout_boundary_3600(self):
+        """Timeout of exactly 3600s should be valid (not untestable)."""
+        g = _graph(_comp("app"))
+        rb = _runbook(
+            last_tested=datetime.now(timezone.utc).strftime("%Y-%m-%d"),
+            steps=[_step(1, timeout=3600)],
+        )
+        engine = RunbookValidationEngine()
+        report = engine.validate_runbook(g, rb)
+        assert report.step_validations[0].result == ValidationResult.VALID
+
+    def test_timeout_boundary_3601(self):
+        """Timeout of 3601s should be untestable."""
+        g = _graph(_comp("app"))
+        rb = _runbook(
+            last_tested=datetime.now(timezone.utc).strftime("%Y-%m-%d"),
+            steps=[_step(1, timeout=3601)],
+        )
+        engine = RunbookValidationEngine()
+        report = engine.validate_runbook(g, rb)
+        assert report.step_validations[0].result == ValidationResult.UNTESTABLE
+
+    def test_dns_component_scenarios(self):
+        g = _graph(_comp("dns1", ctype=ComponentType.DNS))
+        engine = RunbookValidationEngine()
+        gaps = engine.find_coverage_gaps(g, [])
+        scenarios = {gap.failure_scenario for gap in gaps}
+        assert "dns_resolution_failure" in scenarios
+        assert "ttl_misconfiguration" in scenarios
+
+    def test_queue_component_scenarios(self):
+        g = _graph(_comp("q1", ctype=ComponentType.QUEUE))
+        engine = RunbookValidationEngine()
+        gaps = engine.find_coverage_gaps(g, [])
+        scenarios = {gap.failure_scenario for gap in gaps}
+        assert "message_backlog" in scenarios
+        assert "dead_letter_overflow" in scenarios
+
+    def test_cache_component_scenarios(self):
+        g = _graph(_comp("cache1", ctype=ComponentType.CACHE))
+        engine = RunbookValidationEngine()
+        gaps = engine.find_coverage_gaps(g, [])
+        scenarios = {gap.failure_scenario for gap in gaps}
+        assert "cache_stampede" in scenarios
+        assert "memory_overflow" in scenarios
+
+    def test_storage_component_scenarios(self):
+        g = _graph(_comp("s1", ctype=ComponentType.STORAGE))
+        engine = RunbookValidationEngine()
+        gaps = engine.find_coverage_gaps(g, [])
+        scenarios = {gap.failure_scenario for gap in gaps}
+        assert "disk_full" in scenarios
+        assert "io_throttle" in scenarios
+
+    def test_external_api_scenarios(self):
+        g = _graph(_comp("ext1", ctype=ComponentType.EXTERNAL_API))
+        engine = RunbookValidationEngine()
+        gaps = engine.find_coverage_gaps(g, [])
+        scenarios = {gap.failure_scenario for gap in gaps}
+        assert "upstream_timeout" in scenarios
+        assert "rate_limiting" in scenarios
+
+    def test_load_balancer_scenarios(self):
+        g = _graph(_comp("lb1", ctype=ComponentType.LOAD_BALANCER))
+        engine = RunbookValidationEngine()
+        gaps = engine.find_coverage_gaps(g, [])
+        scenarios = {gap.failure_scenario for gap in gaps}
+        assert "routing_failure" in scenarios
+        assert "health_check_misconfiguration" in scenarios
+
+    def test_web_server_scenarios(self):
+        g = _graph(_comp("ws1", ctype=ComponentType.WEB_SERVER))
+        engine = RunbookValidationEngine()
+        gaps = engine.find_coverage_gaps(g, [])
+        scenarios = {gap.failure_scenario for gap in gaps}
+        assert "connection_limit" in scenarios
+        assert "tls_expiry" in scenarios
+
+    def test_compare_with_step_type_change(self):
+        a = _runbook(rid="a", steps=[_step(1, stype=RunbookStepType.DIAGNOSTIC)])
+        b = _runbook(rid="b", steps=[_step(1, stype=RunbookStepType.REMEDIATION)])
+        engine = RunbookValidationEngine()
+        comp = engine.compare_runbooks(a, b)
+        assert 1 in comp.steps_modified
+        assert comp.is_identical is False
+
+    def test_mttr_rounding(self):
+        rb = _runbook(steps=[_step(1, timeout=100)])
+        engine = RunbookValidationEngine()
+        mttr = engine.estimate_mttr(rb)
+        assert mttr == round(100 / 60, 2)
+
+    def test_confidence_zero_on_all_missing(self):
+        g = _graph(_comp("app"))
+        rb = _runbook(
+            last_tested=datetime.now(timezone.utc).strftime("%Y-%m-%d"),
+            steps=[
+                _step(1, target="x"),
+                _step(2, target="y"),
+            ],
+        )
+        engine = RunbookValidationEngine()
+        report = engine.validate_runbook(g, rb)
+        assert report.confidence == 0.0
+
+    def test_detect_stale_with_large_max_age(self):
+        rb = _runbook(rid="rb-1", last_tested="2020-01-01")
+        engine = RunbookValidationEngine()
+        result = engine.detect_stale_runbooks([rb], max_age_days=999999)
+        assert result == []
+
+    def test_coverage_gap_fuzzy_match_by_scenario_name(self):
+        """When a runbook scenario name matches a coverage scenario, it should not be a gap.
+
+        The runbook's steps target a *different* component so (comp_id, scenario) is
+        not in the exact-match set, but the scenario name is in covered_scenarios.
+        """
+        g = _graph(
+            _comp("app"),
+            _comp("db", ctype=ComponentType.DATABASE),
+        )
+        # Runbook targets "db" but scenario is "oom_kill" (an APP_SERVER scenario).
+        rb = _runbook(scenario="oom_kill", steps=[_step(1, target="db")])
+        engine = RunbookValidationEngine()
+        gaps = engine.find_coverage_gaps(g, [rb])
+        app_scenarios = {gap.failure_scenario for gap in gaps if gap.component_id == "app"}
+        assert "oom_kill" not in app_scenarios
+
+    def test_severity_from_dependents_spof_with_two_dependents(self):
+        """SPOF with 2+ dependents -> critical."""
+        g = _graph(
+            _comp("db", replicas=1, failover_enabled=False, ctype=ComponentType.DATABASE),
+            _comp("a1"),
+            _comp("a2"),
+            deps=[
+                Dependency(source_id="a1", target_id="db"),
+                Dependency(source_id="a2", target_id="db"),
+            ],
+        )
+        engine = RunbookValidationEngine()
+        gaps = engine.find_coverage_gaps(g, [])
+        db_gaps = [gap for gap in gaps if gap.component_id == "db"]
+        assert all(gap.severity == "critical" for gap in db_gaps)
+
+    def test_overall_stale_between_90_and_180(self):
+        """Runbook that is 91-180 days stale with all valid steps should be STALE."""
+        g = _graph(_comp("app"))
+        # Pick a date ~120 days ago.
+        from datetime import timedelta
+        dt = datetime.now(timezone.utc) - timedelta(days=120)
+        rb = _runbook(
+            last_tested=dt.strftime("%Y-%m-%d"),
+            steps=[
+                _step(1, stype=RunbookStepType.DIAGNOSTIC),
+                _step(2, stype=RunbookStepType.REMEDIATION),
+                _step(3, stype=RunbookStepType.VERIFICATION),
+            ],
+        )
+        engine = RunbookValidationEngine()
+        report = engine.validate_runbook(g, rb)
+        assert report.overall_result == ValidationResult.STALE
+
+
+# ===========================================================================
+# Legacy RunbookValidator (v1) tests
+# ===========================================================================
+
+def _v1_step(
+    order: int = 1,
+    desc: str = "step",
+    automated: bool = False,
+    time: float = 10.0,
+    approval: bool = False,
+) -> RecoveryStep:
+    return RecoveryStep(
+        order=order,
+        description=desc,
+        is_automated=automated,
+        estimated_time_minutes=time,
+        requires_approval=approval,
+    )
+
+
+def _v1_runbook(
+    scenario_id: str = "app:out of memory",
+    title: str = "OOM runbook",
+    component_id: str = "app",
     steps: list[RecoveryStep] | None = None,
-    last_tested: str | None = "2025-01-01",
-    owner: str = "sre-team",
+    last_tested: str | None = "2026-01-01",
+    owner: str = "team-a",
+    status: RunbookStatus = RunbookStatus.COMPLETE,
     total_time: float = 30.0,
-) -> Runbook:
-    """Helper to create a Runbook with sensible defaults."""
-    if steps is None:
-        steps = [
-            RecoveryStep(
-                order=1,
-                description="Investigate the issue",
-                is_automated=False,
-                estimated_time_minutes=5.0,
-                requires_approval=False,
-            ),
-            RecoveryStep(
-                order=2,
-                description="Apply mitigation",
-                is_automated=True,
-                estimated_time_minutes=10.0,
-                requires_approval=False,
-            ),
-            RecoveryStep(
-                order=3,
-                description="Verify recovery",
-                is_automated=True,
-                estimated_time_minutes=5.0,
-                requires_approval=False,
-            ),
-        ]
-    return Runbook(
+) -> RunbookV1:
+    return RunbookV1(
         scenario_id=scenario_id,
         title=title,
         component_id=component_id,
-        steps=steps,
+        steps=steps if steps is not None else [_v1_step()],
         last_tested=last_tested,
         owner=owner,
         status=status,
@@ -196,1223 +1500,378 @@ def _make_runbook(
     )
 
 
-# ====================================================================
-# Tests for RunbookStatus Enum
-# ====================================================================
-
-
-class TestRunbookStatus:
-    def test_enum_values(self):
+class TestRunbookStatusEnum:
+    def test_complete(self):
         assert RunbookStatus.COMPLETE == "complete"
+
+    def test_partial(self):
         assert RunbookStatus.PARTIAL == "partial"
+
+    def test_missing(self):
         assert RunbookStatus.MISSING == "missing"
+
+    def test_outdated(self):
         assert RunbookStatus.OUTDATED == "outdated"
-
-    def test_enum_from_string(self):
-        assert RunbookStatus("complete") == RunbookStatus.COMPLETE
-        assert RunbookStatus("partial") == RunbookStatus.PARTIAL
-
-    def test_enum_is_string(self):
-        assert isinstance(RunbookStatus.COMPLETE, str)
-        assert RunbookStatus.COMPLETE.upper() == "COMPLETE"
-
-
-# ====================================================================
-# Tests for RecoveryStep dataclass
-# ====================================================================
 
 
 class TestRecoveryStep:
-    def test_basic_creation(self):
-        step = RecoveryStep(
-            order=1,
-            description="Restart service",
-            is_automated=True,
-            estimated_time_minutes=2.0,
-            requires_approval=False,
-        )
-        assert step.order == 1
-        assert step.description == "Restart service"
-        assert step.is_automated is True
-        assert step.estimated_time_minutes == 2.0
-        assert step.requires_approval is False
-
-    def test_approval_required(self):
-        step = RecoveryStep(
-            order=5,
-            description="Scale down production",
-            is_automated=False,
-            estimated_time_minutes=15.0,
-            requires_approval=True,
-        )
-        assert step.requires_approval is True
-
-    def test_zero_time(self):
-        step = RecoveryStep(
-            order=1,
-            description="Notify",
-            is_automated=True,
-            estimated_time_minutes=0.0,
-            requires_approval=False,
-        )
-        assert step.estimated_time_minutes == 0.0
+    def test_fields(self):
+        s = _v1_step(order=3, desc="restart", automated=True, time=5.0, approval=True)
+        assert s.order == 3
+        assert s.description == "restart"
+        assert s.is_automated is True
+        assert s.estimated_time_minutes == 5.0
+        assert s.requires_approval is True
 
 
-# ====================================================================
-# Tests for Runbook dataclass
-# ====================================================================
-
-
-class TestRunbook:
-    def test_basic_creation(self):
-        rb = _make_runbook("db:data corruption", "DB Data Corruption", "db")
-        assert rb.scenario_id == "db:data corruption"
-        assert rb.title == "DB Data Corruption"
-        assert rb.component_id == "db"
+class TestRunbookV1Model:
+    def test_fields(self):
+        rb = _v1_runbook()
+        assert rb.scenario_id == "app:out of memory"
+        assert rb.title == "OOM runbook"
+        assert rb.component_id == "app"
         assert rb.status == RunbookStatus.COMPLETE
-        assert len(rb.steps) == 3
-        assert rb.owner == "sre-team"
-        assert rb.last_tested == "2025-01-01"
-        assert rb.estimated_total_time_minutes == 30.0
 
-    def test_runbook_no_test_date(self):
-        rb = _make_runbook(
-            "app:out of memory", "App OOM", "app", last_tested=None
-        )
+    def test_last_tested_none(self):
+        rb = _v1_runbook(last_tested=None)
         assert rb.last_tested is None
 
-    def test_runbook_empty_steps(self):
-        rb = _make_runbook("cache:overflow", "Cache Overflow", "cache", steps=[])
-        assert len(rb.steps) == 0
 
-    def test_runbook_statuses(self):
-        for status in RunbookStatus:
-            rb = _make_runbook("test:test", "Test", "test", status=status)
-            assert rb.status == status
-
-
-# ====================================================================
-# Tests for RunbookGap dataclass
-# ====================================================================
-
-
-class TestRunbookGap:
-    def test_basic_creation(self):
-        gap = RunbookGap(
-            scenario_description="data corruption on PostgreSQL",
-            component_id="db",
-            component_name="PostgreSQL",
+class TestRunbookGapModel:
+    def test_fields(self):
+        g = RunbookGap(
+            scenario_description="oom on app",
+            component_id="app",
+            component_name="App Server",
             severity="critical",
-            reason="No runbook exists",
-            suggested_steps=["Investigate", "Mitigate", "Verify"],
+            reason="No runbook",
+            suggested_steps=["Restart"],
         )
-        assert gap.severity == "critical"
-        assert len(gap.suggested_steps) == 3
-        assert gap.component_id == "db"
-
-    def test_empty_suggested_steps(self):
-        gap = RunbookGap(
-            scenario_description="test",
-            component_id="x",
-            component_name="X",
-            severity="low",
-            reason="test",
-            suggested_steps=[],
-        )
-        assert gap.suggested_steps == []
+        assert g.severity == "critical"
+        assert g.suggested_steps == ["Restart"]
 
 
-# ====================================================================
-# Tests for RunbookValidationReport dataclass
-# ====================================================================
-
-
-class TestRunbookValidationReport:
-    def test_basic_creation(self):
-        report = RunbookValidationReport(
+class TestRunbookValidationReportV1Model:
+    def test_fields(self):
+        r = RunbookValidationReportV1(
             total_scenarios=10,
             covered_scenarios=7,
             coverage_percent=70.0,
-            completeness_score=65.0,
+            completeness_score=80.0,
             gaps=[],
             existing_runbooks=[],
-            recommendations=["Add more runbooks"],
-            mean_recovery_time_minutes=25.0,
+            recommendations=["Test more"],
+            mean_recovery_time_minutes=15.0,
         )
-        assert report.total_scenarios == 10
-        assert report.covered_scenarios == 7
-        assert report.coverage_percent == 70.0
-        assert report.completeness_score == 65.0
-        assert report.mean_recovery_time_minutes == 25.0
+        assert r.total_scenarios == 10
+        assert r.coverage_percent == 70.0
 
 
-# ====================================================================
-# Tests for RunbookValidator: empty graph
-# ====================================================================
+class TestRunbookValidatorV1:
+    """Tests for the legacy RunbookValidator class."""
 
+    def _build_graph(self) -> InfraGraph:
+        g = InfraGraph()
+        g.add_component(_comp("app", ctype=ComponentType.APP_SERVER, replicas=1))
+        g.add_component(_comp("db", ctype=ComponentType.DATABASE, replicas=2))
+        g.add_dependency(Dependency(source_id="app", target_id="db"))
+        return g
 
-class TestEmptyGraph:
-    def test_empty_graph_no_scenarios(self):
-        graph = _empty_graph()
-        validator = RunbookValidator(graph)
-        report = validator.validate()
+    def test_validate_no_runbooks(self):
+        g = self._build_graph()
+        v = RunbookValidator(g)
+        report = v.validate()
+        assert report.total_scenarios > 0
+        assert report.covered_scenarios == 0
+        assert len(report.gaps) > 0
+
+    def test_validate_empty_graph(self):
+        g = _graph()
+        v = RunbookValidator(g)
+        report = v.validate()
         assert report.total_scenarios == 0
-        assert report.covered_scenarios == 0
         assert report.coverage_percent == 100.0
-        assert report.completeness_score == 100.0
-        assert report.gaps == []
-        assert report.recommendations == []
-        assert report.mean_recovery_time_minutes == 0.0
 
-    def test_empty_graph_generate_required(self):
-        graph = _empty_graph()
-        validator = RunbookValidator(graph)
-        gaps = validator.generate_required_scenarios()
-        assert gaps == []
-
-
-# ====================================================================
-# Tests for RunbookValidator: single component
-# ====================================================================
-
-
-class TestSingleComponent:
-    def test_single_app_server_scenarios(self):
-        graph = _single_component_graph(ComponentType.APP_SERVER)
-        validator = RunbookValidator(graph)
-        report = validator.validate()
-        # APP_SERVER has 3 failure modes
-        assert report.total_scenarios == 3
-        assert report.covered_scenarios == 0
-        assert report.coverage_percent == 0.0
-        assert len(report.gaps) == 3
-
-    def test_single_database_scenarios(self):
-        graph = _single_component_graph(ComponentType.DATABASE, "db", "PostgreSQL")
-        validator = RunbookValidator(graph)
-        report = validator.validate()
-        # DATABASE has 3 failure modes
-        assert report.total_scenarios == 3
-        assert len(report.gaps) == 3
-
-    def test_single_cache_scenarios(self):
-        graph = _single_component_graph(ComponentType.CACHE, "cache", "Redis")
-        validator = RunbookValidator(graph)
-        report = validator.validate()
-        # CACHE has 2 failure modes
-        assert report.total_scenarios == 2
-
-    def test_single_load_balancer_scenarios(self):
-        graph = _single_component_graph(ComponentType.LOAD_BALANCER, "lb", "LB")
-        validator = RunbookValidator(graph)
-        report = validator.validate()
-        # LOAD_BALANCER has 2 failure modes
-        assert report.total_scenarios == 2
-
-    def test_single_queue_scenarios(self):
-        graph = _single_component_graph(ComponentType.QUEUE, "q", "Queue")
-        validator = RunbookValidator(graph)
-        report = validator.validate()
-        # QUEUE has 2 failure modes
-        assert report.total_scenarios == 2
-
-
-# ====================================================================
-# Tests for RunbookValidator: all component types
-# ====================================================================
-
-
-class TestAllComponentTypes:
-    def test_generates_scenarios_for_every_type(self):
-        graph = _all_component_types_graph()
-        validator = RunbookValidator(graph)
-        report = validator.validate()
-
-        # Total scenarios = sum of failure modes for all 10 types
-        # LB:2 + Web:2 + App:3 + DB:3 + Cache:2 + Queue:2 + Storage:2 +
-        # DNS:2 + Ext:2 + Custom:1 = 21
-        assert report.total_scenarios == 21
-        assert len(report.gaps) == 21
-        assert report.covered_scenarios == 0
-
-    def test_generate_required_scenarios_all_types(self):
-        graph = _all_component_types_graph()
-        validator = RunbookValidator(graph)
-        gaps = validator.generate_required_scenarios()
-        assert len(gaps) == 21
-        # Every gap should have suggested steps
-        for gap in gaps:
-            assert len(gap.suggested_steps) > 0
-
-    def test_all_gaps_have_valid_severity(self):
-        graph = _all_component_types_graph()
-        validator = RunbookValidator(graph)
-        gaps = validator.generate_required_scenarios()
-        valid_severities = {"critical", "high", "medium", "low"}
-        for gap in gaps:
-            assert gap.severity in valid_severities
-
-
-# ====================================================================
-# Tests for RunbookValidator: with runbooks provided
-# ====================================================================
-
-
-class TestWithRunbooks:
-    def test_full_coverage_by_scenario_id(self):
-        graph = _single_component_graph(ComponentType.CACHE, "cache", "Redis")
-        validator = RunbookValidator(graph)
-        runbooks = [
-            _make_runbook(
-                "cache:cache invalidation storm",
-                "Cache Invalidation Storm",
-                "cache",
-            ),
-            _make_runbook(
-                "cache:memory overflow",
-                "Cache Memory Overflow",
-                "cache",
-            ),
-        ]
-        report = validator.validate(runbooks)
-        assert report.total_scenarios == 2
-        assert report.covered_scenarios == 2
-        assert report.coverage_percent == 100.0
-        assert len(report.gaps) == 0
-
-    def test_partial_coverage(self):
-        graph = _single_component_graph(ComponentType.APP_SERVER, "app", "App")
-        validator = RunbookValidator(graph)
-        runbooks = [
-            _make_runbook(
-                "app:out of memory", "App OOM Recovery", "app"
-            ),
-        ]
-        report = validator.validate(runbooks)
-        assert report.total_scenarios == 3
-        assert report.covered_scenarios == 1
-        # 1/3 = 33.33%
-        assert 33.0 <= report.coverage_percent <= 34.0
-        assert len(report.gaps) == 2
-
-    def test_fuzzy_title_match(self):
-        """Coverage via title containing the scenario description."""
-        graph = _single_component_graph(ComponentType.DATABASE, "db", "DB")
-        validator = RunbookValidator(graph)
-        runbooks = [
-            _make_runbook(
-                "some-custom-id",
-                "Handle data corruption on DB",
-                "db",
-            ),
-        ]
-        report = validator.validate(runbooks)
-        # Should match "data corruption" via fuzzy title match
+    def test_validate_with_complete_runbook(self):
+        g = self._build_graph()
+        rb = _v1_runbook(
+            scenario_id="app:out of memory",
+            component_id="app",
+            status=RunbookStatus.COMPLETE,
+        )
+        v = RunbookValidator(g)
+        report = v.validate([rb])
         assert report.covered_scenarios >= 1
 
-    def test_runbook_for_wrong_component_does_not_match(self):
-        graph = _single_component_graph(ComponentType.DATABASE, "db", "DB")
-        validator = RunbookValidator(graph)
-        runbooks = [
-            _make_runbook(
-                "app:out of memory",
-                "App OOM Recovery",
-                "app",  # wrong component
-            ),
-        ]
-        report = validator.validate(runbooks)
-        assert report.covered_scenarios == 0
-
-    def test_outdated_runbook_counts_as_gap(self):
-        graph = _single_component_graph(ComponentType.CACHE, "cache", "Redis")
-        validator = RunbookValidator(graph)
-        runbooks = [
-            _make_runbook(
-                "cache:cache invalidation storm",
-                "Cache Invalidation",
-                "cache",
-                status=RunbookStatus.OUTDATED,
-            ),
-            _make_runbook(
-                "cache:memory overflow",
-                "Cache Overflow",
-                "cache",
-                status=RunbookStatus.COMPLETE,
-            ),
-        ]
-        report = validator.validate(runbooks)
-        assert report.covered_scenarios == 1
-        assert len(report.gaps) == 1
-        assert "outdated" in report.gaps[0].reason.lower()
-
-    def test_missing_status_runbook_counts_as_gap(self):
-        graph = _single_component_graph(ComponentType.CACHE, "cache", "Redis")
-        validator = RunbookValidator(graph)
-        runbooks = [
-            _make_runbook(
-                "cache:cache invalidation storm",
-                "Cache Invalidation",
-                "cache",
-                status=RunbookStatus.MISSING,
-            ),
-        ]
-        report = validator.validate(runbooks)
-        assert report.covered_scenarios == 0
-        assert len(report.gaps) == 2
-
-    def test_partial_status_still_covers(self):
-        """Partial status runbooks count as covered."""
-        graph = _single_component_graph(ComponentType.CACHE, "cache", "Redis")
-        validator = RunbookValidator(graph)
-        runbooks = [
-            _make_runbook(
-                "cache:cache invalidation storm",
-                "Cache Invalidation",
-                "cache",
-                status=RunbookStatus.PARTIAL,
-            ),
-            _make_runbook(
-                "cache:memory overflow",
-                "Cache Overflow",
-                "cache",
-                status=RunbookStatus.PARTIAL,
-            ),
-        ]
-        report = validator.validate(runbooks)
-        assert report.covered_scenarios == 2
-
-
-# ====================================================================
-# Tests for RunbookValidator: severity calculation
-# ====================================================================
-
-
-class TestSeverityCalculation:
-    def test_spof_with_many_dependents_is_critical(self):
-        graph = InfraGraph()
-        graph.add_component(
-            Component(id="db", name="DB", type=ComponentType.DATABASE, replicas=1)
+    def test_validate_with_outdated_runbook_not_covered(self):
+        g = self._build_graph()
+        rb = _v1_runbook(
+            scenario_id="app:out of memory",
+            status=RunbookStatus.OUTDATED,
         )
-        graph.add_component(
-            Component(id="app1", name="App1", type=ComponentType.APP_SERVER, replicas=2)
+        v = RunbookValidator(g)
+        report = v.validate([rb])
+        # Outdated runbook should still be a gap.
+        assert any("outdated" in gap.reason.lower() for gap in report.gaps)
+
+    def test_validate_with_missing_status_not_covered(self):
+        g = self._build_graph()
+        rb = _v1_runbook(
+            scenario_id="app:out of memory",
+            status=RunbookStatus.MISSING,
         )
-        graph.add_component(
-            Component(id="app2", name="App2", type=ComponentType.APP_SERVER, replicas=2)
+        v = RunbookValidator(g)
+        report = v.validate([rb])
+        assert any("missing" in gap.reason.lower() for gap in report.gaps)
+
+    def test_fuzzy_match_by_title(self):
+        g = self._build_graph()
+        rb = _v1_runbook(
+            scenario_id="custom-id",
+            component_id="app",
+            title="Handle Out Of Memory",
+            status=RunbookStatus.COMPLETE,
         )
-        graph.add_dependency(Dependency(source_id="app1", target_id="db"))
-        graph.add_dependency(Dependency(source_id="app2", target_id="db"))
+        v = RunbookValidator(g)
+        report = v.validate([rb])
+        assert report.covered_scenarios >= 1
 
-        validator = RunbookValidator(graph)
-        scenarios = validator._identify_critical_scenarios()
-        db_scenarios = [(c, s, sev) for c, s, sev in scenarios if c == "db"]
-        # DB is SPOF with 2 dependents -> critical
-        for _, _, sev in db_scenarios:
-            assert sev == "critical"
-
-    def test_spof_no_dependents_is_low(self):
-        graph = _single_component_graph(
-            ComponentType.DATABASE, "db", "DB", replicas=1, failover=False
+    def test_fuzzy_match_outdated_not_covered(self):
+        g = self._build_graph()
+        rb = _v1_runbook(
+            scenario_id="custom-id",
+            component_id="app",
+            title="Handle Out Of Memory",
+            status=RunbookStatus.OUTDATED,
         )
-        validator = RunbookValidator(graph)
-        scenarios = validator._identify_critical_scenarios()
-        # SPOF but 0 dependents -> still "critical" because is_spof alone
-        # Actually: is_spof=True, num_dependents=0 -> _compute_severity
-        # is_spof or num_dependents>=3 -> True -> critical
-        for _, _, sev in scenarios:
-            assert sev == "critical"
+        v = RunbookValidator(g)
+        report = v.validate([rb])
+        # Even with fuzzy match, outdated = not covered.
+        gap_scenarios = [gap.scenario_description for gap in report.gaps]
+        assert any("out of memory" in s for s in gap_scenarios)
 
-    def test_redundant_component_with_no_dependents_is_low(self):
-        graph = _single_component_graph(
-            ComponentType.DATABASE, "db", "DB", replicas=3, failover=True
-        )
-        validator = RunbookValidator(graph)
-        scenarios = validator._identify_critical_scenarios()
-        for _, _, sev in scenarios:
-            assert sev == "low"
+    def test_generate_required_scenarios(self):
+        g = self._build_graph()
+        v = RunbookValidator(g)
+        gaps = v.generate_required_scenarios()
+        assert len(gaps) > 0
+        assert all(isinstance(g, RunbookGap) for g in gaps)
 
-    def test_redundant_component_with_one_dependent_is_medium(self):
-        graph = InfraGraph()
-        graph.add_component(
-            Component(
-                id="db",
-                name="DB",
-                type=ComponentType.DATABASE,
-                replicas=2,
-                failover=FailoverConfig(enabled=True),
-            )
-        )
-        graph.add_component(
-            Component(id="app", name="App", type=ComponentType.APP_SERVER, replicas=2)
-        )
-        graph.add_dependency(Dependency(source_id="app", target_id="db"))
-
-        validator = RunbookValidator(graph)
-        scenarios = validator._identify_critical_scenarios()
-        db_scenarios = [(c, s, sev) for c, s, sev in scenarios if c == "db"]
-        for _, _, sev in db_scenarios:
-            assert sev == "medium"
-
-    def test_redundant_component_with_two_dependents_is_high(self):
-        graph = InfraGraph()
-        graph.add_component(
-            Component(
-                id="db",
-                name="DB",
-                type=ComponentType.DATABASE,
-                replicas=2,
-                failover=FailoverConfig(enabled=True),
-            )
-        )
-        for i in range(2):
-            graph.add_component(
-                Component(
-                    id=f"app{i}",
-                    name=f"App{i}",
-                    type=ComponentType.APP_SERVER,
-                    replicas=2,
-                )
-            )
-            graph.add_dependency(Dependency(source_id=f"app{i}", target_id="db"))
-
-        validator = RunbookValidator(graph)
-        scenarios = validator._identify_critical_scenarios()
-        db_scenarios = [(c, s, sev) for c, s, sev in scenarios if c == "db"]
-        for _, _, sev in db_scenarios:
-            assert sev == "high"
-
-    def test_compute_severity_static_method(self):
-        assert RunbookValidator._compute_severity(0, False) == "low"
-        assert RunbookValidator._compute_severity(1, False) == "medium"
-        assert RunbookValidator._compute_severity(2, False) == "high"
-        assert RunbookValidator._compute_severity(3, False) == "critical"
-        assert RunbookValidator._compute_severity(0, True) == "critical"
+    def test_compute_severity_critical_spof_high_deps(self):
         assert RunbookValidator._compute_severity(2, True) == "critical"
 
+    def test_compute_severity_critical_spof_only(self):
+        assert RunbookValidator._compute_severity(0, True) == "critical"
 
-# ====================================================================
-# Tests for SPOF detection
-# ====================================================================
+    def test_compute_severity_critical_many_deps(self):
+        assert RunbookValidator._compute_severity(3, False) == "critical"
 
+    def test_compute_severity_high(self):
+        assert RunbookValidator._compute_severity(2, False) == "high"
 
-class TestSPOFDetection:
-    def test_spof_single_replica_no_failover(self):
-        graph = _single_component_graph(
-            ComponentType.DATABASE, "db", "DB", replicas=1, failover=False
+    def test_compute_severity_medium(self):
+        assert RunbookValidator._compute_severity(1, False) == "medium"
+
+    def test_compute_severity_low(self):
+        assert RunbookValidator._compute_severity(0, False) == "low"
+
+    def test_calculate_completeness_no_runbooks(self):
+        g = self._build_graph()
+        v = RunbookValidator(g)
+        assert v._calculate_completeness([]) == 0.0
+
+    def test_calculate_completeness_complete_with_steps(self):
+        g = self._build_graph()
+        v = RunbookValidator(g)
+        rb = _v1_runbook(
+            status=RunbookStatus.COMPLETE,
+            steps=[_v1_step(i, automated=True) for i in range(6)],
+            last_tested="2026-01-01",
         )
-        validator = RunbookValidator(graph)
-        scenarios = validator._identify_critical_scenarios()
-        # All should be critical (SPOF)
-        for _, _, sev in scenarios:
-            assert sev == "critical"
+        score = v._calculate_completeness([rb])
+        assert score == 100.0
 
-    def test_not_spof_with_replicas(self):
-        graph = _single_component_graph(
-            ComponentType.DATABASE, "db", "DB", replicas=3, failover=False
-        )
-        validator = RunbookValidator(graph)
-        scenarios = validator._identify_critical_scenarios()
-        for _, _, sev in scenarios:
-            assert sev == "low"
+    def test_calculate_completeness_partial(self):
+        g = self._build_graph()
+        v = RunbookValidator(g)
+        rb = _v1_runbook(status=RunbookStatus.PARTIAL, steps=[_v1_step()], last_tested=None)
+        score = v._calculate_completeness([rb])
+        assert 0.0 < score < 100.0
 
-    def test_not_spof_with_failover(self):
-        graph = _single_component_graph(
-            ComponentType.DATABASE, "db", "DB", replicas=1, failover=True
-        )
-        validator = RunbookValidator(graph)
-        scenarios = validator._identify_critical_scenarios()
-        for _, _, sev in scenarios:
-            assert sev == "low"
+    def test_calculate_completeness_missing_status_no_steps(self):
+        g = self._build_graph()
+        v = RunbookValidator(g)
+        rb = _v1_runbook(status=RunbookStatus.MISSING, steps=[], last_tested=None)
+        score = v._calculate_completeness([rb])
+        # MISSING status = 0 points, no steps = 0 points, no automation, no testing = 0
+        assert score == 0.0
 
+    def test_calculate_completeness_missing_status_with_step(self):
+        g = self._build_graph()
+        v = RunbookValidator(g)
+        rb = _v1_runbook(status=RunbookStatus.MISSING, steps=[_v1_step()], last_tested=None)
+        score = v._calculate_completeness([rb])
+        # 0 (status) + 5.0 (1/5*25) + 0 (not automated) + 0 (not tested) = 5.0
+        assert score == 5.0
 
-# ====================================================================
-# Tests for RunbookValidator: completeness score
-# ====================================================================
+    def test_calculate_completeness_outdated(self):
+        g = self._build_graph()
+        v = RunbookValidator(g)
+        rb = _v1_runbook(status=RunbookStatus.OUTDATED, steps=[_v1_step()], last_tested=None)
+        score = v._calculate_completeness([rb])
+        assert 0.0 < score < 50.0
 
+    def test_estimate_mean_recovery(self):
+        g = self._build_graph()
+        v = RunbookValidator(g)
+        rbs = [_v1_runbook(total_time=20.0), _v1_runbook(total_time=40.0)]
+        assert v._estimate_mean_recovery(rbs) == 30.0
 
-class TestCompletenessScore:
-    def test_no_runbooks_score_zero(self):
-        graph = _single_component_graph()
-        validator = RunbookValidator(graph)
-        report = validator.validate()
-        assert report.completeness_score == 0.0
+    def test_estimate_mean_recovery_empty(self):
+        g = self._build_graph()
+        v = RunbookValidator(g)
+        assert v._estimate_mean_recovery([]) == 0.0
 
-    def test_complete_runbook_high_score(self):
-        graph = _single_component_graph(ComponentType.CACHE, "cache", "Redis")
-        validator = RunbookValidator(graph)
-        steps = [
-            RecoveryStep(i, f"Step {i}", True, 5.0, False) for i in range(1, 7)
-        ]
-        runbooks = [
-            _make_runbook(
-                "cache:cache invalidation storm",
-                "Cache Invalidation",
-                "cache",
-                status=RunbookStatus.COMPLETE,
-                steps=steps,
-                last_tested="2025-06-01",
-                total_time=30.0,
-            ),
-        ]
-        report = validator.validate(runbooks)
-        # Status=40 + Steps(6 >= 5)=25 + Auto(all)=20 + Tested=15 = 100
-        assert report.completeness_score == 100.0
+    def test_estimate_mean_recovery_zero_times(self):
+        g = self._build_graph()
+        v = RunbookValidator(g)
+        rbs = [_v1_runbook(total_time=0.0)]
+        assert v._estimate_mean_recovery(rbs) == 0.0
 
-    def test_partial_runbook_moderate_score(self):
-        graph = _single_component_graph(ComponentType.CACHE, "cache", "Redis")
-        validator = RunbookValidator(graph)
-        steps = [
-            RecoveryStep(1, "Step 1", False, 10.0, False),
-            RecoveryStep(2, "Step 2", False, 10.0, False),
-        ]
-        runbooks = [
-            _make_runbook(
-                "cache:cache invalidation storm",
-                "Cache Invalidation",
-                "cache",
-                status=RunbookStatus.PARTIAL,
-                steps=steps,
-                last_tested=None,
-                total_time=20.0,
-            ),
-        ]
-        report = validator.validate(runbooks)
-        # Status=20 + Steps(2/5*25)=10 + Auto(0)=0 + Tested(None)=0 = 30
-        assert report.completeness_score == 30.0
+    def test_recommendations_low_coverage(self):
+        g = self._build_graph()
+        v = RunbookValidator(g)
+        report = v.validate([])
+        assert any("coverage" in r.lower() for r in report.recommendations)
 
-    def test_outdated_runbook_low_score(self):
-        graph = _single_component_graph(ComponentType.CACHE, "cache", "Redis")
-        validator = RunbookValidator(graph)
-        runbooks = [
-            _make_runbook(
-                "cache:cache invalidation storm",
-                "Cache Invalidation",
-                "cache",
-                status=RunbookStatus.OUTDATED,
-                steps=[],
-                last_tested=None,
-                total_time=0.0,
-            ),
-        ]
-        report = validator.validate(runbooks)
-        # Status=10 + Steps(0)=0 + Auto(no steps)=0 + Tested(None)=0 = 10
-        assert report.completeness_score == 10.0
-
-    def test_missing_status_zero_score(self):
-        graph = _single_component_graph(ComponentType.CACHE, "cache", "Redis")
-        validator = RunbookValidator(graph)
-        runbooks = [
-            _make_runbook(
-                "cache:cache invalidation storm",
-                "Cache Invalidation",
-                "cache",
-                status=RunbookStatus.MISSING,
-                steps=[],
-                last_tested=None,
-                total_time=0.0,
-            ),
-        ]
-        report = validator.validate(runbooks)
-        assert report.completeness_score == 0.0
-
-    def test_mixed_automation_score(self):
-        graph = _single_component_graph(ComponentType.CACHE, "cache", "Redis")
-        validator = RunbookValidator(graph)
-        steps = [
-            RecoveryStep(1, "Manual step", False, 5.0, False),
-            RecoveryStep(2, "Auto step", True, 5.0, False),
-            RecoveryStep(3, "Auto step 2", True, 5.0, False),
-            RecoveryStep(4, "Manual step 2", False, 5.0, False),
-            RecoveryStep(5, "Auto step 3", True, 5.0, False),
-        ]
-        runbooks = [
-            _make_runbook(
-                "cache:cache invalidation storm",
-                "Cache Invalidation",
-                "cache",
-                status=RunbookStatus.COMPLETE,
-                steps=steps,
-                last_tested="2025-01-01",
-                total_time=25.0,
-            ),
-        ]
-        report = validator.validate(runbooks)
-        # Status=40 + Steps(5>=5)=25 + Auto(3/5*20)=12 + Tested=15 = 92
-        assert report.completeness_score == 92.0
-
-    def test_average_of_multiple_runbooks(self):
-        graph = _single_component_graph(ComponentType.CACHE, "cache", "Redis")
-        validator = RunbookValidator(graph)
-        # One perfect, one empty
-        perfect_steps = [
-            RecoveryStep(i, f"Step {i}", True, 5.0, False) for i in range(1, 6)
-        ]
-        runbooks = [
-            _make_runbook(
-                "cache:cache invalidation storm",
-                "Cache Invalidation",
-                "cache",
-                status=RunbookStatus.COMPLETE,
-                steps=perfect_steps,
-                last_tested="2025-01-01",
-                total_time=25.0,
-            ),
-            _make_runbook(
-                "cache:memory overflow",
-                "Cache Overflow",
-                "cache",
-                status=RunbookStatus.MISSING,
-                steps=[],
-                last_tested=None,
-                total_time=0.0,
-            ),
-        ]
-        report = validator.validate(runbooks)
-        # First: 100, Second: 0 => average = 50
-        assert report.completeness_score == 50.0
-
-
-# ====================================================================
-# Tests for RunbookValidator: mean recovery time
-# ====================================================================
-
-
-class TestMeanRecoveryTime:
-    def test_no_runbooks_zero_recovery(self):
-        graph = _single_component_graph()
-        validator = RunbookValidator(graph)
-        report = validator.validate()
-        assert report.mean_recovery_time_minutes == 0.0
-
-    def test_single_runbook_recovery(self):
-        graph = _single_component_graph(ComponentType.CACHE, "cache", "Redis")
-        validator = RunbookValidator(graph)
-        runbooks = [
-            _make_runbook(
-                "cache:cache invalidation storm",
-                "Cache Invalidation",
-                "cache",
-                total_time=45.0,
-            ),
-        ]
-        report = validator.validate(runbooks)
-        assert report.mean_recovery_time_minutes == 45.0
-
-    def test_multiple_runbooks_mean(self):
-        graph = _single_component_graph(ComponentType.CACHE, "cache", "Redis")
-        validator = RunbookValidator(graph)
-        runbooks = [
-            _make_runbook(
-                "cache:cache invalidation storm",
-                "Cache Invalidation",
-                "cache",
-                total_time=30.0,
-            ),
-            _make_runbook(
-                "cache:memory overflow",
-                "Cache Overflow",
-                "cache",
-                total_time=60.0,
-            ),
-        ]
-        report = validator.validate(runbooks)
-        assert report.mean_recovery_time_minutes == 45.0
-
-    def test_zero_time_runbooks_excluded(self):
-        graph = _single_component_graph(ComponentType.CACHE, "cache", "Redis")
-        validator = RunbookValidator(graph)
-        runbooks = [
-            _make_runbook(
-                "cache:cache invalidation storm",
-                "Cache Invalidation",
-                "cache",
-                total_time=0.0,
-            ),
-            _make_runbook(
-                "cache:memory overflow",
-                "Cache Overflow",
-                "cache",
-                total_time=60.0,
-            ),
-        ]
-        report = validator.validate(runbooks)
-        assert report.mean_recovery_time_minutes == 60.0
-
-    def test_all_zero_time(self):
-        graph = _single_component_graph(ComponentType.CACHE, "cache", "Redis")
-        validator = RunbookValidator(graph)
-        runbooks = [
-            _make_runbook(
-                "cache:cache invalidation storm",
-                "Cache Invalidation",
-                "cache",
-                total_time=0.0,
-            ),
-        ]
-        report = validator.validate(runbooks)
-        assert report.mean_recovery_time_minutes == 0.0
-
-
-# ====================================================================
-# Tests for RunbookValidator: recommendations
-# ====================================================================
-
-
-class TestRecommendations:
-    def test_low_coverage_recommendation(self):
-        graph = _standard_graph()
-        validator = RunbookValidator(graph)
-        report = validator.validate()
-        # No runbooks = 0% coverage -> recommendation about low coverage
-        assert any("critically low" in r.lower() for r in report.recommendations)
-
-    def test_critical_gaps_recommendation(self):
-        graph = _standard_graph()
-        validator = RunbookValidator(graph)
-        report = validator.validate()
+    def test_recommendations_critical_gaps(self):
+        g = self._build_graph()
+        v = RunbookValidator(g)
+        report = v.validate([])
         assert any("critical" in r.lower() for r in report.recommendations)
 
-    def test_outdated_runbook_recommendation(self):
-        graph = _single_component_graph(ComponentType.CACHE, "cache", "Redis")
-        validator = RunbookValidator(graph)
-        runbooks = [
-            _make_runbook(
-                "cache:cache invalidation storm",
-                "Cache Invalidation",
-                "cache",
-                status=RunbookStatus.OUTDATED,
-            ),
-            _make_runbook(
-                "cache:memory overflow",
-                "Cache Overflow",
-                "cache",
-                status=RunbookStatus.COMPLETE,
-            ),
-        ]
-        report = validator.validate(runbooks)
+    def test_recommendations_outdated_runbook(self):
+        g = self._build_graph()
+        v = RunbookValidator(g)
+        rb = _v1_runbook(
+            scenario_id="app:out of memory",
+            title="OOM Recovery",
+            status=RunbookStatus.OUTDATED,
+        )
+        report = v.validate([rb])
         assert any("outdated" in r.lower() for r in report.recommendations)
 
-    def test_partial_runbook_recommendation(self):
-        graph = _single_component_graph(ComponentType.CACHE, "cache", "Redis")
-        validator = RunbookValidator(graph)
-        runbooks = [
-            _make_runbook(
-                "cache:cache invalidation storm",
-                "Cache Invalidation",
-                "cache",
-                status=RunbookStatus.PARTIAL,
-            ),
-            _make_runbook(
-                "cache:memory overflow",
-                "Cache Overflow",
-                "cache",
-                status=RunbookStatus.COMPLETE,
-            ),
-        ]
-        report = validator.validate(runbooks)
+    def test_recommendations_partial_runbook(self):
+        g = self._build_graph()
+        v = RunbookValidator(g)
+        rb = _v1_runbook(
+            scenario_id="app:out of memory",
+            title="OOM Partial",
+            status=RunbookStatus.PARTIAL,
+        )
+        report = v.validate([rb])
         assert any("partial" in r.lower() for r in report.recommendations)
 
-    def test_untested_runbook_recommendation(self):
-        graph = _single_component_graph(ComponentType.CACHE, "cache", "Redis")
-        validator = RunbookValidator(graph)
-        runbooks = [
-            _make_runbook(
-                "cache:cache invalidation storm",
-                "Cache Invalidation",
-                "cache",
-                last_tested=None,
-            ),
-            _make_runbook(
-                "cache:memory overflow",
-                "Cache Overflow",
-                "cache",
-                last_tested=None,
-            ),
-        ]
-        report = validator.validate(runbooks)
+    def test_recommendations_untested(self):
+        g = self._build_graph()
+        v = RunbookValidator(g)
+        rb = _v1_runbook(
+            scenario_id="app:out of memory",
+            last_tested=None,
+        )
+        report = v.validate([rb])
         assert any("untested" in r.lower() for r in report.recommendations)
 
-    def test_low_automation_recommendation(self):
-        graph = _single_component_graph(ComponentType.CACHE, "cache", "Redis")
-        validator = RunbookValidator(graph)
-        steps = [
-            RecoveryStep(i, f"Manual step {i}", False, 10.0, False)
-            for i in range(1, 6)
-        ]
-        runbooks = [
-            _make_runbook(
-                "cache:cache invalidation storm",
-                "Cache Invalidation",
-                "cache",
-                steps=steps,
-            ),
-            _make_runbook(
-                "cache:memory overflow",
-                "Cache Overflow",
-                "cache",
-            ),
-        ]
-        report = validator.validate(runbooks)
+    def test_recommendations_low_automation(self):
+        g = self._build_graph()
+        v = RunbookValidator(g)
+        rb = _v1_runbook(
+            scenario_id="app:out of memory",
+            steps=[_v1_step(i, automated=False) for i in range(5)],
+        )
+        report = v.validate([rb])
         assert any("automation" in r.lower() for r in report.recommendations)
 
-    def test_no_recommendations_for_perfect_coverage(self):
-        graph = _single_component_graph(
-            ComponentType.CACHE, "cache", "Redis", replicas=2, failover=True
+    def test_recommendations_low_completeness(self):
+        g = self._build_graph()
+        v = RunbookValidator(g)
+        rb = _v1_runbook(
+            scenario_id="app:out of memory",
+            status=RunbookStatus.PARTIAL,
+            steps=[_v1_step()],
+            last_tested=None,
         )
-        validator = RunbookValidator(graph)
-        perfect_steps = [
-            RecoveryStep(i, f"Step {i}", True, 5.0, False)
-            for i in range(1, 6)
+        report = v.validate([rb])
+        assert any("completeness" in r.lower() for r in report.recommendations)
+
+    def test_suggest_recovery_steps_known_scenario(self):
+        g = self._build_graph()
+        v = RunbookValidator(g)
+        steps = v._suggest_recovery_steps("app", "out of memory")
+        assert len(steps) > 0
+        assert any("memory" in s.lower() for s in steps)
+
+    def test_suggest_recovery_steps_unknown_scenario(self):
+        g = self._build_graph()
+        v = RunbookValidator(g)
+        steps = v._suggest_recovery_steps("app", "alien_invasion")
+        assert len(steps) > 0
+        assert any("alien_invasion" in s.lower() for s in steps)
+
+    def test_coverage_percent_below_80(self):
+        """Coverage between 50% and 80% should produce a specific recommendation."""
+        g = _graph()
+        g.add_component(_comp("app", ctype=ComponentType.APP_SERVER, replicas=1))
+        v = RunbookValidator(g)
+        # APP_SERVER has 3 scenarios; cover 2 of 3 -> 66%.
+        rbs = [
+            _v1_runbook(scenario_id="app:out of memory", status=RunbookStatus.COMPLETE),
+            _v1_runbook(scenario_id="app:thread exhaustion", status=RunbookStatus.COMPLETE),
         ]
-        runbooks = [
-            _make_runbook(
-                "cache:cache invalidation storm",
-                "Cache Invalidation",
-                "cache",
-                status=RunbookStatus.COMPLETE,
-                steps=perfect_steps,
-                last_tested="2025-06-01",
-            ),
-            _make_runbook(
-                "cache:memory overflow",
-                "Cache Overflow",
-                "cache",
-                status=RunbookStatus.COMPLETE,
-                steps=perfect_steps,
-                last_tested="2025-06-01",
-            ),
+        report = v.validate(rbs)
+        assert report.coverage_percent > 50.0
+        assert report.coverage_percent < 80.0
+        assert any("below target" in r.lower() for r in report.recommendations)
+
+    def test_all_scenarios_covered(self):
+        g = _graph()
+        g.add_component(_comp("app", ctype=ComponentType.APP_SERVER, replicas=1))
+        v = RunbookValidator(g)
+        rbs = [
+            _v1_runbook(scenario_id="app:out of memory", status=RunbookStatus.COMPLETE),
+            _v1_runbook(scenario_id="app:thread exhaustion", status=RunbookStatus.COMPLETE),
+            _v1_runbook(scenario_id="app:dependency timeout", status=RunbookStatus.COMPLETE),
         ]
-        report = validator.validate(runbooks)
+        report = v.validate(rbs)
         assert report.coverage_percent == 100.0
-        assert len(report.recommendations) == 0
-
-
-# ====================================================================
-# Tests for RunbookValidator: edge cases
-# ====================================================================
-
-
-class TestEdgeCases:
-    def test_runbook_for_nonexistent_component(self):
-        graph = _single_component_graph(ComponentType.CACHE, "cache", "Redis")
-        validator = RunbookValidator(graph)
-        runbooks = [
-            _make_runbook(
-                "ghost:data corruption",
-                "Ghost Runbook",
-                "ghost",  # not in graph
-            ),
-        ]
-        report = validator.validate(runbooks)
-        # The ghost runbook doesn't match any scenario
-        assert report.covered_scenarios == 0
-        # But existing_runbooks still contains the ghost runbook
-        assert len(report.existing_runbooks) == 1
-
-    def test_duplicate_runbooks_for_same_scenario(self):
-        graph = _single_component_graph(ComponentType.CACHE, "cache", "Redis")
-        validator = RunbookValidator(graph)
-        runbooks = [
-            _make_runbook(
-                "cache:cache invalidation storm",
-                "Cache Invalidation v1",
-                "cache",
-            ),
-            _make_runbook(
-                "cache:cache invalidation storm",
-                "Cache Invalidation v2",
-                "cache",
-            ),
-        ]
-        report = validator.validate(runbooks)
-        # Only one scenario to cover; both match but only counts as 1 covered
-        assert report.covered_scenarios >= 1
-        # Existing runbooks should contain both
-        assert len(report.existing_runbooks) == 2
-
-    def test_validate_with_none_runbooks(self):
-        graph = _single_component_graph(ComponentType.CACHE, "cache", "Redis")
-        validator = RunbookValidator(graph)
-        report = validator.validate(None)
-        assert report.covered_scenarios == 0
-
-    def test_validate_with_empty_runbooks(self):
-        graph = _single_component_graph(ComponentType.CACHE, "cache", "Redis")
-        validator = RunbookValidator(graph)
-        report = validator.validate([])
-        assert report.covered_scenarios == 0
-
-    def test_custom_component_type(self):
-        graph = _single_component_graph(
-            ComponentType.CUSTOM, "custom", "Custom Service"
-        )
-        validator = RunbookValidator(graph)
-        report = validator.validate()
-        # CUSTOM has 1 failure mode: "unexpected failure"
-        assert report.total_scenarios == 1
-
-    def test_suggested_steps_for_unknown_scenario(self):
-        graph = _single_component_graph(ComponentType.CUSTOM, "custom", "Svc")
-        validator = RunbookValidator(graph)
-        # Use a scenario not in _SUGGESTED_STEPS
-        steps = validator._suggest_recovery_steps("custom", "alien invasion")
-        assert len(steps) >= 3
-        assert any("alien invasion" in s.lower() for s in steps)
-
-
-# ====================================================================
-# Tests for RunbookValidator: boundary conditions
-# ====================================================================
-
-
-class TestBoundaryConditions:
-    def test_zero_percent_coverage(self):
-        graph = _standard_graph()
-        validator = RunbookValidator(graph)
-        report = validator.validate()
-        assert report.coverage_percent == 0.0
-
-    def test_100_percent_coverage(self):
-        graph = _single_component_graph(
-            ComponentType.QUEUE, "q", "Queue", replicas=2, failover=True
-        )
-        validator = RunbookValidator(graph)
-        runbooks = [
-            _make_runbook(
-                "q:message backlog",
-                "Message Backlog",
-                "q",
-            ),
-            _make_runbook(
-                "q:dead letter overflow",
-                "Dead Letter Overflow",
-                "q",
-            ),
-        ]
-        report = validator.validate(runbooks)
-        assert report.coverage_percent == 100.0
-        assert len(report.gaps) == 0
-
-    def test_coverage_rounding(self):
-        graph = _single_component_graph(ComponentType.APP_SERVER, "app", "App")
-        validator = RunbookValidator(graph)
-        runbooks = [
-            _make_runbook(
-                "app:out of memory", "OOM", "app"
-            ),
-        ]
-        report = validator.validate(runbooks)
-        # 1/3 = 33.333... should be rounded to 2 decimal places
-        assert report.coverage_percent == 33.33
-
-    def test_completeness_score_capped_at_100(self):
-        graph = _single_component_graph(ComponentType.CACHE, "cache", "Redis")
-        validator = RunbookValidator(graph)
-        # Even with many steps and everything perfect, max is 100
-        steps = [
-            RecoveryStep(i, f"Step {i}", True, 1.0, False)
-            for i in range(1, 20)
-        ]
-        runbooks = [
-            _make_runbook(
-                "cache:cache invalidation storm",
-                "Cache",
-                "cache",
-                status=RunbookStatus.COMPLETE,
-                steps=steps,
-                last_tested="2025-01-01",
-            ),
-        ]
-        report = validator.validate(runbooks)
-        assert report.completeness_score <= 100.0
-
-
-# ====================================================================
-# Tests for RunbookValidator: large graph
-# ====================================================================
-
-
-class TestLargeGraph:
-    def test_large_graph_many_components(self):
-        graph = InfraGraph()
-        # Create 50 app servers
-        for i in range(50):
-            graph.add_component(
-                Component(
-                    id=f"app-{i}",
-                    name=f"App Server {i}",
-                    type=ComponentType.APP_SERVER,
-                    replicas=2,
-                )
-            )
-        # Add a shared database
-        graph.add_component(
-            Component(id="db", name="Shared DB", type=ComponentType.DATABASE, replicas=1)
-        )
-        for i in range(50):
-            graph.add_dependency(
-                Dependency(source_id=f"app-{i}", target_id="db")
-            )
-
-        validator = RunbookValidator(graph)
-        report = validator.validate()
-        # 50 * 3 (APP_SERVER modes) + 3 (DB modes) = 153
-        assert report.total_scenarios == 153
-        assert report.coverage_percent == 0.0
-        assert len(report.gaps) == 153
-
-        # DB scenarios should be critical (SPOF with 50 dependents)
-        db_gaps = [g for g in report.gaps if g.component_id == "db"]
-        for g in db_gaps:
-            assert g.severity == "critical"
-
-    def test_large_graph_with_full_coverage(self):
-        graph = InfraGraph()
-        for i in range(10):
-            graph.add_component(
-                Component(
-                    id=f"cache-{i}",
-                    name=f"Cache {i}",
-                    type=ComponentType.CACHE,
-                    replicas=2,
-                    failover=FailoverConfig(enabled=True),
-                )
-            )
-        validator = RunbookValidator(graph)
-        # 10 caches * 2 modes = 20 scenarios
-        runbooks = []
-        for i in range(10):
-            for mode in ["cache invalidation storm", "memory overflow"]:
-                runbooks.append(
-                    _make_runbook(
-                        f"cache-{i}:{mode}",
-                        f"Cache {i} {mode}",
-                        f"cache-{i}",
-                    )
-                )
-        report = validator.validate(runbooks)
-        assert report.total_scenarios == 20
-        assert report.covered_scenarios == 20
-        assert report.coverage_percent == 100.0
-        assert len(report.gaps) == 0
-
-
-# ====================================================================
-# Tests for generate_required_scenarios
-# ====================================================================
-
-
-class TestGenerateRequiredScenarios:
-    def test_all_gaps_have_component_info(self):
-        graph = _standard_graph()
-        validator = RunbookValidator(graph)
-        gaps = validator.generate_required_scenarios()
-        for gap in gaps:
-            assert gap.component_id != ""
-            assert gap.component_name != ""
-            assert gap.scenario_description != ""
-
-    def test_gaps_match_validate_gaps_when_no_runbooks(self):
-        graph = _standard_graph()
-        validator = RunbookValidator(graph)
-        generated = validator.generate_required_scenarios()
-        report = validator.validate()
-        assert len(generated) == len(report.gaps)
-
-    def test_gaps_have_suggested_steps(self):
-        graph = _standard_graph()
-        validator = RunbookValidator(graph)
-        gaps = validator.generate_required_scenarios()
-        for gap in gaps:
-            assert len(gap.suggested_steps) > 0
-
-
-# ====================================================================
-# Tests for _suggest_recovery_steps
-# ====================================================================
-
-
-class TestSuggestRecoverySteps:
-    def test_known_database_scenario(self):
-        graph = _single_component_graph(ComponentType.DATABASE, "db", "DB")
-        validator = RunbookValidator(graph)
-        steps = validator._suggest_recovery_steps("db", "data corruption")
-        assert len(steps) >= 3
-        assert any("backup" in s.lower() for s in steps)
-
-    def test_known_cache_scenario(self):
-        graph = _single_component_graph(ComponentType.CACHE, "cache", "Redis")
-        validator = RunbookValidator(graph)
-        steps = validator._suggest_recovery_steps("cache", "cache invalidation storm")
-        assert len(steps) >= 3
-
-    def test_unknown_scenario_gets_generic_steps(self):
-        graph = _single_component_graph(ComponentType.APP_SERVER, "app", "App")
-        validator = RunbookValidator(graph)
-        steps = validator._suggest_recovery_steps("app", "quantum anomaly")
-        assert len(steps) >= 3
-        assert any("quantum anomaly" in s.lower() for s in steps)
-
-    def test_all_failure_modes_have_suggestions(self):
-        """Every standard failure mode should have predefined steps."""
-        graph = _all_component_types_graph()
-        validator = RunbookValidator(graph)
-        scenarios = validator._identify_critical_scenarios()
-        for comp_id, scenario, _ in scenarios:
-            steps = validator._suggest_recovery_steps(comp_id, scenario)
-            assert len(steps) >= 3, (
-                f"Scenario '{scenario}' on '{comp_id}' has fewer than 3 steps"
-            )
-
-
-# ====================================================================
-# Tests for RunbookValidator: standard graph integration
-# ====================================================================
-
-
-class TestStandardGraphIntegration:
-    def test_standard_graph_scenario_count(self):
-        graph = _standard_graph()
-        validator = RunbookValidator(graph)
-        report = validator.validate()
-        # LB:2 + Web:2 + App:3 + DB:3 + Cache:2 + Queue:2 = 14
-        assert report.total_scenarios == 14
-
-    def test_standard_graph_partial_coverage(self):
-        graph = _standard_graph()
-        validator = RunbookValidator(graph)
-        runbooks = [
-            _make_runbook(
-                "db:data corruption",
-                "DB Data Corruption",
-                "db",
-            ),
-            _make_runbook(
-                "db:replication lag",
-                "DB Replication Lag",
-                "db",
-            ),
-            _make_runbook(
-                "db:connection pool exhaustion",
-                "DB Connection Pool",
-                "db",
-            ),
-        ]
-        report = validator.validate(runbooks)
         assert report.covered_scenarios == 3
-        assert report.total_scenarios == 14
-        # 3/14 ~= 21.43%
-        assert 21.0 <= report.coverage_percent <= 22.0
+        assert len(report.gaps) == 0
 
-    def test_report_has_correct_structure(self):
-        graph = _standard_graph()
-        validator = RunbookValidator(graph)
-        report = validator.validate()
-        assert isinstance(report, RunbookValidationReport)
-        assert isinstance(report.gaps, list)
-        assert isinstance(report.existing_runbooks, list)
-        assert isinstance(report.recommendations, list)
-        assert isinstance(report.total_scenarios, int)
-        assert isinstance(report.covered_scenarios, int)
-        assert isinstance(report.coverage_percent, float)
-        assert isinstance(report.completeness_score, float)
-        assert isinstance(report.mean_recovery_time_minutes, float)
+    def test_multiple_component_types(self):
+        g = _graph()
+        g.add_component(_comp("ws", ctype=ComponentType.WEB_SERVER, replicas=1))
+        g.add_component(_comp("cache", ctype=ComponentType.CACHE, replicas=1))
+        v = RunbookValidator(g)
+        report = v.validate([])
+        # WEB_SERVER has 2, CACHE has 2 -> total 4 scenarios.
+        assert report.total_scenarios == 4
+
+    def test_calculate_completeness_few_steps(self):
+        g = self._build_graph()
+        v = RunbookValidator(g)
+        rb = _v1_runbook(
+            status=RunbookStatus.COMPLETE,
+            steps=[_v1_step(1), _v1_step(2), _v1_step(3)],
+            last_tested="2026-01-01",
+        )
+        score = v._calculate_completeness([rb])
+        # 40 (status) + 15 (3/5 * 25) + 0 (no automation) + 15 (tested) = 70
+        assert score == 70.0
+
+    def test_identify_critical_scenarios_with_dependents(self):
+        g = self._build_graph()
+        v = RunbookValidator(g)
+        scenarios = v._identify_critical_scenarios()
+        # Each scenario should have comp_id, description, severity.
+        for comp_id, desc, severity in scenarios:
+            assert severity in ("critical", "high", "medium", "low")

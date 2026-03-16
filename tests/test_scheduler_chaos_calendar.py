@@ -6,15 +6,15 @@ from datetime import datetime, timedelta, timezone
 
 import pytest
 
-from infrasim.model.components import (
+from faultray.model.components import (
     Component,
     ComponentType,
     Dependency,
     FailoverConfig,
     ResourceMetrics,
 )
-from infrasim.model.graph import InfraGraph
-from infrasim.scheduler.chaos_calendar import (
+from faultray.model.graph import InfraGraph
+from faultray.scheduler.chaos_calendar import (
     BlackoutWindow,
     CalendarView,
     ChaosCalendar,

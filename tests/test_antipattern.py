@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import pytest
 
-from infrasim.model.components import (
+from faultray.model.components import (
     AutoScalingConfig,
     CircuitBreakerConfig,
     Component,
@@ -15,8 +15,8 @@ from infrasim.model.components import (
     RetryStrategy,
     SingleflightConfig,
 )
-from infrasim.model.graph import InfraGraph
-from infrasim.simulator.antipattern_detector import AntiPattern, AntiPatternDetector
+from faultray.model.graph import InfraGraph
+from faultray.simulator.antipattern_detector import AntiPattern, AntiPatternDetector
 
 
 # ---------------------------------------------------------------------------
@@ -513,6 +513,6 @@ class TestSeverityOrdering:
     """Verify severity ordering constant is correct."""
 
     def test_severity_order_values(self):
-        from infrasim.simulator.antipattern_detector import _SEVERITY_ORDER
+        from faultray.simulator.antipattern_detector import _SEVERITY_ORDER
         assert _SEVERITY_ORDER["critical"] > _SEVERITY_ORDER["high"]
         assert _SEVERITY_ORDER["high"] > _SEVERITY_ORDER["medium"]

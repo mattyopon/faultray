@@ -7,7 +7,7 @@ from pathlib import Path
 
 import pytest
 
-from infrasim.model.components import (
+from faultray.model.components import (
     AutoScalingConfig,
     CircuitBreakerConfig,
     Component,
@@ -15,8 +15,8 @@ from infrasim.model.components import (
     Dependency,
     FailoverConfig,
 )
-from infrasim.model.graph import InfraGraph
-from infrasim.simulator.team_tracker import (
+from faultray.model.graph import InfraGraph
+from faultray.simulator.team_tracker import (
     TeamComparison,
     TeamLeaderboard,
     TeamMetrics,
@@ -667,7 +667,7 @@ class TestCalculateTeamScoreEdgeCases:
     def test_high_utilization_penalty_above_90(self, tmp_path):
         """Utilization >90% should penalize score by 10 (line 426)."""
         tracker = TeamTracker(history_path=tmp_path / "team_history.jsonl")
-        from infrasim.model.components import ResourceMetrics
+        from faultray.model.components import ResourceMetrics
 
         graph = InfraGraph()
         graph.add_component(Component(
@@ -684,7 +684,7 @@ class TestCalculateTeamScoreEdgeCases:
     def test_high_utilization_penalty_above_80(self, tmp_path):
         """Utilization >80% but <=90% should penalize score by 5 (line 428)."""
         tracker = TeamTracker(history_path=tmp_path / "team_history.jsonl")
-        from infrasim.model.components import ResourceMetrics
+        from faultray.model.components import ResourceMetrics
 
         graph = InfraGraph()
         graph.add_component(Component(

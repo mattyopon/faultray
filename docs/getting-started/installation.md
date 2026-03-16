@@ -38,8 +38,8 @@ docker run -p 8000:8000 ghcr.io/mattyopon/faultray:latest
 ## From source
 
 ```bash
-git clone https://github.com/mattyopon/infrasim.git
-cd infrasim
+git clone https://github.com/mattyopon/faultray.git
+cd faultray
 pip install -e ".[dev]"
 ```
 

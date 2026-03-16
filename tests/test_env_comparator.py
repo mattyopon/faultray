@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import pytest
 
-from infrasim.model.components import (
+from faultray.model.components import (
     AutoScalingConfig,
     Capacity,
     Component,
@@ -15,8 +15,8 @@ from infrasim.model.components import (
     HealthStatus,
     SecurityProfile,
 )
-from infrasim.model.graph import InfraGraph
-from infrasim.simulator.env_comparator import (
+from faultray.model.graph import InfraGraph
+from faultray.simulator.env_comparator import (
     EnvironmentComparator,
     EnvironmentProfile,
     EnvComparisonResult,

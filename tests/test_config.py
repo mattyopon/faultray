@@ -6,7 +6,7 @@ from pathlib import Path
 import pytest
 import yaml
 
-from infrasim.config import (
+from faultray.config import (
     FaultRayConfig,
     load_config,
     save_config,

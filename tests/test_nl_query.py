@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import pytest
 
-from infrasim.model.components import (
+from faultray.model.components import (
     AutoScalingConfig,
     Component,
     ComponentType,
@@ -13,8 +13,8 @@ from infrasim.model.components import (
     FailoverConfig,
     ResourceMetrics,
 )
-from infrasim.model.graph import InfraGraph
-from infrasim.nl_query import NaturalLanguageEngine, QueryResult
+from faultray.model.graph import InfraGraph
+from faultray.nl_query import NaturalLanguageEngine, QueryResult
 
 
 def _build_test_graph() -> InfraGraph:

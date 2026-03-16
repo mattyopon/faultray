@@ -10,15 +10,15 @@ from unittest.mock import MagicMock
 
 import pytest
 
-from infrasim.model.components import (
+from faultray.model.components import (
     AutoScalingConfig,
     Component,
     ComponentType,
     Dependency,
     FailoverConfig,
 )
-from infrasim.model.graph import InfraGraph
-from infrasim.simulator.resilience_timeline import (
+from faultray.model.graph import InfraGraph
+from faultray.simulator.resilience_timeline import (
     ResilienceTimeline,
     TimelineMilestone,
     TimelineReport,
@@ -593,7 +593,7 @@ class TestComputeInfrastructureHashException:
     """Test _compute_infrastructure_hash when graph.to_dict() raises (lines 138-139)."""
 
     def test_hash_returns_unknown_on_exception(self):
-        from infrasim.simulator.resilience_timeline import _compute_infrastructure_hash
+        from faultray.simulator.resilience_timeline import _compute_infrastructure_hash
         from unittest.mock import patch
 
         graph = _make_graph()
@@ -851,7 +851,7 @@ class TestCheckMilestonesRegressionOnRecord:
         tl._append_snapshot(snap1)
 
         # Create a graph with many SPOFs and high utilization so score drops well below 90
-        from infrasim.model.components import ResourceMetrics
+        from faultray.model.components import ResourceMetrics
         graph = InfraGraph()
         # Central DB with replicas=1 and high utilization
         graph.add_component(Component(

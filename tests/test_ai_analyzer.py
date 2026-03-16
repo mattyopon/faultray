@@ -1,13 +1,13 @@
 """Tests for the AI analysis module."""
 
-from infrasim.ai.analyzer import (
+from faultray.ai.analyzer import (
     AIAnalysisReport,
     AIRecommendation,
-    InfraSimAnalyzer,
+    FaultRayAnalyzer,
     _nines_tier_label,
     _score_to_nines,
 )
-from infrasim.model.components import (
+from faultray.model.components import (
     Capacity,
     CircuitBreakerConfig,
     Component,
@@ -18,8 +18,8 @@ from infrasim.model.components import (
     ResourceMetrics,
     RetryStrategy,
 )
-from infrasim.model.graph import InfraGraph
-from infrasim.simulator.engine import SimulationEngine, SimulationReport
+from faultray.model.graph import InfraGraph
+from faultray.simulator.engine import SimulationEngine, SimulationReport
 
 
 # ---------------------------------------------------------------------------
@@ -192,7 +192,7 @@ def test_spof_detection():
     engine = SimulationEngine(graph)
     report = engine.run_all_defaults()
 
-    analyzer = InfraSimAnalyzer()
+    analyzer = FaultRayAnalyzer()
     ai_report = analyzer.analyze(graph, report)
 
     # DB should be flagged as SPOF
@@ -212,7 +212,7 @@ def test_no_spof_with_replicas():
     engine = SimulationEngine(graph)
     report = engine.run_all_defaults()
 
-    analyzer = InfraSimAnalyzer()
+    analyzer = FaultRayAnalyzer()
     ai_report = analyzer.analyze(graph, report)
 
     spof_recs = [r for r in ai_report.recommendations if r.category == "spof"]
@@ -230,7 +230,7 @@ def test_cascade_amplifier_detection():
     engine = SimulationEngine(graph)
     report = engine.run_all_defaults()
 
-    analyzer = InfraSimAnalyzer()
+    analyzer = FaultRayAnalyzer()
     ai_report = analyzer.analyze(graph, report)
 
     cascade_recs = [r for r in ai_report.recommendations if r.category == "cascade"]
@@ -253,7 +253,7 @@ def test_capacity_bottleneck_detection():
     engine = SimulationEngine(graph)
     report = engine.run_all_defaults()
 
-    analyzer = InfraSimAnalyzer()
+    analyzer = FaultRayAnalyzer()
     ai_report = analyzer.analyze(graph, report)
 
     capacity_recs = [r for r in ai_report.recommendations if r.category == "capacity"]
@@ -281,7 +281,7 @@ def test_missing_protections_detection():
     engine = SimulationEngine(graph)
     report = engine.run_all_defaults()
 
-    analyzer = InfraSimAnalyzer()
+    analyzer = FaultRayAnalyzer()
     ai_report = analyzer.analyze(graph, report)
 
     config_recs = [r for r in ai_report.recommendations if r.category == "config"]
@@ -299,7 +299,7 @@ def test_no_missing_protections_when_configured():
     engine = SimulationEngine(graph)
     report = engine.run_all_defaults()
 
-    analyzer = InfraSimAnalyzer()
+    analyzer = FaultRayAnalyzer()
     ai_report = analyzer.analyze(graph, report)
 
     config_recs = [r for r in ai_report.recommendations if r.category == "config"]
@@ -319,7 +319,7 @@ def test_summary_generation():
     engine = SimulationEngine(graph)
     report = engine.run_all_defaults()
 
-    analyzer = InfraSimAnalyzer()
+    analyzer = FaultRayAnalyzer()
     ai_report = analyzer.analyze(graph, report)
 
     assert isinstance(ai_report.summary, str)
@@ -334,7 +334,7 @@ def test_summary_mentions_critical_risks():
     engine = SimulationEngine(graph)
     report = engine.run_all_defaults()
 
-    analyzer = InfraSimAnalyzer()
+    analyzer = FaultRayAnalyzer()
     ai_report = analyzer.analyze(graph, report)
 
     # With SPOFs present, summary should mention critical risks
@@ -354,7 +354,7 @@ def test_availability_assessment():
     engine = SimulationEngine(graph)
     report = engine.run_all_defaults()
 
-    analyzer = InfraSimAnalyzer()
+    analyzer = FaultRayAnalyzer()
     ai_report = analyzer.analyze(graph, report)
 
     assert ai_report.estimated_current_nines > 0
@@ -374,7 +374,7 @@ def test_protected_graph_has_higher_nines():
     protected_engine = SimulationEngine(protected_graph)
     protected_report = protected_engine.run_all_defaults()
 
-    analyzer = InfraSimAnalyzer()
+    analyzer = FaultRayAnalyzer()
     spof_analysis = analyzer.analyze(spof_graph, spof_report)
     protected_analysis = analyzer.analyze(protected_graph, protected_report)
 
@@ -392,7 +392,7 @@ def test_recommendations_sorted_by_severity():
     engine = SimulationEngine(graph)
     report = engine.run_all_defaults()
 
-    analyzer = InfraSimAnalyzer()
+    analyzer = FaultRayAnalyzer()
     ai_report = analyzer.analyze(graph, report)
 
     severity_order = {"critical": 0, "high": 1, "medium": 2, "low": 3}
@@ -411,7 +411,7 @@ def test_recommendation_has_all_fields():
     engine = SimulationEngine(graph)
     report = engine.run_all_defaults()
 
-    analyzer = InfraSimAnalyzer()
+    analyzer = FaultRayAnalyzer()
     ai_report = analyzer.analyze(graph, report)
 
     assert len(ai_report.recommendations) > 0
@@ -433,7 +433,7 @@ def test_top_risks_generated():
     engine = SimulationEngine(graph)
     report = engine.run_all_defaults()
 
-    analyzer = InfraSimAnalyzer()
+    analyzer = FaultRayAnalyzer()
     ai_report = analyzer.analyze(graph, report)
 
     assert 1 <= len(ai_report.top_risks) <= 5
@@ -448,7 +448,7 @@ def test_upgrade_path_generated():
     engine = SimulationEngine(graph)
     report = engine.run_all_defaults()
 
-    analyzer = InfraSimAnalyzer()
+    analyzer = FaultRayAnalyzer()
     ai_report = analyzer.analyze(graph, report)
 
     assert isinstance(ai_report.upgrade_path, str)
@@ -465,7 +465,7 @@ def test_empty_graph():
     graph = InfraGraph()
     report = SimulationReport(results=[], resilience_score=0.0)
 
-    analyzer = InfraSimAnalyzer()
+    analyzer = FaultRayAnalyzer()
     ai_report = analyzer.analyze(graph, report)
 
     assert isinstance(ai_report, AIAnalysisReport)
@@ -484,7 +484,7 @@ def test_single_component_graph():
     engine = SimulationEngine(graph)
     report = engine.run_all_defaults()
 
-    analyzer = InfraSimAnalyzer()
+    analyzer = FaultRayAnalyzer()
     ai_report = analyzer.analyze(graph, report)
 
     assert isinstance(ai_report, AIAnalysisReport)
@@ -564,7 +564,7 @@ def test_upgrade_path_at_highest_tier():
     # Use a very high resilience score to simulate highest tier
     report = SimulationReport(results=[], resilience_score=99.0)
 
-    analyzer = InfraSimAnalyzer()
+    analyzer = FaultRayAnalyzer()
     ai_report = analyzer.analyze(graph, report)
 
     # At 4.5 nines, next tier is 5.0 which may or may not be reachable.
@@ -603,7 +603,7 @@ def test_upgrade_path_needs_architectural_changes():
     engine = SimulationEngine(graph)
     report = engine.run_all_defaults()
 
-    analyzer = InfraSimAnalyzer()
+    analyzer = FaultRayAnalyzer()
     ai_report = analyzer.analyze(graph, report)
 
     # The upgrade path should be a non-empty string
@@ -617,7 +617,7 @@ def test_upgrade_path_needs_architectural_changes():
 
 def test_set_llm_provider():
     """set_llm_provider should store the provider."""
-    analyzer = InfraSimAnalyzer()
+    analyzer = FaultRayAnalyzer()
     assert analyzer._llm_provider is None
 
     class MockLLM:
@@ -645,7 +645,7 @@ def test_no_bottleneck_with_low_utilization():
     ))
     report = SimulationReport(results=[], resilience_score=80.0)
 
-    analyzer = InfraSimAnalyzer()
+    analyzer = FaultRayAnalyzer()
     ai_report = analyzer.analyze(graph, report)
 
     capacity_recs = [r for r in ai_report.recommendations if r.category == "capacity"]
@@ -663,7 +663,7 @@ def test_bottleneck_connection_pool():
     ))
     report = SimulationReport(results=[], resilience_score=80.0)
 
-    analyzer = InfraSimAnalyzer()
+    analyzer = FaultRayAnalyzer()
     ai_report = analyzer.analyze(graph, report)
 
     capacity_recs = [r for r in ai_report.recommendations if r.category == "capacity"]
@@ -693,7 +693,7 @@ def test_optional_dep_not_flagged():
     ))
     report = SimulationReport(results=[], resilience_score=80.0)
 
-    analyzer = InfraSimAnalyzer()
+    analyzer = FaultRayAnalyzer()
     ai_report = analyzer.analyze(graph, report)
 
     config_recs = [r for r in ai_report.recommendations if r.category == "config"]
@@ -727,7 +727,7 @@ def test_summary_no_critical_risks():
 
     engine = SimulationEngine(graph)
     report = engine.run_all_defaults()
-    analyzer = InfraSimAnalyzer()
+    analyzer = FaultRayAnalyzer()
     ai_report = analyzer.analyze(graph, report)
 
     critical_recs = [r for r in ai_report.recommendations if r.severity == "critical"]
@@ -739,6 +739,6 @@ def test_top_risks_no_critical():
     """When no critical risks, should return 'No critical risks detected.'."""
     graph = InfraGraph()
     report = SimulationReport(results=[], resilience_score=100.0)
-    analyzer = InfraSimAnalyzer()
+    analyzer = FaultRayAnalyzer()
     ai_report = analyzer.analyze(graph, report)
     assert any("No critical risks" in r for r in ai_report.top_risks)

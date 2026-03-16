@@ -7,9 +7,9 @@ from pathlib import Path
 
 import pytest
 
-from infrasim.model.components import SCHEMA_VERSION, Component, ComponentType, Dependency
-from infrasim.model.graph import InfraGraph
-from infrasim.model.loader import load_yaml
+from faultray.model.components import SCHEMA_VERSION, Component, ComponentType, Dependency
+from faultray.model.graph import InfraGraph
+from faultray.model.loader import load_yaml
 
 
 def _write_yaml(content: str) -> Path:
@@ -68,7 +68,7 @@ def test_load_json_without_schema_version(caplog):
         }
         save_path.write_text(json.dumps(data))
 
-        with caplog.at_level(logging.WARNING, logger="infrasim.model.graph"):
+        with caplog.at_level(logging.WARNING, logger="faultray.model.graph"):
             loaded = InfraGraph.load(save_path)
 
         assert len(loaded.components) == 1
@@ -88,7 +88,7 @@ def test_load_json_with_old_schema_version(caplog):
         }
         save_path.write_text(json.dumps(data))
 
-        with caplog.at_level(logging.WARNING, logger="infrasim.model.graph"):
+        with caplog.at_level(logging.WARNING, logger="faultray.model.graph"):
             loaded = InfraGraph.load(save_path)
 
         assert len(loaded.components) == 1
@@ -105,7 +105,7 @@ components:
     type: app_server
 dependencies: []
 """)
-    with caplog.at_level(logging.WARNING, logger="infrasim.model.loader"):
+    with caplog.at_level(logging.WARNING, logger="faultray.model.loader"):
         graph = load_yaml(path)
 
     assert len(graph.components) == 1
@@ -122,7 +122,7 @@ components:
     type: app_server
 dependencies: []
 """)
-    with caplog.at_level(logging.WARNING, logger="infrasim.model.loader"):
+    with caplog.at_level(logging.WARNING, logger="faultray.model.loader"):
         graph = load_yaml(path)
 
     assert len(graph.components) == 1
@@ -143,7 +143,7 @@ components:
     type: app_server
 dependencies: []
 """)
-    with caplog.at_level(logging.WARNING, logger="infrasim.model.loader"):
+    with caplog.at_level(logging.WARNING, logger="faultray.model.loader"):
         graph = load_yaml(path)
 
     assert len(graph.components) == 1

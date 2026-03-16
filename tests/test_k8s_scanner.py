@@ -10,8 +10,8 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-from infrasim.model.components import ComponentType, Dependency
-from infrasim.model.graph import InfraGraph
+from faultray.model.components import ComponentType, Dependency
+from faultray.model.graph import InfraGraph
 
 
 # ---------------------------------------------------------------------------
@@ -20,7 +20,7 @@ from infrasim.model.graph import InfraGraph
 
 def _make_scanner(context: str | None = None, namespace: str | None = None):
     """Import and instantiate K8sScanner."""
-    from infrasim.discovery.k8s_scanner import K8sScanner
+    from faultray.discovery.k8s_scanner import K8sScanner
     return K8sScanner(context=context, namespace=namespace)
 
 
@@ -220,14 +220,14 @@ class TestK8sScannerInit:
 
     def test_import_error_graceful(self):
         """Test that missing kubernetes library raises a clear RuntimeError."""
-        from infrasim.discovery.k8s_scanner import _check_k8s_lib
+        from faultray.discovery.k8s_scanner import _check_k8s_lib
 
         with patch("builtins.__import__", side_effect=ImportError("No module named 'kubernetes'")):
             with pytest.raises(RuntimeError, match="kubernetes is required"):
                 _check_k8s_lib()
 
     def test_discovery_result_dataclass(self):
-        from infrasim.discovery.k8s_scanner import K8sDiscoveryResult
+        from faultray.discovery.k8s_scanner import K8sDiscoveryResult
         result = K8sDiscoveryResult(
             context="my-cluster",
             namespace="production",
@@ -241,7 +241,7 @@ class TestK8sScannerInit:
         assert result.warnings == []
 
     def test_looks_like_database(self):
-        from infrasim.discovery.k8s_scanner import _looks_like_database
+        from faultray.discovery.k8s_scanner import _looks_like_database
         assert _looks_like_database("postgres-primary") is True
         assert _looks_like_database("mysql-master") is True
         assert _looks_like_database("redis-cache") is True
@@ -496,7 +496,7 @@ class TestHPAScanning:
         scanner = _make_scanner()
         graph = InfraGraph()
 
-        from infrasim.model.components import Component, AutoScalingConfig
+        from faultray.model.components import Component, AutoScalingConfig
 
         comp = Component(id="deploy-prod-api", name="prod/api", type=ComponentType.APP_SERVER, replicas=3)
         graph.add_component(comp)
@@ -555,7 +555,7 @@ class TestPDBScanning:
         scanner = _make_scanner()
         graph = InfraGraph()
 
-        from infrasim.model.components import Component
+        from faultray.model.components import Component
 
         comp = Component(id="deploy-prod-api", name="prod/api", type=ComponentType.APP_SERVER, replicas=3)
         graph.add_component(comp)
@@ -583,7 +583,7 @@ class TestNetworkPolicyScanning:
         scanner = _make_scanner(namespace="production")
         graph = InfraGraph()
 
-        from infrasim.model.components import Component
+        from faultray.model.components import Component
         comp = Component(
             id="deploy-production-api-server", name="production/api-server",
             type=ComponentType.APP_SERVER, tags=["deployment", "namespace:production"]
@@ -613,7 +613,7 @@ class TestNetworkPolicyScanning:
         scanner = _make_scanner()
         graph = InfraGraph()
 
-        from infrasim.model.components import Component
+        from faultray.model.components import Component
 
         comp = Component(id="deploy-prod-api", name="prod/api", type=ComponentType.APP_SERVER)
         graph.add_component(comp)
@@ -637,7 +637,7 @@ class TestDependencyInference:
         scanner = _make_scanner()
         graph = InfraGraph()
 
-        from infrasim.model.components import Component
+        from faultray.model.components import Component
 
         # Add ingress and workload
         ingress = Component(
@@ -673,7 +673,7 @@ class TestDependencyInference:
         scanner = _make_scanner()
         graph = InfraGraph()
 
-        from infrasim.model.components import Component
+        from faultray.model.components import Component
 
         app = Component(
             id="deploy-production-api", name="production/api",
@@ -711,7 +711,7 @@ class TestDependencyInference:
 class TestFullScan:
     """Tests for the full scan() method."""
 
-    @patch("infrasim.discovery.k8s_scanner._check_k8s_lib")
+    @patch("faultray.discovery.k8s_scanner._check_k8s_lib")
     def test_full_scan_empty(self, mock_check):
         """Test full scan with no resources."""
         scanner = _make_scanner()
@@ -734,7 +734,7 @@ class TestFullScan:
         assert result.components_found == 0
         assert result.dependencies_inferred == 0
 
-    @patch("infrasim.discovery.k8s_scanner._check_k8s_lib")
+    @patch("faultray.discovery.k8s_scanner._check_k8s_lib")
     def test_full_scan_with_context(self, mock_check):
         """Test full scan with context and namespace."""
         scanner = _make_scanner(context="my-cluster", namespace="production")
@@ -755,7 +755,7 @@ class TestFullScan:
         assert result.context == "my-cluster"
         assert result.namespace == "production"
 
-    @patch("infrasim.discovery.k8s_scanner._check_k8s_lib")
+    @patch("faultray.discovery.k8s_scanner._check_k8s_lib")
     def test_full_scan_warnings_on_error(self, mock_check):
         """Test that scan errors are captured as warnings."""
         scanner = _make_scanner()
@@ -776,7 +776,7 @@ class TestFullScan:
         assert len(result.warnings) >= 1
         assert "Deployments" in result.warnings[0]
 
-    @patch("infrasim.discovery.k8s_scanner._check_k8s_lib")
+    @patch("faultray.discovery.k8s_scanner._check_k8s_lib")
     def test_runtime_error_propagates(self, mock_check):
         """Test that RuntimeError (import errors) propagates through scan()."""
         scanner = _make_scanner()
@@ -785,7 +785,7 @@ class TestFullScan:
             with pytest.raises(RuntimeError, match="import error"):
                 scanner.scan()
 
-    @patch("infrasim.discovery.k8s_scanner._check_k8s_lib")
+    @patch("faultray.discovery.k8s_scanner._check_k8s_lib")
     def test_scan_duration_recorded(self, mock_check):
         """Test that scan duration is recorded."""
         scanner = _make_scanner()
@@ -805,7 +805,7 @@ class TestFullScan:
 
         assert result.scan_duration_seconds >= 0.0
 
-    @patch("infrasim.discovery.k8s_scanner._check_k8s_lib")
+    @patch("faultray.discovery.k8s_scanner._check_k8s_lib")
     def test_all_namespaces_when_no_namespace(self, mock_check):
         """Test that scanner queries all namespaces when namespace is not specified."""
         scanner = _make_scanner(namespace=None)

@@ -24,8 +24,8 @@ from pathlib import Path
 import pytest
 from typer.testing import CliRunner
 
-from infrasim.cli import app
-from infrasim.model.demo import create_demo_graph
+from faultray.cli import app
+from faultray.model.demo import create_demo_graph
 
 runner = CliRunner()
 

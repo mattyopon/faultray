@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import pytest
 
-from infrasim.model.components import (
+from faultray.model.components import (
     AutoScalingConfig,
     CircuitBreakerConfig,
     ComplianceTags,
@@ -20,8 +20,8 @@ from infrasim.model.components import (
     SecurityProfile,
     SLOTarget,
 )
-from infrasim.model.graph import InfraGraph
-from infrasim.simulator.sre_maturity import (
+from faultray.model.graph import InfraGraph
+from faultray.simulator.sre_maturity import (
     DimensionAssessment,
     MaturityDimension,
     MaturityLevel,

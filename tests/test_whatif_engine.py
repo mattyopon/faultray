@@ -1,6 +1,6 @@
 """Tests for what-if analysis engine."""
 
-from infrasim.model.components import (
+from faultray.model.components import (
     Capacity,
     Component,
     ComponentType,
@@ -9,10 +9,10 @@ from infrasim.model.components import (
     ResourceMetrics,
     SLOTarget,
 )
-from infrasim.model.graph import InfraGraph
-from infrasim.simulator.ops_engine import OpsScenario, TimeUnit
-from infrasim.simulator.traffic import create_diurnal_weekly
-from infrasim.simulator.whatif_engine import (
+from faultray.model.graph import InfraGraph
+from faultray.simulator.ops_engine import OpsScenario, TimeUnit
+from faultray.simulator.traffic import create_diurnal_weekly
+from faultray.simulator.whatif_engine import (
     MultiWhatIfScenario,
     WhatIfEngine,
     WhatIfScenario,
@@ -311,7 +311,7 @@ def test_multi_whatif_all_parameters():
 
 def test_multi_whatif_replica_autoscaling():
     """Multi what-if replica_factor should also scale autoscaling min/max."""
-    from infrasim.model.components import AutoScalingConfig
+    from faultray.model.components import AutoScalingConfig
     graph = InfraGraph()
     graph.add_component(Component(
         id="app", name="App", type=ComponentType.APP_SERVER,
@@ -366,7 +366,7 @@ def test_run_default_multi_whatifs():
 def test_compute_avg_availability_empty():
     """Empty SLI timeline should return 100.0."""
     from dataclasses import dataclass, field as dc_field
-    from infrasim.simulator.ops_engine import OpsSimulationResult
+    from faultray.simulator.ops_engine import OpsSimulationResult
 
     # Create a minimal OpsSimulationResult with empty sli_timeline
     scenario = _base_scenario()
@@ -537,7 +537,7 @@ def test_apply_mtbf_factor_zero_profiles():
 
 def test_apply_replica_factor_with_autoscaling():
     """_apply_replica_factor should scale autoscaling min/max when enabled."""
-    from infrasim.model.components import AutoScalingConfig
+    from faultray.model.components import AutoScalingConfig
     graph = InfraGraph()
     graph.add_component(Component(
         id="app", name="App", type=ComponentType.APP_SERVER,

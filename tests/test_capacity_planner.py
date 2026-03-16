@@ -4,9 +4,9 @@ from __future__ import annotations
 
 import pytest
 
-from infrasim.model.components import Component, ComponentType, HealthStatus
-from infrasim.model.graph import InfraGraph
-from infrasim.simulator.capacity_planner import (
+from faultray.model.components import Component, ComponentType, HealthStatus
+from faultray.model.graph import InfraGraph
+from faultray.simulator.capacity_planner import (
     CapacityForecast,
     CapacityPlan,
     CapacityPlanner,
@@ -55,7 +55,7 @@ def _simple_infra() -> InfraGraph:
     g.add_component(_comp("lb", "Load Balancer", ComponentType.LOAD_BALANCER, replicas=2, cpu=40.0))
     g.add_component(_comp("api", "API Server", replicas=3, cpu=55.0, mem=60.0))
     g.add_component(_comp("db", "Database", ComponentType.DATABASE, cpu=75.0, mem=70.0))
-    from infrasim.model.components import Dependency
+    from faultray.model.components import Dependency
     g.add_dependency(Dependency(source_id="lb", target_id="api"))
     g.add_dependency(Dependency(source_id="api", target_id="db"))
     return g

@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import pytest
 
-from infrasim.model.components import (
+from faultray.model.components import (
     Component,
     ComponentType,
     Dependency,
@@ -12,8 +12,8 @@ from infrasim.model.components import (
     HealthStatus,
     ResourceMetrics,
 )
-from infrasim.model.graph import InfraGraph
-from infrasim.simulator.sla_risk_quantifier import (
+from faultray.model.graph import InfraGraph
+from faultray.simulator.sla_risk_quantifier import (
     SLA_DEFINITIONS,
     ComponentSLARisk,
     SLABreachScenario,

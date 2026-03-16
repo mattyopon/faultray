@@ -7,28 +7,28 @@ import json
 import pytest
 import yaml
 
-from infrasim.ci.github_action import CIGateConfig, CIGateGenerator
-from infrasim.ci.sarif_exporter import (
+from faultray.ci.github_action import CIGateConfig, CIGateGenerator
+from faultray.ci.sarif_exporter import (
     SARIFExporter,
     export_sarif,
     _risk_to_sarif_level,
     _risk_to_severity,
     _get_remediation,
 )
-from infrasim.model.components import (
+from faultray.model.components import (
     Component,
     ComponentType,
     Dependency,
     OperationalProfile,
 )
-from infrasim.model.graph import InfraGraph
-from infrasim.simulator.engine import (
+from faultray.model.graph import InfraGraph
+from faultray.simulator.engine import (
     CascadeChain,
     ScenarioResult,
     SimulationEngine,
     SimulationReport,
 )
-from infrasim.simulator.scenarios import Scenario
+from faultray.simulator.scenarios import Scenario
 
 
 # ---------------------------------------------------------------------------

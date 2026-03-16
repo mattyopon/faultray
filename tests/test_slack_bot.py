@@ -8,20 +8,20 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-from infrasim.integrations.slack_bot import (
+from faultray.integrations.slack_bot import (
     FaultRaySlackBot,
     SlackCommand,
     SlackResponse,
     parse_slack_command,
 )
-from infrasim.model.components import (
+from faultray.model.components import (
     AutoScalingConfig,
     Component,
     ComponentType,
     Dependency,
     FailoverConfig,
 )
-from infrasim.model.graph import InfraGraph
+from faultray.model.graph import InfraGraph
 
 
 # ---------------------------------------------------------------------------
@@ -223,7 +223,7 @@ class TestTrendCommand:
 
     def test_trend_with_history(self, tmp_path):
         # Set up history first
-        from infrasim.history import HistoryTracker
+        from faultray.history import HistoryTracker
 
         db_path = Path.home() / ".faultray" / "history.db"
         tracker = HistoryTracker(db_path=db_path)

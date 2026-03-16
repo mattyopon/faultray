@@ -2,7 +2,7 @@
 
 import pytest
 
-from infrasim.features import (
+from faultray.features import (
     FEATURES,
     disable,
     enable,

@@ -4,7 +4,7 @@ import json
 
 import pytest
 
-from infrasim.model.components import (
+from faultray.model.components import (
     Component,
     ComponentType,
     Dependency,
@@ -12,8 +12,8 @@ from infrasim.model.components import (
     HealthStatus,
     ResourceMetrics,
 )
-from infrasim.model.graph import InfraGraph
-from infrasim.simulator.experiment_designer import (
+from faultray.model.graph import InfraGraph
+from faultray.simulator.experiment_designer import (
     ActionType,
     AssertionType,
     ExperimentAction,

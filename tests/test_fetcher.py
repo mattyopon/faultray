@@ -6,7 +6,7 @@ from unittest.mock import AsyncMock, patch
 
 import pytest
 
-from infrasim.feeds.fetcher import (
+from faultray.feeds.fetcher import (
     FeedArticle,
     _parse_atom,
     _parse_rss,
@@ -15,7 +15,7 @@ from infrasim.feeds.fetcher import (
     fetch_all_feeds,
     fetch_feed,
 )
-from infrasim.feeds.sources import FeedSource
+from faultray.feeds.sources import FeedSource
 
 
 # ---------------------------------------------------------------------------
@@ -207,7 +207,7 @@ class TestFetchFeed:
         mock_response.content = SAMPLE_RSS
         mock_response.raise_for_status = lambda: None
 
-        with patch("infrasim.feeds.fetcher.httpx.AsyncClient") as MockClient:
+        with patch("faultray.feeds.fetcher.httpx.AsyncClient") as MockClient:
             mock_client = AsyncMock()
             mock_client.get.return_value = mock_response
             mock_client.__aenter__ = AsyncMock(return_value=mock_client)
@@ -227,7 +227,7 @@ class TestFetchFeed:
         mock_response.content = SAMPLE_ATOM
         mock_response.raise_for_status = lambda: None
 
-        with patch("infrasim.feeds.fetcher.httpx.AsyncClient") as MockClient:
+        with patch("faultray.feeds.fetcher.httpx.AsyncClient") as MockClient:
             mock_client = AsyncMock()
             mock_client.get.return_value = mock_response
             mock_client.__aenter__ = AsyncMock(return_value=mock_client)
@@ -242,7 +242,7 @@ class TestFetchFeed:
         import httpx
         source = FeedSource(name="Error", url="https://example.com/fail")
 
-        with patch("infrasim.feeds.fetcher.httpx.AsyncClient") as MockClient:
+        with patch("faultray.feeds.fetcher.httpx.AsyncClient") as MockClient:
             mock_client = AsyncMock()
             mock_client.get.side_effect = httpx.HTTPError("connection failed")
             mock_client.__aenter__ = AsyncMock(return_value=mock_client)
@@ -266,7 +266,7 @@ class TestFetchAllFeeds:
         mock_response.content = SAMPLE_RSS
         mock_response.raise_for_status = lambda: None
 
-        with patch("infrasim.feeds.fetcher.httpx.AsyncClient") as MockClient:
+        with patch("faultray.feeds.fetcher.httpx.AsyncClient") as MockClient:
             mock_client = AsyncMock()
             mock_client.get.return_value = mock_response
             mock_client.__aenter__ = AsyncMock(return_value=mock_client)
@@ -283,7 +283,7 @@ class TestFetchAllFeeds:
             FeedSource(name="Fail", url="https://example.com/fail", enabled=True),
         ]
 
-        with patch("infrasim.feeds.fetcher.fetch_feed", side_effect=Exception("boom")):
+        with patch("faultray.feeds.fetcher.fetch_feed", side_effect=Exception("boom")):
             articles = await fetch_all_feeds(sources)
             # Exceptions are caught and empty list is returned
             assert articles == []

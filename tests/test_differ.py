@@ -7,7 +7,7 @@ from pathlib import Path
 
 import pytest
 
-from infrasim.differ import DiffResult, SimulationDiffer
+from faultray.differ import DiffResult, SimulationDiffer
 
 
 @pytest.fixture

@@ -1,7 +1,7 @@
 """Extended integration tests for untested modules.
 
 Covers:
-  1. src/infrasim/integrations/observability.py
+  1. src/faultray/integrations/observability.py
      - ObservabilityHub.import_from_json with valid data
      - ObservabilityHub.import_from_json with missing component
      - ObservabilityHub.import_from_json with invalid JSON file
@@ -9,12 +9,12 @@ Covers:
      - ObservabilityHub._find_component_by_host matching logic
      - ObservabilityHub._apply_metric for each metric type
 
-  2. src/infrasim/log_config.py
+  2. src/faultray/log_config.py
      - setup_logging with different levels (DEBUG, INFO, WARNING)
      - setup_logging with json_format=True
      - setup_logging idempotent (no duplicate handlers)
 
-  3. src/infrasim/model/demo.py
+  3. src/faultray/model/demo.py
      - create_demo_graph produces valid graph
      - Graph has expected components and dependencies
      - Graph can be saved and reloaded
@@ -28,8 +28,8 @@ from pathlib import Path
 
 import pytest
 
-from infrasim.model.demo import create_demo_graph
-from infrasim.model.graph import InfraGraph
+from faultray.model.demo import create_demo_graph
+from faultray.model.graph import InfraGraph
 
 
 # ===========================================================================
@@ -40,7 +40,7 @@ class TestObservabilityHubImportJson:
     """Tests for ObservabilityHub.import_from_json with sample data."""
 
     def _make_hub(self) -> "ObservabilityHub":
-        from infrasim.integrations.observability import ObservabilityHub
+        from faultray.integrations.observability import ObservabilityHub
 
         graph = create_demo_graph()
         return ObservabilityHub(graph)
@@ -221,7 +221,7 @@ class TestObservabilityHubFindComponent:
     """Tests for _find_component_by_host matching logic."""
 
     def _make_hub(self):
-        from infrasim.integrations.observability import ObservabilityHub
+        from faultray.integrations.observability import ObservabilityHub
 
         graph = create_demo_graph()
         return ObservabilityHub(graph), graph
@@ -259,7 +259,7 @@ class TestObservabilityHubApplyMetric:
     """Tests for _apply_metric static method."""
 
     def _make_component(self):
-        from infrasim.model.components import Component, ComponentType, ResourceMetrics, Capacity
+        from faultray.model.components import Component, ComponentType, ResourceMetrics, Capacity
 
         return Component(
             id="test",
@@ -273,28 +273,28 @@ class TestObservabilityHubApplyMetric:
         )
 
     def test_apply_cpu_percent(self):
-        from infrasim.integrations.observability import ObservabilityHub
+        from faultray.integrations.observability import ObservabilityHub
 
         comp = self._make_component()
         ObservabilityHub._apply_metric(comp, "cpu_percent", 85.0)
         assert comp.metrics.cpu_percent == 85.0
 
     def test_apply_memory_percent(self):
-        from infrasim.integrations.observability import ObservabilityHub
+        from faultray.integrations.observability import ObservabilityHub
 
         comp = self._make_component()
         ObservabilityHub._apply_metric(comp, "memory_percent", 92.5)
         assert comp.metrics.memory_percent == 92.5
 
     def test_apply_disk_percent(self):
-        from infrasim.integrations.observability import ObservabilityHub
+        from faultray.integrations.observability import ObservabilityHub
 
         comp = self._make_component()
         ObservabilityHub._apply_metric(comp, "disk_percent", 77.0)
         assert comp.metrics.disk_percent == 77.0
 
     def test_apply_network_connections(self):
-        from infrasim.integrations.observability import ObservabilityHub
+        from faultray.integrations.observability import ObservabilityHub
 
         comp = self._make_component()
         ObservabilityHub._apply_metric(comp, "network_connections", 500.0)
@@ -306,47 +306,47 @@ class TestObservabilityHubApplyMetric:
 # ===========================================================================
 
 class TestSetupLogging:
-    """Tests for infrasim.log_config.setup_logging."""
+    """Tests for faultray.log_config.setup_logging."""
 
     def setup_method(self):
-        """Reset the infrasim logger before each test."""
-        logger = logging.getLogger("infrasim")
+        """Reset the faultray logger before each test."""
+        logger = logging.getLogger("faultray")
         logger.handlers.clear()
         logger.setLevel(logging.WARNING)
 
     def test_setup_debug_level(self):
-        from infrasim.log_config import setup_logging
+        from faultray.log_config import setup_logging
 
         setup_logging(level="DEBUG")
 
-        logger = logging.getLogger("infrasim")
+        logger = logging.getLogger("faultray")
         assert logger.level == logging.DEBUG
         assert len(logger.handlers) == 1
 
     def test_setup_info_level(self):
-        from infrasim.log_config import setup_logging
+        from faultray.log_config import setup_logging
 
         setup_logging(level="INFO")
 
-        logger = logging.getLogger("infrasim")
+        logger = logging.getLogger("faultray")
         assert logger.level == logging.INFO
         assert len(logger.handlers) == 1
 
     def test_setup_warning_level(self):
-        from infrasim.log_config import setup_logging
+        from faultray.log_config import setup_logging
 
         setup_logging(level="WARNING")
 
-        logger = logging.getLogger("infrasim")
+        logger = logging.getLogger("faultray")
         assert logger.level == logging.WARNING
         assert len(logger.handlers) == 1
 
     def test_setup_json_format(self):
-        from infrasim.log_config import setup_logging
+        from faultray.log_config import setup_logging
 
         setup_logging(level="INFO", json_format=True)
 
-        logger = logging.getLogger("infrasim")
+        logger = logging.getLogger("faultray")
         assert len(logger.handlers) == 1
         handler = logger.handlers[0]
         # JSON format should contain "timestamp" in the format string
@@ -355,31 +355,31 @@ class TestSetupLogging:
         assert "level" in fmt
 
     def test_no_duplicate_handlers(self):
-        from infrasim.log_config import setup_logging
+        from faultray.log_config import setup_logging
 
         setup_logging(level="INFO")
         setup_logging(level="DEBUG")  # second call should be a no-op for handlers
 
-        logger = logging.getLogger("infrasim")
+        logger = logging.getLogger("faultray")
         # Should still have only 1 handler
         assert len(logger.handlers) == 1
 
     def test_handler_outputs_to_stderr(self):
-        from infrasim.log_config import setup_logging
+        from faultray.log_config import setup_logging
         import sys
 
         setup_logging(level="INFO")
 
-        logger = logging.getLogger("infrasim")
+        logger = logging.getLogger("faultray")
         handler = logger.handlers[0]
         assert handler.stream is sys.stderr
 
     def test_invalid_level_falls_back(self):
-        from infrasim.log_config import setup_logging
+        from faultray.log_config import setup_logging
 
         setup_logging(level="NONEXISTENT")
 
-        logger = logging.getLogger("infrasim")
+        logger = logging.getLogger("faultray")
         # getattr(logging, "NONEXISTENT", logging.WARNING) -> WARNING
         assert logger.level == logging.WARNING
 
@@ -389,7 +389,7 @@ class TestSetupLogging:
 # ===========================================================================
 
 class TestCreateDemoGraph:
-    """Tests for infrasim.model.demo.create_demo_graph."""
+    """Tests for faultray.model.demo.create_demo_graph."""
 
     def test_produces_valid_graph(self):
         graph = create_demo_graph()
@@ -425,7 +425,7 @@ class TestCreateDemoGraph:
         assert "redis" in dep_ids
 
     def test_component_types(self):
-        from infrasim.model.components import ComponentType
+        from faultray.model.components import ComponentType
 
         graph = create_demo_graph()
         assert graph.get_component("nginx").type == ComponentType.LOAD_BALANCER

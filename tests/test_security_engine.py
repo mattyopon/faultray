@@ -4,14 +4,14 @@ from __future__ import annotations
 
 import pytest
 
-from infrasim.model.components import (
+from faultray.model.components import (
     Component,
     ComponentType,
     Dependency,
     SecurityProfile,
 )
-from infrasim.model.graph import InfraGraph
-from infrasim.simulator.security_engine import (
+from faultray.model.graph import InfraGraph
+from faultray.simulator.security_engine import (
     AttackSimulationResult,
     AttackType,
     SecurityReport,

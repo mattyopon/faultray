@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import pytest
 
-from infrasim.model.components import (
+from faultray.model.components import (
     AutoScalingConfig,
     CircuitBreakerConfig,
     Component,
@@ -12,8 +12,8 @@ from infrasim.model.components import (
     Dependency,
     FailoverConfig,
 )
-from infrasim.model.graph import InfraGraph
-from infrasim.simulator.benchmarking import (
+from faultray.model.graph import InfraGraph
+from faultray.simulator.benchmarking import (
     BenchmarkEngine,
     BenchmarkResult,
     INDUSTRY_PROFILES,

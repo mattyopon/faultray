@@ -5,8 +5,8 @@ from io import StringIO
 
 from rich.console import Console
 
-from infrasim.cli import _print_dynamic_results
-from infrasim.simulator.dynamic_engine import (
+from faultray.cli import _print_dynamic_results
+from faultray.simulator.dynamic_engine import (
     DynamicScenario,
     DynamicScenarioResult,
     DynamicSimulationReport,

@@ -1,6 +1,6 @@
 """Security audit tests -- verify no common vulnerabilities.
 
-Scans the infrasim source tree for patterns that indicate hardcoded
+Scans the faultray source tree for patterns that indicate hardcoded
 credentials, unsafe deserialization, SQL injection, command injection,
 and other OWASP-style weaknesses.  All tests should PASS (meaning no
 vulnerabilities are found).
@@ -14,11 +14,11 @@ from pathlib import Path
 import pytest
 
 # Root of the source package under test.
-_SRC_DIR = Path(__file__).resolve().parent.parent / "src" / "infrasim"
+_SRC_DIR = Path(__file__).resolve().parent.parent / "src" / "faultray"
 
 
 def _all_py_files() -> list[Path]:
-    """Collect every .py file under src/infrasim/."""
+    """Collect every .py file under src/faultray/."""
     return sorted(_SRC_DIR.rglob("*.py"))
 
 
@@ -44,6 +44,8 @@ def test_no_hardcoded_credentials():
         re.compile(r'test', re.IGNORECASE),
         re.compile(r'TODO', re.IGNORECASE),
         re.compile(r'your[-_]', re.IGNORECASE),
+        re.compile(r'class\s+\w+.*Enum', re.IGNORECASE),
+        re.compile(r'^\s+\w+\s*=\s*["\'][\w_]+["\']$'),  # Enum member definitions
     ]
     violations: list[str] = []
     for py_file in _all_py_files():
@@ -213,7 +215,7 @@ def test_path_traversal_prevention():
     """Verify path traversal in YAML component IDs does not escape sandbox."""
     import tempfile
     import yaml
-    from infrasim.model.loader import load_yaml
+    from faultray.model.loader import load_yaml
 
     malicious_yaml = {
         "schema_version": "3.0",
@@ -256,16 +258,16 @@ def test_path_traversal_prevention():
 
 def test_xss_prevention_in_html():
     """Verify HTML reports escape user input."""
-    from infrasim.model.components import (
+    from faultray.model.components import (
         Capacity,
         Component,
         ComponentType,
         Dependency,
         ResourceMetrics,
     )
-    from infrasim.model.graph import InfraGraph
-    from infrasim.reporter.html_report import generate_html_report
-    from infrasim.simulator.engine import SimulationEngine
+    from faultray.model.graph import InfraGraph
+    from faultray.reporter.html_report import generate_html_report
+    from faultray.simulator.engine import SimulationEngine
 
     graph = InfraGraph()
     xss_payload = "<script>alert('xss')</script>"
@@ -335,8 +337,8 @@ def test_temporary_files_cleaned():
     """Verify temp files are cleaned up after simulation."""
     import tempfile
 
-    from infrasim.model.demo import create_demo_graph
-    from infrasim.simulator.engine import SimulationEngine
+    from faultray.model.demo import create_demo_graph
+    from faultray.simulator.engine import SimulationEngine
 
     checkpoint_dir = Path(tempfile.gettempdir()) / "faultray_checkpoints"
     # Clean up any pre-existing checkpoint files

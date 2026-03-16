@@ -83,7 +83,7 @@ auth:
 ## Usage Example
 
 ```python
-from infrasim.auth import RBACManager
+from faultray.auth import RBACManager
 
 rbac = RBACManager()
 

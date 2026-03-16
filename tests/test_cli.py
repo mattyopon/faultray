@@ -9,8 +9,8 @@ from pathlib import Path
 import pytest
 from typer.testing import CliRunner
 
-from infrasim.cli import app
-from infrasim.model.demo import create_demo_graph
+from faultray.cli import app
+from faultray.model.demo import create_demo_graph
 
 runner = CliRunner()
 
@@ -88,7 +88,7 @@ class TestHelp:
     def test_app_help(self):
         result = runner.invoke(app, ["--help"])
         assert result.exit_code == 0
-        assert "chaos engineering" in result.output.lower() or "infrasim" in result.output.lower()
+        assert "chaos engineering" in result.output.lower() or "faultray" in result.output.lower()
 
     def test_demo_help(self):
         result = runner.invoke(app, ["demo", "--help"])

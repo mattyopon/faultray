@@ -22,9 +22,9 @@ from unittest.mock import MagicMock, patch
 import pytest
 from typer.testing import CliRunner
 
-from infrasim.cli import app
-from infrasim.model.demo import create_demo_graph
-from infrasim.simulator.engine import (
+from faultray.cli import app
+from faultray.model.demo import create_demo_graph
+from faultray.simulator.engine import (
     MAX_SCENARIOS,
     ScenarioResult,
     SimulationEngine,
@@ -47,8 +47,8 @@ def _create_model_file(tmp_path: Path) -> Path:
 
 def _make_scenario_result(name: str, risk: float) -> ScenarioResult:
     """Build a minimal ScenarioResult with a given risk score."""
-    from infrasim.simulator.cascade import CascadeChain
-    from infrasim.simulator.scenarios import Scenario
+    from faultray.simulator.cascade import CascadeChain
+    from faultray.simulator.scenarios import Scenario
 
     scenario = Scenario(
         id=f"s-{name}",
@@ -90,12 +90,12 @@ def _make_dynamic_report(
     n_passed: int = 2,
 ) -> SimpleNamespace:
     """Build a mock DynamicSimulationReport."""
-    from infrasim.simulator.dynamic_engine import (
+    from faultray.simulator.dynamic_engine import (
         DynamicScenario,
         DynamicScenarioResult,
         DynamicSimulationReport,
     )
-    from infrasim.simulator.scenarios import Fault
+    from faultray.simulator.scenarios import Fault
 
     results = []
     for i in range(n_critical):
@@ -148,7 +148,7 @@ def _make_ops_result(
 
 def _make_whatif_results() -> list:
     """Build a list of mock WhatIfResult objects."""
-    from infrasim.simulator.whatif_engine import WhatIfResult
+    from faultray.simulator.whatif_engine import WhatIfResult
 
     return [
         WhatIfResult(
@@ -176,7 +176,7 @@ def _make_whatif_results() -> list:
 
 def _make_capacity_report(over_provisioned_count: int = 0) -> SimpleNamespace:
     """Build a mock CapacityPlanReport."""
-    from infrasim.simulator.capacity_engine import (
+    from faultray.simulator.capacity_engine import (
         CapacityForecast,
         CapacityPlanReport,
         ErrorBudgetForecast,
@@ -276,17 +276,17 @@ def _patch_all_engines(
 
     # Engines are imported lazily inside evaluate(), so patch at source module
     patches = [
-        patch("infrasim.simulator.engine.SimulationEngine", mock_static),
-        patch("infrasim.simulator.dynamic_engine.DynamicSimulationEngine", mock_dyn),
-        patch("infrasim.simulator.ops_engine.OpsSimulationEngine", mock_ops),
-        patch("infrasim.simulator.whatif_engine.WhatIfEngine", mock_whatif),
-        patch("infrasim.simulator.capacity_engine.CapacityPlanningEngine", mock_cap),
+        patch("faultray.simulator.engine.SimulationEngine", mock_static),
+        patch("faultray.simulator.dynamic_engine.DynamicSimulationEngine", mock_dyn),
+        patch("faultray.simulator.ops_engine.OpsSimulationEngine", mock_ops),
+        patch("faultray.simulator.whatif_engine.WhatIfEngine", mock_whatif),
+        patch("faultray.simulator.capacity_engine.CapacityPlanningEngine", mock_cap),
     ]
     return patches
 
 
 # ===================================================================
-# 1. evaluate command tests (src/infrasim/cli/evaluate.py)
+# 1. evaluate command tests (src/faultray/cli/evaluate.py)
 # ===================================================================
 
 
@@ -645,16 +645,16 @@ class TestComputeAvgAvailability:
     """Tests for the _compute_avg_availability helper."""
 
     def test_empty_timeline(self):
-        from infrasim.cli.evaluate import _compute_avg_availability
+        from faultray.cli.evaluate import _compute_avg_availability
         assert _compute_avg_availability([]) == 100.0
 
     def test_single_point(self):
-        from infrasim.cli.evaluate import _compute_avg_availability
+        from faultray.cli.evaluate import _compute_avg_availability
         point = SimpleNamespace(availability_percent=99.5)
         assert _compute_avg_availability([point]) == 99.5
 
     def test_multiple_points(self):
-        from infrasim.cli.evaluate import _compute_avg_availability
+        from faultray.cli.evaluate import _compute_avg_availability
         points = [
             SimpleNamespace(availability_percent=100.0),
             SimpleNamespace(availability_percent=99.0),
@@ -664,13 +664,13 @@ class TestComputeAvgAvailability:
         assert abs(result - 99.0) < 0.01
 
     def test_all_100(self):
-        from infrasim.cli.evaluate import _compute_avg_availability
+        from faultray.cli.evaluate import _compute_avg_availability
         points = [SimpleNamespace(availability_percent=100.0) for _ in range(10)]
         assert _compute_avg_availability(points) == 100.0
 
 
 # ===================================================================
-# 2. simulate truncation warning (src/infrasim/cli/simulate.py)
+# 2. simulate truncation warning (src/faultray/cli/simulate.py)
 # ===================================================================
 
 
@@ -685,7 +685,7 @@ class TestSimulateTruncationWarning:
             was_truncated=True,
         )
         with patch(
-            "infrasim.cli.simulate.SimulationEngine"
+            "faultray.cli.simulate.SimulationEngine"
         ) as mock_engine:
             mock_engine.return_value.run_all_defaults.return_value = truncated_report
             result = runner.invoke(app, [
@@ -704,7 +704,7 @@ class TestSimulateTruncationWarning:
             was_truncated=False,
         )
         with patch(
-            "infrasim.cli.simulate.SimulationEngine"
+            "faultray.cli.simulate.SimulationEngine"
         ) as mock_engine:
             mock_engine.return_value.run_all_defaults.return_value = normal_report
             result = runner.invoke(app, [
@@ -725,7 +725,7 @@ class TestReportScoreExplanation:
     def test_score_explanation_low_score_no_findings(self):
         """Score < 70 with no critical/warning => explanation shown."""
         from rich.console import Console
-        from infrasim.reporter.report import print_simulation_report
+        from faultray.reporter.report import print_simulation_report
 
         report = _make_static_report(
             score=55.0, n_critical=0, n_warning=0, n_passed=5,
@@ -740,7 +740,7 @@ class TestReportScoreExplanation:
     def test_no_explanation_high_score(self):
         """Score >= 70 => no structural explanation shown."""
         from rich.console import Console
-        from infrasim.reporter.report import print_simulation_report
+        from faultray.reporter.report import print_simulation_report
 
         report = _make_static_report(
             score=85.0, n_critical=0, n_warning=0, n_passed=5,
@@ -754,7 +754,7 @@ class TestReportScoreExplanation:
     def test_no_explanation_low_score_with_critical(self):
         """Score < 70 but has critical findings => no structural explanation."""
         from rich.console import Console
-        from infrasim.reporter.report import print_simulation_report
+        from faultray.reporter.report import print_simulation_report
 
         report = _make_static_report(
             score=40.0, n_critical=2, n_warning=0, n_passed=3,
@@ -768,7 +768,7 @@ class TestReportScoreExplanation:
     def test_no_explanation_low_score_with_warnings(self):
         """Score < 70 with warnings => no structural explanation."""
         from rich.console import Console
-        from infrasim.reporter.report import print_simulation_report
+        from faultray.reporter.report import print_simulation_report
 
         report = _make_static_report(
             score=60.0, n_critical=0, n_warning=2, n_passed=3,
@@ -790,7 +790,7 @@ class TestHtmlReportScoreExplanation:
 
     def test_html_score_explanation_low_no_findings(self):
         """Score < 70 with no critical/warning => HTML contains explanation."""
-        from infrasim.reporter.html_report import generate_html_report
+        from faultray.reporter.html_report import generate_html_report
 
         graph = create_demo_graph()
         report = _make_static_report(
@@ -802,7 +802,7 @@ class TestHtmlReportScoreExplanation:
 
     def test_html_no_explanation_high_score(self):
         """Score >= 70 => no 'architectural gaps' explanation."""
-        from infrasim.reporter.html_report import generate_html_report
+        from faultray.reporter.html_report import generate_html_report
 
         graph = create_demo_graph()
         report = _make_static_report(
@@ -813,7 +813,7 @@ class TestHtmlReportScoreExplanation:
 
     def test_html_critical_explanation(self):
         """Score < 70 with critical findings => cascade failure explanation."""
-        from infrasim.reporter.html_report import generate_html_report
+        from faultray.reporter.html_report import generate_html_report
 
         graph = create_demo_graph()
         report = _make_static_report(
@@ -837,7 +837,7 @@ class TestOpsRightSizeTable:
         model_path = _create_model_file(tmp_path)
         cap_report = _make_capacity_report(over_provisioned_count=2)
         with patch(
-            "infrasim.simulator.capacity_engine.CapacityPlanningEngine.forecast",
+            "faultray.simulator.capacity_engine.CapacityPlanningEngine.forecast",
             return_value=cap_report,
         ):
             result = runner.invoke(app, [
@@ -851,7 +851,7 @@ class TestOpsRightSizeTable:
         model_path = _create_model_file(tmp_path)
         cap_report = _make_capacity_report(over_provisioned_count=0)
         with patch(
-            "infrasim.simulator.capacity_engine.CapacityPlanningEngine.forecast",
+            "faultray.simulator.capacity_engine.CapacityPlanningEngine.forecast",
             return_value=cap_report,
         ):
             result = runner.invoke(app, [
@@ -886,7 +886,7 @@ class TestEngineNewFields:
 
     def test_run_scenarios_no_truncation(self):
         """run_scenarios with fewer scenarios than limit => no truncation."""
-        from infrasim.simulator.scenarios import Fault, FaultType, Scenario
+        from faultray.simulator.scenarios import Fault, FaultType, Scenario
 
         graph = create_demo_graph()
         engine = SimulationEngine(graph)
@@ -911,7 +911,7 @@ class TestEngineNewFields:
 
     def test_run_scenarios_with_truncation(self):
         """run_scenarios with more scenarios than max_scenarios => truncation."""
-        from infrasim.simulator.scenarios import Fault, FaultType, Scenario
+        from faultray.simulator.scenarios import Fault, FaultType, Scenario
 
         graph = create_demo_graph()
         engine = SimulationEngine(graph)
@@ -936,7 +936,7 @@ class TestEngineNewFields:
 
     def test_run_scenarios_default_limit(self):
         """run_scenarios with max_scenarios=0 uses module MAX_SCENARIOS."""
-        from infrasim.simulator.scenarios import Fault, FaultType, Scenario
+        from faultray.simulator.scenarios import Fault, FaultType, Scenario
 
         graph = create_demo_graph()
         engine = SimulationEngine(graph)

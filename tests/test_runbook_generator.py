@@ -3,7 +3,7 @@
 import tempfile
 from pathlib import Path
 
-from infrasim.model.components import (
+from faultray.model.components import (
     AutoScalingConfig,
     Capacity,
     Component,
@@ -12,15 +12,15 @@ from infrasim.model.components import (
     FailoverConfig,
     ResourceMetrics,
 )
-from infrasim.model.graph import InfraGraph
-from infrasim.remediation.runbook_generator import (
+from faultray.model.graph import InfraGraph
+from faultray.remediation.runbook_generator import (
     CommunicationTemplate,
     Runbook,
     RunbookGenerator,
     RunbookLibrary,
     RunbookStep,
 )
-from infrasim.simulator.engine import SimulationEngine, SimulationReport
+from faultray.simulator.engine import SimulationEngine, SimulationReport
 
 
 # ---------------------------------------------------------------------------

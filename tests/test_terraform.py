@@ -6,7 +6,7 @@ import json
 
 import pytest
 
-from infrasim.discovery.terraform import (
+from faultray.discovery.terraform import (
     TF_RESOURCE_MAP,
     _assess_change_risk,
     _diff_attributes,
@@ -16,7 +16,7 @@ from infrasim.discovery.terraform import (
     parse_tf_state,
     load_tf_state_file,
 )
-from infrasim.model.components import ComponentType
+from faultray.model.components import ComponentType
 
 
 # ---------------------------------------------------------------------------

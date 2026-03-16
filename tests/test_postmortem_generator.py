@@ -7,7 +7,7 @@ from pathlib import Path
 
 import pytest
 
-from infrasim.model.components import (
+from faultray.model.components import (
     AutoScalingConfig,
     CircuitBreakerConfig,
     Component,
@@ -18,15 +18,15 @@ from infrasim.model.components import (
     ResourceMetrics,
     SecurityProfile,
 )
-from infrasim.model.graph import InfraGraph
-from infrasim.reporter.postmortem_generator import (
+from faultray.model.graph import InfraGraph
+from faultray.reporter.postmortem_generator import (
     ActionItem,
     PostMortem,
     PostMortemGenerator,
     PostMortemLibrary,
     PostMortemSection,
 )
-from infrasim.simulator.engine import SimulationEngine, SimulationReport
+from faultray.simulator.engine import SimulationEngine, SimulationReport
 
 
 # ---------------------------------------------------------------------------
@@ -437,8 +437,8 @@ class TestEdgeCases:
 
     def test_duration_estimate_format(self):
         generator = PostMortemGenerator()
-        from infrasim.simulator.cascade import CascadeChain, CascadeEffect
-        from infrasim.model.components import HealthStatus
+        from faultray.simulator.cascade import CascadeChain, CascadeEffect
+        from faultray.model.components import HealthStatus
 
         # Short duration
         chain = CascadeChain(trigger="test", total_components=5)

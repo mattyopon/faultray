@@ -1,4 +1,4 @@
-"""Comprehensive tests for infrasim.simulator.remediation_engine.
+"""Comprehensive tests for faultray.simulator.remediation_engine.
 
 Covers all classes, methods, branches, and edge cases for ≥99% code coverage.
 """
@@ -7,7 +7,7 @@ from __future__ import annotations
 
 import pytest
 
-from infrasim.model.components import (
+from faultray.model.components import (
     AutoScalingConfig,
     Capacity,
     Component,
@@ -18,8 +18,8 @@ from infrasim.model.components import (
     ResourceMetrics,
     SecurityProfile,
 )
-from infrasim.model.graph import InfraGraph
-from infrasim.simulator.remediation_engine import (
+from faultray.model.graph import InfraGraph
+from faultray.simulator.remediation_engine import (
     ExecutionStatus,
     RemediationAction,
     RemediationEngine,

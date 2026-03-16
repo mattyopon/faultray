@@ -2,8 +2,8 @@
 
 import pytest
 
-from infrasim.model.components import Component, ComponentType
-from infrasim.simulator.scenarios import (
+from faultray.model.components import Component, ComponentType
+from faultray.simulator.scenarios import (
     DynamicScenario,
     Fault,
     FaultType,
@@ -13,7 +13,7 @@ from infrasim.simulator.scenarios import (
     generate_default_scenarios,
     generate_dynamic_scenarios,
 )
-from infrasim.simulator.traffic import TrafficPattern  # noqa: F401 — needed for DynamicScenario
+from faultray.simulator.traffic import TrafficPattern  # noqa: F401 — needed for DynamicScenario
 
 # Rebuild DynamicScenario so the forward reference to TrafficPattern resolves.
 DynamicScenario.model_rebuild()

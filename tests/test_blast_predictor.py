@@ -6,7 +6,7 @@ hotspot detection, prediction comparison, heatmap data generation, and
 various edge cases.
 """
 
-from infrasim.model.components import (
+from faultray.model.components import (
     AutoScalingConfig,
     Capacity,
     CircuitBreakerConfig,
@@ -17,8 +17,8 @@ from infrasim.model.components import (
     HealthStatus,
     ResourceMetrics,
 )
-from infrasim.model.graph import InfraGraph
-from infrasim.simulator.blast_predictor import (
+from faultray.model.graph import InfraGraph
+from faultray.simulator.blast_predictor import (
     BlastPrediction,
     BlastPredictor,
     ComponentImpact,

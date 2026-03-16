@@ -6,7 +6,7 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-from infrasim.model.components import (
+from faultray.model.components import (
     AutoScalingConfig,
     CircuitBreakerConfig,
     Component,
@@ -15,8 +15,8 @@ from infrasim.model.components import (
     FailoverConfig,
     HealthStatus,
 )
-from infrasim.model.graph import InfraGraph
-from infrasim.simulator.multi_env import (
+from faultray.model.graph import InfraGraph
+from faultray.simulator.multi_env import (
     ComparisonMatrix,
     EnvironmentDelta,
     EnvironmentProfile,
@@ -579,9 +579,9 @@ class TestDoCompareInternalPaths:
         mock_analyzer_instance = MagicMock()
         mock_analyzer_instance.analyze.return_value = mock_genome
 
-        mock_module = types.ModuleType("infrasim.simulator.chaos_genome")
+        mock_module = types.ModuleType("faultray.simulator.chaos_genome")
         mock_module.ChaosGenomeAnalyzer = MagicMock(return_value=mock_analyzer_instance)
-        monkeypatch.setitem(sys.modules, "infrasim.simulator.chaos_genome", mock_module)
+        monkeypatch.setitem(sys.modules, "faultray.simulator.chaos_genome", mock_module)
 
         analyzer = MultiEnvAnalyzer()
         matrix = analyzer.compare_graphs({"a": _chain_graph(), "b": _weak_graph()})
@@ -596,7 +596,7 @@ class TestDoCompareInternalPaths:
         mock_engine_instance = MagicMock()
         mock_engine_instance.run_all_defaults.side_effect = RuntimeError("boom")
         mock_engine_mod.SimulationEngine.return_value = mock_engine_instance
-        monkeypatch.setitem(sys.modules, "infrasim.simulator.engine", mock_engine_mod)
+        monkeypatch.setitem(sys.modules, "faultray.simulator.engine", mock_engine_mod)
 
         analyzer = MultiEnvAnalyzer()
         matrix = analyzer.compare_graphs({"a": _chain_graph(), "b": _weak_graph()})

@@ -9,7 +9,7 @@ from unittest.mock import MagicMock
 
 import pytest
 
-from infrasim.cache import ResultCache
+from faultray.cache import ResultCache
 
 
 @pytest.fixture

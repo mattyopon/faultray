@@ -7,7 +7,7 @@ from pathlib import Path
 
 import pytest
 
-from infrasim.plugins.plugin_manager import (
+from faultray.plugins.plugin_manager import (
     PluginContext,
     PluginManager,
     PluginMetadata,
@@ -295,7 +295,7 @@ class TestPluginManagerExecution:
         _write_sample_plugin(tmp_path, "exec-plugin")
         manager = PluginManager(plugin_dirs=[tmp_path])
 
-        from infrasim.model.demo import create_demo_graph
+        from faultray.model.demo import create_demo_graph
 
         ctx = PluginContext(graph=create_demo_graph())
         result = manager.execute("exec-plugin", ctx)
@@ -441,7 +441,7 @@ class TestPluginManagerScaffolding:
 
     def test_create_default_dir(self, tmp_path: Path, monkeypatch):
         """Scaffold uses ~/.faultzero/plugins/ by default."""
-        import infrasim.plugins.plugin_manager as pm
+        import faultray.plugins.plugin_manager as pm
 
         monkeypatch.setattr(pm, "_DEFAULT_PLUGIN_DIR", tmp_path / "default_plugins")
         manager = PluginManager(plugin_dirs=[])

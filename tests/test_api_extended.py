@@ -18,7 +18,7 @@ from fastapi.testclient import TestClient
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 
-from infrasim.api.database import (
+from faultray.api.database import (
     AuditLog,
     Base,
     ProjectRow,
@@ -32,7 +32,7 @@ from infrasim.api.database import (
     reset_engine,
     _get_engine,
 )
-from infrasim.api.server import (
+from faultray.api.server import (
     RateLimiter,
     _rate_limiter,
     _report_to_dict,
@@ -42,12 +42,12 @@ from infrasim.api.server import (
     get_graph,
     set_graph,
 )
-from infrasim.model.components import HealthStatus
-from infrasim.model.demo import create_demo_graph
-from infrasim.model.graph import InfraGraph
-from infrasim.simulator.cascade import CascadeChain, CascadeEffect
-from infrasim.simulator.engine import ScenarioResult, SimulationEngine, SimulationReport
-from infrasim.simulator.scenarios import Fault, FaultType, Scenario
+from faultray.model.components import HealthStatus
+from faultray.model.demo import create_demo_graph
+from faultray.model.graph import InfraGraph
+from faultray.simulator.cascade import CascadeChain, CascadeEffect
+from faultray.simulator.engine import ScenarioResult, SimulationEngine, SimulationReport
+from faultray.simulator.scenarios import Fault, FaultType, Scenario
 
 
 # ---------------------------------------------------------------------------
@@ -198,7 +198,7 @@ def db_client(db_setup):
     Patches init_db to prevent the lifespan from overwriting our test engine.
     Attaches db_path as tc._db_path for sync seeding.
     """
-    with patch("infrasim.api.database.init_db", new_callable=AsyncMock):
+    with patch("faultray.api.database.init_db", new_callable=AsyncMock):
         tc = TestClient(app, raise_server_exceptions=False)
         tc._db_path = db_setup
         yield tc
@@ -217,7 +217,7 @@ def demo_db_client(db_setup):
     """Test client with both demo data and test database."""
     graph = create_demo_graph()
     set_graph(graph)
-    with patch("infrasim.api.database.init_db", new_callable=AsyncMock):
+    with patch("faultray.api.database.init_db", new_callable=AsyncMock):
         tc = TestClient(app, raise_server_exceptions=False)
         tc._db_path = db_setup
         yield tc
@@ -260,7 +260,7 @@ class TestRateLimitMiddleware:
     def test_rate_limit_429_response(self, client):
         """Exhaust rate limiter to trigger 429 response (line 133)."""
         # Replace global rate limiter with a very small one
-        import infrasim.api.server as srv
+        import faultray.api.server as srv
         original = srv._rate_limiter
         srv._rate_limiter = RateLimiter(max_requests=1, window_seconds=60)
         try:
@@ -290,7 +290,7 @@ class TestHTTPExceptionHandler:
         to raise one.
         """
         from fastapi import HTTPException
-        from infrasim.api.server import _optional_user
+        from faultray.api.server import _optional_user
 
         async def _raise_http_exc():
             raise HTTPException(status_code=403, detail="Forbidden by test")
@@ -320,8 +320,8 @@ class TestLifespan:
         reset_engine()
         with patch.dict(os.environ, {}, clear=False):
             # Remove Prometheus env var to skip that branch
-            os.environ.pop("INFRASIM_PROMETHEUS_URL", None)
-            with patch("infrasim.api.database.init_db", new_callable=AsyncMock) as mock_init:
+            os.environ.pop("FAULTRAY_PROMETHEUS_URL", None)
+            with patch("faultray.api.database.init_db", new_callable=AsyncMock) as mock_init:
                 with TestClient(app):
                     mock_init.assert_awaited_once()
 
@@ -331,9 +331,9 @@ class TestLifespan:
         """Cover line 72: warning logged when DB init fails."""
         reset_engine()
         with patch.dict(os.environ, {}, clear=False):
-            os.environ.pop("INFRASIM_PROMETHEUS_URL", None)
+            os.environ.pop("FAULTRAY_PROMETHEUS_URL", None)
             with patch(
-                "infrasim.api.database.init_db",
+                "faultray.api.database.init_db",
                 new_callable=AsyncMock,
                 side_effect=Exception("DB init error"),
             ):
@@ -353,12 +353,12 @@ class TestLifespan:
 
         with patch.dict(
             os.environ,
-            {"INFRASIM_PROMETHEUS_URL": "http://fake-prom:9090"},
+            {"FAULTRAY_PROMETHEUS_URL": "http://fake-prom:9090"},
             clear=False,
         ):
-            with patch("infrasim.api.database.init_db", new_callable=AsyncMock):
+            with patch("faultray.api.database.init_db", new_callable=AsyncMock):
                 with patch(
-                    "infrasim.discovery.prometheus_monitor.PrometheusMonitor",
+                    "faultray.discovery.prometheus_monitor.PrometheusMonitor",
                     return_value=mock_monitor,
                 ):
                     with TestClient(app):
@@ -375,12 +375,12 @@ class TestLifespan:
 
         with patch.dict(
             os.environ,
-            {"INFRASIM_PROMETHEUS_URL": "http://fake-prom:9090"},
+            {"FAULTRAY_PROMETHEUS_URL": "http://fake-prom:9090"},
             clear=False,
         ):
-            with patch("infrasim.api.database.init_db", new_callable=AsyncMock):
+            with patch("faultray.api.database.init_db", new_callable=AsyncMock):
                 with patch(
-                    "infrasim.discovery.prometheus_monitor.PrometheusMonitor",
+                    "faultray.discovery.prometheus_monitor.PrometheusMonitor",
                     side_effect=Exception("prom import error"),
                 ):
                     # Should not raise
@@ -397,7 +397,7 @@ class TestLifespan:
 class TestDashboardWithReport:
     def test_dashboard_with_last_report(self, demo_client):
         """Cover line 278: dashboard with _last_report set."""
-        import infrasim.api.server as srv
+        import faultray.api.server as srv
         report = _make_report()
         srv._last_report = report
         try:
@@ -408,7 +408,7 @@ class TestDashboardWithReport:
 
     def test_simulation_page_with_report(self, demo_client):
         """Cover line 326: simulation page with _last_report set."""
-        import infrasim.api.server as srv
+        import faultray.api.server as srv
         report = _make_report()
         srv._last_report = report
         try:
@@ -425,7 +425,7 @@ class TestDashboardWithReport:
 class TestAnalyzeWithNoReport:
     def test_api_analyze_runs_simulation_if_no_report(self, demo_client):
         """Cover lines 391-392: run simulation if _last_report is None."""
-        import infrasim.api.server as srv
+        import faultray.api.server as srv
         srv._last_report = None
         try:
             resp = demo_client.get("/api/analyze")
@@ -697,7 +697,7 @@ class TestOAuthRoutes:
         """Cover lines 807-814: OAuth login with no env vars configured."""
         with patch.dict(os.environ, {}, clear=False):
             for k in list(os.environ):
-                if k.startswith("INFRASIM_OAUTH_"):
+                if k.startswith("FAULTRAY_OAUTH_"):
                     os.environ.pop(k, None)
             resp = client.get("/auth/login/github", follow_redirects=False)
             assert resp.status_code == 400
@@ -707,8 +707,8 @@ class TestOAuthRoutes:
     def test_oauth_login_configured_redirects(self, client):
         """Cover lines 807-819: OAuth login redirects when configured."""
         env = {
-            "INFRASIM_OAUTH_GITHUB_CLIENT_ID": "test-id",
-            "INFRASIM_OAUTH_GITHUB_CLIENT_SECRET": "test-secret",
+            "FAULTRAY_OAUTH_GITHUB_CLIENT_ID": "test-id",
+            "FAULTRAY_OAUTH_GITHUB_CLIENT_SECRET": "test-secret",
         }
         with patch.dict(os.environ, env, clear=False):
             resp = client.get("/auth/login/github", follow_redirects=False)
@@ -719,7 +719,7 @@ class TestOAuthRoutes:
         """Cover lines 828-835: callback with no provider configured."""
         with patch.dict(os.environ, {}, clear=False):
             for k in list(os.environ):
-                if k.startswith("INFRASIM_OAUTH_"):
+                if k.startswith("FAULTRAY_OAUTH_"):
                     os.environ.pop(k, None)
             resp = client.get("/auth/callback?code=abc&provider=github")
             assert resp.status_code == 400
@@ -727,8 +727,8 @@ class TestOAuthRoutes:
     def test_oauth_callback_missing_code(self, client):
         """Cover lines 837-838: callback with no code."""
         env = {
-            "INFRASIM_OAUTH_GITHUB_CLIENT_ID": "test-id",
-            "INFRASIM_OAUTH_GITHUB_CLIENT_SECRET": "test-secret",
+            "FAULTRAY_OAUTH_GITHUB_CLIENT_ID": "test-id",
+            "FAULTRAY_OAUTH_GITHUB_CLIENT_SECRET": "test-secret",
         }
         with patch.dict(os.environ, env, clear=False):
             resp = client.get("/auth/callback?provider=github")
@@ -739,12 +739,12 @@ class TestOAuthRoutes:
     def test_oauth_callback_exchange_failure(self, client):
         """Cover lines 843-845: OAuth exchange failure returns 502."""
         env = {
-            "INFRASIM_OAUTH_GITHUB_CLIENT_ID": "test-id",
-            "INFRASIM_OAUTH_GITHUB_CLIENT_SECRET": "test-secret",
+            "FAULTRAY_OAUTH_GITHUB_CLIENT_ID": "test-id",
+            "FAULTRAY_OAUTH_GITHUB_CLIENT_SECRET": "test-secret",
         }
         with patch.dict(os.environ, env, clear=False):
             with patch(
-                "infrasim.api.oauth.exchange_code_for_token",
+                "faultray.api.oauth.exchange_code_for_token",
                 new_callable=AsyncMock,
                 side_effect=RuntimeError("token exchange failed"),
             ):
@@ -756,17 +756,17 @@ class TestOAuthRoutes:
     def test_oauth_callback_success_new_user(self, db_client):
         """Cover lines 848-880: successful OAuth creates new user."""
         env = {
-            "INFRASIM_OAUTH_GITHUB_CLIENT_ID": "test-id",
-            "INFRASIM_OAUTH_GITHUB_CLIENT_SECRET": "test-secret",
+            "FAULTRAY_OAUTH_GITHUB_CLIENT_ID": "test-id",
+            "FAULTRAY_OAUTH_GITHUB_CLIENT_SECRET": "test-secret",
         }
         with patch.dict(os.environ, env, clear=False):
             with patch(
-                "infrasim.api.oauth.exchange_code_for_token",
+                "faultray.api.oauth.exchange_code_for_token",
                 new_callable=AsyncMock,
                 return_value="fake-access-token",
             ):
                 with patch(
-                    "infrasim.api.oauth.get_user_profile",
+                    "faultray.api.oauth.get_user_profile",
                     new_callable=AsyncMock,
                     return_value={"email": "new@example.com", "name": "New User"},
                 ):
@@ -782,7 +782,7 @@ class TestOAuthRoutes:
 
     def test_oauth_callback_existing_user(self, db_client):
         """Cover lines 868-874: existing user gets API key rotated."""
-        from infrasim.api.auth import hash_api_key
+        from faultray.api.auth import hash_api_key
 
         # Create a user first using sync sqlite
         now = "2026-01-01T00:00:00"
@@ -795,17 +795,17 @@ class TestOAuthRoutes:
         }])
 
         env = {
-            "INFRASIM_OAUTH_GITHUB_CLIENT_ID": "test-id",
-            "INFRASIM_OAUTH_GITHUB_CLIENT_SECRET": "test-secret",
+            "FAULTRAY_OAUTH_GITHUB_CLIENT_ID": "test-id",
+            "FAULTRAY_OAUTH_GITHUB_CLIENT_SECRET": "test-secret",
         }
         with patch.dict(os.environ, env, clear=False):
             with patch(
-                "infrasim.api.oauth.exchange_code_for_token",
+                "faultray.api.oauth.exchange_code_for_token",
                 new_callable=AsyncMock,
                 return_value="fake-access-token",
             ):
                 with patch(
-                    "infrasim.api.oauth.get_user_profile",
+                    "faultray.api.oauth.get_user_profile",
                     new_callable=AsyncMock,
                     return_value={
                         "email": "existing@example.com",
@@ -824,23 +824,23 @@ class TestOAuthRoutes:
     def test_oauth_callback_db_failure(self, client):
         """Cover lines 881-883: user creation fails."""
         env = {
-            "INFRASIM_OAUTH_GITHUB_CLIENT_ID": "test-id",
-            "INFRASIM_OAUTH_GITHUB_CLIENT_SECRET": "test-secret",
+            "FAULTRAY_OAUTH_GITHUB_CLIENT_ID": "test-id",
+            "FAULTRAY_OAUTH_GITHUB_CLIENT_SECRET": "test-secret",
         }
         with patch.dict(os.environ, env, clear=False):
             with patch(
-                "infrasim.api.oauth.exchange_code_for_token",
+                "faultray.api.oauth.exchange_code_for_token",
                 new_callable=AsyncMock,
                 return_value="fake-access-token",
             ):
                 with patch(
-                    "infrasim.api.oauth.get_user_profile",
+                    "faultray.api.oauth.get_user_profile",
                     new_callable=AsyncMock,
                     return_value={"email": "fail@example.com", "name": "Fail"},
                 ):
                     # Patch at the database module level since it's imported locally
                     with patch(
-                        "infrasim.api.database.get_session_factory",
+                        "faultray.api.database.get_session_factory",
                         side_effect=Exception("DB unavailable"),
                     ):
                         resp = client.get(
@@ -901,7 +901,7 @@ class TestMultiTenantRuns:
 class TestMultiTenantProjects:
     def test_list_projects_with_user_team_filter(self, db_client):
         """Cover lines 722-726: projects filtered by user's team."""
-        from infrasim.api.auth import hash_api_key
+        from faultray.api.auth import hash_api_key
 
         now = "2026-01-01T00:00:00"
         tids = _seed_sync(db_client._db_path, "teams", [{"name": "proj-team", "created_at": now}])
@@ -926,7 +926,7 @@ class TestMultiTenantProjects:
         # which wraps require_permission and returns the user.  We need to
         # override the actual dependency function attached to the route.
         # Extract the dependency from the route so we can override it properly.
-        from infrasim.api.server import _require_permission
+        from faultray.api.server import _require_permission
         mock_user = SimpleNamespace(id=user_id, team_id=team_id, role="editor")
 
         # Find the actual dependency function used by the /api/projects GET route
@@ -962,7 +962,7 @@ class TestOAuthTokenExchange:
 
     async def test_github_exchange_code_success(self):
         """Cover lines 105-121: GitHub token exchange."""
-        from infrasim.api.oauth import OAuthConfig, exchange_code_for_token
+        from faultray.api.oauth import OAuthConfig, exchange_code_for_token
 
         config = OAuthConfig(
             provider="github",
@@ -974,7 +974,7 @@ class TestOAuthTokenExchange:
         mock_response = MagicMock()
         mock_response.json.return_value = {"access_token": "gh-token-123"}
 
-        with patch("infrasim.api.oauth.httpx.AsyncClient") as mock_client_cls:
+        with patch("faultray.api.oauth.httpx.AsyncClient") as mock_client_cls:
             mock_client = AsyncMock()
             mock_client.post.return_value = mock_response
             mock_client.__aenter__ = AsyncMock(return_value=mock_client)
@@ -987,7 +987,7 @@ class TestOAuthTokenExchange:
 
     async def test_github_exchange_code_failure(self):
         """Cover lines 119-120: GitHub token exchange failure."""
-        from infrasim.api.oauth import OAuthConfig, exchange_code_for_token
+        from faultray.api.oauth import OAuthConfig, exchange_code_for_token
 
         config = OAuthConfig(
             provider="github",
@@ -999,7 +999,7 @@ class TestOAuthTokenExchange:
         mock_response = MagicMock()
         mock_response.json.return_value = {"error": "bad_verification_code"}
 
-        with patch("infrasim.api.oauth.httpx.AsyncClient") as mock_client_cls:
+        with patch("faultray.api.oauth.httpx.AsyncClient") as mock_client_cls:
             mock_client = AsyncMock()
             mock_client.post.return_value = mock_response
             mock_client.__aenter__ = AsyncMock(return_value=mock_client)
@@ -1011,7 +1011,7 @@ class TestOAuthTokenExchange:
 
     async def test_google_exchange_code_success(self):
         """Cover lines 123-139: Google token exchange."""
-        from infrasim.api.oauth import OAuthConfig, exchange_code_for_token
+        from faultray.api.oauth import OAuthConfig, exchange_code_for_token
 
         config = OAuthConfig(
             provider="google",
@@ -1023,7 +1023,7 @@ class TestOAuthTokenExchange:
         mock_response = MagicMock()
         mock_response.json.return_value = {"access_token": "ggl-token-456"}
 
-        with patch("infrasim.api.oauth.httpx.AsyncClient") as mock_client_cls:
+        with patch("faultray.api.oauth.httpx.AsyncClient") as mock_client_cls:
             mock_client = AsyncMock()
             mock_client.post.return_value = mock_response
             mock_client.__aenter__ = AsyncMock(return_value=mock_client)
@@ -1035,7 +1035,7 @@ class TestOAuthTokenExchange:
 
     async def test_google_exchange_code_failure(self):
         """Cover lines 137-138: Google token exchange failure."""
-        from infrasim.api.oauth import OAuthConfig, exchange_code_for_token
+        from faultray.api.oauth import OAuthConfig, exchange_code_for_token
 
         config = OAuthConfig(
             provider="google",
@@ -1047,7 +1047,7 @@ class TestOAuthTokenExchange:
         mock_response = MagicMock()
         mock_response.json.return_value = {"error": "invalid_grant"}
 
-        with patch("infrasim.api.oauth.httpx.AsyncClient") as mock_client_cls:
+        with patch("faultray.api.oauth.httpx.AsyncClient") as mock_client_cls:
             mock_client = AsyncMock()
             mock_client.post.return_value = mock_response
             mock_client.__aenter__ = AsyncMock(return_value=mock_client)
@@ -1059,7 +1059,7 @@ class TestOAuthTokenExchange:
 
     async def test_unsupported_provider_exchange(self):
         """Cover line 141: unsupported provider raises RuntimeError."""
-        from infrasim.api.oauth import OAuthConfig, exchange_code_for_token
+        from faultray.api.oauth import OAuthConfig, exchange_code_for_token
 
         config = OAuthConfig(
             provider="unknown",
@@ -1076,7 +1076,7 @@ class TestOAuthUserProfile:
 
     async def test_get_github_user(self):
         """Cover lines 150-156: fetch GitHub user profile."""
-        from infrasim.api.oauth import get_github_user
+        from faultray.api.oauth import get_github_user
 
         mock_response = MagicMock()
         mock_response.json.return_value = {
@@ -1086,7 +1086,7 @@ class TestOAuthUserProfile:
         }
         mock_response.raise_for_status = MagicMock()
 
-        with patch("infrasim.api.oauth.httpx.AsyncClient") as mock_client_cls:
+        with patch("faultray.api.oauth.httpx.AsyncClient") as mock_client_cls:
             mock_client = AsyncMock()
             mock_client.get.return_value = mock_response
             mock_client.__aenter__ = AsyncMock(return_value=mock_client)
@@ -1099,7 +1099,7 @@ class TestOAuthUserProfile:
 
     async def test_get_google_user(self):
         """Cover lines 161-167: fetch Google user profile."""
-        from infrasim.api.oauth import get_google_user
+        from faultray.api.oauth import get_google_user
 
         mock_response = MagicMock()
         mock_response.json.return_value = {
@@ -1108,7 +1108,7 @@ class TestOAuthUserProfile:
         }
         mock_response.raise_for_status = MagicMock()
 
-        with patch("infrasim.api.oauth.httpx.AsyncClient") as mock_client_cls:
+        with patch("faultray.api.oauth.httpx.AsyncClient") as mock_client_cls:
             mock_client = AsyncMock()
             mock_client.get.return_value = mock_response
             mock_client.__aenter__ = AsyncMock(return_value=mock_client)
@@ -1120,7 +1120,7 @@ class TestOAuthUserProfile:
 
     async def test_get_user_profile_github(self):
         """Cover lines 172-177: normalised profile for GitHub."""
-        from infrasim.api.oauth import OAuthConfig, get_user_profile
+        from faultray.api.oauth import OAuthConfig, get_user_profile
 
         config = OAuthConfig(
             provider="github",
@@ -1129,7 +1129,7 @@ class TestOAuthUserProfile:
             redirect_uri="http://localhost/callback",
         )
         with patch(
-            "infrasim.api.oauth.get_github_user",
+            "faultray.api.oauth.get_github_user",
             new_callable=AsyncMock,
             return_value={"email": "gh@example.com", "name": "GH User", "login": "ghuser"},
         ):
@@ -1139,7 +1139,7 @@ class TestOAuthUserProfile:
 
     async def test_get_user_profile_github_no_email(self):
         """Cover lines 175: fallback email for GitHub user without email."""
-        from infrasim.api.oauth import OAuthConfig, get_user_profile
+        from faultray.api.oauth import OAuthConfig, get_user_profile
 
         config = OAuthConfig(
             provider="github",
@@ -1148,7 +1148,7 @@ class TestOAuthUserProfile:
             redirect_uri="http://localhost/callback",
         )
         with patch(
-            "infrasim.api.oauth.get_github_user",
+            "faultray.api.oauth.get_github_user",
             new_callable=AsyncMock,
             return_value={"email": None, "name": None, "login": "ghuser"},
         ):
@@ -1158,7 +1158,7 @@ class TestOAuthUserProfile:
 
     async def test_get_user_profile_google(self):
         """Cover lines 178-183: normalised profile for Google."""
-        from infrasim.api.oauth import OAuthConfig, get_user_profile
+        from faultray.api.oauth import OAuthConfig, get_user_profile
 
         config = OAuthConfig(
             provider="google",
@@ -1167,7 +1167,7 @@ class TestOAuthUserProfile:
             redirect_uri="http://localhost/callback",
         )
         with patch(
-            "infrasim.api.oauth.get_google_user",
+            "faultray.api.oauth.get_google_user",
             new_callable=AsyncMock,
             return_value={"email": "ggl@example.com", "name": "Google User"},
         ):
@@ -1177,7 +1177,7 @@ class TestOAuthUserProfile:
 
     async def test_get_user_profile_unsupported(self):
         """Cover line 184: unsupported provider raises RuntimeError."""
-        from infrasim.api.oauth import OAuthConfig, get_user_profile
+        from faultray.api.oauth import OAuthConfig, get_user_profile
 
         config = OAuthConfig(
             provider="unknown",
@@ -1254,12 +1254,12 @@ class TestDatabaseExtended:
 
     async def test_init_db_default_url_creates_dir(self, tmp_path, monkeypatch):
         """Cover lines 207-208: init_db with url=None creates DB_DIR."""
-        import infrasim.api.database as db_mod
+        import faultray.api.database as db_mod
 
         reset_engine()
 
-        fake_db_dir = tmp_path / "fake_infrasim"
-        fake_db_path = fake_db_dir / "infrasim.db"
+        fake_db_dir = tmp_path / "fake_faultray"
+        fake_db_path = fake_db_dir / "faultray.db"
         monkeypatch.setattr(db_mod, "DB_DIR", fake_db_dir)
         monkeypatch.setattr(db_mod, "DB_PATH", fake_db_path)
 
@@ -1327,7 +1327,7 @@ class TestReportToDict:
 class TestAnalyzeNoReport:
     def test_analyze_page_runs_simulation_when_no_report(self, demo_client):
         """Cover lines 354-355: analyze page runs simulation when _last_report is None."""
-        import infrasim.api.server as srv
+        import faultray.api.server as srv
         srv._last_report = None
         try:
             resp = demo_client.get("/analyze")
@@ -1348,7 +1348,7 @@ class TestDBErrorBranches:
     def test_create_project_db_error(self, client):
         """Cover lines 701-703: create_project returns 503 on DB error."""
         with patch(
-            "infrasim.api.database.get_session_factory",
+            "faultray.api.database.get_session_factory",
             side_effect=Exception("DB unavailable"),
         ):
             resp = client.post("/api/projects", json={"name": "Failing"})
@@ -1359,7 +1359,7 @@ class TestDBErrorBranches:
     def test_list_projects_db_error(self, client):
         """Cover lines 742-744: list_projects returns fallback on DB error."""
         with patch(
-            "infrasim.api.database.get_session_factory",
+            "faultray.api.database.get_session_factory",
             side_effect=Exception("DB unavailable"),
         ):
             resp = client.get("/api/projects")
@@ -1371,7 +1371,7 @@ class TestDBErrorBranches:
     def test_list_audit_logs_db_error(self, client):
         """Cover lines 791-793: list_audit_logs returns fallback on DB error."""
         with patch(
-            "infrasim.api.database.get_session_factory",
+            "faultray.api.database.get_session_factory",
             side_effect=Exception("DB unavailable"),
         ):
             resp = client.get("/api/audit-logs")

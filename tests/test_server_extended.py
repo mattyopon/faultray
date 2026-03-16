@@ -11,8 +11,8 @@ from __future__ import annotations
 import pytest
 from httpx import ASGITransport, AsyncClient
 
-from infrasim.api.server import app, set_graph
-from infrasim.model.demo import create_demo_graph
+from faultray.api.server import app, set_graph
+from faultray.model.demo import create_demo_graph
 
 
 @pytest.fixture(autouse=True)
@@ -22,7 +22,7 @@ def _setup_demo_graph():
     set_graph(g)
     yield
     # Reset graph to empty after test
-    from infrasim.model.graph import InfraGraph
+    from faultray.model.graph import InfraGraph
     set_graph(InfraGraph())
 
 
@@ -48,7 +48,7 @@ class TestDashboard:
         assert resp.status_code == 200
         body = resp.text.lower()
         # Dashboard should contain brand or title reference
-        assert "faultray" in body or "chaosproof" in body or "infrasim" in body or "dashboard" in body
+        assert "faultray" in body or "faultray" in body or "faultray" in body or "dashboard" in body
 
 
 # ===================================================================
@@ -70,7 +70,7 @@ class TestApiSimulate:
         assert data["total_scenarios"] > 0
 
     async def test_simulate_empty_graph(self, client):
-        from infrasim.model.graph import InfraGraph
+        from faultray.model.graph import InfraGraph
         set_graph(InfraGraph())
         resp = await client.post("/api/simulate")
         assert resp.status_code == 400

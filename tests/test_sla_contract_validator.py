@@ -8,7 +8,7 @@ from __future__ import annotations
 
 import pytest
 
-from infrasim.model.components import (
+from faultray.model.components import (
     AutoScalingConfig,
     Component,
     ComponentType,
@@ -17,8 +17,8 @@ from infrasim.model.components import (
     OperationalProfile,
     SecurityProfile,
 )
-from infrasim.model.graph import InfraGraph
-from infrasim.simulator.sla_contract_validator import (
+from faultray.model.graph import InfraGraph
+from faultray.simulator.sla_contract_validator import (
     PenaltyTier,
     SLAContract,
     SLAValidationReport,

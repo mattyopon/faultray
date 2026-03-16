@@ -10,14 +10,14 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-from infrasim.daemon import FaultRayDaemon
+from faultray.daemon import FaultRayDaemon
 
 
 @pytest.fixture
 def model_file(tmp_path: Path) -> Path:
     """Create a minimal model JSON file for the daemon."""
-    from infrasim.model.components import Component, ComponentType
-    from infrasim.model.graph import InfraGraph
+    from faultray.model.components import Component, ComponentType
+    from faultray.model.graph import InfraGraph
 
     graph = InfraGraph()
     graph.add_component(

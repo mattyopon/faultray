@@ -2,7 +2,7 @@
 
 import pytest
 
-from infrasim.model.components import (
+from faultray.model.components import (
     AutoScalingConfig,
     Component,
     ComponentType,
@@ -11,8 +11,8 @@ from infrasim.model.components import (
     ResourceMetrics,
     SecurityProfile,
 )
-from infrasim.model.graph import InfraGraph
-from infrasim.simulator.resilience_scorecard import (
+from faultray.model.graph import InfraGraph
+from faultray.simulator.resilience_scorecard import (
     ActionItem,
     Dimension,
     DimensionScore,
@@ -266,7 +266,7 @@ class TestRedundancy:
         assert any("single replica" in f for f in red.findings)
 
     def test_replicas_1_with_dependents_is_spof(self):
-        from infrasim.model.components import Dependency
+        from faultray.model.components import Dependency
 
         g = InfraGraph()
         g.add_component(_comp("db", "Database", ctype=ComponentType.DATABASE, replicas=1))
@@ -318,7 +318,7 @@ class TestRedundancy:
         assert "All components have redundancy" in red.findings
 
     def test_redundancy_recommendations_capped(self):
-        from infrasim.model.components import Dependency
+        from faultray.model.components import Dependency
 
         g = InfraGraph()
         for i in range(10):
@@ -863,7 +863,7 @@ class TestDependencyHealth:
         assert "All dependencies healthy" in dh.findings
 
     def test_healthy_dependency(self):
-        from infrasim.model.components import Dependency
+        from faultray.model.components import Dependency
 
         g = InfraGraph()
         g.add_component(_comp("app", "App"))
@@ -877,7 +877,7 @@ class TestDependencyHealth:
         assert dh.component_scores["app"] == 100.0
 
     def test_degraded_dependency(self):
-        from infrasim.model.components import Dependency
+        from faultray.model.components import Dependency
 
         g = InfraGraph()
         g.add_component(_comp("app", "App"))
@@ -892,7 +892,7 @@ class TestDependencyHealth:
         assert any("degraded" in f for f in dh.findings)
 
     def test_overloaded_dependency(self):
-        from infrasim.model.components import Dependency
+        from faultray.model.components import Dependency
 
         g = InfraGraph()
         g.add_component(_comp("app", "App"))
@@ -907,7 +907,7 @@ class TestDependencyHealth:
         assert any("overloaded" in f for f in dh.findings)
 
     def test_down_dependency(self):
-        from infrasim.model.components import Dependency
+        from faultray.model.components import Dependency
 
         g = InfraGraph()
         g.add_component(_comp("app", "App"))
@@ -923,7 +923,7 @@ class TestDependencyHealth:
         assert any("Restore" in r for r in dh.recommendations)
 
     def test_mixed_dependencies(self):
-        from infrasim.model.components import Dependency
+        from faultray.model.components import Dependency
 
         g = InfraGraph()
         g.add_component(_comp("app", "App"))
@@ -940,7 +940,7 @@ class TestDependencyHealth:
         assert dh.component_scores["app"] == 50.0
 
     def test_dependency_recommendations_capped(self):
-        from infrasim.model.components import Dependency
+        from faultray.model.components import Dependency
 
         g = InfraGraph()
         g.add_component(_comp("app", "App"))
@@ -1135,7 +1135,7 @@ class TestActionItems:
             assert "High" in ai.impact
 
     def test_effort_medium_for_add_replica(self):
-        from infrasim.model.components import Dependency
+        from faultray.model.components import Dependency
 
         g = InfraGraph()
         g.add_component(_comp("db", "DB", ctype=ComponentType.DATABASE, replicas=1))
@@ -1504,7 +1504,7 @@ class TestDataclasses:
 class TestIntegration:
     def test_realistic_infrastructure(self):
         """Simulate a realistic 3-tier setup and verify scorecard integrity."""
-        from infrasim.model.components import Dependency
+        from faultray.model.components import Dependency
 
         lb = _comp("lb", "LoadBalancer", ctype=ComponentType.LOAD_BALANCER, replicas=2)
         lb.security = SecurityProfile(

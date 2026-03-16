@@ -1,10 +1,12 @@
-"""Tests for Chaos Engineering Maturity Model."""
+"""Tests for chaos_maturity module — Chaos Engineering Maturity Model."""
 
 from __future__ import annotations
 
+from datetime import datetime, timezone
+
 import pytest
 
-from infrasim.model.components import (
+from faultray.model.components import (
     AutoScalingConfig,
     CircuitBreakerConfig,
     Component,
@@ -18,14 +20,22 @@ from infrasim.model.components import (
     SingleflightConfig,
     SLOTarget,
 )
-from infrasim.model.graph import InfraGraph
-from infrasim.simulator.chaos_maturity import (
-    ChaosMaturityAssessor,
-    ChaosMaturityReport,
-    DimensionAssessment,
+from faultray.model.graph import InfraGraph
+from faultray.simulator.chaos_maturity import (
+    ChaosConfig,
+    ChaosMaturityEngine,
+    DimensionScore,
+    ExecutiveSummary,
+    IndustryComparison,
+    MaturityAssessment,
     MaturityDimension,
     MaturityLevel,
-    MaturityRoadmap,
+    ProgressReport,
+    ROIEstimate,
+    RoadmapItem,
+    _INDUSTRY_AVERAGES,
+    _LEVEL_THRESHOLDS,
+    _score_to_level,
 )
 
 
@@ -34,1758 +44,1635 @@ from infrasim.simulator.chaos_maturity import (
 # ---------------------------------------------------------------------------
 
 
-def _empty_graph() -> InfraGraph:
-    """Build a completely empty graph."""
-    return InfraGraph()
+def _comp(
+    cid: str,
+    name: str = "",
+    ctype: ComponentType = ComponentType.APP_SERVER,
+    replicas: int = 1,
+    autoscaling: AutoScalingConfig | None = None,
+    failover: FailoverConfig | None = None,
+    security: SecurityProfile | None = None,
+    slo_targets: list[SLOTarget] | None = None,
+    singleflight: SingleflightConfig | None = None,
+    region: RegionConfig | None = None,
+    team: OperationalTeamConfig | None = None,
+) -> Component:
+    return Component(
+        id=cid,
+        name=name or cid,
+        type=ctype,
+        replicas=replicas,
+        autoscaling=autoscaling or AutoScalingConfig(),
+        failover=failover or FailoverConfig(),
+        security=security or SecurityProfile(),
+        slo_targets=slo_targets or [],
+        singleflight=singleflight or SingleflightConfig(),
+        region=region or RegionConfig(),
+        team=team or OperationalTeamConfig(),
+    )
 
 
-def _minimal_graph() -> InfraGraph:
-    """Build a minimal graph with no resilience features (Level 0)."""
-    graph = InfraGraph()
-    graph.add_component(Component(
-        id="app", name="App Server", type=ComponentType.APP_SERVER, replicas=1,
-    ))
-    graph.add_component(Component(
-        id="db", name="Database", type=ComponentType.DATABASE, replicas=1,
-    ))
-    graph.add_dependency(Dependency(
-        source_id="app", target_id="db", dependency_type="requires",
-    ))
-    return graph
+def _graph(*comps: Component) -> InfraGraph:
+    g = InfraGraph()
+    for c in comps:
+        g.add_component(c)
+    return g
 
 
-def _single_component_graph() -> InfraGraph:
-    """Build a graph with a single isolated component."""
-    graph = InfraGraph()
-    graph.add_component(Component(
-        id="solo", name="Solo Service", type=ComponentType.APP_SERVER, replicas=1,
-    ))
-    return graph
+def _default_config(**overrides) -> ChaosConfig:
+    return ChaosConfig(**overrides)
 
 
-def _partial_graph() -> InfraGraph:
-    """Build a graph with partial resilience (Level 2-3 range)."""
-    graph = InfraGraph()
-    graph.add_component(Component(
-        id="lb", name="Load Balancer", type=ComponentType.LOAD_BALANCER, replicas=2,
-        autoscaling=AutoScalingConfig(enabled=True, min_replicas=2, max_replicas=4),
-        failover=FailoverConfig(enabled=True, health_check_interval_seconds=10),
-        security=SecurityProfile(log_enabled=True, network_segmented=True),
-        team=OperationalTeamConfig(runbook_coverage_percent=60.0, automation_percent=30.0),
-    ))
-    graph.add_component(Component(
-        id="app", name="App Server", type=ComponentType.APP_SERVER, replicas=2,
-        failover=FailoverConfig(enabled=True, health_check_interval_seconds=10),
-        security=SecurityProfile(log_enabled=True),
-        slo_targets=[SLOTarget(name="availability", target=99.9)],
-        team=OperationalTeamConfig(runbook_coverage_percent=55.0, automation_percent=25.0),
-    ))
-    graph.add_component(Component(
-        id="db", name="Database", type=ComponentType.DATABASE, replicas=1,
-        security=SecurityProfile(log_enabled=True, backup_enabled=True),
-        team=OperationalTeamConfig(runbook_coverage_percent=40.0, automation_percent=15.0),
-    ))
-    graph.add_component(Component(
-        id="cache", name="Cache", type=ComponentType.CACHE, replicas=1,
-    ))
-    graph.add_dependency(Dependency(
-        source_id="lb", target_id="app", dependency_type="requires",
-        circuit_breaker=CircuitBreakerConfig(enabled=True),
-        retry_strategy=RetryStrategy(enabled=True),
-    ))
-    graph.add_dependency(Dependency(
-        source_id="app", target_id="db", dependency_type="requires",
-        circuit_breaker=CircuitBreakerConfig(enabled=True),
-    ))
-    graph.add_dependency(Dependency(
-        source_id="app", target_id="cache", dependency_type="optional",
-    ))
-    return graph
+def _full_config() -> ChaosConfig:
+    return ChaosConfig(
+        has_gameday_practice=True,
+        gameday_frequency_per_quarter=4,
+        has_hypothesis_driven_experiments=True,
+        has_automated_chaos=True,
+        chaos_in_ci_cd=True,
+        blast_radius_controls=True,
+        observability_coverage_percent=90.0,
+        runbook_coverage_percent=90.0,
+        incident_learning_process=True,
+        team_training_hours_per_quarter=20.0,
+    )
 
 
-def _well_protected_graph() -> InfraGraph:
-    """Build a graph with comprehensive resilience (Level 4-5 range)."""
-    graph = InfraGraph()
-    # All components have replicas, failover, autoscaling, logging, IDS, etc.
-    for i, (cid, ctype) in enumerate([
-        ("lb", ComponentType.LOAD_BALANCER),
-        ("app1", ComponentType.APP_SERVER),
-        ("app2", ComponentType.APP_SERVER),
-        ("db", ComponentType.DATABASE),
-        ("cache", ComponentType.CACHE),
-    ]):
-        graph.add_component(Component(
-            id=cid,
-            name=cid.upper(),
-            type=ctype,
-            replicas=3,
-            autoscaling=AutoScalingConfig(enabled=True, min_replicas=2, max_replicas=10),
-            failover=FailoverConfig(enabled=True, health_check_interval_seconds=5),
-            security=SecurityProfile(
-                log_enabled=True,
-                ids_monitored=True,
-                network_segmented=True,
-                backup_enabled=True,
-            ),
-            slo_targets=[SLOTarget(name="availability", target=99.99)],
-            singleflight=SingleflightConfig(enabled=True),
-            region=RegionConfig(
-                region="us-east-1",
-                availability_zone="us-east-1a",
-                dr_target_region="us-west-2",
-            ),
-            team=OperationalTeamConfig(
-                runbook_coverage_percent=90.0,
-                automation_percent=70.0,
-                oncall_coverage_hours=24.0,
-            ),
-        ))
-
-    deps = [("lb", "app1"), ("lb", "app2"), ("app1", "db"), ("app2", "db"), ("app1", "cache"), ("app2", "cache")]
-    for src, tgt in deps:
-        graph.add_dependency(Dependency(
-            source_id=src, target_id=tgt, dependency_type="requires",
-            circuit_breaker=CircuitBreakerConfig(enabled=True),
-            retry_strategy=RetryStrategy(enabled=True),
-        ))
-    return graph
+def _well_protected_comp(cid: str) -> Component:
+    return _comp(
+        cid,
+        replicas=3,
+        autoscaling=AutoScalingConfig(enabled=True, min_replicas=2, max_replicas=10),
+        failover=FailoverConfig(enabled=True, health_check_interval_seconds=5),
+        security=SecurityProfile(
+            log_enabled=True, ids_monitored=True, network_segmented=True, backup_enabled=True,
+        ),
+        slo_targets=[SLOTarget(name="availability", target=99.99)],
+        singleflight=SingleflightConfig(enabled=True),
+        region=RegionConfig(region="us-east-1", dr_target_region="us-west-2"),
+        team=OperationalTeamConfig(
+            runbook_coverage_percent=90.0, automation_percent=70.0, oncall_coverage_hours=24.0,
+        ),
+    )
 
 
-def _large_mixed_graph() -> InfraGraph:
-    """Build a large graph with mixed configurations."""
-    graph = InfraGraph()
-    # 10 components: 5 well-configured, 5 bare
-    for i in range(5):
-        graph.add_component(Component(
-            id=f"good_{i}", name=f"Good {i}", type=ComponentType.APP_SERVER,
-            replicas=3,
-            autoscaling=AutoScalingConfig(enabled=True),
-            failover=FailoverConfig(enabled=True, health_check_interval_seconds=10),
-            security=SecurityProfile(log_enabled=True, ids_monitored=True, network_segmented=True),
-            slo_targets=[SLOTarget(name="avail", target=99.9)],
-            singleflight=SingleflightConfig(enabled=True),
-            team=OperationalTeamConfig(runbook_coverage_percent=80.0, automation_percent=50.0),
-        ))
-    for i in range(5):
-        graph.add_component(Component(
-            id=f"bare_{i}", name=f"Bare {i}", type=ComponentType.APP_SERVER,
-            replicas=1,
-        ))
-    # Edges: half with CB/retry, half without
-    for i in range(5):
-        graph.add_dependency(Dependency(
-            source_id=f"good_{i}", target_id=f"bare_{i}", dependency_type="requires",
-            circuit_breaker=CircuitBreakerConfig(enabled=True),
-            retry_strategy=RetryStrategy(enabled=True),
-        ))
-    for i in range(4):
-        graph.add_dependency(Dependency(
-            source_id=f"bare_{i}", target_id=f"bare_{i+1}", dependency_type="requires",
-        ))
-    return graph
-
-
-def _same_type_graph() -> InfraGraph:
-    """Build a graph where all components are the same type."""
-    graph = InfraGraph()
-    for i in range(4):
-        graph.add_component(Component(
-            id=f"web_{i}", name=f"Web {i}", type=ComponentType.WEB_SERVER,
-            replicas=2,
-            failover=FailoverConfig(enabled=True, health_check_interval_seconds=10),
-            security=SecurityProfile(log_enabled=True),
-            team=OperationalTeamConfig(runbook_coverage_percent=60.0, automation_percent=35.0),
-        ))
-    for i in range(3):
-        graph.add_dependency(Dependency(
-            source_id=f"web_{i}", target_id=f"web_{i+1}", dependency_type="requires",
-            circuit_breaker=CircuitBreakerConfig(enabled=True),
-            retry_strategy=RetryStrategy(enabled=True),
-        ))
-    return graph
+def _bare_comp(cid: str) -> Component:
+    return _comp(cid, replicas=1)
 
 
 # ---------------------------------------------------------------------------
-# MaturityLevel enum tests
+# MaturityLevel enum
 # ---------------------------------------------------------------------------
 
 
 class TestMaturityLevel:
-    """Tests for MaturityLevel enum."""
+    def test_has_five_members(self):
+        assert len(MaturityLevel) == 5
 
-    def test_level_values(self):
-        assert MaturityLevel.LEVEL_0_NONE == 0
-        assert MaturityLevel.LEVEL_1_INITIAL == 1
-        assert MaturityLevel.LEVEL_2_DEFINED == 2
-        assert MaturityLevel.LEVEL_3_MANAGED == 3
-        assert MaturityLevel.LEVEL_4_MEASURED == 4
-        assert MaturityLevel.LEVEL_5_OPTIMIZED == 5
+    def test_values(self):
+        expected = {
+            "level_0_initial",
+            "level_1_planned",
+            "level_2_practiced",
+            "level_3_managed",
+            "level_4_optimized",
+        }
+        assert {m.value for m in MaturityLevel} == expected
 
-    def test_level_is_int(self):
-        assert isinstance(MaturityLevel.LEVEL_3_MANAGED, int)
-        assert MaturityLevel.LEVEL_3_MANAGED + 1 == 4
+    def test_is_str_enum(self):
+        assert isinstance(MaturityLevel.level_0_initial, str)
 
-    def test_level_ordering(self):
-        assert MaturityLevel.LEVEL_0_NONE < MaturityLevel.LEVEL_5_OPTIMIZED
-        assert MaturityLevel.LEVEL_2_DEFINED < MaturityLevel.LEVEL_4_MEASURED
-
-    def test_all_levels_exist(self):
-        assert len(MaturityLevel) == 6
+    def test_ordering_preserved(self):
+        levels = list(MaturityLevel)
+        assert levels[0] == MaturityLevel.level_0_initial
+        assert levels[4] == MaturityLevel.level_4_optimized
 
 
 # ---------------------------------------------------------------------------
-# MaturityDimension enum tests
+# MaturityDimension enum
 # ---------------------------------------------------------------------------
 
 
 class TestMaturityDimension:
-    """Tests for MaturityDimension enum."""
-
-    def test_all_dimensions(self):
+    def test_has_eight_members(self):
         assert len(MaturityDimension) == 8
+
+    def test_values(self):
         expected = {
-            "fault_injection", "observability", "automation",
-            "blast_radius_control", "game_days", "steady_state_hypothesis",
-            "rollback_capability", "organizational_adoption",
+            "culture", "process", "tooling", "automation",
+            "observability", "blast_radius_control",
+            "hypothesis_driven", "gameday_practice",
         }
         assert {d.value for d in MaturityDimension} == expected
 
-    def test_dimension_is_str(self):
-        assert isinstance(MaturityDimension.FAULT_INJECTION, str)
-        assert MaturityDimension.FAULT_INJECTION == "fault_injection"
+    def test_is_str_enum(self):
+        assert isinstance(MaturityDimension.culture, str)
 
 
 # ---------------------------------------------------------------------------
-# Dataclass tests
+# _score_to_level helper
 # ---------------------------------------------------------------------------
 
 
-class TestDimensionAssessment:
-    """Tests for DimensionAssessment dataclass."""
+class TestScoreToLevel:
+    def test_zero(self):
+        assert _score_to_level(0.0) == MaturityLevel.level_0_initial
 
+    def test_below_20(self):
+        assert _score_to_level(19.9) == MaturityLevel.level_0_initial
+
+    def test_at_20(self):
+        assert _score_to_level(20.0) == MaturityLevel.level_1_planned
+
+    def test_at_40(self):
+        assert _score_to_level(40.0) == MaturityLevel.level_2_practiced
+
+    def test_at_60(self):
+        assert _score_to_level(60.0) == MaturityLevel.level_3_managed
+
+    def test_at_80(self):
+        assert _score_to_level(80.0) == MaturityLevel.level_4_optimized
+
+    def test_at_100(self):
+        assert _score_to_level(100.0) == MaturityLevel.level_4_optimized
+
+    def test_midrange(self):
+        assert _score_to_level(50.0) == MaturityLevel.level_2_practiced
+
+
+# ---------------------------------------------------------------------------
+# ChaosConfig model
+# ---------------------------------------------------------------------------
+
+
+class TestChaosConfig:
     def test_defaults(self):
-        da = DimensionAssessment(
-            dimension=MaturityDimension.OBSERVABILITY,
-            current_level=MaturityLevel.LEVEL_2_DEFINED,
-        )
-        assert da.max_level == MaturityLevel.LEVEL_5_OPTIMIZED
-        assert da.score == 0.0
-        assert da.evidence == []
-        assert da.gaps == []
-        assert da.next_level_actions == []
+        cfg = ChaosConfig()
+        assert cfg.has_gameday_practice is False
+        assert cfg.gameday_frequency_per_quarter == 0
+        assert cfg.has_hypothesis_driven_experiments is False
+        assert cfg.has_automated_chaos is False
+        assert cfg.chaos_in_ci_cd is False
+        assert cfg.blast_radius_controls is False
+        assert cfg.observability_coverage_percent == 0.0
+        assert cfg.runbook_coverage_percent == 0.0
+        assert cfg.incident_learning_process is False
+        assert cfg.team_training_hours_per_quarter == 0.0
 
-    def test_full_init(self):
-        da = DimensionAssessment(
-            dimension=MaturityDimension.AUTOMATION,
-            current_level=MaturityLevel.LEVEL_3_MANAGED,
-            max_level=MaturityLevel.LEVEL_5_OPTIMIZED,
-            score=65.0,
-            evidence=["AS: 60%"],
-            gaps=["Not full"],
-            next_level_actions=["Enable more"],
-        )
-        assert da.score == 65.0
-        assert len(da.evidence) == 1
-        assert len(da.gaps) == 1
+    def test_full_config(self):
+        cfg = _full_config()
+        assert cfg.has_gameday_practice is True
+        assert cfg.gameday_frequency_per_quarter == 4
+        assert cfg.has_automated_chaos is True
+
+    def test_partial_override(self):
+        cfg = _default_config(has_gameday_practice=True, observability_coverage_percent=80.0)
+        assert cfg.has_gameday_practice is True
+        assert cfg.observability_coverage_percent == 80.0
+        assert cfg.has_automated_chaos is False
 
 
-class TestMaturityRoadmap:
-    """Tests for MaturityRoadmap dataclass."""
+# ---------------------------------------------------------------------------
+# DimensionScore model
+# ---------------------------------------------------------------------------
 
+
+class TestDimensionScore:
     def test_defaults(self):
-        roadmap = MaturityRoadmap()
-        assert roadmap.current_overall_level == MaturityLevel.LEVEL_0_NONE
-        assert roadmap.target_level == MaturityLevel.LEVEL_1_INITIAL
-        assert roadmap.quick_wins == []
-        assert roadmap.short_term == []
-        assert roadmap.long_term == []
-        assert roadmap.estimated_months_to_next_level == 0.0
-
-
-class TestChaosMaturityReport:
-    """Tests for ChaosMaturityReport dataclass."""
-
-    def test_defaults(self):
-        report = ChaosMaturityReport()
-        assert report.overall_level == MaturityLevel.LEVEL_0_NONE
-        assert report.overall_score == 0.0
-        assert report.dimensions == []
-        assert report.strengths == []
-        assert report.weaknesses == []
-        assert report.peer_comparison == "below average"
-
-
-# ---------------------------------------------------------------------------
-# Empty graph tests
-# ---------------------------------------------------------------------------
-
-
-class TestEmptyGraph:
-    """Tests for empty graph (Level 0)."""
-
-    def test_overall_level_is_zero(self):
-        assessor = ChaosMaturityAssessor(_empty_graph())
-        report = assessor.assess()
-        assert report.overall_level == MaturityLevel.LEVEL_0_NONE
-
-    def test_overall_score_is_zero(self):
-        assessor = ChaosMaturityAssessor(_empty_graph())
-        report = assessor.assess()
-        assert report.overall_score == 0.0
-
-    def test_all_dimensions_level_zero(self):
-        assessor = ChaosMaturityAssessor(_empty_graph())
-        report = assessor.assess()
-        assert len(report.dimensions) == 8
-        for dim in report.dimensions:
-            assert dim.current_level == MaturityLevel.LEVEL_0_NONE
-
-    def test_all_dimensions_have_gaps(self):
-        assessor = ChaosMaturityAssessor(_empty_graph())
-        report = assessor.assess()
-        for dim in report.dimensions:
-            assert len(dim.gaps) > 0 or len(dim.next_level_actions) > 0
-
-    def test_peer_comparison_below_average(self):
-        assessor = ChaosMaturityAssessor(_empty_graph())
-        report = assessor.assess()
-        assert report.peer_comparison == "below average"
-
-    def test_roadmap_has_quick_wins(self):
-        assessor = ChaosMaturityAssessor(_empty_graph())
-        report = assessor.assess()
-        assert report.roadmap.current_overall_level == MaturityLevel.LEVEL_0_NONE
-
-
-# ---------------------------------------------------------------------------
-# Minimal graph tests (no resilience)
-# ---------------------------------------------------------------------------
-
-
-class TestMinimalGraph:
-    """Tests for minimal graph with no resilience features."""
-
-    def test_overall_level_low(self):
-        assessor = ChaosMaturityAssessor(_minimal_graph())
-        report = assessor.assess()
-        assert report.overall_level.value <= 1
-
-    def test_fault_injection_low(self):
-        assessor = ChaosMaturityAssessor(_minimal_graph())
-        report = assessor.assess()
-        fi = next(d for d in report.dimensions if d.dimension == MaturityDimension.FAULT_INJECTION)
-        assert fi.current_level.value <= 1
-
-    def test_observability_level_zero(self):
-        assessor = ChaosMaturityAssessor(_minimal_graph())
-        report = assessor.assess()
-        obs = next(d for d in report.dimensions if d.dimension == MaturityDimension.OBSERVABILITY)
-        assert obs.current_level == MaturityLevel.LEVEL_0_NONE
-
-    def test_automation_level_zero(self):
-        assessor = ChaosMaturityAssessor(_minimal_graph())
-        report = assessor.assess()
-        auto = next(d for d in report.dimensions if d.dimension == MaturityDimension.AUTOMATION)
-        assert auto.current_level == MaturityLevel.LEVEL_0_NONE
-
-    def test_blast_radius_control_low(self):
-        assessor = ChaosMaturityAssessor(_minimal_graph())
-        report = assessor.assess()
-        brc = next(d for d in report.dimensions if d.dimension == MaturityDimension.BLAST_RADIUS_CONTROL)
-        assert brc.current_level.value <= 1
-
-    def test_steady_state_level_zero(self):
-        assessor = ChaosMaturityAssessor(_minimal_graph())
-        report = assessor.assess()
-        ss = next(d for d in report.dimensions if d.dimension == MaturityDimension.STEADY_STATE_HYPOTHESIS)
-        assert ss.current_level == MaturityLevel.LEVEL_0_NONE
-
-    def test_rollback_level_zero(self):
-        assessor = ChaosMaturityAssessor(_minimal_graph())
-        report = assessor.assess()
-        rb = next(d for d in report.dimensions if d.dimension == MaturityDimension.ROLLBACK_CAPABILITY)
-        assert rb.current_level == MaturityLevel.LEVEL_0_NONE
-
-    def test_weaknesses_populated(self):
-        assessor = ChaosMaturityAssessor(_minimal_graph())
-        report = assessor.assess()
-        assert len(report.weaknesses) > 0
-
-
-# ---------------------------------------------------------------------------
-# Single component graph tests
-# ---------------------------------------------------------------------------
-
-
-class TestSingleComponentGraph:
-    """Tests for a graph with a single isolated component."""
-
-    def test_assess_succeeds(self):
-        assessor = ChaosMaturityAssessor(_single_component_graph())
-        report = assessor.assess()
-        assert isinstance(report, ChaosMaturityReport)
-        assert len(report.dimensions) == 8
-
-    def test_fault_injection_no_edges(self):
-        assessor = ChaosMaturityAssessor(_single_component_graph())
-        report = assessor.assess()
-        fi = next(d for d in report.dimensions if d.dimension == MaturityDimension.FAULT_INJECTION)
-        # No edges, no failover -> Level 0
-        assert fi.current_level == MaturityLevel.LEVEL_0_NONE
-
-    def test_single_component_with_failover(self):
-        graph = InfraGraph()
-        graph.add_component(Component(
-            id="solo", name="Solo", type=ComponentType.APP_SERVER,
-            failover=FailoverConfig(enabled=True, health_check_interval_seconds=10),
-        ))
-        assessor = ChaosMaturityAssessor(graph)
-        report = assessor.assess()
-        fi = next(d for d in report.dimensions if d.dimension == MaturityDimension.FAULT_INJECTION)
-        assert fi.current_level.value >= 1
-
-    def test_score_in_valid_range(self):
-        assessor = ChaosMaturityAssessor(_single_component_graph())
-        report = assessor.assess()
-        assert 0.0 <= report.overall_score <= 100.0
-
-
-# ---------------------------------------------------------------------------
-# Partial maturity tests (mixed levels)
-# ---------------------------------------------------------------------------
-
-
-class TestPartialGraph:
-    """Tests for graph with partial resilience (mixed levels)."""
-
-    def test_overall_level_intermediate(self):
-        assessor = ChaosMaturityAssessor(_partial_graph())
-        report = assessor.assess()
-        assert 1 <= report.overall_level.value <= 3
-
-    def test_fault_injection_has_evidence(self):
-        assessor = ChaosMaturityAssessor(_partial_graph())
-        report = assessor.assess()
-        fi = next(d for d in report.dimensions if d.dimension == MaturityDimension.FAULT_INJECTION)
-        # Partial graph has 2/3 edges with CB, 1/3 with retry
-        assert fi.current_level.value >= 1
-        assert fi.score > 0
-
-    def test_observability_partial(self):
-        assessor = ChaosMaturityAssessor(_partial_graph())
-        report = assessor.assess()
-        obs = next(d for d in report.dimensions if d.dimension == MaturityDimension.OBSERVABILITY)
-        # 3/4 have logging, 2/4 have health checks
-        assert obs.current_level.value >= 2
-
-    def test_automation_partial(self):
-        assessor = ChaosMaturityAssessor(_partial_graph())
-        report = assessor.assess()
-        auto = next(d for d in report.dimensions if d.dimension == MaturityDimension.AUTOMATION)
-        # 1/4 AS, 2/4 FO -> combined ~0.375
-        assert auto.current_level.value >= 1
-
-    def test_blast_radius_control_partial(self):
-        assessor = ChaosMaturityAssessor(_partial_graph())
-        report = assessor.assess()
-        brc = next(d for d in report.dimensions if d.dimension == MaturityDimension.BLAST_RADIUS_CONTROL)
-        # 2/4 replicas > 1, 2/3 CB, 1/4 segmented
-        assert brc.current_level.value >= 1
-
-    def test_game_days_partial(self):
-        assessor = ChaosMaturityAssessor(_partial_graph())
-        report = assessor.assess()
-        gd = next(d for d in report.dimensions if d.dimension == MaturityDimension.GAME_DAYS)
-        assert gd.current_level.value >= 1
-
-    def test_steady_state_partial(self):
-        assessor = ChaosMaturityAssessor(_partial_graph())
-        report = assessor.assess()
-        ss = next(d for d in report.dimensions if d.dimension == MaturityDimension.STEADY_STATE_HYPOTHESIS)
-        # 1/4 SLO, 2/4 HC -> Level 1 or 2
-        assert ss.current_level.value >= 1
-
-    def test_rollback_partial(self):
-        assessor = ChaosMaturityAssessor(_partial_graph())
-        report = assessor.assess()
-        rb = next(d for d in report.dimensions if d.dimension == MaturityDimension.ROLLBACK_CAPABILITY)
-        assert rb.current_level.value >= 1
-
-    def test_organizational_partial(self):
-        assessor = ChaosMaturityAssessor(_partial_graph())
-        report = assessor.assess()
-        org = next(d for d in report.dimensions if d.dimension == MaturityDimension.ORGANIZATIONAL_ADOPTION)
-        # Custom team config present
-        assert org.current_level.value >= 1
-
-    def test_has_both_strengths_and_weaknesses(self):
-        assessor = ChaosMaturityAssessor(_partial_graph())
-        report = assessor.assess()
-        # Partial graph should have at least some weaknesses
-        assert len(report.weaknesses) > 0 or len(report.strengths) > 0
-
-    def test_peer_comparison_not_above(self):
-        assessor = ChaosMaturityAssessor(_partial_graph())
-        report = assessor.assess()
-        # Partial graph shouldn't be above average
-        assert report.peer_comparison in ("below average", "average")
-
-
-# ---------------------------------------------------------------------------
-# Well-protected graph tests (Level 4-5)
-# ---------------------------------------------------------------------------
-
-
-class TestWellProtectedGraph:
-    """Tests for fully protected graph (Level 4-5)."""
-
-    def test_overall_level_high(self):
-        assessor = ChaosMaturityAssessor(_well_protected_graph())
-        report = assessor.assess()
-        assert report.overall_level.value >= 4
-
-    def test_overall_score_high(self):
-        assessor = ChaosMaturityAssessor(_well_protected_graph())
-        report = assessor.assess()
-        assert report.overall_score >= 75.0
-
-    def test_fault_injection_high(self):
-        assessor = ChaosMaturityAssessor(_well_protected_graph())
-        report = assessor.assess()
-        fi = next(d for d in report.dimensions if d.dimension == MaturityDimension.FAULT_INJECTION)
-        assert fi.current_level.value >= 4
-
-    def test_observability_high(self):
-        assessor = ChaosMaturityAssessor(_well_protected_graph())
-        report = assessor.assess()
-        obs = next(d for d in report.dimensions if d.dimension == MaturityDimension.OBSERVABILITY)
-        assert obs.current_level.value >= 4
-
-    def test_automation_high(self):
-        assessor = ChaosMaturityAssessor(_well_protected_graph())
-        report = assessor.assess()
-        auto = next(d for d in report.dimensions if d.dimension == MaturityDimension.AUTOMATION)
-        assert auto.current_level.value >= 4
-
-    def test_blast_radius_control_high(self):
-        assessor = ChaosMaturityAssessor(_well_protected_graph())
-        report = assessor.assess()
-        brc = next(d for d in report.dimensions if d.dimension == MaturityDimension.BLAST_RADIUS_CONTROL)
-        assert brc.current_level.value >= 4
-
-    def test_game_days_high(self):
-        assessor = ChaosMaturityAssessor(_well_protected_graph())
-        report = assessor.assess()
-        gd = next(d for d in report.dimensions if d.dimension == MaturityDimension.GAME_DAYS)
-        assert gd.current_level.value >= 4
-
-    def test_steady_state_high(self):
-        assessor = ChaosMaturityAssessor(_well_protected_graph())
-        report = assessor.assess()
-        ss = next(d for d in report.dimensions if d.dimension == MaturityDimension.STEADY_STATE_HYPOTHESIS)
-        assert ss.current_level.value >= 4
-
-    def test_rollback_high(self):
-        assessor = ChaosMaturityAssessor(_well_protected_graph())
-        report = assessor.assess()
-        rb = next(d for d in report.dimensions if d.dimension == MaturityDimension.ROLLBACK_CAPABILITY)
-        assert rb.current_level.value >= 4
-
-    def test_organizational_high(self):
-        assessor = ChaosMaturityAssessor(_well_protected_graph())
-        report = assessor.assess()
-        org = next(d for d in report.dimensions if d.dimension == MaturityDimension.ORGANIZATIONAL_ADOPTION)
-        assert org.current_level.value >= 4
-
-    def test_peer_comparison_above_average(self):
-        assessor = ChaosMaturityAssessor(_well_protected_graph())
-        report = assessor.assess()
-        assert report.peer_comparison == "above average"
-
-    def test_strengths_populated(self):
-        assessor = ChaosMaturityAssessor(_well_protected_graph())
-        report = assessor.assess()
-        assert len(report.strengths) > 0
-
-    def test_all_scores_above_75(self):
-        assessor = ChaosMaturityAssessor(_well_protected_graph())
-        report = assessor.assess()
-        for dim in report.dimensions:
-            assert dim.score >= 75.0, f"{dim.dimension.value} score {dim.score} < 75"
-
-
-# ---------------------------------------------------------------------------
-# Roadmap generation tests
-# ---------------------------------------------------------------------------
-
-
-class TestRoadmapGeneration:
-    """Tests for roadmap generation."""
-
-    def test_empty_graph_roadmap(self):
-        assessor = ChaosMaturityAssessor(_empty_graph())
-        report = assessor.assess()
-        roadmap = report.roadmap
-        assert roadmap.current_overall_level == MaturityLevel.LEVEL_0_NONE
-        assert roadmap.target_level == MaturityLevel.LEVEL_1_INITIAL
-
-    def test_roadmap_has_quick_wins_for_low_maturity(self):
-        assessor = ChaosMaturityAssessor(_minimal_graph())
-        report = assessor.assess()
-        assert len(report.roadmap.quick_wins) > 0
-
-    def test_roadmap_estimated_months(self):
-        assessor = ChaosMaturityAssessor(_minimal_graph())
-        report = assessor.assess()
-        assert report.roadmap.estimated_months_to_next_level > 0
-
-    def test_roadmap_target_is_one_above_current(self):
-        assessor = ChaosMaturityAssessor(_partial_graph())
-        report = assessor.assess()
-        expected_target = min(report.roadmap.current_overall_level.value + 1, 5)
-        assert report.roadmap.target_level.value == expected_target
-
-    def test_optimized_roadmap_zero_months(self):
-        # Build a graph at level 5
-        assessor = ChaosMaturityAssessor(_well_protected_graph())
-        report = assessor.assess()
-        if report.overall_level == MaturityLevel.LEVEL_5_OPTIMIZED:
-            assert report.roadmap.estimated_months_to_next_level == 0.0
-
-    def test_roadmap_quick_wins_capped_at_five(self):
-        assessor = ChaosMaturityAssessor(_minimal_graph())
-        report = assessor.assess()
-        assert len(report.roadmap.quick_wins) <= 5
-
-    def test_roadmap_short_term_capped_at_five(self):
-        assessor = ChaosMaturityAssessor(_partial_graph())
-        report = assessor.assess()
-        assert len(report.roadmap.short_term) <= 5
-
-    def test_roadmap_long_term_capped_at_five(self):
-        assessor = ChaosMaturityAssessor(_partial_graph())
-        report = assessor.assess()
-        assert len(report.roadmap.long_term) <= 5
-
-    def test_roadmap_actions_have_dimension_labels(self):
-        assessor = ChaosMaturityAssessor(_minimal_graph())
-        report = assessor.assess()
-        for action in report.roadmap.quick_wins:
-            assert "[" in action and "]" in action, f"Action missing label: {action}"
-
-    def test_well_protected_roadmap_still_has_actions(self):
-        assessor = ChaosMaturityAssessor(_well_protected_graph())
-        report = assessor.assess()
-        # Even at level 5, roadmap should have long-term actions
-        total_actions = (
-            len(report.roadmap.quick_wins)
-            + len(report.roadmap.short_term)
-            + len(report.roadmap.long_term)
+        ds = DimensionScore(dimension=MaturityDimension.culture)
+        assert ds.score == 0.0
+        assert ds.level == MaturityLevel.level_0_initial
+        assert ds.evidence == []
+        assert ds.gaps == []
+        assert ds.next_level_actions == []
+
+    def test_with_values(self):
+        ds = DimensionScore(
+            dimension=MaturityDimension.tooling,
+            score=75.0,
+            level=MaturityLevel.level_3_managed,
+            evidence=["e1"],
+            gaps=["g1"],
+            next_level_actions=["a1"],
         )
-        assert total_actions >= 0  # May be 0 if all at level 5
+        assert ds.score == 75.0
+        assert ds.evidence == ["e1"]
 
 
 # ---------------------------------------------------------------------------
-# Peer comparison tests
+# RoadmapItem model
 # ---------------------------------------------------------------------------
 
 
-class TestPeerComparison:
-    """Tests for peer comparison boundaries."""
+class TestRoadmapItem:
+    def test_defaults(self):
+        item = RoadmapItem()
+        assert item.phase == 1
+        assert item.effort == "medium"
+        assert item.impact == "medium"
+        assert item.prerequisites == []
 
-    def test_below_40_is_below_average(self):
-        assessor = ChaosMaturityAssessor(_empty_graph())
-        result = assessor._determine_peer_comparison(0.0)
-        assert result == "below average"
-
-    def test_exactly_40_is_average(self):
-        assessor = ChaosMaturityAssessor(_empty_graph())
-        result = assessor._determine_peer_comparison(40.0)
-        assert result == "average"
-
-    def test_between_40_and_70_is_average(self):
-        assessor = ChaosMaturityAssessor(_empty_graph())
-        result = assessor._determine_peer_comparison(55.0)
-        assert result == "average"
-
-    def test_exactly_70_is_average(self):
-        assessor = ChaosMaturityAssessor(_empty_graph())
-        result = assessor._determine_peer_comparison(70.0)
-        assert result == "average"
-
-    def test_above_70_is_above_average(self):
-        assessor = ChaosMaturityAssessor(_empty_graph())
-        result = assessor._determine_peer_comparison(71.0)
-        assert result == "above average"
-
-    def test_score_100_is_above_average(self):
-        assessor = ChaosMaturityAssessor(_empty_graph())
-        result = assessor._determine_peer_comparison(100.0)
-        assert result == "above average"
-
-    def test_score_39_is_below_average(self):
-        assessor = ChaosMaturityAssessor(_empty_graph())
-        result = assessor._determine_peer_comparison(39.9)
-        assert result == "below average"
+    def test_with_values(self):
+        item = RoadmapItem(
+            phase=3, title="Deploy Litmus", description="Set up chaos tooling",
+            dimension=MaturityDimension.tooling, effort="high", impact="high",
+            prerequisites=["Complete phase 2"],
+        )
+        assert item.phase == 3
+        assert item.prerequisites == ["Complete phase 2"]
 
 
 # ---------------------------------------------------------------------------
-# Score boundaries
+# MaturityAssessment model
 # ---------------------------------------------------------------------------
 
 
-class TestScoreBoundaries:
-    """Tests for score boundary conditions."""
+class TestMaturityAssessment:
+    def test_defaults(self):
+        a = MaturityAssessment()
+        assert a.overall_level == MaturityLevel.level_0_initial
+        assert a.overall_score == 0.0
+        assert a.dimensions == []
+        assert a.roadmap == []
+        assert a.industry_percentile == 0.0
+        assert a.estimated_improvement_months == 0
 
-    def test_score_exactly_zero(self):
-        assessor = ChaosMaturityAssessor(_empty_graph())
-        report = assessor.assess()
-        assert report.overall_score == 0.0
-
-    def test_all_scores_in_valid_range(self):
-        for graph_fn in [_empty_graph, _minimal_graph, _partial_graph,
-                         _well_protected_graph, _large_mixed_graph]:
-            assessor = ChaosMaturityAssessor(graph_fn())
-            report = assessor.assess()
-            assert 0.0 <= report.overall_score <= 100.0
-            for dim in report.dimensions:
-                assert 0.0 <= dim.score <= 100.0, (
-                    f"{dim.dimension.value} score {dim.score} out of range"
-                )
-
-    def test_well_protected_scores_are_high(self):
-        assessor = ChaosMaturityAssessor(_well_protected_graph())
-        report = assessor.assess()
-        assert report.overall_score >= 75.0
-
-    def test_minimal_scores_are_low(self):
-        assessor = ChaosMaturityAssessor(_minimal_graph())
-        report = assessor.assess()
-        assert report.overall_score < 30.0
+    def test_strengths_and_weaknesses(self):
+        a = MaturityAssessment(strengths=["a"], weaknesses=["b"])
+        assert a.strengths == ["a"]
+        assert a.weaknesses == ["b"]
 
 
 # ---------------------------------------------------------------------------
-# Evidence and gaps tests
+# IndustryComparison model
 # ---------------------------------------------------------------------------
 
 
-class TestEvidenceAndGaps:
-    """Tests for evidence and gaps population."""
+class TestIndustryComparison:
+    def test_defaults(self):
+        ic = IndustryComparison()
+        assert ic.industry == ""
+        assert ic.industry_average == 50.0
+        assert ic.percentile == 0.0
 
-    def test_empty_graph_gaps_populated(self):
-        assessor = ChaosMaturityAssessor(_empty_graph())
-        report = assessor.assess()
-        for dim in report.dimensions:
-            assert len(dim.gaps) > 0 or len(dim.next_level_actions) > 0
-
-    def test_protected_graph_evidence_populated(self):
-        assessor = ChaosMaturityAssessor(_well_protected_graph())
-        report = assessor.assess()
-        for dim in report.dimensions:
-            assert len(dim.evidence) > 0, f"{dim.dimension.value} has no evidence"
-
-    def test_partial_graph_has_gaps_and_evidence(self):
-        assessor = ChaosMaturityAssessor(_partial_graph())
-        report = assessor.assess()
-        has_evidence = any(len(d.evidence) > 0 for d in report.dimensions)
-        has_gaps = any(len(d.gaps) > 0 for d in report.dimensions)
-        assert has_evidence
-        assert has_gaps
-
-    def test_next_level_actions_populated(self):
-        assessor = ChaosMaturityAssessor(_minimal_graph())
-        report = assessor.assess()
-        for dim in report.dimensions:
-            assert len(dim.next_level_actions) > 0, (
-                f"{dim.dimension.value} has no next_level_actions"
-            )
+    def test_with_values(self):
+        ic = IndustryComparison(industry="finance", your_score=70.0, percentile=65.0)
+        assert ic.industry == "finance"
 
 
 # ---------------------------------------------------------------------------
-# Large mixed graph tests
+# ROIEstimate model
 # ---------------------------------------------------------------------------
 
 
-class TestLargeMixedGraph:
-    """Tests for large graph with mixed configurations."""
+class TestROIEstimate:
+    def test_defaults(self):
+        roi = ROIEstimate()
+        assert roi.estimated_months == 0
+        assert roi.incident_reduction_percent == 0.0
 
-    def test_intermediate_level(self):
-        assessor = ChaosMaturityAssessor(_large_mixed_graph())
-        report = assessor.assess()
-        assert 1 <= report.overall_level.value <= 3
-
-    def test_dimension_count(self):
-        assessor = ChaosMaturityAssessor(_large_mixed_graph())
-        report = assessor.assess()
-        assert len(report.dimensions) == 8
-
-    def test_score_reflects_mixed(self):
-        assessor = ChaosMaturityAssessor(_large_mixed_graph())
-        report = assessor.assess()
-        # Mixed graph should not be at extremes
-        assert 10.0 <= report.overall_score <= 80.0
+    def test_with_values(self):
+        roi = ROIEstimate(
+            current_level=MaturityLevel.level_1_planned,
+            target_level=MaturityLevel.level_3_managed,
+            estimated_months=6,
+        )
+        assert roi.estimated_months == 6
 
 
 # ---------------------------------------------------------------------------
-# Same type graph tests
+# ExecutiveSummary model
 # ---------------------------------------------------------------------------
 
 
-class TestSameTypeGraph:
-    """Tests for graph where all components are the same type."""
+class TestExecutiveSummary:
+    def test_defaults(self):
+        es = ExecutiveSummary()
+        assert es.headline == ""
+        assert es.key_findings == []
+        assert es.top_risks == []
 
-    def test_assess_succeeds(self):
-        assessor = ChaosMaturityAssessor(_same_type_graph())
-        report = assessor.assess()
-        assert isinstance(report, ChaosMaturityReport)
-
-    def test_has_valid_scores(self):
-        assessor = ChaosMaturityAssessor(_same_type_graph())
-        report = assessor.assess()
-        for dim in report.dimensions:
-            assert 0.0 <= dim.score <= 100.0
-
-    def test_observability_with_logging(self):
-        assessor = ChaosMaturityAssessor(_same_type_graph())
-        report = assessor.assess()
-        obs = next(d for d in report.dimensions if d.dimension == MaturityDimension.OBSERVABILITY)
-        # All have logging -> at least level 2
-        assert obs.current_level.value >= 2
+    def test_with_values(self):
+        es = ExecutiveSummary(headline="Test headline", top_risks=["r1"])
+        assert es.headline == "Test headline"
 
 
 # ---------------------------------------------------------------------------
-# Individual dimension deep tests
+# ProgressReport model
 # ---------------------------------------------------------------------------
 
 
-class TestFaultInjectionDimension:
-    """Detailed tests for fault injection dimension."""
+class TestProgressReport:
+    def test_defaults(self):
+        pr = ProgressReport()
+        assert pr.score_delta == 0.0
+        assert pr.level_changed is False
+        assert isinstance(pr.assessed_at, datetime)
 
-    def test_no_edges_no_failover(self):
-        graph = InfraGraph()
-        graph.add_component(Component(
-            id="a", name="A", type=ComponentType.APP_SERVER,
-        ))
-        assessor = ChaosMaturityAssessor(graph)
-        report = assessor.assess()
-        fi = next(d for d in report.dimensions if d.dimension == MaturityDimension.FAULT_INJECTION)
-        assert fi.current_level == MaturityLevel.LEVEL_0_NONE
+    def test_assessed_at_is_utc(self):
+        pr = ProgressReport()
+        assert pr.assessed_at.tzinfo is not None
 
-    def test_some_cb_and_retry(self):
-        graph = InfraGraph()
-        graph.add_component(Component(id="a", name="A", type=ComponentType.APP_SERVER))
-        graph.add_component(Component(id="b", name="B", type=ComponentType.APP_SERVER))
-        graph.add_dependency(Dependency(
+
+# ---------------------------------------------------------------------------
+# ChaosMaturityEngine — score_dimension (culture)
+# ---------------------------------------------------------------------------
+
+
+class TestScoreCulture:
+    def test_empty_graph_zero_config(self):
+        engine = ChaosMaturityEngine()
+        ds = engine.score_dimension(InfraGraph(), MaturityDimension.culture, ChaosConfig())
+        assert ds.score < 20
+        assert ds.level == MaturityLevel.level_0_initial
+
+    def test_incident_learning_adds_points(self):
+        engine = ChaosMaturityEngine()
+        ds = engine.score_dimension(
+            InfraGraph(), MaturityDimension.culture,
+            _default_config(incident_learning_process=True),
+        )
+        assert ds.score >= 25.0
+
+    def test_training_hours_contribute(self):
+        engine = ChaosMaturityEngine()
+        ds = engine.score_dimension(
+            InfraGraph(), MaturityDimension.culture,
+            _default_config(team_training_hours_per_quarter=20.0),
+        )
+        assert ds.score >= 25.0
+
+    def test_gameday_practice_adds_points(self):
+        engine = ChaosMaturityEngine()
+        ds = engine.score_dimension(
+            InfraGraph(), MaturityDimension.culture,
+            _default_config(has_gameday_practice=True),
+        )
+        assert ds.score >= 15.0
+
+    def test_high_runbook_with_components(self):
+        engine = ChaosMaturityEngine()
+        g = _graph(_comp("a", team=OperationalTeamConfig(runbook_coverage_percent=90.0)))
+        ds = engine.score_dimension(g, MaturityDimension.culture, ChaosConfig())
+        assert ds.score > 0
+
+    def test_full_config_high_score(self):
+        engine = ChaosMaturityEngine()
+        g = _graph(_well_protected_comp("a"))
+        ds = engine.score_dimension(g, MaturityDimension.culture, _full_config())
+        assert ds.score >= 80.0
+        assert ds.level in (MaturityLevel.level_3_managed, MaturityLevel.level_4_optimized)
+
+    def test_evidence_populated(self):
+        engine = ChaosMaturityEngine()
+        ds = engine.score_dimension(
+            InfraGraph(), MaturityDimension.culture,
+            _default_config(incident_learning_process=True),
+        )
+        assert any("Incident" in e for e in ds.evidence)
+
+    def test_gaps_populated_on_low_config(self):
+        engine = ChaosMaturityEngine()
+        ds = engine.score_dimension(InfraGraph(), MaturityDimension.culture, ChaosConfig())
+        assert len(ds.gaps) > 0
+
+    def test_actions_populated_on_low_config(self):
+        engine = ChaosMaturityEngine()
+        ds = engine.score_dimension(InfraGraph(), MaturityDimension.culture, ChaosConfig())
+        assert len(ds.next_level_actions) > 0
+
+
+# ---------------------------------------------------------------------------
+# ChaosMaturityEngine — score_dimension (process)
+# ---------------------------------------------------------------------------
+
+
+class TestScoreProcess:
+    def test_empty_gives_zero(self):
+        engine = ChaosMaturityEngine()
+        ds = engine.score_dimension(InfraGraph(), MaturityDimension.process, ChaosConfig())
+        assert ds.score < 20
+
+    def test_hypothesis_driven_adds_points(self):
+        engine = ChaosMaturityEngine()
+        ds = engine.score_dimension(
+            InfraGraph(), MaturityDimension.process,
+            _default_config(has_hypothesis_driven_experiments=True),
+        )
+        assert ds.score >= 30.0
+
+    def test_incident_learning_adds_points(self):
+        engine = ChaosMaturityEngine()
+        ds = engine.score_dimension(
+            InfraGraph(), MaturityDimension.process,
+            _default_config(incident_learning_process=True),
+        )
+        assert ds.score >= 20.0
+
+    def test_gameday_frequency_contributes(self):
+        engine = ChaosMaturityEngine()
+        ds = engine.score_dimension(
+            InfraGraph(), MaturityDimension.process,
+            _default_config(gameday_frequency_per_quarter=4),
+        )
+        assert ds.score >= 25.0
+
+    def test_runbook_coverage_contributes(self):
+        engine = ChaosMaturityEngine()
+        ds = engine.score_dimension(
+            InfraGraph(), MaturityDimension.process,
+            _default_config(runbook_coverage_percent=100.0),
+        )
+        assert ds.score >= 25.0
+
+    def test_full_config_high_score(self):
+        engine = ChaosMaturityEngine()
+        ds = engine.score_dimension(InfraGraph(), MaturityDimension.process, _full_config())
+        assert ds.score >= 80.0
+
+    def test_gaps_on_low_config(self):
+        engine = ChaosMaturityEngine()
+        ds = engine.score_dimension(InfraGraph(), MaturityDimension.process, ChaosConfig())
+        assert len(ds.gaps) > 0
+
+
+# ---------------------------------------------------------------------------
+# ChaosMaturityEngine — score_dimension (tooling)
+# ---------------------------------------------------------------------------
+
+
+class TestScoreTooling:
+    def test_empty_graph_zero_config(self):
+        engine = ChaosMaturityEngine()
+        ds = engine.score_dimension(InfraGraph(), MaturityDimension.tooling, ChaosConfig())
+        assert ds.score < 20
+
+    def test_automated_chaos_adds_points(self):
+        engine = ChaosMaturityEngine()
+        ds = engine.score_dimension(
+            InfraGraph(), MaturityDimension.tooling,
+            _default_config(has_automated_chaos=True),
+        )
+        assert ds.score >= 25.0
+
+    def test_chaos_in_ci_cd_adds_points(self):
+        engine = ChaosMaturityEngine()
+        ds = engine.score_dimension(
+            InfraGraph(), MaturityDimension.tooling,
+            _default_config(chaos_in_ci_cd=True),
+        )
+        assert ds.score >= 25.0
+
+    def test_blast_radius_controls_add_points(self):
+        engine = ChaosMaturityEngine()
+        ds = engine.score_dimension(
+            InfraGraph(), MaturityDimension.tooling,
+            _default_config(blast_radius_controls=True),
+        )
+        assert ds.score >= 15.0
+
+    def test_edges_with_cb_and_retry(self):
+        engine = ChaosMaturityEngine()
+        g = _graph(_comp("a"), _comp("b"))
+        g.add_dependency(Dependency(
             source_id="a", target_id="b",
             circuit_breaker=CircuitBreakerConfig(enabled=True),
             retry_strategy=RetryStrategy(enabled=True),
         ))
-        assessor = ChaosMaturityAssessor(graph)
-        report = assessor.assess()
-        fi = next(d for d in report.dimensions if d.dimension == MaturityDimension.FAULT_INJECTION)
-        assert fi.current_level.value >= 3
+        ds = engine.score_dimension(g, MaturityDimension.tooling, ChaosConfig())
+        assert ds.score > 0
 
-
-class TestObservabilityDimension:
-    """Detailed tests for observability dimension."""
-
-    def test_no_logging(self):
-        graph = InfraGraph()
-        graph.add_component(Component(id="a", name="A", type=ComponentType.APP_SERVER))
-        assessor = ChaosMaturityAssessor(graph)
-        report = assessor.assess()
-        obs = next(d for d in report.dimensions if d.dimension == MaturityDimension.OBSERVABILITY)
-        assert obs.current_level == MaturityLevel.LEVEL_0_NONE
-        assert obs.score == 0.0
-
-    def test_full_observability(self):
-        graph = InfraGraph()
-        graph.add_component(Component(
-            id="a", name="A", type=ComponentType.APP_SERVER,
-            security=SecurityProfile(log_enabled=True, ids_monitored=True),
-            failover=FailoverConfig(enabled=True, health_check_interval_seconds=5),
+    def test_full_config_full_graph(self):
+        engine = ChaosMaturityEngine()
+        g = _graph(_well_protected_comp("a"), _well_protected_comp("b"))
+        g.add_dependency(Dependency(
+            source_id="a", target_id="b",
+            circuit_breaker=CircuitBreakerConfig(enabled=True),
+            retry_strategy=RetryStrategy(enabled=True),
         ))
-        assessor = ChaosMaturityAssessor(graph)
-        report = assessor.assess()
-        obs = next(d for d in report.dimensions if d.dimension == MaturityDimension.OBSERVABILITY)
-        assert obs.current_level == MaturityLevel.LEVEL_5_OPTIMIZED
+        ds = engine.score_dimension(g, MaturityDimension.tooling, _full_config())
+        assert ds.score >= 80.0
 
-
-class TestAutomationDimension:
-    """Detailed tests for automation dimension."""
-
-    def test_no_automation(self):
-        graph = InfraGraph()
-        graph.add_component(Component(id="a", name="A", type=ComponentType.APP_SERVER))
-        assessor = ChaosMaturityAssessor(graph)
-        report = assessor.assess()
-        auto = next(d for d in report.dimensions if d.dimension == MaturityDimension.AUTOMATION)
-        assert auto.current_level == MaturityLevel.LEVEL_0_NONE
-        assert auto.score == 0.0
-
-    def test_full_automation(self):
-        graph = InfraGraph()
-        graph.add_component(Component(
-            id="a", name="A", type=ComponentType.APP_SERVER,
-            autoscaling=AutoScalingConfig(enabled=True),
-            failover=FailoverConfig(enabled=True),
-        ))
-        assessor = ChaosMaturityAssessor(graph)
-        report = assessor.assess()
-        auto = next(d for d in report.dimensions if d.dimension == MaturityDimension.AUTOMATION)
-        assert auto.current_level == MaturityLevel.LEVEL_5_OPTIMIZED
-
-
-class TestBlastRadiusDimension:
-    """Detailed tests for blast radius control dimension."""
-
-    def test_no_controls(self):
-        graph = InfraGraph()
-        graph.add_component(Component(id="a", name="A", type=ComponentType.APP_SERVER))
-        assessor = ChaosMaturityAssessor(graph)
-        report = assessor.assess()
-        brc = next(d for d in report.dimensions if d.dimension == MaturityDimension.BLAST_RADIUS_CONTROL)
-        assert brc.current_level == MaturityLevel.LEVEL_0_NONE
-        assert brc.score == 0.0
-
-    def test_replicas_only(self):
-        graph = InfraGraph()
-        graph.add_component(Component(
-            id="a", name="A", type=ComponentType.APP_SERVER, replicas=3,
-        ))
-        assessor = ChaosMaturityAssessor(graph)
-        report = assessor.assess()
-        brc = next(d for d in report.dimensions if d.dimension == MaturityDimension.BLAST_RADIUS_CONTROL)
-        assert brc.current_level.value >= 1
-
-
-class TestGameDaysDimension:
-    """Detailed tests for game days dimension."""
-
-    def test_no_readiness(self):
-        assessor = ChaosMaturityAssessor(_minimal_graph())
-        report = assessor.assess()
-        gd = next(d for d in report.dimensions if d.dimension == MaturityDimension.GAME_DAYS)
-        assert gd.current_level == MaturityLevel.LEVEL_0_NONE
-
-    def test_high_readiness(self):
-        assessor = ChaosMaturityAssessor(_well_protected_graph())
-        report = assessor.assess()
-        gd = next(d for d in report.dimensions if d.dimension == MaturityDimension.GAME_DAYS)
-        assert gd.current_level.value >= 4
-
-
-class TestSteadyStateDimension:
-    """Detailed tests for steady state hypothesis dimension."""
-
-    def test_no_slo_or_hc(self):
-        assessor = ChaosMaturityAssessor(_minimal_graph())
-        report = assessor.assess()
-        ss = next(d for d in report.dimensions if d.dimension == MaturityDimension.STEADY_STATE_HYPOTHESIS)
-        assert ss.current_level == MaturityLevel.LEVEL_0_NONE
-        assert ss.score == 0.0
-
-    def test_with_slo_and_hc(self):
-        graph = InfraGraph()
-        graph.add_component(Component(
-            id="a", name="A", type=ComponentType.APP_SERVER,
-            slo_targets=[SLOTarget(name="avail", target=99.9)],
-            failover=FailoverConfig(enabled=True, health_check_interval_seconds=5),
-            security=SecurityProfile(log_enabled=True),
-        ))
-        assessor = ChaosMaturityAssessor(graph)
-        report = assessor.assess()
-        ss = next(d for d in report.dimensions if d.dimension == MaturityDimension.STEADY_STATE_HYPOTHESIS)
-        assert ss.current_level.value >= 4
-
-
-class TestRollbackDimension:
-    """Detailed tests for rollback capability dimension."""
-
-    def test_no_rollback(self):
-        assessor = ChaosMaturityAssessor(_minimal_graph())
-        report = assessor.assess()
-        rb = next(d for d in report.dimensions if d.dimension == MaturityDimension.ROLLBACK_CAPABILITY)
-        assert rb.current_level == MaturityLevel.LEVEL_0_NONE
-
-    def test_full_rollback(self):
-        assessor = ChaosMaturityAssessor(_well_protected_graph())
-        report = assessor.assess()
-        rb = next(d for d in report.dimensions if d.dimension == MaturityDimension.ROLLBACK_CAPABILITY)
-        assert rb.current_level.value >= 4
-
-
-class TestOrganizationalDimension:
-    """Detailed tests for organizational adoption dimension."""
-
-    def test_default_config_is_level_zero(self):
-        graph = InfraGraph()
-        graph.add_component(Component(id="a", name="A", type=ComponentType.APP_SERVER))
-        assessor = ChaosMaturityAssessor(graph)
-        report = assessor.assess()
-        org = next(d for d in report.dimensions if d.dimension == MaturityDimension.ORGANIZATIONAL_ADOPTION)
-        assert org.current_level == MaturityLevel.LEVEL_0_NONE
-
-    def test_custom_team_config(self):
-        graph = InfraGraph()
-        graph.add_component(Component(
-            id="a", name="A", type=ComponentType.APP_SERVER,
-            team=OperationalTeamConfig(
-                runbook_coverage_percent=90.0,
-                automation_percent=70.0,
-                oncall_coverage_hours=24.0,
-            ),
-        ))
-        assessor = ChaosMaturityAssessor(graph)
-        report = assessor.assess()
-        org = next(d for d in report.dimensions if d.dimension == MaturityDimension.ORGANIZATIONAL_ADOPTION)
-        assert org.current_level.value >= 4
+    def test_no_edges_reports_gap(self):
+        engine = ChaosMaturityEngine()
+        ds = engine.score_dimension(InfraGraph(), MaturityDimension.tooling, ChaosConfig())
+        assert any("edge" in g.lower() or "dependency" in g.lower() for g in ds.gaps)
 
 
 # ---------------------------------------------------------------------------
-# _calculate_overall tests
+# ChaosMaturityEngine — score_dimension (automation)
 # ---------------------------------------------------------------------------
 
 
-class TestCalculateOverall:
-    """Tests for _calculate_overall method."""
+class TestScoreAutomation:
+    def test_empty_graph_zero_config(self):
+        engine = ChaosMaturityEngine()
+        ds = engine.score_dimension(InfraGraph(), MaturityDimension.automation, ChaosConfig())
+        assert ds.score < 20
 
-    def test_empty_dimensions_list(self):
-        assessor = ChaosMaturityAssessor(_empty_graph())
-        level, score = assessor._calculate_overall([])
-        assert level == MaturityLevel.LEVEL_0_NONE
-        assert score == 0.0
-
-    def test_all_zero_scores(self):
-        dims = [
-            DimensionAssessment(dimension=MaturityDimension.FAULT_INJECTION,
-                                current_level=MaturityLevel.LEVEL_0_NONE, score=0.0),
-            DimensionAssessment(dimension=MaturityDimension.OBSERVABILITY,
-                                current_level=MaturityLevel.LEVEL_0_NONE, score=0.0),
-        ]
-        assessor = ChaosMaturityAssessor(_empty_graph())
-        level, score = assessor._calculate_overall(dims)
-        assert level == MaturityLevel.LEVEL_0_NONE
-        assert score == 0.0
-
-    def test_high_scores(self):
-        dims = [
-            DimensionAssessment(dimension=MaturityDimension.FAULT_INJECTION,
-                                current_level=MaturityLevel.LEVEL_5_OPTIMIZED, score=95.0),
-            DimensionAssessment(dimension=MaturityDimension.OBSERVABILITY,
-                                current_level=MaturityLevel.LEVEL_5_OPTIMIZED, score=92.0),
-        ]
-        assessor = ChaosMaturityAssessor(_empty_graph())
-        level, score = assessor._calculate_overall(dims)
-        assert level == MaturityLevel.LEVEL_5_OPTIMIZED
-        assert score >= 90.0
-
-    def test_level_thresholds(self):
-        assessor = ChaosMaturityAssessor(_empty_graph())
-        # Test each threshold boundary
-        test_cases = [
-            (5.0, MaturityLevel.LEVEL_0_NONE),
-            (10.0, MaturityLevel.LEVEL_1_INITIAL),
-            (30.0, MaturityLevel.LEVEL_2_DEFINED),
-            (55.0, MaturityLevel.LEVEL_3_MANAGED),
-            (75.0, MaturityLevel.LEVEL_4_MEASURED),
-            (90.0, MaturityLevel.LEVEL_5_OPTIMIZED),
-        ]
-        for target_score, expected_level in test_cases:
-            dims = [DimensionAssessment(
-                dimension=MaturityDimension.FAULT_INJECTION,
-                current_level=MaturityLevel.LEVEL_0_NONE,
-                score=target_score,
-            )]
-            level, _ = assessor._calculate_overall(dims)
-            assert level == expected_level, (
-                f"Score {target_score} expected {expected_level}, got {level}"
-            )
-
-    def test_exactly_50_score(self):
-        assessor = ChaosMaturityAssessor(_empty_graph())
-        dims = [DimensionAssessment(
-            dimension=MaturityDimension.FAULT_INJECTION,
-            current_level=MaturityLevel.LEVEL_0_NONE,
-            score=50.0,
-        )]
-        level, score = assessor._calculate_overall(dims)
-        assert level == MaturityLevel.LEVEL_2_DEFINED
-        assert score == 50.0
-
-    def test_exactly_100_score(self):
-        assessor = ChaosMaturityAssessor(_empty_graph())
-        dims = [DimensionAssessment(
-            dimension=MaturityDimension.FAULT_INJECTION,
-            current_level=MaturityLevel.LEVEL_5_OPTIMIZED,
-            score=100.0,
-        )]
-        level, score = assessor._calculate_overall(dims)
-        assert level == MaturityLevel.LEVEL_5_OPTIMIZED
-        assert score == 100.0
-
-
-# ---------------------------------------------------------------------------
-# Max level field tests
-# ---------------------------------------------------------------------------
-
-
-class TestMaxLevel:
-    """Tests for DimensionAssessment max_level."""
-
-    def test_default_max_level(self):
-        da = DimensionAssessment(
-            dimension=MaturityDimension.FAULT_INJECTION,
-            current_level=MaturityLevel.LEVEL_2_DEFINED,
+    def test_automated_chaos_adds_points(self):
+        engine = ChaosMaturityEngine()
+        ds = engine.score_dimension(
+            InfraGraph(), MaturityDimension.automation,
+            _default_config(has_automated_chaos=True),
         )
-        assert da.max_level == MaturityLevel.LEVEL_5_OPTIMIZED
+        assert ds.score >= 20.0
 
-    def test_custom_max_level(self):
-        da = DimensionAssessment(
-            dimension=MaturityDimension.FAULT_INJECTION,
-            current_level=MaturityLevel.LEVEL_2_DEFINED,
-            max_level=MaturityLevel.LEVEL_3_MANAGED,
+    def test_chaos_in_ci_cd_adds_points(self):
+        engine = ChaosMaturityEngine()
+        ds = engine.score_dimension(
+            InfraGraph(), MaturityDimension.automation,
+            _default_config(chaos_in_ci_cd=True),
         )
-        assert da.max_level == MaturityLevel.LEVEL_3_MANAGED
+        assert ds.score >= 20.0
 
-    def test_all_assessed_dimensions_have_max_level(self):
-        assessor = ChaosMaturityAssessor(_partial_graph())
-        report = assessor.assess()
-        for dim in report.dimensions:
-            assert dim.max_level == MaturityLevel.LEVEL_5_OPTIMIZED
+    def test_autoscaling_failover_contribute(self):
+        engine = ChaosMaturityEngine()
+        g = _graph(_comp("a", autoscaling=AutoScalingConfig(enabled=True),
+                         failover=FailoverConfig(enabled=True)))
+        ds = engine.score_dimension(g, MaturityDimension.automation, ChaosConfig())
+        assert ds.score > 0
+
+    def test_team_automation_percent(self):
+        engine = ChaosMaturityEngine()
+        g = _graph(_comp("a", team=OperationalTeamConfig(automation_percent=80.0)))
+        ds = engine.score_dimension(g, MaturityDimension.automation, ChaosConfig())
+        assert ds.score > 0
+
+    def test_full_config_high_score(self):
+        engine = ChaosMaturityEngine()
+        g = _graph(_well_protected_comp("a"))
+        ds = engine.score_dimension(g, MaturityDimension.automation, _full_config())
+        assert ds.score >= 70.0
+
+    def test_no_components_reports_gap(self):
+        engine = ChaosMaturityEngine()
+        ds = engine.score_dimension(InfraGraph(), MaturityDimension.automation, ChaosConfig())
+        assert any("component" in g.lower() for g in ds.gaps)
 
 
 # ---------------------------------------------------------------------------
-# Regression / edge case tests
+# ChaosMaturityEngine — score_dimension (observability)
+# ---------------------------------------------------------------------------
+
+
+class TestScoreObservability:
+    def test_empty_graph_zero_config(self):
+        engine = ChaosMaturityEngine()
+        ds = engine.score_dimension(InfraGraph(), MaturityDimension.observability, ChaosConfig())
+        assert ds.score < 20
+
+    def test_observability_coverage_adds_points(self):
+        engine = ChaosMaturityEngine()
+        ds = engine.score_dimension(
+            InfraGraph(), MaturityDimension.observability,
+            _default_config(observability_coverage_percent=80.0),
+        )
+        assert ds.score >= 30.0
+
+    def test_logging_contributes(self):
+        engine = ChaosMaturityEngine()
+        g = _graph(_comp("a", security=SecurityProfile(log_enabled=True)))
+        ds = engine.score_dimension(g, MaturityDimension.observability, ChaosConfig())
+        assert ds.score > 0
+
+    def test_ids_contributes(self):
+        engine = ChaosMaturityEngine()
+        g = _graph(_comp("a", security=SecurityProfile(ids_monitored=True)))
+        ds = engine.score_dimension(g, MaturityDimension.observability, ChaosConfig())
+        assert ds.score > 0
+
+    def test_health_checks_contribute(self):
+        engine = ChaosMaturityEngine()
+        g = _graph(_comp("a", failover=FailoverConfig(enabled=True, health_check_interval_seconds=5)))
+        ds = engine.score_dimension(g, MaturityDimension.observability, ChaosConfig())
+        assert ds.score > 0
+
+    def test_full_config_full_graph(self):
+        engine = ChaosMaturityEngine()
+        g = _graph(_well_protected_comp("a"))
+        ds = engine.score_dimension(g, MaturityDimension.observability, _full_config())
+        assert ds.score >= 80.0
+
+    def test_no_components_reports_gap(self):
+        engine = ChaosMaturityEngine()
+        ds = engine.score_dimension(InfraGraph(), MaturityDimension.observability, ChaosConfig())
+        assert any("component" in g.lower() for g in ds.gaps)
+
+    def test_high_coverage_evidence(self):
+        engine = ChaosMaturityEngine()
+        g = _graph(_well_protected_comp("a"))
+        ds = engine.score_dimension(
+            g, MaturityDimension.observability,
+            _default_config(observability_coverage_percent=80.0),
+        )
+        assert len(ds.evidence) > 0
+
+
+# ---------------------------------------------------------------------------
+# ChaosMaturityEngine — score_dimension (blast_radius_control)
+# ---------------------------------------------------------------------------
+
+
+class TestScoreBlastRadius:
+    def test_empty_graph_zero_config(self):
+        engine = ChaosMaturityEngine()
+        ds = engine.score_dimension(
+            InfraGraph(), MaturityDimension.blast_radius_control, ChaosConfig(),
+        )
+        assert ds.score < 20
+
+    def test_blast_radius_controls_add_points(self):
+        engine = ChaosMaturityEngine()
+        ds = engine.score_dimension(
+            InfraGraph(), MaturityDimension.blast_radius_control,
+            _default_config(blast_radius_controls=True),
+        )
+        assert ds.score >= 25.0
+
+    def test_replicas_contribute(self):
+        engine = ChaosMaturityEngine()
+        g = _graph(_comp("a", replicas=3))
+        ds = engine.score_dimension(g, MaturityDimension.blast_radius_control, ChaosConfig())
+        assert ds.score > 0
+
+    def test_network_segmentation_contributes(self):
+        engine = ChaosMaturityEngine()
+        g = _graph(_comp("a", security=SecurityProfile(network_segmented=True)))
+        ds = engine.score_dimension(g, MaturityDimension.blast_radius_control, ChaosConfig())
+        assert ds.score > 0
+
+    def test_circuit_breakers_on_edges(self):
+        engine = ChaosMaturityEngine()
+        g = _graph(_comp("a"), _comp("b"))
+        g.add_dependency(Dependency(
+            source_id="a", target_id="b",
+            circuit_breaker=CircuitBreakerConfig(enabled=True),
+        ))
+        ds = engine.score_dimension(g, MaturityDimension.blast_radius_control, ChaosConfig())
+        assert ds.score > 0
+
+    def test_full_config_full_graph(self):
+        engine = ChaosMaturityEngine()
+        g = _graph(_well_protected_comp("a"), _well_protected_comp("b"))
+        g.add_dependency(Dependency(
+            source_id="a", target_id="b",
+            circuit_breaker=CircuitBreakerConfig(enabled=True),
+        ))
+        ds = engine.score_dimension(g, MaturityDimension.blast_radius_control, _full_config())
+        assert ds.score >= 80.0
+
+    def test_no_edges_adds_gap(self):
+        engine = ChaosMaturityEngine()
+        g = _graph(_comp("a"))
+        ds = engine.score_dimension(g, MaturityDimension.blast_radius_control, ChaosConfig())
+        assert any("edge" in g_text.lower() or "dependency" in g_text.lower() for g_text in ds.gaps)
+
+
+# ---------------------------------------------------------------------------
+# ChaosMaturityEngine — score_dimension (hypothesis_driven)
+# ---------------------------------------------------------------------------
+
+
+class TestScoreHypothesis:
+    def test_empty_gives_zero(self):
+        engine = ChaosMaturityEngine()
+        ds = engine.score_dimension(InfraGraph(), MaturityDimension.hypothesis_driven, ChaosConfig())
+        assert ds.score < 20
+
+    def test_hypothesis_driven_adds_points(self):
+        engine = ChaosMaturityEngine()
+        ds = engine.score_dimension(
+            InfraGraph(), MaturityDimension.hypothesis_driven,
+            _default_config(has_hypothesis_driven_experiments=True),
+        )
+        assert ds.score >= 35.0
+
+    def test_incident_learning_adds_points(self):
+        engine = ChaosMaturityEngine()
+        ds = engine.score_dimension(
+            InfraGraph(), MaturityDimension.hypothesis_driven,
+            _default_config(incident_learning_process=True),
+        )
+        assert ds.score >= 15.0
+
+    def test_observability_contributes(self):
+        engine = ChaosMaturityEngine()
+        ds = engine.score_dimension(
+            InfraGraph(), MaturityDimension.hypothesis_driven,
+            _default_config(observability_coverage_percent=80.0),
+        )
+        assert ds.score > 0
+
+    def test_slo_targets_contribute(self):
+        engine = ChaosMaturityEngine()
+        g = _graph(_comp("a", slo_targets=[SLOTarget(name="avail", target=99.9)]))
+        ds = engine.score_dimension(g, MaturityDimension.hypothesis_driven, ChaosConfig())
+        assert ds.score > 0
+
+    def test_full_config_full_graph(self):
+        engine = ChaosMaturityEngine()
+        g = _graph(_well_protected_comp("a"))
+        ds = engine.score_dimension(g, MaturityDimension.hypothesis_driven, _full_config())
+        assert ds.score >= 80.0
+
+    def test_no_slo_reports_gap(self):
+        engine = ChaosMaturityEngine()
+        g = _graph(_comp("a"))
+        ds = engine.score_dimension(g, MaturityDimension.hypothesis_driven, ChaosConfig())
+        assert any("slo" in g_text.lower() for g_text in ds.gaps)
+
+
+# ---------------------------------------------------------------------------
+# ChaosMaturityEngine — score_dimension (gameday_practice)
+# ---------------------------------------------------------------------------
+
+
+class TestScoreGameday:
+    def test_empty_gives_zero(self):
+        engine = ChaosMaturityEngine()
+        ds = engine.score_dimension(InfraGraph(), MaturityDimension.gameday_practice, ChaosConfig())
+        assert ds.score < 20
+
+    def test_gameday_practice_adds_points(self):
+        engine = ChaosMaturityEngine()
+        ds = engine.score_dimension(
+            InfraGraph(), MaturityDimension.gameday_practice,
+            _default_config(has_gameday_practice=True),
+        )
+        assert ds.score >= 25.0
+
+    def test_gameday_frequency_contributes(self):
+        engine = ChaosMaturityEngine()
+        ds = engine.score_dimension(
+            InfraGraph(), MaturityDimension.gameday_practice,
+            _default_config(gameday_frequency_per_quarter=4),
+        )
+        assert ds.score >= 25.0
+
+    def test_training_hours_contribute(self):
+        engine = ChaosMaturityEngine()
+        ds = engine.score_dimension(
+            InfraGraph(), MaturityDimension.gameday_practice,
+            _default_config(team_training_hours_per_quarter=20.0),
+        )
+        assert ds.score >= 15.0
+
+    def test_runbook_coverage_contributes(self):
+        engine = ChaosMaturityEngine()
+        ds = engine.score_dimension(
+            InfraGraph(), MaturityDimension.gameday_practice,
+            _default_config(runbook_coverage_percent=100.0),
+        )
+        assert ds.score >= 15.0
+
+    def test_infrastructure_readiness(self):
+        engine = ChaosMaturityEngine()
+        g = _graph(_comp("a", autoscaling=AutoScalingConfig(enabled=True),
+                         failover=FailoverConfig(enabled=True)))
+        ds = engine.score_dimension(g, MaturityDimension.gameday_practice, ChaosConfig())
+        assert ds.score > 0
+
+    def test_full_config_full_graph(self):
+        engine = ChaosMaturityEngine()
+        g = _graph(_well_protected_comp("a"))
+        ds = engine.score_dimension(g, MaturityDimension.gameday_practice, _full_config())
+        assert ds.score >= 80.0
+
+    def test_no_components_reports_gap(self):
+        engine = ChaosMaturityEngine()
+        ds = engine.score_dimension(InfraGraph(), MaturityDimension.gameday_practice, ChaosConfig())
+        assert any("component" in g_text.lower() for g_text in ds.gaps)
+
+
+# ---------------------------------------------------------------------------
+# ChaosMaturityEngine — assess_maturity
+# ---------------------------------------------------------------------------
+
+
+class TestAssessMaturity:
+    def test_empty_graph_zero_config_initial_level(self):
+        engine = ChaosMaturityEngine()
+        result = engine.assess_maturity(InfraGraph(), ChaosConfig())
+        assert result.overall_level == MaturityLevel.level_0_initial
+        assert result.overall_score < 20
+
+    def test_returns_eight_dimensions(self):
+        engine = ChaosMaturityEngine()
+        result = engine.assess_maturity(InfraGraph(), ChaosConfig())
+        assert len(result.dimensions) == 8
+
+    def test_all_dimensions_present(self):
+        engine = ChaosMaturityEngine()
+        result = engine.assess_maturity(InfraGraph(), ChaosConfig())
+        dims = {d.dimension for d in result.dimensions}
+        assert dims == set(MaturityDimension)
+
+    def test_full_config_full_graph_high_level(self):
+        engine = ChaosMaturityEngine()
+        g = _graph(_well_protected_comp("a"), _well_protected_comp("b"))
+        g.add_dependency(Dependency(
+            source_id="a", target_id="b",
+            circuit_breaker=CircuitBreakerConfig(enabled=True),
+            retry_strategy=RetryStrategy(enabled=True),
+        ))
+        result = engine.assess_maturity(g, _full_config())
+        assert result.overall_level in (MaturityLevel.level_3_managed, MaturityLevel.level_4_optimized)
+        assert result.overall_score >= 60
+
+    def test_strengths_populated_for_high_scores(self):
+        engine = ChaosMaturityEngine()
+        g = _graph(_well_protected_comp("a"))
+        result = engine.assess_maturity(g, _full_config())
+        assert len(result.strengths) > 0
+
+    def test_weaknesses_populated_for_low_scores(self):
+        engine = ChaosMaturityEngine()
+        result = engine.assess_maturity(InfraGraph(), ChaosConfig())
+        assert len(result.weaknesses) > 0
+
+    def test_roadmap_generated(self):
+        engine = ChaosMaturityEngine()
+        result = engine.assess_maturity(InfraGraph(), ChaosConfig())
+        assert len(result.roadmap) > 0
+
+    def test_industry_percentile_set(self):
+        engine = ChaosMaturityEngine()
+        result = engine.assess_maturity(InfraGraph(), ChaosConfig())
+        assert result.industry_percentile >= 1.0
+
+    def test_estimated_months_set(self):
+        engine = ChaosMaturityEngine()
+        result = engine.assess_maturity(InfraGraph(), ChaosConfig())
+        assert result.estimated_improvement_months > 0
+
+    def test_overall_score_rounded(self):
+        engine = ChaosMaturityEngine()
+        result = engine.assess_maturity(InfraGraph(), ChaosConfig())
+        assert result.overall_score == round(result.overall_score, 1)
+
+    def test_score_between_0_and_100(self):
+        engine = ChaosMaturityEngine()
+        result = engine.assess_maturity(InfraGraph(), ChaosConfig())
+        assert 0 <= result.overall_score <= 100
+
+    def test_dimension_scores_between_0_and_100(self):
+        engine = ChaosMaturityEngine()
+        result = engine.assess_maturity(InfraGraph(), ChaosConfig())
+        for ds in result.dimensions:
+            assert 0 <= ds.score <= 100
+
+
+# ---------------------------------------------------------------------------
+# ChaosMaturityEngine — generate_roadmap
+# ---------------------------------------------------------------------------
+
+
+class TestGenerateRoadmap:
+    def test_empty_assessment_returns_empty(self):
+        engine = ChaosMaturityEngine()
+        result = engine.generate_roadmap(MaturityAssessment())
+        assert result == []
+
+    def test_skips_optimized_dimensions(self):
+        engine = ChaosMaturityEngine()
+        assessment = MaturityAssessment(
+            dimensions=[
+                DimensionScore(
+                    dimension=MaturityDimension.culture,
+                    score=90.0,
+                    level=MaturityLevel.level_4_optimized,
+                    next_level_actions=["Should be skipped"],
+                ),
+            ],
+        )
+        result = engine.generate_roadmap(assessment)
+        assert len(result) == 0
+
+    def test_includes_actions_from_low_dimensions(self):
+        engine = ChaosMaturityEngine()
+        assessment = MaturityAssessment(
+            dimensions=[
+                DimensionScore(
+                    dimension=MaturityDimension.culture,
+                    score=10.0,
+                    level=MaturityLevel.level_0_initial,
+                    next_level_actions=["Train teams"],
+                ),
+            ],
+        )
+        result = engine.generate_roadmap(assessment)
+        assert len(result) == 1
+        assert result[0].title == "Train teams"
+
+    def test_phases_are_sequential(self):
+        engine = ChaosMaturityEngine()
+        assessment = MaturityAssessment(
+            dimensions=[
+                DimensionScore(
+                    dimension=MaturityDimension.culture,
+                    score=10.0, level=MaturityLevel.level_0_initial,
+                    next_level_actions=["A1", "A2"],
+                ),
+                DimensionScore(
+                    dimension=MaturityDimension.process,
+                    score=20.0, level=MaturityLevel.level_1_planned,
+                    next_level_actions=["B1"],
+                ),
+            ],
+        )
+        result = engine.generate_roadmap(assessment)
+        phases = [item.phase for item in result]
+        assert phases == sorted(phases)
+        assert phases[0] == 1
+
+    def test_effort_is_low_for_low_score(self):
+        engine = ChaosMaturityEngine()
+        assessment = MaturityAssessment(
+            dimensions=[
+                DimensionScore(
+                    dimension=MaturityDimension.culture,
+                    score=10.0, level=MaturityLevel.level_0_initial,
+                    next_level_actions=["A1"],
+                ),
+            ],
+        )
+        result = engine.generate_roadmap(assessment)
+        assert result[0].effort == "low"
+        assert result[0].impact == "high"
+
+    def test_effort_is_medium_for_mid_score(self):
+        engine = ChaosMaturityEngine()
+        assessment = MaturityAssessment(
+            dimensions=[
+                DimensionScore(
+                    dimension=MaturityDimension.culture,
+                    score=45.0, level=MaturityLevel.level_2_practiced,
+                    next_level_actions=["A1"],
+                ),
+            ],
+        )
+        result = engine.generate_roadmap(assessment)
+        assert result[0].effort == "medium"
+        assert result[0].impact == "medium"
+
+    def test_effort_is_high_for_high_score(self):
+        engine = ChaosMaturityEngine()
+        assessment = MaturityAssessment(
+            dimensions=[
+                DimensionScore(
+                    dimension=MaturityDimension.culture,
+                    score=70.0, level=MaturityLevel.level_3_managed,
+                    next_level_actions=["A1"],
+                ),
+            ],
+        )
+        result = engine.generate_roadmap(assessment)
+        assert result[0].effort == "high"
+        assert result[0].impact == "low"
+
+    def test_prerequisites_reference_prior_phase(self):
+        engine = ChaosMaturityEngine()
+        assessment = MaturityAssessment(
+            dimensions=[
+                DimensionScore(
+                    dimension=MaturityDimension.culture,
+                    score=10.0, level=MaturityLevel.level_0_initial,
+                    next_level_actions=["A1", "A2"],
+                ),
+            ],
+        )
+        result = engine.generate_roadmap(assessment)
+        assert result[0].prerequisites == []
+        assert "phase 1" in result[1].prerequisites[0].lower()
+
+    def test_dimension_set_on_items(self):
+        engine = ChaosMaturityEngine()
+        assessment = MaturityAssessment(
+            dimensions=[
+                DimensionScore(
+                    dimension=MaturityDimension.tooling,
+                    score=10.0, level=MaturityLevel.level_0_initial,
+                    next_level_actions=["Deploy tools"],
+                ),
+            ],
+        )
+        result = engine.generate_roadmap(assessment)
+        assert result[0].dimension == MaturityDimension.tooling
+
+    def test_sorted_by_score_ascending(self):
+        engine = ChaosMaturityEngine()
+        assessment = MaturityAssessment(
+            dimensions=[
+                DimensionScore(
+                    dimension=MaturityDimension.culture,
+                    score=50.0, level=MaturityLevel.level_2_practiced,
+                    next_level_actions=["Culture action"],
+                ),
+                DimensionScore(
+                    dimension=MaturityDimension.process,
+                    score=10.0, level=MaturityLevel.level_0_initial,
+                    next_level_actions=["Process action"],
+                ),
+            ],
+        )
+        result = engine.generate_roadmap(assessment)
+        assert result[0].title == "Process action"
+
+
+# ---------------------------------------------------------------------------
+# ChaosMaturityEngine — compare_to_industry
+# ---------------------------------------------------------------------------
+
+
+class TestCompareToIndustry:
+    def test_finance_average(self):
+        engine = ChaosMaturityEngine()
+        assessment = MaturityAssessment(overall_score=62.0, dimensions=[])
+        ic = engine.compare_to_industry(assessment, "finance")
+        assert ic.industry == "finance"
+        assert ic.industry_average == 62.0
+
+    def test_default_industry(self):
+        engine = ChaosMaturityEngine()
+        assessment = MaturityAssessment(overall_score=50.0, dimensions=[])
+        ic = engine.compare_to_industry(assessment, "unknown_industry")
+        assert ic.industry_average == 50.0
+
+    def test_percentile_calculation(self):
+        engine = ChaosMaturityEngine()
+        assessment = MaturityAssessment(overall_score=50.0, dimensions=[])
+        ic = engine.compare_to_industry(assessment, "default")
+        assert 1.0 <= ic.percentile <= 99.0
+
+    def test_above_below_dimensions(self):
+        engine = ChaosMaturityEngine()
+        assessment = MaturityAssessment(
+            overall_score=50.0,
+            dimensions=[
+                DimensionScore(dimension=MaturityDimension.culture, score=80.0),
+                DimensionScore(dimension=MaturityDimension.process, score=20.0),
+            ],
+        )
+        ic = engine.compare_to_industry(assessment, "default")
+        assert "culture" in ic.above_average_dimensions
+        assert "process" in ic.below_average_dimensions
+
+    def test_high_score_high_percentile(self):
+        engine = ChaosMaturityEngine()
+        assessment = MaturityAssessment(overall_score=95.0, dimensions=[])
+        ic = engine.compare_to_industry(assessment, "default")
+        assert ic.percentile >= 90.0
+
+    def test_low_score_low_percentile(self):
+        engine = ChaosMaturityEngine()
+        assessment = MaturityAssessment(overall_score=5.0, dimensions=[])
+        ic = engine.compare_to_industry(assessment, "default")
+        assert ic.percentile <= 10.0
+
+    def test_industry_averages_exist(self):
+        assert "finance" in _INDUSTRY_AVERAGES
+        assert "healthcare" in _INDUSTRY_AVERAGES
+        assert "default" in _INDUSTRY_AVERAGES
+
+
+# ---------------------------------------------------------------------------
+# ChaosMaturityEngine — estimate_roi
+# ---------------------------------------------------------------------------
+
+
+class TestEstimateROI:
+    def test_same_level_zero_gap(self):
+        engine = ChaosMaturityEngine()
+        assessment = MaturityAssessment(overall_level=MaturityLevel.level_2_practiced)
+        roi = engine.estimate_roi(assessment, MaturityLevel.level_2_practiced)
+        assert roi.estimated_months == 0
+        assert roi.estimated_cost_hours == 0
+
+    def test_one_level_gap(self):
+        engine = ChaosMaturityEngine()
+        assessment = MaturityAssessment(overall_level=MaturityLevel.level_0_initial)
+        roi = engine.estimate_roi(assessment, MaturityLevel.level_1_planned)
+        assert roi.estimated_months == 3
+        assert roi.estimated_cost_hours == 160
+
+    def test_multiple_level_gap(self):
+        engine = ChaosMaturityEngine()
+        assessment = MaturityAssessment(overall_level=MaturityLevel.level_0_initial)
+        roi = engine.estimate_roi(assessment, MaturityLevel.level_4_optimized)
+        assert roi.estimated_months == 12
+        assert roi.estimated_cost_hours == 640
+
+    def test_incident_reduction_capped(self):
+        engine = ChaosMaturityEngine()
+        assessment = MaturityAssessment(overall_level=MaturityLevel.level_0_initial)
+        roi = engine.estimate_roi(assessment, MaturityLevel.level_4_optimized)
+        assert roi.incident_reduction_percent == 80.0
+
+    def test_mttr_improvement_capped(self):
+        engine = ChaosMaturityEngine()
+        assessment = MaturityAssessment(overall_level=MaturityLevel.level_0_initial)
+        roi = engine.estimate_roi(assessment, MaturityLevel.level_4_optimized)
+        assert roi.mttr_improvement_percent == 60.0
+
+    def test_current_and_target_set(self):
+        engine = ChaosMaturityEngine()
+        assessment = MaturityAssessment(overall_level=MaturityLevel.level_1_planned)
+        roi = engine.estimate_roi(assessment, MaturityLevel.level_3_managed)
+        assert roi.current_level == MaturityLevel.level_1_planned
+        assert roi.target_level == MaturityLevel.level_3_managed
+
+    def test_availability_gain(self):
+        engine = ChaosMaturityEngine()
+        assessment = MaturityAssessment(overall_level=MaturityLevel.level_0_initial)
+        roi = engine.estimate_roi(assessment, MaturityLevel.level_2_practiced)
+        assert roi.availability_gain_nines > 0
+
+    def test_target_below_current(self):
+        engine = ChaosMaturityEngine()
+        assessment = MaturityAssessment(overall_level=MaturityLevel.level_3_managed)
+        roi = engine.estimate_roi(assessment, MaturityLevel.level_0_initial)
+        assert roi.estimated_months == 0
+        assert roi.estimated_cost_hours == 0
+
+
+# ---------------------------------------------------------------------------
+# ChaosMaturityEngine — generate_executive_summary
+# ---------------------------------------------------------------------------
+
+
+class TestExecutiveSummaryGeneration:
+    def test_headline_contains_level(self):
+        engine = ChaosMaturityEngine()
+        assessment = MaturityAssessment(
+            overall_level=MaturityLevel.level_2_practiced,
+            overall_score=45.0,
+        )
+        es = engine.generate_executive_summary(assessment)
+        assert "Practiced" in es.headline
+
+    def test_headline_contains_score(self):
+        engine = ChaosMaturityEngine()
+        assessment = MaturityAssessment(
+            overall_level=MaturityLevel.level_0_initial,
+            overall_score=10.0,
+        )
+        es = engine.generate_executive_summary(assessment)
+        assert "10.0" in es.headline
+
+    def test_findings_include_strengths(self):
+        engine = ChaosMaturityEngine()
+        assessment = MaturityAssessment(
+            overall_level=MaturityLevel.level_2_practiced,
+            overall_score=50.0,
+            strengths=["culture"],
+        )
+        es = engine.generate_executive_summary(assessment)
+        assert any("culture" in f for f in es.key_findings)
+
+    def test_findings_include_weaknesses(self):
+        engine = ChaosMaturityEngine()
+        assessment = MaturityAssessment(
+            overall_level=MaturityLevel.level_0_initial,
+            overall_score=10.0,
+            weaknesses=["tooling"],
+        )
+        es = engine.generate_executive_summary(assessment)
+        assert any("tooling" in f for f in es.key_findings)
+
+    def test_risks_from_low_dimensions(self):
+        engine = ChaosMaturityEngine()
+        assessment = MaturityAssessment(
+            overall_level=MaturityLevel.level_0_initial,
+            overall_score=10.0,
+            dimensions=[
+                DimensionScore(dimension=MaturityDimension.culture, score=15.0),
+            ],
+        )
+        es = engine.generate_executive_summary(assessment)
+        assert len(es.top_risks) > 0
+
+    def test_investments_from_roadmap(self):
+        engine = ChaosMaturityEngine()
+        assessment = MaturityAssessment(
+            overall_level=MaturityLevel.level_0_initial,
+            overall_score=10.0,
+            roadmap=[
+                RoadmapItem(title="Invest in training", effort="low"),
+            ],
+        )
+        es = engine.generate_executive_summary(assessment)
+        assert len(es.recommended_investments) > 0
+
+    def test_months_from_assessment(self):
+        engine = ChaosMaturityEngine()
+        assessment = MaturityAssessment(
+            overall_level=MaturityLevel.level_0_initial,
+            overall_score=10.0,
+            estimated_improvement_months=6,
+        )
+        es = engine.generate_executive_summary(assessment)
+        assert es.estimated_improvement_months == 6
+
+    def test_overall_fields_passed_through(self):
+        engine = ChaosMaturityEngine()
+        assessment = MaturityAssessment(
+            overall_level=MaturityLevel.level_3_managed,
+            overall_score=65.0,
+        )
+        es = engine.generate_executive_summary(assessment)
+        assert es.overall_level == MaturityLevel.level_3_managed
+        assert es.overall_score == 65.0
+
+    def test_all_levels_have_labels(self):
+        engine = ChaosMaturityEngine()
+        for level in MaturityLevel:
+            assessment = MaturityAssessment(overall_level=level, overall_score=50.0)
+            es = engine.generate_executive_summary(assessment)
+            assert es.headline != ""
+
+
+# ---------------------------------------------------------------------------
+# ChaosMaturityEngine — track_progress
+# ---------------------------------------------------------------------------
+
+
+class TestTrackProgress:
+    def test_no_change(self):
+        engine = ChaosMaturityEngine()
+        a = MaturityAssessment(
+            overall_level=MaturityLevel.level_1_planned,
+            overall_score=25.0,
+            dimensions=[
+                DimensionScore(dimension=MaturityDimension.culture, score=25.0),
+            ],
+        )
+        pr = engine.track_progress(a, a)
+        assert pr.score_delta == 0.0
+        assert pr.level_changed is False
+
+    def test_improvement_detected(self):
+        engine = ChaosMaturityEngine()
+        prev = MaturityAssessment(
+            overall_level=MaturityLevel.level_0_initial,
+            overall_score=10.0,
+            dimensions=[
+                DimensionScore(dimension=MaturityDimension.culture, score=10.0),
+            ],
+        )
+        curr = MaturityAssessment(
+            overall_level=MaturityLevel.level_1_planned,
+            overall_score=30.0,
+            dimensions=[
+                DimensionScore(dimension=MaturityDimension.culture, score=30.0),
+            ],
+        )
+        pr = engine.track_progress(curr, prev)
+        assert pr.score_delta == 20.0
+        assert pr.level_changed is True
+        assert "culture" in pr.improved_dimensions
+
+    def test_regression_detected(self):
+        engine = ChaosMaturityEngine()
+        prev = MaturityAssessment(
+            overall_level=MaturityLevel.level_2_practiced,
+            overall_score=50.0,
+            dimensions=[
+                DimensionScore(dimension=MaturityDimension.process, score=50.0),
+            ],
+        )
+        curr = MaturityAssessment(
+            overall_level=MaturityLevel.level_1_planned,
+            overall_score=30.0,
+            dimensions=[
+                DimensionScore(dimension=MaturityDimension.process, score=30.0),
+            ],
+        )
+        pr = engine.track_progress(curr, prev)
+        assert pr.score_delta == -20.0
+        assert "process" in pr.regressed_dimensions
+
+    def test_unchanged_dimensions(self):
+        engine = ChaosMaturityEngine()
+        a = MaturityAssessment(
+            overall_level=MaturityLevel.level_1_planned,
+            overall_score=25.0,
+            dimensions=[
+                DimensionScore(dimension=MaturityDimension.culture, score=25.0),
+            ],
+        )
+        pr = engine.track_progress(a, a)
+        assert "culture" in pr.unchanged_dimensions
+
+    def test_assessed_at_is_datetime(self):
+        engine = ChaosMaturityEngine()
+        a = MaturityAssessment(overall_level=MaturityLevel.level_0_initial, overall_score=10.0)
+        pr = engine.track_progress(a, a)
+        assert isinstance(pr.assessed_at, datetime)
+
+    def test_previous_and_current_levels(self):
+        engine = ChaosMaturityEngine()
+        prev = MaturityAssessment(overall_level=MaturityLevel.level_0_initial, overall_score=10.0)
+        curr = MaturityAssessment(overall_level=MaturityLevel.level_2_practiced, overall_score=45.0)
+        pr = engine.track_progress(curr, prev)
+        assert pr.previous_level == MaturityLevel.level_0_initial
+        assert pr.current_level == MaturityLevel.level_2_practiced
+
+
+# ---------------------------------------------------------------------------
+# Integration tests — full pipeline
+# ---------------------------------------------------------------------------
+
+
+class TestFullPipeline:
+    def test_assess_then_compare(self):
+        engine = ChaosMaturityEngine()
+        result = engine.assess_maturity(InfraGraph(), ChaosConfig())
+        ic = engine.compare_to_industry(result, "finance")
+        assert ic.industry == "finance"
+        assert ic.your_score == result.overall_score
+
+    def test_assess_then_roi(self):
+        engine = ChaosMaturityEngine()
+        result = engine.assess_maturity(InfraGraph(), ChaosConfig())
+        roi = engine.estimate_roi(result, MaturityLevel.level_3_managed)
+        assert roi.current_level == result.overall_level
+
+    def test_assess_then_executive_summary(self):
+        engine = ChaosMaturityEngine()
+        result = engine.assess_maturity(InfraGraph(), ChaosConfig())
+        es = engine.generate_executive_summary(result)
+        assert es.overall_level == result.overall_level
+
+    def test_assess_then_track_progress(self):
+        engine = ChaosMaturityEngine()
+        prev = engine.assess_maturity(InfraGraph(), ChaosConfig())
+        g = _graph(_well_protected_comp("a"))
+        curr = engine.assess_maturity(g, _full_config())
+        pr = engine.track_progress(curr, prev)
+        assert pr.score_delta > 0
+        assert len(pr.improved_dimensions) > 0
+
+    def test_mixed_graph_mid_config(self):
+        engine = ChaosMaturityEngine()
+        g = _graph(
+            _well_protected_comp("a"),
+            _bare_comp("b"),
+        )
+        g.add_dependency(Dependency(
+            source_id="a", target_id="b",
+            circuit_breaker=CircuitBreakerConfig(enabled=True),
+        ))
+        cfg = _default_config(
+            has_gameday_practice=True,
+            has_hypothesis_driven_experiments=True,
+            observability_coverage_percent=50.0,
+            runbook_coverage_percent=50.0,
+        )
+        result = engine.assess_maturity(g, cfg)
+        assert MaturityLevel.level_1_planned.value <= result.overall_level.value
+
+    def test_multiple_components_varied(self):
+        engine = ChaosMaturityEngine()
+        g = _graph(
+            _well_protected_comp("a"),
+            _well_protected_comp("b"),
+            _bare_comp("c"),
+            _bare_comp("d"),
+        )
+        g.add_dependency(Dependency(
+            source_id="a", target_id="c",
+            circuit_breaker=CircuitBreakerConfig(enabled=True),
+            retry_strategy=RetryStrategy(enabled=True),
+        ))
+        g.add_dependency(Dependency(
+            source_id="b", target_id="d",
+        ))
+        result = engine.assess_maturity(g, _default_config(
+            has_gameday_practice=True,
+            observability_coverage_percent=40.0,
+        ))
+        assert 0 <= result.overall_score <= 100
+
+
+# ---------------------------------------------------------------------------
+# Edge cases & boundary tests
 # ---------------------------------------------------------------------------
 
 
 class TestEdgeCases:
-    """Edge case and regression tests."""
+    def test_score_exactly_zero(self):
+        ds = DimensionScore(dimension=MaturityDimension.culture, score=0.0)
+        assert ds.level == MaturityLevel.level_0_initial
 
-    def test_graph_with_only_edges_no_matching_components(self):
-        """Graph with dependency edges but no matching components."""
-        graph = InfraGraph()
-        graph.add_component(Component(id="a", name="A", type=ComponentType.APP_SERVER))
-        graph.add_component(Component(id="b", name="B", type=ComponentType.DATABASE))
-        graph.add_dependency(Dependency(source_id="a", target_id="b"))
-        assessor = ChaosMaturityAssessor(graph)
-        report = assessor.assess()
-        assert isinstance(report, ChaosMaturityReport)
+    def test_score_exactly_100(self):
+        ds = DimensionScore(
+            dimension=MaturityDimension.culture,
+            score=100.0,
+            level=MaturityLevel.level_4_optimized,
+        )
+        assert ds.score == 100.0
 
-    def test_many_components_same_level(self):
-        """All components at same config level."""
-        graph = InfraGraph()
-        for i in range(20):
-            graph.add_component(Component(
-                id=f"svc_{i}", name=f"Service {i}", type=ComponentType.APP_SERVER,
-                replicas=2,
-                autoscaling=AutoScalingConfig(enabled=True),
-                failover=FailoverConfig(enabled=True, health_check_interval_seconds=10),
-                security=SecurityProfile(log_enabled=True),
+    def test_very_large_training_hours(self):
+        engine = ChaosMaturityEngine()
+        cfg = _default_config(team_training_hours_per_quarter=1000.0)
+        ds = engine.score_dimension(InfraGraph(), MaturityDimension.culture, cfg)
+        assert ds.score <= 100.0
+
+    def test_very_large_gameday_frequency(self):
+        engine = ChaosMaturityEngine()
+        cfg = _default_config(gameday_frequency_per_quarter=100)
+        ds = engine.score_dimension(InfraGraph(), MaturityDimension.gameday_practice, cfg)
+        assert ds.score <= 100.0
+
+    def test_observability_above_100_clamped(self):
+        engine = ChaosMaturityEngine()
+        cfg = _default_config(observability_coverage_percent=200.0)
+        ds = engine.score_dimension(InfraGraph(), MaturityDimension.observability, cfg)
+        assert ds.score <= 100.0
+
+    def test_single_component_no_edges(self):
+        engine = ChaosMaturityEngine()
+        g = _graph(_comp("solo"))
+        result = engine.assess_maturity(g, ChaosConfig())
+        assert result.overall_score >= 0
+
+    def test_many_components_all_bare(self):
+        engine = ChaosMaturityEngine()
+        comps = [_bare_comp(f"c{i}") for i in range(20)]
+        g = _graph(*comps)
+        result = engine.assess_maturity(g, ChaosConfig())
+        assert result.overall_level == MaturityLevel.level_0_initial
+
+    def test_many_components_all_protected(self):
+        engine = ChaosMaturityEngine()
+        comps = [_well_protected_comp(f"c{i}") for i in range(10)]
+        g = _graph(*comps)
+        for i in range(9):
+            g.add_dependency(Dependency(
+                source_id=f"c{i}", target_id=f"c{i+1}",
+                circuit_breaker=CircuitBreakerConfig(enabled=True),
+                retry_strategy=RetryStrategy(enabled=True),
             ))
-        assessor = ChaosMaturityAssessor(graph)
-        report = assessor.assess()
-        assert isinstance(report, ChaosMaturityReport)
-        assert report.overall_level.value >= 2
+        result = engine.assess_maturity(g, _full_config())
+        assert result.overall_score >= 70.0
 
-    def test_assess_is_idempotent(self):
-        """Calling assess twice returns same results."""
-        assessor = ChaosMaturityAssessor(_partial_graph())
-        report1 = assessor.assess()
-        report2 = assessor.assess()
-        assert report1.overall_score == report2.overall_score
-        assert report1.overall_level == report2.overall_level
+    def test_engine_is_stateless(self):
+        engine = ChaosMaturityEngine()
+        r1 = engine.assess_maturity(InfraGraph(), ChaosConfig())
+        r2 = engine.assess_maturity(InfraGraph(), ChaosConfig())
+        assert r1.overall_score == r2.overall_score
 
-    def test_dimension_assessment_score_never_negative(self):
-        """No dimension should ever have a negative score."""
-        for graph_fn in [_empty_graph, _minimal_graph, _partial_graph,
-                         _well_protected_graph, _large_mixed_graph]:
-            assessor = ChaosMaturityAssessor(graph_fn())
-            report = assessor.assess()
-            for dim in report.dimensions:
-                assert dim.score >= 0.0, f"{dim.dimension}: {dim.score}"
+    def test_percentile_at_least_1(self):
+        engine = ChaosMaturityEngine()
+        result = engine.assess_maturity(InfraGraph(), ChaosConfig())
+        assert result.industry_percentile >= 1.0
 
-    def test_dimension_assessment_score_never_exceeds_100(self):
-        """No dimension should ever exceed 100."""
-        for graph_fn in [_empty_graph, _minimal_graph, _partial_graph,
-                         _well_protected_graph, _large_mixed_graph]:
-            assessor = ChaosMaturityAssessor(graph_fn())
-            report = assessor.assess()
-            for dim in report.dimensions:
-                assert dim.score <= 100.0, f"{dim.dimension}: {dim.score}"
+    def test_percentile_at_most_99(self):
+        engine = ChaosMaturityEngine()
+        g = _graph(_well_protected_comp("a"))
+        result = engine.assess_maturity(g, _full_config())
+        assert result.industry_percentile <= 99.0
 
-    def test_assessor_stores_graph(self):
-        graph = _minimal_graph()
-        assessor = ChaosMaturityAssessor(graph)
-        assert assessor._graph is graph
+    def test_score_to_level_boundary_19_point_9(self):
+        assert _score_to_level(19.9) == MaturityLevel.level_0_initial
 
-    def test_report_overall_score_is_rounded(self):
-        assessor = ChaosMaturityAssessor(_partial_graph())
-        report = assessor.assess()
-        # Score should be rounded to 1 decimal
-        assert report.overall_score == round(report.overall_score, 1)
+    def test_score_to_level_boundary_20_point_0(self):
+        assert _score_to_level(20.0) == MaturityLevel.level_1_planned
 
-    def test_organizational_moderate_runbook(self):
-        """Test organizational dimension with moderate runbook (~55%)."""
-        graph = InfraGraph()
-        graph.add_component(Component(
-            id="a", name="A", type=ComponentType.APP_SERVER,
-            team=OperationalTeamConfig(
-                runbook_coverage_percent=55.0,
-                automation_percent=15.0,
-            ),
-        ))
-        assessor = ChaosMaturityAssessor(graph)
-        report = assessor.assess()
-        org = next(d for d in report.dimensions if d.dimension == MaturityDimension.ORGANIZATIONAL_ADOPTION)
-        assert org.current_level == MaturityLevel.LEVEL_2_DEFINED
+    def test_score_to_level_boundary_79_point_9(self):
+        assert _score_to_level(79.9) == MaturityLevel.level_3_managed
 
-    def test_organizational_high_runbook_low_automation(self):
-        """Test organizational dimension with high runbook but low automation."""
-        graph = InfraGraph()
-        graph.add_component(Component(
-            id="a", name="A", type=ComponentType.APP_SERVER,
-            team=OperationalTeamConfig(
-                runbook_coverage_percent=70.0,
-                automation_percent=30.0,
-            ),
-        ))
-        assessor = ChaosMaturityAssessor(graph)
-        report = assessor.assess()
-        org = next(d for d in report.dimensions if d.dimension == MaturityDimension.ORGANIZATIONAL_ADOPTION)
-        assert org.current_level == MaturityLevel.LEVEL_3_MANAGED
+    def test_industry_comparison_percentile_clamped_low(self):
+        engine = ChaosMaturityEngine()
+        assessment = MaturityAssessment(overall_score=0.0, dimensions=[])
+        ic = engine.compare_to_industry(assessment, "finance")
+        assert ic.percentile >= 1.0
+
+    def test_industry_comparison_percentile_clamped_high(self):
+        engine = ChaosMaturityEngine()
+        assessment = MaturityAssessment(overall_score=200.0, dimensions=[])
+        ic = engine.compare_to_industry(assessment, "government")
+        assert ic.percentile <= 99.0
 
 
 # ---------------------------------------------------------------------------
-# Coverage gap tests: intermediate levels for each dimension
+# LEVEL_THRESHOLDS and INDUSTRY_AVERAGES constants
 # ---------------------------------------------------------------------------
 
 
-class TestFaultInjectionIntermediate:
-    """Tests to cover intermediate fault injection branches."""
+class TestConstants:
+    def test_level_thresholds_descending(self):
+        thresholds = [t for t, _ in _LEVEL_THRESHOLDS]
+        assert thresholds == sorted(thresholds, reverse=True)
 
-    def test_level_1_few_cb_and_retries(self):
-        """cb_ratio < 0.25 and retry_ratio < 0.5 -> Level 1."""
-        graph = InfraGraph()
-        for i in range(4):
-            graph.add_component(Component(
-                id=f"s{i}", name=f"S{i}", type=ComponentType.APP_SERVER,
-            ))
-        # 5 edges total: only 1 with CB (0.2 < 0.25), 2 with retry (0.4 < 0.5)
-        edges_config = [
-            (True, True),    # CB + retry
-            (False, True),   # retry only
-            (False, False),
-            (False, False),
-            (False, False),
-        ]
-        targets = ["s1", "s2", "s3", "s1", "s2"]
-        sources = ["s0", "s0", "s0", "s1", "s1"]
-        for idx, (src, tgt) in enumerate(zip(sources, targets)):
-            cb_en, rt_en = edges_config[idx]
-            graph.add_dependency(Dependency(
-                source_id=src, target_id=tgt,
-                circuit_breaker=CircuitBreakerConfig(enabled=cb_en),
-                retry_strategy=RetryStrategy(enabled=rt_en),
-            ))
-        assessor = ChaosMaturityAssessor(graph)
-        report = assessor.assess()
-        fi = next(d for d in report.dimensions if d.dimension == MaturityDimension.FAULT_INJECTION)
-        assert fi.current_level == MaturityLevel.LEVEL_1_INITIAL
+    def test_level_thresholds_has_five_entries(self):
+        assert len(_LEVEL_THRESHOLDS) == 5
 
-    def test_level_2_moderate_cb(self):
-        """cb_ratio between 0.25 and 0.5 -> Level 2."""
-        graph = InfraGraph()
-        for i in range(3):
-            graph.add_component(Component(
-                id=f"s{i}", name=f"S{i}", type=ComponentType.APP_SERVER,
-            ))
-        # 3 edges: 1 with CB (0.33), all with retry (1.0)
-        graph.add_dependency(Dependency(
-            source_id="s0", target_id="s1",
+    def test_industry_averages_has_default(self):
+        assert "default" in _INDUSTRY_AVERAGES
+
+    def test_industry_averages_all_positive(self):
+        for k, v in _INDUSTRY_AVERAGES.items():
+            assert v > 0, f"Industry {k} has non-positive average"
+
+
+# ---------------------------------------------------------------------------
+# Additional dimension interaction tests
+# ---------------------------------------------------------------------------
+
+
+class TestDimensionInteractions:
+    def test_culture_vs_process_consistency(self):
+        engine = ChaosMaturityEngine()
+        cfg = _full_config()
+        g = _graph(_well_protected_comp("a"))
+        culture = engine.score_dimension(g, MaturityDimension.culture, cfg)
+        process = engine.score_dimension(g, MaturityDimension.process, cfg)
+        assert abs(culture.score - process.score) < 40
+
+    def test_all_dimensions_have_gaps_on_empty(self):
+        engine = ChaosMaturityEngine()
+        for dim in MaturityDimension:
+            ds = engine.score_dimension(InfraGraph(), dim, ChaosConfig())
+            assert len(ds.gaps) > 0, f"{dim.value} should have gaps on empty input"
+
+    def test_all_dimensions_have_actions_on_empty(self):
+        engine = ChaosMaturityEngine()
+        for dim in MaturityDimension:
+            ds = engine.score_dimension(InfraGraph(), dim, ChaosConfig())
+            assert len(ds.next_level_actions) > 0, f"{dim.value} should have actions"
+
+    def test_all_dimensions_have_evidence_on_full(self):
+        engine = ChaosMaturityEngine()
+        g = _graph(_well_protected_comp("a"))
+        g.add_dependency(Dependency(
+            source_id="a", target_id="a",  # self-loop, harmless for testing
             circuit_breaker=CircuitBreakerConfig(enabled=True),
             retry_strategy=RetryStrategy(enabled=True),
         ))
-        graph.add_dependency(Dependency(
-            source_id="s0", target_id="s2",
-            retry_strategy=RetryStrategy(enabled=True),
-        ))
-        graph.add_dependency(Dependency(
-            source_id="s1", target_id="s2",
-            retry_strategy=RetryStrategy(enabled=True),
-        ))
-        assessor = ChaosMaturityAssessor(graph)
-        report = assessor.assess()
-        fi = next(d for d in report.dimensions if d.dimension == MaturityDimension.FAULT_INJECTION)
-        assert fi.current_level == MaturityLevel.LEVEL_2_DEFINED
+        for dim in MaturityDimension:
+            ds = engine.score_dimension(g, dim, _full_config())
+            assert len(ds.evidence) > 0, f"{dim.value} should have evidence on full config"
 
-    def test_level_4_high_cb_retry_low_singleflight(self):
-        """cb+retry >= 0.75 but singleflight < 0.5 -> Level 4."""
-        graph = InfraGraph()
-        graph.add_component(Component(id="a", name="A", type=ComponentType.APP_SERVER))
-        graph.add_component(Component(id="b", name="B", type=ComponentType.APP_SERVER))
-        graph.add_dependency(Dependency(
+
+# ---------------------------------------------------------------------------
+# Coverage gap tests — hit remaining branches
+# ---------------------------------------------------------------------------
+
+
+class TestCoverageGaps:
+    def test_score_to_level_negative_score(self):
+        """Line 64: fallback return when score < 0 (below all thresholds)."""
+        assert _score_to_level(-1.0) == MaturityLevel.level_0_initial
+
+    def test_industry_comparison_zero_average(self):
+        """Line 314: branch where industry avg is 0."""
+        from faultray.simulator.chaos_maturity import _INDUSTRY_AVERAGES
+        original = _INDUSTRY_AVERAGES.get("default")
+        _INDUSTRY_AVERAGES["_test_zero"] = 0.0
+        try:
+            engine = ChaosMaturityEngine()
+            # Use a custom industry that has 0 average — we need to directly
+            # override compare_to_industry's lookup
+            assessment = MaturityAssessment(overall_score=50.0, dimensions=[])
+            # Temporarily set default to 0
+            _INDUSTRY_AVERAGES["default"] = 0.0
+            ic = engine.compare_to_industry(assessment, "nonexistent_zero_avg")
+            assert ic.percentile == 50.0
+        finally:
+            _INDUSTRY_AVERAGES["default"] = original
+            _INDUSTRY_AVERAGES.pop("_test_zero", None)
+
+    def test_tooling_low_cb_retry_ratio(self):
+        """Lines 605-606: edges present but low CB/retry ratio (< 0.5)."""
+        engine = ChaosMaturityEngine()
+        g = _graph(_comp("a"), _comp("b"), _comp("c"))
+        # One edge with CB only (no retry), two edges bare
+        g.add_dependency(Dependency(
             source_id="a", target_id="b",
             circuit_breaker=CircuitBreakerConfig(enabled=True),
-            retry_strategy=RetryStrategy(enabled=True),
         ))
-        assessor = ChaosMaturityAssessor(graph)
-        report = assessor.assess()
-        fi = next(d for d in report.dimensions if d.dimension == MaturityDimension.FAULT_INJECTION)
-        # CB=100%, Retry=100%, SF=0% -> Level 4
-        assert fi.current_level == MaturityLevel.LEVEL_4_MEASURED
+        g.add_dependency(Dependency(source_id="a", target_id="c"))
+        g.add_dependency(Dependency(source_id="b", target_id="c"))
+        ds = engine.score_dimension(g, MaturityDimension.tooling, ChaosConfig())
+        assert any("low" in gap.lower() or "cb" in gap.lower() for gap in ds.gaps)
 
-
-class TestObservabilityIntermediate:
-    """Tests to cover intermediate observability branches."""
-
-    def test_level_1_partial_logging(self):
-        """log_ratio < 0.5 -> Level 1."""
-        graph = InfraGraph()
-        graph.add_component(Component(
-            id="a", name="A", type=ComponentType.APP_SERVER,
-            security=SecurityProfile(log_enabled=True),
-        ))
-        graph.add_component(Component(
-            id="b", name="B", type=ComponentType.APP_SERVER,
-        ))
-        graph.add_component(Component(
-            id="c", name="C", type=ComponentType.APP_SERVER,
-        ))
-        assessor = ChaosMaturityAssessor(graph)
-        report = assessor.assess()
-        obs = next(d for d in report.dimensions if d.dimension == MaturityDimension.OBSERVABILITY)
-        assert obs.current_level == MaturityLevel.LEVEL_1_INITIAL
-
-    def test_level_3_logging_and_ids_no_hc(self):
-        """log >= 0.5, ids >= 0.25, hc_ratio < 0.5 -> Level 3."""
-        graph = InfraGraph()
-        for i in range(4):
-            graph.add_component(Component(
-                id=f"s{i}", name=f"S{i}", type=ComponentType.APP_SERVER,
-                security=SecurityProfile(
-                    log_enabled=True,
-                    ids_monitored=(i < 2),  # 2/4 = 50% > 25%
-                ),
-                # Only 1 has health check -> hc_ratio = 25% < 50%
-                failover=FailoverConfig(
-                    enabled=(i == 0),
-                    health_check_interval_seconds=10 if i == 0 else 0,
-                ),
-            ))
-        assessor = ChaosMaturityAssessor(graph)
-        report = assessor.assess()
-        obs = next(d for d in report.dimensions if d.dimension == MaturityDimension.OBSERVABILITY)
-        assert obs.current_level == MaturityLevel.LEVEL_3_MANAGED
-
-    def test_level_4_good_but_not_complete(self):
-        """All logging, some IDS + HC but not 75% for both -> Level 4."""
-        graph = InfraGraph()
-        for i in range(4):
-            graph.add_component(Component(
-                id=f"s{i}", name=f"S{i}", type=ComponentType.APP_SERVER,
-                security=SecurityProfile(
-                    log_enabled=True,
-                    ids_monitored=(i < 2),  # 50% < 75%
-                ),
-                failover=FailoverConfig(
-                    enabled=(i < 3),
-                    health_check_interval_seconds=10 if i < 3 else 0,
-                ),
-            ))
-        assessor = ChaosMaturityAssessor(graph)
-        report = assessor.assess()
-        obs = next(d for d in report.dimensions if d.dimension == MaturityDimension.OBSERVABILITY)
-        assert obs.current_level == MaturityLevel.LEVEL_4_MEASURED
-
-
-class TestAutomationIntermediate:
-    """Tests to cover intermediate automation branches."""
-
-    def test_level_1_small_automation(self):
-        """combined < 0.25 -> Level 1."""
-        graph = InfraGraph()
-        for i in range(4):
-            graph.add_component(Component(
-                id=f"s{i}", name=f"S{i}", type=ComponentType.APP_SERVER,
-                autoscaling=AutoScalingConfig(enabled=(i == 0)),
-            ))
-        assessor = ChaosMaturityAssessor(graph)
-        report = assessor.assess()
-        auto = next(d for d in report.dimensions if d.dimension == MaturityDimension.AUTOMATION)
-        # AS=25%, FO=0%, combined=12.5% < 25%
-        assert auto.current_level == MaturityLevel.LEVEL_1_INITIAL
-
-    def test_level_2_moderate_automation(self):
-        """combined between 0.25 and 0.5 -> Level 2."""
-        graph = InfraGraph()
-        for i in range(4):
-            graph.add_component(Component(
-                id=f"s{i}", name=f"S{i}", type=ComponentType.APP_SERVER,
-                autoscaling=AutoScalingConfig(enabled=(i < 2)),  # 50%
-            ))
-        assessor = ChaosMaturityAssessor(graph)
-        report = assessor.assess()
-        auto = next(d for d in report.dimensions if d.dimension == MaturityDimension.AUTOMATION)
-        # AS=50%, FO=0%, combined=25%
-        assert auto.current_level == MaturityLevel.LEVEL_2_DEFINED
-
-    def test_level_3_good_but_not_75(self):
-        """combined between 0.5 and 0.75 -> Level 3."""
-        graph = InfraGraph()
-        for i in range(4):
-            graph.add_component(Component(
-                id=f"s{i}", name=f"S{i}", type=ComponentType.APP_SERVER,
-                autoscaling=AutoScalingConfig(enabled=(i < 3)),  # 75%
-                failover=FailoverConfig(enabled=(i < 1)),  # 25%
-            ))
-        assessor = ChaosMaturityAssessor(graph)
-        report = assessor.assess()
-        auto = next(d for d in report.dimensions if d.dimension == MaturityDimension.AUTOMATION)
-        # AS=75%, FO=25%, combined=50%
-        assert auto.current_level == MaturityLevel.LEVEL_3_MANAGED
-
-    def test_level_4_near_complete(self):
-        """combined between 0.75 and 0.9 -> Level 4."""
-        graph = InfraGraph()
-        for i in range(4):
-            graph.add_component(Component(
-                id=f"s{i}", name=f"S{i}", type=ComponentType.APP_SERVER,
-                autoscaling=AutoScalingConfig(enabled=True),  # 100%
-                failover=FailoverConfig(enabled=(i < 2)),  # 50%
-            ))
-        assessor = ChaosMaturityAssessor(graph)
-        report = assessor.assess()
-        auto = next(d for d in report.dimensions if d.dimension == MaturityDimension.AUTOMATION)
-        # AS=100%, FO=50%, combined=75%
-        assert auto.current_level == MaturityLevel.LEVEL_4_MEASURED
-
-
-class TestBlastRadiusIntermediate:
-    """Tests to cover intermediate blast radius branches."""
-
-    def test_level_1_some_replicas_few_cb(self):
-        """replica < 0.5 and cb < 0.25 -> Level 1."""
-        graph = InfraGraph()
-        for i in range(4):
-            graph.add_component(Component(
-                id=f"s{i}", name=f"S{i}", type=ComponentType.APP_SERVER,
-                replicas=2 if i == 0 else 1,  # 25% replicas
-            ))
-        graph.add_dependency(Dependency(source_id="s0", target_id="s1"))
-        graph.add_dependency(Dependency(source_id="s1", target_id="s2"))
-        graph.add_dependency(Dependency(source_id="s2", target_id="s3"))
-        graph.add_dependency(Dependency(source_id="s0", target_id="s3"))
-        assessor = ChaosMaturityAssessor(graph)
-        report = assessor.assess()
-        brc = next(d for d in report.dimensions if d.dimension == MaturityDimension.BLAST_RADIUS_CONTROL)
-        assert brc.current_level == MaturityLevel.LEVEL_1_INITIAL
-
-    def test_level_3_moderate_cb_low_segmentation(self):
-        """cb between 0.5-0.75, seg < 0.5 -> Level 3."""
-        graph = InfraGraph()
-        for i in range(4):
-            graph.add_component(Component(
-                id=f"s{i}", name=f"S{i}", type=ComponentType.APP_SERVER,
-                replicas=3,
-                security=SecurityProfile(network_segmented=(i == 0)),  # 25% seg
-            ))
-        # 4 edges, 3 with CB -> 75%, seg=25% < 50% -> Level 3
-        graph.add_dependency(Dependency(
-            source_id="s0", target_id="s1",
+    def test_blast_radius_low_cb_ratio(self):
+        """Lines 812-813: edges present but CB ratio < 0.5."""
+        engine = ChaosMaturityEngine()
+        g = _graph(_comp("a"), _comp("b"), _comp("c"))
+        # One edge with CB, two without
+        g.add_dependency(Dependency(
+            source_id="a", target_id="b",
             circuit_breaker=CircuitBreakerConfig(enabled=True),
         ))
-        graph.add_dependency(Dependency(
-            source_id="s1", target_id="s2",
-            circuit_breaker=CircuitBreakerConfig(enabled=True),
-        ))
-        graph.add_dependency(Dependency(
-            source_id="s2", target_id="s3",
-            circuit_breaker=CircuitBreakerConfig(enabled=True),
-        ))
-        graph.add_dependency(Dependency(
-            source_id="s0", target_id="s3",
-        ))
-        assessor = ChaosMaturityAssessor(graph)
-        report = assessor.assess()
-        brc = next(d for d in report.dimensions if d.dimension == MaturityDimension.BLAST_RADIUS_CONTROL)
-        assert brc.current_level == MaturityLevel.LEVEL_3_MANAGED
+        g.add_dependency(Dependency(source_id="a", target_id="c"))
+        g.add_dependency(Dependency(source_id="b", target_id="c"))
+        ds = engine.score_dimension(g, MaturityDimension.blast_radius_control, ChaosConfig())
+        assert any("circuit breaker" in gap.lower() or "cb" in gap.lower() for gap in ds.gaps)
 
-    def test_level_4_near_complete_segmentation(self):
-        """seg between 0.5-0.75 or cb between 0.75-0.9 -> Level 4."""
-        graph = InfraGraph()
-        for i in range(4):
-            graph.add_component(Component(
-                id=f"s{i}", name=f"S{i}", type=ComponentType.APP_SERVER,
-                replicas=3,
-                security=SecurityProfile(network_segmented=(i < 3)),  # 75% but need < 0.75 for L4
-            ))
-        # 4 edges, 3 with CB -> 75% (not >= 0.9)
-        graph.add_dependency(Dependency(
-            source_id="s0", target_id="s1",
-            circuit_breaker=CircuitBreakerConfig(enabled=True),
-        ))
-        graph.add_dependency(Dependency(
-            source_id="s1", target_id="s2",
-            circuit_breaker=CircuitBreakerConfig(enabled=True),
-        ))
-        graph.add_dependency(Dependency(
-            source_id="s2", target_id="s3",
-            circuit_breaker=CircuitBreakerConfig(enabled=True),
-        ))
-        graph.add_dependency(Dependency(
-            source_id="s0", target_id="s3",
-        ))
-        assessor = ChaosMaturityAssessor(graph)
-        report = assessor.assess()
-        brc = next(d for d in report.dimensions if d.dimension == MaturityDimension.BLAST_RADIUS_CONTROL)
-        assert brc.current_level == MaturityLevel.LEVEL_4_MEASURED
-
-
-class TestGameDaysIntermediate:
-    """Tests to cover intermediate game days branches."""
-
-    def test_level_1_low_readiness(self):
-        """infra_readiness between 0 and 0.2 -> Level 1."""
-        graph = InfraGraph()
-        # Need infra_readiness < 0.2.  fo=1/20=5%, as=0%, no edges -> cb/retry=0
-        # readiness = (0.05 + 0 + 0 + 0)/4 = 0.0125 < 0.2
-        for i in range(20):
-            graph.add_component(Component(
-                id=f"s{i}", name=f"S{i}", type=ComponentType.APP_SERVER,
-                failover=FailoverConfig(enabled=(i == 0)),
-                team=OperationalTeamConfig(runbook_coverage_percent=50.0, automation_percent=20.0),
-            ))
-        assessor = ChaosMaturityAssessor(graph)
-        report = assessor.assess()
-        gd = next(d for d in report.dimensions if d.dimension == MaturityDimension.GAME_DAYS)
-        assert gd.current_level == MaturityLevel.LEVEL_1_INITIAL
-
-    def test_level_3_moderate_readiness(self):
-        """infra_readiness between 0.4 and 0.6, runbook >= 40 -> Level 3."""
-        graph = InfraGraph()
-        for i in range(4):
-            graph.add_component(Component(
-                id=f"s{i}", name=f"S{i}", type=ComponentType.APP_SERVER,
-                failover=FailoverConfig(enabled=(i < 2)),  # 50%
-                autoscaling=AutoScalingConfig(enabled=(i < 2)),  # 50%
-                team=OperationalTeamConfig(
-                    runbook_coverage_percent=55.0,
-                    automation_percent=20.0,
-                ),
-            ))
-        # 3 edges, all with CB and retry -> 100%
-        graph.add_dependency(Dependency(
-            source_id="s0", target_id="s1",
-            circuit_breaker=CircuitBreakerConfig(enabled=True),
-            retry_strategy=RetryStrategy(enabled=True),
-        ))
-        graph.add_dependency(Dependency(
-            source_id="s1", target_id="s2",
-            circuit_breaker=CircuitBreakerConfig(enabled=True),
-            retry_strategy=RetryStrategy(enabled=True),
-        ))
-        graph.add_dependency(Dependency(
-            source_id="s2", target_id="s3",
-            circuit_breaker=CircuitBreakerConfig(enabled=True),
-            retry_strategy=RetryStrategy(enabled=True),
-        ))
-        assessor = ChaosMaturityAssessor(graph)
-        report = assessor.assess()
-        gd = next(d for d in report.dimensions if d.dimension == MaturityDimension.GAME_DAYS)
-        # fo=50%, as=50%, cb=100%, retry=100% -> readiness = 75%, runbook=55 < 60
-        assert gd.current_level == MaturityLevel.LEVEL_3_MANAGED
-
-    def test_level_4_high_readiness_low_automation(self):
-        """infra_readiness >= 0.6, runbook >= 60, automation < 50 -> Level 4."""
-        graph = InfraGraph()
-        for i in range(2):
-            graph.add_component(Component(
-                id=f"s{i}", name=f"S{i}", type=ComponentType.APP_SERVER,
-                failover=FailoverConfig(enabled=True),
-                autoscaling=AutoScalingConfig(enabled=True),
-                team=OperationalTeamConfig(
-                    runbook_coverage_percent=70.0,
-                    automation_percent=40.0,
-                ),
-            ))
-        graph.add_dependency(Dependency(
-            source_id="s0", target_id="s1",
-            circuit_breaker=CircuitBreakerConfig(enabled=True),
-            retry_strategy=RetryStrategy(enabled=True),
-        ))
-        assessor = ChaosMaturityAssessor(graph)
-        report = assessor.assess()
-        gd = next(d for d in report.dimensions if d.dimension == MaturityDimension.GAME_DAYS)
-        assert gd.current_level == MaturityLevel.LEVEL_4_MEASURED
-
-
-class TestSteadyStateIntermediate:
-    """Tests to cover intermediate steady state branches."""
-
-    def test_level_1_some_hc_no_slo(self):
-        """hc_ratio < 0.25 and slo_ratio < 0.1 -> Level 1."""
-        graph = InfraGraph()
-        for i in range(10):
-            graph.add_component(Component(
-                id=f"s{i}", name=f"S{i}", type=ComponentType.APP_SERVER,
-                failover=FailoverConfig(
-                    enabled=(i == 0),
-                    health_check_interval_seconds=10 if i == 0 else 0,
-                ),
-            ))
-        assessor = ChaosMaturityAssessor(graph)
-        report = assessor.assess()
-        ss = next(d for d in report.dimensions if d.dimension == MaturityDimension.STEADY_STATE_HYPOTHESIS)
-        assert ss.current_level == MaturityLevel.LEVEL_1_INITIAL
-
-    def test_level_3_good_slo_moderate_hc(self):
-        """slo between 0.5 and 0.75 or hc < 0.5 -> Level 3."""
-        graph = InfraGraph()
-        for i in range(4):
-            graph.add_component(Component(
-                id=f"s{i}", name=f"S{i}", type=ComponentType.APP_SERVER,
-                slo_targets=[SLOTarget(name="avail", target=99.9)] if i < 3 else [],
-                failover=FailoverConfig(
-                    enabled=(i < 1),
-                    health_check_interval_seconds=10 if i < 1 else 0,
-                ),
-            ))
-        assessor = ChaosMaturityAssessor(graph)
-        report = assessor.assess()
-        ss = next(d for d in report.dimensions if d.dimension == MaturityDimension.STEADY_STATE_HYPOTHESIS)
-        # slo=75%, hc=25% < 50% -> Level 3
-        assert ss.current_level == MaturityLevel.LEVEL_3_MANAGED
-
-    def test_level_4_good_slo_hc_moderate_log(self):
-        """slo >= 0.75, hc >= 0.5, log < 0.75 -> Level 4."""
-        graph = InfraGraph()
-        for i in range(4):
-            graph.add_component(Component(
-                id=f"s{i}", name=f"S{i}", type=ComponentType.APP_SERVER,
-                slo_targets=[SLOTarget(name="avail", target=99.9)],
-                failover=FailoverConfig(enabled=True, health_check_interval_seconds=10),
-                security=SecurityProfile(log_enabled=(i < 2)),  # 50% < 75%
-            ))
-        assessor = ChaosMaturityAssessor(graph)
-        report = assessor.assess()
-        ss = next(d for d in report.dimensions if d.dimension == MaturityDimension.STEADY_STATE_HYPOTHESIS)
-        assert ss.current_level == MaturityLevel.LEVEL_4_MEASURED
-
-
-class TestRollbackIntermediate:
-    """Tests to cover intermediate rollback branches."""
-
-    def test_level_2_moderate_fo_low_backup(self):
-        """fo between 0.25 and 0.5 or backup < 0.25 -> Level 2."""
-        graph = InfraGraph()
-        for i in range(4):
-            graph.add_component(Component(
-                id=f"s{i}", name=f"S{i}", type=ComponentType.APP_SERVER,
-                replicas=2,
-                failover=FailoverConfig(enabled=(i < 1)),  # 25%
-            ))
-        assessor = ChaosMaturityAssessor(graph)
-        report = assessor.assess()
-        rb = next(d for d in report.dimensions if d.dimension == MaturityDimension.ROLLBACK_CAPABILITY)
-        assert rb.current_level == MaturityLevel.LEVEL_2_DEFINED
-
-    def test_level_3_moderate_backup_moderate_fo(self):
-        """backup < 0.5 or fo < 0.75 -> Level 3."""
-        graph = InfraGraph()
-        for i in range(4):
-            graph.add_component(Component(
-                id=f"s{i}", name=f"S{i}", type=ComponentType.APP_SERVER,
-                replicas=2,
-                failover=FailoverConfig(enabled=(i < 2)),  # 50%
-                security=SecurityProfile(backup_enabled=(i < 1)),  # 25%
-            ))
-        assessor = ChaosMaturityAssessor(graph)
-        report = assessor.assess()
-        rb = next(d for d in report.dimensions if d.dimension == MaturityDimension.ROLLBACK_CAPABILITY)
-        assert rb.current_level == MaturityLevel.LEVEL_3_MANAGED
-
-    def test_level_4_good_fo_backup_no_dr(self):
-        """fo >= 0.75, backup >= 0.5, dr < 0.25 -> Level 4."""
-        graph = InfraGraph()
-        for i in range(4):
-            graph.add_component(Component(
-                id=f"s{i}", name=f"S{i}", type=ComponentType.APP_SERVER,
-                replicas=3,
-                failover=FailoverConfig(enabled=True),  # 100%
-                security=SecurityProfile(backup_enabled=True),  # 100%
-            ))
-        assessor = ChaosMaturityAssessor(graph)
-        report = assessor.assess()
-        rb = next(d for d in report.dimensions if d.dimension == MaturityDimension.ROLLBACK_CAPABILITY)
-        assert rb.current_level == MaturityLevel.LEVEL_4_MEASURED
-
-
-class TestOrganizationalIntermediate:
-    """Tests to cover intermediate organizational branches."""
-
-    def test_level_1_low_runbook(self):
-        """Custom config but avg_runbook < 40 -> Level 1."""
-        graph = InfraGraph()
-        graph.add_component(Component(
-            id="a", name="A", type=ComponentType.APP_SERVER,
-            team=OperationalTeamConfig(
-                runbook_coverage_percent=30.0,
-                automation_percent=10.0,
-            ),
-        ))
-        assessor = ChaosMaturityAssessor(graph)
-        report = assessor.assess()
-        org = next(d for d in report.dimensions if d.dimension == MaturityDimension.ORGANIZATIONAL_ADOPTION)
-        assert org.current_level == MaturityLevel.LEVEL_1_INITIAL
-
-    def test_level_4_moderate_automation_low_oncall(self):
-        """avg_automation between 40-60 or oncall < 20 -> Level 4."""
-        graph = InfraGraph()
-        graph.add_component(Component(
-            id="a", name="A", type=ComponentType.APP_SERVER,
-            team=OperationalTeamConfig(
-                runbook_coverage_percent=80.0,
-                automation_percent=50.0,
-                oncall_coverage_hours=15.0,
-            ),
-        ))
-        assessor = ChaosMaturityAssessor(graph)
-        report = assessor.assess()
-        org = next(d for d in report.dimensions if d.dimension == MaturityDimension.ORGANIZATIONAL_ADOPTION)
-        assert org.current_level == MaturityLevel.LEVEL_4_MEASURED
-
-
-class TestRoadmapEstimatedMonths:
-    """Tests for roadmap estimated_months_to_next_level at each level."""
-
-    def test_level_0_months(self):
-        assessor = ChaosMaturityAssessor(_empty_graph())
-        roadmap = assessor._build_roadmap([], MaturityLevel.LEVEL_0_NONE)
-        assert roadmap.estimated_months_to_next_level == 1.0
-
-    def test_level_1_months(self):
-        assessor = ChaosMaturityAssessor(_empty_graph())
-        roadmap = assessor._build_roadmap([], MaturityLevel.LEVEL_1_INITIAL)
-        assert roadmap.estimated_months_to_next_level == 2.0
-
-    def test_level_2_months(self):
-        assessor = ChaosMaturityAssessor(_empty_graph())
-        roadmap = assessor._build_roadmap([], MaturityLevel.LEVEL_2_DEFINED)
-        assert roadmap.estimated_months_to_next_level == 3.0
-
-    def test_level_3_months(self):
-        assessor = ChaosMaturityAssessor(_empty_graph())
-        roadmap = assessor._build_roadmap([], MaturityLevel.LEVEL_3_MANAGED)
-        assert roadmap.estimated_months_to_next_level == 6.0
-
-    def test_level_4_months(self):
-        assessor = ChaosMaturityAssessor(_empty_graph())
-        roadmap = assessor._build_roadmap([], MaturityLevel.LEVEL_4_MEASURED)
-        assert roadmap.estimated_months_to_next_level == 12.0
-
-    def test_level_5_months(self):
-        assessor = ChaosMaturityAssessor(_empty_graph())
-        roadmap = assessor._build_roadmap([], MaturityLevel.LEVEL_5_OPTIMIZED)
-        assert roadmap.estimated_months_to_next_level == 0.0
+    def test_average_score_empty_list(self):
+        """Line 973: _average_score called with empty list."""
+        engine = ChaosMaturityEngine()
+        assert engine._average_score([]) == 0.0

@@ -10,16 +10,16 @@ import time
 
 import pytest
 
-from infrasim.model.components import (
+from faultray.model.components import (
     Capacity,
     Component,
     ComponentType,
     Dependency,
     ResourceMetrics,
 )
-from infrasim.model.demo import create_demo_graph
-from infrasim.model.graph import InfraGraph
-from infrasim.simulator.engine import SimulationEngine
+from faultray.model.demo import create_demo_graph
+from faultray.model.graph import InfraGraph
+from faultray.simulator.engine import SimulationEngine
 
 
 def _build_tiered_graph(

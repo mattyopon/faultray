@@ -6,14 +6,14 @@ import math
 
 import pytest
 
-from infrasim.model.components import (
+from faultray.model.components import (
     Component,
     ComponentType,
     Dependency,
     OperationalProfile,
 )
-from infrasim.model.graph import InfraGraph
-from infrasim.simulator.monte_carlo import MonteCarloResult, run_monte_carlo
+from faultray.model.graph import InfraGraph
+from faultray.simulator.monte_carlo import MonteCarloResult, run_monte_carlo
 
 
 # ---------------------------------------------------------------------------
@@ -259,38 +259,38 @@ class TestHelpers:
     """Test internal helper functions."""
 
     def test_percentile_empty_list(self) -> None:
-        from infrasim.simulator.monte_carlo import _percentile
+        from faultray.simulator.monte_carlo import _percentile
         assert _percentile([], 50) == 0.0
 
     def test_percentile_single_element(self) -> None:
-        from infrasim.simulator.monte_carlo import _percentile
+        from faultray.simulator.monte_carlo import _percentile
         assert _percentile([42.0], 50) == 42.0
         assert _percentile([42.0], 0) == 42.0
         assert _percentile([42.0], 100) == 42.0
 
     def test_percentile_exact_index(self) -> None:
-        from infrasim.simulator.monte_carlo import _percentile
+        from faultray.simulator.monte_carlo import _percentile
         # 3 elements: indices 0, 1, 2. p50 -> k = 0.5 * 2 = 1.0 (exact)
         assert _percentile([1.0, 2.0, 3.0], 50) == 2.0
 
     def test_mean_empty(self) -> None:
-        from infrasim.simulator.monte_carlo import _mean
+        from faultray.simulator.monte_carlo import _mean
         assert _mean([]) == 0.0
 
     def test_std_empty_and_single(self) -> None:
-        from infrasim.simulator.monte_carlo import _std
+        from faultray.simulator.monte_carlo import _std
         assert _std([]) == 0.0
         assert _std([5.0]) == 0.0
 
     def test_sample_exponential_zero_mean(self) -> None:
         import random as rand_mod
-        from infrasim.simulator.monte_carlo import _sample_exponential
+        from faultray.simulator.monte_carlo import _sample_exponential
         rng = rand_mod.Random(42)
         assert _sample_exponential(rng, 0.0) == 0.0
 
     def test_sample_lognormal_zero_mean(self) -> None:
         import random as rand_mod
-        from infrasim.simulator.monte_carlo import _sample_lognormal
+        from faultray.simulator.monte_carlo import _sample_lognormal
         rng = rand_mod.Random(42)
         assert _sample_lognormal(rng, 0.0) == 0.0
 

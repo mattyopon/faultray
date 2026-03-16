@@ -12,16 +12,16 @@ from pathlib import Path
 
 import pytest
 
-from infrasim.model.components import (
+from faultray.model.components import (
     Capacity,
     Component,
     ComponentType,
     Dependency,
     ResourceMetrics,
 )
-from infrasim.model.demo import create_demo_graph
-from infrasim.model.graph import InfraGraph
-from infrasim.simulator.engine import SimulationEngine
+from faultray.model.demo import create_demo_graph
+from faultray.model.graph import InfraGraph
+from faultray.simulator.engine import SimulationEngine
 
 
 # ── Helpers ───────────────────────────────────────────────────────────────
@@ -144,7 +144,7 @@ def test_50_component_simulation_under_10_seconds():
 def test_yaml_load_100_components_under_2_seconds():
     """Loading a YAML with 100 components should take < 2 seconds."""
     import yaml
-    from infrasim.model.loader import load_yaml
+    from faultray.model.loader import load_yaml
 
     # Build a 100-component YAML dict
     components = []
@@ -191,7 +191,7 @@ def test_yaml_load_100_components_under_2_seconds():
 
 def test_cost_engine_performance():
     """Cost engine on 50 components should run in < 5 seconds."""
-    from infrasim.simulator.cost_engine import CostImpactEngine
+    from faultray.simulator.cost_engine import CostImpactEngine
 
     graph = _build_large_graph(50)
     engine = SimulationEngine(graph)
@@ -210,7 +210,7 @@ def test_cost_engine_performance():
 
 def test_security_engine_performance():
     """Security engine on 20 components should run in < 3 seconds."""
-    from infrasim.simulator.security_engine import SecurityResilienceEngine
+    from faultray.simulator.security_engine import SecurityResilienceEngine
 
     graph = _build_large_graph(20)
     start = time.perf_counter()
@@ -226,7 +226,7 @@ def test_security_engine_performance():
 
 def test_monte_carlo_10000_trials_under_10_seconds():
     """10,000 Monte Carlo trials should complete in < 10 seconds."""
-    from infrasim.simulator.monte_carlo import run_monte_carlo
+    from faultray.simulator.monte_carlo import run_monte_carlo
 
     graph = create_demo_graph()
     start = time.perf_counter()
@@ -242,7 +242,7 @@ def test_monte_carlo_10000_trials_under_10_seconds():
 
 def test_fuzzer_100_iterations_under_30_seconds():
     """100 fuzzer iterations should complete in < 30 seconds."""
-    from infrasim.simulator.chaos_fuzzer import ChaosFuzzer
+    from faultray.simulator.chaos_fuzzer import ChaosFuzzer
 
     graph = create_demo_graph()
     fuzzer = ChaosFuzzer(graph, seed=42)

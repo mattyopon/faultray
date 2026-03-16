@@ -14,9 +14,9 @@ from pathlib import Path
 import pytest
 from typer.testing import CliRunner
 
-from infrasim.cli.main import app
-from infrasim.model.demo import create_demo_graph
-from infrasim.model.graph import InfraGraph
+from faultray.cli.main import app
+from faultray.model.demo import create_demo_graph
+from faultray.model.graph import InfraGraph
 
 runner = CliRunner()
 
@@ -47,7 +47,7 @@ def _build_large_graph(n: int = 12) -> InfraGraph:
 
     Used to test likelihood caps that only activate for >= 10 components.
     """
-    from infrasim.model.components import (
+    from faultray.model.components import (
         Capacity,
         Component,
         ComponentType,
@@ -68,14 +68,14 @@ def _build_large_graph(n: int = 12) -> InfraGraph:
 
 def _create_small_model_file(tmp_path: Path, name: str = "small.json") -> Path:
     """Create a minimal 2-component model (no app_server/web_server)."""
-    from infrasim.model.components import (
+    from faultray.model.components import (
         Capacity,
         Component,
         ComponentType,
         Dependency,
         ResourceMetrics,
     )
-    from infrasim.model.graph import InfraGraph
+    from faultray.model.graph import InfraGraph
 
     graph = InfraGraph()
     graph.add_component(Component(
@@ -298,11 +298,11 @@ class TestDynamicEngineLikelihoodReduction:
     def test_high_fault_ratio_reduces_severity(self) -> None:
         """A scenario faulting all components in a large graph (>=10) should
         get likelihood 0.05, resulting in much lower peak severity."""
-        from infrasim.simulator.dynamic_engine import (
+        from faultray.simulator.dynamic_engine import (
             DynamicScenario,
             DynamicSimulationEngine,
         )
-        from infrasim.simulator.scenarios import Fault, FaultType
+        from faultray.simulator.scenarios import Fault, FaultType
 
         graph = _build_large_graph(12)
         comp_ids = list(graph.components.keys())
@@ -327,11 +327,11 @@ class TestDynamicEngineLikelihoodReduction:
 
     def test_below_threshold_no_reduction(self) -> None:
         """Faulting < 90% of components should not trigger likelihood reduction."""
-        from infrasim.simulator.dynamic_engine import (
+        from faultray.simulator.dynamic_engine import (
             DynamicScenario,
             DynamicSimulationEngine,
         )
-        from infrasim.simulator.scenarios import Fault, FaultType
+        from faultray.simulator.scenarios import Fault, FaultType
 
         graph = create_demo_graph()
         engine = DynamicSimulationEngine(graph)
@@ -367,7 +367,7 @@ class TestCascadingMeltdownScenario:
 
     def test_cascading_meltdown_generated(self) -> None:
         """generate_default_scenarios should produce a 'cascading-meltdown' scenario."""
-        from infrasim.simulator.scenarios import generate_default_scenarios
+        from faultray.simulator.scenarios import generate_default_scenarios
 
         graph = create_demo_graph()
         component_ids = list(graph.components.keys())
@@ -381,7 +381,7 @@ class TestCascadingMeltdownScenario:
 
     def test_cascading_meltdown_root_causes_are_critical(self) -> None:
         """The cascading-meltdown scenario should fault 2-3 high-priority components."""
-        from infrasim.simulator.scenarios import generate_default_scenarios
+        from faultray.simulator.scenarios import generate_default_scenarios
 
         graph = create_demo_graph()
         component_ids = list(graph.components.keys())
@@ -405,7 +405,7 @@ class TestCascadingMeltdownScenario:
 
     def test_cascading_meltdown_fewer_faults_than_total_meltdown(self) -> None:
         """cascading-meltdown should fault fewer components than total-meltdown."""
-        from infrasim.simulator.scenarios import generate_default_scenarios
+        from faultray.simulator.scenarios import generate_default_scenarios
 
         graph = create_demo_graph()
         component_ids = list(graph.components.keys())
@@ -433,8 +433,8 @@ class TestEngineLikelihoodCap:
     def test_all_faults_capped(self) -> None:
         """Faulting all components in a >=10 component graph should produce
         a low risk score due to the 0.05 likelihood cap."""
-        from infrasim.simulator.engine import SimulationEngine
-        from infrasim.simulator.scenarios import Fault, FaultType, Scenario
+        from faultray.simulator.engine import SimulationEngine
+        from faultray.simulator.scenarios import Fault, FaultType, Scenario
 
         graph = _build_large_graph(10)
         engine = SimulationEngine(graph)
@@ -459,8 +459,8 @@ class TestEngineLikelihoodCap:
 
     def test_partial_faults_not_capped(self) -> None:
         """Faulting < 90% of components should not trigger the cap."""
-        from infrasim.simulator.engine import SimulationEngine
-        from infrasim.simulator.scenarios import Fault, FaultType, Scenario
+        from faultray.simulator.engine import SimulationEngine
+        from faultray.simulator.scenarios import Fault, FaultType, Scenario
 
         graph = create_demo_graph()
         engine = SimulationEngine(graph)
@@ -484,12 +484,12 @@ class TestEngineLikelihoodCap:
 
     def test_exactly_90_percent_triggers_cap(self) -> None:
         """Faulting exactly 90% should trigger the 0.05 cap."""
-        from infrasim.simulator.engine import SimulationEngine
-        from infrasim.simulator.scenarios import Fault, FaultType, Scenario
-        from infrasim.model.components import (
+        from faultray.simulator.engine import SimulationEngine
+        from faultray.simulator.scenarios import Fault, FaultType, Scenario
+        from faultray.model.components import (
             Capacity, Component, ComponentType, Dependency, ResourceMetrics,
         )
-        from infrasim.model.graph import InfraGraph
+        from faultray.model.graph import InfraGraph
 
         # Create a 10-component graph so we can fault exactly 9 (90%)
         graph = InfraGraph()
@@ -529,12 +529,12 @@ class TestEvaluateHelpers:
 
     def test_compute_avg_availability_empty(self) -> None:
         """_compute_avg_availability with empty list returns 100.0."""
-        from infrasim.cli.evaluate import _compute_avg_availability
+        from faultray.cli.evaluate import _compute_avg_availability
         assert _compute_avg_availability([]) == 100.0
 
     def test_verdict_color(self) -> None:
         """_verdict_color returns correct colors for each verdict."""
-        from infrasim.cli.evaluate import _verdict_color
+        from faultray.cli.evaluate import _verdict_color
         assert _verdict_color("NEEDS ATTENTION") == "red"
         assert _verdict_color("ACCEPTABLE") == "yellow"
         assert _verdict_color("HEALTHY") == "green"
@@ -542,7 +542,7 @@ class TestEvaluateHelpers:
 
     def test_build_comparison_json_strips_raw(self) -> None:
         """_build_comparison_json should strip _raw keys from output."""
-        from infrasim.cli.evaluate import _build_comparison_json
+        from faultray.cli.evaluate import _build_comparison_json
 
         data = {
             "model": "a.json",
@@ -578,10 +578,10 @@ class TestEvaluateHelpers:
         """
         from io import StringIO
         from rich.console import Console
-        from infrasim.cli.evaluate import _print_comparison_table
+        from faultray.cli.evaluate import _print_comparison_table
 
         # Temporarily patch the module-level console
-        import infrasim.cli.evaluate as eval_mod
+        import faultray.cli.evaluate as eval_mod
         buf = StringIO()
         original_console = eval_mod.console
         eval_mod.console = Console(file=buf, force_terminal=False, width=120)

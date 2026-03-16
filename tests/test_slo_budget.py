@@ -1,6 +1,6 @@
 """Tests for the SLO Budget Simulator."""
 
-from infrasim.model.components import (
+from faultray.model.components import (
     Capacity,
     Component,
     ComponentType,
@@ -8,10 +8,10 @@ from infrasim.model.components import (
     OperationalProfile,
     ResourceMetrics,
 )
-from infrasim.model.graph import InfraGraph
-from infrasim.simulator.engine import SimulationEngine, SimulationReport
-from infrasim.simulator.scenarios import Fault, FaultType, Scenario
-from infrasim.simulator.slo_budget import BudgetSimulation, SLOBudgetSimulator
+from faultray.model.graph import InfraGraph
+from faultray.simulator.engine import SimulationEngine, SimulationReport
+from faultray.simulator.scenarios import Fault, FaultType, Scenario
+from faultray.simulator.slo_budget import BudgetSimulation, SLOBudgetSimulator
 
 
 # ---------------------------------------------------------------------------
@@ -252,8 +252,8 @@ def test_estimate_downtime_no_effects():
     """Scenario with no cascade effects should estimate 0 downtime."""
     graph = _build_test_graph()
     simulator = SLOBudgetSimulator(graph, slo_target=99.9, window_days=30)
-    from infrasim.simulator.engine import ScenarioResult
-    from infrasim.simulator.cascade import CascadeChain
+    from faultray.simulator.engine import ScenarioResult
+    from faultray.simulator.cascade import CascadeChain
 
     scenario = Scenario(
         id="s-noeffect", name="No Effect", description="Nothing",
@@ -268,9 +268,9 @@ def test_estimate_downtime_no_effects():
 
 def test_estimate_downtime_degraded_only():
     """Scenario with only degraded effects should return fractional downtime."""
-    from infrasim.model.components import HealthStatus
-    from infrasim.simulator.cascade import CascadeChain, CascadeEffect
-    from infrasim.simulator.engine import ScenarioResult
+    from faultray.model.components import HealthStatus
+    from faultray.simulator.cascade import CascadeChain, CascadeEffect
+    from faultray.simulator.engine import ScenarioResult
 
     graph = _build_test_graph()
     simulator = SLOBudgetSimulator(graph, slo_target=99.9, window_days=30)
@@ -295,9 +295,9 @@ def test_estimate_downtime_degraded_only():
 
 def test_estimate_downtime_down_component_no_mttr():
     """DOWN component with zero MTTR should fallback to 30.0 min default."""
-    from infrasim.model.components import HealthStatus
-    from infrasim.simulator.cascade import CascadeChain, CascadeEffect
-    from infrasim.simulator.engine import ScenarioResult
+    from faultray.model.components import HealthStatus
+    from faultray.simulator.cascade import CascadeChain, CascadeEffect
+    from faultray.simulator.engine import ScenarioResult
 
     graph = InfraGraph()
     graph.add_component(Component(
@@ -328,9 +328,9 @@ def test_estimate_downtime_down_component_no_mttr():
 
 def test_estimate_downtime_unknown_component():
     """DOWN effect for unknown component should use default 30.0 MTTR."""
-    from infrasim.model.components import HealthStatus
-    from infrasim.simulator.cascade import CascadeChain, CascadeEffect
-    from infrasim.simulator.engine import ScenarioResult
+    from faultray.model.components import HealthStatus
+    from faultray.simulator.cascade import CascadeChain, CascadeEffect
+    from faultray.simulator.engine import ScenarioResult
 
     graph = _build_test_graph()
     simulator = SLOBudgetSimulator(graph, slo_target=99.9, window_days=30)

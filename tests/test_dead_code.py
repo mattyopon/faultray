@@ -78,9 +78,9 @@ def test_no_significant_dead_code():
     but allows a generous margin for false positives (framework-called
     route handlers, Protocol implementations, Pydantic validators, etc.).
     """
-    defined = _get_all_defined_names("src/infrasim")
-    referenced = _get_all_references("src/infrasim", "tests")
-    string_refs = _get_string_references("src/infrasim", "tests")
+    defined = _get_all_defined_names("src/faultray")
+    referenced = _get_all_references("src/faultray", "tests")
+    string_refs = _get_string_references("src/faultray", "tests")
     all_refs = referenced | string_refs
 
     dead = []

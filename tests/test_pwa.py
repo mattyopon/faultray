@@ -11,8 +11,8 @@ from pathlib import Path
 
 
 # Base paths
-STATIC_DIR = Path(__file__).resolve().parent.parent / "src" / "infrasim" / "api" / "static"
-TEMPLATES_DIR = Path(__file__).resolve().parent.parent / "src" / "infrasim" / "api" / "templates"
+STATIC_DIR = Path(__file__).resolve().parent.parent / "src" / "faultray" / "api" / "static"
+TEMPLATES_DIR = Path(__file__).resolve().parent.parent / "src" / "faultray" / "api" / "templates"
 
 
 class TestPWASupport:

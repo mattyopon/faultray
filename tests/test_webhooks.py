@@ -6,7 +6,7 @@ from unittest.mock import AsyncMock, patch
 import httpx
 import pytest
 
-from infrasim.integrations.webhooks import (
+from faultray.integrations.webhooks import (
     send_generic_webhook,
     send_pagerduty_event,
     send_slack_notification,
@@ -50,7 +50,7 @@ class TestSlackNotification:
     async def test_slack_success(self, report_summary_critical):
         """Slack notification should return True on 200."""
         mock_response = httpx.Response(200)
-        with patch("infrasim.integrations.webhooks.httpx.AsyncClient") as MockClient:
+        with patch("faultray.integrations.webhooks.httpx.AsyncClient") as MockClient:
             client_instance = AsyncMock()
             client_instance.post.return_value = mock_response
             MockClient.return_value.__aenter__ = AsyncMock(return_value=client_instance)
@@ -73,7 +73,7 @@ class TestSlackNotification:
     async def test_slack_no_critical_has_two_blocks(self, report_summary_clean):
         """Slack notification without critical findings should have 2 blocks."""
         mock_response = httpx.Response(200)
-        with patch("infrasim.integrations.webhooks.httpx.AsyncClient") as MockClient:
+        with patch("faultray.integrations.webhooks.httpx.AsyncClient") as MockClient:
             client_instance = AsyncMock()
             client_instance.post.return_value = mock_response
             MockClient.return_value.__aenter__ = AsyncMock(return_value=client_instance)
@@ -92,7 +92,7 @@ class TestSlackNotification:
     async def test_slack_failure(self, report_summary_critical):
         """Slack notification should return False on non-200."""
         mock_response = httpx.Response(500)
-        with patch("infrasim.integrations.webhooks.httpx.AsyncClient") as MockClient:
+        with patch("faultray.integrations.webhooks.httpx.AsyncClient") as MockClient:
             client_instance = AsyncMock()
             client_instance.post.return_value = mock_response
             MockClient.return_value.__aenter__ = AsyncMock(return_value=client_instance)
@@ -106,7 +106,7 @@ class TestSlackNotification:
     @pytest.mark.asyncio
     async def test_slack_network_error(self, report_summary_critical):
         """Slack notification should return False on network error."""
-        with patch("infrasim.integrations.webhooks.httpx.AsyncClient") as MockClient:
+        with patch("faultray.integrations.webhooks.httpx.AsyncClient") as MockClient:
             client_instance = AsyncMock()
             client_instance.post.side_effect = httpx.ConnectError("connection refused")
             MockClient.return_value.__aenter__ = AsyncMock(return_value=client_instance)
@@ -127,7 +127,7 @@ class TestPagerDutyEvent:
     async def test_pagerduty_critical_triggers(self, report_summary_critical):
         """PagerDuty should send event when there are critical findings."""
         mock_response = httpx.Response(202)
-        with patch("infrasim.integrations.webhooks.httpx.AsyncClient") as MockClient:
+        with patch("faultray.integrations.webhooks.httpx.AsyncClient") as MockClient:
             client_instance = AsyncMock()
             client_instance.post.return_value = mock_response
             MockClient.return_value.__aenter__ = AsyncMock(return_value=client_instance)
@@ -155,7 +155,7 @@ class TestPagerDutyEvent:
     async def test_pagerduty_failure(self, report_summary_critical):
         """PagerDuty should return False on non-202."""
         mock_response = httpx.Response(500)
-        with patch("infrasim.integrations.webhooks.httpx.AsyncClient") as MockClient:
+        with patch("faultray.integrations.webhooks.httpx.AsyncClient") as MockClient:
             client_instance = AsyncMock()
             client_instance.post.return_value = mock_response
             MockClient.return_value.__aenter__ = AsyncMock(return_value=client_instance)
@@ -174,7 +174,7 @@ class TestGenericWebhook:
     async def test_generic_success(self, report_summary_critical):
         """Generic webhook should return True on success status codes."""
         mock_response = httpx.Response(200)
-        with patch("infrasim.integrations.webhooks.httpx.AsyncClient") as MockClient:
+        with patch("faultray.integrations.webhooks.httpx.AsyncClient") as MockClient:
             client_instance = AsyncMock()
             client_instance.post.return_value = mock_response
             MockClient.return_value.__aenter__ = AsyncMock(return_value=client_instance)
@@ -189,7 +189,7 @@ class TestGenericWebhook:
     async def test_generic_failure(self, report_summary_critical):
         """Generic webhook should return False on 4xx/5xx."""
         mock_response = httpx.Response(400)
-        with patch("infrasim.integrations.webhooks.httpx.AsyncClient") as MockClient:
+        with patch("faultray.integrations.webhooks.httpx.AsyncClient") as MockClient:
             client_instance = AsyncMock()
             client_instance.post.return_value = mock_response
             MockClient.return_value.__aenter__ = AsyncMock(return_value=client_instance)
@@ -203,7 +203,7 @@ class TestGenericWebhook:
     @pytest.mark.asyncio
     async def test_generic_network_error(self, report_summary_critical):
         """Generic webhook should return False on network error."""
-        with patch("infrasim.integrations.webhooks.httpx.AsyncClient") as MockClient:
+        with patch("faultray.integrations.webhooks.httpx.AsyncClient") as MockClient:
             client_instance = AsyncMock()
             client_instance.post.side_effect = httpx.TimeoutException("timeout")
             MockClient.return_value.__aenter__ = AsyncMock(return_value=client_instance)

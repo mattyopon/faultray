@@ -1,6 +1,6 @@
 """Extended tests for cascade simulation engine — targeting uncovered lines."""
 
-from infrasim.model.components import (
+from faultray.model.components import (
     Capacity,
     CircuitBreakerConfig,
     Component,
@@ -11,9 +11,9 @@ from infrasim.model.components import (
     RetryStrategy,
     SingleflightConfig,
 )
-from infrasim.model.graph import InfraGraph
-from infrasim.simulator.cascade import CascadeChain, CascadeEffect, CascadeEngine
-from infrasim.simulator.scenarios import Fault, FaultType
+from faultray.model.graph import InfraGraph
+from faultray.simulator.cascade import CascadeChain, CascadeEffect, CascadeEngine
+from faultray.simulator.scenarios import Fault, FaultType
 
 
 # ---------------------------------------------------------------------------

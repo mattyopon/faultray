@@ -9,7 +9,7 @@ from pathlib import Path
 
 import pytest
 
-from infrasim.model.components import (
+from faultray.model.components import (
     Component,
     ComponentType,
     Dependency,
@@ -17,8 +17,8 @@ from infrasim.model.components import (
     OperationalProfile,
     ResourceMetrics,
 )
-from infrasim.model.graph import InfraGraph
-from infrasim.simulator.chaos_calendar import (
+from faultray.model.graph import InfraGraph
+from faultray.simulator.chaos_calendar import (
     ChaosCalendar,
     ChaosWindow,
     ExperimentRecord,

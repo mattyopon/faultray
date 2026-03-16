@@ -2,20 +2,20 @@
 
 from __future__ import annotations
 
-from infrasim.feeds.analyzer import (
+from faultray.feeds.analyzer import (
     AnalyzedIncident,
     IncidentPattern,
     analyze_articles,
     incidents_to_scenarios,
 )
-from infrasim.feeds.fetcher import FeedArticle
-from infrasim.feeds.store import (
+from faultray.feeds.fetcher import FeedArticle
+from faultray.feeds.store import (
     clear_store,
     load_feed_scenarios,
     save_feed_scenarios,
 )
-from infrasim.model.components import Component, ComponentType, ResourceMetrics, Capacity
-from infrasim.simulator.scenarios import FaultType
+from faultray.model.components import Component, ComponentType, ResourceMetrics, Capacity
+from faultray.simulator.scenarios import FaultType
 
 
 def _make_article(title: str, summary: str = "", source: str = "test") -> FeedArticle:

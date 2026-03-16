@@ -2,7 +2,7 @@
 
 import math
 
-from infrasim.model.components import (
+from faultray.model.components import (
     Component,
     ComponentType,
     Dependency,
@@ -12,8 +12,8 @@ from infrasim.model.components import (
     OperationalProfile,
     RuntimeJitter,
 )
-from infrasim.model.graph import InfraGraph
-from infrasim.simulator.availability_model import (
+from faultray.model.graph import InfraGraph
+from faultray.simulator.availability_model import (
     FiveLayerResult,
     ThreeLayerResult,
     _annual_downtime,

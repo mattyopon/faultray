@@ -8,9 +8,9 @@ from unittest.mock import MagicMock
 
 import pytest
 
-from infrasim.model.components import Component, ComponentType, HealthStatus
-from infrasim.model.graph import InfraGraph
-from infrasim.reporter.export import (
+from faultray.model.components import Component, ComponentType, HealthStatus
+from faultray.model.graph import InfraGraph
+from faultray.reporter.export import (
     _report_rows,
     _report_to_export_dict,
     export_csv,
@@ -19,9 +19,9 @@ from infrasim.reporter.export import (
     export_sarif,
     export_sarif_file,
 )
-from infrasim.simulator.cascade import CascadeChain, CascadeEffect
-from infrasim.simulator.engine import ScenarioResult, SimulationEngine, SimulationReport
-from infrasim.simulator.scenarios import Scenario
+from faultray.simulator.cascade import CascadeChain, CascadeEffect
+from faultray.simulator.engine import ScenarioResult, SimulationEngine, SimulationReport
+from faultray.simulator.scenarios import Scenario
 
 
 # ---------------------------------------------------------------------------

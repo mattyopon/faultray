@@ -4,9 +4,9 @@ from __future__ import annotations
 
 import pytest
 
-from infrasim.model.components import Component, ComponentType, HealthStatus, SecurityProfile
-from infrasim.model.graph import InfraGraph
-from infrasim.simulator.compliance_chaos import (
+from faultray.model.components import Component, ComponentType, HealthStatus, SecurityProfile
+from faultray.model.graph import InfraGraph
+from faultray.simulator.compliance_chaos import (
     ComplianceChaosExperiment,
     ComplianceChaosGenerator,
     ComplianceChaosReport,
@@ -523,7 +523,7 @@ class TestGapDetection:
         assert "single replica" in avail_gaps[0].gap_description.lower()
 
     def test_gap_single_replica_with_failover_no_gap(self):
-        from infrasim.model.components import FailoverConfig
+        from faultray.model.components import FailoverConfig
 
         app = _comp("a1", "App", replicas=1)
         app.failover = FailoverConfig(enabled=True)

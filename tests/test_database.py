@@ -10,7 +10,7 @@ import pytest_asyncio
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker
 
-from infrasim.api.database import (
+from faultray.api.database import (
     Base,
     ProjectRow,
     SimulationRunRow,
@@ -22,7 +22,7 @@ from infrasim.api.database import (
     reset_engine,
     _get_engine,
 )
-from infrasim.api.auth import generate_api_key, hash_api_key
+from faultray.api.auth import generate_api_key, hash_api_key
 
 
 # ---------------------------------------------------------------------------
@@ -32,7 +32,7 @@ from infrasim.api.auth import generate_api_key, hash_api_key
 @pytest_asyncio.fixture
 async def db_url(tmp_path: Path):
     """Create a temporary database and yield its URL."""
-    db_path = tmp_path / "test_infrasim.db"
+    db_path = tmp_path / "test_faultray.db"
     url = f"sqlite+aiosqlite:///{db_path}"
 
     # Reset global engine state before and after the test
@@ -282,10 +282,10 @@ class TestTeamRelationship:
 class TestExport:
     def _make_report(self):
         """Create a minimal SimulationReport for testing."""
-        from infrasim.model.components import HealthStatus
-        from infrasim.simulator.cascade import CascadeChain, CascadeEffect
-        from infrasim.simulator.engine import ScenarioResult, SimulationReport
-        from infrasim.simulator.scenarios import Fault, FaultType, Scenario
+        from faultray.model.components import HealthStatus
+        from faultray.simulator.cascade import CascadeChain, CascadeEffect
+        from faultray.simulator.engine import ScenarioResult, SimulationReport
+        from faultray.simulator.scenarios import Fault, FaultType, Scenario
 
         effect = CascadeEffect(
             component_id="comp-1",
@@ -316,7 +316,7 @@ class TestExport:
         return SimulationReport(results=[result], resilience_score=65.0)
 
     def test_export_csv(self, tmp_path: Path):
-        from infrasim.reporter.export import export_csv
+        from faultray.reporter.export import export_csv
 
         report = self._make_report()
         out = export_csv(report, tmp_path / "results.csv")
@@ -335,7 +335,7 @@ class TestExport:
         assert float(rows[0]["risk_score"]) == 8.5
 
     def test_export_json(self, tmp_path: Path):
-        from infrasim.reporter.export import export_json
+        from faultray.reporter.export import export_json
 
         report = self._make_report()
         out = export_json(report, tmp_path / "results.json")

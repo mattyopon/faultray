@@ -8,7 +8,7 @@ from pathlib import Path
 import pytest
 import yaml
 
-from infrasim.model.components import (
+from faultray.model.components import (
     AutoScalingConfig,
     CircuitBreakerConfig,
     Component,
@@ -16,8 +16,8 @@ from infrasim.model.components import (
     Dependency,
     FailoverConfig,
 )
-from infrasim.model.graph import InfraGraph
-from infrasim.simulator.canary_analysis import (
+from faultray.model.graph import InfraGraph
+from faultray.simulator.canary_analysis import (
     CanaryAnalyzer,
     CanaryConfig,
     CanaryMetric,

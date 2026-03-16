@@ -37,8 +37,8 @@ faultray simulate -m model.json --insurance --output insurance-report.json
 ## Generating Insurance Reports
 
 ```python
-from infrasim import SimulationEngine
-from infrasim.insurance import InsuranceScorer
+from faultray import SimulationEngine
+from faultray.insurance import InsuranceScorer
 
 engine = SimulationEngine(graph)
 results = engine.simulate()

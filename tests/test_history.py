@@ -10,15 +10,15 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-from infrasim.history import HistoryEntry, HistoryTracker, TrendAnalysis, _compute_model_hash
-from infrasim.model.components import (
+from faultray.history import HistoryEntry, HistoryTracker, TrendAnalysis, _compute_model_hash
+from faultray.model.components import (
     AutoScalingConfig,
     Component,
     ComponentType,
     Dependency,
     FailoverConfig,
 )
-from infrasim.model.graph import InfraGraph
+from faultray.model.graph import InfraGraph
 
 
 # ---------------------------------------------------------------------------

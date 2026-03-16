@@ -13,7 +13,7 @@ from pathlib import Path
 
 import pytest
 
-from infrasim.model.components import (
+from faultray.model.components import (
     Capacity,
     ComplianceTags,
     Component,
@@ -29,13 +29,13 @@ from infrasim.model.components import (
     RuntimeJitter,
     SecurityProfile,
 )
-from infrasim.model.demo import create_demo_graph
-from infrasim.model.graph import InfraGraph
-from infrasim.simulator.engine import SimulationEngine
-from infrasim.simulator.cost_engine import CostImpactEngine
-from infrasim.simulator.planner import RemediationPlanner
-from infrasim.simulator.security_engine import SecurityResilienceEngine
-from infrasim.remediation.iac_generator import IaCGenerator
+from faultray.model.demo import create_demo_graph
+from faultray.model.graph import InfraGraph
+from faultray.simulator.engine import SimulationEngine
+from faultray.simulator.cost_engine import CostImpactEngine
+from faultray.simulator.planner import RemediationPlanner
+from faultray.simulator.security_engine import SecurityResilienceEngine
+from faultray.remediation.iac_generator import IaCGenerator
 
 
 # ---------------------------------------------------------------------------
@@ -261,7 +261,7 @@ def test_evaluate_to_plan_flow():
 
 def test_five_layer_model_uses_all_fields():
     """5-layer model correctly uses MTBF, failover, network, external SLA, and team config."""
-    from infrasim.simulator.availability_model import compute_five_layer_model
+    from faultray.simulator.availability_model import compute_five_layer_model
 
     graph = _build_rich_graph()
     result = compute_five_layer_model(graph)
@@ -419,10 +419,10 @@ def test_cost_engine_uses_customer_ltv_churn():
     ))
 
     # Both should be non-negative; the LTV component adds churn cost
-    from infrasim.simulator.cascade import CascadeChain, CascadeEffect
-    from infrasim.simulator.engine import SimulationReport, ScenarioResult
-    from infrasim.simulator.scenarios import Scenario, Fault, FaultType
-    from infrasim.model.components import HealthStatus
+    from faultray.simulator.cascade import CascadeChain, CascadeEffect
+    from faultray.simulator.engine import SimulationReport, ScenarioResult
+    from faultray.simulator.scenarios import Scenario, Fault, FaultType
+    from faultray.model.components import HealthStatus
 
     for comp_id in ["app", "app-ltv"]:
         g = InfraGraph()
@@ -458,10 +458,10 @@ def test_cost_engine_uses_customer_ltv_churn():
 
 def test_cost_engine_uses_recovery_team_size():
     """Cost engine uses recovery_team_size from component when set."""
-    from infrasim.simulator.cascade import CascadeChain, CascadeEffect
-    from infrasim.simulator.engine import SimulationReport, ScenarioResult
-    from infrasim.simulator.scenarios import Scenario, Fault, FaultType
-    from infrasim.model.components import HealthStatus
+    from faultray.simulator.cascade import CascadeChain, CascadeEffect
+    from faultray.simulator.engine import SimulationReport, ScenarioResult
+    from faultray.simulator.scenarios import Scenario, Fault, FaultType
+    from faultray.model.components import HealthStatus
 
     graph = InfraGraph()
     graph.add_component(Component(
@@ -501,7 +501,7 @@ def test_cost_engine_uses_recovery_team_size():
 
 def test_ops_engine_uses_acknowledge_time():
     """Ops engine includes mean_acknowledge_time_minutes in recovery duration."""
-    from infrasim.simulator.ops_engine import OpsSimulationEngine, OpsScenario
+    from faultray.simulator.ops_engine import OpsSimulationEngine, OpsScenario
 
     graph = InfraGraph()
     graph.add_component(Component(
@@ -536,7 +536,7 @@ def test_ops_engine_uses_acknowledge_time():
 
 def test_compliance_engine_pci_scope():
     """Compliance engine generates PCI-specific checks when pci_scope=True."""
-    from infrasim.simulator.compliance_engine import ComplianceEngine
+    from faultray.simulator.compliance_engine import ComplianceEngine
 
     graph = InfraGraph()
     graph.add_component(Component(
@@ -578,7 +578,7 @@ def test_compliance_engine_pci_scope():
 
 def test_compliance_engine_pii_gdpr():
     """Compliance engine generates GDPR/privacy checks when contains_pii=True."""
-    from infrasim.simulator.compliance_engine import ComplianceEngine
+    from faultray.simulator.compliance_engine import ComplianceEngine
 
     graph = InfraGraph()
     graph.add_component(Component(
@@ -607,7 +607,7 @@ def test_compliance_engine_pii_gdpr():
 
 def test_compliance_engine_audit_logging():
     """Compliance engine uses audit_logging tag for audit checks."""
-    from infrasim.simulator.compliance_engine import ComplianceEngine
+    from faultray.simulator.compliance_engine import ComplianceEngine
 
     graph = InfraGraph()
     graph.add_component(Component(
@@ -633,7 +633,7 @@ def test_compliance_engine_audit_logging():
 
 def test_availability_model_team_config():
     """5-layer model Layer 4 uses team runbook/automation config."""
-    from infrasim.simulator.availability_model import compute_five_layer_model
+    from faultray.simulator.availability_model import compute_five_layer_model
 
     # Graph with high runbook/automation
     high_graph = InfraGraph()
@@ -685,7 +685,7 @@ def test_full_pipeline_with_rich_graph():
     assert sec_report.total_attacks_simulated > 0
 
     # Compliance
-    from infrasim.simulator.compliance_engine import ComplianceEngine
+    from faultray.simulator.compliance_engine import ComplianceEngine
     compliance_engine = ComplianceEngine(graph)
     all_compliance = compliance_engine.check_all()
     assert "soc2" in all_compliance
@@ -695,7 +695,7 @@ def test_full_pipeline_with_rich_graph():
     assert "Req-3.4" in pci_control_ids
 
     # 5-layer availability
-    from infrasim.simulator.availability_model import compute_five_layer_model
+    from faultray.simulator.availability_model import compute_five_layer_model
     five_layer = compute_five_layer_model(graph)
     assert five_layer.layer4_operational.availability > 0
     assert five_layer.layer5_external.availability < 1.0  # has external SLA

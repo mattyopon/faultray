@@ -6,20 +6,20 @@ from pathlib import Path
 
 import pytest
 
-from infrasim.integrations.incident_correlator import (
+from faultray.integrations.incident_correlator import (
     CorrelationReport,
     CorrelationResult,
     IncidentCorrelator,
     IncidentRecord,
 )
-from infrasim.model.components import (
+from faultray.model.components import (
     Component,
     ComponentType,
     Dependency,
     FailoverConfig,
 )
-from infrasim.model.graph import InfraGraph
-from infrasim.simulator.engine import SimulationEngine, SimulationReport
+from faultray.model.graph import InfraGraph
+from faultray.simulator.engine import SimulationEngine, SimulationReport
 
 
 # ---------------------------------------------------------------------------

@@ -4,9 +4,9 @@ from __future__ import annotations
 
 import pytest
 
-from infrasim.model.components import Component, ComponentType
-from infrasim.model.graph import InfraGraph
-from infrasim.simulator.dependency_freshness import (
+from faultray.model.components import Component, ComponentType
+from faultray.model.graph import InfraGraph
+from faultray.simulator.dependency_freshness import (
     ComponentFreshness,
     DependencyFreshnessTracker,
     FreshnessLevel,
@@ -1079,7 +1079,7 @@ class TestInternalEdgeCases:
         """When detect_technology matches a pattern but the key is missing
         from the tech database, we should get UNKNOWN with detected_tech set."""
         # Temporarily inject a detection pattern for a tech not in the DB
-        import infrasim.simulator.dependency_freshness as mod
+        import faultray.simulator.dependency_freshness as mod
         original_patterns = mod._DETECTION_PATTERNS
         mod._DETECTION_PATTERNS = [("fakedb", "fakedb")] + list(original_patterns)
         try:

@@ -4,9 +4,9 @@ from __future__ import annotations
 
 import pytest
 
-from infrasim.model.components import Component, ComponentType, Dependency, HealthStatus
-from infrasim.model.graph import InfraGraph
-from infrasim.simulator.resource_optimizer import (
+from faultray.model.components import Component, ComponentType, Dependency, HealthStatus
+from faultray.model.graph import InfraGraph
+from faultray.simulator.resource_optimizer import (
     OptimizationReport,
     OptimizationType,
     Priority,
@@ -358,7 +358,7 @@ class TestEdgeCases:
         """Test lines 258-261: under-provisioned generates SCALE_UP recommendation."""
         opt = ResourceOptimizer(under_threshold=5.0)  # very low threshold
         g = InfraGraph()
-        from infrasim.model.components import Capacity, ResourceMetrics
+        from faultray.model.components import Capacity, ResourceMetrics
         c = _comp("hot", "Hot Server", replicas=2)
         c.capacity = Capacity(max_connections=100)
         c.metrics = ResourceMetrics(cpu_percent=95, memory_percent=90, network_connections=90)

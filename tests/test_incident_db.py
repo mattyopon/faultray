@@ -1,4 +1,4 @@
-"""Comprehensive tests for infrasim.simulator.incident_db — HISTORICAL_INCIDENTS data integrity."""
+"""Comprehensive tests for faultray.simulator.incident_db — HISTORICAL_INCIDENTS data integrity."""
 
 from __future__ import annotations
 
@@ -6,8 +6,8 @@ from datetime import datetime, timedelta
 
 import pytest
 
-from infrasim.simulator.incident_db import HISTORICAL_INCIDENTS
-from infrasim.simulator.incident_replay import HistoricalIncident, IncidentEvent
+from faultray.simulator.incident_db import HISTORICAL_INCIDENTS
+from faultray.simulator.incident_replay import HistoricalIncident, IncidentEvent
 
 
 # ---------------------------------------------------------------------------
@@ -576,13 +576,13 @@ class TestModuleAccess:
     """Verify the module can be imported and accessed correctly."""
 
     def test_import_historical_incidents(self):
-        from infrasim.simulator.incident_db import HISTORICAL_INCIDENTS as incidents
+        from faultray.simulator.incident_db import HISTORICAL_INCIDENTS as incidents
         assert incidents is not None
 
     def test_incidents_same_reference(self):
         """Multiple imports return the same list."""
-        from infrasim.simulator.incident_db import HISTORICAL_INCIDENTS as a
-        from infrasim.simulator.incident_db import HISTORICAL_INCIDENTS as b
+        from faultray.simulator.incident_db import HISTORICAL_INCIDENTS as a
+        from faultray.simulator.incident_db import HISTORICAL_INCIDENTS as b
         assert a is b
 
     def test_incident_attributes_accessible(self):

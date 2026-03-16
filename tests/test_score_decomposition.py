@@ -17,7 +17,7 @@ from unittest.mock import patch
 
 import pytest
 
-from infrasim.model.components import (
+from faultray.model.components import (
     AutoScalingConfig,
     Capacity,
     CircuitBreakerConfig,
@@ -28,8 +28,8 @@ from infrasim.model.components import (
     HealthStatus,
     ResourceMetrics,
 )
-from infrasim.model.graph import InfraGraph
-from infrasim.simulator.score_decomposition import (
+from faultray.model.graph import InfraGraph
+from faultray.simulator.score_decomposition import (
     ScoreDecomposer,
     ScoreDecomposition,
     ScoreFactor,

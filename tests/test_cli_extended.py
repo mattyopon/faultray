@@ -24,8 +24,8 @@ import pytest
 from click.exceptions import Exit as ClickExit
 from typer.testing import CliRunner
 
-from infrasim.cli import app
-from infrasim.model.demo import create_demo_graph
+from faultray.cli import app
+from faultray.model.demo import create_demo_graph
 
 runner = CliRunner()
 
@@ -170,7 +170,7 @@ class TestPrintOpsResults:
         error_budgets=None,
         summary="Test summary",
     ):
-        from infrasim.simulator.ops_engine import OpsScenario
+        from faultray.simulator.ops_engine import OpsScenario
         scenario = OpsScenario(
             id="test-scenario",
             name="Test Scenario",
@@ -197,7 +197,7 @@ class TestPrintOpsResults:
         )
 
     def test_high_availability(self):
-        from infrasim.cli.main import _print_ops_results
+        from faultray.cli.main import _print_ops_results
         from rich.console import Console
         buf = StringIO()
         con = Console(file=buf, force_terminal=False, width=120)
@@ -208,7 +208,7 @@ class TestPrintOpsResults:
         assert "99.99" in output
 
     def test_medium_availability(self):
-        from infrasim.cli.main import _print_ops_results
+        from faultray.cli.main import _print_ops_results
         from rich.console import Console
         buf = StringIO()
         con = Console(file=buf, force_terminal=False, width=120)
@@ -218,7 +218,7 @@ class TestPrintOpsResults:
         assert "99.5" in output
 
     def test_low_availability(self):
-        from infrasim.cli.main import _print_ops_results
+        from faultray.cli.main import _print_ops_results
         from rich.console import Console
         buf = StringIO()
         con = Console(file=buf, force_terminal=False, width=120)
@@ -228,7 +228,7 @@ class TestPrintOpsResults:
         assert "98.0" in output
 
     def test_with_events(self):
-        from infrasim.cli.main import _print_ops_results
+        from faultray.cli.main import _print_ops_results
         from rich.console import Console
         buf = StringIO()
         con = Console(file=buf, force_terminal=False, width=120)
@@ -247,7 +247,7 @@ class TestPrintOpsResults:
         assert "Day" in output
 
     def test_with_error_budgets(self):
-        from infrasim.cli.main import _print_ops_results
+        from faultray.cli.main import _print_ops_results
         from rich.console import Console
         buf = StringIO()
         con = Console(file=buf, force_terminal=False, width=120)
@@ -264,7 +264,7 @@ class TestPrintOpsResults:
         assert "EXHAUSTED" in output
 
     def test_empty_sli_timeline(self):
-        from infrasim.cli.main import _print_ops_results
+        from faultray.cli.main import _print_ops_results
         from rich.console import Console
         buf = StringIO()
         con = Console(file=buf, force_terminal=False, width=120)
@@ -274,7 +274,7 @@ class TestPrintOpsResults:
         assert "Operational Simulation Report" in output
 
     def test_no_summary(self):
-        from infrasim.cli.main import _print_ops_results
+        from faultray.cli.main import _print_ops_results
         from rich.console import Console
         buf = StringIO()
         con = Console(file=buf, force_terminal=False, width=120)
@@ -284,7 +284,7 @@ class TestPrintOpsResults:
 
     def test_many_events_truncated(self):
         """More than 25 events should be truncated."""
-        from infrasim.cli.main import _print_ops_results
+        from faultray.cli.main import _print_ops_results
         from rich.console import Console
         buf = StringIO()
         con = Console(file=buf, force_terminal=False, width=120)
@@ -315,7 +315,7 @@ class TestPrintWhatifResult:
         )
 
     def test_basic_whatif_output(self):
-        from infrasim.cli.main import _print_whatif_result
+        from faultray.cli.main import _print_whatif_result
         from rich.console import Console
         buf = StringIO()
         con = Console(file=buf, force_terminal=False, width=120)
@@ -327,7 +327,7 @@ class TestPrintWhatifResult:
         assert "FAIL" in output
 
     def test_with_breakpoint(self):
-        from infrasim.cli.main import _print_whatif_result
+        from faultray.cli.main import _print_whatif_result
         from rich.console import Console
         buf = StringIO()
         con = Console(file=buf, force_terminal=False, width=120)
@@ -338,7 +338,7 @@ class TestPrintWhatifResult:
         assert "1.50" in output
 
     def test_empty_values(self):
-        from infrasim.cli.main import _print_whatif_result
+        from faultray.cli.main import _print_whatif_result
         from rich.console import Console
         buf = StringIO()
         con = Console(file=buf, force_terminal=False, width=120)
@@ -364,7 +364,7 @@ class TestPrintMultiWhatifResult:
     """Tests for _print_multi_whatif_result (main.py lines 317-350)."""
 
     def test_basic_multi_result(self):
-        from infrasim.cli.main import _print_multi_whatif_result
+        from faultray.cli.main import _print_multi_whatif_result
         from rich.console import Console
         buf = StringIO()
         con = Console(file=buf, force_terminal=False, width=120)
@@ -384,7 +384,7 @@ class TestPrintMultiWhatifResult:
         assert "FAIL" in output
 
     def test_multi_result_with_pass(self):
-        from infrasim.cli.main import _print_multi_whatif_result
+        from faultray.cli.main import _print_multi_whatif_result
         from rich.console import Console
         buf = StringIO()
         con = Console(file=buf, force_terminal=False, width=120)
@@ -402,7 +402,7 @@ class TestPrintMultiWhatifResult:
         assert "PASS" in output
 
     def test_multi_result_no_analysis_prefix(self):
-        from infrasim.cli.main import _print_multi_whatif_result
+        from faultray.cli.main import _print_multi_whatif_result
         from rich.console import Console
         buf = StringIO()
         con = Console(file=buf, force_terminal=False, width=120)
@@ -428,7 +428,7 @@ class TestPrintAiAnalysis:
     """Tests for _print_ai_analysis (main.py lines ~71-135)."""
 
     def test_full_ai_analysis(self):
-        from infrasim.cli.main import _print_ai_analysis
+        from faultray.cli.main import _print_ai_analysis
         from rich.console import Console
         buf = StringIO()
         con = Console(file=buf, force_terminal=False, width=200)
@@ -467,7 +467,7 @@ class TestPrintAiAnalysis:
         assert "Upgrade Path" in output
 
     def test_ai_analysis_no_risks_no_recs_no_upgrade(self):
-        from infrasim.cli.main import _print_ai_analysis
+        from faultray.cli.main import _print_ai_analysis
         from rich.console import Console
         buf = StringIO()
         con = Console(file=buf, force_terminal=False, width=120)
@@ -487,7 +487,7 @@ class TestPrintAiAnalysis:
         assert "Upgrade Path" not in output
 
     def test_ai_analysis_medium_and_high_severity(self):
-        from infrasim.cli.main import _print_ai_analysis
+        from faultray.cli.main import _print_ai_analysis
         from rich.console import Console
         buf = StringIO()
         con = Console(file=buf, force_terminal=False, width=200)
@@ -520,30 +520,30 @@ class TestLoadGraphForAnalysis:
     """Tests for _load_graph_for_analysis (main.py lines 358-376)."""
 
     def test_load_from_yaml(self, tmp_path):
-        from infrasim.cli.main import _load_graph_for_analysis
+        from faultray.cli.main import _load_graph_for_analysis
         yaml_path = _create_yaml_file(tmp_path)
         graph = _load_graph_for_analysis(Path("nonexistent.json"), yaml_path)
         assert len(graph.components) == 3
 
     def test_load_yaml_not_found(self, tmp_path):
-        from infrasim.cli.main import _load_graph_for_analysis
+        from faultray.cli.main import _load_graph_for_analysis
         with pytest.raises(ClickExit):
             _load_graph_for_analysis(Path("x.json"), tmp_path / "missing.yaml")
 
     def test_load_from_model_json(self, tmp_path):
-        from infrasim.cli.main import _load_graph_for_analysis
+        from faultray.cli.main import _load_graph_for_analysis
         model_path = _create_model_file(tmp_path)
         graph = _load_graph_for_analysis(model_path, None)
         assert len(graph.components) > 0
 
     def test_load_model_not_found(self, tmp_path):
-        from infrasim.cli.main import _load_graph_for_analysis
+        from faultray.cli.main import _load_graph_for_analysis
         with pytest.raises(ClickExit):
             _load_graph_for_analysis(tmp_path / "missing.json", None)
 
     def test_load_from_yaml_model_path(self, tmp_path):
         """When model path ends with .yaml, load via load_yaml."""
-        from infrasim.cli.main import _load_graph_for_analysis
+        from faultray.cli.main import _load_graph_for_analysis
         yaml_path = _create_yaml_file(tmp_path)
         yaml_model = tmp_path / "model.yaml"
         yaml_path.rename(yaml_model)
@@ -552,7 +552,7 @@ class TestLoadGraphForAnalysis:
 
     def test_load_from_yml_model_path(self, tmp_path):
         """When model path ends with .yml, load via load_yaml."""
-        from infrasim.cli.main import _load_graph_for_analysis
+        from faultray.cli.main import _load_graph_for_analysis
         yaml_path = _create_yaml_file(tmp_path)
         yml_model = tmp_path / "model.yml"
         yaml_path.rename(yml_model)
@@ -838,7 +838,7 @@ class TestWhatif:
         import builtins
         real_import = builtins.__import__
         def mock_import(name, *args, **kwargs):
-            if name == "infrasim.simulator.whatif_engine":
+            if name == "faultray.simulator.whatif_engine":
                 raise ImportError("no module")
             return real_import(name, *args, **kwargs)
         with patch("builtins.__import__", side_effect=mock_import):
@@ -901,7 +901,7 @@ class TestCapacity:
         import builtins
         real_import = builtins.__import__
         def mock_import(name, *args, **kwargs):
-            if name == "infrasim.simulator.capacity_engine":
+            if name == "faultray.simulator.capacity_engine":
                 raise ImportError("no module")
             return real_import(name, *args, **kwargs)
         with patch("builtins.__import__", side_effect=mock_import):
@@ -939,7 +939,7 @@ class TestScan:
         output_path = tmp_path / "scanned.json"
         graph = create_demo_graph()
         # Patch at the source modules since they're imported lazily inside the function
-        with patch("infrasim.discovery.prometheus.PrometheusClient") as MockClient:
+        with patch("faultray.discovery.prometheus.PrometheusClient") as MockClient:
             mock_instance = MagicMock()
             MockClient.return_value = mock_instance
             # asyncio.run is called in the CLI function, patch it there
@@ -985,8 +985,8 @@ class TestShowExtended:
 
     def test_show_utilization_colors(self, tmp_path):
         """Covers the yellow branch (util > 60) and green branch."""
-        from infrasim.model.graph import InfraGraph
-        from infrasim.model.components import Component, ComponentType, ResourceMetrics, Capacity
+        from faultray.model.graph import InfraGraph
+        from faultray.model.components import Component, ComponentType, ResourceMetrics, Capacity
 
         graph = InfraGraph()
         # High utilization (red, >80)
@@ -1010,7 +1010,7 @@ class TestShowExtended:
             metrics=ResourceMetrics(cpu_percent=30, memory_percent=30),
             capacity=Capacity(max_connections=100),
         ))
-        from infrasim.model.graph import Dependency
+        from faultray.model.graph import Dependency
         graph.add_dependency(Dependency(source_id="high-util", target_id="mid-util"))
 
         model_path = tmp_path / "model.json"
@@ -1035,7 +1035,7 @@ class TestTfImport:
         output = tmp_path / "tf-model.json"
         state_file = tmp_path / "terraform.tfstate"
         state_file.write_text("{}", encoding="utf-8")
-        with patch("infrasim.discovery.terraform.load_tf_state_file", return_value=graph):
+        with patch("faultray.discovery.terraform.load_tf_state_file", return_value=graph):
             result = runner.invoke(app, [
                 "tf-import", "--state", str(state_file), "--output", str(output),
             ])
@@ -1045,7 +1045,7 @@ class TestTfImport:
     def test_tf_import_dir(self, tmp_path):
         graph = create_demo_graph()
         output = tmp_path / "tf-model.json"
-        with patch("infrasim.discovery.terraform.load_tf_state_cmd", return_value=graph):
+        with patch("faultray.discovery.terraform.load_tf_state_cmd", return_value=graph):
             result = runner.invoke(app, [
                 "tf-import", "--dir", str(tmp_path), "--output", str(output),
             ])
@@ -1053,7 +1053,7 @@ class TestTfImport:
 
     def test_tf_import_dir_error_falls_back_to_hcl(self, tmp_path):
         """When terraform show fails with --dir, falls back to HCL parsing."""
-        with patch("infrasim.discovery.terraform.load_tf_state_cmd", side_effect=RuntimeError("terraform not found")):
+        with patch("faultray.discovery.terraform.load_tf_state_cmd", side_effect=RuntimeError("terraform not found")):
             result = runner.invoke(app, [
                 "tf-import", "--dir", str(tmp_path),
             ])
@@ -1063,7 +1063,7 @@ class TestTfImport:
     def test_tf_import_no_args(self, tmp_path):
         """When no --state or --dir, runs in current directory."""
         graph = create_demo_graph()
-        with patch("infrasim.discovery.terraform.load_tf_state_cmd", return_value=graph):
+        with patch("faultray.discovery.terraform.load_tf_state_cmd", return_value=graph):
             output = tmp_path / "out.json"
             result = runner.invoke(app, [
                 "tf-import", "--output", str(output),
@@ -1071,7 +1071,7 @@ class TestTfImport:
             assert result.exit_code == 0
 
     def test_tf_import_no_args_error(self, tmp_path):
-        with patch("infrasim.discovery.terraform.load_tf_state_cmd", side_effect=RuntimeError("no state")):
+        with patch("faultray.discovery.terraform.load_tf_state_cmd", side_effect=RuntimeError("no state")):
             result = runner.invoke(app, [
                 "tf-import",
             ])
@@ -1122,7 +1122,7 @@ class TestTfPlan:
         plan_file = tmp_path / "plan.out"
         plan_file.write_text("plan", encoding="utf-8")
 
-        with patch("infrasim.discovery.terraform.load_tf_plan_cmd", return_value=plan_result):
+        with patch("faultray.discovery.terraform.load_tf_plan_cmd", return_value=plan_result):
             result = runner.invoke(app, [
                 "tf-plan", str(plan_file),
             ])
@@ -1135,7 +1135,7 @@ class TestTfPlan:
         plan_file = tmp_path / "plan.out"
         plan_file.write_text("plan", encoding="utf-8")
 
-        with patch("infrasim.discovery.terraform.load_tf_plan_cmd", return_value=plan_result):
+        with patch("faultray.discovery.terraform.load_tf_plan_cmd", return_value=plan_result):
             result = runner.invoke(app, [
                 "tf-plan", str(plan_file),
             ])
@@ -1146,7 +1146,7 @@ class TestTfPlan:
         plan_file = tmp_path / "plan.out"
         plan_file.write_text("plan", encoding="utf-8")
 
-        with patch("infrasim.discovery.terraform.load_tf_plan_cmd", side_effect=RuntimeError("plan error")):
+        with patch("faultray.discovery.terraform.load_tf_plan_cmd", side_effect=RuntimeError("plan error")):
             result = runner.invoke(app, [
                 "tf-plan", str(plan_file),
             ])
@@ -1171,8 +1171,8 @@ class TestTfPlan:
         plan_file.write_text("plan", encoding="utf-8")
         html_path = tmp_path / "tf-report.html"
 
-        with patch("infrasim.discovery.terraform.load_tf_plan_cmd", return_value=plan_result):
-            with patch("infrasim.reporter.html_report.save_html_report"):
+        with patch("faultray.discovery.terraform.load_tf_plan_cmd", return_value=plan_result):
+            with patch("faultray.reporter.html_report.save_html_report"):
                 result = runner.invoke(app, [
                     "tf-plan", str(plan_file), "--html", str(html_path),
                 ])
@@ -1217,12 +1217,12 @@ class TestFeedUpdate:
         ]
         mock_scenario = SimpleNamespace(id="feed-scenario-1", name="test")
 
-        with patch("infrasim.feeds.sources.get_enabled_sources", return_value=[MagicMock()]):
-            with patch("infrasim.feeds.fetcher.fetch_all_feeds", new_callable=AsyncMock, return_value=articles):
+        with patch("faultray.feeds.sources.get_enabled_sources", return_value=[MagicMock()]):
+            with patch("faultray.feeds.fetcher.fetch_all_feeds", new_callable=AsyncMock, return_value=articles):
                 with patch("asyncio.run", return_value=articles) as mock_arun:
-                    with patch("infrasim.feeds.analyzer.analyze_articles", return_value=incidents):
-                        with patch("infrasim.feeds.analyzer.incidents_to_scenarios", return_value=[mock_scenario]):
-                            with patch("infrasim.feeds.store.save_feed_scenarios", return_value=Path("/tmp/store.json")):
+                    with patch("faultray.feeds.analyzer.analyze_articles", return_value=incidents):
+                        with patch("faultray.feeds.analyzer.incidents_to_scenarios", return_value=[mock_scenario]):
+                            with patch("faultray.feeds.store.save_feed_scenarios", return_value=Path("/tmp/store.json")):
                                 result = runner.invoke(app, [
                                     "feed-update", "--model", str(model_path),
                                 ])
@@ -1230,7 +1230,7 @@ class TestFeedUpdate:
                                 assert "Generated" in result.output
 
     def test_feed_update_no_articles(self, tmp_path):
-        with patch("infrasim.feeds.sources.get_enabled_sources", return_value=[MagicMock()]):
+        with patch("faultray.feeds.sources.get_enabled_sources", return_value=[MagicMock()]):
             with patch("asyncio.run", return_value=[]):
                 result = runner.invoke(app, ["feed-update"])
                 assert result.exit_code == 0
@@ -1238,9 +1238,9 @@ class TestFeedUpdate:
 
     def test_feed_update_no_incidents(self, tmp_path):
         articles = [self._mock_article()]
-        with patch("infrasim.feeds.sources.get_enabled_sources", return_value=[MagicMock()]):
+        with patch("faultray.feeds.sources.get_enabled_sources", return_value=[MagicMock()]):
             with patch("asyncio.run", return_value=articles):
-                with patch("infrasim.feeds.analyzer.analyze_articles", return_value=[]):
+                with patch("faultray.feeds.analyzer.analyze_articles", return_value=[]):
                     result = runner.invoke(app, ["feed-update"])
                     assert result.exit_code == 0
                     assert "No new incident" in result.output
@@ -1251,11 +1251,11 @@ class TestFeedUpdate:
         incidents = [self._mock_incident()]
         mock_scenario = SimpleNamespace(id="feed-scenario-1", name="test")
 
-        with patch("infrasim.feeds.sources.get_enabled_sources", return_value=[MagicMock()]):
+        with patch("faultray.feeds.sources.get_enabled_sources", return_value=[MagicMock()]):
             with patch("asyncio.run", return_value=articles):
-                with patch("infrasim.feeds.analyzer.analyze_articles", return_value=incidents):
-                    with patch("infrasim.feeds.analyzer.incidents_to_scenarios", return_value=[mock_scenario]):
-                        with patch("infrasim.feeds.store.save_feed_scenarios", return_value=Path("/tmp/store.json")):
+                with patch("faultray.feeds.analyzer.analyze_articles", return_value=incidents):
+                    with patch("faultray.feeds.analyzer.incidents_to_scenarios", return_value=[mock_scenario]):
+                        with patch("faultray.feeds.store.save_feed_scenarios", return_value=Path("/tmp/store.json")):
                             result = runner.invoke(app, [
                                 "feed-update", "--model", str(tmp_path / "nonexistent.json"),
                             ])
@@ -1287,8 +1287,8 @@ class TestFeedListExtended:
                 for i in range(15)
             ],
         }
-        with patch("infrasim.feeds.store.get_store_stats", return_value=mock_stats):
-            with patch("infrasim.feeds.store.load_store_raw", return_value=mock_raw):
+        with patch("faultray.feeds.store.get_store_stats", return_value=mock_stats):
+            with patch("faultray.feeds.store.load_store_raw", return_value=mock_raw):
                 result = runner.invoke(app, ["feed-list"])
                 assert result.exit_code == 0
                 assert "Feed Scenario Store" in result.output
@@ -1301,8 +1301,8 @@ class TestFeedListExtended:
             "article_count": 0,
             "store_path": "/tmp/store.json",
         }
-        with patch("infrasim.feeds.store.get_store_stats", return_value=mock_stats):
-            with patch("infrasim.feeds.store.load_store_raw", return_value={}):
+        with patch("faultray.feeds.store.get_store_stats", return_value=mock_stats):
+            with patch("faultray.feeds.store.load_store_raw", return_value={}):
                 result = runner.invoke(app, ["feed-list"])
                 assert result.exit_code == 0
                 assert "No feed data" in result.output
@@ -1336,8 +1336,8 @@ class TestFeedClear:
             "article_count": 10,
             "store_path": "/tmp/store.json",
         }
-        with patch("infrasim.feeds.store.get_store_stats", return_value=mock_stats):
-            with patch("infrasim.feeds.store.clear_store") as mock_clear:
+        with patch("faultray.feeds.store.get_store_stats", return_value=mock_stats):
+            with patch("faultray.feeds.store.clear_store") as mock_clear:
                 result = runner.invoke(app, ["feed-clear"])
                 assert result.exit_code == 0
                 assert "Cleared" in result.output
@@ -1350,7 +1350,7 @@ class TestFeedClear:
             "article_count": 0,
             "store_path": "/tmp/store.json",
         }
-        with patch("infrasim.feeds.store.get_store_stats", return_value=mock_stats):
+        with patch("faultray.feeds.store.get_store_stats", return_value=mock_stats):
             result = runner.invoke(app, ["feed-clear"])
             assert result.exit_code == 0
             assert "already empty" in result.output
@@ -1366,7 +1366,7 @@ class TestAdminExtended:
     def test_demo_with_web(self, tmp_path):
         """Test demo --web flag - mock uvicorn to avoid starting a server."""
         with patch("uvicorn.run") as mock_run:
-            with patch("infrasim.api.server.set_graph") as mock_set:
+            with patch("faultray.api.server.set_graph") as mock_set:
                 result = runner.invoke(app, ["demo", "--web", "--port", "9999"])
                 assert result.exit_code == 0
                 mock_set.assert_called_once()
@@ -1375,7 +1375,7 @@ class TestAdminExtended:
     def test_serve_with_model(self, tmp_path):
         model_path = _create_model_file(tmp_path)
         with patch("uvicorn.run") as mock_run:
-            with patch("infrasim.api.server.set_graph"):
+            with patch("faultray.api.server.set_graph"):
                 result = runner.invoke(app, [
                     "serve", "--model", str(model_path),
                     "--port", "9999",
@@ -1395,7 +1395,7 @@ class TestAdminExtended:
     def test_serve_with_prometheus(self, tmp_path):
         model_path = _create_model_file(tmp_path)
         with patch("uvicorn.run"):
-            with patch("infrasim.api.server.set_graph"):
+            with patch("faultray.api.server.set_graph"):
                 with patch.dict("os.environ", {}, clear=False):
                     result = runner.invoke(app, [
                         "serve", "--model", str(model_path),
@@ -1433,7 +1433,7 @@ class TestSimulateExtended:
         model_path = _create_model_file(tmp_path)
         plugins_dir = tmp_path / "plugins"
         plugins_dir.mkdir()
-        with patch("infrasim.plugins.registry.PluginRegistry.load_plugins_from_dir"):
+        with patch("faultray.plugins.registry.PluginRegistry.load_plugins_from_dir"):
             result = runner.invoke(app, [
                 "simulate", "--model", str(model_path),
                 "--plugins-dir", str(plugins_dir),
@@ -1451,7 +1451,7 @@ class TestSimulateExtended:
     def test_simulate_with_pdf(self, tmp_path):
         model_path = _create_model_file(tmp_path)
         pdf_path = tmp_path / "report.html"
-        with patch("infrasim.reporter.pdf_report.save_pdf_ready_html") as mock_pdf:
+        with patch("faultray.reporter.pdf_report.save_pdf_ready_html") as mock_pdf:
             result = runner.invoke(app, [
                 "simulate", "--model", str(model_path),
                 "--pdf", str(pdf_path),
@@ -1462,7 +1462,7 @@ class TestSimulateExtended:
     def test_simulate_with_md(self, tmp_path):
         model_path = _create_model_file(tmp_path)
         md_path = tmp_path / "report.md"
-        with patch("infrasim.reporter.pdf_report.export_markdown") as mock_md:
+        with patch("faultray.reporter.pdf_report.export_markdown") as mock_md:
             result = runner.invoke(app, [
                 "simulate", "--model", str(model_path),
                 "--md", str(md_path),
@@ -1472,8 +1472,8 @@ class TestSimulateExtended:
 
     def test_simulate_with_slack_webhook(self, tmp_path):
         model_path = _create_model_file(tmp_path)
-        with patch("infrasim.integrations.webhooks.send_slack_notification", new_callable=AsyncMock, return_value=True):
-            with patch("infrasim.api.server._report_to_dict", return_value={}):
+        with patch("faultray.integrations.webhooks.send_slack_notification", new_callable=AsyncMock, return_value=True):
+            with patch("faultray.api.server._report_to_dict", return_value={}):
                 result = runner.invoke(app, [
                     "simulate", "--model", str(model_path),
                     "--slack-webhook", "https://hooks.slack.com/test",
@@ -1482,8 +1482,8 @@ class TestSimulateExtended:
 
     def test_simulate_with_pagerduty_key(self, tmp_path):
         model_path = _create_model_file(tmp_path)
-        with patch("infrasim.integrations.webhooks.send_pagerduty_event", new_callable=AsyncMock, return_value=False):
-            with patch("infrasim.api.server._report_to_dict", return_value={}):
+        with patch("faultray.integrations.webhooks.send_pagerduty_event", new_callable=AsyncMock, return_value=False):
+            with patch("faultray.api.server._report_to_dict", return_value={}):
                 result = runner.invoke(app, [
                     "simulate", "--model", str(model_path),
                     "--pagerduty-key", "test-key",
@@ -1492,8 +1492,8 @@ class TestSimulateExtended:
 
     def test_simulate_webhook_error(self, tmp_path):
         model_path = _create_model_file(tmp_path)
-        with patch("infrasim.api.server._report_to_dict", return_value={}):
-            with patch("infrasim.integrations.webhooks.send_slack_notification", new_callable=AsyncMock, side_effect=Exception("connection error")):
+        with patch("faultray.api.server._report_to_dict", return_value={}):
+            with patch("faultray.integrations.webhooks.send_slack_notification", new_callable=AsyncMock, side_effect=Exception("connection error")):
                 result = runner.invoke(app, [
                     "simulate", "--model", str(model_path),
                     "--slack-webhook", "https://hooks.slack.com/test",
@@ -1504,8 +1504,8 @@ class TestSimulateExtended:
     def test_simulate_slack_notification_failed(self, tmp_path):
         """Test that slack notification failure (returns False) shows failure message."""
         model_path = _create_model_file(tmp_path)
-        with patch("infrasim.integrations.webhooks.send_slack_notification", new_callable=AsyncMock, return_value=False):
-            with patch("infrasim.api.server._report_to_dict", return_value={}):
+        with patch("faultray.integrations.webhooks.send_slack_notification", new_callable=AsyncMock, return_value=False):
+            with patch("faultray.api.server._report_to_dict", return_value={}):
                 result = runner.invoke(app, [
                     "simulate", "--model", str(model_path),
                     "--slack-webhook", "https://hooks.slack.com/test",
@@ -1515,9 +1515,9 @@ class TestSimulateExtended:
 
     def test_simulate_with_both_webhooks(self, tmp_path):
         model_path = _create_model_file(tmp_path)
-        with patch("infrasim.api.server._report_to_dict", return_value={}):
-            with patch("infrasim.integrations.webhooks.send_slack_notification", new_callable=AsyncMock, return_value=True):
-                with patch("infrasim.integrations.webhooks.send_pagerduty_event", new_callable=AsyncMock, return_value=True):
+        with patch("faultray.api.server._report_to_dict", return_value={}):
+            with patch("faultray.integrations.webhooks.send_slack_notification", new_callable=AsyncMock, return_value=True):
+                with patch("faultray.integrations.webhooks.send_pagerduty_event", new_callable=AsyncMock, return_value=True):
                     result = runner.invoke(app, [
                         "simulate", "--model", str(model_path),
                         "--slack-webhook", "https://hooks.slack.com/test",
@@ -1536,7 +1536,7 @@ class TestDynamicExtended:
     def test_dynamic_with_html(self, tmp_path):
         model_path = _create_model_file(tmp_path)
         html_path = tmp_path / "dynamic-report.html"
-        with patch("infrasim.reporter.html_report.save_html_report"):
+        with patch("faultray.reporter.html_report.save_html_report"):
             result = runner.invoke(app, [
                 "dynamic", "--model", str(model_path),
                 "--duration", "10", "--step", "5",

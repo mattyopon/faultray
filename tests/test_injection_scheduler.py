@@ -6,9 +6,9 @@ from datetime import datetime, timezone
 
 import pytest
 
-from infrasim.model.components import Component, ComponentType, Dependency
-from infrasim.model.graph import InfraGraph
-from infrasim.simulator.injection_scheduler import (
+from faultray.model.components import Component, ComponentType, Dependency
+from faultray.model.graph import InfraGraph
+from faultray.simulator.injection_scheduler import (
     BlackoutWindow,
     EscalationLevel,
     InjectionResult,

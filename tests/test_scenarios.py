@@ -2,8 +2,8 @@
 
 import pytest
 
-from infrasim.model.components import Capacity, Component, ComponentType, FailoverConfig
-from infrasim.simulator.scenarios import (
+from faultray.model.components import Capacity, Component, ComponentType, FailoverConfig
+from faultray.simulator.scenarios import (
     DynamicScenario,
     Fault,
     FaultType,
@@ -148,7 +148,7 @@ def test_scenario_negative_traffic_multiplier():
 
 def test_dynamic_scenario_zero_duration_rejected():
     """DynamicScenario with zero duration should raise ValueError."""
-    from infrasim.simulator.traffic import TrafficPattern  # resolve forward ref
+    from faultray.simulator.traffic import TrafficPattern  # resolve forward ref
     DynamicScenario.model_rebuild(_types_namespace={"TrafficPattern": TrafficPattern})
     with pytest.raises(ValueError, match="must be > 0"):
         DynamicScenario(
@@ -159,7 +159,7 @@ def test_dynamic_scenario_zero_duration_rejected():
 
 def test_dynamic_scenario_zero_time_step_rejected():
     """DynamicScenario with zero time_step should raise ValueError."""
-    from infrasim.simulator.traffic import TrafficPattern  # resolve forward ref
+    from faultray.simulator.traffic import TrafficPattern  # resolve forward ref
     DynamicScenario.model_rebuild(_types_namespace={"TrafficPattern": TrafficPattern})
     with pytest.raises(ValueError, match="must be > 0"):
         DynamicScenario(

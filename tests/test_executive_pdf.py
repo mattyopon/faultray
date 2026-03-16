@@ -4,8 +4,8 @@ from __future__ import annotations
 
 import pytest
 
-from infrasim.ai.analyzer import AIAnalysisReport, AIRecommendation
-from infrasim.model.components import (
+from faultray.ai.analyzer import AIAnalysisReport, AIRecommendation
+from faultray.model.components import (
     Component,
     ComponentType,
     CostProfile,
@@ -13,8 +13,8 @@ from infrasim.model.components import (
     FailoverConfig,
     SecurityProfile,
 )
-from infrasim.model.graph import InfraGraph
-from infrasim.reporter.executive_pdf import (
+from faultray.model.graph import InfraGraph
+from faultray.reporter.executive_pdf import (
     ExecutiveReport,
     ExecutiveReportGenerator,
     ReportSection,
@@ -23,9 +23,9 @@ from infrasim.reporter.executive_pdf import (
     _traffic_light_class,
     _traffic_light_label,
 )
-from infrasim.simulator.cascade import CascadeChain
-from infrasim.simulator.engine import ScenarioResult, SimulationReport
-from infrasim.simulator.scenarios import Fault, FaultType, Scenario
+from faultray.simulator.cascade import CascadeChain
+from faultray.simulator.engine import ScenarioResult, SimulationReport
+from faultray.simulator.scenarios import Fault, FaultType, Scenario
 
 
 # ---------------------------------------------------------------------------

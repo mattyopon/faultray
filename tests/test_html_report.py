@@ -6,9 +6,9 @@ from pathlib import Path
 
 import pytest
 
-from infrasim.model.components import HealthStatus
-from infrasim.model.demo import create_demo_graph
-from infrasim.reporter.html_report import (
+from faultray.model.components import HealthStatus
+from faultray.model.demo import create_demo_graph
+from faultray.reporter.html_report import (
     _build_dependency_svg,
     _build_finding,
     _health_class,
@@ -18,9 +18,9 @@ from infrasim.reporter.html_report import (
     generate_html_report,
     save_html_report,
 )
-from infrasim.simulator.cascade import CascadeChain, CascadeEffect
-from infrasim.simulator.engine import ScenarioResult, SimulationEngine, SimulationReport
-from infrasim.simulator.scenarios import Fault, FaultType, Scenario
+from faultray.simulator.cascade import CascadeChain, CascadeEffect
+from faultray.simulator.engine import ScenarioResult, SimulationEngine, SimulationReport
+from faultray.simulator.scenarios import Fault, FaultType, Scenario
 
 
 # ---------------------------------------------------------------------------
@@ -157,7 +157,7 @@ class TestDependencySvg:
         assert "arrowhead" in svg
 
     def test_svg_empty_graph(self):
-        from infrasim.model.graph import InfraGraph
+        from faultray.model.graph import InfraGraph
         graph = InfraGraph()
         svg = _build_dependency_svg(graph)
         assert "No components" in svg
@@ -206,8 +206,8 @@ class TestSaveHtmlReport:
         assert "Resilience" in content
 
     def test_save_with_minimal_report(self, tmp_path, minimal_report):
-        from infrasim.model.graph import InfraGraph
-        from infrasim.model.components import Component, ComponentType
+        from faultray.model.graph import InfraGraph
+        from faultray.model.components import Component, ComponentType
 
         graph = InfraGraph()
         graph.add_component(Component(

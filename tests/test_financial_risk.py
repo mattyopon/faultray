@@ -8,7 +8,7 @@ from dataclasses import dataclass, field
 
 import pytest
 
-from infrasim.model.components import (
+from faultray.model.components import (
     AutoScalingConfig,
     CircuitBreakerConfig,
     Component,
@@ -20,8 +20,8 @@ from infrasim.model.components import (
     OperationalTeamConfig,
     ResourceMetrics,
 )
-from infrasim.model.graph import InfraGraph
-from infrasim.simulator.financial_risk import (
+from faultray.model.graph import InfraGraph
+from faultray.simulator.financial_risk import (
     FinancialRiskEngine,
     FinancialRiskReport,
     FinancialRiskResult,

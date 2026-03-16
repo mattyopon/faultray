@@ -53,7 +53,7 @@ Open the Command Palette (`Ctrl+Shift+P` / `Cmd+Shift+P`) and search for:
 
 | Setting | Default | Description |
 |---------|---------|-------------|
-| `faultray.modelPath` | `infrasim-model.json` | Path to infrastructure model file |
+| `faultray.modelPath` | `faultray-model.json` | Path to infrastructure model file |
 | `faultray.autoScan` | `false` | Auto-scan on file save |
 
 ## Development / 開発

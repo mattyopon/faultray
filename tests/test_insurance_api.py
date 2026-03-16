@@ -5,13 +5,13 @@ from __future__ import annotations
 import pytest
 from fastapi.testclient import TestClient
 
-from infrasim.api.insurance_api import (
+from faultray.api.insurance_api import (
     InsuranceScore,
     _score_to_grade,
     compute_insurance_score,
 )
-from infrasim.api.server import app, set_graph
-from infrasim.model.components import (
+from faultray.api.server import app, set_graph
+from faultray.model.components import (
     AutoScalingConfig,
     Component,
     ComponentType,
@@ -21,7 +21,7 @@ from infrasim.model.components import (
     SecurityProfile,
     CostProfile,
 )
-from infrasim.model.graph import InfraGraph
+from faultray.model.graph import InfraGraph
 
 
 # ---------------------------------------------------------------------------
@@ -32,7 +32,7 @@ from infrasim.model.graph import InfraGraph
 @pytest.fixture(autouse=True)
 def _reset_graph():
     """Reset server graph state and rate limiter before/after each test."""
-    import infrasim.api.server as _srv
+    import faultray.api.server as _srv
     set_graph(None)
     _srv._rate_limiter.requests.clear()
     yield

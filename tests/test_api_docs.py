@@ -7,8 +7,8 @@ import time
 import pytest
 from fastapi.testclient import TestClient
 
-from infrasim.api.server import app, set_graph
-from infrasim.model.demo import create_demo_graph
+from faultray.api.server import app, set_graph
+from faultray.model.demo import create_demo_graph
 
 
 @pytest.fixture(autouse=True)
@@ -223,13 +223,13 @@ class TestAPIVersioningModule:
     """Unit tests for the api_versioning module."""
 
     def test_rate_limiter_allows_requests(self):
-        from infrasim.api.api_versioning import RateLimiter
+        from faultray.api.api_versioning import RateLimiter
 
         rl = RateLimiter(window_seconds=60)
         assert rl.check_limit("test-key") is True
 
     def test_rate_limiter_blocks_excess(self):
-        from infrasim.api.api_versioning import RateLimiter
+        from faultray.api.api_versioning import RateLimiter
 
         rl = RateLimiter(window_seconds=60)
         rl._tiers["test-key"] = "free"  # 30 req/min
@@ -239,7 +239,7 @@ class TestAPIVersioningModule:
         assert rl.check_limit("test-key") is False
 
     def test_rate_limiter_get_remaining(self):
-        from infrasim.api.api_versioning import RateLimiter
+        from faultray.api.api_versioning import RateLimiter
 
         rl = RateLimiter(window_seconds=60)
         # Default free tier = 30
@@ -248,21 +248,21 @@ class TestAPIVersioningModule:
         assert rl.get_remaining("new-key") == 29
 
     def test_rate_limiter_set_tier(self):
-        from infrasim.api.api_versioning import RateLimiter
+        from faultray.api.api_versioning import RateLimiter
 
         rl = RateLimiter(window_seconds=60)
         rl.set_tier("pro-key", "pro")
         assert rl._limit_for("pro-key") == 600
 
     def test_rate_limiter_invalid_tier(self):
-        from infrasim.api.api_versioning import RateLimiter
+        from faultray.api.api_versioning import RateLimiter
 
         rl = RateLimiter(window_seconds=60)
         with pytest.raises(ValueError, match="Unknown tier"):
             rl.set_tier("key", "nonexistent")
 
     def test_rate_limiter_reset_time(self):
-        from infrasim.api.api_versioning import RateLimiter
+        from faultray.api.api_versioning import RateLimiter
 
         rl = RateLimiter(window_seconds=60)
         rl.check_limit("time-key")
@@ -270,7 +270,7 @@ class TestAPIVersioningModule:
         assert reset is not None
 
     def test_rate_limiter_usage_tracking(self):
-        from infrasim.api.api_versioning import RateLimiter
+        from faultray.api.api_versioning import RateLimiter
 
         rl = RateLimiter(window_seconds=60)
         assert rl.get_usage("usage-key") == 0
@@ -279,7 +279,7 @@ class TestAPIVersioningModule:
         assert rl.get_usage("usage-key") == 2
 
     def test_api_version_dataclass(self):
-        from infrasim.api.api_versioning import APIVersion
+        from faultray.api.api_versioning import APIVersion
 
         v = APIVersion(
             version="v3",
@@ -291,7 +291,7 @@ class TestAPIVersioningModule:
         assert v.deprecation_date is None
 
     def test_health_check(self):
-        from infrasim.api.api_versioning import APIHealthCheck
+        from faultray.api.api_versioning import APIHealthCheck
 
         hc = APIHealthCheck(version="1.0.0-test")
         result = hc.check(component_count=5)
@@ -301,7 +301,7 @@ class TestAPIVersioningModule:
         assert result["uptime_seconds"] >= 0
 
     def test_list_versions(self):
-        from infrasim.api.api_versioning import list_versions
+        from faultray.api.api_versioning import list_versions
 
         versions = list_versions()
         assert len(versions) >= 2

@@ -4,7 +4,7 @@ import json
 
 import yaml
 
-from infrasim.model.components import (
+from faultray.model.components import (
     AutoScalingConfig,
     Capacity,
     Component,
@@ -13,8 +13,8 @@ from infrasim.model.components import (
     RegionConfig,
     ResourceMetrics,
 )
-from infrasim.model.graph import InfraGraph, Dependency
-from infrasim.simulator.autoscaling_engine import (
+from faultray.model.graph import InfraGraph, Dependency
+from faultray.simulator.autoscaling_engine import (
     AutoScalingRecommendation,
     AutoScalingRecommendationEngine,
     _DEFAULT_TARGET_UTILIZATION,
@@ -49,7 +49,7 @@ def _build_graph() -> InfraGraph:
         autoscaling=AutoScalingConfig(enabled=True, min_replicas=2, max_replicas=5),
     ))
     # Dependencies: lb -> app -> db, app -> cache
-    from infrasim.model.components import Dependency as DepModel
+    from faultray.model.components import Dependency as DepModel
     graph.add_dependency(DepModel(source_id="lb", target_id="app"))
     graph.add_dependency(DepModel(source_id="app", target_id="db"))
     graph.add_dependency(DepModel(source_id="app", target_id="cache", dependency_type="optional"))
@@ -104,7 +104,7 @@ def test_spof_increases_confidence():
         id="consumer", name="Consumer", type=ComponentType.APP_SERVER,
         replicas=2, metrics=ResourceMetrics(cpu_percent=65),
     ))
-    from infrasim.model.components import Dependency as DepModel
+    from faultray.model.components import Dependency as DepModel
     graph.add_dependency(DepModel(source_id="consumer", target_id="spof"))
 
     engine = AutoScalingRecommendationEngine(graph)

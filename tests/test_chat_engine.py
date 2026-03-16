@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import pytest
 
-from infrasim.model.components import (
+from faultray.model.components import (
     AutoScalingConfig,
     CircuitBreakerConfig,
     Component,
@@ -13,8 +13,8 @@ from infrasim.model.components import (
     FailoverConfig,
     RegionConfig,
 )
-from infrasim.model.graph import InfraGraph
-from infrasim.api.chat_engine import (
+from faultray.model.graph import InfraGraph
+from faultray.api.chat_engine import (
     ChatEngine,
     ChatIntent,
     ChatResponse,

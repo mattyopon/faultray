@@ -16,7 +16,7 @@ import time
 
 import pytest
 
-from infrasim.model.components import (
+from faultray.model.components import (
     AutoScalingConfig,
     CacheWarmingConfig,
     Capacity,
@@ -29,9 +29,9 @@ from infrasim.model.components import (
     ResourceMetrics,
     SingleflightConfig,
 )
-from infrasim.model.graph import InfraGraph
-from infrasim.simulator.cascade import CascadeChain, CascadeEffect, CascadeEngine
-from infrasim.simulator.dynamic_engine import (
+from faultray.model.graph import InfraGraph
+from faultray.simulator.cascade import CascadeChain, CascadeEffect, CascadeEngine
+from faultray.simulator.dynamic_engine import (
     ComponentSnapshot,
     DynamicScenario,
     DynamicScenarioResult,
@@ -42,8 +42,8 @@ from infrasim.simulator.dynamic_engine import (
     _CircuitBreakerDynamicState,
     _ComponentDynamicState,
 )
-from infrasim.simulator.scenarios import Fault, FaultType
-from infrasim.simulator.traffic import (
+from faultray.simulator.scenarios import Fault, FaultType
+from faultray.simulator.traffic import (
     TrafficPattern,
     TrafficPatternType,
     create_ddos_volumetric,

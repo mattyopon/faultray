@@ -1,21 +1,21 @@
 """Comprehensive tests for the Dependency Health Propagation Simulator.
 
 Targets 99%+ line/branch coverage of
-``infrasim.simulator.dependency_health``.
+``faultray.simulator.dependency_health``.
 """
 
 from __future__ import annotations
 
 import pytest
 
-from infrasim.model.components import (
+from faultray.model.components import (
     Component,
     ComponentType,
     Dependency,
     HealthStatus,
 )
-from infrasim.model.graph import InfraGraph
-from infrasim.simulator.dependency_health import (
+from faultray.model.graph import InfraGraph
+from faultray.simulator.dependency_health import (
     DependencyHealthEngine,
     HealthImpact,
     PropagationMode,

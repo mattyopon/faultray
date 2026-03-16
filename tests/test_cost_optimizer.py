@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import pytest
 
-from infrasim.model.components import (
+from faultray.model.components import (
     AutoScalingConfig,
     CircuitBreakerConfig,
     Component,
@@ -14,8 +14,8 @@ from infrasim.model.components import (
     HealthStatus,
     ResourceMetrics,
 )
-from infrasim.model.graph import InfraGraph
-from infrasim.simulator.cost_optimizer import (
+from faultray.model.graph import InfraGraph
+from faultray.simulator.cost_optimizer import (
     CostOptimizer,
     OptimizationReport,
     OptimizationSuggestion,
@@ -671,7 +671,7 @@ class TestParetoAnalysis:
         frontier = opt.pareto_analysis()
         # The frontier includes the current cost (sorted by cost, it might not be first
         # if there are cheaper options, but it should appear somewhere)
-        from infrasim.simulator.pareto_optimizer import _calculate_base_cost
+        from faultray.simulator.pareto_optimizer import _calculate_base_cost
         current_cost = round(_calculate_base_cost(g), 2)
         costs = [p["cost"] for p in frontier]
         assert current_cost in costs

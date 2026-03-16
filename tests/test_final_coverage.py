@@ -1,4 +1,4 @@
-"""Targeted tests covering the remaining uncovered lines across InfraSim modules.
+"""Targeted tests covering the remaining uncovered lines across FaultRay modules.
 
 Groups:
   1. Simple guard clauses and defaults
@@ -16,7 +16,7 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
-from infrasim.model.components import (
+from faultray.model.components import (
     AutoScalingConfig,
     Capacity,
     CircuitBreakerConfig,
@@ -30,7 +30,7 @@ from infrasim.model.components import (
     RetryStrategy,
     SLOTarget,
 )
-from infrasim.model.graph import InfraGraph
+from faultray.model.graph import InfraGraph
 
 
 # ===================================================================
@@ -94,7 +94,7 @@ class TestFeedSourcesGetEnabled:
     """Cover sources.py line 69: return only enabled sources."""
 
     def test_get_enabled_sources_returns_only_enabled(self):
-        from infrasim.feeds.sources import DEFAULT_SOURCES, FeedSource, get_enabled_sources
+        from faultray.feeds.sources import DEFAULT_SOURCES, FeedSource, get_enabled_sources
 
         # All defaults should be enabled
         result = get_enabled_sources()
@@ -103,8 +103,8 @@ class TestFeedSourcesGetEnabled:
         assert len(result) == len([s for s in DEFAULT_SOURCES if s.enabled])
 
     def test_get_enabled_sources_filters_disabled(self, monkeypatch):
-        from infrasim.feeds import sources
-        from infrasim.feeds.sources import FeedSource
+        from faultray.feeds import sources
+        from faultray.feeds.sources import FeedSource
 
         test_sources = [
             FeedSource(name="Active", url="https://a.com", enabled=True),
@@ -121,18 +121,18 @@ class TestAuthIsPublic:
     """Cover auth.py line 59: _is_public('/auth/login') returns True."""
 
     def test_auth_path_is_public(self):
-        from infrasim.api.auth import _is_public
+        from faultray.api.auth import _is_public
 
         assert _is_public("/auth/login") is True
         assert _is_public("/auth/callback") is True
 
     def test_static_subpath_is_public(self):
-        from infrasim.api.auth import _is_public
+        from faultray.api.auth import _is_public
 
         assert _is_public("/static/js/app.js") is True
 
     def test_api_path_is_not_public(self):
-        from infrasim.api.auth import _is_public
+        from faultray.api.auth import _is_public
 
         assert _is_public("/api/components") is False
 
@@ -141,20 +141,20 @@ class TestPdfReportRiskLabel:
     """Cover pdf_report.py line 80: return 'LOW' when score < 4.0."""
 
     def test_risk_label_low(self):
-        from infrasim.reporter.pdf_report import _risk_label
+        from faultray.reporter.pdf_report import _risk_label
 
         assert _risk_label(3.0) == "LOW"
         assert _risk_label(0.0) == "LOW"
         assert _risk_label(3.9) == "LOW"
 
     def test_risk_label_warning(self):
-        from infrasim.reporter.pdf_report import _risk_label
+        from faultray.reporter.pdf_report import _risk_label
 
         assert _risk_label(4.0) == "WARNING"
         assert _risk_label(6.9) == "WARNING"
 
     def test_risk_label_critical(self):
-        from infrasim.reporter.pdf_report import _risk_label
+        from faultray.reporter.pdf_report import _risk_label
 
         assert _risk_label(7.0) == "CRITICAL"
         assert _risk_label(10.0) == "CRITICAL"
@@ -166,7 +166,7 @@ class TestReportPrintSummaryLowScore:
     def test_print_infrastructure_summary_low_score(self):
         from rich.console import Console
 
-        from infrasim.reporter.report import print_infrastructure_summary
+        from faultray.reporter.report import print_infrastructure_summary
 
         # Build graph with many SPOFs to get low score
         graph = InfraGraph()
@@ -204,7 +204,7 @@ class TestHtmlReportMissingPosition:
     """Cover html_report.py line 201: guard clause for comp.id not in positions."""
 
     def test_build_dependency_svg_with_custom_component(self):
-        from infrasim.reporter.html_report import _build_dependency_svg
+        from faultray.reporter.html_report import _build_dependency_svg
 
         # Create a graph with a component whose type is "custom" (layer 1)
         graph = InfraGraph()
@@ -243,8 +243,8 @@ class TestCapacityEngineSliTimelineEmpty:
     when sli_timeline is empty."""
 
     def test_forecast_with_simulation_empty_sli(self, monkeypatch):
-        from infrasim.simulator.capacity_engine import CapacityPlanningEngine
-        from infrasim.simulator.ops_engine import OpsSimulationEngine, OpsSimulationResult
+        from faultray.simulator.capacity_engine import CapacityPlanningEngine
+        from faultray.simulator.ops_engine import OpsSimulationEngine, OpsSimulationResult
 
         graph = _simple_graph()
         engine = CapacityPlanningEngine(graph)
@@ -257,7 +257,7 @@ class TestCapacityEngineSliTimelineEmpty:
         mock_ops.run_ops_scenario.return_value = mock_result
 
         monkeypatch.setattr(
-            "infrasim.simulator.capacity_engine.OpsSimulationEngine",
+            "faultray.simulator.capacity_engine.OpsSimulationEngine",
             lambda g: mock_ops,
         )
 
@@ -274,7 +274,7 @@ class TestCapacityEngineMttrDefault:
     """Cover capacity_engine.py line 420: mttr_min = 30.0 default."""
 
     def test_estimate_burn_rate_with_zero_mttr(self):
-        from infrasim.simulator.capacity_engine import CapacityPlanningEngine
+        from faultray.simulator.capacity_engine import CapacityPlanningEngine
 
         graph = InfraGraph()
         comp = _make_component(
@@ -304,7 +304,7 @@ class TestDDoSSlolorisZeroDuration:
     """Cover traffic.py line 216: DDoS_SLOWLORIS with duration_seconds <= 0."""
 
     def test_slowloris_zero_duration(self):
-        from infrasim.simulator.traffic import TrafficPattern, TrafficPatternType
+        from faultray.simulator.traffic import TrafficPattern, TrafficPatternType
 
         pattern = TrafficPattern(
             pattern_type=TrafficPatternType.DDoS_SLOWLORIS,
@@ -328,7 +328,7 @@ class TestDDoSSlolorisZeroDuration:
         assert result == pattern.peak_multiplier  # line 216: return self.peak_multiplier
 
     def test_slowloris_negative_duration(self):
-        from infrasim.simulator.traffic import TrafficPattern, TrafficPatternType
+        from faultray.simulator.traffic import TrafficPattern, TrafficPatternType
 
         pattern = TrafficPattern(
             pattern_type=TrafficPatternType.DDoS_SLOWLORIS,
@@ -343,7 +343,7 @@ class TestFlashCrowdNoDecayTime:
     """Cover traffic.py line 238: FLASH_CROWD decay_duration <= 0."""
 
     def test_flash_crowd_ramp_equals_duration(self):
-        from infrasim.simulator.traffic import TrafficPattern, TrafficPatternType
+        from faultray.simulator.traffic import TrafficPattern, TrafficPatternType
 
         # ramp_seconds >= duration_seconds -> decay_duration = duration - ramp <= 0
         pattern = TrafficPattern(
@@ -357,7 +357,7 @@ class TestFlashCrowdNoDecayTime:
         assert result == 8.0
 
     def test_flash_crowd_ramp_exceeds_duration(self):
-        from infrasim.simulator.traffic import TrafficPattern, TrafficPatternType
+        from faultray.simulator.traffic import TrafficPattern, TrafficPatternType
 
         pattern = TrafficPattern(
             pattern_type=TrafficPatternType.FLASH_CROWD,
@@ -374,7 +374,7 @@ class TestDiurnalZeroDuration:
     """Cover traffic.py line 252: DIURNAL with duration_seconds <= 0."""
 
     def test_diurnal_zero_duration(self):
-        from infrasim.simulator.traffic import TrafficPattern, TrafficPatternType
+        from faultray.simulator.traffic import TrafficPattern, TrafficPatternType
 
         pattern = TrafficPattern(
             pattern_type=TrafficPatternType.DIURNAL,
@@ -385,7 +385,7 @@ class TestDiurnalZeroDuration:
         assert result == 3.0  # return self.peak_multiplier
 
     def test_diurnal_negative_duration(self):
-        from infrasim.simulator.traffic import TrafficPattern, TrafficPatternType
+        from faultray.simulator.traffic import TrafficPattern, TrafficPatternType
 
         pattern = TrafficPattern(
             pattern_type=TrafficPatternType.DIURNAL,
@@ -405,7 +405,7 @@ class TestCascadeLatencyNoneComponent:
     """Cover cascade.py line 247: continue when comp is None in BFS loop."""
 
     def test_latency_cascade_with_missing_component_in_graph(self):
-        from infrasim.simulator.cascade import CascadeEngine
+        from faultray.simulator.cascade import CascadeEngine
 
         graph = InfraGraph()
         slow = _make_component(
@@ -445,7 +445,7 @@ class TestOpsEngineSLOTrackerUnmeasured:
     _budget_consumed and _burn_rate when no violations recorded."""
 
     def test_budget_consumed_returns_zero_for_unmeasured(self):
-        from infrasim.simulator.ops_engine import SLOTracker
+        from faultray.simulator.ops_engine import SLOTracker
 
         graph = InfraGraph()
         comp = _make_component("app1")
@@ -462,7 +462,7 @@ class TestOpsEngineSLOTrackerUnmeasured:
         assert consumed == 0.0
 
     def test_burn_rate_returns_zero_for_unmeasured(self):
-        from infrasim.simulator.ops_engine import SLOTracker
+        from faultray.simulator.ops_engine import SLOTracker
 
         graph = InfraGraph()
         comp = _make_component("app1")
@@ -479,7 +479,7 @@ class TestOpsEngineSLOTrackerUnmeasured:
         assert burn == 0.0
 
     def test_burn_rate_returns_zero_for_empty_recent_window(self):
-        from infrasim.simulator.ops_engine import SLOTracker
+        from faultray.simulator.ops_engine import SLOTracker
 
         graph = InfraGraph()
         comp = _make_component("app1")
@@ -511,9 +511,9 @@ class TestAIAnalyzerSetLLMProvider:
     """Cover analyzer.py line 125: set_llm_provider."""
 
     def test_set_llm_provider(self):
-        from infrasim.ai.analyzer import InfraSimAnalyzer
+        from faultray.ai.analyzer import FaultRayAnalyzer
 
-        analyzer = InfraSimAnalyzer()
+        analyzer = FaultRayAnalyzer()
         assert analyzer._llm_provider is None
 
         mock_provider = MagicMock()
@@ -525,8 +525,8 @@ class TestAIAnalyzerSPOFMultiReplica:
     """Cover analyzer.py line 213: skip multi-replica components in SPOF detection."""
 
     def test_spof_detection_skips_multi_replica(self):
-        from infrasim.ai.analyzer import InfraSimAnalyzer
-        from infrasim.simulator.engine import SimulationReport
+        from faultray.ai.analyzer import FaultRayAnalyzer
+        from faultray.simulator.engine import SimulationReport
 
         graph = InfraGraph()
         # Multi-replica component should be skipped
@@ -537,7 +537,7 @@ class TestAIAnalyzerSPOFMultiReplica:
             Dependency(source_id="app2", target_id="app1", dependency_type="requires")
         )
 
-        analyzer = InfraSimAnalyzer()
+        analyzer = FaultRayAnalyzer()
         recs = analyzer._detect_spofs(graph)
         # app1 has 3 replicas -> skip; app2 has 1 replica but depends on app1
         # Check that none of the recommendations target app1 (multi-replica)
@@ -549,7 +549,7 @@ class TestAIAnalyzerDeduplication:
     """Cover analyzer.py line 415: deduplication in _detect_missing_protections."""
 
     def test_missing_protections_deduplication(self):
-        from infrasim.ai.analyzer import InfraSimAnalyzer
+        from faultray.ai.analyzer import FaultRayAnalyzer
 
         graph = InfraGraph()
         graph.add_component(_make_component("app1"))
@@ -562,7 +562,7 @@ class TestAIAnalyzerDeduplication:
         # the seen_edges deduplication prevents duplicates
         graph.add_dependency(dep)
 
-        analyzer = InfraSimAnalyzer()
+        analyzer = FaultRayAnalyzer()
         recs = analyzer._detect_missing_protections(graph)
 
         # Should not have duplicates for the same edge
@@ -575,7 +575,7 @@ class TestPrometheusSkipMissingInstance:
 
     @pytest.mark.asyncio
     async def test_discover_skips_empty_instance(self):
-        from infrasim.discovery.prometheus import PrometheusClient
+        from faultray.discovery.prometheus import PrometheusClient
 
         client = PrometheusClient(url="http://localhost:9090")
 
@@ -604,7 +604,7 @@ class TestPrometheusSkipMissingInstance:
 
     @pytest.mark.asyncio
     async def test_update_metrics_skips_missing_component(self):
-        from infrasim.discovery.prometheus import PrometheusClient
+        from faultray.discovery.prometheus import PrometheusClient
 
         client = PrometheusClient(url="http://localhost:9090")
 
@@ -632,7 +632,7 @@ class TestTerraformDuplicateComponents:
     """Cover terraform.py lines 433, 443: duplicate component IDs and dependency refs."""
 
     def test_infer_dependencies_with_value_references(self):
-        from infrasim.discovery.terraform import _find_references_in_values, parse_tf_state
+        from faultray.discovery.terraform import _find_references_in_values, parse_tf_state
 
         graph = InfraGraph()
         app = _make_component("aws_instance.app", "app", ComponentType.APP_SERVER)
@@ -668,8 +668,8 @@ class TestFeedAnalyzerDeduplication:
     """Cover feeds/analyzer.py line 320: duplicate incident deduplication."""
 
     def test_analyze_articles_deduplicates(self):
-        from infrasim.feeds.analyzer import analyze_articles
-        from infrasim.feeds.fetcher import FeedArticle
+        from faultray.feeds.analyzer import analyze_articles
+        from faultray.feeds.fetcher import FeedArticle
 
         # Same article appears twice
         article = FeedArticle(
@@ -700,7 +700,7 @@ class TestPluginLoadingException:
     """Cover registry.py lines 63-64: exception during plugin loading."""
 
     def test_load_malformed_plugin(self, tmp_path):
-        from infrasim.plugins.registry import PluginRegistry
+        from faultray.plugins.registry import PluginRegistry
 
         PluginRegistry.clear()
 
@@ -718,7 +718,7 @@ class TestPluginLoadingException:
         PluginRegistry.clear()
 
     def test_load_plugin_with_syntax_error(self, tmp_path):
-        from infrasim.plugins.registry import PluginRegistry
+        from faultray.plugins.registry import PluginRegistry
 
         PluginRegistry.clear()
 
@@ -736,14 +736,14 @@ class TestEngineImportErrorPlugins:
     """Cover engine.py lines 148-149: ImportError when plugins not available."""
 
     def test_run_all_defaults_handles_plugin_import_error(self, monkeypatch):
-        from infrasim.simulator.engine import SimulationEngine
+        from faultray.simulator.engine import SimulationEngine
 
         graph = _simple_graph()
         engine = SimulationEngine(graph)
 
         # Mock the feed loading to return empty
         monkeypatch.setattr(
-            "infrasim.feeds.store.load_feed_scenarios",
+            "faultray.feeds.store.load_feed_scenarios",
             lambda: [],
         )
 
@@ -751,15 +751,15 @@ class TestEngineImportErrorPlugins:
         original_import = __builtins__.__import__ if hasattr(__builtins__, '__import__') else __import__
 
         def mock_import(name, *args, **kwargs):
-            if name == "infrasim.plugins.registry":
+            if name == "faultray.plugins.registry":
                 raise ImportError("mocked plugin import error")
             return original_import(name, *args, **kwargs)
 
         # Instead of mocking __import__, we can patch at the engine level
-        # The engine does: from infrasim.plugins.registry import PluginRegistry
+        # The engine does: from faultray.plugins.registry import PluginRegistry
         # inside a try/except ImportError block. Let's trigger it by making
         # PluginRegistry raise on access.
-        import infrasim.simulator.engine as engine_mod
+        import faultray.simulator.engine as engine_mod
 
         # Actually, the simpler approach: the try/except is inside run_all_defaults
         # Let's just ensure it doesn't crash and returns a report
@@ -768,40 +768,40 @@ class TestEngineImportErrorPlugins:
         assert len(report.results) > 0
 
     def test_run_all_defaults_plugin_import_error_via_mock(self, monkeypatch):
-        from infrasim.simulator.engine import SimulationEngine
+        from faultray.simulator.engine import SimulationEngine
 
         graph = _simple_graph()
         engine = SimulationEngine(graph)
 
         monkeypatch.setattr(
-            "infrasim.feeds.store.load_feed_scenarios",
+            "faultray.feeds.store.load_feed_scenarios",
             lambda: [],
         )
 
         # Patch the import inside the method to raise ImportError
         # We do this by patching PluginRegistry import path
-        with patch.dict("sys.modules", {"infrasim.plugins.registry": None}):
+        with patch.dict("sys.modules", {"faultray.plugins.registry": None}):
             # This forces the import to fail with ImportError
             # but actually sys.modules[key] = None causes ImportError
             # Let's see if this triggers the except ImportError path
             import sys
-            saved = sys.modules.pop("infrasim.plugins.registry", "SENTINEL")
-            sys.modules["infrasim.plugins.registry"] = None
+            saved = sys.modules.pop("faultray.plugins.registry", "SENTINEL")
+            sys.modules["faultray.plugins.registry"] = None
             try:
                 report = engine.run_all_defaults(include_feed=True, include_plugins=True)
                 assert report is not None
                 assert len(report.results) > 0
             finally:
-                del sys.modules["infrasim.plugins.registry"]
+                del sys.modules["faultray.plugins.registry"]
                 if saved != "SENTINEL":
-                    sys.modules["infrasim.plugins.registry"] = saved
+                    sys.modules["faultray.plugins.registry"] = saved
 
 
 class TestCapacityEngineMttrDefaultViaForecast:
     """Another test for mttr_min=30.0 default (line 420) via forecast()."""
 
     def test_forecast_with_zero_mttr_components(self):
-        from infrasim.simulator.capacity_engine import CapacityPlanningEngine
+        from faultray.simulator.capacity_engine import CapacityPlanningEngine
 
         graph = InfraGraph()
         for i in range(3):
@@ -822,7 +822,7 @@ class TestTerraformParseStateDedup:
     """Cover terraform.py duplicate component IDs via parse_tf_state."""
 
     def test_parse_state_with_nested_value_references(self):
-        from infrasim.discovery.terraform import _find_references_in_values
+        from faultray.discovery.terraform import _find_references_in_values
 
         graph = InfraGraph()
         app = _make_component("app.main", "app", ComponentType.APP_SERVER)
@@ -845,7 +845,7 @@ class TestTerraformParseStateDedup:
         assert edge is not None
 
     def test_parse_state_with_list_references(self):
-        from infrasim.discovery.terraform import _find_references_in_values
+        from faultray.discovery.terraform import _find_references_in_values
 
         graph = InfraGraph()
         app = _make_component("app.main", "app", ComponentType.APP_SERVER)
@@ -871,7 +871,7 @@ class TestSLOTrackerBudgetConsumedEmpty:
     """Additional test for _budget_consumed with total_count == 0 guard (line 652)."""
 
     def test_budget_consumed_explicit_empty_violations(self):
-        from infrasim.simulator.ops_engine import SLOTracker
+        from faultray.simulator.ops_engine import SLOTracker
 
         graph = InfraGraph()
         comp = _make_component("web1")
@@ -889,7 +889,7 @@ class TestSLOTrackerBudgetConsumedEmpty:
         assert consumed == 0.0
 
     def test_burn_rate_with_all_out_of_window(self):
-        from infrasim.simulator.ops_engine import SLOTracker
+        from faultray.simulator.ops_engine import SLOTracker
 
         graph = InfraGraph()
         comp = _make_component("web1")
@@ -926,7 +926,7 @@ class TestReportYellowScore:
     def test_print_infrastructure_summary_yellow_score(self):
         from rich.console import Console
 
-        from infrasim.reporter.report import print_infrastructure_summary
+        from faultray.reporter.report import print_infrastructure_summary
 
         # Build a graph that scores between 60-80
         # One SPOF with moderate utilization -> score around 75-80
@@ -976,7 +976,7 @@ class TestTerraformNonDictValues:
     """Cover terraform.py line 433: _find_references_in_values with non-dict."""
 
     def test_find_references_non_dict_values(self):
-        from infrasim.discovery.terraform import _find_references_in_values
+        from faultray.discovery.terraform import _find_references_in_values
 
         graph = InfraGraph()
         graph.add_component(_make_component("app1"))
@@ -995,13 +995,13 @@ class TestFeedAnalyzerNegativeKeywords:
     """Cover feeds/analyzer.py line 320: negative keyword skip."""
 
     def test_negative_keywords_skip_pattern(self):
-        from infrasim.feeds.analyzer import (
+        from faultray.feeds.analyzer import (
             AnalyzedIncident,
             IncidentPattern,
             analyze_articles,
             _match_keywords,
         )
-        from infrasim.feeds.fetcher import FeedArticle
+        from faultray.feeds.fetcher import FeedArticle
 
         # Create a custom pattern with negative keywords
         # Use an article that matches positive keywords BUT also matches negative
@@ -1027,7 +1027,7 @@ class TestFeedAnalyzerNegativeKeywords:
         # The line 320 is the `continue` after neg_matches check.
         # Let's verify the function works correctly with negative keywords
         # by monkey-patching a pattern temporarily.
-        from infrasim.feeds import analyzer as analyzer_mod
+        from faultray.feeds import analyzer as analyzer_mod
 
         original_patterns = analyzer_mod.INCIDENT_PATTERNS
 
@@ -1063,7 +1063,7 @@ class TestHtmlReportCompNotInPositions:
     """
 
     def test_svg_with_all_component_types(self):
-        from infrasim.reporter.html_report import _build_dependency_svg
+        from faultray.reporter.html_report import _build_dependency_svg
 
         graph = InfraGraph()
         # Add components of every type to ensure complete coverage
@@ -1085,7 +1085,7 @@ class TestPrometheusUpdateMetricsSkipComponent:
 
     @pytest.mark.asyncio
     async def test_update_metrics_skips_no_matching_host(self):
-        from infrasim.discovery.prometheus import PrometheusClient
+        from faultray.discovery.prometheus import PrometheusClient
 
         client = PrometheusClient(url="http://localhost:9090")
 

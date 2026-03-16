@@ -2,7 +2,7 @@
 # 競合調査レポート: カオスエンジニアリング & インフラレジリエンスツール
 
 **Research Date:** 2026-03-15
-**Purpose:** Feature analysis for ChaosProof product strategy
+**Purpose:** Feature analysis for FaultRay product strategy
 
 ---
 
@@ -22,7 +22,7 @@
 13. [Market Gaps & SRE Wish List](#13-market-gaps--sre-wish-list)
 14. [Emerging Trends (2024-2025)](#14-emerging-trends-2024-2025)
 15. [AI/ML in Infrastructure Reliability](#15-aiml-in-infrastructure-reliability)
-16. [ChaosProof Strategic Opportunities](#16-chaosproof-strategic-opportunities)
+16. [FaultRay Strategic Opportunities](#16-faultray-strategic-opportunities)
 
 ---
 
@@ -48,7 +48,7 @@
 - No free tier publicly available
 - AWS Marketplace listing available
 
-### What They're Missing (ChaosProof Opportunities)
+### What They're Missing (FaultRay Opportunities)
 - No **cost/financial impact prediction** of failures
 - No **predictive failure simulation** (AI-based "what will break next")
 - Limited observability integrations (compared to dedicated observability tools)
@@ -79,7 +79,7 @@
 - **Free** (open source)
 - Enterprise support via Harness (see Harness section)
 
-### What They're Missing (ChaosProof Opportunities)
+### What They're Missing (FaultRay Opportunities)
 - **Kubernetes-centric:** Limited applicability for non-containerized environments
 - **Steep learning curve:** Requires deep Kubernetes expertise
 - No built-in **reliability scoring**
@@ -109,7 +109,7 @@
 ### Pricing Model
 - **Free** (open source, Apache 2.0)
 
-### What They're Missing (ChaosProof Opportunities)
+### What They're Missing (FaultRay Opportunities)
 - **Abandoned project** -- no active development
 - AWS-only (tightly coupled to Netflix's AWS infrastructure)
 - No UI, no dashboards, no reporting
@@ -141,7 +141,7 @@
 - **Enterprise:** Custom pricing
 - 30-day free trial available
 
-### What They're Missing (ChaosProof Opportunities)
+### What They're Missing (FaultRay Opportunities)
 - **No reliability score** (acknowledged gap vs. Gremlin)
 - Requires users to know what to test for upfront
 - No clear "where to start" guidance for beginners
@@ -175,7 +175,7 @@
 - **Free Plan:** All capabilities, limited usage
 - **Enterprise:** $23K-$41K/year (200 employees, per Vendr data); custom quotes
 
-### What They're Missing (ChaosProof Opportunities)
+### What They're Missing (FaultRay Opportunities)
 - **No financial impact prediction**
 - No cost-of-downtime analysis
 - GenAI features are nascent (basic experiment generation)
@@ -208,7 +208,7 @@
 - Pay-as-you-go, no upfront costs
 - GovCloud: $0.12/action-minute
 
-### What They're Missing (ChaosProof Opportunities)
+### What They're Missing (FaultRay Opportunities)
 - **AWS-only** -- no multi-cloud support
 - No **predictive failure analysis**
 - No **reliability scoring**
@@ -240,7 +240,7 @@
 - Pay-as-you-go
 - Indirect costs from triggered auto-scaling
 
-### What They're Missing (ChaosProof Opportunities)
+### What They're Missing (FaultRay Opportunities)
 - **Azure-only** -- no multi-cloud support
 - No **predictive capabilities**
 - No **reliability scoring**
@@ -270,11 +270,11 @@
 ### Pricing Model
 - No longer relevant (acquired by NVIDIA, no new customers)
 
-### What They're Missing / ChaosProof Opportunities
-- **Platform is dead for new adoption** -- huge opportunity for ChaosProof to fill this gap
+### What They're Missing / FaultRay Opportunities
+- **Platform is dead for new adoption** -- huge opportunity for FaultRay to fill this gap
 - Combined chaos + automated remediation (Shoreline only did remediation, not chaos)
 - Pre-built runbook library + chaos experiment library = complete platform
-- ChaosProof can offer what Shoreline had PLUS predictive capabilities
+- FaultRay can offer what Shoreline had PLUS predictive capabilities
 
 ---
 
@@ -300,7 +300,7 @@
 - **Add-ons:** AIOps ($699/month), PagerDuty Advance AI ($415/month)
 - Volume discounts: 14% median discount at 100 users
 
-### What They're Missing (ChaosProof Opportunities)
+### What They're Missing (FaultRay Opportunities)
 - **No chaos engineering capabilities** -- purely reactive incident management
 - No **proactive failure testing**
 - No **predictive failure simulation**
@@ -308,7 +308,7 @@
 - AI features locked behind expensive add-ons ($699-$415/month extra)
 - No **reliability scoring**
 - No **compliance/regulatory testing**
-- ChaosProof can integrate WITH PagerDuty while adding proactive layers
+- FaultRay can integrate WITH PagerDuty while adding proactive layers
 
 ---
 
@@ -335,7 +335,7 @@
 - 5-10 free containers per host; 100-200 custom metrics per host
 - Volume discounts available
 
-### What They're Missing (ChaosProof Opportunities)
+### What They're Missing (FaultRay Opportunities)
 - **No chaos engineering capabilities** -- observation only, no fault injection
 - No **proactive failure testing**
 - No **reliability scoring** (monitors but doesn't score)
@@ -343,7 +343,7 @@
 - **Expensive at scale** -- costs balloon with host count
 - No **financial impact prediction**
 - No **remediation automation** (only detection)
-- ChaosProof can INTEGRATE with Datadog while adding chaos + prediction layers
+- FaultRay can INTEGRATE with Datadog while adding chaos + prediction layers
 
 ---
 
@@ -373,7 +373,7 @@
 - **Synthetic Monitoring:** $0.001/request
 - Billed in 15-minute increments
 
-### What They're Missing (ChaosProof Opportunities)
+### What They're Missing (FaultRay Opportunities)
 - **No chaos engineering / fault injection** -- all observation, no proactive testing
 - No **reliability scoring** comparable to Gremlin
 - No **GameDay management**
@@ -381,7 +381,7 @@
 - **Extremely expensive** for mid-market organizations
 - Complex licensing model confuses buyers
 - No **cost-of-failure prediction** for business stakeholders
-- ChaosProof can complement Dynatrace with chaos + simulation capabilities
+- FaultRay can complement Dynatrace with chaos + simulation capabilities
 
 ---
 
@@ -405,7 +405,7 @@
 - Pay only for what you use
 - Additional charges for provisioned AWS services
 
-### What They're Missing (ChaosProof Opportunities)
+### What They're Missing (FaultRay Opportunities)
 - **AWS-only** -- no multi-cloud support
 - No **predictive failure analysis** (only assessment, not prediction)
 - No **financial impact modeling**
@@ -414,7 +414,7 @@
 - No **AI-driven recommendations** (rule-based only)
 - No **GameDay management**
 - No **real-time infrastructure simulation**
-- Static assessment vs. ChaosProof's dynamic simulation approach
+- Static assessment vs. FaultRay's dynamic simulation approach
 
 ---
 
@@ -444,7 +444,7 @@
 
 ### Key Market Gaps
 
-| Gap | Status | ChaosProof Opportunity |
+| Gap | Status | FaultRay Opportunity |
 |-----|--------|----------------------|
 | Predictive failure simulation | No tool offers this well | **Core differentiator** |
 | Financial impact modeling | No tool offers this | **Core differentiator** |
@@ -530,7 +530,7 @@
 
 ---
 
-## 16. ChaosProof Strategic Opportunities
+## 16. FaultRay Strategic Opportunities
 
 ### Tier 1: Core Differentiators (No Competitor Has These Well)
 
@@ -538,13 +538,13 @@
 |---------|----------------|----------------|
 | **Predictive Failure Simulation** | AI predicts what will break before it breaks, not just testing known failure modes | No tool does this -- all are reactive |
 | **Financial Impact Modeling** | Translate technical failures into dollar amounts for business stakeholders | Zero competitors offer this |
-| **Backtest Engine** | Validate predictions against historical incidents to prove accuracy | Completely unique to ChaosProof |
+| **Backtest Engine** | Validate predictions against historical incidents to prove accuracy | Completely unique to FaultRay |
 | **Compliance-Ready Reporting** | Auto-generate DORA, SOC2, ISO 27001 evidence from chaos experiments | No tool has native compliance mapping |
-| **Infrastructure Simulation (Digital Twin)** | Simulate entire infrastructure without touching production | Others inject real faults; ChaosProof can simulate them |
+| **Infrastructure Simulation (Digital Twin)** | Simulate entire infrastructure without touching production | Others inject real faults; FaultRay can simulate them |
 
 ### Tier 2: Competitive Features to Adopt/Improve
 
-| Feature | Inspired By | ChaosProof Enhancement |
+| Feature | Inspired By | FaultRay Enhancement |
 |---------|------------|----------------------|
 | Reliability Score | Gremlin (0-100) | Add predictive dimension ("score will drop to X in 30 days if...") |
 | GameDays | Gremlin | Add AI-suggested scenarios, automated post-mortem generation |
@@ -560,7 +560,7 @@
 ### Tier 3: Market Positioning Strategy
 
 **Target the 62% who fear chaos engineering:**
-- ChaosProof's simulation approach removes the #1 adoption barrier (fear of causing disruptions)
+- FaultRay's simulation approach removes the #1 adoption barrier (fear of causing disruptions)
 - "Simulate, don't break" messaging for risk-averse organizations
 
 **Target the compliance-driven buyer:**
@@ -570,15 +570,15 @@
 **Target the mid-market:**
 - Enterprise tools (Gremlin, Dynatrace) are too expensive
 - Open source tools (LitmusChaos) are too complex
-- ChaosProof can be the "Goldilocks" solution: powerful but accessible
+- FaultRay can be the "Goldilocks" solution: powerful but accessible
 
 **Target the multi-cloud organization:**
 - AWS FIS = AWS only, Azure Chaos Studio = Azure only
-- ChaosProof = cloud-agnostic simulation
+- FaultRay = cloud-agnostic simulation
 
 ### Pricing Strategy Recommendations
 
-| Competitor | Their Price | ChaosProof Opportunity |
+| Competitor | Their Price | FaultRay Opportunity |
 |-----------|------------|----------------------|
 | Gremlin | Custom (expensive) | Transparent pricing, free tier |
 | Steadybit | $1,250/month Pro | Undercut at $500-800/month |
@@ -596,7 +596,7 @@
 
 ---
 
-## Summary: ChaosProof's Unique Value Proposition
+## Summary: FaultRay's Unique Value Proposition
 
 **"The only platform that predicts infrastructure failures before they happen, quantifies their financial impact, and proves its accuracy through backtesting -- all without touching your production systems."**
 

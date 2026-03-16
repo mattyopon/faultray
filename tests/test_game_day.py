@@ -4,14 +4,14 @@ from __future__ import annotations
 
 import pytest
 
-from infrasim.model.components import (
+from faultray.model.components import (
     Component,
     ComponentType,
     Dependency,
     HealthStatus,
 )
-from infrasim.model.graph import InfraGraph
-from infrasim.simulator.game_day import (
+from faultray.model.graph import InfraGraph
+from faultray.simulator.game_day import (
     ExerciseDifficulty,
     ExerciseObjective,
     ExerciseStatus,

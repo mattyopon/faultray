@@ -27,7 +27,7 @@ faultray quickstart [--output MODEL_PATH]
 
 | Option | Default | Description |
 |--------|---------|-------------|
-| `--output` | `infrasim-model.json` | Output path for the generated model |
+| `--output` | `faultray-model.json` | Output path for the generated model |
 
 ### `scan`
 

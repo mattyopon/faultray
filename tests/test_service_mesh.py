@@ -4,13 +4,13 @@ from __future__ import annotations
 
 import pytest
 
-from infrasim.model.components import (
+from faultray.model.components import (
     Component,
     ComponentType,
     Dependency,
 )
-from infrasim.model.graph import InfraGraph
-from infrasim.simulator.service_mesh import (
+from faultray.model.graph import InfraGraph
+from faultray.simulator.service_mesh import (
     MeshComponent,
     MeshPattern,
     MeshReadiness,

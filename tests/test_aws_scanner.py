@@ -13,8 +13,8 @@ from unittest.mock import MagicMock, patch, PropertyMock
 
 import pytest
 
-from infrasim.model.components import ComponentType, Dependency
-from infrasim.model.graph import InfraGraph
+from faultray.model.components import ComponentType, Dependency
+from faultray.model.graph import InfraGraph
 
 
 # ---------------------------------------------------------------------------
@@ -23,7 +23,7 @@ from infrasim.model.graph import InfraGraph
 
 def _make_scanner(region: str = "ap-northeast-1", profile: str | None = None):
     """Import and instantiate AWSScanner (ensures module is importable)."""
-    from infrasim.discovery.aws_scanner import AWSScanner
+    from faultray.discovery.aws_scanner import AWSScanner
     return AWSScanner(region=region, profile=profile)
 
 
@@ -183,7 +183,7 @@ def _cloudfront_client_with_dists(distributions):
 # ---------------------------------------------------------------------------
 
 class TestEC2Discovery:
-    @patch("infrasim.discovery.aws_scanner._boto3_session")
+    @patch("faultray.discovery.aws_scanner._boto3_session")
     def test_discover_running_ec2_instances(self, mock_session_fn):
         instances = [
             {
@@ -223,7 +223,7 @@ class TestEC2Discovery:
         assert ec2_comps[0].host == "10.0.1.5"
         assert "instance_type:t3.medium" in ec2_comps[0].tags
 
-    @patch("infrasim.discovery.aws_scanner._boto3_session")
+    @patch("faultray.discovery.aws_scanner._boto3_session")
     def test_ec2_without_name_tag(self, mock_session_fn):
         instances = [
             {
@@ -254,7 +254,7 @@ class TestEC2Discovery:
 # ---------------------------------------------------------------------------
 
 class TestRDSDiscovery:
-    @patch("infrasim.discovery.aws_scanner._boto3_session")
+    @patch("faultray.discovery.aws_scanner._boto3_session")
     def test_discover_aurora_cluster(self, mock_session_fn):
         clusters = [
             {
@@ -290,7 +290,7 @@ class TestRDSDiscovery:
         assert comp.failover.enabled is True  # multi-AZ
         assert "aurora" in comp.tags
 
-    @patch("infrasim.discovery.aws_scanner._boto3_session")
+    @patch("faultray.discovery.aws_scanner._boto3_session")
     def test_discover_standalone_rds(self, mock_session_fn):
         instances = [
             {
@@ -328,7 +328,7 @@ class TestRDSDiscovery:
 # ---------------------------------------------------------------------------
 
 class TestALBDiscovery:
-    @patch("infrasim.discovery.aws_scanner._boto3_session")
+    @patch("faultray.discovery.aws_scanner._boto3_session")
     def test_discover_alb(self, mock_session_fn):
         load_balancers = [
             {
@@ -364,7 +364,7 @@ class TestALBDiscovery:
 # ---------------------------------------------------------------------------
 
 class TestS3Discovery:
-    @patch("infrasim.discovery.aws_scanner._boto3_session")
+    @patch("faultray.discovery.aws_scanner._boto3_session")
     def test_discover_s3_buckets(self, mock_session_fn):
         ec2 = _ec2_client_with_instances([])
         s3 = _s3_client_with_buckets(["my-data-bucket", "my-logs-bucket"])
@@ -390,7 +390,7 @@ class TestS3Discovery:
 # ---------------------------------------------------------------------------
 
 class TestSQSDiscovery:
-    @patch("infrasim.discovery.aws_scanner._boto3_session")
+    @patch("faultray.discovery.aws_scanner._boto3_session")
     def test_discover_sqs_queues(self, mock_session_fn):
         ec2 = _ec2_client_with_instances([])
         sqs = _sqs_client_with_queues([
@@ -414,7 +414,7 @@ class TestSQSDiscovery:
 # ---------------------------------------------------------------------------
 
 class TestDependencyInference:
-    @patch("infrasim.discovery.aws_scanner._boto3_session")
+    @patch("faultray.discovery.aws_scanner._boto3_session")
     def test_sg_based_dependency_inference(self, mock_session_fn):
         """If sg-app allows inbound from sg-web on port 8080 then web->app."""
         instances = [
@@ -477,7 +477,7 @@ class TestDependencyInference:
         assert dep is not None, f"Expected dependency from web to app. Got edges: {[(e.source_id, e.target_id) for e in edges]}"
         assert dep.dependency_type == "optional"  # port 8080 is not in _DB_CACHE_PORTS
 
-    @patch("infrasim.discovery.aws_scanner._boto3_session")
+    @patch("faultray.discovery.aws_scanner._boto3_session")
     def test_sg_db_port_creates_requires_dependency(self, mock_session_fn):
         """If sg-db allows inbound from sg-app on port 5432 then dep_type='requires'."""
         instances = [
@@ -545,7 +545,7 @@ class TestDependencyInference:
 # ---------------------------------------------------------------------------
 
 class TestSecurityDetection:
-    @patch("infrasim.discovery.aws_scanner._boto3_session")
+    @patch("faultray.discovery.aws_scanner._boto3_session")
     def test_encrypted_vs_unencrypted(self, mock_session_fn):
         """RDS with StorageEncrypted=True vs False."""
         clusters = [
@@ -591,7 +591,7 @@ class TestSecurityDetection:
         assert unenc_comp is not None
         assert unenc_comp.security.encryption_at_rest is False
 
-    @patch("infrasim.discovery.aws_scanner._boto3_session")
+    @patch("faultray.discovery.aws_scanner._boto3_session")
     def test_port_443_sets_encryption_in_transit(self, mock_session_fn):
         load_balancers = [
             {
@@ -623,7 +623,7 @@ class TestSecurityDetection:
 # ---------------------------------------------------------------------------
 
 class TestEmptyAccount:
-    @patch("infrasim.discovery.aws_scanner._boto3_session")
+    @patch("faultray.discovery.aws_scanner._boto3_session")
     def test_empty_aws_account(self, mock_session_fn):
         ec2 = _ec2_client_with_instances([])
         session = _mock_boto3_session(ec2=ec2)
@@ -642,7 +642,7 @@ class TestEmptyAccount:
 # ---------------------------------------------------------------------------
 
 class TestPermissionDenied:
-    @patch("infrasim.discovery.aws_scanner._boto3_session")
+    @patch("faultray.discovery.aws_scanner._boto3_session")
     def test_permission_denied_graceful(self, mock_session_fn):
         """If EC2 describe_instances raises ClientError, scanner should warn but not crash."""
         ec2 = MagicMock()
@@ -668,7 +668,7 @@ class TestPermissionDenied:
 class TestBoto3NotInstalled:
     def test_boto3_import_error(self):
         """If boto3 is not available, _boto3_session should raise RuntimeError."""
-        from infrasim.discovery.aws_scanner import _boto3_session
+        from faultray.discovery.aws_scanner import _boto3_session
 
         with patch.dict(sys.modules, {"boto3": None}):
             # When boto3 is set to None in sys.modules, import will fail
@@ -684,9 +684,9 @@ class TestBoto3NotInstalled:
 class TestYAMLExport:
     def test_export_yaml_roundtrip(self, tmp_path):
         """Export a graph to YAML and verify it can be loaded back."""
-        from infrasim.discovery.aws_scanner import export_yaml
-        from infrasim.model.loader import load_yaml
-        from infrasim.model.components import Component, SecurityProfile, Capacity
+        from faultray.discovery.aws_scanner import export_yaml
+        from faultray.model.loader import load_yaml
+        from faultray.model.components import Component, SecurityProfile, Capacity
 
         graph = InfraGraph()
         graph.add_component(Component(
@@ -740,7 +740,7 @@ class TestYAMLExport:
 
     def test_export_yaml_empty_graph(self, tmp_path):
         """Exporting an empty graph produces valid YAML."""
-        from infrasim.discovery.aws_scanner import export_yaml
+        from faultray.discovery.aws_scanner import export_yaml
 
         graph = InfraGraph()
         yaml_path = tmp_path / "empty.yaml"
@@ -758,7 +758,7 @@ class TestYAMLExport:
 class TestComponentTypeMapping:
     def test_aws_type_map_completeness(self):
         """Verify AWS_TYPE_MAP covers all expected services."""
-        from infrasim.discovery.aws_scanner import AWS_TYPE_MAP
+        from faultray.discovery.aws_scanner import AWS_TYPE_MAP
 
         expected_services = {
             "ec2", "rds", "aurora", "elasticache", "alb", "nlb",
@@ -768,7 +768,7 @@ class TestComponentTypeMapping:
 
     def test_all_mapped_types_are_valid(self):
         """All values in AWS_TYPE_MAP must be valid ComponentTypes."""
-        from infrasim.discovery.aws_scanner import AWS_TYPE_MAP
+        from faultray.discovery.aws_scanner import AWS_TYPE_MAP
 
         for service, comp_type in AWS_TYPE_MAP.items():
             assert isinstance(comp_type, ComponentType), f"{service} mapped to non-ComponentType: {comp_type}"
@@ -779,7 +779,7 @@ class TestComponentTypeMapping:
 # ---------------------------------------------------------------------------
 
 class TestMetricEnrichment:
-    @patch("infrasim.discovery.aws_scanner._boto3_session")
+    @patch("faultray.discovery.aws_scanner._boto3_session")
     def test_ec2_cpu_enrichment(self, mock_session_fn):
         """CloudWatch CPU metrics should be applied to EC2 components."""
         instances = [
@@ -818,7 +818,7 @@ class TestMetricEnrichment:
 # ---------------------------------------------------------------------------
 
 class TestMultiAZDetection:
-    @patch("infrasim.discovery.aws_scanner._boto3_session")
+    @patch("faultray.discovery.aws_scanner._boto3_session")
     def test_rds_multi_az(self, mock_session_fn):
         """MultiAZ RDS instance should have failover enabled and replicas=2."""
         instances = [
@@ -854,7 +854,7 @@ class TestMultiAZDetection:
 # ---------------------------------------------------------------------------
 
 class TestECSTaskDefinitionParsing:
-    @patch("infrasim.discovery.aws_scanner._boto3_session")
+    @patch("faultray.discovery.aws_scanner._boto3_session")
     def test_ecs_env_var_dependency_inference(self, mock_session_fn):
         """ECS env vars referencing RDS endpoints should create dependencies."""
         instances = []
@@ -950,7 +950,7 @@ class TestECSTaskDefinitionParsing:
 # ---------------------------------------------------------------------------
 
 class TestLambdaDiscovery:
-    @patch("infrasim.discovery.aws_scanner._boto3_session")
+    @patch("faultray.discovery.aws_scanner._boto3_session")
     def test_discover_lambda_functions(self, mock_session_fn):
         functions = [
             {
@@ -984,7 +984,7 @@ class TestLambdaDiscovery:
 # ---------------------------------------------------------------------------
 
 class TestCloudFrontDiscovery:
-    @patch("infrasim.discovery.aws_scanner._boto3_session")
+    @patch("faultray.discovery.aws_scanner._boto3_session")
     def test_discover_cloudfront(self, mock_session_fn):
         distributions = [
             {
@@ -1015,7 +1015,7 @@ class TestCloudFrontDiscovery:
 # ---------------------------------------------------------------------------
 
 class TestCompleteScanFlow:
-    @patch("infrasim.discovery.aws_scanner._boto3_session")
+    @patch("faultray.discovery.aws_scanner._boto3_session")
     def test_full_scan_integration(self, mock_session_fn):
         """Full scan with multiple service types, verifying component count and types."""
         instances = [
@@ -1086,7 +1086,7 @@ class TestCompleteScanFlow:
         assert ComponentType.STORAGE in types_found
         assert ComponentType.QUEUE in types_found
 
-    @patch("infrasim.discovery.aws_scanner._boto3_session")
+    @patch("faultray.discovery.aws_scanner._boto3_session")
     def test_scan_result_dataclass(self, mock_session_fn):
         """AWSDiscoveryResult fields are properly populated."""
         ec2 = _ec2_client_with_instances([])
@@ -1107,7 +1107,7 @@ class TestCompleteScanFlow:
 # ---------------------------------------------------------------------------
 
 class TestRoute53Discovery:
-    @patch("infrasim.discovery.aws_scanner._boto3_session")
+    @patch("faultray.discovery.aws_scanner._boto3_session")
     def test_discover_route53_zones(self, mock_session_fn):
         ec2 = _ec2_client_with_instances([])
 
@@ -1149,7 +1149,7 @@ class TestRoute53Discovery:
 # ---------------------------------------------------------------------------
 
 class TestElastiCacheDiscovery:
-    @patch("infrasim.discovery.aws_scanner._boto3_session")
+    @patch("faultray.discovery.aws_scanner._boto3_session")
     def test_discover_elasticache_replication_group(self, mock_session_fn):
         ec2 = _ec2_client_with_instances([])
 

@@ -7,7 +7,7 @@ compare(), boundary conditions, and performance with large graphs.
 
 import pytest
 
-from infrasim.model.components import (
+from faultray.model.components import (
     AutoScalingConfig,
     Capacity,
     CircuitBreakerConfig,
@@ -18,8 +18,8 @@ from infrasim.model.components import (
     HealthStatus,
     ResourceMetrics,
 )
-from infrasim.model.graph import InfraGraph
-from infrasim.simulator.blast_radius_predictor import (
+from faultray.model.graph import InfraGraph
+from faultray.simulator.blast_radius_predictor import (
     AffectedComponent,
     BlastRadiusComparison,
     BlastRadiusPrediction,
@@ -1566,7 +1566,7 @@ class TestCoverageGapsBFS:
     def test_bfs_depth_exceeds_max_depth(self):
         """A chain deeper than _MAX_BFS_DEPTH should stop propagating
         beyond that depth. [line 248]"""
-        from infrasim.simulator.blast_radius_predictor import _MAX_BFS_DEPTH
+        from faultray.simulator.blast_radius_predictor import _MAX_BFS_DEPTH
 
         graph = InfraGraph()
         # Create a chain of _MAX_BFS_DEPTH + 5 nodes

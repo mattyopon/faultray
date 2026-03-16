@@ -42,7 +42,7 @@ It's completely free and open source (MIT). I'd love your feedback!
 
 - Live demo: https://faultray-demo.fly.dev/
 - PyPI: pip install faultray
-- GitHub: https://github.com/mattyopon/infrasim
+- GitHub: https://github.com/mattyopon/faultray
 
 ---
 
@@ -78,7 +78,7 @@ faultray demo --web
 ```
 
 Live demo: https://faultray-demo.fly.dev/
-GitHub: https://github.com/mattyopon/infrasim
+GitHub: https://github.com/mattyopon/faultray
 
 ---
 
@@ -99,6 +99,6 @@ You describe your infra in YAML or import from Terraform, and it runs 150+ failu
 - Free & open source (MIT)
 - `pip install faultray`
 - Live demo: https://faultray-demo.fly.dev/
-- GitHub: https://github.com/mattyopon/infrasim
+- GitHub: https://github.com/mattyopon/faultray
 
 Would love feedback from fellow SREs!

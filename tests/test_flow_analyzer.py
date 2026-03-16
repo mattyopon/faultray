@@ -8,13 +8,13 @@ from unittest.mock import MagicMock
 
 import pytest
 
-from infrasim.discovery.flow_analyzer import (
+from faultray.discovery.flow_analyzer import (
     CommunicationPattern,
     FlowAnalysisResult,
     FlowLogAnalyzer,
 )
-from infrasim.model.components import Component, ComponentType, Dependency
-from infrasim.model.graph import InfraGraph
+from faultray.model.components import Component, ComponentType, Dependency
+from faultray.model.graph import InfraGraph
 
 
 # ---------------------------------------------------------------------------

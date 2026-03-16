@@ -9,14 +9,14 @@ from pathlib import Path
 
 import pytest
 
-from infrasim.marketplace.catalog import (
+from faultray.marketplace.catalog import (
     CATEGORIES,
     MarketplaceCategory,
     ScenarioMarketplace,
     ScenarioPackage,
     ScenarioReview,
 )
-from infrasim.marketplace.builtin_packages import BUILTIN_PACKAGES
+from faultray.marketplace.builtin_packages import BUILTIN_PACKAGES
 
 
 # ---------------------------------------------------------------------------
@@ -283,7 +283,7 @@ class TestBuiltinPackages:
                 )
 
     def test_scenarios_have_valid_fault_types(self):
-        from infrasim.simulator.scenarios import FaultType
+        from faultray.simulator.scenarios import FaultType
 
         valid_types = {ft.value for ft in FaultType}
         for pkg in BUILTIN_PACKAGES:
@@ -362,7 +362,7 @@ class TestScenarioMarketplace:
             mp.install_package("nonexistent-pkg")
 
     def test_export_scenarios(self, mp: ScenarioMarketplace):
-        from infrasim.simulator.scenarios import Fault, FaultType, Scenario
+        from faultray.simulator.scenarios import Fault, FaultType, Scenario
 
         scenarios = [
             Scenario(
@@ -456,7 +456,7 @@ class TestScenarioMarketplace:
         assert pkg.downloads == 999
 
     def test_installed_scenarios_have_correct_fault_types(self, mp: ScenarioMarketplace):
-        from infrasim.simulator.scenarios import FaultType
+        from faultray.simulator.scenarios import FaultType
 
         scenarios = mp.install_package("aws-database-chaos")
         for s in scenarios:
@@ -475,7 +475,7 @@ class TestScenarioMarketplace:
     def test_install_package_with_invalid_fault_type(self, mp: ScenarioMarketplace):
         """Line 372-373: Invalid fault_type in scenario data falls back
         to COMPONENT_DOWN."""
-        from infrasim.simulator.scenarios import FaultType
+        from faultray.simulator.scenarios import FaultType
 
         custom_pkg = _make_package(
             pkg_id="bad-fault-pkg",
@@ -521,7 +521,7 @@ class TestMarketplaceBuiltinLoadFailure:
         # Patch the import inside _load_builtins to raise an exception
         with mock.patch.dict(
             "sys.modules",
-            {"infrasim.marketplace.builtin_packages": None},
+            {"faultray.marketplace.builtin_packages": None},
         ):
             # Force fresh instance that will try to import and fail
             mp = ScenarioMarketplace.__new__(ScenarioMarketplace)
@@ -540,7 +540,7 @@ class TestMarketplaceIntegration:
 
     def test_installed_scenarios_are_valid(self, mp: ScenarioMarketplace):
         """All installed scenarios should be valid Scenario objects."""
-        from infrasim.simulator.scenarios import Scenario
+        from faultray.simulator.scenarios import Scenario
 
         for builtin in BUILTIN_PACKAGES[:5]:  # Test first 5 for speed
             scenarios = mp.install_package(builtin.id)

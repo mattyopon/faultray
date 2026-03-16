@@ -14,7 +14,7 @@ from unittest.mock import patch
 import pytest
 from fastapi.testclient import TestClient
 
-from infrasim.api.server import (
+from faultray.api.server import (
     RateLimiter,
     _rate_limiter,
     app,
@@ -22,14 +22,14 @@ from infrasim.api.server import (
     get_graph,
     set_graph,
 )
-from infrasim.model.components import (
+from faultray.model.components import (
     Capacity,
     Component,
     ComponentType,
     Dependency,
     ResourceMetrics,
 )
-from infrasim.model.graph import InfraGraph
+from faultray.model.graph import InfraGraph
 
 
 # ---------------------------------------------------------------------------

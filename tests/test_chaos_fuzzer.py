@@ -4,12 +4,12 @@ from __future__ import annotations
 
 import pytest
 
-from infrasim.model.components import Component, ComponentType, Dependency, HealthStatus
-from infrasim.model.graph import InfraGraph
-from infrasim.simulator.cascade import CascadeChain, CascadeEffect
-from infrasim.simulator.chaos_fuzzer import ChaosFuzzer, FuzzReport, FuzzResult
-from infrasim.simulator.engine import ScenarioResult
-from infrasim.simulator.scenarios import Fault, FaultType, Scenario
+from faultray.model.components import Component, ComponentType, Dependency, HealthStatus
+from faultray.model.graph import InfraGraph
+from faultray.simulator.cascade import CascadeChain, CascadeEffect
+from faultray.simulator.chaos_fuzzer import ChaosFuzzer, FuzzReport, FuzzResult
+from faultray.simulator.engine import ScenarioResult
+from faultray.simulator.scenarios import Fault, FaultType, Scenario
 
 
 # ---------------------------------------------------------------------------

@@ -1,4 +1,4 @@
-"""Boundary value analysis tests for ChaosProof / FaultRay.
+"""Boundary value analysis tests for FaultRay / FaultRay.
 
 Tests edge cases that normal tests miss: numeric limits, empty/maximal
 collections, special float values, unicode handling, and graph topology
@@ -15,7 +15,7 @@ from pathlib import Path
 import pytest
 from pydantic import ValidationError
 
-from infrasim.model.components import (
+from faultray.model.components import (
     AutoScalingConfig,
     Capacity,
     Component,
@@ -29,10 +29,10 @@ from infrasim.model.components import (
     RuntimeJitter,
     SLOTarget,
 )
-from infrasim.model.graph import InfraGraph
-from infrasim.simulator.cascade import CascadeChain, CascadeEffect, CascadeEngine
-from infrasim.simulator.engine import SimulationEngine, SimulationReport
-from infrasim.simulator.scenarios import Fault, FaultType, Scenario
+from faultray.model.graph import InfraGraph
+from faultray.simulator.cascade import CascadeChain, CascadeEffect, CascadeEngine
+from faultray.simulator.engine import SimulationEngine, SimulationReport
+from faultray.simulator.scenarios import Fault, FaultType, Scenario
 
 
 # ---------------------------------------------------------------------------
@@ -609,7 +609,7 @@ class TestDynamicScenarioValidation:
 
     def test_duration_zero_rejected(self):
         """Zero duration should be rejected by validator."""
-        from infrasim.simulator.dynamic_engine import DynamicScenario as DynScenario
+        from faultray.simulator.dynamic_engine import DynamicScenario as DynScenario
 
         with pytest.raises(ValidationError):
             DynScenario(
@@ -621,7 +621,7 @@ class TestDynamicScenarioValidation:
 
     def test_time_step_negative_rejected(self):
         """Negative time step should be rejected."""
-        from infrasim.simulator.dynamic_engine import DynamicScenario as DynScenario
+        from faultray.simulator.dynamic_engine import DynamicScenario as DynScenario
 
         with pytest.raises(ValidationError):
             DynScenario(
@@ -634,7 +634,7 @@ class TestDynamicScenarioValidation:
     def test_step_larger_than_duration(self):
         """Step > duration should be accepted (validator only checks > 0).
         The engine handles the semantics."""
-        from infrasim.simulator.dynamic_engine import DynamicScenario as DynScenario
+        from faultray.simulator.dynamic_engine import DynamicScenario as DynScenario
 
         ds = DynScenario(
             id="big-step",

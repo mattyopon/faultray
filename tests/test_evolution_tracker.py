@@ -7,7 +7,7 @@ from __future__ import annotations
 
 import pytest
 
-from infrasim.model.components import (
+from faultray.model.components import (
     Component,
     ComponentType,
     FailoverConfig,
@@ -15,8 +15,8 @@ from infrasim.model.components import (
     ResourceMetrics,
     SecurityProfile,
 )
-from infrasim.model.graph import InfraGraph
-from infrasim.simulator.evolution_tracker import (
+from faultray.model.graph import InfraGraph
+from faultray.simulator.evolution_tracker import (
     ChangeType,
     EvolutionReport,
     EvolutionTracker,

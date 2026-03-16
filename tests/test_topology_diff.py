@@ -8,15 +8,15 @@ from pathlib import Path
 
 import pytest
 
-from infrasim.model.components import (
+from faultray.model.components import (
     AutoScalingConfig,
     Component,
     ComponentType,
     Dependency,
     FailoverConfig,
 )
-from infrasim.model.graph import InfraGraph
-from infrasim.reporter.topology_diff import (
+from faultray.model.graph import InfraGraph
+from faultray.reporter.topology_diff import (
     ComponentDiff,
     DiffType,
     EdgeDiff,

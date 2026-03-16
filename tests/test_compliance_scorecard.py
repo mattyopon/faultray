@@ -4,9 +4,9 @@ from __future__ import annotations
 
 import pytest
 
-from infrasim.model.components import Component, ComponentType, HealthStatus
-from infrasim.model.graph import InfraGraph
-from infrasim.simulator.compliance_scorecard import (
+from faultray.model.components import Component, ComponentType, HealthStatus
+from faultray.model.graph import InfraGraph
+from faultray.simulator.compliance_scorecard import (
     ComplianceReport,
     ComplianceScorecardEngine,
     ControlStatus,

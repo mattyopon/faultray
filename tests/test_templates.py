@@ -6,7 +6,7 @@ from pathlib import Path
 
 import pytest
 
-from infrasim.templates import TEMPLATES, get_template_path, list_templates
+from faultray.templates import TEMPLATES, get_template_path, list_templates
 
 
 # ---------------------------------------------------------------------------
@@ -57,7 +57,7 @@ class TestTemplateFiles:
     @pytest.mark.parametrize("name", list(TEMPLATES.keys()))
     def test_template_loadable(self, name: str):
         """Each template must be loadable by the YAML loader."""
-        from infrasim.model.loader import load_yaml
+        from faultray.model.loader import load_yaml
 
         path = get_template_path(name)
         graph = load_yaml(path)
@@ -65,7 +65,7 @@ class TestTemplateFiles:
 
     @pytest.mark.parametrize("name", list(TEMPLATES.keys()))
     def test_template_has_dependencies(self, name: str):
-        from infrasim.model.loader import load_yaml
+        from faultray.model.loader import load_yaml
 
         path = get_template_path(name)
         graph = load_yaml(path)
@@ -74,7 +74,7 @@ class TestTemplateFiles:
 
     @pytest.mark.parametrize("name", list(TEMPLATES.keys()))
     def test_template_resilience_score_positive(self, name: str):
-        from infrasim.model.loader import load_yaml
+        from faultray.model.loader import load_yaml
 
         path = get_template_path(name)
         graph = load_yaml(path)
@@ -84,7 +84,7 @@ class TestTemplateFiles:
     @pytest.mark.parametrize("name", list(TEMPLATES.keys()))
     def test_template_has_security_profiles(self, name: str):
         """Templates should have at least some security settings."""
-        from infrasim.model.loader import load_yaml
+        from faultray.model.loader import load_yaml
 
         path = get_template_path(name)
         graph = load_yaml(path)
@@ -97,7 +97,7 @@ class TestTemplateFiles:
     @pytest.mark.parametrize("name", list(TEMPLATES.keys()))
     def test_template_has_cost_profiles(self, name: str):
         """Templates should have realistic cost profiles."""
-        from infrasim.model.loader import load_yaml
+        from faultray.model.loader import load_yaml
 
         path = get_template_path(name)
         graph = load_yaml(path)
@@ -115,8 +115,8 @@ class TestTemplateFiles:
 
 class TestTemplateContent:
     def test_web_app_has_lb_app_db_cache(self):
-        from infrasim.model.loader import load_yaml
-        from infrasim.model.components import ComponentType
+        from faultray.model.loader import load_yaml
+        from faultray.model.components import ComponentType
 
         graph = load_yaml(get_template_path("web-app"))
         types = {comp.type for comp in graph.components.values()}
@@ -126,7 +126,7 @@ class TestTemplateContent:
         assert ComponentType.CACHE in types
 
     def test_fintech_has_hsm_and_waf(self):
-        from infrasim.model.loader import load_yaml
+        from faultray.model.loader import load_yaml
 
         graph = load_yaml(get_template_path("fintech"))
         ids = set(graph.components.keys())

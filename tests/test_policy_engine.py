@@ -1,13 +1,13 @@
 """Comprehensive tests for the Policy-as-Code Engine.
 
-Targets 99%+ coverage of ``infrasim.policy.engine``.
+Targets 99%+ coverage of ``faultray.policy.engine``.
 """
 
 from __future__ import annotations
 
 import pytest
 
-from infrasim.model.components import (
+from faultray.model.components import (
     AutoScalingConfig,
     CircuitBreakerConfig,
     ComplianceTags,
@@ -18,8 +18,8 @@ from infrasim.model.components import (
     ResourceMetrics,
     SecurityProfile,
 )
-from infrasim.model.graph import InfraGraph
-from infrasim.policy.engine import (
+from faultray.model.graph import InfraGraph
+from faultray.policy.engine import (
     PolicyCategory,
     PolicyEngine,
     PolicyReport,
@@ -1821,13 +1821,13 @@ class TestEdgeCases:
 
 class TestSafeGetattr:
     def test_simple_attr(self):
-        from infrasim.policy.engine import _safe_getattr
+        from faultray.policy.engine import _safe_getattr
 
         comp = _make_component("app", ComponentType.APP_SERVER, replicas=3)
         assert _safe_getattr(comp, "replicas") == 3
 
     def test_nested_attr(self):
-        from infrasim.policy.engine import _safe_getattr
+        from faultray.policy.engine import _safe_getattr
 
         comp = Component(
             id="app",
@@ -1838,19 +1838,19 @@ class TestSafeGetattr:
         assert _safe_getattr(comp, "failover.enabled") is True
 
     def test_missing_attr(self):
-        from infrasim.policy.engine import _safe_getattr
+        from faultray.policy.engine import _safe_getattr
 
         comp = _make_component("app", ComponentType.APP_SERVER)
         assert _safe_getattr(comp, "nonexistent.attr") is None
 
     def test_missing_attr_with_default(self):
-        from infrasim.policy.engine import _safe_getattr
+        from faultray.policy.engine import _safe_getattr
 
         comp = _make_component("app", ComponentType.APP_SERVER)
         assert _safe_getattr(comp, "nonexistent", "fallback") == "fallback"
 
     def test_deep_nested(self):
-        from infrasim.policy.engine import _safe_getattr
+        from faultray.policy.engine import _safe_getattr
 
         comp = Component(
             id="app",

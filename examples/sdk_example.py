@@ -5,7 +5,7 @@ running simulations, SLA validation, genome analysis, benchmarking,
 natural language queries, environment comparison, and exports.
 """
 
-from infrasim import FaultZero
+from faultray import FaultZero
 
 # ============================================================
 # 1. Quick Start - Load from demo infrastructure

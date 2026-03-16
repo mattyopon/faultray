@@ -6,7 +6,7 @@ import time
 
 import pytest
 
-from infrasim.model.components import (
+from faultray.model.components import (
     AutoScalingConfig,
     Component,
     ComponentType,
@@ -15,8 +15,8 @@ from infrasim.model.components import (
     OperationalProfile,
     ResourceMetrics,
 )
-from infrasim.model.graph import InfraGraph
-from infrasim.simulator.digital_twin import (
+from faultray.model.graph import InfraGraph
+from faultray.simulator.digital_twin import (
     DigitalTwin,
     DigitalTwinReport,
     PredictionWarning,

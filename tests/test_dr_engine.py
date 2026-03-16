@@ -6,15 +6,15 @@ from types import SimpleNamespace
 
 import pytest
 
-from infrasim.model.components import (
+from faultray.model.components import (
     Component,
     ComponentType,
     Dependency,
     FailoverConfig,
     RegionConfig,
 )
-from infrasim.model.graph import InfraGraph
-from infrasim.simulator.dr_engine import DREngine, DRScenarioResult
+from faultray.model.graph import InfraGraph
+from faultray.simulator.dr_engine import DREngine, DRScenarioResult
 
 
 # ---------------------------------------------------------------------------
@@ -333,7 +333,7 @@ class TestIsPrimary:
 class TestRecoveryEstimation:
     def test_recovery_with_mttr(self):
         """Test line 118: recovery uses MTTR*60 when no failover and MTTR > 0."""
-        from infrasim.model.components import OperationalProfile
+        from faultray.model.components import OperationalProfile
         graph = InfraGraph()
         graph.add_component(Component(
             id="app",
@@ -350,7 +350,7 @@ class TestRecoveryEstimation:
 
     def test_recovery_no_mttr_fallback(self):
         """Test line 120: recovery defaults to 300s when no failover and MTTR is 0."""
-        from infrasim.model.components import OperationalProfile
+        from faultray.model.components import OperationalProfile
         graph = InfraGraph()
         graph.add_component(Component(
             id="app",

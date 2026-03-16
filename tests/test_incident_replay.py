@@ -6,7 +6,7 @@ from datetime import datetime, timedelta
 
 import pytest
 
-from infrasim.model.components import (
+from faultray.model.components import (
     Component,
     ComponentType,
     CostProfile,
@@ -16,9 +16,9 @@ from infrasim.model.components import (
     OperationalProfile,
     RegionConfig,
 )
-from infrasim.model.graph import InfraGraph
-from infrasim.simulator.incident_db import HISTORICAL_INCIDENTS
-from infrasim.simulator.incident_replay import (
+from faultray.model.graph import InfraGraph
+from faultray.simulator.incident_db import HISTORICAL_INCIDENTS
+from faultray.simulator.incident_replay import (
     AffectedComponent,
     HistoricalIncident,
     IncidentEvent,

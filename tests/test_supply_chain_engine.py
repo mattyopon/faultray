@@ -1,4 +1,4 @@
-"""Comprehensive tests for infrasim.simulator.supply_chain_engine."""
+"""Comprehensive tests for faultray.simulator.supply_chain_engine."""
 
 from __future__ import annotations
 
@@ -8,9 +8,9 @@ from pathlib import Path
 
 import pytest
 
-from infrasim.model.components import Component, ComponentType, Dependency
-from infrasim.model.graph import InfraGraph
-from infrasim.simulator.supply_chain_engine import (
+from faultray.model.components import Component, ComponentType, Dependency
+from faultray.model.graph import InfraGraph
+from faultray.simulator.supply_chain_engine import (
     DEFAULT_IMPACT,
     SEVERITY_ORDER,
     SupplyChainEngine,

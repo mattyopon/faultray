@@ -18,13 +18,13 @@ from __future__ import annotations
 import pytest
 import yaml
 
-from infrasim.ai.nl_to_infra import (
+from faultray.ai.nl_to_infra import (
     NLInfraParser,
     ParsedComponent,
     ParsedInfrastructure,
     ParsedRelationship,
 )
-from infrasim.model.components import ComponentType
+from faultray.model.components import ComponentType
 
 
 @pytest.fixture

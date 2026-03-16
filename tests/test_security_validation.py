@@ -1,4 +1,4 @@
-"""Security validation tests for InfraSim / FaultRay.
+"""Security validation tests for FaultRay / FaultRay.
 
 Tests non-functional security requirements:
 - Input sanitization for component IDs, names, and config loading
@@ -17,13 +17,13 @@ from pathlib import Path
 
 import pytest
 
-from infrasim.model.components import (
+from faultray.model.components import (
     Component,
     ComponentType,
     Dependency,
     HealthStatus,
 )
-from infrasim.model.graph import InfraGraph
+from faultray.model.graph import InfraGraph
 
 
 # =========================================================================
@@ -64,7 +64,7 @@ class TestInputSanitization:
             saved_ids = [c["id"] for c in raw["components"]]
             assert malicious_id in saved_ids
             # Ensure no file was created outside tmpdir
-            assert not Path("/etc/passwd_infrasim").exists()
+            assert not Path("/etc/passwd_faultray").exists()
 
     def test_component_id_with_null_bytes(self):
         """Component IDs with null bytes should be stored literally."""
@@ -96,10 +96,10 @@ class TestInputSanitization:
 
     def test_component_name_with_html_tags(self):
         """HTML tags in component names should be escaped in HTML report generation."""
-        from infrasim.reporter.html_report import _build_finding
-        from infrasim.simulator.cascade import CascadeChain, CascadeEffect
-        from infrasim.simulator.engine import ScenarioResult
-        from infrasim.simulator.scenarios import Scenario
+        from faultray.reporter.html_report import _build_finding
+        from faultray.simulator.cascade import CascadeChain, CascadeEffect
+        from faultray.simulator.engine import ScenarioResult
+        from faultray.simulator.scenarios import Scenario
 
         xss_name = '<script>alert("xss")</script>'
 
@@ -145,7 +145,7 @@ class TestInputSanitization:
     def test_yaml_safe_load_used(self):
         """Verify that the YAML loader uses safe_load, not yaml.load."""
         import inspect
-        from infrasim.model import loader
+        from faultray.model import loader
 
         source = inspect.getsource(loader)
         # Must use yaml.safe_load, never yaml.load with unsafe Loader
@@ -177,7 +177,7 @@ class TestInputSanitization:
 
     def test_yaml_loader_rejects_non_dict(self):
         """YAML loader should raise ValueError for non-dict top-level."""
-        from infrasim.model.loader import load_yaml
+        from faultray.model.loader import load_yaml
 
         with tempfile.NamedTemporaryFile(
             suffix=".yaml", mode="w", delete=False
@@ -326,8 +326,8 @@ class TestAPISecurity:
         """Create a FastAPI test client."""
         try:
             from fastapi.testclient import TestClient
-            from infrasim.api.server import app, set_graph
-            from infrasim.model.demo import create_demo_graph
+            from faultray.api.server import app, set_graph
+            from faultray.model.demo import create_demo_graph
 
             set_graph(create_demo_graph())
             return TestClient(app, raise_server_exceptions=False)
@@ -413,10 +413,10 @@ class TestDependencySecurity:
     def test_no_eval_in_source_modules(self):
         """Core modules must not use eval() with user-controlled data."""
         import inspect
-        import infrasim.model.graph as graph_mod
-        import infrasim.model.components as comp_mod
-        import infrasim.model.loader as loader_mod
-        import infrasim.scoring as scoring_mod
+        import faultray.model.graph as graph_mod
+        import faultray.model.components as comp_mod
+        import faultray.model.loader as loader_mod
+        import faultray.scoring as scoring_mod
 
         for mod in [graph_mod, comp_mod, loader_mod, scoring_mod]:
             source = inspect.getsource(mod)
@@ -429,9 +429,9 @@ class TestDependencySecurity:
     def test_no_pickle_loads_in_core(self):
         """Core modules must not use pickle.loads (unsafe deserialization)."""
         import inspect
-        import infrasim.model.graph as graph_mod
-        import infrasim.model.components as comp_mod
-        import infrasim.model.loader as loader_mod
+        import faultray.model.graph as graph_mod
+        import faultray.model.components as comp_mod
+        import faultray.model.loader as loader_mod
 
         for mod in [graph_mod, comp_mod, loader_mod]:
             source = inspect.getsource(mod)
@@ -445,9 +445,9 @@ class TestDependencySecurity:
     def test_no_exec_in_core_modules(self):
         """Core model/graph/loader modules must not use exec()."""
         import inspect
-        import infrasim.model.graph as graph_mod
-        import infrasim.model.components as comp_mod
-        import infrasim.model.loader as loader_mod
+        import faultray.model.graph as graph_mod
+        import faultray.model.components as comp_mod
+        import faultray.model.loader as loader_mod
 
         for mod in [graph_mod, comp_mod, loader_mod]:
             source = inspect.getsource(mod)
@@ -459,7 +459,7 @@ class TestDependencySecurity:
     def test_yaml_safe_load_not_unsafe_loader(self):
         """YAML loading must use safe_load, not load with FullLoader/UnsafeLoader."""
         import inspect
-        from infrasim.model import loader
+        from faultray.model import loader
 
         source = inspect.getsource(loader)
         # Must not contain Loader=yaml.FullLoader or Loader=yaml.UnsafeLoader
@@ -469,7 +469,7 @@ class TestDependencySecurity:
     def test_json_loading_uses_stdlib(self):
         """JSON model loading should use stdlib json, not unsafe alternatives."""
         import inspect
-        import infrasim.model.graph as graph_mod
+        import faultray.model.graph as graph_mod
 
         source = inspect.getsource(graph_mod)
         assert "json.loads" in source or "json.load" in source
@@ -479,7 +479,7 @@ class TestDependencySecurity:
     def test_policy_engine_no_eval(self):
         """Policy engine explicitly avoids eval() for condition evaluation."""
         import inspect
-        import infrasim.policy.engine as policy_mod
+        import faultray.policy.engine as policy_mod
 
         source = inspect.getsource(policy_mod)
         # Match actual eval() calls — exclude comments, docstrings, and
@@ -505,7 +505,7 @@ class TestDependencySecurity:
     def test_plugin_exec_is_sandboxed(self):
         """Plugin manager uses exec() but only on local .py files, not user input."""
         import inspect
-        from infrasim.plugins import plugin_manager
+        from faultray.plugins import plugin_manager
 
         source = inspect.getsource(plugin_manager)
         # exec() IS used in plugin_manager for loading .py plugins, which is

@@ -6,7 +6,7 @@ from dataclasses import dataclass, field
 
 import pytest
 
-from infrasim.model.components import (
+from faultray.model.components import (
     AutoScalingConfig,
     Component,
     ComponentType,
@@ -17,8 +17,8 @@ from infrasim.model.components import (
     ResourceMetrics,
     SLOTarget,
 )
-from infrasim.model.graph import InfraGraph
-from infrasim.simulator.failure_budget import (
+from faultray.model.graph import InfraGraph
+from faultray.simulator.failure_budget import (
     BudgetAllocation,
     BudgetReport,
     FailureBudgetAllocator,

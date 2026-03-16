@@ -14,7 +14,7 @@ from pathlib import Path
 import pytest
 from typer.testing import CliRunner
 
-from infrasim.cli import app
+from faultray.cli import app
 
 runner = CliRunner()
 
@@ -25,7 +25,7 @@ runner = CliRunner()
 
 def _create_model(tmp_path: Path) -> Path:
     """Save a demo model JSON to a temp file and return its path."""
-    from infrasim.model.demo import create_demo_graph
+    from faultray.model.demo import create_demo_graph
 
     g = create_demo_graph()
     p = tmp_path / "m.json"

@@ -1,4 +1,4 @@
-"""Performance benchmark tests for InfraSim / FaultRay.
+"""Performance benchmark tests for FaultRay / FaultRay.
 
 Verifies performance characteristics under load:
 - Graph creation and manipulation at various scales
@@ -17,7 +17,7 @@ from typing import Callable
 
 import pytest
 
-from infrasim.model.components import (
+from faultray.model.components import (
     AutoScalingConfig,
     Capacity,
     Component,
@@ -27,8 +27,8 @@ from infrasim.model.components import (
     HealthStatus,
     ResourceMetrics,
 )
-from infrasim.model.graph import InfraGraph
-from infrasim.simulator.engine import SimulationEngine
+from faultray.model.graph import InfraGraph
+from faultray.simulator.engine import SimulationEngine
 
 
 # =========================================================================
@@ -330,7 +330,7 @@ class TestSimulationPerformance:
 
     def test_simulation_small_graph(self):
         """Running default scenarios on a small graph should be fast."""
-        from infrasim.model.demo import create_demo_graph
+        from faultray.model.demo import create_demo_graph
 
         graph = create_demo_graph()
         engine = SimulationEngine(graph)
@@ -362,7 +362,7 @@ class TestSimulationPerformance:
 
     def test_single_scenario_execution_speed(self):
         """A single scenario should run in milliseconds."""
-        from infrasim.simulator.scenarios import Fault, FaultType, Scenario
+        from faultray.simulator.scenarios import Fault, FaultType, Scenario
 
         graph = _build_tiered_graph(100)
         engine = SimulationEngine(graph)
@@ -453,7 +453,7 @@ class TestReportGenerationPerformance:
     def test_html_report_generation_performance(self):
         """HTML report generation should complete within threshold."""
         try:
-            from infrasim.reporter.html_report import generate_html_report
+            from faultray.reporter.html_report import generate_html_report
         except ImportError:
             pytest.skip("HTML report module not available")
 

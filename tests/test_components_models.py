@@ -5,7 +5,7 @@ from __future__ import annotations
 import pytest
 from pydantic import ValidationError
 
-from infrasim.model.components import (
+from faultray.model.components import (
     AutoScalingConfig,
     CacheWarmingConfig,
     Capacity,

@@ -6,16 +6,16 @@ from pathlib import Path
 
 import pytest
 
-from infrasim.ai.analyzer import AIAnalysisReport, AIRecommendation, InfraSimAnalyzer
-from infrasim.model.components import ComponentType, HealthStatus
-from infrasim.model.demo import create_demo_graph
-from infrasim.reporter.compliance import (
+from faultray.ai.analyzer import AIAnalysisReport, AIRecommendation, FaultRayAnalyzer
+from faultray.model.components import ComponentType, HealthStatus
+from faultray.model.demo import create_demo_graph
+from faultray.reporter.compliance import (
     _esc,
     _health_badge,
     _severity_badge,
     generate_dora_report,
 )
-from infrasim.simulator.engine import SimulationEngine
+from faultray.simulator.engine import SimulationEngine
 
 
 # ---------------------------------------------------------------------------
@@ -35,7 +35,7 @@ def demo_sim_report(demo_graph):
 
 @pytest.fixture
 def demo_ai_report(demo_graph, demo_sim_report):
-    analyzer = InfraSimAnalyzer()
+    analyzer = FaultRayAnalyzer()
     return analyzer.analyze(demo_graph, demo_sim_report)
 
 

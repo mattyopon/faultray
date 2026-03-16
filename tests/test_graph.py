@@ -1,8 +1,8 @@
 """Tests for InfraGraph cascade path and critical path operations."""
 
-from infrasim.model.components import Component, ComponentType, Dependency
-from infrasim.model.demo import create_demo_graph
-from infrasim.model.graph import InfraGraph
+from faultray.model.components import Component, ComponentType, Dependency
+from faultray.model.demo import create_demo_graph
+from faultray.model.graph import InfraGraph
 
 
 def test_cascade_path_direction():

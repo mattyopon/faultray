@@ -1,14 +1,14 @@
 """Tests for the Resilience Leaderboard."""
 
-from infrasim.api.leaderboard import (
+from faultray.api.leaderboard import (
     BADGE_CRITERIA,
     LeaderboardEntry,
     LeaderboardStore,
     evaluate_badges,
     get_leaderboard_store,
 )
-from infrasim.model.components import Component, ComponentType
-from infrasim.model.graph import InfraGraph
+from faultray.model.components import Component, ComponentType
+from faultray.model.graph import InfraGraph
 
 
 def _make_graph(replicas: int = 2) -> InfraGraph:

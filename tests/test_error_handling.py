@@ -1,4 +1,4 @@
-"""Error handling and graceful degradation tests for ChaosProof / FaultRay.
+"""Error handling and graceful degradation tests for FaultRay / FaultRay.
 
 Verifies that the system produces clear error messages for invalid input,
 recovers gracefully from corrupt state, and does not crash on edge-case
@@ -18,9 +18,9 @@ from unittest.mock import AsyncMock, MagicMock, patch
 import pytest
 from pydantic import ValidationError
 
-from infrasim.cache import ResultCache
-from infrasim.ci.sarif_exporter import SARIFExporter, export_sarif
-from infrasim.model.components import (
+from faultray.cache import ResultCache
+from faultray.ci.sarif_exporter import SARIFExporter, export_sarif
+from faultray.model.components import (
     AutoScalingConfig,
     Capacity,
     Component,
@@ -29,16 +29,16 @@ from infrasim.model.components import (
     FailoverConfig,
     ResourceMetrics,
 )
-from infrasim.model.graph import InfraGraph
-from infrasim.model.loader import load_yaml
-from infrasim.reporter.export import (
+from faultray.model.graph import InfraGraph
+from faultray.model.loader import load_yaml
+from faultray.reporter.export import (
     export_csv,
     export_json,
     export_sarif as export_sarif_reporter,
 )
-from infrasim.simulator.cascade import CascadeChain, CascadeEffect, CascadeEngine
-from infrasim.simulator.engine import SimulationEngine, SimulationReport
-from infrasim.simulator.scenarios import Fault, FaultType, Scenario
+from faultray.simulator.cascade import CascadeChain, CascadeEffect, CascadeEngine
+from faultray.simulator.engine import SimulationEngine, SimulationReport
+from faultray.simulator.scenarios import Fault, FaultType, Scenario
 
 
 # ---------------------------------------------------------------------------
@@ -439,7 +439,7 @@ class TestScannerNoCredentials:
     def test_aws_scanner_no_credentials(self):
         """AWS scan without credentials should give clear error."""
         try:
-            from infrasim.discovery.aws_scanner import scan_aws
+            from faultray.discovery.aws_scanner import scan_aws
         except ImportError:
             pytest.skip("boto3 not installed")
 
@@ -450,7 +450,7 @@ class TestScannerNoCredentials:
     def test_gcp_scanner_no_libs(self):
         """GCP scan without google-cloud libs should error clearly."""
         try:
-            from infrasim.discovery.gcp_scanner import _check_gcp_libs
+            from faultray.discovery.gcp_scanner import _check_gcp_libs
         except ImportError:
             pytest.skip("gcp scanner not importable")
 
@@ -464,7 +464,7 @@ class TestScannerNoCredentials:
     def test_k8s_scanner_no_cluster(self):
         """K8s scan without cluster should error clearly."""
         try:
-            from infrasim.discovery.k8s_scanner import _check_k8s_lib
+            from faultray.discovery.k8s_scanner import _check_k8s_lib
         except ImportError:
             pytest.skip("k8s scanner not importable")
 
@@ -483,7 +483,7 @@ class TestWebhookNotificationFailure:
     @pytest.mark.asyncio
     async def test_webhook_notification_failure_returns_false(self):
         """Failed webhook should return False, not crash."""
-        from infrasim.integrations.webhooks import send_slack_notification
+        from faultray.integrations.webhooks import send_slack_notification
 
         # Use a URL that will fail
         result = await send_slack_notification(
@@ -495,7 +495,7 @@ class TestWebhookNotificationFailure:
     @pytest.mark.asyncio
     async def test_pagerduty_no_critical(self):
         """PagerDuty should not fire when there are no critical findings."""
-        from infrasim.integrations.webhooks import send_pagerduty_event
+        from faultray.integrations.webhooks import send_pagerduty_event
 
         result = await send_pagerduty_event(
             "fake-routing-key",
@@ -513,14 +513,14 @@ class TestGraphQLMalformedQuery:
 
     def test_graphql_tokenizer_empty_query(self):
         """Empty query should produce empty token list."""
-        from infrasim.api.graphql_api import _tokenize
+        from faultray.api.graphql_api import _tokenize
 
         tokens = _tokenize("")
         assert tokens == []
 
     def test_graphql_tokenizer_garbage(self):
         """Non-GraphQL input should not crash tokenizer."""
-        from infrasim.api.graphql_api import _tokenize
+        from faultray.api.graphql_api import _tokenize
 
         tokens = _tokenize("!@#$%^&*()")
         # No alphanumeric or braces -> empty
@@ -528,7 +528,7 @@ class TestGraphQLMalformedQuery:
 
     def test_graphql_parse_unclosed_brace(self):
         """Unclosed brace should not cause infinite loop."""
-        from infrasim.api.graphql_api import _parse_selection_set, _tokenize
+        from faultray.api.graphql_api import _parse_selection_set, _tokenize
 
         tokens = _tokenize("{ components id name")
         # Parse should terminate even without closing brace
@@ -808,7 +808,7 @@ class TestPrometheusUnreachable:
 
     def test_prometheus_parse_instance(self):
         """_parse_instance should handle various formats without crash."""
-        from infrasim.discovery.prometheus import _parse_instance
+        from faultray.discovery.prometheus import _parse_instance
 
         host, port = _parse_instance("myhost:9090")
         assert host == "myhost"
@@ -820,7 +820,7 @@ class TestPrometheusUnreachable:
 
     def test_prometheus_safe_float(self):
         """_safe_float should handle bad input gracefully."""
-        from infrasim.discovery.prometheus import _safe_float
+        from faultray.discovery.prometheus import _safe_float
 
         assert _safe_float("123.45") == pytest.approx(123.45)
         assert _safe_float("not_a_number") == 0.0

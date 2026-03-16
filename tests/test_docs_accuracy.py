@@ -16,7 +16,7 @@ import yaml
 
 # Project root
 PROJECT_ROOT = Path(__file__).parent.parent
-SRC_ROOT = PROJECT_ROOT / "src" / "infrasim"
+SRC_ROOT = PROJECT_ROOT / "src" / "faultray"
 DOCS_ROOT = PROJECT_ROOT / "docs"
 EXAMPLES_ROOT = PROJECT_ROOT / "examples"
 TEMPLATES_ROOT = SRC_ROOT / "templates"
@@ -44,7 +44,7 @@ class TestReadmeCLICommandsExist:
 
     def _get_registered_commands(self) -> set[str]:
         """Get all registered CLI commands from the Typer app."""
-        from infrasim.cli import app
+        from faultray.cli import app
         from typer.main import get_command
 
         click_app = get_command(app)
@@ -159,14 +159,14 @@ class TestAllPublicAPIDocumented:
 
     def test_public_api_has_docstrings(self):
         """All public API names in __all__ should have docstrings when imported."""
-        from infrasim import __all__ as public_api
+        from faultray import __all__ as public_api
 
         missing_docs = []
         import_errors = []
 
         for name in public_api:
             try:
-                obj = getattr(importlib.import_module("infrasim"), name)
+                obj = getattr(importlib.import_module("faultray"), name)
             except (ImportError, AttributeError) as exc:
                 import_errors.append(f"{name}: {exc}")
                 continue
@@ -194,7 +194,7 @@ class TestChangelogVersions:
 
     def test_init_version_is_valid(self):
         """__version__ should be a valid semantic version string."""
-        from infrasim import __version__
+        from faultray import __version__
 
         assert __version__, "__version__ should not be empty"
         # Should match semver pattern: X.Y.Z (with optional pre-release)
@@ -204,7 +204,7 @@ class TestChangelogVersions:
 
     def test_pyproject_version_matches_init(self):
         """pyproject.toml version should match __init__.py __version__."""
-        from infrasim import __version__
+        from faultray import __version__
 
         pyproject_path = PROJECT_ROOT / "pyproject.toml"
         if not pyproject_path.exists():
@@ -256,9 +256,9 @@ class TestExampleYAMLFilesLoadable:
 
         assert len(errors) == 0, f"YAML files with parse errors: {errors}"
 
-    def test_template_yaml_loadable_by_infrasim(self):
-        """Template YAML files should load via infrasim.model.loader."""
-        from infrasim.model.loader import load_yaml
+    def test_template_yaml_loadable_by_faultray(self):
+        """Template YAML files should load via faultray.model.loader."""
+        from faultray.model.loader import load_yaml
 
         template_files = list(TEMPLATES_ROOT.glob("*.yaml"))
         if not template_files:
@@ -274,9 +274,9 @@ class TestExampleYAMLFilesLoadable:
 
         assert len(errors) == 0, f"Templates that fail to load: {errors}"
 
-    def test_example_yaml_loadable_by_infrasim(self):
-        """Example YAML files (infra models) should load via infrasim."""
-        from infrasim.model.loader import load_yaml
+    def test_example_yaml_loadable_by_faultray(self):
+        """Example YAML files (infra models) should load via faultray."""
+        from faultray.model.loader import load_yaml
 
         example_yamls = []
         if EXAMPLES_ROOT.exists():
@@ -310,7 +310,7 @@ class TestHelpTextMatchesOptions:
     def test_main_help_works(self):
         """Main CLI --help should produce output with registered commands."""
         from typer.testing import CliRunner
-        from infrasim.cli import app
+        from faultray.cli import app
 
         runner = CliRunner()
         result = runner.invoke(app, ["--help"])
@@ -320,7 +320,7 @@ class TestHelpTextMatchesOptions:
     def test_simulate_help_shows_options(self):
         """simulate --help should document --model, --json, --dynamic."""
         from typer.testing import CliRunner
-        from infrasim.cli import app
+        from faultray.cli import app
 
         runner = CliRunner()
         result = runner.invoke(app, ["simulate", "--help"])
@@ -332,7 +332,7 @@ class TestHelpTextMatchesOptions:
     def test_evaluate_help_shows_options(self):
         """evaluate --help should document key options."""
         from typer.testing import CliRunner
-        from infrasim.cli import app
+        from faultray.cli import app
 
         runner = CliRunner()
         result = runner.invoke(app, ["evaluate", "--help"])
@@ -346,7 +346,7 @@ class TestHelpTextMatchesOptions:
     def test_command_help_exits_zero(self, cmd: str):
         """All documented commands should have working --help."""
         from typer.testing import CliRunner
-        from infrasim.cli import app
+        from faultray.cli import app
 
         runner = CliRunner()
         result = runner.invoke(app, [cmd, "--help"])
@@ -362,20 +362,20 @@ class TestAllCompleteness:
     """__all__ in __init__.py should export importable names."""
 
     def test_all_names_importable(self):
-        """Every name in __all__ should be importable from infrasim."""
-        from infrasim import __all__ as public_api
-        import infrasim
+        """Every name in __all__ should be importable from faultray."""
+        from faultray import __all__ as public_api
+        import faultray
 
         for name in public_api:
             try:
-                obj = getattr(infrasim, name)
+                obj = getattr(faultray, name)
                 assert obj is not None, f"'{name}' imported but is None"
             except (ImportError, AttributeError) as exc:
-                pytest.fail(f"Cannot import '{name}' from infrasim: {exc}")
+                pytest.fail(f"Cannot import '{name}' from faultray: {exc}")
 
     def test_all_names_are_strings(self):
         """__all__ should be a list of strings."""
-        from infrasim import __all__ as public_api
+        from faultray import __all__ as public_api
 
         assert isinstance(public_api, (list, tuple))
         for name in public_api:
@@ -391,7 +391,7 @@ class TestComponentModelConsistency:
 
     def test_all_component_types_in_enum(self):
         """All ComponentType enum values should be recognized strings."""
-        from infrasim.model.components import ComponentType
+        from faultray.model.components import ComponentType
 
         # These should exist as per the code and documentation
         expected = {
@@ -405,7 +405,7 @@ class TestComponentModelConsistency:
 
     def test_fault_types_in_enum(self):
         """All FaultType enum values should be valid strings."""
-        from infrasim.simulator.scenarios import FaultType
+        from faultray.simulator.scenarios import FaultType
 
         expected = {
             "component_down", "latency_spike", "cpu_saturation",
@@ -419,7 +419,7 @@ class TestComponentModelConsistency:
 
     def test_health_status_enum(self):
         """HealthStatus enum should have expected values."""
-        from infrasim.model.components import HealthStatus
+        from faultray.model.components import HealthStatus
 
         expected = {"healthy", "degraded", "down", "overloaded"}
         actual = {hs.value for hs in HealthStatus}
@@ -437,7 +437,7 @@ class TestSchemaVersionConsistency:
 
     def test_schema_version_is_string(self):
         """SCHEMA_VERSION should be a non-empty string."""
-        from infrasim.model.components import SCHEMA_VERSION
+        from faultray.model.components import SCHEMA_VERSION
 
         assert isinstance(SCHEMA_VERSION, str)
         assert len(SCHEMA_VERSION) > 0
@@ -445,8 +445,8 @@ class TestSchemaVersionConsistency:
     def test_saved_model_includes_schema_version(self, tmp_path: Path):
         """A saved model JSON should include schema_version."""
         import json
-        from infrasim.model.demo import create_demo_graph
-        from infrasim.model.components import SCHEMA_VERSION
+        from faultray.model.demo import create_demo_graph
+        from faultray.model.components import SCHEMA_VERSION
 
         graph = create_demo_graph()
         model_path = tmp_path / "test.json"
@@ -466,7 +466,7 @@ class TestTemplatesRegistryMatchesFiles:
 
     def test_all_registered_templates_have_files(self):
         """Every template in the TEMPLATES dict should have a corresponding YAML file."""
-        from infrasim.templates import TEMPLATES, get_template_path
+        from faultray.templates import TEMPLATES, get_template_path
 
         for name in TEMPLATES:
             path = get_template_path(name)
@@ -476,7 +476,7 @@ class TestTemplatesRegistryMatchesFiles:
 
     def test_template_files_have_components(self):
         """Every template YAML should have a 'components' key with entries."""
-        from infrasim.templates import TEMPLATES, get_template_path
+        from faultray.templates import TEMPLATES, get_template_path
 
         for name in TEMPLATES:
             path = get_template_path(name)

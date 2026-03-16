@@ -1,6 +1,6 @@
 """Tests for cascade simulation engine."""
 
-from infrasim.model.components import (
+from faultray.model.components import (
     Capacity,
     Component,
     ComponentType,
@@ -8,10 +8,10 @@ from infrasim.model.components import (
     HealthStatus,
     ResourceMetrics,
 )
-from infrasim.model.graph import InfraGraph
-from infrasim.simulator.cascade import CascadeChain, CascadeEffect, CascadeEngine
-from infrasim.simulator.engine import SimulationEngine
-from infrasim.simulator.scenarios import Fault, FaultType, Scenario
+from faultray.model.graph import InfraGraph
+from faultray.simulator.cascade import CascadeChain, CascadeEffect, CascadeEngine
+from faultray.simulator.engine import SimulationEngine
+from faultray.simulator.scenarios import Fault, FaultType, Scenario
 
 
 def _build_test_graph() -> InfraGraph:
@@ -527,7 +527,7 @@ def test_simulate_latency_cascade_circuit_breaker_stops_propagation():
         replicas=1,
         capacity=Capacity(timeout_seconds=30),
     ))
-    from infrasim.model.components import CircuitBreakerConfig
+    from faultray.model.components import CircuitBreakerConfig
     # Enable circuit breaker on app->db edge
     graph.add_dependency(Dependency(
         source_id="app", target_id="db", dependency_type="requires",
@@ -1146,7 +1146,7 @@ def test_async_dependency_non_down_no_cascade():
 
 def test_latency_cascade_singleflight_reduces_connections():
     """Singleflight should reduce effective connections during latency cascade."""
-    from infrasim.model.components import SingleflightConfig
+    from faultray.model.components import SingleflightConfig
     graph = InfraGraph()
     graph.add_component(Component(
         id="app", name="App", type=ComponentType.APP_SERVER,
@@ -1173,7 +1173,7 @@ def test_latency_cascade_singleflight_reduces_connections():
 
 def test_latency_cascade_adaptive_retry():
     """Adaptive retry strategy should use max_retries instead of retry_multiplier."""
-    from infrasim.model.components import RetryStrategy
+    from faultray.model.components import RetryStrategy
     graph = InfraGraph()
     graph.add_component(Component(
         id="app", name="App", type=ComponentType.APP_SERVER,
@@ -1204,7 +1204,7 @@ def test_latency_cascade_adaptive_retry():
 
 def test_latency_cascade_bfs_multi_level_with_cb():
     """Latency cascade should propagate BFS through multiple levels, stopping at circuit breaker."""
-    from infrasim.model.components import CircuitBreakerConfig
+    from faultray.model.components import CircuitBreakerConfig
     graph = InfraGraph()
     graph.add_component(Component(
         id="fe", name="Frontend", type=ComponentType.WEB_SERVER,

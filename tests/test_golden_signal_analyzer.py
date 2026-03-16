@@ -8,9 +8,9 @@ from __future__ import annotations
 
 import pytest
 
-from infrasim.model.components import Component, ComponentType, HealthStatus
-from infrasim.model.graph import InfraGraph
-from infrasim.simulator.golden_signal_analyzer import (
+from faultray.model.components import Component, ComponentType, HealthStatus
+from faultray.model.graph import InfraGraph
+from faultray.simulator.golden_signal_analyzer import (
     GoldenSignalAnalyzer,
     GoldenSignalReport,
     SignalReading,
@@ -1066,11 +1066,11 @@ class TestLatencyBoundary:
         """Need a scenario that produces exactly 200ms."""
         # Can't easily produce exactly 200 with the given health values and multipliers.
         # Use _classify directly instead.
-        from infrasim.simulator.golden_signal_analyzer import _LATENCY_THRESHOLD
+        from faultray.simulator.golden_signal_analyzer import _LATENCY_THRESHOLD
         assert _classify(200.0, _LATENCY_THRESHOLD) == SignalStatus.WARNING
 
     def test_at_exactly_1000(self):
-        from infrasim.simulator.golden_signal_analyzer import _LATENCY_THRESHOLD
+        from faultray.simulator.golden_signal_analyzer import _LATENCY_THRESHOLD
         assert _classify(1000.0, _LATENCY_THRESHOLD) == SignalStatus.CRITICAL
 
 

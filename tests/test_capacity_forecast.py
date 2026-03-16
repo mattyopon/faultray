@@ -7,14 +7,14 @@ from datetime import datetime, timedelta
 
 import pytest
 
-from infrasim.model.components import (
+from faultray.model.components import (
     Component,
     ComponentType,
     HealthStatus,
     ResourceMetrics,
 )
-from infrasim.model.graph import InfraGraph
-from infrasim.simulator.capacity_forecast import (
+from faultray.model.graph import InfraGraph
+from faultray.simulator.capacity_forecast import (
     CapacityDataPoint,
     CapacityForecast,
     CapacityForecaster,

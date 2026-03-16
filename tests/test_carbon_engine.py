@@ -1,13 +1,13 @@
 """Tests for the Carbon Footprint Engine."""
 
-from infrasim.model.components import (
+from faultray.model.components import (
     Component,
     ComponentType,
     RegionConfig,
     ResourceMetrics,
 )
-from infrasim.model.graph import InfraGraph
-from infrasim.simulator.carbon_engine import (
+from faultray.model.graph import InfraGraph
+from faultray.simulator.carbon_engine import (
     CARBON_FACTORS_G_PER_CPU_HOUR,
     CarbonEngine,
     CarbonReport,

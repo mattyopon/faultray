@@ -2,7 +2,7 @@
 
 import math
 
-from infrasim.model.components import (
+from faultray.model.components import (
     Capacity,
     Component,
     ComponentType,
@@ -10,8 +10,8 @@ from infrasim.model.components import (
     ResourceMetrics,
     SLOTarget,
 )
-from infrasim.model.graph import InfraGraph
-from infrasim.simulator.capacity_engine import CapacityPlanningEngine
+from faultray.model.graph import InfraGraph
+from faultray.simulator.capacity_engine import CapacityPlanningEngine
 
 
 def _build_capacity_graph() -> InfraGraph:
@@ -137,7 +137,7 @@ def test_months_to_capacity_zero_utilization():
 
 def test_forecast_with_simulation():
     """forecast_with_simulation should run ops simulation and return a report."""
-    from infrasim.model.components import FailoverConfig
+    from faultray.model.components import FailoverConfig
 
     graph = InfraGraph()
     graph.add_component(Component(
@@ -161,7 +161,7 @@ def test_forecast_with_simulation():
         metrics=ResourceMetrics(cpu_percent=15),
         capacity=Capacity(max_connections=10000),
     ))
-    from infrasim.model.components import Dependency
+    from faultray.model.components import Dependency
     graph.add_dependency(Dependency(source_id="lb", target_id="app", dependency_type="requires"))
     graph.add_dependency(Dependency(source_id="app", target_id="db", dependency_type="requires"))
 
@@ -207,7 +207,7 @@ def test_get_component_utilization_many_replicas():
 
 def test_ha_min_replicas_for_lb():
     """Load balancer should have min 2 replicas even at low utilization."""
-    from infrasim.model.components import FailoverConfig
+    from faultray.model.components import FailoverConfig
 
     graph = InfraGraph()
     graph.add_component(Component(

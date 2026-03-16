@@ -1,4 +1,4 @@
-name: ChaosProof Resilience Gate
+name: FaultRay Resilience Gate
 on:
   pull_request:
     paths:
@@ -111,7 +111,7 @@ jobs:
           set -euo pipefail
           python3 -c "
           import json
-          from infrasim.ci.sarif_exporter import SARIFExporter
+          from faultray.ci.sarif_exporter import SARIFExporter
           results = json.load(open('results.json'))
           sarif = SARIFExporter.from_json_results(results)
           with open('results.sarif', 'w') as f:
@@ -141,7 +141,7 @@ jobs:
             const statusText = critical === 0 ? 'PASSED' : 'FAILED';
             const statusEmoji = critical === 0 ? '\u2705' : '\u274c';
 
-            const body = `## ${statusEmoji} ChaosProof Resilience Gate: ${statusText}
+            const body = `## ${statusEmoji} FaultRay Resilience Gate: ${statusText}
 
             | Metric | Value |
             |--------|-------|
@@ -160,7 +160,7 @@ jobs:
             });
 
             const botComment = comments.find(c =>
-              c.body.includes('ChaosProof Resilience Gate')
+              c.body.includes('FaultRay Resilience Gate')
             );
 
             if (botComment) {

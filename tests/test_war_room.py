@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import pytest
 
-from infrasim.model.components import (
+from faultray.model.components import (
     AutoScalingConfig,
     CircuitBreakerConfig,
     Component,
@@ -14,8 +14,8 @@ from infrasim.model.components import (
     HealthStatus,
     OperationalProfile,
 )
-from infrasim.model.graph import InfraGraph
-from infrasim.simulator.war_room import (
+from faultray.model.graph import InfraGraph
+from faultray.simulator.war_room import (
     WarRoomEvent,
     WarRoomPhase,
     WarRoomReport,

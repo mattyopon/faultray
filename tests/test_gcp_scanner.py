@@ -11,8 +11,8 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-from infrasim.model.components import Component, ComponentType, Dependency
-from infrasim.model.graph import InfraGraph
+from faultray.model.components import Component, ComponentType, Dependency
+from faultray.model.graph import InfraGraph
 
 
 # ---------------------------------------------------------------------------
@@ -21,7 +21,7 @@ from infrasim.model.graph import InfraGraph
 
 def _make_scanner(project_id: str = "my-project"):
     """Import and instantiate GCPScanner (ensures module is importable)."""
-    from infrasim.discovery.gcp_scanner import GCPScanner
+    from faultray.discovery.gcp_scanner import GCPScanner
     return GCPScanner(project_id=project_id)
 
 
@@ -112,7 +112,7 @@ def _patch_gcp_modules(**extra_modules):
 def _reload_scanner(modules_dict):
     """Reload the gcp_scanner module with patched sys.modules and return it."""
     with patch.dict(sys.modules, modules_dict):
-        import infrasim.discovery.gcp_scanner as gcp_mod
+        import faultray.discovery.gcp_scanner as gcp_mod
         importlib.reload(gcp_mod)
         return gcp_mod
 
@@ -129,7 +129,7 @@ class TestGCPScannerInit:
         assert scanner.project_id == "test-project"
 
     def test_gcp_type_map(self):
-        from infrasim.discovery.gcp_scanner import GCP_TYPE_MAP
+        from faultray.discovery.gcp_scanner import GCP_TYPE_MAP
         assert GCP_TYPE_MAP["compute"] == ComponentType.APP_SERVER
         assert GCP_TYPE_MAP["cloud_sql"] == ComponentType.DATABASE
         assert GCP_TYPE_MAP["memorystore"] == ComponentType.CACHE
@@ -143,14 +143,14 @@ class TestGCPScannerInit:
 
     def test_import_error_graceful(self):
         """Test that missing google-cloud libraries raise a clear RuntimeError."""
-        from infrasim.discovery.gcp_scanner import _check_gcp_libs
+        from faultray.discovery.gcp_scanner import _check_gcp_libs
 
         with patch("builtins.__import__", side_effect=ImportError("No module named 'google.cloud.compute_v1'")):
             with pytest.raises(RuntimeError, match="google-cloud-compute is required"):
                 _check_gcp_libs()
 
     def test_discovery_result_dataclass(self):
-        from infrasim.discovery.gcp_scanner import GCPDiscoveryResult
+        from faultray.discovery.gcp_scanner import GCPDiscoveryResult
         result = GCPDiscoveryResult(
             project_id="test-project",
             components_found=5,
@@ -825,7 +825,7 @@ class TestSecurityDetection:
 class TestFullScan:
     """Tests for the full scan() method."""
 
-    @patch("infrasim.discovery.gcp_scanner._check_gcp_libs")
+    @patch("faultray.discovery.gcp_scanner._check_gcp_libs")
     def test_full_scan_empty(self, mock_check):
         """Test full scan with no resources."""
         scanner = _make_scanner()
@@ -849,7 +849,7 @@ class TestFullScan:
         assert result.dependencies_inferred == 0
         assert result.scan_duration_seconds >= 0
 
-    @patch("infrasim.discovery.gcp_scanner._check_gcp_libs")
+    @patch("faultray.discovery.gcp_scanner._check_gcp_libs")
     def test_full_scan_warnings_on_error(self, mock_check):
         """Test that scan errors are captured as warnings."""
         scanner = _make_scanner()
@@ -871,7 +871,7 @@ class TestFullScan:
         assert len(result.warnings) >= 1
         assert "Compute Engine" in result.warnings[0]
 
-    @patch("infrasim.discovery.gcp_scanner._check_gcp_libs")
+    @patch("faultray.discovery.gcp_scanner._check_gcp_libs")
     def test_runtime_error_propagates(self, mock_check):
         """Test that RuntimeError (import errors) propagates through scan()."""
         scanner = _make_scanner()
@@ -880,7 +880,7 @@ class TestFullScan:
             with pytest.raises(RuntimeError, match="import error"):
                 scanner.scan()
 
-    @patch("infrasim.discovery.gcp_scanner._check_gcp_libs")
+    @patch("faultray.discovery.gcp_scanner._check_gcp_libs")
     def test_scan_duration_recorded(self, mock_check):
         """Test that scan duration is recorded."""
         scanner = _make_scanner()
@@ -901,7 +901,7 @@ class TestFullScan:
 
         assert result.scan_duration_seconds >= 0.0
 
-    @patch("infrasim.discovery.gcp_scanner._check_gcp_libs")
+    @patch("faultray.discovery.gcp_scanner._check_gcp_libs")
     def test_scan_missing_optional_libs_warning(self, mock_check):
         """Test that missing optional libs produce warnings, not crashes."""
         scanner = _make_scanner()

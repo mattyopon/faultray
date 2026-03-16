@@ -4,7 +4,7 @@ import math
 
 import pytest
 
-from infrasim.model.components import (
+from faultray.model.components import (
     AutoScalingConfig,
     Capacity,
     Component,
@@ -15,8 +15,8 @@ from infrasim.model.components import (
     ResourceMetrics,
     SecurityProfile,
 )
-from infrasim.model.graph import InfraGraph
-from infrasim.simulator.cost_resilience_optimizer import (
+from faultray.model.graph import InfraGraph
+from faultray.simulator.cost_resilience_optimizer import (
     CostResilienceOptimizer,
     ImprovementOption,
     ImprovementType,
@@ -552,7 +552,7 @@ class TestParetoFrontier:
 
 class TestInfrastructureResilience:
     def test_weighted_by_dependents(self):
-        from infrasim.model.components import Dependency
+        from faultray.model.components import Dependency
         g = _graph(
             _comp("lb", "LB", ComponentType.LOAD_BALANCER, replicas=3, failover=True),
             _comp("app", "App", replicas=1),

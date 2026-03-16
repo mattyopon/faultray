@@ -16,12 +16,12 @@ The `quickstart` command creates a sample infrastructure model and runs a basic 
 faultray quickstart
 ```
 
-This generates an `infrasim-model.json` file in your current directory containing a sample multi-tier web application architecture.
+This generates an `faultray-model.json` file in your current directory containing a sample multi-tier web application architecture.
 
 ## Step 3: Run a simulation
 
 ```bash
-faultray simulate -m infrasim-model.json
+faultray simulate -m faultray-model.json
 ```
 
 FaultRay will run 150+ failure scenarios against your model and produce a resilience report showing:
@@ -36,7 +36,7 @@ FaultRay will run 150+ failure scenarios against your model and produce a resili
 Generate an HTML report for detailed visualization:
 
 ```bash
-faultray report -m infrasim-model.json -o report.html
+faultray report -m faultray-model.json -o report.html
 ```
 
 Open `report.html` in your browser to see an interactive resilience dashboard.

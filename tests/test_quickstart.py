@@ -8,9 +8,9 @@ from pathlib import Path
 import pytest
 from typer.testing import CliRunner
 
-from infrasim.cli import app
-from infrasim.cli.admin import _build_yaml_from_answers, _TEMPLATES
-from infrasim.model.loader import load_yaml
+from faultray.cli import app
+from faultray.cli.admin import _build_yaml_from_answers, _TEMPLATES
+from faultray.model.loader import load_yaml
 
 runner = CliRunner()
 

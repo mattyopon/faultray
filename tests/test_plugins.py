@@ -6,8 +6,8 @@ from pathlib import Path
 
 import pytest
 
-from infrasim.plugins.registry import PluginRegistry
-from infrasim.simulator.scenarios import Fault, FaultType, Scenario
+from faultray.plugins.registry import PluginRegistry
+from faultray.simulator.scenarios import Fault, FaultType, Scenario
 
 
 # ---------------------------------------------------------------------------
@@ -87,7 +87,7 @@ class TestPluginRegistry:
         plugin_file = tmp_path / "my_plugin.py"
         plugin_file.write_text(
             textwrap.dedent("""\
-                from infrasim.simulator.scenarios import Fault, FaultType, Scenario
+                from faultray.simulator.scenarios import Fault, FaultType, Scenario
 
                 class MyPlugin:
                     name = "my-plugin"
@@ -123,8 +123,8 @@ class TestPluginRegistry:
 class TestPluginEngineIntegration:
     def test_plugin_scenarios_merged_into_simulation(self):
         """Plugin-generated scenarios should appear in simulation results."""
-        from infrasim.model.demo import create_demo_graph
-        from infrasim.simulator.engine import SimulationEngine
+        from faultray.model.demo import create_demo_graph
+        from faultray.simulator.engine import SimulationEngine
 
         graph = create_demo_graph()
         plugin = _DummyScenarioPlugin()
@@ -139,8 +139,8 @@ class TestPluginEngineIntegration:
 
     def test_simulation_without_plugins(self):
         """Simulation should work with no plugins registered."""
-        from infrasim.model.demo import create_demo_graph
-        from infrasim.simulator.engine import SimulationEngine
+        from faultray.model.demo import create_demo_graph
+        from faultray.simulator.engine import SimulationEngine
 
         graph = create_demo_graph()
         engine = SimulationEngine(graph)
@@ -180,7 +180,7 @@ class _DummyDiscoveryPlugin:
     name = "dummy-discovery"
 
     def discover(self, config):
-        from infrasim.model.graph import InfraGraph
+        from faultray.model.graph import InfraGraph
         return InfraGraph()
 
 
@@ -240,7 +240,7 @@ class TestDiscoveryPlugin:
         assert discoveries[0].name == "dummy-discovery"
 
     def test_discovery_plugin_discover(self):
-        from infrasim.model.graph import InfraGraph
+        from faultray.model.graph import InfraGraph
         plugin = _DummyDiscoveryPlugin()
         graph = plugin.discover({})
         assert isinstance(graph, InfraGraph)

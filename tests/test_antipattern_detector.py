@@ -8,7 +8,7 @@ from __future__ import annotations
 
 import pytest
 
-from infrasim.model.components import (
+from faultray.model.components import (
     CircuitBreakerConfig,
     Component,
     ComponentType,
@@ -18,8 +18,8 @@ from infrasim.model.components import (
     RegionConfig,
     SingleflightConfig,
 )
-from infrasim.model.graph import InfraGraph
-from infrasim.simulator.antipattern_detector import (
+from faultray.model.graph import InfraGraph
+from faultray.simulator.antipattern_detector import (
     AntiPattern,
     AntiPatternDetector,
     _find_cycles,

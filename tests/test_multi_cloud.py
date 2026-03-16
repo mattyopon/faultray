@@ -1,12 +1,12 @@
 """Tests for Multi-Cloud Topology Mapper."""
 
-from infrasim.model.components import (
+from faultray.model.components import (
     Component,
     ComponentType,
     Dependency,
 )
-from infrasim.model.graph import InfraGraph
-from infrasim.simulator.multi_cloud import (
+from faultray.model.graph import InfraGraph
+from faultray.simulator.multi_cloud import (
     CloudMapping,
     CloudProvider,
     CloudRegion,

@@ -7,9 +7,9 @@ from pathlib import Path
 
 import pytest
 
-from infrasim.model.components import Component, ComponentType, Dependency, HealthStatus
-from infrasim.model.graph import InfraGraph
-from infrasim.simulator.infra_timeline import (
+from faultray.model.components import Component, ComponentType, Dependency, HealthStatus
+from faultray.model.graph import InfraGraph
+from faultray.simulator.infra_timeline import (
     ChangeType,
     InfraChange,
     InfraCommit,

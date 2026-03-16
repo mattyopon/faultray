@@ -11,7 +11,7 @@ pip install faultray
 ## Quick Start
 
 ```python
-from infrasim import InfraGraph, SimulationEngine
+from faultray import InfraGraph, SimulationEngine
 
 # Build a model
 graph = InfraGraph()
@@ -40,7 +40,7 @@ print(f"SPOFs found: {results.spof_count}")
 The main class for building infrastructure models.
 
 ```python
-from infrasim import InfraGraph
+from faultray import InfraGraph
 
 graph = InfraGraph()
 
@@ -67,7 +67,7 @@ loaded = InfraGraph.load("model.json")
 Runs failure scenarios against a model.
 
 ```python
-from infrasim import SimulationEngine
+from faultray import SimulationEngine
 
 engine = SimulationEngine(graph)
 
@@ -110,7 +110,7 @@ for scenario in results.scenarios:
 ### Custom scoring weights
 
 ```python
-from infrasim import ScoringConfig
+from faultray import ScoringConfig
 
 config = ScoringConfig(
     spof_weight=0.35,
@@ -125,7 +125,7 @@ results = engine.simulate(scoring_config=config)
 ### Cloud provider scanning
 
 ```python
-from infrasim.scanners import AWSScanner
+from faultray.scanners import AWSScanner
 
 scanner = AWSScanner(profile="my-profile", region="us-east-1")
 graph = scanner.scan()

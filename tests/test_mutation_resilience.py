@@ -16,9 +16,9 @@ from unittest.mock import patch
 
 import pytest
 
-from infrasim.model.demo import create_demo_graph
-from infrasim.model.graph import InfraGraph
-from infrasim.model.components import (
+from faultray.model.demo import create_demo_graph
+from faultray.model.graph import InfraGraph
+from faultray.model.components import (
     Capacity,
     Component,
     ComponentType,
@@ -26,9 +26,9 @@ from infrasim.model.components import (
     HealthStatus,
     ResourceMetrics,
 )
-from infrasim.simulator.cascade import CascadeChain, CascadeEffect, CascadeEngine
-from infrasim.simulator.engine import SimulationEngine, SimulationReport
-from infrasim.simulator.scenarios import Fault, FaultType, Scenario
+from faultray.simulator.cascade import CascadeChain, CascadeEffect, CascadeEngine
+from faultray.simulator.engine import SimulationEngine, SimulationReport
+from faultray.simulator.scenarios import Fault, FaultType, Scenario
 
 
 # ---------------------------------------------------------------------------
@@ -233,7 +233,7 @@ class TestAvailabilityModelMutation:
 
     def test_wrong_mtbf_formula_changes_nines(self):
         """Using MTTR instead of MTBF in the formula should change results."""
-        from infrasim.simulator.availability_model import (
+        from faultray.simulator.availability_model import (
             compute_three_layer_model,
             _to_nines,
         )
@@ -257,7 +257,7 @@ class TestAvailabilityModelMutation:
 
     def test_nines_calculation_correctness(self):
         """_to_nines should correctly compute -log10(1-availability)."""
-        from infrasim.simulator.availability_model import _to_nines
+        from faultray.simulator.availability_model import _to_nines
 
         # 99.9% = 3 nines
         assert abs(_to_nines(0.999) - 3.0) < 0.01
@@ -285,7 +285,7 @@ class TestCostEngineMutation:
 
     def test_ignoring_revenue_changes_business_loss(self):
         """Zeroing out revenue should make business loss zero."""
-        from infrasim.simulator.cost_engine import CostImpactEngine
+        from faultray.simulator.cost_engine import CostImpactEngine
 
         graph = create_demo_graph()
         # Set revenue on some components
@@ -334,7 +334,7 @@ class TestSecurityScoreMutation:
 
     def test_enabling_waf_increases_score(self):
         """Enabling WAF should increase the network security sub-score."""
-        from infrasim.simulator.security_engine import SecurityResilienceEngine
+        from faultray.simulator.security_engine import SecurityResilienceEngine
 
         graph = create_demo_graph()
 
@@ -362,7 +362,7 @@ class TestSecurityScoreMutation:
 
     def test_disabling_all_security_drops_score(self):
         """Disabling all security controls should drop the score to near zero."""
-        from infrasim.simulator.security_engine import SecurityResilienceEngine
+        from faultray.simulator.security_engine import SecurityResilienceEngine
 
         graph = create_demo_graph()
 
@@ -413,7 +413,7 @@ class TestFuzzerMutation:
 
     def test_deterministic_fuzzer_finds_few_novel(self):
         """A fuzzer with no randomness should find fewer novel patterns."""
-        from infrasim.simulator.chaos_fuzzer import ChaosFuzzer
+        from faultray.simulator.chaos_fuzzer import ChaosFuzzer
 
         graph = create_demo_graph()
 
@@ -437,7 +437,7 @@ class TestFuzzerMutation:
 
     def test_fuzzer_coverage_increases_with_iterations(self):
         """More iterations should lead to equal or higher component coverage."""
-        from infrasim.simulator.chaos_fuzzer import ChaosFuzzer
+        from faultray.simulator.chaos_fuzzer import ChaosFuzzer
 
         graph = create_demo_graph()
 
@@ -462,7 +462,7 @@ class TestRegressionGateMutation:
 
     def test_higher_score_is_not_regression(self):
         """A higher resilience score should NOT be detected as a regression."""
-        from infrasim.differ import SimulationDiffer
+        from faultray.differ import SimulationDiffer
 
         differ = SimulationDiffer()
 
@@ -483,7 +483,7 @@ class TestRegressionGateMutation:
 
     def test_lower_score_is_regression(self):
         """A lower resilience score should be detected as a regression."""
-        from infrasim.differ import SimulationDiffer
+        from faultray.differ import SimulationDiffer
 
         differ = SimulationDiffer()
 
@@ -503,7 +503,7 @@ class TestRegressionGateMutation:
 
     def test_equal_score_is_not_regression(self):
         """Equal resilience score should NOT be detected as a regression."""
-        from infrasim.differ import SimulationDiffer
+        from faultray.differ import SimulationDiffer
 
         differ = SimulationDiffer()
 
@@ -523,7 +523,7 @@ class TestRegressionGateMutation:
 
     def test_new_critical_findings_is_regression(self):
         """New critical findings should be detected as a regression."""
-        from infrasim.differ import SimulationDiffer
+        from faultray.differ import SimulationDiffer
 
         differ = SimulationDiffer()
 

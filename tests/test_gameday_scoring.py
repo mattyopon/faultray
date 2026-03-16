@@ -4,9 +4,9 @@ from __future__ import annotations
 
 import pytest
 
-from infrasim.model.components import Component, ComponentType, HealthStatus
-from infrasim.model.graph import InfraGraph
-from infrasim.simulator.gameday_scoring import (
+from faultray.model.components import Component, ComponentType, HealthStatus
+from faultray.model.graph import InfraGraph
+from faultray.simulator.gameday_scoring import (
     ChallengeCategory,
     ChallengeStep,
     Difficulty,

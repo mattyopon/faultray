@@ -1,4 +1,4 @@
-# FaultRay (InfraSim) 改善実装ハンドオフプロンプト
+# FaultRay (FaultRay) 改善実装ハンドオフプロンプト
 
 > **目的**: 特許分析中に発見した FaultRay の改善ポイントを実装する
 > **規模**: L（大規模） — 5つのエンジン追加 + 可用性モデル拡張 + レポート拡張 + プラグイン拡張
@@ -9,15 +9,15 @@
 ## プロンプト（以下をそのまま別セッションのエージェントに渡す）
 
 ```
-FaultRay（旧InfraSim）の大規模改善を実装してください。
+FaultRay（旧FaultRay）の大規模改善を実装してください。
 特許分析の過程で発見された改善ポイントを5つのカテゴリに分けて実装します。
 
-プロジェクトパス: /home/user/projects/tools/infrasim/
+プロジェクトパス: /home/user/projects/tools/faultray/
 
 ## 現在のコードベース構造（重要）
 
 ```
-src/infrasim/
+src/faultray/
 ├── simulator/          # シミュレーションエンジン（ここに追加）
 │   ├── engine.py       (206行) — 基本シミュレーション・シナリオオーケストレーション
 │   ├── cascade.py      (701行) — カスケード障害伝搬エンジン
@@ -66,7 +66,7 @@ src/infrasim/
 ## 改善カテゴリ 1: 新シミュレーションエンジン追加（5エンジン）
 
 ### 1-1. Cost Impact Engine（コスト影響エンジン）
-**ファイル**: `src/infrasim/simulator/cost_engine.py`（新規）
+**ファイル**: `src/faultray/simulator/cost_engine.py`（新規）
 
 障害発生時のコスト影響を定量化するエンジン。
 
@@ -88,7 +88,7 @@ src/infrasim/
 - レポート出力: 障害シナリオごとの想定損失額ランキング
 
 ### 1-2. Compliance Engine（コンプライアンスエンジン）
-**ファイル**: `src/infrasim/simulator/compliance_engine.py`（新規）
+**ファイル**: `src/faultray/simulator/compliance_engine.py`（新規）
 
 インフラ構成が各規制フレームワークに準拠しているかを自動チェック。
 
@@ -109,7 +109,7 @@ src/infrasim/
 - 出力: フレームワークごとの準拠率 + ギャップ分析レポート
 
 ### 1-3. Predictive Engine（予測エンジン — ML/統計ベース）
-**ファイル**: `src/infrasim/simulator/predictive_engine.py`（新規）
+**ファイル**: `src/faultray/simulator/predictive_engine.py`（新規）
 
 過去のシミュレーション結果やメトリクスから将来の障害を予測。
 
@@ -126,7 +126,7 @@ src/infrasim/
   - 推奨アクション（スケールアウト時期、メンテナンスウィンドウ提案）
 
 ### 1-4. Multi-Region DR Engine（マルチリージョンDRエンジン）
-**ファイル**: `src/infrasim/simulator/dr_engine.py`（新規）
+**ファイル**: `src/faultray/simulator/dr_engine.py`（新規）
 
 リージョン障害/AZ障害時のDR（災害復旧）をシミュレート。
 
@@ -152,7 +152,7 @@ src/infrasim/
 - 出力: RPO/RTO達成可否、データ損失量の推定
 
 ### 1-5. Game Day Engine（ゲームデイエンジン）
-**ファイル**: `src/infrasim/simulator/gameday_engine.py`（新規）
+**ファイル**: `src/faultray/simulator/gameday_engine.py`（新規）
 
 実際のGame Day演習をシミュレート環境で事前検証。
 
@@ -189,7 +189,7 @@ src/infrasim/
 - Layer 3: Theoretical Limit（パケットロス + GCポーズ + カーネルジッタ）
 
 ### 追加する層:
-**ファイル**: `src/infrasim/simulator/availability_model.py`（既存を拡張）
+**ファイル**: `src/faultray/simulator/availability_model.py`（既存を拡張）
 
 #### Layer 4: Operational Limit（運用上限）
 - インシデント対応時間の制約
@@ -204,19 +204,19 @@ src/infrasim/
 ### 追加する数学的手法:
 
 #### Monte Carlo シミュレーション
-**ファイル**: `src/infrasim/simulator/monte_carlo.py`（新規）
+**ファイル**: `src/faultray/simulator/monte_carlo.py`（新規）
 - 確率的な可用性シミュレーション（N回試行の統計分布）
 - MTBF/MTTRに正規分布やワイブル分布を適用
 - 出力: 可用性の確率分布（p50/p95/p99）、信頼区間
 
 #### Markov Chain モデル
-**ファイル**: `src/infrasim/simulator/markov_model.py`（新規）
+**ファイル**: `src/faultray/simulator/markov_model.py`（新規）
 - コンポーネントの状態遷移（Healthy → Degraded → Down → Recovering → Healthy）
 - 遷移確率行列から定常状態を計算
 - 出力: 各状態の定常確率、可用性の解析解
 
 #### Bayesian Network モデル
-**ファイル**: `src/infrasim/simulator/bayesian_model.py`（新規）
+**ファイル**: `src/faultray/simulator/bayesian_model.py`（新規）
 - 条件付き確率で障害の連鎖を表現
 - 「Aが落ちたときにBが落ちる確率」を依存関係から推論
 - 出力: 事後確率による影響分析
@@ -245,12 +245,12 @@ class FiveLayerResult:
 - JSON/CSVエクスポート（export.py）
 
 ### 追加するレポート:
-**ファイル**: `src/infrasim/reporter/compliance.py`（既存を拡張）+ 新規ファイル
+**ファイル**: `src/faultray/reporter/compliance.py`（既存を拡張）+ 新規ファイル
 
 #### 3-1. SOC 2 Type II レポート
 - Trust Service Criteria（TSC）へのマッピング
 - CC6（論理的/物理的アクセス制御）、CC7（システム運用）、CC8（変更管理）
-- InfraSim結果からの自動マッピング
+- FaultRay結果からの自動マッピング
 
 #### 3-2. ISO 27001 レポート
 - Annex A管理策との対応表
@@ -291,7 +291,7 @@ class AnalyzerPlugin(Protocol):
 ```
 
 ### 追加するプラグインProtocol:
-**ファイル**: `src/infrasim/plugins/registry.py`（既存を拡張）
+**ファイル**: `src/faultray/plugins/registry.py`（既存を拡張）
 
 ```python
 class EnginePlugin(Protocol):
@@ -317,7 +317,7 @@ class DiscoveryPlugin(Protocol):
 ## 改善カテゴリ 5: 特許価値を高める実装改善
 
 ### 5-1. Terraform → シミュレーションモデル自動変換の強化
-**ファイル**: `src/infrasim/discovery/terraform.py`（既存を拡張）
+**ファイル**: `src/faultray/discovery/terraform.py`（既存を拡張）
 
 現在のTerraformインポートに以下を追加:
 - terraform plan の差分から変更影響シミュレーションを自動実行
@@ -325,7 +325,7 @@ class DiscoveryPlugin(Protocol):
 - Pulumi/CDK対応のスタブ
 
 ### 5-2. Resilience Score アルゴリズムの拡張
-**ファイル**: `src/infrasim/model/graph.py`（既存を拡張）
+**ファイル**: `src/faultray/model/graph.py`（既存を拡張）
 
 現在の resilience_score() は3要素（SPOF/利用率/チェーン深度）のみ。追加:
 - 冗長化パターンスコア（Active-Active > Active-Standby > Single）
@@ -335,7 +335,7 @@ class DiscoveryPlugin(Protocol):
 - 新スコア: `resilience_score_v2()` として追加（v1は後方互換のため残す）
 
 ### 5-3. シナリオ自動生成アルゴリズムの拡張
-**ファイル**: `src/infrasim/simulator/scenarios.py`（既存を拡張）
+**ファイル**: `src/faultray/simulator/scenarios.py`（既存を拡張）
 
 現在30カテゴリ → 以下を追加:
 - カオスエンジニアリングベストプラクティスからのシナリオ自動提案
@@ -367,14 +367,14 @@ class DiscoveryPlugin(Protocol):
 
 各エンジンに対応するCLIサブコマンドを追加:
 ```
-infrasim cost <yaml>               # コスト影響分析
-infrasim compliance <yaml> --framework soc2  # コンプライアンスチェック
-infrasim predict <yaml>            # 予測分析
-infrasim dr <yaml> --scenario region-failure  # DRシミュレーション
-infrasim gameday <yaml> --plan gameday.yaml   # ゲームデイ事前検証
-infrasim monte-carlo <yaml> -n 10000          # モンテカルロ分析
-infrasim markov <yaml>             # マルコフ連鎖分析
-infrasim availability <yaml> --layers 5       # 5層可用性モデル
+faultray cost <yaml>               # コスト影響分析
+faultray compliance <yaml> --framework soc2  # コンプライアンスチェック
+faultray predict <yaml>            # 予測分析
+faultray dr <yaml> --scenario region-failure  # DRシミュレーション
+faultray gameday <yaml> --plan gameday.yaml   # ゲームデイ事前検証
+faultray monte-carlo <yaml> -n 10000          # モンテカルロ分析
+faultray markov <yaml>             # マルコフ連鎖分析
+faultray availability <yaml> --layers 5       # 5層可用性モデル
 ```
 
 ## テスト要件

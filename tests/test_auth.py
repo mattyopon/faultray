@@ -10,14 +10,14 @@ from fastapi import HTTPException
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
 
-from infrasim.api.auth import (
+from faultray.api.auth import (
     PUBLIC_PATHS,
     _is_public,
     generate_api_key,
     get_current_user,
     hash_api_key,
 )
-from infrasim.api.database import Base, UserRow, reset_engine
+from faultray.api.database import Base, UserRow, reset_engine
 
 
 # ---------------------------------------------------------------------------
@@ -131,7 +131,7 @@ class TestGetCurrentUser:
         factory, engine = auth_db
 
         # Monkey-patch get_session_factory to use our test DB
-        import infrasim.api.auth as auth_module
+        import faultray.api.auth as auth_module
         original_factory = auth_module.get_session_factory
         auth_module.get_session_factory = lambda: factory
 
@@ -158,7 +158,7 @@ class TestGetCurrentUser:
             session.add(user)
             await session.commit()
 
-        import infrasim.api.auth as auth_module
+        import faultray.api.auth as auth_module
         original_factory = auth_module.get_session_factory
         auth_module.get_session_factory = lambda: factory
 
@@ -185,7 +185,7 @@ class TestGetCurrentUser:
             session.add(user)
             await session.commit()
 
-        import infrasim.api.auth as auth_module
+        import faultray.api.auth as auth_module
         original_factory = auth_module.get_session_factory
         auth_module.get_session_factory = lambda: factory
 
@@ -213,7 +213,7 @@ class TestGetCurrentUser:
             session.add(user)
             await session.commit()
 
-        import infrasim.api.auth as auth_module
+        import faultray.api.auth as auth_module
         original_factory = auth_module.get_session_factory
         auth_module.get_session_factory = lambda: factory
 

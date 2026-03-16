@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import pytest
 
-from infrasim.model.components import (
+from faultray.model.components import (
     AutoScalingConfig,
     Capacity,
     CircuitBreakerConfig,
@@ -15,8 +15,8 @@ from infrasim.model.components import (
     RegionConfig,
     ResourceMetrics,
 )
-from infrasim.model.graph import InfraGraph
-from infrasim.simulator.compliance_engine import ComplianceCheck, ComplianceEngine, ComplianceReport
+from faultray.model.graph import InfraGraph
+from faultray.simulator.compliance_engine import ComplianceCheck, ComplianceEngine, ComplianceReport
 
 
 # ---------------------------------------------------------------------------
@@ -524,7 +524,7 @@ class TestEdgeCases:
 
     def test_pci_dss_pci_scope_components(self):
         """PCI-scope checks (Req-3.4, Req-1.3) should be generated for PCI-tagged components."""
-        from infrasim.model.components import ComplianceTags, SecurityProfile
+        from faultray.model.components import ComplianceTags, SecurityProfile
         graph = InfraGraph()
         graph.add_component(Component(
             id="payment-db", name="Payment DB", type=ComponentType.DATABASE,
@@ -543,7 +543,7 @@ class TestEdgeCases:
 
     def test_pci_dss_pci_scope_fail(self):
         """PCI-scope checks should fail when components lack encryption/segmentation."""
-        from infrasim.model.components import ComplianceTags, SecurityProfile
+        from faultray.model.components import ComplianceTags, SecurityProfile
         graph = InfraGraph()
         graph.add_component(Component(
             id="payment-db", name="Payment DB", type=ComponentType.DATABASE,
@@ -629,7 +629,7 @@ class TestEdgeCases:
 
     def test_nist_csf_pii_components(self):
         """PR.DS-1 check should appear for PII-tagged components."""
-        from infrasim.model.components import ComplianceTags, SecurityProfile
+        from faultray.model.components import ComplianceTags, SecurityProfile
         graph = InfraGraph()
         graph.add_component(Component(
             id="user-db", name="User DB", type=ComponentType.DATABASE,
@@ -645,7 +645,7 @@ class TestEdgeCases:
 
     def test_nist_csf_pii_partial_encryption(self):
         """PR.DS-1 should be 'partial' when PII component has only rest OR transit encryption."""
-        from infrasim.model.components import ComplianceTags, SecurityProfile
+        from faultray.model.components import ComplianceTags, SecurityProfile
         graph = InfraGraph()
         graph.add_component(Component(
             id="user-db", name="User DB", type=ComponentType.DATABASE,
@@ -660,7 +660,7 @@ class TestEdgeCases:
 
     def test_nist_csf_pii_no_encryption(self):
         """PR.DS-1 should be 'fail' when PII has no encryption at all."""
-        from infrasim.model.components import ComplianceTags, SecurityProfile
+        from faultray.model.components import ComplianceTags, SecurityProfile
         graph = InfraGraph()
         graph.add_component(Component(
             id="user-db", name="User DB", type=ComponentType.DATABASE,
@@ -675,7 +675,7 @@ class TestEdgeCases:
 
     def test_nist_csf_audit_logging_tags(self):
         """DE.AE-3 should be generated and pass when monitoring + audit tags exist."""
-        from infrasim.model.components import ComplianceTags
+        from faultray.model.components import ComplianceTags
         graph = InfraGraph()
         graph.add_component(Component(
             id="otel", name="otel-collector", type=ComponentType.CUSTOM, replicas=2,
@@ -692,7 +692,7 @@ class TestEdgeCases:
 
     def test_nist_csf_audit_logging_partial(self):
         """DE.AE-3 should be 'partial' when monitoring but no audit tags (or vice versa)."""
-        from infrasim.model.components import ComplianceTags
+        from faultray.model.components import ComplianceTags
         graph = InfraGraph()
         # Has monitoring (otel) but no audit_logging tags
         graph.add_component(Component(
@@ -721,7 +721,7 @@ class TestEdgeCases:
 
     def test_has_pci_scope(self):
         """_has_pci_scope should detect PCI-tagged components."""
-        from infrasim.model.components import ComplianceTags
+        from faultray.model.components import ComplianceTags
         graph = InfraGraph()
         graph.add_component(Component(
             id="app", name="app", type=ComponentType.APP_SERVER,
@@ -732,7 +732,7 @@ class TestEdgeCases:
 
     def test_has_pii_data(self):
         """_has_pii_data should detect PII-tagged components."""
-        from infrasim.model.components import ComplianceTags
+        from faultray.model.components import ComplianceTags
         graph = InfraGraph()
         graph.add_component(Component(
             id="db", name="db", type=ComponentType.DATABASE,
@@ -743,7 +743,7 @@ class TestEdgeCases:
 
     def test_has_audit_logging_tags(self):
         """_has_audit_logging_tags should detect audit_logging tags."""
-        from infrasim.model.components import ComplianceTags
+        from faultray.model.components import ComplianceTags
         graph = InfraGraph()
         graph.add_component(Component(
             id="app", name="app", type=ComponentType.APP_SERVER,

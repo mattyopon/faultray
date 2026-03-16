@@ -4,15 +4,15 @@ from __future__ import annotations
 
 import pytest
 
-from infrasim.model.components import (
+from faultray.model.components import (
     AutoScalingConfig,
     Component,
     ComponentType,
     Dependency,
     FailoverConfig,
 )
-from infrasim.model.dna import DNAEngine, InfraDNA, SimilarityResult
-from infrasim.model.graph import InfraGraph
+from faultray.model.dna import DNAEngine, InfraDNA, SimilarityResult
+from faultray.model.graph import InfraGraph
 
 
 # ---------------------------------------------------------------------------
