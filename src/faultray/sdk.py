@@ -508,6 +508,119 @@ class FaultZero:
     # Dunder methods
     # ------------------------------------------------------------------
 
+    def assess_agents(self) -> list:
+        """Run agent adoption risk assessment on all agent components.
+
+        Evaluates the risk of AI agents in the infrastructure by analyzing
+        blast radius, failsafe mechanisms, hallucination impact, and
+        dependency chains.
+
+        Returns:
+            List of ``AgentAdoptionReport`` for each agent/orchestrator
+            component in the graph.
+        """
+        from faultray.simulator.adoption_engine import AdoptionEngine
+
+        engine = AdoptionEngine(self._graph)
+        return engine.assess_all_agents()
+
+    def generate_monitoring_plan(self):
+        """Generate a monitoring plan for agent infrastructure.
+
+        Analyzes the infrastructure graph and produces monitoring rules
+        that can detect pre-failure conditions identified by simulations,
+        including hallucination risk, context overflow, rate limits, and
+        cascading failures.
+
+        Returns:
+            A ``MonitoringPlan`` with rules, coverage metrics, and
+            per-component monitoring configuration.
+        """
+        from faultray.simulator.agent_monitor import AgentMonitorEngine
+
+        engine = AgentMonitorEngine(self._graph)
+        return engine.generate_monitoring_plan()
+
+    def generate_agent_scenarios(self) -> list:
+        """Generate agent-specific chaos scenarios.
+
+        Creates fault scenarios tailored to AI agent infrastructure
+        including hallucination, context overflow, agent loops, LLM rate
+        limits, tool failures, cross-layer failures, and prompt injection.
+
+        Returns:
+            List of ``Scenario`` objects for agent-specific chaos testing.
+        """
+        from faultray.simulator.agent_scenarios import (
+            generate_agent_scenarios as _gen,
+        )
+
+        return _gen(self._graph)
+
+    def check_hallucination_risk(self, component_id: str) -> list[tuple]:
+        """Check cross-layer hallucination risk for a specific component failure.
+
+        Determines which AI agents would lose grounding data if the given
+        infrastructure component fails, and assesses the resulting
+        hallucination risk.
+
+        Args:
+            component_id: ID of the infrastructure component to simulate
+                failing (e.g. a database or cache).
+
+        Returns:
+            List of ``(agent_component, risk_description)`` tuples for
+            each agent affected by the component failure.
+
+        Raises:
+            ValueError: If the component ID is not found.
+        """
+        from faultray.model.components import ComponentType
+
+        comp = self._graph.get_component(component_id)
+        if comp is None:
+            raise ValueError(f"Component '{component_id}' not found in graph")
+
+        agent_types = {ComponentType.AI_AGENT, ComponentType.AGENT_ORCHESTRATOR}
+        risks: list[tuple] = []
+
+        # Find all agents that depend (directly or transitively) on this component
+        for agent in self._graph.components.values():
+            if agent.type not in agent_types:
+                continue
+            deps = self._graph.get_dependencies(agent.id)
+            dep_ids = {d.id for d in deps}
+            # Also check transitive: if the failed component is in the
+            # set of components affected by agent's dependencies
+            if component_id in dep_ids:
+                params = agent.parameters or {}
+                hallucination_risk = float(params.get("hallucination_risk", 0.05))
+                has_grounding = bool(params.get("requires_grounding", 0))
+                has_cb = bool(params.get("circuit_breaker_on_hallucination", 0))
+
+                if has_grounding:
+                    severity = "CRITICAL"
+                    desc = (
+                        f"Agent '{agent.name}' depends on '{comp.name}' for grounding data. "
+                        f"Failure will cause ungrounded responses. "
+                        f"Baseline hallucination risk: {hallucination_risk:.1%}. "
+                        f"Circuit breaker: {'enabled' if has_cb else 'MISSING'}."
+                    )
+                else:
+                    severity = "WARNING"
+                    desc = (
+                        f"Agent '{agent.name}' depends on '{comp.name}'. "
+                        f"Failure may degrade agent quality. "
+                        f"Baseline hallucination risk: {hallucination_risk:.1%}."
+                    )
+                risks.append((agent, f"[{severity}] {desc}"))
+
+        return risks
+
+    # ------------------------------------------------------------------
+    # Dunder methods
+    # ------------------------------------------------------------------
+
     def __repr__(self) -> str:
         source = self._yaml_path or "in-memory"
         return (
@@ -524,3 +637,78 @@ class FaultZero:
             f"  Resilience Score: {self.resilience_score}/100\n"
             f"  SPOFs: {self.spof_count}"
         )
+
+
+# -----------------------------------------------------------------------
+# Module-level convenience functions for agent workflows
+# -----------------------------------------------------------------------
+
+
+def assess_agents(graph: "InfraGraph") -> list:
+    """Run agent adoption assessment on all agent components in the graph.
+
+    Convenience wrapper around ``AdoptionEngine.assess_all_agents()``.
+
+    Args:
+        graph: An ``InfraGraph`` containing AI agent components.
+
+    Returns:
+        List of ``AgentAdoptionReport`` for each agent/orchestrator.
+    """
+    from faultray.simulator.adoption_engine import AdoptionEngine
+
+    engine = AdoptionEngine(graph)
+    return engine.assess_all_agents()
+
+
+def generate_monitoring_plan(graph: "InfraGraph"):
+    """Generate a monitoring plan for agent infrastructure.
+
+    Convenience wrapper around ``AgentMonitorEngine.generate_monitoring_plan()``.
+
+    Args:
+        graph: An ``InfraGraph`` containing AI agent components.
+
+    Returns:
+        A ``MonitoringPlan`` with monitoring rules and coverage metrics.
+    """
+    from faultray.simulator.agent_monitor import AgentMonitorEngine
+
+    engine = AgentMonitorEngine(graph)
+    return engine.generate_monitoring_plan()
+
+
+def generate_agent_scenarios(graph: "InfraGraph") -> list:
+    """Generate agent-specific chaos scenarios for the graph.
+
+    Convenience wrapper around ``agent_scenarios.generate_agent_scenarios()``.
+
+    Args:
+        graph: An ``InfraGraph`` containing AI agent components.
+
+    Returns:
+        List of ``Scenario`` objects for agent-specific chaos testing.
+    """
+    from faultray.simulator.agent_scenarios import (
+        generate_agent_scenarios as _gen,
+    )
+
+    return _gen(graph)
+
+
+def check_hallucination_risk(graph: "InfraGraph", component_id: str) -> list[tuple]:
+    """Check cross-layer hallucination risk for a specific component failure.
+
+    Determines which AI agents would lose grounding data if the given
+    infrastructure component fails.
+
+    Args:
+        graph: An ``InfraGraph`` containing AI agent components.
+        component_id: ID of the infrastructure component to simulate
+            failing (e.g. a database or cache).
+
+    Returns:
+        List of ``(agent_component, risk_description)`` tuples.
+    """
+    fz = FaultZero(graph=graph)
+    return fz.check_hallucination_risk(component_id)

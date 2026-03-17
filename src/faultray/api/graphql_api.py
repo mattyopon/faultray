@@ -10,6 +10,13 @@ parser that supports the subset used by typical dashboard clients:
     { availabilityLayers { name nines availabilityPercent annualDowntimeSeconds } }
     { resilienceScore }
     mutation { runSimulation { resilienceScore critical warning passed } }
+
+Agent-specific queries (iteration 4)::
+
+    { agentAssessment(topologyId: "default") { agentName riskScore riskLevel } }
+    { agentMonitoringPlan(topologyId: "default") { rules { name metric threshold } } }
+    { agentScenarios(topologyId: "default") { id name description } }
+    { crossLayerRisk(topologyId: "default", componentId: "db-1") { agentId risk reason } }
 """
 
 from __future__ import annotations
@@ -32,15 +39,55 @@ graphql_router = APIRouter(tags=["graphql"])
 # ---------------------------------------------------------------------------
 
 def _tokenize(query: str) -> list[str]:
-    """Split a GraphQL-like query string into tokens."""
-    return re.findall(r'[a-zA-Z_][a-zA-Z0-9_]*|[{}]', query)
+    """Split a GraphQL-like query string into tokens.
+
+    Supports identifiers, braces, parentheses, colons, commas, and
+    quoted string literals (needed for field arguments).
+    """
+    return re.findall(r'"[^"]*"|[a-zA-Z_][a-zA-Z0-9_]*|[{}(),:!]', query)
+
+
+def _parse_arguments(tokens: list[str], pos: int) -> tuple[dict[str, str], int]:
+    """Parse ``(argName: "value", argName2: "value2")`` argument lists.
+
+    Returns a dict of argument name → string value, and the new position.
+    """
+    if pos >= len(tokens) or tokens[pos] != '(':
+        return {}, pos
+
+    pos += 1  # skip '('
+    args: dict[str, str] = {}
+
+    while pos < len(tokens) and tokens[pos] != ')':
+        arg_name = tokens[pos]
+        pos += 1
+        # skip ':'
+        if pos < len(tokens) and tokens[pos] == ':':
+            pos += 1
+        # read value (may be quoted string or bare identifier)
+        if pos < len(tokens):
+            value = tokens[pos].strip('"')
+            args[arg_name] = value
+            pos += 1
+        # skip optional ',' or '!'
+        while pos < len(tokens) and tokens[pos] in (',', '!'):
+            pos += 1
+
+    if pos < len(tokens) and tokens[pos] == ')':
+        pos += 1  # skip ')'
+
+    return args, pos
 
 
 def _parse_selection_set(tokens: list[str], pos: int) -> tuple[dict | list | None, int]:
     """Parse ``{ field1 field2 { subfield } }`` recursively.
 
     Returns a nested dict representing the selection set and the new position
-    in the token stream.
+    in the token stream.  Field values can be:
+
+    - ``True`` for leaf fields
+    - a nested dict for sub-selections
+    - a ``("__args__", args_dict, sub_selection)`` tuple for fields with arguments
     """
     if pos >= len(tokens) or tokens[pos] != '{':
         return None, pos
@@ -52,12 +99,23 @@ def _parse_selection_set(tokens: list[str], pos: int) -> tuple[dict | list | Non
         field_name = tokens[pos]
         pos += 1
 
+        # Check for arguments: field(arg: "value")
+        args: dict[str, str] = {}
+        if pos < len(tokens) and tokens[pos] == '(':
+            args, pos = _parse_arguments(tokens, pos)
+
         # Check for nested selection set
         if pos < len(tokens) and tokens[pos] == '{':
             sub, pos = _parse_selection_set(tokens, pos)
-            fields[field_name] = sub
+            if args:
+                fields[field_name] = {"__args__": args, "__selection__": sub}
+            else:
+                fields[field_name] = sub
         else:
-            fields[field_name] = True  # leaf field
+            if args:
+                fields[field_name] = {"__args__": args, "__selection__": True}
+            else:
+                fields[field_name] = True  # leaf field
 
     if pos < len(tokens) and tokens[pos] == '}':
         pos += 1  # skip '}'
@@ -290,6 +348,112 @@ def _mutation_run_simulation() -> dict:
 
 
 # ---------------------------------------------------------------------------
+# Agent-specific resolvers (iteration 4)
+# ---------------------------------------------------------------------------
+
+def _resolve_agent_assessment(args: dict[str, str]) -> list[dict]:
+    """Resolve ``agentAssessment(topologyId)`` — ADOPT risk assessment."""
+    from faultray.api.server import get_graph
+    from faultray.simulator.adoption_engine import AdoptionEngine
+
+    graph = get_graph()
+    engine = AdoptionEngine(graph)
+    reports = engine.assess_all_agents()
+
+    return [
+        {
+            "agentName": r.agent_name,
+            "agentId": r.agent_id,
+            "riskScore": r.risk_score,
+            "riskLevel": r.risk_level.value,
+            "maxBlastRadius": r.max_blast_radius,
+            "hallucinationImpact": r.hallucination_impact,
+            "safeToDeploy": r.safe_to_deploy,
+            "failsafes": [
+                {"name": f.name, "present": f.present, "description": f.description}
+                for f in r.failsafes
+            ],
+            "recommendations": r.recommendations,
+        }
+        for r in reports
+    ]
+
+
+def _resolve_agent_monitoring_plan(args: dict[str, str]) -> dict:
+    """Resolve ``agentMonitoringPlan(topologyId)`` — MANAGE monitoring plan."""
+    from faultray.api.server import get_graph
+    from faultray.simulator.agent_monitor import AgentMonitorEngine
+
+    graph = get_graph()
+    engine = AgentMonitorEngine(graph)
+    plan = engine.generate_monitoring_plan()
+
+    return {
+        "totalComponentsMonitored": plan.total_components_monitored,
+        "coveragePercent": plan.coverage_percent,
+        "rules": [
+            {
+                "ruleId": r.rule_id,
+                "name": r.name,
+                "description": r.description,
+                "componentId": r.component_id,
+                "metric": r.metric,
+                "threshold": r.threshold,
+                "operator": r.operator,
+                "predictedFault": r.predicted_fault.value,
+                "severity": r.severity.value,
+                "recommendedAction": r.recommended_action,
+            }
+            for r in plan.rules
+        ],
+    }
+
+
+def _resolve_agent_scenarios(args: dict[str, str]) -> list[dict]:
+    """Resolve ``agentScenarios(topologyId)`` — agent-specific scenarios."""
+    from faultray.api.server import get_graph
+    from faultray.simulator.agent_scenarios import generate_agent_scenarios
+
+    graph = get_graph()
+    scenarios = generate_agent_scenarios(graph)
+
+    return [
+        {
+            "id": s.id,
+            "name": s.name,
+            "description": s.description,
+            "faults": [
+                {"target": f.target_component_id, "type": f.fault_type.value}
+                for f in s.faults
+            ],
+        }
+        for s in scenarios
+    ]
+
+
+def _resolve_cross_layer_risk(args: dict[str, str]) -> list[dict]:
+    """Resolve ``crossLayerRisk(topologyId, componentId)`` — hallucination risks."""
+    from faultray.api.server import get_graph
+    from faultray.simulator.agent_cascade import calculate_cross_layer_hallucination_risk
+
+    component_id = args.get("componentId", "")
+    if not component_id:
+        return []
+
+    graph = get_graph()
+    risks = calculate_cross_layer_hallucination_risk(graph, component_id)
+
+    return [
+        {
+            "agentId": agent_id,
+            "risk": round(risk, 4),
+            "reason": reason,
+        }
+        for agent_id, risk, reason in risks
+    ]
+
+
+# ---------------------------------------------------------------------------
 # Root resolver dispatch
 # ---------------------------------------------------------------------------
 
@@ -303,6 +467,15 @@ _QUERY_RESOLVERS: dict[str, Any] = {
     "resilience_score": _resolve_resilience_score,
     "resilienceScoreV2": _resolve_resilience_score_v2,
     "resilience_score_v2": _resolve_resilience_score_v2,
+    # Agent-specific resolvers (iteration 4) — accept args dict
+    "agentAssessment": _resolve_agent_assessment,
+    "agent_assessment": _resolve_agent_assessment,
+    "agentMonitoringPlan": _resolve_agent_monitoring_plan,
+    "agent_monitoring_plan": _resolve_agent_monitoring_plan,
+    "agentScenarios": _resolve_agent_scenarios,
+    "agent_scenarios": _resolve_agent_scenarios,
+    "crossLayerRisk": _resolve_cross_layer_risk,
+    "cross_layer_risk": _resolve_cross_layer_risk,
 }
 
 _MUTATION_RESOLVERS: dict[str, Any] = {
@@ -330,15 +503,26 @@ def _execute(operation: str, selection: dict) -> dict:
             result[field_name] = None
             continue
 
-        value = resolver()
+        # Extract arguments and actual selection from parsed field value
+        args: dict[str, str] = {}
+        actual_selection = sub_selection
+        if isinstance(sub_selection, dict) and "__args__" in sub_selection:
+            args = sub_selection["__args__"]
+            actual_selection = sub_selection.get("__selection__", True)
+
+        # Call resolver — with args if it accepts them, without otherwise
+        try:
+            value = resolver(args)
+        except TypeError:
+            value = resolver()
 
         # Apply sub-selection filtering
-        if isinstance(sub_selection, dict):
+        if isinstance(actual_selection, dict):
             if isinstance(value, dict):
-                value = _filter_dict(value, sub_selection)
+                value = _filter_dict(value, actual_selection)
             elif isinstance(value, list):
                 value = [
-                    _filter_dict(item, sub_selection) if isinstance(item, dict) else item
+                    _filter_dict(item, actual_selection) if isinstance(item, dict) else item
                     for item in value
                 ]
 

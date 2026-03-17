@@ -59,6 +59,7 @@ class TemplateCategory(str, Enum):
     MACHINE_LEARNING = "machine_learning"
     IOT = "iot"
     EDGE_COMPUTING = "edge_computing"
+    AI_AGENTS = "ai_agents"
 
 
 @dataclass
@@ -1339,6 +1340,467 @@ GALLERY_TEMPLATES: list[InfraTemplate] = [
             "Use managed database for less operational overhead",
             "Add redundancy and failover as you grow",
             "Monitor metrics to know when to scale",
+        ],
+    ),
+    # ------------------------------------------------------------------
+    # AI Agent templates
+    # ------------------------------------------------------------------
+    InfraTemplate(
+        id="ai-chatbot",
+        name="AI Chatbot",
+        category=TemplateCategory.AI_AGENTS,
+        description=(
+            "Simple AI chatbot with a single agent backed by an LLM API "
+            "and a database for conversation context. Includes circuit "
+            "breakers and hallucination safeguards."
+        ),
+        architecture_style="agent-single",
+        target_nines=3.5,
+        estimated_monthly_cost="$500-2,000",
+        components=[
+            {
+                "id": "user-gateway",
+                "name": "User Gateway",
+                "type": "load_balancer",
+                "replicas": 2,
+                "capacity": {"max_connections": 10000, "max_rps": 20000},
+                "metrics": {"cpu_percent": 10, "memory_percent": 15, "network_connections": 500},
+                "failover": {"enabled": True, "promotion_time_seconds": 5},
+                "security": {"encryption_in_transit": True, "rate_limiting": True, "log_enabled": True},
+                "cost_profile": {"hourly_infra_cost": 0.20},
+            },
+            {
+                "id": "chat-agent",
+                "name": "Chat Agent",
+                "type": "ai_agent",
+                "replicas": 2,
+                "capacity": {"max_connections": 2000, "max_rps": 500},
+                "metrics": {"cpu_percent": 30, "memory_percent": 50, "network_connections": 200},
+                "autoscaling": {"enabled": True, "min_replicas": 2, "max_replicas": 8},
+                "security": {"encryption_in_transit": True, "log_enabled": True},
+                "cost_profile": {"hourly_infra_cost": 0.40},
+            },
+            {
+                "id": "llm-api",
+                "name": "LLM API",
+                "type": "llm_endpoint",
+                "replicas": 1,
+                "capacity": {"max_rps": 1000},
+                "metrics": {"cpu_percent": 0, "memory_percent": 0, "network_connections": 100},
+                "security": {"encryption_in_transit": True, "auth_required": True, "log_enabled": True},
+                "cost_profile": {"hourly_infra_cost": 0.0},
+            },
+            {
+                "id": "context-db",
+                "name": "Context Database",
+                "type": "database",
+                "replicas": 2,
+                "capacity": {"max_connections": 500, "max_disk_gb": 50},
+                "metrics": {"cpu_percent": 20, "memory_percent": 40, "disk_percent": 15, "network_connections": 100},
+                "failover": {"enabled": True, "promotion_time_seconds": 30},
+                "security": {"encryption_at_rest": True, "encryption_in_transit": True, "backup_enabled": True, "network_segmented": True, "log_enabled": True},
+                "cost_profile": {"hourly_infra_cost": 0.80},
+                "compliance_tags": {"data_classification": "confidential", "contains_pii": True, "audit_logging": True},
+            },
+        ],
+        edges=[
+            {"source": "user-gateway", "target": "chat-agent", "type": "requires", "protocol": "https", "latency_ms": 2.0, "circuit_breaker": {"enabled": True, "failure_threshold": 5}},
+            {"source": "chat-agent", "target": "llm-api", "type": "requires", "protocol": "https", "latency_ms": 500.0, "circuit_breaker": {"enabled": True, "failure_threshold": 3}, "retry_strategy": {"enabled": True, "max_retries": 2}},
+            {"source": "chat-agent", "target": "context-db", "type": "optional", "protocol": "tcp", "latency_ms": 2.0, "weight": 0.8, "circuit_breaker": {"enabled": True, "failure_threshold": 3}},
+        ],
+        resilience_score=78.0,
+        tags=["ai", "chatbot", "agent", "llm", "conversational"],
+        difficulty="starter",
+        cloud_provider="cloud-agnostic",
+        compliance=["SOC2"],
+        diagram_mermaid=(
+            "graph TD\n"
+            "    GW[User Gateway] --> AGENT[Chat Agent x2]\n"
+            "    AGENT --> LLM[LLM API]\n"
+            "    AGENT -.-> DB[Context Database x2]"
+        ),
+        best_practices=[
+            "Run at least 2 agent replicas for availability",
+            "Circuit breaker on LLM endpoint to handle API outages",
+            "Conversation context in DB enables graceful degradation",
+            "Rate limiting at gateway to prevent abuse",
+            "Enable hallucination detection and logging",
+        ],
+    ),
+    InfraTemplate(
+        id="ai-rag-pipeline",
+        name="AI RAG Pipeline",
+        category=TemplateCategory.AI_AGENTS,
+        description=(
+            "Retrieval-Augmented Generation pipeline with a router, retriever agent "
+            "backed by a vector database, and a writer agent connected to an LLM API. "
+            "Designed to reduce hallucination through grounded responses."
+        ),
+        architecture_style="agent-pipeline",
+        target_nines=3.5,
+        estimated_monthly_cost="$1,500-5,000",
+        components=[
+            {
+                "id": "rag-gateway",
+                "name": "RAG Gateway",
+                "type": "load_balancer",
+                "replicas": 2,
+                "capacity": {"max_connections": 10000, "max_rps": 15000},
+                "metrics": {"cpu_percent": 10, "memory_percent": 15, "network_connections": 400},
+                "failover": {"enabled": True, "promotion_time_seconds": 5},
+                "security": {"encryption_in_transit": True, "rate_limiting": True, "log_enabled": True},
+                "cost_profile": {"hourly_infra_cost": 0.20},
+            },
+            {
+                "id": "router",
+                "name": "Query Router",
+                "type": "agent_orchestrator",
+                "replicas": 2,
+                "capacity": {"max_connections": 5000, "max_rps": 3000},
+                "metrics": {"cpu_percent": 20, "memory_percent": 30, "network_connections": 300},
+                "autoscaling": {"enabled": True, "min_replicas": 2, "max_replicas": 6},
+                "security": {"encryption_in_transit": True, "log_enabled": True},
+                "cost_profile": {"hourly_infra_cost": 0.30},
+            },
+            {
+                "id": "retriever-agent",
+                "name": "Retriever Agent",
+                "type": "ai_agent",
+                "replicas": 2,
+                "capacity": {"max_connections": 2000, "max_rps": 1000},
+                "metrics": {"cpu_percent": 35, "memory_percent": 55, "network_connections": 200},
+                "autoscaling": {"enabled": True, "min_replicas": 2, "max_replicas": 8},
+                "security": {"encryption_in_transit": True, "log_enabled": True},
+                "cost_profile": {"hourly_infra_cost": 0.40},
+            },
+            {
+                "id": "vector-db",
+                "name": "Vector Database",
+                "type": "database",
+                "replicas": 2,
+                "capacity": {"max_connections": 1000, "max_disk_gb": 200},
+                "metrics": {"cpu_percent": 40, "memory_percent": 60, "disk_percent": 30, "network_connections": 200},
+                "failover": {"enabled": True, "promotion_time_seconds": 30},
+                "security": {"encryption_at_rest": True, "encryption_in_transit": True, "backup_enabled": True, "network_segmented": True, "log_enabled": True},
+                "cost_profile": {"hourly_infra_cost": 1.50},
+            },
+            {
+                "id": "writer-agent",
+                "name": "Writer Agent",
+                "type": "ai_agent",
+                "replicas": 2,
+                "capacity": {"max_connections": 2000, "max_rps": 800},
+                "metrics": {"cpu_percent": 30, "memory_percent": 50, "network_connections": 200},
+                "autoscaling": {"enabled": True, "min_replicas": 2, "max_replicas": 8},
+                "security": {"encryption_in_transit": True, "log_enabled": True},
+                "cost_profile": {"hourly_infra_cost": 0.40},
+            },
+            {
+                "id": "rag-llm-api",
+                "name": "LLM API",
+                "type": "llm_endpoint",
+                "replicas": 1,
+                "capacity": {"max_rps": 1000},
+                "metrics": {"cpu_percent": 0, "memory_percent": 0, "network_connections": 150},
+                "security": {"encryption_in_transit": True, "auth_required": True, "log_enabled": True},
+                "cost_profile": {"hourly_infra_cost": 0.0},
+            },
+        ],
+        edges=[
+            {"source": "rag-gateway", "target": "router", "type": "requires", "protocol": "https", "latency_ms": 2.0, "circuit_breaker": {"enabled": True, "failure_threshold": 5}},
+            {"source": "router", "target": "retriever-agent", "type": "requires", "protocol": "grpc", "latency_ms": 5.0, "circuit_breaker": {"enabled": True, "failure_threshold": 3}},
+            {"source": "retriever-agent", "target": "vector-db", "type": "requires", "protocol": "tcp", "latency_ms": 3.0, "circuit_breaker": {"enabled": True, "failure_threshold": 3}, "retry_strategy": {"enabled": True, "max_retries": 2}},
+            {"source": "router", "target": "writer-agent", "type": "requires", "protocol": "grpc", "latency_ms": 5.0, "circuit_breaker": {"enabled": True, "failure_threshold": 3}},
+            {"source": "writer-agent", "target": "rag-llm-api", "type": "requires", "protocol": "https", "latency_ms": 500.0, "circuit_breaker": {"enabled": True, "failure_threshold": 3}, "retry_strategy": {"enabled": True, "max_retries": 2}},
+        ],
+        resilience_score=82.0,
+        tags=["ai", "rag", "agent", "llm", "vector-db", "retrieval"],
+        difficulty="intermediate",
+        cloud_provider="cloud-agnostic",
+        compliance=["SOC2"],
+        diagram_mermaid=(
+            "graph TD\n"
+            "    GW[RAG Gateway] --> ROUTER[Query Router x2]\n"
+            "    ROUTER --> RET[Retriever Agent x2]\n"
+            "    RET --> VDB[Vector Database x2]\n"
+            "    ROUTER --> WRITER[Writer Agent x2]\n"
+            "    WRITER --> LLM[LLM API]"
+        ),
+        best_practices=[
+            "Grounding retriever agent in vector DB reduces hallucination",
+            "Circuit breakers on all agent-to-service dependencies",
+            "Router enables query classification and routing optimisation",
+            "Separate retriever and writer agents for independent scaling",
+            "Vector DB replication for grounding data availability",
+        ],
+    ),
+    InfraTemplate(
+        id="ai-multi-agent",
+        name="AI Multi-Agent System",
+        category=TemplateCategory.AI_AGENTS,
+        description=(
+            "Multi-agent system with an orchestrator coordinating research, writer, "
+            "and reviewer agents. Each agent connects to LLM APIs and external tools. "
+            "Designed for complex content generation and analysis workflows."
+        ),
+        architecture_style="agent-orchestrated",
+        target_nines=3.0,
+        estimated_monthly_cost="$3,000-10,000",
+        components=[
+            {
+                "id": "multi-gateway",
+                "name": "API Gateway",
+                "type": "load_balancer",
+                "replicas": 2,
+                "capacity": {"max_connections": 10000, "max_rps": 15000},
+                "metrics": {"cpu_percent": 10, "memory_percent": 15, "network_connections": 500},
+                "failover": {"enabled": True, "promotion_time_seconds": 5},
+                "security": {"encryption_in_transit": True, "rate_limiting": True, "log_enabled": True},
+                "cost_profile": {"hourly_infra_cost": 0.20},
+            },
+            {
+                "id": "orchestrator",
+                "name": "Agent Orchestrator",
+                "type": "agent_orchestrator",
+                "replicas": 2,
+                "capacity": {"max_connections": 3000, "max_rps": 1000},
+                "metrics": {"cpu_percent": 25, "memory_percent": 40, "network_connections": 300},
+                "autoscaling": {"enabled": True, "min_replicas": 2, "max_replicas": 6},
+                "security": {"encryption_in_transit": True, "log_enabled": True},
+                "cost_profile": {"hourly_infra_cost": 0.40},
+            },
+            {
+                "id": "research-agent",
+                "name": "Research Agent",
+                "type": "ai_agent",
+                "replicas": 2,
+                "capacity": {"max_connections": 1500, "max_rps": 500},
+                "metrics": {"cpu_percent": 35, "memory_percent": 55, "network_connections": 150},
+                "autoscaling": {"enabled": True, "min_replicas": 2, "max_replicas": 8},
+                "security": {"encryption_in_transit": True, "log_enabled": True},
+                "cost_profile": {"hourly_infra_cost": 0.40},
+            },
+            {
+                "id": "writer-agent-multi",
+                "name": "Writer Agent",
+                "type": "ai_agent",
+                "replicas": 2,
+                "capacity": {"max_connections": 1500, "max_rps": 500},
+                "metrics": {"cpu_percent": 30, "memory_percent": 50, "network_connections": 150},
+                "autoscaling": {"enabled": True, "min_replicas": 2, "max_replicas": 8},
+                "security": {"encryption_in_transit": True, "log_enabled": True},
+                "cost_profile": {"hourly_infra_cost": 0.40},
+            },
+            {
+                "id": "reviewer-agent",
+                "name": "Reviewer Agent",
+                "type": "ai_agent",
+                "replicas": 2,
+                "capacity": {"max_connections": 1500, "max_rps": 500},
+                "metrics": {"cpu_percent": 25, "memory_percent": 45, "network_connections": 100},
+                "autoscaling": {"enabled": True, "min_replicas": 1, "max_replicas": 4},
+                "security": {"encryption_in_transit": True, "log_enabled": True},
+                "cost_profile": {"hourly_infra_cost": 0.40},
+            },
+            {
+                "id": "multi-llm-primary",
+                "name": "Primary LLM API",
+                "type": "llm_endpoint",
+                "replicas": 1,
+                "capacity": {"max_rps": 1000},
+                "metrics": {"cpu_percent": 0, "memory_percent": 0, "network_connections": 200},
+                "security": {"encryption_in_transit": True, "auth_required": True, "log_enabled": True},
+                "cost_profile": {"hourly_infra_cost": 0.0},
+            },
+            {
+                "id": "multi-llm-secondary",
+                "name": "Secondary LLM API",
+                "type": "llm_endpoint",
+                "replicas": 1,
+                "capacity": {"max_rps": 500},
+                "metrics": {"cpu_percent": 0, "memory_percent": 0, "network_connections": 100},
+                "security": {"encryption_in_transit": True, "auth_required": True, "log_enabled": True},
+                "cost_profile": {"hourly_infra_cost": 0.0},
+            },
+            {
+                "id": "search-tool",
+                "name": "Search Tool",
+                "type": "tool_service",
+                "replicas": 2,
+                "capacity": {"max_connections": 5000, "max_rps": 3000},
+                "metrics": {"cpu_percent": 20, "memory_percent": 30, "network_connections": 200},
+                "security": {"encryption_in_transit": True, "auth_required": True, "log_enabled": True},
+                "cost_profile": {"hourly_infra_cost": 0.30},
+            },
+            {
+                "id": "code-exec-tool",
+                "name": "Code Execution Tool",
+                "type": "tool_service",
+                "replicas": 2,
+                "capacity": {"max_connections": 1000, "max_rps": 500},
+                "metrics": {"cpu_percent": 40, "memory_percent": 50, "network_connections": 80},
+                "security": {"encryption_in_transit": True, "auth_required": True, "network_segmented": True, "log_enabled": True},
+                "cost_profile": {"hourly_infra_cost": 0.50},
+            },
+        ],
+        edges=[
+            {"source": "multi-gateway", "target": "orchestrator", "type": "requires", "protocol": "https", "latency_ms": 2.0, "circuit_breaker": {"enabled": True, "failure_threshold": 5}},
+            {"source": "orchestrator", "target": "research-agent", "type": "requires", "protocol": "grpc", "latency_ms": 5.0, "circuit_breaker": {"enabled": True, "failure_threshold": 3}},
+            {"source": "orchestrator", "target": "writer-agent-multi", "type": "requires", "protocol": "grpc", "latency_ms": 5.0, "circuit_breaker": {"enabled": True, "failure_threshold": 3}},
+            {"source": "orchestrator", "target": "reviewer-agent", "type": "requires", "protocol": "grpc", "latency_ms": 5.0, "circuit_breaker": {"enabled": True, "failure_threshold": 3}},
+            {"source": "research-agent", "target": "multi-llm-primary", "type": "requires", "protocol": "https", "latency_ms": 500.0, "circuit_breaker": {"enabled": True, "failure_threshold": 3}, "retry_strategy": {"enabled": True, "max_retries": 2}},
+            {"source": "research-agent", "target": "search-tool", "type": "optional", "protocol": "https", "latency_ms": 50.0, "weight": 0.8, "circuit_breaker": {"enabled": True, "failure_threshold": 5}},
+            {"source": "writer-agent-multi", "target": "multi-llm-primary", "type": "requires", "protocol": "https", "latency_ms": 500.0, "circuit_breaker": {"enabled": True, "failure_threshold": 3}, "retry_strategy": {"enabled": True, "max_retries": 2}},
+            {"source": "reviewer-agent", "target": "multi-llm-secondary", "type": "requires", "protocol": "https", "latency_ms": 500.0, "circuit_breaker": {"enabled": True, "failure_threshold": 3}, "retry_strategy": {"enabled": True, "max_retries": 2}},
+            {"source": "reviewer-agent", "target": "code-exec-tool", "type": "optional", "protocol": "https", "latency_ms": 100.0, "weight": 0.6, "circuit_breaker": {"enabled": True, "failure_threshold": 5}},
+        ],
+        resilience_score=80.0,
+        tags=["ai", "multi-agent", "orchestrator", "llm", "tools", "research"],
+        difficulty="advanced",
+        cloud_provider="cloud-agnostic",
+        compliance=["SOC2"],
+        diagram_mermaid=(
+            "graph TD\n"
+            "    GW[API Gateway] --> ORCH[Orchestrator x2]\n"
+            "    ORCH --> RES[Research Agent x2]\n"
+            "    ORCH --> WRT[Writer Agent x2]\n"
+            "    ORCH --> REV[Reviewer Agent x2]\n"
+            "    RES --> LLM1[Primary LLM API]\n"
+            "    RES -.-> SEARCH[Search Tool x2]\n"
+            "    WRT --> LLM1\n"
+            "    REV --> LLM2[Secondary LLM API]\n"
+            "    REV -.-> CODE[Code Execution Tool x2]"
+        ),
+        best_practices=[
+            "Use separate LLM endpoints for reviewer to avoid single provider dependency",
+            "Orchestrator with iteration limits to prevent infinite agent loops",
+            "Circuit breakers on all agent-to-LLM and agent-to-tool connections",
+            "Tool services should be sandboxed (especially code execution)",
+            "Auto-scaling agents independently based on workload patterns",
+            "Add human escalation path for high-stakes decisions",
+        ],
+    ),
+    InfraTemplate(
+        id="ai-customer-support",
+        name="AI Customer Support Bot",
+        category=TemplateCategory.AI_AGENTS,
+        description=(
+            "Customer support system with a triage agent that routes queries "
+            "to FAQ and escalation agents. Integrates with CRM and ticketing "
+            "tools for automated support workflows."
+        ),
+        architecture_style="agent-triage",
+        target_nines=3.5,
+        estimated_monthly_cost="$2,000-6,000",
+        components=[
+            {
+                "id": "support-gateway",
+                "name": "Support Gateway",
+                "type": "load_balancer",
+                "replicas": 2,
+                "capacity": {"max_connections": 15000, "max_rps": 20000},
+                "metrics": {"cpu_percent": 10, "memory_percent": 15, "network_connections": 600},
+                "failover": {"enabled": True, "promotion_time_seconds": 5},
+                "security": {"encryption_in_transit": True, "rate_limiting": True, "log_enabled": True},
+                "cost_profile": {"hourly_infra_cost": 0.20},
+            },
+            {
+                "id": "triage-agent",
+                "name": "Triage Agent",
+                "type": "agent_orchestrator",
+                "replicas": 2,
+                "capacity": {"max_connections": 5000, "max_rps": 2000},
+                "metrics": {"cpu_percent": 20, "memory_percent": 35, "network_connections": 400},
+                "autoscaling": {"enabled": True, "min_replicas": 2, "max_replicas": 8},
+                "security": {"encryption_in_transit": True, "log_enabled": True},
+                "cost_profile": {"hourly_infra_cost": 0.40},
+            },
+            {
+                "id": "faq-agent",
+                "name": "FAQ Agent",
+                "type": "ai_agent",
+                "replicas": 2,
+                "capacity": {"max_connections": 3000, "max_rps": 1500},
+                "metrics": {"cpu_percent": 25, "memory_percent": 45, "network_connections": 200},
+                "autoscaling": {"enabled": True, "min_replicas": 2, "max_replicas": 10},
+                "security": {"encryption_in_transit": True, "log_enabled": True},
+                "cost_profile": {"hourly_infra_cost": 0.30},
+            },
+            {
+                "id": "escalation-agent",
+                "name": "Escalation Agent",
+                "type": "ai_agent",
+                "replicas": 2,
+                "capacity": {"max_connections": 2000, "max_rps": 800},
+                "metrics": {"cpu_percent": 30, "memory_percent": 50, "network_connections": 150},
+                "autoscaling": {"enabled": True, "min_replicas": 1, "max_replicas": 6},
+                "security": {"encryption_in_transit": True, "log_enabled": True},
+                "cost_profile": {"hourly_infra_cost": 0.40},
+            },
+            {
+                "id": "support-llm-api",
+                "name": "LLM API",
+                "type": "llm_endpoint",
+                "replicas": 1,
+                "capacity": {"max_rps": 2000},
+                "metrics": {"cpu_percent": 0, "memory_percent": 0, "network_connections": 200},
+                "security": {"encryption_in_transit": True, "auth_required": True, "log_enabled": True},
+                "cost_profile": {"hourly_infra_cost": 0.0},
+            },
+            {
+                "id": "crm-tool",
+                "name": "CRM Tool",
+                "type": "tool_service",
+                "replicas": 2,
+                "capacity": {"max_connections": 5000, "max_rps": 3000},
+                "metrics": {"cpu_percent": 15, "memory_percent": 25, "network_connections": 200},
+                "security": {"encryption_in_transit": True, "auth_required": True, "log_enabled": True},
+                "cost_profile": {"hourly_infra_cost": 0.25},
+            },
+            {
+                "id": "ticket-tool",
+                "name": "Ticket Tool",
+                "type": "tool_service",
+                "replicas": 2,
+                "capacity": {"max_connections": 3000, "max_rps": 2000},
+                "metrics": {"cpu_percent": 15, "memory_percent": 25, "network_connections": 150},
+                "security": {"encryption_in_transit": True, "auth_required": True, "log_enabled": True},
+                "cost_profile": {"hourly_infra_cost": 0.25},
+            },
+        ],
+        edges=[
+            {"source": "support-gateway", "target": "triage-agent", "type": "requires", "protocol": "https", "latency_ms": 2.0, "circuit_breaker": {"enabled": True, "failure_threshold": 5}},
+            {"source": "triage-agent", "target": "faq-agent", "type": "requires", "protocol": "grpc", "latency_ms": 5.0, "circuit_breaker": {"enabled": True, "failure_threshold": 3}},
+            {"source": "triage-agent", "target": "escalation-agent", "type": "requires", "protocol": "grpc", "latency_ms": 5.0, "circuit_breaker": {"enabled": True, "failure_threshold": 3}},
+            {"source": "faq-agent", "target": "support-llm-api", "type": "requires", "protocol": "https", "latency_ms": 500.0, "circuit_breaker": {"enabled": True, "failure_threshold": 3}, "retry_strategy": {"enabled": True, "max_retries": 2}},
+            {"source": "escalation-agent", "target": "support-llm-api", "type": "requires", "protocol": "https", "latency_ms": 500.0, "circuit_breaker": {"enabled": True, "failure_threshold": 3}, "retry_strategy": {"enabled": True, "max_retries": 2}},
+            {"source": "faq-agent", "target": "crm-tool", "type": "optional", "protocol": "https", "latency_ms": 20.0, "weight": 0.7, "circuit_breaker": {"enabled": True, "failure_threshold": 5}},
+            {"source": "escalation-agent", "target": "crm-tool", "type": "requires", "protocol": "https", "latency_ms": 20.0, "circuit_breaker": {"enabled": True, "failure_threshold": 3}},
+            {"source": "escalation-agent", "target": "ticket-tool", "type": "requires", "protocol": "https", "latency_ms": 20.0, "circuit_breaker": {"enabled": True, "failure_threshold": 3}},
+        ],
+        resilience_score=81.0,
+        tags=["ai", "customer-support", "agent", "triage", "crm", "ticketing"],
+        difficulty="intermediate",
+        cloud_provider="cloud-agnostic",
+        compliance=["SOC2", "GDPR"],
+        diagram_mermaid=(
+            "graph TD\n"
+            "    GW[Support Gateway] --> TRIAGE[Triage Agent x2]\n"
+            "    TRIAGE --> FAQ[FAQ Agent x2]\n"
+            "    TRIAGE --> ESC[Escalation Agent x2]\n"
+            "    FAQ --> LLM[LLM API]\n"
+            "    ESC --> LLM\n"
+            "    FAQ -.-> CRM[CRM Tool x2]\n"
+            "    ESC --> CRM\n"
+            "    ESC --> TICKET[Ticket Tool x2]"
+        ),
+        best_practices=[
+            "Triage agent classifies and routes to minimize LLM costs",
+            "FAQ agent handles common queries; escalation agent for complex cases",
+            "CRM integration grounds agent responses in customer data",
+            "Ticket tool integration enables automatic case creation",
+            "Circuit breakers prevent tool failures from cascading to agents",
+            "Human escalation path from escalation agent for unresolvable cases",
         ],
     ),
 ]
