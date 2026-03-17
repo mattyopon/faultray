@@ -1,0 +1,248 @@
+schema_version: "4.0"
+
+components:
+  # Infrastructure layer
+  - id: api-server
+    name: API Gateway
+    type: app_server
+    host: api.example.com
+    port: 443
+    replicas: 3
+    metrics:
+      cpu_percent: 35.0
+      memory_percent: 50.0
+    capacity:
+      max_connections: 5000
+      max_rps: 10000
+      timeout_seconds: 30
+
+  - id: postgres-db
+    name: PostgreSQL (User Data)
+    type: database
+    host: db.internal
+    port: 5432
+    replicas: 2
+    metrics:
+      cpu_percent: 40.0
+      memory_percent: 60.0
+      disk_percent: 45.0
+    capacity:
+      max_connections: 200
+    failover:
+      enabled: true
+      promotion_time_seconds: 30
+
+  - id: redis-cache
+    name: Redis Cache
+    type: cache
+    host: redis.internal
+    port: 6379
+    replicas: 3
+    metrics:
+      memory_percent: 55.0
+    capacity:
+      max_connections: 1000
+
+  # LLM API layer
+  - id: claude-api
+    name: Claude API (Anthropic)
+    type: llm_endpoint
+    host: api.anthropic.com
+    port: 443
+    replicas: 1
+    capacity:
+      max_rps: 1000
+      timeout_seconds: 60
+    parameters:
+      provider: anthropic
+      model_id: claude-sonnet-4-20250514
+      rate_limit_rpm: 1000
+      rate_limit_tpm: 100000
+      avg_latency_ms: 500
+      p99_latency_ms: 3000
+      availability_sla: 99.9
+      context_window: 200000
+
+  - id: openai-api
+    name: OpenAI API (Fallback)
+    type: llm_endpoint
+    host: api.openai.com
+    port: 443
+    replicas: 1
+    capacity:
+      max_rps: 500
+      timeout_seconds: 60
+    parameters:
+      provider: openai
+      model_id: gpt-4o
+      rate_limit_rpm: 500
+      availability_sla: 99.5
+
+  # Tool services
+  - id: web-search
+    name: Web Search Tool
+    type: tool_service
+    host: search.internal
+    port: 8080
+    replicas: 2
+    capacity:
+      max_rps: 100
+      timeout_seconds: 10
+    parameters:
+      tool_type: web_search
+      idempotent: 1
+      side_effects: 0
+      failure_rate: 0.02
+
+  - id: db-query-tool
+    name: Database Query Tool
+    type: tool_service
+    host: query.internal
+    port: 8081
+    replicas: 2
+    capacity:
+      max_rps: 500
+      timeout_seconds: 5
+    parameters:
+      tool_type: database_query
+      idempotent: 1
+      side_effects: 0
+      failure_rate: 0.01
+
+  # Agent layer
+  - id: router-agent
+    name: Router Agent
+    type: agent_orchestrator
+    host: agents.internal
+    port: 9000
+    replicas: 2
+    capacity:
+      max_connections: 100
+      timeout_seconds: 120
+    parameters:
+      framework: langchain
+      pattern: hierarchical
+      max_agents: 5
+      max_iterations: 30
+      circuit_breaker_on_hallucination: 1
+
+  - id: research-agent
+    name: Research Agent
+    type: ai_agent
+    host: agents.internal
+    port: 9001
+    replicas: 2
+    capacity:
+      max_connections: 50
+      timeout_seconds: 90
+    parameters:
+      framework: langchain
+      model_id: claude-sonnet-4-20250514
+      max_context_tokens: 200000
+      temperature: 0.3
+      hallucination_risk: 0.03
+      requires_grounding: 1
+
+  - id: writer-agent
+    name: Writer Agent
+    type: ai_agent
+    host: agents.internal
+    port: 9002
+    replicas: 1
+    capacity:
+      max_connections: 30
+      timeout_seconds: 120
+    parameters:
+      framework: langchain
+      model_id: claude-sonnet-4-20250514
+      max_context_tokens: 200000
+      temperature: 0.7
+      hallucination_risk: 0.08
+      requires_grounding: 0
+
+dependencies:
+  # User -> Router
+  - source: api-server
+    target: router-agent
+    type: requires
+    protocol: grpc
+    latency_ms: 5
+    weight: 1.0
+
+  # Router -> Agents
+  - source: router-agent
+    target: research-agent
+    type: requires
+    protocol: grpc
+    latency_ms: 2
+    weight: 0.8
+
+  - source: router-agent
+    target: writer-agent
+    type: requires
+    protocol: grpc
+    latency_ms: 2
+    weight: 0.7
+
+  # Research Agent -> Tools
+  - source: research-agent
+    target: web-search
+    type: optional
+    protocol: http
+    latency_ms: 100
+    weight: 0.5
+
+  - source: research-agent
+    target: db-query-tool
+    type: requires
+    protocol: http
+    latency_ms: 10
+    weight: 0.9
+
+  # Agents -> LLM APIs
+  - source: research-agent
+    target: claude-api
+    type: requires
+    protocol: https
+    latency_ms: 500
+    weight: 1.0
+    circuit_breaker:
+      enabled: true
+      failure_threshold: 3
+      recovery_timeout_seconds: 30
+
+  - source: writer-agent
+    target: claude-api
+    type: requires
+    protocol: https
+    latency_ms: 500
+    weight: 1.0
+    circuit_breaker:
+      enabled: true
+      failure_threshold: 3
+      recovery_timeout_seconds: 30
+
+  # Fallback LLM
+  - source: research-agent
+    target: openai-api
+    type: optional
+    protocol: https
+    latency_ms: 600
+    weight: 0.3
+
+  # Tools -> Infrastructure
+  - source: db-query-tool
+    target: postgres-db
+    type: requires
+    protocol: tcp
+    port: 5432
+    latency_ms: 3
+    weight: 1.0
+
+  - source: db-query-tool
+    target: redis-cache
+    type: optional
+    protocol: tcp
+    port: 6379
+    latency_ms: 1
+    weight: 0.4

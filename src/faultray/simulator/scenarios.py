@@ -21,6 +21,13 @@ class FaultType(str, Enum):
     CONNECTION_POOL_EXHAUSTION = "connection_pool_exhaustion"
     NETWORK_PARTITION = "network_partition"
     TRAFFIC_SPIKE = "traffic_spike"
+    HALLUCINATION = "hallucination"
+    CONTEXT_OVERFLOW = "context_overflow"
+    LLM_RATE_LIMIT = "llm_rate_limit"
+    TOKEN_EXHAUSTION = "token_exhaustion"
+    TOOL_FAILURE = "tool_failure"
+    AGENT_LOOP = "agent_loop"
+    PROMPT_INJECTION = "prompt_injection"
 
 
 class Fault(BaseModel):

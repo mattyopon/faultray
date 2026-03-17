@@ -7,6 +7,7 @@ from dataclasses import dataclass, field
 
 from faultray.model.components import Component, HealthStatus
 from faultray.model.graph import InfraGraph
+from faultray.simulator import agent_cascade
 from faultray.simulator.scenarios import Fault, FaultType
 
 
@@ -125,6 +126,19 @@ class CascadeEngine:
             depth=0,
             elapsed_seconds=0,
         )
+
+        # Check cross-layer hallucination risk from infrastructure failures
+        for agent_id, risk, reason in agent_cascade.calculate_cross_layer_hallucination_risk(
+            self.graph, fault.target_component_id
+        ):
+            comp = self.graph.get_component(agent_id)
+            if comp and not any(e.component_id == agent_id for e in chain.effects):
+                chain.effects.append(CascadeEffect(
+                    component_id=agent_id,
+                    component_name=comp.name,
+                    health=HealthStatus.DEGRADED,
+                    reason=reason,
+                ))
 
         return chain
 
@@ -400,6 +414,12 @@ class CascadeEngine:
         scenario. Likelihood (how close current state is to the failure) is tracked
         separately.
         """
+        # Delegate agent-specific faults to agent_cascade
+        if agent_cascade.is_agent_fault(fault.fault_type.value):
+            effect = agent_cascade.apply_agent_direct_effect(component, fault.fault_type.value)
+            if effect is not None:
+                return effect
+
         match fault.fault_type:
             case FaultType.COMPONENT_DOWN:
                 return CascadeEffect(
@@ -488,6 +508,11 @@ class CascadeEngine:
         Returns a value from 0.2 (very unlikely) to 1.0 (imminent/already happening).
         This reduces the risk score for scenarios that are far from actually occurring.
         """
+        # Delegate agent-specific faults to agent_cascade
+        agent_likelihood = agent_cascade.calculate_agent_likelihood(component, fault.fault_type.value)
+        if agent_likelihood is not None:
+            return agent_likelihood
+
         match fault.fault_type:
             case FaultType.DISK_FULL:
                 disk_pct = component.metrics.disk_percent

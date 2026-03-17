@@ -5,7 +5,7 @@ from __future__ import annotations
 from enum import Enum
 from pydantic import BaseModel, Field, field_validator
 
-SCHEMA_VERSION = "3.0"
+SCHEMA_VERSION = "4.0"
 
 
 class ComponentType(str, Enum):
@@ -19,6 +19,10 @@ class ComponentType(str, Enum):
     DNS = "dns"
     EXTERNAL_API = "external_api"
     CUSTOM = "custom"
+    AI_AGENT = "ai_agent"
+    LLM_ENDPOINT = "llm_endpoint"
+    TOOL_SERVICE = "tool_service"
+    AGENT_ORCHESTRATOR = "agent_orchestrator"
 
 
 class ResourceMetrics(BaseModel):
