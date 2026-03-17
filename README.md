@@ -6,7 +6,7 @@
 [![Python 3.11+](https://img.shields.io/badge/python-3.11+-blue.svg)](https://www.python.org/downloads/)
 [![License: BSL 1.1](https://img.shields.io/badge/License-BSL%201.1-orange.svg)](LICENSE)
 [![Tests](https://img.shields.io/badge/tests-19%2C757%20passed-brightgreen.svg)]()
-[![Version](https://img.shields.io/badge/version-10.3.0-blue.svg)]()
+[![Version](https://img.shields.io/badge/version-11.0.0-blue.svg)]()
 [![Docker](https://img.shields.io/badge/docker-ready-2496ED.svg)](Dockerfile)
 [![PyPI](https://img.shields.io/pypi/v/faultray)](https://pypi.org/project/faultray/)
 [![Downloads](https://img.shields.io/pypi/dm/faultray)](https://pypi.org/project/faultray/)
@@ -119,6 +119,7 @@ CRITICAL FINDINGS
 | :shield: | **Security Resilience Engine** | Assess security posture against 8 threat categories with control gap analysis |
 | :earth_americas: | **Multi-Region DR** | Evaluate DR strategies, simulate failover, compare RTO/RPO across regions |
 | :crystal_ball: | **Predictive Engine** | Statistical failure prediction, capacity forecasting, SLA projection |
+| :robot: | **AI Agent Resilience** | Simulate agent hallucinations, LLM rate limits, prompt injection, and cross-layer cascades |
 
 ---
 
@@ -209,6 +210,96 @@ Growth forecasting with resource exhaustion prediction and SLO compliance evalua
 ```bash
 faultray capacity infra.yaml --growth 0.15 --slo 99.9
 ```
+
+---
+
+## AI Agent Resilience (v11.0)
+
+FaultRay extends chaos simulation to AI agent systems. It models agents, LLM endpoints, tool services, and orchestrators as first-class components in the dependency graph, then simulates agent-specific failure modes that traditional chaos engineering tools miss.
+
+**Key insight:** Infrastructure failures cause agent hallucinations. When a database serving as an agent's grounding source goes down, the agent may continue responding with ungrounded output — silently producing wrong results while appearing healthy.
+
+### 3 Pillars: PREDICT, ADOPT, MANAGE
+
+| Pillar | Purpose | CLI Command |
+|--------|---------|-------------|
+| **PREDICT** | Generate and run agent-specific chaos scenarios | `faultray agent scenarios` |
+| **ADOPT** | Assess deployment risk with blast-radius analysis | `faultray agent assess` |
+| **MANAGE** | Generate monitoring rules from simulation results | `faultray agent monitor` |
+
+### 4 New Component Types
+
+| Type | Value | Description |
+|------|-------|-------------|
+| AI Agent | `ai_agent` | LLM-powered agent that processes requests, uses tools, or makes decisions |
+| LLM Endpoint | `llm_endpoint` | The LLM API (Anthropic, OpenAI, Google, self-hosted) with rate limits and SLAs |
+| Tool Service | `tool_service` | External tools/APIs that agents invoke (DB queries, web search, MCP servers) |
+| Agent Orchestrator | `agent_orchestrator` | Multi-agent coordination layer (sequential, parallel, hierarchical patterns) |
+
+### 7 Agent-Specific Fault Types
+
+Hallucination, context overflow, LLM rate limiting, token exhaustion, tool failure, agent loops, and prompt injection.
+
+### Example Configuration
+
+```yaml
+components:
+  - id: claude-endpoint
+    name: Claude API
+    type: llm_endpoint
+    replicas: 1
+    parameters:
+      provider: anthropic
+      model_id: claude-sonnet-4-20250514
+      rate_limit_rpm: 1000
+      availability_sla: 99.9
+
+  - id: support-agent
+    name: Customer Support Agent
+    type: ai_agent
+    replicas: 2
+    parameters:
+      framework: langchain
+      model_id: claude-sonnet-4-20250514
+      max_context_tokens: 200000
+      hallucination_risk: 0.03
+      requires_grounding: 1
+      circuit_breaker_on_hallucination: 1
+      human_escalation: 1
+
+  - id: search-tool
+    name: Knowledge Base Search
+    type: tool_service
+    replicas: 2
+    parameters:
+      tool_type: database_query
+      idempotent: 1
+      side_effects: 0
+
+dependencies:
+  - from: support-agent
+    to: claude-endpoint
+  - from: support-agent
+    to: search-tool
+```
+
+### CLI Usage
+
+```bash
+# Assess agent deployment risk
+faultray agent assess infra.yaml
+
+# List generated agent chaos scenarios
+faultray agent scenarios infra.yaml
+
+# Generate monitoring rules
+faultray agent monitor infra.yaml
+
+# JSON output for CI/CD pipelines
+faultray agent assess infra.yaml --json
+```
+
+For full documentation, see [AI Agent Resilience Concepts](docs/concepts/agent-resilience.md).
 
 ---
 
@@ -427,6 +518,9 @@ likelihood = proximity to failure threshold (0.2 = unlikely, 1.0 = imminent)
 | `faultray feed-clear` | Clear feed scenario store |
 | `faultray whatif` | Run what-if analysis (parameter sweep) |
 | `faultray capacity` | Capacity planning with growth forecasting |
+| `faultray agent assess` | Assess AI agent deployment risk |
+| `faultray agent scenarios` | Generate agent-specific chaos scenarios |
+| `faultray agent monitor` | Generate agent monitoring rules |
 
 ---
 

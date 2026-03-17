@@ -5,7 +5,7 @@ build-backend = "hatchling.build"
 [project]
 name = "faultray"
 version = "11.0.0"
-description = "FaultRay — Zero-risk infrastructure chaos engineering. Prove your availability ceiling mathematically."
+description = "FaultRay — Zero-risk infrastructure and AI agent chaos engineering. Simulate agent resilience failures and prove your availability ceiling mathematically."
 readme = "README.md"
 license = {text = "BSL-1.1"}
 requires-python = ">=3.11"
