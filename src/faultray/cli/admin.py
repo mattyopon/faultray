@@ -53,7 +53,7 @@ def demo(
     engine = SimulationEngine(graph)
     report = engine.run_all_defaults()
 
-    print_simulation_report(report, console)
+    print_simulation_report(report, console, graph=graph)
 
     # Launch web dashboard if requested
     if web:
@@ -143,7 +143,7 @@ def report(
     engine = SimulationEngine(graph)
     sim_report = engine.run_all_defaults()
 
-    print_simulation_report(sim_report, console)
+    print_simulation_report(sim_report, console, graph=graph)
 
     save_html_report(sim_report, graph, output)
     console.print(f"\n[green]HTML report saved to {output}[/]")

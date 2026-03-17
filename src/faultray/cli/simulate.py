@@ -257,7 +257,7 @@ def simulate(
         + "[/]"
     )
 
-    print_simulation_report(report, console)
+    print_simulation_report(report, console, graph=graph)
 
     if analyze_flag:
         from faultray.ai.analyzer import FaultRayAnalyzer

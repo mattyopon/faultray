@@ -7,7 +7,7 @@ from rich.panel import Panel
 from rich.table import Table
 from rich.tree import Tree
 
-from faultray.model.components import HealthStatus
+from faultray.model.components import ComponentType, HealthStatus
 from faultray.model.graph import InfraGraph
 from faultray.simulator.engine import SimulationReport, ScenarioResult
 
@@ -64,7 +64,11 @@ def print_infrastructure_summary(graph: InfraGraph, console: Console | None = No
     console.print(table)
 
 
-def print_simulation_report(report: SimulationReport, console: Console | None = None) -> None:
+def print_simulation_report(
+    report: SimulationReport,
+    console: Console | None = None,
+    graph: InfraGraph | None = None,
+) -> None:
     """Print full simulation report."""
     console = console or Console()
 
@@ -109,6 +113,10 @@ def print_simulation_report(report: SimulationReport, console: Console | None = 
         console.print()
         console.print(f"[green]{len(report.passed)} scenarios passed with low risk[/]")
 
+    # Agent resilience section
+    if graph is not None:
+        _print_agent_section(report, graph, console)
+
     # Score context: explain structural score vs scenario results
     if score < 70 and not report.critical_findings and not report.warnings:
         console.print()
@@ -118,6 +126,71 @@ def print_simulation_report(report: SimulationReport, console: Console | None = 
             "    All scenarios passed = good runtime resilience "
             "despite architectural gaps.[/]"
         )
+
+
+def _print_agent_section(report: SimulationReport, graph: InfraGraph, console: Console) -> None:
+    """Print agent resilience section if agent components exist."""
+    from faultray.simulator.adoption_engine import AdoptionEngine
+    from faultray.simulator.agent_cascade import (
+        AGENT_COMPONENT_TYPES,
+        calculate_cross_layer_hallucination_risk,
+    )
+    agents = [c for c in graph.components.values() if c.type in AGENT_COMPONENT_TYPES]
+    if not agents:
+        return
+
+    console.print()
+    console.print("[bold]AGENT RESILIENCE[/]")
+    console.print()
+
+    engine = AdoptionEngine(graph)
+    assessments = engine.assess_all_agents()
+
+    if assessments:
+        table = Table(show_header=True)
+        table.add_column("Agent", style="cyan")
+        table.add_column("Risk", justify="right")
+        table.add_column("Level")
+        table.add_column("Blast Radius", justify="right")
+        table.add_column("Safe to Deploy")
+
+        for a in assessments:
+            level_color = {"low": "green", "medium": "yellow", "high": "red", "critical": "bold red"}.get(a.risk_level.value, "white")
+            safe_str = "[green]Yes[/]" if a.safe_to_deploy else "[bold red]No[/]"
+            table.add_row(
+                a.agent_name,
+                f"{a.risk_score:.1f}/10",
+                f"[{level_color}]{a.risk_level.value.upper()}[/]",
+                str(a.max_blast_radius),
+                safe_str,
+            )
+        console.print(table)
+
+    # Cross-layer hallucination risks for DOWN components
+    down_components = [
+        c for c in graph.components.values()
+        if c.health == HealthStatus.DOWN
+    ]
+    for result in report.results:
+        for effect in result.cascade.effects:
+            if effect.health == HealthStatus.DOWN:
+                comp = graph.get_component(effect.component_id)
+                if comp and comp not in down_components:
+                    down_components.append(comp)
+
+    hallucination_risks: list[tuple[str, float, str]] = []
+    seen = set()
+    for comp in down_components:
+        for agent_id, prob, reason in calculate_cross_layer_hallucination_risk(graph, comp.id):
+            if (agent_id, comp.id) not in seen:
+                seen.add((agent_id, comp.id))
+                hallucination_risks.append((agent_id, prob, reason))
+
+    if hallucination_risks:
+        console.print()
+        console.print("[yellow]Cross-Layer Hallucination Risks:[/]")
+        for agent_id, prob, reason in hallucination_risks:
+            console.print(f"  [yellow]{prob:.0%}[/] {reason}")
 
 
 def _print_scenario_result(result: ScenarioResult, console: Console) -> None:

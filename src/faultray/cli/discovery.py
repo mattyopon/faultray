@@ -494,7 +494,7 @@ def tf_plan(
         console.print(f"\n[cyan]Simulating chaos on planned infrastructure ({len(after_graph.components)} components)...[/]")
         engine = SimulationEngine(after_graph)
         sim_report = engine.run_all_defaults()
-        print_simulation_report(sim_report, console)
+        print_simulation_report(sim_report, console, graph=after_graph)
 
         if html:
             from faultray.reporter.html_report import save_html_report
