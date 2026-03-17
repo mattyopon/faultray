@@ -20,6 +20,7 @@ nav:
     - How It Works: concepts/how-it-works.md
     - 5-Layer Model: concepts/five-layer-model.md
     - Risk Scoring: concepts/risk-scoring.md
+    - Agent Resilience: concepts/agent-resilience.md
   - CLI Reference:
     - Commands: cli/commands.md
   - API Reference:
