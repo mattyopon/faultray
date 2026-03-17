@@ -97,8 +97,8 @@
                 </li>
 
                 <!-- Simulation submenu -->
-                <li x-data="{ open: {% if active_page in ['simulation', 'security', 'cost', 'blast_radius', 'heatmap', 'cost_attribution', 'whatif', 'topology_diff', 'optimizer', 'anomaly', 'fmea', 'chaos_monkey', 'attack_surface', 'score_explain'] %}true{% else %}false{% endif %} }">
-                    <button @click="open = !open" class="nav-link nav-link-toggle {% if active_page in ['simulation', 'security', 'cost', 'blast_radius', 'heatmap', 'cost_attribution', 'whatif', 'topology_diff', 'optimizer', 'anomaly', 'fmea', 'chaos_monkey', 'attack_surface', 'score_explain'] %}active{% endif %}" type="button">
+                <li x-data="{ open: {% if active_page in ['simulation', 'security', 'cost', 'blast_radius', 'heatmap', 'cost_attribution', 'whatif', 'topology_diff', 'optimizer', 'anomaly', 'fmea', 'chaos_monkey', 'attack_surface', 'score_explain', 'agents', 'supply_chain'] %}true{% else %}false{% endif %} }">
+                    <button @click="open = !open" class="nav-link nav-link-toggle {% if active_page in ['simulation', 'security', 'cost', 'blast_radius', 'heatmap', 'cost_attribution', 'whatif', 'topology_diff', 'optimizer', 'anomaly', 'fmea', 'chaos_monkey', 'attack_surface', 'score_explain', 'agents', 'supply_chain'] %}active{% endif %}" type="button">
                         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                             <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/>
                         </svg>
@@ -176,6 +176,16 @@
                         <li>
                             <a href="/chaos-monkey" class="nav-link nav-link-sub {% if active_page == 'chaos_monkey' %}active{% endif %}">
                                 <span>Chaos Monkey</span>
+                            </a>
+                        </li>
+                        <li>
+                            <a href="/agents" class="nav-link nav-link-sub {% if active_page == 'agents' %}active{% endif %}">
+                                <span>AI Agents</span>
+                            </a>
+                        </li>
+                        <li>
+                            <a href="/supply-chain" class="nav-link nav-link-sub {% if active_page == 'supply_chain' %}active{% endif %}">
+                                <span>Supply Chain</span>
                             </a>
                         </li>
                     </ul>

@@ -1,0 +1,222 @@
+{% extends "base.html" %}
+{% set active_page = "supply_chain" %}
+
+{% block title %}FaultRay - Supply Chain Analysis{% endblock %}
+{% block page_title %}Supply Chain Analysis{% endblock %}
+{% block page_subtitle %}<span class="page-subtitle">Simulate supply chain attacks and package vulnerability propagation</span>{% endblock %}
+
+{% block top_actions %}
+<button class="btn btn-sm btn-accent" id="runSupplyChainBtn"
+        hx-post="/api/v1/supply-chain/analyze" hx-target="#supply-chain-results" hx-swap="innerHTML"
+        hx-indicator="#sc-spinner">
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M20.59 13.41l-7.17 7.17a2 2 0 01-2.83 0L2 12V2h10l8.59 8.59a2 2 0 010 2.82z"/>
+        <line x1="7" y1="7" x2="7.01" y2="7"/>
+    </svg>
+    Run Analysis
+</button>
+<span id="sc-spinner" class="htmx-indicator"><span class="spinner"></span></span>
+{% endblock %}
+
+{% block content %}
+<div class="dashboard-grid" id="supply-chain-results">
+    <!-- Overall Risk Score -->
+    <div class="card">
+        <div class="card-header">
+            <h3>Supply Chain Risk</h3>
+            <span class="text-muted" style="font-size: 0.85em;">Lower is better</span>
+        </div>
+        <div class="card-body score-display">
+            {% set sc_score = report.overall_risk_score if report else 0 %}
+            {% if sc_score <= 30 %}
+                {% set sc_class = "score-good" %}
+                {% set sc_label = "Low Risk" %}
+            {% elif sc_score <= 60 %}
+                {% set sc_class = "score-warning" %}
+                {% set sc_label = "Moderate" %}
+            {% else %}
+                {% set sc_class = "score-critical" %}
+                {% set sc_label = "High Risk" %}
+            {% endif %}
+            <div class="score-circle {{ sc_class }}">
+                <svg viewBox="0 0 120 120" class="score-ring">
+                    <circle cx="60" cy="60" r="54" fill="none" stroke="#2d3748" stroke-width="8"/>
+                    <circle cx="60" cy="60" r="54" fill="none"
+                            stroke-width="8"
+                            stroke-dasharray="339.292"
+                            stroke-dashoffset="{{ 339.292 - (339.292 * sc_score / 100) }}"
+                            stroke-linecap="round"
+                            class="score-ring-progress"/>
+                </svg>
+                <div class="score-value">{{ "%.0f"|format(sc_score) }}</div>
+                <div class="score-label">{{ sc_label }}</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Quick Stats -->
+    <div class="card">
+        <div class="card-header">
+            <h3>Package Summary</h3>
+        </div>
+        <div class="card-body">
+            {% if report %}
+            <div class="stat-grid" style="display:grid; grid-template-columns:1fr 1fr; gap:16px;">
+                <div class="stat-item">
+                    <div class="stat-value" style="font-size:2em; color:var(--blue);">{{ report.total_packages_analyzed }}</div>
+                    <div class="stat-label">Packages Analyzed</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-value" style="font-size:2em; color:var(--yellow);">{{ report.vulnerable_packages }}</div>
+                    <div class="stat-label">Vulnerable</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-value" style="font-size:2em; color:var(--red);">{{ report.compromised_packages }}</div>
+                    <div class="stat-label">Compromised</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-value" style="font-size:2em; color:var(--green);">{{ report.package_impacts|length }}</div>
+                    <div class="stat-label">Impact Paths</div>
+                </div>
+            </div>
+            {% else %}
+            <p class="text-muted">Run the analysis to see results.</p>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Package Impact Table -->
+    <div class="card card-wide">
+        <div class="card-header">
+            <h3>Package Vulnerabilities</h3>
+        </div>
+        <div class="card-body no-padding">
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>Package</th>
+                        <th>Version</th>
+                        <th>CVE</th>
+                        <th>Severity</th>
+                        <th>Risk Score</th>
+                        <th>Blast Radius</th>
+                        <th>Agent Hallucination Risk</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% if report and report.package_impacts %}
+                    {% for pkg in report.package_impacts|sort(attribute='risk_score', reverse=true) %}
+                    <tr>
+                        <td><span class="comp-name">{{ pkg.package_name }}</span></td>
+                        <td><span class="mono">{{ pkg.package_version }}</span></td>
+                        <td><span class="mono">{{ pkg.cve_id }}</span></td>
+                        <td>
+                            {% if pkg.severity == "critical" %}
+                            <span class="health-badge health-down">CRITICAL</span>
+                            {% elif pkg.severity == "high" %}
+                            <span class="health-badge health-degraded">HIGH</span>
+                            {% elif pkg.severity == "medium" %}
+                            <span class="health-badge health-degraded">MEDIUM</span>
+                            {% else %}
+                            <span class="health-badge health-healthy">LOW</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if pkg.risk_score >= 7 %}
+                            <span class="badge badge-critical">{{ "%.1f"|format(pkg.risk_score) }}/10</span>
+                            {% elif pkg.risk_score >= 4 %}
+                            <span class="badge badge-warning">{{ "%.1f"|format(pkg.risk_score) }}/10</span>
+                            {% else %}
+                            <span class="badge badge-passed">{{ "%.1f"|format(pkg.risk_score) }}/10</span>
+                            {% endif %}
+                        </td>
+                        <td>{{ pkg.total_blast_radius }} component(s)</td>
+                        <td>
+                            {% if pkg.agent_hallucination_risk %}
+                            <span class="badge badge-critical">Yes</span>
+                            {% else %}
+                            <span class="badge badge-passed">No</span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                    {% else %}
+                    <tr><td colspan="7" class="text-muted">No data yet. Run analysis above.</td></tr>
+                    {% endif %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Attack Paths -->
+    {% if report and report.package_impacts %}
+    <div class="card card-wide">
+        <div class="card-header">
+            <h3>Attack Propagation Paths</h3>
+        </div>
+        <div class="card-body">
+            {% for pkg in report.package_impacts %}
+            {% if pkg.attack_path %}
+            <div style="margin-bottom: 24px; padding: 16px; background: var(--bg-card); border-radius: 8px; border-left: 3px solid {% if pkg.severity == 'critical' %}var(--red){% elif pkg.severity == 'high' %}var(--yellow){% else %}var(--blue){% endif %};">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+                    <h4 style="margin: 0;">{{ pkg.package_name }} ({{ pkg.cve_id }})</h4>
+                    <span class="badge badge-critical">{{ pkg.severity|upper }}</span>
+                </div>
+                <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-bottom: 12px;">
+                    {% for step in pkg.attack_path %}
+                    <div style="padding: 6px 12px; background: var(--bg-secondary); border-radius: 6px; font-size: 0.85em;">
+                        <strong>{{ step }}</strong>
+                    </div>
+                    {% if not loop.last %}
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--text-muted)" stroke-width="2">
+                        <path d="M5 12h14M12 5l7 7-7 7"/>
+                    </svg>
+                    {% endif %}
+                    {% endfor %}
+                </div>
+                {% if pkg.recommendation %}
+                <div class="text-muted" style="font-size: 0.85em;">
+                    <strong>Recommendation:</strong> {{ pkg.recommendation }}
+                </div>
+                {% endif %}
+            </div>
+            {% endif %}
+            {% endfor %}
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Cross-Layer Risks -->
+    {% if report and report.cross_layer_risks %}
+    <div class="card card-wide">
+        <div class="card-header">
+            <h3>Cross-Layer Risks</h3>
+            <span class="text-muted" style="font-size: 0.85em;">Supply chain vulnerabilities that may cause agent hallucinations</span>
+        </div>
+        <div class="card-body">
+            {% for risk in report.cross_layer_risks %}
+            <div style="padding: 12px 16px; margin-bottom: 8px; background: var(--bg-secondary); border-radius: 6px; border-left: 3px solid var(--red);">
+                {{ loop.index }}. {{ risk }}
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Recommendations -->
+    {% if report and report.recommendations %}
+    <div class="card card-wide">
+        <div class="card-header">
+            <h3>Recommendations</h3>
+        </div>
+        <div class="card-body">
+            {% for rec in report.recommendations %}
+            <div style="padding: 12px 16px; margin-bottom: 8px; background: var(--bg-secondary); border-radius: 6px; border-left: 3px solid var(--yellow);">
+                {{ loop.index }}. {{ rec }}
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

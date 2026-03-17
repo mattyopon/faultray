@@ -18,3 +18,4 @@ faultray-model.json
 htmlcov/
 .mypy_cache/
 .faultray/
+site/
