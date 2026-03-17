@@ -3324,3 +3324,145 @@ async def api_score_decomposition(user=Depends(_require_permission("view_results
     decomposer = ScoreDecomposer()
     decomposition = decomposer.decompose(graph)
     return JSONResponse(decomposition.to_dict())
+
+
+# ---------------------------------------------------------------------------
+# Agent Assessment
+# ---------------------------------------------------------------------------
+
+@app.get("/agents", response_class=HTMLResponse)
+async def agents_page(request: Request):
+    """AI Agent assessment page."""
+    graph = get_graph()
+    has_data = len(graph.components) > 0
+
+    assessment_data = None
+    monitoring_data = None
+    scenarios_data = None
+    if has_data:
+        import dataclasses
+
+        from faultray.simulator.adoption_engine import AdoptionEngine
+        from faultray.simulator.agent_monitor import AgentMonitorEngine
+        from faultray.simulator.agent_scenarios import generate_agent_scenarios
+
+        engine = AdoptionEngine(graph)
+        reports = engine.assess_all_agents()
+        assessment_data = [dataclasses.asdict(r) for r in reports]
+
+        monitor = AgentMonitorEngine(graph)
+        plan = monitor.generate_monitoring_plan()
+        monitoring_data = dataclasses.asdict(plan)
+
+        scenarios = generate_agent_scenarios(graph)
+        scenarios_data = [s.model_dump() for s in scenarios]
+
+    return templates.TemplateResponse("agents.html", {
+        "request": request,
+        "has_data": has_data,
+        "active_page": "agents",
+        "assessments": assessment_data,
+        "monitoring": monitoring_data,
+        "scenarios": scenarios_data,
+    })
+
+
+@app.post("/api/v1/agent/assess", response_class=JSONResponse)
+async def agent_assess(request: Request, user=Depends(_require_permission("view_results"))):
+    """Run agent adoption risk assessment."""
+    import dataclasses
+
+    graph = get_graph()
+    if not graph.components:
+        return JSONResponse(
+            {"error": "No infrastructure loaded. Visit /demo first."},
+            status_code=400,
+        )
+
+    from faultray.simulator.adoption_engine import AdoptionEngine
+
+    engine = AdoptionEngine(graph)
+    reports = engine.assess_all_agents()
+    return JSONResponse({"assessments": [dataclasses.asdict(r) for r in reports]})
+
+
+@app.post("/api/v1/agent/monitor", response_class=JSONResponse)
+async def agent_monitor(request: Request, user=Depends(_require_permission("view_results"))):
+    """Generate agent monitoring plan."""
+    import dataclasses
+
+    graph = get_graph()
+    if not graph.components:
+        return JSONResponse(
+            {"error": "No infrastructure loaded. Visit /demo first."},
+            status_code=400,
+        )
+
+    from faultray.simulator.agent_monitor import AgentMonitorEngine
+
+    monitor = AgentMonitorEngine(graph)
+    plan = monitor.generate_monitoring_plan()
+    return JSONResponse(dataclasses.asdict(plan))
+
+
+@app.post("/api/v1/agent/scenarios", response_class=JSONResponse)
+async def agent_scenarios(request: Request, user=Depends(_require_permission("view_results"))):
+    """List agent-specific scenarios."""
+    graph = get_graph()
+    if not graph.components:
+        return JSONResponse(
+            {"error": "No infrastructure loaded. Visit /demo first."},
+            status_code=400,
+        )
+
+    from faultray.simulator.agent_scenarios import generate_agent_scenarios
+
+    scenarios = generate_agent_scenarios(graph)
+    return JSONResponse({"scenarios": [s.model_dump() for s in scenarios]})
+
+
+# ---------------------------------------------------------------------------
+# Supply Chain Analysis
+# ---------------------------------------------------------------------------
+
+@app.get("/supply-chain", response_class=HTMLResponse)
+async def supply_chain_page(request: Request):
+    """Supply chain attack analysis page."""
+    graph = get_graph()
+    has_data = len(graph.components) > 0
+
+    report_data = None
+    if has_data:
+        import dataclasses
+
+        from faultray.simulator.supply_chain_cascade import SupplyChainCascadeEngine
+
+        engine = SupplyChainCascadeEngine(graph)
+        report = engine.analyze_all_packages()
+        report_data = dataclasses.asdict(report)
+
+    return templates.TemplateResponse("supply_chain.html", {
+        "request": request,
+        "has_data": has_data,
+        "active_page": "supply_chain",
+        "report": report_data,
+    })
+
+
+@app.post("/api/v1/supply-chain/analyze", response_class=JSONResponse)
+async def supply_chain_analyze(request: Request, user=Depends(_require_permission("view_results"))):
+    """Run supply chain attack analysis."""
+    import dataclasses
+
+    graph = get_graph()
+    if not graph.components:
+        return JSONResponse(
+            {"error": "No infrastructure loaded. Visit /demo first."},
+            status_code=400,
+        )
+
+    from faultray.simulator.supply_chain_cascade import SupplyChainCascadeEngine
+
+    engine = SupplyChainCascadeEngine(graph)
+    report = engine.analyze_all_packages()
+    return JSONResponse(dataclasses.asdict(report))

@@ -1,0 +1,272 @@
+{% extends "base.html" %}
+{% set active_page = "agents" %}
+
+{% block title %}FaultRay - AI Agent Assessment{% endblock %}
+{% block page_title %}AI Agent Assessment{% endblock %}
+{% block page_subtitle %}<span class="page-subtitle">Evaluate adoption risk, monitoring plans, and chaos scenarios for AI agents</span>{% endblock %}
+
+{% block top_actions %}
+<button class="btn btn-sm btn-accent" id="runAgentAssessBtn"
+        hx-post="/api/v1/agent/assess" hx-target="#agent-results" hx-swap="innerHTML"
+        hx-indicator="#agent-spinner">
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M12 2a4 4 0 014 4v1a2 2 0 012 2v1a2 2 0 01-2 2H8a2 2 0 01-2-2V9a2 2 0 012-2V6a4 4 0 014-4z"/>
+        <path d="M9 18h6"/>
+        <path d="M10 22h4"/>
+    </svg>
+    Run Assessment
+</button>
+<span id="agent-spinner" class="htmx-indicator"><span class="spinner"></span></span>
+{% endblock %}
+
+{% block content %}
+<div class="dashboard-grid" id="agent-results">
+    <!-- Adoption Risk Overview -->
+    <div class="card">
+        <div class="card-header">
+            <h3>Adoption Risk Overview</h3>
+        </div>
+        <div class="card-body">
+            {% if assessments %}
+            <div class="stat-grid" style="display:grid; grid-template-columns:1fr 1fr; gap:16px;">
+                <div class="stat-item">
+                    <div class="stat-value" style="font-size:2em; color:var(--blue);">{{ assessments|length }}</div>
+                    <div class="stat-label">Agents Assessed</div>
+                </div>
+                <div class="stat-item">
+                    {% set critical_count = assessments|selectattr('risk_level', 'equalto', 'critical')|list|length %}
+                    <div class="stat-value" style="font-size:2em; color:var(--red);">{{ critical_count }}</div>
+                    <div class="stat-label">Critical Risk</div>
+                </div>
+                <div class="stat-item">
+                    {% set safe_count = assessments|selectattr('safe_to_deploy', 'equalto', true)|list|length %}
+                    <div class="stat-value" style="font-size:2em; color:var(--green);">{{ safe_count }}</div>
+                    <div class="stat-label">Safe to Deploy</div>
+                </div>
+                <div class="stat-item">
+                    {% set avg_risk = (assessments|sum(attribute='risk_score')) / (assessments|length) if assessments else 0 %}
+                    <div class="stat-value" style="font-size:2em; color:var(--yellow);">{{ "%.1f"|format(avg_risk) }}</div>
+                    <div class="stat-label">Avg Risk Score</div>
+                </div>
+            </div>
+            {% else %}
+            <p class="text-muted">Run the assessment to see results.</p>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Monitoring Plan -->
+    <div class="card">
+        <div class="card-header">
+            <h3>Monitoring Plan</h3>
+        </div>
+        <div class="card-body">
+            {% if monitoring %}
+            <div class="stat-grid" style="display:grid; grid-template-columns:1fr 1fr; gap:16px;">
+                <div class="stat-item">
+                    <div class="stat-value" style="font-size:2em; color:var(--blue);">{{ monitoring.rules|length }}</div>
+                    <div class="stat-label">Monitoring Rules</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-value" style="font-size:2em; color:var(--green);">{{ monitoring.total_components_monitored }}</div>
+                    <div class="stat-label">Components Monitored</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-value" style="font-size:2em; color:var(--yellow);">{{ "%.0f"|format(monitoring.coverage_percent) }}%</div>
+                    <div class="stat-label">Coverage</div>
+                </div>
+            </div>
+            {% else %}
+            <p class="text-muted">Run the assessment to generate a monitoring plan.</p>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Agent Risk Table -->
+    <div class="card card-wide">
+        <div class="card-header">
+            <h3>Agent Risk Assessment</h3>
+        </div>
+        <div class="card-body no-padding">
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>Agent</th>
+                        <th>Risk Score</th>
+                        <th>Risk Level</th>
+                        <th>Blast Radius</th>
+                        <th>Safe to Deploy</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% if assessments %}
+                    {% for a in assessments|sort(attribute='risk_score', reverse=true) %}
+                    <tr>
+                        <td><span class="comp-name">{{ a.agent_name }}</span></td>
+                        <td>
+                            {% if a.risk_score >= 7 %}
+                            <span class="badge badge-critical">{{ "%.1f"|format(a.risk_score) }}/10</span>
+                            {% elif a.risk_score >= 4 %}
+                            <span class="badge badge-warning">{{ "%.1f"|format(a.risk_score) }}/10</span>
+                            {% else %}
+                            <span class="badge badge-passed">{{ "%.1f"|format(a.risk_score) }}/10</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if a.risk_level == "critical" %}
+                            <span class="health-badge health-down">CRITICAL</span>
+                            {% elif a.risk_level == "high" %}
+                            <span class="health-badge health-degraded">HIGH</span>
+                            {% elif a.risk_level == "medium" %}
+                            <span class="health-badge health-degraded">MEDIUM</span>
+                            {% else %}
+                            <span class="health-badge health-healthy">LOW</span>
+                            {% endif %}
+                        </td>
+                        <td>{{ a.max_blast_radius }} component(s)</td>
+                        <td>
+                            {% if a.safe_to_deploy %}
+                            <span class="badge badge-passed">Yes</span>
+                            {% else %}
+                            <span class="badge badge-critical">No</span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                    {% else %}
+                    <tr><td colspan="5" class="text-muted">No data yet. Run assessment above.</td></tr>
+                    {% endif %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Failsafe Details -->
+    {% if assessments %}
+    {% for a in assessments %}
+    {% if a.failsafes %}
+    <div class="card card-wide">
+        <div class="card-header">
+            <h3>Failsafes: {{ a.agent_name }}</h3>
+        </div>
+        <div class="card-body no-padding">
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>Failsafe</th>
+                        <th>Status</th>
+                        <th>Description</th>
+                        <th>Recommendation</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for fs in a.failsafes %}
+                    <tr>
+                        <td><span class="comp-name">{{ fs.name }}</span></td>
+                        <td>
+                            {% if fs.present %}
+                            <span class="badge badge-passed">Present</span>
+                            {% else %}
+                            <span class="badge badge-critical">Missing</span>
+                            {% endif %}
+                        </td>
+                        <td><span class="text-muted">{{ fs.description }}</span></td>
+                        <td><span class="text-muted">{{ fs.recommendation }}</span></td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+    {% endif %}
+    {% endfor %}
+    {% endif %}
+
+    <!-- Monitoring Rules -->
+    {% if monitoring and monitoring.rules %}
+    <div class="card card-wide">
+        <div class="card-header">
+            <h3>Monitoring Rules</h3>
+        </div>
+        <div class="card-body no-padding">
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>Rule</th>
+                        <th>Component</th>
+                        <th>Metric</th>
+                        <th>Threshold</th>
+                        <th>Predicted Fault</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for rule in monitoring.rules %}
+                    <tr>
+                        <td><span class="comp-name">{{ rule.name }}</span></td>
+                        <td><span class="mono">{{ rule.component_id }}</span></td>
+                        <td><span class="mono">{{ rule.metric }}</span></td>
+                        <td>{{ rule.operator }} {{ rule.threshold }}</td>
+                        <td><span class="badge badge-warning">{{ rule.predicted_fault }}</span></td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Agent Scenarios -->
+    {% if scenarios %}
+    <div class="card card-wide">
+        <div class="card-header">
+            <h3>Agent Chaos Scenarios</h3>
+            <span class="text-muted" style="font-size: 0.85em;">{{ scenarios|length }} scenarios generated</span>
+        </div>
+        <div class="card-body no-padding">
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>Scenario</th>
+                        <th>Description</th>
+                        <th>Fault Types</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for s in scenarios %}
+                    <tr>
+                        <td><span class="comp-name">{{ s.name }}</span></td>
+                        <td><span class="text-muted">{{ s.description }}</span></td>
+                        <td>
+                            {% for f in s.faults %}
+                            <span class="badge badge-info">{{ f.fault_type }}</span>
+                            {% endfor %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Recommendations -->
+    {% if assessments %}
+    {% for a in assessments %}
+    {% if a.recommendations %}
+    <div class="card card-wide">
+        <div class="card-header">
+            <h3>Recommendations: {{ a.agent_name }}</h3>
+        </div>
+        <div class="card-body">
+            {% for rec in a.recommendations %}
+            <div style="padding: 12px 16px; margin-bottom: 8px; background: var(--bg-secondary); border-radius: 6px; border-left: 3px solid var(--yellow);">
+                {{ loop.index }}. {{ rec }}
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+    {% endif %}
+    {% endfor %}
+    {% endif %}
+</div>
+{% endblock %}
