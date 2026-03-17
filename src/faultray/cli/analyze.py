@@ -59,7 +59,7 @@ def analyze(
         report_dict = dataclasses.asdict(ai_report)
         console.print_json(json_mod.dumps(report_dict, indent=2, default=str))
     else:
-        print_simulation_report(sim_report, console)
+        print_simulation_report(sim_report, console, graph=graph)
         _print_ai_analysis(ai_report, console)
 
 

@@ -242,6 +242,10 @@ _COMPONENT_USER_WEIGHTS: Dict[ComponentType, float] = {
     ComponentType.DNS: 1.0,
     ComponentType.EXTERNAL_API: 0.3,
     ComponentType.CUSTOM: 0.5,
+    ComponentType.AI_AGENT: 0.75,
+    ComponentType.LLM_ENDPOINT: 0.7,
+    ComponentType.TOOL_SERVICE: 0.5,
+    ComponentType.AGENT_ORCHESTRATOR: 0.8,
 }
 
 _COMPONENT_REVENUE_WEIGHTS: Dict[ComponentType, float] = {
@@ -255,6 +259,10 @@ _COMPONENT_REVENUE_WEIGHTS: Dict[ComponentType, float] = {
     ComponentType.DNS: 0.95,
     ComponentType.EXTERNAL_API: 0.25,
     ComponentType.CUSTOM: 0.5,
+    ComponentType.AI_AGENT: 0.65,
+    ComponentType.LLM_ENDPOINT: 0.6,
+    ComponentType.TOOL_SERVICE: 0.4,
+    ComponentType.AGENT_ORCHESTRATOR: 0.7,
 }
 
 _TEMPORAL_BOUNDARIES: List[Tuple[TemporalPhase, float]] = [
@@ -380,6 +388,21 @@ def compute_direct_impact(
             weighted_dep_count += 1.0
 
     raw = min(100.0, weighted_dep_count * 15.0 * type_weight * rep_factor)
+
+    # Agent hallucination risk boost: if this component's failure causes
+    # agent dependents to lose grounding, increase impact score
+    _AGENT_TYPES = {
+        ComponentType.AI_AGENT, ComponentType.LLM_ENDPOINT,
+        ComponentType.TOOL_SERVICE, ComponentType.AGENT_ORCHESTRATOR,
+    }
+    for dep_comp in dependents:
+        if dep_comp.type in _AGENT_TYPES:
+            hallucination_risk = float(dep_comp.parameters.get("hallucination_risk", 0.0))
+            requires_grounding = bool(dep_comp.parameters.get("requires_grounding", 0))
+            if requires_grounding and hallucination_risk > 0:
+                # Agents that lose their grounding data source are high-risk
+                raw = min(100.0, raw * (1.0 + hallucination_risk * 5.0))
+
     return round(raw, 2)
 
 

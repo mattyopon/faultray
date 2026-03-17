@@ -110,6 +110,21 @@ def score_explain(
     )
     console.print(Panel(score_display, title="[bold]Score Summary[/]", border_style=score_color))
 
+    # Agent risk summary
+    from faultray.model.components import ComponentType
+    agent_types = {ComponentType.AI_AGENT, ComponentType.AGENT_ORCHESTRATOR}
+    agent_comps = [c for c in graph.components.values() if c.type in agent_types]
+    if agent_comps:
+        from faultray.simulator.adoption_engine import AdoptionEngine
+        adoption = AdoptionEngine(graph)
+        agent_reports = adoption.assess_all_agents()
+        if agent_reports:
+            avg_risk = sum(r.risk_score for r in agent_reports) / len(agent_reports)
+            console.print(
+                f"\n[bold]Agent Risk:[/] {len(agent_reports)} agent(s) assessed, "
+                f"avg risk {avg_risk:.1f}/10"
+            )
+
     # Show improvements only if requested
     if improvements_only:
         if decomposition.improvements:

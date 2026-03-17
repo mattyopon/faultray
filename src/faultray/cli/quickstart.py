@@ -151,7 +151,7 @@ def quickstart(
 
         engine = SimulationEngine(graph)
         results = engine.run_all_defaults()
-        print_simulation_report(results, console)
+        print_simulation_report(results, console, graph=graph)
 
         console.print(
             f"\n[bold green]Simulation complete![/] "
