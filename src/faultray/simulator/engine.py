@@ -10,6 +10,7 @@ from pathlib import Path
 
 from faultray.model.graph import InfraGraph
 from faultray.simulator.cascade import CascadeChain, CascadeEngine
+from faultray.simulator.agent_scenarios import generate_agent_scenarios
 from faultray.simulator.scenarios import Scenario, generate_default_scenarios
 
 logger = logging.getLogger(__name__)
@@ -150,6 +151,11 @@ class SimulationEngine:
         scenarios = generate_default_scenarios(
             component_ids, components=self.graph.components
         )
+
+        # Include agent-specific scenarios
+        agent_scenarios = generate_agent_scenarios(self.graph)
+        if agent_scenarios:
+            scenarios.extend(agent_scenarios)
 
         if include_feed:
             from faultray.feeds.store import load_feed_scenarios

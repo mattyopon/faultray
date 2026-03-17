@@ -82,5 +82,6 @@ import faultray.cli.attack_surface_cmd  # noqa: F401
 import faultray.cli.score_cmd  # noqa: F401
 import faultray.cli.cost_impact_cmd  # noqa: F401
 import faultray.cli.init_cmd  # noqa: F401
+import faultray.cli.agent_cmd  # noqa: F401
 
 __all__ = ["app", "_print_dynamic_results"]

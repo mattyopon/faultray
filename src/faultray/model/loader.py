@@ -188,6 +188,19 @@ def load_yaml(path: Path | str) -> InfraGraph:
             parameters=entry.get("parameters", {}),
             tags=entry.get("tags", []),
         )
+
+        # Flatten agent_config / llm_config / tool_config / orchestrator_config
+        # into component.parameters for ai_agent components.
+        for config_key in ("agent_config", "llm_config", "tool_config", "orchestrator_config"):
+            if config_key in entry:
+                raw_cfg = entry[config_key]
+                if isinstance(raw_cfg, dict):
+                    for k, v in raw_cfg.items():
+                        if isinstance(v, bool):
+                            component.parameters[k] = 1 if v else 0
+                        else:
+                            component.parameters[k] = v
+
         graph.add_component(component)
 
     # --- Dependencies ---------------------------------------------------------

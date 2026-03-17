@@ -54,6 +54,15 @@ def __getattr__(name: str):
         "SARIFExporter": (
             "faultray.ci.sarif_exporter", "SARIFExporter",
         ),
+        # Agent components
+        "AgentConfig": ("faultray.model.agent_components", "AgentConfig"),
+        "LLMEndpointConfig": ("faultray.model.agent_components", "LLMEndpointConfig"),
+        "ToolServiceConfig": ("faultray.model.agent_components", "ToolServiceConfig"),
+        "AgentOrchestratorConfig": ("faultray.model.agent_components", "AgentOrchestratorConfig"),
+        # Agent engines
+        "AdoptionEngine": ("faultray.simulator.adoption_engine", "AdoptionEngine"),
+        "AgentMonitorEngine": ("faultray.simulator.agent_monitor", "AgentMonitorEngine"),
+        "generate_agent_scenarios": ("faultray.simulator.agent_scenarios", "generate_agent_scenarios"),
         # SDK entry point
         "FaultZero": ("faultray.sdk", "FaultZero"),
     }
@@ -78,5 +87,7 @@ __all__ = [
     "CostImpactEngine", "SecurityResilienceEngine",
     "SLAValidatorEngine", "SLATarget",
     "CIGateGenerator", "CIGateConfig", "SARIFExporter",
+    "AgentConfig", "LLMEndpointConfig", "ToolServiceConfig", "AgentOrchestratorConfig",
+    "AdoptionEngine", "AgentMonitorEngine", "generate_agent_scenarios",
     "FaultZero",
 ]
