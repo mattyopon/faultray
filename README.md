@@ -1,80 +1,47 @@
-# FaultRay — Zero-Risk Infrastructure Chaos Simulation
+<p align="center">
+  <h1 align="center">FaultRay</h1>
+  <p align="center"><strong>Zero-Risk Chaos Engineering for Infrastructure & AI Agents</strong></p>
+  <p align="center"><strong>インフラ & AIエージェントのためのゼロリスク・カオスエンジニアリング</strong></p>
+</p>
 
-> **Simulate infrastructure failures without touching production.**
-> **Prove your system's availability ceiling mathematically.**
-
-[![Python 3.11+](https://img.shields.io/badge/python-3.11+-blue.svg)](https://www.python.org/downloads/)
-[![License: BSL 1.1](https://img.shields.io/badge/License-BSL%201.1-orange.svg)](LICENSE)
-[![Tests](https://img.shields.io/badge/tests-19%2C757%20passed-brightgreen.svg)]()
-[![Version](https://img.shields.io/badge/version-11.0.0-blue.svg)]()
-[![Docker](https://img.shields.io/badge/docker-ready-2496ED.svg)](Dockerfile)
-[![PyPI](https://img.shields.io/pypi/v/faultray)](https://pypi.org/project/faultray/)
-[![Downloads](https://img.shields.io/pypi/dm/faultray)](https://pypi.org/project/faultray/)
-[![GitHub stars](https://img.shields.io/github/stars/mattyopon/faultray)](https://github.com/mattyopon/faultray)
-
----
-
-## Why FaultRay?
-
-Most chaos engineering tools inject real faults into real infrastructure. FaultRay takes a fundamentally different approach: **pure mathematical simulation** that models your entire dependency graph in memory, runs 2,000+ failure scenarios across 5 engines, and proves your system's theoretical availability ceiling — all without touching a single server.
-
-| | **Gremlin** | **Steadybit** | **AWS FIS** | **FaultRay** |
-|---|---|---|---|---|
-| **Approach** | Fault injection | Fault injection | Fault injection | Mathematical simulation |
-| **Risk to production** | Medium-High | Medium | Medium | **Zero** |
-| **Setup required** | Agent per host | Agent per host | AWS-only | **Single pip install** |
-| **Scenario count** | Manual config | Manual config | AWS services only | **2,000+ auto-generated** |
-| **Availability proof** | No | No | No | **3-Layer Limit Model** |
-| **Cost** | $$$$ | $$$ | $$ (AWS-only) | **Free / OSS** |
-| **Dependency graph** | No | Limited | No | **Full NetworkX graph** |
-| **Terraform integration** | No | No | Native | **tfstate + plan analysis** |
-| **Security feed** | No | No | No | **Auto CVE scenarios** |
-
-**Key differentiators:**
-
-- **Zero risk** — Runs entirely in memory. No agents, no sidecars, no production impact.
-- **5 simulation engines** — Cascade, Dynamic, Ops, What-If, and Capacity engines working together.
-- **3-Layer Availability Limit Model** — The only tool that mathematically proves your system's availability ceiling (see below).
-- **HA & Quorum Guards** — Capacity Engine enforces minimum 2 replicas for HA components and minimum 3 for quorum-based clusters (Redis, Kafka).
+<p align="center">
+  <a href="https://www.python.org/downloads/"><img src="https://img.shields.io/badge/python-3.11+-blue.svg" alt="Python 3.11+"></a>
+  <a href="LICENSE"><img src="https://img.shields.io/badge/License-BSL%201.1-orange.svg" alt="License: BSL 1.1"></a>
+  <a href="#"><img src="https://img.shields.io/badge/tests-19%2C757%20passed-brightgreen.svg" alt="Tests"></a>
+  <a href="#"><img src="https://img.shields.io/badge/version-11.0.0-blue.svg" alt="Version"></a>
+  <a href="Dockerfile"><img src="https://img.shields.io/badge/docker-ready-2496ED.svg" alt="Docker"></a>
+  <a href="https://pypi.org/project/faultray/"><img src="https://img.shields.io/pypi/v/faultray" alt="PyPI"></a>
+  <a href="https://pypi.org/project/faultray/"><img src="https://img.shields.io/pypi/dm/faultray" alt="Downloads"></a>
+  <a href="https://github.com/mattyopon/faultray"><img src="https://img.shields.io/github/stars/mattyopon/faultray" alt="GitHub stars"></a>
+</p>
 
 ---
 
-## Quick Start
+# English
 
-### pip
+## What is FaultRay?
+
+**FaultRay is a tool that tests whether your systems can survive failures — without actually breaking anything.**
+
+Think of it like a flight simulator for your infrastructure. Pilots don't learn to handle engine failures by breaking real engines. They use simulators. FaultRay does the same thing for your servers, databases, load balancers, and even AI agents.
+
+Traditional chaos engineering tools (like Gremlin or AWS FIS) literally break things in your production environment to see what happens. That's scary and risky. FaultRay takes a completely different approach: it builds a **mathematical model** of your entire system and simulates over **2,000 failure scenarios** entirely in memory. Nothing gets touched. Nothing breaks. You just get answers.
+
+### What Can FaultRay Do?
+
+#### 1. Find Your System's Weak Points — Before They Break
+
+FaultRay automatically discovers single points of failure, cascade paths, and hidden dependencies in your infrastructure. You define your system in a simple YAML file (or import from Terraform/Prometheus), and FaultRay runs thousands of "what if" scenarios:
+
+- What if your database goes down?
+- What if traffic spikes 10x during a sale?
+- What if two servers fail at the same time?
+- What if a DDoS attack hits your load balancer?
 
 ```bash
-# Install from PyPI
 pip install faultray
-
-# Or install from source
-pip install -e .
-
-# Run demo (6-component web stack simulation)
 faultray demo
-
-# With web dashboard
-faultray demo --web
 ```
-
-### Docker
-
-```bash
-# Web dashboard (http://localhost:8000)
-docker compose up web
-
-# Demo mode with dashboard
-docker compose --profile demo up demo
-
-# CLI mode
-docker compose --profile cli run cli simulate
-
-# Build from source
-docker build -t faultray .
-docker run -p 8000:8000 faultray
-```
-
-### Demo Output
 
 ```
 ╭────────── FaultRay Chaos Simulation Report ──────────╮
@@ -82,230 +49,105 @@ docker run -p 8000:8000 faultray
 │ Scenarios tested: 2,000+                             │
 │ Critical: 7  Warning: 66  Passed: 77                 │
 ╰──────────────────────────────────────────────────────╯
-
-CRITICAL FINDINGS
-
-  10.0/10 CRITICAL  Traffic spike (10x)
-  Cascade path:
-  ├── DOWN nginx (LB)
-  ├── DOWN api-server-1
-  ├── DOWN api-server-2
-  ├── DOWN PostgreSQL (primary)
-  ├── DOWN Redis (cache)
-  └── DOWN RabbitMQ
 ```
 
----
+#### 2. Prove Your Availability Ceiling Mathematically
 
-## Features
+Ever wondered: "Can we actually achieve 99.99% uptime?" FaultRay answers this with its unique **3-Layer Availability Limit Model**:
 
-| | Feature | Description |
-|---|---|---|
-| :shield: | **Zero Risk Simulation** | Runs entirely in memory — no agents, no sidecars, no production impact |
-| :chart_with_upwards_trend: | **2,000+ Chaos Scenarios** | 30 categories of failure scenarios auto-generated from your topology |
-| :link: | **Dependency Graph Analysis** | NetworkX-powered graph modeling with cascade fault prediction |
-| :triangular_ruler: | **3-Layer Availability Proof** | Mathematically proves your system's theoretical availability ceiling |
-| :dart: | **SLO/SLI Tracking** | Availability, latency, and error rate tracking against SLO targets |
-| :crystal_ball: | **What-If Analysis** | Parameter sweep for fault tolerance sensitivity analysis |
-| :bar_chart: | **Capacity Planning** | Growth forecasting with SLO compliance evaluation |
-| :ocean: | **10 Traffic Models** | DDoS, diurnal, flash crowd, growth trend, and more |
-| :clock1: | **Ops Simulation** | Long-running (days/weeks) operational simulation with SLO tracking |
-| :zap: | **Dynamic Simulation** | Time-stepped simulation with traffic pattern integration |
-| :newspaper: | **Security Feed** | Auto-generates scenarios from CISA, NVD, Krebs, BleepingComputer |
-| :globe_with_meridians: | **Terraform Integration** | Import from tfstate/plan with change impact analysis |
-| :desktop_computer: | **Web Dashboard** | D3.js interactive graph + Grafana-style dashboard |
-| :mag: | **Multiple Discovery** | Local scan, Prometheus, Terraform, YAML |
-| :moneybag: | **Cost Impact Engine** | Quantify downtime costs, SLA penalties, and ROI of resilience improvements |
-| :shield: | **Security Resilience Engine** | Assess security posture against 8 threat categories with control gap analysis |
-| :earth_americas: | **Multi-Region DR** | Evaluate DR strategies, simulate failover, compare RTO/RPO across regions |
-| :crystal_ball: | **Predictive Engine** | Statistical failure prediction, capacity forecasting, SLA projection |
-| :robot: | **AI Agent Resilience** | Simulate agent hallucinations, LLM rate limits, prompt injection, and cross-layer cascades |
+```
+Layer 3: Theoretical Limit   → 6.65 nines (99.99997%)  — Math says this is the max
+Layer 2: Hardware Limit      → 5.91 nines (99.999%)    — Your hardware caps it here
+Layer 1: Software Limit      → 4.00 nines (99.99%)     — Human error brings it here
+```
 
----
+If your SLO target is 99.99% but your architecture can only physically reach 99.95%, **no amount of engineering effort will close the gap** without architectural changes. FaultRay tells you this before you waste months trying.
 
-## Enterprise Features
+#### 3. Simulate AI Agent Failures (v11.0 — NEW)
 
-| Feature | Description |
+As AI agents become part of production systems, a new class of failures emerges. FaultRay is the **first chaos engineering tool** to model AI-specific failure modes:
+
+| Failure Type | What It Means |
 |---|---|
-| Multi-tenant Dashboard | OAuth2 (GitHub/Google) + API key authentication with role-based access |
-| CI/CD Integration | GitHub Actions marketplace action for pre-deploy chaos validation |
-| Compliance Engine | SOC 2, ISO 27001, PCI DSS, DORA, HIPAA, GDPR gap analysis with remediation |
-| Terraform Integration | Import from tfstate, analyze tf plan impact before apply |
-| Prometheus Discovery | Auto-discover infrastructure from Prometheus targets |
-| Slack & PagerDuty | Real-time notification of critical findings |
-| Security Feed | Auto-generate scenarios from CVE/NVD/CISA feeds |
-| AI-Powered Analysis | Architecture recommendations and root cause analysis |
-| OpenAPI / Swagger | Auto-generated API docs at /docs and /redoc with full schema |
-| Structured Logging | JSON logging for production pipelines, human-readable for development |
-| Health Checks | Detailed component-level health status for monitoring integration |
+| **Hallucination** | Agent produces confident but wrong answers when its data source goes down |
+| **Context Overflow** | Agent exceeds token limits and loses critical context |
+| **LLM Rate Limiting** | API provider throttles your requests during peak load |
+| **Token Exhaustion** | You run out of API budget mid-conversation |
+| **Tool Failure** | External tools the agent depends on become unavailable |
+| **Agent Loops** | Agent gets stuck in infinite retry cycles |
+| **Prompt Injection** | Malicious input hijacks agent behavior |
+
+```bash
+faultray agent assess infra.yaml    # Check your AI system's risk level
+faultray agent scenarios infra.yaml # See what could go wrong
+faultray agent monitor infra.yaml   # Generate monitoring rules
+```
+
+#### 4. Five Simulation Engines Working Together
+
+| Engine | What It Does | Example |
+|---|---|---|
+| **Cascade** | Traces how one failure spreads through your system | "If Redis dies, what else goes down?" |
+| **Dynamic** | Simulates real traffic patterns over time | "What happens during a 24h diurnal cycle?" |
+| **Ops** | Runs week-long operational simulations | "Will our SLOs hold over 7 days?" |
+| **What-If** | Sweeps parameters to find breaking points | "At what MTTR do we violate our SLA?" |
+| **Capacity** | Forecasts when you'll run out of resources | "When do we need to scale up?" |
+
+#### 5. Enterprise-Ready Features
+
+- **Terraform Integration** — Import directly from `tfstate`, analyze `tf plan` impact before apply
+- **Prometheus Discovery** — Auto-discover your infrastructure from Prometheus targets
+- **Security Feed** — Auto-generate chaos scenarios from real CVE/CISA/NVD advisories
+- **Cost Impact Engine** — Quantify downtime costs, SLA penalties, and ROI of improvements
+- **Compliance Engine** — SOC 2, ISO 27001, PCI DSS, DORA, HIPAA, GDPR gap analysis
+- **Multi-Region DR** — Evaluate disaster recovery strategies, compare RTO/RPO across regions
+- **Web Dashboard** — Interactive D3.js dependency graph + Grafana-style dashboard
+- **CI/CD Integration** — GitHub Actions marketplace action for pre-deploy validation
 
 ---
 
-## 3-Layer Availability Limit Model
+### How Does FaultRay Compare?
 
-**This is FaultRay's unique contribution to chaos engineering.**
-
-Traditional chaos tools answer "what breaks?" FaultRay answers **"what is the maximum availability your architecture can physically achieve?"** using a three-layer mathematical model.
-
-```
-                    ┌─────────────────────────────────────────┐
-                    │                                         │
-  Layer 3 ──────── │  Theoretical Limit       6.65 nines     │ ── Upper bound
-                    │  (perfect redundancy + perfect failover)│    (unreachable)
-                    │                                         │
-  Layer 2 ──────── │  Hardware Limit          5.91 nines     │ ── Physical ceiling
-                    │  (component MTBF × redundancy)          │    (hard constraint)
-                    │                                         │
-  Layer 1 ──────── │  Software Limit          4.00 nines     │ ── Practical ceiling
-                    │  (deployment + config + human error)    │    (your real target)
-                    │                                         │
-                    └─────────────────────────────────────────┘
-```
-
-### Layer 1: Software Availability Limit (practical ceiling)
-
-Accounts for deployment failures, configuration drift, human error, and software bugs. Most organizations cannot exceed **4.00 nines (99.99%)** at this layer without extreme operational maturity.
-
-### Layer 2: Hardware Availability Limit (physical ceiling)
-
-Calculated from component MTBF (Mean Time Between Failures), redundancy factor, and failover time. Even with perfect software, hardware constraints cap availability at approximately **5.91 nines (99.999%)**.
-
-### Layer 3: Theoretical Availability Limit (mathematical upper bound)
-
-Assumes perfect redundancy, instant failover, and zero software errors. This is the mathematical ceiling your architecture can never exceed: **6.65 nines (99.99997%)**.
-
-**Why this matters:** If your SLO target is 99.99% but your Layer 1 limit is 99.95%, no amount of engineering effort will close the gap without architectural changes. FaultRay tells you this **before** you waste months trying.
+| | **Gremlin** | **Steadybit** | **AWS FIS** | **FaultRay** |
+|---|---|---|---|---|
+| **Approach** | Breaks real things | Breaks real things | Breaks real things | Math simulation |
+| **Risk to production** | Medium-High | Medium | Medium | **Zero** |
+| **Setup** | Agent per host | Agent per host | AWS only | **`pip install faultray`** |
+| **Scenarios** | You write them | You write them | AWS services only | **2,000+ auto-generated** |
+| **Availability proof** | No | No | No | **3-Layer Limit Model** |
+| **AI agent testing** | No | No | No | **7 agent-specific fault types** |
+| **Cost** | $$$$ | $$$ | $$ | **Free / Open Source** |
 
 ---
 
-## 5 Simulation Engines
+### Quick Start
 
-### 1. Cascade Engine
-Models fault propagation through dependency graphs. Identifies single points of failure, compound failures, and cascade paths.
-```bash
-faultray load infra.yaml
-faultray simulate --html report.html
-```
-
-### 2. Dynamic Engine
-Time-stepped simulation with traffic pattern integration. Models real-world load variations over hours or days.
-```bash
-faultray dynamic infra.yaml --traffic diurnal --duration 24h --step 1min
-```
-
-### 3. Ops Engine
-Long-running operational simulation (days to weeks) with SLO tracking, incident generation, and deployment events.
-```bash
-faultray ops-sim infra.yaml --days 7 --step 5min
-```
-
-### 4. What-If Engine
-Parameter sweep analysis to understand fault tolerance sensitivity across multiple dimensions.
-```bash
-faultray whatif infra.yaml --parameter mttr_factor --values "0.5,1.0,2.0,4.0"
-```
-
-### 5. Capacity Engine
-Growth forecasting with resource exhaustion prediction and SLO compliance evaluation.
-```bash
-faultray capacity infra.yaml --growth 0.15 --slo 99.9
-```
-
----
-
-## AI Agent Resilience (v11.0)
-
-FaultRay extends chaos simulation to AI agent systems. It models agents, LLM endpoints, tool services, and orchestrators as first-class components in the dependency graph, then simulates agent-specific failure modes that traditional chaos engineering tools miss.
-
-**Key insight:** Infrastructure failures cause agent hallucinations. When a database serving as an agent's grounding source goes down, the agent may continue responding with ungrounded output — silently producing wrong results while appearing healthy.
-
-### 3 Pillars: PREDICT, ADOPT, MANAGE
-
-| Pillar | Purpose | CLI Command |
-|--------|---------|-------------|
-| **PREDICT** | Generate and run agent-specific chaos scenarios | `faultray agent scenarios` |
-| **ADOPT** | Assess deployment risk with blast-radius analysis | `faultray agent assess` |
-| **MANAGE** | Generate monitoring rules from simulation results | `faultray agent monitor` |
-
-### 4 New Component Types
-
-| Type | Value | Description |
-|------|-------|-------------|
-| AI Agent | `ai_agent` | LLM-powered agent that processes requests, uses tools, or makes decisions |
-| LLM Endpoint | `llm_endpoint` | The LLM API (Anthropic, OpenAI, Google, self-hosted) with rate limits and SLAs |
-| Tool Service | `tool_service` | External tools/APIs that agents invoke (DB queries, web search, MCP servers) |
-| Agent Orchestrator | `agent_orchestrator` | Multi-agent coordination layer (sequential, parallel, hierarchical patterns) |
-
-### 7 Agent-Specific Fault Types
-
-Hallucination, context overflow, LLM rate limiting, token exhaustion, tool failure, agent loops, and prompt injection.
-
-### Example Configuration
-
-```yaml
-components:
-  - id: claude-endpoint
-    name: Claude API
-    type: llm_endpoint
-    replicas: 1
-    parameters:
-      provider: anthropic
-      model_id: claude-sonnet-4-20250514
-      rate_limit_rpm: 1000
-      availability_sla: 99.9
-
-  - id: support-agent
-    name: Customer Support Agent
-    type: ai_agent
-    replicas: 2
-    parameters:
-      framework: langchain
-      model_id: claude-sonnet-4-20250514
-      max_context_tokens: 200000
-      hallucination_risk: 0.03
-      requires_grounding: 1
-      circuit_breaker_on_hallucination: 1
-      human_escalation: 1
-
-  - id: search-tool
-    name: Knowledge Base Search
-    type: tool_service
-    replicas: 2
-    parameters:
-      tool_type: database_query
-      idempotent: 1
-      side_effects: 0
-
-dependencies:
-  - from: support-agent
-    to: claude-endpoint
-  - from: support-agent
-    to: search-tool
-```
-
-### CLI Usage
+**Option 1: pip (recommended)**
 
 ```bash
-# Assess agent deployment risk
-faultray agent assess infra.yaml
-
-# List generated agent chaos scenarios
-faultray agent scenarios infra.yaml
-
-# Generate monitoring rules
-faultray agent monitor infra.yaml
-
-# JSON output for CI/CD pipelines
-faultray agent assess infra.yaml --json
+pip install faultray
+faultray demo              # Run a demo simulation
+faultray demo --web        # With web dashboard at http://localhost:8000
 ```
 
-For full documentation, see [AI Agent Resilience Concepts](docs/concepts/agent-resilience.md).
+**Option 2: Docker**
 
----
+```bash
+docker compose up web                          # Web dashboard
+docker compose --profile demo up demo          # Demo mode
+docker compose --profile cli run cli simulate  # CLI mode
+```
 
-## Usage
+**Option 3: From source**
 
-### From YAML Definition
+```bash
+git clone https://github.com/mattyopon/faultray.git
+cd faultray
+pip install -e .
+faultray demo
+```
+
+### Define Your Infrastructure
 
 ```yaml
 # infra.yaml
@@ -314,20 +156,16 @@ components:
     type: load_balancer
     port: 443
     replicas: 2
-    metrics: { cpu_percent: 25, memory_percent: 30 }
-    capacity: { max_connections: 10000 }
 
   - id: api
     type: app_server
     port: 8080
-    metrics: { cpu_percent: 65, memory_percent: 70 }
-    capacity: { max_connections: 500, connection_pool_size: 100 }
+    replicas: 3
 
   - id: postgres
     type: database
     port: 5432
-    metrics: { cpu_percent: 45, memory_percent: 80, disk_percent: 72 }
-    capacity: { max_connections: 100 }
+    replicas: 1   # <-- FaultRay will flag this as a single point of failure
 
 dependencies:
   - source: nginx
@@ -340,409 +178,427 @@ dependencies:
 
 ```bash
 faultray load infra.yaml
-faultray simulate --html report.html
+faultray simulate --html report.html   # Get a full HTML report
 ```
 
-### From Terraform
+### CLI Reference
 
-```bash
-# Import from state file
-faultray tf-import --state terraform.tfstate
-
-# Import from live terraform
-faultray tf-import --dir ./terraform
-
-# Analyze plan impact
-terraform plan -out=plan.out
-faultray tf-plan plan.out --html plan-report.html
-```
-
-### From Prometheus
-
-```bash
-faultray scan --prometheus-url http://prometheus:9090
-faultray simulate
-```
-
-### Security News Feed
-
-```bash
-# Fetch latest security news and generate scenarios
-faultray feed-update
-
-# View generated scenarios
-faultray feed-list
-
-# Simulate with feed scenarios included automatically
-faultray simulate
-```
-
-### Web Dashboard
-
-```bash
-faultray serve --port 8080
-# Open http://localhost:8080
-```
-
-### Operational Simulation
-
-Simulate long-running operations and track SLO compliance and incident patterns over time.
-
-```bash
-# Run 7-day operational simulation with 5-minute time steps
-faultray ops-sim infra.yaml --days 7 --step 5min
-
-# Run with default parameters
-faultray ops-sim --defaults
-```
-
-### What-If Analysis
-
-Sweep parameters to analyze fault tolerance sensitivity across multiple dimensions.
-
-```bash
-# Run with default parameter sweep
-faultray whatif infra.yaml --defaults
-
-# Sweep a specific parameter
-faultray whatif --parameter mttr_factor --values "0.5,1.0,2.0,4.0"
-```
-
-### Capacity Planning
-
-Forecast resource exhaustion and evaluate SLO compliance under growth projections.
-
-```bash
-# Capacity planning with 15% annual growth targeting 99.9% SLO
-faultray capacity infra.yaml --growth 0.15 --slo 99.9
-```
-
-### Traffic Patterns
-
-10 traffic models available for dynamic simulation:
-
-| Pattern | Description |
-|---------|-------------|
-| `CONSTANT` | Steady-state constant traffic |
-| `RAMP` | Linear traffic increase |
-| `SPIKE` | Instantaneous traffic spike |
-| `WAVE` | Sinusoidal wave pattern |
-| `DDoS_VOLUMETRIC` | High-volume DDoS attack |
-| `DDoS_SLOWLORIS` | Slowloris-style DDoS attack |
-| `FLASH_CROWD` | Sudden viral popularity surge |
-| `DIURNAL` | Daily cycle (high daytime, low nighttime) |
-| `DIURNAL_WEEKLY` | Weekly cycle (high weekdays, low weekends) |
-| `GROWTH_TREND` | Long-term organic growth trend |
-
-```bash
-# Dynamic simulation with traffic pattern
-faultray dynamic infra.yaml --traffic diurnal --duration 24h --step 1min
-```
+| Command | What It Does |
+|---|---|
+| `faultray demo` | Run a demo with sample infrastructure |
+| `faultray load <yaml>` | Load your infrastructure definition |
+| `faultray simulate` | Run 2,000+ chaos scenarios |
+| `faultray dynamic <yaml>` | Time-stepped simulation with traffic patterns |
+| `faultray ops-sim <yaml>` | Long-running (days/weeks) operational simulation |
+| `faultray whatif <yaml>` | Parameter sweep analysis |
+| `faultray capacity <yaml>` | Growth forecasting and capacity planning |
+| `faultray agent assess <yaml>` | Assess AI agent deployment risk |
+| `faultray agent scenarios <yaml>` | Generate agent-specific chaos scenarios |
+| `faultray agent monitor <yaml>` | Generate monitoring rules for agents |
+| `faultray tf-import` | Import from Terraform state |
+| `faultray tf-plan <plan>` | Analyze Terraform plan impact |
+| `faultray scan` | Discover local/Prometheus infrastructure |
+| `faultray serve` | Launch the web dashboard |
+| `faultray feed-update` | Fetch latest security news and generate scenarios |
+| `faultray report` | Generate HTML report |
 
 ---
 
-## Chaos Scenarios (30 Categories)
+## Why FaultRay is a Big Deal
 
-| Category | Examples |
-|----------|---------|
-| **Single Failures** | Component down, CPU saturation, OOM, disk full, network partition |
-| **Traffic** | 1.5x, 2x, 3x, 5x, 10x (DDoS-level) traffic spikes |
-| **Compound** | All pairwise (C(n,2)) and triple (C(n,3)) simultaneous failures |
-| **DB-Specific** | Log explosion, replication lag, connection storm, lock contention |
-| **Cache-Specific** | Stampede, eviction storm, split brain |
-| **Queue-Specific** | Backpressure, poison message |
-| **LB-Specific** | Health check failure, TLS expiry, config reload failure |
-| **App-Specific** | Memory leak, thread exhaustion, GC pause, bad deployment |
-| **Infrastructure** | Zone failure, cascading timeouts, total meltdown, rolling restart |
-| **Real-World** | Black Friday (10x + cache pressure), noisy neighbor, slow DB at peak |
-| **Security Feed** | Auto-generated from CISA, NVD, Krebs, BleepingComputer, etc. |
+### The Problem With Traditional Chaos Engineering
 
----
+Netflix invented chaos engineering in 2011 with Chaos Monkey — a tool that randomly kills production servers to test resilience. Since then, the industry has followed this pattern: **break things in production to see what happens.**
 
-## Risk Scoring
+But this approach has serious problems:
 
-```
-severity = (impact x spread) x likelihood
+1. **It's risky.** You're literally injecting faults into real systems. Things can go wrong.
+2. **It's expensive.** You need agents on every host, complex setup, and enterprise licenses.
+3. **It's limited.** You can only test scenarios you manually configure.
+4. **It doesn't work for regulated industries.** Banks, healthcare, and government can't casually break production.
+5. **It can't test AI agents.** Traditional fault injection doesn't model hallucinations or context overflow.
 
-impact     = weighted health status (DOWN=1.0, OVERLOADED=0.5, DEGRADED=0.25)
-spread     = affected_components / total_components
-likelihood = proximity to failure threshold (0.2 = unlikely, 1.0 = imminent)
-```
+### FaultRay's Approach: Simulate, Don't Break
 
-| Level | Score | Meaning |
-|-------|-------|---------|
-| CRITICAL | 7.0-10.0 | Cascading failure, major outage risk |
-| WARNING | 4.0-6.9 | Degradation, limited cascade |
-| PASSED | 0.0-3.9 | Low risk, contained impact |
+FaultRay represents a **paradigm shift** in chaos engineering. Instead of breaking things and hoping for the best, FaultRay builds a mathematical model of your system and exhaustively simulates every failure scenario.
+
+This means:
+- **Zero risk** — Nothing in production is touched. Ever.
+- **Complete coverage** — 2,000+ scenarios tested automatically, including compound failures that would be too dangerous to test in production.
+- **Mathematical proof** — The 3-Layer Availability Limit Model gives you a mathematical ceiling for your system's uptime. No other tool does this.
+- **Instant setup** — One `pip install` and you're running. No agents, no sidecars, no infrastructure changes.
+
+### The Future: Why This Matters Now
+
+The chaos engineering market is projected to reach **$3.5 billion by 2030** (Mordor Intelligence, CAGR 8.28%). Several converging trends make FaultRay's approach increasingly relevant:
+
+**1. AI Agents Are Becoming Infrastructure**
+
+AI agents are moving from experimental tools to critical production components. When an AI agent handles customer support, processes financial transactions, or manages supply chains, its failures have real-world consequences. FaultRay is the **first tool** to simulate AI-specific failure modes like hallucination cascades, context overflow, and prompt injection — testing what happens when the LLM behind your agent goes down while the agent keeps serving (incorrect) responses.
+
+**2. Regulation Is Driving Adoption**
+
+The EU's **Digital Operational Resilience Act (DORA)**, effective January 2025, mandates resilience testing for financial institutions. The **EU AI Act** (fully enforced August 2026) requires algorithmic accountability for AI systems. These regulations create a **compliance-driven market** where organizations must prove their systems are resilient — and FaultRay's mathematical proofs and compliance engine (SOC 2, ISO 27001, PCI DSS, DORA, HIPAA, GDPR) are purpose-built for this.
+
+**3. Shift-Left Resilience**
+
+The industry is moving chaos engineering from post-deployment to **every stage of the software development lifecycle**. FaultRay's zero-risk approach is ideal for this: you can run simulations in CI/CD pipelines, during design reviews, or before Terraform apply — no production environment needed.
+
+**4. Multi-Cloud Complexity**
+
+89% of large enterprises run workloads across 2+ cloud providers, but most failure testing is designed for single vendors. FaultRay's vendor-agnostic simulation works across any infrastructure topology, making it uniquely suited for multi-cloud environments.
+
+**5. Security Chaos Engineering**
+
+Security chaos engineering is the fastest-growing sub-segment (CAGR 11.34%). FaultRay's security feed automatically generates chaos scenarios from real-world CVE/CISA advisories, bridging the gap between security intelligence and resilience testing.
+
+### Where FaultRay Fits in the Market
+
+| Use Case | Who Benefits | How FaultRay Helps |
+|---|---|---|
+| **Pre-deploy validation** | DevOps / SRE teams | Run simulations in CI/CD before every deploy |
+| **Architecture review** | Platform engineers | Prove availability ceiling before building |
+| **Compliance** | Finance, healthcare, government | Generate audit-ready resilience reports |
+| **AI agent reliability** | AI/ML engineers | Test agent failure modes before production |
+| **Capacity planning** | Infrastructure teams | Forecast resource exhaustion and scaling needs |
+| **Incident prevention** | On-call engineers | Identify cascade paths before incidents happen |
+| **Security posture** | Security teams | Test resilience against real-world threat scenarios |
 
 ---
 
 ## Architecture
 
 ```
-┌─────────────────────────────────────────────┐
-│                  FaultRay                     │
-├──────────┬──────────┬──────────┬─────────────┤
-│ Cascade  │ Dynamic  │   Ops    │  What-If    │
-│ Engine   │ Engine   │  Engine  │  Engine     │
-├──────────┴──────────┴──────────┴─────────────┤
-│              Capacity Engine                   │
-├───────────────────────────────────────────────┤
-│          Dependency Graph (NetworkX)           │
-├──────────┬──────────┬──────────┬─────────────┤
-│   YAML   │Terraform │Prometheus│ Cloud APIs  │
-│  Loader  │ Importer │Discovery │  (AWS/GCP)  │
-└──────────┴──────────┴──────────┴─────────────┘
+┌──────────────────────────────────────────────────────┐
+│                      FaultRay                         │
+├──────────┬──────────┬──────────┬──────────┬──────────┤
+│ Cascade  │ Dynamic  │   Ops    │ What-If  │ Capacity │
+│ Engine   │ Engine   │  Engine  │  Engine  │  Engine  │
+├──────────┴──────────┴──────────┴──────────┴──────────┤
+│            AI Agent Resilience Layer (v11)             │
+├───────────────────────────────────────────────────────┤
+│           Dependency Graph (NetworkX)                  │
+├──────────┬──────────┬──────────┬─────────────────────┤
+│   YAML   │Terraform │Prometheus│    Cloud APIs        │
+│  Loader  │ Importer │Discovery │   (AWS/GCP)          │
+└──────────┴──────────┴──────────┴─────────────────────┘
 ```
-
----
-
-## CLI Commands
-
-| Command | Description |
-|---------|-------------|
-| `faultray scan` | Discover local system or Prometheus infrastructure |
-| `faultray simulate` | Run chaos simulation (2,000+ scenarios) |
-| `faultray dynamic` | Run dynamic time-stepped simulation with traffic patterns |
-| `faultray ops-sim` | Long-running operational simulation with SLO tracking |
-| `faultray show` | Display infrastructure model summary |
-| `faultray load <yaml>` | Load infrastructure from YAML |
-| `faultray tf-import` | Import from Terraform state |
-| `faultray tf-plan <plan>` | Analyze Terraform plan impact |
-| `faultray report` | Generate HTML report |
-| `faultray serve` | Launch web dashboard |
-| `faultray demo` | Run demo with sample infrastructure |
-| `faultray feed-update` | Update scenarios from security news |
-| `faultray feed-list` | Show stored feed scenarios |
-| `faultray feed-sources` | Show configured news sources |
-| `faultray feed-clear` | Clear feed scenario store |
-| `faultray whatif` | Run what-if analysis (parameter sweep) |
-| `faultray capacity` | Capacity planning with growth forecasting |
-| `faultray agent assess` | Assess AI agent deployment risk |
-| `faultray agent scenarios` | Generate agent-specific chaos scenarios |
-| `faultray agent monitor` | Generate agent monitoring rules |
-
----
-
-## Docker
-
-### Docker Compose Services
-
-| Service | Description | Command |
-|---------|-------------|---------|
-| `web` | Web dashboard on port 8000 | `docker compose up web` |
-| `demo` | Demo mode with sample infrastructure | `docker compose --profile demo up demo` |
-| `cli` | CLI mode for running simulations | `docker compose --profile cli run cli <command>` |
-
-### Docker Build
-
-```bash
-# Build
-docker build -t faultray .
-
-# Run web dashboard
-docker run -p 8000:8000 faultray
-
-# Run CLI command
-docker run --rm faultray faultray simulate
-
-# Mount custom infrastructure definition
-docker run --rm -v $(pwd)/infra.yaml:/app/infra.yaml faultray faultray load /app/infra.yaml
-```
-
-### Docker Compose Examples
-
-```bash
-# Start web dashboard
-docker compose up web
-
-# Run a simulation via CLI
-docker compose --profile cli run cli load examples/demo-infra.yaml
-
-# Run with Terraform state mounted
-docker compose --profile cli run -v $(pwd)/terraform.tfstate:/app/terraform.tfstate \
-  cli tf-import --state /app/terraform.tfstate
-```
-
----
 
 ## Development
 
 ```bash
-# Install in development mode
-pip install -e ".[dev]"
-
-# Run tests (19,757 tests)
-pytest tests/ -v
-
-# Lint
-ruff check src/ tests/
-
-# Build Docker image
-docker build -t faultray:dev .
+pip install -e ".[dev]"         # Install in dev mode
+pytest tests/ -v                # Run 19,757 tests
+ruff check src/ tests/          # Lint
+docker build -t faultray:dev .  # Build Docker image
 ```
-
-### Test Coverage
-
-**19,757 tests — all passing** (pytest)
-
-| Module | Description |
-|--------|-------------|
-| Cascade / Static Engine | Fault propagation, severity scoring, compound failures, SPOF detection |
-| Dynamic Engine | Time-stepped simulation, autoscaling, circuit breakers, failover, traffic patterns |
-| Ops Engine | 7-day operational simulation, SLO tracking, deployments, incident generation |
-| Capacity Engine | Growth forecasting, right-sizing, HA guard, quorum guard, cost optimization |
-| What-If Engine | Parameter sweep, sensitivity analysis, breakpoint detection |
-| Scenarios | 30 categories, rolling restart (maxUnavailable), compound/triple failures |
-| Traffic Models | All 10 patterns + determinism + DDoS simulation |
-| Security Feeds | CISA/NVD analysis, scoring, store operations |
-| Loaders | YAML parsing, validation, circular dependency detection, Terraform import |
-| 3-Layer Limits | Availability ceiling calculation, nines computation |
-| API / Web | FastAPI endpoints, D3.js dashboard, HTML report generation |
-
-### Requirements
-
-- Python 3.11+
-- Dependencies: typer, rich, pydantic, networkx, psutil, fastapi, uvicorn, jinja2, httpx, pyyaml
-
----
-
-## Related Work & Differentiation
-
-FaultRay occupies a unique position in the chaos engineering landscape: **pure offline simulation with no production fault injection.** This section clarifies how FaultRay relates to prior academic work and existing tools.
-
-### Academic Prior Art
-
-| Paper | Year | Approach | FaultRay Differentiator |
-|-------|------|----------|------------------------|
-| Krasnovsky & Zorkin, "[Model Discovery and Graph Simulation](https://arxiv.org/abs/2506.11176)" (ICSE-NIER '26) | 2025 | Graph reachability + Monte Carlo for fail-stop availability estimation | FaultRay goes far beyond static graph reachability: **5 integrated engines** (Dynamic, Ops, What-If, Capacity), traffic simulation, autoscaling, circuit breakers, HA/quorum guards |
-| Poltronieri et al., "ChaosTwin" (IFIP/IEEE CNSM) | 2021 | Digital twin + chaos event simulation | FaultRay uses declarative YAML models, not digital twins. No runtime environment required |
-| Mendonca et al., "Model-Based Analysis of Microservice Resiliency Patterns" (IEEE ICSA) | 2020 | PRISM model checker for Retry/CB patterns | FaultRay uses simulation (not formal verification) and covers 30 failure categories, not just 2 patterns |
-| Buldyrev et al., "Catastrophic cascade of failures in interdependent networks" (Nature) | 2010 | Percolation theory for cascade analysis | FaultRay applies cascade analysis specifically to IT infrastructure with practical tooling (CLI, reports, dashboards) |
-
-### Key Differentiators from All Prior Work
-
-1. **5-Engine Integration** — No existing tool or paper combines Static (SPOF/cascade), Dynamic (traffic/autoscaling/CB/failover), Ops (7-day simulation), What-If (parameter sensitivity), and Capacity (right-sizing/HA/quorum) in a single platform.
-2. **Declarative YAML Model** — Infrastructure defined as code, no runtime environment or agents required.
-3. **HA & Quorum Guards** — Capacity Engine respects HA constraints (min 2 replicas for LB/DNS/failover) and quorum constraints (min 3 for cache/queue clusters), preventing false right-sizing recommendations.
-4. **3-Layer Availability Limit Model** — Mathematical proof of system availability ceiling (Software, Hardware, Theoretical layers). No other tool provides this.
-5. **Zero Risk** — All simulation runs in memory. No production fault injection, no agents, no sidecars.
-
-### Patent & IP Clearance
-
-FaultRay has been evaluated against all known chaos engineering patents (US11397665B2 JPMorgan, US11356324B2 Dell, US7334222B2) and found **no conflicts**. All existing patents cover real-environment fault injection via APIs or service meshes — a fundamentally different approach from FaultRay's pure mathematical simulation.
-
----
-
-## Changelog
-
-### v8.0.0 (2026-03-15)
-- SRE maturity assessment, anti-pattern detection, A/B testing, observability integration, DORA metrics
-- HA minimum replica guard (failover/LB/DNS → min 2 replicas)
-- Cluster quorum guard (cache/queue with ≥3 replicas → min 3)
-- MAX_SCENARIOS raised from 1,000 to 2,000 (zero truncation)
-- Emergency autoscaling (>90% utilization → immediate 2x step scale-up)
-- Adaptive circuit breaker recovery (1/3 timeout first OPEN + exponential backoff)
-- maxUnavailable-based rolling restart scenarios (K8s 25% default)
-- 1,070 tests passing
-
----
 
 ## Community
 
-- [Contributing Guide](CONTRIBUTING.md) — How to contribute
-- [Security Policy](SECURITY.md) — Vulnerability reporting
-- [Code of Conduct](CODE_OF_CONDUCT.md) — Community guidelines
-- [Changelog](CHANGELOG.md) — Release history
+- [Contributing Guide](CONTRIBUTING.md)
+- [Security Policy](SECURITY.md)
+- [Code of Conduct](CODE_OF_CONDUCT.md)
+- [Changelog](CHANGELOG.md)
 
 ## License
 
-BSL 1.1 (Business Source License) - see [LICENSE](LICENSE). Patent pending. Converts to Apache 2.0 on 2030-03-17.
+BSL 1.1 (Business Source License) — see [LICENSE](LICENSE). Converts to Apache 2.0 on 2030-03-17.
 
 ---
 
-# FaultRay（日本語）
+---
 
-> **本番環境に触れずにインフラ障害をシミュレーション。**
-> **数学的にシステムの可用性上限を証明します。**
+# 日本語
 
-FaultRayは、純粋な数学的シミュレーションによるゼロリスクのカオスエンジニアリングツールです。
-依存グラフ全体をメモリ内でモデル化し、5つのエンジンで2,000以上の障害シナリオを実行します。
+## FaultRay とは？
 
-### 主な特徴
+**FaultRay は、本番環境を一切壊さずに「システムが障害に耐えられるか」をテストするツールです。**
 
-- **ゼロリスク** — 完全にメモリ内で実行。エージェント不要、本番影響ゼロ
-- **5つのシミュレーションエンジン** — カスケード、動的、運用、What-If、キャパシティ
-- **3層可用性限界モデル** — システムの可用性上限を数学的に証明する唯一のツール
-- **2,000+シナリオ** — 30カテゴリの障害シナリオをトポロジーから自動生成
-- **Terraform統合** — tfstateインポート、tfplanの影響分析
-- **セキュリティフィード** — CVE/NVD/CISAからシナリオを自動生成
-- **コスト影響エンジン** — ダウンタイムコスト、SLAペナルティ、改善ROIを定量化
-- **セキュリティ耐性エンジン** — 8種の脅威カテゴリに対するセキュリティ態勢を評価
-- **コンプライアンスエンジン** — SOC 2/ISO 27001/PCI DSS/DORA/HIPAA/GDPR準拠評価
-- **マルチリージョンDR** — DR戦略の評価、フェイルオーバーシミュレーション、RTO/RPO比較
-- **予測エンジン** — 統計ベースの障害予測、キャパシティ予測、SLA達成率予測
+たとえるなら、インフラのための「フライトシミュレーター」です。パイロットはエンジン故障の対処法を、実際にエンジンを壊して学んだりしません。シミュレーターを使います。FaultRay も同じです。サーバー、データベース、ロードバランサー、そして AI エージェントまで、すべてをメモリ上で数学的にシミュレーションします。
 
-### クイックスタート
+従来のカオスエンジニアリングツール（Gremlin, AWS FIS など）は、**本番環境に実際に障害を注入**してシステムの挙動を確認します。これにはリスクが伴います。FaultRay はまったく異なるアプローチを取ります。システム全体の**数学モデル**を構築し、メモリ内で **2,000以上の障害シナリオ**をシミュレーションします。何も壊れません。答えだけが得られます。
+
+### FaultRay にできること
+
+#### 1. システムの弱点を、壊れる前に発見する
+
+FaultRay は、単一障害点（SPOF）、障害の連鎖経路、隠れた依存関係を自動的に発見します。シンプルな YAML ファイルでシステムを定義（Terraform/Prometheus からのインポートも可能）するだけで、何千もの「もし〜が起きたら？」を検証します：
+
+- データベースがダウンしたら？
+- セール中にトラフィックが10倍に急増したら？
+- 2台のサーバーが同時に故障したら？
+- ロードバランサーに DDoS 攻撃が来たら？
 
 ```bash
 pip install faultray
-faultray demo        # デモ実行
-faultray demo --web  # Webダッシュボード付き
+faultray demo
 ```
 
-### なぜ FaultRay なのか？
+```
+╭────────── FaultRay Chaos Simulation Report ──────────╮
+│ Resilience Score: 36/100                             │
+│ Scenarios tested: 2,000+                             │
+│ Critical: 7  Warning: 66  Passed: 77                 │
+╰──────────────────────────────────────────────────────╯
+```
 
-従来のカオスエンジニアリングツール（Gremlin, Steadybit, AWS FIS）は**実際のインフラに障害を注入**します。FaultRay はまったく異なるアプローチ：**純粋な数学的シミュレーション**で依存関係グラフ全体をメモリ上にモデル化し、5つのエンジンで2,000以上の障害シナリオを実行して、システムの理論的可用性上限を証明します。サーバーに一切触れません。
+#### 2. 可用性の上限を数学的に証明する
+
+「本当に 99.99% のアップタイムを達成できるのか？」と思ったことはありませんか？FaultRay は独自の **3層可用性限界モデル** でこの問いに答えます：
+
+```
+Layer 3: 理論限界      → 6.65 nines (99.99997%)  — 数学的にこれが最大値
+Layer 2: ハードウェア限界 → 5.91 nines (99.999%)  — ハードウェアの物理的限界
+Layer 1: ソフトウェア限界 → 4.00 nines (99.99%)   — 人為的ミスを含む現実的な限界
+```
+
+SLO 目標が 99.99% でも、アーキテクチャの限界が 99.95% なら、**どれだけエンジニアリング努力を重ねてもアーキテクチャ変更なしにギャップは埋まりません**。FaultRay は、数ヶ月の無駄な努力の前にそれを教えてくれます。
+
+#### 3. AIエージェントの障害をシミュレーション（v11.0 — 最新機能）
+
+AI エージェントが本番システムの一部になるにつれ、新しい種類の障害が生まれています。FaultRay は AI 固有の障害モードをモデル化する**世界初のカオスエンジニアリングツール**です：
+
+| 障害タイプ | どういうことか |
+|---|---|
+| **ハルシネーション** | データソースがダウンした時、エージェントが自信満々に誤った回答を返す |
+| **コンテキストオーバーフロー** | トークン上限を超え、重要なコンテキストを失う |
+| **LLMレート制限** | ピーク時にAPIプロバイダーがリクエストを制限する |
+| **トークン枯渇** | 会話の途中でAPI予算が尽きる |
+| **ツール障害** | エージェントが依存する外部ツールが利用不能になる |
+| **エージェントループ** | 無限リトライのサイクルに陥る |
+| **プロンプトインジェクション** | 悪意のある入力がエージェントの挙動を乗っ取る |
+
+```bash
+faultray agent assess infra.yaml    # AIシステムのリスクレベルを確認
+faultray agent scenarios infra.yaml # 何が起こりうるかを確認
+faultray agent monitor infra.yaml   # モニタリングルールを生成
+```
+
+#### 4. 5つのシミュレーションエンジンが連携
+
+| エンジン | 何をするか | 例 |
+|---|---|---|
+| **カスケード** | 1つの障害がシステム全体にどう伝搬するかを追跡 | 「Redisが死んだら、他に何が落ちる？」 |
+| **ダイナミック** | 実際のトラフィックパターンを時系列でシミュレーション | 「24時間の日周パターンで何が起きる？」 |
+| **Ops** | 数日〜数週間の運用シミュレーション | 「7日間でSLOを維持できるか？」 |
+| **What-If** | パラメータを変えて限界点を発見 | 「MTTRがどこまで伸びたらSLA違反になる？」 |
+| **キャパシティ** | リソース枯渇のタイミングを予測 | 「スケールアップはいつ必要？」 |
+
+#### 5. エンタープライズ対応の機能
+
+- **Terraform 統合** — `tfstate` から直接インポート、`tf plan` の影響を事前分析
+- **Prometheus 連携** — Prometheus のターゲットからインフラを自動検出
+- **セキュリティフィード** — CVE/CISA/NVD の実際の脆弱性情報からシナリオを自動生成
+- **コスト影響エンジン** — ダウンタイムコスト、SLA ペナルティ、改善の ROI を定量化
+- **コンプライアンスエンジン** — SOC 2, ISO 27001, PCI DSS, DORA, HIPAA, GDPR のギャップ分析
+- **マルチリージョン DR** — DR 戦略の評価、リージョン間の RTO/RPO 比較
+- **Web ダッシュボード** — D3.js インタラクティブグラフ + Grafana スタイルのダッシュボード
+- **CI/CD 統合** — GitHub Actions マーケットプレイスアクションでデプロイ前検証
+
+---
+
+### 他のツールとの比較
 
 | | **Gremlin** | **Steadybit** | **AWS FIS** | **FaultRay** |
 |---|---|---|---|---|
-| **アプローチ** | 障害注入 | 障害注入 | 障害注入 | 数学的シミュレーション |
+| **アプローチ** | 本番を壊す | 本番を壊す | 本番を壊す | 数学的シミュレーション |
 | **本番リスク** | 中〜高 | 中 | 中 | **ゼロ** |
-| **セットアップ** | ホスト毎にエージェント | ホスト毎にエージェント | AWSのみ | **pip install のみ** |
-| **シナリオ数** | 手動設定 | 手動設定 | AWSサービスのみ | **2,000+自動生成** |
-| **可用性証明** | なし | なし | なし | **3層限界モデル** |
-| **コスト** | $$$$ | $$$ | $$ | **無料 / OSS** |
+| **セットアップ** | ホスト毎にエージェント | ホスト毎にエージェント | AWS のみ | **`pip install faultray`** |
+| **シナリオ** | 手動で作成 | 手動で作成 | AWS サービスのみ | **2,000+ 自動生成** |
+| **可用性の証明** | できない | できない | できない | **3層限界モデル** |
+| **AIエージェントテスト** | できない | できない | できない | **7種のエージェント障害** |
+| **コスト** | $$$$ | $$$ | $$ | **無料 / オープンソース** |
 
-### 3層可用性限界モデル（最大の特徴）
+---
 
-FaultRay 独自の理論モデルです。従来のカオスツールが「何が壊れるか？」に答えるのに対し、FaultRay は **「あなたのアーキテクチャが物理的に達成できる最大可用性はいくつか？」** に答えます。
+### クイックスタート
 
-| 層 | 名称 | 上限 | 説明 |
-|---|---|---|---|
-| **Layer 3** | 理論限界 | 6.65 nines | 完全な冗長性＋瞬時フェイルオーバーを仮定した数学的上限（到達不可） |
-| **Layer 2** | ハードウェア限界 | 5.91 nines | コンポーネントMTBF × 冗長係数から算出される物理的上限 |
-| **Layer 1** | ソフトウェア限界 | 4.00 nines | デプロイ失敗・設定ドリフト・ヒューマンエラーを考慮した実用上限 |
+**方法1: pip（おすすめ）**
 
-**重要な意味:** SLO目標が99.99%でもLayer 1の限界が99.95%なら、どれだけエンジニアリング努力を重ねてもアーキテクチャ変更なしにはギャップを埋められません。FaultRay は**数ヶ月の無駄な努力の前に**それを教えてくれます。
+```bash
+pip install faultray
+faultray demo              # デモシミュレーションを実行
+faultray demo --web        # Web ダッシュボード付き (http://localhost:8000)
+```
 
-### 5つのシミュレーションエンジン
+**方法2: Docker**
 
-1. **カスケードエンジン** — 依存関係グラフを通じた障害伝搬モデリング
-2. **ダイナミックエンジン** — トラフィックパターン連動の時間ステップ型シミュレーション
-3. **Opsエンジン** — 長期間（数日〜数週間）の運用シミュレーション
-4. **What-Ifエンジン** — パラメータスイープによる感度分析
-5. **キャパシティエンジン** — 成長予測とリソース枯渇予測、HAガード（最低2レプリカ）、クォーラムガード（最低3レプリカ）
+```bash
+docker compose up web                          # Web ダッシュボード
+docker compose --profile demo up demo          # デモモード
+docker compose --profile cli run cli simulate  # CLI モード
+```
 
-### 先行研究との関係
+**方法3: ソースから**
 
-FaultRay は「本番環境に障害を注入しない純粋なオフラインシミュレーション」という独自の立場にあります。
+```bash
+git clone https://github.com/mattyopon/faultray.git
+cd faultray
+pip install -e .
+faultray demo
+```
 
-| 論文 | 手法 | FaultRay の差別化 |
-|------|------|-------------------|
-| Krasnovsky & Zorkin (2025) "[Model Discovery and Graph Simulation](https://arxiv.org/abs/2506.11176)" | グラフ到達可能性 + モンテカルロ | FaultRay は **5エンジン統合**（動的シミュレーション、Ops、What-If、Capacity を含む） |
-| Poltronieri et al. (2021) "ChaosTwin" | デジタルツイン | FaultRay は **YAML宣言的モデル**。実行環境不要 |
-| Mendonca et al. (2020) "Model-Based Analysis" | PRISM形式検証 | FaultRay は **30カテゴリのシナリオ**を自動生成。2パターンの分析ではない |
+### インフラの定義
 
-**特許・知財クリアランス:** 既存のカオスエンジニアリング特許（US11397665B2, US11356324B2）はすべて「実環境への障害注入」が対象であり、FaultRay の純粋シミュレーションアプローチとは技術カテゴリが異なります。抵触なし。
+```yaml
+# infra.yaml
+components:
+  - id: nginx
+    type: load_balancer
+    port: 443
+    replicas: 2
 
-### コミュニティ
+  - id: api
+    type: app_server
+    port: 8080
+    replicas: 3
+
+  - id: postgres
+    type: database
+    port: 5432
+    replicas: 1   # <-- FaultRay はこれを単一障害点として警告します
+
+dependencies:
+  - source: nginx
+    target: api
+    type: requires
+  - source: api
+    target: postgres
+    type: requires
+```
+
+```bash
+faultray load infra.yaml
+faultray simulate --html report.html   # HTML レポートを生成
+```
+
+### コマンド一覧
+
+| コマンド | 説明 |
+|---|---|
+| `faultray demo` | サンプルインフラでデモ実行 |
+| `faultray load <yaml>` | インフラ定義を読み込み |
+| `faultray simulate` | 2,000+ のカオスシナリオを実行 |
+| `faultray dynamic <yaml>` | トラフィックパターン付き時間ステップシミュレーション |
+| `faultray ops-sim <yaml>` | 長期間（数日〜数週間）の運用シミュレーション |
+| `faultray whatif <yaml>` | パラメータスイープ分析 |
+| `faultray capacity <yaml>` | 成長予測とキャパシティプランニング |
+| `faultray agent assess <yaml>` | AI エージェントのデプロイリスク評価 |
+| `faultray agent scenarios <yaml>` | エージェント固有のカオスシナリオ生成 |
+| `faultray agent monitor <yaml>` | エージェント監視ルールの生成 |
+| `faultray tf-import` | Terraform ステートからインポート |
+| `faultray tf-plan <plan>` | Terraform プランの影響分析 |
+| `faultray scan` | ローカル/Prometheus インフラの検出 |
+| `faultray serve` | Web ダッシュボードを起動 |
+| `faultray feed-update` | セキュリティニュースからシナリオを生成 |
+| `faultray report` | HTML レポートを生成 |
+
+---
+
+## なぜ FaultRay はすごいのか
+
+### 従来のカオスエンジニアリングの問題点
+
+Netflix は 2011 年に Chaos Monkey を発明しました。本番サーバーをランダムに停止させてレジリエンスをテストするツールです。以来、業界はこのパターンに従ってきました：**本番を壊して何が起きるか見る**。
+
+しかし、このアプローチには深刻な問題があります：
+
+1. **リスクがある。** 実際のシステムに障害を注入するため、予期せぬ事態が起きうる。
+2. **コストが高い。** ホスト毎にエージェントが必要で、セットアップが複雑、エンタープライズライセンスも高額。
+3. **網羅性が低い。** 手動で設定したシナリオしかテストできない。
+4. **規制産業で使えない。** 銀行、医療、政府機関は本番を気軽に壊せない。
+5. **AIエージェントに対応できない。** 従来の障害注入ではハルシネーションやコンテキストオーバーフローをモデル化できない。
+
+### FaultRay のアプローチ：壊すのではなく、シミュレーションする
+
+FaultRay はカオスエンジニアリングにおける**パラダイムシフト**です。壊して結果を祈るのではなく、システムの数学モデルを構築し、あらゆる障害シナリオを網羅的にシミュレーションします。
+
+これにより：
+- **ゼロリスク** — 本番環境には一切触れません
+- **完全な網羅性** — 2,000 以上のシナリオを自動テスト。本番では危険すぎる複合障害も含む
+- **数学的な証明** — 3層可用性限界モデルでシステムのアップタイムの数学的上限を算出。他のツールにはこの機能はない
+- **即座にセットアップ** — `pip install` 一発で実行可能。エージェント不要、サイドカー不要、インフラ変更不要
+
+---
+
+## 今後の市場と FaultRay の役割
+
+カオスエンジニアリング市場は **2030年に35億ドル規模**に成長すると予測されています（Mordor Intelligence, CAGR 8.28%）。いくつかの大きなトレンドが、FaultRay のアプローチをますます重要にしています。
+
+### 1. AIエージェントがインフラの一部になる時代
+
+AI エージェントは実験的なツールから、**本番の重要コンポーネント**へと移行しています。カスタマーサポート、金融取引処理、サプライチェーン管理 — AI エージェントの障害は現実世界に影響を与えます。
+
+FaultRay は、ハルシネーションの連鎖、コンテキストオーバーフロー、プロンプトインジェクションといった **AI固有の障害モード**をシミュレーションできる**世界初のツール**です。LLM がダウンしてもエージェントが（誤った）応答を返し続ける — そんなシナリオをテストできます。
+
+### 2. 規制がレジリエンステストを義務化している
+
+- **EU DORA**（2025年1月施行）: 金融機関にレジリエンステストを義務化
+- **EU AI Act**（2026年8月完全施行）: AI システムにアルゴリズムの説明責任を要求
+- **Colorado AI Act**: AI の公平性と安全性のテストを義務化
+
+FaultRay のコンプライアンスエンジン（SOC 2, ISO 27001, PCI DSS, DORA, HIPAA, GDPR 対応）と数学的な証明は、これらの**規制要件に応えるために設計**されています。
+
+### 3. 「シフトレフト」レジリエンス
+
+業界はカオスエンジニアリングを、デプロイ後の活動から**ソフトウェア開発ライフサイクル全体**へと移行させています。FaultRay のゼロリスクアプローチはこれに最適です。CI/CD パイプラインで、設計レビューで、Terraform apply の前に — 本番環境なしでシミュレーションを実行できます。
+
+### 4. マルチクラウドの複雑さ
+
+大企業の89%が2つ以上のクラウドプロバイダーでワークロードを運用していますが、ほとんどの障害テストは単一ベンダー向けに設計されています。FaultRay のベンダー非依存のシミュレーションは、あらゆるインフラトポロジーで動作します。
+
+### 5. セキュリティカオスエンジニアリング
+
+セキュリティカオスエンジニアリングは最も急成長しているサブセグメント（CAGR 11.34%）です。FaultRay のセキュリティフィードは、CVE/CISA の脆弱性情報からカオスシナリオを自動生成し、セキュリティインテリジェンスとレジリエンステストを橋渡しします。
+
+### FaultRay の市場ポジション
+
+| ユースケース | 対象ユーザー | FaultRay の貢献 |
+|---|---|---|
+| **デプロイ前検証** | DevOps / SRE チーム | CI/CD でデプロイ毎にシミュレーション実行 |
+| **アーキテクチャレビュー** | プラットフォームエンジニア | 構築前に可用性の上限を証明 |
+| **コンプライアンス** | 金融・医療・政府機関 | 監査対応のレジリエンスレポートを生成 |
+| **AIエージェントの信頼性** | AI/ML エンジニア | 本番投入前にエージェントの障害モードをテスト |
+| **キャパシティプランニング** | インフラチーム | リソース枯渇とスケーリングのタイミングを予測 |
+| **インシデント予防** | オンコールエンジニア | インシデント発生前にカスケードパスを特定 |
+| **セキュリティ態勢** | セキュリティチーム | 実際の脅威シナリオに対するレジリエンスをテスト |
+
+---
+
+## アーキテクチャ
+
+```
+┌──────────────────────────────────────────────────────┐
+│                      FaultRay                         │
+├──────────┬──────────┬──────────┬──────────┬──────────┤
+│ Cascade  │ Dynamic  │   Ops    │ What-If  │ Capacity │
+│ Engine   │ Engine   │  Engine  │  Engine  │  Engine  │
+├──────────┴──────────┴──────────┴──────────┴──────────┤
+│           AI Agent Resilience Layer (v11)              │
+├───────────────────────────────────────────────────────┤
+│            Dependency Graph (NetworkX)                  │
+├──────────┬──────────┬──────────┬─────────────────────┤
+│   YAML   │Terraform │Prometheus│    Cloud APIs        │
+│  Loader  │ Importer │Discovery │   (AWS/GCP)          │
+└──────────┴──────────┴──────────┴─────────────────────┘
+```
+
+## 開発
+
+```bash
+pip install -e ".[dev]"         # 開発モードでインストール
+pytest tests/ -v                # 19,757 テストを実行
+ruff check src/ tests/          # リント
+docker build -t faultray:dev .  # Docker イメージをビルド
+```
+
+## コミュニティ
 
 - [Contributing Guide](CONTRIBUTING.md) — 貢献ガイド
 - [Security Policy](SECURITY.md) — 脆弱性報告ポリシー
 - [Code of Conduct](CODE_OF_CONDUCT.md) — 行動規範
 - [Changelog](CHANGELOG.md) — 変更履歴
 
-### ライセンス
+## ライセンス
 
-BSL 1.1 (Business Source License) - [LICENSE](LICENSE) を参照。特許出願中。2030-03-17にApache 2.0へ移行。
+BSL 1.1 (Business Source License) — [LICENSE](LICENSE) を参照。2030-03-17 に Apache 2.0 へ移行。
