@@ -1,0 +1,47 @@
+{
+  "_comment": [
+    "FaultRay MCP Server — Claude Desktop / Claude Code configuration.",
+    "",
+    "INSTALLATION:",
+    "  pip install faultray mcp",
+    "",
+    "USAGE (Claude Desktop):",
+    "  Copy the 'mcpServers' block below into:",
+    "    macOS  : ~/Library/Application Support/Claude/claude_desktop_config.json",
+    "    Windows: %APPDATA%\\Claude\\claude_desktop_config.json",
+    "",
+    "USAGE (Claude Code):",
+    "  claude mcp add faultray -- python -m faultray.mcp_server",
+    "  Or add to ~/.claude/settings.json under 'mcpServers'.",
+    "",
+    "ALTERNATIVE — uvx (no install needed, always latest):",
+    "  {",
+    "    \"mcpServers\": {",
+    "      \"faultray\": {",
+    "        \"command\": \"uvx\",",
+    "        \"args\": [\"--from\", \"faultray[mcp]\", \"python\", \"-m\", \"faultray.mcp_server\"],",
+    "        \"env\": {}",
+    "      }",
+    "    }",
+    "  }",
+    "",
+    "ALTERNATIVE — pipx:",
+    "  pipx install 'faultray[mcp]'",
+    "  {",
+    "    \"mcpServers\": {",
+    "      \"faultray\": {",
+    "        \"command\": \"faultray-mcp\",",
+    "        \"args\": [],",
+    "        \"env\": {}",
+    "      }",
+    "    }",
+    "  }"
+  ],
+  "mcpServers": {
+    "faultray": {
+      "command": "python",
+      "args": ["-m", "faultray.mcp_server"],
+      "env": {}
+    }
+  }
+}
