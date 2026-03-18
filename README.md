@@ -7,7 +7,7 @@
 <p align="center">
   <a href="https://www.python.org/downloads/"><img src="https://img.shields.io/badge/python-3.11+-blue.svg" alt="Python 3.11+"></a>
   <a href="LICENSE"><img src="https://img.shields.io/badge/License-BSL%201.1-orange.svg" alt="License: BSL 1.1"></a>
-  <a href="#"><img src="https://img.shields.io/badge/tests-19%2C757%20passed-brightgreen.svg" alt="Tests"></a>
+  <a href="#"><img src="https://img.shields.io/badge/tests-29%2C640%20passed-brightgreen.svg" alt="Tests"></a>
   <a href="#"><img src="https://img.shields.io/badge/version-11.0.0-blue.svg" alt="Version"></a>
   <a href="Dockerfile"><img src="https://img.shields.io/badge/docker-ready-2496ED.svg" alt="Docker"></a>
   <a href="https://pypi.org/project/faultray/"><img src="https://img.shields.io/pypi/v/faultray" alt="PyPI"></a>
@@ -280,6 +280,52 @@ faultray load infra.yaml
 faultray simulate --html report.html   # Get a full HTML report
 ```
 
+### Define AI Agent Infrastructure
+
+FaultRay supports AI-specific component types (`ai_agent`, `llm_endpoint`, `tool_service`, `agent_orchestrator`) for modeling agent workflows. See [`examples/ai-agent-workflow.yaml`](examples/ai-agent-workflow.yaml) for a complete example:
+
+```yaml
+# ai-agent-workflow.yaml (excerpt)
+components:
+  - id: claude-api
+    type: llm_endpoint
+    llm_config:
+      provider: anthropic
+      model_id: claude-sonnet-4-20250514
+      rate_limit_rpm: 1000
+      context_window: 200000
+      availability_sla: 99.9
+
+  - id: research-agent
+    type: ai_agent
+    agent_config:
+      framework: langchain
+      model_id: claude-sonnet-4-20250514
+      max_context_tokens: 200000
+      hallucination_risk: 0.03
+      requires_grounding: true
+
+  - id: router-agent
+    type: agent_orchestrator
+    orchestrator_config:
+      pattern: hierarchical
+      max_agents: 5
+      circuit_breaker_on_hallucination: true
+
+dependencies:
+  - source: research-agent
+    target: claude-api
+    type: requires
+    circuit_breaker:
+      enabled: true
+      failure_threshold: 3
+```
+
+```bash
+faultray agent assess ai-agent-workflow.yaml     # Risk assessment
+faultray agent scenarios ai-agent-workflow.yaml   # What could go wrong?
+```
+
 ### CLI Reference
 
 | Command | What It Does |
@@ -300,6 +346,98 @@ faultray simulate --html report.html   # Get a full HTML report
 | `faultray serve` | Launch the web dashboard |
 | `faultray feed-update` | Fetch latest security news and generate scenarios |
 | `faultray report` | Generate HTML report |
+
+### Quick Command Reference
+
+FaultRay provides 100+ CLI commands. Here they are organized by category:
+
+#### Core
+| Command | Description |
+|---|---|
+| `faultray demo` | Run demo simulation with sample infrastructure |
+| `faultray load <yaml>` | Load infrastructure definition from YAML |
+| `faultray simulate` | Run 2,000+ chaos scenarios against loaded infra |
+| `faultray dynamic <yaml>` | Time-stepped simulation with traffic patterns |
+| `faultray show` | Display loaded infrastructure topology |
+| `faultray serve` | Launch interactive web dashboard |
+
+#### Analysis
+| Command | Description |
+|---|---|
+| `faultray evaluate <yaml>` | Score infrastructure resilience (0-100) |
+| `faultray whatif <yaml>` | Parameter sweep to find breaking points |
+| `faultray capacity <yaml>` | Growth forecasting and capacity planning |
+| `faultray ops-sim <yaml>` | Multi-day operational simulation |
+| `faultray monte-carlo <yaml>` | Monte Carlo probabilistic risk analysis |
+| `faultray bayesian <yaml>` | Bayesian network inference for failure probabilities |
+| `faultray markov <yaml>` | Markov chain steady-state availability analysis |
+
+#### Security
+| Command | Description |
+|---|---|
+| `faultray security <yaml>` | Security posture assessment |
+| `faultray attack-surface <yaml>` | Map attack surface and entry points |
+| `faultray fuzz <yaml>` | Fuzz-test input boundaries and edge cases |
+
+#### Compliance
+| Command | Description |
+|---|---|
+| `faultray compliance <yaml>` | Run compliance gap analysis (SOC2, ISO, PCI, etc.) |
+| `faultray dora-report <yaml>` | Generate DORA compliance report |
+| `faultray evidence <yaml>` | Export audit-ready evidence packages |
+| `faultray sre-maturity <yaml>` | Assess SRE maturity level |
+
+#### Cost
+| Command | Description |
+|---|---|
+| `faultray cost <yaml>` | Estimate downtime cost impact |
+| `faultray cost-optimize <yaml>` | Find cost optimization opportunities |
+| `faultray cost-report <yaml>` | Generate cost-risk tradeoff report |
+| `faultray risk <yaml>` | Quantitative risk assessment with financial impact |
+| `faultray carbon <yaml>` | Estimate carbon footprint of infrastructure |
+
+#### AI Agent
+| Command | Description |
+|---|---|
+| `faultray agent assess <yaml>` | Assess AI agent deployment risk (hallucination, loops, etc.) |
+| `faultray agent scenarios <yaml>` | Generate agent-specific chaos scenarios |
+| `faultray agent monitor <yaml>` | Generate monitoring rules for AI agents |
+
+#### Infrastructure
+| Command | Description |
+|---|---|
+| `faultray tf-import` | Import infrastructure from Terraform state |
+| `faultray tf-check <plan>` | Check Terraform plan for resilience regression |
+| `faultray tf-plan <plan>` | Detailed Terraform plan impact analysis |
+| `faultray scan` | Auto-discover local/Prometheus infrastructure |
+| `faultray calibrate <yaml>` | Calibrate simulation parameters from real metrics |
+
+#### Comparison
+| Command | Description |
+|---|---|
+| `faultray diff <a> <b>` | Compare two infrastructure versions |
+| `faultray compare-envs <a> <b>` | Compare staging vs production environments |
+| `faultray canary-compare <a> <b>` | Compare canary vs baseline resilience |
+| `faultray ab-test <a> <b>` | A/B test two infrastructure configurations |
+| `faultray topo-diff <a> <b>` | Visual diff of topology changes |
+
+#### Reporting
+| Command | Description |
+|---|---|
+| `faultray report` | Generate HTML resilience report |
+| `faultray executive <yaml>` | Executive summary for leadership |
+| `faultray heatmap <yaml>` | Generate failure probability heatmap |
+| `faultray graph-export <yaml>` | Export dependency graph (DOT, SVG, PNG) |
+| `faultray postmortem-generate` | Auto-generate postmortem from incident data |
+
+#### Advanced
+| Command | Description |
+|---|---|
+| `faultray fmea <yaml>` | Failure Mode and Effects Analysis |
+| `faultray chaos-monkey <yaml>` | Randomized fault injection simulation |
+| `faultray gameday <yaml>` | Run a full game day exercise simulation |
+| `faultray war-room <yaml>` | Interactive war room incident simulation |
+| `faultray replay <incident>` | Replay a past incident against current infra |
 
 ---
 
@@ -387,7 +525,7 @@ Security chaos engineering is the fastest-growing sub-segment (CAGR 11.34%). Fau
 
 ```bash
 pip install -e ".[dev]"         # Install in dev mode
-pytest tests/ -v                # Run 19,757 tests
+pytest tests/ -v                # Run 29,640 tests
 ruff check src/ tests/          # Lint
 docker build -t faultray:dev .  # Build Docker image
 ```
@@ -688,7 +826,7 @@ FaultRay のコンプライアンスエンジン（SOC 2, ISO 27001, PCI DSS, DO
 
 ```bash
 pip install -e ".[dev]"         # 開発モードでインストール
-pytest tests/ -v                # 19,757 テストを実行
+pytest tests/ -v                # 29,640 テストを実行
 ruff check src/ tests/          # リント
 docker build -t faultray:dev .  # Docker イメージをビルド
 ```

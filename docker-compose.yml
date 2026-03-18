@@ -5,7 +5,8 @@ services:
       - "8000:8000"
     environment:
       - FAULTRAY_DB_PATH=/data/faultray.db
-      - FAULTRAY_CORS_ORIGINS=*
+      # Set specific origins for production, e.g. https://your-domain.com
+      # - FAULTRAY_CORS_ORIGINS=https://your-domain.com
     volumes:
       - faultray-data:/data
       - ./examples:/app/examples:ro
@@ -17,6 +18,14 @@ services:
       timeout: 10s
       start_period: 10s
       retries: 3
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+          cpus: "1.0"
+        reservations:
+          memory: 128M
+          cpus: "0.25"
 
   demo:
     build: .
@@ -24,7 +33,8 @@ services:
       - "8000:8000"
     environment:
       - FAULTRAY_DB_PATH=/data/faultray.db
-      - FAULTRAY_CORS_ORIGINS=*
+      # Set specific origins for production, e.g. https://your-domain.com
+      # - FAULTRAY_CORS_ORIGINS=https://your-domain.com
     volumes:
       - faultray-data:/data
     command: ["faultray", "demo", "--web"]
@@ -35,6 +45,14 @@ services:
       timeout: 10s
       start_period: 10s
       retries: 3
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+          cpus: "1.0"
+        reservations:
+          memory: 128M
+          cpus: "0.25"
     profiles:
       - demo
 
@@ -46,6 +64,11 @@ services:
       - ./reports:/app/reports
     entrypoint: ["faultray"]
     command: ["--help"]
+    deploy:
+      resources:
+        limits:
+          memory: 256M
+          cpus: "0.5"
     profiles:
       - cli
 

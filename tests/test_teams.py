@@ -5,23 +5,22 @@ from __future__ import annotations
 import pytest
 from fastapi.testclient import TestClient
 
-from faultray.api.database import reset_engine
 from faultray.api.server import app, set_graph
+from tests.conftest import TEST_API_KEY, _setup_test_user
 
 
 @pytest.fixture(autouse=True)
 def _reset_state():
-    """Reset server and database state between tests."""
+    """Reset server graph state between tests."""
+    _setup_test_user()
     set_graph(None)
-    reset_engine()
     yield
     set_graph(None)
-    reset_engine()
 
 
 @pytest.fixture
 def client():
-    return TestClient(app, raise_server_exceptions=False)
+    return TestClient(app, raise_server_exceptions=False, headers={"Authorization": f"Bearer {TEST_API_KEY}"})
 
 
 # ---------------------------------------------------------------------------

@@ -8,11 +8,13 @@ from fastapi.testclient import TestClient
 from faultray.api.server import app, build_demo_graph, get_graph, set_graph
 from faultray.model.demo import create_demo_graph
 from faultray.model.graph import InfraGraph
+from tests.conftest import TEST_API_KEY, _setup_test_user, _teardown_test_user
 
 
 @pytest.fixture(autouse=True)
 def _reset_graph():
-    """Reset the server graph state before and after each test."""
+    """Reset the server graph state and ensure test user exists."""
+    _setup_test_user()
     set_graph(None)
     yield
     set_graph(None)
@@ -20,8 +22,12 @@ def _reset_graph():
 
 @pytest.fixture
 def client():
-    """Create a test client for the FastAPI app."""
-    return TestClient(app, raise_server_exceptions=False)
+    """Create a test client for the FastAPI app with auth headers."""
+    return TestClient(
+        app,
+        raise_server_exceptions=False,
+        headers={"Authorization": f"Bearer {TEST_API_KEY}"},
+    )
 
 
 @pytest.fixture

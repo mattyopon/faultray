@@ -22,6 +22,7 @@ from faultray.model.components import (
     CostProfile,
 )
 from faultray.model.graph import InfraGraph
+from tests.conftest import TEST_API_KEY, _setup_test_user
 
 
 # ---------------------------------------------------------------------------
@@ -33,6 +34,7 @@ from faultray.model.graph import InfraGraph
 def _reset_graph():
     """Reset server graph state and rate limiter before/after each test."""
     import faultray.api.server as _srv
+    _setup_test_user()
     set_graph(None)
     _srv._rate_limiter.requests.clear()
     yield
@@ -42,7 +44,7 @@ def _reset_graph():
 
 @pytest.fixture
 def client():
-    return TestClient(app, raise_server_exceptions=False)
+    return TestClient(app, raise_server_exceptions=False, headers={"Authorization": f"Bearer {TEST_API_KEY}"})
 
 
 @pytest.fixture

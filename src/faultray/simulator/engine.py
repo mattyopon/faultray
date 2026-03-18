@@ -202,17 +202,17 @@ class SimulationEngine:
             try:
                 from faultray.plugins.registry import PluginRegistry
 
-                for plugin in PluginRegistry.get_engines():
+                for engine_plugin in PluginRegistry.get_engines():
                     try:
-                        plugin_results = plugin.simulate(self.graph, scenarios)
+                        plugin_results = engine_plugin.simulate(self.graph, scenarios)
                         if plugin_results:
                             report.engine_plugin_results[
-                                getattr(plugin, "name", "unknown")
+                                getattr(engine_plugin, "name", "unknown")
                             ] = plugin_results
                     except Exception:
                         logger.warning(
                             "Engine plugin %s failed",
-                            getattr(plugin, "name", "unknown"),
+                            getattr(engine_plugin, "name", "unknown"),
                             exc_info=True,
                         )
             except ImportError:

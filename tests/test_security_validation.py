@@ -323,14 +323,18 @@ class TestAPISecurity:
 
     @pytest.fixture
     def client(self):
-        """Create a FastAPI test client."""
+        """Create a FastAPI test client with auth headers."""
         try:
             from fastapi.testclient import TestClient
             from faultray.api.server import app, set_graph
             from faultray.model.demo import create_demo_graph
+            from tests.conftest import TEST_API_KEY, _setup_test_user
 
+            _setup_test_user()
             set_graph(create_demo_graph())
-            return TestClient(app, raise_server_exceptions=False)
+            client = TestClient(app, raise_server_exceptions=False)
+            client.headers["Authorization"] = f"Bearer {TEST_API_KEY}"
+            return client
         except ImportError:
             pytest.skip("FastAPI / httpx test client not available")
 

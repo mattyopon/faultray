@@ -106,6 +106,18 @@ line-length = 100
 testpaths = ["tests"]
 asyncio_mode = "auto"
 
+[tool.mypy]
+python_version = "3.11"
+warn_return_any = true
+warn_unused_configs = true
+disallow_untyped_defs = true
+check_untyped_defs = true
+
+[tool.mutmut]
+paths_to_mutate = "src/faultray/model/"
+tests_dir = "tests/"
+runner = "python -m pytest tests/test_engine.py tests/test_scenarios.py tests/test_cascade.py -x -q"
+
 [tool.coverage.run]
 concurrency = ["thread", "greenlet"]
 source = ["src/faultray"]

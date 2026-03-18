@@ -284,6 +284,9 @@ def load_yaml_with_ops(path: Path | str) -> tuple[InfraGraph, dict]:
         with ``'slos'`` (list of :class:`SLOTarget`) and
         ``'operational_simulation'`` (raw dict of simulation parameters).
     """
+    if isinstance(path, str):
+        path = Path(path)
+
     # Build the graph using the existing loader
     graph = load_yaml(path)
 

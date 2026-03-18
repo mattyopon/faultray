@@ -110,19 +110,28 @@ app = FastAPI(
 )
 
 # ---------------------------------------------------------------------------
-# CORS middleware — origins configurable via FAULTRAY_CORS_ORIGINS env var (legacy FAULTRAY_CORS_ORIGINS / FAULTRAY_CORS_ORIGINS also accepted)
+# CORS middleware — origins configurable via FAULTRAY_CORS_ORIGINS env var
 # ---------------------------------------------------------------------------
-_cors_origins_raw = os.environ.get("FAULTRAY_CORS_ORIGINS", os.environ.get("FAULTRAY_CORS_ORIGINS", os.environ.get("FAULTRAY_CORS_ORIGINS", "*")))
+_cors_origins_raw = os.environ.get("FAULTRAY_CORS_ORIGINS", "")
 _cors_origins: list[str] = [
     origin.strip()
     for origin in _cors_origins_raw.split(",")
     if origin.strip()
-]
+] if _cors_origins_raw else []
+
+if _cors_origins == ["*"]:
+    logger.warning(
+        "CORS is configured with allow_origins='*'. "
+        "This is insecure for production. Set FAULTRAY_CORS_ORIGINS to specific origins."
+    )
+
+# Only allow credentials when specific origins are set (not wildcard or empty)
+_allow_credentials = bool(_cors_origins) and _cors_origins != ["*"]
 
 app.add_middleware(
     CORSMiddleware,
     allow_origins=_cors_origins,
-    allow_credentials=True,
+    allow_credentials=_allow_credentials,
     allow_methods=["*"],
     allow_headers=["*"],
 )
@@ -134,19 +143,24 @@ app.add_middleware(
 
 @app.middleware("http")
 async def rate_limit_middleware(request: Request, call_next):
-    """Enforce rate limiting on /api/* endpoints."""
-    if request.url.path.startswith("/api"):
+    """Enforce rate limiting on all endpoints."""
+    # Use X-Forwarded-For for proxy-aware client IP detection
+    forwarded_for = request.headers.get("X-Forwarded-For")
+    if forwarded_for:
+        # First IP in the chain is the original client
+        client_ip = forwarded_for.split(",")[0].strip()
+    else:
         client_ip = request.client.host if request.client else "unknown"
-        if not _rate_limiter.is_allowed(client_ip):
-            return JSONResponse(
-                status_code=429,
-                content={
-                    "error": {
-                        "code": 429,
-                        "message": "Too many requests. Please try again later.",
-                    }
-                },
-            )
+    if not _rate_limiter.is_allowed(client_ip):
+        return JSONResponse(
+            status_code=429,
+            content={
+                "error": {
+                    "code": 429,
+                    "message": "Too many requests. Please try again later.",
+                }
+            },
+        )
     return await call_next(request)
 
 

@@ -19,3 +19,4 @@ htmlcov/
 .mypy_cache/
 .faultray/
 site/
+.hypothesis/

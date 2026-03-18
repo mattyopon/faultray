@@ -4,9 +4,9 @@
 
 | Version | Supported |
 |---------|-----------|
-| 10.x    | ✅ Active support |
-| 9.x     | ⚠️ Security fixes only |
-| < 9.0   | ❌ End of life |
+| 11.x    | ✅ Active support |
+| 10.x    | ⚠️ Security fixes only |
+| < 10.0  | ❌ End of life |
 
 ## Reporting a Vulnerability
 

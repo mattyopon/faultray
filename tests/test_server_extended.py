@@ -14,15 +14,16 @@ from httpx import ASGITransport, AsyncClient
 
 from faultray.api.server import app, set_graph
 from faultray.model.demo import create_demo_graph
+from tests.conftest import TEST_API_KEY, _setup_test_user
 
 
 @pytest.fixture(autouse=True)
 def _setup_demo_graph():
-    """Load demo graph into the server before each test."""
+    """Load demo graph into the server and ensure test user exists."""
+    _setup_test_user()
     g = create_demo_graph()
     set_graph(g)
     yield
-    # Reset graph to empty after test
     from faultray.model.graph import InfraGraph
     set_graph(InfraGraph())
 
@@ -30,7 +31,8 @@ def _setup_demo_graph():
 @pytest_asyncio.fixture
 async def client():
     transport = ASGITransport(app=app)
-    async with AsyncClient(transport=transport, base_url="http://test") as c:
+    headers = {"Authorization": f"Bearer {TEST_API_KEY}"}
+    async with AsyncClient(transport=transport, base_url="http://test", headers=headers) as c:
         yield c
 
 

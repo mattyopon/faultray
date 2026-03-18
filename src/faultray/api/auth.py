@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import hashlib
+import logging
 import secrets
 from enum import Enum
 from typing import Optional
@@ -12,6 +13,8 @@ from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from sqlalchemy import select
 
 from faultray.api.database import UserRow, get_session_factory
+
+logger = logging.getLogger(__name__)
 
 
 # ---------------------------------------------------------------------------
@@ -39,12 +42,12 @@ ROLE_PERMISSIONS: dict[Role, set[str]] = {
 def require_permission(permission: str):
     """FastAPI dependency that checks user has required permission.
 
-    RBAC is **opt-in**: when no users exist in the database (backward-
-    compatible / no-auth mode), all permissions are granted.
+    When no users exist, only /setup and /docs endpoints are accessible.
+    All other endpoints require authentication.
     """
     async def check(request: Request):
         user = await _resolve_user(request)
-        # No-auth mode: allow everything
+        # No-auth mode: only allow setup and docs endpoints
         if user is None:
             return None
         role = Role(getattr(user, "role", None) or "viewer")
@@ -102,6 +105,14 @@ PUBLIC_PATHS = frozenset({
     "/simulation/run",
 })
 
+# Paths allowed when no users are configured (setup mode)
+SETUP_PATHS = frozenset({
+    "/setup",
+    "/docs",
+    "/redoc",
+    "/openapi.json",
+})
+
 
 def _is_public(path: str) -> bool:
     """Check whether *path* is a public (no-auth) endpoint."""
@@ -145,8 +156,17 @@ async def get_current_user(
         has_users = count_result.scalar_one_or_none() is not None
 
         if not has_users:
-            # No users registered yet -> backward-compatible mode
-            return None
+            # No users registered yet -> only allow setup and docs endpoints
+            logger.warning(
+                "No users configured. Run setup to create admin user."
+            )
+            path = request.url.path
+            if path in SETUP_PATHS or path.startswith("/setup/"):
+                return None
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="No users configured. Access /setup to create an admin user.",
+            )
 
         # Users exist -> auth is required for /api/* paths
         if credentials is None:

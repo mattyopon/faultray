@@ -6,12 +6,14 @@ import pytest
 from fastapi.testclient import TestClient
 
 from faultray.api.server import app
+from tests.conftest import TEST_API_KEY, _setup_test_user
 
 
 @pytest.fixture
 def client():
     """Create a test client for the FastAPI app."""
-    return TestClient(app, raise_server_exceptions=False)
+    _setup_test_user()
+    return TestClient(app, raise_server_exceptions=False, headers={"Authorization": f"Bearer {TEST_API_KEY}"})
 
 
 # ---------------------------------------------------------------------------

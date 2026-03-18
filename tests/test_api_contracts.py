@@ -3,13 +3,15 @@ import pytest
 import pytest_asyncio
 from httpx import AsyncClient, ASGITransport
 from faultray.api.server import app as fastapi_app
+from tests.conftest import TEST_API_KEY, _setup_test_user
 
 
 @pytest_asyncio.fixture
 async def client():
+    _setup_test_user()
     transport = ASGITransport(app=fastapi_app)
-    async with AsyncClient(transport=transport, base_url="http://test") as c:
-        # Load demo first
+    headers = {"Authorization": f"Bearer {TEST_API_KEY}"}
+    async with AsyncClient(transport=transport, base_url="http://test", headers=headers) as c:
         await c.get("/demo")
         yield c
 
