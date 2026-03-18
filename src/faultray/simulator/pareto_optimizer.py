@@ -47,6 +47,10 @@ COST_PER_REPLICA: dict[ComponentType, float] = {
     ComponentType.DNS: 10.0,
     ComponentType.EXTERNAL_API: 0.0,
     ComponentType.CUSTOM: 150.0,
+    ComponentType.AI_AGENT: 250.0,
+    ComponentType.LLM_ENDPOINT: 500.0,
+    ComponentType.TOOL_SERVICE: 150.0,
+    ComponentType.AGENT_ORCHESTRATOR: 300.0,
 }
 
 # Monthly cost for enabling features

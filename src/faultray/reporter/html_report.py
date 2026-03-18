@@ -225,16 +225,21 @@ def _build_dependency_svg(graph: InfraGraph) -> str:
 # Public API
 # ---------------------------------------------------------------------------
 
-def generate_html_report(report: SimulationReport, graph: InfraGraph) -> str:
+def generate_html_report(report: SimulationReport | list, graph: InfraGraph) -> str:
     """Render a standalone HTML report string.
 
     Args:
-        report: The simulation report produced by :class:`SimulationEngine`.
+        report: The simulation report produced by :class:`SimulationEngine`,
+                or a plain list of :class:`ScenarioResult` (from dynamic simulation).
         graph: The infrastructure graph that was simulated.
 
     Returns:
         A complete HTML document as a string.
     """
+    # Handle plain list input (e.g. from dynamic simulation)
+    if isinstance(report, list):
+        report = SimulationReport(results=report)
+
     env = Environment(
         loader=FileSystemLoader(str(_TEMPLATE_DIR)),
         autoescape=True,
@@ -296,11 +301,11 @@ def generate_html_report(report: SimulationReport, graph: InfraGraph) -> str:
     return template.render(**context)
 
 
-def save_html_report(report: SimulationReport, graph: InfraGraph, output_path: Path) -> None:
+def save_html_report(report: SimulationReport | list, graph: InfraGraph, output_path: Path) -> None:
     """Generate and write an HTML report to disk.
 
     Args:
-        report: The simulation report.
+        report: The simulation report, or a plain list of ScenarioResult.
         graph: The infrastructure graph.
         output_path: File path for the HTML output.
     """

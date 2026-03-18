@@ -156,6 +156,10 @@ _CRITICALITY_WEIGHTS: dict[ComponentType, float] = {
     ComponentType.CACHE: 0.50,
     ComponentType.EXTERNAL_API: 0.40,
     ComponentType.CUSTOM: 0.35,
+    ComponentType.AI_AGENT: 0.65,
+    ComponentType.LLM_ENDPOINT: 0.60,
+    ComponentType.TOOL_SERVICE: 0.50,
+    ComponentType.AGENT_ORCHESTRATOR: 0.80,
 }
 
 _SAFETY_CONCERN: dict[ComponentType, float] = {
@@ -169,6 +173,10 @@ _SAFETY_CONCERN: dict[ComponentType, float] = {
     ComponentType.CACHE: 0.30,
     ComponentType.EXTERNAL_API: 0.25,
     ComponentType.CUSTOM: 0.40,
+    ComponentType.AI_AGENT: 0.55,
+    ComponentType.LLM_ENDPOINT: 0.45,
+    ComponentType.TOOL_SERVICE: 0.35,
+    ComponentType.AGENT_ORCHESTRATOR: 0.70,
 }
 
 _METHOD_SUITABILITY: dict[ComponentType, list[InjectionType]] = {
@@ -238,6 +246,33 @@ _METHOD_SUITABILITY: dict[ComponentType, list[InjectionType]] = {
         InjectionType.CPU_STRESS,
         InjectionType.MEMORY_PRESSURE,
         InjectionType.NETWORK_DELAY,
+    ],
+    ComponentType.AI_AGENT: [
+        InjectionType.PROCESS_KILL,
+        InjectionType.CPU_STRESS,
+        InjectionType.MEMORY_PRESSURE,
+        InjectionType.NETWORK_DELAY,
+        InjectionType.DEPENDENCY_TIMEOUT,
+    ],
+    ComponentType.LLM_ENDPOINT: [
+        InjectionType.NETWORK_DELAY,
+        InjectionType.NETWORK_PARTITION,
+        InjectionType.DEPENDENCY_TIMEOUT,
+        InjectionType.DNS_FAILURE,
+    ],
+    ComponentType.TOOL_SERVICE: [
+        InjectionType.PROCESS_KILL,
+        InjectionType.CPU_STRESS,
+        InjectionType.MEMORY_PRESSURE,
+        InjectionType.NETWORK_DELAY,
+    ],
+    ComponentType.AGENT_ORCHESTRATOR: [
+        InjectionType.PROCESS_KILL,
+        InjectionType.CPU_STRESS,
+        InjectionType.MEMORY_PRESSURE,
+        InjectionType.NETWORK_DELAY,
+        InjectionType.DEPENDENCY_TIMEOUT,
+        InjectionType.CLOCK_SKEW,
     ],
 }
 

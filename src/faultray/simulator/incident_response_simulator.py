@@ -346,6 +346,10 @@ _BASE_MTTR_BY_TYPE: dict[str, float] = {
     ComponentType.DNS.value: 20.0,
     ComponentType.EXTERNAL_API.value: 0.0,
     ComponentType.CUSTOM.value: 30.0,
+    ComponentType.AI_AGENT.value: 25.0,
+    ComponentType.LLM_ENDPOINT.value: 15.0,
+    ComponentType.TOOL_SERVICE.value: 20.0,
+    ComponentType.AGENT_ORCHESTRATOR.value: 30.0,
 }
 
 _COMPONENT_TYPE_CATEGORY: dict[str, IncidentCategory] = {
@@ -359,6 +363,10 @@ _COMPONENT_TYPE_CATEGORY: dict[str, IncidentCategory] = {
     ComponentType.STORAGE.value: IncidentCategory.INFRASTRUCTURE,
     ComponentType.EXTERNAL_API.value: IncidentCategory.THIRD_PARTY,
     ComponentType.CUSTOM.value: IncidentCategory.UNKNOWN,
+    ComponentType.AI_AGENT.value: IncidentCategory.APPLICATION,
+    ComponentType.LLM_ENDPOINT.value: IncidentCategory.THIRD_PARTY,
+    ComponentType.TOOL_SERVICE.value: IncidentCategory.APPLICATION,
+    ComponentType.AGENT_ORCHESTRATOR.value: IncidentCategory.APPLICATION,
 }
 
 _FAILURE_MODES_BY_TYPE: dict[str, list[str]] = {
@@ -430,6 +438,32 @@ _FAILURE_MODES_BY_TYPE: dict[str, list[str]] = {
         "config_error",
         "resource_exhaustion",
     ],
+    ComponentType.AI_AGENT.value: [
+        "hallucination",
+        "tool_call_failure",
+        "context_overflow",
+        "timeout",
+        "rate_limit",
+    ],
+    ComponentType.LLM_ENDPOINT.value: [
+        "rate_limit",
+        "timeout",
+        "model_degradation",
+        "auth_failure",
+    ],
+    ComponentType.TOOL_SERVICE.value: [
+        "tool_timeout",
+        "invalid_input",
+        "resource_exhaustion",
+        "config_error",
+    ],
+    ComponentType.AGENT_ORCHESTRATOR.value: [
+        "workflow_deadlock",
+        "agent_timeout",
+        "state_corruption",
+        "resource_exhaustion",
+        "config_error",
+    ],
 }
 
 _RECOVERY_ACTIONS_BY_TYPE: dict[str, list[tuple[RecoveryActionType, str, float, bool]]] = {
@@ -481,6 +515,24 @@ _RECOVERY_ACTIONS_BY_TYPE: dict[str, list[tuple[RecoveryActionType, str, float, 
     ComponentType.CUSTOM.value: [
         (RecoveryActionType.RESTART_SERVICE, "Restart service", 10.0, True),
         (RecoveryActionType.MANUAL_INTERVENTION, "Manual investigation", 30.0, False),
+    ],
+    ComponentType.AI_AGENT.value: [
+        (RecoveryActionType.RESTART_SERVICE, "Restart AI agent process", 5.0, True),
+        (RecoveryActionType.PATCH_CONFIG, "Adjust agent configuration", 5.0, False),
+        (RecoveryActionType.ROLLBACK_DEPLOY, "Rollback agent version", 10.0, True),
+    ],
+    ComponentType.LLM_ENDPOINT.value: [
+        (RecoveryActionType.MANUAL_INTERVENTION, "Contact LLM provider", 60.0, False),
+        (RecoveryActionType.PATCH_CONFIG, "Switch to fallback model", 5.0, True),
+    ],
+    ComponentType.TOOL_SERVICE.value: [
+        (RecoveryActionType.RESTART_SERVICE, "Restart tool service", 5.0, True),
+        (RecoveryActionType.SCALE_UP, "Scale up tool service replicas", 8.0, True),
+    ],
+    ComponentType.AGENT_ORCHESTRATOR.value: [
+        (RecoveryActionType.RESTART_SERVICE, "Restart orchestrator", 5.0, True),
+        (RecoveryActionType.PATCH_CONFIG, "Update orchestrator config", 5.0, False),
+        (RecoveryActionType.MANUAL_INTERVENTION, "Manual workflow recovery", 20.0, False),
     ],
 }
 

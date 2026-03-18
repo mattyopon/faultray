@@ -217,9 +217,9 @@ class TestPerformanceBenchmarks:
     """Performance benchmarks for the simulation engine."""
 
     def test_small_graph_performance(self):
-        """6-component demo should simulate in < 1 second."""
+        """Demo graph should simulate in < 1 second."""
         graph = create_demo_graph()
-        assert len(graph.components) == 6
+        assert len(graph.components) == 9
         engine = SimulationEngine(graph)
         start = time.perf_counter()
         report = engine.run_all_defaults(include_feed=False, include_plugins=False)

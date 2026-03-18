@@ -103,6 +103,10 @@ _BASE_AVAILABILITY: dict[ComponentType, float] = {
     ComponentType.STORAGE: 0.99999,
     ComponentType.EXTERNAL_API: 0.999,
     ComponentType.CUSTOM: 0.999,
+    ComponentType.AI_AGENT: 0.999,
+    ComponentType.LLM_ENDPOINT: 0.999,
+    ComponentType.TOOL_SERVICE: 0.999,
+    ComponentType.AGENT_ORCHESTRATOR: 0.999,
 }
 
 

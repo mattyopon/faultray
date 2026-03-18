@@ -1,10 +1,11 @@
 """API contract tests — verify response shapes match expectations."""
 import pytest
+import pytest_asyncio
 from httpx import AsyncClient, ASGITransport
 from faultray.api.server import app as fastapi_app
 
 
-@pytest.fixture
+@pytest_asyncio.fixture
 async def client():
     transport = ASGITransport(app=fastapi_app)
     async with AsyncClient(transport=transport, base_url="http://test") as c:

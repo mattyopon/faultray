@@ -381,6 +381,10 @@ _DEFAULT_FAILURE_MODES: dict[ComponentType, list[str]] = {
     ComponentType.DNS: ["resolution_failure", "ttl_misconfiguration", "dnssec_failure"],
     ComponentType.EXTERNAL_API: ["latency_spike", "rate_limit_hit", "auth_failure", "endpoint_deprecated"],
     ComponentType.CUSTOM: ["unknown_failure"],
+    ComponentType.AI_AGENT: ["hallucination", "tool_call_failure", "context_overflow", "timeout"],
+    ComponentType.LLM_ENDPOINT: ["latency_spike", "rate_limit_hit", "model_degradation", "auth_failure"],
+    ComponentType.TOOL_SERVICE: ["tool_timeout", "invalid_input", "resource_exhaustion"],
+    ComponentType.AGENT_ORCHESTRATOR: ["workflow_deadlock", "agent_timeout", "state_corruption"],
 }
 
 

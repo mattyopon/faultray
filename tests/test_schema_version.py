@@ -21,8 +21,8 @@ def _write_yaml(content: str) -> Path:
 
 
 def test_schema_version_constant():
-    """SCHEMA_VERSION should be '3.0'."""
-    assert SCHEMA_VERSION == "3.0"
+    """SCHEMA_VERSION should be '4.0'."""
+    assert SCHEMA_VERSION == "4.0"
 
 
 def test_to_dict_includes_schema_version():
@@ -93,7 +93,7 @@ def test_load_json_with_old_schema_version(caplog):
 
         assert len(loaded.components) == 1
         assert any("v2.0" in msg for msg in caplog.messages)
-        assert any("v3.0" in msg for msg in caplog.messages)
+        assert any("v4.0" in msg for msg in caplog.messages)
 
 
 def test_yaml_without_schema_version_logs_warning(caplog):
@@ -148,4 +148,4 @@ dependencies: []
 
     assert len(graph.components) == 1
     assert any("v1.5" in msg for msg in caplog.messages)
-    assert any("v3.0" in msg for msg in caplog.messages)
+    assert any("v4.0" in msg for msg in caplog.messages)

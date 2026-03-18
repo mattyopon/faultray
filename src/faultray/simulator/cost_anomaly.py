@@ -39,6 +39,10 @@ _BASE_MONTHLY_COST: dict[ComponentType, float] = {
     ComponentType.DNS: 50.0,
     ComponentType.EXTERNAL_API: 0.0,
     ComponentType.CUSTOM: 100.0,
+    ComponentType.AI_AGENT: 300.0,
+    ComponentType.LLM_ENDPOINT: 800.0,
+    ComponentType.TOOL_SERVICE: 150.0,
+    ComponentType.AGENT_ORCHESTRATOR: 250.0,
 }
 
 # Tier classification for cost reporting.
@@ -53,6 +57,10 @@ _COMPONENT_TIER: dict[ComponentType, str] = {
     ComponentType.STORAGE: "storage",
     ComponentType.EXTERNAL_API: "network",
     ComponentType.CUSTOM: "compute",
+    ComponentType.AI_AGENT: "compute",
+    ComponentType.LLM_ENDPOINT: "compute",
+    ComponentType.TOOL_SERVICE: "compute",
+    ComponentType.AGENT_ORCHESTRATOR: "compute",
 }
 
 # Minimum replicas threshold factor — replicas above this multiple of the

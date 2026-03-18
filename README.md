@@ -150,12 +150,14 @@ Common catches: removing a replica count you meant to keep, adding a new depende
 
 #### 2. Prove Your Availability Ceiling Mathematically
 
-Ever wondered: "Can we actually achieve 99.99% uptime?" FaultRay answers this with its unique **3-Layer Availability Limit Model**:
+Ever wondered: "Can we actually achieve 99.99% uptime?" FaultRay answers this with its unique **5-Layer Availability Limit Model**:
 
 ```
-Layer 3: Theoretical Limit   → 6.65 nines (99.99997%)  — Math says this is the max
-Layer 2: Hardware Limit      → 5.91 nines (99.999%)    — Your hardware caps it here
-Layer 1: Software Limit      → 4.00 nines (99.99%)     — Human error brings it here
+Layer 5: External SLA Cascading → 3.00 nines (99.9%)     — Third-party SLA product caps it here
+Layer 4: Operational Limit      → 3.50 nines (99.95%)    — Incident response & on-call coverage
+Layer 3: Theoretical Limit      → 6.65 nines (99.99997%) — Math says this is the max
+Layer 2: Hardware Limit         → 5.91 nines (99.999%)   — Your hardware caps it here
+Layer 1: Software Limit         → 4.00 nines (99.99%)    — Human error brings it here
 ```
 
 If your SLO target is 99.99% but your architecture can only physically reach 99.95%, **no amount of engineering effort will close the gap** without architectural changes. FaultRay tells you this before you waste months trying.
@@ -211,7 +213,7 @@ faultray agent monitor infra.yaml   # Generate monitoring rules
 | **Risk to production** | Medium-High | Medium | Medium | **Zero** |
 | **Setup** | Agent per host | Agent per host | AWS only | **`pip install faultray`** |
 | **Scenarios** | You write them | You write them | AWS services only | **2,000+ auto-generated** |
-| **Availability proof** | No | No | No | **3-Layer Limit Model** |
+| **Availability proof** | No | No | No | **5-Layer Limit Model** |
 | **AI agent testing** | No | No | No | **7 agent-specific fault types** |
 | **Cost** | $$$$ | $$$ | $$ | **Free / Open Source** |
 
@@ -322,7 +324,7 @@ FaultRay represents a **paradigm shift** in chaos engineering. Instead of breaki
 This means:
 - **Zero risk** — Nothing in production is touched. Ever.
 - **Complete coverage** — 2,000+ scenarios tested automatically, including compound failures that would be too dangerous to test in production.
-- **Mathematical proof** — The 3-Layer Availability Limit Model gives you a mathematical ceiling for your system's uptime. No other tool does this.
+- **Mathematical proof** — The 5-Layer Availability Limit Model gives you a mathematical ceiling for your system's uptime. No other tool does this.
 - **Instant setup** — One `pip install` and you're running. No agents, no sidecars, no infrastructure changes.
 
 ### The Future: Why This Matters Now
@@ -441,12 +443,14 @@ faultray demo
 
 #### 2. 可用性の上限を数学的に証明する
 
-「本当に 99.99% のアップタイムを達成できるのか？」と思ったことはありませんか？FaultRay は独自の **3層可用性限界モデル** でこの問いに答えます：
+「本当に 99.99% のアップタイムを達成できるのか？」と思ったことはありませんか？FaultRay は独自の **5層可用性限界モデル** でこの問いに答えます：
 
 ```
-Layer 3: 理論限界      → 6.65 nines (99.99997%)  — 数学的にこれが最大値
-Layer 2: ハードウェア限界 → 5.91 nines (99.999%)  — ハードウェアの物理的限界
-Layer 1: ソフトウェア限界 → 4.00 nines (99.99%)   — 人為的ミスを含む現実的な限界
+Layer 5: 外部SLAカスケード  → 3.00 nines (99.9%)      — サードパーティSLAの積がここで上限を決める
+Layer 4: 運用限界           → 3.50 nines (99.95%)     — インシデント対応とオンコール体制による限界
+Layer 3: 理論限界           → 6.65 nines (99.99997%)  — 数学的にこれが最大値
+Layer 2: ハードウェア限界   → 5.91 nines (99.999%)    — ハードウェアの物理的限界
+Layer 1: ソフトウェア限界   → 4.00 nines (99.99%)     — 人為的ミスを含む現実的な限界
 ```
 
 SLO 目標が 99.99% でも、アーキテクチャの限界が 99.95% なら、**どれだけエンジニアリング努力を重ねてもアーキテクチャ変更なしにギャップは埋まりません**。FaultRay は、数ヶ月の無駄な努力の前にそれを教えてくれます。
@@ -502,7 +506,7 @@ faultray agent monitor infra.yaml   # モニタリングルールを生成
 | **本番リスク** | 中〜高 | 中 | 中 | **ゼロ** |
 | **セットアップ** | ホスト毎にエージェント | ホスト毎にエージェント | AWS のみ | **`pip install faultray`** |
 | **シナリオ** | 手動で作成 | 手動で作成 | AWS サービスのみ | **2,000+ 自動生成** |
-| **可用性の証明** | できない | できない | できない | **3層限界モデル** |
+| **可用性の証明** | できない | できない | できない | **5層限界モデル** |
 | **AIエージェントテスト** | できない | できない | できない | **7種のエージェント障害** |
 | **コスト** | $$$$ | $$$ | $$ | **無料 / オープンソース** |
 
@@ -613,7 +617,7 @@ FaultRay はカオスエンジニアリングにおける**パラダイムシフ
 これにより：
 - **ゼロリスク** — 本番環境には一切触れません
 - **完全な網羅性** — 2,000 以上のシナリオを自動テスト。本番では危険すぎる複合障害も含む
-- **数学的な証明** — 3層可用性限界モデルでシステムのアップタイムの数学的上限を算出。他のツールにはこの機能はない
+- **数学的な証明** — 5層可用性限界モデルでシステムのアップタイムの数学的上限を算出。他のツールにはこの機能はない
 - **即座にセットアップ** — `pip install` 一発で実行可能。エージェント不要、サイドカー不要、インフラ変更不要
 
 ---

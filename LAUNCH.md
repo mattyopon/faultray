@@ -6,13 +6,14 @@
 Zero-risk chaos engineering — prove your infra's availability ceiling
 
 ### Description
-FaultRay simulates infrastructure failures without touching production. Unlike Gremlin or Chaos Monkey that inject real faults, FaultRay runs 150+ chaos scenarios entirely in memory — proving your system's theoretical availability ceiling mathematically.
+FaultRay simulates infrastructure failures without touching production. Unlike Gremlin or Chaos Monkey that inject real faults, FaultRay runs 2,000+ chaos scenarios entirely in memory — proving your system's theoretical availability ceiling mathematically.
 
 **Key features:**
-- 5 simulation engines (Static, Dynamic, Ops, What-If, Capacity)
+- 5 simulation engines (Cascade, Dynamic, Ops, What-If, Capacity)
 - 3-Layer Availability Limit Model (proves your ceiling: 4.00 → 5.91 → 6.65 nines)
-- AI-powered analysis with remediation recommendations
+- AI-powered analysis with remediation recommendations (v11.0: AI agent resilience via MCP)
 - DORA compliance report generation
+- Terraform Safety Net — pre-deploy blast radius prediction before `terraform apply`
 - Terraform/Prometheus integration
 - Plugin system for custom scenarios
 - Slack/PagerDuty notifications
@@ -34,13 +35,15 @@ Hi everyone! I'm Yutaro, an infrastructure engineer from Tokyo.
 
 I built FaultRay because I was frustrated with chaos engineering tools that require production access. My team needed to evaluate "what happens if our DB goes down?" without actually breaking things.
 
-FaultRay takes a fundamentally different approach: pure mathematical simulation. You describe your infrastructure in YAML (or import from Terraform), and FaultRay runs 150+ failure scenarios to find your weakest points.
+FaultRay takes a fundamentally different approach: pure mathematical simulation. You describe your infrastructure in YAML (or import from Terraform), and FaultRay runs 2,000+ failure scenarios to find your weakest points.
 
 The most unique feature is the 3-Layer Availability Limit Model — it mathematically proves that your architecture's theoretical maximum is, say, 6.65 nines (7 seconds of downtime per year), and that going higher would violate the laws of physics (speed of light limits failover time).
 
-It's completely free and open source (MIT). I'd love your feedback!
+v11.0 adds AI agent resilience via MCP: plug FaultRay directly into your AI agents and CI pipelines. Also introducing Terraform Safety Net — predict blast radius before `terraform apply` ever runs.
 
-- Live demo: https://faultray-demo.fly.dev/
+It's completely free and open source (BSL 1.1). I'd love your feedback!
+
+- Live demo: https://faultray-demo.fly.dev/ (URL may change)
 - PyPI: pip install faultray
 - GitHub: https://github.com/mattyopon/faultray
 
@@ -54,7 +57,7 @@ Show HN: FaultRay – Zero-risk chaos engineering that proves your availability 
 ### Text
 I built FaultRay because existing chaos engineering tools (Gremlin, Chaos Monkey, AWS FIS) all inject real faults into real infrastructure. That's scary, expensive, and requires production access.
 
-FaultRay takes a different approach: it models your infrastructure as a dependency graph and simulates 150+ failure scenarios entirely in memory. No agents, no sidecars, no risk.
+FaultRay takes a different approach: it models your infrastructure as a dependency graph and simulates 2,000+ failure scenarios entirely in memory. No agents, no sidecars, no risk.
 
 What makes it unique:
 
@@ -63,11 +66,13 @@ What makes it unique:
    - Hardware limit: 5.91 nines (InfiniBand + GC-free runtimes)
    - Theoretical limit: 6.65 nines (physics: speed of light limits failover)
 
-2. **5 simulation engines** — Static (150+ scenarios), Dynamic (time-stepped with traffic), Ops (30-day operational sim), What-If (parameter sweeps), Capacity (growth forecasting)
+2. **5 simulation engines** — Cascade (2,000+ scenarios), Dynamic (time-stepped with traffic), Ops (30-day operational sim), What-If (parameter sweeps), Capacity (growth forecasting)
 
-3. **AI analysis** — identifies SPOFs, cascade amplifiers, and generates upgrade recommendations with estimated nines improvement
+3. **AI analysis** — identifies SPOFs, cascade amplifiers, and generates upgrade recommendations with estimated nines improvement; v11.0 exposes 12-tool MCP server for AI agent integration
 
 4. **DORA compliance** — auto-generates EU regulatory compliance reports
+
+5. **Terraform Safety Net** — pre-deploy blast radius prediction; integrates with Overmind and AWS Resilience Hub
 
 Tech stack: Python 3.11+, NetworkX, FastAPI, Typer, Pydantic
 
@@ -77,7 +82,7 @@ pip install faultray
 faultray demo --web
 ```
 
-Live demo: https://faultray-demo.fly.dev/
+Live demo: https://faultray-demo.fly.dev/ (URL may change)
 GitHub: https://github.com/mattyopon/faultray
 
 ---
@@ -92,13 +97,15 @@ Hey r/devops,
 
 I've been working on an open-source tool that takes a different approach to chaos engineering. Instead of injecting faults into real infrastructure, FaultRay simulates everything in memory.
 
-You describe your infra in YAML or import from Terraform, and it runs 150+ failure scenarios (single failures, pairwise combinations, traffic spikes, DB-specific issues, cache stampedes, etc.) and tells you exactly what would break and how badly.
+You describe your infra in YAML or import from Terraform, and it runs 2,000+ failure scenarios (single failures, pairwise combinations, traffic spikes, DB-specific issues, cache stampedes, etc.) and tells you exactly what would break and how badly.
 
 **The coolest feature**: It can prove your system's theoretical availability ceiling. For example, "your current architecture maxes out at 4.2 nines no matter what you do — to reach 5 nines, you need to add replicas here and circuit breakers there."
 
-- Free & open source (MIT)
+**v11.0 highlights**: AI agent resilience via MCP (12-tool server for AI agent/CI integration), and Terraform Safety Net — blast radius prediction before `terraform apply`.
+
+- Free & open source (BSL 1.1, converts to Apache 2.0 in 2030)
 - `pip install faultray`
-- Live demo: https://faultray-demo.fly.dev/
+- Live demo: https://faultray-demo.fly.dev/ (URL may change)
 - GitHub: https://github.com/mattyopon/faultray
 
 Would love feedback from fellow SREs!

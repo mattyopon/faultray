@@ -373,6 +373,10 @@ _DATA_RISK_BY_TYPE: dict[ComponentType, str] = {
     ComponentType.DNS: "none",
     ComponentType.EXTERNAL_API: "low",
     ComponentType.CUSTOM: "low",
+    ComponentType.AI_AGENT: "low",
+    ComponentType.LLM_ENDPOINT: "low",
+    ComponentType.TOOL_SERVICE: "low",
+    ComponentType.AGENT_ORCHESTRATOR: "medium",
 }
 
 

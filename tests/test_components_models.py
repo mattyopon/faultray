@@ -40,7 +40,7 @@ from faultray.model.components import (
 
 class TestSchemaVersion:
     def test_schema_version_exists(self):
-        assert SCHEMA_VERSION == "3.0"
+        assert SCHEMA_VERSION == "4.0"
 
 
 # ===========================================================================
@@ -442,6 +442,7 @@ class TestComponentType:
         expected = {
             "load_balancer", "web_server", "app_server", "database",
             "cache", "queue", "storage", "dns", "external_api", "custom",
+            "ai_agent", "llm_endpoint", "tool_service", "agent_orchestrator",
         }
         actual = {ct.value for ct in ComponentType}
         assert actual == expected

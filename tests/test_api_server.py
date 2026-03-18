@@ -184,7 +184,7 @@ class TestGraphData:
         resp = demo_client.get("/api/graph-data")
         assert resp.status_code == 200
         data = resp.json()
-        assert len(data["nodes"]) == 6  # Demo has 6 components
+        assert len(data["nodes"]) == 9  # Demo has 9 components
         assert len(data["edges"]) > 0
 
         # Verify node structure
@@ -238,9 +238,9 @@ class TestHelpers:
         demo = create_demo_graph()
         set_graph(demo)
         graph = get_graph()
-        assert len(graph.components) == 6
+        assert len(graph.components) == 9
 
     def test_build_demo_graph(self):
         graph = build_demo_graph()
         assert isinstance(graph, InfraGraph)
-        assert len(graph.components) == 6
+        assert len(graph.components) == 9

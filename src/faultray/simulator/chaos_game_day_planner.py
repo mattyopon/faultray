@@ -268,6 +268,10 @@ _COMPONENT_INJECTION_MAP: dict[ComponentType, list[str]] = {
     ComponentType.DNS: ["resolution_failure", "ttl_expiry", "propagation_delay"],
     ComponentType.EXTERNAL_API: ["timeout", "rate_limit_hit", "connection_refused"],
     ComponentType.CUSTOM: ["process_crash", "resource_exhaustion"],
+    ComponentType.AI_AGENT: ["hallucination", "tool_call_failure", "context_overflow"],
+    ComponentType.LLM_ENDPOINT: ["rate_limit_hit", "model_degradation", "timeout"],
+    ComponentType.TOOL_SERVICE: ["tool_timeout", "invalid_input", "resource_exhaustion"],
+    ComponentType.AGENT_ORCHESTRATOR: ["workflow_deadlock", "agent_timeout", "state_corruption"],
 }
 
 # ---------------------------------------------------------------------------

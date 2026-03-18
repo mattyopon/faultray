@@ -138,6 +138,10 @@ _RECOMMENDED_CHECK_TYPES: dict[ComponentType, HealthCheckType] = {
     ComponentType.DNS: HealthCheckType.TCP,
     ComponentType.EXTERNAL_API: HealthCheckType.HTTP,
     ComponentType.CUSTOM: HealthCheckType.HTTP,
+    ComponentType.AI_AGENT: HealthCheckType.HTTP,
+    ComponentType.LLM_ENDPOINT: HealthCheckType.HTTP,
+    ComponentType.TOOL_SERVICE: HealthCheckType.HTTP,
+    ComponentType.AGENT_ORCHESTRATOR: HealthCheckType.HTTP,
 }
 
 

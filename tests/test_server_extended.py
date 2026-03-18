@@ -9,6 +9,7 @@ and more.
 from __future__ import annotations
 
 import pytest
+import pytest_asyncio
 from httpx import ASGITransport, AsyncClient
 
 from faultray.api.server import app, set_graph
@@ -26,7 +27,7 @@ def _setup_demo_graph():
     set_graph(InfraGraph())
 
 
-@pytest.fixture
+@pytest_asyncio.fixture
 async def client():
     transport = ASGITransport(app=app)
     async with AsyncClient(transport=transport, base_url="http://test") as c:
@@ -121,9 +122,9 @@ class TestApiGraphData:
     async def test_graph_data_counts_match(self, client):
         resp = await client.get("/api/graph-data")
         data = resp.json()
-        # Demo graph has 6 components and 8 dependencies
-        assert len(data["nodes"]) == 6
-        assert len(data["edges"]) == 8
+        # Demo graph has 9 components and 12 dependencies
+        assert len(data["nodes"]) == 9
+        assert len(data["edges"]) == 12
 
 
 # ===================================================================

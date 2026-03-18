@@ -397,12 +397,12 @@ class TestCreateDemoGraph:
 
     def test_has_expected_components(self):
         graph = create_demo_graph()
-        expected_ids = {"nginx", "app-1", "app-2", "postgres", "redis", "rabbitmq"}
+        expected_ids = {"nginx", "app-1", "app-2", "postgres", "redis", "rabbitmq", "support-agent", "llm-endpoint", "tool-db-query"}
         assert set(graph.components.keys()) == expected_ids
 
     def test_component_count(self):
         graph = create_demo_graph()
-        assert len(graph.components) == 6
+        assert len(graph.components) == 9
 
     def test_has_dependencies(self):
         graph = create_demo_graph()
@@ -466,7 +466,7 @@ class TestCreateDemoGraph:
         data = json.loads(model_path.read_text())
         assert "components" in data
         assert "dependencies" in data
-        assert len(data["components"]) == 6
+        assert len(data["components"]) == 9
 
     def test_nginx_port(self):
         graph = create_demo_graph()

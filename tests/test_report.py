@@ -143,7 +143,7 @@ class TestPrintInfrastructureSummary:
         print_infrastructure_summary(graph, con)
         output = buf.getvalue()
         assert "Components" in output
-        assert "6" in output  # 6 demo components
+        assert "9" in output  # 9 demo components
 
     def test_contains_resilience_score(self):
         graph = create_demo_graph()

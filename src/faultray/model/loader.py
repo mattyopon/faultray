@@ -214,8 +214,8 @@ def load_yaml(path: Path | str) -> InfraGraph:
         if not isinstance(entry, dict):
             raise ValidationError(f"Dependency entry {idx} must be a mapping")
 
-        source_id = entry.get("source")
-        target_id = entry.get("target")
+        source_id = entry.get("source") or entry.get("source_id")
+        target_id = entry.get("target") or entry.get("target_id")
         if not source_id or not target_id:
             raise ValidationError(f"Dependency entry {idx} is missing 'source' or 'target'")
 

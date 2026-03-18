@@ -658,6 +658,28 @@ _COMPONENT_CATEGORY_RELEVANCE: dict[str, list[ExperimentCategory]] = {
         ExperimentCategory.AVAILABILITY,
         ExperimentCategory.CONFIGURATION,
     ],
+    ComponentType.AI_AGENT.value: [
+        ExperimentCategory.AVAILABILITY,
+        ExperimentCategory.DEPENDENCY,
+        ExperimentCategory.LATENCY,
+        ExperimentCategory.CONFIGURATION,
+    ],
+    ComponentType.LLM_ENDPOINT.value: [
+        ExperimentCategory.DEPENDENCY,
+        ExperimentCategory.LATENCY,
+        ExperimentCategory.AVAILABILITY,
+    ],
+    ComponentType.TOOL_SERVICE.value: [
+        ExperimentCategory.AVAILABILITY,
+        ExperimentCategory.LATENCY,
+        ExperimentCategory.CONFIGURATION,
+    ],
+    ComponentType.AGENT_ORCHESTRATOR.value: [
+        ExperimentCategory.AVAILABILITY,
+        ExperimentCategory.DEPENDENCY,
+        ExperimentCategory.CAPACITY,
+        ExperimentCategory.CONFIGURATION,
+    ],
 }
 
 

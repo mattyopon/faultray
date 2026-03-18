@@ -47,6 +47,10 @@ COMPUTE_COST_PER_REPLICA: dict[ComponentType, float] = {
     ComponentType.DNS: 10.0,
     ComponentType.EXTERNAL_API: 0.0,
     ComponentType.CUSTOM: 150.0,
+    ComponentType.AI_AGENT: 250.0,
+    ComponentType.LLM_ENDPOINT: 600.0,
+    ComponentType.TOOL_SERVICE: 150.0,
+    ComponentType.AGENT_ORCHESTRATOR: 300.0,
 }
 
 # Storage cost per replica per month (USD)
@@ -61,6 +65,10 @@ STORAGE_COST_PER_REPLICA: dict[ComponentType, float] = {
     ComponentType.DNS: 0.0,
     ComponentType.EXTERNAL_API: 0.0,
     ComponentType.CUSTOM: 5.0,
+    ComponentType.AI_AGENT: 10.0,
+    ComponentType.LLM_ENDPOINT: 5.0,
+    ComponentType.TOOL_SERVICE: 5.0,
+    ComponentType.AGENT_ORCHESTRATOR: 10.0,
 }
 
 # Network cost per replica per month (USD)
@@ -75,6 +83,10 @@ NETWORK_COST_PER_REPLICA: dict[ComponentType, float] = {
     ComponentType.DNS: 2.0,
     ComponentType.EXTERNAL_API: 0.0,
     ComponentType.CUSTOM: 5.0,
+    ComponentType.AI_AGENT: 15.0,
+    ComponentType.LLM_ENDPOINT: 20.0,
+    ComponentType.TOOL_SERVICE: 10.0,
+    ComponentType.AGENT_ORCHESTRATOR: 15.0,
 }
 
 # Licensing cost per replica per month (USD)
@@ -89,6 +101,10 @@ LICENSING_COST_PER_REPLICA: dict[ComponentType, float] = {
     ComponentType.DNS: 0.0,
     ComponentType.EXTERNAL_API: 0.0,
     ComponentType.CUSTOM: 0.0,
+    ComponentType.AI_AGENT: 0.0,
+    ComponentType.LLM_ENDPOINT: 0.0,
+    ComponentType.TOOL_SERVICE: 0.0,
+    ComponentType.AGENT_ORCHESTRATOR: 0.0,
 }
 
 # Spot instance discount rate (fraction of on-demand)

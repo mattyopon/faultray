@@ -34,6 +34,10 @@ COMPONENT_AVAILABILITY: dict[ComponentType, float] = {
     ComponentType.STORAGE: 0.99999,        # 99.999%
     ComponentType.EXTERNAL_API: 0.999,     # 99.9%
     ComponentType.CUSTOM: 0.999,           # 99.9%
+    ComponentType.AI_AGENT: 0.999,         # 99.9%
+    ComponentType.LLM_ENDPOINT: 0.999,     # 99.9%
+    ComponentType.TOOL_SERVICE: 0.999,     # 99.9%
+    ComponentType.AGENT_ORCHESTRATOR: 0.999, # 99.9%
 }
 
 # Default MTBF/MTTR for Monte Carlo (hours)
@@ -48,6 +52,10 @@ _DEFAULT_MTBF: dict[str, float] = {
     "storage": 8760.0,
     "external_api": 2160.0,
     "custom": 2160.0,
+    "ai_agent": 2160.0,
+    "llm_endpoint": 2160.0,
+    "tool_service": 2160.0,
+    "agent_orchestrator": 2160.0,
 }
 
 _DEFAULT_MTTR: dict[str, float] = {
@@ -61,6 +69,10 @@ _DEFAULT_MTTR: dict[str, float] = {
     "storage": 0.083,
     "external_api": 0.5,
     "custom": 0.5,
+    "ai_agent": 0.25,
+    "llm_endpoint": 0.167,
+    "tool_service": 0.167,
+    "agent_orchestrator": 0.25,
 }
 
 # Measurement window durations

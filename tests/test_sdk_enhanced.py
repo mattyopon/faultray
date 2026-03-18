@@ -111,7 +111,7 @@ class TestFaultZeroProperties:
         assert isinstance(score, float)
 
     def test_component_count(self, demo_fz: FaultZero):
-        assert demo_fz.component_count == 6  # demo has 6 components
+        assert demo_fz.component_count == 9  # demo has 9 components
 
     def test_spof_count(self, demo_fz: FaultZero):
         assert demo_fz.spof_count >= 0
