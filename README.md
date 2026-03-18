@@ -17,6 +17,83 @@
 
 ---
 
+## The Problem: `terraform apply` Broke Production. Again.
+
+Every DevOps engineer has a horror story about a `terraform apply` that went wrong. A config change that looked harmless but caused a cascade failure. A replica count set to 1 that nobody noticed until the database went down at 2am. The PR looked clean, the plan output looked fine — and then production fell over.
+
+**FaultRay catches these before you apply.**
+
+It scores your infrastructure's resilience *before* and *after* the planned changes — and flags the delta. Not just "this is risky" but "this specific change drops your resilience score by 27 points and introduces a new single point of failure."
+
+```bash
+terraform plan -out=plan.out
+terraform show -json plan.out > plan.json
+faultray tf-check plan.json
+```
+
+```
+╭──────────── FaultRay Terraform Guard ────────────╮
+│                                                   │
+│  Score Before: 72/100                             │
+│  Score After:  45/100  (-27 points)               │
+│                                                   │
+│  NEW RISKS:                                       │
+│  - Database is now a single point of failure      │
+│  - Cache has no replication (data loss risk)      │
+│                                                   │
+│  Recommendation: HIGH RISK - Review Required      │
+│                                                   │
+╰───────────────────────────────────────────────────╯
+```
+
+### Add to CI/CD in 2 minutes
+
+Block merges automatically when a Terraform change degrades resilience below your threshold:
+
+```yaml
+# .github/workflows/terraform.yml
+- name: Check Terraform Plan
+  run: |
+    pip install faultray
+    terraform show -json plan.out > plan.json
+    faultray tf-check plan.json --fail-on-regression --min-score 60
+```
+
+`--fail-on-regression` fails the job if the resilience score drops at all. `--min-score 60` fails if the resulting score is below 60. Use either or both.
+
+---
+
+## 問題：`terraform apply` がまた本番を壊した。
+
+DevOps エンジニアなら誰でも、`terraform apply` で痛い目を見た経験があるはずです。無害に見えた設定変更が、連鎖障害を引き起こした。誰も気づかなかった `replicas: 1` が、深夜 2 時にデータベースを落とした。PR はクリーンに見えた。plan の出力も問題なさそうだった。それでも本番は落ちた。
+
+**FaultRay は、apply する前にそれを検知します。**
+
+変更前と変更後のインフラのレジリエンススコアを算出し、その差分を提示します。「これはリスクがある」という曖昧な警告ではなく、「この変更によりレジリエンススコアが 27 ポイント低下し、新たな単一障害点が生まれる」という具体的な診断です。
+
+```bash
+terraform plan -out=plan.out
+terraform show -json plan.out > plan.json
+faultray tf-check plan.json
+```
+
+### CI/CD への組み込みは 2 分
+
+レジリエンスが閾値を下回る Terraform 変更を自動でブロックします：
+
+```yaml
+# .github/workflows/terraform.yml
+- name: Check Terraform Plan
+  run: |
+    pip install faultray
+    terraform show -json plan.out > plan.json
+    faultray tf-check plan.json --fail-on-regression --min-score 60
+```
+
+`--fail-on-regression` はスコアが少しでも下がればジョブを失敗させます。`--min-score 60` は結果スコアが 60 未満なら失敗させます。両方の併用も可能です。
+
+---
+
 # English
 
 ## What is FaultRay?
@@ -50,6 +127,26 @@ faultray demo
 │ Critical: 7  Warning: 66  Passed: 77                 │
 ╰──────────────────────────────────────────────────────╯
 ```
+
+#### Use Case: Terraform Safety Net
+
+The most common place teams use FaultRay is as a gate in their Terraform CI/CD pipeline. The workflow is simple:
+
+1. Run `terraform plan`, export the plan as JSON
+2. Run `faultray tf-check plan.json` — FaultRay models what your infrastructure will look like *after* the apply, then runs the same 2,000+ failure scenarios against the before and after states
+3. The score delta tells you immediately whether the change is safe, risky, or a showstopper
+
+This works for any Terraform-managed infrastructure — AWS, GCP, Azure, on-prem VMware, Kubernetes. FaultRay doesn't call cloud APIs; it reasons about the topology described in the plan. No credentials needed beyond what Terraform already has.
+
+```bash
+# In your pipeline, after terraform plan:
+faultray tf-check plan.json --fail-on-regression --min-score 60
+
+# Or interactively, to understand what a change does:
+faultray tf-check plan.json --report tf-impact.html
+```
+
+Common catches: removing a replica count you meant to keep, adding a new dependency that creates a cascade path, changing a timeout that breaks a health check chain, or accidentally making a previously replicated service single-instance.
 
 #### 2. Prove Your Availability Ceiling Mathematically
 
