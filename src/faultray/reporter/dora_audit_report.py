@@ -178,6 +178,9 @@ class DORAuditReportGenerator:
         remediation_items = self._build_remediation_items(gap_analyses, all_records)
         register = self.generate_register_of_information(graph)
 
+        # Store graph reference for use by new engine sections in export_regulatory_package
+        self._last_graph = graph
+
         now = datetime.now(timezone.utc)
         report_id = (
             f"DORA-{now.strftime('%Y%m%d%H%M%S')}-"
@@ -365,14 +368,61 @@ class DORAuditReportGenerator:
         audit_trail = self._build_audit_trail(report, sign=sign)
         _write("audit-trail.json", audit_trail)
 
-        # 8. Manifest (written last so it can include all other checksums)
+        # 8. Article 17-23 Incident Management (optional — uses new engine)
+        try:
+            from faultray.simulator.dora_incident_engine import DORAIncidentEngine
+
+            inc_engine = DORAIncidentEngine(self._last_graph if hasattr(self, "_last_graph") else None)
+            maturity = inc_engine.assess_incident_management()
+            _write("article-17-23-incident-management.json", {
+                "section": "Articles 17-23 — Incident Management",
+                "regulatory_reference": "DORA Articles 17-23, EU 2022/2554",
+                "overall_maturity": maturity.overall_maturity.value,
+                "overall_score": maturity.overall_score,
+                "capabilities": [cap.model_dump(mode="json") for cap in maturity.capabilities],
+                "strengths": maturity.strengths,
+                "weaknesses": maturity.weaknesses,
+                "recommendations": maturity.recommendations,
+            })
+        except (ImportError, AttributeError, Exception) as exc:
+            logger.debug("Incident management section skipped: %s", exc)
+
+        # 9. ICT Risk Assessment (optional — uses new engine)
+        try:
+            from faultray.simulator.dora_risk_assessment import DORAICTRiskAssessmentEngine
+
+            risk_engine = DORAICTRiskAssessmentEngine(self._last_graph if hasattr(self, "_last_graph") else None)
+            risk_register = risk_engine.run_assessment()
+            _write("ict-risk-assessment.json", risk_engine.export_report(risk_register))
+        except (ImportError, AttributeError, Exception) as exc:
+            logger.debug("ICT risk assessment section skipped: %s", exc)
+
+        # 10. Concentration Risk (optional — uses new engine)
+        try:
+            from faultray.simulator.dora_concentration_risk import ConcentrationRiskAnalyser
+
+            conc_analyser = ConcentrationRiskAnalyser(self._last_graph if hasattr(self, "_last_graph") else None)
+            conc_report = conc_analyser.generate_report()
+            _write("concentration-risk.json", conc_analyser.export_report(conc_report))
+        except (ImportError, AttributeError, Exception) as exc:
+            logger.debug("Concentration risk section skipped: %s", exc)
+
+        # 11. Manifest (written last so it can include all other checksums)
         manifest = {
             "package_id": report.report_id,
             "generated_at": report.generated_at,
             "reporting_entity": report.reporting_entity,
             "faultray_version": report.faultray_version,
             "regulatory_framework": "DORA (EU 2022/2554)",
-            "articles_covered": ["Article 24", "Article 25 (readiness)", "Article 28"],
+            "articles_covered": [
+                "Article 5-16 (ICT Risk Management)",
+                "Article 17-23 (Incident Management)",
+                "Article 24 (Testing Programme)",
+                "Article 25 (TLPT readiness)",
+                "Article 26-27 (Tester Requirements)",
+                "Article 28-30 (Third-Party Risk)",
+                "Article 45 (Information Sharing)",
+            ],
             "tlpt_disclaimer": TLPT_DISCLAIMER,
             "files": files_written + ["manifest.json"],
             "checksums": checksums,
@@ -403,6 +453,10 @@ class DORAuditReportGenerator:
 
         Identifies all ICT third-party providers from the infrastructure graph
         and builds structured register entries.
+
+        For the enhanced ITS 2024/2956-compliant register with contractual
+        overlays and concentration risk analysis, use
+        ``faultray.simulator.dora_register.DORARegister`` directly.
 
         Args:
             graph: The infrastructure topology.

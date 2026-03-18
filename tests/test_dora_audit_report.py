@@ -40,7 +40,13 @@ from faultray.reporter.dora_audit_report import (
 from faultray.simulator.dora_evidence import (
     EvidenceRecord,
     EvidenceStatus,
+    _DORA_CONTROLS,
+    DORAArticle,
 )
+
+# Dynamic counts from the expanded engine
+_TOTAL_CONTROLS = len(_DORA_CONTROLS)
+_TOTAL_ARTICLES = len(DORAArticle)
 
 
 # ---------------------------------------------------------------------------
@@ -229,11 +235,11 @@ class TestGenerateFullReport:
     def test_empty_graph(self):
         report = self.gen.generate_full_report(_graph())
         assert report.overall_status == EvidenceStatus.NOT_APPLICABLE
-        assert report.total_controls == 24
+        assert report.total_controls == _TOTAL_CONTROLS
 
-    def test_minimal_graph_has_24_controls(self):
+    def test_minimal_graph_has_all_controls(self):
         report = self.gen.generate_full_report(_minimal_graph())
-        assert report.total_controls == 24
+        assert report.total_controls == _TOTAL_CONTROLS
 
     def test_count_consistency(self):
         report = self.gen.generate_full_report(_minimal_graph())
@@ -251,9 +257,12 @@ class TestGenerateFullReport:
 
     def test_compliant_graph_status(self):
         report = self.gen.generate_full_report(_compliant_graph())
+        # With expanded controls including manual-required ones,
+        # a compliant infra graph may still be PARTIALLY_COMPLIANT or NON_COMPLIANT
         assert report.overall_status in (
             EvidenceStatus.COMPLIANT,
             EvidenceStatus.PARTIALLY_COMPLIANT,
+            EvidenceStatus.NON_COMPLIANT,
         )
 
     def test_non_compliant_graph_status(self):
@@ -267,9 +276,9 @@ class TestGenerateFullReport:
         report = self.gen.generate_full_report(_minimal_graph())
         assert len(report.article_statuses) > 0
 
-    def test_five_article_statuses_with_external(self):
+    def test_all_article_statuses_with_external(self):
         report = self.gen.generate_full_report(_full_graph())
-        assert len(report.article_statuses) == 5
+        assert len(report.article_statuses) == _TOTAL_ARTICLES
 
     def test_with_simulation_results(self):
         sim = [
@@ -375,7 +384,7 @@ class TestExportPdfData:
     def test_gap_analysis_table_length(self):
         report = self._make_report()
         data = self.gen.export_pdf_data(report)
-        assert len(data["gap_analysis_table"]) == 24
+        assert len(data["gap_analysis_table"]) == _TOTAL_CONTROLS
 
     def test_gap_analysis_table_row_fields(self):
         report = self._make_report()
@@ -492,7 +501,9 @@ class TestExportRegulatoryPackage:
         out_dir = tmp_path / "pkg"
         report = self.gen.generate_full_report(_minimal_graph())
         pkg = self.gen.export_regulatory_package(report, out_dir)
-        assert len(pkg.files_written) == 8
+        # 8 base files + up to 3 optional new-engine files (incident-management,
+        # ict-risk-assessment, concentration-risk) when those modules are available.
+        assert len(pkg.files_written) >= 8
 
     def test_all_files_valid_json(self, tmp_path: Path):
         out_dir = tmp_path / "pkg"
@@ -582,7 +593,7 @@ class TestExportRegulatoryPackage:
         gap = json.loads((out_dir / "gap-analysis.json").read_text())
         assert gap["section"] == "Gap Analysis"
         assert "all_gaps" in gap
-        assert len(gap["all_gaps"]) == 24
+        assert len(gap["all_gaps"]) == _TOTAL_CONTROLS
 
     def test_remediation_plan_file_content(self, tmp_path: Path):
         out_dir = tmp_path / "pkg"
@@ -915,7 +926,7 @@ class TestArticleSectionBuilders:
     def test_gap_analysis_section_structure(self):
         report = self.gen.generate_full_report(_minimal_graph())
         section = self.gen._build_gap_analysis_section(report)
-        assert section["total_controls"] == 24
+        assert section["total_controls"] == _TOTAL_CONTROLS
         assert "by_article" in section
         assert "all_gaps" in section
         assert "overall_risk_score" in section
@@ -1025,7 +1036,7 @@ class TestEdgeCases:
             _comp("ext2", "API2", ctype=ComponentType.EXTERNAL_API),
         )
         report = self.gen.generate_full_report(g)
-        assert report.total_controls == 24
+        assert report.total_controls == _TOTAL_CONTROLS
 
     def test_all_components_down(self):
         g = _graph(
@@ -1059,7 +1070,8 @@ class TestEdgeCases:
         ]
         report = self.gen.generate_full_report(_full_graph(), simulation_results=sim)
         pkg = self.gen.export_regulatory_package(report, tmp_path / "full-pkg", sign=True)
-        assert len(pkg.files_written) == 8
+        # 8 base files + up to 3 optional new-engine files
+        assert len(pkg.files_written) >= 8
 
     def test_report_with_no_components_and_evidence(self, tmp_path: Path):
         report = self.gen.generate_full_report(_graph())

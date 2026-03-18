@@ -7,6 +7,12 @@ Provides the ``faultray dora`` subcommand group:
     faultray dora gap-analysis <infra.yaml> [--json] [--remediation]
     faultray dora register <infra.yaml> [--output register.json]
     faultray dora report <infra.yaml> --output report.html [--signed]
+    faultray dora incident-assess <infra.yaml> [--component <id>] [--json]
+    faultray dora test-plan <infra.yaml> [--json] [--output <file>]
+    faultray dora tlpt-readiness <infra.yaml> [--json]
+    faultray dora concentration-risk <infra.yaml> [--json]
+    faultray dora risk-assessment <infra.yaml> [--json] [--output <file>]
+    faultray dora rts-export <infra.yaml> --output <dir> [--format json|csv]
 
 The key market gap addressed: GRC tools generate documentation but cannot run
 tests; chaos tools run tests but do not produce regulatory-formatted output.
@@ -87,8 +93,8 @@ def dora_assess(
 ) -> None:
     """Quick DORA compliance status check.
 
-    Evaluates the infrastructure model against all 24 DORA controls and
-    reports overall status, per-article results, and key gaps.
+    Evaluates the infrastructure model against all 52 DORA controls (Articles
+    5-30, 45) and reports overall status, per-article results, and key gaps.
 
     Examples:
         faultray dora assess infra.yaml
@@ -145,12 +151,40 @@ def dora_assess(
     art_table.add_column("Article", style="cyan", width=18)
     art_table.add_column("Status", width=22, justify="center")
 
+    # Full article labels for the 52-control engine (Art. 5-30, 45)
     article_labels = {
-        "article_11": "Art. 11 — ICT Risk Mgmt",
-        "article_24": "Art. 24 — Testing",
+        # Pillar 1 — ICT Risk Management (Art. 5-16)
+        "article_5": "Art. 5 — ICT Risk Mgmt Framework",
+        "article_6": "Art. 6 — ICT Risk Mgmt Governance",
+        "article_7": "Art. 7 — ICT Systems & Tools",
+        "article_8": "Art. 8 — Identification",
+        "article_9": "Art. 9 — Protection & Prevention",
+        "article_10": "Art. 10 — Detection",
+        "article_11": "Art. 11 — Response & Recovery",
+        "article_12": "Art. 12 — Backup & Recovery",
+        "article_13": "Art. 13 — Learning & Evolving",
+        "article_14": "Art. 14 — Communication",
+        "article_15": "Art. 15 — Simplified ICT Risk Mgmt",
+        "article_16": "Art. 16 — RTS Harmonisation",
+        # Pillar 2 — Incident Management (Art. 17-23)
+        "article_17": "Art. 17 — Incident Mgmt Process",
+        "article_18": "Art. 18 — Incident Classification",
+        "article_19": "Art. 19 — Incident Reporting",
+        "article_20": "Art. 20 — Reporting Templates",
+        "article_21": "Art. 21 — Centralised Reporting",
+        "article_22": "Art. 22 — Supervisory Feedback",
+        "article_23": "Art. 23 — Payment Incidents",
+        # Pillar 3 — Resilience Testing (Art. 24-27)
+        "article_24": "Art. 24 — Testing Programme",
         "article_25": "Art. 25 — TLPT",
         "article_26": "Art. 26 — Tester Requirements",
+        "article_27": "Art. 27 — Mutual Recognition",
+        # Pillar 4 — Third-Party Risk (Art. 28-30)
         "article_28": "Art. 28 — Third-Party Risk",
+        "article_29": "Art. 29 — Concentration Risk",
+        "article_30": "Art. 30 — Contractual Provisions",
+        # Pillar 5 — Information Sharing
+        "article_45": "Art. 45 — Info Sharing",
     }
     for art_key, status in report.article_statuses.items():
         label = article_labels.get(art_key, art_key)
@@ -272,8 +306,8 @@ def dora_gap_analysis(
 ) -> None:
     """Identify DORA compliance gaps with remediation recommendations.
 
-    Analyses all 24 DORA controls and reports gaps, risk scores, and
-    optionally the full prioritised remediation plan.
+    Analyses all 52 DORA controls (Articles 5-30, 45) and reports gaps,
+    risk scores, and optionally the full prioritised remediation plan.
 
     Examples:
         faultray dora gap-analysis infra.yaml
@@ -545,14 +579,36 @@ def dora_report(
             f'border-radius:4px;font-size:0.85em;">{_esc(severity.upper())}' + "</span>"
         )
 
-    # Article summary rows
+    # Article summary rows — full 52-control engine (Art. 5-30, 45)
     art_rows = ""
     article_labels = {
-        "article_11": "Art. 11 — ICT Risk Management",
+        "article_5": "Art. 5 — ICT Risk Mgmt Framework",
+        "article_6": "Art. 6 — ICT Risk Mgmt Governance",
+        "article_7": "Art. 7 — ICT Systems & Tools",
+        "article_8": "Art. 8 — Identification",
+        "article_9": "Art. 9 — Protection & Prevention",
+        "article_10": "Art. 10 — Detection",
+        "article_11": "Art. 11 — Response & Recovery",
+        "article_12": "Art. 12 — Backup & Recovery",
+        "article_13": "Art. 13 — Learning & Evolving",
+        "article_14": "Art. 14 — Communication",
+        "article_15": "Art. 15 — Simplified ICT Risk Mgmt",
+        "article_16": "Art. 16 — RTS Harmonisation",
+        "article_17": "Art. 17 — Incident Mgmt Process",
+        "article_18": "Art. 18 — Incident Classification",
+        "article_19": "Art. 19 — Incident Reporting",
+        "article_20": "Art. 20 — Reporting Templates",
+        "article_21": "Art. 21 — Centralised Reporting",
+        "article_22": "Art. 22 — Supervisory Feedback",
+        "article_23": "Art. 23 — Payment Incidents",
         "article_24": "Art. 24 — Testing Programme",
         "article_25": "Art. 25 — TLPT",
         "article_26": "Art. 26 — Tester Requirements",
+        "article_27": "Art. 27 — Mutual Recognition",
         "article_28": "Art. 28 — Third-Party Risk",
+        "article_29": "Art. 29 — Concentration Risk",
+        "article_30": "Art. 30 — Contractual Provisions",
+        "article_45": "Art. 45 — Info Sharing",
     }
     for art_key, status in report.article_statuses.items():
         label = article_labels.get(art_key, art_key)
@@ -686,7 +742,7 @@ def dora_report(
 </div>
 
 <div class="section">
-  <h2>Gap Analysis — All 24 DORA Controls</h2>
+  <h2>Gap Analysis — All DORA Controls</h2>
   <table>
     <thead><tr><th>Control</th><th>Status</th><th>Risk</th><th>Key Gap</th><th>Recommendation</th></tr></thead>
     <tbody>{gap_rows}</tbody>
@@ -749,5 +805,523 @@ def dora_report(
         f"[yellow]{report.partially_compliant_count} ~[/] | "
         f"[red]{report.non_compliant_count} ✗[/]",
         title="[bold]DORA HTML Report Generated[/]",
+        border_style="cyan",
+    ))
+
+
+# ---------------------------------------------------------------------------
+# dora incident-assess
+# ---------------------------------------------------------------------------
+
+
+def _risk_color(level: str) -> str:
+    """Map risk/maturity level strings to rich colours."""
+    return {
+        "critical": "bold red",
+        "high": "red",
+        "medium": "yellow",
+        "low": "green",
+        "initial": "red",
+        "developing": "yellow",
+        "defined": "cyan",
+        "managed": "green",
+        "optimising": "bold green",
+    }.get(level.lower(), "white")
+
+
+@dora_app.command("incident-assess")
+def dora_incident_assess(
+    model: Annotated[Path, typer.Argument(help="Infrastructure model file (.yaml/.json)")],
+    component: Annotated[str | None, typer.Option("--component", "-c", help="Component ID to simulate failing")] = None,
+    json_output: Annotated[bool, typer.Option("--json", help="Output raw JSON")] = False,
+) -> None:
+    """DORA incident management assessment (Articles 17-23).
+
+    If --component is given, simulates that component failing and shows impact
+    assessment with auto-classification.  Otherwise shows incident management
+    maturity assessment.
+
+    Examples:
+        faultray dora incident-assess infra.yaml
+        faultray dora incident-assess infra.yaml --component db-primary
+        faultray dora incident-assess infra.yaml --json
+    """
+    from faultray.simulator.dora_incident_engine import DORAIncidentEngine
+
+    graph = _load_graph(model)
+    engine = DORAIncidentEngine(graph)
+
+    if component:
+        # Simulate component failure
+        impact = engine.simulate_incident(component)
+
+        if json_output:
+            console.print_json(data=impact.model_dump(mode="json"))
+            return
+
+        console.print(Panel(
+            f"[bold]Component Failed:[/] {impact.failed_component_name} ({impact.failed_component_id})\n"
+            f"[bold]Directly Affected:[/] {len(impact.directly_affected_components)}\n"
+            f"[bold]Transitively Affected:[/] {len(impact.transitively_affected_components)}\n"
+            f"[bold]Total Affected:[/] {impact.total_affected_count}\n"
+            f"[bold]Cascade Depth:[/] {impact.cascade_depth}\n"
+            f"[bold]Estimated Clients Affected:[/] {impact.estimated_clients_affected}\n"
+            f"[bold]Cross-Border:[/] {'Yes' if impact.cross_border else 'No'}\n"
+            f"[bold]Data Loss Risk:[/] {impact.data_loss_risk.value}",
+            title="[bold]DORA Incident Impact Assessment[/]",
+            border_style="red" if impact.total_affected_count > 3 else "yellow",
+        ))
+
+        if impact.directly_affected_components:
+            console.print()
+            console.print("[bold]Directly affected components:[/]")
+            for comp_id in impact.directly_affected_components[:10]:
+                console.print(f"  [red]* {comp_id}[/]")
+            if len(impact.directly_affected_components) > 10:
+                console.print(f"  [dim]... and {len(impact.directly_affected_components) - 10} more[/]")
+    else:
+        # Maturity assessment
+        maturity = engine.assess_incident_management()
+
+        if json_output:
+            console.print_json(data=maturity.model_dump(mode="json"))
+            return
+
+        mat_color = _risk_color(maturity.overall_maturity.value)
+        console.print(Panel(
+            f"[bold]Overall Maturity:[/] [{mat_color}]{maturity.overall_maturity.value.upper()}[/]\n"
+            f"[bold]Overall Score:[/] {maturity.overall_score:.1f} / 100\n\n"
+            + ("[bold green]Strengths:[/]\n" + "\n".join(f"  + {s}" for s in maturity.strengths[:5]) + "\n\n" if maturity.strengths else "")
+            + ("[bold red]Weaknesses:[/]\n" + "\n".join(f"  - {w}" for w in maturity.weaknesses[:5]) + "\n\n" if maturity.weaknesses else "")
+            + ("[bold cyan]Recommendations:[/]\n" + "\n".join(f"  > {r}" for r in maturity.recommendations[:5]) if maturity.recommendations else ""),
+            title="[bold]DORA Art. 17 — Incident Management Maturity[/]",
+            border_style=mat_color,
+        ))
+
+        if maturity.capabilities:
+            cap_table = Table(title="Capability Scores", show_header=True)
+            cap_table.add_column("Capability", style="cyan", width=30)
+            cap_table.add_column("Maturity", width=14, justify="center")
+            cap_table.add_column("Present", width=8, justify="center")
+
+            for cap in maturity.capabilities:
+                cap_color = _risk_color(cap.maturity.value)
+                cap_table.add_row(
+                    cap.capability,
+                    f"[{cap_color}]{cap.maturity.value.upper()}[/]",
+                    "[green]Yes[/]" if cap.present else "[red]No[/]",
+                )
+            console.print()
+            console.print(cap_table)
+
+
+# ---------------------------------------------------------------------------
+# dora test-plan
+# ---------------------------------------------------------------------------
+
+
+@dora_app.command("test-plan")
+def dora_test_plan(
+    model: Annotated[Path, typer.Argument(help="Infrastructure model file (.yaml/.json)")],
+    json_output: Annotated[bool, typer.Option("--json", help="Output raw JSON")] = False,
+    output: Annotated[Path | None, typer.Option("--output", "-o", help="Export test plan to JSON file")] = None,
+) -> None:
+    """Generate a risk-based annual DORA test plan (Article 24).
+
+    Analyses the infrastructure model and generates a test programme with
+    risk-based prioritisation and scheduling per DORA Article 24.
+
+    Examples:
+        faultray dora test-plan infra.yaml
+        faultray dora test-plan infra.yaml --json
+        faultray dora test-plan infra.yaml --output test-plan.json
+    """
+    import json
+    from datetime import date
+
+    from faultray.simulator.dora_test_plan import TestPlanGenerator
+
+    graph = _load_graph(model)
+    generator = TestPlanGenerator(graph)
+    programme = generator.generate(year=date.today().year)
+
+    if json_output:
+        console.print_json(data=programme.model_dump(mode="json"))
+        return
+
+    if output:
+        output.parent.mkdir(parents=True, exist_ok=True)
+        output.write_text(
+            json.dumps(programme.model_dump(mode="json"), indent=2, default=str),
+            encoding="utf-8",
+        )
+        console.print(f"[green]Test plan exported to {output}[/]")
+
+    console.print(Panel(
+        f"[bold]Programme ID:[/] {programme.programme_id}\n"
+        f"[bold]Year:[/] {programme.year}\n"
+        f"[bold]Total Plans:[/] {len(programme.plans)}\n"
+        f"[bold]Scope:[/] {programme.scope[:100]}",
+        title="[bold]DORA Art. 24 — Risk-Based Test Programme[/]",
+        border_style="cyan",
+    ))
+
+    plan_table = Table(title="Test Plan Summary", show_header=True)
+    plan_table.add_column("Plan ID", style="dim", width=30)
+    plan_table.add_column("Test Type", style="cyan", width=24)
+    plan_table.add_column("Target", width=22)
+    plan_table.add_column("Frequency", width=12, justify="center")
+    plan_table.add_column("Scheduled", width=12, justify="center")
+
+    for plan in programme.plans[:30]:
+        target_name = plan.targets[0].component_name if plan.targets else "—"
+        freq_color = {"quarterly": "red", "semi_annual": "yellow", "annual": "green"}.get(plan.frequency.value, "white")
+        plan_table.add_row(
+            plan.plan_id,
+            plan.test_category.value.replace("_", " ").title(),
+            target_name[:22],
+            f"[{freq_color}]{plan.frequency.value.upper()}[/]",
+            str(plan.scheduled_date) if plan.scheduled_date else "—",
+        )
+
+    console.print()
+    console.print(plan_table)
+    if len(programme.plans) > 30:
+        console.print(f"[dim]... and {len(programme.plans) - 30} more plans. Use --json for full list.[/]")
+
+
+# ---------------------------------------------------------------------------
+# dora tlpt-readiness
+# ---------------------------------------------------------------------------
+
+
+@dora_app.command("tlpt-readiness")
+def dora_tlpt_readiness(
+    model: Annotated[Path, typer.Argument(help="Infrastructure model file (.yaml/.json)")],
+    json_output: Annotated[bool, typer.Option("--json", help="Output raw JSON")] = False,
+) -> None:
+    """Assess TLPT readiness (DORA Article 26).
+
+    Evaluates infrastructure readiness for Threat-Led Penetration Testing
+    and shows a pass/fail checklist with overall readiness score.
+
+    DISCLAIMER: FaultRay provides readiness assessment only. Actual TLPT must
+    be performed by qualified testers on live production systems.
+
+    Examples:
+        faultray dora tlpt-readiness infra.yaml
+        faultray dora tlpt-readiness infra.yaml --json
+    """
+    from faultray.simulator.dora_tlpt import TLPTReadinessAssessor
+
+    graph = _load_graph(model)
+    assessor = TLPTReadinessAssessor(graph)
+
+    engagement = assessor.create_engagement("TLPT-CLI-ASSESS")
+    assessor.generate_scope_document(engagement)
+    readiness_status, deficiencies = assessor.assess_readiness(engagement)
+
+    if json_output:
+        import json
+        out = {
+            "tlpt_id": engagement.tlpt_id,
+            "readiness_status": readiness_status.value,
+            "deficiencies": deficiencies,
+            "checklist": [
+                {
+                    "item_id": item.item_id,
+                    "category": item.category,
+                    "description": item.description,
+                    "status": item.status.value,
+                }
+                for item in engagement.readiness_checklist
+            ] if engagement.readiness_checklist else [],
+        }
+        console.print_json(data=out)
+        return
+
+    status_color = {
+        "ready": "green",
+        "partially_ready": "yellow",
+        "not_ready": "red",
+    }.get(readiness_status.value, "white")
+
+    console.print(Panel(
+        f"[bold]Readiness Status:[/] [{status_color}]{readiness_status.value.upper()}[/]\n"
+        f"[bold]Deficiencies:[/] {len(deficiencies)}\n\n"
+        + ("[bold red]Deficiencies:[/]\n" + "\n".join(f"  - {d}" for d in deficiencies[:10]) if deficiencies else "[green]No deficiencies found.[/]"),
+        title="[bold]DORA Art. 26 — TLPT Readiness Assessment[/]",
+        border_style=status_color,
+    ))
+
+    if engagement.readiness_checklist:
+        check_table = Table(title="Readiness Checklist", show_header=True)
+        check_table.add_column("ID", style="dim", width=12)
+        check_table.add_column("Category", style="cyan", width=16)
+        check_table.add_column("Description", width=50)
+        check_table.add_column("Status", width=14, justify="center")
+
+        for item in engagement.readiness_checklist:
+            s_color = {
+                "satisfied": "green",
+                "unsatisfied": "red",
+                "needs_review": "yellow",
+                "not_applicable": "dim",
+            }.get(item.status.value, "white")
+            check_table.add_row(
+                item.item_id,
+                item.category,
+                item.description[:50] + ("..." if len(item.description) > 50 else ""),
+                f"[{s_color}]{item.status.value.upper()}[/]",
+            )
+        console.print()
+        console.print(check_table)
+
+    console.print()
+    console.print(
+        "[dim]DISCLAIMER: FaultRay provides TLPT readiness assessment only. "
+        "Actual TLPT must be performed by qualified testers on live production systems "
+        "per DORA Articles 26 and 27.[/]"
+    )
+
+
+# ---------------------------------------------------------------------------
+# dora concentration-risk
+# ---------------------------------------------------------------------------
+
+
+@dora_app.command("concentration-risk")
+def dora_concentration_risk(
+    model: Annotated[Path, typer.Argument(help="Infrastructure model file (.yaml/.json)")],
+    json_output: Annotated[bool, typer.Option("--json", help="Output raw JSON")] = False,
+) -> None:
+    """Analyse ICT third-party concentration risk (DORA Article 29).
+
+    Computes HHI score, single-provider dependencies, geographic concentration,
+    and overall risk rating with recommendations.
+
+    Examples:
+        faultray dora concentration-risk infra.yaml
+        faultray dora concentration-risk infra.yaml --json
+    """
+    from faultray.simulator.dora_concentration_risk import ConcentrationRiskAnalyser
+
+    graph = _load_graph(model)
+    analyser = ConcentrationRiskAnalyser(graph)
+    report = analyser.generate_report()
+
+    if json_output:
+        console.print_json(data=analyser.export_report(report))
+        return
+
+    metrics = report.metrics
+    overall_color = _risk_color(report.overall_risk_rating.value)
+
+    console.print(Panel(
+        f"[bold]Overall Risk:[/] [{overall_color}]{report.overall_risk_rating.value.upper()}[/]\n"
+        f"[bold]HHI Score:[/] {metrics.hhi_provider_share:.0f}\n"
+        f"[bold]HHI Interpretation:[/] {metrics.hhi_interpretation}\n\n"
+        f"[bold]Top Provider:[/] {metrics.top_provider} ({metrics.top_provider_service_share_percent:.1f}%)\n"
+        f"[bold]Geographic Concentration:[/] {metrics.geographic_concentration_percent:.1f}% in {metrics.dominant_jurisdiction}\n"
+        f"[bold]Critical Function Concentration:[/] {metrics.critical_function_concentration_percent:.1f}%\n\n"
+        f"[bold]Providers:[/] {len(report.provider_profiles)} | "
+        f"[red]High-risk: {len(report.high_risk_providers)}[/] | "
+        f"[bold red]Non-substitutable: {len(report.non_substitutable_providers)}[/]",
+        title="[bold]DORA Art. 29 — Concentration Risk Analysis[/]",
+        border_style=overall_color,
+    ))
+
+    if report.provider_profiles:
+        prov_table = Table(title="Provider Risk Profiles", show_header=True)
+        prov_table.add_column("Provider", style="cyan", width=20)
+        prov_table.add_column("Components", width=12, justify="right")
+        prov_table.add_column("Risk Rating", width=14, justify="center")
+        prov_table.add_column("Substitutability", width=16, justify="center")
+
+        for profile in report.provider_profiles:
+            r_color = _risk_color(profile.risk_score.risk_rating.value)
+            s_color = _risk_color(profile.substitutability.substitutability_risk_rating.value)
+            prov_table.add_row(
+                profile.provider_name,
+                str(len(profile.service_mapping.component_ids)),
+                f"[{r_color}]{profile.risk_score.risk_rating.value.upper()}[/]",
+                f"[{s_color}]{profile.substitutability.substitutability_risk_rating.value.upper()}[/]",
+            )
+        console.print()
+        console.print(prov_table)
+
+    if report.recommendations:
+        console.print()
+        console.print("[bold cyan]Recommendations:[/]")
+        for rec in report.recommendations[:10]:
+            console.print(f"  > {rec}")
+
+
+# ---------------------------------------------------------------------------
+# dora risk-assessment
+# ---------------------------------------------------------------------------
+
+
+@dora_app.command("risk-assessment")
+def dora_risk_assessment(
+    model: Annotated[Path, typer.Argument(help="Infrastructure model file (.yaml/.json)")],
+    json_output: Annotated[bool, typer.Option("--json", help="Output raw JSON")] = False,
+    output: Annotated[Path | None, typer.Option("--output", "-o", help="Export risk register to JSON file")] = None,
+) -> None:
+    """ICT risk assessment per DORA Article 8.
+
+    Auto-detects risks from the infrastructure model (SPOFs, unencrypted
+    connections, missing monitoring) and builds a structured risk register
+    with treatment plans.
+
+    Examples:
+        faultray dora risk-assessment infra.yaml
+        faultray dora risk-assessment infra.yaml --json
+        faultray dora risk-assessment infra.yaml --output risk-register.json
+    """
+    import json
+
+    from faultray.simulator.dora_risk_assessment import DORAICTRiskAssessmentEngine
+
+    graph = _load_graph(model)
+    engine = DORAICTRiskAssessmentEngine(graph)
+    register = engine.run_assessment()
+    summary = register.summary()
+
+    if json_output:
+        console.print_json(data=engine.export_report(register))
+        return
+
+    if output:
+        output.parent.mkdir(parents=True, exist_ok=True)
+        output.write_text(
+            json.dumps(engine.export_report(register), indent=2, default=str),
+            encoding="utf-8",
+        )
+        console.print(f"[green]Risk register exported to {output}[/]")
+
+    console.print(Panel(
+        f"[bold]Total Risks:[/] {summary['total_risks']}\n"
+        f"[bold red]Critical:[/] {summary['by_residual_label']['critical']} | "
+        f"[red]High:[/] {summary['by_residual_label']['high']} | "
+        f"[yellow]Medium:[/] {summary['by_residual_label']['medium']} | "
+        f"[green]Low:[/] {summary['by_residual_label']['low']}\n\n"
+        f"[bold]Open Treatment Plans:[/] {summary['open_treatment_plans']}\n"
+        f"[bold]Overdue Actions:[/] {summary['overdue_actions']}",
+        title="[bold]DORA Art. 8 — ICT Risk Assessment[/]",
+        border_style="red" if summary['by_residual_label']['critical'] > 0 else "yellow",
+    ))
+
+    risk_table = Table(title="Risk Register Summary", show_header=True)
+    risk_table.add_column("Risk ID", style="dim", width=16)
+    risk_table.add_column("Category", style="cyan", width=16)
+    risk_table.add_column("Description", width=40)
+    risk_table.add_column("Residual", width=10, justify="center")
+    risk_table.add_column("Level", width=10, justify="center")
+
+    for risk in register.risks[:25]:
+        level_color = _risk_color(risk.residual_label)
+        risk_table.add_row(
+            risk.risk_id,
+            risk.category.value,
+            risk.description[:40] + ("..." if len(risk.description) > 40 else ""),
+            str(risk.residual_score),
+            f"[{level_color}]{risk.residual_label.upper()}[/]",
+        )
+
+    console.print()
+    console.print(risk_table)
+    if len(register.risks) > 25:
+        console.print(f"[dim]... and {len(register.risks) - 25} more risks. Use --json for full list.[/]")
+
+
+# ---------------------------------------------------------------------------
+# dora rts-export
+# ---------------------------------------------------------------------------
+
+
+@dora_app.command("rts-export")
+def dora_rts_export(
+    model: Annotated[Path, typer.Argument(help="Infrastructure model file (.yaml/.json)")],
+    output: Annotated[Path, typer.Option("--output", "-o", help="Output directory for RTS/ITS files")],
+    fmt: Annotated[str, typer.Option("--format", "-f", help="Export format: json or csv")] = "json",
+) -> None:
+    """Export DORA RTS/ITS-compliant regulatory files.
+
+    Generates ITS 2024/2956 Register of Information and RTS 2024/1774
+    ICT Risk Management Framework report in the specified format.
+
+    Examples:
+        faultray dora rts-export infra.yaml --output ./rts-export/
+        faultray dora rts-export infra.yaml --output ./rts-export/ --format csv
+    """
+    import json
+
+    from faultray.simulator.dora_rts_formats import (
+        RegisterOfInformationFormatter,
+        ThirdPartyProviderRecord,
+        CriticalityAssessment,
+        RiskManagementFrameworkFormatter,
+        RegulatoryPackageExporter,
+    )
+    from faultray.model.components import ComponentType
+
+    if fmt not in ("json", "csv"):
+        console.print(f"[red]Invalid format '{fmt}'. Choose 'json' or 'csv'.[/]")
+        raise typer.Exit(1)
+
+    graph = _load_graph(model)
+    output = Path(output)
+    output.mkdir(parents=True, exist_ok=True)
+    files_written: list[str] = []
+
+    # Build ITS 2024/2956 Register of Information
+    reg_formatter = RegisterOfInformationFormatter()
+    for comp in graph.components.values():
+        if comp.type == ComponentType.EXTERNAL_API:
+            dependents = graph.get_dependents(comp.id)
+            crit = (
+                CriticalityAssessment.CRITICAL if len(dependents) >= 3
+                else CriticalityAssessment.IMPORTANT if len(dependents) >= 1
+                else CriticalityAssessment.NON_CRITICAL
+            )
+            record = ThirdPartyProviderRecord(
+                record_id=comp.id,
+                provider_name=comp.name,
+                provider_type="ICT Third-Party Service Provider",
+                service_description=f"External API service '{comp.name}'",
+                criticality_assessment=crit,
+                concentration_risk_flag=not comp.failover.enabled,
+            )
+            reg_formatter.add_record(record)
+
+    if fmt == "json":
+        reg_path = output / "register_of_information.json"
+        reg_path.write_text(reg_formatter.to_json(), encoding="utf-8")
+        files_written.append("register_of_information.json")
+    else:
+        csv_content = reg_formatter.to_csv()
+        if csv_content:
+            reg_path = output / "register_of_information.csv"
+            reg_path.write_text(csv_content, encoding="utf-8")
+            files_written.append("register_of_information.csv")
+
+    # Build RTS 2024/1774 Framework Report
+    framework_report = RiskManagementFrameworkFormatter.create_blank_report()
+    RiskManagementFrameworkFormatter.compute_scores(framework_report)
+
+    fw_path = output / "risk_management_framework.json"
+    fw_path.write_text(
+        RiskManagementFrameworkFormatter.to_json(framework_report),
+        encoding="utf-8",
+    )
+    files_written.append("risk_management_framework.json")
+
+    console.print(Panel(
+        f"[bold]Output Directory:[/] {output}\n"
+        f"[bold]Format:[/] {fmt.upper()}\n"
+        f"[bold]Files Written:[/] {len(files_written)}\n\n"
+        + "\n".join(f"  [dim]* {f}[/]" for f in files_written),
+        title="[bold]DORA RTS/ITS Export[/]",
         border_style="cyan",
     ))
