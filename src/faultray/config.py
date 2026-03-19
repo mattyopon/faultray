@@ -37,6 +37,13 @@ class FaultRayConfig:
         "default_host": "0.0.0.0",
         "language": "en",
     })
+    telemetry: dict = field(default_factory=lambda: {
+        "enabled": False,
+        "anonymous_id": "",
+        "endpoint": "https://app.posthog.com",
+        "api_key": "",
+        "local_fallback": True,
+    })
 
 
 def load_config(path: Path | None = None) -> FaultRayConfig:
@@ -63,6 +70,7 @@ def save_config(config: FaultRayConfig, path: Path | None = None) -> None:
         "daemon": config.daemon,
         "notifications": config.notifications,
         "ui": config.ui,
+        "telemetry": config.telemetry,
     }
     with open(config_path, "w") as f:
         yaml.dump(data, f, default_flow_style=False, sort_keys=False)
@@ -83,7 +91,7 @@ def set_nested_value(config: FaultRayConfig, key_path: str, value: str) -> None:
     if not hasattr(config, section):
         raise ValueError(
             f"Unknown config section '{section}'. "
-            f"Valid sections: simulation, cost_model, daemon, notifications, ui"
+            f"Valid sections: simulation, cost_model, daemon, notifications, ui, telemetry"
         )
     section_dict = getattr(config, section)
     if not isinstance(section_dict, dict):

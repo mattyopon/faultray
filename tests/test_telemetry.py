@@ -43,8 +43,9 @@ class TestTelemetry:
 
         t = Telemetry(enabled=True)
         t.track("test_event")
-        assert "timestamp" in t._events[0]
-        assert "T" in t._events[0]["timestamp"]  # ISO format
+        # timestamp is stored inside the properties dict
+        assert "timestamp" in t._events[0]["properties"]
+        assert "T" in t._events[0]["properties"]["timestamp"]  # ISO format
 
     def test_event_has_properties(self):
         from faultray.telemetry import Telemetry
@@ -102,4 +103,9 @@ class TestTelemetry:
 
         t = Telemetry(enabled=True)
         t.track("event", None)
-        assert t._events[0]["properties"] == {}
+        # Properties always contain at least the common session fields
+        # (anonymous_id, faultray_version, python_version, os_type, timestamp)
+        props = t._events[0]["properties"]
+        assert isinstance(props, dict)
+        assert "timestamp" in props
+        assert "python_version" in props
