@@ -1,5 +1,3 @@
-# FaultRay — US Non-Provisional Patent Application (Optimized)
-
 **Title of Invention:**
 System and Method for In-Memory Infrastructure Resilience Simulation Using Graph-Based Topology Modeling, Multi-Layer Availability Analysis, and AI Agent Cross-Layer Failure Simulation
 
@@ -7,9 +5,7 @@ System and Method for In-Memory Infrastructure Resilience Simulation Using Graph
 
 **Date:** March 2026
 
-**Status:** FILING READY — Non-provisional patent application (cost-optimized)
-
-**Application Type:** US Utility Patent Application (Non-Provisional)
+**Application Type:** US Provisional Patent Application
 
 **Classification:** G06F 11/36 (Testing software for fault injection); G06F 11/07 (Responding to faults); G06N 20/00 (Machine learning)
 
@@ -800,4 +796,4 @@ Key implementation files:
 
 ---
 
-*END OF PATENT APPLICATION (OPTIMIZED)*
+*END OF PATENT APPLICATION*
