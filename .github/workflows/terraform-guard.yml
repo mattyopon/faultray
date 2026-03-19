@@ -286,7 +286,7 @@ jobs:
         if: >
           (inputs.comment-on-pr == true || inputs.comment-on-pr == 'true') &&
           github.event_name == 'pull_request'
-        uses: actions/github-script@v7
+        uses: actions/github-script@v8
         with:
           script: |
             const fs = require('fs');

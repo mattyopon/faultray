@@ -57,7 +57,7 @@ jobs:
 
       - name: Comment PR with results
         if: steps.find-yaml.outputs.found == 'true'
-        uses: actions/github-script@v7
+        uses: actions/github-script@v8
         with:
           script: |
             const fs = require('fs');
