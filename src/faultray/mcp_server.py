@@ -425,8 +425,7 @@ def dora_assess(yaml_path: str) -> str:
         return f"Error loading infrastructure: {exc}"
 
     bridge = MCPBridge(graph)
-    resp = bridge.execute(MCPRequest(tool_name=MCPToolName.CHECK_COMPLIANCE, parameters={"framework": "iso27001"}))
-    compliance = resp.result or {}
+    bridge.execute(MCPRequest(tool_name=MCPToolName.CHECK_COMPLIANCE, parameters={"framework": "iso27001"}))
 
     score = round(graph.resilience_score(), 1)
     summary = graph.summary()

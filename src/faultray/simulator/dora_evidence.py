@@ -1173,7 +1173,6 @@ class DORAEvidenceEngine:
         Groups by article for controls that share evaluation patterns,
         but marks them as requiring manual verification where appropriate.
         """
-        article = control.article
 
         # Stub controls (Pillar 2 incident management, etc.)
         if control.evaluation_method in (
@@ -1430,7 +1429,7 @@ class DORAEvidenceEngine:
             1 for c in self.graph.components.values()
             if c.compliance_tags.data_classification != "internal"
         )
-        total = self._component_count()
+        self._component_count()
         if classified == 0:
             gaps.append("No components have explicit data classification beyond default 'internal'")
             recommendations.append("Classify all components by data sensitivity (public/internal/confidential/restricted)")
@@ -1543,7 +1542,7 @@ class DORAEvidenceEngine:
 
         # Check for IDS monitoring
         ids_count = sum(1 for c in self.graph.components.values() if c.security.ids_monitored)
-        total = self._component_count()
+        self._component_count()
         if ids_count == 0:
             gaps.append("No components have IDS/IPS monitoring enabled")
             recommendations.append("Deploy intrusion detection system for network-facing components")
@@ -1976,7 +1975,7 @@ class DORAEvidenceEngine:
             1 for c in self.graph.components.values()
             if c.region.rto_seconds > 0
         )
-        total = self._component_count()
+        self._component_count()
         if components_with_rpo == 0:
             gaps.append("No RPO (Recovery Point Objective) configured for any component")
             recommendations.append("Define RPO for all critical data stores")
@@ -2013,7 +2012,7 @@ class DORAEvidenceEngine:
         risk = 0.0
 
         # Risk-based: check if resilience mechanisms exist proportional to system count
-        total = self._component_count()
+        self._component_count()
         has_red = self._has_redundancy()
         has_fo = self._has_failover()
 

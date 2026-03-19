@@ -1244,7 +1244,6 @@ def _compute_overall_score(
 ) -> float:
     """Compute a weighted overall resilience score (0-100)."""
 
-    score = 100.0
 
     # Health check quality (0-20 points)
     hc_score = {

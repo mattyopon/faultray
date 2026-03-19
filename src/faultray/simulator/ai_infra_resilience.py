@@ -304,7 +304,7 @@ class AIInfraResilienceAnalyzer:
         embedders = [c for c in configs if c.component_type == AIComponentType.EMBEDDING_SERVICE]
         vectordbs = [c for c in configs if c.component_type == AIComponentType.VECTOR_DB]
         llms = [c for c in configs if c.component_type == AIComponentType.LLM_API]
-        pipelines = [c for c in configs if c.component_type == AIComponentType.RAG_PIPELINE]
+        [c for c in configs if c.component_type == AIComponentType.RAG_PIPELINE]
 
         # Retrieval reliability
         retrieval = 0.8

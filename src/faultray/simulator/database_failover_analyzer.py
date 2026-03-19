@@ -441,7 +441,7 @@ class DatabaseFailoverAnalyzer:
                 weakest = link
                 break
         if weakest is None:
-            weakest = max(chain, key=lambda l: l.replication_lag_seconds)
+            weakest = max(chain, key=lambda node: node.replication_lag_seconds)
 
         # Chain reliability: fraction of healthy nodes weighted by lag
         if len(chain) == 0:

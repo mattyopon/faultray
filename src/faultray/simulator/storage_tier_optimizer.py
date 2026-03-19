@@ -355,7 +355,7 @@ def _classify_temperature(profile: DataAccessProfile) -> DataClassification:
     write_freq = profile.write_frequency_per_day
     total_freq = read_freq + write_freq
     last_access = profile.last_access_days_ago
-    age = max(1, profile.data_age_days)
+    max(1, profile.data_age_days)
 
     # Score: higher = hotter
     if total_freq <= 0 and last_access > 180:

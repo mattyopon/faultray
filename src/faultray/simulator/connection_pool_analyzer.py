@@ -314,7 +314,6 @@ def _recommend_pool_size(
     Returns a tuple of (recommended_min, recommended_max, recommended_idle).
     """
     max_conns = component.capacity.max_connections
-    max_rps = component.capacity.max_rps
     replicas = component.replicas
 
     # Per-replica target max based on type
@@ -821,7 +820,7 @@ class ConnectionPoolAnalyzer:
         config: PoolConfig,
     ) -> WarmupAnalysisResult:
         """Analyze the pool warmup strategy and its cold-start impact."""
-        comp = graph.get_component(component_id)
+        graph.get_component(component_id)
 
         readiness = _WARMUP_READINESS.get(config.warmup, 0.0)
         creation_overhead = _POOL_CREATION_OVERHEAD_MS.get(config.pool_type, 10.0)
@@ -879,7 +878,7 @@ class ConnectionPoolAnalyzer:
         service_count: int = 1,
     ) -> SharingTradeoffResult:
         """Analyze shared vs dedicated pool tradeoffs."""
-        comp = graph.get_component(component_id)
+        graph.get_component(component_id)
 
         # Shared pool: better utilisation, less isolation
         shared_eff = _clamp(80.0 + 20.0 / max(service_count, 1))
@@ -1028,7 +1027,7 @@ class ConnectionPoolAnalyzer:
             else:
                 wait_ms = 0.5 + (utilization - 80) ** 2 * 0.1
 
-            creation_overhead = _POOL_CREATION_OVERHEAD_MS.get(config.pool_type, 10.0)
+            _POOL_CREATION_OVERHEAD_MS.get(config.pool_type, 10.0)
             created = max(0, active - config.min_size * comp.replicas) if step == 0 else max(0, active - (snapshots[-1].active_connections if snapshots else 0))
             destroyed = max(0, (snapshots[-1].idle_connections if snapshots else 0) - idle) if step > 0 else 0
 

@@ -1202,7 +1202,7 @@ class HealthCheckStrategyOptimizer:
         """Analyze trade-offs between deep and shallow health checks."""
         comp = graph.get_component(component_id)
         deps = self._safe_dependencies(graph, component_id)
-        p99 = _estimate_p99_from_component(comp)
+        _estimate_p99_from_component(comp)
         shallow_detection = probe.interval_seconds * probe.failure_threshold
         deep_detection = shallow_detection * 0.7
         shallow_fp = 2.0
@@ -1426,7 +1426,7 @@ class HealthCheckStrategyOptimizer:
         mesh_circuit_breaker_enabled: bool = False,
     ) -> ServiceMeshHealthAnalysis:
         """Analyze service mesh health check integration for a component."""
-        comp = graph.get_component(component_id)
+        graph.get_component(component_id)
         findings: list[str] = []
         if mesh_type == ServiceMeshType.NONE:
             return ServiceMeshHealthAnalysis(
@@ -1450,7 +1450,6 @@ class HealthCheckStrategyOptimizer:
             )
         retry_overlap = False
         if mesh_retry_enabled:
-            dep_edge = None
             deps = self._safe_dependencies(graph, component_id)
             for d in deps:
                 edge = graph.get_dependency_edge(component_id, d.id)

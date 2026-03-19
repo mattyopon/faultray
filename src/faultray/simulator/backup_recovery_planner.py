@@ -343,7 +343,7 @@ class BackupRecoveryPlanner:
 
         data_gb = cfg.data_size_gb * cfg.compression_ratio
         tier = cfg.storage_tier
-        restore_speed = _TIER_RESTORE_SPEED_GB_MIN.get(tier, 1.0)
+        _TIER_RESTORE_SPEED_GB_MIN.get(tier, 1.0)
 
         # Tier retrieval latency: time for the storage to make data available.
         if tier == StorageTier.ARCHIVE:

@@ -735,7 +735,7 @@ class ThrottleCascadeAnalyzer:
             ))
 
         total_throttled = sum(e.throttled_rps for e in entries)
-        total_served = sum(e.actual_rps for e in entries)
+        sum(e.actual_rps for e in entries)
         fairness = 100.0 - (total_throttled / max(total_rps, 0.01)) * 100.0
         if starvation_found:
             fairness *= 0.7
@@ -986,7 +986,7 @@ class ThrottleCascadeAnalyzer:
         worst_impact = 0.0
 
         total_demand = sum(tenant_rps.values())
-        fair_share = config.rate_limit_rps / max(len(tenant_rps), 1)
+        config.rate_limit_rps / max(len(tenant_rps), 1)
 
         for tid, rps in tenant_rps.items():
             throttled = max(0.0, rps - per_tenant_limit)

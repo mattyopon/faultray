@@ -263,7 +263,7 @@ def _generate_samples(profile: LatencyProfile, rng: random.Random, n: int = 1000
             samples.append(base + injected * queue_factor)
 
         elif pattern == LatencyPattern.CONNECTION_POOL_EXHAUSTION:
-            pool_size = int(params.get("pool_size", 20))
+            int(params.get("pool_size", 20))
             utilization = float(params.get("pool_utilization", 0.95))
             if rng.random() < utilization:
                 wait_factor = rng.expovariate(1.0 / injected)

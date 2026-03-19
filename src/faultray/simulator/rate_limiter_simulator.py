@@ -470,7 +470,7 @@ class RateLimiterSimulator:
         if not rules:
             return []
 
-        component = graph.get_component(component_id)
+        graph.get_component(component_id)
         analyses: list[TierAnalysis] = []
 
         # Sort rules by tier priority (global checked first)

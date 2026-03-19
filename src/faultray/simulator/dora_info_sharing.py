@@ -25,7 +25,6 @@ from enum import Enum
 
 from pydantic import BaseModel, Field
 
-from faultray.model.components import Component, ComponentType
 from faultray.model.graph import InfraGraph
 
 
@@ -664,7 +663,7 @@ class DORAInfoSharingEngine:
         # Anonymise free-text fields
         anon_attack_vector = self._apply_anon_rules(attack_vector)
         anon_impact = self._apply_anon_rules(impact_description)
-        anon_lessons = [self._apply_anon_rules(l) for l in lessons_for_community]
+        anon_lessons = [self._apply_anon_rules(item) for item in lessons_for_community]
         anon_sector = self._apply_anon_rules(affected_sector)
 
         # Filter indicators by TLP: only share indicators at or below report TLP

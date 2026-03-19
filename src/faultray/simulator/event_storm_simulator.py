@@ -597,7 +597,7 @@ class EventStormSimulatorEngine:
             base_tp = 1.0
         max_throughput = base_tp * config.partitions
 
-        total_events = config.events_per_second * config.duration_seconds
+        config.events_per_second * config.duration_seconds
         effective_eps = config.events_per_second
 
         if config.storm_type == StormType.REPLAY_FLOOD:

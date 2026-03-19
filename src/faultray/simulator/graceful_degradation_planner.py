@@ -453,7 +453,7 @@ def _resolve_feature_deps(
         return disabled
     visited.add(feature_name)
 
-    feature_map = {f.name: f for f in features}
+    {f.name: f for f in features}
     for f in features:
         if feature_name in f.depends_on_features and f.name not in disabled:
             disabled.add(f.name)
@@ -783,7 +783,7 @@ class GracefulDegradationPlanner:
 
         # Fairness: higher if shedding is concentrated on low priority
         high_shed = shed_by_priority.get("critical", 0) + shed_by_priority.get("high", 0)
-        low_shed = shed_by_priority.get("best_effort", 0) + shed_by_priority.get("low", 0)
+        shed_by_priority.get("best_effort", 0) + shed_by_priority.get("low", 0)
         if total_shed > 0:
             fairness = _clamp(100.0 - (high_shed / total_shed) * 100.0)
         else:

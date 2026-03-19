@@ -17,11 +17,9 @@ Key capabilities:
 from __future__ import annotations
 
 import uuid
-from collections import Counter
 from datetime import date, datetime, timedelta, timezone
 from enum import Enum
 from statistics import mean
-from typing import Any
 
 from pydantic import BaseModel, Field
 
@@ -355,12 +353,12 @@ class DORALearningEngine:
         """Query the knowledge base by failure mode or free-text keyword."""
         results = list(self._knowledge_base)
         if failure_mode is not None:
-            results = [l for l in results if l.failure_mode == failure_mode]
+            results = [entry for entry in results if entry.failure_mode == failure_mode]
         if keyword:
             kw_lower = keyword.lower()
             results = [
-                l for l in results
-                if kw_lower in l.summary.lower() or kw_lower in l.detail.lower()
+                entry for entry in results
+                if kw_lower in entry.summary.lower() or kw_lower in entry.detail.lower()
             ]
         return results
 
@@ -595,7 +593,7 @@ class DORALearningEngine:
 
         # --- 3. Knowledge sharing score ---
         kb_size = len(self._knowledge_base)
-        validated_count = sum(1 for l in self._knowledge_base if l.validated)
+        validated_count = sum(1 for entry in self._knowledge_base if entry.validated)
         if kb_size == 0:
             kb_score = 0.0
             gaps.append("Knowledge base is empty — no lessons have been catalogued.")
@@ -641,7 +639,7 @@ class DORALearningEngine:
         else:
             level = MaturityLevel.OPTIMISING
 
-        velocity = self.improvement_velocity()
+        self.improvement_velocity()
 
         return LearningMaturity(
             overall_level=level,

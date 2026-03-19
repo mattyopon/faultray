@@ -301,8 +301,6 @@ class SyntheticMonitorEngine:
         # Build a latency threshold map
         latency_warning = None
         latency_critical = None
-        error_rate_warning = None
-        error_rate_critical = None
         consecutive_limit = 3
 
         for th in thresholds:
@@ -311,8 +309,7 @@ class SyntheticMonitorEngine:
                 latency_critical = th.critical_value
                 consecutive_limit = th.consecutive_failures
             elif th.metric == "error_rate":
-                error_rate_warning = th.warning_value
-                error_rate_critical = th.critical_value
+                pass
 
         total_alerts = 0
         true_positives = 0

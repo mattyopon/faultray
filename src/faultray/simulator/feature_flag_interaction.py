@@ -364,7 +364,7 @@ class FeatureFlagInteractionEngine:
         """Return a visualisation-ready dependency graph."""
         nodes: list[dict] = []
         edges: list[dict] = []
-        flag_map = {f.id: f for f in flags}
+        {f.id: f for f in flags}
 
         for f in flags:
             nodes.append(

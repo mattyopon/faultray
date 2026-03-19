@@ -224,7 +224,7 @@ class SecurityResilienceEngine:
         strengths = [c.value for c in SecurityControl if c in all_controls]
         weaknesses = [c.value for c in SecurityControl if c not in all_controls]
 
-        critical = [a for a in assessments if a.risk_level == RiskLevel.CRITICAL]
+        [a for a in assessments if a.risk_level == RiskLevel.CRITICAL]
         recs = []
         for a in sorted(assessments, key=lambda x: x.overall_score, reverse=True)[:3]:
             if a.mitigations:

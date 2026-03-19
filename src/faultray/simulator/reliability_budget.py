@@ -327,7 +327,6 @@ class ReliabilityBudgetEngine:
         else:
             projected_day = period_days  # never exhausts
 
-        sufficient = burn_rate <= 1.0 or consumed_fraction < 1.0 and burn_rate <= 1.0
 
         return BurnRateAnalysis(
             current_burn_rate=round(burn_rate, 6) if burn_rate != float("inf") else 999.0,
@@ -361,7 +360,7 @@ class ReliabilityBudgetEngine:
         ReleaseRiskAssessment
         """
         remaining = consumption.remaining_minutes
-        total_budget = target.effective_budget_minutes()
+        target.effective_budget_minutes()
 
         if remaining <= 0:
             return ReleaseRiskAssessment(

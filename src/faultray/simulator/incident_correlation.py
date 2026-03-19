@@ -603,7 +603,6 @@ class IncidentCorrelationEngine:
                 return RootCauseCategory.DEPLOYMENT_FAILURE
 
         # Check if affected services share a common dependency that is external
-        services_in_cluster: set[str] = set()
         for iid in cluster.incidents:
             # extract service_id from incident_id naming or from the cluster context
             pass  # We can't directly map without the incidents list
@@ -666,7 +665,7 @@ class IncidentCorrelationEngine:
             existing = best.get(pair)
             if existing is None or link.confidence > existing.confidence:
                 best[pair] = link
-        return sorted(best.values(), key=lambda l: -l.confidence)
+        return sorted(best.values(), key=lambda link_item: -link_item.confidence)
 
     def _categorize_cluster(
         self,
@@ -692,9 +691,9 @@ class IncidentCorrelationEngine:
             )
 
         # Check link types
-        dep_links = [l for l in links if l.correlation_type == CorrelationType.DEPENDENCY]
-        temporal_links = [l for l in links if l.correlation_type == CorrelationType.TEMPORAL]
-        symptom_links = [l for l in links if l.correlation_type == CorrelationType.SYMPTOM]
+        dep_links = [lnk for lnk in links if lnk.correlation_type == CorrelationType.DEPENDENCY]
+        temporal_links = [lnk for lnk in links if lnk.correlation_type == CorrelationType.TEMPORAL]
+        symptom_links = [lnk for lnk in links if lnk.correlation_type == CorrelationType.SYMPTOM]
 
         if dep_links:
             return (

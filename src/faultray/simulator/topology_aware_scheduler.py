@@ -160,7 +160,6 @@ def _region_of(comp: Component) -> str:
 
 
 def _available_cpu(comp: Component) -> float:
-    total = comp.capacity.max_memory_mb  # Using a proxy; see _available_mem
     # cpu capacity derived from 100% minus current usage scaled to replicas
     return max(0.0, (100.0 - comp.metrics.cpu_percent) * comp.replicas / 100.0)
 

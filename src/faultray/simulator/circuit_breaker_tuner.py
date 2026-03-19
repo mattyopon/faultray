@@ -1028,10 +1028,8 @@ class CircuitBreakerTuner:
         trip_count = 0
         half_open_requests = 0
         last_state_change_time = 0.0
-        open_entry_time = 0.0
 
         for is_error in error_sequence:
-            prev_state = state
             elapsed_in_state = time_cursor - last_state_change_time
 
             if state == BreakerState.CLOSED:
@@ -1041,7 +1039,6 @@ class CircuitBreakerTuner:
                         closed_time += time_cursor - last_state_change_time
                         state = BreakerState.OPEN
                         trip_count += 1
-                        open_entry_time = time_cursor
                         transitions.append(
                             StateTransition(
                                 time_seconds=round(time_cursor, 4),
@@ -1089,7 +1086,6 @@ class CircuitBreakerTuner:
                     half_open_time += time_cursor - last_state_change_time
                     state = BreakerState.OPEN
                     trip_count += 1
-                    open_entry_time = time_cursor
                     transitions.append(
                         StateTransition(
                             time_seconds=round(time_cursor, 4),
@@ -1157,7 +1153,7 @@ class CircuitBreakerTuner:
         """Recommend optimal circuit breaker placement for each dependency."""
         results: list[PlacementRecommendation] = []
         for dep in self._graph.all_dependency_edges():
-            source = self._graph.get_component(dep.source_id)
+            self._graph.get_component(dep.source_id)
             target = self._graph.get_component(dep.target_id)
 
             # Compute fan-out from source

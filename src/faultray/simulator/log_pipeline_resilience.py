@@ -700,7 +700,6 @@ class LogPipelineResilienceEngine:
         meets_retention = required_gb <= current_gb
 
         # Days until storage full (at current daily rate)
-        used_gb = daily_gb  # approximate current usage = 1 day
         if daily_gb > 0 and current_gb > 0:
             days_until_full = current_gb / daily_gb
         else:
@@ -1029,7 +1028,7 @@ class LogPipelineResilienceEngine:
     ) -> ComponentFailureImpact:
         """Analyze what happens when a pipeline component fails."""
         recovery = _COMPONENT_RECOVERY_MINUTES.get(component, 10.0)
-        daily_gb = self._daily_volume_gb_raw(config)
+        self._daily_volume_gb_raw(config)
         recs: list[str] = []
         cascading: list[str] = []
 

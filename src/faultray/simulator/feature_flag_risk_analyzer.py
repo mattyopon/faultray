@@ -335,7 +335,7 @@ class FeatureFlagRiskAnalyzer:
         graph: InfraGraph,
     ) -> list[RollbackSafetyResult]:
         """Score how safely each flag can be turned off."""
-        flag_map = {f.id: f for f in flags}
+        {f.id: f for f in flags}
         results: list[RollbackSafetyResult] = []
         component_ids = set(graph.components.keys())
 
@@ -366,7 +366,7 @@ class FeatureFlagRiskAnalyzer:
     ) -> list[FlagConflictResult]:
         """Find mutually exclusive or conflicting flag pairs."""
         conflicts: list[FlagConflictResult] = []
-        flag_map = {f.id: f for f in flags}
+        {f.id: f for f in flags}
 
         for i, fa in enumerate(flags):
             for fb in flags[i + 1:]:

@@ -1070,9 +1070,6 @@ class MultiCloudResilienceAnalyzer:
     def _region_to_geography(self, region: str) -> str:
         """Map a region name to a geographic area."""
         region_lower = region.lower()
-        us_patterns = ["us-", "us_", "central", "east", "west"]
-        eu_patterns = ["eu-", "europe", "north", "germany", "france", "sweden"]
-        apac_patterns = ["ap-", "asia", "japan", "singapore", "australia", "india"]
 
         # Check US
         if any(p in region_lower for p in ["us-", "us_", "eastus", "westus", "centralus"]):

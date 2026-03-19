@@ -1240,7 +1240,7 @@ class CertificateExpiryAnalyzer:
                 recommendations=["No certificates to analyze"],
             )
 
-        cert_map = {c.id: c for c in certs}
+        {c.id: c for c in certs}
         cascades: list[CascadeEntry] = []
 
         # Find root and intermediate certs

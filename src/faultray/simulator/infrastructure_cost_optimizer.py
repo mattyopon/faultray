@@ -1033,7 +1033,7 @@ class InfrastructureCostOptimizer:
             is_sf = _is_stateful(comp.type)
 
             # Determine availability benefit
-            has_az = bool(comp.region.availability_zone)
+            bool(comp.region.availability_zone)
             dependents = self.graph.get_dependents(comp.id)
 
             if is_sf and len(dependents) > 0:

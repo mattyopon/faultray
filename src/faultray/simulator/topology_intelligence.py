@@ -102,7 +102,7 @@ class TopologyIntelligenceEngine:
         lb_nodes = self._components_by_type(ComponentType.LOAD_BALANCER)
         cache_nodes = self._components_by_type(ComponentType.CACHE)
         db_nodes = self._components_by_type(ComponentType.DATABASE)
-        storage_nodes = self._components_by_type(ComponentType.STORAGE)
+        self._components_by_type(ComponentType.STORAGE)
 
         # Rule 1: All components implicitly depend on DNS if one exists
         #   (External APIs are handled separately in Rule 4.)

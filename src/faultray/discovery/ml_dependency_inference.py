@@ -295,7 +295,6 @@ class DependencyInferenceEngine:
             # Extract aligned time series for each metric dimension
             metric_names = ["cpu", "memory", "latency", "rps", "error_rate"]
             best_corr = 0.0
-            best_lag = 0
             best_metric = ""
 
             for metric in metric_names:

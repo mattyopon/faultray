@@ -550,7 +550,7 @@ class DNSResilienceEngine:
             ttl = 60
 
         # Check for DNS components
-        dns_components = [
+        [
             cid for cid, c in graph.components.items()
             if c.type == ComponentType.DNS
         ]
