@@ -731,7 +731,7 @@ In an alternative embodiment, the system performs multi-objective optimization t
 
 **Claim 8.** The method of Claim 1, embodied as a system comprising: at least one processor; a memory coupled to the at least one processor; and instructions stored in the memory that, when executed by the at least one processor, cause the system to perform the method of Claim 1.
 
-**Claim 9.** The method of Claim 1, embodied as a non-transitory computer-readable medium storing instructions that, when executed by at least one processor, cause the at least one processor to perform the method of Claim 1.
+**Claim 9.** The method of Claim 1, further comprising ingesting metric data from a monitored infrastructure environment, mapping said metric data to corresponding components in the graph representation, computing trend projections from the ingested metric data to predict future resource states, and automatically invoking at least one resilience simulation on the graph representation updated with the ingested metrics and generating predictive alerts when simulation results indicate impending resilience degradation.
 
 **Claim 10.** The method of Claim 2, wherein computing the hardware availability layer further comprises, for each component with failover enabled, computing the expected number of failover events per year based on MTBF and replica count, computing the failover downtime fraction from promotion time and detection latency, and applying said downtime fraction as a multiplicative penalty on the parallel redundancy availability.
 
@@ -741,7 +741,7 @@ In an alternative embodiment, the system performs multi-objective optimization t
 
 **Claim 13.** The method of Claim 2, wherein computing the external dependency availability layer comprises identifying all components with external SLA attributes in the dependency graph and computing the product of their SLA values.
 
-**Claim 14.** The method of Claim 2, further comprising computing a cascade path availability by, for each path through the dependency graph from a leaf component to a root component, computing the product of per-component tier availabilities along the path, attenuated by dependency type weights.
+**Claim 14.** The method of Claim 1, further comprising ingesting vulnerability information from at least one external security threat feed, wherein said threat feed comprises at least one of Common Vulnerabilities and Exposures (CVE) entries, Cybersecurity and Infrastructure Security Agency (CISA) advisories, and National Vulnerability Database (NVD) records, and automatically generating fault scenarios corresponding to said vulnerabilities by mapping vulnerability characteristics to infrastructure components and failure modes in the graph representation.
 
 **Claim 15.** The method of Claim 3, wherein computing the hallucination probability further comprises, for each data source d with health status DEGRADED, computing h_d = h_0(a) + (1 - h_0(a)) * w(d) * delta where delta is a degradation factor in (0, 1), and for each data source d with health status OVERLOADED, computing h_d = h_0(a) + (1 - h_0(a)) * w(d) * omega where omega is an overload factor in (0, 1).
 
