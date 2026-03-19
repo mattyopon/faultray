@@ -17,10 +17,10 @@
 |-------|-------|
 | **Given Name (First and Middle)** | Yutaro |
 | **Family Name (Last)** | Maeda |
-| **Residence (City)** | [YOUR CITY] |
-| **Residence (State)** | [YOUR STATE/PREFECTURE] |
+| **Residence (City)** | Chigasaki |
+| **Residence (State)** | Kanagawa |
 | **Residence (Country)** | Japan |
-| **Residence (Zip)** | [YOUR ZIP] |
+| **Residence (Zip)** | 253-0006 |
 
 ---
 
@@ -35,12 +35,12 @@ System and Method for In-Memory Infrastructure Resilience Simulation Using Graph
 | Field | Value |
 |-------|-------|
 | **Name** | Yutaro Maeda |
-| **Address** | [YOUR ADDRESS] |
-| **City** | [YOUR CITY] |
+| **Address** | 22-6 Tsutsumi, Chigasaki-shi, Kanagawa |
+| **City** | Chigasaki |
 | **State/Country** | Japan |
-| **Zip/Postal Code** | [YOUR ZIP] |
-| **Telephone** | [YOUR PHONE] |
-| **Email** | [YOUR EMAIL] |
+| **Zip/Postal Code** | 253-0006 |
+| **Telephone** | +81-70-4372-2209 |
+| **Email** | ymaeda.it@gmail.com |
 
 ---
 
