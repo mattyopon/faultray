@@ -273,7 +273,7 @@ class Component(BaseModel):
 
     @field_validator('replicas')
     @classmethod
-    def validate_replicas(cls, v):
+    def validate_replicas(cls, v: int) -> int:
         if v < 1:
             raise ValueError(f"replicas must be >= 1, got {v}")
         return v

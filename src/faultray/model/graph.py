@@ -49,10 +49,11 @@ class InfraGraph:
     def get_dependency_edge(self, source_id: str, target_id: str) -> Dependency | None:
         edge = self._graph.edges.get((source_id, target_id))
         if edge:
-            return edge.get("dependency")
+            dep: Dependency | None = edge.get("dependency")
+            return dep
         return None
 
-    def all_dependency_edges(self) -> list:
+    def all_dependency_edges(self) -> list[Dependency]:
         """Return all dependency edge metadata."""
         edges = []
         for u, v, data in self._graph.edges(data=True):
@@ -165,7 +166,7 @@ class InfraGraph:
 
         return max(0.0, min(100.0, score))
 
-    def resilience_score_v2(self) -> dict:
+    def resilience_score_v2(self) -> dict[str, object]:
         """Enhanced resilience score with detailed breakdown.
 
         Returns dict with:
@@ -326,7 +327,7 @@ class InfraGraph:
             "recommendations": unique_recommendations,
         }
 
-    def summary(self) -> dict:
+    def summary(self) -> dict[str, object]:
         return {
             "total_components": len(self._components),
             "total_dependencies": self._graph.number_of_edges(),
@@ -340,7 +341,7 @@ class InfraGraph:
             "resilience_score": round(self.resilience_score(), 1),
         }
 
-    def to_dict(self) -> dict:
+    def to_dict(self) -> dict[str, object]:
         return {
             "schema_version": SCHEMA_VERSION,
             "components": [c.model_dump() for c in self._components.values()],

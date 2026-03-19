@@ -218,7 +218,9 @@ def compute_three_layer_model(
     system_hw = 1.0
     for comp_id, a_tier in tier_availabilities.items():
         # Weight by number of `requires` dependents (more critical = more impact)
-        comp = graph.get_component(comp_id)
+        comp_or_none = graph.get_component(comp_id)
+        if comp_or_none is None:
+            continue
         dependents = graph.get_dependents(comp_id)
         has_requires_dependent = any(
             (edge := graph.get_dependency_edge(d.id, comp_id)) and edge.dependency_type == "requires"

@@ -47,7 +47,7 @@ class SimulationReport:
     resilience_score: float = 0.0
     total_generated: int = 0
     was_truncated: bool = False
-    engine_plugin_results: dict[str, dict] = field(default_factory=dict)
+    engine_plugin_results: dict[str, dict[str, object]] = field(default_factory=dict)
 
     @property
     def critical_findings(self) -> list[ScenarioResult]:
@@ -65,7 +65,7 @@ class SimulationReport:
 class SimulationEngine:
     """Runs chaos scenarios against an InfraGraph."""
 
-    def __init__(self, graph: InfraGraph, cache=None) -> None:
+    def __init__(self, graph: InfraGraph, cache: object = None) -> None:
         self.graph = graph
         self.cascade_engine = CascadeEngine(graph)
         self._cache = cache  # Optional ResultCache instance

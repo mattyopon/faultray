@@ -1,4 +1,27 @@
-"""Cascade rules - defines how failures propagate between components."""
+"""Cascade rules - defines how failures propagate between components.
+
+Formal Specification
+--------------------
+This module implements the **Cascade Propagation Semantics (CPS)**, a Labeled
+Transition System (LTS) formally defined in:
+
+    docs/patent/cascade-formal-spec.md
+
+The CPS state is a 4-tuple ``S = (H, L, T, V)`` where:
+
+- ``H: Component -> HealthStatus`` — health map
+- ``L: Component -> float``        — accumulated latency map (ms)
+- ``T: float``                     — elapsed time (seconds)
+- ``V: set[Component]``            — visited (monotonically growing) set
+
+Key proven properties (see formal spec Section 3):
+
+1. **Monotonicity** — health can only worsen during a simulation run.
+2. **Causality** — a component fails only if a dependency has failed.
+3. **Circuit Breaker Correctness** — CB trip stops cascade at that edge.
+4. **Termination** — CPS terminates in O(|V| + |E|) for acyclic graphs;
+   depth limit D_max=20 guarantees termination for cyclic graphs.
+"""
 
 from __future__ import annotations
 
@@ -93,13 +116,29 @@ class CascadeChain:
 
 
 class CascadeEngine:
-    """Simulates cascading failures through the dependency graph."""
+    """Simulates cascading failures through the dependency graph.
+
+    Implements the CPS Labeled Transition System (see ``cascade-formal-spec.md``).
+    The engine operates on an ``InfraGraph`` and produces ``CascadeChain`` results
+    that record every state transition.
+
+    Three simulation modes correspond to different transition subsets:
+
+    - ``simulate_fault``: Rules 1-5 (injection + recursive propagation)
+    - ``simulate_latency_cascade``: Rules 1, 6-7 (latency BFS + circuit breakers)
+    - ``simulate_traffic_spike``: Rule 1 applied per-component (capacity check)
+    """
 
     def __init__(self, graph: InfraGraph) -> None:
         self.graph = graph
 
     def simulate_fault(self, fault: Fault) -> CascadeChain:
-        """Simulate a single fault and calculate cascade effects."""
+        """Simulate a single fault and calculate cascade effects.
+
+        Implements CPS Rules 1-5: fault injection (Rule 1), then recursive
+        propagation through required (Rules 2-3), optional (Rule 4), and
+        async (Rule 5) dependency edges.  See formal spec Section 1.5.
+        """
         from faultray.simulator import agent_cascade  # noqa: F811 — lazy to avoid circular import
 
         total = len(self.graph.components)
@@ -188,6 +227,12 @@ class CascadeEngine:
     ) -> CascadeChain:
         """Simulate latency cascade from a slow component.
 
+        Implements CPS Rules 6-7: circuit breaker trip (Rule 6) and timeout
+        propagation (Rule 7) via BFS traversal.  See formal spec Section 1.5.
+
+        The BFS queue is bounded by |C| (Lemma 2) and the visited set grows
+        monotonically (Lemma 1), guaranteeing termination (Theorem 1).
+
         When a dependency becomes slow (not DOWN), callers that have timeouts
         will wait for the timeout, then retry. This creates:
         1. Accumulated latency through the dependency chain
@@ -222,7 +267,8 @@ class CascadeEngine:
             metrics_impact={"latency_ms": slow_latency},
         ))
 
-        # BFS propagation through dependents
+        # BFS propagation through dependents.
+        # V (visited) grows monotonically (Lemma 1); |bfs_queue| <= |C| (Lemma 2).
         visited: set[str] = {slow_component_id}
         bfs_queue: deque[tuple[str, float]] = deque()  # (component_id, its_latency_ms)
 
@@ -233,7 +279,8 @@ class CascadeEngine:
                 edge_latency = edge.latency_ms if edge else 0.0
                 accumulated = slow_latency + edge_latency
 
-                # Circuit breaker check on the dependency edge
+                # CPS Rule 6: Circuit breaker trip — cascade stopped at this edge
+                # (formal spec Property 3: CB Correctness)
                 if edge and edge.circuit_breaker.enabled:
                     cb_timeout = dep_comp.capacity.timeout_seconds * 1000
                     if cb_timeout > 0 and accumulated > cb_timeout:
@@ -255,6 +302,7 @@ class CascadeEngine:
                 bfs_queue.append((dep_comp.id, accumulated))
                 visited.add(dep_comp.id)
 
+        # CPS Rule 7: Timeout propagation via BFS (formal spec Section 1.5)
         while bfs_queue:
             comp_id, accumulated_latency = bfs_queue.popleft()
             comp = self.graph.get_component(comp_id)
@@ -269,7 +317,7 @@ class CascadeEngine:
             if timeout_ms > 0 and accumulated_latency > timeout_ms:
                 # Request exceeds timeout — component experiences timeouts
                 # Retry storm: each timed-out request is retried, amplifying load
-                base_connections = comp.metrics.network_connections
+                base_connections: float = float(comp.metrics.network_connections)
 
                 # Singleflight: reduce effective load by coalescing duplicate requests
                 if comp.singleflight.enabled:
@@ -409,6 +457,10 @@ class CascadeEngine:
 
     def _apply_direct_effect(self, component: Component, fault: Fault) -> CascadeEffect:
         """Calculate the direct effect of a fault on its target.
+
+        Implements CPS Rule 1 (Fault Injection).  The ``effect`` function maps
+        each ``FaultType`` to a ``HealthStatus`` as defined in formal spec
+        Section 1.5, Rule 1.
 
         These are "what if" simulations - DISK_FULL means "what if the disk fills up",
         not "check current disk usage". The direct effect is always the full failure
@@ -586,7 +638,20 @@ class CascadeEngine:
         depth: int,
         elapsed_seconds: int,
     ) -> None:
-        """Recursively propagate failure effects through the graph."""
+        """Recursively propagate failure effects through the graph.
+
+        Implements CPS Rules 2-5 (cascade propagation).  The ``visited`` set
+        enforces Lemma 1 (monotonic growth) and the depth bound ``D_max=20``
+        enforces Corollary 1 (cyclic graph termination).  Together these
+        guarantee Theorem 1 (termination) — see formal spec Section 2.
+
+        Soundness properties maintained:
+        - Monotonicity (Property 1): health only worsens
+        - Causality (Property 2): propagation requires failed dependency
+        - Attenuation (Property 4): optional/async edges cap at DEGRADED
+        """
+        # CPS D_max depth limit — guarantees termination for cyclic graphs
+        # (formal spec Corollary 1)
         if depth > 20:
             return
         visited.add(failed_id)
@@ -636,7 +701,10 @@ class CascadeEngine:
                 latency_ms=latency,
             ))
 
-            # Continue propagation if degraded or worse
+            # Continue propagation only for DOWN/OVERLOADED.
+            # DEGRADED does NOT propagate — this enforces Property 4
+            # (Dependency Type Attenuation): optional/async edges produce
+            # DEGRADED and therefore cannot cascade further.
             if cascade_health in (HealthStatus.DOWN, HealthStatus.OVERLOADED):
                 self._propagate(
                     dep_comp.id, cascade_health, chain, visited, depth + 1, new_elapsed
@@ -651,6 +719,14 @@ class CascadeEngine:
         weight: float,
     ) -> tuple[HealthStatus, str, int]:
         """Calculate how a failure cascades to a dependent component.
+
+        Implements the transition functions for CPS Rules 2-5:
+        - Rule 2: Required dep, single replica -> DOWN (with timeout dt)
+        - Rule 3: Required dep, multi-replica -> DEGRADED (absorbed)
+        - Rule 4: Optional dep -> DEGRADED only if source is DOWN
+        - Rule 5: Async dep -> DEGRADED with 60s delay (queue buildup)
+
+        See formal spec Section 1.5 for the complete transition definitions.
 
         Returns (health_status, reason, time_delta_seconds).
         """

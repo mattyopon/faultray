@@ -5,11 +5,16 @@ from faultray.model.graph import InfraGraph
 from faultray.simulator.agent_cascade import (
     AGENT_COMPONENT_TYPES,
     AGENT_FAULT_TYPES,
+    DataSourceState,
     apply_agent_direct_effect,
+    calculate_agent_cascade_probability,
     calculate_agent_likelihood,
+    calculate_chain_hallucination_probability,
     calculate_cross_layer_hallucination_risk,
+    calculate_hallucination_probability,
     is_agent_component,
     is_agent_fault,
+    propagate_agent_to_agent_cascade,
 )
 
 
@@ -109,6 +114,35 @@ class TestApplyAgentDirectEffect:
         assert effect.health == HealthStatus.DEGRADED
         assert "prompt injection" in effect.reason
 
+    def test_confidence_miscalibration_effect(self):
+        comp = _agent(name="Overconfident Agent")
+        effect = apply_agent_direct_effect(comp, "confidence_miscalibration")
+        assert effect is not None
+        assert effect.health == HealthStatus.DEGRADED
+        assert "miscalibrated" in effect.reason
+
+    def test_cot_collapse_effect(self):
+        comp = _agent(name="Reasoning Agent")
+        effect = apply_agent_direct_effect(comp, "cot_collapse")
+        assert effect is not None
+        assert effect.health == HealthStatus.DEGRADED
+        assert "chain-of-thought" in effect.reason
+
+    def test_output_amplification_effect(self):
+        comp = _agent(name="Downstream Agent")
+        effect = apply_agent_direct_effect(comp, "output_amplification")
+        assert effect is not None
+        assert effect.health == HealthStatus.DEGRADED
+        assert "amplifying" in effect.reason
+
+    def test_grounding_staleness_effect(self):
+        comp = _agent(name="Stale Agent")
+        effect = apply_agent_direct_effect(comp, "grounding_staleness")
+        assert effect is not None
+        assert effect.health == HealthStatus.DEGRADED
+        assert "stale" in effect.reason
+        assert effect.estimated_time_seconds == 300
+
     def test_non_agent_fault_returns_none(self):
         comp = _agent()
         effect = apply_agent_direct_effect(comp, "component_down")
@@ -207,6 +241,50 @@ class TestCalculateAgentLikelihood:
         likelihood = calculate_agent_likelihood(comp, "prompt_injection")
         assert likelihood == 0.4
 
+    def test_confidence_miscalibration_default_temperature(self):
+        comp = _agent()
+        likelihood = calculate_agent_likelihood(comp, "confidence_miscalibration")
+        assert likelihood is not None
+        assert 0.2 <= likelihood <= 1.0
+
+    def test_confidence_miscalibration_high_temperature(self):
+        comp_high = _agent(temperature=1.5)
+        comp_low = _agent(temperature=0.1)
+        l_high = calculate_agent_likelihood(comp_high, "confidence_miscalibration")
+        l_low = calculate_agent_likelihood(comp_low, "confidence_miscalibration")
+        assert l_high is not None and l_low is not None
+        assert l_high > l_low
+
+    def test_cot_collapse_small_context(self):
+        comp = _agent(max_context_tokens=16000)
+        likelihood = calculate_agent_likelihood(comp, "cot_collapse")
+        assert likelihood == 0.5
+
+    def test_cot_collapse_large_context(self):
+        comp = _agent(max_context_tokens=200000)
+        likelihood = calculate_agent_likelihood(comp, "cot_collapse")
+        assert likelihood == 0.3
+
+    def test_output_amplification_with_agent_input(self):
+        comp = _agent(receives_agent_output=1)
+        likelihood = calculate_agent_likelihood(comp, "output_amplification")
+        assert likelihood == 0.6
+
+    def test_output_amplification_without_agent_input(self):
+        comp = _agent(receives_agent_output=0)
+        likelihood = calculate_agent_likelihood(comp, "output_amplification")
+        assert likelihood == 0.2
+
+    def test_grounding_staleness_long_ttl(self):
+        comp = _agent(grounding_cache_ttl_seconds=7200)
+        likelihood = calculate_agent_likelihood(comp, "grounding_staleness")
+        assert likelihood == 0.7
+
+    def test_grounding_staleness_short_ttl(self):
+        comp = _agent(grounding_cache_ttl_seconds=60)
+        likelihood = calculate_agent_likelihood(comp, "grounding_staleness")
+        assert likelihood == 0.3
+
     def test_non_agent_fault_returns_none(self):
         comp = _agent()
         likelihood = calculate_agent_likelihood(comp, "component_down")
@@ -267,6 +345,18 @@ class TestIsAgentFault:
     def test_prompt_injection_is_agent_fault(self):
         assert is_agent_fault("prompt_injection")
 
+    def test_confidence_miscalibration_is_agent_fault(self):
+        assert is_agent_fault("confidence_miscalibration")
+
+    def test_cot_collapse_is_agent_fault(self):
+        assert is_agent_fault("cot_collapse")
+
+    def test_output_amplification_is_agent_fault(self):
+        assert is_agent_fault("output_amplification")
+
+    def test_grounding_staleness_is_agent_fault(self):
+        assert is_agent_fault("grounding_staleness")
+
     def test_component_down_is_not_agent_fault(self):
         assert not is_agent_fault("component_down")
 
@@ -283,8 +373,8 @@ class TestAgentConstantSets:
     def test_agent_component_types_has_four_entries(self):
         assert len(AGENT_COMPONENT_TYPES) == 4
 
-    def test_agent_fault_types_has_seven_entries(self):
-        assert len(AGENT_FAULT_TYPES) == 7
+    def test_agent_fault_types_has_eleven_entries(self):
+        assert len(AGENT_FAULT_TYPES) == 11
 
     def test_agent_fault_types_match_fault_enum(self):
         """All entries in AGENT_FAULT_TYPES should correspond to FaultType values."""
@@ -382,3 +472,247 @@ class TestCalculateCrossLayerHallucinationRisk:
         # The agent should appear even though it's 2 hops away
         agent_ids = [r[0] for r in risks]
         assert "agent" in agent_ids
+
+
+class TestCalculateHallucinationProbability:
+    """Test the formal probabilistic model H(a, D, I)."""
+
+    def test_no_data_sources_returns_base_rate(self):
+        agent = _agent(hallucination_risk=0.05)
+        h = calculate_hallucination_probability(agent)
+        assert h == 0.05
+
+    def test_all_healthy_returns_base_rate(self):
+        agent = _agent(hallucination_risk=0.05)
+        sources = [
+            DataSourceState("db", 0.8, HealthStatus.HEALTHY),
+            DataSourceState("cache", 0.5, HealthStatus.HEALTHY),
+        ]
+        h = calculate_hallucination_probability(agent, data_sources=sources)
+        assert h == 0.05
+
+    def test_single_down_source_increases_probability(self):
+        agent = _agent(hallucination_risk=0.05)
+        sources = [DataSourceState("db", 1.0, HealthStatus.DOWN)]
+        h = calculate_hallucination_probability(agent, data_sources=sources)
+        # h_d = 0.05 + (1 - 0.05) * 1.0 = 1.0
+        assert h == 1.0
+
+    def test_single_down_partial_weight(self):
+        agent = _agent(hallucination_risk=0.1)
+        sources = [DataSourceState("db", 0.5, HealthStatus.DOWN)]
+        h = calculate_hallucination_probability(agent, data_sources=sources)
+        # h_d = 0.1 + (1 - 0.1) * 0.5 = 0.1 + 0.45 = 0.55
+        assert abs(h - 0.55) < 0.001
+
+    def test_degraded_source_partial_increase(self):
+        agent = _agent(hallucination_risk=0.1)
+        sources = [DataSourceState("db", 1.0, HealthStatus.DEGRADED)]
+        h = calculate_hallucination_probability(agent, data_sources=sources)
+        # h_d = 0.1 + (1 - 0.1) * 1.0 * 0.5 = 0.1 + 0.45 = 0.55
+        assert abs(h - 0.55) < 0.001
+
+    def test_overloaded_source(self):
+        agent = _agent(hallucination_risk=0.1)
+        sources = [DataSourceState("api", 1.0, HealthStatus.OVERLOADED)]
+        h = calculate_hallucination_probability(agent, data_sources=sources)
+        # h_d = 0.1 + (1 - 0.1) * 1.0 * 0.3 = 0.1 + 0.27 = 0.37
+        assert abs(h - 0.37) < 0.001
+
+    def test_multiple_down_sources_compound(self):
+        agent = _agent(hallucination_risk=0.0)
+        sources = [
+            DataSourceState("db", 0.5, HealthStatus.DOWN),
+            DataSourceState("cache", 0.5, HealthStatus.DOWN),
+        ]
+        h = calculate_hallucination_probability(agent, data_sources=sources)
+        # h_d1 = 0 + 1.0 * 0.5 = 0.5, h_d2 = 0.5
+        # H = 1 - (1-0.5)*(1-0.5) = 1 - 0.25 = 0.75
+        assert abs(h - 0.75) < 0.001
+
+    def test_monotonicity_more_failures_higher_probability(self):
+        agent = _agent(hallucination_risk=0.05)
+        sources_one = [DataSourceState("db", 0.5, HealthStatus.DOWN)]
+        sources_two = [
+            DataSourceState("db", 0.5, HealthStatus.DOWN),
+            DataSourceState("cache", 0.5, HealthStatus.DOWN),
+        ]
+        h_one = calculate_hallucination_probability(agent, data_sources=sources_one)
+        h_two = calculate_hallucination_probability(agent, data_sources=sources_two)
+        assert h_two > h_one
+
+    def test_bounded_zero_to_one(self):
+        agent = _agent(hallucination_risk=0.0)
+        sources = [DataSourceState("db", 0.0, HealthStatus.DOWN)]
+        h = calculate_hallucination_probability(agent, data_sources=sources)
+        assert 0.0 <= h <= 1.0
+
+    def test_infra_state_dict_mode(self):
+        agent = _agent(
+            hallucination_risk=0.1,
+            data_source_weights="db:0.8,cache:0.5",
+        )
+        infra = {"db": HealthStatus.DOWN, "cache": HealthStatus.HEALTHY}
+        h = calculate_hallucination_probability(agent, infra_state=infra)
+        # Only db is DOWN: h_d = 0.1 + 0.9 * 0.8 = 0.82
+        assert h > 0.1
+        assert h <= 1.0
+
+
+class TestAgentCascadeProbability:
+    """Test agent-to-agent cascade probability calculation."""
+
+    def test_no_source_hallucination_no_increase(self):
+        h = calculate_agent_cascade_probability(0.0, 0.1)
+        assert abs(h - 0.1) < 0.001
+
+    def test_source_hallucination_increases_target(self):
+        h = calculate_agent_cascade_probability(0.5, 0.1)
+        # H = 1 - (1-0.1)*(1-0.5) = 1 - 0.9*0.5 = 1 - 0.45 = 0.55
+        assert abs(h - 0.55) < 0.001
+
+    def test_full_amplification(self):
+        h = calculate_agent_cascade_probability(1.0, 0.0, amplification_factor=1.0)
+        assert abs(h - 1.0) < 0.001
+
+    def test_zero_amplification_no_propagation(self):
+        h = calculate_agent_cascade_probability(1.0, 0.1, amplification_factor=0.0)
+        assert abs(h - 0.1) < 0.001
+
+    def test_partial_amplification(self):
+        h = calculate_agent_cascade_probability(0.5, 0.1, amplification_factor=0.5)
+        # inherited = 0.5 * 0.5 = 0.25
+        # H = 1 - (1-0.1)*(1-0.25) = 1 - 0.9*0.75 = 1 - 0.675 = 0.325
+        assert abs(h - 0.325) < 0.001
+
+
+class TestChainHallucinationProbability:
+    """Test compound chain probability."""
+
+    def test_empty_chain(self):
+        assert calculate_chain_hallucination_probability([]) == 0.0
+
+    def test_single_agent(self):
+        h = calculate_chain_hallucination_probability([0.3])
+        assert abs(h - 0.3) < 0.001
+
+    def test_two_agents(self):
+        h = calculate_chain_hallucination_probability([0.3, 0.3])
+        # H = 1 - (1-0.3)*(1-0.3) = 1 - 0.49 = 0.51
+        assert abs(h - 0.51) < 0.001
+
+    def test_chain_always_increases(self):
+        h2 = calculate_chain_hallucination_probability([0.2, 0.2])
+        h3 = calculate_chain_hallucination_probability([0.2, 0.2, 0.2])
+        assert h3 > h2
+
+    def test_chain_bounded_by_one(self):
+        h = calculate_chain_hallucination_probability([0.9, 0.9, 0.9, 0.9])
+        assert h <= 1.0
+
+
+class TestPropagateAgentToAgentCascade:
+    """Test agent-to-agent cascade propagation through the graph."""
+
+    def test_single_hop_cascade(self):
+        g = InfraGraph()
+        g.add_component(Component(
+            id="agent-a", name="Agent A", type=ComponentType.AI_AGENT,
+            parameters={"hallucination_risk": 0.1},
+        ))
+        g.add_component(Component(
+            id="agent-b", name="Agent B", type=ComponentType.AI_AGENT,
+            parameters={"hallucination_risk": 0.05},
+        ))
+        g.add_dependency(Dependency(
+            source_id="agent-b", target_id="agent-a", dependency_type="requires",
+        ))
+        results = propagate_agent_to_agent_cascade(g, "agent-a", 0.8)
+        assert len(results) == 1
+        agent_id, h_eff, reason = results[0]
+        assert agent_id == "agent-b"
+        assert h_eff > 0.05  # Must be higher than base
+        assert "upstream" in reason.lower()
+
+    def test_multi_hop_cascade(self):
+        g = InfraGraph()
+        g.add_component(Component(
+            id="a1", name="Agent 1", type=ComponentType.AI_AGENT,
+            parameters={"hallucination_risk": 0.1},
+        ))
+        g.add_component(Component(
+            id="a2", name="Agent 2", type=ComponentType.AI_AGENT,
+            parameters={"hallucination_risk": 0.1},
+        ))
+        g.add_component(Component(
+            id="a3", name="Agent 3", type=ComponentType.AI_AGENT,
+            parameters={"hallucination_risk": 0.1},
+        ))
+        g.add_dependency(Dependency(source_id="a2", target_id="a1", dependency_type="requires"))
+        g.add_dependency(Dependency(source_id="a3", target_id="a2", dependency_type="requires"))
+        results = propagate_agent_to_agent_cascade(g, "a1", 0.5)
+        assert len(results) == 2
+        ids = [r[0] for r in results]
+        assert "a2" in ids
+        assert "a3" in ids
+        # a3 should have higher risk than a2 (compound effect)
+        h_a2 = next(r[1] for r in results if r[0] == "a2")
+        h_a3 = next(r[1] for r in results if r[0] == "a3")
+        assert h_a3 >= h_a2
+
+    def test_nonexistent_source_returns_empty(self):
+        g = InfraGraph()
+        results = propagate_agent_to_agent_cascade(g, "nonexistent", 0.5)
+        assert results == []
+
+    def test_no_downstream_agents_returns_empty(self):
+        g = InfraGraph()
+        g.add_component(Component(
+            id="agent-a", name="Agent A", type=ComponentType.AI_AGENT,
+            parameters={"hallucination_risk": 0.1},
+        ))
+        results = propagate_agent_to_agent_cascade(g, "agent-a", 0.5)
+        assert results == []
+
+    def test_skips_non_agent_dependents(self):
+        g = InfraGraph()
+        g.add_component(Component(
+            id="agent-a", name="Agent A", type=ComponentType.AI_AGENT,
+            parameters={"hallucination_risk": 0.1},
+        ))
+        g.add_component(Component(
+            id="app", name="App Server", type=ComponentType.APP_SERVER,
+        ))
+        g.add_dependency(Dependency(source_id="app", target_id="agent-a", dependency_type="requires"))
+        results = propagate_agent_to_agent_cascade(g, "agent-a", 0.5)
+        assert results == []
+
+    def test_custom_amplification_factor(self):
+        g = InfraGraph()
+        g.add_component(Component(
+            id="a1", name="Agent 1", type=ComponentType.AI_AGENT,
+            parameters={"hallucination_risk": 0.1},
+        ))
+        g.add_component(Component(
+            id="a2", name="Agent 2", type=ComponentType.AI_AGENT,
+            parameters={"hallucination_risk": 0.1, "amplification_factor": 0.3},
+        ))
+        g.add_dependency(Dependency(source_id="a2", target_id="a1", dependency_type="requires"))
+        results = propagate_agent_to_agent_cascade(g, "a1", 0.8)
+        assert len(results) == 1
+        # With low amplification, effective H should be lower than full amplification
+        h_partial = results[0][1]
+        # Compare with full amplification
+        g2 = InfraGraph()
+        g2.add_component(Component(
+            id="a1", name="Agent 1", type=ComponentType.AI_AGENT,
+            parameters={"hallucination_risk": 0.1},
+        ))
+        g2.add_component(Component(
+            id="a2", name="Agent 2", type=ComponentType.AI_AGENT,
+            parameters={"hallucination_risk": 0.1, "amplification_factor": 1.0},
+        ))
+        g2.add_dependency(Dependency(source_id="a2", target_id="a1", dependency_type="requires"))
+        results2 = propagate_agent_to_agent_cascade(g2, "a1", 0.8)
+        h_full = results2[0][1]
+        assert h_partial < h_full

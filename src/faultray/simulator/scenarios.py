@@ -28,6 +28,10 @@ class FaultType(str, Enum):
     TOOL_FAILURE = "tool_failure"
     AGENT_LOOP = "agent_loop"
     PROMPT_INJECTION = "prompt_injection"
+    CONFIDENCE_MISCALIBRATION = "confidence_miscalibration"
+    COT_COLLAPSE = "cot_collapse"
+    OUTPUT_AMPLIFICATION = "output_amplification"
+    GROUNDING_STALENESS = "grounding_staleness"
     DEPENDENCY_COMPROMISED = "dependency_compromised"  # Supply chain attack
     DEPENDENCY_VULNERABLE = "dependency_vulnerable"    # CVE discovered
 
