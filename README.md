@@ -13,6 +13,8 @@
   <a href="https://pypi.org/project/faultray/"><img src="https://img.shields.io/pypi/v/faultray" alt="PyPI"></a>
   <a href="https://pypi.org/project/faultray/"><img src="https://img.shields.io/pypi/dm/faultray" alt="Downloads"></a>
   <a href="https://github.com/mattyopon/faultray"><img src="https://img.shields.io/github/stars/mattyopon/faultray" alt="GitHub stars"></a>
+  <a href="https://doi.org/10.5281/zenodo.19139911"><img src="https://zenodo.org/badge/DOI/10.5281/zenodo.19139911.svg" alt="DOI"></a>
+  <a href="https://github.com/sponsors/mattyopon"><img src="https://img.shields.io/badge/sponsor-GitHub%20Sponsors-ea4aaa.svg" alt="Sponsor"></a>
 </p>
 
 ---
@@ -837,6 +839,25 @@ docker build -t faultray:dev .  # Docker イメージをビルド
 - [Security Policy](SECURITY.md) — 脆弱性報告ポリシー
 - [Code of Conduct](CODE_OF_CONDUCT.md) — 行動規範
 - [Changelog](CHANGELOG.md) — 変更履歴
+
+## Research & Patent
+
+FaultRay's core algorithms are described in a peer-reviewable paper and protected by a US patent application:
+
+- **Paper:** [FaultRay: In-Memory Infrastructure Resilience Simulation with Graph-Based Cascade Analysis, Multi-Layer Availability Limits, and AI Agent Failure Modeling](https://doi.org/10.5281/zenodo.19139911) (Zenodo, DOI: 10.5281/zenodo.19139911)
+- **Patent:** US Provisional Patent Application No. 64/010,200 (filed March 19, 2026)
+
+If you use FaultRay in academic work, please cite:
+
+```bibtex
+@misc{maeda2026faultray,
+  author    = {Maeda, Yutaro},
+  title     = {FaultRay: In-Memory Infrastructure Resilience Simulation with Graph-Based Cascade Analysis, Multi-Layer Availability Limits, and AI Agent Failure Modeling},
+  year      = {2026},
+  doi       = {10.5281/zenodo.19139911},
+  publisher = {Zenodo}
+}
+```
 
 ## ライセンス
 
