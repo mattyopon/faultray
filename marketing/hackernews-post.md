@@ -23,6 +23,7 @@ Technical details: the core uses NetworkX for dependency graph modeling. The 5-L
 Honest limitations: the simulation is only as good as the model you feed it. If your YAML doesn't capture a dependency, FaultRay won't find it. The AI agent hallucination model is based on published failure mode taxonomies, not trained on production incident data. Auto-discovery from Prometheus helps but won't catch everything. The project is BSL-1.1 (converts to Apache 2.0 in 2030).
 
 - GitHub: https://github.com/mattyopon/faultray
+- Paper (DOI): https://doi.org/10.5281/zenodo.19139911
 - PyPI: https://pypi.org/project/faultray/
 - Try it: `pip install faultray && faultray demo`
 

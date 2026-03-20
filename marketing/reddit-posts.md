@@ -56,6 +56,7 @@ pip install faultray && faultray demo
 ```
 
 GitHub: https://github.com/mattyopon/faultray
+Paper (DOI): https://doi.org/10.5281/zenodo.19139911
 
 Happy to answer questions about the approach.
 
@@ -94,6 +95,7 @@ pip install faultray && faultray demo
 ```
 
 GitHub: https://github.com/mattyopon/faultray
+Paper (DOI): https://doi.org/10.5281/zenodo.19139911
 
 Paper with formal proofs: https://github.com/mattyopon/faultray/tree/main/paper
 
@@ -133,5 +135,6 @@ pip install faultray && faultray demo
 ```
 
 GitHub: https://github.com/mattyopon/faultray
+Paper (DOI): https://doi.org/10.5281/zenodo.19139911
 
 Interested in feedback, especially from anyone running multi-agent systems in production and seeing these failure patterns.
