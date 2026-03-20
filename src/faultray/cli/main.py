@@ -30,6 +30,23 @@ def _version_callback(value: bool) -> None:
         raise typer.Exit()
 
 
+def _tier_banner() -> str:
+    """Return a startup banner string showing the active license tier."""
+    from faultray import __version__
+    from faultray.licensing import get_active_tier
+    from faultray.api.billing import PricingTier
+
+    tier = get_active_tier()
+    if tier == PricingTier.ENTERPRISE:
+        label = "Enterprise License"
+    elif tier == PricingTier.PRO:
+        label = "Pro License"
+    else:
+        label = "Free Tier - upgrade at github.com/sponsors/mattyopon"
+
+    return f"FaultRay v{__version__} [{label}]"
+
+
 @app.callback()
 def main(
     version: bool = typer.Option(
@@ -46,6 +63,8 @@ def main(
     ),
 ) -> None:
     """FaultRay — Zero-risk infrastructure chaos engineering simulator."""
+    console.print(f"[dim]{_tier_banner()}[/]")
+
     if debug or verbose:
         from faultray.log_config import setup_logging
 
