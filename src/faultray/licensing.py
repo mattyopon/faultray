@@ -1,16 +1,44 @@
 # Copyright (c) 2025-2026 Yutaro Maeda. All rights reserved.
 # Licensed under the Business Source License 1.1. See LICENSE file for details.
 
-"""Feature gating stub for FaultRay OSS vs commercial tiers.
+"""HMAC-based license key generation, verification, and feature gating for FaultRay.
 
-This module defines a feature tier structure for future commercial
-gating.  Currently **all features are enabled** regardless of tier --
-this is just a stub that establishes the data model.
+License key format: ``FR-{TIER}-{TEAM_ID_HASH}-{SIGNATURE}``
+
+Environment variables:
+    ``FAULTRAY_LICENSE_KEY``    — set by the user to activate Pro/Enterprise.
+    ``FAULTRAY_LICENSE_SECRET`` — server-side only, used to generate keys.
 """
 
 from __future__ import annotations
 
+import hashlib
+import hmac
+import logging
+import os
 from enum import Enum
+
+from faultray.api.billing import PricingTier, TIER_LIMITS, UsageLimits
+
+logger = logging.getLogger(__name__)
+
+# ---------------------------------------------------------------------------
+# Environment variable names
+# ---------------------------------------------------------------------------
+_ENV_LICENSE_KEY = "FAULTRAY_LICENSE_KEY"
+_ENV_LICENSE_SECRET = "FAULTRAY_LICENSE_SECRET"
+
+# ---------------------------------------------------------------------------
+# Key format constants
+# ---------------------------------------------------------------------------
+_KEY_PREFIX = "FR"
+_VALID_TIERS: dict[str, PricingTier] = {
+    t.value.upper(): t for t in PricingTier if t != PricingTier.FREE
+}
+
+# ---------------------------------------------------------------------------
+# Feature gating (carried over from the original stub)
+# ---------------------------------------------------------------------------
 
 
 class FeatureTier(str, Enum):
@@ -48,23 +76,158 @@ _TIER_ORDER: list[FeatureTier] = [
     FeatureTier.ENTERPRISE,
 ]
 
+# Map between PricingTier and FeatureTier (they share the same values).
+_PRICING_TO_FEATURE: dict[PricingTier, FeatureTier] = {
+    PricingTier.FREE: FeatureTier.FREE,
+    PricingTier.PRO: FeatureTier.PRO,
+    PricingTier.ENTERPRISE: FeatureTier.ENTERPRISE,
+}
+
+# ---------------------------------------------------------------------------
+# License key generation (admin / server-side)
+# ---------------------------------------------------------------------------
+
+
+def generate_license_key(
+    tier: PricingTier,
+    team_id: str,
+    secret: str | None = None,
+) -> str:
+    """Generate a signed license key for the given tier and team.
+
+    Parameters
+    ----------
+    tier:
+        The pricing tier to encode (PRO or ENTERPRISE).
+    team_id:
+        An opaque team identifier (e.g. UUID or slug).
+    secret:
+        The HMAC signing secret.  Falls back to ``FAULTRAY_LICENSE_SECRET``.
+
+    Returns
+    -------
+    str
+        A license key in the format ``FR-{TIER}-{TEAM_ID_HASH}-{SIGNATURE}``.
+
+    Raises
+    ------
+    ValueError
+        If the tier is FREE or the secret is missing.
+    """
+    if tier == PricingTier.FREE:
+        raise ValueError("Cannot generate a license key for the FREE tier")
+
+    secret = secret or os.environ.get(_ENV_LICENSE_SECRET, "")
+    if not secret:
+        raise ValueError(
+            f"Signing secret is required. Set {_ENV_LICENSE_SECRET} or pass explicitly."
+        )
+
+    tier_tag = tier.value.upper()
+    team_hash = hashlib.sha256(team_id.encode()).hexdigest()[:8]
+
+    message = f"{_KEY_PREFIX}-{tier_tag}-{team_hash}"
+    signature = hmac.new(
+        secret.encode(), message.encode(), hashlib.sha256,
+    ).hexdigest()[:8]
+
+    return f"{message}-{signature}"
+
+
+# ---------------------------------------------------------------------------
+# License key verification
+# ---------------------------------------------------------------------------
+
+
+def verify_license_key(key: str, secret: str | None = None) -> PricingTier | None:
+    """Verify a license key and return the encoded tier if valid.
+
+    Returns ``None`` when the key is malformed, the secret is missing, or
+    the signature does not match.
+    """
+    secret = secret or os.environ.get(_ENV_LICENSE_SECRET, "")
+    if not secret:
+        logger.debug("No license secret configured; cannot verify key")
+        return None
+
+    parts = key.split("-")
+    if len(parts) != 4:
+        logger.debug("License key has wrong number of segments: %d", len(parts))
+        return None
+
+    prefix, tier_tag, team_hash, provided_sig = parts
+
+    if prefix != _KEY_PREFIX:
+        logger.debug("License key prefix mismatch: %s", prefix)
+        return None
+
+    if tier_tag not in _VALID_TIERS:
+        logger.debug("License key tier unknown: %s", tier_tag)
+        return None
+
+    # Recompute expected signature
+    message = f"{prefix}-{tier_tag}-{team_hash}"
+    expected_sig = hmac.new(
+        secret.encode(), message.encode(), hashlib.sha256,
+    ).hexdigest()[:8]
+
+    if not hmac.compare_digest(provided_sig, expected_sig):
+        logger.debug("License key signature mismatch")
+        return None
+
+    return _VALID_TIERS[tier_tag]
+
+
+# ---------------------------------------------------------------------------
+# Active tier resolution
+# ---------------------------------------------------------------------------
+
+
+def get_active_tier() -> PricingTier:
+    """Return the active pricing tier based on the ``FAULTRAY_LICENSE_KEY`` env var.
+
+    Returns :attr:`PricingTier.FREE` when no key is set or the key is invalid.
+    """
+    key = os.environ.get(_ENV_LICENSE_KEY, "")
+    if not key:
+        return PricingTier.FREE
+
+    tier = verify_license_key(key)
+    if tier is None:
+        logger.warning(
+            "Invalid license key in %s; falling back to FREE tier",
+            _ENV_LICENSE_KEY,
+        )
+        return PricingTier.FREE
+
+    return tier
+
+
+def get_active_limits() -> UsageLimits:
+    """Return the usage limits for the currently active tier."""
+    return TIER_LIMITS[get_active_tier()]
+
+
+# ---------------------------------------------------------------------------
+# Feature checks
+# ---------------------------------------------------------------------------
+
 
 def check_feature(
     feature: str,
-    current_tier: FeatureTier = FeatureTier.FREE,
+    current_tier: FeatureTier | None = None,
 ) -> bool:
     """Check if *feature* is available in *current_tier*.
 
+    When *current_tier* is ``None`` the tier is resolved automatically from
+    the ``FAULTRAY_LICENSE_KEY`` environment variable via :func:`get_active_tier`.
+
     The tier hierarchy is ``FREE < PRO < ENTERPRISE``.  A higher tier
     always includes all features of a lower tier.
-
-    Args:
-        feature: feature key (must match a key in :data:`FEATURE_GATES`).
-        current_tier: the user's active tier.
-
-    Returns:
-        ``True`` if the feature is available, ``False`` otherwise.
     """
+    if current_tier is None:
+        current_tier = _PRICING_TO_FEATURE[get_active_tier()]
+
     required = FEATURE_GATES.get(feature, FeatureTier.FREE)
     return _TIER_ORDER.index(current_tier) >= _TIER_ORDER.index(required)
 
