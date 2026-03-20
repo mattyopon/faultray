@@ -1,3 +1,6 @@
+# Copyright (c) 2025-2026 Yutaro Maeda. All rights reserved.
+# Licensed under the Business Source License 1.1. See LICENSE file for details.
+
 """Resilience Contracts - Define resilience requirements as code.
 
 Resilience Contracts are machine-readable definitions of what resilience

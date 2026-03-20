@@ -1,3 +1,6 @@
+# Copyright (c) 2025-2026 Yutaro Maeda. All rights reserved.
+# Licensed under the Business Source License 1.1. See LICENSE file for details.
+
 """Chaos blast radius predictor.
 
 Predicts the cascading impact of component failures before they occur,

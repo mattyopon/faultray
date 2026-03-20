@@ -1,3 +1,6 @@
+# Copyright (c) 2025-2026 Yutaro Maeda. All rights reserved.
+# Licensed under the Business Source License 1.1. See LICENSE file for details.
+
 """SRE Game Day scoring engine — measure team resilience response.
 
 Provides scoring framework for chaos engineering game days,

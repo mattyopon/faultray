@@ -1,3 +1,6 @@
+# Copyright (c) 2025-2026 Yutaro Maeda. All rights reserved.
+# Licensed under the Business Source License 1.1. See LICENSE file for details.
+
 """Compliance Frameworks Engine — Multi-regulation compliance assessment.
 
 Evaluate infrastructure against SOC 2 Type II, ISO 27001, PCI DSS,

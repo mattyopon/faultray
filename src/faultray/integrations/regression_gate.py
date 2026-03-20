@@ -1,3 +1,6 @@
+# Copyright (c) 2025-2026 Yutaro Maeda. All rights reserved.
+# Licensed under the Business Source License 1.1. See LICENSE file for details.
+
 """Chaos Regression Gate - block code changes that reduce infrastructure resilience.
 
 Designed for CI/CD pipeline integration. Compares before/after infrastructure

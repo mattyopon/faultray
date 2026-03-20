@@ -1,3 +1,6 @@
+# Copyright (c) 2025-2026 Yutaro Maeda. All rights reserved.
+# Licensed under the Business Source License 1.1. See LICENSE file for details.
+
 """Game Day Simulator -- automated chaos engineering game day exercise runner.
 
 Generates, executes, and evaluates structured game day exercises against an

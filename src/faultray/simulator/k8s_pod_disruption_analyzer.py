@@ -1,3 +1,6 @@
+# Copyright (c) 2025-2026 Yutaro Maeda. All rights reserved.
+# Licensed under the Business Source License 1.1. See LICENSE file for details.
+
 """K8s Pod Disruption Analyzer -- analyze PDB configurations and their impact.
 
 Evaluates Kubernetes Pod Disruption Budget (PDB) configurations and their

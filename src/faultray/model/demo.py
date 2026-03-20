@@ -1,3 +1,6 @@
+# Copyright (c) 2025-2026 Yutaro Maeda. All rights reserved.
+# Licensed under the Business Source License 1.1. See LICENSE file for details.
+
 """Shared demo infrastructure builder.
 
 Provides a canonical 6-component web application stack used by both the CLI

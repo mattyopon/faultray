@@ -1,3 +1,6 @@
+# Copyright (c) 2025-2026 Yutaro Maeda. All rights reserved.
+# Licensed under the Business Source License 1.1. See LICENSE file for details.
+
 """Azure infrastructure auto-discovery scanner.
 
 Connects to Azure via azure-mgmt libraries to discover all infrastructure

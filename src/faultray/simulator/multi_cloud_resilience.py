@@ -1,3 +1,6 @@
+# Copyright (c) 2025-2026 Yutaro Maeda. All rights reserved.
+# Licensed under the Business Source License 1.1. See LICENSE file for details.
+
 """Multi-Cloud Resilience Analyzer.
 
 Analyzes resilience of multi-cloud and hybrid cloud deployments by

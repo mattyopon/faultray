@@ -1,3 +1,6 @@
+# Copyright (c) 2025-2026 Yutaro Maeda. All rights reserved.
+# Licensed under the Business Source License 1.1. See LICENSE file for details.
+
 """Security Resilience Engine — Evaluate infrastructure security posture.
 
 Analyzes security configurations, simulates attack scenarios,

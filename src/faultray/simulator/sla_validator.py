@@ -1,3 +1,6 @@
+# Copyright (c) 2025-2026 Yutaro Maeda. All rights reserved.
+# Licensed under the Business Source License 1.1. See LICENSE file for details.
+
 """SLA Validator - Mathematically prove SLA achievability.
 
 Given an infrastructure topology and SLA target (e.g., 99.99% uptime),

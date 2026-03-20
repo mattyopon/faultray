@@ -1,3 +1,6 @@
+# Copyright (c) 2025-2026 Yutaro Maeda. All rights reserved.
+# Licensed under the Business Source License 1.1. See LICENSE file for details.
+
 """Toil-Resilience Mapper — maps operational toil to resilience gaps.
 
 Answers questions like "you're spending 40% of toil on DNS issues BECAUSE

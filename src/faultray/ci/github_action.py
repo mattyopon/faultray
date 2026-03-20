@@ -1,3 +1,6 @@
+# Copyright (c) 2025-2026 Yutaro Maeda. All rights reserved.
+# Licensed under the Business Source License 1.1. See LICENSE file for details.
+
 """Generate CI/CD resilience gate configurations.
 
 Generates GitHub Actions, GitLab CI, and Jenkins pipeline configurations

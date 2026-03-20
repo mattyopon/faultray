@@ -1,3 +1,6 @@
+# Copyright (c) 2025-2026 Yutaro Maeda. All rights reserved.
+# Licensed under the Business Source License 1.1. See LICENSE file for details.
+
 """Recovery Time Estimator engine for FaultRay.
 
 Estimates Mean Time To Recovery (MTTR) for each component based on:

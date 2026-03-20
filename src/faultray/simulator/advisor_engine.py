@@ -1,3 +1,6 @@
+# Copyright (c) 2025-2026 Yutaro Maeda. All rights reserved.
+# Licensed under the Business Source License 1.1. See LICENSE file for details.
+
 """Chaos Advisor Engine - auto-recommends chaos tests based on graph topology.
 
 Analyzes the infrastructure graph to detect SPOFs, bottleneck components,

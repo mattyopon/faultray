@@ -1,3 +1,6 @@
+# Copyright (c) 2025-2026 Yutaro Maeda. All rights reserved.
+# Licensed under the Business Source License 1.1. See LICENSE file for details.
+
 """Built-in chaos scenario packages for the FaultRay Marketplace.
 
 Each package contains 3-5 scenario definitions that map to FaultRay's

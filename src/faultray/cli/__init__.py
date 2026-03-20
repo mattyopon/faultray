@@ -1,3 +1,6 @@
+# Copyright (c) 2025-2026 Yutaro Maeda. All rights reserved.
+# Licensed under the Business Source License 1.1. See LICENSE file for details.
+
 """CLI package for FaultRay.
 
 Re-exports the Typer ``app`` so that ``faultray.cli:app`` keeps working as the

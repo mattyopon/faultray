@@ -1,3 +1,6 @@
+# Copyright (c) 2025-2026 Yutaro Maeda. All rights reserved.
+# Licensed under the Business Source License 1.1. See LICENSE file for details.
+
 """Incident Response Simulator - evaluates and models incident response processes.
 
 Simulates complete incident response workflows including severity classification,

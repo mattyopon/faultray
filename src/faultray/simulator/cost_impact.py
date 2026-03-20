@@ -1,3 +1,6 @@
+# Copyright (c) 2025-2026 Yutaro Maeda. All rights reserved.
+# Licensed under the Business Source License 1.1. See LICENSE file for details.
+
 """Cost Impact Engine — Quantify the business cost of infrastructure failures.
 
 Calculates downtime costs, SLA penalty exposure, and recovery costs

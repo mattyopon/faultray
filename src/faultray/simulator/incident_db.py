@@ -1,3 +1,6 @@
+# Copyright (c) 2025-2026 Yutaro Maeda. All rights reserved.
+# Licensed under the Business Source License 1.1. See LICENSE file for details.
+
 """Historical incident database for the Incident Replay Engine.
 
 Contains documented real-world cloud and infrastructure outages with accurate

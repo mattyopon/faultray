@@ -1,3 +1,6 @@
+# Copyright (c) 2025-2026 Yutaro Maeda. All rights reserved.
+# Licensed under the Business Source License 1.1. See LICENSE file for details.
+
 """Service Mesh Analyzer - deep analysis of service mesh configurations and resilience.
 
 Analyzes mesh topologies (sidecar proxy, per-node, ambient), traffic management,

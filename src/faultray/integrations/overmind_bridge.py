@@ -1,3 +1,6 @@
+# Copyright (c) 2025-2026 Yutaro Maeda. All rights reserved.
+# Licensed under the Business Source License 1.1. See LICENSE file for details.
+
 """Overmind Bridge -- blast radius analysis + FaultRay cascade simulation.
 
 Overmind (overmind.tech) analyzes Terraform plan blast radius by querying live

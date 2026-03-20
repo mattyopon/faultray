@@ -1,3 +1,6 @@
+# Copyright (c) 2025-2026 Yutaro Maeda. All rights reserved.
+# Licensed under the Business Source License 1.1. See LICENSE file for details.
+
 """Synthetic Monitoring Simulator — end-user perspective health validation.
 
 Simulates synthetic monitoring probes to validate system health from an

@@ -1,3 +1,6 @@
+# Copyright (c) 2025-2026 Yutaro Maeda. All rights reserved.
+# Licensed under the Business Source License 1.1. See LICENSE file for details.
+
 """Failure Cost Attribution Engine.
 
 Attributes the financial cost of potential infrastructure failures to

@@ -1,3 +1,6 @@
+# Copyright (c) 2025-2026 Yutaro Maeda. All rights reserved.
+# Licensed under the Business Source License 1.1. See LICENSE file for details.
+
 """Predictive failure engine — forecast failures before they happen.
 
 Uses time-series analysis and pattern mining to predict which components

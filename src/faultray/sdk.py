@@ -1,3 +1,6 @@
+# Copyright (c) 2025-2026 Yutaro Maeda. All rights reserved.
+# Licensed under the Business Source License 1.1. See LICENSE file for details.
+
 """FaultZero Python SDK - Simple, developer-friendly API.
 
 The SDK provides a clean, high-level interface for integrating FaultZero

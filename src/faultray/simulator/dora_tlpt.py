@@ -1,3 +1,6 @@
+# Copyright (c) 2025-2026 Yutaro Maeda. All rights reserved.
+# Licensed under the Business Source License 1.1. See LICENSE file for details.
+
 """DORA Article 26 — Threat-Led Penetration Testing (TLPT) Support.
 
 Provides TLPT readiness assessment, scope definition, tester qualification

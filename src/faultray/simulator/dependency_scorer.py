@@ -1,3 +1,6 @@
+# Copyright (c) 2025-2026 Yutaro Maeda. All rights reserved.
+# Licensed under the Business Source License 1.1. See LICENSE file for details.
+
 """Dependency Impact Scorer for FaultRay.
 
 Score each dependency edge by "cost if broken" -- quantify the impact of

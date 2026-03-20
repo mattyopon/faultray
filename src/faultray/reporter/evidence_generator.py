@@ -1,3 +1,6 @@
+# Copyright (c) 2025-2026 Yutaro Maeda. All rights reserved.
+# Licensed under the Business Source License 1.1. See LICENSE file for details.
+
 """Compliance Evidence Auto-Generator.
 
 Automatically generates audit-ready compliance evidence from FaultRay

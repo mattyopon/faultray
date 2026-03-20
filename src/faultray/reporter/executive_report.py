@@ -1,3 +1,6 @@
+# Copyright (c) 2025-2026 Yutaro Maeda. All rights reserved.
+# Licensed under the Business Source License 1.1. See LICENSE file for details.
+
 """Executive Summary Report - 1-page C-level summary of infrastructure resilience.
 
 Generates a traffic-light style executive summary with top risks, ROI table,

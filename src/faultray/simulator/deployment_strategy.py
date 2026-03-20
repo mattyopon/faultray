@@ -1,3 +1,6 @@
+# Copyright (c) 2025-2026 Yutaro Maeda. All rights reserved.
+# Licensed under the Business Source License 1.1. See LICENSE file for details.
+
 """Deployment strategy recommender — analyze infrastructure and recommend optimal deployment strategies.
 
 Evaluates infrastructure graphs and recommends the best deployment strategy

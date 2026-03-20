@@ -1,3 +1,6 @@
+# Copyright (c) 2025-2026 Yutaro Maeda. All rights reserved.
+# Licensed under the Business Source License 1.1. See LICENSE file for details.
+
 """HTML report generator - produces standalone HTML simulation reports."""
 
 from __future__ import annotations

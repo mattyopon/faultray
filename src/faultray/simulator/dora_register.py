@@ -1,3 +1,6 @@
+# Copyright (c) 2025-2026 Yutaro Maeda. All rights reserved.
+# Licensed under the Business Source License 1.1. See LICENSE file for details.
+
 """DORA Article 28 Register of Information — ITS 2024/2956 compliant.
 
 This module provides a production-quality implementation of the Register of

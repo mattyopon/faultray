@@ -1,3 +1,6 @@
+# Copyright (c) 2025-2026 Yutaro Maeda. All rights reserved.
+# Licensed under the Business Source License 1.1. See LICENSE file for details.
+
 """AWS Resilience Hub Pre-Deploy Bridge — FaultRay as "AWS Resilience Hub for Terraform Plan".
 
 AWS Resilience Hub scores infrastructure resilience but only works AFTER deployment

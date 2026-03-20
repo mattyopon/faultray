@@ -1,3 +1,6 @@
+# Copyright (c) 2025-2026 Yutaro Maeda. All rights reserved.
+# Licensed under the Business Source License 1.1. See LICENSE file for details.
+
 """Slack bot for interactive FaultRay commands.
 
 Provides a Slack bot that responds to slash commands for running

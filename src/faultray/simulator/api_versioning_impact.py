@@ -1,3 +1,6 @@
+# Copyright (c) 2025-2026 Yutaro Maeda. All rights reserved.
+# Licensed under the Business Source License 1.1. See LICENSE file for details.
+
 """API Versioning Impact Analyzer for FaultRay.
 
 Analyzes the resilience impact of API versioning strategies across a

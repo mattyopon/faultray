@@ -1,3 +1,6 @@
+# Copyright (c) 2025-2026 Yutaro Maeda. All rights reserved.
+# Licensed under the Business Source License 1.1. See LICENSE file for details.
+
 """Alert Fatigue Analyzer — detect alert fatigue risk and optimize alert quality.
 
 Analyzes alert configurations for fatigue risk by examining actionability,

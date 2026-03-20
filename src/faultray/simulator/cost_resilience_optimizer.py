@@ -1,3 +1,6 @@
+# Copyright (c) 2025-2026 Yutaro Maeda. All rights reserved.
+# Licensed under the Business Source License 1.1. See LICENSE file for details.
+
 """Cost-resilience optimizer — Pareto frontier for cost vs reliability.
 
 Finds the optimal balance between infrastructure cost and resilience.

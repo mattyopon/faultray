@@ -1,3 +1,6 @@
+# Copyright (c) 2025-2026 Yutaro Maeda. All rights reserved.
+# Licensed under the Business Source License 1.1. See LICENSE file for details.
+
 """DORA Article 13 — Learning and Evolving Engine.
 
 Implements the post-incident and post-test learning framework required by

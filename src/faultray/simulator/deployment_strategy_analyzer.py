@@ -1,3 +1,6 @@
+# Copyright (c) 2025-2026 Yutaro Maeda. All rights reserved.
+# Licensed under the Business Source License 1.1. See LICENSE file for details.
+
 """Deployment Strategy Analyzer — evaluate deployment strategies for resilience and risk.
 
 Analyzes infrastructure graphs to assess deployment strategies (rolling update,

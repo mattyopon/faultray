@@ -1,3 +1,6 @@
+# Copyright (c) 2025-2026 Yutaro Maeda. All rights reserved.
+# Licensed under the Business Source License 1.1. See LICENSE file for details.
+
 """Autonomous remediation engine — detect, plan, and execute fixes.
 
 Automatically identifies infrastructure issues and generates executable

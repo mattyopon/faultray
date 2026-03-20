@@ -1,3 +1,6 @@
+# Copyright (c) 2025-2026 Yutaro Maeda. All rights reserved.
+# Licensed under the Business Source License 1.1. See LICENSE file for details.
+
 """VPC Flow Log / ALB access log analyzer for dependency discovery.
 
 Parses VPC Flow Logs (or file exports) to discover REAL communication

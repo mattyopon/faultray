@@ -1,3 +1,6 @@
+# Copyright (c) 2025-2026 Yutaro Maeda. All rights reserved.
+# Licensed under the Business Source License 1.1. See LICENSE file for details.
+
 """Compliance Drift Detector — detect drift from compliance baselines over time.
 
 Compares current infrastructure state against compliance snapshots, identifies

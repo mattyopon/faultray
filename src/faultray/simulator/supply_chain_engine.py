@@ -1,3 +1,6 @@
+# Copyright (c) 2025-2026 Yutaro Maeda. All rights reserved.
+# Licensed under the Business Source License 1.1. See LICENSE file for details.
+
 """Supply Chain Risk Engine — map software vulnerabilities to infrastructure impact.
 
 Reads vulnerability reports in Snyk, Dependabot, or Trivy JSON format and

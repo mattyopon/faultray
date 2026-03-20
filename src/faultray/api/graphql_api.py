@@ -1,3 +1,6 @@
+# Copyright (c) 2025-2026 Yutaro Maeda. All rights reserved.
+# Licensed under the Business Source License 1.1. See LICENSE file for details.
+
 """GraphQL-like API for FaultRay — zero external dependencies.
 
 Provides a ``/graphql`` POST endpoint that accepts simplified GraphQL queries

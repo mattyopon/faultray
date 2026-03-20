@@ -1,3 +1,6 @@
+# Copyright (c) 2025-2026 Yutaro Maeda. All rights reserved.
+# Licensed under the Business Source License 1.1. See LICENSE file for details.
+
 """DORA Article 24 — Test Programme Management.
 
 Implements a risk-based ICT testing programme per DORA Article 24 requirements.

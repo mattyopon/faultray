@@ -1,3 +1,6 @@
+# Copyright (c) 2025-2026 Yutaro Maeda. All rights reserved.
+# Licensed under the Business Source License 1.1. See LICENSE file for details.
+
 """Failure injection scheduler — automated chaos experiment scheduling.
 
 Schedules and manages recurring chaos experiments against infrastructure,

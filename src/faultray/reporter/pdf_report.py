@@ -1,3 +1,6 @@
+# Copyright (c) 2025-2026 Yutaro Maeda. All rights reserved.
+# Licensed under the Business Source License 1.1. See LICENSE file for details.
+
 """PDF-compatible report generation using HTML print and Markdown export."""
 
 from __future__ import annotations

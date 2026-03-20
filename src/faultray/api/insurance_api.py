@@ -1,3 +1,6 @@
+# Copyright (c) 2025-2026 Yutaro Maeda. All rights reserved.
+# Licensed under the Business Source License 1.1. See LICENSE file for details.
+
 """Cyber Insurance Scoring API - compute insurance risk scores for infrastructure.
 
 Provides endpoints for evaluating infrastructure resilience from an insurance

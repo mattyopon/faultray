@@ -1,3 +1,6 @@
+# Copyright (c) 2025-2026 Yutaro Maeda. All rights reserved.
+# Licensed under the Business Source License 1.1. See LICENSE file for details.
+
 """Visual Topology Diff - Side-by-side infrastructure comparison.
 
 Like 'git diff' but for infrastructure topologies. Shows what changed

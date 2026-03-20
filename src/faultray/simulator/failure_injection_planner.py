@@ -1,3 +1,6 @@
+# Copyright (c) 2025-2026 Yutaro Maeda. All rights reserved.
+# Licensed under the Business Source License 1.1. See LICENSE file for details.
+
 """Intelligent Failure Injection Planner -- plans optimal chaos injection sequences.
 
 Plans which failures to inject and in what order to maximise learning

@@ -1,3 +1,6 @@
+# Copyright (c) 2025-2026 Yutaro Maeda. All rights reserved.
+# Licensed under the Business Source License 1.1. See LICENSE file for details.
+
 """OpenTelemetry Simulation Exporter — generates OTel-compatible telemetry.
 
 Produces traces, metrics, and logs in OTLP-compatible JSON format from chaos

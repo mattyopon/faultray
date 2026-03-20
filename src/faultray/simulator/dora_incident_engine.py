@@ -1,3 +1,6 @@
+# Copyright (c) 2025-2026 Yutaro Maeda. All rights reserved.
+# Licensed under the Business Source License 1.1. See LICENSE file for details.
+
 """DORA Pillar 2 — ICT Incident Management Engine (Articles 17-23).
 
 Implements the full incident management lifecycle required by DORA regulation:

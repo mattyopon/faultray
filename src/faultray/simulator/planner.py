@@ -1,3 +1,6 @@
+# Copyright (c) 2025-2026 Yutaro Maeda. All rights reserved.
+# Licensed under the Business Source License 1.1. See LICENSE file for details.
+
 """Remediation Planner - generates phased improvement plans with timeline, team, and ROI.
 
 Analyzes the current infrastructure state using resilience_score_v2(), security

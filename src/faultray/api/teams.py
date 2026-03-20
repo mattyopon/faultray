@@ -1,3 +1,6 @@
+# Copyright (c) 2025-2026 Yutaro Maeda. All rights reserved.
+# Licensed under the Business Source License 1.1. See LICENSE file for details.
+
 """Team Workspace API — multi-tenant team management with projects and members.
 
 Provides CRUD endpoints for teams, team membership, and team-scoped projects.

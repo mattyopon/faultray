@@ -1,3 +1,6 @@
+# Copyright (c) 2025-2026 Yutaro Maeda. All rights reserved.
+# Licensed under the Business Source License 1.1. See LICENSE file for details.
+
 """SLA budget tracker — error budget consumption and burn rate prediction.
 
 Tracks SLA error budget consumption over time, calculates burn rates,

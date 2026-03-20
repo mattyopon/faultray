@@ -1,3 +1,6 @@
+# Copyright (c) 2025-2026 Yutaro Maeda. All rights reserved.
+# Licensed under the Business Source License 1.1. See LICENSE file for details.
+
 """DORA RTS/ITS-Compliant Output Formatters for Regulatory Submissions.
 
 Provides structured formatters aligned with the following regulatory standards:

@@ -1,3 +1,6 @@
+# Copyright (c) 2025-2026 Yutaro Maeda. All rights reserved.
+# Licensed under the Business Source License 1.1. See LICENSE file for details.
+
 """Compliance Gap Analyzer — identify gaps between infrastructure state and compliance requirements.
 
 Supports SOC2, HIPAA, PCI-DSS, GDPR, and ISO27001 frameworks.

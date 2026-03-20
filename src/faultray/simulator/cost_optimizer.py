@@ -1,3 +1,6 @@
+# Copyright (c) 2025-2026 Yutaro Maeda. All rights reserved.
+# Licensed under the Business Source License 1.1. See LICENSE file for details.
+
 """Infrastructure Cost Optimizer - find cost-efficient architecture meeting resilience targets.
 
 Analyzes each component for cost optimization opportunities (reducing replicas,

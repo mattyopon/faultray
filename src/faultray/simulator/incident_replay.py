@@ -1,3 +1,6 @@
+# Copyright (c) 2025-2026 Yutaro Maeda. All rights reserved.
+# Licensed under the Business Source License 1.1. See LICENSE file for details.
+
 """Incident Replay Engine - Replay real-world outages on your infrastructure.
 
 Take famous cloud outages (AWS us-east-1 2021, Cloudflare 2022, etc.) and

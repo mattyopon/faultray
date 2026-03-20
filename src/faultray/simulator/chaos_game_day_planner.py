@@ -1,3 +1,6 @@
+# Copyright (c) 2025-2026 Yutaro Maeda. All rights reserved.
+# Licensed under the Business Source License 1.1. See LICENSE file for details.
+
 """Chaos Game Day Planner -- plans and orchestrates chaos engineering game day exercises.
 
 Generates structured game day plans with scenario generation, participant roles,

@@ -1,3 +1,6 @@
+# Copyright (c) 2025-2026 Yutaro Maeda. All rights reserved.
+# Licensed under the Business Source License 1.1. See LICENSE file for details.
+
 """SLA Risk Quantifier - Quantify financial and operational risk of SLA violations.
 
 Calculates breach probability, estimated financial penalties, and provides

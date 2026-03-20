@@ -1,3 +1,6 @@
+# Copyright (c) 2025-2026 Yutaro Maeda. All rights reserved.
+# Licensed under the Business Source License 1.1. See LICENSE file for details.
+
 """Markov chain availability model for FaultRay.
 
 Computes steady-state availability using a 3-state continuous-time Markov

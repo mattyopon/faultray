@@ -1,3 +1,6 @@
+# Copyright (c) 2025-2026 Yutaro Maeda. All rights reserved.
+# Licensed under the Business Source License 1.1. See LICENSE file for details.
+
 """Bayesian network model for conditional failure probability.
 
 Computes prior and posterior failure probabilities using the infrastructure

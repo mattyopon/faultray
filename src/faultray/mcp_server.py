@@ -1,3 +1,6 @@
+# Copyright (c) 2025-2026 Yutaro Maeda. All rights reserved.
+# Licensed under the Business Source License 1.1. See LICENSE file for details.
+
 """MCP (Model Context Protocol) server for FaultRay.
 
 Exposes FaultRay's infrastructure simulation and resilience analysis tools

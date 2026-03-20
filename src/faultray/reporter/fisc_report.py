@@ -1,3 +1,6 @@
+# Copyright (c) 2025-2026 Yutaro Maeda. All rights reserved.
+# Licensed under the Business Source License 1.1. See LICENSE file for details.
+
 """FISC compliance report generator for Japanese financial institutions.
 
 Generates evidence reports mapped to FISC安全対策基準 (FISC Security

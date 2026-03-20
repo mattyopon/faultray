@@ -1,3 +1,6 @@
+# Copyright (c) 2025-2026 Yutaro Maeda. All rights reserved.
+# Licensed under the Business Source License 1.1. See LICENSE file for details.
+
 """What-if Analysis engine for FaultRay v4.0.
 
 Runs parametric sweeps over operational scenarios, varying one parameter

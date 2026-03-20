@@ -1,3 +1,6 @@
+# Copyright (c) 2025-2026 Yutaro Maeda. All rights reserved.
+# Licensed under the Business Source License 1.1. See LICENSE file for details.
+
 """Custom scoring models — let users define their own scoring criteria.
 
 Users can define scoring rules in YAML and evaluate their infrastructure

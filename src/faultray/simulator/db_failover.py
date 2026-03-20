@@ -1,3 +1,6 @@
+# Copyright (c) 2025-2026 Yutaro Maeda. All rights reserved.
+# Licensed under the Business Source License 1.1. See LICENSE file for details.
+
 """Database Failover Simulator - simulate database-specific failure modes.
 
 Supports replication lag, split-brain, failover timing, connection pool

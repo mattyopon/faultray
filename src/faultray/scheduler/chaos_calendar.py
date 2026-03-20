@@ -1,3 +1,6 @@
+# Copyright (c) 2025-2026 Yutaro Maeda. All rights reserved.
+# Licensed under the Business Source License 1.1. See LICENSE file for details.
+
 """Chaos Calendar - Schedule and track chaos experiments.
 
 A calendar-based system for planning, scheduling, and tracking chaos

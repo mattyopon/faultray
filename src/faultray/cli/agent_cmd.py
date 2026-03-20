@@ -1,3 +1,6 @@
+# Copyright (c) 2025-2026 Yutaro Maeda. All rights reserved.
+# Licensed under the Business Source License 1.1. See LICENSE file for details.
+
 """CLI commands for AI Agent resilience features (ADOPT, MANAGE, scenarios)."""
 
 from __future__ import annotations

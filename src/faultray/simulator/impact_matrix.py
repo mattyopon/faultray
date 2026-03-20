@@ -1,3 +1,6 @@
+# Copyright (c) 2025-2026 Yutaro Maeda. All rights reserved.
+# Licensed under the Business Source License 1.1. See LICENSE file for details.
+
 """Dependency Impact Matrix - shows how failure of each component impacts every other.
 
 Builds a complete N x N matrix of impact relationships across all components

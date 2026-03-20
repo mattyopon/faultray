@@ -1,3 +1,6 @@
+# Copyright (c) 2025-2026 Yutaro Maeda. All rights reserved.
+# Licensed under the Business Source License 1.1. See LICENSE file for details.
+
 """Compliance Engine - auto-check infrastructure against regulatory frameworks.
 
 Supports SOC 2 Type II, ISO 27001, PCI DSS, and NIST CSF frameworks.

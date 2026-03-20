@@ -1,3 +1,6 @@
+# Copyright (c) 2025-2026 Yutaro Maeda. All rights reserved.
+# Licensed under the Business Source License 1.1. See LICENSE file for details.
+
 """Natural Language to Infrastructure Converter.
 
 Converts plain-text infrastructure descriptions into FaultRay YAML definitions.
