@@ -1,0 +1,1355 @@
+<!--
+  FaultRay Landing Page
+  Copyright (c) 2025-2026 Yutaro Maeda. All rights reserved.
+  Patent Pending — US Application 64/010,200
+  License: BSL-1.1
+-->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>FaultRay — Zero-Risk Chaos Engineering for Infrastructure & AI Agents</title>
+  <meta name="description" content="FaultRay simulates infrastructure failures in memory before they happen in production. Graph-based cascade simulation, multi-layer availability limits, and AI agent failure modeling. Zero risk. Full visibility.">
+  <meta name="keywords" content="chaos engineering, infrastructure resilience, fault simulation, terraform, SRE, DevOps, AI agent testing, availability, SLA, incident prevention">
+  <meta property="og:title" content="FaultRay — Zero-Risk Chaos Engineering">
+  <meta property="og:description" content="Simulate infrastructure failures before they happen in production. Zero risk. Full visibility.">
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://faultray.com">
+  <meta property="og:image" content="https://faultray.com/og-image.png">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="FaultRay — Zero-Risk Chaos Engineering">
+  <meta name="twitter:description" content="Simulate infrastructure failures before they happen in production. Zero risk. Full visibility.">
+  <link rel="canonical" href="https://faultray.com">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    :root {
+      --bg: #0a0e1a;
+      --bg-secondary: #0f1424;
+      --bg-tertiary: #141a2e;
+      --bg-card: #161d33;
+      --border: #1e2a4a;
+      --border-light: #2a3a5c;
+      --text: #e2e8f0;
+      --text-secondary: #94a3b8;
+      --text-muted: #64748b;
+      --accent: #3b82f6;
+      --accent-hover: #2563eb;
+      --accent-glow: rgba(59, 130, 246, 0.15);
+      --accent-glow-strong: rgba(59, 130, 246, 0.25);
+      --green: #22c55e;
+      --red: #ef4444;
+      --yellow: #eab308;
+      --purple: #a855f7;
+      --terminal-bg: #0c0f1a;
+      --terminal-border: #1a2340;
+      --font: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      --mono: 'JetBrains Mono', 'Fira Code', monospace;
+    }
+
+    html {
+      scroll-behavior: smooth;
+      font-size: 16px;
+    }
+
+    body {
+      font-family: var(--font);
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.6;
+      -webkit-font-smoothing: antialiased;
+      overflow-x: hidden;
+    }
+
+    /* Animations */
+    @keyframes fadeInUp {
+      from { opacity: 0; transform: translateY(30px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; }
+      to { opacity: 1; }
+    }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.5; }
+    }
+
+    @keyframes terminalBlink {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0; }
+    }
+
+    @keyframes gradientShift {
+      0% { background-position: 0% 50%; }
+      50% { background-position: 100% 50%; }
+      100% { background-position: 0% 50%; }
+    }
+
+    .animate-on-scroll {
+      opacity: 0;
+      transform: translateY(30px);
+      transition: opacity 0.6s ease, transform 0.6s ease;
+    }
+
+    .animate-on-scroll.visible {
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    /* Navigation */
+    nav {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      z-index: 100;
+      background: rgba(10, 14, 26, 0.8);
+      backdrop-filter: blur(20px);
+      border-bottom: 1px solid var(--border);
+      padding: 0 1.5rem;
+    }
+
+    .nav-inner {
+      max-width: 1200px;
+      margin: 0 auto;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      height: 64px;
+    }
+
+    .nav-logo {
+      font-size: 1.25rem;
+      font-weight: 800;
+      color: var(--text);
+      text-decoration: none;
+      letter-spacing: -0.02em;
+    }
+
+    .nav-logo span {
+      color: var(--accent);
+    }
+
+    .nav-links {
+      display: flex;
+      align-items: center;
+      gap: 2rem;
+      list-style: none;
+    }
+
+    .nav-links a {
+      color: var(--text-secondary);
+      text-decoration: none;
+      font-size: 0.875rem;
+      font-weight: 500;
+      transition: color 0.2s;
+    }
+
+    .nav-links a:hover {
+      color: var(--text);
+    }
+
+    .nav-cta {
+      background: var(--accent) !important;
+      color: #fff !important;
+      padding: 0.5rem 1rem;
+      border-radius: 8px;
+      font-weight: 600 !important;
+      transition: background 0.2s !important;
+    }
+
+    .nav-cta:hover {
+      background: var(--accent-hover) !important;
+    }
+
+    .nav-mobile-toggle {
+      display: none;
+      background: none;
+      border: none;
+      color: var(--text);
+      font-size: 1.5rem;
+      cursor: pointer;
+    }
+
+    /* Sections */
+    section {
+      padding: 6rem 1.5rem;
+    }
+
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+    }
+
+    .section-label {
+      font-size: 0.75rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      color: var(--accent);
+      margin-bottom: 1rem;
+    }
+
+    .section-title {
+      font-size: clamp(2rem, 4vw, 3rem);
+      font-weight: 800;
+      letter-spacing: -0.03em;
+      line-height: 1.15;
+      margin-bottom: 1.25rem;
+    }
+
+    .section-subtitle {
+      font-size: 1.125rem;
+      color: var(--text-secondary);
+      max-width: 640px;
+      line-height: 1.7;
+    }
+
+    /* Hero */
+    .hero {
+      padding: 10rem 1.5rem 6rem;
+      text-align: center;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .hero::before {
+      content: '';
+      position: absolute;
+      top: -200px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 800px;
+      height: 800px;
+      background: radial-gradient(circle, var(--accent-glow) 0%, transparent 70%);
+      pointer-events: none;
+    }
+
+    .hero .container {
+      position: relative;
+      z-index: 1;
+    }
+
+    .hero-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      padding: 0.375rem 1rem;
+      background: var(--accent-glow);
+      border: 1px solid rgba(59, 130, 246, 0.3);
+      border-radius: 100px;
+      font-size: 0.8125rem;
+      font-weight: 500;
+      color: var(--accent);
+      margin-bottom: 2rem;
+      animation: fadeIn 0.8s ease;
+    }
+
+    .hero-badge .dot {
+      width: 6px;
+      height: 6px;
+      background: var(--green);
+      border-radius: 50%;
+      animation: pulse 2s infinite;
+    }
+
+    .hero h1 {
+      font-size: clamp(2.5rem, 6vw, 4.5rem);
+      font-weight: 800;
+      letter-spacing: -0.04em;
+      line-height: 1.1;
+      margin-bottom: 1.5rem;
+      animation: fadeInUp 0.8s ease;
+    }
+
+    .hero h1 .gradient {
+      background: linear-gradient(135deg, var(--accent), var(--purple));
+      background-size: 200% 200%;
+      animation: gradientShift 6s ease infinite;
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    .hero-sub {
+      font-size: clamp(1rem, 2vw, 1.25rem);
+      color: var(--text-secondary);
+      max-width: 640px;
+      margin: 0 auto 2.5rem;
+      line-height: 1.7;
+      animation: fadeInUp 0.8s ease 0.1s both;
+    }
+
+    .hero-buttons {
+      display: flex;
+      gap: 1rem;
+      justify-content: center;
+      flex-wrap: wrap;
+      margin-bottom: 4rem;
+      animation: fadeInUp 0.8s ease 0.2s both;
+    }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      padding: 0.875rem 1.75rem;
+      border-radius: 10px;
+      font-size: 0.9375rem;
+      font-weight: 600;
+      text-decoration: none;
+      transition: all 0.2s;
+      cursor: pointer;
+      border: none;
+      font-family: var(--font);
+    }
+
+    .btn-primary {
+      background: var(--accent);
+      color: #fff;
+      box-shadow: 0 0 30px var(--accent-glow-strong);
+    }
+
+    .btn-primary:hover {
+      background: var(--accent-hover);
+      box-shadow: 0 0 40px rgba(59, 130, 246, 0.35);
+      transform: translateY(-1px);
+    }
+
+    .btn-secondary {
+      background: var(--bg-tertiary);
+      color: var(--text);
+      border: 1px solid var(--border);
+    }
+
+    .btn-secondary:hover {
+      background: var(--bg-card);
+      border-color: var(--border-light);
+      transform: translateY(-1px);
+    }
+
+    /* Terminal */
+    .terminal {
+      max-width: 680px;
+      margin: 0 auto;
+      background: var(--terminal-bg);
+      border: 1px solid var(--terminal-border);
+      border-radius: 12px;
+      overflow: hidden;
+      text-align: left;
+      box-shadow: 0 25px 60px rgba(0, 0, 0, 0.5);
+      animation: fadeInUp 0.8s ease 0.3s both;
+    }
+
+    .terminal-header {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      padding: 0.875rem 1rem;
+      background: rgba(255, 255, 255, 0.03);
+      border-bottom: 1px solid var(--terminal-border);
+    }
+
+    .terminal-dot {
+      width: 12px;
+      height: 12px;
+      border-radius: 50%;
+    }
+
+    .terminal-dot.red { background: #ff5f57; }
+    .terminal-dot.yellow { background: #febc2e; }
+    .terminal-dot.green { background: #28c840; }
+
+    .terminal-title {
+      flex: 1;
+      text-align: center;
+      font-size: 0.75rem;
+      color: var(--text-muted);
+      font-family: var(--mono);
+    }
+
+    .terminal-body {
+      padding: 1.25rem 1.5rem;
+      font-family: var(--mono);
+      font-size: 0.8125rem;
+      line-height: 1.7;
+      overflow-x: auto;
+    }
+
+    .terminal-body .prompt {
+      color: var(--green);
+    }
+
+    .terminal-body .cmd {
+      color: var(--text);
+    }
+
+    .terminal-body .comment {
+      color: var(--text-muted);
+    }
+
+    .terminal-body .box {
+      color: var(--text-secondary);
+    }
+
+    .terminal-body .highlight {
+      color: var(--accent);
+    }
+
+    .terminal-body .warn {
+      color: var(--yellow);
+    }
+
+    .terminal-body .danger {
+      color: var(--red);
+    }
+
+    .terminal-body .score-good {
+      color: var(--green);
+    }
+
+    .terminal-body .cursor {
+      display: inline-block;
+      width: 8px;
+      height: 16px;
+      background: var(--text);
+      animation: terminalBlink 1s step-end infinite;
+      vertical-align: text-bottom;
+    }
+
+    /* Problem section */
+    .problem {
+      background: var(--bg-secondary);
+      border-top: 1px solid var(--border);
+      border-bottom: 1px solid var(--border);
+    }
+
+    .problem-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 2rem;
+      margin-top: 3rem;
+    }
+
+    .problem-card {
+      padding: 2rem;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      transition: border-color 0.3s, box-shadow 0.3s;
+    }
+
+    .problem-card:hover {
+      border-color: var(--red);
+      box-shadow: 0 0 30px rgba(239, 68, 68, 0.08);
+    }
+
+    .problem-icon {
+      font-size: 2rem;
+      margin-bottom: 1rem;
+    }
+
+    .problem-card h3 {
+      font-size: 1.0625rem;
+      font-weight: 700;
+      margin-bottom: 0.75rem;
+      letter-spacing: -0.01em;
+    }
+
+    .problem-card p {
+      font-size: 0.9375rem;
+      color: var(--text-secondary);
+      line-height: 1.65;
+    }
+
+    /* Solution section */
+    .solution-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 2rem;
+      margin-top: 3rem;
+    }
+
+    .solution-card {
+      padding: 2rem;
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      transition: border-color 0.3s, box-shadow 0.3s, transform 0.3s;
+    }
+
+    .solution-card:hover {
+      border-color: var(--accent);
+      box-shadow: 0 0 40px var(--accent-glow);
+      transform: translateY(-2px);
+    }
+
+    .solution-number {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 36px;
+      height: 36px;
+      border-radius: 10px;
+      background: var(--accent-glow);
+      color: var(--accent);
+      font-weight: 700;
+      font-size: 0.875rem;
+      margin-bottom: 1.25rem;
+    }
+
+    .solution-card h3 {
+      font-size: 1.125rem;
+      font-weight: 700;
+      margin-bottom: 0.75rem;
+      letter-spacing: -0.01em;
+    }
+
+    .solution-card p {
+      font-size: 0.9375rem;
+      color: var(--text-secondary);
+      line-height: 1.65;
+    }
+
+    /* How it works */
+    .how-it-works {
+      background: var(--bg-secondary);
+      border-top: 1px solid var(--border);
+      border-bottom: 1px solid var(--border);
+    }
+
+    .steps {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 2rem;
+      margin-top: 3rem;
+    }
+
+    .step {
+      position: relative;
+    }
+
+    .step-number {
+      font-size: 0.75rem;
+      font-weight: 700;
+      color: var(--accent);
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      margin-bottom: 1rem;
+    }
+
+    .step h3 {
+      font-size: 1.0625rem;
+      font-weight: 700;
+      margin-bottom: 1rem;
+    }
+
+    .code-block {
+      background: var(--terminal-bg);
+      border: 1px solid var(--terminal-border);
+      border-radius: 8px;
+      padding: 1rem 1.25rem;
+      font-family: var(--mono);
+      font-size: 0.8125rem;
+      color: var(--text);
+      overflow-x: auto;
+      line-height: 1.7;
+    }
+
+    .code-block .prompt {
+      color: var(--green);
+      user-select: none;
+    }
+
+    .code-block .output {
+      color: var(--text-muted);
+    }
+
+    /* Integrations */
+    .integrations-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.75rem;
+      justify-content: center;
+      margin-top: 3rem;
+    }
+
+    .integration-badge {
+      padding: 0.625rem 1.25rem;
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      font-size: 0.875rem;
+      font-weight: 600;
+      color: var(--text-secondary);
+      transition: border-color 0.2s, color 0.2s;
+    }
+
+    .integration-badge:hover {
+      border-color: var(--border-light);
+      color: var(--text);
+    }
+
+    /* Comparison */
+    .comparison {
+      background: var(--bg-secondary);
+      border-top: 1px solid var(--border);
+      border-bottom: 1px solid var(--border);
+    }
+
+    .comparison-table-wrapper {
+      overflow-x: auto;
+      margin-top: 3rem;
+      border: 1px solid var(--border);
+      border-radius: 12px;
+    }
+
+    .comparison-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.9375rem;
+    }
+
+    .comparison-table th,
+    .comparison-table td {
+      padding: 1rem 1.25rem;
+      text-align: left;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .comparison-table th {
+      background: var(--bg-tertiary);
+      font-weight: 600;
+      font-size: 0.8125rem;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: var(--text-secondary);
+    }
+
+    .comparison-table th:last-child {
+      color: var(--accent);
+    }
+
+    .comparison-table td {
+      color: var(--text-secondary);
+    }
+
+    .comparison-table td:last-child {
+      color: var(--text);
+      font-weight: 600;
+    }
+
+    .comparison-table tr:last-child td {
+      border-bottom: none;
+    }
+
+    .comparison-table td:first-child {
+      font-weight: 600;
+      color: var(--text);
+    }
+
+    /* Pricing */
+    .pricing-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 1.5rem;
+      margin-top: 3rem;
+    }
+
+    .pricing-card {
+      padding: 2.5rem 2rem;
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      display: flex;
+      flex-direction: column;
+      transition: border-color 0.3s, box-shadow 0.3s, transform 0.3s;
+    }
+
+    .pricing-card:hover {
+      transform: translateY(-2px);
+    }
+
+    .pricing-card.featured {
+      border-color: var(--accent);
+      box-shadow: 0 0 50px var(--accent-glow);
+      position: relative;
+    }
+
+    .pricing-card.featured::before {
+      content: 'Most Popular';
+      position: absolute;
+      top: -12px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: var(--accent);
+      color: #fff;
+      padding: 0.25rem 1rem;
+      border-radius: 100px;
+      font-size: 0.75rem;
+      font-weight: 600;
+    }
+
+    .pricing-name {
+      font-size: 1.125rem;
+      font-weight: 700;
+      margin-bottom: 0.5rem;
+    }
+
+    .pricing-price {
+      font-size: 2.5rem;
+      font-weight: 800;
+      letter-spacing: -0.03em;
+      margin-bottom: 0.25rem;
+    }
+
+    .pricing-price span {
+      font-size: 1rem;
+      font-weight: 500;
+      color: var(--text-muted);
+    }
+
+    .pricing-desc {
+      font-size: 0.875rem;
+      color: var(--text-muted);
+      margin-bottom: 2rem;
+    }
+
+    .pricing-features {
+      list-style: none;
+      flex: 1;
+      margin-bottom: 2rem;
+    }
+
+    .pricing-features li {
+      padding: 0.5rem 0;
+      font-size: 0.9375rem;
+      color: var(--text-secondary);
+      display: flex;
+      align-items: flex-start;
+      gap: 0.625rem;
+    }
+
+    .pricing-features li::before {
+      content: '\2713';
+      color: var(--green);
+      font-weight: 700;
+      flex-shrink: 0;
+    }
+
+    .pricing-card .btn {
+      width: 100%;
+      justify-content: center;
+    }
+
+    /* Install */
+    .install-section {
+      text-align: center;
+      background: var(--bg-secondary);
+      border-top: 1px solid var(--border);
+      border-bottom: 1px solid var(--border);
+    }
+
+    .install-block {
+      max-width: 500px;
+      margin: 2rem auto 0;
+      position: relative;
+    }
+
+    .install-code {
+      background: var(--terminal-bg);
+      border: 1px solid var(--terminal-border);
+      border-radius: 12px;
+      padding: 1.25rem 1.5rem;
+      font-family: var(--mono);
+      font-size: 1.125rem;
+      color: var(--text);
+      text-align: center;
+      cursor: pointer;
+      transition: border-color 0.2s;
+    }
+
+    .install-code:hover {
+      border-color: var(--accent);
+    }
+
+    .install-code .prompt {
+      color: var(--green);
+      user-select: none;
+    }
+
+    .install-hint {
+      margin-top: 0.75rem;
+      font-size: 0.8125rem;
+      color: var(--text-muted);
+    }
+
+    /* CTA Section */
+    .cta-section {
+      text-align: center;
+      padding: 8rem 1.5rem;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .cta-section::before {
+      content: '';
+      position: absolute;
+      bottom: -300px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 800px;
+      height: 800px;
+      background: radial-gradient(circle, var(--accent-glow) 0%, transparent 70%);
+      pointer-events: none;
+    }
+
+    .cta-section .container {
+      position: relative;
+      z-index: 1;
+    }
+
+    .cta-section h2 {
+      font-size: clamp(2rem, 4vw, 3rem);
+      font-weight: 800;
+      letter-spacing: -0.03em;
+      margin-bottom: 1.25rem;
+    }
+
+    .cta-section p {
+      font-size: 1.125rem;
+      color: var(--text-secondary);
+      max-width: 500px;
+      margin: 0 auto 2.5rem;
+    }
+
+    /* Footer */
+    footer {
+      padding: 3rem 1.5rem;
+      border-top: 1px solid var(--border);
+    }
+
+    .footer-inner {
+      max-width: 1200px;
+      margin: 0 auto;
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: space-between;
+      align-items: center;
+      gap: 1.5rem;
+    }
+
+    .footer-left {
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+    }
+
+    .footer-brand {
+      font-size: 1rem;
+      font-weight: 700;
+      color: var(--text);
+    }
+
+    .footer-brand span {
+      color: var(--accent);
+    }
+
+    .footer-meta {
+      font-size: 0.8125rem;
+      color: var(--text-muted);
+      line-height: 1.6;
+    }
+
+    .footer-links {
+      display: flex;
+      gap: 1.5rem;
+      flex-wrap: wrap;
+    }
+
+    .footer-links a {
+      color: var(--text-secondary);
+      text-decoration: none;
+      font-size: 0.875rem;
+      font-weight: 500;
+      transition: color 0.2s;
+    }
+
+    .footer-links a:hover {
+      color: var(--text);
+    }
+
+    /* Responsive */
+    @media (max-width: 768px) {
+      section {
+        padding: 4rem 1.25rem;
+      }
+
+      .hero {
+        padding: 7rem 1.25rem 4rem;
+      }
+
+      .nav-links {
+        display: none;
+      }
+
+      .nav-links.open {
+        display: flex;
+        flex-direction: column;
+        position: absolute;
+        top: 64px;
+        left: 0;
+        right: 0;
+        background: var(--bg);
+        border-bottom: 1px solid var(--border);
+        padding: 1.5rem;
+        gap: 1rem;
+      }
+
+      .nav-mobile-toggle {
+        display: block;
+      }
+
+      .problem-grid,
+      .solution-grid,
+      .steps,
+      .pricing-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .hero-buttons {
+        flex-direction: column;
+        align-items: center;
+      }
+
+      .btn {
+        width: 100%;
+        max-width: 320px;
+        justify-content: center;
+      }
+
+      .terminal-body {
+        font-size: 0.6875rem;
+        padding: 1rem;
+      }
+
+      .footer-inner {
+        flex-direction: column;
+        text-align: center;
+      }
+
+      .footer-links {
+        justify-content: center;
+      }
+    }
+
+    @media (min-width: 769px) and (max-width: 1024px) {
+      .problem-grid,
+      .solution-grid,
+      .steps {
+        grid-template-columns: repeat(2, 1fr);
+      }
+
+      .pricing-grid {
+        grid-template-columns: repeat(3, 1fr);
+        gap: 1rem;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Navigation -->
+  <nav>
+    <div class="nav-inner">
+      <a href="#" class="nav-logo">Fault<span>Ray</span></a>
+      <button class="nav-mobile-toggle" onclick="document.querySelector('.nav-links').classList.toggle('open')" aria-label="Toggle menu">&#9776;</button>
+      <ul class="nav-links">
+        <li><a href="#features">Features</a></li>
+        <li><a href="#how-it-works">How It Works</a></li>
+        <li><a href="#pricing">Pricing</a></li>
+        <li><a href="https://github.com/mattyopon/faultray" target="_blank" rel="noopener">GitHub</a></li>
+        <li><a href="#install" class="nav-cta">Get Started</a></li>
+      </ul>
+    </div>
+  </nav>
+
+  <!-- Hero -->
+  <section class="hero">
+    <div class="container">
+      <div class="hero-badge">
+        <span class="dot"></span>
+        v11.0 — Now with AI Agent Failure Modeling
+      </div>
+      <h1>Stop Breaking Production.<br><span class="gradient">Start Simulating It.</span></h1>
+      <p class="hero-sub">FaultRay simulates infrastructure failures in memory — before they happen in production. Zero risk. Full visibility.</p>
+      <div class="hero-buttons">
+        <a href="#install" class="btn btn-primary">Get Started Free</a>
+        <a href="https://github.com/mattyopon/faultray" target="_blank" rel="noopener" class="btn btn-secondary">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"/></svg>
+          View on GitHub
+        </a>
+      </div>
+
+      <!-- Terminal Mockup -->
+      <div class="terminal">
+        <div class="terminal-header">
+          <span class="terminal-dot red"></span>
+          <span class="terminal-dot yellow"></span>
+          <span class="terminal-dot green"></span>
+          <span class="terminal-title">terminal</span>
+        </div>
+        <div class="terminal-body">
+<span class="prompt">$</span> <span class="cmd">faultray tf-check plan.json</span>
+<br><br>
+<span class="box">&#9581;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472; FaultRay Terraform Guard &#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9584;</span><br>
+<span class="box">&#9474;</span>                                                   <span class="box">&#9474;</span><br>
+<span class="box">&#9474;</span>  Score Before: <span class="score-good">72/100</span>                             <span class="box">&#9474;</span><br>
+<span class="box">&#9474;</span>  Score After:  <span class="danger">45/100</span>  <span class="danger">(-27 points)</span>               <span class="box">&#9474;</span><br>
+<span class="box">&#9474;</span>                                                   <span class="box">&#9474;</span><br>
+<span class="box">&#9474;</span>  <span class="warn">NEW RISKS:</span>                                       <span class="box">&#9474;</span><br>
+<span class="box">&#9474;</span>  <span class="danger">-</span> Database is now a single point of failure      <span class="box">&#9474;</span><br>
+<span class="box">&#9474;</span>  <span class="danger">-</span> Cache has no replication (data loss risk)      <span class="box">&#9474;</span><br>
+<span class="box">&#9474;</span>                                                   <span class="box">&#9474;</span><br>
+<span class="box">&#9474;</span>  Recommendation: <span class="danger">HIGH RISK - Review Required</span>      <span class="box">&#9474;</span><br>
+<span class="box">&#9474;</span>                                                   <span class="box">&#9474;</span><br>
+<span class="box">&#9582;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9583;</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Problem -->
+  <section class="problem" id="problem">
+    <div class="container">
+      <div class="animate-on-scroll" style="text-align:center">
+        <p class="section-label">The Problem</p>
+        <h2 class="section-title"><code style="background:rgba(239,68,68,0.15);color:var(--red);padding:0.1em 0.4em;border-radius:6px;font-family:var(--mono);font-size:0.85em">terraform apply</code> Broke Production. Again.</h2>
+        <p class="section-subtitle" style="margin:0 auto">Every DevOps engineer has a horror story. A config change that looked harmless. A cascade failure at 2am. The plan output looked fine — and then production fell over.</p>
+      </div>
+      <div class="problem-grid">
+        <div class="problem-card animate-on-scroll">
+          <div class="problem-icon">&#128165;</div>
+          <h3>Cascade Failures from "Harmless" Changes</h3>
+          <p>A single config tweak triggers a chain reaction across your infrastructure. By the time you see it, half your services are down.</p>
+        </div>
+        <div class="problem-card animate-on-scroll">
+          <div class="problem-icon">&#128064;</div>
+          <h3>Single Points of Failure Nobody Noticed</h3>
+          <p>That database with <code style="background:var(--bg-tertiary);padding:0.1em 0.3em;border-radius:4px;font-family:var(--mono);font-size:0.85em">replicas: 1</code> slipped through code review. You found out at 2am when it went down.</p>
+        </div>
+        <div class="problem-card animate-on-scroll">
+          <div class="problem-icon">&#129335;</div>
+          <h3>No Way to Test Resilience Before Deploying</h3>
+          <p>Traditional chaos engineering means breaking production. Regulated industries can't do that. Most teams won't risk it.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Solution -->
+  <section id="features">
+    <div class="container">
+      <div class="animate-on-scroll" style="text-align:center">
+        <p class="section-label">The Solution</p>
+        <h2 class="section-title">Simulate Before You Ship</h2>
+        <p class="section-subtitle" style="margin:0 auto">FaultRay builds a mathematical model of your entire system and simulates 2,000+ failure scenarios in memory. Nothing breaks. You just get answers.</p>
+      </div>
+      <div class="solution-grid">
+        <div class="solution-card animate-on-scroll">
+          <div class="solution-number">1</div>
+          <h3>Graph-Based Cascade Simulation</h3>
+          <p>Model your entire infra as a dependency graph. Inject faults virtually. See exactly what breaks — and what survives.</p>
+        </div>
+        <div class="solution-card animate-on-scroll">
+          <div class="solution-number">2</div>
+          <h3>Multi-Layer Availability Limits</h3>
+          <p>Mathematically prove your theoretical maximum uptime across hardware, software, operations, and external dependencies.</p>
+        </div>
+        <div class="solution-card animate-on-scroll">
+          <div class="solution-number">3</div>
+          <h3>AI Agent Failure Modeling</h3>
+          <p>First tool to simulate how infrastructure failures cause AI agents to hallucinate, loop, or cascade errors through your system.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- How it works -->
+  <section class="how-it-works" id="how-it-works">
+    <div class="container">
+      <div class="animate-on-scroll" style="text-align:center">
+        <p class="section-label">How It Works</p>
+        <h2 class="section-title">Three Commands. Full Visibility.</h2>
+        <p class="section-subtitle" style="margin:0 auto">No agents to install. No infrastructure changes. No credentials needed beyond what Terraform already has.</p>
+      </div>
+      <div class="steps">
+        <div class="step animate-on-scroll">
+          <div class="step-number">Step 1 — Install</div>
+          <h3>One-line setup</h3>
+          <div class="code-block">
+            <span class="prompt">$ </span>pip install faultray
+          </div>
+        </div>
+        <div class="step animate-on-scroll">
+          <div class="step-number">Step 2 — Define</div>
+          <h3>Import or define your infra</h3>
+          <div class="code-block">
+<span class="prompt">$ </span>faultray tf-import<br>
+<span class="output">Imported 47 resources from terraform state</span><br><br>
+<span class="prompt">$ </span>faultray init<br>
+<span class="output">Created infra.yaml template</span>
+          </div>
+        </div>
+        <div class="step animate-on-scroll">
+          <div class="step-number">Step 3 — Simulate</div>
+          <h3>See what breaks</h3>
+          <div class="code-block">
+<span class="prompt">$ </span>faultray simulate<br>
+<span class="output">Resilience Score: 72/100</span><br>
+<span class="output">Scenarios tested: 2,000+</span><br>
+<span class="output">Critical: 3  Warning: 12  Passed: 85</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Integrations -->
+  <section id="integrations">
+    <div class="container animate-on-scroll" style="text-align:center">
+      <p class="section-label">Integrations</p>
+      <h2 class="section-title">Works With Your Stack</h2>
+      <p class="section-subtitle" style="margin:0 auto">Vendor-agnostic simulation that works across any infrastructure topology.</p>
+      <div class="integrations-row">
+        <span class="integration-badge">Terraform</span>
+        <span class="integration-badge">AWS</span>
+        <span class="integration-badge">Azure</span>
+        <span class="integration-badge">GCP</span>
+        <span class="integration-badge">Kubernetes</span>
+        <span class="integration-badge">Datadog</span>
+        <span class="integration-badge">PagerDuty</span>
+        <span class="integration-badge">Grafana</span>
+        <span class="integration-badge">OpsGenie</span>
+        <span class="integration-badge">Slack</span>
+        <span class="integration-badge">Prometheus</span>
+        <span class="integration-badge">GitHub Actions</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- Comparison -->
+  <section class="comparison">
+    <div class="container animate-on-scroll">
+      <div style="text-align:center">
+        <p class="section-label">Comparison</p>
+        <h2 class="section-title">Why Teams Switch to FaultRay</h2>
+      </div>
+      <div class="comparison-table-wrapper">
+        <table class="comparison-table">
+          <thead>
+            <tr>
+              <th></th>
+              <th>Gremlin</th>
+              <th>Steadybit</th>
+              <th>AWS FIS</th>
+              <th>FaultRay</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>Approach</td>
+              <td>Breaks real things</td>
+              <td>Breaks real things</td>
+              <td>Breaks real things</td>
+              <td>Math simulation</td>
+            </tr>
+            <tr>
+              <td>Production risk</td>
+              <td>Medium-High</td>
+              <td>Medium</td>
+              <td>Medium</td>
+              <td>Zero</td>
+            </tr>
+            <tr>
+              <td>Setup</td>
+              <td>Agent per host</td>
+              <td>Agent per host</td>
+              <td>AWS only</td>
+              <td>pip install faultray</td>
+            </tr>
+            <tr>
+              <td>Scenarios</td>
+              <td>Manual</td>
+              <td>Manual</td>
+              <td>AWS only</td>
+              <td>2,000+ auto-generated</td>
+            </tr>
+            <tr>
+              <td>Availability proof</td>
+              <td>No</td>
+              <td>No</td>
+              <td>No</td>
+              <td>5-Layer Limit Model</td>
+            </tr>
+            <tr>
+              <td>AI agent testing</td>
+              <td>No</td>
+              <td>No</td>
+              <td>No</td>
+              <td>7 fault types</td>
+            </tr>
+            <tr>
+              <td>Cost</td>
+              <td>$$$$</td>
+              <td>$$$</td>
+              <td>$$</td>
+              <td>Free / Open Source</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+
+  <!-- Pricing -->
+  <section id="pricing">
+    <div class="container">
+      <div class="animate-on-scroll" style="text-align:center">
+        <p class="section-label">Pricing</p>
+        <h2 class="section-title">Start Free. Scale When Ready.</h2>
+        <p class="section-subtitle" style="margin:0 auto">No credit card required. Install and start simulating in under a minute.</p>
+      </div>
+      <div class="pricing-grid">
+        <div class="pricing-card animate-on-scroll">
+          <div class="pricing-name">Free</div>
+          <div class="pricing-price">$0<span>/mo</span></div>
+          <div class="pricing-desc">For individuals and small projects</div>
+          <ul class="pricing-features">
+            <li>5 components</li>
+            <li>10 simulations / month</li>
+            <li>CLI only</li>
+            <li>Community support</li>
+            <li>Cascade simulation engine</li>
+          </ul>
+          <a href="#install" class="btn btn-secondary">Install Free</a>
+        </div>
+        <div class="pricing-card featured animate-on-scroll">
+          <div class="pricing-name">Pro</div>
+          <div class="pricing-price">$29<span>/mo</span></div>
+          <div class="pricing-desc">For teams running production infrastructure</div>
+          <ul class="pricing-features">
+            <li>50 components</li>
+            <li>Unlimited simulations</li>
+            <li>All 5 simulation engines</li>
+            <li>Compliance reports (SOC 2, ISO, PCI)</li>
+            <li>AI agent failure modeling</li>
+            <li>Web dashboard</li>
+            <li>Email support</li>
+          </ul>
+          <a href="https://github.com/sponsors/mattyopon" target="_blank" rel="noopener" class="btn btn-primary">Sponsor on GitHub</a>
+        </div>
+        <div class="pricing-card animate-on-scroll">
+          <div class="pricing-name">Enterprise</div>
+          <div class="pricing-price">$299<span>/mo</span></div>
+          <div class="pricing-desc">For organizations with compliance requirements</div>
+          <ul class="pricing-features">
+            <li>Unlimited components</li>
+            <li>Unlimited simulations</li>
+            <li>SSO / SAML integration</li>
+            <li>Insurance API access</li>
+            <li>Multi-region DR analysis</li>
+            <li>Security feed (CVE/CISA/NVD)</li>
+            <li>Dedicated support</li>
+            <li>Custom integrations</li>
+          </ul>
+          <a href="mailto:ymaeda.it@gmail.com" class="btn btn-secondary">Contact Us</a>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Install -->
+  <section class="install-section" id="install">
+    <div class="container animate-on-scroll">
+      <p class="section-label">Get Started</p>
+      <h2 class="section-title">Install in Seconds</h2>
+      <p class="section-subtitle" style="margin:0 auto 0">One command. No agents. No infrastructure changes.</p>
+      <div class="install-block">
+        <div class="install-code" onclick="navigator.clipboard.writeText('pip install faultray');this.querySelector('.install-hint-inner').textContent='Copied!'">
+          <span class="prompt">$ </span>pip install faultray
+        </div>
+        <p class="install-hint"><span class="install-hint-inner">Click to copy</span></p>
+      </div>
+    </div>
+  </section>
+
+  <!-- CTA -->
+  <section class="cta-section">
+    <div class="container animate-on-scroll">
+      <h2>Ready to Stop Breaking Production?</h2>
+      <p>Join engineering teams who simulate failures before they ship. Free forever for small projects.</p>
+      <div class="hero-buttons">
+        <a href="#install" class="btn btn-primary">Get Started Free</a>
+        <a href="https://github.com/mattyopon/faultray" target="_blank" rel="noopener" class="btn btn-secondary">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"/></svg>
+          Star on GitHub
+        </a>
+      </div>
+    </div>
+  </section>
+
+  <!-- Footer -->
+  <footer>
+    <div class="footer-inner">
+      <div class="footer-left">
+        <div class="footer-brand">Fault<span>Ray</span></div>
+        <div class="footer-meta">
+          Patent Pending — US Application 64/010,200<br>
+          &copy; 2025-2026 Yutaro Maeda
+        </div>
+      </div>
+      <div class="footer-links">
+        <a href="https://github.com/mattyopon/faultray" target="_blank" rel="noopener">GitHub</a>
+        <a href="https://faultray.com" target="_blank" rel="noopener">Documentation</a>
+        <a href="https://pypi.org/project/faultray/" target="_blank" rel="noopener">PyPI</a>
+        <a href="https://github.com/mattyopon/faultray/blob/main/LICENSE" target="_blank" rel="noopener">License (BSL-1.1)</a>
+      </div>
+    </div>
+  </footer>
+
+  <!-- Minimal JS for scroll animations -->
+  <script>
+    const observer = new IntersectionObserver((entries) => {
+      entries.forEach(entry => {
+        if (entry.isIntersecting) {
+          entry.target.classList.add('visible');
+        }
+      });
+    }, {
+      threshold: 0.1,
+      rootMargin: '0px 0px -40px 0px'
+    });
+
+    document.querySelectorAll('.animate-on-scroll').forEach(el => observer.observe(el));
+
+    // Close mobile nav on link click
+    document.querySelectorAll('.nav-links a').forEach(link => {
+      link.addEventListener('click', () => {
+        document.querySelector('.nav-links').classList.remove('open');
+      });
+    });
+  </script>
+</body>
+</html>
