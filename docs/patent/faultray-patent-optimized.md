@@ -750,7 +750,7 @@ In an alternative embodiment, the system performs multi-objective optimization t
 **Claim 2.** A computer-implemented method for simulating AI agent failure behavior as a function of infrastructure state, comprising:
 - (a) modeling AI agent components within an infrastructure dependency graph stored in computer memory, each AI agent vertex having a base hallucination rate attribute and weighted dependency edges to data source vertices, wherein each data source vertex represents a grounding information source with an associated dependency weight indicating the criticality of that source to the agent's output quality;
 - (b) simulating infrastructure faults affecting data source vertices within said dependency graph and computing health states for each affected vertex, wherein each vertex is assigned a health status from the set {HEALTHY, DEGRADED, OVERLOADED, DOWN};
-- (c) computing a hallucination probability H(a, D, I) for each AI agent a as a function of the agent's base hallucination rate h_0(a), data source dependency weights w(d), and infrastructure health states of data sources, using the formula: for each unavailable data source d with health status DOWN, computing per-source hallucination contribution h_d = h_0(a) + (1 - h_0(a)) * w(d), and computing the combined hallucination probability as H(a, D, I) = 1 - product over all non-healthy data sources d of (1 - h_d);
+- (c) computing a hallucination probability for each AI agent as a monotonically increasing function of the number and importance of unavailable data sources, wherein the hallucination probability increases as more data sources upon which the agent depends become unavailable, and wherein the function incorporates the agent's base hallucination rate and the dependency weight of each unavailable data source;
 - (d) simulating cross-layer cascade propagation across four layers: (L1) infrastructure fault causes component failure, (L2) data source becomes unavailable causing grounding data loss for dependent agents, (L3) agent hallucination probability exceeds a configured threshold causing the agent to enter a degraded behavioral state, (L4) degraded agent output propagates to downstream agent consumers through the agent dependency subgraph;
 - (e) computing compound hallucination probability for each downstream agent a_t that consumes output from an upstream agent a_s, incorporating an amplification factor reflecting whether the downstream agent has independent verification capability, using the formula: H_effective(a_t) = 1 - (1 - H(a_t, D, I)) * (1 - H(a_s) * amplification_factor(a_s, a_t));
 - (f) generating infrastructure monitoring thresholds derived from said hallucination probabilities, wherein for each AI agent and each of its data source dependencies, a threshold for data source health degradation is computed such that the agent's hallucination probability remains below a configured acceptable level, said thresholds providing actionable alerts to infrastructure operators;
@@ -778,6 +778,8 @@ In an alternative embodiment, the system performs multi-objective optimization t
 
 **Claim 12.** The method of Claim 1, embodied as a system comprising: at least one processor; a memory coupled to the at least one processor; and instructions stored in the memory that, when executed by the at least one processor, cause the system to perform the method of Claim 1.
 
+**Claim 13.** The method of Claim 2, wherein the hallucination probability H for an AI agent a is computed using the formula: for each unavailable data source d, h_d = h_0(a) + (1 - h_0(a)) * w(d), where h_0(a) is the base hallucination rate and w(d) is the dependency weight; and H = 1 - product(1 - h_d) for all unavailable data sources.
+
 ---
 
 ## APPENDIX A: Prior Art Differentiation
@@ -801,6 +803,9 @@ Isograph and similar RAMS tools compute availability using hardware reliability 
 
 **Bell-LaPadula Model:**
 The Bell-LaPadula model is a formal state machine model for enforcing mandatory access control in computer security. It addresses information flow control (no read up, no write down), not infrastructure resilience or failure simulation. It is not relevant prior art for the present invention.
+
+**AWS Fault Injection Service (FIS):**
+AWS's managed fault injection service enables controlled experiments on AWS infrastructure. FIS injects real faults (CPU stress, network disruption, instance termination) into actual running AWS resources. FIS differs from the present invention in that: (1) FIS requires real infrastructure — experiments execute against production or staging environments, incurring production risk; (2) FIS does not construct a formal graph model of dependencies or simulate cascade propagation in-memory; (3) FIS lacks LTS-based formalization of fault propagation semantics; (4) FIS does not compute multi-layer availability ceilings; (5) FIS has no AI agent failure modeling capability; (6) FIS cannot perform exhaustive combinatorial scenario analysis because each experiment runs against real resources with real cost and time constraints.
 
 ### A.2 Novel Contributions Summary
 
