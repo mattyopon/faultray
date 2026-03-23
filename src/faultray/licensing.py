@@ -26,7 +26,7 @@ logger = logging.getLogger(__name__)
 # Environment variable names
 # ---------------------------------------------------------------------------
 _ENV_LICENSE_KEY = "FAULTRAY_LICENSE_KEY"
-_ENV_LICENSE_SECRET = "FAULTRAY_LICENSE_SECRET"
+_ENV_LICENSE_SECRET = "FAULTRAY_LICENSE_SECRET"  # noqa: S105 - env var name, not a secret value
 
 # ---------------------------------------------------------------------------
 # Key format constants

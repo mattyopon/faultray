@@ -10,9 +10,9 @@ Route handlers live in ``faultray.api.routes.*``.
 
 from __future__ import annotations
 
-import asyncio
 import logging
 import os
+import threading
 import time
 from collections import defaultdict
 from contextlib import asynccontextmanager
@@ -42,11 +42,11 @@ class RateLimiter:
         self.max_requests = max_requests
         self.window = window_seconds
         self.requests: dict[str, list[float]] = defaultdict(list)
-        self._lock = asyncio.Lock()
+        self._lock = threading.Lock()
 
-    async def is_allowed(self, client_id: str) -> bool:
+    def is_allowed(self, client_id: str) -> bool:
         now = time.time()
-        async with self._lock:
+        with self._lock:
             self.requests[client_id] = [
                 t for t in self.requests[client_id] if now - t < self.window
             ]
@@ -243,7 +243,7 @@ async def rate_limit_middleware(request: Request, call_next):
         client_ip = forwarded_for.split(",")[0].strip()
     else:
         client_ip = request.client.host if request.client else "unknown"
-    if not await _rate_limiter.is_allowed(client_ip):
+    if not _rate_limiter.is_allowed(client_ip):
         return JSONResponse(
             status_code=429,
             content={

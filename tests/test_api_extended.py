@@ -5,27 +5,17 @@ from __future__ import annotations
 import asyncio
 import json
 import os
-import time
-from dataclasses import dataclass, field
 from pathlib import Path
 from types import SimpleNamespace
 from unittest.mock import AsyncMock, MagicMock, patch
 
-import httpx
 import pytest
 import pytest_asyncio
 from fastapi.testclient import TestClient
-from sqlalchemy import select
-from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 
 from faultray.api.auth import hash_api_key
 from faultray.api.database import (
-    AuditLog,
     Base,
-    ProjectRow,
-    SimulationRunRow,
-    TeamRow,
-    UserRow,
     get_database_url,
     get_session_factory,
     init_db,
@@ -39,19 +29,15 @@ _TEST_API_KEY = "test-extended-api-key"
 _TEST_API_KEY_HASH = hash_api_key(_TEST_API_KEY)
 from faultray.api.server import (
     RateLimiter,
-    _rate_limiter,
     _report_to_dict,
     _save_run,
     app,
-    build_demo_graph,
-    get_graph,
     set_graph,
 )
 from faultray.model.components import HealthStatus
 from faultray.model.demo import create_demo_graph
-from faultray.model.graph import InfraGraph
 from faultray.simulator.cascade import CascadeChain, CascadeEffect
-from faultray.simulator.engine import ScenarioResult, SimulationEngine, SimulationReport
+from faultray.simulator.engine import ScenarioResult, SimulationReport
 from faultray.simulator.scenarios import Fault, FaultType, Scenario
 
 
@@ -754,27 +740,43 @@ class TestOAuthRoutes:
 
     def test_oauth_callback_exchange_failure(self, client):
         """Cover lines 843-845: OAuth exchange failure returns 502."""
+        import hashlib
+        import hmac
+
         env = {
             "FAULTRAY_OAUTH_GITHUB_CLIENT_ID": "test-id",
             "FAULTRAY_OAUTH_GITHUB_CLIENT_SECRET": "test-secret",
         }
+        # Build a valid CSRF state so the callback passes CSRF validation
+        nonce = "testnonce"
+        sig = hmac.new(b"test-secret", nonce.encode(), hashlib.sha256).hexdigest()
+        state = f"{nonce}.{sig}"
+
         with patch.dict(os.environ, env, clear=False):
             with patch(
                 "faultray.api.oauth.exchange_code_for_token",
                 new_callable=AsyncMock,
                 side_effect=RuntimeError("token exchange failed"),
             ):
-                resp = client.get("/auth/callback?code=testcode&provider=github")
+                client.cookies.set("oauth_state", state)
+                resp = client.get(f"/auth/callback?code=testcode&provider=github&state={state}")
                 assert resp.status_code == 502
                 data = resp.json()
                 assert "OAuth exchange failed" in data["error"]
 
     def test_oauth_callback_success_new_user(self, db_client):
         """Cover lines 848-880: successful OAuth creates new user."""
+        import hashlib
+        import hmac as _hmac
+
         env = {
             "FAULTRAY_OAUTH_GITHUB_CLIENT_ID": "test-id",
             "FAULTRAY_OAUTH_GITHUB_CLIENT_SECRET": "test-secret",
         }
+        nonce = "testnonce"
+        sig = _hmac.new(b"test-secret", nonce.encode(), hashlib.sha256).hexdigest()
+        state = f"{nonce}.{sig}"
+
         with patch.dict(os.environ, env, clear=False):
             with patch(
                 "faultray.api.oauth.exchange_code_for_token",
@@ -786,8 +788,9 @@ class TestOAuthRoutes:
                     new_callable=AsyncMock,
                     return_value={"email": "new@example.com", "name": "New User"},
                 ):
+                    db_client.cookies.set("oauth_state", state)
                     resp = db_client.get(
-                        "/auth/callback?code=testcode&provider=github"
+                        f"/auth/callback?code=testcode&provider=github&state={state}"
                     )
                     assert resp.status_code == 200
                     data = resp.json()
@@ -798,6 +801,8 @@ class TestOAuthRoutes:
 
     def test_oauth_callback_existing_user(self, db_client):
         """Cover lines 868-874: existing user gets API key rotated."""
+        import hashlib
+        import hmac as _hmac
         from faultray.api.auth import hash_api_key
 
         # Create a user first using sync sqlite
@@ -814,6 +819,10 @@ class TestOAuthRoutes:
             "FAULTRAY_OAUTH_GITHUB_CLIENT_ID": "test-id",
             "FAULTRAY_OAUTH_GITHUB_CLIENT_SECRET": "test-secret",
         }
+        nonce = "testnonce"
+        sig = _hmac.new(b"test-secret", nonce.encode(), hashlib.sha256).hexdigest()
+        state = f"{nonce}.{sig}"
+
         with patch.dict(os.environ, env, clear=False):
             with patch(
                 "faultray.api.oauth.exchange_code_for_token",
@@ -828,8 +837,9 @@ class TestOAuthRoutes:
                         "name": "Updated Name",
                     },
                 ):
+                    db_client.cookies.set("oauth_state", state)
                     resp = db_client.get(
-                        "/auth/callback?code=testcode&provider=github"
+                        f"/auth/callback?code=testcode&provider=github&state={state}"
                     )
                     assert resp.status_code == 200
                     data = resp.json()
@@ -839,10 +849,17 @@ class TestOAuthRoutes:
 
     def test_oauth_callback_db_failure(self, client):
         """Cover lines 881-883: user creation fails."""
+        import hashlib
+        import hmac as _hmac
+
         env = {
             "FAULTRAY_OAUTH_GITHUB_CLIENT_ID": "test-id",
             "FAULTRAY_OAUTH_GITHUB_CLIENT_SECRET": "test-secret",
         }
+        nonce = "testnonce"
+        sig = _hmac.new(b"test-secret", nonce.encode(), hashlib.sha256).hexdigest()
+        state = f"{nonce}.{sig}"
+
         with patch.dict(os.environ, env, clear=False):
             with patch(
                 "faultray.api.oauth.exchange_code_for_token",
@@ -859,8 +876,9 @@ class TestOAuthRoutes:
                         "faultray.api.database.get_session_factory",
                         side_effect=Exception("DB unavailable"),
                     ):
+                        client.cookies.set("oauth_state", state)
                         resp = client.get(
-                            "/auth/callback?code=testcode&provider=github"
+                            f"/auth/callback?code=testcode&provider=github&state={state}"
                         )
                         assert resp.status_code == 500
                         data = resp.json()
@@ -942,7 +960,6 @@ class TestMultiTenantProjects:
         # which wraps require_permission and returns the user.  We need to
         # override the actual dependency function attached to the route.
         # Extract the dependency from the route so we can override it properly.
-        from faultray.api.server import _require_permission
         mock_user = SimpleNamespace(id=user_id, team_id=team_id, role="editor")
 
         # Find the actual dependency function used by the /api/projects GET route

@@ -11,9 +11,25 @@ from faultray.api.database import (
     Base,
     UserRow,
     get_session_factory,
-    reset_engine,
     _get_engine,
 )
+
+
+@pytest.fixture(autouse=True)
+def _reset_rate_limiter():
+    """Reset the global rate limiter state before each test.
+
+    The rate limiter uses a sliding-window counter keyed by client IP.
+    TestClient always uses the same IP ("testclient"), so after 60 requests
+    within the 60-second window, every subsequent request returns 429.
+    This fixture clears accumulated request timestamps so each test starts
+    with a clean slate regardless of how many other tests have run.
+    """
+    import faultray.api.server as _srv
+    _srv._rate_limiter.requests.clear()
+    yield
+    # Leave state clean for the next test as well
+    _srv._rate_limiter.requests.clear()
 
 # A known test API key for use in tests
 TEST_API_KEY = "test-api-key-for-faultray-tests"
@@ -21,12 +37,37 @@ TEST_API_KEY_HASH = hash_api_key(TEST_API_KEY)
 
 
 def _run_async(coro):
-    """Run an async coroutine from sync code, handling event loop reuse."""
+    """Run an async coroutine from sync code (no running event loop)."""
+    loop = asyncio.new_event_loop()
     try:
-        loop = asyncio.get_running_loop()
-    except RuntimeError:
-        loop = asyncio.new_event_loop()
-    return loop.run_until_complete(coro)
+        return loop.run_until_complete(coro)
+    finally:
+        loop.close()
+
+
+async def _setup_test_user_async():
+    """Create test admin user in DB (async helper).
+
+    Safe to call multiple times — skips if user already exists.
+    """
+    engine = _get_engine()
+    async with engine.begin() as conn:
+        await conn.run_sync(Base.metadata.create_all)
+    sf = get_session_factory()
+    async with sf() as session:
+        from sqlalchemy import select
+        result = await session.execute(
+            select(UserRow).where(UserRow.api_key_hash == TEST_API_KEY_HASH)
+        )
+        if result.scalar_one_or_none() is None:
+            user = UserRow(
+                email="test@faultray.local",
+                name="Test Admin",
+                api_key_hash=TEST_API_KEY_HASH,
+                role="admin",
+            )
+            session.add(user)
+            await session.commit()
 
 
 def _setup_test_user():
@@ -34,27 +75,7 @@ def _setup_test_user():
 
     Safe to call multiple times — skips if user already exists.
     """
-    async def _setup():
-        engine = _get_engine()
-        async with engine.begin() as conn:
-            await conn.run_sync(Base.metadata.create_all)
-        sf = get_session_factory()
-        async with sf() as session:
-            from sqlalchemy import select
-            result = await session.execute(
-                select(UserRow).where(UserRow.api_key_hash == TEST_API_KEY_HASH)
-            )
-            if result.scalar_one_or_none() is None:
-                user = UserRow(
-                    email="test@faultray.local",
-                    name="Test Admin",
-                    api_key_hash=TEST_API_KEY_HASH,
-                    role="admin",
-                )
-                session.add(user)
-                await session.commit()
-
-    _run_async(_setup())
+    _run_async(_setup_test_user_async())
 
 
 def _teardown_test_user():

@@ -365,7 +365,9 @@ class PluginManager:
             )
 
         logger.warning(
-            "Loading plugin '%s' via exec() from %s", plugin_name, py_file,
+            "Loading plugin '%s' via exec() from %s",  # noqa: S102 - log message, not a call
+            plugin_name,
+            py_file,
         )
 
         source = py_file.read_text(encoding="utf-8")

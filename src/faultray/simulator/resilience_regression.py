@@ -727,7 +727,7 @@ class ResilienceRegressionEngine:
             return slope
         except Exception:
             logger.warning("Linear regression failed for values: %s", values)
-            return -1.0
+            return 0.0
 
     @staticmethod
     def _estimate_effort_impact(

@@ -7,13 +7,36 @@ from __future__ import annotations
 
 from pathlib import Path
 
+import click
 import typer
+import typer.core
 from rich.console import Console
 
 from faultray.model.graph import InfraGraph
 
+# ---------------------------------------------------------------------------
+# Banner suppression: detect --json anywhere in the raw CLI args so we can
+# skip the startup banner when machine-readable output is requested.
+# We capture the raw arg list in TyperGroup.parse_args() *before* Click
+# processes them, because by the time @app.callback() runs the sub-command's
+# options are no longer visible through the context.
+# ---------------------------------------------------------------------------
+
+_raw_cli_args: list[str] = []
+
+
+class _ArgCapturingGroup(typer.core.TyperGroup):
+    """TyperGroup subclass that snapshots raw CLI args before parsing."""
+
+    def parse_args(self, ctx: click.Context, args: list[str]) -> list[str]:
+        global _raw_cli_args  # noqa: PLW0603
+        _raw_cli_args = list(args)
+        return super().parse_args(ctx, args)
+
+
 app = typer.Typer(
     name="faultray",
+    cls=_ArgCapturingGroup,
     help="FaultRay — Zero-risk infrastructure chaos engineering simulator",
     no_args_is_help=True,
 )
@@ -63,7 +86,10 @@ def main(
     ),
 ) -> None:
     """FaultRay — Zero-risk infrastructure chaos engineering simulator."""
-    console.print(f"[dim]{_tier_banner()}[/]")
+    # Skip the banner when --json is anywhere in the raw args so that
+    # machine-readable output is not contaminated with human-readable text.
+    if "--json" not in _raw_cli_args:
+        console.print(f"[dim]{_tier_banner()}[/]")
 
     if debug or verbose:
         from faultray.log_config import setup_logging
