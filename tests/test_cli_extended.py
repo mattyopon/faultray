@@ -12,13 +12,10 @@ Covers:
 
 from __future__ import annotations
 
-import asyncio
-import json
-from dataclasses import dataclass, field
 from io import StringIO
 from pathlib import Path
 from types import SimpleNamespace
-from unittest.mock import AsyncMock, MagicMock, patch, PropertyMock
+from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 from click.exceptions import Exit as ClickExit
@@ -1219,7 +1216,7 @@ class TestFeedUpdate:
 
         with patch("faultray.feeds.sources.get_enabled_sources", return_value=[MagicMock()]):
             with patch("faultray.feeds.fetcher.fetch_all_feeds", new_callable=AsyncMock, return_value=articles):
-                with patch("asyncio.run", return_value=articles) as mock_arun:
+                with patch("asyncio.run", return_value=articles):
                     with patch("faultray.feeds.analyzer.analyze_articles", return_value=incidents):
                         with patch("faultray.feeds.analyzer.incidents_to_scenarios", return_value=[mock_scenario]):
                             with patch("faultray.feeds.store.save_feed_scenarios", return_value=Path("/tmp/store.json")):
@@ -1384,7 +1381,7 @@ class TestAdminExtended:
                 mock_run.assert_called_once()
 
     def test_serve_no_model(self, tmp_path):
-        with patch("uvicorn.run") as mock_run:
+        with patch("uvicorn.run"):
             result = runner.invoke(app, [
                 "serve", "--model", str(tmp_path / "nonexistent.json"),
                 "--port", "9999",

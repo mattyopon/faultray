@@ -5,7 +5,6 @@ import pytest
 from faultray.model.components import Component, ComponentType
 from faultray.simulator.scenarios import (
     DynamicScenario,
-    Fault,
     FaultType,
     Scenario,
     _categorize,

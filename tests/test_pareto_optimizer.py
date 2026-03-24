@@ -6,12 +6,10 @@ import pytest
 
 from faultray.model.components import (
     AutoScalingConfig,
-    CircuitBreakerConfig,
     Component,
     ComponentType,
     Dependency,
     FailoverConfig,
-    ResourceMetrics,
 )
 from faultray.model.graph import InfraGraph
 from faultray.simulator.pareto_optimizer import (
@@ -401,7 +399,6 @@ class TestCostCalculations:
 # Additional tests for 99%+ coverage
 # ---------------------------------------------------------------------------
 
-import copy
 from unittest.mock import patch
 
 
@@ -603,7 +600,6 @@ class TestGenerateFrontierEdgeCases:
 
         # Mock _filter_pareto_optimal to return many distinct solutions
         # with current placed at an odd index so step_size skips it
-        original_filter = optimizer._filter_pareto_optimal
 
         def mock_filter_inflated(solutions):
             """Return all unique solutions to inflate the Pareto front."""

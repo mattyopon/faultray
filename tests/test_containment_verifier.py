@@ -18,8 +18,6 @@ from faultray.model.components import (
     ComponentType,
     Dependency,
     FailoverConfig,
-    HealthStatus,
-    ResourceMetrics,
     RetryStrategy,
     SecurityProfile,
 )

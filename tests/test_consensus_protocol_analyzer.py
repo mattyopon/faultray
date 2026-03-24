@@ -14,7 +14,6 @@ from faultray.model.components import (
     Component,
     ComponentType,
     Dependency,
-    HealthStatus,
 )
 from faultray.model.graph import InfraGraph
 from faultray.simulator.consensus_protocol_analyzer import (
@@ -22,26 +21,19 @@ from faultray.simulator.consensus_protocol_analyzer import (
     CAPScore,
     ConsensusAnalysisReport,
     ConsensusCluster,
-    ConsensusLatencyModel,
     ConsensusNode,
     ConsensusProtocolAnalyzer,
     LeaderElectionImpact,
-    LogReplicationLag,
-    MembershipChangeImpact,
     MembershipChangeType,
     ConsensusProtocol,
     NodeRole,
-    PartitionToleranceResult,
     PartitionType,
     ProtocolComparison,
     ProtocolRanking,
     QuorumAnalysis,
-    QuorumRecoveryEstimate,
     RiskLevel,
     SplitBrainAnalysis,
-    WitnessEffectiveness,
     WorkloadType,
-    WriteAvailabilityAssessment,
 )
 
 
@@ -2085,7 +2077,7 @@ class TestAdditionalCoverage:
     def test_membership_change_ft_after_zero_high_risk(self):
         """Cover line 1324: ft_after <= 0 => HIGH (when ft_after < ft_before is False)."""
         a = _analyzer()
-        c = ConsensusCluster(
+        ConsensusCluster(
             cluster_id="ftzero",
             nodes=[
                 _node("n1", "c1", NodeRole.LEADER),
@@ -2123,7 +2115,7 @@ class TestAdditionalCoverage:
         # A cluster where the worst risk is MEDIUM (not HIGH or CRITICAL).
         c = _cluster_5()  # healthy 5-node cluster should be LOW/MEDIUM
         a.add_cluster(c)
-        report = a.generate_report()
+        a.generate_report()
         # The report may contain MEDIUM risks from quorum margin=2 (LOW)
         # Let's force a MEDIUM by using a 3-node cluster at boundary.
         a2 = _analyzer()

@@ -1,6 +1,5 @@
 """Tests for the 3-Layer and 5-Layer Availability Limit Models."""
 
-import math
 
 from faultray.model.components import (
     Component,

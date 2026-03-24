@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import pytest
 
 from faultray.model.components import (
     AutoScalingConfig,
@@ -18,7 +17,6 @@ from faultray.api.chat_engine import (
     ChatEngine,
     ChatIntent,
     ChatResponse,
-    INTENT_PATTERNS,
 )
 
 

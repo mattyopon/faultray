@@ -16,28 +16,16 @@ from datetime import datetime, timezone, timedelta
 from faultray.model.components import Component, ComponentType, Dependency
 from faultray.model.graph import InfraGraph
 from faultray.simulator.queue_backpressure_analyzer import (
-    BackpressureReport,
-    BackpressurePropagation,
     BackpressureSeverity,
     CircuitState,
-    ConsumerLagAnalysis,
     ConsumerLagSnapshot,
-    DepthLatencyCorrelation,
-    DLQRiskAssessment,
-    FlowControlAssessment,
     FlowControlMode,
-    PartitionRebalanceImpact,
-    PoisonMessageAssessment,
-    PropagationStep,
     QueueBackpressureAnalyzer,
     QueueDependencyEdge,
     QueueEndpoint,
     QueuePlatform,
     RiskLevel,
-    ScalingRecommendation,
-    ThrottleImpact,
     ThrottleStrategy,
-    TTLAnalysis,
     _clamp,
     _max_risk,
     _max_severity,
@@ -57,7 +45,6 @@ def _comp(cid="c1", ctype=ComponentType.APP_SERVER):
 
 
 def _graph(*comps):
-    from faultray.model.graph import InfraGraph
 
     g = InfraGraph()
     for c in comps:

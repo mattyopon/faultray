@@ -8,7 +8,6 @@ from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from unittest.mock import MagicMock
 
-import pytest
 
 from faultray.model.components import (
     AutoScalingConfig,
@@ -23,7 +22,6 @@ from faultray.simulator.resilience_timeline import (
     TimelineMilestone,
     TimelineReport,
     TimelineSnapshot,
-    TimelineTrend,
     _count_spofs,
     _generate_sparkline,
 )
@@ -138,7 +136,7 @@ class TestTimelineSnapshot:
 class TestTimelineInit:
     def test_creates_storage_directory(self, tmp_path):
         path = tmp_path / "sub" / "dir" / "timeline.jsonl"
-        tl = ResilienceTimeline(storage_path=path)
+        ResilienceTimeline(storage_path=path)
         assert path.parent.exists()
         assert path.exists()
 
@@ -670,7 +668,6 @@ class TestCheckMilestonesScoreThreshold:
     """Test _check_milestones with score threshold and regression logging (lines 328, 334)."""
 
     def test_milestone_score_threshold_logging(self, tmp_path):
-        import logging
         tl = _timeline_in_tmp(tmp_path)
 
         # Seed with a low-score snapshot first
@@ -699,7 +696,7 @@ class TestCheckMilestonesScoreThreshold:
             type=ComponentType.APP_SERVER,
             replicas=1,
         ))
-        snap = tl.record(graph)
+        tl.record(graph)
         # Just ensure it doesn't crash
 
 

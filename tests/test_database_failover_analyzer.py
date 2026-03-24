@@ -10,7 +10,6 @@ from faultray.model.components import Component, ComponentType, Dependency
 from faultray.model.graph import InfraGraph
 from faultray.simulator.database_failover_analyzer import (
     AppRetryConfig,
-    ConnectionStringState,
     CrossRegionConfig,
     DatabaseFailoverAnalyzer,
     DatabaseFailoverConfig,
@@ -24,7 +23,6 @@ from faultray.simulator.database_failover_analyzer import (
     FailoverTimingBreakdown,
     PostFailoverHealthCheck,
     ProxyType,
-    ReplicaPromotionAnalysis,
     ReplicationMode,
     RetryBackoff,
     SplitBrainStrategy,

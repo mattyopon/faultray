@@ -6,7 +6,7 @@ import json
 import signal
 import time
 from pathlib import Path
-from unittest.mock import MagicMock, patch
+from unittest.mock import patch
 
 import pytest
 
@@ -112,7 +112,6 @@ class TestFaultRayDaemon:
         """start() should run scans and respond to stop."""
         scan_count = 0
 
-        original_sleep = daemon._interruptible_sleep
 
         def mock_sleep(seconds):
             nonlocal scan_count

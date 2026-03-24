@@ -2,24 +2,18 @@
 
 from __future__ import annotations
 
-import math
 
-import pytest
-from datetime import datetime, timezone
+from datetime import datetime
 
 from faultray.model.components import Component, ComponentType, Dependency, HealthStatus
 from faultray.model.graph import InfraGraph
 from faultray.simulator.load_balancer_strategy_analyzer import (
     BackendWeightConfig,
-    ConnectionDrainingAssessment,
     ConnectionDrainingConfig,
-    CrossZoneAssessment,
     CrossZoneConfig,
     FailoverAssessment,
     FailoverBehaviour,
     FairnessGrade,
-    FairnessScore,
-    HealthCheckAssessment,
     HealthCheckConfig,
     HealthCheckVerdict,
     LBAlgorithm,
@@ -27,14 +21,10 @@ from faultray.simulator.load_balancer_strategy_analyzer import (
     LoadBalancerStrategyAnalyzer,
     RedundancyAssessment,
     RedundancyMode,
-    SSLAnalysis,
     SSLTerminationPoint,
     SessionPersistenceMode,
     SessionTradeoffAnalysis,
-    SlowStartAssessment,
     SlowStartConfig,
-    StickySessionAssessment,
-    WeightOptimizationResult,
     _coefficient_of_variation,
 )
 

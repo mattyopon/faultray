@@ -8,7 +8,6 @@ WarRoomSimulator, and EnvironmentComparator.
 from __future__ import annotations
 
 import json
-from pathlib import Path
 
 import pytest
 
@@ -193,7 +192,7 @@ class TestBacktestEngine:
         assert summary["avg_f1"] == 0.0
 
     def test_backtest_load_incidents(self, tmp_path):
-        from faultray.simulator.backtest_engine import BacktestEngine, RealIncident
+        from faultray.simulator.backtest_engine import BacktestEngine
 
         data = [
             {

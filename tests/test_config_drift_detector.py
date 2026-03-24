@@ -11,9 +11,8 @@ map_compliance, generate_report), edge cases, and integration scenarios.
 
 from __future__ import annotations
 
-from datetime import datetime, timedelta, timezone
+from datetime import datetime, timezone
 
-import pytest
 
 from faultray.model.components import (
     AutoScalingConfig,
@@ -35,14 +34,10 @@ from faultray.simulator.config_drift_detector import (
     DriftCluster,
     DriftItem,
     DriftReport,
-    DriftRiskAssessment,
     DriftSeverity,
-    DriftTimeSeries,
     RemediationStrategy,
     _classify_category,
-    _COMPLIANCE_MAP,
     _compute_snapshot_id,
-    _CRITICALITY,
     _extract_config,
     _EXTRACTORS,
     _max_severity,

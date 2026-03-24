@@ -5,7 +5,6 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
-import pytest
 import pytest_asyncio
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker
@@ -16,11 +15,7 @@ from faultray.api.database import (
     SimulationRunRow,
     TeamRow,
     UserRow,
-    get_database_url,
-    get_session_factory,
-    init_db,
     reset_engine,
-    _get_engine,
 )
 from faultray.api.auth import generate_api_key, hash_api_key
 

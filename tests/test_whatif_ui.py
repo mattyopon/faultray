@@ -5,7 +5,6 @@ from __future__ import annotations
 import copy
 import json
 
-import pytest
 
 from faultray.model.components import (
     AutoScalingConfig,
@@ -166,7 +165,7 @@ class TestWhatIfCalculation:
         edge_mod.circuit_breaker.enabled = False
 
         # Score should be equal or lower
-        baseline = graph.resilience_score()
+        graph.resilience_score()
         new_score = modified.resilience_score()
         # Circuit breaker changes affect v2 score but not v1 necessarily
         # Just verify no crash

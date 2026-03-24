@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import pytest
 
 from faultray.model.components import (
     Component,
@@ -1172,7 +1171,6 @@ class TestAntiAffinityHardConstraint:
                 hard=True,
             )
         ]
-        existing = {"w1": ["n1"]}
         # With hard anti-affinity and same zone, the only node should be skipped
         report = _engine().schedule_workloads(g, [wl], constraints)
         # w1 not in existing_assignments of engine, but n1 anti-affinity

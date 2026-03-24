@@ -1,9 +1,7 @@
 """Tests for the Chaos Monkey random failure injection simulator."""
 
 from faultray.model.components import (
-    AutoScalingConfig,
     Capacity,
-    CircuitBreakerConfig,
     Component,
     ComponentType,
     Dependency,

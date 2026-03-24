@@ -4,7 +4,6 @@ from __future__ import annotations
 
 import json
 import subprocess
-import tempfile
 from pathlib import Path
 
 import pytest
@@ -143,7 +142,7 @@ class TestGitArchitectureTracker:
 
         # At least one non-initial commit should have a non-zero delta
         non_initial = [c for c in changes if c != changes[-1]]
-        has_delta = any(c.score_delta != 0 for c in non_initial)
+        any(c.score_delta != 0 for c in non_initial)
         # This may or may not have deltas depending on resilience score logic
         # but score_delta should at least be a float
         for c in changes:

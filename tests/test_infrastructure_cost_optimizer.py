@@ -2,17 +2,14 @@
 
 from __future__ import annotations
 
-import pytest
 
 from faultray.model.components import (
     AutoScalingConfig,
-    Capacity,
     Component,
     ComponentType,
     CostProfile,
     Dependency,
     FailoverConfig,
-    HealthStatus,
     OperationalProfile,
     RegionConfig,
     ResourceMetrics,
@@ -20,34 +17,18 @@ from faultray.model.components import (
 from faultray.model.graph import InfraGraph
 from faultray.simulator.infrastructure_cost_optimizer import (
     COMPUTE_COST_PER_REPLICA,
-    IDLE_UTILIZATION_THRESHOLD,
     LICENSING_COST_PER_REPLICA,
     MULTI_AZ_PREMIUM_PERCENT,
     NETWORK_COST_PER_REPLICA,
     OPERATIONAL_COST_PER_COMPONENT,
-    RESERVED_1YR_DISCOUNT,
-    RESERVED_3YR_DISCOUNT,
-    RIGHTSIZE_UTILIZATION_THRESHOLD,
-    SPOT_DISCOUNT_RATE,
     STORAGE_COST_PER_REPLICA,
     ComponentCostBreakdown,
-    CostAllocation,
-    CostAnomalyThreshold,
     CostCategory,
-    CostRecommendation,
-    IdleResource,
     InfrastructureCostOptimizer,
     InfrastructureCostReport,
-    MultiAZCostAnalysis,
     PricingModel,
     RecommendationType,
-    RedundancyCostAnalysis,
-    ReservedInstanceAnalysis,
-    ResilienceChangeCostImpact,
     RiskLevel,
-    SavingsPlanRecommendation,
-    SpotOpportunity,
-    TCOAnalysis,
     compute_component_cost,
     compute_graph_cost,
     _is_stateless,

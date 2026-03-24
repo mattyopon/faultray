@@ -9,7 +9,6 @@ from unittest.mock import MagicMock
 import pytest
 
 from faultray.discovery.flow_analyzer import (
-    CommunicationPattern,
     FlowAnalysisResult,
     FlowLogAnalyzer,
 )

@@ -2,8 +2,6 @@
 
 from __future__ import annotations
 
-import pytest
-from datetime import datetime, timezone
 
 from faultray.model.components import Component, ComponentType, Dependency
 from faultray.model.graph import InfraGraph
@@ -15,7 +13,6 @@ from faultray.simulator.health_check_strategy import (
     CascadeChain,
     CheckDepth,
     DependencyChainAnalysis,
-    DependencyChainLink,
     DepthTradeoff,
     EndpointRecommendation,
     FalsePositiveEstimate,

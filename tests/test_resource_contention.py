@@ -6,7 +6,6 @@ engine methods, edge cases, and internal helpers.
 
 from __future__ import annotations
 
-import pytest
 
 from faultray.model.components import (
     AutoScalingConfig,
@@ -14,7 +13,6 @@ from faultray.model.components import (
     Component,
     ComponentType,
     Dependency,
-    HealthStatus,
     ResourceMetrics,
 )
 from faultray.model.graph import InfraGraph

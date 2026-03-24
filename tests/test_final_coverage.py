@@ -10,24 +10,17 @@ Groups:
 from __future__ import annotations
 
 import io
-import logging
-from pathlib import Path
-from unittest.mock import AsyncMock, MagicMock, patch
+from unittest.mock import MagicMock, patch
 
 import pytest
 
 from faultray.model.components import (
-    AutoScalingConfig,
     Capacity,
-    CircuitBreakerConfig,
     Component,
     ComponentType,
     Dependency,
-    FailoverConfig,
-    HealthStatus,
     OperationalProfile,
     ResourceMetrics,
-    RetryStrategy,
     SLOTarget,
 )
 from faultray.model.graph import InfraGraph
@@ -94,7 +87,7 @@ class TestFeedSourcesGetEnabled:
     """Cover sources.py line 69: return only enabled sources."""
 
     def test_get_enabled_sources_returns_only_enabled(self):
-        from faultray.feeds.sources import DEFAULT_SOURCES, FeedSource, get_enabled_sources
+        from faultray.feeds.sources import DEFAULT_SOURCES, get_enabled_sources
 
         # All defaults should be enabled
         result = get_enabled_sources()
@@ -526,7 +519,6 @@ class TestAIAnalyzerSPOFMultiReplica:
 
     def test_spof_detection_skips_multi_replica(self):
         from faultray.ai.analyzer import FaultRayAnalyzer
-        from faultray.simulator.engine import SimulationReport
 
         graph = InfraGraph()
         # Multi-replica component should be skipped
@@ -632,7 +624,7 @@ class TestTerraformDuplicateComponents:
     """Cover terraform.py lines 433, 443: duplicate component IDs and dependency refs."""
 
     def test_infer_dependencies_with_value_references(self):
-        from faultray.discovery.terraform import _find_references_in_values, parse_tf_state
+        from faultray.discovery.terraform import _find_references_in_values
 
         graph = InfraGraph()
         app = _make_component("aws_instance.app", "app", ComponentType.APP_SERVER)
@@ -759,7 +751,6 @@ class TestEngineImportErrorPlugins:
         # The engine does: from faultray.plugins.registry import PluginRegistry
         # inside a try/except ImportError block. Let's trigger it by making
         # PluginRegistry raise on access.
-        import faultray.simulator.engine as engine_mod
 
         # Actually, the simpler approach: the try/except is inside run_all_defaults
         # Let's just ensure it doesn't crash and returns a report
@@ -996,7 +987,6 @@ class TestFeedAnalyzerNegativeKeywords:
 
     def test_negative_keywords_skip_pattern(self):
         from faultray.feeds.analyzer import (
-            AnalyzedIncident,
             IncidentPattern,
             analyze_articles,
             _match_keywords,

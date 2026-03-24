@@ -24,9 +24,7 @@ from __future__ import annotations
 
 import json
 import logging
-from pathlib import Path
 
-import pytest
 
 from faultray.model.demo import create_demo_graph
 from faultray.model.graph import InfraGraph

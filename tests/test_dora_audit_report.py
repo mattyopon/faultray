@@ -20,7 +20,6 @@ from dataclasses import asdict
 from datetime import datetime, timezone
 from pathlib import Path
 
-import pytest
 
 from faultray.model.components import (
     Component,
@@ -30,7 +29,6 @@ from faultray.model.components import (
 )
 from faultray.model.graph import InfraGraph
 from faultray.reporter.dora_audit_report import (
-    DORAuditReport,
     DORAuditReportGenerator,
     RegisterEntry,
     RemediationItem,
@@ -472,7 +470,7 @@ class TestExportRegulatoryPackage:
     def test_creates_output_dir(self, tmp_path: Path):
         out_dir = tmp_path / "dora-pkg"
         report = self.gen.generate_full_report(_minimal_graph())
-        pkg = self.gen.export_regulatory_package(report, out_dir)
+        self.gen.export_regulatory_package(report, out_dir)
         assert out_dir.exists()
 
     def test_returns_regulatory_package(self, tmp_path: Path):
@@ -483,7 +481,7 @@ class TestExportRegulatoryPackage:
     def test_all_expected_files_written(self, tmp_path: Path):
         out_dir = tmp_path / "pkg"
         report = self.gen.generate_full_report(_minimal_graph())
-        pkg = self.gen.export_regulatory_package(report, out_dir)
+        self.gen.export_regulatory_package(report, out_dir)
         expected = {
             "executive-summary.json",
             "article-24-testing-evidence.json",
@@ -633,7 +631,7 @@ class TestExportRegulatoryPackage:
     def test_nested_output_dir_created(self, tmp_path: Path):
         out_dir = tmp_path / "deep" / "nested" / "dora"
         report = self.gen.generate_full_report(_minimal_graph())
-        pkg = self.gen.export_regulatory_package(report, out_dir)
+        self.gen.export_regulatory_package(report, out_dir)
         assert out_dir.exists()
 
     def test_existing_output_dir_overwritten(self, tmp_path: Path):
@@ -642,7 +640,7 @@ class TestExportRegulatoryPackage:
         # Write a pre-existing file that should be replaced
         (out_dir / "executive-summary.json").write_text("{}")
         report = self.gen.generate_full_report(_minimal_graph())
-        pkg = self.gen.export_regulatory_package(report, out_dir)
+        self.gen.export_regulatory_package(report, out_dir)
         content = (out_dir / "executive-summary.json").read_text()
         parsed = json.loads(content)
         assert parsed.get("section") == "Executive Summary"
@@ -1075,7 +1073,7 @@ class TestEdgeCases:
 
     def test_report_with_no_components_and_evidence(self, tmp_path: Path):
         report = self.gen.generate_full_report(_graph())
-        pkg = self.gen.export_regulatory_package(report, tmp_path / "empty-pkg")
+        self.gen.export_regulatory_package(report, tmp_path / "empty-pkg")
         manifest = json.loads((tmp_path / "empty-pkg" / "manifest.json").read_text())
         assert manifest["overall_compliance_status"] == "not_applicable"
 

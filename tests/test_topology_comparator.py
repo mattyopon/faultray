@@ -2,16 +2,13 @@
 
 from __future__ import annotations
 
-import pytest
 
 from faultray.model.components import Component, ComponentType, Dependency, HealthStatus
 from faultray.model.graph import InfraGraph
 from faultray.simulator.topology_comparator import (
     ChangeImpact,
     ChangeType,
-    TopologyChange,
     TopologyComparator,
-    TopologyDiff,
     TopologyMetrics,
 )
 

@@ -6,7 +6,6 @@ Each section covers the specific missing lines identified in the coverage report
 from __future__ import annotations
 
 import json
-import re
 import tempfile
 from pathlib import Path
 from unittest.mock import AsyncMock, patch
@@ -17,7 +16,6 @@ import pytest
 from faultray.model.components import (
     AutoScalingConfig,
     Capacity,
-    CircuitBreakerConfig,
     Component,
     ComponentType,
     DegradationConfig,
@@ -26,7 +24,6 @@ from faultray.model.components import (
     HealthStatus,
     OperationalProfile,
     ResourceMetrics,
-    RetryStrategy,
     SLOTarget,
 )
 from faultray.model.graph import InfraGraph
@@ -384,7 +381,7 @@ class TestFeedsAnalyzerCoverageGaps:
 
     def test_negative_keywords_block_match(self):
         """Line 320: article matching negative keywords is skipped."""
-        from faultray.feeds.analyzer import analyze_articles, IncidentPattern, INCIDENT_PATTERNS
+        from faultray.feeds.analyzer import IncidentPattern
         from faultray.feeds.fetcher import FeedArticle
 
         # Create an article that matches DDoS but has negative keywords
@@ -998,7 +995,7 @@ class TestOpsEngineCoverageGaps:
     def test_slo_tracker_budget_and_burn_rate(self):
         """Lines 607, 640, 647, 652, 658, 676, 684, 689, 697, 700:
         SLOTracker helper methods."""
-        from faultray.simulator.ops_engine import SLOTracker, _OpsComponentState
+        from faultray.simulator.ops_engine import SLOTracker
 
         graph = InfraGraph()
         graph.add_component(Component(
@@ -1398,7 +1395,6 @@ class TestOpsEngineCoverageGaps:
             OpsSimulationEngine,
             OpsEventType,
             TimeUnit,
-            GRACEFUL_RESTART_THRESHOLD,
         )
 
         graph = InfraGraph()

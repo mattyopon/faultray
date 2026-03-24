@@ -15,7 +15,6 @@ from faultray.model.components import (
     Component,
     ComponentType,
     Dependency,
-    HealthStatus,
     NetworkProfile,
 )
 from faultray.model.graph import InfraGraph

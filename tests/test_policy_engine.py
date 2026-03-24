@@ -5,7 +5,6 @@ Targets 99%+ coverage of ``faultray.policy.engine``.
 
 from __future__ import annotations
 
-import pytest
 
 from faultray.model.components import (
     AutoScalingConfig,

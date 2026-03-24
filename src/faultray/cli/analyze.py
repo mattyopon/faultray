@@ -38,29 +38,46 @@ def analyze(
     from faultray.model.loader import load_yaml
 
     if not yaml_file.exists():
-        console.print(f"[red]File not found: {yaml_file}[/]")
+        console.print(f"[red]File not found: {yaml_file}[/]", err=True)
         raise typer.Exit(1)
 
-    console.print(f"[cyan]Loading infrastructure from {yaml_file}...[/]")
+    if not json_output:
+        console.print(f"[cyan]Loading infrastructure from {yaml_file}...[/]")
     try:
         graph = load_yaml(yaml_file)
     except (FileNotFoundError, ValueError) as exc:
-        console.print(f"[red]{exc}[/]")
+        console.print(f"[red]{exc}[/]", err=True)
         raise typer.Exit(1)
 
-    console.print(f"[cyan]Running chaos simulation ({len(graph.components)} components)...[/]")
+    if not json_output:
+        console.print(f"[cyan]Running chaos simulation ({len(graph.components)} components)...[/]")
     engine = SimulationEngine(graph)
     sim_report = engine.run_all_defaults()
 
-    console.print("[cyan]Running AI analysis...[/]")
+    if not json_output:
+        console.print("[cyan]Running AI analysis...[/]")
     ai_analyzer = FaultRayAnalyzer()
     ai_report = ai_analyzer.analyze(graph, sim_report)
 
     if json_output:
         import dataclasses
 
-        report_dict = dataclasses.asdict(ai_report)
-        console.print_json(json_mod.dumps(report_dict, indent=2, default=str))
+        ai_dict = dataclasses.asdict(ai_report)
+        # Add simulation metrics expected by CI/CD pipelines (resilience-gate.yml)
+        critical_count = sum(1 for r in sim_report.results if r.is_critical)
+        warning_count = sum(1 for r in sim_report.results if r.is_warning)
+        passed_count = sum(
+            1 for r in sim_report.results if not r.is_critical and not r.is_warning
+        )
+        ci_dict = {
+            "resilience_score": sim_report.resilience_score,
+            "critical": critical_count,
+            "warning": warning_count,
+            "passed": passed_count,
+            "total_scenarios": len(sim_report.results),
+            **ai_dict,
+        }
+        print(json_mod.dumps(ci_dict, indent=2, default=str))
     else:
         print_simulation_report(sim_report, console, graph=graph)
         _print_ai_analysis(ai_report, console)

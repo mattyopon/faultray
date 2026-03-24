@@ -2,19 +2,17 @@
 
 from __future__ import annotations
 
-import pytest
 
 from faultray.model.components import (
     AutoScalingConfig,
     Component,
     ComponentType,
-    Dependency,
     FailoverConfig,
     RegionConfig,
     SecurityProfile,
 )
 from faultray.model.graph import InfraGraph
-from faultray.remediation.iac_generator import IaCGenerator, RemediationPlan
+from faultray.remediation.iac_generator import IaCGenerator
 
 
 # ---------------------------------------------------------------------------

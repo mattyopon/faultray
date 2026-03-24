@@ -5,10 +5,8 @@ and the check_health function with 20+ test cases.
 """
 from __future__ import annotations
 
-import time
-from unittest.mock import patch, MagicMock
+from unittest.mock import patch
 
-import pytest
 
 from faultray.health import (
     HealthStatus,
@@ -220,7 +218,6 @@ class TestCheckHealth:
         """When some but not all imports fail, status should be DEGRADED."""
         original_import = __builtins__.__import__ if hasattr(__builtins__, '__import__') else __import__
 
-        call_count = {"n": 0}
 
         def mock_import(name, *args, **kwargs):
             if name == "faultray.simulator.predictive_engine":

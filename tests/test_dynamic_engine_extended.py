@@ -16,14 +16,12 @@ from faultray.model.components import (
     SingleflightConfig,
 )
 from faultray.model.graph import InfraGraph
-from faultray.simulator.cascade import CascadeEffect
 from faultray.simulator.dynamic_engine import (
     DynamicScenario,
     DynamicScenarioResult,
     DynamicSimulationEngine,
     DynamicSimulationReport,
     _CBState,
-    _CircuitBreakerDynamicState,
     _ComponentDynamicState,
 )
 from faultray.simulator.scenarios import Fault, FaultType

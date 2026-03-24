@@ -7,7 +7,6 @@ dependencies, external APIs, and high-utilisation scenarios.
 
 from __future__ import annotations
 
-from dataclasses import dataclass, field as dc_field
 
 from faultray.model.components import (
     Component,
@@ -23,7 +22,6 @@ from faultray.simulator.recovery_estimator import (
     RecoveryReport,
     RecoveryStep,
     ScenarioRecovery,
-    _CASCADE_DELAY_PER_LEVEL,
     _dependency_depth,
 )
 from faultray.simulator.scenarios import Fault, FaultType, Scenario
@@ -293,8 +291,8 @@ class TestModifiers:
         assert lb_comp is not None
         assert app_comp is not None
 
-        cr_lb = est.estimate_component(lb_comp, g)
-        cr_app = est.estimate_component(app_comp, g)
+        est.estimate_component(lb_comp, g)
+        est.estimate_component(app_comp, g)
 
         # LB depends on App which depends on DB => depth = 2.
         # App depends on DB => depth = 1.

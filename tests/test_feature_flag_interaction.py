@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-from datetime import datetime, timezone
 
 import pytest
 
@@ -19,13 +18,9 @@ from faultray.simulator.feature_flag_interaction import (
     FlagType,
     RolloutStageResult,
     RolloutStrategy,
-    _CRITICAL_RESOURCE_THRESHOLD,
     _DEFAULT_ROLLOUT_STAGES,
     _RESILIENCE_NEGATIVE_CAP,
     _RESILIENCE_POSITIVE_CAP,
-    _RESOURCE_OVERHEAD_THRESHOLD,
-    _ROLLBACK_RISKY_THRESHOLD,
-    _ROLLBACK_SAFE_THRESHOLD,
 )
 
 
@@ -1199,7 +1194,7 @@ class TestIntegration:
     def test_many_flags_performance(self):
         """Ensure we handle 50 flags without error."""
         engine = FeatureFlagInteractionEngine()
-        g = _graph(_comp("c1"))
+        _graph(_comp("c1"))
         flags = [_flag(f"f{i}") for i in range(50)]
         interactions = engine.detect_interactions(flags)
         # With 50 flags, no interactions expected (no deps/conflicts)

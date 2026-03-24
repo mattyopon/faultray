@@ -6,7 +6,6 @@ models, enums, edge cases, and internal helpers.
 
 from __future__ import annotations
 
-import math
 
 import pytest
 
@@ -422,7 +421,7 @@ class TestEstimateRTO:
             retention_days=10,
         )
         planner = BackupRecoveryPlanner(configs={"full": cfg_full, "inc": cfg_inc})
-        r_full = planner.estimate_rto("full")
+        planner.estimate_rto("full")
         r_inc = planner.estimate_rto("inc")
         # Incremental has chain replay overhead on processing
         assert r_inc.processing_overhead_seconds > 0

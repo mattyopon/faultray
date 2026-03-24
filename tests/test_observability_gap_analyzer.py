@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import pytest
 
 from faultray.model.components import Component, ComponentType, Dependency
 from faultray.model.graph import InfraGraph
@@ -12,18 +11,13 @@ from faultray.simulator.observability_gap_analyzer import (
     BlindSpot,
     CorrelationAnalysisResult,
     CorrelationCapability,
-    CostOptimizationResult,
     DashboardConfig,
-    DashboardCoverageResult,
     GapSeverity,
     GoldenSignal,
     GoldenSignalAnalysisResult,
     GoldenSignalCoverage,
     LogLevel,
-    LogLevelAnalysisResult,
     LogLevelConfig,
-    MTTDEstimation,
-    ObservabilityGap,
     ObservabilityGapAnalyzer,
     ObservabilityGapReport,
     ObservabilityPillar,
@@ -31,9 +25,7 @@ from faultray.simulator.observability_gap_analyzer import (
     PillarAnalysisResult,
     PillarCoverage,
     SLIMonitoringConfig,
-    SLIMonitoringResult,
     TracePropagation,
-    TracingCompletenessResult,
     _ANALYSIS_WEIGHTS,
     _DEFAULT_FAILURE_MODES,
     _MTTD_BASE_MINUTES,

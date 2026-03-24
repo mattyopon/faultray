@@ -1,7 +1,6 @@
 """Dead code detection tests."""
 import ast
 import os
-from pathlib import Path
 
 
 def _get_all_defined_names(src_dir):

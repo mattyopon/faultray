@@ -6,11 +6,8 @@ structures, or other hard-to-reach branches.
 
 from __future__ import annotations
 
-from dataclasses import dataclass
 from io import StringIO
-from unittest.mock import MagicMock, patch
 
-import pytest
 
 from faultray.model.components import (
     Component,
@@ -18,7 +15,6 @@ from faultray.model.components import (
     Dependency,
     FailoverConfig,
     HealthStatus,
-    OperationalProfile,
     SLOTarget,
 )
 from faultray.model.graph import InfraGraph
@@ -156,7 +152,6 @@ class TestFeedAnalyzerNegativeKeywords:
         from faultray.feeds.analyzer import (
             analyze_articles,
             IncidentPattern,
-            INCIDENT_PATTERNS,
         )
         from faultray.feeds.fetcher import FeedArticle
         from faultray.simulator.scenarios import FaultType
@@ -332,7 +327,7 @@ class TestOpsEngineNoneGuards:
         )
         engine = OpsSimulationEngine(g)
         try:
-            result = engine.run(scenario)
+            engine.run(scenario)
         except Exception:
             pass  # May fail but we want line 825 covered
 
@@ -388,7 +383,7 @@ class TestDynamicEngineNoneComp:
         g._components["ghost"] = None  # type: ignore
 
         try:
-            scenarios = engine.generate_default_scenarios()
+            engine.generate_default_scenarios()
         except Exception:
             pass
         finally:

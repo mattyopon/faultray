@@ -6,12 +6,10 @@ ISO27001), score calculation, remediation ordering, and edge cases.
 
 from __future__ import annotations
 
-import pytest
 
 from faultray.model.components import (
     Component,
     ComponentType,
-    HealthStatus,
 )
 from faultray.model.graph import InfraGraph
 from faultray.simulator.compliance_gap import (

@@ -1,7 +1,6 @@
 """Tests for MCP Bridge — 130+ tests targeting 100% coverage."""
 
 import time
-import uuid
 
 import pytest
 

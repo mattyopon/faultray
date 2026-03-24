@@ -1321,7 +1321,7 @@ class TestIntegration:
             affected=["app-1"],
             consistency=ConsistencyModel.STRONG,
         )
-        impact = engine.simulate_partition(simple_graph, cfg)
+        engine.simulate_partition(simple_graph, cfg)
         cap = engine.simulate_cap_tradeoff(simple_graph, cfg)
         assert cap.chosen_tradeoff == "CP"
 
@@ -1346,7 +1346,7 @@ class TestIntegration:
             pt=PartitionType.FULL_PARTITION,
             affected=["db-1"],
         )
-        sb = engine.detect_split_brain_risk(g, cfg)
+        engine.detect_split_brain_risk(g, cfg)
         ci = engine.analyze_consensus_impact(g, cfg)
         assert ci.quorum_maintained is True  # 2 of 3
 
@@ -1733,7 +1733,7 @@ class TestSelectResolutionStrategy:
 
 class TestPathVulnerabilityScore:
     def test_max_score_clamped(self):
-        src = _comp("a", replicas=1, failover=False)
+        _comp("a", replicas=1, failover=False)
         tgt = _comp("b", replicas=1, failover=False, region="eu-west-1")
         src_with_region = _comp("a", replicas=1, failover=False, region="us-east-1")
         edge = _dep("a", "b")

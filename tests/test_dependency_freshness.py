@@ -2,12 +2,10 @@
 
 from __future__ import annotations
 
-import pytest
 
 from faultray.model.components import Component, ComponentType
 from faultray.model.graph import InfraGraph
 from faultray.simulator.dependency_freshness import (
-    ComponentFreshness,
     DependencyFreshnessTracker,
     FreshnessLevel,
     FreshnessReport,

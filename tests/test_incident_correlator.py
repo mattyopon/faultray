@@ -2,13 +2,10 @@
 
 from __future__ import annotations
 
-from pathlib import Path
 
-import pytest
 
 from faultray.integrations.incident_correlator import (
     CorrelationReport,
-    CorrelationResult,
     IncidentCorrelator,
     IncidentRecord,
 )
@@ -16,10 +13,8 @@ from faultray.model.components import (
     Component,
     ComponentType,
     Dependency,
-    FailoverConfig,
 )
 from faultray.model.graph import InfraGraph
-from faultray.simulator.engine import SimulationEngine, SimulationReport
 
 
 # ---------------------------------------------------------------------------

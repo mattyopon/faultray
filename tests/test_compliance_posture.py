@@ -1553,7 +1553,7 @@ class TestEdgeCases:
 
     def test_assess_control_with_empty_gaps_non_compliant(self):
         """Non-compliant control with no gaps still gets default remediation."""
-        engine = CompliancePostureEngine()
+        CompliancePostureEngine()
         # Use an unknown control_id that returns NOT_APPLICABLE -> no gaps
         # But let's test the remediation path directly
         ctrl = Control(
@@ -1572,7 +1572,7 @@ class TestEdgeCases:
         engine = CompliancePostureEngine()
         # Create a report with a NOT_APPLICABLE control by using an unknown
         # control_id that maps to no requirements
-        report = PostureReport(
+        PostureReport(
             framework=Framework.SOC2,
             overall_score=100.0,
             controls=[

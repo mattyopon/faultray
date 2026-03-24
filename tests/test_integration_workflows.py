@@ -7,7 +7,6 @@ feeds into the next, ensuring structural compatibility across the pipeline:
 
 from __future__ import annotations
 
-import json
 import tempfile
 from pathlib import Path
 
@@ -393,7 +392,7 @@ def test_cost_engine_uses_monthly_contract_value():
 
 def test_cost_engine_uses_customer_ltv_churn():
     """Cost engine includes reputation cost from customer_ltv and churn_rate."""
-    graph = _build_rich_graph()
+    _build_rich_graph()
 
     # Build a graph without LTV/churn for comparison
     basic_graph = InfraGraph()
@@ -706,7 +705,7 @@ def test_full_pipeline_with_rich_graph():
 
     # Fix
     gen = IaCGenerator(graph)
-    fix_plan = gen.generate(target_score=90.0)
+    gen.generate(target_score=90.0)
 
     # Plan uses resilience_score_v2() while report uses resilience_score().
     # Both should be valid scores.

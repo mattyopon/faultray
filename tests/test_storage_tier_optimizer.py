@@ -9,8 +9,6 @@ handling, and full report generation.  Targets 100% branch coverage.
 
 from __future__ import annotations
 
-import math
-from unittest.mock import patch
 
 from faultray.model.components import (
     Component,
@@ -20,15 +18,9 @@ from faultray.model.components import (
 from faultray.model.graph import InfraGraph
 from faultray.simulator.storage_tier_optimizer import (
     AccessPattern,
-    CapacityProjection,
-    ComplianceCheck,
     ComplianceFramework,
-    CrossRegionCost,
     CROSS_REGION_REPLICATION_COST_PER_GB,
     DataAccessProfile,
-    DataClassification,
-    DeduplicationOpportunity,
-    LifecycleRule,
     READ_IOPS_COST,
     RETRIEVAL_LATENCY_MS,
     RiskLevel,

@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import math
 
 import pytest
 
@@ -14,16 +13,12 @@ from faultray.simulator.capacity_planning_engine import (
     CapacityPlanningEngine,
     CapacityPlanningReport,
     CapacityRiskLevel,
-    ComponentCapacityReport,
     CostProjection,
     ExhaustionPrediction,
     GrowthModelType,
-    PeakSteadyAnalysis,
-    ReservationPlan,
     ReservationType,
     ResourceSnapshot,
     ResourceType,
-    SizingRecommendation,
     SizingVerdict,
     days_to_threshold,
     project_value,
@@ -713,7 +708,7 @@ class TestRecommendations:
         engine = CapacityPlanningEngine(g)
         report = engine.analyze()
         # Component at 70% can't handle 3x => burst warning
-        has_burst = any("BURST" in r for r in report.recommendations)
+        any("BURST" in r for r in report.recommendations)
         # May or may not trigger depending on exact calculations,
         # so just verify recommendations are present
         assert len(report.recommendations) > 0

@@ -9,7 +9,6 @@ Covers:
 
 from __future__ import annotations
 
-import random
 
 import pytest
 
@@ -17,7 +16,6 @@ from faultray.model.components import (
     Capacity,
     Component,
     ComponentType,
-    Dependency,
     FailoverConfig,
     HealthStatus,
     NetworkProfile,
@@ -26,7 +24,7 @@ from faultray.model.components import (
     RuntimeJitter,
 )
 from faultray.model.graph import InfraGraph
-from faultray.simulator.ops_engine import OpsSimulationEngine, _OpsComponentState, SLOTracker
+from faultray.simulator.ops_engine import _OpsComponentState, SLOTracker
 
 
 # ---------------------------------------------------------------------------

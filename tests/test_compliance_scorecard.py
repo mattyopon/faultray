@@ -4,14 +4,12 @@ from __future__ import annotations
 
 import pytest
 
-from faultray.model.components import Component, ComponentType, HealthStatus
+from faultray.model.components import Component, ComponentType
 from faultray.model.graph import InfraGraph
 from faultray.simulator.compliance_scorecard import (
-    ComplianceReport,
     ComplianceScorecardEngine,
     ControlStatus,
     Framework,
-    FrameworkScorecard,
     _control_status,
     _score_to_grade,
 )

@@ -2,35 +2,24 @@
 
 from __future__ import annotations
 
-import math
 
 from faultray.model.components import (
-    AutoScalingConfig,
     Component,
     ComponentType,
     Dependency,
-    ResourceMetrics,
 )
 from faultray.model.graph import InfraGraph
 from faultray.simulator.autoscaling_policy_evaluator import (
     AutoscalingPolicyEvaluator,
-    BlastRadiusResult,
     ConflictType,
-    CostAnalysis,
     CostStrategy,
-    EvaluationResult,
     MetricDataPoint,
     MetricType,
-    OscillationWindow,
-    PolicyConflict,
     PolicySeverity,
-    RegionalScalingState,
     ScalingDirection,
     ScalingEvent,
-    ScalingLagAnalysis,
     ScalingPolicy,
     ScalingStrategy,
-    WarmPoolState,
 )
 
 

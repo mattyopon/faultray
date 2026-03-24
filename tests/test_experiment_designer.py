@@ -1926,7 +1926,7 @@ class TestEndToEnd:
         exp = designer.from_template("cache-stampede")
         exp = designer.resolve_template_targets(exp, graph)
 
-        errors = designer.validate_experiment(exp, graph)
+        designer.validate_experiment(exp, graph)
         # May have blast radius issues with a simple template, but should validate structurally
         # (rollback targets may not match exactly after resolution)
 

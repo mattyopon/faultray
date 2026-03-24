@@ -6,7 +6,6 @@ import json
 import math
 from dataclasses import dataclass, field
 
-import pytest
 
 from faultray.model.components import (
     AutoScalingConfig,

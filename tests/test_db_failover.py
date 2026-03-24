@@ -903,7 +903,7 @@ class TestEdgeCases:
         """When a failure mode has no registered handler, return default result."""
         from faultray.simulator import db_failover
         # Temporarily clear the handler map to force the fallback
-        original = db_failover._FAILURE_HANDLERS.copy()
+        db_failover._FAILURE_HANDLERS.copy()
         monkeypatch.setattr(db_failover, "_FAILURE_HANDLERS", {})
         cfg = _default_config()
         r = simulator.simulate_failover(cfg, _scenario(DBFailureMode.PRIMARY_FAILURE))

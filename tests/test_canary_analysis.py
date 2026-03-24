@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import tempfile
 from pathlib import Path
 
 import pytest
@@ -21,7 +20,6 @@ from faultray.simulator.canary_analysis import (
     CanaryAnalyzer,
     CanaryConfig,
     CanaryMetric,
-    CanaryResult,
     _autoscaling_coverage,
     _avg_blast_radius,
     _circuit_breaker_coverage,

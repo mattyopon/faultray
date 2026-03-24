@@ -597,7 +597,7 @@ class TestSQLitePersistence:
     def test_store_path_creates_db(self, tmp_path, secure_graph: InfraGraph):
         """Monitor with store_path should create SQLite database."""
         db_path = tmp_path / "compliance.db"
-        monitor = ComplianceMonitor(store_path=db_path)
+        ComplianceMonitor(store_path=db_path)
         assert db_path.exists()
 
     def test_track_persists_to_db(self, tmp_path, secure_graph: InfraGraph):
@@ -652,7 +652,7 @@ class TestSQLitePersistence:
         """Loading from a non-existent store file should not crash."""
         db_path = tmp_path / "does_not_exist.db"
         # Don't create it; the monitor should handle this
-        monitor = ComplianceMonitor(store_path=db_path)
+        ComplianceMonitor(store_path=db_path)
         # It will create the store file during init
         assert db_path.exists()
 

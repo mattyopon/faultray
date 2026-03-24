@@ -7,9 +7,7 @@ calculate_roi (positive, zero/negative, payback), set/get profile, edge cases.
 """
 from __future__ import annotations
 
-import math
 
-import pytest
 
 from faultray.simulator.cost_impact import (
     AnnualCostProjection,

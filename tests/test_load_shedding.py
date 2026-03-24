@@ -7,7 +7,6 @@ configuration, graceful degradation, goodput analysis, and edge cases.
 
 from __future__ import annotations
 
-import pytest
 
 from faultray.model.components import (
     AutoScalingConfig,
@@ -16,7 +15,6 @@ from faultray.model.components import (
     ComponentType,
     Dependency,
     HealthStatus,
-    ResourceMetrics,
 )
 from faultray.model.graph import InfraGraph
 from faultray.simulator.load_shedding import (

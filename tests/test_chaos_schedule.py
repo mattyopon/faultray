@@ -3,9 +3,7 @@
 import pytest
 
 from faultray.model.components import (
-    AutoScalingConfig,
     Capacity,
-    CircuitBreakerConfig,
     Component,
     ComponentType,
     Dependency,

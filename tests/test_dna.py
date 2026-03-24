@@ -11,7 +11,7 @@ from faultray.model.components import (
     Dependency,
     FailoverConfig,
 )
-from faultray.model.dna import DNAEngine, InfraDNA, SimilarityResult
+from faultray.model.dna import DNAEngine
 from faultray.model.graph import InfraGraph
 
 

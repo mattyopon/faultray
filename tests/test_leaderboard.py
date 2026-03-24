@@ -1,11 +1,8 @@
 """Tests for the Resilience Leaderboard."""
 
 from faultray.api.leaderboard import (
-    BADGE_CRITERIA,
-    LeaderboardEntry,
     LeaderboardStore,
     evaluate_badges,
-    get_leaderboard_store,
 )
 from faultray.model.components import Component, ComponentType
 from faultray.model.graph import InfraGraph

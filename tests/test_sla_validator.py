@@ -2,10 +2,8 @@
 
 from __future__ import annotations
 
-import math
 from datetime import timedelta
 
-import pytest
 
 from faultray.model.components import (
     AutoScalingConfig,
@@ -915,7 +913,7 @@ class TestSuggestImprovementEdgeCases:
             replicas=2,
             operational_profile=OperationalProfile(mtbf_hours=100, mttr_minutes=60),
         )
-        a_base = _component_base_availability(comp)
+        _component_base_availability(comp)
         a_current = _component_effective_availability(comp)
         # Need a very high availability that requires many more replicas
         a_needed = 0.9999999

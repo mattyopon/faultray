@@ -6,7 +6,6 @@ methods with edge cases for 100 % coverage.
 
 from __future__ import annotations
 
-import math
 
 import pytest
 

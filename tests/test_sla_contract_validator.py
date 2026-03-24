@@ -6,7 +6,6 @@ conditions, penalty calculations, and graph configurations.
 
 from __future__ import annotations
 
-import pytest
 
 from faultray.model.components import (
     AutoScalingConfig,

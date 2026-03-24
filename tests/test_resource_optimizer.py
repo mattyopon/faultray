@@ -2,15 +2,13 @@
 
 from __future__ import annotations
 
-import pytest
 
-from faultray.model.components import Component, ComponentType, Dependency, HealthStatus
+from faultray.model.components import Component, ComponentType, Dependency
 from faultray.model.graph import InfraGraph
 from faultray.simulator.resource_optimizer import (
     OptimizationReport,
     OptimizationType,
     Priority,
-    Recommendation,
     ResourceOptimizer,
     ResourceUsage,
 )

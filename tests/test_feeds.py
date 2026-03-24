@@ -3,8 +3,6 @@
 from __future__ import annotations
 
 from faultray.feeds.analyzer import (
-    AnalyzedIncident,
-    IncidentPattern,
     analyze_articles,
     incidents_to_scenarios,
 )
@@ -15,7 +13,6 @@ from faultray.feeds.store import (
     save_feed_scenarios,
 )
 from faultray.model.components import Component, ComponentType, ResourceMetrics, Capacity
-from faultray.simulator.scenarios import FaultType
 
 
 def _make_article(title: str, summary: str = "", source: str = "test") -> FeedArticle:

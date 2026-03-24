@@ -3,27 +3,21 @@
 from __future__ import annotations
 
 import csv
-import tempfile
-from pathlib import Path
 
 import pytest
 
 from faultray.model.components import (
-    AutoScalingConfig,
     Component,
     ComponentType,
     Dependency,
     FailoverConfig,
-    OperationalProfile,
     RegionConfig,
-    ResourceMetrics,
     SecurityProfile,
 )
 from faultray.model.graph import InfraGraph
 from faultray.reporter.evidence_generator import (
     CONTROL_MAPPINGS,
     EvidenceGenerator,
-    EvidenceItem,
     EvidencePackage,
 )
 

@@ -6,7 +6,6 @@ to achieve 99%+ code coverage.
 
 from __future__ import annotations
 
-import math
 
 import pytest
 
@@ -832,7 +831,7 @@ class TestOverallRisk:
         """CRITICAL predictions are weighted 4x, HIGH 2x, etc."""
         # Create one CRITICAL and one LOW
         c1 = _comp("or1", "Crit", cpu=100.0, memory=100.0, health=HealthStatus.DOWN)
-        c2 = _comp("or2", "Low", replicas=2, failover=True)
+        _comp("or2", "Low", replicas=2, failover=True)
         # c2 won't generate a prediction (no risk), so add a minimal risk one
         c3 = _comp("or3", "LowRisk", replicas=1, failover=True)  # 10 => LOW
         engine = PredictiveFailureEngine(_graph(c1, c3))
@@ -1236,7 +1235,7 @@ class TestEdgeCases:
         engine = PredictiveFailureEngine(_graph(c))
         report = engine.predict()
         pred = report.predictions[0]
-        expected_hours = (100 - 95) / 3.0 * 24  # 5/3*24 = 40
+        (100 - 95) / 3.0 * 24  # 5/3*24 = 40
         assert pred.predicted_failure_hours == 40.0
 
     def test_hours_from_disk_estimation(self):

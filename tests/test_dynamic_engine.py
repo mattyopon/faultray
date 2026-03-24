@@ -11,7 +11,6 @@ Covers:
 
 from __future__ import annotations
 
-import math
 import time
 
 import pytest
@@ -30,7 +29,7 @@ from faultray.model.components import (
     SingleflightConfig,
 )
 from faultray.model.graph import InfraGraph
-from faultray.simulator.cascade import CascadeChain, CascadeEffect, CascadeEngine
+from faultray.simulator.cascade import CascadeEffect
 from faultray.simulator.dynamic_engine import (
     ComponentSnapshot,
     DynamicScenario,
@@ -750,7 +749,7 @@ class TestEvaluateAutoscaling:
         states["app"].current_replicas = 10  # already at max
         states["app"].current_utilization = 95.0
 
-        events = eng._evaluate_autoscaling(states, 5, 5)
+        eng._evaluate_autoscaling(states, 5, 5)
         # Can't go above max_replicas=10
         assert states["app"].current_replicas == 10
 
@@ -964,7 +963,7 @@ class TestEvaluateFailover:
         states["db"].failover_total_seconds = 10
         states["db"].current_health = HealthStatus.DOWN
 
-        events = eng._evaluate_failover(states, {}, 5, 5)
+        eng._evaluate_failover(states, {}, 5, 5)
         assert states["db"].failover_elapsed_seconds == 5
         assert states["db"].current_health == HealthStatus.DOWN
 
@@ -1087,10 +1086,10 @@ class TestEvaluateCircuitBreakers:
             "app": _ComponentDynamicState("app", 30.0, current_health=HealthStatus.HEALTHY),
             "db": _ComponentDynamicState("db", 30.0, current_health=HealthStatus.DOWN),
         }
-        events = eng._evaluate_circuit_breakers(cbs, comp, 1, 39)
+        eng._evaluate_circuit_breakers(cbs, comp, 1, 39)
         assert cbs[key].state == _CBState.OPEN  # not yet (39 < 40)
 
-        events = eng._evaluate_circuit_breakers(cbs, comp, 1, 40)
+        eng._evaluate_circuit_breakers(cbs, comp, 1, 40)
         assert cbs[key].state == _CBState.HALF_OPEN
 
     def test_open_consecutive_opens_high_capped(self):
@@ -1107,10 +1106,10 @@ class TestEvaluateCircuitBreakers:
             "app": _ComponentDynamicState("app", 30.0, current_health=HealthStatus.HEALTHY),
             "db": _ComponentDynamicState("db", 30.0, current_health=HealthStatus.DOWN),
         }
-        events = eng._evaluate_circuit_breakers(cbs, comp, 1, 59)
+        eng._evaluate_circuit_breakers(cbs, comp, 1, 59)
         assert cbs[key].state == _CBState.OPEN
 
-        events = eng._evaluate_circuit_breakers(cbs, comp, 1, 60)
+        eng._evaluate_circuit_breakers(cbs, comp, 1, 60)
         assert cbs[key].state == _CBState.HALF_OPEN
 
     def test_half_open_to_closed(self):
@@ -1180,7 +1179,7 @@ class TestEvaluateCircuitBreakers:
             "app": _ComponentDynamicState("app", 30.0, current_health=HealthStatus.HEALTHY),
             "db": _ComponentDynamicState("db", 30.0, current_health=HealthStatus.OVERLOADED),
         }
-        events = eng._evaluate_circuit_breakers(cbs, comp, 5, 5)
+        eng._evaluate_circuit_breakers(cbs, comp, 5, 5)
         assert cbs[("app", "db")].state == _CBState.OPEN
 
 
@@ -1641,7 +1640,7 @@ class TestTrafficPatternTypes:
 
     def test_diurnal_weekly(self):
         g = _simple_graph(1)
-        eng = DynamicSimulationEngine(g)
+        DynamicSimulationEngine(g)
         p = TrafficPattern(
             pattern_type=TrafficPatternType.DIURNAL_WEEKLY,
             peak_multiplier=3.0,
@@ -1656,7 +1655,7 @@ class TestTrafficPatternTypes:
 
     def test_growth_trend(self):
         g = _simple_graph(1)
-        eng = DynamicSimulationEngine(g)
+        DynamicSimulationEngine(g)
         p = TrafficPattern(
             pattern_type=TrafficPatternType.GROWTH_TREND,
             peak_multiplier=0.1,  # 10% monthly growth
@@ -2102,7 +2101,7 @@ class TestStaticConversion:
         eng = DynamicSimulationEngine(g)
         scens = eng._generate_default_dynamic_scenarios(duration=10, step=5)
         # Some static scenarios (like traffic_spike) have traffic_multiplier > 1.0
-        constant_pats = [
+        [
             s for s in scens
             if s.traffic_pattern is not None
             and s.traffic_pattern.pattern_type == TrafficPatternType.CONSTANT

@@ -4,13 +4,11 @@ from unittest.mock import patch
 
 from faultray.model.components import (
     AutoScalingConfig,
-    Capacity,
     Component,
     ComponentType,
     Dependency,
     FailoverConfig,
     OperationalProfile,
-    ResourceMetrics,
 )
 from faultray.model.graph import InfraGraph
 from faultray.simulator.cost_attribution import (
@@ -18,7 +16,6 @@ from faultray.simulator.cost_attribution import (
     CostAttributionEngine,
     CostAttributionReport,
     CostModel,
-    TeamRiskProfile,
     _auto_assign_team,
     _estimate_downtime_hours,
     _estimate_failure_probability,

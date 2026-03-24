@@ -9,9 +9,7 @@ import json
 import logging
 import os
 import tempfile
-from unittest.mock import patch
 
-import pytest
 
 from faultray.logging_config import (
     JSONFormatter,

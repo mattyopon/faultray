@@ -11,7 +11,6 @@ Uses wall-clock timing with generous thresholds suitable for CI.
 
 from __future__ import annotations
 
-import sys
 import time
 from typing import Callable
 
@@ -19,12 +18,10 @@ import pytest
 
 from faultray.model.components import (
     AutoScalingConfig,
-    Capacity,
     Component,
     ComponentType,
     Dependency,
     FailoverConfig,
-    HealthStatus,
     ResourceMetrics,
 )
 from faultray.model.graph import InfraGraph
@@ -98,9 +95,6 @@ def _build_tiered_graph(n: int) -> InfraGraph:
 
     # Infrastructure tiers
     n_app = max(1, n - 4)  # Reserve slots for lb, db, cache, queue
-    n_db = 1
-    n_cache = 1
-    n_queue = 1
 
     graph.add_component(
         Component(
@@ -525,7 +519,7 @@ class TestSerialisationSize:
             include_feed=False, include_plugins=False
         )
 
-        report_dict = {
+        {
             "results_count": len(report.results),
             "resilience_score": report.resilience_score,
         }

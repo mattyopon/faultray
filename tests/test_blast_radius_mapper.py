@@ -7,7 +7,6 @@ BlastRadiusMapperEngine and all helper functions.
 
 from __future__ import annotations
 
-import pytest
 
 from faultray.model.components import (
     AutoScalingConfig,

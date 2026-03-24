@@ -1819,7 +1819,7 @@ class TestIntegration:
     def test_full_lifecycle_database(self) -> None:
         engine = StateMachineChaosEngine()
         g = _graph(_comp("db", ctype=ComponentType.DATABASE))
-        config = engine.build_state_machine(g, "db")
+        engine.build_state_machine(g, "db")
 
         result = engine.inject_state_chaos(g, "db", TransitionTrigger.FAILURE_DETECTED)
         assert result.data_risk == "critical"

@@ -8,10 +8,8 @@ plus targeted unit tests for engine/dynamic_engine/scenarios changes.
 from __future__ import annotations
 
 import json
-import tempfile
 from pathlib import Path
 
-import pytest
 from typer.testing import CliRunner
 
 from faultray.cli.main import app
@@ -487,7 +485,7 @@ class TestEngineLikelihoodCap:
         from faultray.simulator.engine import SimulationEngine
         from faultray.simulator.scenarios import Fault, FaultType, Scenario
         from faultray.model.components import (
-            Capacity, Component, ComponentType, Dependency, ResourceMetrics,
+            Capacity, Component, ComponentType, ResourceMetrics,
         )
         from faultray.model.graph import InfraGraph
 

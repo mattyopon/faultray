@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import pytest
 
 from faultray.model.components import (
     AutoScalingConfig,
@@ -13,7 +12,6 @@ from faultray.model.components import (
     FailoverConfig,
     HealthStatus,
     OperationalProfile,
-    ResourceMetrics,
 )
 from faultray.model.graph import InfraGraph
 from faultray.simulator.change_velocity import (

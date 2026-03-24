@@ -18,27 +18,17 @@ from faultray.model.components import (
 )
 from faultray.model.graph import InfraGraph
 from faultray.simulator.dns_resilience_analyzer import (
-    AmplificationRisk,
     DNSProviderType,
     DNSRecord,
     DNSResilienceAnalyzer,
     DNSResilienceReport,
-    DNSSECAssessment,
     DNSSECStatus,
     DNSProvider,
     DNSZone,
-    DependencyChainAssessment,
-    FailoverTimingAssessment,
-    LBEvaluation,
     LoadBalancingStrategy,
-    PropagationEstimate,
-    ProviderRedundancyAssessment,
     ResolverAssessment,
     ResolverType,
     RiskLevel,
-    SplitHorizonAssessment,
-    TTLAssessment,
-    ZoneTransferAssessment,
 )
 
 
@@ -52,7 +42,6 @@ def _comp(cid="c1", ctype=ComponentType.APP_SERVER):
 
 
 def _graph(*comps):
-    from faultray.model.graph import InfraGraph
 
     g = InfraGraph()
     for c in comps:

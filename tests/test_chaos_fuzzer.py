@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import pytest
 
 from faultray.model.components import Component, ComponentType, Dependency, HealthStatus
 from faultray.model.graph import InfraGraph
@@ -409,7 +408,7 @@ class TestMutateRemoveFault:
 class TestMutateChangeTarget:
     def test_changes_target_component(self):
         g = _chain_graph()
-        fuzzer = ChaosFuzzer(g, seed=10)
+        ChaosFuzzer(g, seed=10)
         base = _single_fault_scenario("api")
         comp_ids = list(g.components.keys())
 
@@ -751,7 +750,7 @@ class TestNoveltyTracking:
         """Novel scenarios should grow the corpus and thus produce more variety."""
         g = _chain_graph()
         fuzzer = ChaosFuzzer(g, seed=42)
-        report = fuzzer.fuzz(iterations=50)
+        fuzzer.fuzz(iterations=50)
         # After fuzzing, _seen_patterns should have entries
         assert len(fuzzer._seen_patterns) > 0
 

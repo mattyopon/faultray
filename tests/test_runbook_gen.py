@@ -8,7 +8,6 @@ from faultray.model.components import (
     Component,
     ComponentType,
     Dependency,
-    HealthStatus,
 )
 from faultray.model.graph import InfraGraph
 from faultray.simulator.runbook_gen import (
@@ -16,7 +15,6 @@ from faultray.simulator.runbook_gen import (
     Runbook,
     RunbookGenerator,
     RunbookLibrary,
-    RunbookStep,
     StepType,
 )
 

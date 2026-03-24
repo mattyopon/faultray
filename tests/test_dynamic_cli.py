@@ -1,6 +1,5 @@
 """Tests for dynamic simulation CLI output and result handling."""
 
-from dataclasses import dataclass, field
 from io import StringIO
 
 from rich.console import Console

@@ -18,7 +18,6 @@ from faultray.model.components import (
     Component,
     ComponentType,
     Dependency,
-    NetworkProfile,
 )
 from faultray.model.graph import InfraGraph
 from faultray.simulator.traffic_shaping_simulator import (

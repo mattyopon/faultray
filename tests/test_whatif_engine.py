@@ -365,7 +365,6 @@ def test_run_default_multi_whatifs():
 
 def test_compute_avg_availability_empty():
     """Empty SLI timeline should return 100.0."""
-    from dataclasses import dataclass, field as dc_field
     from faultray.simulator.ops_engine import OpsSimulationResult
 
     # Create a minimal OpsSimulationResult with empty sli_timeline

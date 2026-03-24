@@ -7,18 +7,15 @@ import tempfile
 from pathlib import Path
 from unittest.mock import MagicMock, patch
 
-import pytest
 
 from faultray.model.components import (
-    Capacity,
     Component,
     ComponentType,
     Dependency,
-    HealthStatus,
     ResourceMetrics,
 )
 from faultray.model.graph import InfraGraph
-from faultray.simulator.cascade import CascadeChain, CascadeEffect, CascadeEngine
+from faultray.simulator.cascade import CascadeChain
 from faultray.simulator.engine import (
     MAX_SCENARIOS,
     SimulationEngine,

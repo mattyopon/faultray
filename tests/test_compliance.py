@@ -2,12 +2,11 @@
 
 from __future__ import annotations
 
-from pathlib import Path
 
 import pytest
 
-from faultray.ai.analyzer import AIAnalysisReport, AIRecommendation, FaultRayAnalyzer
-from faultray.model.components import ComponentType, HealthStatus
+from faultray.ai.analyzer import FaultRayAnalyzer
+from faultray.model.components import HealthStatus
 from faultray.model.demo import create_demo_graph
 from faultray.reporter.compliance import (
     _esc,

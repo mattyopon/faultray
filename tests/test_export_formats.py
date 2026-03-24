@@ -4,7 +4,6 @@ from __future__ import annotations
 
 import json
 from pathlib import Path
-from unittest.mock import MagicMock
 
 import pytest
 
@@ -20,7 +19,7 @@ from faultray.reporter.export import (
     export_sarif_file,
 )
 from faultray.simulator.cascade import CascadeChain, CascadeEffect
-from faultray.simulator.engine import ScenarioResult, SimulationEngine, SimulationReport
+from faultray.simulator.engine import ScenarioResult, SimulationReport
 from faultray.simulator.scenarios import Scenario
 
 
@@ -250,7 +249,6 @@ class TestExcelExport:
 
     def test_excel_missing_openpyxl(self, sample_report: SimulationReport, tmp_path: Path):
         """export_excel() should raise ImportError with helpful message when openpyxl missing."""
-        import importlib
         import sys
 
         # Temporarily hide openpyxl

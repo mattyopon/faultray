@@ -10,7 +10,6 @@ and edge cases.
 
 from __future__ import annotations
 
-import pytest
 
 from faultray.model.components import (
     Component,
@@ -21,27 +20,19 @@ from faultray.model.components import (
 )
 from faultray.model.graph import InfraGraph
 from faultray.simulator.graceful_degradation_planner import (
-    BulkheadEvaluation,
     BulkheadPartition,
     BulkheadStatus,
-    CascadeDegradation,
-    CircuitBreakerCoordination,
     CircuitState,
     DegradationLevel,
     DegradationLevelAssessment,
     DegradationPlan,
     DegradationReport,
     DegradationRule,
-    FallbackEvaluation,
     FallbackType,
     Feature,
     FeatureCriticality,
     GracefulDegradationPlanner,
-    LoadSheddingAnalysis,
     LoadSheddingPriority,
-    RecoveryPlan,
-    RecoveryStep,
-    SLAImpactAssessment,
     _clamp,
     _compute_features_for_level,
     _compute_revenue_impact,

@@ -8,7 +8,6 @@ Targets 100% line/branch coverage with 140+ tests.
 
 from __future__ import annotations
 
-import pytest
 
 from faultray.simulator.infra_as_code_validator import (
     EffortEstimate,
@@ -984,7 +983,7 @@ class TestComparePlatforms:
         }
         result = self.engine.compare_platforms(groups)
         # Check if there's a gap recommendation
-        gap_recs = [r for r in result.overall_recommendations if "gap" in r.lower() or "compliance" in r.lower()]
+        [r for r in result.overall_recommendations if "gap" in r.lower() or "compliance" in r.lower()]
         # Score difference may or may not exceed 20
         # Just verify the comparison produces results
         assert len(result.platforms) == 2
@@ -1436,8 +1435,8 @@ class TestEndToEnd:
         tf_resources = [_resource(resource_type="aws_instance", platform=IaCPlatform.TERRAFORM)]
         cf_resources = [_compliant_resource(platform=IaCPlatform.CLOUDFORMATION)]
 
-        tf_report = self.engine.validate_resources(tf_resources)
-        cf_report = self.engine.validate_resources(cf_resources)
+        self.engine.validate_resources(tf_resources)
+        self.engine.validate_resources(cf_resources)
 
         comparison = self.engine.compare_platforms({
             IaCPlatform.TERRAFORM: tf_resources,

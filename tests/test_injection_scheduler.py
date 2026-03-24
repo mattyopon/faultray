@@ -4,20 +4,16 @@ from __future__ import annotations
 
 from datetime import datetime, timezone
 
-import pytest
 
 from faultray.model.components import Component, ComponentType, Dependency
 from faultray.model.graph import InfraGraph
 from faultray.simulator.injection_scheduler import (
     BlackoutWindow,
     EscalationLevel,
-    InjectionResult,
     InjectionScheduler,
     InjectionTarget,
     InjectionType,
     ScheduleFrequency,
-    ScheduledInjection,
-    SchedulerReport,
 )
 
 

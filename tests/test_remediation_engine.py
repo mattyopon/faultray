@@ -25,7 +25,6 @@ from faultray.simulator.remediation_engine import (
     RemediationEngine,
     RemediationPlan,
     RemediationPriority,
-    RemediationReport,
     RemediationStep,
 )
 
@@ -1115,7 +1114,7 @@ class TestAllExecuteStepBranches:
     def test_add_replica_default(self):
         engine, g = self._make_engine()
         step = self._make_step(RemediationAction.ADD_REPLICA, params={})
-        result = engine._execute_step(step)
+        engine._execute_step(step)
         assert g.get_component("x1").replicas == 2  # 1 + 1
 
     def test_scale_up(self):
@@ -1141,7 +1140,7 @@ class TestAllExecuteStepBranches:
         comp = g.get_component("x1")
         comp.replicas = 3
         step = self._make_step(RemediationAction.REMOVE_REPLICA, params={})
-        result = engine._execute_step(step)
+        engine._execute_step(step)
         assert comp.replicas == 2  # max(1, 3-1)
 
     def test_remove_replica_minimum_1(self):
@@ -1149,7 +1148,7 @@ class TestAllExecuteStepBranches:
         comp = g.get_component("x1")
         comp.replicas = 1
         step = self._make_step(RemediationAction.REMOVE_REPLICA, params={})
-        result = engine._execute_step(step)
+        engine._execute_step(step)
         assert comp.replicas == 1  # max(1, 1-1) = 1
 
     def test_scale_down(self):
@@ -1195,7 +1194,7 @@ class TestAllExecuteStepBranches:
     def test_enable_autoscaling_defaults(self):
         engine, g = self._make_engine()
         step = self._make_step(RemediationAction.ENABLE_AUTOSCALING, params={})
-        result = engine._execute_step(step)
+        engine._execute_step(step)
         comp = g.get_component("x1")
         assert comp.autoscaling.enabled
         assert comp.autoscaling.min_replicas == 1
@@ -1271,7 +1270,7 @@ class TestAllExecuteStepBranches:
         comp = g.get_component("x1")
         original = comp.capacity.timeout_seconds
         step = self._make_step(RemediationAction.INCREASE_TIMEOUT, params={})
-        result = engine._execute_step(step)
+        engine._execute_step(step)
         assert comp.capacity.timeout_seconds == original * 2
 
     def test_component_not_found_raises(self):
@@ -1632,7 +1631,6 @@ class TestUnknownActionFallback:
     """Cover the unreachable 'Unknown action' return on line 962 using mock."""
 
     def test_unknown_action_returns_unknown_message(self):
-        from unittest.mock import patch
 
         c = _comp("uk1", "Comp")
         g = _graph(c)

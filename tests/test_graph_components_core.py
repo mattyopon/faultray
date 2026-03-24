@@ -15,16 +15,13 @@ from pathlib import Path
 import pytest
 
 from faultray.model.components import (
-    AutoScalingConfig,
     Capacity,
-    CircuitBreakerConfig,
     Component,
     ComponentType,
     Dependency,
     ExternalSLAConfig,
     FailoverConfig,
     HealthStatus,
-    OperationalProfile,
     ResourceMetrics,
 )
 from faultray.model.graph import InfraGraph
@@ -167,7 +164,7 @@ class TestEmptyGraph:
         assert g.get_component("nonexistent") is None
 
     def test_get_dependents_empty(self) -> None:
-        g = InfraGraph()
+        InfraGraph()
         # Node doesn't exist; networkx will raise or return empty
         # Our graph adds the node only when add_component is called
         g2 = _graph(_comp("a"))

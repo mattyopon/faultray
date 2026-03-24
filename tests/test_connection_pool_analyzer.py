@@ -8,7 +8,6 @@ coordination, full analysis, enums, helpers, and edge cases.
 
 from __future__ import annotations
 
-import math
 
 import pytest
 
@@ -18,7 +17,6 @@ from faultray.model.components import (
     ComponentType,
     Dependency,
     DegradationConfig,
-    HealthStatus,
     OperationalProfile,
     ResourceMetrics,
 )
@@ -27,7 +25,6 @@ from faultray.simulator.connection_pool_analyzer import (
     ConnectionPoolAnalyzer,
     CrossServiceCoordinationResult,
     ExhaustionSimResult,
-    HealthCheckAnalysisResult,
     HealthCheckStrategy,
     LeakDetectionResult,
     PoolAnalysisSummary,
@@ -36,10 +33,6 @@ from faultray.simulator.connection_pool_analyzer import (
     PoolSharingMode,
     PoolSizingResult,
     PoolType,
-    SharingTradeoffResult,
-    StormPreventionResult,
-    TimeoutAnalysisResult,
-    WarmupAnalysisResult,
     WarmupStrategy,
     _HEALTH_CHECK_OVERHEAD_MS,
     _HEALTH_CHECK_RELIABILITY,

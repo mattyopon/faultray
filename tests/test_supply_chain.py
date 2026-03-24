@@ -3,16 +3,13 @@
 from __future__ import annotations
 
 import json
-import tempfile
 from pathlib import Path
 
-import pytest
 
 from faultray.model.components import Component, ComponentType, Dependency
 from faultray.model.graph import InfraGraph
 from faultray.simulator.supply_chain_engine import (
     SupplyChainEngine,
-    SupplyChainReport,
     VulnerabilityImpact,
 )
 

@@ -8,17 +8,13 @@ report generation. Targets 100% branch coverage.
 
 from __future__ import annotations
 
-import math
 
 from faultray.model.components import (
     Capacity,
     Component,
     ComponentType,
-    Dependency,
     HealthStatus,
     ResourceMetrics,
-    SecurityProfile,
-    FailoverConfig,
 )
 from faultray.model.graph import InfraGraph
 from faultray.simulator.data_replication_analyzer import (
@@ -36,7 +32,6 @@ from faultray.simulator.data_replication_analyzer import (
     ReplicationGroup,
     ReplicationStrategy,
     RiskLevel,
-    SplitBrainAssessment,
     SplitBrainResolution,
 )
 

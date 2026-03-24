@@ -4,17 +4,14 @@ from __future__ import annotations
 
 from datetime import datetime, timedelta
 
-import pytest
 
 from faultray.model.components import Component, ComponentType, Dependency, HealthStatus
 from faultray.model.graph import InfraGraph
 from faultray.simulator.alert_correlator import (
     Alert,
-    AlertCluster,
     AlertCorrelator,
     AlertSeverity,
     AlertStatus,
-    CorrelationReport,
 )
 
 

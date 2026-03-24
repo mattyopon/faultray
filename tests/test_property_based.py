@@ -5,11 +5,10 @@ import tempfile
 from pathlib import Path
 
 from hypothesis import given, settings, strategies as st
-import pytest
 
 from faultray.model.components import Component, ComponentType, Dependency, SCHEMA_VERSION
 from faultray.model.graph import InfraGraph
-from faultray.simulator.engine import SimulationEngine, SimulationReport
+from faultray.simulator.engine import SimulationEngine
 from faultray.simulator.scenarios import Scenario, Fault, FaultType, generate_default_scenarios
 
 

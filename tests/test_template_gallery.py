@@ -11,7 +11,6 @@ from faultray.templates.gallery import (
     InfraTemplate,
     TemplateCategory,
     TemplateGallery,
-    _build_graph_from_template,
 )
 
 
@@ -32,7 +31,7 @@ class TestGalleryRegistry:
 
     def test_all_templates_have_required_fields(self):
         for t in GALLERY_TEMPLATES:
-            assert t.id, f"Template missing id"
+            assert t.id, "Template missing id"
             assert t.name, f"Template {t.id} missing name"
             assert isinstance(t.category, TemplateCategory), f"Template {t.id} bad category"
             assert t.description, f"Template {t.id} missing description"

@@ -11,9 +11,7 @@ full analysis integration.
 
 from __future__ import annotations
 
-import math
 
-import pytest
 
 from faultray.model.components import Component, ComponentType, Dependency
 from faultray.model.graph import InfraGraph

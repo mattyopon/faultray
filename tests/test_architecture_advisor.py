@@ -22,8 +22,6 @@ from faultray.model.components import (
     ComponentType,
     Dependency,
     FailoverConfig,
-    RegionConfig,
-    SecurityProfile,
 )
 from faultray.model.graph import InfraGraph
 
@@ -347,7 +345,7 @@ class TestQuickWins:
 
     def test_fewer_wins_for_redundant_graph(self, redundant_graph):
         advisor = ArchitectureAdvisor()
-        wins_simple = advisor.generate_quick_wins(
+        advisor.generate_quick_wins(
             InfraGraph()  # Will be replaced
         )
         wins_redundant = advisor.generate_quick_wins(redundant_graph)
@@ -600,7 +598,7 @@ class TestAdvise:
         report = advisor.advise(redundant_graph)
 
         # Should have fewer quick wins and anti-patterns
-        simple_report = advisor.advise(
+        advisor.advise(
             InfraGraph()  # Empty graph baseline
         )
 

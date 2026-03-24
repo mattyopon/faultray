@@ -2,13 +2,10 @@
 
 from __future__ import annotations
 
-import math
 
-import pytest
 
 from faultray.model.components import (
     AutoScalingConfig,
-    Capacity,
     CircuitBreakerConfig,
     Component,
     ComponentType,

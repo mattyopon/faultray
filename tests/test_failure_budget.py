@@ -4,7 +4,6 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 
-import pytest
 
 from faultray.model.components import (
     AutoScalingConfig,

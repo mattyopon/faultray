@@ -7,7 +7,6 @@ from datetime import datetime, timezone
 import pytest
 
 from faultray.model.components import (
-    AutoScalingConfig,
     Component,
     ComponentType,
     Dependency,
@@ -15,7 +14,6 @@ from faultray.model.components import (
     HealthStatus,
     OperationalProfile,
     OperationalTeamConfig,
-    ResourceMetrics,
 )
 from faultray.model.graph import InfraGraph
 from faultray.simulator.resilience_benchmark import (

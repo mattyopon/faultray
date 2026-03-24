@@ -10,11 +10,8 @@ that results differ from the correct (un-mutated) run.
 
 from __future__ import annotations
 
-import copy
 import math
-from unittest.mock import patch
 
-import pytest
 
 from faultray.model.demo import create_demo_graph
 from faultray.model.graph import InfraGraph
@@ -28,7 +25,7 @@ from faultray.model.components import (
 )
 from faultray.simulator.cascade import CascadeChain, CascadeEffect, CascadeEngine
 from faultray.simulator.engine import SimulationEngine, SimulationReport
-from faultray.simulator.scenarios import Fault, FaultType, Scenario
+from faultray.simulator.scenarios import Fault, FaultType
 
 
 # ---------------------------------------------------------------------------
@@ -207,8 +204,7 @@ class TestCascadeEngineMutation:
             target_component_id="db",
             fault_type=FaultType.COMPONENT_DOWN,
         )
-        normal_chain = engine.simulate_fault(fault)
-        normal_severity = normal_chain.severity
+        engine.simulate_fault(fault)
 
         original_propagate = CascadeEngine._propagate
         CascadeEngine._propagate = lambda self, *a, **kw: None
@@ -235,7 +231,6 @@ class TestAvailabilityModelMutation:
         """Using MTTR instead of MTBF in the formula should change results."""
         from faultray.simulator.availability_model import (
             compute_three_layer_model,
-            _to_nines,
         )
 
         graph = create_demo_graph()

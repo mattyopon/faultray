@@ -1,12 +1,9 @@
 """Tests for cost-resilience optimizer."""
 
-import math
 
-import pytest
 
 from faultray.model.components import (
     AutoScalingConfig,
-    Capacity,
     Component,
     ComponentType,
     FailoverConfig,
@@ -18,10 +15,8 @@ from faultray.model.components import (
 from faultray.model.graph import InfraGraph
 from faultray.simulator.cost_resilience_optimizer import (
     CostResilienceOptimizer,
-    ImprovementOption,
     ImprovementType,
     OptimizationStrategy,
-    ParetoPoint,
 )
 
 

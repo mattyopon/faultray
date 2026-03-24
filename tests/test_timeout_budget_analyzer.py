@@ -7,7 +7,7 @@ to achieve 100% code coverage (280+ statements in source).
 from __future__ import annotations
 
 import pytest
-from datetime import datetime, timezone
+from datetime import timezone
 
 from faultray.model.components import (
     CircuitBreakerConfig,
@@ -19,21 +19,15 @@ from faultray.model.components import (
 from faultray.model.graph import InfraGraph
 from faultray.simulator.timeout_budget_analyzer import (
     CircuitBreakerState,
-    CircuitBreakerTimeoutImpact,
     CascadeStep,
     DeadlineHop,
-    DeadlinePropagation,
     HopBudget,
-    JitterRecommendation,
     JitterStrategy,
-    OptimalTimeout,
-    PathBudgetVisualization,
     RetryTimeoutInteraction,
     Severity,
     SlowConsumerMismatch,
     TimeoutBudgetAnalyzer,
     TimeoutBudgetReport,
-    TimeoutCascadeResult,
     TimeoutConfig,
     TimeoutInconsistency,
     TimeoutKind,

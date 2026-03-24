@@ -6,7 +6,6 @@ edge cases for 100% line/branch coverage.
 
 from __future__ import annotations
 
-import math
 
 import pytest
 

@@ -4,7 +4,6 @@ from __future__ import annotations
 
 import json
 
-import pytest
 
 from faultray.discovery.terraform import (
     TF_RESOURCE_MAP,

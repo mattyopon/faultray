@@ -20,7 +20,6 @@
 """
 from __future__ import annotations
 
-import math
 
 import pytest
 
@@ -28,7 +27,6 @@ from faultray.simulator.multi_region_dr import (
     DRAssessment,
     DRConfig,
     DRStrategy,
-    FailoverSimulation,
     FailoverTrigger,
     MultiRegionDREngine,
     Region,

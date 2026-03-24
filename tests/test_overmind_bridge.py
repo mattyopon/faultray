@@ -3,10 +3,7 @@
 from __future__ import annotations
 
 import json
-from pathlib import Path
-from unittest.mock import MagicMock, patch
 
-import pytest
 
 from faultray.integrations.overmind_bridge import (
     EnrichedAnalysis,
@@ -706,8 +703,6 @@ class TestOvermindEnrichCLI:
     def test_enrich_json_output_empty_file(self, tmp_path):
         from typer.testing import CliRunner
         from faultray.cli.main import app
-        import importlib
-        import faultray.cli.overmind_cmd  # ensure commands are registered
 
         runner = CliRunner()
 

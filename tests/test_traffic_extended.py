@@ -1,15 +1,12 @@
 """Extended tests for traffic pattern models — targeting uncovered lines."""
 
-import math
 
 from faultray.simulator.traffic import (
     TrafficPattern,
     TrafficPatternType,
     create_ddos_slowloris,
-    create_ddos_volumetric,
     create_diurnal,
     create_diurnal_weekly,
-    create_flash_crowd,
     create_growth_trend,
     create_viral_event,
 )

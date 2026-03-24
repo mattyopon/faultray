@@ -1168,7 +1168,7 @@ class TestEdgeCases:
     def test_timeout_cascade_non_timeout_branch(self):
         """Cover the 'ok' timeline branch for upstream components below timeout."""
         engine = LatencyInjectionEngine(seed=SEED)
-        g = _graph()
+        _graph()
         # db times out, api inherits db latency + own rtt which exceeds timeout,
         # but lb's own rtt + api latency may be below a very high timeout for lb.
         # Use a custom graph where the upstream stays under the threshold.
@@ -1178,11 +1178,11 @@ class TestEdgeCases:
         g2.add_dependency(Dependency(source_id="frontend", target_id="backend"))
         # Set a timeout high enough that frontend stays below it:
         # backend times out at 50ms, frontend = rtt(1.0) + 50 = 51 < 100
-        result = engine.simulate_timeout_cascade(g2, "backend", timeout_ms=100.0)
+        engine.simulate_timeout_cascade(g2, "backend", timeout_ms=100.0)
         # backend times out, but frontend sees rtt(1) + 100 = 101 >= 100 → also timeout
         # Let's use a very high timeout so upstream is ok
         result2 = engine.simulate_timeout_cascade(g2, "backend", timeout_ms=10000.0)
-        statuses = [e["status"] for e in result2.cascade_timeline]
+        [e["status"] for e in result2.cascade_timeline]
         # frontend: rtt(1) + 10000 = 10001 >= 10000 → timeout
         # Actually the origin always gets timeout_ms, so upstream = rtt + timeout_ms
         # which is always >= timeout_ms. Let's test a case where origin is isolated.

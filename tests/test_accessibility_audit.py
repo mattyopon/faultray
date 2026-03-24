@@ -65,7 +65,7 @@ def test_all_images_have_alt():
                 img_no_alt.append(f"{tmpl.name}: {tag[:80]}")
 
     assert not img_no_alt, (
-        f"Images without alt attribute:\n" + "\n".join(img_no_alt)
+        "Images without alt attribute:\n" + "\n".join(img_no_alt)
     )
 
 
@@ -92,7 +92,7 @@ def test_all_forms_have_labels():
     # Informational -- many templates use placeholder as implicit label
     if unlabeled:
         pytest.skip(
-            f"Inputs without explicit labels (review needed):\n"
+            "Inputs without explicit labels (review needed):\n"
             + "\n".join(unlabeled[:5])
         )
 
@@ -120,7 +120,7 @@ def test_all_interactive_elements_keyboard_accessible():
 
     if issues:
         pytest.skip(
-            f"Interactive elements without keyboard support:\n"
+            "Interactive elements without keyboard support:\n"
             + "\n".join(issues[:5])
         )
 

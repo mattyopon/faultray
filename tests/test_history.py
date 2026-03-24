@@ -6,11 +6,10 @@ import json
 import sqlite3
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
-from unittest.mock import MagicMock, patch
+from unittest.mock import MagicMock
 
-import pytest
 
-from faultray.history import HistoryEntry, HistoryTracker, TrendAnalysis, _compute_model_hash
+from faultray.history import HistoryEntry, HistoryTracker, _compute_model_hash
 from faultray.model.components import (
     AutoScalingConfig,
     Component,
@@ -61,7 +60,7 @@ def _tracker_in_tmp(tmp_path: Path) -> HistoryTracker:
 class TestHistoryTrackerInit:
     def test_creates_db_directory(self, tmp_path):
         db = tmp_path / "sub" / "dir" / "history.db"
-        tracker = HistoryTracker(db_path=db)
+        HistoryTracker(db_path=db)
         assert db.parent.exists()
 
     def test_creates_table(self, tmp_path):

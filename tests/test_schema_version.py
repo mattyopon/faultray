@@ -5,9 +5,8 @@ import logging
 import tempfile
 from pathlib import Path
 
-import pytest
 
-from faultray.model.components import SCHEMA_VERSION, Component, ComponentType, Dependency
+from faultray.model.components import SCHEMA_VERSION, Component, ComponentType
 from faultray.model.graph import InfraGraph
 from faultray.model.loader import load_yaml
 

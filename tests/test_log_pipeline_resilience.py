@@ -9,7 +9,6 @@ full pipeline assessment, and compliance retention checks.
 
 from __future__ import annotations
 
-import math
 
 import pytest
 
@@ -1774,7 +1773,7 @@ class TestCoverageGapStorageCapacity:
             storage_replicas=1,
             retention_days=30,
         )
-        result = engine.plan_storage_capacity(graph, cfg)
+        engine.plan_storage_capacity(graph, cfg)
         # Adjust: verify that we can construct a config where
         # meets_retention=True and util>80
         # daily = 0.04 * 1.0 * scale * 86400 / 1024

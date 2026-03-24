@@ -3,10 +3,7 @@
 from __future__ import annotations
 
 import json
-from pathlib import Path
-from unittest.mock import MagicMock, patch
 
-import pytest
 
 from faultray.model.components import (
     AutoScalingConfig,
@@ -185,7 +182,7 @@ class TestDryRunPipeline:
         graph = _make_vulnerable_graph()
         output_dir = tmp_path / "remediation-output"
         pipeline = AutoRemediationPipeline(graph, output_dir=output_dir)
-        result = pipeline.run(target_score=90.0, dry_run=True)
+        pipeline.run(target_score=90.0, dry_run=True)
 
         # Files should NOT be written in dry run
         assert not output_dir.exists() or not any(output_dir.rglob("*.tf"))
@@ -238,7 +235,7 @@ class TestApplyPipeline:
         graph = _make_vulnerable_graph()
         output_dir = tmp_path / "fixes"
         pipeline = AutoRemediationPipeline(graph, output_dir=output_dir)
-        result = pipeline.run(target_score=90.0, dry_run=False)
+        pipeline.run(target_score=90.0, dry_run=False)
 
         tf_files = list(output_dir.rglob("*.tf"))
         assert len(tf_files) > 0, "Should generate at least one Terraform file"

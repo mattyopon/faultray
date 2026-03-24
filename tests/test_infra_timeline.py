@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import json
 from pathlib import Path
 
 import pytest
@@ -204,7 +203,7 @@ class TestSnapshotCreation:
     def test_snapshot_no_changes_between_identical_graphs(self):
         timeline = InfraTimeline()
         g = _chain_graph()
-        c1 = timeline.snapshot(g, "admin", "initial")
+        timeline.snapshot(g, "admin", "initial")
 
         # Snapshot the exact same graph again
         g2 = _chain_graph()
@@ -797,7 +796,7 @@ class TestChangelog:
         timeline = InfraTimeline()
         g = _chain_graph()
         c1 = timeline.snapshot(g, "admin", "first")
-        c2 = timeline.snapshot(g, "admin", "second")
+        timeline.snapshot(g, "admin", "second")
         c3 = timeline.snapshot(g, "admin", "third")
 
         changelog = timeline.changelog(from_id=c1.commit_id, to_id=c3.commit_id)
@@ -891,8 +890,8 @@ class TestChangelog:
         timeline = InfraTimeline()
         g = _chain_graph()
         c1 = timeline.snapshot(g, "admin", "first")
-        c2 = timeline.snapshot(g, "admin", "second")
-        c3 = timeline.snapshot(g, "admin", "third")
+        timeline.snapshot(g, "admin", "second")
+        timeline.snapshot(g, "admin", "third")
 
         changelog = timeline.changelog(from_id=c1.commit_id)
         assert "second" in changelog
@@ -902,9 +901,9 @@ class TestChangelog:
         """Changelog with only to_id specified."""
         timeline = InfraTimeline()
         g = _chain_graph()
-        c1 = timeline.snapshot(g, "admin", "first")
+        timeline.snapshot(g, "admin", "first")
         c2 = timeline.snapshot(g, "admin", "second")
-        c3 = timeline.snapshot(g, "admin", "third")
+        timeline.snapshot(g, "admin", "third")
 
         changelog = timeline.changelog(to_id=c2.commit_id)
         assert "first" in changelog
@@ -1014,7 +1013,7 @@ class TestRollback:
         c1 = timeline.snapshot(g1, "admin", "v1")
 
         g2 = _modified_graph()
-        c2 = timeline.snapshot(g2, "admin", "v2")
+        timeline.snapshot(g2, "admin", "v2")
 
         # Rollback to v1
         restored = timeline.rollback_to(c1.commit_id)
@@ -1026,7 +1025,7 @@ class TestRollback:
     def test_rollback_to_latest(self):
         timeline = InfraTimeline()
         g1 = _chain_graph()
-        c1 = timeline.snapshot(g1, "admin", "v1")
+        timeline.snapshot(g1, "admin", "v1")
 
         g2 = _modified_graph()
         c2 = timeline.snapshot(g2, "admin", "v2")
@@ -1073,10 +1072,10 @@ class TestPersistence:
 
         tl1 = InfraTimeline(storage_path=storage)
         g1 = _chain_graph()
-        c1 = tl1.snapshot(g1, "admin", "initial", tags=["v1.0"])
+        tl1.snapshot(g1, "admin", "initial", tags=["v1.0"])
 
         g2 = _modified_graph()
-        c2 = tl1.snapshot(g2, "admin", "update")
+        tl1.snapshot(g2, "admin", "update")
 
         assert storage.exists()
 

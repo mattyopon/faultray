@@ -22,7 +22,6 @@ from faultray.ai.nl_to_infra import (
     NLInfraParser,
     ParsedComponent,
     ParsedInfrastructure,
-    ParsedRelationship,
 )
 from faultray.model.components import ComponentType
 

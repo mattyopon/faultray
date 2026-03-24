@@ -677,7 +677,7 @@ class TestSimulateFlapping:
             interval=1.0, timeout=0.3, failure_threshold=1, success_threshold=1,
             checks_deps=True, deep=True,
         )
-        r_stable = engine.simulate_flapping(graph, "app", stable)
+        engine.simulate_flapping(graph, "app", stable)
         r_aggressive = engine.simulate_flapping(graph, "app", aggressive)
         # Aggressive config should have longer or comparable steady-state due to
         # the propensity multiplier

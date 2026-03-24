@@ -1114,7 +1114,7 @@ class TestGenerateReport:
         engine = ReliabilityContractEngine(g)
         r = engine.generate_report()
         # Chain of external APIs with 99.9% each, combined ~99.4%
-        has_chain_rec = any("low availability" in rec for rec in r.recommendations)
+        any("low availability" in rec for rec in r.recommendations)
         # This may or may not trigger depending on exact calculation
         assert isinstance(r.recommendations, list)
 

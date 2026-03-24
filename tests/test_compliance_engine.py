@@ -6,14 +6,12 @@ import pytest
 
 from faultray.model.components import (
     AutoScalingConfig,
-    Capacity,
     CircuitBreakerConfig,
     Component,
     ComponentType,
     Dependency,
     FailoverConfig,
     RegionConfig,
-    ResourceMetrics,
 )
 from faultray.model.graph import InfraGraph
 from faultray.simulator.compliance_engine import ComplianceCheck, ComplianceEngine, ComplianceReport
@@ -692,7 +690,6 @@ class TestEdgeCases:
 
     def test_nist_csf_audit_logging_partial(self):
         """DE.AE-3 should be 'partial' when monitoring but no audit tags (or vice versa)."""
-        from faultray.model.components import ComplianceTags
         graph = InfraGraph()
         # Has monitoring (otel) but no audit_logging tags
         graph.add_component(Component(

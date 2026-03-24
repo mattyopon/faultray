@@ -8,8 +8,6 @@ input validation, and edge cases.
 from __future__ import annotations
 
 import json
-import time
-from unittest.mock import patch
 
 import pytest
 from fastapi.testclient import TestClient
@@ -19,7 +17,6 @@ from faultray.api.server import (
     _rate_limiter,
     app,
     build_demo_graph,
-    get_graph,
     set_graph,
 )
 from faultray.model.components import (

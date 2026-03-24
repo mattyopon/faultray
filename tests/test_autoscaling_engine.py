@@ -9,17 +9,13 @@ from faultray.model.components import (
     Capacity,
     Component,
     ComponentType,
-    FailoverConfig,
-    RegionConfig,
     ResourceMetrics,
 )
-from faultray.model.graph import InfraGraph, Dependency
+from faultray.model.graph import InfraGraph
 from faultray.simulator.autoscaling_engine import (
     AutoScalingRecommendation,
     AutoScalingRecommendationEngine,
-    _DEFAULT_TARGET_UTILIZATION,
     _MAX_REPLICAS_CAP,
-    _SCALE_TRIGGER_THRESHOLD,
 )
 
 

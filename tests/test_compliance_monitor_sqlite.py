@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-from datetime import datetime, timezone
 from pathlib import Path
 
 import pytest
@@ -20,13 +19,9 @@ from faultray.model.components import (
 )
 from faultray.model.graph import InfraGraph
 from faultray.simulator.compliance_monitor import (
-    ComplianceAlert,
-    ComplianceControl,
     ComplianceFramework,
     ComplianceMonitor,
     ComplianceSnapshot,
-    ComplianceTrend,
-    ControlStatus,
 )
 
 

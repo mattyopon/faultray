@@ -6,7 +6,6 @@ percentile calculations, SLA compliance, and edge cases.
 
 from __future__ import annotations
 
-import math
 
 import pytest
 
@@ -261,7 +260,7 @@ class TestDegradedCondition:
     def test_degraded_increases_latency(self):
         graph = _simple_chain()
         sim = NetworkSimulator(graph)
-        normal = sim.simulate(NetworkCondition.NORMAL)
+        sim.simulate(NetworkCondition.NORMAL)
         degraded = sim.simulate(NetworkCondition.DEGRADED)
 
         for lnk in degraded.links:

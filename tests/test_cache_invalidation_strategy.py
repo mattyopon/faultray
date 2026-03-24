@@ -11,7 +11,7 @@ from __future__ import annotations
 
 import pytest
 
-from faultray.model.components import Component, ComponentType, Dependency, HealthStatus
+from faultray.model.components import Component, ComponentType, Dependency
 from faultray.model.graph import InfraGraph
 from faultray.simulator.cache_invalidation_strategy import (
     CacheInvalidationEngine,

@@ -8,7 +8,6 @@ from faultray.model.components import (
     ComponentType,
     OperationalProfile,
     ResourceMetrics,
-    SLOTarget,
 )
 from faultray.model.graph import InfraGraph
 from faultray.simulator.capacity_engine import CapacityPlanningEngine
@@ -207,7 +206,6 @@ def test_get_component_utilization_many_replicas():
 
 def test_ha_min_replicas_for_lb():
     """Load balancer should have min 2 replicas even at low utilization."""
-    from faultray.model.components import FailoverConfig
 
     graph = InfraGraph()
     graph.add_component(Component(

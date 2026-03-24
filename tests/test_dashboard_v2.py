@@ -7,7 +7,6 @@ from fastapi.testclient import TestClient
 
 from faultray.api.server import app, set_graph
 from faultray.model.demo import create_demo_graph
-from faultray.model.graph import InfraGraph
 from tests.conftest import TEST_API_KEY, _setup_test_user
 
 

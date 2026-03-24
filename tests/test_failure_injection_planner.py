@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import uuid
 
 import pytest
 
@@ -437,7 +436,7 @@ class TestAnalyzeCoverage:
         past = [_make_experiment(component_id="a")]
         r = p.analyze_coverage(g, past)
         assert r.tested_components == 1
-        gap_ids = {gap.component_id for gap in r.gaps}
+        {gap.component_id for gap in r.gaps}
         if r.gaps:
             assert r.gaps[0].coverage_gap == CoverageGap.PARTIAL_COVERAGE
 

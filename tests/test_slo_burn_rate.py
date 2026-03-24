@@ -1036,7 +1036,7 @@ class TestErrorPatterns:
         alerts = e.check_alerts(pattern)
         # At least one should be triggered from the recent high rates
         # (last 5 hours are 0.01, but 6h window includes the spike)
-        triggered = [a for a in alerts if a.triggered]
+        [a for a in alerts if a.triggered]
         # The 1h window should NOT trigger (last hour is 0.01)
         page_1h = alerts[0]
         assert page_1h.triggered is False

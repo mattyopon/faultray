@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import pytest
 
-from faultray.model.components import Component, ComponentType, HealthStatus, SecurityProfile
+from faultray.model.components import Component, ComponentType, SecurityProfile
 from faultray.model.graph import InfraGraph
 from faultray.simulator.compliance_chaos import (
     ComplianceChaosExperiment,

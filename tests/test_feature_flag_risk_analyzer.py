@@ -4,28 +4,15 @@ from __future__ import annotations
 
 from datetime import datetime, timedelta, timezone
 
-import pytest
 
-from faultray.model.components import Component, ComponentType, Dependency
+from faultray.model.components import Component, ComponentType
 from faultray.model.graph import InfraGraph
 from faultray.simulator.feature_flag_risk_analyzer import (
     CleanupPriority,
-    CleanupRecommendation,
-    EvalPerformanceResult,
     FeatureFlagRiskAnalyzer,
-    FlagConflictResult,
-    FlagCoverageResult,
     FlagDefinition,
-    FlagDependencyResult,
-    FlagOwnershipReport,
-    GradualRolloutRisk,
-    KillSwitchAuditResult,
-    RiskAnalysisReport,
     RiskFlagType,
     RollbackSafety,
-    RollbackSafetyResult,
-    StaleFlagResult,
-    TechDebtResult,
     _COVERAGE_ACCEPTABLE,
     _COVERAGE_GOOD,
     _DEFAULT_LONG_LIVED_THRESHOLD_DAYS,

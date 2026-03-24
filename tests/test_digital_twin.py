@@ -4,15 +4,12 @@ from __future__ import annotations
 
 import time
 
-import pytest
 
 from faultray.model.components import (
     AutoScalingConfig,
     Component,
     ComponentType,
     Dependency,
-    FailoverConfig,
-    OperationalProfile,
     ResourceMetrics,
 )
 from faultray.model.graph import InfraGraph

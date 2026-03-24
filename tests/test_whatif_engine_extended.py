@@ -8,7 +8,6 @@ from faultray.model.components import (
     Component,
     ComponentType,
     Dependency,
-    HealthStatus,
     OperationalProfile,
     ResourceMetrics,
     SLOTarget,
@@ -17,12 +16,9 @@ from faultray.model.graph import InfraGraph
 from faultray.simulator.ops_engine import OpsScenario, OpsSimulationResult, TimeUnit
 from faultray.simulator.traffic import create_diurnal_weekly
 from faultray.simulator.whatif_engine import (
-    MultiWhatIfResult,
     MultiWhatIfScenario,
     WhatIfEngine,
-    WhatIfResult,
     WhatIfScenario,
-    _SLO_THRESHOLD,
 )
 
 

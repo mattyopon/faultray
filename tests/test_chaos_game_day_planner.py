@@ -21,7 +21,6 @@ from faultray.simulator.chaos_game_day_planner import (
     Finding,
     FindingSeverity,
     GameDayPlan,
-    GameDayReport,
     GameDayType,
     Hypothesis,
     Participant,

@@ -2,7 +2,6 @@
 
 from faultray.ai.analyzer import (
     AIAnalysisReport,
-    AIRecommendation,
     FaultRayAnalyzer,
     _nines_tier_label,
     _score_to_nines,
@@ -14,7 +13,6 @@ from faultray.model.components import (
     ComponentType,
     Dependency,
     FailoverConfig,
-    HealthStatus,
     ResourceMetrics,
     RetryStrategy,
 )

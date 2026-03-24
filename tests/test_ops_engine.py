@@ -429,7 +429,6 @@ def test_ops_scenario_with_degradation():
 
 def test_ops_scenario_with_maintenance():
     """Scenario with maintenance enabled should schedule maintenance events."""
-    from faultray.model.components import Dependency
 
     graph = InfraGraph()
     graph.add_component(Component(
@@ -463,7 +462,7 @@ def test_ops_scenario_with_maintenance():
 
 def test_ops_scenario_autoscaling():
     """Autoscaling should trigger during high-traffic periods."""
-    from faultray.model.components import AutoScalingConfig, Dependency
+    from faultray.model.components import AutoScalingConfig
     from faultray.simulator.traffic import create_growth_trend
 
     graph = InfraGraph()
@@ -627,7 +626,7 @@ def test_ops_scenario_full_features():
 
 def test_degradation_oom_and_disk_full_events():
     """Test that degradation with small capacities generates OOM and disk-full events."""
-    from faultray.model.components import DegradationConfig, Dependency
+    from faultray.model.components import DegradationConfig
     from faultray.simulator.ops_engine import OpsEventType
 
     graph = InfraGraph()
@@ -682,8 +681,6 @@ def test_degradation_oom_and_disk_full_events():
 
 def test_degradation_no_type_defaults():
     """Component type not in _DEFAULT_DEGRADATION should use zero rates."""
-    from faultray.model.components import Dependency
-    from faultray.simulator.ops_engine import OpsEventType
 
     graph = InfraGraph()
     # CUSTOM type is not in _DEFAULT_DEGRADATION, so all rates should be 0
@@ -717,7 +714,6 @@ def test_degradation_no_type_defaults():
 def test_degradation_explicit_rates_override_defaults():
     """Explicitly set degradation rates should override type defaults."""
     from faultray.model.components import DegradationConfig
-    from faultray.simulator.ops_engine import OpsEventType
 
     graph = InfraGraph()
     # App server with explicit (non-zero) degradation rates
@@ -1143,7 +1139,6 @@ def test_graceful_restart_memory_degradation():
 
 def test_default_mttr_fallback():
     """Component type not in _DEFAULT_MTTR_MINUTES should use 30.0 fallback."""
-    from faultray.model.components import FailoverConfig
 
     graph = InfraGraph()
     # CUSTOM type is not in _DEFAULT_MTTR_MINUTES

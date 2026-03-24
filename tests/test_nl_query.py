@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import pytest
 
 from faultray.model.components import (
     AutoScalingConfig,
@@ -11,7 +10,6 @@ from faultray.model.components import (
     CostProfile,
     Dependency,
     FailoverConfig,
-    ResourceMetrics,
 )
 from faultray.model.graph import InfraGraph
 from faultray.nl_query import NaturalLanguageEngine, QueryResult

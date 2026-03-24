@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import pytest
 
 from faultray.model.components import (
     AutoScalingConfig,
@@ -14,7 +13,6 @@ from faultray.model.components import (
 from faultray.model.graph import InfraGraph
 from faultray.remediation.iac_exporter import (
     IaCExporter,
-    IaCExportResult,
     IaCFormat,
     _sanitize_id,
     _sanitize_k8s_name,

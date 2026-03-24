@@ -17,7 +17,6 @@ from faultray.model.components import (
     FailoverConfig,
     HealthStatus,
     ResourceMetrics,
-    RetryStrategy,
     SecurityProfile,
 )
 from faultray.model.graph import InfraGraph

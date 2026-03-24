@@ -4,7 +4,6 @@ from __future__ import annotations
 
 import json
 
-import pytest
 import yaml
 
 from faultray.ci.github_action import CIGateConfig, CIGateGenerator
@@ -19,13 +18,11 @@ from faultray.model.components import (
     Component,
     ComponentType,
     Dependency,
-    OperationalProfile,
 )
 from faultray.model.graph import InfraGraph
 from faultray.simulator.engine import (
     CascadeChain,
     ScenarioResult,
-    SimulationEngine,
     SimulationReport,
 )
 from faultray.simulator.scenarios import Scenario

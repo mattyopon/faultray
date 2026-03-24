@@ -316,8 +316,7 @@ class TestHTTPExceptionHandler:
 class TestLifespan:
     def test_lifespan_initialises_db(self, tmp_path):
         """Cover lines 67-72: lifespan initialises database on startup."""
-        db_path = tmp_path / "lifespan_test.db"
-        url = f"sqlite+aiosqlite:///{db_path}"
+        tmp_path / "lifespan_test.db"
 
         reset_engine()
         with patch.dict(os.environ, {}, clear=False):
@@ -456,7 +455,7 @@ class TestSimulationRunWithDB:
         """Cover _save_run returning None on exception."""
         reset_engine()
         # With no DB set up, this should catch the exception and return None
-        result = await _save_run({"resilience_score": 50.0})
+        await _save_run({"resilience_score": 50.0})
         # It may return None if there's no valid engine
         # Just ensure it doesn't raise
         reset_engine()

@@ -1,7 +1,6 @@
 """Tests for InfraGraph.resilience_score_v2()."""
 from __future__ import annotations
 
-import pytest
 
 from faultray.model.components import (
     AutoScalingConfig,

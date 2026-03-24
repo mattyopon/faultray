@@ -8,18 +8,15 @@ configurations. Each test targets a specific failure mode.
 from __future__ import annotations
 
 import json
-import math
-import os
 import sqlite3
 import tempfile
 from pathlib import Path
-from unittest.mock import AsyncMock, MagicMock, patch
+from unittest.mock import patch
 
 import pytest
-from pydantic import ValidationError
 
 from faultray.cache import ResultCache
-from faultray.ci.sarif_exporter import SARIFExporter, export_sarif
+from faultray.ci.sarif_exporter import SARIFExporter
 from faultray.model.components import (
     AutoScalingConfig,
     Capacity,
@@ -36,7 +33,7 @@ from faultray.reporter.export import (
     export_json,
     export_sarif as export_sarif_reporter,
 )
-from faultray.simulator.cascade import CascadeChain, CascadeEffect, CascadeEngine
+from faultray.simulator.cascade import CascadeEngine
 from faultray.simulator.engine import SimulationEngine, SimulationReport
 from faultray.simulator.scenarios import Fault, FaultType, Scenario
 
@@ -551,7 +548,7 @@ class TestLargeYamlPerformance:
         for i in range(500):
             lines.append(f"  - id: comp-{i}\n")
             lines.append(f"    name: Component {i}\n")
-            lines.append(f"    type: app_server\n")
+            lines.append("    type: app_server\n")
         lines.append("dependencies: []\n")
         content = "".join(lines)
         path = _write_yaml(content)

@@ -17,8 +17,6 @@ from faultray.model.components import (
     Dependency,
     FailoverConfig,
     OperationalProfile,
-    SecurityProfile,
-    ComplianceTags,
 )
 from faultray.model.graph import InfraGraph
 from faultray.simulator.incident_cost_model import (
@@ -1308,7 +1306,7 @@ class TestEdgeCases:
         g1 = _graph(_comp("a", revenue_per_minute=100.0))
         g2 = _graph(_comp("b", revenue_per_minute=200.0))
         r1 = engine.calculate_incident_cost(g1, _profile(components=["a"]))
-        r2 = engine.calculate_incident_cost(g2, _profile(components=["b"]))
+        engine.calculate_incident_cost(g2, _profile(components=["b"]))
         # Running on g2 should not affect g1 results
         r1b = engine.calculate_incident_cost(g1, _profile(components=["a"]))
         assert r1.total_cost == r1b.total_cost

@@ -7,11 +7,9 @@ from pathlib import Path
 import pytest
 import pytest_asyncio
 from fastapi import HTTPException
-from sqlalchemy import select
 from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
 
 from faultray.api.auth import (
-    PUBLIC_PATHS,
     _is_public,
     generate_api_key,
     get_current_user,

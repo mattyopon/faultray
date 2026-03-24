@@ -2,14 +2,12 @@
 
 from __future__ import annotations
 
-import pytest
 
 from faultray.model.components import Component, ComponentType, Dependency
 from faultray.model.graph import InfraGraph
 from faultray.simulator.throttle_cascade_analyzer import (
     AdaptiveStrategy,
     AdaptiveThreshold,
-    AdaptiveThresholdResult,
     BudgetAllocation,
     BypassDetectionResult,
     BypassRisk,
@@ -20,14 +18,12 @@ from faultray.simulator.throttle_cascade_analyzer import (
     CoordinationResult,
     DownstreamBackpressureResult,
     PriorityFairnessEntry,
-    PriorityFairnessResult,
     PropagationHop,
     ResponseCodeEntry,
     ResponseCodeResult,
     RetryStormResult,
     RetryStormSeverity,
     TenantIsolationEntry,
-    TenantIsolationResult,
     ThrottleBudgetResult,
     ThrottleCascadeAnalyzer,
     ThrottleConfig,
@@ -911,7 +907,7 @@ class TestBypassDetection:
         cfgs = {"a1": ThrottleConfig()}
         analyzer = ThrottleCascadeAnalyzer()
         result = analyzer.detect_bypass_vulnerabilities(g, cfgs)
-        has_bypass = any(v.component_id == "b1" for v in result.vulnerabilities)
+        any(v.component_id == "b1" for v in result.vulnerabilities)
         # b1 depends on a1, but a1 is protected. b1 has no dependents with configs,
         # so no bypass. Let's check reverse.
         assert result.overall_risk in list(BypassRisk)

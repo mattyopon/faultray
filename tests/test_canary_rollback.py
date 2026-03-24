@@ -24,8 +24,6 @@ from faultray.model.components import (
     HealthStatus,
     OperationalProfile,
     ResourceMetrics,
-    RetryStrategy,
-    SecurityProfile,
     SLOTarget,
 )
 from faultray.model.graph import InfraGraph

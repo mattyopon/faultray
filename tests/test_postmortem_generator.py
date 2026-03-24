@@ -14,9 +14,6 @@ from faultray.model.components import (
     ComponentType,
     Dependency,
     FailoverConfig,
-    OperationalProfile,
-    ResourceMetrics,
-    SecurityProfile,
 )
 from faultray.model.graph import InfraGraph
 from faultray.reporter.postmortem_generator import (

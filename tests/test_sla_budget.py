@@ -4,15 +4,11 @@ from __future__ import annotations
 
 from datetime import datetime, timedelta
 
-import pytest
 
-from faultray.model.components import Component, ComponentType, Dependency, HealthStatus
+from faultray.model.components import Component, ComponentType, HealthStatus
 from faultray.model.graph import InfraGraph
 from faultray.simulator.sla_budget import (
-    BudgetReport,
-    BudgetSnapshot,
     BudgetStatus,
-    BurnRateInfo,
     BurnRateTrend,
     Incident,
     SLABudgetTracker,

@@ -22,7 +22,6 @@ from faultray.model.components import (
 )
 from faultray.model.graph import InfraGraph
 from faultray.simulator.sre_maturity import (
-    DimensionAssessment,
     MaturityDimension,
     MaturityLevel,
     MaturityReport,
@@ -356,7 +355,7 @@ class TestRoadmap:
         report = engine.assess(graph)
         # Well-configured may still have roadmap items for non-max dimensions
         # But Level 5 dimensions should not have roadmap items
-        level5_dims = {
+        {
             d.dimension.value for d in report.dimensions if d.level == MaturityLevel.OPTIMIZING
         }
         for action, _, _ in report.roadmap:

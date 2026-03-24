@@ -2,11 +2,10 @@
 
 from __future__ import annotations
 
-import math
 
 import pytest
 
-from faultray.model.components import Component, ComponentType, Dependency, HealthStatus
+from faultray.model.components import Component, ComponentType, Dependency
 from faultray.model.graph import InfraGraph
 from faultray.simulator.capacity_planning import (
     BottleneckResult,

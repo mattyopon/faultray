@@ -8,9 +8,8 @@ from __future__ import annotations
 
 from datetime import datetime, timedelta, timezone
 
-import pytest
 
-from faultray.model.components import Component, ComponentType, Dependency
+from faultray.model.components import Component, ComponentType
 from faultray.model.graph import InfraGraph
 from faultray.simulator.certificate_expiry_analyzer import (
     CADependencyRisk,
@@ -1362,7 +1361,7 @@ class TestAdditionalCoverage:
 
     def test_chain_validation_medium_severity_incomplete_non_selfsigned(self):
         """Line 688: chain_length < 2 and not self-signed but still valid/complete."""
-        a = CertificateExpiryAnalyzer()
+        CertificateExpiryAnalyzer()
         # A non-self-signed cert with no chain_certificates and valid expiry
         # complete=False, valid=True => severity HIGH (line 686)
         # To reach line 688 we need: valid=True, complete=True, chain_length < 2

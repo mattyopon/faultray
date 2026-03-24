@@ -4,7 +4,6 @@ from __future__ import annotations
 
 import copy
 
-import pytest
 
 from faultray.model.components import (
     Component,
@@ -423,7 +422,7 @@ class TestPredictImpactRemoveComponent:
             change_type=ChangeType.REMOVE_COMPONENT,
             target_component_id="db",
         )
-        imp = p.predict_impact(ch)
+        p.predict_impact(ch)
         # Original graph should be unmodified
         assert g.get_component("db").health == HealthStatus.HEALTHY
 

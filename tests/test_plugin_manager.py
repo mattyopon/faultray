@@ -428,7 +428,7 @@ class TestPluginManagerScaffolding:
 
     def test_created_template_is_loadable(self, tmp_path: Path):
         manager = PluginManager(plugin_dirs=[tmp_path])
-        path = manager.create_plugin_template(
+        manager.create_plugin_template(
             "loadable-template",
             PluginType.ANALYZER,
             output_dir=tmp_path,

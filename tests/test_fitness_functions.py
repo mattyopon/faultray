@@ -2,20 +2,14 @@
 
 from __future__ import annotations
 
-import pytest
 
 from faultray.model.components import (
-    AutoScalingConfig,
     CircuitBreakerConfig,
     Component,
     ComponentType,
     Dependency,
-    FailoverConfig,
     HealthStatus,
-    ResourceMetrics,
     RetryStrategy,
-    SecurityProfile,
-    ComplianceTags,
 )
 from faultray.model.graph import InfraGraph
 from faultray.simulator.fitness_functions import (

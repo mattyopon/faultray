@@ -103,7 +103,7 @@ def test_no_sql_injection_in_sqlite():
     # A strict project would assert not violations here.
     if violations:
         pytest.skip(
-            f"SQL injection patterns found (review needed):\n"
+            "SQL injection patterns found (review needed):\n"
             + "\n".join(violations[:10])
         )
 
@@ -262,7 +262,6 @@ def test_xss_prevention_in_html():
         Capacity,
         Component,
         ComponentType,
-        Dependency,
         ResourceMetrics,
     )
     from faultray.model.graph import InfraGraph
@@ -387,6 +386,6 @@ def test_no_debug_mode_in_production():
     # Informational -- some debug=True may be in dev-only server code
     if violations:
         pytest.skip(
-            f"Hardcoded debug=True found (review needed):\n"
+            "Hardcoded debug=True found (review needed):\n"
             + "\n".join(violations[:5])
         )

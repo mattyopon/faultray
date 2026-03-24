@@ -1,16 +1,13 @@
 """Tests for the Multi-Cloud Resilience Comparator."""
 
-import pytest
 
 from faultray.model.components import (
     AutoScalingConfig,
-    Capacity,
     Component,
     ComponentType,
     Dependency,
     FailoverConfig,
     HealthStatus,
-    ResourceMetrics,
 )
 from faultray.model.graph import InfraGraph
 from faultray.simulator.cloud_comparator import (

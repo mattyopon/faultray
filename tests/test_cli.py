@@ -2,11 +2,8 @@
 
 from __future__ import annotations
 
-import json
-from io import StringIO
 from pathlib import Path
 
-import pytest
 from typer.testing import CliRunner
 
 from faultray.cli import app

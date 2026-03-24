@@ -5,11 +5,8 @@ All boto3 calls are mocked — tests work without actual AWS credentials.
 
 from __future__ import annotations
 
-import importlib
-import json
 import sys
-from pathlib import Path
-from unittest.mock import MagicMock, patch, PropertyMock
+from unittest.mock import MagicMock, patch
 
 import pytest
 

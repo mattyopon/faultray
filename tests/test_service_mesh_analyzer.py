@@ -9,47 +9,36 @@ and policy enforcement analysis.
 from __future__ import annotations
 
 import pytest
-from datetime import datetime, timezone
+from datetime import datetime
 
 from faultray.model.components import (
     Component,
     ComponentType,
     Dependency,
-    HealthStatus,
 )
 from faultray.model.graph import InfraGraph
 from faultray.simulator.service_mesh_analyzer import (
     BackoffStrategy,
     CircuitBreakerPairConfig,
-    CircuitBreakerReport,
     ControlPlaneResilienceResult,
-    DataPlaneSaturationReport,
     DataPlaneSaturationResult,
     LoadBalancingAnalysis,
-    LoadBalancingReport,
     LoadBalancingStrategy,
     MeshTopology,
-    MeshTopologyResult,
-    MTLSReport,
     MTLSStatus,
     ObservabilityGap,
-    ObservabilityGapReport,
     ObservabilitySignal,
     PolicyEnforcementLevel,
-    PolicyEnforcementReport,
     PolicyEnforcementResult,
     RetryPolicyEvaluation,
-    RetryPolicyReport,
     ServiceMeshAnalysisReport,
     ServiceMeshConfigAnalyzer,
     TrafficAction,
-    TrafficManagementReport,
     TrafficRule,
     _AMBIENT_CPU_PERCENT,
     _AMBIENT_MEMORY_MB,
     _CERT_EXPIRY_WARNING_HOURS,
     _DEFAULT_CERT_ROTATION_HOURS,
-    _PER_NODE_CPU_PERCENT,
     _PER_NODE_MEMORY_MB,
     _SIDECAR_CPU_PERCENT,
     _SIDECAR_MEMORY_MB,

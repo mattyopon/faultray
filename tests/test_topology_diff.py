@@ -3,26 +3,19 @@
 from __future__ import annotations
 
 import json
-import tempfile
 from pathlib import Path
 
 import pytest
 
 from faultray.model.components import (
-    AutoScalingConfig,
     Component,
     ComponentType,
     Dependency,
-    FailoverConfig,
 )
 from faultray.model.graph import InfraGraph
 from faultray.reporter.topology_diff import (
-    ComponentDiff,
     DiffType,
-    EdgeDiff,
-    FieldChange,
     TopologyDiffer,
-    TopologyDiffResult,
 )
 
 

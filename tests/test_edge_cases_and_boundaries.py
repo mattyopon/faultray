@@ -805,17 +805,17 @@ class TestConcurrentModification:
 
         # First analysis: no dependencies
         score1 = graph.resilience_score()
-        paths1 = graph.get_critical_paths()
+        graph.get_critical_paths()
 
         # Add dependency
         graph.add_dependency(Dependency(source_id="a", target_id="b"))
         score2 = graph.resilience_score()
-        paths2 = graph.get_critical_paths()
+        graph.get_critical_paths()
 
         # Add another
         graph.add_dependency(Dependency(source_id="b", target_id="c"))
         score3 = graph.resilience_score()
-        paths3 = graph.get_critical_paths()
+        graph.get_critical_paths()
 
         # All should be valid
         for s in (score1, score2, score3):
@@ -971,7 +971,6 @@ class TestCrossCuttingEdgeCases:
 
     def test_graph_save_and_load_roundtrip(self, tmp_path):
         """Save and reload a graph with edge cases in component names."""
-        from pathlib import Path
 
         graph = InfraGraph()
         graph.add_component(_make_component(cid="db-1", name="Database Primary"))

@@ -10,7 +10,6 @@ from faultray.model.components import (
     Component,
     ComponentType,
     Dependency,
-    FailoverConfig,
     ResourceMetrics,
 )
 from faultray.model.graph import InfraGraph

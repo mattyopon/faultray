@@ -7,9 +7,7 @@ extremes.
 
 from __future__ import annotations
 
-import math
 import tempfile
-import time
 from pathlib import Path
 
 import pytest
@@ -31,7 +29,7 @@ from faultray.model.components import (
 )
 from faultray.model.graph import InfraGraph
 from faultray.simulator.cascade import CascadeChain, CascadeEffect, CascadeEngine
-from faultray.simulator.engine import SimulationEngine, SimulationReport
+from faultray.simulator.engine import SimulationEngine
 from faultray.simulator.scenarios import Fault, FaultType, Scenario
 
 

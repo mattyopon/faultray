@@ -6,7 +6,6 @@ from faultray.simulator.agent_monitor import (
     AgentMonitorEngine,
     AlertSeverity,
     MonitoringPlan,
-    MonitoringRule,
     PredictedFault,
 )
 

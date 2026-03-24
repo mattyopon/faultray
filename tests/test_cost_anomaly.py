@@ -9,7 +9,6 @@ from faultray.model.components import (
     ComponentType,
     Dependency,
     HealthStatus,
-    ResourceMetrics,
 )
 from faultray.model.graph import InfraGraph
 from faultray.simulator.cost_anomaly import (

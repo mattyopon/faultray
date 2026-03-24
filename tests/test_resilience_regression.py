@@ -960,7 +960,7 @@ class TestGenerateCIGateResult:
         curr = _graph([_comp("api", replicas=1)])
         engine = ResilienceRegressionEngine()
         result = engine.generate_ci_gate_result(curr, prev)
-        major_details = [d for d in result.details if "major" in d.lower()]
+        [d for d in result.details if "major" in d.lower()]
         # Might or might not have major detail depending on if it also triggers critical
         assert isinstance(result.details, list)
 

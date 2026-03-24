@@ -5,7 +5,6 @@ Targets 99%+ line/branch coverage.
 
 from __future__ import annotations
 
-import pytest
 
 from faultray.model.components import (
     Component,

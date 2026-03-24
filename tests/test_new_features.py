@@ -13,19 +13,16 @@ Covers:
 from __future__ import annotations
 
 import json
-from dataclasses import dataclass, field
 from io import StringIO
 from pathlib import Path
 from types import SimpleNamespace
 from unittest.mock import MagicMock, patch
 
-import pytest
 from typer.testing import CliRunner
 
 from faultray.cli import app
 from faultray.model.demo import create_demo_graph
 from faultray.simulator.engine import (
-    MAX_SCENARIOS,
     ScenarioResult,
     SimulationEngine,
     SimulationReport,
@@ -95,7 +92,6 @@ def _make_dynamic_report(
         DynamicScenarioResult,
         DynamicSimulationReport,
     )
-    from faultray.simulator.scenarios import Fault
 
     results = []
     for i in range(n_critical):

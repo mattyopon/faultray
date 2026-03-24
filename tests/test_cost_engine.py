@@ -3,22 +3,18 @@
 from __future__ import annotations
 
 from faultray.model.components import (
-    Capacity,
     Component,
     ComponentType,
     CostProfile,
     Dependency,
     HealthStatus,
     OperationalProfile,
-    ResourceMetrics,
     SLOTarget,
 )
 from faultray.model.graph import InfraGraph
 from faultray.simulator.cascade import CascadeChain, CascadeEffect
 from faultray.simulator.cost_engine import (
     CostImpactEngine,
-    CostImpactReport,
-    ScenarioCostImpact,
 )
 from faultray.simulator.engine import SimulationEngine, SimulationReport, ScenarioResult
 from faultray.simulator.scenarios import Fault, FaultType, Scenario

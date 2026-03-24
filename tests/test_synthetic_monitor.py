@@ -7,7 +7,6 @@ simulation, false positive analysis, and report generation to achieve
 
 from __future__ import annotations
 
-import math
 
 import pytest
 
@@ -1412,7 +1411,7 @@ class TestEdgeCases:
                 regions=[ProbeRegion.US_EAST, ProbeRegion.EU_WEST],
             ),
         ]
-        report = self.engine.run_probes(g, configs_mix)
+        self.engine.run_probes(g, configs_mix)
         # Degraded results count as success → error_rate = 0 → healthy
         # We need to construct a scenario where 0.1 < error_rate <= 0.5
         # Let's create manual executions to test via calculate_availability

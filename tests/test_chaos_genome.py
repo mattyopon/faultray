@@ -2,21 +2,18 @@
 
 from __future__ import annotations
 
-import math
 from datetime import datetime, timedelta, timezone
 
 import pytest
 
 from faultray.model.components import (
     AutoScalingConfig,
-    Capacity,
     CircuitBreakerConfig,
     Component,
     ComponentType,
     Dependency,
     FailoverConfig,
     RegionConfig,
-    ResourceMetrics,
 )
 from faultray.model.demo import create_demo_graph
 from faultray.model.graph import InfraGraph
@@ -1393,7 +1390,6 @@ class TestMaxDepthInnerException:
     """Test max_depth inner exception handler (lines 771-772)."""
 
     def test_max_depth_inner_exception(self):
-        import networkx as nx
         from unittest.mock import patch
 
         engine = ChaosGenomeEngine()

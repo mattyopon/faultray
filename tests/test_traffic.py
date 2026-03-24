@@ -1,6 +1,5 @@
 """Tests for traffic pattern models."""
 
-import math
 
 from faultray.simulator.traffic import (
     TrafficPattern,
@@ -320,7 +319,7 @@ def test_flash_crowd_no_decay_duration():
 
 def test_flash_crowd_ramp_equals_duration():
     """FLASH_CROWD where ramp == duration leaves no decay time, returns peak."""
-    p = TrafficPattern(
+    TrafficPattern(
         pattern_type=TrafficPatternType.FLASH_CROWD,
         peak_multiplier=5.0,
         duration_seconds=50,

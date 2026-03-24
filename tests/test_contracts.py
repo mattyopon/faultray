@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import tempfile
 from pathlib import Path
 
 import pytest
@@ -11,8 +10,6 @@ import yaml
 from faultray.contracts.engine import (
     ContractEngine,
     ContractRule,
-    ContractValidationResult,
-    ContractViolation,
     ResilienceContract,
     _count_spofs,
 )
@@ -1186,7 +1183,6 @@ class TestAdvancedRules:
 
     def test_validate_unknown_rule_type_handler(self):
         """Unknown rule type handler returns empty violations via _check_rule."""
-        from unittest.mock import patch
         graph = _simple_graph()
         engine = ContractEngine()
         # Create a rule with a valid rule_type but then mock _RULE_HANDLERS to miss it

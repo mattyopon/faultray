@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import pytest
 
 from faultray.model.components import (
     CircuitBreakerConfig,
@@ -19,28 +18,21 @@ from faultray.simulator.circuit_breaker_tuner import (
     BreakerState,
     BulkheadBreakerIntegration,
     BulkheadConfig,
-    CascadeAnalysis,
     CascadeLink,
     CircuitBreakerTuner,
-    CircuitBreakerTuningReport,
     ErrorRateSnapshot,
-    FalseNegativeRisk,
-    FalsePositiveRisk,
     HalfOpenBudget,
     MonitoringGap,
     PlacementRecommendation,
     PlacementStrategy,
     RecoveryPattern,
     RecoveryTimeoutRecommendation,
-    RetryBreakerInteraction,
     RiskCategory,
     Severity,
-    SimulationResult,
     StateTransition,
     SuccessRateRecommendation,
     TestCoverageLevel,
     TestCoverageResult,
-    ThresholdRecommendation,
     ThunderingHerdRisk,
 )
 

@@ -18,7 +18,6 @@ from faultray.model.components import (
 )
 from faultray.model.graph import InfraGraph
 from faultray.simulator.dependency_health_scorer import (
-    CircuitBreakerReadiness,
     DependencyCriticality,
     DependencyHealthReport,
     DependencyHealthScore,
@@ -26,8 +25,6 @@ from faultray.simulator.dependency_health_scorer import (
     GraphComplexityMetrics,
     HealthDimensions,
     HealthTrend,
-    RetryPolicyEvaluation,
-    TimeoutAudit,
 )
 
 

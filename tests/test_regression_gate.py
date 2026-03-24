@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import json
 import tempfile
 from pathlib import Path
 
@@ -15,12 +14,10 @@ from faultray.model.components import (
     ComponentType,
     Dependency,
     FailoverConfig,
-    ResourceMetrics,
 )
 from faultray.model.graph import InfraGraph
 from faultray.integrations.regression_gate import (
     ChaosRegressionGate,
-    RegressionCheckResult,
 )
 
 

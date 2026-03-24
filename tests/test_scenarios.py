@@ -2,10 +2,9 @@
 
 import pytest
 
-from faultray.model.components import Capacity, Component, ComponentType, FailoverConfig
+from faultray.model.components import Capacity, Component, ComponentType
 from faultray.simulator.scenarios import (
     DynamicScenario,
-    Fault,
     FaultType,
     Scenario,
     generate_default_scenarios,

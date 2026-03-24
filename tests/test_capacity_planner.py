@@ -4,15 +4,12 @@ from __future__ import annotations
 
 import pytest
 
-from faultray.model.components import Component, ComponentType, HealthStatus
+from faultray.model.components import Component, ComponentType
 from faultray.model.graph import InfraGraph
 from faultray.simulator.capacity_planner import (
-    CapacityForecast,
-    CapacityPlan,
     CapacityPlanner,
     CapacityRisk,
     GrowthModel,
-    ScalingEvent,
     _classify_risk,
     _days_to_threshold,
     _identify_bottleneck,

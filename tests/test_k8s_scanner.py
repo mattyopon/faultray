@@ -5,12 +5,11 @@ All kubernetes client calls are mocked — tests work without an actual cluster.
 
 from __future__ import annotations
 
-import sys
 from unittest.mock import MagicMock, patch
 
 import pytest
 
-from faultray.model.components import ComponentType, Dependency
+from faultray.model.components import ComponentType
 from faultray.model.graph import InfraGraph
 
 

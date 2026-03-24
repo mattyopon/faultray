@@ -2,14 +2,12 @@
 
 from __future__ import annotations
 
-import pytest
 
 from faultray.model.components import (
     Component,
     ComponentType,
     Dependency,
     FailoverConfig,
-    HealthStatus,
     OperationalProfile,
 )
 from faultray.model.graph import InfraGraph

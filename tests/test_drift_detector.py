@@ -1212,7 +1212,7 @@ class TestDetectFromFileNonYaml:
         """Non-yaml file should use InfraGraph.load."""
         graph = _make_graph(components=[_web_api(replicas=3)])
         bl_path = tmp_path / "bl.json"
-        baseline = detector.save_baseline(graph, bl_path)
+        detector.save_baseline(graph, bl_path)
 
         # Save current graph as JSON
         current_path = tmp_path / "current.json"
