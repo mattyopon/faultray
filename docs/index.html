@@ -9,21 +9,22 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>FaultRay — Zero-Risk Chaos Engineering for Infrastructure & AI Agents</title>
-  <meta name="description" content="FaultRay simulates infrastructure failures in memory before they happen in production. Graph-based cascade simulation, multi-layer availability limits, and AI agent failure modeling. Zero risk. Full visibility.">
-  <meta name="keywords" content="chaos engineering, infrastructure resilience, fault simulation, terraform, SRE, DevOps, AI agent testing, availability, SLA, incident prevention">
-  <meta property="og:title" content="FaultRay — Zero-Risk Chaos Engineering">
-  <meta property="og:description" content="Simulate infrastructure failures before they happen in production. Zero risk. Full visibility.">
+  <title>FaultRay — DORA-Compliant Resilience Testing</title>
+  <meta name="description" content="FaultRay proves infrastructure resilience mathematically — without touching production. 2,000+ failure scenarios, DORA compliance, audit-ready evidence. Zero risk.">
+  <meta name="keywords" content="DORA compliance, resilience testing, chaos engineering, fault simulation, SLA proof, infrastructure, SRE, DevOps, AI agent testing, fintech">
+  <meta property="og:title" content="FaultRay — DORA-Compliant Resilience Testing">
+  <meta property="og:description" content="2,000+ failure scenarios simulated in memory. Zero production risk. Audit-ready evidence for regulators.">
   <meta property="og:type" content="website">
   <meta property="og:url" content="https://faultray.com">
   <meta property="og:image" content="https://faultray.com/og-image.png">
   <meta name="twitter:card" content="summary_large_image">
-  <meta name="twitter:title" content="FaultRay — Zero-Risk Chaos Engineering">
-  <meta name="twitter:description" content="Simulate infrastructure failures before they happen in production. Zero risk. Full visibility.">
+  <meta name="twitter:title" content="FaultRay — DORA-Compliant Resilience Testing">
+  <meta name="twitter:description" content="2,000+ failure scenarios simulated in memory. Zero production risk. Audit-ready evidence for regulators.">
   <link rel="canonical" href="https://faultray.com">
+  <link rel="icon" href="/assets/images/favicon.png" type="image/png">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
   <style>
     *, *::before, *::after {
       margin: 0;
@@ -32,96 +33,68 @@
     }
 
     :root {
-      --bg: #0a0e1a;
-      --bg-secondary: #0f1424;
-      --bg-tertiary: #141a2e;
-      --bg-card: #161d33;
+      --bg-deep: #090e1a;
+      --bg: #0d1525;
+      --bg-secondary: #111c30;
+      --bg-card: #141d33;
+      --bg-card-hover: #192441;
       --border: #1e2a4a;
-      --border-light: #2a3a5c;
+      --border-light: #263556;
       --text: #e2e8f0;
-      --text-secondary: #94a3b8;
-      --text-muted: #64748b;
-      --accent: #3b82f6;
-      --accent-hover: #2563eb;
-      --accent-glow: rgba(59, 130, 246, 0.15);
-      --accent-glow-strong: rgba(59, 130, 246, 0.25);
+      --text-secondary: #8ca0bb;
+      --text-muted: #5a7194;
+      --cyan: #00c8ff;
+      --cyan-dim: rgba(0, 200, 255, 0.15);
+      --cyan-glow: rgba(0, 200, 255, 0.25);
+      --blue: #2563eb;
+      --blue-hover: #1d4ed8;
+      --blue-glow: rgba(37, 99, 235, 0.3);
       --green: #22c55e;
+      --green-dim: rgba(34, 197, 94, 0.15);
       --red: #ef4444;
-      --yellow: #eab308;
-      --purple: #a855f7;
-      --terminal-bg: #0c0f1a;
-      --terminal-border: #1a2340;
-      --font: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
-      --mono: 'JetBrains Mono', 'Fira Code', monospace;
+      --red-dim: rgba(239, 68, 68, 0.12);
+      --amber: #f59e0b;
+      --radius: 12px;
+      --radius-lg: 20px;
     }
 
     html {
       scroll-behavior: smooth;
-      font-size: 16px;
+      -webkit-text-size-adjust: 100%;
     }
 
     body {
-      font-family: var(--font);
-      background: var(--bg);
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      background: var(--bg-deep);
       color: var(--text);
       line-height: 1.6;
       -webkit-font-smoothing: antialiased;
-      overflow-x: hidden;
+      -moz-osx-font-smoothing: grayscale;
     }
 
-    /* Animations */
-    @keyframes fadeInUp {
-      from { opacity: 0; transform: translateY(30px); }
-      to { opacity: 1; transform: translateY(0); }
+    .container {
+      max-width: 1140px;
+      margin: 0 auto;
+      padding: 0 24px;
     }
 
-    @keyframes fadeIn {
-      from { opacity: 0; }
-      to { opacity: 1; }
-    }
-
-    @keyframes pulse {
-      0%, 100% { opacity: 1; }
-      50% { opacity: 0.5; }
-    }
-
-    @keyframes terminalBlink {
-      0%, 100% { opacity: 1; }
-      50% { opacity: 0; }
-    }
-
-    @keyframes gradientShift {
-      0% { background-position: 0% 50%; }
-      50% { background-position: 100% 50%; }
-      100% { background-position: 0% 50%; }
-    }
-
-    .animate-on-scroll {
-      opacity: 0;
-      transform: translateY(30px);
-      transition: opacity 0.6s ease, transform 0.6s ease;
-    }
-
-    .animate-on-scroll.visible {
-      opacity: 1;
-      transform: translateY(0);
-    }
-
-    /* Navigation */
-    nav {
+    /* ===== NAV ===== */
+    .nav {
       position: fixed;
       top: 0;
       left: 0;
       right: 0;
       z-index: 100;
-      background: rgba(10, 14, 26, 0.8);
-      backdrop-filter: blur(20px);
-      border-bottom: 1px solid var(--border);
-      padding: 0 1.5rem;
+      background: rgba(9, 14, 26, 0.88);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      border-bottom: 1px solid rgba(30, 42, 74, 0.5);
+      padding: 0 24px;
+      transition: background 0.3s;
     }
 
     .nav-inner {
-      max-width: 1200px;
+      max-width: 1140px;
       margin: 0 auto;
       display: flex;
       align-items: center;
@@ -130,47 +103,52 @@
     }
 
     .nav-logo {
-      font-size: 1.25rem;
+      font-size: 20px;
       font-weight: 800;
-      color: var(--text);
+      color: var(--cyan);
       text-decoration: none;
-      letter-spacing: -0.02em;
+      letter-spacing: -0.5px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
     }
 
     .nav-logo span {
-      color: var(--accent);
+      font-weight: 400;
+      color: var(--text-secondary);
+      font-size: 14px;
     }
 
     .nav-links {
       display: flex;
       align-items: center;
-      gap: 2rem;
-      list-style: none;
+      gap: 32px;
     }
 
     .nav-links a {
       color: var(--text-secondary);
       text-decoration: none;
-      font-size: 0.875rem;
+      font-size: 14px;
       font-weight: 500;
       transition: color 0.2s;
     }
 
     .nav-links a:hover {
-      color: var(--text);
+      color: var(--cyan);
     }
 
     .nav-cta {
-      background: var(--accent) !important;
+      background: var(--blue);
       color: #fff !important;
-      padding: 0.5rem 1rem;
+      padding: 8px 20px;
       border-radius: 8px;
       font-weight: 600 !important;
-      transition: background 0.2s !important;
+      transition: background 0.2s, transform 0.2s !important;
     }
 
     .nav-cta:hover {
-      background: var(--accent-hover) !important;
+      background: var(--blue-hover);
+      transform: translateY(-1px);
     }
 
     .nav-mobile-toggle {
@@ -178,627 +156,524 @@
       background: none;
       border: none;
       color: var(--text);
-      font-size: 1.5rem;
+      font-size: 24px;
       cursor: pointer;
+      padding: 4px;
     }
 
-    /* Sections */
-    section {
-      padding: 6rem 1.5rem;
-    }
-
-    .container {
-      max-width: 1200px;
-      margin: 0 auto;
-    }
-
-    .section-label {
-      font-size: 0.75rem;
-      font-weight: 600;
-      text-transform: uppercase;
-      letter-spacing: 0.1em;
-      color: var(--accent);
-      margin-bottom: 1rem;
-    }
-
-    .section-title {
-      font-size: clamp(2rem, 4vw, 3rem);
-      font-weight: 800;
-      letter-spacing: -0.03em;
-      line-height: 1.15;
-      margin-bottom: 1.25rem;
-    }
-
-    .section-subtitle {
-      font-size: 1.125rem;
-      color: var(--text-secondary);
-      max-width: 640px;
-      line-height: 1.7;
-    }
-
-    /* Hero */
+    /* ===== HERO ===== */
     .hero {
-      padding: 10rem 1.5rem 6rem;
-      text-align: center;
+      padding: 160px 0 100px;
+      background: linear-gradient(135deg, #090e1a 0%, #0c1a35 40%, #111c30 100%);
       position: relative;
       overflow: hidden;
+      text-align: center;
     }
 
     .hero::before {
       content: '';
       position: absolute;
-      top: -200px;
-      left: 50%;
-      transform: translateX(-50%);
-      width: 800px;
-      height: 800px;
-      background: radial-gradient(circle, var(--accent-glow) 0%, transparent 70%);
+      inset: 0;
+      background: radial-gradient(ellipse 60% 50% at 50% 40%, rgba(0, 200, 255, 0.12) 0%, transparent 70%);
       pointer-events: none;
     }
 
-    .hero .container {
+    .hero::after {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background-image: radial-gradient(rgba(255, 255, 255, 0.04) 1px, transparent 1px);
+      background-size: 28px 28px;
+      pointer-events: none;
+    }
+
+    .hero-content {
       position: relative;
       z-index: 1;
+      max-width: 860px;
+      margin: 0 auto;
     }
 
     .hero-badge {
       display: inline-flex;
       align-items: center;
-      gap: 0.5rem;
-      padding: 0.375rem 1rem;
-      background: var(--accent-glow);
-      border: 1px solid rgba(59, 130, 246, 0.3);
+      gap: 8px;
+      background: var(--cyan-dim);
+      color: var(--cyan);
+      border: 1px solid rgba(0, 200, 255, 0.3);
+      padding: 6px 18px;
       border-radius: 100px;
-      font-size: 0.8125rem;
-      font-weight: 500;
-      color: var(--accent);
-      margin-bottom: 2rem;
-      animation: fadeIn 0.8s ease;
+      font-size: 13px;
+      font-weight: 600;
+      margin-bottom: 28px;
     }
 
-    .hero-badge .dot {
-      width: 6px;
-      height: 6px;
-      background: var(--green);
+    .hero-badge-dot {
+      width: 7px;
+      height: 7px;
+      background: var(--cyan);
       border-radius: 50%;
       animation: pulse 2s infinite;
     }
 
-    .hero h1 {
-      font-size: clamp(2.5rem, 6vw, 4.5rem);
-      font-weight: 800;
-      letter-spacing: -0.04em;
-      line-height: 1.1;
-      margin-bottom: 1.5rem;
-      animation: fadeInUp 0.8s ease;
+    @keyframes pulse {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.5; transform: scale(1.4); }
     }
 
-    .hero h1 .gradient {
-      background: linear-gradient(135deg, var(--accent), var(--purple));
-      background-size: 200% 200%;
-      animation: gradientShift 6s ease infinite;
+    .hero h1 {
+      font-size: clamp(30px, 5vw, 56px);
+      font-weight: 900;
+      color: #fff;
+      line-height: 1.15;
+      letter-spacing: -1.5px;
+      margin-bottom: 24px;
+    }
+
+    .hero h1 .accent {
+      background: linear-gradient(135deg, var(--cyan), #60a5fa);
       -webkit-background-clip: text;
       -webkit-text-fill-color: transparent;
       background-clip: text;
     }
 
     .hero-sub {
-      font-size: clamp(1rem, 2vw, 1.25rem);
+      font-size: clamp(16px, 2vw, 19px);
       color: var(--text-secondary);
-      max-width: 640px;
-      margin: 0 auto 2.5rem;
       line-height: 1.7;
-      animation: fadeInUp 0.8s ease 0.1s both;
+      margin-bottom: 40px;
+      max-width: 680px;
+      margin-left: auto;
+      margin-right: auto;
     }
 
-    .hero-buttons {
+    .hero-btns {
       display: flex;
-      gap: 1rem;
+      gap: 16px;
       justify-content: center;
       flex-wrap: wrap;
-      margin-bottom: 4rem;
-      animation: fadeInUp 0.8s ease 0.2s both;
-    }
-
-    .btn {
-      display: inline-flex;
-      align-items: center;
-      gap: 0.5rem;
-      padding: 0.875rem 1.75rem;
-      border-radius: 10px;
-      font-size: 0.9375rem;
-      font-weight: 600;
-      text-decoration: none;
-      transition: all 0.2s;
-      cursor: pointer;
-      border: none;
-      font-family: var(--font);
+      margin-bottom: 32px;
     }
 
     .btn-primary {
-      background: var(--accent);
+      background: var(--blue);
       color: #fff;
-      box-shadow: 0 0 30px var(--accent-glow-strong);
+      padding: 16px 36px;
+      border-radius: 10px;
+      font-size: 17px;
+      font-weight: 700;
+      text-decoration: none;
+      transition: all 0.2s;
+      box-shadow: 0 4px 24px var(--blue-glow);
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      border: none;
+      cursor: pointer;
+      font-family: inherit;
     }
 
     .btn-primary:hover {
-      background: var(--accent-hover);
-      box-shadow: 0 0 40px rgba(59, 130, 246, 0.35);
-      transform: translateY(-1px);
+      background: var(--blue-hover);
+      transform: translateY(-2px);
+      box-shadow: 0 8px 32px rgba(37, 99, 235, 0.5);
     }
 
     .btn-secondary {
-      background: var(--bg-tertiary);
+      background: rgba(255, 255, 255, 0.06);
       color: var(--text);
-      border: 1px solid var(--border);
+      padding: 16px 32px;
+      border-radius: 10px;
+      font-size: 17px;
+      font-weight: 600;
+      text-decoration: none;
+      transition: all 0.2s;
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      backdrop-filter: blur(4px);
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
     }
 
     .btn-secondary:hover {
-      background: var(--bg-card);
-      border-color: var(--border-light);
-      transform: translateY(-1px);
+      background: rgba(255, 255, 255, 0.12);
+      border-color: rgba(255, 255, 255, 0.2);
     }
 
-    /* Terminal */
-    .terminal {
-      max-width: 680px;
-      margin: 0 auto;
-      background: var(--terminal-bg);
-      border: 1px solid var(--terminal-border);
-      border-radius: 12px;
-      overflow: hidden;
-      text-align: left;
-      box-shadow: 0 25px 60px rgba(0, 0, 0, 0.5);
-      animation: fadeInUp 0.8s ease 0.3s both;
-    }
-
-    .terminal-header {
-      display: flex;
-      align-items: center;
-      gap: 0.5rem;
-      padding: 0.875rem 1rem;
-      background: rgba(255, 255, 255, 0.03);
-      border-bottom: 1px solid var(--terminal-border);
-    }
-
-    .terminal-dot {
-      width: 12px;
-      height: 12px;
-      border-radius: 50%;
-    }
-
-    .terminal-dot.red { background: #ff5f57; }
-    .terminal-dot.yellow { background: #febc2e; }
-    .terminal-dot.green { background: #28c840; }
-
-    .terminal-title {
-      flex: 1;
-      text-align: center;
-      font-size: 0.75rem;
-      color: var(--text-muted);
-      font-family: var(--mono);
-    }
-
-    .terminal-body {
-      padding: 1.25rem 1.5rem;
-      font-family: var(--mono);
-      font-size: 0.8125rem;
-      line-height: 1.7;
-      overflow-x: auto;
-    }
-
-    .terminal-body .prompt {
-      color: var(--green);
-    }
-
-    .terminal-body .cmd {
-      color: var(--text);
-    }
-
-    .terminal-body .comment {
-      color: var(--text-muted);
-    }
-
-    .terminal-body .box {
-      color: var(--text-secondary);
-    }
-
-    .terminal-body .highlight {
-      color: var(--accent);
-    }
-
-    .terminal-body .warn {
-      color: var(--yellow);
-    }
-
-    .terminal-body .danger {
-      color: var(--red);
-    }
-
-    .terminal-body .score-good {
-      color: var(--green);
-    }
-
-    .terminal-body .cursor {
+    .hero-install {
       display: inline-block;
-      width: 8px;
-      height: 16px;
-      background: var(--text);
-      animation: terminalBlink 1s step-end infinite;
-      vertical-align: text-bottom;
+      background: rgba(0, 0, 0, 0.4);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 14px 28px;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 15px;
+      color: var(--cyan);
+      letter-spacing: -0.3px;
     }
 
-    /* Problem section */
-    .problem {
-      background: var(--bg-secondary);
+    .hero-install .prompt {
+      color: var(--text-muted);
+      user-select: none;
+    }
+
+    /* ===== STATS ===== */
+    .stats-section {
+      padding: 80px 0;
+      background: var(--bg);
       border-top: 1px solid var(--border);
       border-bottom: 1px solid var(--border);
     }
 
-    .problem-grid {
+    .stats-grid {
       display: grid;
       grid-template-columns: repeat(3, 1fr);
-      gap: 2rem;
-      margin-top: 3rem;
+      gap: 32px;
+      text-align: center;
+    }
+
+    .stat-item {
+      padding: 24px 16px;
+    }
+
+    .stat-number {
+      font-size: clamp(44px, 8vw, 72px);
+      font-weight: 900;
+      line-height: 1;
+      letter-spacing: -3px;
+      margin-bottom: 12px;
+    }
+
+    .stat-number.cyan { color: var(--cyan); }
+    .stat-number.blue { color: #60a5fa; }
+    .stat-number.green { color: var(--green); }
+
+    .stat-label {
+      font-size: 15px;
+      color: var(--text-secondary);
+      font-weight: 500;
+    }
+
+    /* ===== SECTIONS COMMON ===== */
+    .section {
+      padding: 96px 0;
+    }
+
+    .section-alt {
+      background: var(--bg-secondary);
+    }
+
+    .section-title {
+      font-size: clamp(24px, 4vw, 40px);
+      font-weight: 900;
+      color: #fff;
+      letter-spacing: -0.5px;
+      margin-bottom: 16px;
+    }
+
+    .section-title.text-center { text-align: center; }
+
+    .section-sub {
+      font-size: 17px;
+      color: var(--text-secondary);
+      max-width: 640px;
+      line-height: 1.7;
+    }
+
+    .section-sub.text-center {
+      text-align: center;
+      margin-left: auto;
+      margin-right: auto;
+    }
+
+    .section-label {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: 1.5px;
+      text-transform: uppercase;
+      color: var(--cyan);
+      margin-bottom: 12px;
+    }
+
+    .section-label.text-center {
+      justify-content: center;
+      display: flex;
+    }
+
+    /* ===== PROBLEMS ===== */
+    .problems-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+      gap: 20px;
+      margin-top: 48px;
     }
 
     .problem-card {
-      padding: 2rem;
-      background: var(--bg);
+      background: var(--bg-card);
       border: 1px solid var(--border);
-      border-radius: 12px;
-      transition: border-color 0.3s, box-shadow 0.3s;
+      border-radius: var(--radius);
+      padding: 28px;
+      display: flex;
+      gap: 16px;
+      align-items: flex-start;
+      transition: border-color 0.2s, transform 0.2s;
     }
 
     .problem-card:hover {
-      border-color: var(--red);
-      box-shadow: 0 0 30px rgba(239, 68, 68, 0.08);
+      border-color: var(--border-light);
+      transform: translateY(-2px);
     }
 
     .problem-icon {
-      font-size: 2rem;
-      margin-bottom: 1rem;
+      width: 44px;
+      height: 44px;
+      min-width: 44px;
+      background: var(--red-dim);
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 20px;
     }
 
     .problem-card h3 {
-      font-size: 1.0625rem;
+      font-size: 15px;
       font-weight: 700;
-      margin-bottom: 0.75rem;
-      letter-spacing: -0.01em;
+      color: #fff;
+      margin-bottom: 6px;
     }
 
     .problem-card p {
-      font-size: 0.9375rem;
+      font-size: 14px;
       color: var(--text-secondary);
-      line-height: 1.65;
+      line-height: 1.6;
     }
 
-    /* Solution section */
-    .solution-grid {
+    /* ===== FEATURES ===== */
+    .features-grid {
       display: grid;
-      grid-template-columns: repeat(3, 1fr);
-      gap: 2rem;
-      margin-top: 3rem;
+      grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+      gap: 20px;
+      margin-top: 48px;
     }
 
-    .solution-card {
-      padding: 2rem;
+    .feature-card {
       background: var(--bg-card);
       border: 1px solid var(--border);
-      border-radius: 12px;
-      transition: border-color 0.3s, box-shadow 0.3s, transform 0.3s;
+      border-radius: var(--radius);
+      padding: 28px;
+      transition: box-shadow 0.2s, transform 0.2s, border-color 0.2s;
     }
 
-    .solution-card:hover {
-      border-color: var(--accent);
-      box-shadow: 0 0 40px var(--accent-glow);
-      transform: translateY(-2px);
-    }
-
-    .solution-number {
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      width: 36px;
-      height: 36px;
-      border-radius: 10px;
-      background: var(--accent-glow);
-      color: var(--accent);
-      font-weight: 700;
-      font-size: 0.875rem;
-      margin-bottom: 1.25rem;
-    }
-
-    .solution-card h3 {
-      font-size: 1.125rem;
-      font-weight: 700;
-      margin-bottom: 0.75rem;
-      letter-spacing: -0.01em;
-    }
-
-    .solution-card p {
-      font-size: 0.9375rem;
-      color: var(--text-secondary);
-      line-height: 1.65;
-    }
-
-    /* How it works */
-    .how-it-works {
-      background: var(--bg-secondary);
-      border-top: 1px solid var(--border);
-      border-bottom: 1px solid var(--border);
-    }
-
-    .steps {
-      display: grid;
-      grid-template-columns: repeat(3, 1fr);
-      gap: 2rem;
-      margin-top: 3rem;
-    }
-
-    .step {
-      position: relative;
-    }
-
-    .step-number {
-      font-size: 0.75rem;
-      font-weight: 700;
-      color: var(--accent);
-      text-transform: uppercase;
-      letter-spacing: 0.08em;
-      margin-bottom: 1rem;
-    }
-
-    .step h3 {
-      font-size: 1.0625rem;
-      font-weight: 700;
-      margin-bottom: 1rem;
-    }
-
-    .code-block {
-      background: var(--terminal-bg);
-      border: 1px solid var(--terminal-border);
-      border-radius: 8px;
-      padding: 1rem 1.25rem;
-      font-family: var(--mono);
-      font-size: 0.8125rem;
-      color: var(--text);
-      overflow-x: auto;
-      line-height: 1.7;
-    }
-
-    .code-block .prompt {
-      color: var(--green);
-      user-select: none;
-    }
-
-    .code-block .output {
-      color: var(--text-muted);
-    }
-
-    /* Integrations */
-    .integrations-row {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 0.75rem;
-      justify-content: center;
-      margin-top: 3rem;
-    }
-
-    .integration-badge {
-      padding: 0.625rem 1.25rem;
-      background: var(--bg-card);
-      border: 1px solid var(--border);
-      border-radius: 8px;
-      font-size: 0.875rem;
-      font-weight: 600;
-      color: var(--text-secondary);
-      transition: border-color 0.2s, color 0.2s;
-    }
-
-    .integration-badge:hover {
+    .feature-card:hover {
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+      transform: translateY(-3px);
       border-color: var(--border-light);
-      color: var(--text);
     }
 
-    /* Comparison */
-    .comparison {
-      background: var(--bg-secondary);
-      border-top: 1px solid var(--border);
-      border-bottom: 1px solid var(--border);
+    .feature-icon {
+      font-size: 28px;
+      margin-bottom: 14px;
+      display: block;
     }
 
-    .comparison-table-wrapper {
+    .feature-card h3 {
+      font-size: 15px;
+      font-weight: 700;
+      color: #fff;
+      margin-bottom: 8px;
+    }
+
+    .feature-card p {
+      font-size: 14px;
+      color: var(--text-secondary);
+      line-height: 1.6;
+    }
+
+    .feature-badge {
+      display: inline-block;
+      font-size: 11px;
+      font-weight: 700;
+      padding: 2px 8px;
+      border-radius: 100px;
+      margin-top: 12px;
+    }
+
+    .badge-dora {
+      background: var(--cyan-dim);
+      color: var(--cyan);
+      border: 1px solid rgba(0, 200, 255, 0.25);
+    }
+
+    .badge-ai {
+      background: rgba(168, 85, 247, 0.15);
+      color: #a855f7;
+      border: 1px solid rgba(168, 85, 247, 0.25);
+    }
+
+    .badge-new {
+      background: var(--green-dim);
+      color: var(--green);
+      border: 1px solid rgba(34, 197, 94, 0.25);
+    }
+
+    .badge-security {
+      background: var(--red-dim);
+      color: var(--red);
+      border: 1px solid rgba(239, 68, 68, 0.2);
+    }
+
+    /* ===== COMPARISON TABLE ===== */
+    .compare-wrapper {
       overflow-x: auto;
-      margin-top: 3rem;
+      margin-top: 48px;
+      border-radius: var(--radius-lg);
       border: 1px solid var(--border);
-      border-radius: 12px;
     }
 
-    .comparison-table {
+    .compare-table {
       width: 100%;
       border-collapse: collapse;
-      font-size: 0.9375rem;
+      font-size: 14px;
+      min-width: 700px;
     }
 
-    .comparison-table th,
-    .comparison-table td {
-      padding: 1rem 1.25rem;
+    .compare-table th {
+      padding: 18px 20px;
       text-align: left;
+      background: rgba(0, 0, 0, 0.3);
+      color: var(--text-secondary);
+      font-weight: 700;
+      font-size: 13px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
       border-bottom: 1px solid var(--border);
     }
 
-    .comparison-table th {
-      background: var(--bg-tertiary);
-      font-weight: 600;
-      font-size: 0.8125rem;
-      text-transform: uppercase;
-      letter-spacing: 0.05em;
+    .compare-table th:last-child {
+      color: var(--cyan);
+      background: rgba(0, 200, 255, 0.06);
+    }
+
+    .compare-table td {
+      padding: 16px 20px;
+      border-bottom: 1px solid var(--border);
       color: var(--text-secondary);
+      vertical-align: middle;
     }
 
-    .comparison-table th:last-child {
-      color: var(--accent);
-    }
-
-    .comparison-table td {
-      color: var(--text-secondary);
-    }
-
-    .comparison-table td:last-child {
-      color: var(--text);
-      font-weight: 600;
-    }
-
-    .comparison-table tr:last-child td {
+    .compare-table tr:last-child td {
       border-bottom: none;
     }
 
-    .comparison-table td:first-child {
+    .compare-table tr:hover td {
+      background: rgba(255, 255, 255, 0.02);
+    }
+
+    .compare-table td:first-child {
       font-weight: 600;
       color: var(--text);
     }
 
-    /* Pricing */
-    .pricing-grid {
-      display: grid;
-      grid-template-columns: repeat(3, 1fr);
-      gap: 1.5rem;
-      margin-top: 3rem;
+    .compare-table td:last-child {
+      background: rgba(0, 200, 255, 0.03);
     }
 
-    .pricing-card {
-      padding: 2.5rem 2rem;
-      background: var(--bg-card);
-      border: 1px solid var(--border);
-      border-radius: 16px;
-      display: flex;
-      flex-direction: column;
-      transition: border-color 0.3s, box-shadow 0.3s, transform 0.3s;
+    .compare-table tr:hover td:last-child {
+      background: rgba(0, 200, 255, 0.06);
     }
 
-    .pricing-card:hover {
-      transform: translateY(-2px);
-    }
-
-    .pricing-card.featured {
-      border-color: var(--accent);
-      box-shadow: 0 0 50px var(--accent-glow);
-      position: relative;
-    }
-
-    .pricing-card.featured::before {
-      content: 'Most Popular';
-      position: absolute;
-      top: -12px;
-      left: 50%;
-      transform: translateX(-50%);
-      background: var(--accent);
-      color: #fff;
-      padding: 0.25rem 1rem;
-      border-radius: 100px;
-      font-size: 0.75rem;
-      font-weight: 600;
-    }
-
-    .pricing-name {
-      font-size: 1.125rem;
-      font-weight: 700;
-      margin-bottom: 0.5rem;
-    }
-
-    .pricing-price {
-      font-size: 2.5rem;
-      font-weight: 800;
-      letter-spacing: -0.03em;
-      margin-bottom: 0.25rem;
-    }
-
-    .pricing-price span {
-      font-size: 1rem;
-      font-weight: 500;
-      color: var(--text-muted);
-    }
-
-    .pricing-desc {
-      font-size: 0.875rem;
-      color: var(--text-muted);
-      margin-bottom: 2rem;
-    }
-
-    .pricing-features {
-      list-style: none;
-      flex: 1;
-      margin-bottom: 2rem;
-    }
-
-    .pricing-features li {
-      padding: 0.5rem 0;
-      font-size: 0.9375rem;
-      color: var(--text-secondary);
-      display: flex;
-      align-items: flex-start;
-      gap: 0.625rem;
-    }
-
-    .pricing-features li::before {
-      content: '\2713';
+    .check {
       color: var(--green);
       font-weight: 700;
-      flex-shrink: 0;
     }
 
-    .pricing-card .btn {
-      width: 100%;
-      justify-content: center;
+    .cross {
+      color: var(--text-muted);
     }
 
-    /* Install */
-    .install-section {
-      text-align: center;
-      background: var(--bg-secondary);
-      border-top: 1px solid var(--border);
+    .risk-high { color: var(--red); font-weight: 600; }
+    .risk-med { color: var(--amber); font-weight: 600; }
+    .risk-zero { color: var(--green); font-weight: 700; }
+
+    /* ===== FAQ ===== */
+    .faq-list {
+      max-width: 780px;
+      margin: 48px auto 0;
+    }
+
+    .faq-item {
       border-bottom: 1px solid var(--border);
     }
 
-    .install-block {
-      max-width: 500px;
-      margin: 2rem auto 0;
-      position: relative;
-    }
-
-    .install-code {
-      background: var(--terminal-bg);
-      border: 1px solid var(--terminal-border);
-      border-radius: 12px;
-      padding: 1.25rem 1.5rem;
-      font-family: var(--mono);
-      font-size: 1.125rem;
+    .faq-question {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 22px 4px;
+      font-size: 16px;
+      font-weight: 600;
       color: var(--text);
-      text-align: center;
       cursor: pointer;
-      transition: border-color 0.2s;
-    }
-
-    .install-code:hover {
-      border-color: var(--accent);
-    }
-
-    .install-code .prompt {
-      color: var(--green);
       user-select: none;
+      gap: 16px;
+      background: none;
+      border: none;
+      width: 100%;
+      font-family: inherit;
+      text-align: left;
+      transition: color 0.2s;
     }
 
-    .install-hint {
-      margin-top: 0.75rem;
-      font-size: 0.8125rem;
-      color: var(--text-muted);
+    .faq-question:hover {
+      color: var(--cyan);
     }
 
-    /* CTA Section */
+    .faq-icon {
+      width: 28px;
+      height: 28px;
+      min-width: 28px;
+      background: var(--blue);
+      color: #fff;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 18px;
+      font-weight: 700;
+      transition: transform 0.25s;
+      flex-shrink: 0;
+    }
+
+    .faq-item.open .faq-icon {
+      transform: rotate(45deg);
+    }
+
+    .faq-answer {
+      max-height: 0;
+      overflow: hidden;
+      transition: max-height 0.35s ease;
+    }
+
+    .faq-item.open .faq-answer {
+      max-height: 300px;
+    }
+
+    .faq-answer-inner {
+      font-size: 15px;
+      color: var(--text-secondary);
+      line-height: 1.75;
+      padding: 0 4px 24px;
+    }
+
+    /* ===== CTA ===== */
     .cta-section {
+      background: linear-gradient(135deg, #0c1a35 0%, #111c30 50%, #0d1525 100%);
+      padding: 96px 0;
       text-align: center;
-      padding: 8rem 1.5rem;
       position: relative;
       overflow: hidden;
     }
@@ -806,104 +681,200 @@
     .cta-section::before {
       content: '';
       position: absolute;
-      bottom: -300px;
-      left: 50%;
-      transform: translateX(-50%);
-      width: 800px;
-      height: 800px;
-      background: radial-gradient(circle, var(--accent-glow) 0%, transparent 70%);
+      inset: 0;
+      background: radial-gradient(ellipse 50% 60% at 50% 50%, rgba(0, 200, 255, 0.08) 0%, transparent 70%);
       pointer-events: none;
     }
 
-    .cta-section .container {
+    .cta-section::after {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background-image: radial-gradient(rgba(255, 255, 255, 0.03) 1px, transparent 1px);
+      background-size: 28px 28px;
+      pointer-events: none;
+    }
+
+    .cta-content {
       position: relative;
       z-index: 1;
     }
 
     .cta-section h2 {
-      font-size: clamp(2rem, 4vw, 3rem);
-      font-weight: 800;
-      letter-spacing: -0.03em;
-      margin-bottom: 1.25rem;
+      font-size: clamp(24px, 4vw, 40px);
+      font-weight: 900;
+      color: #fff;
+      margin-bottom: 16px;
+      letter-spacing: -0.5px;
     }
 
     .cta-section p {
-      font-size: 1.125rem;
       color: var(--text-secondary);
-      max-width: 500px;
-      margin: 0 auto 2.5rem;
+      font-size: 17px;
+      margin-bottom: 40px;
+      max-width: 560px;
+      margin-left: auto;
+      margin-right: auto;
     }
 
-    /* Footer */
-    footer {
-      padding: 3rem 1.5rem;
+    .cta-code {
+      display: inline-block;
+      background: rgba(0, 0, 0, 0.5);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 24px 40px;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 16px;
+      text-align: left;
+      margin-bottom: 32px;
+      line-height: 2;
+    }
+
+    .cta-code .prompt { color: var(--text-muted); user-select: none; }
+    .cta-code .cmd { color: var(--cyan); }
+    .cta-code .arg { color: #60a5fa; }
+
+    .cta-buttons {
+      display: flex;
+      gap: 16px;
+      justify-content: center;
+      flex-wrap: wrap;
+    }
+
+    .btn-github {
+      background: rgba(255, 255, 255, 0.08);
+      color: var(--text);
+      padding: 14px 28px;
+      border-radius: 10px;
+      font-size: 16px;
+      font-weight: 600;
+      text-decoration: none;
+      transition: all 0.2s;
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .btn-github:hover {
+      background: rgba(255, 255, 255, 0.14);
+      border-color: rgba(255, 255, 255, 0.2);
+      transform: translateY(-1px);
+    }
+
+    .btn-docs {
+      background: transparent;
+      color: var(--cyan);
+      padding: 14px 28px;
+      border-radius: 10px;
+      font-size: 16px;
+      font-weight: 600;
+      text-decoration: none;
+      transition: all 0.2s;
+      border: 1px solid rgba(0, 200, 255, 0.3);
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .btn-docs:hover {
+      background: var(--cyan-dim);
+      border-color: rgba(0, 200, 255, 0.5);
+      transform: translateY(-1px);
+    }
+
+    /* ===== FOOTER ===== */
+    .footer {
+      background: var(--bg-deep);
       border-top: 1px solid var(--border);
+      color: var(--text-muted);
+      padding: 48px 0;
+      font-size: 13px;
     }
 
     .footer-inner {
-      max-width: 1200px;
-      margin: 0 auto;
       display: flex;
-      flex-wrap: wrap;
       justify-content: space-between;
-      align-items: center;
-      gap: 1.5rem;
-    }
-
-    .footer-left {
-      display: flex;
-      flex-direction: column;
-      gap: 0.5rem;
+      align-items: flex-start;
+      flex-wrap: wrap;
+      gap: 24px;
     }
 
     .footer-brand {
-      font-size: 1rem;
-      font-weight: 700;
-      color: var(--text);
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
     }
 
-    .footer-brand span {
-      color: var(--accent);
+    .footer-logo {
+      color: var(--cyan);
+      font-weight: 800;
+      font-size: 18px;
+      text-decoration: none;
     }
 
-    .footer-meta {
-      font-size: 0.8125rem;
+    .footer-tagline {
       color: var(--text-muted);
-      line-height: 1.6;
+      font-size: 13px;
     }
 
     .footer-links {
       display: flex;
-      gap: 1.5rem;
+      gap: 24px;
       flex-wrap: wrap;
+      align-items: center;
     }
 
     .footer-links a {
-      color: var(--text-secondary);
+      color: var(--text-muted);
       text-decoration: none;
-      font-size: 0.875rem;
-      font-weight: 500;
       transition: color 0.2s;
+      font-size: 13px;
     }
 
     .footer-links a:hover {
-      color: var(--text);
+      color: var(--text-secondary);
     }
 
-    /* Responsive */
+    .footer-meta {
+      width: 100%;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 12px;
+      padding-top: 24px;
+      margin-top: 24px;
+      border-top: 1px solid var(--border);
+      font-size: 12px;
+      color: var(--text-muted);
+    }
+
+    .footer-legal {
+      display: flex;
+      gap: 16px;
+      flex-wrap: wrap;
+    }
+
+    /* ===== ANIMATIONS ===== */
+    .fade-in {
+      opacity: 0;
+      transform: translateY(24px);
+      transition: opacity 0.6s ease, transform 0.6s ease;
+    }
+
+    .fade-in.visible {
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    .fade-in-delay-1 { transition-delay: 0.1s; }
+    .fade-in-delay-2 { transition-delay: 0.2s; }
+    .fade-in-delay-3 { transition-delay: 0.3s; }
+
+    /* ===== RESPONSIVE ===== */
     @media (max-width: 768px) {
-      section {
-        padding: 4rem 1.25rem;
-      }
-
-      .hero {
-        padding: 7rem 1.25rem 4rem;
-      }
-
-      .nav-links {
-        display: none;
-      }
-
+      .nav-links { display: none; }
       .nav-links.open {
         display: flex;
         flex-direction: column;
@@ -911,253 +882,282 @@
         top: 64px;
         left: 0;
         right: 0;
-        background: var(--bg);
+        background: rgba(9, 14, 26, 0.96);
+        backdrop-filter: blur(16px);
+        padding: 24px;
+        gap: 16px;
         border-bottom: 1px solid var(--border);
-        padding: 1.5rem;
-        gap: 1rem;
+      }
+      .nav-mobile-toggle { display: block; }
+
+      .hero { padding: 120px 0 72px; }
+
+      .stats-grid {
+        grid-template-columns: 1fr;
+        gap: 40px;
       }
 
-      .nav-mobile-toggle {
-        display: block;
-      }
-
-      .problem-grid,
-      .solution-grid,
-      .steps,
-      .pricing-grid {
+      .problems-grid {
         grid-template-columns: 1fr;
       }
 
-      .hero-buttons {
+      .features-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .hero-btns {
         flex-direction: column;
         align-items: center;
       }
 
-      .btn {
-        width: 100%;
-        max-width: 320px;
-        justify-content: center;
-      }
-
-      .terminal-body {
-        font-size: 0.6875rem;
-        padding: 1rem;
+      .cta-code {
+        padding: 20px 24px;
+        font-size: 14px;
       }
 
       .footer-inner {
         flex-direction: column;
-        text-align: center;
+        align-items: flex-start;
       }
 
-      .footer-links {
-        justify-content: center;
+      .footer-meta {
+        flex-direction: column;
+        align-items: flex-start;
+      }
+
+      .section {
+        padding: 72px 0;
       }
     }
 
-    @media (min-width: 769px) and (max-width: 1024px) {
-      .problem-grid,
-      .solution-grid,
-      .steps {
-        grid-template-columns: repeat(2, 1fr);
+    @media (max-width: 480px) {
+      .hero h1 {
+        font-size: 28px;
+        letter-spacing: -0.5px;
       }
 
-      .pricing-grid {
-        grid-template-columns: repeat(3, 1fr);
-        gap: 1rem;
+      .stat-number {
+        font-size: 48px;
       }
+
+      .compare-wrapper {
+        margin-left: -24px;
+        margin-right: -24px;
+        border-radius: 0;
+        border-left: none;
+        border-right: none;
+      }
+    }
+
+    /* ===== DARK MODE (already dark, enhance for light preferences) ===== */
+    @media (prefers-color-scheme: light) {
+      /* Keep dark — FaultRay is always dark themed for brand consistency */
+    }
+
+    /* ===== SELECTION ===== */
+    ::selection {
+      background: rgba(0, 200, 255, 0.25);
+      color: #fff;
     }
   </style>
 </head>
 <body>
 
-  <!-- Navigation -->
-  <nav>
+  <!-- NAV -->
+  <nav class="nav" id="nav">
     <div class="nav-inner">
-      <a href="#" class="nav-logo">Fault<span>Ray</span></a>
-      <button class="nav-mobile-toggle" onclick="document.querySelector('.nav-links').classList.toggle('open')" aria-label="Toggle menu">&#9776;</button>
-      <ul class="nav-links">
-        <li><a href="#features">Features</a></li>
-        <li><a href="#how-it-works">How It Works</a></li>
-        <li><a href="#pricing">Pricing</a></li>
-        <li><a href="https://github.com/mattyopon/faultray" target="_blank" rel="noopener">GitHub</a></li>
-        <li><a href="#install" class="nav-cta">Get Started</a></li>
-      </ul>
+      <a href="#" class="nav-logo">FaultRay</a>
+      <div class="nav-links" id="nav-links">
+        <a href="#problems">Why FaultRay</a>
+        <a href="#features">Features</a>
+        <a href="#compare">Compare</a>
+        <a href="#faq">FAQ</a>
+        <a href="https://github.com/mattyopon/faultray" class="nav-cta" target="_blank" rel="noopener">GitHub</a>
+      </div>
+      <button class="nav-mobile-toggle" id="nav-toggle" aria-label="Toggle menu">&#9776;</button>
     </div>
   </nav>
 
-  <!-- Hero -->
+  <!-- HERO -->
   <section class="hero">
     <div class="container">
-      <div class="hero-badge">
-        <span class="dot"></span>
-        v11.0 — Now with AI Agent Failure Modeling
-      </div>
-      <h1>Stop Breaking Production.<br><span class="gradient">Start Simulating It.</span></h1>
-      <p class="hero-sub">FaultRay simulates infrastructure failures in memory — before they happen in production. Zero risk. Full visibility.</p>
-      <div class="hero-buttons">
-        <a href="#install" class="btn btn-primary">Get Started Free</a>
-        <a href="https://github.com/mattyopon/faultray" target="_blank" rel="noopener" class="btn btn-secondary">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"/></svg>
-          View on GitHub
-        </a>
-      </div>
-
-      <!-- Terminal Mockup -->
-      <div class="terminal">
-        <div class="terminal-header">
-          <span class="terminal-dot red"></span>
-          <span class="terminal-dot yellow"></span>
-          <span class="terminal-dot green"></span>
-          <span class="terminal-title">terminal</span>
+      <div class="hero-content">
+        <span class="hero-badge">
+          <span class="hero-badge-dot"></span>
+          DORA-Compliant &middot; Patent Pending
+        </span>
+        <h1>DORA Compliance,<br>Proven <span class="accent">Mathematically</span><br>Without Touching Production</h1>
+        <p class="hero-sub">2,000+ failure scenarios simulated in memory. Zero production risk. Audit-ready evidence for regulators.</p>
+        <div class="hero-btns">
+          <a href="#get-started" class="btn-primary">Get Started Free &rarr;</a>
+          <a href="#features" class="btn-secondary">Explore Features</a>
         </div>
-        <div class="terminal-body">
-<span class="prompt">$</span> <span class="cmd">faultray tf-check plan.json</span>
-<br><br>
-<span class="box">&#9581;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472; FaultRay Terraform Guard &#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9584;</span><br>
-<span class="box">&#9474;</span>                                                   <span class="box">&#9474;</span><br>
-<span class="box">&#9474;</span>  Score Before: <span class="score-good">72/100</span>                             <span class="box">&#9474;</span><br>
-<span class="box">&#9474;</span>  Score After:  <span class="danger">45/100</span>  <span class="danger">(-27 points)</span>               <span class="box">&#9474;</span><br>
-<span class="box">&#9474;</span>                                                   <span class="box">&#9474;</span><br>
-<span class="box">&#9474;</span>  <span class="warn">NEW RISKS:</span>                                       <span class="box">&#9474;</span><br>
-<span class="box">&#9474;</span>  <span class="danger">-</span> Database is now a single point of failure      <span class="box">&#9474;</span><br>
-<span class="box">&#9474;</span>  <span class="danger">-</span> Cache has no replication (data loss risk)      <span class="box">&#9474;</span><br>
-<span class="box">&#9474;</span>                                                   <span class="box">&#9474;</span><br>
-<span class="box">&#9474;</span>  Recommendation: <span class="danger">HIGH RISK - Review Required</span>      <span class="box">&#9474;</span><br>
-<span class="box">&#9474;</span>                                                   <span class="box">&#9474;</span><br>
-<span class="box">&#9582;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9583;</span>
+        <div class="hero-install">
+          <span class="prompt">$ </span>pip install faultray
         </div>
       </div>
     </div>
   </section>
 
-  <!-- Problem -->
-  <section class="problem" id="problem">
+  <!-- STATS -->
+  <section class="stats-section">
     <div class="container">
-      <div class="animate-on-scroll" style="text-align:center">
-        <p class="section-label">The Problem</p>
-        <h2 class="section-title"><code style="background:rgba(239,68,68,0.15);color:var(--red);padding:0.1em 0.4em;border-radius:6px;font-family:var(--mono);font-size:0.85em">terraform apply</code> Broke Production. Again.</h2>
-        <p class="section-subtitle" style="margin:0 auto">Every DevOps engineer has a horror story. A config change that looked harmless. A cascade failure at 2am. The plan output looked fine — and then production fell over.</p>
-      </div>
-      <div class="problem-grid">
-        <div class="problem-card animate-on-scroll">
-          <div class="problem-icon">&#128165;</div>
-          <h3>Cascade Failures from "Harmless" Changes</h3>
-          <p>A single config tweak triggers a chain reaction across your infrastructure. By the time you see it, half your services are down.</p>
+      <div class="stats-grid">
+        <div class="stat-item fade-in">
+          <div class="stat-number cyan">2,000+</div>
+          <div class="stat-label">Scenarios simulated in seconds</div>
         </div>
-        <div class="problem-card animate-on-scroll">
-          <div class="problem-icon">&#128064;</div>
-          <h3>Single Points of Failure Nobody Noticed</h3>
-          <p>That database with <code style="background:var(--bg-tertiary);padding:0.1em 0.3em;border-radius:4px;font-family:var(--mono);font-size:0.85em">replicas: 1</code> slipped through code review. You found out at 2am when it went down.</p>
+        <div class="stat-item fade-in fade-in-delay-1">
+          <div class="stat-number blue">52</div>
+          <div class="stat-label">DORA controls assessed automatically</div>
         </div>
-        <div class="problem-card animate-on-scroll">
-          <div class="problem-icon">&#129335;</div>
-          <h3>No Way to Test Resilience Before Deploying</h3>
-          <p>Traditional chaos engineering means breaking production. Regulated industries can't do that. Most teams won't risk it.</p>
+        <div class="stat-item fade-in fade-in-delay-2">
+          <div class="stat-number green">0%</div>
+          <div class="stat-label">Production risk &mdash; pure math simulation</div>
         </div>
       </div>
     </div>
   </section>
 
-  <!-- Solution -->
-  <section id="features">
+  <!-- PROBLEMS -->
+  <section class="section" id="problems">
     <div class="container">
-      <div class="animate-on-scroll" style="text-align:center">
-        <p class="section-label">The Solution</p>
-        <h2 class="section-title">Simulate Before You Ship</h2>
-        <p class="section-subtitle" style="margin:0 auto">FaultRay builds a mathematical model of your entire system and simulates 2,000+ failure scenarios in memory. Nothing breaks. You just get answers.</p>
-      </div>
-      <div class="solution-grid">
-        <div class="solution-card animate-on-scroll">
-          <div class="solution-number">1</div>
-          <h3>Graph-Based Cascade Simulation</h3>
-          <p>Model your entire infra as a dependency graph. Inject faults virtually. See exactly what breaks — and what survives.</p>
-        </div>
-        <div class="solution-card animate-on-scroll">
-          <div class="solution-number">2</div>
-          <h3>Multi-Layer Availability Limits</h3>
-          <p>Mathematically prove your theoretical maximum uptime across hardware, software, operations, and external dependencies.</p>
-        </div>
-        <div class="solution-card animate-on-scroll">
-          <div class="solution-number">3</div>
-          <h3>AI Agent Failure Modeling</h3>
-          <p>First tool to simulate how infrastructure failures cause AI agents to hallucinate, loop, or cascade errors through your system.</p>
-        </div>
-      </div>
-    </div>
-  </section>
-
-  <!-- How it works -->
-  <section class="how-it-works" id="how-it-works">
-    <div class="container">
-      <div class="animate-on-scroll" style="text-align:center">
-        <p class="section-label">How It Works</p>
-        <h2 class="section-title">Three Commands. Full Visibility.</h2>
-        <p class="section-subtitle" style="margin:0 auto">No agents to install. No infrastructure changes. No credentials needed beyond what Terraform already has.</p>
-      </div>
-      <div class="steps">
-        <div class="step animate-on-scroll">
-          <div class="step-number">Step 1 — Install</div>
-          <h3>One-line setup</h3>
-          <div class="code-block">
-            <span class="prompt">$ </span>pip install faultray
+      <div class="section-label">The Problem</div>
+      <h2 class="section-title">Still breaking production to test resilience?</h2>
+      <p class="section-sub">Traditional chaos engineering injects real failures into live systems. In a regulated world, that's no longer acceptable.</p>
+      <div class="problems-grid">
+        <div class="problem-card fade-in">
+          <div class="problem-icon">&#x1F4A5;</div>
+          <div>
+            <h3>Production chaos tests crash systems</h3>
+            <p>Injecting real faults into production causes outages, customer impact, and incident response overhead.</p>
           </div>
         </div>
-        <div class="step animate-on-scroll">
-          <div class="step-number">Step 2 — Define</div>
-          <h3>Import or define your infra</h3>
-          <div class="code-block">
-<span class="prompt">$ </span>faultray tf-import<br>
-<span class="output">Imported 47 resources from terraform state</span><br><br>
-<span class="prompt">$ </span>faultray init<br>
-<span class="output">Created infra.yaml template</span>
+        <div class="problem-card fade-in fade-in-delay-1">
+          <div class="problem-icon">&#x23F0;</div>
+          <div>
+            <h3>DORA deadline has passed</h3>
+            <p>The Digital Operational Resilience Act took effect January 2025. Non-compliance penalties reach 2% of global revenue.</p>
           </div>
         </div>
-        <div class="step animate-on-scroll">
-          <div class="step-number">Step 3 — Simulate</div>
-          <h3>See what breaks</h3>
-          <div class="code-block">
-<span class="prompt">$ </span>faultray simulate<br>
-<span class="output">Resilience Score: 72/100</span><br>
-<span class="output">Scenarios tested: 2,000+</span><br>
-<span class="output">Critical: 3  Warning: 12  Passed: 85</span>
+        <div class="problem-card fade-in fade-in-delay-2">
+          <div class="problem-icon">&#x1F4CB;</div>
+          <div>
+            <h3>No audit evidence from simulations</h3>
+            <p>Existing tools don't generate the structured evidence packages that regulators and auditors require.</p>
+          </div>
+        </div>
+        <div class="problem-card fade-in">
+          <div class="problem-icon">&#x1F4CA;</div>
+          <div>
+            <h3>SLA promises exceed physics</h3>
+            <p>Promising 99.99% availability without mathematical proof means your SLA is a guess, not a guarantee.</p>
+          </div>
+        </div>
+        <div class="problem-card fade-in fade-in-delay-1">
+          <div class="problem-icon">&#x1F50D;</div>
+          <div>
+            <h3>Hidden single points of failure</h3>
+            <p>SPOFs lurk in complex dependency graphs. Manual review misses cascading failure paths.</p>
+          </div>
+        </div>
+        <div class="problem-card fade-in fade-in-delay-2">
+          <div class="problem-icon">&#x2601;</div>
+          <div>
+            <h3>Third-party concentration risk</h3>
+            <p>Over-reliance on a single cloud vendor creates systemic risk that regulators are increasingly scrutinizing.</p>
           </div>
         </div>
       </div>
     </div>
   </section>
 
-  <!-- Integrations -->
-  <section id="integrations">
-    <div class="container animate-on-scroll" style="text-align:center">
-      <p class="section-label">Integrations</p>
-      <h2 class="section-title">Works With Your Stack</h2>
-      <p class="section-subtitle" style="margin:0 auto">Vendor-agnostic simulation that works across any infrastructure topology.</p>
-      <div class="integrations-row">
-        <span class="integration-badge">Terraform</span>
-        <span class="integration-badge">AWS</span>
-        <span class="integration-badge">Azure</span>
-        <span class="integration-badge">GCP</span>
-        <span class="integration-badge">Kubernetes</span>
-        <span class="integration-badge">Datadog</span>
-        <span class="integration-badge">PagerDuty</span>
-        <span class="integration-badge">Grafana</span>
-        <span class="integration-badge">OpsGenie</span>
-        <span class="integration-badge">Slack</span>
-        <span class="integration-badge">Prometheus</span>
-        <span class="integration-badge">GitHub Actions</span>
+  <!-- FEATURES -->
+  <section class="section section-alt" id="features">
+    <div class="container">
+      <div class="section-label text-center">Capabilities</div>
+      <h2 class="section-title text-center">Everything you need for resilience compliance</h2>
+      <p class="section-sub text-center">From mathematical SLA proofs to AI agent failure modeling &mdash; a complete resilience testing platform in a single CLI.</p>
+      <div class="features-grid">
+        <div class="feature-card fade-in">
+          <div class="feature-icon">&#x1F4D0;</div>
+          <h3>5-Layer Availability Model</h3>
+          <p>Mathematical SLA proof across network, compute, storage, application, and external dependency layers.</p>
+          <span class="feature-badge badge-dora">DORA</span>
+        </div>
+        <div class="feature-card fade-in">
+          <div class="feature-icon">&#x1F30A;</div>
+          <h3>Cascade Failure Analysis</h3>
+          <p>Graph-based failure propagation modeling. Trace how one component failure cascades through your infrastructure.</p>
+        </div>
+        <div class="feature-card fade-in">
+          <div class="feature-icon">&#x26A0;</div>
+          <h3>SPOF Detection</h3>
+          <p>Automatic detection of single points of failure in your dependency graph before they cause outages.</p>
+        </div>
+        <div class="feature-card fade-in">
+          <div class="feature-icon">&#x1F3DB;</div>
+          <h3>DORA 5-Pillar Assessment</h3>
+          <p>Comprehensive mapping to all 52 controls across ICT Risk Management, Incident Management, Testing, Third-Party, and Information Sharing.</p>
+          <span class="feature-badge badge-dora">DORA</span>
+        </div>
+        <div class="feature-card fade-in">
+          <div class="feature-icon">&#x1F4C4;</div>
+          <h3>DORA Evidence Packages</h3>
+          <p>Generate audit-ready PDF evidence packages with compliance scores, gap analysis, and remediation roadmaps.</p>
+          <span class="feature-badge badge-dora">DORA</span>
+        </div>
+        <div class="feature-card fade-in">
+          <div class="feature-icon">&#x1F6E1;</div>
+          <h3>TLPT Readiness</h3>
+          <p>Threat-Led Penetration Testing preparation. Model advanced persistent threats against your infrastructure.</p>
+          <span class="feature-badge badge-dora">DORA</span>
+        </div>
+        <div class="feature-card fade-in">
+          <div class="feature-icon">&#x1F4CA;</div>
+          <h3>Concentration Risk (HHI)</h3>
+          <p>Herfindahl-Hirschman Index analysis for ICT third-party concentration risk. Identify vendor lock-in before regulators do.</p>
+        </div>
+        <div class="feature-card fade-in">
+          <div class="feature-icon">&#x1F916;</div>
+          <h3>AI Agent Testing</h3>
+          <p>7 failure types including hallucination cascades, context window overflows, and tool-call loops in autonomous agents.</p>
+          <span class="feature-badge badge-ai">AI</span>
+        </div>
+        <div class="feature-card fade-in">
+          <div class="feature-icon">&#x2699;</div>
+          <h3>Terraform Integration</h3>
+          <p>Run as a CI/CD gate. Block deployments that reduce resilience below your threshold. Infrastructure-as-code native.</p>
+        </div>
+        <div class="feature-card fade-in">
+          <div class="feature-icon">&#x1F310;</div>
+          <h3>Multi-Framework Compliance</h3>
+          <p>SOC 2, PCI DSS, ISO 27001, HIPAA, GDPR compliance mapping. One scan, multiple frameworks.</p>
+          <span class="feature-badge badge-new">NEW</span>
+        </div>
+        <div class="feature-card fade-in">
+          <div class="feature-icon">&#x1F4BB;</div>
+          <h3>100+ CLI Commands</h3>
+          <p>From <code style="font-family:'JetBrains Mono',monospace;font-size:12px;background:rgba(0,200,255,0.1);padding:2px 6px;border-radius:4px;color:var(--cyan)">faultray demo</code> to <code style="font-family:'JetBrains Mono',monospace;font-size:12px;background:rgba(0,200,255,0.1);padding:2px 6px;border-radius:4px;color:var(--cyan)">faultray war-room</code> &mdash; a complete resilience CLI toolkit.</p>
+        </div>
+        <div class="feature-card fade-in">
+          <div class="feature-icon">&#x1F4E1;</div>
+          <h3>Security Feed</h3>
+          <p>Automatic scenario generation from CVE and CISA advisories. Stay ahead of emerging threats.</p>
+          <span class="feature-badge badge-security">SECURITY</span>
+        </div>
       </div>
     </div>
   </section>
 
-  <!-- Comparison -->
-  <section class="comparison">
-    <div class="container animate-on-scroll">
-      <div style="text-align:center">
-        <p class="section-label">Comparison</p>
-        <h2 class="section-title">Why Teams Switch to FaultRay</h2>
-      </div>
-      <div class="comparison-table-wrapper">
-        <table class="comparison-table">
+  <!-- COMPARISON -->
+  <section class="section" id="compare">
+    <div class="container">
+      <div class="section-label text-center">Comparison</div>
+      <h2 class="section-title text-center">Why not just use chaos engineering?</h2>
+      <p class="section-sub text-center">FaultRay takes a fundamentally different approach. No agents, no injected failures, no production risk.</p>
+      <div class="compare-wrapper fade-in">
+        <table class="compare-table">
           <thead>
             <tr>
               <th></th>
@@ -1170,52 +1170,52 @@
           <tbody>
             <tr>
               <td>Approach</td>
-              <td>Breaks real things</td>
-              <td>Breaks real things</td>
-              <td>Breaks real things</td>
-              <td>Math simulation</td>
+              <td>Injects real failures</td>
+              <td>Injects real failures</td>
+              <td>Injects real failures</td>
+              <td class="check">Math simulation</td>
             </tr>
             <tr>
               <td>Production risk</td>
-              <td>Medium-High</td>
-              <td>Medium</td>
-              <td>Medium</td>
-              <td>Zero</td>
+              <td class="risk-high">High</td>
+              <td class="risk-med">Medium</td>
+              <td class="risk-med">Medium</td>
+              <td class="risk-zero">Zero</td>
             </tr>
             <tr>
               <td>Setup</td>
               <td>Agent per host</td>
               <td>Agent per host</td>
               <td>AWS only</td>
-              <td>pip install faultray</td>
+              <td class="check">pip install</td>
             </tr>
             <tr>
-              <td>Scenarios</td>
-              <td>Manual</td>
-              <td>Manual</td>
-              <td>AWS only</td>
-              <td>2,000+ auto-generated</td>
-            </tr>
-            <tr>
-              <td>Availability proof</td>
-              <td>No</td>
-              <td>No</td>
-              <td>No</td>
-              <td>5-Layer Limit Model</td>
+              <td>DORA evidence</td>
+              <td class="cross">&times;</td>
+              <td class="cross">&times;</td>
+              <td class="cross">&times;</td>
+              <td class="check">&#10003; Audit-ready</td>
             </tr>
             <tr>
               <td>AI agent testing</td>
-              <td>No</td>
-              <td>No</td>
-              <td>No</td>
-              <td>7 fault types</td>
+              <td class="cross">&times;</td>
+              <td class="cross">&times;</td>
+              <td class="cross">&times;</td>
+              <td class="check">&#10003; 7 failure types</td>
+            </tr>
+            <tr>
+              <td>SLA proof</td>
+              <td class="cross">&times;</td>
+              <td class="cross">&times;</td>
+              <td class="cross">&times;</td>
+              <td class="check">&#10003; Mathematical</td>
             </tr>
             <tr>
               <td>Cost</td>
               <td>$$$$</td>
               <td>$$$</td>
               <td>$$</td>
-              <td>Free / Open Source</td>
+              <td class="check">Free / Enterprise</td>
             </tr>
           </tbody>
         </table>
@@ -1223,119 +1223,115 @@
     </div>
   </section>
 
-  <!-- Pricing -->
-  <section id="pricing">
+  <!-- FAQ -->
+  <section class="section section-alt" id="faq">
     <div class="container">
-      <div class="animate-on-scroll" style="text-align:center">
-        <p class="section-label">Pricing</p>
-        <h2 class="section-title">Start Free. Scale When Ready.</h2>
-        <p class="section-subtitle" style="margin:0 auto">No credit card required. Install and start simulating in under a minute.</p>
-      </div>
-      <div class="pricing-grid">
-        <div class="pricing-card animate-on-scroll">
-          <div class="pricing-name">Free</div>
-          <div class="pricing-price">$0<span>/mo</span></div>
-          <div class="pricing-desc">For individuals and small projects</div>
-          <ul class="pricing-features">
-            <li>5 components</li>
-            <li>10 simulations / month</li>
-            <li>CLI only</li>
-            <li>Community support</li>
-            <li>Cascade simulation engine</li>
-          </ul>
-          <a href="#install" class="btn btn-secondary">Install Free</a>
+      <div class="section-label text-center">FAQ</div>
+      <h2 class="section-title text-center">Frequently asked questions</h2>
+      <div class="faq-list">
+        <div class="faq-item fade-in">
+          <button class="faq-question" aria-expanded="false">
+            <span>Does FaultRay actually break anything?</span>
+            <span class="faq-icon">+</span>
+          </button>
+          <div class="faq-answer">
+            <div class="faq-answer-inner">No. FaultRay uses pure in-memory mathematical simulation. It models your infrastructure as a directed graph and computes failure probabilities, cascade paths, and availability limits without touching any live systems. Your production environment remains completely untouched.</div>
+          </div>
         </div>
-        <div class="pricing-card featured animate-on-scroll">
-          <div class="pricing-name">Pro</div>
-          <div class="pricing-price">$29<span>/mo</span></div>
-          <div class="pricing-desc">For teams running production infrastructure</div>
-          <ul class="pricing-features">
-            <li>50 components</li>
-            <li>Unlimited simulations</li>
-            <li>All 5 simulation engines</li>
-            <li>Compliance reports (SOC 2, ISO, PCI)</li>
-            <li>AI agent failure modeling</li>
-            <li>Web dashboard</li>
-            <li>Email support</li>
-          </ul>
-          <a href="https://github.com/sponsors/mattyopon" target="_blank" rel="noopener" class="btn btn-primary">Sponsor on GitHub</a>
+        <div class="faq-item fade-in">
+          <button class="faq-question" aria-expanded="false">
+            <span>How does it help with DORA compliance?</span>
+            <span class="faq-icon">+</span>
+          </button>
+          <div class="faq-answer">
+            <div class="faq-answer-inner">FaultRay maps directly to all 5 DORA pillars and 52 controls. It generates structured evidence packages including gap analysis, risk assessments, and remediation roadmaps that auditors can directly review. Think of it as automated DORA compliance documentation backed by mathematical proof.</div>
+          </div>
         </div>
-        <div class="pricing-card animate-on-scroll">
-          <div class="pricing-name">Enterprise</div>
-          <div class="pricing-price">$299<span>/mo</span></div>
-          <div class="pricing-desc">For organizations with compliance requirements</div>
-          <ul class="pricing-features">
-            <li>Unlimited components</li>
-            <li>Unlimited simulations</li>
-            <li>SSO / SAML integration</li>
-            <li>Insurance API access</li>
-            <li>Multi-region DR analysis</li>
-            <li>Security feed (CVE/CISA/NVD)</li>
-            <li>Dedicated support</li>
-            <li>Custom integrations</li>
-          </ul>
-          <a href="mailto:ymaeda.it@gmail.com" class="btn btn-secondary">Contact Us</a>
+        <div class="faq-item fade-in">
+          <button class="faq-question" aria-expanded="false">
+            <span>Can I use it in CI/CD pipelines?</span>
+            <span class="faq-icon">+</span>
+          </button>
+          <div class="faq-answer">
+            <div class="faq-answer-inner">Yes. FaultRay integrates as a Terraform gate, blocking deployments that reduce resilience below your configured threshold. It also works with GitHub Actions for automated resilience checks on every pull request.</div>
+          </div>
         </div>
-      </div>
-    </div>
-  </section>
-
-  <!-- Install -->
-  <section class="install-section" id="install">
-    <div class="container animate-on-scroll">
-      <p class="section-label">Get Started</p>
-      <h2 class="section-title">Install in Seconds</h2>
-      <p class="section-subtitle" style="margin:0 auto 0">One command. No agents. No infrastructure changes.</p>
-      <div class="install-block">
-        <div class="install-code" onclick="navigator.clipboard.writeText('pip install faultray');this.querySelector('.install-hint-inner').textContent='Copied!'">
-          <span class="prompt">$ </span>pip install faultray
+        <div class="faq-item fade-in">
+          <button class="faq-question" aria-expanded="false">
+            <span>What about AI agent testing?</span>
+            <span class="faq-icon">+</span>
+          </button>
+          <div class="faq-answer">
+            <div class="faq-answer-inner">FaultRay models 7 AI-specific failure types: hallucination cascades, context window overflows, tool-call infinite loops, permission escalation, data poisoning propagation, multi-agent deadlocks, and graceful degradation failures. Essential for any team deploying autonomous AI agents.</div>
+          </div>
         </div>
-        <p class="install-hint"><span class="install-hint-inner">Click to copy</span></p>
+        <div class="faq-item fade-in">
+          <button class="faq-question" aria-expanded="false">
+            <span>Is it really free?</span>
+            <span class="faq-icon">+</span>
+          </button>
+          <div class="faq-answer">
+            <div class="faq-answer-inner">FaultRay offers a free tier that includes core simulation capabilities, SPOF detection, and basic DORA assessment. Enterprise licenses add full evidence package generation, advanced compliance frameworks, and priority support for production deployments.</div>
+          </div>
+        </div>
       </div>
     </div>
   </section>
 
   <!-- CTA -->
-  <section class="cta-section">
-    <div class="container animate-on-scroll">
-      <h2>Ready to Stop Breaking Production?</h2>
-      <p>Join engineering teams who simulate failures before they ship. Free forever for small projects.</p>
-      <div class="hero-buttons">
-        <a href="#install" class="btn btn-primary">Get Started Free</a>
-        <a href="https://github.com/mattyopon/faultray" target="_blank" rel="noopener" class="btn btn-secondary">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"/></svg>
-          Star on GitHub
-        </a>
+  <section class="cta-section" id="get-started">
+    <div class="container">
+      <div class="cta-content">
+        <h2>Start proving resilience in 30 seconds</h2>
+        <p>Install FaultRay, run the demo, and see your first resilience report. No agents, no configuration, no production risk.</p>
+        <div class="cta-code">
+          <span class="prompt">$ </span><span class="cmd">pip install</span> <span class="arg">faultray</span><br>
+          <span class="prompt">$ </span><span class="cmd">faultray</span> <span class="arg">demo</span>
+        </div>
+        <div class="cta-buttons">
+          <a href="https://github.com/mattyopon/faultray" class="btn-github" target="_blank" rel="noopener">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"/></svg>
+            Star on GitHub
+          </a>
+          <a href="https://pypi.org/project/faultray/" class="btn-docs" target="_blank" rel="noopener">
+            PyPI Package &rarr;
+          </a>
+        </div>
       </div>
     </div>
   </section>
 
-  <!-- Footer -->
-  <footer>
-    <div class="footer-inner">
-      <div class="footer-left">
-        <div class="footer-brand">Fault<span>Ray</span></div>
-        <div class="footer-meta">
-          Patent Pending — US Application 64/010,200 |
-          <a href="https://doi.org/10.5281/zenodo.19139911" style="color: #93c5fd; text-decoration: none;">Research Paper (DOI)</a><br>
-          &copy; 2025-2026 Yutaro Maeda
+  <!-- FOOTER -->
+  <footer class="footer">
+    <div class="container">
+      <div class="footer-inner">
+        <div class="footer-brand">
+          <a href="#" class="footer-logo">FaultRay</a>
+          <span class="footer-tagline">Mathematical resilience testing for regulated industries.</span>
         </div>
-      </div>
-      <div class="footer-links">
-        <a href="https://github.com/mattyopon/faultray" target="_blank" rel="noopener">GitHub</a>
-        <a href="https://faultray.com" target="_blank" rel="noopener">Documentation</a>
-        <a href="https://pypi.org/project/faultray/" target="_blank" rel="noopener">PyPI</a>
-        <a href="https://github.com/mattyopon/faultray/blob/main/LICENSE" target="_blank" rel="noopener">License (BSL-1.1)</a>
+        <div class="footer-links">
+          <a href="https://github.com/mattyopon/faultray" target="_blank" rel="noopener">GitHub</a>
+          <a href="https://pypi.org/project/faultray/" target="_blank" rel="noopener">PyPI</a>
+          <a href="https://doi.org/10.5281/zenodo.19139911" target="_blank" rel="noopener">Paper (DOI)</a>
+        </div>
+        <div class="footer-meta">
+          <div class="footer-legal">
+            <span>Patent Pending: US 64/010,200</span>
+            <span>License: BSL-1.1</span>
+          </div>
+          <span>&copy; 2025-2026 Yutaro Maeda. All rights reserved.</span>
+        </div>
       </div>
     </div>
   </footer>
 
-  <!-- Minimal JS for scroll animations -->
   <script>
-    const observer = new IntersectionObserver((entries) => {
+    /* ===== INTERSECTION OBSERVER FADE-IN ===== */
+    const observer = new IntersectionObserver(entries => {
       entries.forEach(entry => {
         if (entry.isIntersecting) {
           entry.target.classList.add('visible');
+          observer.unobserve(entry.target);
         }
       });
     }, {
@@ -1343,12 +1339,67 @@
       rootMargin: '0px 0px -40px 0px'
     });
 
-    document.querySelectorAll('.animate-on-scroll').forEach(el => observer.observe(el));
+    document.querySelectorAll('.fade-in').forEach(el => observer.observe(el));
 
-    // Close mobile nav on link click
-    document.querySelectorAll('.nav-links a').forEach(link => {
-      link.addEventListener('click', () => {
-        document.querySelector('.nav-links').classList.remove('open');
+    /* ===== FAQ ACCORDION ===== */
+    document.querySelectorAll('.faq-question').forEach(question => {
+      const toggle = () => {
+        const item = question.closest('.faq-item');
+        const isOpen = item.classList.contains('open');
+        document.querySelectorAll('.faq-item').forEach(i => {
+          i.classList.remove('open');
+          i.querySelector('.faq-question').setAttribute('aria-expanded', 'false');
+        });
+        if (!isOpen) {
+          item.classList.add('open');
+          question.setAttribute('aria-expanded', 'true');
+        }
+      };
+      question.addEventListener('click', toggle);
+      question.addEventListener('keydown', e => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault();
+          toggle();
+        }
+      });
+    });
+
+    /* ===== MOBILE NAV TOGGLE ===== */
+    const navToggle = document.getElementById('nav-toggle');
+    const navLinks = document.getElementById('nav-links');
+    navToggle.addEventListener('click', () => {
+      navLinks.classList.toggle('open');
+    });
+
+    /* Close mobile nav on link click */
+    navLinks.querySelectorAll('a').forEach(a => {
+      a.addEventListener('click', () => {
+        navLinks.classList.remove('open');
+      });
+    });
+
+    /* ===== NAV BACKGROUND ON SCROLL ===== */
+    const nav = document.getElementById('nav');
+    window.addEventListener('scroll', () => {
+      if (window.scrollY > 50) {
+        nav.style.background = 'rgba(9, 14, 26, 0.96)';
+      } else {
+        nav.style.background = 'rgba(9, 14, 26, 0.88)';
+      }
+    });
+
+    /* ===== SMOOTH SCROLL WITH NAV OFFSET ===== */
+    document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+      anchor.addEventListener('click', function(e) {
+        const href = this.getAttribute('href');
+        if (href === '#') return;
+        const target = document.querySelector(href);
+        if (target) {
+          e.preventDefault();
+          const offset = 80;
+          const top = target.getBoundingClientRect().top + window.pageYOffset - offset;
+          window.scrollTo({ top, behavior: 'smooth' });
+        }
       });
     });
   </script>
