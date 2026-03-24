@@ -1,0 +1,2503 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+        <meta name="description" content="Zero-risk infrastructure chaos simulation">
+      
+      
+      
+      
+      
+      
+        
+      
+      
+      <link rel="icon" href="../../assets/images/favicon.png">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.5">
+    
+    
+      
+        <title>Engine/Analyzer Classes Beyond the Patent's 36 Engines - FaultRay Documentation</title>
+      
+    
+    
+      <link rel="stylesheet" href="../../assets/stylesheets/main.484c7ddc.min.css">
+      
+        
+        <link rel="stylesheet" href="../../assets/stylesheets/palette.ab4e12ef.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+    <script>__md_scope=new URL("../..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+  </head>
+  
+  
+    
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="slate" data-md-color-primary="blue" data-md-color-accent="indigo">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#engineanalyzer-classes-beyond-the-patents-36-engines" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+<header class="md-header" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href="../.." title="FaultRay Documentation" class="md-header__button md-logo" aria-label="FaultRay Documentation" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            FaultRay Documentation
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              Engine/Analyzer Classes Beyond the Patent's 36 Engines
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      
+    
+    
+    
+    
+      
+      
+        <label class="md-header__button md-icon" for="__search">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        </label>
+        <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
+      </nav>
+      
+        <div class="md-search__suggest" data-md-component="search-suggest"></div>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+      
+    
+    
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+            
+<nav class="md-tabs" aria-label="Tabs" data-md-component="tabs">
+  <div class="md-grid">
+    <ul class="md-tabs__list">
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../.." class="md-tabs__link">
+        
+  
+  
+    
+  
+  Home
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../getting-started/installation/" class="md-tabs__link">
+          
+  
+  
+  Getting Started
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../concepts/how-it-works/" class="md-tabs__link">
+          
+  
+  
+  Concepts
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../cli/commands/" class="md-tabs__link">
+          
+  
+  
+  CLI Reference
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../api/rest/" class="md-tabs__link">
+          
+  
+  
+  API Reference
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../integrations/aws/" class="md-tabs__link">
+          
+  
+  
+  Integrations
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../enterprise/compliance/" class="md-tabs__link">
+          
+  
+  
+  Enterprise
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../legal/terms-of-service/" class="md-tabs__link">
+          
+  
+  
+  Legal
+
+        </a>
+      </li>
+    
+  
+
+      
+    </ul>
+  </div>
+</nav>
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+  
+
+
+<nav class="md-nav md-nav--primary md-nav--lifted" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href="../.." title="FaultRay Documentation" class="md-nav__button md-logo" aria-label="FaultRay Documentation" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    FaultRay Documentation
+  </label>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../.." class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Home
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_2" >
+        
+          
+          <label class="md-nav__link" for="__nav_2" id="__nav_2_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Getting Started
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_2_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_2">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Getting Started
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../getting-started/installation/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Installation
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../getting-started/quickstart/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Quick Start
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../getting-started/first-simulation/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Your First Simulation
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3" >
+        
+          
+          <label class="md-nav__link" for="__nav_3" id="__nav_3_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Concepts
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_3">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Concepts
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../concepts/how-it-works/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    How It Works
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../concepts/five-layer-model/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    5-Layer Model
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../concepts/risk-scoring/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Risk Scoring
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../concepts/agent-resilience/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Agent Resilience
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4" >
+        
+          
+          <label class="md-nav__link" for="__nav_4" id="__nav_4_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    CLI Reference
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_4_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_4">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    CLI Reference
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../cli/commands/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Commands
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5" >
+        
+          
+          <label class="md-nav__link" for="__nav_5" id="__nav_5_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    API Reference
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_5_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_5">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    API Reference
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../api/rest/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    REST API
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../api/graphql/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    GraphQL
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../api/python-sdk/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Python SDK
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_6" >
+        
+          
+          <label class="md-nav__link" for="__nav_6" id="__nav_6_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Integrations
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_6_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_6">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Integrations
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../integrations/aws/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    AWS
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../integrations/gcp/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    GCP
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../integrations/azure/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Azure
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../integrations/kubernetes/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Kubernetes
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../integrations/terraform/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Terraform
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../integrations/cicd/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    CI/CD
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../integrations/slack/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Slack
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_7" >
+        
+          
+          <label class="md-nav__link" for="__nav_7" id="__nav_7_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Enterprise
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_7_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_7">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Enterprise
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../enterprise/compliance/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Compliance
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../enterprise/insurance/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Insurance Scoring
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../enterprise/rbac/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    RBAC
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_8" >
+        
+          
+          <label class="md-nav__link" for="__nav_8" id="__nav_8_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Legal
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_8_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_8">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Legal
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../legal/terms-of-service/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Terms of Service
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../legal/privacy-policy/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Privacy Policy
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#summary" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Summary
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#categories" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Categories
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Categories">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#agent-based-advanced-simulation-5-classes" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Agent-Based &amp; Advanced Simulation (5 classes)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#api-gateway-resilience-7-classes" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        API &amp; Gateway Resilience (7 classes)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#backup-recovery-disaster-recovery-6-classes" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Backup, Recovery &amp; Disaster Recovery (6 classes)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#cache-queue-messaging-5-classes" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Cache, Queue &amp; Messaging (5 classes)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#chaos-engineering-lifecycle-11-classes" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Chaos Engineering Lifecycle (11 classes)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#compliance-regulatory-10-classes" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Compliance &amp; Regulatory (10 classes)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#cost-analysis-finops-11-classes" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Cost Analysis &amp; FinOps (11 classes)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#dependency-topology-analysis-8-classes" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Dependency &amp; Topology Analysis (8 classes)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#deployment-release-engineering-9-classes" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Deployment &amp; Release Engineering (9 classes)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#incident-management-7-classes" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Incident Management (7 classes)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#observability-monitoring-10-classes" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Observability &amp; Monitoring (10 classes)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#reliability-slosla-14-classes" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Reliability &amp; SLO/SLA (14 classes)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#security-7-classes" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Security (7 classes)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#other-misc" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Other (misc)
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+
+<h1 id="engineanalyzer-classes-beyond-the-patents-36-engines">Engine/Analyzer Classes Beyond the Patent's 36 Engines</h1>
+<p>Generated: 2026-03-17
+Purpose: Patent attorney review - additional IP not yet covered in provisional patent draft</p>
+<h2 id="summary">Summary</h2>
+<ul>
+<li>Patent draft claims: <strong>36 engines</strong></li>
+<li>Actually implemented engine/analyzer classes: <strong>~160 additional classes</strong></li>
+<li>All implemented in <code>/src/faultray/simulator/</code></li>
+<li>All pure Python (no external ML dependencies)</li>
+</ul>
+<hr />
+<h2 id="categories">Categories</h2>
+<h3 id="agent-based-advanced-simulation-5-classes">Agent-Based &amp; Advanced Simulation (5 classes)</h3>
+<table>
+<thead>
+<tr>
+<th>Class</th>
+<th>File</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>ABMEngine</code></td>
+<td><code>abm_engine.py</code></td>
+<td>Agent-Based Model engine for infrastructure resilience simulation</td>
+</tr>
+<tr>
+<td><code>GNNCascadePredictor</code></td>
+<td><code>gnn_engine.py</code></td>
+<td>Graph Neural Network (MPNN) that predicts failure cascade patterns</td>
+</tr>
+<tr>
+<td><code>MLFailurePredictor</code></td>
+<td><code>ml_failure_predictor.py</code></td>
+<td>Logistic regression model for component failure prediction</td>
+</tr>
+<tr>
+<td><code>PredictiveEngine</code></td>
+<td><code>predictive_engine.py</code></td>
+<td>Predicts future failures from degradation trends and MTBF data</td>
+</tr>
+<tr>
+<td><code>PredictiveFailureEngine</code></td>
+<td><code>predictive_failure.py</code></td>
+<td>Leading-indicator analysis for failure prediction</td>
+</tr>
+</tbody>
+</table>
+<h3 id="api-gateway-resilience-7-classes">API &amp; Gateway Resilience (7 classes)</h3>
+<table>
+<thead>
+<tr>
+<th>Class</th>
+<th>File</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>APIGatewayResilienceAnalyzer</code></td>
+<td><code>api_gateway_resilience.py</code></td>
+<td>API gateway configuration resilience analysis</td>
+</tr>
+<tr>
+<td><code>ApiVersioningImpactEngine</code></td>
+<td><code>api_versioning_impact.py</code></td>
+<td>Resilience impact of API versioning strategies</td>
+</tr>
+<tr>
+<td><code>IdempotencyAnalyzer</code></td>
+<td><code>idempotency_analyzer.py</code></td>
+<td>Idempotency pattern analysis across distributed services</td>
+</tr>
+<tr>
+<td><code>RateLimiterSimulator</code></td>
+<td><code>rate_limiter_simulator.py</code></td>
+<td>Rate-limiter behaviour simulation</td>
+</tr>
+<tr>
+<td><code>ThrottleCascadeAnalyzer</code></td>
+<td><code>throttle_cascade_analyzer.py</code></td>
+<td>Throttle-triggered cascade propagation analysis</td>
+</tr>
+<tr>
+<td><code>TimeoutBudgetAnalyzer</code></td>
+<td><code>timeout_budget_analyzer.py</code></td>
+<td>Timeout configuration optimization across service chains</td>
+</tr>
+<tr>
+<td><code>WebhookResilienceAnalyzer</code></td>
+<td><code>webhook_resilience_analyzer.py</code></td>
+<td>Webhook delivery resilience analysis</td>
+</tr>
+</tbody>
+</table>
+<h3 id="backup-recovery-disaster-recovery-6-classes">Backup, Recovery &amp; Disaster Recovery (6 classes)</h3>
+<table>
+<thead>
+<tr>
+<th>Class</th>
+<th>File</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>BackupRecoveryPlanner</code></td>
+<td><code>backup_recovery_planner.py</code></td>
+<td>Backup and DR strategy evaluation</td>
+</tr>
+<tr>
+<td><code>DatabaseFailoverAnalyzer</code></td>
+<td><code>database_failover_analyzer.py</code></td>
+<td>Database failover strategy reliability analysis</td>
+</tr>
+<tr>
+<td><code>DBFailoverSimulator</code></td>
+<td><code>db_failover.py</code></td>
+<td>Database failover scenario simulation</td>
+</tr>
+<tr>
+<td><code>DisasterRecoveryEngine</code></td>
+<td><code>disaster_recovery.py</code></td>
+<td>DR scenario simulation with RTO/RPO validation</td>
+</tr>
+<tr>
+<td><code>DREngine</code></td>
+<td><code>dr_engine.py</code></td>
+<td>DR scenario simulation</td>
+</tr>
+<tr>
+<td><code>MultiRegionDREngine</code></td>
+<td><code>multi_region_dr.py</code></td>
+<td>Multi-region failover evaluation</td>
+</tr>
+</tbody>
+</table>
+<h3 id="cache-queue-messaging-5-classes">Cache, Queue &amp; Messaging (5 classes)</h3>
+<table>
+<thead>
+<tr>
+<th>Class</th>
+<th>File</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>CacheInvalidationEngine</code></td>
+<td><code>cache_invalidation_strategy.py</code></td>
+<td>Cache invalidation strategy resilience analysis</td>
+</tr>
+<tr>
+<td><code>EventStormSimulatorEngine</code></td>
+<td><code>event_storm_simulator.py</code></td>
+<td>Event storm impact simulation</td>
+</tr>
+<tr>
+<td><code>LoadSheddingEngine</code></td>
+<td><code>load_shedding.py</code></td>
+<td>Load shedding and backpressure simulation</td>
+</tr>
+<tr>
+<td><code>QueueBackpressureAnalyzer</code></td>
+<td><code>queue_backpressure_analyzer.py</code></td>
+<td>Queue backpressure cascade analysis</td>
+</tr>
+<tr>
+<td><code>QueueResilienceSimulator</code></td>
+<td><code>queue_resilience.py</code></td>
+<td>Queue/event-stream failure simulation</td>
+</tr>
+</tbody>
+</table>
+<h3 id="chaos-engineering-lifecycle-11-classes">Chaos Engineering Lifecycle (11 classes)</h3>
+<table>
+<thead>
+<tr>
+<th>Class</th>
+<th>File</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>ChaosCorrelationEngine</code></td>
+<td><code>chaos_correlation.py</code></td>
+<td>Cross-experiment pattern correlation</td>
+</tr>
+<tr>
+<td><code>ChaosCoverageEngine</code></td>
+<td><code>chaos_coverage.py</code></td>
+<td>Chaos-test coverage tracking</td>
+</tr>
+<tr>
+<td><code>ChaosExperimentLibraryEngine</code></td>
+<td><code>chaos_experiment_library.py</code></td>
+<td>Curated experiment template library</td>
+</tr>
+<tr>
+<td><code>ChaosGameDayPlanner</code></td>
+<td><code>chaos_game_day_planner.py</code></td>
+<td>Game day exercise planning</td>
+</tr>
+<tr>
+<td><code>ChaosMaturityEngine</code></td>
+<td><code>chaos_maturity.py</code></td>
+<td>Chaos engineering maturity assessment</td>
+</tr>
+<tr>
+<td><code>ChaosScheduleEngine</code></td>
+<td><code>chaos_schedule.py</code></td>
+<td>Risk-based experiment scheduling</td>
+</tr>
+<tr>
+<td><code>FailureInjectionPlanner</code></td>
+<td><code>failure_injection_planner.py</code></td>
+<td>Intelligent failure-injection sequence planning</td>
+</tr>
+<tr>
+<td><code>GameDayEngine</code></td>
+<td><code>gameday_engine.py</code></td>
+<td>Game day exercise execution</td>
+</tr>
+<tr>
+<td><code>GameDayScoringEngine</code></td>
+<td><code>gameday_scoring.py</code></td>
+<td>Game day exercise scoring</td>
+</tr>
+<tr>
+<td><code>GameDaySimulator</code></td>
+<td><code>game_day.py</code></td>
+<td>Automated game day runner with multi-team support</td>
+</tr>
+<tr>
+<td><code>StateMachineChaosEngine</code></td>
+<td><code>state_machine_chaos.py</code></td>
+<td>State machine chaos injection</td>
+</tr>
+</tbody>
+</table>
+<h3 id="compliance-regulatory-10-classes">Compliance &amp; Regulatory (10 classes)</h3>
+<table>
+<thead>
+<tr>
+<th>Class</th>
+<th>File</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>ComplianceDriftEngine</code></td>
+<td><code>compliance_drift.py</code></td>
+<td>Compliance drift detection over time</td>
+</tr>
+<tr>
+<td><code>ComplianceEngine</code></td>
+<td><code>compliance_engine.py</code></td>
+<td>SOC 2, PCI DSS, HIPAA compliance checking</td>
+</tr>
+<tr>
+<td><code>ComplianceFrameworksEngine</code></td>
+<td><code>compliance_frameworks.py</code></td>
+<td>Multi-framework simultaneous evaluation</td>
+</tr>
+<tr>
+<td><code>ComplianceGapAnalyzer</code></td>
+<td><code>compliance_gap.py</code></td>
+<td>Compliance gap analysis</td>
+</tr>
+<tr>
+<td><code>ComplianceMonitor</code></td>
+<td><code>compliance_monitor.py</code></td>
+<td>Continuous compliance monitoring with alerting</td>
+</tr>
+<tr>
+<td><code>CompliancePostureEngine</code></td>
+<td><code>compliance_posture.py</code></td>
+<td>Compliance posture assessment</td>
+</tr>
+<tr>
+<td><code>ComplianceScorecardEngine</code></td>
+<td><code>compliance_scorecard.py</code></td>
+<td>Compliance scoring with actionable gaps</td>
+</tr>
+<tr>
+<td><code>DORAEvidenceEngine</code></td>
+<td><code>dora_evidence.py</code></td>
+<td>EU DORA compliance evidence generation</td>
+</tr>
+<tr>
+<td><code>IaCResilienceValidatorEngine</code></td>
+<td><code>infra_as_code_validator.py</code></td>
+<td>Infrastructure-as-Code resilience validation</td>
+</tr>
+<tr>
+<td><code>DataSovereigntyAnalyzer</code></td>
+<td><code>data_sovereignty_analyzer.py</code></td>
+<td>Data sovereignty and residency compliance</td>
+</tr>
+</tbody>
+</table>
+<h3 id="cost-analysis-finops-11-classes">Cost Analysis &amp; FinOps (11 classes)</h3>
+<table>
+<thead>
+<tr>
+<th>Class</th>
+<th>File</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>CostAnomalyDetector</code></td>
+<td><code>cost_anomaly.py</code></td>
+<td>Cost anomaly detection</td>
+</tr>
+<tr>
+<td><code>CostAnomalyDetectorEngine</code></td>
+<td><code>cost_anomaly_detector.py</code></td>
+<td>Cost anomaly and optimization analysis</td>
+</tr>
+<tr>
+<td><code>CostAttributionEngine</code></td>
+<td><code>cost_attribution.py</code></td>
+<td>Failure cost attribution to teams/services</td>
+</tr>
+<tr>
+<td><code>CostImpactEngine</code></td>
+<td><code>cost_engine.py</code></td>
+<td>Monetary cost impact calculation</td>
+</tr>
+<tr>
+<td><code>CostImpactEngine</code></td>
+<td><code>cost_impact.py</code></td>
+<td>Business impact in financial terms</td>
+</tr>
+<tr>
+<td><code>CostOptimizer</code></td>
+<td><code>cost_optimizer.py</code></td>
+<td>Cost savings while maintaining resilience</td>
+</tr>
+<tr>
+<td><code>CostResilienceOptimizer</code></td>
+<td><code>cost_resilience_optimizer.py</code></td>
+<td>Cost-resilience tradeoff optimization</td>
+</tr>
+<tr>
+<td><code>FinOpsResilienceEngine</code></td>
+<td><code>finops_resilience.py</code></td>
+<td>FinOps cost analysis tied to resilience</td>
+</tr>
+<tr>
+<td><code>InfrastructureCostOptimizer</code></td>
+<td><code>infrastructure_cost_optimizer.py</code></td>
+<td>Multi-dimensional cost optimization</td>
+</tr>
+<tr>
+<td><code>ObservabilityCostEngine</code></td>
+<td><code>observability_cost.py</code></td>
+<td>Observability tooling cost optimization</td>
+</tr>
+<tr>
+<td><code>StorageTierOptimizer</code></td>
+<td><code>storage_tier_optimizer.py</code></td>
+<td>Storage tier placement optimization</td>
+</tr>
+</tbody>
+</table>
+<h3 id="dependency-topology-analysis-8-classes">Dependency &amp; Topology Analysis (8 classes)</h3>
+<table>
+<thead>
+<tr>
+<th>Class</th>
+<th>File</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>AntiPatternDetector</code></td>
+<td><code>antipattern_detector.py</code></td>
+<td>Architectural anti-pattern detection</td>
+</tr>
+<tr>
+<td><code>ConnectionPoolAnalyzer</code></td>
+<td><code>connection_pool_analyzer.py</code></td>
+<td>Connection pool saturation and failover risk</td>
+</tr>
+<tr>
+<td><code>ConsensusProtocolAnalyzer</code></td>
+<td><code>consensus_protocol_analyzer.py</code></td>
+<td>Distributed consensus protocol resilience</td>
+</tr>
+<tr>
+<td><code>DependencyHealthEngine</code></td>
+<td><code>dependency_health.py</code></td>
+<td>Health propagation through dependency graph</td>
+</tr>
+<tr>
+<td><code>DependencyInjectionAnalyzer</code></td>
+<td><code>dependency_injection_analyzer.py</code></td>
+<td>DI pattern resilience risk</td>
+</tr>
+<tr>
+<td><code>DependencyRiskAnalyzer</code></td>
+<td><code>dependency_risk.py</code></td>
+<td>Circular deps, SPOFs, high fan-in analysis</td>
+</tr>
+<tr>
+<td><code>ImpactAnalyzer</code></td>
+<td><code>impact_matrix.py</code></td>
+<td>Cross-component dependency impact</td>
+</tr>
+<tr>
+<td><code>TopologyIntelligenceEngine</code></td>
+<td><code>topology_intelligence.py</code></td>
+<td>Hidden dependency and risk discovery</td>
+</tr>
+</tbody>
+</table>
+<h3 id="deployment-release-engineering-9-classes">Deployment &amp; Release Engineering (9 classes)</h3>
+<table>
+<thead>
+<tr>
+<th>Class</th>
+<th>File</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>CanaryAnalyzer</code></td>
+<td><code>canary_analysis.py</code></td>
+<td>Canary analysis report generation</td>
+</tr>
+<tr>
+<td><code>CanaryRollbackEngine</code></td>
+<td><code>canary_rollback.py</code></td>
+<td>Canary deployment and rollback simulation</td>
+</tr>
+<tr>
+<td><code>ChangeRiskPredictor</code></td>
+<td><code>change_risk_predictor.py</code></td>
+<td>Change resilience impact prediction</td>
+</tr>
+<tr>
+<td><code>ChangeVelocityAnalyzer</code></td>
+<td><code>change_velocity.py</code></td>
+<td>Change velocity impact on stability</td>
+</tr>
+<tr>
+<td><code>DeploymentStrategyAnalyzer</code></td>
+<td><code>deployment_strategy_analyzer.py</code></td>
+<td>Blue/green, canary, rolling strategy evaluation</td>
+</tr>
+<tr>
+<td><code>DeploymentWindowEngine</code></td>
+<td><code>deployment_window.py</code></td>
+<td>Deployment window risk analysis</td>
+</tr>
+<tr>
+<td><code>FeatureFlagInteractionEngine</code></td>
+<td><code>feature_flag_interaction.py</code></td>
+<td>Feature-flag interaction analysis</td>
+</tr>
+<tr>
+<td><code>FeatureFlagRiskAnalyzer</code></td>
+<td><code>feature_flag_risk_analyzer.py</code></td>
+<td>Feature flag blast radius analysis</td>
+</tr>
+<tr>
+<td><code>MigrationRiskEngine</code></td>
+<td><code>migration_risk.py</code></td>
+<td>Cloud/platform migration risk assessment</td>
+</tr>
+</tbody>
+</table>
+<h3 id="incident-management-7-classes">Incident Management (7 classes)</h3>
+<table>
+<thead>
+<tr>
+<th>Class</th>
+<th>File</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>IncidentCorrelationEngine</code></td>
+<td><code>incident_correlation.py</code></td>
+<td>Cross-incident common cause identification</td>
+</tr>
+<tr>
+<td><code>IncidentCostEngine</code></td>
+<td><code>incident_cost_model.py</code></td>
+<td>Incident financial cost modeling</td>
+</tr>
+<tr>
+<td><code>IncidentLearningEngine</code></td>
+<td><code>incident_learning.py</code></td>
+<td>Incident history to chaos scenario conversion</td>
+</tr>
+<tr>
+<td><code>IncidentReplayEngine</code></td>
+<td><code>incident_replay.py</code></td>
+<td>Historical outage replay</td>
+</tr>
+<tr>
+<td><code>IncidentResponseSimulator</code></td>
+<td><code>incident_response_simulator.py</code></td>
+<td>Incident response process simulation</td>
+</tr>
+<tr>
+<td><code>RemediationEngine</code></td>
+<td><code>remediation_engine.py</code></td>
+<td>Autonomous fix recommendation generation</td>
+</tr>
+<tr>
+<td><code>RemediationPlanner</code></td>
+<td><code>planner.py</code></td>
+<td>Phased remediation plan generation</td>
+</tr>
+</tbody>
+</table>
+<h3 id="observability-monitoring-10-classes">Observability &amp; Monitoring (10 classes)</h3>
+<table>
+<thead>
+<tr>
+<th>Class</th>
+<th>File</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>AlertFatigueEngine</code></td>
+<td><code>alert_fatigue.py</code></td>
+<td>Alert fatigue risk analysis</td>
+</tr>
+<tr>
+<td><code>AnomalyDetector</code></td>
+<td><code>anomaly_detector.py</code></td>
+<td>Infrastructure configuration anomaly detection</td>
+</tr>
+<tr>
+<td><code>DistributedTracingEngine</code></td>
+<td><code>distributed_tracing_resilience.py</code></td>
+<td>Tracing pipeline resilience</td>
+</tr>
+<tr>
+<td><code>FreshnessAlertEngine</code></td>
+<td><code>freshness_alert.py</code></td>
+<td>Data staleness alerting</td>
+</tr>
+<tr>
+<td><code>GoldenSignalAnalyzer</code></td>
+<td><code>golden_signal_analyzer.py</code></td>
+<td>SRE 4 Golden Signals analysis</td>
+</tr>
+<tr>
+<td><code>HealthCheckStrategyOptimizer</code></td>
+<td><code>health_check_strategy.py</code></td>
+<td>Health check strategy optimization</td>
+</tr>
+<tr>
+<td><code>HealthCheckValidationEngine</code></td>
+<td><code>health_check_validator.py</code></td>
+<td>Health check configuration validation</td>
+</tr>
+<tr>
+<td><code>LogPipelineResilienceEngine</code></td>
+<td><code>log_pipeline_resilience.py</code></td>
+<td>Log pipeline SPOF analysis</td>
+</tr>
+<tr>
+<td><code>ObservabilityGapAnalyzer</code></td>
+<td><code>observability_gap_analyzer.py</code></td>
+<td>Observability coverage gap analysis</td>
+</tr>
+<tr>
+<td><code>SyntheticMonitorEngine</code></td>
+<td><code>synthetic_monitor.py</code></td>
+<td>Synthetic monitoring probe simulation</td>
+</tr>
+</tbody>
+</table>
+<h3 id="reliability-slosla-14-classes">Reliability &amp; SLO/SLA (14 classes)</h3>
+<table>
+<thead>
+<tr>
+<th>Class</th>
+<th>File</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>ErrorBudgetPolicyEngine</code></td>
+<td><code>error_budget_policy.py</code></td>
+<td>Error budget policy compliance</td>
+</tr>
+<tr>
+<td><code>ReliabilityBudgetEngine</code></td>
+<td><code>reliability_budget.py</code></td>
+<td>Cross-service reliability budget management</td>
+</tr>
+<tr>
+<td><code>ReliabilityContractEngine</code></td>
+<td><code>reliability_contract.py</code></td>
+<td>Inter-service reliability contract verification</td>
+</tr>
+<tr>
+<td><code>ResilienceBenchmarkEngine</code></td>
+<td><code>resilience_benchmark.py</code></td>
+<td>Industry peer benchmarking</td>
+</tr>
+<tr>
+<td><code>ResilienceForecastEngine</code></td>
+<td><code>resilience_forecast.py</code></td>
+<td>Future resilience score prediction</td>
+</tr>
+<tr>
+<td><code>ResilienceRegressionEngine</code></td>
+<td><code>resilience_regression.py</code></td>
+<td>Resilience regression detection</td>
+</tr>
+<tr>
+<td><code>RiskHeatMapEngine</code></td>
+<td><code>risk_heatmap.py</code></td>
+<td>Multi-dimensional risk heat map</td>
+</tr>
+<tr>
+<td><code>SLACascadeEngine</code></td>
+<td><code>sla_cascade.py</code></td>
+<td>Composite SLA and breach cascade modeling</td>
+</tr>
+<tr>
+<td><code>SLAContractAnalyzer</code></td>
+<td><code>sla_contract_analyzer.py</code></td>
+<td>SLA contract vs topology capability analysis</td>
+</tr>
+<tr>
+<td><code>SLAValidatorEngine</code></td>
+<td><code>sla_validator.py</code></td>
+<td>Mathematical SLA achievability validation</td>
+</tr>
+<tr>
+<td><code>SLAValidator</code></td>
+<td><code>sla_contract_validator.py</code></td>
+<td>SLA contract commitment validation</td>
+</tr>
+<tr>
+<td><code>SLOBudgetSimulator</code></td>
+<td><code>slo_budget.py</code></td>
+<td>Chaos risk vs SLO error budget simulation</td>
+</tr>
+<tr>
+<td><code>SLOBurnRateEngine</code></td>
+<td><code>slo_burn_rate.py</code></td>
+<td>Multi-window burn-rate SLO alerting simulation</td>
+</tr>
+<tr>
+<td><code>SREMaturityEngine</code></td>
+<td><code>sre_maturity.py</code></td>
+<td>SRE maturity assessment</td>
+</tr>
+</tbody>
+</table>
+<h3 id="security-7-classes">Security (7 classes)</h3>
+<table>
+<thead>
+<tr>
+<th>Class</th>
+<th>File</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>AIInfraResilienceAnalyzer</code></td>
+<td><code>ai_infra_resilience.py</code></td>
+<td>AI/LLM infrastructure resilience analysis</td>
+</tr>
+<tr>
+<td><code>AttackSurfaceAnalyzer</code></td>
+<td><code>attack_surface.py</code></td>
+<td>Attack surface analysis across entry points</td>
+</tr>
+<tr>
+<td><code>CertificateExpiryAnalyzer</code></td>
+<td><code>certificate_expiry_analyzer.py</code></td>
+<td>TLS/SSL certificate lifecycle analysis</td>
+</tr>
+<tr>
+<td><code>SecretRotationEngine</code></td>
+<td><code>secret_rotation.py</code></td>
+<td>Secret-rotation resilience impact analysis</td>
+</tr>
+<tr>
+<td><code>SecretRotationAnalyzer</code></td>
+<td><code>secret_rotation_analyzer.py</code></td>
+<td>Comprehensive secret rotation analysis</td>
+</tr>
+<tr>
+<td><code>SecurityChaosEngine</code></td>
+<td><code>security_chaos.py</code></td>
+<td>Compound failure + attack scenario simulation</td>
+</tr>
+<tr>
+<td><code>SupplyChainEngine</code></td>
+<td><code>supply_chain_engine.py</code></td>
+<td>Software supply chain vulnerability mapping</td>
+</tr>
+</tbody>
+</table>
+<h3 id="other-misc">Other (misc)</h3>
+<table>
+<thead>
+<tr>
+<th>Class</th>
+<th>File</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>ServiceMeshAnalyzer</code></td>
+<td><code>service_mesh.py</code></td>
+<td>Service mesh perspective analysis</td>
+</tr>
+<tr>
+<td><code>ServiceMeshConfigAnalyzer</code></td>
+<td><code>service_mesh_analyzer.py</code></td>
+<td>Deep service mesh config analysis</td>
+</tr>
+<tr>
+<td><code>ServiceMeshResilienceEngine</code></td>
+<td><code>service_mesh_resilience.py</code></td>
+<td>Service mesh resilience (retry storms, sidecar failures)</td>
+</tr>
+<tr>
+<td><code>TeamTopologyResilienceEngine</code></td>
+<td><code>team_topology_resilience.py</code></td>
+<td>Conway's Law impact on resilience</td>
+</tr>
+<tr>
+<td><code>ExecutiveDashboardEngine</code></td>
+<td><code>executive_dashboard.py</code></td>
+<td>Executive-level resilience KPI dashboard</td>
+</tr>
+<tr>
+<td><code>MultiCloudResilienceAnalyzer</code></td>
+<td><code>multi_cloud_resilience.py</code></td>
+<td>Multi-cloud/hybrid deployment resilience</td>
+</tr>
+<tr>
+<td><code>MultiEnvAnalyzer</code></td>
+<td><code>multi_env.py</code></td>
+<td>Cross-environment resilience comparison</td>
+</tr>
+<tr>
+<td><code>MultiTenantIsolationEngine</code></td>
+<td><code>multi_tenant_isolation.py</code></td>
+<td>Multi-tenant isolation verification</td>
+</tr>
+</tbody>
+</table>
+
+
+
+
+
+
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    
+      
+      
+      <script id="__config" type="application/json">{"annotate": null, "base": "../..", "features": ["navigation.tabs", "navigation.sections", "search.suggest"], "search": "../../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+    
+    
+      <script src="../../assets/javascripts/bundle.79ae519e.min.js"></script>
+      
+    
+  </body>
+</html>

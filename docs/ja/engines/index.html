@@ -1,0 +1,2394 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+        <meta name="description" content="Zero-risk infrastructure chaos simulation">
+      
+      
+      
+      
+      
+      
+        
+      
+      
+      <link rel="icon" href="../../assets/images/favicon.png">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.5">
+    
+    
+      
+        <title>FaultRay 5つのシミュレーションエンジン - FaultRay Documentation</title>
+      
+    
+    
+      <link rel="stylesheet" href="../../assets/stylesheets/main.484c7ddc.min.css">
+      
+        
+        <link rel="stylesheet" href="../../assets/stylesheets/palette.ab4e12ef.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+    <script>__md_scope=new URL("../..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+  </head>
+  
+  
+    
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="slate" data-md-color-primary="blue" data-md-color-accent="indigo">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#faultray-5" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+<header class="md-header" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href="../.." title="FaultRay Documentation" class="md-header__button md-logo" aria-label="FaultRay Documentation" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            FaultRay Documentation
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              FaultRay 5つのシミュレーションエンジン
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      
+    
+    
+    
+    
+      
+      
+        <label class="md-header__button md-icon" for="__search">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        </label>
+        <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
+      </nav>
+      
+        <div class="md-search__suggest" data-md-component="search-suggest"></div>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+      
+    
+    
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+            
+<nav class="md-tabs" aria-label="Tabs" data-md-component="tabs">
+  <div class="md-grid">
+    <ul class="md-tabs__list">
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../.." class="md-tabs__link">
+        
+  
+  
+    
+  
+  Home
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../getting-started/installation/" class="md-tabs__link">
+          
+  
+  
+  Getting Started
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../concepts/how-it-works/" class="md-tabs__link">
+          
+  
+  
+  Concepts
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../cli/commands/" class="md-tabs__link">
+          
+  
+  
+  CLI Reference
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../api/rest/" class="md-tabs__link">
+          
+  
+  
+  API Reference
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../integrations/aws/" class="md-tabs__link">
+          
+  
+  
+  Integrations
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../enterprise/compliance/" class="md-tabs__link">
+          
+  
+  
+  Enterprise
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../legal/terms-of-service/" class="md-tabs__link">
+          
+  
+  
+  Legal
+
+        </a>
+      </li>
+    
+  
+
+      
+    </ul>
+  </div>
+</nav>
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+  
+
+
+<nav class="md-nav md-nav--primary md-nav--lifted" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href="../.." title="FaultRay Documentation" class="md-nav__button md-logo" aria-label="FaultRay Documentation" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    FaultRay Documentation
+  </label>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../.." class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Home
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_2" >
+        
+          
+          <label class="md-nav__link" for="__nav_2" id="__nav_2_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Getting Started
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_2_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_2">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Getting Started
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../getting-started/installation/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Installation
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../getting-started/quickstart/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Quick Start
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../getting-started/first-simulation/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Your First Simulation
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3" >
+        
+          
+          <label class="md-nav__link" for="__nav_3" id="__nav_3_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Concepts
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_3">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Concepts
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../concepts/how-it-works/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    How It Works
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../concepts/five-layer-model/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    5-Layer Model
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../concepts/risk-scoring/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Risk Scoring
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../concepts/agent-resilience/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Agent Resilience
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4" >
+        
+          
+          <label class="md-nav__link" for="__nav_4" id="__nav_4_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    CLI Reference
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_4_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_4">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    CLI Reference
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../cli/commands/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Commands
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5" >
+        
+          
+          <label class="md-nav__link" for="__nav_5" id="__nav_5_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    API Reference
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_5_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_5">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    API Reference
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../api/rest/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    REST API
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../api/graphql/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    GraphQL
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../api/python-sdk/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Python SDK
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_6" >
+        
+          
+          <label class="md-nav__link" for="__nav_6" id="__nav_6_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Integrations
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_6_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_6">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Integrations
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../integrations/aws/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    AWS
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../integrations/gcp/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    GCP
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../integrations/azure/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Azure
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../integrations/kubernetes/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Kubernetes
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../integrations/terraform/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Terraform
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../integrations/cicd/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    CI/CD
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../integrations/slack/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Slack
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_7" >
+        
+          
+          <label class="md-nav__link" for="__nav_7" id="__nav_7_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Enterprise
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_7_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_7">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Enterprise
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../enterprise/compliance/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Compliance
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../enterprise/insurance/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Insurance Scoring
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../enterprise/rbac/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    RBAC
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_8" >
+        
+          
+          <label class="md-nav__link" for="__nav_8" id="__nav_8_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Legal
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_8_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_8">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Legal
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../legal/terms-of-service/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Terms of Service
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../legal/privacy-policy/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Privacy Policy
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#1-cascade" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1. Cascadeエンジン（静的シミュレーション）
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="1. Cascadeエンジン（静的シミュレーション）">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#_1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        概要
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#_2" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        仕組み
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#30" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        生成されるシナリオ（30カテゴリ）
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#_3" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        使い方
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#_4" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        出力
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#3" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3層可用性限界モデル
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#2-dynamic" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2. Dynamicエンジン（動的シミュレーション）
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="2. Dynamicエンジン（動的シミュレーション）">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#_5" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        概要
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#_6" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        仕組み
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#10" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        10種類のトラフィックモデル
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#_7" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        使い方
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#_8" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        出力例
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#3-ops" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3. Opsエンジン（運用シミュレーション）
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="3. Opsエンジン（運用シミュレーション）">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#_9" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        概要
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#_10" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        仕組み
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#_11" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        使い方
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#_12" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        出力例
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#_13" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        ユースケース
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#4-what-if" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4. What-Ifエンジン（感度分析）
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="4. What-Ifエンジン（感度分析）">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#_14" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        概要
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#_15" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        仕組み
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#_16" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        使い方
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#_17" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        出力例
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#_18" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        ユースケース
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#5-capacity" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        5. Capacityエンジン（キャパシティ計画）
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="5. Capacityエンジン（キャパシティ計画）">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#_19" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        概要
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#_20" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        仕組み
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ha" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        HA &amp; クォーラムガード
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#_21" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        使い方
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#_22" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        出力例
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#_23" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        ユースケース
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#_24" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        エンジンの組み合わせ
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="エンジンの組み合わせ">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#_25" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        推奨ワークフロー
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#_26" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        統合実行例
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#_27" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        次のステップ
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+
+<h1 id="faultray-5">FaultRay 5つのシミュレーションエンジン</h1>
+<p>FaultRayは5つのシミュレーションエンジンを統合し、インフラの障害耐性をあらゆる角度から評価します。各エンジンは独立して動作しますが、組み合わせることで包括的な耐性評価が可能です。</p>
+<pre><code>+-----------------------------------------------------+
+|                    FaultRay                          |
++----------+----------+----------+--------------------+
+| Cascade  | Dynamic  |   Ops    |  What-If           |
+| Engine   | Engine   |  Engine  |  Engine            |
++----------+----------+----------+--------------------+
+|              Capacity Engine                         |
++-----------------------------------------------------+
+|          Dependency Graph (NetworkX)                 |
++----------+----------+----------+--------------------+
+|   YAML   |Terraform |Prometheus| Cloud APIs         |
+|  Loader  | Importer |Discovery |  (AWS/GCP/Azure)   |
++----------+----------+----------+--------------------+
+</code></pre>
+<hr />
+<h2 id="1-cascade">1. Cascadeエンジン（静的シミュレーション）</h2>
+<h3 id="_1">概要</h3>
+<p>依存関係グラフ（NetworkX DAG）を通じた<strong>障害伝搬のモデリング</strong>を行うコアエンジンです。単一障害点（SPOF）の検出、複合障害シナリオの生成、カスケード障害パスの追跡を実行します。</p>
+<h3 id="_2">仕組み</h3>
+<ol>
+<li>ターゲットコンポーネントを障害状態に設定</li>
+<li>依存関係エッジを通じて障害を伝搬（BFS/DFSトラバーサル）</li>
+<li>冗長性・フェイルオーバーパスを評価</li>
+<li>エンドユーザーへの可用性影響を算出</li>
+</ol>
+<h3 id="30">生成されるシナリオ（30カテゴリ）</h3>
+<table>
+<thead>
+<tr>
+<th>カテゴリ</th>
+<th>例</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>単一障害</strong></td>
+<td>コンポーネントダウン、CPU飽和、OOM、ディスク満杯、ネットワーク分断</td>
+</tr>
+<tr>
+<td><strong>トラフィック</strong></td>
+<td>1.5x, 2x, 3x, 5x, 10x（DDoS級）のトラフィックスパイク</td>
+</tr>
+<tr>
+<td><strong>複合障害</strong></td>
+<td>全ペアワイズ C(n,2) + トリプル C(n,3) の同時障害</td>
+</tr>
+<tr>
+<td><strong>DB固有</strong></td>
+<td>ログ爆発、レプリケーション遅延、コネクション嵐、ロック競合</td>
+</tr>
+<tr>
+<td><strong>Cache固有</strong></td>
+<td>キャッシュスタンピード、エビクション嵐、スプリットブレイン</td>
+</tr>
+<tr>
+<td><strong>Queue固有</strong></td>
+<td>バックプレッシャー、ポイズンメッセージ</td>
+</tr>
+<tr>
+<td><strong>LB固有</strong></td>
+<td>ヘルスチェック失敗、TLS証明書期限切れ、設定リロード失敗</td>
+</tr>
+<tr>
+<td><strong>App固有</strong></td>
+<td>メモリリーク、スレッド枯渇、GCポーズ、不良デプロイ</td>
+</tr>
+<tr>
+<td><strong>インフラ</strong></td>
+<td>ゾーン障害、連鎖タイムアウト、全面メルトダウン、ローリングリスタート</td>
+</tr>
+<tr>
+<td><strong>実世界</strong></td>
+<td>ブラックフライデー（10x+キャッシュ圧力）、ノイジーネイバー</td>
+</tr>
+<tr>
+<td><strong>セキュリティフィード</strong></td>
+<td>CISA/NVD/Krebs等から自動生成</td>
+</tr>
+</tbody>
+</table>
+<h3 id="_3">使い方</h3>
+<pre><code class="language-bash"># YAML定義をロードしてシミュレーション
+faultray load infra.yaml
+faultray simulate --html report.html
+
+# シナリオ絞り込み
+faultray simulate --scenarios critical
+
+# JSON出力
+faultray simulate --json
+</code></pre>
+<h3 id="_4">出力</h3>
+<ul>
+<li><strong>レジリエンススコア</strong>: 0〜100（SPOF 30% + カスケード 25% + 冗長性 25% + 地理分散 20%の加重平均）</li>
+<li><strong>重大度レベル</strong>: CRITICAL（7.0-10.0）/ WARNING（4.0-6.9）/ PASSED（0.0-3.9）</li>
+<li><strong>カスケードパス</strong>: 障害伝搬の経路を視覚化</li>
+<li><strong>SPOF一覧</strong>: 単一障害点の特定と改善提案</li>
+</ul>
+<h3 id="3">3層可用性限界モデル</h3>
+<p>Cascadeエンジンの最大の特徴は、<strong>システムの可用性上限を数学的に証明する3層限界モデル</strong>です。</p>
+<table>
+<thead>
+<tr>
+<th>層</th>
+<th>名称</th>
+<th>上限</th>
+<th>説明</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Layer 3</strong></td>
+<td>理論限界</td>
+<td>6.65 nines</td>
+<td>完全な冗長性 + 瞬時フェイルオーバーを仮定（到達不可能な数学的上限）</td>
+</tr>
+<tr>
+<td><strong>Layer 2</strong></td>
+<td>ハードウェア限界</td>
+<td>5.91 nines</td>
+<td>コンポーネントMTBF x 冗長係数から算出される物理的上限</td>
+</tr>
+<tr>
+<td><strong>Layer 1</strong></td>
+<td>ソフトウェア限界</td>
+<td>4.00 nines</td>
+<td>デプロイ失敗・設定ドリフト・ヒューマンエラーを考慮した実用上限</td>
+</tr>
+</tbody>
+</table>
+<p><strong>活用例</strong>: SLO目標が99.99%だがLayer 1限界が99.95%の場合、アーキテクチャ変更なしにはギャップを埋められないことが数学的に証明されます。</p>
+<hr />
+<h2 id="2-dynamic">2. Dynamicエンジン（動的シミュレーション）</h2>
+<h3 id="_5">概要</h3>
+<p><strong>時間ステップ方式</strong>のシミュレーションで、トラフィックパターン、オートスケーリング、サーキットブレーカー、フェイルオーバーを時系列で再現します。「ピーク時のトラフィックにインフラは耐えられるか？」という問いに答えます。</p>
+<h3 id="_6">仕組み</h3>
+<ol>
+<li>時間ステップごとにトラフィック量を算出</li>
+<li>各コンポーネントの負荷をメトリクスとして計算</li>
+<li>オートスケーリングポリシーを適用</li>
+<li>過負荷コンポーネントの障害をトリガー</li>
+<li>サーキットブレーカー・フェイルオーバーの動作をシミュレート</li>
+</ol>
+<h3 id="10">10種類のトラフィックモデル</h3>
+<table>
+<thead>
+<tr>
+<th>パターン</th>
+<th>説明</th>
+<th>ユースケース</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>CONSTANT</code></td>
+<td>定常トラフィック</td>
+<td>ベースライン測定</td>
+</tr>
+<tr>
+<td><code>RAMP</code></td>
+<td>線形増加</td>
+<td>キャンペーン・新機能リリース</td>
+</tr>
+<tr>
+<td><code>SPIKE</code></td>
+<td>瞬時スパイク</td>
+<td>TV放映・SNSバズ</td>
+</tr>
+<tr>
+<td><code>WAVE</code></td>
+<td>正弦波パターン</td>
+<td>周期的ワークロード</td>
+</tr>
+<tr>
+<td><code>DDoS_VOLUMETRIC</code></td>
+<td>大量DDoSアタック</td>
+<td>DDoS耐性テスト</td>
+</tr>
+<tr>
+<td><code>DDoS_SLOWLORIS</code></td>
+<td>Slowloris型DDoS</td>
+<td>アプリケーション層DDoS</td>
+</tr>
+<tr>
+<td><code>FLASH_CROWD</code></td>
+<td>バイラル急増</td>
+<td>プレスリリース・バズ</td>
+</tr>
+<tr>
+<td><code>DIURNAL</code></td>
+<td>日中サイクル</td>
+<td>通常運用パターン</td>
+</tr>
+<tr>
+<td><code>DIURNAL_WEEKLY</code></td>
+<td>週間サイクル</td>
+<td>平日/週末の差異</td>
+</tr>
+<tr>
+<td><code>GROWTH_TREND</code></td>
+<td>長期成長</td>
+<td>オーガニック成長</td>
+</tr>
+</tbody>
+</table>
+<h3 id="_7">使い方</h3>
+<pre><code class="language-bash"># 24時間の日中パターンシミュレーション
+faultray dynamic infra.yaml --traffic diurnal --duration 24h --step 1min
+
+# DDoS耐性テスト
+faultray dynamic infra.yaml --traffic ddos_volumetric --duration 2h
+
+# ブラックフライデーシナリオ
+faultray dynamic infra.yaml --traffic spike --duration 12h
+</code></pre>
+<h3 id="_8">出力例</h3>
+<p>時間ステップごとの状態推移：</p>
+<pre><code>[T=00:00] STABLE  | api: 45% CPU | db: 30% CPU | cache: 20% CPU
+[T=08:00] STABLE  | api: 72% CPU | db: 55% CPU | cache: 35% CPU
+[T=12:00] WARNING | api: 89% CPU | db: 78% CPU  -&gt; autoscaling triggered
+[T=12:05] STABLE  | api: 65% CPU (scaled 3-&gt;5) | db: 78% CPU
+[T=18:00] STABLE  | api: 50% CPU | db: 40% CPU | cache: 25% CPU
+</code></pre>
+<hr />
+<h2 id="3-ops">3. Opsエンジン（運用シミュレーション）</h2>
+<h3 id="_9">概要</h3>
+<p><strong>数日〜数週間の長期運用</strong>をシミュレートし、SLO準拠状況、インシデント発生パターン、デプロイイベントの影響を追跡します。「今月のエラーバジェットは持つか？」「週次デプロイが可用性に与える影響は？」に答えます。</p>
+<h3 id="_10">仕組み</h3>
+<ol>
+<li>長時間の時間ステップでシミュレーション実行</li>
+<li>確率的にインシデントを発生させる</li>
+<li>デプロイイベント（ローリングアップデート等）を挿入</li>
+<li>SLOに対する準拠率を継続計測</li>
+<li>エラーバジェット消費量を追跡</li>
+</ol>
+<h3 id="_11">使い方</h3>
+<pre><code class="language-bash"># 7日間の運用シミュレーション（5分間隔）
+faultray ops-sim infra.yaml --days 7 --step 5min
+
+# デフォルト設定で実行
+faultray ops-sim --defaults
+</code></pre>
+<h3 id="_12">出力例</h3>
+<pre><code>=== 7-Day Operational Simulation ===
+
+SLO Compliance: 99.82% (target: 99.9%)  BELOW TARGET
+Error Budget Consumed: 127% (EXCEEDED)
+
+Incidents:
+  Day 1 12:34  SEV-2  API latency spike (95th: 2.3s)  MTTR: 45min
+  Day 3 03:12  SEV-3  Cache eviction storm             MTTR: 15min
+  Day 5 09:45  SEV-1  Database failover triggered       MTTR: 8min
+  Day 6 14:00  ---    Deployment event (v2.1.3)        No impact
+
+Recommendation:
+  - Error budget exceeded. Freeze non-critical deployments until budget recovers.
+  - Cache cluster needs capacity increase (eviction rate &gt; 5%).
+</code></pre>
+<h3 id="_13">ユースケース</h3>
+<ul>
+<li><strong>SLO交渉前の可用性予測</strong>: 「99.9% SLOを契約して大丈夫か？」を事前に検証</li>
+<li><strong>デプロイ頻度の最適化</strong>: デプロイ間隔と可用性のトレードオフを分析</li>
+<li><strong>インシデント対応訓練</strong>: 予測されるインシデントパターンの把握</li>
+<li><strong>エラーバジェット運用</strong>: Google SRE方式のエラーバジェット消費シミュレーション</li>
+</ul>
+<hr />
+<h2 id="4-what-if">4. What-Ifエンジン（感度分析）</h2>
+<h3 id="_14">概要</h3>
+<p><strong>パラメータスイープ</strong>により、「もし〜だったら？」という仮説検証を行います。MTTRを半分にしたら可用性はどう変わるか、レプリカ数を増やしたらリスクスコアはどう改善するか、といった感度分析を自動化します。</p>
+<h3 id="_15">仕組み</h3>
+<ol>
+<li>対象パラメータと値の範囲を指定</li>
+<li>各値でシミュレーションを再実行</li>
+<li>パラメータ値とレジリエンススコアの関係をプロット</li>
+<li>ブレークポイント（急激にリスクが変化する閾値）を検出</li>
+</ol>
+<h3 id="_16">使い方</h3>
+<pre><code class="language-bash"># MTTR係数のスイープ
+faultray whatif infra.yaml --parameter mttr_factor --values &quot;0.5,1.0,2.0,4.0&quot;
+
+# デフォルトパラメータスイープ
+faultray whatif infra.yaml --defaults
+
+# レプリカ数の感度分析
+faultray whatif infra.yaml --parameter replicas --values &quot;1,2,3,5&quot;
+</code></pre>
+<h3 id="_17">出力例</h3>
+<pre><code>=== What-If Analysis: mttr_factor ===
+
+Parameter: mttr_factor (Mean Time To Recovery multiplier)
+
+  Value  | Score | Delta |  Status
+  -------+-------+-------+---------
+  0.5    |  82   | +10   |  IMPROVED
+  1.0    |  72   |  --   |  BASELINE
+  2.0    |  58   | -14   |  DEGRADED
+  4.0    |  31   | -41   |  CRITICAL
+
+Breakpoint detected: mttr_factor &gt; 2.5 causes cascade failure risk
+Recommendation: Keep MTTR below 2.0x for acceptable resilience
+</code></pre>
+<h3 id="_18">ユースケース</h3>
+<ul>
+<li><strong>投資対効果の定量化</strong>: 「レプリカを1台追加するとリスクスコアがどれだけ改善するか」</li>
+<li><strong>SLA交渉の根拠</strong>: 「MTTR 30分を保証するとSLO達成率はいくつになるか」</li>
+<li><strong>障害対応時間の最適化</strong>: 「復旧時間が2倍になった場合の影響度はどの程度か」</li>
+<li><strong>コスト最適化</strong>: 「最小限の投資で最大限のスコア改善を得るにはどのパラメータを変えるべきか」</li>
+</ul>
+<hr />
+<h2 id="5-capacity">5. Capacityエンジン（キャパシティ計画）</h2>
+<h3 id="_19">概要</h3>
+<p><strong>成長予測とリソース枯渇予測</strong>を行い、SLO準拠を維持しつつコスト最適化を実現するエンジンです。HAガード（最低2レプリカ）とクォーラムガード（最低3レプリカ）により、過剰なリソース削減を防止します。</p>
+<h3 id="_20">仕組み</h3>
+<ol>
+<li>現在のリソース使用率を基準に成長率を適用</li>
+<li>将来の各時点でのリソース使用率を予測</li>
+<li>枯渇予測日を算出</li>
+<li>ライトサイジング推奨を生成（HA/クォーラムガード適用）</li>
+<li>SLO準拠を確認</li>
+</ol>
+<h3 id="ha">HA &amp; クォーラムガード</h3>
+<table>
+<thead>
+<tr>
+<th>ガード</th>
+<th>対象</th>
+<th>最低レプリカ数</th>
+<th>理由</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>HAガード</strong></td>
+<td>LB, DNS, フェイルオーバー対象</td>
+<td>2</td>
+<td>アクティブ-スタンバイ構成の維持</td>
+</tr>
+<tr>
+<td><strong>クォーラムガード</strong></td>
+<td>Cache（Redis等）, Queue（Kafka等）</td>
+<td>3</td>
+<td>クォーラム合意（過半数）の維持</td>
+</tr>
+</tbody>
+</table>
+<h3 id="_21">使い方</h3>
+<pre><code class="language-bash"># 年15%成長、SLO 99.9%でキャパシティ計画
+faultray capacity infra.yaml --growth 0.15 --slo 99.9
+
+# 月次成長率での予測
+faultray capacity infra.yaml --growth 0.02 --monthly --slo 99.95
+</code></pre>
+<h3 id="_22">出力例</h3>
+<pre><code>=== Capacity Planning Report ===
+
+Growth Rate: 15% annual | SLO Target: 99.9%
+
+Component       | Current | 6mo  | 12mo | Exhaustion   | Action
+----------------+---------+------+------+--------------+-------
+api (app)       | 65% CPU | 75%  | 86%  | 14 months    | Scale at 80%
+postgres (db)   | 72% disk| 83%  | 95%  | 8 months     | URGENT: expand storage
+redis (cache)   | 35% mem | 40%  | 46%  | &gt;24 months   | OK
+nginx (lb)      | 25% CPU | 29%  | 33%  | &gt;24 months   | OK
+
+Right-sizing Recommendations:
+  api:      3 -&gt; 4 replicas (growth headroom)
+  postgres: 100GB -&gt; 250GB disk (exhaustion in 8mo)
+  redis:    3 replicas (quorum guard: minimum 3)  [no reduction]
+  nginx:    2 replicas (HA guard: minimum 2)       [no reduction]
+
+SLO Compliance at 12 months: 99.87%  WARNING (below 99.9% target)
+  Action: Scale api to 5 replicas before month 10
+</code></pre>
+<h3 id="_23">ユースケース</h3>
+<ul>
+<li><strong>予算計画</strong>: 来年度のインフラコストを根拠をもって見積もる</li>
+<li><strong>SLA保証</strong>: 成長しても契約SLAを維持できることを証明する</li>
+<li><strong>リソース最適化</strong>: 過剰プロビジョニングを解消しつつ安全マージンを確保する</li>
+<li><strong>リスク予測</strong>: いつどのコンポーネントがボトルネックになるかを事前に特定する</li>
+</ul>
+<hr />
+<h2 id="_24">エンジンの組み合わせ</h2>
+<h3 id="_25">推奨ワークフロー</h3>
+<pre><code>1. Cascade     まずSPOFとカスケード障害を把握する
+       |
+2. Dynamic     トラフィックパターンを適用して動的耐性を検証する
+       |
+3. What-If     パラメータ調整で改善可能な領域を特定する
+       |
+4. Capacity    成長予測で将来のボトルネックを予測する
+       |
+5. Ops         長期運用でSLO準拠を確認する
+</code></pre>
+<h3 id="_26">統合実行例</h3>
+<pre><code class="language-bash"># 全エンジンを順番に実行
+faultray load infra.yaml
+faultray simulate --html cascade-report.html
+faultray dynamic infra.yaml --traffic diurnal --duration 24h
+faultray whatif infra.yaml --defaults
+faultray capacity infra.yaml --growth 0.15 --slo 99.9
+faultray ops-sim infra.yaml --days 7
+</code></pre>
+<h2 id="_27">次のステップ</h2>
+<ul>
+<li><a href="../getting-started/">クイックスタート</a> -- インストールと最初のシミュレーション</li>
+<li><a href="../compliance/">コンプライアンス評価</a> -- 規制フレームワーク準拠チェック</li>
+<li><a href="../api/">API リファレンス</a> -- プログラマティックアクセス</li>
+<li><a href="../usecases/">業界別ユースケース</a> -- 具体的な活用事例</li>
+</ul>
+
+
+
+
+
+
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    
+      
+      
+      <script id="__config" type="application/json">{"annotate": null, "base": "../..", "features": ["navigation.tabs", "navigation.sections", "search.suggest"], "search": "../../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+    
+    
+      <script src="../../assets/javascripts/bundle.79ae519e.min.js"></script>
+      
+    
+  </body>
+</html>

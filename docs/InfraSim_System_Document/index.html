@@ -1,0 +1,3841 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+        <meta name="description" content="Zero-risk infrastructure chaos simulation">
+      
+      
+      
+      
+      
+      
+        
+      
+      
+      <link rel="icon" href="../assets/images/favicon.png">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.5">
+    
+    
+      
+        <title>FaultRay - 仮想インフラ カオスエンジニアリング シミュレータ - FaultRay Documentation</title>
+      
+    
+    
+      <link rel="stylesheet" href="../assets/stylesheets/main.484c7ddc.min.css">
+      
+        
+        <link rel="stylesheet" href="../assets/stylesheets/palette.ab4e12ef.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+    <script>__md_scope=new URL("..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+  </head>
+  
+  
+    
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="slate" data-md-color-primary="blue" data-md-color-accent="indigo">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#faultray-" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+<header class="md-header" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href=".." title="FaultRay Documentation" class="md-header__button md-logo" aria-label="FaultRay Documentation" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            FaultRay Documentation
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              FaultRay - 仮想インフラ カオスエンジニアリング シミュレータ
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      
+    
+    
+    
+    
+      
+      
+        <label class="md-header__button md-icon" for="__search">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        </label>
+        <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
+      </nav>
+      
+        <div class="md-search__suggest" data-md-component="search-suggest"></div>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+      
+    
+    
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+            
+<nav class="md-tabs" aria-label="Tabs" data-md-component="tabs">
+  <div class="md-grid">
+    <ul class="md-tabs__list">
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href=".." class="md-tabs__link">
+        
+  
+  
+    
+  
+  Home
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../getting-started/installation/" class="md-tabs__link">
+          
+  
+  
+  Getting Started
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../concepts/how-it-works/" class="md-tabs__link">
+          
+  
+  
+  Concepts
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../cli/commands/" class="md-tabs__link">
+          
+  
+  
+  CLI Reference
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../api/rest/" class="md-tabs__link">
+          
+  
+  
+  API Reference
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../integrations/aws/" class="md-tabs__link">
+          
+  
+  
+  Integrations
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../enterprise/compliance/" class="md-tabs__link">
+          
+  
+  
+  Enterprise
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../legal/terms-of-service/" class="md-tabs__link">
+          
+  
+  
+  Legal
+
+        </a>
+      </li>
+    
+  
+
+      
+    </ul>
+  </div>
+</nav>
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+  
+
+
+<nav class="md-nav md-nav--primary md-nav--lifted" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href=".." title="FaultRay Documentation" class="md-nav__button md-logo" aria-label="FaultRay Documentation" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    FaultRay Documentation
+  </label>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href=".." class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Home
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_2" >
+        
+          
+          <label class="md-nav__link" for="__nav_2" id="__nav_2_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Getting Started
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_2_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_2">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Getting Started
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../getting-started/installation/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Installation
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../getting-started/quickstart/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Quick Start
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../getting-started/first-simulation/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Your First Simulation
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3" >
+        
+          
+          <label class="md-nav__link" for="__nav_3" id="__nav_3_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Concepts
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_3">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Concepts
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../concepts/how-it-works/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    How It Works
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../concepts/five-layer-model/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    5-Layer Model
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../concepts/risk-scoring/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Risk Scoring
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../concepts/agent-resilience/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Agent Resilience
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4" >
+        
+          
+          <label class="md-nav__link" for="__nav_4" id="__nav_4_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    CLI Reference
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_4_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_4">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    CLI Reference
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../cli/commands/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Commands
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5" >
+        
+          
+          <label class="md-nav__link" for="__nav_5" id="__nav_5_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    API Reference
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_5_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_5">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    API Reference
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../api/rest/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    REST API
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../api/graphql/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    GraphQL
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../api/python-sdk/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Python SDK
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_6" >
+        
+          
+          <label class="md-nav__link" for="__nav_6" id="__nav_6_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Integrations
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_6_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_6">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Integrations
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../integrations/aws/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    AWS
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../integrations/gcp/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    GCP
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../integrations/azure/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Azure
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../integrations/kubernetes/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Kubernetes
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../integrations/terraform/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Terraform
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../integrations/cicd/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    CI/CD
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../integrations/slack/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Slack
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_7" >
+        
+          
+          <label class="md-nav__link" for="__nav_7" id="__nav_7_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Enterprise
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_7_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_7">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Enterprise
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../enterprise/compliance/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Compliance
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../enterprise/insurance/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Insurance Scoring
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../enterprise/rbac/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    RBAC
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_8" >
+        
+          
+          <label class="md-nav__link" for="__nav_8" id="__nav_8_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Legal
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_8_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_8">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Legal
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../legal/terms-of-service/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Terms of Service
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../legal/privacy-policy/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Privacy Policy
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#_1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        システム概要
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="システム概要">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#_2" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        概要
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#_3" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        コンセプト
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#_4" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        技術スタック
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#_5" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        アーキテクチャ
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="アーキテクチャ">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#_6" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        システム構成図
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#_7" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        ディレクトリ構成
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#_8" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        データモデル
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="データモデル">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#_9" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        コンポーネント種別
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#_10" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        ヘルスステータス
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#_11" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        依存関係の種類
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#resourcemetrics" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        ResourceMetrics（リソースメトリクス）
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#capacity" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Capacity（キャパシティ制限）
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#cli" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        CLIコマンド一覧
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="CLIコマンド一覧">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#_12" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        インフラ検出
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#_13" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        シミュレーション
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#_14" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        レポート・表示
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#_15" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        セキュリティフィード
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#_16" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        カオスシナリオ
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="カオスシナリオ">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#_17" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        障害タイプ
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#30" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        自動生成シナリオ（30カテゴリ）
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="自動生成シナリオ（30カテゴリ）">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#_18" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        単一障害シナリオ
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#_19" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        トラフィックシナリオ
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#_20" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        複合障害シナリオ
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#_21" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        インフラ種別特化シナリオ
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#_22" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        大規模障害シナリオ
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#6" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        デモ構成（6コンポーネント）での実績
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#_23" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        リスクスコアリング
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="リスクスコアリング">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#00-100" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        重要度スコア (0.0 - 10.0)
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="重要度スコア (0.0 - 10.0)">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#_24" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        計算式
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#_25" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        スコアキャップ
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#_26" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        リスクレベル分類
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#likelihood-02-10" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        発生確率 (Likelihood: 0.2 - 1.0)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#0-100" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        レジリエンススコア (0 - 100)
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="レジリエンススコア (0 - 100)">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#_27" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        減点要因
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#_28" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        セキュリティニュースフィード連携
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="セキュリティニュースフィード連携">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#_29" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        概要
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#_30" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        データフロー
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#8" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        フィードソース（8件）
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#18" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        インシデントパターン（18種）
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#_31" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        自動更新の仕組み
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#_32" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        インフラ検出
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="インフラ検出">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#_33" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        ローカルシステムスキャン
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#prometheus" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Prometheus連携
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#terraform" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Terraform連携
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Terraform連携">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#50" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        対応リソース（50種以上）
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#terraform-plan" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Terraform Plan リスク評価
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#web" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Webダッシュボード
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Webダッシュボード">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#_34" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        エンドポイント一覧
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ui" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        UIの特徴
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#_35" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        使い方
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="使い方">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#_36" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        クイックスタート
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="クイックスタート">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#_37" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        デモ実行（最も簡単）
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#yaml" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        YAML定義からシミュレーション
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#terraform_1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Terraformからインポート
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#_38" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        セキュリティフィード更新
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#web_1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Webダッシュボード
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#yaml_1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        YAML定義ファイルの書き方
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#_39" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        テスト
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="テスト">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#_40" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        テストカバレッジ
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="テストカバレッジ">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#16" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        カスケードテスト（16件）
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#11" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        フィードテスト（11件）
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#_41" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        他ツールとの比較
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="他ツールとの比較">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#faultray" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        FaultRayの独自価値
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+
+<h1 id="faultray-">FaultRay - 仮想インフラ カオスエンジニアリング シミュレータ</h1>
+<h2 id="_1">システム概要</h2>
+<hr />
+<h3 id="_2">概要</h3>
+<p>FaultRayは、実際のインフラに一切触れることなく、インフラ障害の連鎖的影響をシミュレーションする仮想カオスエンジニアリングツールである。インフラの依存関係グラフをモデル化し、150以上のカオスシナリオを自動生成・実行して、システムの脆弱性と障害連鎖リスクを可視化する。</p>
+<h3 id="_3">コンセプト</h3>
+<ul>
+<li><strong>仮想シミュレーション</strong>: 実インフラ・ステージング環境に影響を与えない。全てメモリ上で完結</li>
+<li><strong>依存関係グラフ分析</strong>: NetworkXを用いた有向グラフでコンポーネント間の依存関係をモデル化</li>
+<li><strong>自動シナリオ生成</strong>: 30カテゴリ・150以上のカオスシナリオを自動生成</li>
+<li><strong>セキュリティニュース連動</strong>: 実際のセキュリティニュースからシナリオを自動追加</li>
+<li><strong>リスクスコアリング</strong>: 影響度 x 拡散率 x 発生確率の3軸でリスクを定量評価</li>
+</ul>
+<h3 id="_4">技術スタック</h3>
+<table>
+<thead>
+<tr>
+<th>カテゴリ</th>
+<th>技術</th>
+<th>用途</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>言語</td>
+<td>Python 3.11+</td>
+<td>メインランタイム</td>
+</tr>
+<tr>
+<td>CLI</td>
+<td>Typer + Rich</td>
+<td>コマンドライン・ターミナル出力</td>
+</tr>
+<tr>
+<td>データモデル</td>
+<td>Pydantic</td>
+<td>バリデーション・シリアライゼーション</td>
+</tr>
+<tr>
+<td>グラフ解析</td>
+<td>NetworkX</td>
+<td>依存関係グラフ・連鎖解析</td>
+</tr>
+<tr>
+<td>HTTP</td>
+<td>httpx</td>
+<td>非同期HTTP通信（Prometheus・RSS）</td>
+</tr>
+<tr>
+<td>Web</td>
+<td>FastAPI + Jinja2 + D3.js</td>
+<td>Webダッシュボード</td>
+</tr>
+<tr>
+<td>メトリクス</td>
+<td>psutil</td>
+<td>ローカルシステムスキャン</td>
+</tr>
+<tr>
+<td>設定</td>
+<td>PyYAML</td>
+<td>YAML定義ファイル読み込み</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="_5">アーキテクチャ</h2>
+<h3 id="_6">システム構成図</h3>
+<pre><code>+------------------+     +------------------+     +------------------+
+|  Discovery Layer |     |   Model Layer    |     | Simulator Layer  |
+|                  | --&gt; |                  | --&gt; |                  |
+| - Local Scanner  |     | - InfraGraph     |     | - ScenarioGen    |
+| - Prometheus     |     | - Components     |     | - CascadeEngine  |
+| - Terraform      |     | - Dependencies   |     | - SimEngine      |
+| - YAML Loader    |     | - Save/Load JSON |     | - Feed Scenarios |
++------------------+     +------------------+     +------------------+
+                                                          |
+                         +------------------+     +------------------+
+                         |    API Layer     | &lt;-- |  Reporter Layer  |
+                         |                  |     |                  |
+                         | - FastAPI        |     | - CLI Report     |
+                         | - D3.js Graph    |     | - HTML Report    |
+                         | - Dashboard      |     | - SVG Diagram    |
+                         +------------------+     +------------------+
+</code></pre>
+<h3 id="_7">ディレクトリ構成</h3>
+<pre><code>faultray/
+  src/faultray/
+    cli.py                 # CLIインターフェース（13コマンド）
+    model/                 # インフラモデル定義
+      components.py        # Component, Dependency, ResourceMetrics等
+      graph.py             # InfraGraph（NetworkXラッパー）
+      loader.py            # YAML読み込み
+    discovery/             # インフラ検出
+      scanner.py           # ローカルシステムスキャン
+      prometheus.py        # Prometheusメトリクス連携
+      terraform.py         # Terraform state/plan解析
+    simulator/             # カオスシミュレーション
+      scenarios.py         # 30カテゴリのシナリオ定義
+      engine.py            # シミュレーション実行エンジン
+      cascade.py           # 障害連鎖伝播エンジン
+    feeds/                 # セキュリティニュースフィード
+      sources.py           # 8つのRSS/Atomフィードソース
+      fetcher.py           # フィード取得・パース
+      analyzer.py          # インシデントパターン分析
+      store.py             # シナリオ永続ストア
+    reporter/              # レポート生成
+      report.py            # CLI出力フォーマット
+      html_report.py       # HTMLレポート生成
+    api/                   # Webダッシュボード
+      server.py            # FastAPIルーティング
+      templates/           # Jinja2テンプレート
+      static/              # CSS, D3.jsスクリプト
+  tests/
+    test_cascade.py        # カスケードテスト（16件）
+    test_feeds.py          # フィードテスト（11件）
+  examples/
+    demo-infra.yaml        # YAMLインフラ定義例
+    sample-tfstate.json    # Terraform state例
+</code></pre>
+<hr />
+<h2 id="_8">データモデル</h2>
+<h3 id="_9">コンポーネント種別</h3>
+<table>
+<thead>
+<tr>
+<th>種別</th>
+<th>値</th>
+<th>例</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>ロードバランサー</td>
+<td>load_balancer</td>
+<td>nginx, ALB, HAProxy</td>
+</tr>
+<tr>
+<td>Webサーバー</td>
+<td>web_server</td>
+<td>Apache, Caddy</td>
+</tr>
+<tr>
+<td>アプリサーバー</td>
+<td>app_server</td>
+<td>Express, Gunicorn, ECS Service</td>
+</tr>
+<tr>
+<td>データベース</td>
+<td>database</td>
+<td>PostgreSQL, MySQL, RDS</td>
+</tr>
+<tr>
+<td>キャッシュ</td>
+<td>cache</td>
+<td>Redis, Memcached, ElastiCache</td>
+</tr>
+<tr>
+<td>キュー</td>
+<td>queue</td>
+<td>RabbitMQ, SQS, Kafka</td>
+</tr>
+<tr>
+<td>ストレージ</td>
+<td>storage</td>
+<td>S3, EBS, NFS</td>
+</tr>
+<tr>
+<td>DNS</td>
+<td>dns</td>
+<td>Route53, CoreDNS</td>
+</tr>
+<tr>
+<td>外部API</td>
+<td>external_api</td>
+<td>Stripe, Twilio</td>
+</tr>
+</tbody>
+</table>
+<h3 id="_10">ヘルスステータス</h3>
+<table>
+<thead>
+<tr>
+<th>ステータス</th>
+<th>説明</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>HEALTHY</td>
+<td>正常稼働</td>
+</tr>
+<tr>
+<td>DEGRADED</td>
+<td>劣化（応答遅延、一部機能停止）</td>
+</tr>
+<tr>
+<td>OVERLOADED</td>
+<td>過負荷（処理能力の限界付近）</td>
+</tr>
+<tr>
+<td>DOWN</td>
+<td>完全停止</td>
+</tr>
+</tbody>
+</table>
+<h3 id="_11">依存関係の種類</h3>
+<table>
+<thead>
+<tr>
+<th>種類</th>
+<th>値</th>
+<th>障害伝播の挙動</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>必須</td>
+<td>requires</td>
+<td>依存先DOWN → 自身もDOWN（レプリカなし時）</td>
+</tr>
+<tr>
+<td>オプション</td>
+<td>optional</td>
+<td>依存先DOWN → 自身はDEGRADED（停止しない）</td>
+</tr>
+<tr>
+<td>非同期</td>
+<td>async</td>
+<td>依存先DOWN → 遅延DEGRADED（キュー溜まり）</td>
+</tr>
+</tbody>
+</table>
+<h3 id="resourcemetrics">ResourceMetrics（リソースメトリクス）</h3>
+<table>
+<thead>
+<tr>
+<th>フィールド</th>
+<th>型</th>
+<th>説明</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>cpu_percent</td>
+<td>float</td>
+<td>CPU使用率 (0-100)</td>
+</tr>
+<tr>
+<td>memory_percent</td>
+<td>float</td>
+<td>メモリ使用率 (0-100)</td>
+</tr>
+<tr>
+<td>disk_percent</td>
+<td>float</td>
+<td>ディスク使用率 (0-100)</td>
+</tr>
+<tr>
+<td>network_connections</td>
+<td>int</td>
+<td>現在のネットワーク接続数</td>
+</tr>
+<tr>
+<td>open_files</td>
+<td>int</td>
+<td>オープンファイル数</td>
+</tr>
+</tbody>
+</table>
+<h3 id="capacity">Capacity（キャパシティ制限）</h3>
+<table>
+<thead>
+<tr>
+<th>フィールド</th>
+<th>型</th>
+<th>説明</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>max_connections</td>
+<td>int</td>
+<td>最大接続数</td>
+</tr>
+<tr>
+<td>max_rps</td>
+<td>int</td>
+<td>最大リクエスト/秒</td>
+</tr>
+<tr>
+<td>connection_pool_size</td>
+<td>int</td>
+<td>接続プールサイズ</td>
+</tr>
+<tr>
+<td>max_memory_mb</td>
+<td>int</td>
+<td>最大メモリ (MB)</td>
+</tr>
+<tr>
+<td>max_disk_gb</td>
+<td>int</td>
+<td>最大ディスク (GB)</td>
+</tr>
+<tr>
+<td>timeout_seconds</td>
+<td>float</td>
+<td>タイムアウト秒数</td>
+</tr>
+<tr>
+<td>retry_multiplier</td>
+<td>float</td>
+<td>リトライ倍率</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="cli">CLIコマンド一覧</h2>
+<h3 id="_12">インフラ検出</h3>
+<table>
+<thead>
+<tr>
+<th>コマンド</th>
+<th>説明</th>
+<th>主要オプション</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>faultray scan</strong></td>
+<td>ローカルシステム/Prometheusからインフラ検出</td>
+<td>--output, --hostname, --prometheus-url</td>
+</tr>
+<tr>
+<td><strong>faultray load</strong></td>
+<td>YAMLファイルからインフラ読み込み</td>
+<td>YAML_FILE, --output</td>
+</tr>
+<tr>
+<td><strong>faultray tf-import</strong></td>
+<td>Terraform stateからインポート</td>
+<td>--state, --dir, --output</td>
+</tr>
+</tbody>
+</table>
+<h3 id="_13">シミュレーション</h3>
+<table>
+<thead>
+<tr>
+<th>コマンド</th>
+<th>説明</th>
+<th>主要オプション</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>faultray simulate</strong></td>
+<td>カオスシミュレーション実行</td>
+<td>--model, --html</td>
+</tr>
+<tr>
+<td><strong>faultray demo</strong></td>
+<td>デモインフラでシミュレーション実行</td>
+<td>--web, --host, --port</td>
+</tr>
+<tr>
+<td><strong>faultray tf-plan</strong></td>
+<td>Terraform planの変更影響分析</td>
+<td>PLAN_FILE, --dir, --html</td>
+</tr>
+</tbody>
+</table>
+<h3 id="_14">レポート・表示</h3>
+<table>
+<thead>
+<tr>
+<th>コマンド</th>
+<th>説明</th>
+<th>主要オプション</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>faultray show</strong></td>
+<td>インフラモデルのサマリー表示</td>
+<td>--model</td>
+</tr>
+<tr>
+<td><strong>faultray report</strong></td>
+<td>HTMLレポート生成</td>
+<td>--model, --output</td>
+</tr>
+<tr>
+<td><strong>faultray serve</strong></td>
+<td>Webダッシュボード起動</td>
+<td>--model, --host, --port</td>
+</tr>
+</tbody>
+</table>
+<h3 id="_15">セキュリティフィード</h3>
+<table>
+<thead>
+<tr>
+<th>コマンド</th>
+<th>説明</th>
+<th>主要オプション</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>faultray feed-update</strong></td>
+<td>セキュリティニュースからシナリオ自動生成</td>
+<td>--model, --timeout</td>
+</tr>
+<tr>
+<td><strong>faultray feed-list</strong></td>
+<td>保存済みフィードシナリオ一覧表示</td>
+<td>なし</td>
+</tr>
+<tr>
+<td><strong>faultray feed-sources</strong></td>
+<td>設定されたフィードソース一覧</td>
+<td>なし</td>
+</tr>
+<tr>
+<td><strong>faultray feed-clear</strong></td>
+<td>フィードシナリオストアのクリア</td>
+<td>なし</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="_16">カオスシナリオ</h2>
+<h3 id="_17">障害タイプ</h3>
+<table>
+<thead>
+<tr>
+<th>障害タイプ</th>
+<th>値</th>
+<th>直接効果</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>コンポーネント停止</td>
+<td>component_down</td>
+<td>DOWN</td>
+</tr>
+<tr>
+<td>CPU飽和</td>
+<td>cpu_saturation</td>
+<td>OVERLOADED</td>
+</tr>
+<tr>
+<td>メモリ枯渇</td>
+<td>memory_exhaustion</td>
+<td>DOWN (OOM)</td>
+</tr>
+<tr>
+<td>ディスクフル</td>
+<td>disk_full</td>
+<td>DOWN</td>
+</tr>
+<tr>
+<td>接続プール枯渇</td>
+<td>connection_pool_exhaustion</td>
+<td>DOWN</td>
+</tr>
+<tr>
+<td>ネットワーク分断</td>
+<td>network_partition</td>
+<td>DOWN</td>
+</tr>
+<tr>
+<td>レイテンシスパイク</td>
+<td>latency_spike</td>
+<td>DEGRADED</td>
+</tr>
+<tr>
+<td>トラフィックスパイク</td>
+<td>traffic_spike</td>
+<td>OVERLOADED</td>
+</tr>
+</tbody>
+</table>
+<h3 id="30">自動生成シナリオ（30カテゴリ）</h3>
+<h4 id="_18">単一障害シナリオ</h4>
+<table>
+<thead>
+<tr>
+<th>カテゴリ</th>
+<th>内容</th>
+<th>生成数</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>単一コンポーネント停止</td>
+<td>各コンポーネントの完全停止</td>
+<td>N</td>
+</tr>
+<tr>
+<td>CPU飽和</td>
+<td>各コンポーネントのCPU 100%</td>
+<td>N</td>
+</tr>
+<tr>
+<td>メモリ枯渇 (OOM)</td>
+<td>各コンポーネントのメモリ使い切り</td>
+<td>N</td>
+</tr>
+<tr>
+<td>接続プール枯渇</td>
+<td>DB/App/Cacheのプール使い切り</td>
+<td>該当数</td>
+</tr>
+<tr>
+<td>ディスクフル</td>
+<td>DB/Storage/App/Queueのディスク満杯</td>
+<td>該当数</td>
+</tr>
+<tr>
+<td>ネットワーク分断</td>
+<td>各コンポーネントの完全隔離</td>
+<td>N</td>
+</tr>
+<tr>
+<td>レイテンシスパイク (5x)</td>
+<td>各コンポーネントの応答遅延5倍</td>
+<td>N</td>
+</tr>
+<tr>
+<td>DB高レイテンシ (20x)</td>
+<td>DB応答遅延20倍</td>
+<td>DB数</td>
+</tr>
+</tbody>
+</table>
+<h4 id="_19">トラフィックシナリオ</h4>
+<table>
+<thead>
+<tr>
+<th>カテゴリ</th>
+<th>内容</th>
+<th>生成数</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>トラフィック 1.5x</td>
+<td>通常の1.5倍トラフィック</td>
+<td>1</td>
+</tr>
+<tr>
+<td>トラフィック 2x</td>
+<td>通常の2倍トラフィック</td>
+<td>1</td>
+</tr>
+<tr>
+<td>トラフィック 3x</td>
+<td>通常の3倍トラフィック</td>
+<td>1</td>
+</tr>
+<tr>
+<td>トラフィック 5x</td>
+<td>通常の5倍トラフィック</td>
+<td>1</td>
+</tr>
+<tr>
+<td>トラフィック 10x</td>
+<td>DDoSレベル10倍トラフィック</td>
+<td>1</td>
+</tr>
+</tbody>
+</table>
+<h4 id="_20">複合障害シナリオ</h4>
+<table>
+<thead>
+<tr>
+<th>カテゴリ</th>
+<th>内容</th>
+<th>生成数</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>ペア障害</td>
+<td>全2コンポーネント組み合わせの同時障害</td>
+<td>C(N,2)</td>
+</tr>
+<tr>
+<td>トリプル障害</td>
+<td>全3コンポーネント組み合わせの同時障害</td>
+<td>C(N,3)</td>
+</tr>
+<tr>
+<td>コンポーネント停止 + トラフィック</td>
+<td>1台停止 + 2x/3xトラフィック</td>
+<td>N x 2</td>
+</tr>
+<tr>
+<td>キャッシュスタンピード</td>
+<td>キャッシュ停止 + 2x/5xトラフィック</td>
+<td>Cache数 x 2</td>
+</tr>
+</tbody>
+</table>
+<h4 id="_21">インフラ種別特化シナリオ</h4>
+<table>
+<thead>
+<tr>
+<th>カテゴリ</th>
+<th>内容</th>
+<th>対象</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>DBログ爆発</td>
+<td>トランザクションログの異常増大</td>
+<td>database</td>
+</tr>
+<tr>
+<td>DBレプリケーション遅延</td>
+<td>レプリカの同期遅延</td>
+<td>database</td>
+</tr>
+<tr>
+<td>DB接続嵐</td>
+<td>接続プール枯渇+リトライ嵐</td>
+<td>database</td>
+</tr>
+<tr>
+<td>DBロック競合</td>
+<td>テーブルロックによる全クエリブロック</td>
+<td>database</td>
+</tr>
+<tr>
+<td>キューバックプレッシャー</td>
+<td>メッセージ処理追いつかず蓄積</td>
+<td>queue</td>
+</tr>
+<tr>
+<td>ポイズンメッセージ</td>
+<td>処理不能メッセージによるキュー詰まり</td>
+<td>queue</td>
+</tr>
+<tr>
+<td>LBヘルスチェック失敗</td>
+<td>全バックエンドのヘルスチェック失敗</td>
+<td>load_balancer</td>
+</tr>
+<tr>
+<td>TLS証明書期限切れ</td>
+<td>SSL/TLS証明書の有効期限切れ</td>
+<td>load_balancer</td>
+</tr>
+<tr>
+<td>LB設定リロード失敗</td>
+<td>設定変更失敗によるLBダウン</td>
+<td>load_balancer</td>
+</tr>
+<tr>
+<td>メモリリーク</td>
+<td>徐々にメモリを消費するリーク</td>
+<td>app_server</td>
+</tr>
+<tr>
+<td>スレッドプール枯渇</td>
+<td>ワーカースレッドの使い切り</td>
+<td>app_server</td>
+</tr>
+<tr>
+<td>GCポーズ</td>
+<td>GC Full発生による一時停止</td>
+<td>app_server</td>
+</tr>
+<tr>
+<td>不良デプロイ</td>
+<td>バグを含むデプロイメント</td>
+<td>app_server</td>
+</tr>
+<tr>
+<td>キャッシュエビクション嵐</td>
+<td>メモリ圧迫による大量キー退避</td>
+<td>cache</td>
+</tr>
+<tr>
+<td>キャッシュスプリットブレイン</td>
+<td>レプリカ間の不整合</td>
+<td>cache</td>
+</tr>
+</tbody>
+</table>
+<h4 id="_22">大規模障害シナリオ</h4>
+<table>
+<thead>
+<tr>
+<th>カテゴリ</th>
+<th>内容</th>
+<th>生成数</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>ゾーン障害</td>
+<td>同一ホスト上の全コンポーネント同時停止</td>
+<td>ホスト数</td>
+</tr>
+<tr>
+<td>ティア間ネットワーク分断</td>
+<td>App-DB、App-Cache、LB-App間の通信断</td>
+<td>3</td>
+</tr>
+<tr>
+<td>カスケードタイムアウト連鎖</td>
+<td>DB遅延→App タイムアウト→504応答</td>
+<td>1</td>
+</tr>
+<tr>
+<td>全インフラ崩壊</td>
+<td>全コンポーネント同時停止</td>
+<td>1</td>
+</tr>
+<tr>
+<td>ノイジーネイバー</td>
+<td>1プロセスが他のリソースを圧迫</td>
+<td>App数</td>
+</tr>
+<tr>
+<td>ピーク時DB遅延</td>
+<td>3xトラフィック中のDB応答遅延</td>
+<td>DB数</td>
+</tr>
+<tr>
+<td>ローリングリスタート失敗</td>
+<td>デプロイ中にApp半数停止</td>
+<td>1</td>
+</tr>
+<tr>
+<td>全リソース枯渇</td>
+<td>CPU+メモリ+ディスク全て逼迫</td>
+<td>App数</td>
+</tr>
+<tr>
+<td>フェイルオーバーテスト</td>
+<td>プライマリ障害時のフェイルオーバー検証</td>
+<td>該当DB数</td>
+</tr>
+<tr>
+<td>ブラックフライデー</td>
+<td>10xトラフィック+キャッシュ圧力</td>
+<td>1</td>
+</tr>
+</tbody>
+</table>
+<h3 id="6">デモ構成（6コンポーネント）での実績</h3>
+<p>デフォルトシナリオ: <strong>124件</strong>、フィード追加: <strong>26件</strong>、合計: <strong>150件</strong></p>
+<hr />
+<h2 id="_23">リスクスコアリング</h2>
+<h3 id="00-100">重要度スコア (0.0 - 10.0)</h3>
+<h4 id="_24">計算式</h4>
+<pre><code>impact_score = (DOWN数 x 1.0 + OVERLOADED数 x 0.5 + DEGRADED数 x 0.25) / 影響コンポーネント数
+spread_score = 影響コンポーネント数 / 全コンポーネント数
+raw_score = impact_score x spread_score x 10.0
+final_score = raw_score x likelihood
+</code></pre>
+<h4 id="_25">スコアキャップ</h4>
+<table>
+<thead>
+<tr>
+<th>条件</th>
+<th>最大スコア</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>影響が自身のみ（連鎖なし）、DOWN</td>
+<td>3.0</td>
+</tr>
+<tr>
+<td>影響が自身のみ、OVERLOADED</td>
+<td>2.0</td>
+</tr>
+<tr>
+<td>影響が自身のみ、DEGRADED</td>
+<td>1.5</td>
+</tr>
+<tr>
+<td>全体の30%未満に波及</td>
+<td>6.0</td>
+</tr>
+<tr>
+<td>DEGRADEDのみ（DOWNなし）</td>
+<td>4.0</td>
+</tr>
+<tr>
+<td>全体の30%以上に波及</td>
+<td>10.0</td>
+</tr>
+</tbody>
+</table>
+<h4 id="_26">リスクレベル分類</h4>
+<table>
+<thead>
+<tr>
+<th>レベル</th>
+<th>スコア範囲</th>
+<th>表示</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>CRITICAL</td>
+<td>7.0 - 10.0</td>
+<td>赤色で警告表示</td>
+</tr>
+<tr>
+<td>WARNING</td>
+<td>4.0 - 6.9</td>
+<td>黄色で警告表示</td>
+</tr>
+<tr>
+<td>PASSED</td>
+<td>0.0 - 3.9</td>
+<td>低リスクとして記録</td>
+</tr>
+</tbody>
+</table>
+<h3 id="likelihood-02-10">発生確率 (Likelihood: 0.2 - 1.0)</h3>
+<p>現在のメトリクスに基づき、各障害シナリオの発生確率を算出する。</p>
+<table>
+<thead>
+<tr>
+<th>障害タイプ</th>
+<th>条件</th>
+<th>確率</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>ディスクフル</td>
+<td>使用率 &gt;90%</td>
+<td>1.0（切迫）</td>
+</tr>
+<tr>
+<td>ディスクフル</td>
+<td>使用率 &gt;75%</td>
+<td>0.7</td>
+</tr>
+<tr>
+<td>ディスクフル</td>
+<td>使用率 &gt;50%</td>
+<td>0.4</td>
+</tr>
+<tr>
+<td>ディスクフル</td>
+<td>使用率 &lt;50%</td>
+<td>0.2（低い）</td>
+</tr>
+<tr>
+<td>接続プール枯渇</td>
+<td>使用率 &gt;90%</td>
+<td>1.0（切迫）</td>
+</tr>
+<tr>
+<td>接続プール枯渇</td>
+<td>使用率 &gt;70%</td>
+<td>0.7</td>
+</tr>
+<tr>
+<td>CPU飽和</td>
+<td>使用率 &gt;85%</td>
+<td>1.0</td>
+</tr>
+<tr>
+<td>CPU飽和</td>
+<td>使用率 &gt;60%</td>
+<td>0.6</td>
+</tr>
+<tr>
+<td>メモリ枯渇</td>
+<td>使用率 &gt;85%</td>
+<td>1.0</td>
+</tr>
+<tr>
+<td>コンポーネント停止</td>
+<td>常時</td>
+<td>0.8（ハードウェア障害は常に可能）</td>
+</tr>
+<tr>
+<td>レイテンシスパイク</td>
+<td>常時</td>
+<td>0.7（頻繁に発生）</td>
+</tr>
+<tr>
+<td>トラフィックスパイク</td>
+<td>常時</td>
+<td>0.5（可能性あり）</td>
+</tr>
+</tbody>
+</table>
+<h3 id="0-100">レジリエンススコア (0 - 100)</h3>
+<p>システム全体の耐障害性を0-100で評価する。</p>
+<h4 id="_27">減点要因</h4>
+<table>
+<thead>
+<tr>
+<th>要因</th>
+<th>減点</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>単一障害点（レプリカ1、依存先あり）</td>
+<td>-5 ~ -20</td>
+</tr>
+<tr>
+<td>高使用率（70%超え）</td>
+<td>-3 ~ -15</td>
+</tr>
+<tr>
+<td>深い依存チェーン（5ホップ超）</td>
+<td>-(深さ-5) x 5</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="_28">セキュリティニュースフィード連携</h2>
+<h3 id="_29">概要</h3>
+<p>実世界のセキュリティインシデント情報をRSS/Atomフィードから自動取得し、カオスシナリオに変換する。これにより、最新の脅威トレンドを反映したシミュレーションが可能になる。</p>
+<h3 id="_30">データフロー</h3>
+<pre><code>RSS/Atom Feeds  --&gt;  Fetcher  --&gt;  Analyzer  --&gt;  Store  --&gt;  SimEngine
+  (8ソース)       (httpx非同期)  (パターン     (~/.faultray/  (自動マージ)
+                               マッチング)    feed-scenarios.json)
+</code></pre>
+<h3 id="8">フィードソース（8件）</h3>
+<table>
+<thead>
+<tr>
+<th>ソース</th>
+<th>URL</th>
+<th>種別</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>CISA Alerts</td>
+<td>cisa.gov/cybersecurity-advisories</td>
+<td>RSS</td>
+</tr>
+<tr>
+<td>NIST NVD</td>
+<td>nvd.nist.gov/feeds/xml/cve</td>
+<td>RSS</td>
+</tr>
+<tr>
+<td>The Hacker News</td>
+<td>feedburner.com/TheHackersNews</td>
+<td>RSS</td>
+</tr>
+<tr>
+<td>BleepingComputer</td>
+<td>bleepingcomputer.com/feed</td>
+<td>RSS</td>
+</tr>
+<tr>
+<td>AWS Security Bulletins</td>
+<td>aws.amazon.com/security/security-bulletins</td>
+<td>Atom</td>
+</tr>
+<tr>
+<td>Google Cloud Incidents</td>
+<td>status.cloud.google.com</td>
+<td>Atom</td>
+</tr>
+<tr>
+<td>Krebs on Security</td>
+<td>krebsonsecurity.com/feed</td>
+<td>RSS</td>
+</tr>
+<tr>
+<td>Ars Technica Security</td>
+<td>feeds.arstechnica.com/arstechnica/security</td>
+<td>RSS</td>
+</tr>
+</tbody>
+</table>
+<h3 id="18">インシデントパターン（18種）</h3>
+<table>
+<thead>
+<tr>
+<th>パターン</th>
+<th>検出キーワード例</th>
+<th>変換先障害タイプ</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>DDoS 体積型攻撃</td>
+<td>ddos, traffic flood, syn flood</td>
+<td>TRAFFIC_SPIKE (10x)</td>
+</tr>
+<tr>
+<td>アプリ層 DDoS</td>
+<td>layer 7, slowloris, request flood</td>
+<td>POOL_EXHAUSTION + CPU</td>
+</tr>
+<tr>
+<td>クラウド障害</td>
+<td>aws outage, region down</td>
+<td>COMPONENT_DOWN + NETWORK</td>
+</tr>
+<tr>
+<td>DNS障害</td>
+<td>dns failure, dns hijack</td>
+<td>COMPONENT_DOWN</td>
+</tr>
+<tr>
+<td>DB破損</td>
+<td>data loss, replication fail</td>
+<td>COMPONENT_DOWN + DISK</td>
+</tr>
+<tr>
+<td>DB接続嵐</td>
+<td>connection exhaust, pool limit</td>
+<td>POOL_EXHAUSTION</td>
+</tr>
+<tr>
+<td>メモリリーク</td>
+<td>memory leak, oom, heap exhaust</td>
+<td>MEMORY_EXHAUSTION</td>
+</tr>
+<tr>
+<td>TLS証明書障害</td>
+<td>certificate expir, ssl fail</td>
+<td>COMPONENT_DOWN</td>
+</tr>
+<tr>
+<td>ネットワーク分断</td>
+<td>split brain, bgp hijack, fiber cut</td>
+<td>NETWORK_PARTITION</td>
+</tr>
+<tr>
+<td>ストレージ障害</td>
+<td>disk full, ebs fail, io error</td>
+<td>DISK_FULL</td>
+</tr>
+<tr>
+<td>キャッシュ障害</td>
+<td>redis crash, cache stampede</td>
+<td>COMPONENT_DOWN + MEMORY</td>
+</tr>
+<tr>
+<td>キュー障害</td>
+<td>kafka fail, message lost</td>
+<td>COMPONENT_DOWN</td>
+</tr>
+<tr>
+<td>CPU乗っ取り</td>
+<td>cryptojack, resource hijack</td>
+<td>CPU_SATURATION</td>
+</tr>
+<tr>
+<td>サプライチェーン</td>
+<td>supply chain, npm malicious</td>
+<td>COMPONENT_DOWN + LATENCY</td>
+</tr>
+<tr>
+<td>ランサムウェア</td>
+<td>ransomware, lockbit</td>
+<td>COMPONENT_DOWN + DISK</td>
+</tr>
+<tr>
+<td>レイテンシ劣化</td>
+<td>latency spike, timeout increase</td>
+<td>LATENCY_SPIKE</td>
+</tr>
+<tr>
+<td>K8s障害</td>
+<td>kubernetes vuln, pod crash</td>
+<td>COMPONENT_DOWN + CPU</td>
+</tr>
+<tr>
+<td>カスケード障害</td>
+<td>cascading fail, retry storm</td>
+<td>DOWN + LATENCY + POOL</td>
+</tr>
+</tbody>
+</table>
+<h3 id="_31">自動更新の仕組み</h3>
+<ol>
+<li><code>faultray feed-update</code> を実行</li>
+<li>8つのRSS/Atomフィードを並列取得（httpx非同期）</li>
+<li>記事タイトル+サマリーに対して18パターンのキーワードマッチング実施</li>
+<li>マッチした記事からインシデントパターンを抽出、信頼度スコア算出</li>
+<li>インシデントをカオスシナリオに変換（コンポーネント種別マッピング付き）</li>
+<li><code>~/.faultray/feed-scenarios.json</code> に永続保存（重複排除付きマージ）</li>
+<li>次回の <code>faultray simulate</code> 実行時にデフォルトシナリオと自動統合</li>
+</ol>
+<hr />
+<h2 id="_32">インフラ検出</h2>
+<h3 id="_33">ローカルシステムスキャン</h3>
+<p>psutilを使用してローカルマシンのサービスを自動検出する。</p>
+<ul>
+<li>リスニングポートからサービス種別を推定（5432→PostgreSQL、6379→Redis等）</li>
+<li>確立済み接続から依存関係を推定</li>
+<li>CPU/メモリ/ディスク/接続数のメトリクスを取得</li>
+</ul>
+<h3 id="prometheus">Prometheus連携</h3>
+<p>Prometheusサーバーに対してPromQLクエリを実行し、メトリクスを取得する。</p>
+<table>
+<thead>
+<tr>
+<th>メトリクス</th>
+<th>PromQLクエリ</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>CPU使用率</td>
+<td>100 - avg by(instance)(rate(node_cpu_seconds_total{mode="idle"}[5m])) * 100</td>
+</tr>
+<tr>
+<td>メモリ使用率</td>
+<td>(1 - node_memory_MemAvailable_bytes / node_memory_MemTotal_bytes) * 100</td>
+</tr>
+<tr>
+<td>ディスク使用率</td>
+<td>(1 - node_filesystem_avail_bytes / node_filesystem_size_bytes) * 100</td>
+</tr>
+<tr>
+<td>接続数</td>
+<td>node_netstat_Tcp_CurrEstab</td>
+</tr>
+</tbody>
+</table>
+<h3 id="terraform">Terraform連携</h3>
+<h4 id="50">対応リソース（50種以上）</h4>
+<table>
+<thead>
+<tr>
+<th>Terraformリソース</th>
+<th>マッピング先</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>aws_lb / aws_alb / aws_elb</td>
+<td>LOAD_BALANCER</td>
+</tr>
+<tr>
+<td>aws_ecs_service / aws_lambda_function</td>
+<td>APP_SERVER</td>
+</tr>
+<tr>
+<td>aws_db_instance / aws_rds_cluster</td>
+<td>DATABASE</td>
+</tr>
+<tr>
+<td>aws_elasticache_cluster</td>
+<td>CACHE</td>
+</tr>
+<tr>
+<td>aws_sqs_queue</td>
+<td>QUEUE</td>
+</tr>
+<tr>
+<td>aws_s3_bucket</td>
+<td>STORAGE</td>
+</tr>
+<tr>
+<td>aws_route53_zone</td>
+<td>DNS</td>
+</tr>
+<tr>
+<td>google_compute_instance</td>
+<td>APP_SERVER</td>
+</tr>
+<tr>
+<td>azurerm_virtual_machine</td>
+<td>APP_SERVER</td>
+</tr>
+</tbody>
+</table>
+<h4 id="terraform-plan">Terraform Plan リスク評価</h4>
+<table>
+<thead>
+<tr>
+<th>変更内容</th>
+<th>リスクスコア</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>リソース削除</td>
+<td>8-10</td>
+</tr>
+<tr>
+<td>置換（create + delete）</td>
+<td>9</td>
+</tr>
+<tr>
+<td>DB変更（削除以外）</td>
+<td>6-8</td>
+</tr>
+<tr>
+<td>DB削除</td>
+<td>10</td>
+</tr>
+<tr>
+<td>インスタンスタイプ変更</td>
+<td>6-7</td>
+</tr>
+<tr>
+<td>スケールダウン</td>
+<td>5</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="web">Webダッシュボード</h2>
+<h3 id="_34">エンドポイント一覧</h3>
+<table>
+<thead>
+<tr>
+<th>パス</th>
+<th>メソッド</th>
+<th>説明</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>/</td>
+<td>GET</td>
+<td>メインダッシュボード</td>
+</tr>
+<tr>
+<td>/components</td>
+<td>GET</td>
+<td>コンポーネント一覧</td>
+</tr>
+<tr>
+<td>/simulation</td>
+<td>GET</td>
+<td>シミュレーション結果</td>
+</tr>
+<tr>
+<td>/graph</td>
+<td>GET</td>
+<td>D3.jsインタラクティブグラフ</td>
+</tr>
+<tr>
+<td>/demo</td>
+<td>GET</td>
+<td>デモデータ読み込み</td>
+</tr>
+<tr>
+<td>/simulation/run</td>
+<td>GET</td>
+<td>シミュレーション実行（JSON）</td>
+</tr>
+<tr>
+<td>/api/simulate</td>
+<td>POST</td>
+<td>シミュレーション実行（JSON）</td>
+</tr>
+<tr>
+<td>/api/graph-data</td>
+<td>GET</td>
+<td>グラフデータ取得（JSON）</td>
+</tr>
+</tbody>
+</table>
+<h3 id="ui">UIの特徴</h3>
+<ul>
+<li>ダークテーマ（Grafana風）</li>
+<li>D3.js力学グラフによるインタラクティブな依存関係可視化</li>
+<li>コンポーネント種別ごとの色分け</li>
+<li>レジリエンススコアゲージ</li>
+<li>リアルタイムシミュレーション結果表示</li>
+</ul>
+<hr />
+<h2 id="_35">使い方</h2>
+<h3 id="_36">クイックスタート</h3>
+<h4 id="_37">デモ実行（最も簡単）</h4>
+<pre><code class="language-bash">pip install -e .
+faultray demo
+</code></pre>
+<h4 id="yaml">YAML定義からシミュレーション</h4>
+<pre><code class="language-bash">faultray load examples/demo-infra.yaml
+faultray simulate --html report.html
+</code></pre>
+<h4 id="terraform_1">Terraformからインポート</h4>
+<pre><code class="language-bash"># stateファイルから
+faultray tf-import --state terraform.tfstate
+
+# ライブ環境から
+faultray tf-import --dir /path/to/terraform
+
+# planの影響分析
+terraform plan -out=plan.out
+faultray tf-plan plan.out --html plan-report.html
+</code></pre>
+<h4 id="_38">セキュリティフィード更新</h4>
+<pre><code class="language-bash">faultray feed-update --model faultray-model.json
+faultray feed-list
+faultray simulate  # フィードシナリオも自動統合
+</code></pre>
+<h4 id="web_1">Webダッシュボード</h4>
+<pre><code class="language-bash">faultray serve --model faultray-model.json --port 8080
+# ブラウザで http://localhost:8080 を開く
+</code></pre>
+<h3 id="yaml_1">YAML定義ファイルの書き方</h3>
+<pre><code class="language-yaml">components:
+  - id: nginx
+    name: &quot;nginx (LB)&quot;
+    type: load_balancer
+    host: web01
+    port: 443
+    replicas: 2
+    metrics:
+      cpu_percent: 25
+      memory_percent: 30
+    capacity:
+      max_connections: 10000
+
+  - id: postgres
+    name: &quot;PostgreSQL&quot;
+    type: database
+    host: db01
+    port: 5432
+    replicas: 1
+    metrics:
+      cpu_percent: 45
+      memory_percent: 80
+      disk_percent: 72
+    capacity:
+      max_connections: 100
+      connection_pool_size: 100
+
+dependencies:
+  - source: nginx
+    target: app-server
+    type: requires
+    weight: 1.0
+
+  - source: app-server
+    target: redis
+    type: optional
+    weight: 0.7
+</code></pre>
+<hr />
+<h2 id="_39">テスト</h2>
+<h3 id="_40">テストカバレッジ</h3>
+<p>全27テスト:</p>
+<h4 id="16">カスケードテスト（16件）</h4>
+<ul>
+<li>コンポーネント停止の連鎖伝播</li>
+<li>接続プール枯渇の影響</li>
+<li>オプション依存の連鎖制限</li>
+<li>トラフィックスパイクの影響</li>
+<li>重要度スコア計算</li>
+<li>孤立コンポーネントの非連鎖</li>
+<li>グラフレジリエンススコア</li>
+<li>グラフ保存・読み込み</li>
+<li>非連鎖障害の低スコア</li>
+<li>全連鎖障害の高スコア</li>
+<li>オプション vs 必須依存のスコア比較</li>
+<li>複合障害シナリオ</li>
+<li>ディスクフルの常時DOWN</li>
+<li>低使用率時の低リスク</li>
+<li>total_componentsコンテキスト</li>
+<li>DEGRADED専用キャップ</li>
+</ul>
+<h4 id="11">フィードテスト（11件）</h4>
+<ul>
+<li>DDoS記事の検出</li>
+<li>ランサムウェア記事の検出</li>
+<li>メモリリーク記事の検出</li>
+<li>無関係記事の非マッチ</li>
+<li>複数パターン同時検出</li>
+<li>汎用シナリオ生成</li>
+<li>コンポーネント種別マッピング</li>
+<li>ストアの保存・読み込み</li>
+<li>ストアの重複排除</li>
+<li>ストアのクリア</li>
+<li>信頼度スコアリング</li>
+</ul>
+<hr />
+<h2 id="_41">他ツールとの比較</h2>
+<table>
+<thead>
+<tr>
+<th>特徴</th>
+<th>FaultRay</th>
+<th>Gremlin</th>
+<th>Chaos Monkey</th>
+<th>Litmus</th>
+<th>securiCAD</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>実インフラへの影響</td>
+<td>なし（完全仮想）</td>
+<td>あり（実障害注入）</td>
+<td>あり（実障害注入）</td>
+<td>あり（K8s上実行）</td>
+<td>なし（モデル）</td>
+</tr>
+<tr>
+<td>セットアップ</td>
+<td>pip install</td>
+<td>エージェント必要</td>
+<td>AWS統合必要</td>
+<td>K8s必要</td>
+<td>企業契約必要</td>
+</tr>
+<tr>
+<td>対象</td>
+<td>任意のインフラ</td>
+<td>クラウド/コンテナ</td>
+<td>AWS</td>
+<td>Kubernetes</td>
+<td>ITインフラ</td>
+</tr>
+<tr>
+<td>分析方式</td>
+<td>依存グラフ+連鎖</td>
+<td>実験結果</td>
+<td>実験結果</td>
+<td>実験結果</td>
+<td>攻撃パスモデル</td>
+</tr>
+<tr>
+<td>コスト</td>
+<td>無料（OSS）</td>
+<td>有料SaaS</td>
+<td>OSS</td>
+<td>OSS</td>
+<td>有料</td>
+</tr>
+<tr>
+<td>安全性</td>
+<td>最高（仮想）</td>
+<td>リスクあり</td>
+<td>リスクあり</td>
+<td>リスクあり</td>
+<td>高（モデル）</td>
+</tr>
+<tr>
+<td>ニュースフィード連携</td>
+<td>あり</td>
+<td>なし</td>
+<td>なし</td>
+<td>なし</td>
+<td>なし</td>
+</tr>
+<tr>
+<td>Terraform連携</td>
+<td>あり</td>
+<td>なし</td>
+<td>なし</td>
+<td>なし</td>
+<td>なし</td>
+</tr>
+</tbody>
+</table>
+<h3 id="faultray">FaultRayの独自価値</h3>
+<ul>
+<li><strong>ゼロリスク</strong>: 実環境に一切触れないため、本番環境でも安全に使用可能</li>
+<li><strong>高速</strong>: メモリ上のシミュレーションのため秒単位で完了</li>
+<li><strong>自動更新</strong>: セキュリティニュースから最新脅威シナリオを自動追加</li>
+<li><strong>Terraform統合</strong>: IaCからの自動インポートとplan影響分析</li>
+<li><strong>依存関係可視化</strong>: D3.jsによるインタラクティブグラフ</li>
+</ul>
+
+
+
+
+
+
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    
+      
+      
+      <script id="__config" type="application/json">{"annotate": null, "base": "..", "features": ["navigation.tabs", "navigation.sections", "search.suggest"], "search": "../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+    
+    
+      <script src="../assets/javascripts/bundle.79ae519e.min.js"></script>
+      
+    
+  </body>
+</html>

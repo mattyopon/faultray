@@ -1,0 +1,2395 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+        <meta name="description" content="Zero-risk infrastructure chaos simulation">
+      
+      
+      
+      
+      
+      
+        
+      
+      
+      <link rel="icon" href="../../assets/images/favicon.png">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.5">
+    
+    
+      
+        <title>FaultRay REST API リファレンス - FaultRay Documentation</title>
+      
+    
+    
+      <link rel="stylesheet" href="../../assets/stylesheets/main.484c7ddc.min.css">
+      
+        
+        <link rel="stylesheet" href="../../assets/stylesheets/palette.ab4e12ef.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+    <script>__md_scope=new URL("../..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+  </head>
+  
+  
+    
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="slate" data-md-color-primary="blue" data-md-color-accent="indigo">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#faultray-rest-api" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+<header class="md-header" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href="../.." title="FaultRay Documentation" class="md-header__button md-logo" aria-label="FaultRay Documentation" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            FaultRay Documentation
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              FaultRay REST API リファレンス
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      
+    
+    
+    
+    
+      
+      
+        <label class="md-header__button md-icon" for="__search">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        </label>
+        <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
+      </nav>
+      
+        <div class="md-search__suggest" data-md-component="search-suggest"></div>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+      
+    
+    
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+            
+<nav class="md-tabs" aria-label="Tabs" data-md-component="tabs">
+  <div class="md-grid">
+    <ul class="md-tabs__list">
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../.." class="md-tabs__link">
+        
+  
+  
+    
+  
+  Home
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../getting-started/installation/" class="md-tabs__link">
+          
+  
+  
+  Getting Started
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../concepts/how-it-works/" class="md-tabs__link">
+          
+  
+  
+  Concepts
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../cli/commands/" class="md-tabs__link">
+          
+  
+  
+  CLI Reference
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../api/rest/" class="md-tabs__link">
+          
+  
+  
+  API Reference
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../integrations/aws/" class="md-tabs__link">
+          
+  
+  
+  Integrations
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../enterprise/compliance/" class="md-tabs__link">
+          
+  
+  
+  Enterprise
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../legal/terms-of-service/" class="md-tabs__link">
+          
+  
+  
+  Legal
+
+        </a>
+      </li>
+    
+  
+
+      
+    </ul>
+  </div>
+</nav>
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+  
+
+
+<nav class="md-nav md-nav--primary md-nav--lifted" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href="../.." title="FaultRay Documentation" class="md-nav__button md-logo" aria-label="FaultRay Documentation" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    FaultRay Documentation
+  </label>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../.." class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Home
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_2" >
+        
+          
+          <label class="md-nav__link" for="__nav_2" id="__nav_2_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Getting Started
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_2_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_2">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Getting Started
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../getting-started/installation/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Installation
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../getting-started/quickstart/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Quick Start
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../getting-started/first-simulation/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Your First Simulation
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3" >
+        
+          
+          <label class="md-nav__link" for="__nav_3" id="__nav_3_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Concepts
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_3">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Concepts
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../concepts/how-it-works/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    How It Works
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../concepts/five-layer-model/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    5-Layer Model
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../concepts/risk-scoring/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Risk Scoring
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../concepts/agent-resilience/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Agent Resilience
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4" >
+        
+          
+          <label class="md-nav__link" for="__nav_4" id="__nav_4_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    CLI Reference
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_4_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_4">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    CLI Reference
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../cli/commands/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Commands
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5" >
+        
+          
+          <label class="md-nav__link" for="__nav_5" id="__nav_5_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    API Reference
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_5_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_5">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    API Reference
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../api/rest/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    REST API
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../api/graphql/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    GraphQL
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../api/python-sdk/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Python SDK
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_6" >
+        
+          
+          <label class="md-nav__link" for="__nav_6" id="__nav_6_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Integrations
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_6_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_6">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Integrations
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../integrations/aws/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    AWS
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../integrations/gcp/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    GCP
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../integrations/azure/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Azure
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../integrations/kubernetes/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Kubernetes
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../integrations/terraform/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Terraform
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../integrations/cicd/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    CI/CD
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../integrations/slack/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Slack
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_7" >
+        
+          
+          <label class="md-nav__link" for="__nav_7" id="__nav_7_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Enterprise
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_7_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_7">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Enterprise
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../enterprise/compliance/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Compliance
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../enterprise/insurance/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Insurance Scoring
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../enterprise/rbac/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    RBAC
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_8" >
+        
+          
+          <label class="md-nav__link" for="__nav_8" id="__nav_8_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Legal
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_8_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_8">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Legal
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../legal/terms-of-service/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Terms of Service
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../legal/privacy-policy/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Privacy Policy
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#_1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        サーバー起動
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#_2" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        認証
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#_3" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        レート制限
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#_4" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        エンドポイント一覧
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="エンドポイント一覧">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#_5" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        ヘルスチェック
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="ヘルスチェック">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#get-apiv1health" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        GET /api/v1/health
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#_6" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        シミュレーション実行
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="シミュレーション実行">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#post-apiv1simulate" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        POST /api/v1/simulate
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#_7" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        コンプライアンス評価
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="コンプライアンス評価">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#post-apiv1complianceassess" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        POST /api/v1/compliance/assess
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#_8" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        コスト影響分析
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="コスト影響分析">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#post-apiv1costanalyze" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        POST /api/v1/cost/analyze
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#_9" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        エラーレスポンス
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#swagger-ui-redoc" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Swagger UI / ReDoc
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Swagger UI / ReDoc">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#swagger-ui" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Swagger UI
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#redoc" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        ReDoc
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#python" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Pythonクライアント例
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#_10" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        環境変数
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#_11" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        次のステップ
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+
+<h1 id="faultray-rest-api">FaultRay REST API リファレンス</h1>
+<p>FaultRayはFastAPIベースのREST APIを提供し、シミュレーション・コンプライアンス評価・コスト分析をプログラマティックに実行できます。</p>
+<hr />
+<h2 id="_1">サーバー起動</h2>
+<pre><code class="language-bash"># デフォルト（ポート8000）
+faultray serve
+
+# ポート指定
+faultray serve --port 8080
+
+# Docker
+docker compose up web
+</code></pre>
+<p>起動後、以下のURLでアクセスできます:</p>
+<table>
+<thead>
+<tr>
+<th>URL</th>
+<th>説明</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>http://localhost:8000</code></td>
+<td>Webダッシュボード（D3.jsインタラクティブグラフ）</td>
+</tr>
+<tr>
+<td><code>http://localhost:8000/docs</code></td>
+<td>Swagger UI（OpenAPIドキュメント）</td>
+</tr>
+<tr>
+<td><code>http://localhost:8000/redoc</code></td>
+<td>ReDoc（APIドキュメント）</td>
+</tr>
+<tr>
+<td><code>http://localhost:8000/api/v1/</code></td>
+<td>APIベースURL</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="_2">認証</h2>
+<p>APIリクエストにはBearerトークンが必要です:</p>
+<pre><code class="language-bash">curl -H &quot;Authorization: Bearer YOUR_API_KEY&quot; \
+     http://localhost:8000/api/v1/health
+</code></pre>
+<p>ローカル開発時は認証をスキップできます（環境変数 <code>FAULTRAY_AUTH_DISABLED=1</code>）。</p>
+<hr />
+<h2 id="_3">レート制限</h2>
+<p>デフォルトで<strong>60リクエスト/分/クライアント</strong>のレート制限が適用されます。制限を超えた場合は <code>429 Too Many Requests</code> が返されます。</p>
+<hr />
+<h2 id="_4">エンドポイント一覧</h2>
+<h3 id="_5">ヘルスチェック</h3>
+<h4 id="get-apiv1health"><code>GET /api/v1/health</code></h4>
+<p>サービスの稼働状態とバージョンを確認します。</p>
+<p><strong>レスポンス</strong>:</p>
+<pre><code class="language-json">{
+  &quot;status&quot;: &quot;healthy&quot;,
+  &quot;version&quot;: &quot;10.2.0&quot;,
+  &quot;engines&quot;: 5
+}
+</code></pre>
+<table>
+<thead>
+<tr>
+<th>フィールド</th>
+<th>型</th>
+<th>説明</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>status</code></td>
+<td>string</td>
+<td>サービス状態（<code>healthy</code> / <code>unhealthy</code>）</td>
+</tr>
+<tr>
+<td><code>version</code></td>
+<td>string</td>
+<td>FaultRayバージョン</td>
+</tr>
+<tr>
+<td><code>engines</code></td>
+<td>integer</td>
+<td>利用可能なエンジン数</td>
+</tr>
+</tbody>
+</table>
+<p><strong>cURLサンプル</strong>:</p>
+<pre><code class="language-bash">curl http://localhost:8000/api/v1/health
+</code></pre>
+<hr />
+<h3 id="_6">シミュレーション実行</h3>
+<h4 id="post-apiv1simulate"><code>POST /api/v1/simulate</code></h4>
+<p>インフラトポロジーに対してカオスシミュレーションを実行します。</p>
+<p><strong>リクエストボディ</strong>:</p>
+<pre><code class="language-json">{
+  &quot;topology_yaml&quot;: &quot;components:\n  - id: api\n    type: application\n    replicas: 3\n  - id: db\n    type: database\n    replicas: 2\ndependencies:\n  - source: api\n    target: db\n    type: requires&quot;,
+  &quot;scenarios&quot;: &quot;all&quot;,
+  &quot;engines&quot;: [&quot;cascade&quot;]
+}
+</code></pre>
+<table>
+<thead>
+<tr>
+<th>フィールド</th>
+<th>型</th>
+<th>必須</th>
+<th>デフォルト</th>
+<th>説明</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>topology_yaml</code></td>
+<td>string</td>
+<td>はい</td>
+<td>-</td>
+<td>YAML形式のインフラトポロジー定義</td>
+</tr>
+<tr>
+<td><code>scenarios</code></td>
+<td>string</td>
+<td>いいえ</td>
+<td><code>"all"</code></td>
+<td>シナリオフィルター: <code>all</code>, <code>critical</code>, またはカンマ区切りのシナリオ名</td>
+</tr>
+<tr>
+<td><code>engines</code></td>
+<td>list[string]</td>
+<td>いいえ</td>
+<td><code>["cascade"]</code></td>
+<td>使用エンジン: <code>cascade</code>, <code>dynamic</code>, <code>ops</code>, <code>whatif</code>, <code>capacity</code></td>
+</tr>
+</tbody>
+</table>
+<p><strong>レスポンス</strong>:</p>
+<pre><code class="language-json">{
+  &quot;resilience_score&quot;: 72.5,
+  &quot;scenarios_tested&quot;: 152,
+  &quot;critical_count&quot;: 3,
+  &quot;warning_count&quot;: 45,
+  &quot;passed_count&quot;: 104,
+  &quot;availability_nines&quot;: 3.8
+}
+</code></pre>
+<table>
+<thead>
+<tr>
+<th>フィールド</th>
+<th>型</th>
+<th>説明</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>resilience_score</code></td>
+<td>float</td>
+<td>総合レジリエンススコア（0〜100）</td>
+</tr>
+<tr>
+<td><code>scenarios_tested</code></td>
+<td>integer</td>
+<td>テスト済みシナリオ数</td>
+</tr>
+<tr>
+<td><code>critical_count</code></td>
+<td>integer</td>
+<td>CRITICALレベルの検出数</td>
+</tr>
+<tr>
+<td><code>warning_count</code></td>
+<td>integer</td>
+<td>WARNINGレベルの検出数</td>
+</tr>
+<tr>
+<td><code>passed_count</code></td>
+<td>integer</td>
+<td>PASSEDのシナリオ数</td>
+</tr>
+<tr>
+<td><code>availability_nines</code></td>
+<td>float</td>
+<td>算出された可用性（nines単位。例: 3.8 = 99.98%）</td>
+</tr>
+</tbody>
+</table>
+<p><strong>cURLサンプル</strong>:</p>
+<pre><code class="language-bash">curl -X POST http://localhost:8000/api/v1/simulate \
+  -H &quot;Content-Type: application/json&quot; \
+  -H &quot;Authorization: Bearer YOUR_API_KEY&quot; \
+  -d '{
+    &quot;topology_yaml&quot;: &quot;components:\n  - id: api\n    type: application\n    replicas: 3\n  - id: db\n    type: database\n    replicas: 2&quot;,
+    &quot;scenarios&quot;: &quot;all&quot;,
+    &quot;engines&quot;: [&quot;cascade&quot;]
+  }'
+</code></pre>
+<hr />
+<h3 id="_7">コンプライアンス評価</h3>
+<h4 id="post-apiv1complianceassess"><code>POST /api/v1/compliance/assess</code></h4>
+<p>インフラのコンプライアンス準拠状況を評価します。</p>
+<p><strong>リクエストボディ</strong>:</p>
+<pre><code class="language-json">{
+  &quot;framework&quot;: &quot;soc2&quot;,
+  &quot;evidence&quot;: {
+    &quot;has_encryption&quot;: true,
+    &quot;has_redundancy&quot;: true,
+    &quot;has_monitoring&quot;: true,
+    &quot;has_access_control&quot;: true,
+    &quot;has_backup&quot;: true,
+    &quot;has_dr_plan&quot;: false,
+    &quot;has_incident_response&quot;: true
+  }
+}
+</code></pre>
+<table>
+<thead>
+<tr>
+<th>フィールド</th>
+<th>型</th>
+<th>必須</th>
+<th>説明</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>framework</code></td>
+<td>string</td>
+<td>はい</td>
+<td>フレームワーク名: <code>soc2</code>, <code>iso27001</code>, <code>pci_dss</code>, <code>dora</code>, <code>hipaa</code>, <code>gdpr</code></td>
+</tr>
+<tr>
+<td><code>evidence</code></td>
+<td>object</td>
+<td>いいえ</td>
+<td>インフラ構成のエビデンスマップ</td>
+</tr>
+</tbody>
+</table>
+<p><strong>evidenceフィールド</strong>:</p>
+<table>
+<thead>
+<tr>
+<th>フィールド</th>
+<th>型</th>
+<th>説明</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>has_encryption</code></td>
+<td>boolean</td>
+<td>TLS/暗号化が有効か</td>
+</tr>
+<tr>
+<td><code>has_redundancy</code></td>
+<td>boolean</td>
+<td>冗長構成があるか</td>
+</tr>
+<tr>
+<td><code>has_monitoring</code></td>
+<td>boolean</td>
+<td>監視が設定されているか</td>
+</tr>
+<tr>
+<td><code>has_access_control</code></td>
+<td>boolean</td>
+<td>アクセス制御があるか</td>
+</tr>
+<tr>
+<td><code>has_backup</code></td>
+<td>boolean</td>
+<td>バックアップが設定されているか</td>
+</tr>
+<tr>
+<td><code>has_dr_plan</code></td>
+<td>boolean</td>
+<td>DR計画が策定されているか</td>
+</tr>
+<tr>
+<td><code>has_incident_response</code></td>
+<td>boolean</td>
+<td>インシデント対応体制があるか</td>
+</tr>
+</tbody>
+</table>
+<p><strong>レスポンス</strong>:</p>
+<pre><code class="language-json">{
+  &quot;framework&quot;: &quot;soc2&quot;,
+  &quot;overall_score&quot;: 78.5,
+  &quot;compliant_count&quot;: 8,
+  &quot;non_compliant_count&quot;: 2,
+  &quot;critical_gaps&quot;: [
+    &quot;DR plan not established&quot;,
+    &quot;Backup recovery not tested&quot;
+  ],
+  &quot;recommendations&quot;: [
+    &quot;Implement disaster recovery plan with regular testing&quot;,
+    &quot;Schedule quarterly backup recovery drills&quot;
+  ]
+}
+</code></pre>
+<table>
+<thead>
+<tr>
+<th>フィールド</th>
+<th>型</th>
+<th>説明</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>framework</code></td>
+<td>string</td>
+<td>評価したフレームワーク名</td>
+</tr>
+<tr>
+<td><code>overall_score</code></td>
+<td>float</td>
+<td>総合準拠スコア（0〜100）</td>
+</tr>
+<tr>
+<td><code>compliant_count</code></td>
+<td>integer</td>
+<td>準拠コントロール数</td>
+</tr>
+<tr>
+<td><code>non_compliant_count</code></td>
+<td>integer</td>
+<td>非準拠コントロール数</td>
+</tr>
+<tr>
+<td><code>critical_gaps</code></td>
+<td>list[string]</td>
+<td>重大なギャップ一覧</td>
+</tr>
+<tr>
+<td><code>recommendations</code></td>
+<td>list[string]</td>
+<td>改善提案一覧</td>
+</tr>
+</tbody>
+</table>
+<p><strong>cURLサンプル</strong>:</p>
+<pre><code class="language-bash">curl -X POST http://localhost:8000/api/v1/compliance/assess \
+  -H &quot;Content-Type: application/json&quot; \
+  -H &quot;Authorization: Bearer YOUR_API_KEY&quot; \
+  -d '{
+    &quot;framework&quot;: &quot;dora&quot;,
+    &quot;evidence&quot;: {
+      &quot;has_encryption&quot;: true,
+      &quot;has_redundancy&quot;: true,
+      &quot;has_monitoring&quot;: true,
+      &quot;has_access_control&quot;: true
+    }
+  }'
+</code></pre>
+<hr />
+<h3 id="_8">コスト影響分析</h3>
+<h4 id="post-apiv1costanalyze"><code>POST /api/v1/cost/analyze</code></h4>
+<p>インフラ障害によるコスト影響（収益損失、SLAペナルティ、復旧コスト）を分析します。</p>
+<p><strong>リクエストボディ</strong>:</p>
+<pre><code class="language-json">{
+  &quot;topology_yaml&quot;: &quot;components:\n  - id: api\n    type: application\n    replicas: 3\n  - id: db\n    type: database\n    replicas: 2&quot;,
+  &quot;revenue_per_hour&quot;: 50000,
+  &quot;incidents_per_year&quot;: 12
+}
+</code></pre>
+<table>
+<thead>
+<tr>
+<th>フィールド</th>
+<th>型</th>
+<th>必須</th>
+<th>デフォルト</th>
+<th>説明</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>topology_yaml</code></td>
+<td>string</td>
+<td>はい</td>
+<td>-</td>
+<td>YAML形式のインフラトポロジー</td>
+</tr>
+<tr>
+<td><code>revenue_per_hour</code></td>
+<td>float</td>
+<td>いいえ</td>
+<td>10000</td>
+<td>時間あたりの収益（USD）</td>
+</tr>
+<tr>
+<td><code>incidents_per_year</code></td>
+<td>float</td>
+<td>いいえ</td>
+<td>12</td>
+<td>年間予想インシデント数</td>
+</tr>
+</tbody>
+</table>
+<p><strong>レスポンス</strong>:</p>
+<pre><code class="language-json">{
+  &quot;expected_annual_cost&quot;: 240000.0,
+  &quot;worst_case_annual_cost&quot;: 1200000.0,
+  &quot;top_scenarios&quot;: [
+    {&quot;name&quot;: &quot;Full region outage&quot;, &quot;cost&quot;: 100000},
+    {&quot;name&quot;: &quot;Database failure&quot;, &quot;cost&quot;: 50000}
+  ]
+}
+</code></pre>
+<table>
+<thead>
+<tr>
+<th>フィールド</th>
+<th>型</th>
+<th>説明</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>expected_annual_cost</code></td>
+<td>float</td>
+<td>予想年間障害コスト（USD）</td>
+</tr>
+<tr>
+<td><code>worst_case_annual_cost</code></td>
+<td>float</td>
+<td>最悪ケースの年間コスト（USD）</td>
+</tr>
+<tr>
+<td><code>top_scenarios</code></td>
+<td>list[object]</td>
+<td>コスト影響の大きいシナリオ上位</td>
+</tr>
+</tbody>
+</table>
+<p><strong>cURLサンプル</strong>:</p>
+<pre><code class="language-bash">curl -X POST http://localhost:8000/api/v1/cost/analyze \
+  -H &quot;Content-Type: application/json&quot; \
+  -H &quot;Authorization: Bearer YOUR_API_KEY&quot; \
+  -d '{
+    &quot;topology_yaml&quot;: &quot;components:\n  - id: api\n    type: application\n    replicas: 3&quot;,
+    &quot;revenue_per_hour&quot;: 50000,
+    &quot;incidents_per_year&quot;: 12
+  }'
+</code></pre>
+<hr />
+<h2 id="_9">エラーレスポンス</h2>
+<p>全エラーは統一フォーマットで返されます:</p>
+<pre><code class="language-json">{
+  &quot;error&quot;: {
+    &quot;code&quot;: &quot;VALIDATION_ERROR&quot;,
+    &quot;message&quot;: &quot;Model must contain at least one node&quot;,
+    &quot;details&quot;: {}
+  }
+}
+</code></pre>
+<table>
+<thead>
+<tr>
+<th>HTTPステータス</th>
+<th>エラーコード</th>
+<th>説明</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>400</td>
+<td><code>VALIDATION_ERROR</code></td>
+<td>リクエストボディが不正</td>
+</tr>
+<tr>
+<td>401</td>
+<td><code>UNAUTHORIZED</code></td>
+<td>APIキーが無効または未指定</td>
+</tr>
+<tr>
+<td>404</td>
+<td><code>NOT_FOUND</code></td>
+<td>リソースが見つからない</td>
+</tr>
+<tr>
+<td>429</td>
+<td><code>RATE_LIMITED</code></td>
+<td>レート制限超過</td>
+</tr>
+<tr>
+<td>500</td>
+<td><code>INTERNAL_ERROR</code></td>
+<td>サーバー内部エラー</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="swagger-ui-redoc">Swagger UI / ReDoc</h2>
+<p>FaultRayはOpenAPI仕様を自動生成し、インタラクティブなAPIドキュメントを提供します。</p>
+<h3 id="swagger-ui">Swagger UI</h3>
+<p><code>http://localhost:8000/docs</code> にアクセスすると、ブラウザ上でAPIを直接試すことができます。</p>
+<ul>
+<li>リクエストパラメータの入力フォーム</li>
+<li>レスポンスのライブプレビュー</li>
+<li>リクエスト/レスポンスのスキーマ表示</li>
+</ul>
+<h3 id="redoc">ReDoc</h3>
+<p><code>http://localhost:8000/redoc</code> にアクセスすると、より読みやすいドキュメント形式で閲覧できます。</p>
+<hr />
+<h2 id="python">Pythonクライアント例</h2>
+<pre><code class="language-python">import httpx
+
+BASE_URL = &quot;http://localhost:8000/api/v1&quot;
+HEADERS = {&quot;Authorization&quot;: &quot;Bearer YOUR_API_KEY&quot;}
+
+# ヘルスチェック
+resp = httpx.get(f&quot;{BASE_URL}/health&quot;, headers=HEADERS)
+print(resp.json())
+
+# シミュレーション実行
+topology = &quot;&quot;&quot;
+components:
+  - id: api
+    type: application
+    replicas: 3
+  - id: db
+    type: database
+    replicas: 2
+dependencies:
+  - source: api
+    target: db
+    type: requires
+&quot;&quot;&quot;
+
+resp = httpx.post(
+    f&quot;{BASE_URL}/simulate&quot;,
+    headers=HEADERS,
+    json={
+        &quot;topology_yaml&quot;: topology,
+        &quot;scenarios&quot;: &quot;all&quot;,
+        &quot;engines&quot;: [&quot;cascade&quot;, &quot;dynamic&quot;],
+    },
+)
+result = resp.json()
+print(f&quot;レジリエンススコア: {result['resilience_score']}&quot;)
+print(f&quot;テスト済みシナリオ: {result['scenarios_tested']}&quot;)
+print(f&quot;CRITICAL: {result['critical_count']}&quot;)
+
+# コンプライアンス評価
+resp = httpx.post(
+    f&quot;{BASE_URL}/compliance/assess&quot;,
+    headers=HEADERS,
+    json={
+        &quot;framework&quot;: &quot;soc2&quot;,
+        &quot;evidence&quot;: {
+            &quot;has_encryption&quot;: True,
+            &quot;has_redundancy&quot;: True,
+            &quot;has_monitoring&quot;: True,
+        },
+    },
+)
+compliance = resp.json()
+print(f&quot;SOC 2 スコア: {compliance['overall_score']}%&quot;)
+</code></pre>
+<hr />
+<h2 id="_10">環境変数</h2>
+<table>
+<thead>
+<tr>
+<th>環境変数</th>
+<th>デフォルト</th>
+<th>説明</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>FAULTRAY_AUTH_DISABLED</code></td>
+<td><code>0</code></td>
+<td><code>1</code>に設定するとAPI認証を無効化</td>
+</tr>
+<tr>
+<td><code>FAULTRAY_PROMETHEUS_URL</code></td>
+<td>(未設定)</td>
+<td>PrometheusのURL（設定するとバックグラウンド監視が起動）</td>
+</tr>
+<tr>
+<td><code>FAULTRAY_PROMETHEUS_INTERVAL</code></td>
+<td><code>60</code></td>
+<td>Prometheus監視の取得間隔（秒）</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="_11">次のステップ</h2>
+<ul>
+<li><a href="../getting-started/">クイックスタート</a> -- CLIからの基本的な使い方</li>
+<li><a href="../engines/">5つのシミュレーションエンジン</a> -- エンジンの詳細仕様</li>
+<li><a href="../compliance/">コンプライアンス評価</a> -- 規制フレームワーク対応の詳細</li>
+<li><a href="../usecases/">業界別ユースケース</a> -- 具体的な活用事例</li>
+</ul>
+
+
+
+
+
+
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    
+      
+      
+      <script id="__config" type="application/json">{"annotate": null, "base": "../..", "features": ["navigation.tabs", "navigation.sections", "search.suggest"], "search": "../../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+    
+    
+      <script src="../../assets/javascripts/bundle.79ae519e.min.js"></script>
+      
+    
+  </body>
+</html>

@@ -1,0 +1,2262 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+        <meta name="description" content="Zero-risk infrastructure chaos simulation">
+      
+      
+      
+      
+        <link rel="prev" href="../risk-scoring/">
+      
+      
+        <link rel="next" href="../../cli/commands/">
+      
+      
+        
+      
+      
+      <link rel="icon" href="../../assets/images/favicon.png">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.5">
+    
+    
+      
+        <title>Agent Resilience - FaultRay Documentation</title>
+      
+    
+    
+      <link rel="stylesheet" href="../../assets/stylesheets/main.484c7ddc.min.css">
+      
+        
+        <link rel="stylesheet" href="../../assets/stylesheets/palette.ab4e12ef.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+    <script>__md_scope=new URL("../..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+  </head>
+  
+  
+    
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="slate" data-md-color-primary="blue" data-md-color-accent="indigo">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#ai-agent-resilience-simulation" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+<header class="md-header" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href="../.." title="FaultRay Documentation" class="md-header__button md-logo" aria-label="FaultRay Documentation" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            FaultRay Documentation
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              Agent Resilience
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      
+    
+    
+    
+    
+      
+      
+        <label class="md-header__button md-icon" for="__search">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        </label>
+        <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
+      </nav>
+      
+        <div class="md-search__suggest" data-md-component="search-suggest"></div>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+      
+    
+    
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+            
+<nav class="md-tabs" aria-label="Tabs" data-md-component="tabs">
+  <div class="md-grid">
+    <ul class="md-tabs__list">
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../.." class="md-tabs__link">
+        
+  
+  
+    
+  
+  Home
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../getting-started/installation/" class="md-tabs__link">
+          
+  
+  
+  Getting Started
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+    
+  
+  
+    
+    
+      <li class="md-tabs__item md-tabs__item--active">
+        <a href="../how-it-works/" class="md-tabs__link">
+          
+  
+  
+  Concepts
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../cli/commands/" class="md-tabs__link">
+          
+  
+  
+  CLI Reference
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../api/rest/" class="md-tabs__link">
+          
+  
+  
+  API Reference
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../integrations/aws/" class="md-tabs__link">
+          
+  
+  
+  Integrations
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../enterprise/compliance/" class="md-tabs__link">
+          
+  
+  
+  Enterprise
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../legal/terms-of-service/" class="md-tabs__link">
+          
+  
+  
+  Legal
+
+        </a>
+      </li>
+    
+  
+
+      
+    </ul>
+  </div>
+</nav>
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+  
+
+
+<nav class="md-nav md-nav--primary md-nav--lifted" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href="../.." title="FaultRay Documentation" class="md-nav__button md-logo" aria-label="FaultRay Documentation" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    FaultRay Documentation
+  </label>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../.." class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Home
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_2" >
+        
+          
+          <label class="md-nav__link" for="__nav_2" id="__nav_2_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Getting Started
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_2_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_2">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Getting Started
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../getting-started/installation/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Installation
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../getting-started/quickstart/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Quick Start
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../getting-started/first-simulation/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Your First Simulation
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+    
+  
+  
+  
+    
+    
+    
+    
+      
+        
+        
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3" checked>
+        
+          
+          <label class="md-nav__link" for="__nav_3" id="__nav_3_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Concepts
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="true">
+          <label class="md-nav__title" for="__nav_3">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Concepts
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../how-it-works/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    How It Works
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../five-layer-model/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    5-Layer Model
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../risk-scoring/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Risk Scoring
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+    
+  
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Agent Resilience
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Agent Resilience
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#why-agent-resilience-matters" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Why Agent Resilience Matters
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#component-types" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Component Types
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#fault-types" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Fault Types
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#cross-layer-analysis" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Cross-Layer Analysis
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#the-three-pillars-predict-adopt-manage" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        The Three Pillars: PREDICT, ADOPT, MANAGE
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="The Three Pillars: PREDICT, ADOPT, MANAGE">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#predict-scenario-simulation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        PREDICT (Scenario Simulation)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#adopt-risk-assessment" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        ADOPT (Risk Assessment)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#manage-monitoring-plan" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        MANAGE (Monitoring Plan)
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#example-yaml-configuration" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Example YAML Configuration
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#cli-usage" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        CLI Usage
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="CLI Usage">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#run-all-agent-scenarios" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Run all agent scenarios
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#assess-agent-deployment-risk" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Assess agent deployment risk
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#generate-monitoring-plan" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Generate monitoring plan
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#run-full-simulation-including-agent-scenarios" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Run full simulation including agent scenarios
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#graphql-api" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        GraphQL API
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4" >
+        
+          
+          <label class="md-nav__link" for="__nav_4" id="__nav_4_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    CLI Reference
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_4_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_4">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    CLI Reference
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../cli/commands/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Commands
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5" >
+        
+          
+          <label class="md-nav__link" for="__nav_5" id="__nav_5_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    API Reference
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_5_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_5">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    API Reference
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../api/rest/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    REST API
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../api/graphql/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    GraphQL
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../api/python-sdk/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Python SDK
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_6" >
+        
+          
+          <label class="md-nav__link" for="__nav_6" id="__nav_6_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Integrations
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_6_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_6">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Integrations
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../integrations/aws/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    AWS
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../integrations/gcp/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    GCP
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../integrations/azure/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Azure
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../integrations/kubernetes/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Kubernetes
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../integrations/terraform/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Terraform
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../integrations/cicd/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    CI/CD
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../integrations/slack/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Slack
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_7" >
+        
+          
+          <label class="md-nav__link" for="__nav_7" id="__nav_7_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Enterprise
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_7_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_7">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Enterprise
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../enterprise/compliance/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Compliance
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../enterprise/insurance/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Insurance Scoring
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../enterprise/rbac/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    RBAC
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_8" >
+        
+          
+          <label class="md-nav__link" for="__nav_8" id="__nav_8_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Legal
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_8_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_8">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Legal
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../legal/terms-of-service/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Terms of Service
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../legal/privacy-policy/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Privacy Policy
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#why-agent-resilience-matters" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Why Agent Resilience Matters
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#component-types" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Component Types
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#fault-types" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Fault Types
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#cross-layer-analysis" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Cross-Layer Analysis
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#the-three-pillars-predict-adopt-manage" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        The Three Pillars: PREDICT, ADOPT, MANAGE
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="The Three Pillars: PREDICT, ADOPT, MANAGE">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#predict-scenario-simulation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        PREDICT (Scenario Simulation)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#adopt-risk-assessment" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        ADOPT (Risk Assessment)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#manage-monitoring-plan" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        MANAGE (Monitoring Plan)
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#example-yaml-configuration" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Example YAML Configuration
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#cli-usage" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        CLI Usage
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="CLI Usage">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#run-all-agent-scenarios" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Run all agent scenarios
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#assess-agent-deployment-risk" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Assess agent deployment risk
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#generate-monitoring-plan" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Generate monitoring plan
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#run-full-simulation-including-agent-scenarios" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Run full simulation including agent scenarios
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#graphql-api" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        GraphQL API
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+
+<h1 id="ai-agent-resilience-simulation">AI Agent Resilience Simulation</h1>
+<p>FaultRay extends infrastructure resilience simulation to AI agent systems. It models agents, LLM endpoints, tool services, and orchestrators as first-class components in the dependency graph, then simulates agent-specific failure modes that traditional chaos engineering tools miss.</p>
+<h2 id="why-agent-resilience-matters">Why Agent Resilience Matters</h2>
+<p>AI agents introduce failure modes that do not exist in traditional infrastructure:</p>
+<ul>
+<li>An agent can <strong>hallucinate</strong> (produce incorrect output) without any infrastructure component failing</li>
+<li>A <strong>rate limit</strong> on an LLM API can cascade through an entire multi-agent system</li>
+<li>An agent can enter an <strong>infinite loop</strong>, consuming resources without progress</li>
+<li><strong>Prompt injection</strong> in external input can compromise agent behavior</li>
+<li>When a grounding data source goes down, agents may silently degrade to ungrounded responses</li>
+</ul>
+<p>FaultRay simulates these scenarios before they happen in production.</p>
+<h2 id="component-types">Component Types</h2>
+<p>FaultRay adds four agent-specific component types to the existing infrastructure types:</p>
+<table>
+<thead>
+<tr>
+<th>Type</th>
+<th>Value</th>
+<th>When to Use</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>AI Agent</strong></td>
+<td><code>ai_agent</code></td>
+<td>Any LLM-powered agent that processes requests, uses tools, or makes decisions. Includes standalone agents and agents within multi-agent systems.</td>
+</tr>
+<tr>
+<td><strong>LLM Endpoint</strong></td>
+<td><code>llm_endpoint</code></td>
+<td>The LLM API that agents call (Anthropic, OpenAI, Google, Azure OpenAI, self-hosted). Model rate limits, latency, and availability SLAs.</td>
+</tr>
+<tr>
+<td><strong>Tool Service</strong></td>
+<td><code>tool_service</code></td>
+<td>External tools/APIs that agents invoke (database queries, web search, file operations, MCP servers). Tracks idempotency, side effects, and failure rates.</td>
+</tr>
+<tr>
+<td><strong>Agent Orchestrator</strong></td>
+<td><code>agent_orchestrator</code></td>
+<td>Multi-agent coordination layer (sequential, parallel, hierarchical, or consensus patterns). Manages agent lifecycles and iteration limits.</td>
+</tr>
+</tbody>
+</table>
+<p>These integrate into the same dependency graph as traditional components (databases, load balancers, caches), enabling cross-layer analysis.</p>
+<h2 id="fault-types">Fault Types</h2>
+<p>Seven agent-specific fault types complement the existing infrastructure faults:</p>
+<table>
+<thead>
+<tr>
+<th>Fault Type</th>
+<th>Value</th>
+<th>What It Simulates</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Hallucination</strong></td>
+<td><code>hallucination</code></td>
+<td>Agent produces ungrounded, incorrect output. Downstream consumers receive wrong information. No infrastructure failure occurs -- the agent simply generates bad data.</td>
+</tr>
+<tr>
+<td><strong>Context Overflow</strong></td>
+<td><code>context_overflow</code></td>
+<td>Agent's context window is exceeded. The agent cannot process the request and goes down until context is reset (~5s recovery).</td>
+</tr>
+<tr>
+<td><strong>LLM Rate Limit</strong></td>
+<td><code>llm_rate_limit</code></td>
+<td>LLM provider throttles requests. Dependent agents experience delays or failures. Recovers when the rate limit window resets (~60s).</td>
+</tr>
+<tr>
+<td><strong>Token Exhaustion</strong></td>
+<td><code>token_exhaustion</code></td>
+<td>Token budget is fully consumed. No further API calls are possible. Requires manual budget replenishment.</td>
+</tr>
+<tr>
+<td><strong>Tool Failure</strong></td>
+<td><code>tool_failure</code></td>
+<td>A tool service fails. The agent falls back to LLM-only responses, which increases hallucination risk since the agent loses access to real data.</td>
+</tr>
+<tr>
+<td><strong>Agent Loop</strong></td>
+<td><code>agent_loop</code></td>
+<td>Agent enters an infinite loop, consuming compute and tokens without making progress. Requires manual intervention or a circuit breaker.</td>
+</tr>
+<tr>
+<td><strong>Prompt Injection</strong></td>
+<td><code>prompt_injection</code></td>
+<td>External input contains adversarial instructions that manipulate agent behavior. Agent outputs may be compromised.</td>
+</tr>
+</tbody>
+</table>
+<h2 id="cross-layer-analysis">Cross-Layer Analysis</h2>
+<p>The key insight of agent resilience simulation is that <strong>infrastructure failures cause agent hallucinations</strong>.</p>
+<p>When a database or cache that serves as an agent's grounding data source goes down, the agent does not necessarily fail. Instead, it may continue operating but produce ungrounded responses -- hallucinations. This is worse than a clean failure because the system appears to work while producing incorrect results.</p>
+<p>FaultRay traces these cross-layer dependencies:</p>
+<pre><code>Database (Layer 1) goes down
+    |
+    v
+Agent loses grounding data source
+    |
+    v
+Agent continues responding but hallucinates
+    |
+    v
+Downstream tool service receives bad instructions
+    |
+    v
+Tool executes incorrect action (e.g., wrong database write)
+</code></pre>
+<p>The <code>crossLayerRisk</code> query exposes this analysis. For each infrastructure component, it calculates which agents are affected and their hallucination probability when that component fails.</p>
+<h2 id="the-three-pillars-predict-adopt-manage">The Three Pillars: PREDICT, ADOPT, MANAGE</h2>
+<p>FaultRay organizes agent resilience into three phases:</p>
+<h3 id="predict-scenario-simulation">PREDICT (Scenario Simulation)</h3>
+<p>Generate and run agent-specific chaos scenarios against your topology. This includes single-agent failures, cross-layer cascades, multi-endpoint outages, and prompt injection attacks.</p>
+<pre><code class="language-bash">faultray agent scenarios infra.yaml
+</code></pre>
+<h3 id="adopt-risk-assessment">ADOPT (Risk Assessment)</h3>
+<p>Before deploying an agent, assess the risk it introduces. The ADOPT engine evaluates:</p>
+<ul>
+<li><strong>Blast radius</strong> -- how many components are affected if this agent fails</li>
+<li><strong>Failsafe mechanisms</strong> -- human escalation, fallback LLM, hallucination circuit breaker, iteration limits, redundancy, data grounding</li>
+<li><strong>Hallucination impact</strong> -- what happens when the agent hallucinates (especially dangerous if it can trigger tools with side effects)</li>
+<li><strong>Risk score</strong> (0-10) with actionable recommendations</li>
+</ul>
+<pre><code class="language-bash">faultray agent assess infra.yaml
+</code></pre>
+<p>Risk levels:
+- <strong>LOW</strong> (0-3): Safe to deploy
+- <strong>MEDIUM</strong> (4-6): Deploy with mitigations
+- <strong>HIGH</strong> (7-8): Significant risk, needs redesign
+- <strong>CRITICAL</strong> (9-10): Do not deploy without major changes</p>
+<h3 id="manage-monitoring-plan">MANAGE (Monitoring Plan)</h3>
+<p>Generate monitoring rules derived from simulation results. These rules detect pre-failure conditions before they cascade:</p>
+<ul>
+<li>Context window approaching capacity</li>
+<li>Hallucination detection rate exceeding baseline</li>
+<li>LLM request rate nearing provider limits</li>
+<li>Tool service error rate increasing</li>
+<li>Orchestrator approaching iteration limits</li>
+<li>Infrastructure degradation affecting agent grounding</li>
+</ul>
+<pre><code class="language-bash">faultray agent monitor infra.yaml
+</code></pre>
+<h2 id="example-yaml-configuration">Example YAML Configuration</h2>
+<pre><code class="language-yaml">components:
+  - id: claude-endpoint
+    name: Claude API
+    type: llm_endpoint
+    replicas: 1
+    parameters:
+      provider: anthropic
+      model_id: claude-sonnet-4-20250514
+      rate_limit_rpm: 1000
+      rate_limit_tpm: 100000
+      avg_latency_ms: 500
+      p99_latency_ms: 3000
+      availability_sla: 99.9
+
+  - id: support-agent
+    name: Customer Support Agent
+    type: ai_agent
+    replicas: 2
+    parameters:
+      framework: langchain
+      model_id: claude-sonnet-4-20250514
+      max_context_tokens: 200000
+      temperature: 0.3
+      hallucination_risk: 0.03
+      requires_grounding: 1
+      fallback_model_id: gpt-4o
+      circuit_breaker_on_hallucination: 1
+      max_iterations: 25
+      human_escalation: 1
+
+  - id: search-tool
+    name: Knowledge Base Search
+    type: tool_service
+    replicas: 2
+    parameters:
+      tool_type: database_query
+      idempotent: 1
+      side_effects: 0
+      failure_rate: 0.005
+
+  - id: ticket-tool
+    name: Ticket Creation API
+    type: tool_service
+    replicas: 1
+    parameters:
+      tool_type: api
+      idempotent: 0
+      side_effects: 1
+      failure_rate: 0.02
+
+  - id: orchestrator
+    name: Agent Coordinator
+    type: agent_orchestrator
+    replicas: 1
+    parameters:
+      pattern: hierarchical
+      max_agents: 5
+      timeout_seconds: 120
+      max_iterations: 30
+      circuit_breaker_on_hallucination: 1
+
+  - id: customer-db
+    name: Customer Database
+    type: database
+    replicas: 2
+    region: us-east-1
+
+dependencies:
+  - from: support-agent
+    to: claude-endpoint
+  - from: support-agent
+    to: search-tool
+  - from: support-agent
+    to: ticket-tool
+  - from: search-tool
+    to: customer-db
+  - from: orchestrator
+    to: support-agent
+</code></pre>
+<h2 id="cli-usage">CLI Usage</h2>
+<h3 id="run-all-agent-scenarios">Run all agent scenarios</h3>
+<pre><code class="language-bash"># List generated scenarios
+faultray agent scenarios infra.yaml
+
+# JSON output for automation
+faultray agent scenarios infra.yaml --json
+</code></pre>
+<h3 id="assess-agent-deployment-risk">Assess agent deployment risk</h3>
+<pre><code class="language-bash"># Interactive risk report
+faultray agent assess infra.yaml
+
+# JSON for CI/CD gate
+faultray agent assess infra.yaml --json
+</code></pre>
+<h3 id="generate-monitoring-plan">Generate monitoring plan</h3>
+<pre><code class="language-bash"># View monitoring rules
+faultray agent monitor infra.yaml
+
+# Export as JSON for integration with Datadog, Grafana, etc.
+faultray agent monitor infra.yaml --json
+</code></pre>
+<h3 id="run-full-simulation-including-agent-scenarios">Run full simulation including agent scenarios</h3>
+<pre><code class="language-bash"># Standard simulation includes agent scenarios automatically
+faultray simulate infra.yaml
+</code></pre>
+<h2 id="graphql-api">GraphQL API</h2>
+<p>Agent data is also available via the GraphQL API:</p>
+<pre><code class="language-graphql">{
+  agentAssessment(topologyId: &quot;default&quot;) {
+    agentName
+    riskScore
+    riskLevel
+    maxBlastRadius
+    safeToDeploy
+    recommendations
+  }
+}
+
+{
+  agentMonitoringPlan(topologyId: &quot;default&quot;) {
+    totalComponentsMonitored
+    coveragePercent
+    rules {
+      name
+      metric
+      threshold
+      severity
+      recommendedAction
+    }
+  }
+}
+
+{
+  agentScenarios(topologyId: &quot;default&quot;) {
+    id
+    name
+    description
+    faults {
+      target
+      type
+    }
+  }
+}
+
+{
+  crossLayerRisk(topologyId: &quot;default&quot;, componentId: &quot;customer-db&quot;) {
+    agentId
+    risk
+    reason
+  }
+}
+</code></pre>
+
+
+
+
+
+
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    
+      
+      
+      <script id="__config" type="application/json">{"annotate": null, "base": "../..", "features": ["navigation.tabs", "navigation.sections", "search.suggest"], "search": "../../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+    
+    
+      <script src="../../assets/javascripts/bundle.79ae519e.min.js"></script>
+      
+    
+  </body>
+</html>

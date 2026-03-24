@@ -1,0 +1,2255 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+        <meta name="description" content="Zero-risk infrastructure chaos simulation">
+      
+      
+      
+      
+      
+      
+        
+      
+      
+      <link rel="icon" href="../assets/images/favicon.png">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.5">
+    
+    
+      
+        <title>FaultRay Backtest Accuracy Report - FaultRay Documentation</title>
+      
+    
+    
+      <link rel="stylesheet" href="../assets/stylesheets/main.484c7ddc.min.css">
+      
+        
+        <link rel="stylesheet" href="../assets/stylesheets/palette.ab4e12ef.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+    <script>__md_scope=new URL("..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+  </head>
+  
+  
+    
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="slate" data-md-color-primary="blue" data-md-color-accent="indigo">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#faultray-backtest-accuracy-report" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+<header class="md-header" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href=".." title="FaultRay Documentation" class="md-header__button md-logo" aria-label="FaultRay Documentation" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            FaultRay Documentation
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              FaultRay Backtest Accuracy Report
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      
+    
+    
+    
+    
+      
+      
+        <label class="md-header__button md-icon" for="__search">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        </label>
+        <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
+      </nav>
+      
+        <div class="md-search__suggest" data-md-component="search-suggest"></div>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+      
+    
+    
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+            
+<nav class="md-tabs" aria-label="Tabs" data-md-component="tabs">
+  <div class="md-grid">
+    <ul class="md-tabs__list">
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href=".." class="md-tabs__link">
+        
+  
+  
+    
+  
+  Home
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../getting-started/installation/" class="md-tabs__link">
+          
+  
+  
+  Getting Started
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../concepts/how-it-works/" class="md-tabs__link">
+          
+  
+  
+  Concepts
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../cli/commands/" class="md-tabs__link">
+          
+  
+  
+  CLI Reference
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../api/rest/" class="md-tabs__link">
+          
+  
+  
+  API Reference
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../integrations/aws/" class="md-tabs__link">
+          
+  
+  
+  Integrations
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../enterprise/compliance/" class="md-tabs__link">
+          
+  
+  
+  Enterprise
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../legal/terms-of-service/" class="md-tabs__link">
+          
+  
+  
+  Legal
+
+        </a>
+      </li>
+    
+  
+
+      
+    </ul>
+  </div>
+</nav>
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+  
+
+
+<nav class="md-nav md-nav--primary md-nav--lifted" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href=".." title="FaultRay Documentation" class="md-nav__button md-logo" aria-label="FaultRay Documentation" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    FaultRay Documentation
+  </label>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href=".." class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Home
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_2" >
+        
+          
+          <label class="md-nav__link" for="__nav_2" id="__nav_2_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Getting Started
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_2_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_2">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Getting Started
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../getting-started/installation/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Installation
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../getting-started/quickstart/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Quick Start
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../getting-started/first-simulation/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Your First Simulation
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3" >
+        
+          
+          <label class="md-nav__link" for="__nav_3" id="__nav_3_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Concepts
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_3">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Concepts
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../concepts/how-it-works/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    How It Works
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../concepts/five-layer-model/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    5-Layer Model
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../concepts/risk-scoring/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Risk Scoring
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../concepts/agent-resilience/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Agent Resilience
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4" >
+        
+          
+          <label class="md-nav__link" for="__nav_4" id="__nav_4_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    CLI Reference
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_4_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_4">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    CLI Reference
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../cli/commands/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Commands
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5" >
+        
+          
+          <label class="md-nav__link" for="__nav_5" id="__nav_5_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    API Reference
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_5_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_5">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    API Reference
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../api/rest/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    REST API
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../api/graphql/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    GraphQL
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../api/python-sdk/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Python SDK
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_6" >
+        
+          
+          <label class="md-nav__link" for="__nav_6" id="__nav_6_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Integrations
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_6_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_6">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Integrations
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../integrations/aws/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    AWS
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../integrations/gcp/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    GCP
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../integrations/azure/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Azure
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../integrations/kubernetes/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Kubernetes
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../integrations/terraform/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Terraform
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../integrations/cicd/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    CI/CD
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../integrations/slack/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Slack
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_7" >
+        
+          
+          <label class="md-nav__link" for="__nav_7" id="__nav_7_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Enterprise
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_7_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_7">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Enterprise
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../enterprise/compliance/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Compliance
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../enterprise/insurance/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Insurance Scoring
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../enterprise/rbac/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    RBAC
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_8" >
+        
+          
+          <label class="md-nav__link" for="__nav_8" id="__nav_8_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Legal
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_8_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_8">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Legal
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../legal/terms-of-service/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Terms of Service
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../legal/privacy-policy/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Privacy Policy
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#overall-accuracy-summary" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Overall Accuracy Summary
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#per-incident-results" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Per-Incident Results
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#calibration-recommendations" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Calibration Recommendations
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#detailed-results" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Detailed Results
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Detailed Results">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#aws-us-east-1-2021-12" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        aws-us-east-1-2021-12
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#aws-s3-2017-02" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        aws-s3-2017-02
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#meta-bgp-2021-10" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        meta-bgp-2021-10
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#cloudflare-2022-06" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        cloudflare-2022-06
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#gcp-2019-06" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        gcp-2019-06
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#azure-2023-01" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        azure-2023-01
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#github-ddos-2018" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        github-ddos-2018
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#fastly-2021-06" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        fastly-2021-06
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#crowdstrike-2024-07" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        crowdstrike-2024-07
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#aws-dynamodb-2015-09" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        aws-dynamodb-2015-09
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#gcp-lb-2021-11" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        gcp-lb-2021-11
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#dyn-ddos-2016-10" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        dyn-ddos-2016-10
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#aws-kinesis-2020-11" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        aws-kinesis-2020-11
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#slack-2022-02" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        slack-2022-02
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#aws-ebs-2011-04" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        aws-ebs-2011-04
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#roblox-2021-10" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        roblox-2021-10
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#azure-ad-2021-03" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        azure-ad-2021-03
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ovh-fire-2021-03" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        ovh-fire-2021-03
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+
+<h1 id="faultray-backtest-accuracy-report">FaultRay Backtest Accuracy Report</h1>
+<p>Generated: 2026-03-16 17:56:26
+Total Incidents: 18</p>
+<h2 id="overall-accuracy-summary">Overall Accuracy Summary</h2>
+<table>
+<thead>
+<tr>
+<th>Metric</th>
+<th>Value</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Avg Precision</td>
+<td>1.000</td>
+</tr>
+<tr>
+<td>Avg Recall</td>
+<td>1.000</td>
+</tr>
+<tr>
+<td>Avg F1 Score</td>
+<td>1.000</td>
+</tr>
+<tr>
+<td>Avg Severity Accuracy</td>
+<td>0.819</td>
+</tr>
+<tr>
+<td>Avg Downtime MAE (min)</td>
+<td>3159.53</td>
+</tr>
+<tr>
+<td>Avg Confidence</td>
+<td>0.756</td>
+</tr>
+</tbody>
+</table>
+<h2 id="per-incident-results">Per-Incident Results</h2>
+<table>
+<thead>
+<tr>
+<th>Incident ID</th>
+<th>Component</th>
+<th>Precision</th>
+<th>Recall</th>
+<th>F1</th>
+<th>Sev Acc</th>
+<th>DT MAE</th>
+<th>Confidence</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>aws-us-east-1-2021-12</td>
+<td>shared_network</td>
+<td>1.000</td>
+<td>1.000</td>
+<td>1.000</td>
+<td>0.810</td>
+<td>659.0</td>
+<td>0.743</td>
+</tr>
+<tr>
+<td>aws-s3-2017-02</td>
+<td>shared_network</td>
+<td>1.000</td>
+<td>1.000</td>
+<td>1.000</td>
+<td>0.770</td>
+<td>299.0</td>
+<td>0.731</td>
+</tr>
+<tr>
+<td>meta-bgp-2021-10</td>
+<td>shared_network</td>
+<td>1.000</td>
+<td>1.000</td>
+<td>1.000</td>
+<td>0.900</td>
+<td>359.5</td>
+<td>0.770</td>
+</tr>
+<tr>
+<td>cloudflare-2022-06</td>
+<td>physical_infra</td>
+<td>1.000</td>
+<td>1.000</td>
+<td>1.000</td>
+<td>0.700</td>
+<td>119.0</td>
+<td>0.710</td>
+</tr>
+<tr>
+<td>gcp-2019-06</td>
+<td>shared_network</td>
+<td>1.000</td>
+<td>1.000</td>
+<td>1.000</td>
+<td>0.740</td>
+<td>264.5</td>
+<td>0.722</td>
+</tr>
+<tr>
+<td>azure-2023-01</td>
+<td>shared_network</td>
+<td>1.000</td>
+<td>1.000</td>
+<td>1.000</td>
+<td>0.770</td>
+<td>539.0</td>
+<td>0.731</td>
+</tr>
+<tr>
+<td>github-ddos-2018</td>
+<td>shared_network</td>
+<td>1.000</td>
+<td>1.000</td>
+<td>1.000</td>
+<td>0.700</td>
+<td>19.5</td>
+<td>0.845</td>
+</tr>
+<tr>
+<td>fastly-2021-06</td>
+<td>shared_network</td>
+<td>1.000</td>
+<td>1.000</td>
+<td>1.000</td>
+<td>0.900</td>
+<td>48.0</td>
+<td>0.810</td>
+</tr>
+<tr>
+<td>crowdstrike-2024-07</td>
+<td>host_os</td>
+<td>1.000</td>
+<td>1.000</td>
+<td>1.000</td>
+<td>0.900</td>
+<td>1439.5</td>
+<td>0.770</td>
+</tr>
+<tr>
+<td>aws-dynamodb-2015-09</td>
+<td>dynamo_db</td>
+<td>1.000</td>
+<td>1.000</td>
+<td>1.000</td>
+<td>0.980</td>
+<td>299.5</td>
+<td>0.794</td>
+</tr>
+<tr>
+<td>gcp-lb-2021-11</td>
+<td>shared_network</td>
+<td>1.000</td>
+<td>1.000</td>
+<td>1.000</td>
+<td>0.900</td>
+<td>149.5</td>
+<td>0.770</td>
+</tr>
+<tr>
+<td>dyn-ddos-2016-10</td>
+<td>shared_network</td>
+<td>1.000</td>
+<td>1.000</td>
+<td>1.000</td>
+<td>0.900</td>
+<td>479.5</td>
+<td>0.770</td>
+</tr>
+<tr>
+<td>aws-kinesis-2020-11</td>
+<td>shared_network</td>
+<td>1.000</td>
+<td>1.000</td>
+<td>1.000</td>
+<td>0.770</td>
+<td>599.5</td>
+<td>0.731</td>
+</tr>
+<tr>
+<td>slack-2022-02</td>
+<td>shared_network</td>
+<td>1.000</td>
+<td>1.000</td>
+<td>1.000</td>
+<td>0.700</td>
+<td>299.0</td>
+<td>0.710</td>
+</tr>
+<tr>
+<td>aws-ebs-2011-04</td>
+<td>shared_network</td>
+<td>1.000</td>
+<td>1.000</td>
+<td>1.000</td>
+<td>0.740</td>
+<td>2879.5</td>
+<td>0.722</td>
+</tr>
+<tr>
+<td>roblox-2021-10</td>
+<td>shared_network</td>
+<td>1.000</td>
+<td>1.000</td>
+<td>1.000</td>
+<td>0.900</td>
+<td>4379.5</td>
+<td>0.770</td>
+</tr>
+<tr>
+<td>azure-ad-2021-03</td>
+<td>shared_network</td>
+<td>1.000</td>
+<td>1.000</td>
+<td>1.000</td>
+<td>0.770</td>
+<td>839.0</td>
+<td>0.731</td>
+</tr>
+<tr>
+<td>ovh-fire-2021-03</td>
+<td>physical_infra</td>
+<td>1.000</td>
+<td>1.000</td>
+<td>1.000</td>
+<td>0.900</td>
+<td>43199.5</td>
+<td>0.770</td>
+</tr>
+</tbody>
+</table>
+<h2 id="calibration-recommendations">Calibration Recommendations</h2>
+<ul>
+<li><strong>downtime_bias_correction</strong>: 3159.53</li>
+</ul>
+<h2 id="detailed-results">Detailed Results</h2>
+<h3 id="aws-us-east-1-2021-12">aws-us-east-1-2021-12</h3>
+<ul>
+<li><strong>Failed Component</strong>: shared_network</li>
+<li><strong>Actual Affected</strong>: shared_network, app_server, primary_db, redis, lambda_fn, message_queue, monitoring, container_service</li>
+<li><strong>Predicted Affected</strong>: app_server, container_service, lambda_fn, message_queue, monitoring, primary_db, redis, shared_network</li>
+<li><strong>Actual Severity</strong>: critical</li>
+<li><strong>Predicted Severity</strong>: 7.1</li>
+<li><strong>Actual Downtime</strong>: 660 min</li>
+<li><strong>Predicted Downtime</strong>: 1.0 min</li>
+<li><strong>Precision</strong>: 1.000 | <strong>Recall</strong>: 1.000 | <strong>F1</strong>: 1.000</li>
+<li><strong>True Positives</strong>: app_server, container_service, lambda_fn, message_queue, monitoring, primary_db, redis, shared_network</li>
+</ul>
+<h3 id="aws-s3-2017-02">aws-s3-2017-02</h3>
+<ul>
+<li><strong>Failed Component</strong>: shared_network</li>
+<li><strong>Actual Affected</strong>: shared_network, s3_storage, app_server, lambda_fn, message_queue</li>
+<li><strong>Predicted Affected</strong>: app_server, lambda_fn, message_queue, s3_storage, shared_network</li>
+<li><strong>Actual Severity</strong>: critical</li>
+<li><strong>Predicted Severity</strong>: 6.7</li>
+<li><strong>Actual Downtime</strong>: 300 min</li>
+<li><strong>Predicted Downtime</strong>: 1.0 min</li>
+<li><strong>Precision</strong>: 1.000 | <strong>Recall</strong>: 1.000 | <strong>F1</strong>: 1.000</li>
+<li><strong>True Positives</strong>: app_server, lambda_fn, message_queue, s3_storage, shared_network</li>
+</ul>
+<h3 id="meta-bgp-2021-10">meta-bgp-2021-10</h3>
+<ul>
+<li><strong>Failed Component</strong>: shared_network</li>
+<li><strong>Actual Affected</strong>: shared_network, dns_resolver, cdn</li>
+<li><strong>Predicted Affected</strong>: cdn, dns_resolver, shared_network</li>
+<li><strong>Actual Severity</strong>: critical</li>
+<li><strong>Predicted Severity</strong>: 8.0</li>
+<li><strong>Actual Downtime</strong>: 360 min</li>
+<li><strong>Predicted Downtime</strong>: 0.5 min</li>
+<li><strong>Precision</strong>: 1.000 | <strong>Recall</strong>: 1.000 | <strong>F1</strong>: 1.000</li>
+<li><strong>True Positives</strong>: cdn, dns_resolver, shared_network</li>
+</ul>
+<h3 id="cloudflare-2022-06">cloudflare-2022-06</h3>
+<ul>
+<li><strong>Failed Component</strong>: physical_infra</li>
+<li><strong>Actual Affected</strong>: physical_infra, cdn, dns_resolver, api_gw</li>
+<li><strong>Predicted Affected</strong>: api_gw, cdn, dns_resolver, physical_infra</li>
+<li><strong>Actual Severity</strong>: major</li>
+<li><strong>Predicted Severity</strong>: 8.0</li>
+<li><strong>Actual Downtime</strong>: 120 min</li>
+<li><strong>Predicted Downtime</strong>: 1.0 min</li>
+<li><strong>Precision</strong>: 1.000 | <strong>Recall</strong>: 1.000 | <strong>F1</strong>: 1.000</li>
+<li><strong>True Positives</strong>: api_gw, cdn, dns_resolver, physical_infra</li>
+</ul>
+<h3 id="gcp-2019-06">gcp-2019-06</h3>
+<ul>
+<li><strong>Failed Component</strong>: shared_network</li>
+<li><strong>Actual Affected</strong>: shared_network, gce_instance, cloud_sql, gcs_storage</li>
+<li><strong>Predicted Affected</strong>: cloud_sql, gce_instance, gcs_storage, shared_network</li>
+<li><strong>Actual Severity</strong>: critical</li>
+<li><strong>Predicted Severity</strong>: 6.4</li>
+<li><strong>Actual Downtime</strong>: 265 min</li>
+<li><strong>Predicted Downtime</strong>: 0.5 min</li>
+<li><strong>Precision</strong>: 1.000 | <strong>Recall</strong>: 1.000 | <strong>F1</strong>: 1.000</li>
+<li><strong>True Positives</strong>: cloud_sql, gce_instance, gcs_storage, shared_network</li>
+</ul>
+<h3 id="azure-2023-01">azure-2023-01</h3>
+<ul>
+<li><strong>Failed Component</strong>: shared_network</li>
+<li><strong>Actual Affected</strong>: shared_network, azure_vm, azure_sql, azure_blob, azure_lb</li>
+<li><strong>Predicted Affected</strong>: azure_blob, azure_lb, azure_sql, azure_vm, shared_network</li>
+<li><strong>Actual Severity</strong>: critical</li>
+<li><strong>Predicted Severity</strong>: 6.7</li>
+<li><strong>Actual Downtime</strong>: 540 min</li>
+<li><strong>Predicted Downtime</strong>: 1.0 min</li>
+<li><strong>Precision</strong>: 1.000 | <strong>Recall</strong>: 1.000 | <strong>F1</strong>: 1.000</li>
+<li><strong>True Positives</strong>: azure_blob, azure_lb, azure_sql, azure_vm, shared_network</li>
+</ul>
+<h3 id="github-ddos-2018">github-ddos-2018</h3>
+<ul>
+<li><strong>Failed Component</strong>: shared_network</li>
+<li><strong>Actual Affected</strong>: shared_network, cdn, main_lb, app_server</li>
+<li><strong>Predicted Affected</strong>: app_server, cdn, main_lb, shared_network</li>
+<li><strong>Actual Severity</strong>: major</li>
+<li><strong>Predicted Severity</strong>: 8.0</li>
+<li><strong>Actual Downtime</strong>: 20 min</li>
+<li><strong>Predicted Downtime</strong>: 0.5 min</li>
+<li><strong>Precision</strong>: 1.000 | <strong>Recall</strong>: 1.000 | <strong>F1</strong>: 1.000</li>
+<li><strong>True Positives</strong>: app_server, cdn, main_lb, shared_network</li>
+</ul>
+<h3 id="fastly-2021-06">fastly-2021-06</h3>
+<ul>
+<li><strong>Failed Component</strong>: shared_network</li>
+<li><strong>Actual Affected</strong>: shared_network, cdn, dns_resolver</li>
+<li><strong>Predicted Affected</strong>: cdn, dns_resolver, shared_network</li>
+<li><strong>Actual Severity</strong>: critical</li>
+<li><strong>Predicted Severity</strong>: 8.0</li>
+<li><strong>Actual Downtime</strong>: 49 min</li>
+<li><strong>Predicted Downtime</strong>: 1.0 min</li>
+<li><strong>Precision</strong>: 1.000 | <strong>Recall</strong>: 1.000 | <strong>F1</strong>: 1.000</li>
+<li><strong>True Positives</strong>: cdn, dns_resolver, shared_network</li>
+</ul>
+<h3 id="crowdstrike-2024-07">crowdstrike-2024-07</h3>
+<ul>
+<li><strong>Failed Component</strong>: host_os</li>
+<li><strong>Actual Affected</strong>: host_os, app_server, azure_vm, gce_instance</li>
+<li><strong>Predicted Affected</strong>: app_server, azure_vm, gce_instance, host_os</li>
+<li><strong>Actual Severity</strong>: critical</li>
+<li><strong>Predicted Severity</strong>: 8.0</li>
+<li><strong>Actual Downtime</strong>: 1440 min</li>
+<li><strong>Predicted Downtime</strong>: 0.5 min</li>
+<li><strong>Precision</strong>: 1.000 | <strong>Recall</strong>: 1.000 | <strong>F1</strong>: 1.000</li>
+<li><strong>True Positives</strong>: app_server, azure_vm, gce_instance, host_os</li>
+</ul>
+<h3 id="aws-dynamodb-2015-09">aws-dynamodb-2015-09</h3>
+<ul>
+<li><strong>Failed Component</strong>: dynamo_db</li>
+<li><strong>Actual Affected</strong>: dynamo_db, app_server, container_service</li>
+<li><strong>Predicted Affected</strong>: app_server, container_service, dynamo_db</li>
+<li><strong>Actual Severity</strong>: major</li>
+<li><strong>Predicted Severity</strong>: 4.8</li>
+<li><strong>Actual Downtime</strong>: 300 min</li>
+<li><strong>Predicted Downtime</strong>: 0.5 min</li>
+<li><strong>Precision</strong>: 1.000 | <strong>Recall</strong>: 1.000 | <strong>F1</strong>: 1.000</li>
+<li><strong>True Positives</strong>: app_server, container_service, dynamo_db</li>
+</ul>
+<h3 id="gcp-lb-2021-11">gcp-lb-2021-11</h3>
+<ul>
+<li><strong>Failed Component</strong>: shared_network</li>
+<li><strong>Actual Affected</strong>: shared_network, main_lb, cdn</li>
+<li><strong>Predicted Affected</strong>: cdn, main_lb, shared_network</li>
+<li><strong>Actual Severity</strong>: major</li>
+<li><strong>Predicted Severity</strong>: 6.0</li>
+<li><strong>Actual Downtime</strong>: 150 min</li>
+<li><strong>Predicted Downtime</strong>: 0.5 min</li>
+<li><strong>Precision</strong>: 1.000 | <strong>Recall</strong>: 1.000 | <strong>F1</strong>: 1.000</li>
+<li><strong>True Positives</strong>: cdn, main_lb, shared_network</li>
+</ul>
+<h3 id="dyn-ddos-2016-10">dyn-ddos-2016-10</h3>
+<ul>
+<li><strong>Failed Component</strong>: shared_network</li>
+<li><strong>Actual Affected</strong>: shared_network, dns_resolver</li>
+<li><strong>Predicted Affected</strong>: dns_resolver, shared_network</li>
+<li><strong>Actual Severity</strong>: critical</li>
+<li><strong>Predicted Severity</strong>: 8.0</li>
+<li><strong>Actual Downtime</strong>: 480 min</li>
+<li><strong>Predicted Downtime</strong>: 0.5 min</li>
+<li><strong>Precision</strong>: 1.000 | <strong>Recall</strong>: 1.000 | <strong>F1</strong>: 1.000</li>
+<li><strong>True Positives</strong>: dns_resolver, shared_network</li>
+</ul>
+<h3 id="aws-kinesis-2020-11">aws-kinesis-2020-11</h3>
+<ul>
+<li><strong>Failed Component</strong>: shared_network</li>
+<li><strong>Actual Affected</strong>: shared_network, lambda_fn, monitoring, app_server, container_service</li>
+<li><strong>Predicted Affected</strong>: app_server, container_service, lambda_fn, monitoring, shared_network</li>
+<li><strong>Actual Severity</strong>: critical</li>
+<li><strong>Predicted Severity</strong>: 6.7</li>
+<li><strong>Actual Downtime</strong>: 600 min</li>
+<li><strong>Predicted Downtime</strong>: 0.5 min</li>
+<li><strong>Precision</strong>: 1.000 | <strong>Recall</strong>: 1.000 | <strong>F1</strong>: 1.000</li>
+<li><strong>True Positives</strong>: app_server, container_service, lambda_fn, monitoring, shared_network</li>
+</ul>
+<h3 id="slack-2022-02">slack-2022-02</h3>
+<ul>
+<li><strong>Failed Component</strong>: shared_network</li>
+<li><strong>Actual Affected</strong>: shared_network, primary_db, app_server, redis, message_queue</li>
+<li><strong>Predicted Affected</strong>: app_server, message_queue, primary_db, redis, shared_network</li>
+<li><strong>Actual Severity</strong>: major</li>
+<li><strong>Predicted Severity</strong>: 8.0</li>
+<li><strong>Actual Downtime</strong>: 300 min</li>
+<li><strong>Predicted Downtime</strong>: 1.0 min</li>
+<li><strong>Precision</strong>: 1.000 | <strong>Recall</strong>: 1.000 | <strong>F1</strong>: 1.000</li>
+<li><strong>True Positives</strong>: app_server, message_queue, primary_db, redis, shared_network</li>
+</ul>
+<h3 id="aws-ebs-2011-04">aws-ebs-2011-04</h3>
+<ul>
+<li><strong>Failed Component</strong>: shared_network</li>
+<li><strong>Actual Affected</strong>: shared_network, app_server, primary_db, s3_storage</li>
+<li><strong>Predicted Affected</strong>: app_server, primary_db, s3_storage, shared_network</li>
+<li><strong>Actual Severity</strong>: critical</li>
+<li><strong>Predicted Severity</strong>: 6.4</li>
+<li><strong>Actual Downtime</strong>: 2880 min</li>
+<li><strong>Predicted Downtime</strong>: 0.5 min</li>
+<li><strong>Precision</strong>: 1.000 | <strong>Recall</strong>: 1.000 | <strong>F1</strong>: 1.000</li>
+<li><strong>True Positives</strong>: app_server, primary_db, s3_storage, shared_network</li>
+</ul>
+<h3 id="roblox-2021-10">roblox-2021-10</h3>
+<ul>
+<li><strong>Failed Component</strong>: shared_network</li>
+<li><strong>Actual Affected</strong>: shared_network, app_server, primary_db, redis, message_queue</li>
+<li><strong>Predicted Affected</strong>: app_server, message_queue, primary_db, redis, shared_network</li>
+<li><strong>Actual Severity</strong>: critical</li>
+<li><strong>Predicted Severity</strong>: 8.0</li>
+<li><strong>Actual Downtime</strong>: 4380 min</li>
+<li><strong>Predicted Downtime</strong>: 0.5 min</li>
+<li><strong>Precision</strong>: 1.000 | <strong>Recall</strong>: 1.000 | <strong>F1</strong>: 1.000</li>
+<li><strong>True Positives</strong>: app_server, message_queue, primary_db, redis, shared_network</li>
+</ul>
+<h3 id="azure-ad-2021-03">azure-ad-2021-03</h3>
+<ul>
+<li><strong>Failed Component</strong>: shared_network</li>
+<li><strong>Actual Affected</strong>: shared_network, azure_vm, azure_sql, azure_blob, app_server</li>
+<li><strong>Predicted Affected</strong>: app_server, azure_blob, azure_sql, azure_vm, shared_network</li>
+<li><strong>Actual Severity</strong>: critical</li>
+<li><strong>Predicted Severity</strong>: 6.7</li>
+<li><strong>Actual Downtime</strong>: 840 min</li>
+<li><strong>Predicted Downtime</strong>: 1.0 min</li>
+<li><strong>Precision</strong>: 1.000 | <strong>Recall</strong>: 1.000 | <strong>F1</strong>: 1.000</li>
+<li><strong>True Positives</strong>: app_server, azure_blob, azure_sql, azure_vm, shared_network</li>
+</ul>
+<h3 id="ovh-fire-2021-03">ovh-fire-2021-03</h3>
+<ul>
+<li><strong>Failed Component</strong>: physical_infra</li>
+<li><strong>Actual Affected</strong>: physical_infra, app_server, primary_db, s3_storage</li>
+<li><strong>Predicted Affected</strong>: app_server, physical_infra, primary_db, s3_storage</li>
+<li><strong>Actual Severity</strong>: critical</li>
+<li><strong>Predicted Severity</strong>: 8.0</li>
+<li><strong>Actual Downtime</strong>: 43200 min</li>
+<li><strong>Predicted Downtime</strong>: 0.5 min</li>
+<li><strong>Precision</strong>: 1.000 | <strong>Recall</strong>: 1.000 | <strong>F1</strong>: 1.000</li>
+<li><strong>True Positives</strong>: app_server, physical_infra, primary_db, s3_storage</li>
+</ul>
+
+
+
+
+
+
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    
+      
+      
+      <script id="__config" type="application/json">{"annotate": null, "base": "..", "features": ["navigation.tabs", "navigation.sections", "search.suggest"], "search": "../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+    
+    
+      <script src="../assets/javascripts/bundle.79ae519e.min.js"></script>
+      
+    
+  </body>
+</html>
