@@ -1,0 +1,37 @@
+name: Push to AWS Marketplace ECR
+
+on:
+  workflow_dispatch:
+
+env:
+  MARKETPLACE_ECR: 709825985650.dkr.ecr.us-east-1.amazonaws.com/yutaro-maeda/faultray
+  AWS_REGION: us-east-1
+
+jobs:
+  push:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Login to Marketplace ECR
+        run: |
+          aws ecr get-login-password --region ${{ env.AWS_REGION }} | \
+            docker login --username AWS --password-stdin 709825985650.dkr.ecr.${{ env.AWS_REGION }}.amazonaws.com
+
+      - name: Build Docker image
+        run: docker build -t faultray:latest .
+
+      - name: Tag and push to Marketplace ECR
+        run: |
+          docker tag faultray:latest ${{ env.MARKETPLACE_ECR }}:11.0.1
+          docker tag faultray:latest ${{ env.MARKETPLACE_ECR }}:latest
+          docker push ${{ env.MARKETPLACE_ECR }}:11.0.1
+          docker push ${{ env.MARKETPLACE_ECR }}:latest
+          echo "Pushed to ${{ env.MARKETPLACE_ECR }}"
