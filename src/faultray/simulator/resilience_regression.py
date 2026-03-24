@@ -15,12 +15,12 @@ import logging
 from enum import Enum
 from statistics import linear_regression
 
-logger = logging.getLogger(__name__)
-
 from pydantic import BaseModel, Field
 
 from faultray.model.components import ComponentType
 from faultray.model.graph import InfraGraph
+
+logger = logging.getLogger(__name__)
 
 
 # ---------------------------------------------------------------------------
