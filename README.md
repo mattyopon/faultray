@@ -9,6 +9,7 @@
   <a href="https://www.python.org/downloads/"><img src="https://img.shields.io/badge/python-3.11+-blue.svg" alt="Python 3.11+"></a>
   <a href="LICENSE"><img src="https://img.shields.io/badge/License-BSL%201.1-orange.svg" alt="License"></a>
   <a href="https://doi.org/10.5281/zenodo.19139911"><img src="https://zenodo.org/badge/DOI/10.5281/zenodo.19139911.svg" alt="DOI"></a>
+  <a href="https://github.com/mattyopon/ai-agent-security-suite"><img src="https://img.shields.io/badge/Part%20of-AI%20Agent%20Security%20Suite-blueviolet" alt="Part of AI Agent Security Suite"></a>
 </p>
 
 ---
