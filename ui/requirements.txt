@@ -1,0 +1,8 @@
+# FaultRay Streamlit UI — 最小依存関係
+# Streamlit Community Cloud での動作を考慮し、軽量な構成にしています
+
+streamlit>=1.35.0
+pyyaml>=6.0
+
+# FaultRayエンジン（インストール済みの場合に使用）
+# pip install faultray  または  pip install -e .
