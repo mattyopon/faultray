@@ -3,7 +3,7 @@
 
 """FaultRay Streamlit UI — インフラ障害シミュレーターのWebインターフェース.
 
-初めてのユーザーが迷わず使えるUI。オンボーディングフロー付き。
+初めてのユーザーが迷わず使えるUI。ワンクリックで価値を体験できる設計。
 FaultRayがインストールされていない場合はデモモードで動作します。
 
 起動方法:
@@ -47,7 +47,7 @@ st.set_page_config(
     page_title="FaultRay — インフラ障害シミュレーター",
     page_icon="\u26a1",
     layout="wide",
-    initial_sidebar_state="collapsed",
+    initial_sidebar_state="expanded",
 )
 
 # ---------------------------------------------------------------------------
@@ -64,6 +64,8 @@ _defaults: dict[str, Any] = {
     "show_topology_preview": False,
     "parsed_topology": None,
     "severity_filter": "すべて",
+    "auto_run_demo": False,
+    "inline_result": None,
 }
 for _k, _v in _defaults.items():
     if _k not in st.session_state:
@@ -138,16 +140,26 @@ st.markdown("""
         font-size: 1.25em;
         margin-top: 8px;
     }
-    /* サンプルカード */
-    .sample-card {
+    /* サンプルカード — クリッカブル */
+    .sample-card-clickable {
         background: #f8f9fa;
-        border: 1px solid #e9ecef;
+        border: 2px solid #e9ecef;
         border-radius: 12px;
         padding: 20px;
         margin-bottom: 12px;
+        cursor: pointer;
+        transition: all 0.2s ease;
     }
-    .sample-card:hover {
+    .sample-card-clickable:hover {
         border-color: #667eea;
+        background: #f0f4ff;
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(102, 126, 234, 0.15);
+    }
+    .sample-card-selected {
+        border-color: #667eea !important;
+        background: #eef2ff !important;
+        box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.2);
     }
     /* 改善提案カード */
     .suggestion-card {
@@ -173,6 +185,27 @@ st.markdown("""
         border-bottom: 1px dotted #94a3b8;
         cursor: help;
     }
+    /* インラインスコアバッジ */
+    .score-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        padding: 8px 16px;
+        border-radius: 999px;
+        font-weight: 700;
+        font-size: 1.1em;
+    }
+    .score-badge-good { background: #dcfce7; color: #166534; }
+    .score-badge-warn { background: #fef3c7; color: #92400e; }
+    .score-badge-danger { background: #fee2e2; color: #991b1b; }
+    /* クイックスタートの結果カード */
+    .quick-result-card {
+        background: #f8f9fa;
+        border: 1px solid #e9ecef;
+        border-radius: 12px;
+        padding: 20px;
+        margin: 8px 0;
+    }
 </style>
 """, unsafe_allow_html=True)
 
@@ -184,8 +217,8 @@ st.markdown("""
 SAMPLE_TOPOLOGIES: dict[str, dict[str, Any]] = {
     "Webアプリ 3層構成": {
         "description": "典型的な Nginx + アプリサーバー + DB + キャッシュ の3層構成",
-        "icon": "1",
-        "detail": "ロードバランサー、アプリサーバー2台、PostgreSQL、Redis、RabbitMQで構成される標準的なWebアプリケーション",
+        "icon": "🌐",
+        "detail": "LB、アプリサーバー2台、PostgreSQL、Redis、RabbitMQ",
         "yaml": """\
 components:
   - id: nginx
@@ -310,8 +343,8 @@ dependencies:
     },
     "マイクロサービス構成": {
         "description": "API Gateway + 複数のマイクロサービス + 共有DB",
-        "icon": "2",
-        "detail": "API Gateway経由でUser/Order/Payment/Notificationサービスが連携する、ECサイト向け構成",
+        "icon": "🔗",
+        "detail": "User/Order/Payment/Notificationが連携するEC構成",
         "yaml": """\
 components:
   - id: api-gateway
@@ -476,8 +509,8 @@ dependencies:
     },
     "AIパイプライン": {
         "description": "LLMエージェント + ツールサービス + インフラ の AI ワークフロー",
-        "icon": "3",
-        "detail": "Claude API/OpenAIをバックエンドに、Router/Research/Writerエージェントが協調するAIアプリケーション構成",
+        "icon": "🤖",
+        "detail": "Claude/OpenAI + Router/Research/Writerエージェント協調",
         "yaml": """\
 schema_version: "4.0"
 
@@ -896,6 +929,36 @@ def _tooltip(term: str, explanation: str) -> str:
     return f'<span class="tooltip-term" title="{_html.escape(explanation)}">{_html.escape(term)}</span>'
 
 
+def _score_emoji(score: float) -> str:
+    """スコアに対応する絵文字を返す."""
+    if score >= 80:
+        return "\U0001f60a"  # 良好
+    elif score >= 60:
+        return "\u26a0\ufe0f"  # 要改善
+    else:
+        return "\U0001f6a8"  # 危険
+
+
+def _score_label(score: float) -> str:
+    """スコアに対応するラベルを返す."""
+    if score >= 80:
+        return "良好"
+    elif score >= 60:
+        return "要改善"
+    else:
+        return "危険"
+
+
+def _score_badge_class(score: float) -> str:
+    """スコアに対応するCSSクラスを返す."""
+    if score >= 80:
+        return "score-badge-good"
+    elif score >= 60:
+        return "score-badge-warn"
+    else:
+        return "score-badge-danger"
+
+
 def parse_topology(text: str) -> dict[str, Any]:
     """YAMLまたはJSONのトポロジー定義をパースする."""
     text = text.strip()
@@ -1064,6 +1127,27 @@ def _generate_suggestions(report: "SimulationReport") -> list[dict[str, str]]:
     return suggestions
 
 
+def _execute_demo_simulation(sample_key: str) -> dict[str, Any] | None:
+    """デモモードまたは実エンジンでシミュレーションを実行する."""
+    if sample_key not in SAMPLE_TOPOLOGIES:
+        return None
+
+    sample = SAMPLE_TOPOLOGIES[sample_key]
+
+    if FAULTRAY_AVAILABLE:
+        try:
+            topo = parse_topology(sample["yaml"])
+            return run_simulation(topo)
+        except Exception:
+            # エンジン実行失敗時はデモ結果にフォールバック
+            pass
+
+    # デモモード
+    if sample_key in DEMO_RESULTS:
+        return DEMO_RESULTS[sample_key]
+    return None
+
+
 # ---------------------------------------------------------------------------
 # UI コンポーネント
 # ---------------------------------------------------------------------------
@@ -1080,11 +1164,13 @@ def render_score_gauge(score: float) -> None:
         color = "#ef4444"
         label = "危険"
 
+    emoji = _score_emoji(score)
+
     st.markdown(
         f"""
         <div class="score-gauge">
             <div class="score-number" style="color: {color};">
-                {score:.1f}
+                {emoji} {score:.1f}
             </div>
             <div class="score-sublabel">/ 100</div>
             <div class="score-label" style="color: {color};">
@@ -1092,6 +1178,19 @@ def render_score_gauge(score: float) -> None:
             </div>
         </div>
         """,
+        unsafe_allow_html=True,
+    )
+
+
+def render_score_inline(score: float) -> None:
+    """スコアをインラインバッジで表示する（シミュレーション結果のサマリー用）."""
+    emoji = _score_emoji(score)
+    label = _score_label(score)
+    badge_class = _score_badge_class(score)
+    st.markdown(
+        f'<div class="score-badge {badge_class}">'
+        f'{emoji} 耐障害スコア: {score:.1f} / 100 ({label})'
+        f'</div>',
         unsafe_allow_html=True,
     )
 
@@ -1206,72 +1305,104 @@ def render_topology_graph(topology: dict[str, Any]) -> None:
     st.code("\n".join(lines), language=None)
 
 
+def render_inline_top_issues(result: dict[str, Any], max_issues: int = 3) -> None:
+    """シミュレーション結果のトップN問題をインライン表示する."""
+    scenarios = result.get("scenarios", [])
+    critical_scenarios = sorted(
+        [s for s in scenarios if s["severity"] in ("CRITICAL", "WARNING")],
+        key=lambda x: x["risk_score"],
+        reverse=True,
+    )[:max_issues]
+
+    if not critical_scenarios:
+        st.success("重大な問題は見つかりませんでした。")
+        return
+
+    for s in critical_scenarios:
+        sev = s["severity"]
+        if sev == "CRITICAL":
+            icon = "\U0001f6a8"
+        else:
+            icon = "\u26a0\ufe0f"
+        st.markdown(
+            f'<div class="quick-result-card">'
+            f'{icon} <strong>{s["name"]}</strong> '
+            f'<span style="color:#6c757d">(リスク: {s["risk_score"]}/10)</span><br>'
+            f'<span style="color:#6c757d;font-size:0.9em">'
+            f'{s.get("suggestion", "") or ""}</span>'
+            f'</div>',
+            unsafe_allow_html=True,
+        )
+
+
 # ══════════════════════════════════════════════════════════════════
-# ウェルカム + オンボーディング
+# ウェルカム画面（簡素化）
 # ══════════════════════════════════════════════════════════════════
 
 def show_welcome() -> None:
-    """ウェルカム画面を表示する."""
+    """ウェルカム画面を表示する. ワンクリックで即デモ体験."""
     st.markdown("""
     <div class="welcome-card">
-        <h1>FaultRay</h1>
-        <p>インフラ障害をシミュレーション - 本番を壊さずにカスケード障害をテスト</p>
+        <h1>\u26a1 FaultRay</h1>
+        <p>あなたのインフラの弱点を、本番を壊さずに発見</p>
     </div>
     """, unsafe_allow_html=True)
 
-    st.markdown("### 3つのステップで始めましょう")
-    st.markdown("")
-
-    col1, col2, col3 = st.columns(3)
-
-    with col1:
-        st.markdown("""
-        <div class="step-card">
-            <div style="font-size:2em">1</div>
-            <h3>サンプルを選ぶ</h3>
-            <p>Webアプリ3層、マイクロサービス、AIパイプラインから選択</p>
-            <p style="color:#6c757d;font-size:0.9em">入力の手間ゼロ</p>
-        </div>
-        """, unsafe_allow_html=True)
-
-    with col2:
-        st.markdown("""
-        <div class="step-card">
-            <div style="font-size:2em">2</div>
-            <h3>シミュレーション実行</h3>
-            <p>ボタン1つで障害シナリオを自動生成・テスト</p>
-            <p style="color:#6c757d;font-size:0.9em">数秒で完了</p>
-        </div>
-        """, unsafe_allow_html=True)
-
-    with col3:
-        st.markdown("""
-        <div class="step-card">
-            <div style="font-size:2em">3</div>
-            <h3>結果を確認する</h3>
-            <p>耐障害スコア、発見された問題、具体的な改善提案</p>
-            <p style="color:#6c757d;font-size:0.9em">すぐ表示</p>
-        </div>
-        """, unsafe_allow_html=True)
-
-    st.markdown("")
-    st.markdown("")
-
-    # エンジン状態
-    if FAULTRAY_AVAILABLE:
-        st.success("FaultRayエンジン: 有効 - 実際のシミュレーションを実行します")
-    else:
-        st.info(
-            "**デモモード**で動作しています。サンプル結果をすぐに体験できます。  \n"
-            "実際のシミュレーションには `pip install faultray` を実行してください。"
-        )
-
+    # --- ワンクリック体験 ---
     _col_l, col_center, _col_r = st.columns([1, 2, 1])
     with col_center:
-        if st.button("試してみる", type="primary", use_container_width=True):
+        if st.button(
+            "\U0001f680 デモを試す（ワンクリック）",
+            type="primary",
+            use_container_width=True,
+            help="Webアプリ3層構成のサンプルで即座にシミュレーションを実行します",
+        ):
             st.session_state.onboarded = True
+            st.session_state.auto_run_demo = True
+            st.session_state.selected_sample = "Webアプリ 3層構成"
+            st.session_state.topology_yaml = SAMPLE_TOPOLOGIES["Webアプリ 3層構成"]["yaml"]
             st.session_state.current_page = "page_simulation"
             st.rerun()
+
+    st.markdown("")
+
+    # エンジン状態（簡潔に）
+    if FAULTRAY_AVAILABLE:
+        st.caption("\u2705 FaultRayエンジン有効 - 実際のシミュレーションを実行します")
+    else:
+        st.caption("\U0001f4cb デモモードで動作中 - サンプル結果をすぐに体験できます")
+
+    # --- 他のサンプルへの誘導 ---
+    st.markdown("---")
+    st.markdown("##### または、構成を選んで始める")
+
+    sample_cols = st.columns(3)
+    sample_names = list(SAMPLE_TOPOLOGIES.keys())
+
+    for idx, col in enumerate(sample_cols):
+        name = sample_names[idx]
+        sample = SAMPLE_TOPOLOGIES[name]
+        with col:
+            is_default = (name == "Webアプリ 3層構成")
+            st.markdown(
+                f'<div class="sample-card-clickable{"" if not is_default else ""}">'
+                f'<div style="font-size:1.8em;margin-bottom:4px">{sample["icon"]}</div>'
+                f'<strong>{name}</strong><br>'
+                f'<span style="color:#6c757d;font-size:0.9em">{sample["detail"]}</span>'
+                f'</div>',
+                unsafe_allow_html=True,
+            )
+            if st.button(
+                f"{sample['icon']} {name}",
+                key=f"welcome_sample_{idx}",
+                use_container_width=True,
+            ):
+                st.session_state.onboarded = True
+                st.session_state.auto_run_demo = True
+                st.session_state.selected_sample = name
+                st.session_state.topology_yaml = sample["yaml"]
+                st.session_state.current_page = "page_simulation"
+                st.rerun()
 
 
 # ══════════════════════════════════════════════════════════════════
@@ -1280,7 +1411,7 @@ def show_welcome() -> None:
 
 def page_dashboard() -> None:
     """ダッシュボード: 直近のシミュレーション結果サマリー."""
-    st.header("ダッシュボード")
+    st.header("\U0001f4ca ダッシュボード")
     st.caption("直近のシミュレーション結果を一目で確認できます。")
 
     result = st.session_state.sim_result
@@ -1291,14 +1422,13 @@ def page_dashboard() -> None:
         st.markdown("""
         <div class="empty-state">
             <h3>まだシミュレーションを実行していません</h3>
-            <p>インフラトポロジーを入力して、障害シミュレーションを実行すると<br>
-            ここにスコアと結果のサマリーが表示されます。</p>
+            <p>シミュレーションを実行すると、スコアと結果のサマリーが表示されます。</p>
         </div>
         """, unsafe_allow_html=True)
         st.markdown("")
         _col_l, col_center, _col_r = st.columns([1, 2, 1])
         with col_center:
-            if st.button("シミュレーションを始める", type="primary", use_container_width=True):
+            if st.button("\u26a1 シミュレーションを始める", type="primary", use_container_width=True):
                 st.session_state.current_page = "page_simulation"
                 st.rerun()
         return
@@ -1311,17 +1441,17 @@ def page_dashboard() -> None:
     c1, c2, c3, c4 = st.columns(4)
     c1.metric("総シナリオ数", result["total_scenarios"])
     c2.metric(
-        "CRITICAL",
+        "\U0001f6a8 CRITICAL",
         result["critical"],
         help="即座に対応が必要な重大な障害シナリオの数です",
     )
     c3.metric(
-        "WARNING",
+        "\u26a0\ufe0f WARNING",
         result["warning"],
         help="注意が必要な障害シナリオの数です",
     )
     c4.metric(
-        "PASS",
+        "\u2705 PASS",
         result["passed"],
         help="冗長化等が機能しており、問題のないシナリオの数です",
     )
@@ -1331,7 +1461,7 @@ def page_dashboard() -> None:
     critical_suggestions = [s for s in suggestions if isinstance(s, dict) and s.get("priority") == "critical"]
     if critical_suggestions:
         st.markdown("---")
-        st.markdown("#### 最優先で対応すべきこと")
+        st.markdown("#### \U0001f6a8 最優先で対応すべきこと")
         for i, sug in enumerate(critical_suggestions[:3], 1):
             st.markdown(
                 f'<div class="suggestion-card suggestion-card-critical">'
@@ -1341,7 +1471,7 @@ def page_dashboard() -> None:
                 unsafe_allow_html=True,
             )
         st.markdown("")
-        if st.button("すべての改善提案を見る"):
+        if st.button("\U0001f4a1 すべての改善提案を見る"):
             st.session_state.current_page = "page_suggestions"
             st.rerun()
 
@@ -1349,11 +1479,12 @@ def page_dashboard() -> None:
     if len(history) > 1:
         st.markdown("---")
         st.markdown("#### 実行履歴")
-        for i, h in enumerate(reversed(history[-5:])):
+        for _i, h in enumerate(reversed(history[-5:])):
             score = h["resilience_score"]
+            emoji = _score_emoji(score)
             color = "#22c55e" if score >= 80 else "#f59e0b" if score >= 60 else "#ef4444"
             st.markdown(
-                f"<span style='color:{color};font-weight:bold'>{score:.1f}</span>"
+                f"{emoji} <span style='color:{color};font-weight:bold'>{score:.1f}</span>"
                 f" / 100  -  CRITICAL: {h['critical']}, WARNING: {h['warning']}, PASS: {h['passed']}",
                 unsafe_allow_html=True,
             )
@@ -1364,31 +1495,67 @@ def page_dashboard() -> None:
 # ══════════════════════════════════════════════════════════════════
 
 def page_simulation() -> None:
-    """シミュレーション実行: サンプル選択 or YAML入力 -> 実行."""
-    st.header("シミュレーション実行")
-    st.caption(
-        "サンプルトポロジーを選ぶか、YAML/JSONを直接入力してシミュレーションを実行できます。"
-    )
+    """シミュレーション実行: サンプル選択 -> 自動実行 -> 結果をインライン表示."""
+    st.header("\u26a1 シミュレーション")
 
-    # サンプル読み込み成功フィードバック (HIGH-1)
-    if st.session_state.get("sample_loaded"):
-        st.success(f"サンプル「{st.session_state.selected_sample}」を読み込みました")
-        st.session_state.sample_loaded = False
+    # --- 自動実行（ウェルカムからのワンクリック遷移時） ---
+    if st.session_state.auto_run_demo:
+        st.session_state.auto_run_demo = False
+        sample_key = st.session_state.selected_sample
+        if sample_key:
+            with st.spinner(f"「{sample_key}」でシミュレーション実行中..."):
+                if not FAULTRAY_AVAILABLE:
+                    time.sleep(0.5)
+                results = _execute_demo_simulation(sample_key)
+            if results:
+                st.session_state.sim_result = results
+                st.session_state.sim_history.append(results)
+                if len(st.session_state.sim_history) > 20:
+                    st.session_state.sim_history = st.session_state.sim_history[-20:]
+                st.session_state.inline_result = results
 
-    # YAML エラー永続表示 (MEDIUM-3)
-    if st.session_state.get("yaml_error"):
-        st.error(st.session_state.yaml_error)
-        st.session_state.yaml_error = None
+    # --- インライン結果表示（シミュレーション直後） ---
+    inline_result = st.session_state.inline_result
+    if inline_result:
+        st.markdown("### 結果サマリー")
+        render_score_inline(inline_result["resilience_score"])
+        st.markdown("")
 
-    # エンジン状態
+        c1, c2, c3 = st.columns(3)
+        c1.metric("\U0001f6a8 CRITICAL", inline_result["critical"])
+        c2.metric("\u26a0\ufe0f WARNING", inline_result["warning"])
+        c3.metric("\u2705 PASS", inline_result["passed"])
+
+        st.markdown("#### 発見された主な問題")
+        render_inline_top_issues(inline_result)
+
+        st.markdown("")
+        col_detail, col_suggest, col_new = st.columns(3)
+        with col_detail:
+            if st.button("\U0001f4cb 結果の詳細を見る", use_container_width=True):
+                st.session_state.current_page = "page_results"
+                st.rerun()
+        with col_suggest:
+            if st.button("\U0001f4a1 改善提案を見る", use_container_width=True):
+                st.session_state.current_page = "page_suggestions"
+                st.rerun()
+        with col_new:
+            if st.button("\U0001f504 別の構成を試す", use_container_width=True):
+                st.session_state.inline_result = None
+                st.rerun()
+
+        st.markdown("---")
+
+    # --- エンジン状態（簡潔に） ---
     if not FAULTRAY_AVAILABLE:
-        st.info(
-            "**デモモード**で動作中。サンプル結果を表示します。  \n"
-            "実際のシミュレーションには `pip install faultray` を実行してください。"
+        st.caption(
+            "\U0001f4cb デモモードで動作中 - サンプル結果を表示します。"
+            " 実際のシミュレーションには `pip install faultray` を実行してください。"
         )
 
-    # -- サンプル選択
-    st.markdown("#### サンプルトポロジーを選ぶ")
+    # --- サンプル選択（カードクリックで即実行） ---
+    st.markdown("#### 構成を選んでシミュレーション")
+    st.caption("カードをクリックすると即座にシミュレーションを実行します")
 
     sample_cols = st.columns(3)
     sample_names = list(SAMPLE_TOPOLOGIES.keys())
@@ -1396,121 +1563,115 @@ def page_simulation() -> None:
     for idx, col in enumerate(sample_cols):
         name = sample_names[idx]
         sample = SAMPLE_TOPOLOGIES[name]
+        is_selected = (st.session_state.selected_sample == name)
         with col:
+            card_class = "sample-card-clickable"
+            if is_selected:
+                card_class += " sample-card-selected"
             st.markdown(
-                f'<div class="sample-card">'
-                f'<div style="font-size:1.5em;margin-bottom:4px">{sample["icon"]}</div>'
+                f'<div class="{card_class}">'
+                f'<div style="font-size:1.8em;margin-bottom:4px">{sample["icon"]}</div>'
                 f'<strong>{name}</strong><br>'
                 f'<span style="color:#6c757d;font-size:0.9em">{sample["detail"]}</span>'
                 f'</div>',
                 unsafe_allow_html=True,
             )
-            if st.button("この構成を使う", key=f"sample_{idx}", use_container_width=True):
-                st.session_state.topology_yaml = sample["yaml"]
+            btn_label = "\u2705 選択中" if is_selected else f"{sample['icon']} この構成で実行"
+            if st.button(
+                btn_label,
+                key=f"sample_{idx}",
+                use_container_width=True,
+                disabled=is_selected,
+            ):
                 st.session_state.selected_sample = name
-                st.session_state.sample_loaded = True
+                st.session_state.topology_yaml = sample["yaml"]
+                st.session_state.auto_run_demo = True
+                st.session_state.inline_result = None
                 st.rerun()
 
-    # -- カスタム入力
+    # --- 上級者向け: YAML直接入力 ---
     st.markdown("---")
-    st.markdown("#### または YAML / JSON を直接入力")
+    with st.expander("\U0001f527 上級者向け: YAML / JSON を直接入力", expanded=False):
+        # YAML エラー表示
+        if st.session_state.get("yaml_error"):
+            st.error(st.session_state.yaml_error)
+            st.session_state.yaml_error = None
 
-    default_yaml = st.session_state.topology_yaml
-    if not default_yaml:
-        default_yaml = SAMPLE_TOPOLOGIES["Webアプリ 3層構成"]["yaml"]
-        st.session_state.selected_sample = "Webアプリ 3層構成"
+        default_yaml = st.session_state.topology_yaml
+        if not default_yaml:
+            default_yaml = SAMPLE_TOPOLOGIES["Webアプリ 3層構成"]["yaml"]
 
-    if st.session_state.selected_sample:
-        st.caption(f"選択中: **{st.session_state.selected_sample}**")
+        topology_text = st.text_area(
+            "トポロジー定義",
+            value=default_yaml,
+            height=250,
+            help="components（コンポーネント定義）とdependencies（依存関係）をYAMLまたはJSONで記述します",
+            key="topology_input",
+        )
 
-    topology_text = st.text_area(
-        "トポロジー定義",
-        value=default_yaml,
-        height=250,
-        help="components（コンポーネント定義）とdependencies（依存関係）をYAMLまたはJSONで記述します",
-        key="topology_input",
-    )
-    # text_areaの編集をsession_stateに反映（ページ遷移後も保持）
-    if topology_text != default_yaml:
-        st.session_state.topology_yaml = topology_text
-        st.session_state.selected_sample = None  # カスタム入力に切り替え
+        col_preview, col_run = st.columns([1, 1])
 
-    # -- ボタン行
-    col_preview, col_run = st.columns([1, 1])
+        with col_preview:
+            if st.button("\U0001f441\ufe0f トポロジーを可視化", use_container_width=True):
+                try:
+                    topo = parse_topology(topology_text)
+                    st.session_state.parsed_topology = topo
+                    st.session_state.show_topology_preview = True
+                    st.session_state.yaml_error = None
+                except Exception as e:
+                    st.session_state.yaml_error = f"パースエラー: {e}"
+                    st.rerun()
 
-    with col_preview:
-        if st.button("トポロジーを可視化", use_container_width=True):
+        with col_run:
+            run_clicked = st.button(
+                "\u26a1 カスタムシミュレーション開始",
+                type="primary",
+                use_container_width=True,
+            )
+
+        # -- トポロジー可視化
+        if st.session_state.show_topology_preview and st.session_state.parsed_topology:
+            st.markdown("")
+            st.markdown("##### トポロジーグラフ")
+            st.markdown(
+                "依存関係の種類: "
+                f"{_tooltip('-> (必須)', '障害が直接伝播する依存。ターゲット停止でソースも停止')}  "
+                f"{_tooltip('~> (任意)', '部分劣化する依存。ターゲット停止でもソースは動作可能')}  "
+                f"{_tooltip('>> (非同期)', '遅延して影響する依存。キューやイベントバス経由')}",
+                unsafe_allow_html=True,
+            )
+            render_topology_graph(st.session_state.parsed_topology)
+
+        # -- カスタムシミュレーション実行
+        if run_clicked:
             try:
                 topo = parse_topology(topology_text)
-                st.session_state.parsed_topology = topo
-                st.session_state.show_topology_preview = True
                 st.session_state.yaml_error = None
             except Exception as e:
-                st.session_state.yaml_error = f"パースエラー: {e}"
+                st.session_state.yaml_error = f"トポロジーのパースに失敗しました: {e}"
                 st.rerun()
+                return
 
-    with col_run:
-        run_clicked = st.button(
-            "シミュレーション開始",
-            type="primary",
-            use_container_width=True,
-        )
+            st.session_state.topology_yaml = topology_text
+            st.session_state.selected_sample = None
 
-    # -- トポロジー可視化
-    if st.session_state.show_topology_preview and st.session_state.parsed_topology:
-        st.markdown("")
-        st.markdown("##### トポロジーグラフ")
-        st.markdown(
-            "依存関係の種類: "
-            f"{_tooltip('-> (必須)', '障害が直接伝播する依存。ターゲット停止でソースも停止')}  "
-            f"{_tooltip('~> (任意)', '部分劣化する依存。ターゲット停止でもソースは動作可能')}  "
-            f"{_tooltip('>> (非同期)', '遅延して影響する依存。キューやイベントバス経由')}",
-            unsafe_allow_html=True,
-        )
-        render_topology_graph(st.session_state.parsed_topology)
-
-    # -- シミュレーション実行
-    if run_clicked:
-        try:
-            topo = parse_topology(topology_text)
-            st.session_state.yaml_error = None
-        except Exception as e:
-            st.session_state.yaml_error = f"トポロジーのパースに失敗しました: {e}"
-            st.rerun()
-            return
-
-        with st.spinner("シミュレーション実行中..."):
-            if FAULTRAY_AVAILABLE:
-                try:
-                    results = run_simulation(topo)
-                except Exception as e:
-                    st.error(f"シミュレーションエラー: {e}")
-                    st.code(traceback.format_exc(), language="python")
-                    return
-            else:
-                # デモモード
-                time.sleep(0.8)
-                sample_key = st.session_state.selected_sample
-                if not sample_key or sample_key not in DEMO_RESULTS:
+            with st.spinner("シミュレーション実行中..."):
+                if FAULTRAY_AVAILABLE:
+                    try:
+                        results = run_simulation(topo)
+                    except Exception as e:
+                        st.error(f"シミュレーションエラー: {e}")
+                        st.code(traceback.format_exc(), language="python")
+                        return
+                else:
                     st.warning("デモモードではカスタムトポロジーのシミュレーションは実行できません。サンプルを選択してください。")
                     return
-                results = DEMO_RESULTS[sample_key]
 
-        st.session_state.sim_result = results
-        st.session_state.sim_history.append(results)
-        # 履歴は最新20件に制限（メモリ膨張防止）
-        if len(st.session_state.sim_history) > 20:
-            st.session_state.sim_history = st.session_state.sim_history[-20:]
-
-        # シミュレーション完了メッセージ + 明示的な遷移ボタン (MEDIUM-1)
-        st.success(
-            f"シミュレーション完了！ "
-            f"耐障害スコア: **{results['resilience_score']}** / "
-            f"シナリオ数: {results['total_scenarios']} "
-            f"(CRITICAL: {results['critical']}, WARNING: {results['warning']}, PASS: {results['passed']})"
-        )
-        if st.button("結果を見る", type="primary"):
-            st.session_state.current_page = "page_results"
+            st.session_state.sim_result = results
+            st.session_state.sim_history.append(results)
+            if len(st.session_state.sim_history) > 20:
+                st.session_state.sim_history = st.session_state.sim_history[-20:]
+            st.session_state.inline_result = results
             st.rerun()
 
 
@@ -1520,7 +1681,7 @@ def page_simulation() -> None:
 
 def page_results() -> None:
     """結果詳細: シナリオ一覧とフィルタ."""
-    st.header("結果詳細")
+    st.header("\U0001f4cb 結果詳細")
     st.caption(
         "シミュレーションで発見されたすべての障害シナリオを確認できます。"
     )
@@ -1533,7 +1694,7 @@ def page_results() -> None:
             <p>シミュレーションを実行すると、ここに詳細な結果が表示されます。</p>
         </div>
         """, unsafe_allow_html=True)
-        if st.button("シミュレーションを始める", type="primary"):
+        if st.button("\u26a1 シミュレーションを始める", type="primary"):
             st.session_state.current_page = "page_simulation"
             st.rerun()
         return
@@ -1549,17 +1710,17 @@ def page_results() -> None:
         c1, c2, c3, c4 = st.columns(4)
         c1.metric("総数", result["total_scenarios"])
         c2.metric(
-            "CRITICAL",
+            "\U0001f6a8 CRITICAL",
             result["critical"],
             help="即座に対応が必要な重大な障害シナリオです",
         )
         c3.metric(
-            "WARNING",
+            "\u26a0\ufe0f WARNING",
             result["warning"],
             help="注意が必要な障害シナリオです",
         )
         c4.metric(
-            "PASS",
+            "\u2705 PASS",
             result["passed"],
             help="冗長化が機能しており問題のないシナリオです",
         )
@@ -1593,7 +1754,7 @@ def page_results() -> None:
     if not scenarios_sorted:
         st.info("該当するシナリオがありません")
     else:
-        # 最初の10件を表示、残りはexpanderにまとめる (MEDIUM-2)
+        # 最初の10件を表示、残りはexpanderにまとめる
         _INITIAL_DISPLAY = 10
         for scenario in scenarios_sorted[:_INITIAL_DISPLAY]:
             render_scenario_card(scenario)
@@ -1608,7 +1769,7 @@ def page_results() -> None:
     st.markdown("#### 結果エクスポート")
     export_data = json.dumps(result, ensure_ascii=False, indent=2)
     st.download_button(
-        label="JSON でダウンロード",
+        label="\U0001f4e5 JSON でダウンロード",
         data=export_data,
         file_name="faultray-results.json",
         mime="application/json",
@@ -1623,7 +1784,7 @@ def page_results() -> None:
 
 def page_suggestions() -> None:
     """改善提案: 発見された問題と対策の一覧."""
-    st.header("改善提案")
+    st.header("\U0001f4a1 改善提案")
     st.caption("発見された問題とその対策を優先度順に確認できます。")
 
     result = st.session_state.sim_result
@@ -1634,7 +1795,7 @@ def page_suggestions() -> None:
             <p>シミュレーションを実行すると、ここに改善提案が表示されます。</p>
         </div>
         """, unsafe_allow_html=True)
-        if st.button("シミュレーションを始める", type="primary"):
+        if st.button("\u26a1 シミュレーションを始める", type="primary"):
             st.session_state.current_page = "page_simulation"
             st.rerun()
         return
@@ -1652,17 +1813,17 @@ def page_suggestions() -> None:
 
     col1, col2, col3 = st.columns(3)
     col1.metric(
-        "CRITICAL",
+        "\U0001f6a8 CRITICAL",
         f"{critical_count}件",
         help="即座に対応が必要な重大な問題です",
     )
     col2.metric(
-        "WARNING",
+        "\u26a0\ufe0f WARNING",
         f"{warning_count}件",
         help="早めに対応すべき問題です",
     )
     col3.metric(
-        "情報",
+        "\u2139\ufe0f 情報",
         f"{info_count}件",
         help="参考情報です",
     )
@@ -1725,7 +1886,7 @@ def page_suggestions() -> None:
 
 def page_settings() -> None:
     """設定: トポロジーの保存/読み込み."""
-    st.header("設定")
+    st.header("\u2699\ufe0f 設定")
     st.caption("トポロジーの保存・読み込みとデータ管理ができます。")
 
     # -- トポロジーの保存
@@ -1735,7 +1896,7 @@ def page_settings() -> None:
     if current_yaml:
         st.caption("現在のトポロジーをファイルとしてダウンロードできます。")
         st.download_button(
-            label="YAML でダウンロード",
+            label="\U0001f4e5 YAML でダウンロード",
             data=current_yaml,
             file_name="faultray-topology.yaml",
             mime="text/yaml",
@@ -1778,12 +1939,13 @@ def page_settings() -> None:
 
     col1, col2 = st.columns(2)
     with col1:
-        if st.button("シミュレーション結果をリセット"):
+        if st.button("\U0001f5d1\ufe0f シミュレーション結果をリセット"):
             st.session_state.sim_result = None
             st.session_state.sim_history = []
+            st.session_state.inline_result = None
             st.success("シミュレーション結果をリセットしました。")
     with col2:
-        if st.button("トポロジーをリセット"):
+        if st.button("\U0001f5d1\ufe0f トポロジーをリセット"):
             st.session_state.topology_yaml = ""
             st.session_state.selected_sample = None
             st.session_state.parsed_topology = None
@@ -1816,32 +1978,62 @@ def page_settings() -> None:
 # ルーティング
 # ══════════════════════════════════════════════════════════════════
 
+MENU_ITEMS = [
+    "\U0001f4ca ダッシュボード",
+    "\u26a1 シミュレーション",
+    "\U0001f4cb 結果詳細",
+    "\U0001f4a1 改善提案",
+    "\u2699\ufe0f 設定",
+]
+
+MENU_TO_PAGE_KEY = {
+    "\U0001f4ca ダッシュボード": "page_dashboard",
+    "\u26a1 シミュレーション": "page_simulation",
+    "\U0001f4cb 結果詳細": "page_results",
+    "\U0001f4a1 改善提案": "page_suggestions",
+    "\u2699\ufe0f 設定": "page_settings",
+}
+
+PAGE_KEY_TO_MENU = {v: k for k, v in MENU_TO_PAGE_KEY.items()}
+
+PAGE_KEY_TO_FN = {
+    "page_dashboard": page_dashboard,
+    "page_simulation": page_simulation,
+    "page_results": page_results,
+    "page_suggestions": page_suggestions,
+    "page_settings": page_settings,
+}
+
 if not st.session_state.onboarded:
     show_welcome()
 else:
     # サイドバー
-    st.sidebar.title("FaultRay")
+    st.sidebar.title("\u26a1 FaultRay")
     st.sidebar.caption("インフラ障害シミュレーター")
     st.sidebar.markdown("---")
 
+    # ページ遷移（ボタンからの直接遷移をサポート）
+    override_page = st.session_state.current_page
+    default_index = 0
+    if override_page in PAGE_KEY_TO_MENU:
+        menu_label = PAGE_KEY_TO_MENU[override_page]
+        if menu_label in MENU_ITEMS:
+            default_index = MENU_ITEMS.index(menu_label)
+        st.session_state.current_page = None
+
     page = st.sidebar.radio(
         "メニュー",
-        [
-            "ダッシュボード",
-            "シミュレーション実行",
-            "結果詳細",
-            "改善提案",
-            "設定",
-        ],
+        MENU_ITEMS,
+        index=default_index,
         label_visibility="collapsed",
     )
 
     # エンジン状態バッジ
     st.sidebar.markdown("---")
     if FAULTRAY_AVAILABLE:
-        st.sidebar.success("エンジン: 有効")
+        st.sidebar.success("\u2705 エンジン: 有効")
     else:
-        st.sidebar.warning("デモモード: サンプルデータで動作しています。実際のシミュレーションには `pip install faultray` が必要です。")
+        st.sidebar.info("\U0001f4cb デモモード")
 
     st.sidebar.markdown("---")
     st.sidebar.markdown(
@@ -1852,29 +2044,6 @@ else:
         unsafe_allow_html=True,
     )
 
-    # ページ遷移（ボタンからの直接遷移をサポート）
-    override_page = st.session_state.current_page
-    if override_page in (
-        "page_dashboard", "page_simulation", "page_results",
-        "page_suggestions", "page_settings",
-    ):
-        page_map = {
-            "page_dashboard": "ダッシュボード",
-            "page_simulation": "シミュレーション実行",
-            "page_results": "結果詳細",
-            "page_suggestions": "改善提案",
-            "page_settings": "設定",
-        }
-        page = page_map.get(override_page, page)
-        st.session_state.current_page = None
-
-    PAGE_MAP = {
-        "ダッシュボード": page_dashboard,
-        "シミュレーション実行": page_simulation,
-        "結果詳細": page_results,
-        "改善提案": page_suggestions,
-        "設定": page_settings,
-    }
-
-    page_fn = PAGE_MAP.get(page, page_dashboard)
+    page_key = MENU_TO_PAGE_KEY.get(page, "page_dashboard")
+    page_fn = PAGE_KEY_TO_FN.get(page_key, page_dashboard)
     page_fn()
