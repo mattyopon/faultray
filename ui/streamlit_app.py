@@ -892,7 +892,8 @@ DEMO_RESULTS: dict[str, dict[str, Any]] = {
 
 def _tooltip(term: str, explanation: str) -> str:
     """専門用語にツールチップを付与する."""
-    return f'<span class="tooltip-term" title="{explanation}">{term}</span>'
+    import html as _html
+    return f'<span class="tooltip-term" title="{_html.escape(explanation)}">{_html.escape(term)}</span>'
 
 
 def parse_topology(text: str) -> dict[str, Any]:
@@ -901,8 +902,12 @@ def parse_topology(text: str) -> dict[str, Any]:
     if not text:
         raise ValueError("トポロジーが空です")
     if text.startswith("{") or text.startswith("["):
-        return json.loads(text)
-    return yaml.safe_load(text)
+        result = json.loads(text)
+    else:
+        result = yaml.safe_load(text)
+    if not isinstance(result, dict):
+        raise ValueError(f"トポロジーはオブジェクト（dict）である必要があります。取得した型: {type(result).__name__}")
+    return result
 
 
 def build_infra_graph(topology: dict[str, Any]) -> "InfraGraph":
@@ -1330,8 +1335,8 @@ def page_dashboard() -> None:
         for i, sug in enumerate(critical_suggestions[:3], 1):
             st.markdown(
                 f'<div class="suggestion-card suggestion-card-critical">'
-                f'<strong>{i}. {sug["title"]}</strong><br>'
-                f'<span style="color:#6c757d">{sug["detail"]}</span>'
+                f'<strong>{i}. {__import__("html").escape(sug["title"])}</strong><br>'
+                f'<span style="color:#6c757d">{__import__("html").escape(sug["detail"])}</span>'
                 f'</div>',
                 unsafe_allow_html=True,
             )
@@ -1414,6 +1419,10 @@ def page_simulation() -> None:
         help="components（コンポーネント定義）とdependencies（依存関係）をYAMLまたはJSONで記述します",
         key="topology_input",
     )
+    # text_areaの編集をsession_stateに反映（ページ遷移後も保持）
+    if topology_text != default_yaml:
+        st.session_state.topology_yaml = topology_text
+        st.session_state.selected_sample = None  # カスタム入力に切り替え
 
     # -- ボタン行
     col_preview, col_run = st.columns([1, 1])
@@ -1438,11 +1447,12 @@ def page_simulation() -> None:
     if st.session_state.show_topology_preview and st.session_state.parsed_topology:
         st.markdown("")
         st.markdown("##### トポロジーグラフ")
-        st.caption(
+        st.markdown(
             "依存関係の種類: "
             f"{_tooltip('-> (必須)', '障害が直接伝播する依存。ターゲット停止でソースも停止')}  "
             f"{_tooltip('~> (任意)', '部分劣化する依存。ターゲット停止でもソースは動作可能')}  "
             f"{_tooltip('>> (非同期)', '遅延して影響する依存。キューやイベントバス経由')}",
+            unsafe_allow_html=True,
         )
         render_topology_graph(st.session_state.parsed_topology)
 
@@ -1465,11 +1475,17 @@ def page_simulation() -> None:
             else:
                 # デモモード
                 time.sleep(0.8)
-                sample_key = st.session_state.selected_sample or "Webアプリ 3層構成"
-                results = DEMO_RESULTS.get(sample_key, DEMO_RESULTS["Webアプリ 3層構成"])
+                sample_key = st.session_state.selected_sample
+                if not sample_key or sample_key not in DEMO_RESULTS:
+                    st.warning("デモモードではカスタムトポロジーのシミュレーションは実行できません。サンプルを選択してください。")
+                    return
+                results = DEMO_RESULTS[sample_key]
 
         st.session_state.sim_result = results
         st.session_state.sim_history.append(results)
+        # 履歴は最新20件に制限（メモリ膨張防止）
+        if len(st.session_state.sim_history) > 20:
+            st.session_state.sim_history = st.session_state.sim_history[-20:]
         st.session_state.current_page = "page_results"
         st.rerun()
 
@@ -1710,14 +1726,19 @@ def page_settings() -> None:
         help="YAML(.yaml, .yml) または JSON(.json) ファイルをアップロードしてください",
     )
     if uploaded is not None:
-        content = uploaded.read().decode("utf-8")
         try:
-            parse_topology(content)  # バリデーション
-            st.session_state.topology_yaml = content
-            st.session_state.selected_sample = None
-            st.success(f"ファイル「{uploaded.name}」を読み込みました。シミュレーションページで使用できます。")
-        except Exception as e:
-            st.error(f"ファイルのパースに失敗しました: {e}")
+            content = uploaded.read().decode("utf-8")
+        except UnicodeDecodeError:
+            st.error("ファイルのエンコーディングがUTF-8ではありません。UTF-8で保存し直してください。")
+            content = None
+        if content is not None:
+            try:
+                parse_topology(content)  # バリデーション
+                st.session_state.topology_yaml = content
+                st.session_state.selected_sample = None
+                st.success(f"ファイル「{uploaded.name}」を読み込みました。シミュレーションページで使用できます。")
+            except Exception as e:
+                st.error(f"ファイルのパースに失敗しました: {e}")
 
     st.markdown("---")
 
