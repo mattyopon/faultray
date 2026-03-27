@@ -58,6 +58,17 @@ def demo(
 
     print_simulation_report(report, console, graph=graph)
 
+    # Financial Impact Report
+    try:
+        from faultray.cli.financial_cmd import _print_financial_report
+        from faultray.simulator.financial_impact import calculate_financial_impact
+
+        console.print("\n[cyan]Calculating financial impact...[/]")
+        fin_report = calculate_financial_impact(graph, simulation_report=report)
+        _print_financial_report(fin_report)
+    except Exception as exc:
+        console.print(f"[dim]Financial impact unavailable: {exc}[/]")
+
     # Launch web dashboard if requested
     if web:
         import uvicorn

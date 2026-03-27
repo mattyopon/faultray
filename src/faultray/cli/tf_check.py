@@ -29,6 +29,10 @@ def tf_check(
         help="Minimum resilience score threshold",
     ),
     json_output: bool = typer.Option(False, "--json", help="Output JSON summary"),
+    financial: bool = typer.Option(
+        False, "--financial",
+        help="Show financial impact of the Terraform change.",
+    ),
 ) -> None:
     """Analyze a Terraform plan for resilience impact.
 
@@ -47,6 +51,9 @@ def tf_check(
 
         # JSON output for CI/CD
         faultray tf-check plan.json --json
+
+        # Show financial impact of the change
+        faultray tf-check plan.json --financial
     """
     from faultray.integrations.terraform_provider import TerraformFaultRayProvider
 
@@ -80,6 +87,52 @@ def tf_check(
         })
     else:
         _print_tf_analysis(analysis)
+
+    # Financial impact comparison (when --financial is set)
+    if financial and not json_output:
+        try:
+            from faultray.simulator.financial_impact import calculate_financial_impact
+
+            # Build before/after graphs from the provider analysis
+            before_graph = getattr(analysis, "before_graph", None)
+            after_graph = getattr(analysis, "after_graph", None)
+
+            if before_graph is not None and after_graph is not None:
+                before_fin = calculate_financial_impact(before_graph)
+                after_fin = calculate_financial_impact(after_graph)
+
+                before_loss = before_fin.total_annual_loss
+                after_loss = after_fin.total_annual_loss
+                delta_loss = after_loss - before_loss
+
+                if delta_loss > 0:
+                    delta_str = f"[red]+${delta_loss:,.0f}[/]"
+                    delta_msg = f"This change [red]increases[/] annual risk by ${delta_loss:,.0f}"
+                elif delta_loss < 0:
+                    delta_str = f"[green]-${abs(delta_loss):,.0f}[/]"
+                    delta_msg = f"This change [green]reduces[/] annual risk by ${abs(delta_loss):,.0f}"
+                else:
+                    delta_str = "[dim]$0[/]"
+                    delta_msg = "No change in financial risk"
+
+                from rich.panel import Panel
+                console.print()
+                console.print(Panel(
+                    f"Score Before: [bold]{analysis.score_before:.0f}/100[/] "
+                    f"(${before_loss:,.0f}/year risk)\n"
+                    f"Score After:  [bold]{analysis.score_after:.0f}/100[/] "
+                    f"(${after_loss:,.0f}/year risk)\n"
+                    f"{delta_msg}",
+                    title="[bold]Financial Impact of Change[/]",
+                    border_style="red" if delta_loss > 0 else "green",
+                ))
+            else:
+                console.print(
+                    "[dim]Financial impact comparison requires before/after "
+                    "graphs from the Terraform provider.[/]"
+                )
+        except Exception as exc:
+            console.print(f"[dim]Financial impact unavailable: {exc}[/]")
 
     # Check for regression
     exit_code = 0

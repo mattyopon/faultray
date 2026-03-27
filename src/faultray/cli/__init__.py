@@ -104,6 +104,7 @@ _KNOWN_MODULES: list[str] = [
     "attack_surface_cmd",
     "score_cmd",
     "cost_impact_cmd",
+    "financial_cmd",
     "init_cmd",
     "agent_cmd",
 ]
