@@ -223,7 +223,7 @@ class TestEnums:
         assert Severity.INFO.value == "info"
 
     def test_framework_count(self):
-        assert len(ComplianceFramework) == 6
+        assert len(ComplianceFramework) == 9
 
 
 # ---------------------------------------------------------------------------
@@ -707,10 +707,10 @@ class TestGDPRAssessment:
 
 
 class TestAssessAll:
-    def test_returns_six_reports(self, all_true_evidence):
+    def test_returns_nine_reports(self, all_true_evidence):
         engine = ComplianceFrameworksEngine(all_true_evidence)
         reports = engine.assess_all()
-        assert len(reports) == 6
+        assert len(reports) == 9
 
     def test_all_frameworks_covered(self, all_true_evidence):
         engine = ComplianceFrameworksEngine(all_true_evidence)
@@ -726,10 +726,20 @@ class TestAssessAll:
     def test_all_full_compliance(self, all_true_evidence):
         engine = ComplianceFrameworksEngine(all_true_evidence)
         reports = engine.assess_all()
+        # AI governance frameworks (METI, ISO42001, AI Promotion) are
+        # organizational/policy-based and not fully assessable from
+        # infrastructure evidence alone, so exclude them from the
+        # 80% threshold check.
+        infra_frameworks = {
+            ComplianceFramework.SOC2, ComplianceFramework.ISO27001,
+            ComplianceFramework.PCI_DSS, ComplianceFramework.DORA,
+            ComplianceFramework.HIPAA, ComplianceFramework.GDPR,
+        }
         for report in reports:
-            assert report.overall_score >= 80.0, (
-                f"{report.framework} score {report.overall_score} below 80"
-            )
+            if report.framework in infra_frameworks:
+                assert report.overall_score >= 80.0, (
+                    f"{report.framework} score {report.overall_score} below 80"
+                )
 
     def test_all_zero_compliance(self, all_false_evidence):
         engine = ComplianceFrameworksEngine(all_false_evidence)

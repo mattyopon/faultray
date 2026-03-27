@@ -74,7 +74,7 @@ def compliance_monitor(
         except ValueError:
             console.print(
                 f"[red]Unknown framework: '{framework}'[/]\n"
-                f"[dim]Valid: soc2, iso27001, pci_dss, nist_csf, dora, hipaa, all[/]"
+                f"[dim]Valid: soc2, iso27001, pci_dss, nist_csf, dora, hipaa, meti-v1.1, iso42001, ai-promotion, all[/]"
             )
             raise typer.Exit(1)
 

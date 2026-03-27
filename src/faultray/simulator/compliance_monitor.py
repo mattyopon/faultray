@@ -40,6 +40,9 @@ class ComplianceFramework(str, Enum):
     PCI_DSS = "pci_dss"
     NIST_CSF = "nist_csf"
     HIPAA = "hipaa"
+    METI_V1_1 = "meti-v1.1"
+    ISO42001 = "iso42001"
+    AI_PROMOTION = "ai-promotion"
 
 
 class ControlStatus(str, Enum):
@@ -388,6 +391,9 @@ class ComplianceMonitor:
             ComplianceFramework.PCI_DSS: self._build_pci_dss_controls(),
             ComplianceFramework.NIST_CSF: self._build_nist_csf_controls(),
             ComplianceFramework.HIPAA: _build_hipaa_controls(),
+            ComplianceFramework.METI_V1_1: self._build_meti_v1_1_controls(),
+            ComplianceFramework.ISO42001: self._build_iso42001_controls(),
+            ComplianceFramework.AI_PROMOTION: self._build_ai_promotion_controls(),
         }
         # Initialise SQLite store and load existing history if store_path given
         if self._store_path is not None:
@@ -623,6 +629,143 @@ class ComplianceMonitor:
                 "description": "Recovery plans incorporate lessons learned.",
                 "risk": "Repeated failures from same root cause",
                 "check": "_check_failover_capability",
+            },
+        ]
+
+    @staticmethod
+    def _build_meti_v1_1_controls() -> list[dict]:
+        """METI AI事業者ガイドライン v1.1 controls (infrastructure-assessable subset)."""
+        return [
+            {
+                "control_id": "METI-C02",
+                "title": "Safety: risk assessment and safe operation",
+                "description": "Risk assessment and safe operation procedures for AI systems.",
+                "risk": "AI system failures cause harm without recovery procedures",
+                "check": "_check_business_continuity",
+            },
+            {
+                "control_id": "METI-C05-SEC",
+                "title": "Security: adversarial attack protection",
+                "description": "Protect AI systems from adversarial attacks and unauthorized access.",
+                "risk": "AI systems compromised through adversarial or cyber attacks",
+                "check": "_check_security_controls",
+            },
+            {
+                "control_id": "METI-C05-VULN",
+                "title": "Security: vulnerability management",
+                "description": "Regular vulnerability assessment and timely remediation.",
+                "risk": "Known vulnerabilities exploited in AI infrastructure",
+                "check": "_check_access_controls",
+            },
+            {
+                "control_id": "METI-C05-INC",
+                "title": "Security: incident response",
+                "description": "Security incident response procedures and communication channels.",
+                "risk": "Delayed or chaotic response to AI security incidents",
+                "check": "_check_incident_detection",
+            },
+            {
+                "control_id": "METI-C06-DOC",
+                "title": "Transparency: documentation",
+                "description": "AI system technical specifications and performance metrics documented.",
+                "risk": "Lack of auditability and inability to explain AI behavior",
+                "check": "_check_asset_inventory",
+            },
+            {
+                "control_id": "METI-C07-GOV",
+                "title": "Accountability: governance records",
+                "description": "Governance records maintained in auditable state.",
+                "risk": "Cannot demonstrate compliance during audits",
+                "check": "_check_audit_controls",
+            },
+        ]
+
+    @staticmethod
+    def _build_iso42001_controls() -> list[dict]:
+        """ISO/IEC 42001:2023 AIMS controls (infrastructure-assessable subset)."""
+        return [
+            {
+                "control_id": "ISO42001-4",
+                "title": "Context: asset inventory and scope",
+                "description": "AIMS scope documented with complete asset inventory.",
+                "risk": "Unknown AI assets create governance blind spots",
+                "check": "_check_asset_inventory",
+            },
+            {
+                "control_id": "ISO42001-6",
+                "title": "Planning: AI risk assessment",
+                "description": "AI risk assessment process defined and executed.",
+                "risk": "Unidentified AI risks lead to incidents",
+                "check": "_check_redundancy",
+            },
+            {
+                "control_id": "ISO42001-7",
+                "title": "Support: documentation and communication",
+                "description": "AIMS documentation maintained and communicated.",
+                "risk": "Inadequate documentation undermines AIMS effectiveness",
+                "check": "_check_audit_controls",
+            },
+            {
+                "control_id": "ISO42001-8",
+                "title": "Operation: risk treatment and impact evaluation",
+                "description": "AI risk treatment plans implemented and AI impact evaluated.",
+                "risk": "Untreated AI risks cause harm to individuals or society",
+                "check": "_check_security_controls",
+            },
+            {
+                "control_id": "ISO42001-9",
+                "title": "Performance: monitoring and audit",
+                "description": "AIMS performance monitored with internal audits conducted.",
+                "risk": "Degrading AI governance posture goes undetected",
+                "check": "_check_monitoring",
+            },
+            {
+                "control_id": "ISO42001-10",
+                "title": "Improvement: corrective actions",
+                "description": "Nonconformities addressed with corrective actions.",
+                "risk": "Recurring AI governance failures",
+                "check": "_check_incident_detection",
+            },
+        ]
+
+    @staticmethod
+    def _build_ai_promotion_controls() -> list[dict]:
+        """AI推進法 (AI Promotion Act) controls (infrastructure-assessable subset)."""
+        return [
+            {
+                "control_id": "APA-CH3-RISK",
+                "title": "Risk management framework",
+                "description": "Risk management framework for high-risk AI systems.",
+                "risk": "Non-compliance with mandatory risk management requirements",
+                "check": "_check_redundancy",
+            },
+            {
+                "control_id": "APA-CH3-SEC",
+                "title": "Cybersecurity measures",
+                "description": "Cybersecurity measures for AI systems.",
+                "risk": "AI systems vulnerable to cyber attacks in violation of law",
+                "check": "_check_security_controls",
+            },
+            {
+                "control_id": "APA-CH3-INC",
+                "title": "Incident reporting readiness",
+                "description": "Incident detection and reporting capabilities.",
+                "risk": "Failure to report AI incidents as legally required",
+                "check": "_check_incident_detection",
+            },
+            {
+                "control_id": "APA-CH5-GOV",
+                "title": "AI governance structure",
+                "description": "AI governance body established with internal controls.",
+                "risk": "Lack of governance structure violates legal expectations",
+                "check": "_check_asset_inventory",
+            },
+            {
+                "control_id": "APA-CH5-AUDIT",
+                "title": "Audit readiness and record keeping",
+                "description": "Operational records maintained for audit compliance.",
+                "risk": "Cannot demonstrate compliance during regulatory audits",
+                "check": "_check_audit_controls",
             },
         ]
 

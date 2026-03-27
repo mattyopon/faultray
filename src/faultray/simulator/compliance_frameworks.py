@@ -19,6 +19,9 @@ class ComplianceFramework(str, Enum):
     PCI_DSS = "pci_dss"
     HIPAA = "hipaa"
     GDPR = "gdpr"
+    METI_V1_1 = "meti-v1.1"
+    ISO42001 = "iso42001"
+    AI_PROMOTION = "ai-promotion"
 
 
 class ControlStatus(str, Enum):
@@ -321,6 +324,12 @@ class ComplianceFrameworksEngine:
             return self._hipaa_controls()
         elif framework == ComplianceFramework.GDPR:
             return self._gdpr_controls()
+        elif framework == ComplianceFramework.METI_V1_1:
+            return self._meti_v1_1_controls()
+        elif framework == ComplianceFramework.ISO42001:
+            return self._iso42001_controls()
+        elif framework == ComplianceFramework.AI_PROMOTION:
+            return self._ai_promotion_controls()
         return []
 
     def _soc2_controls(self) -> list[ComplianceControl]:
@@ -468,4 +477,88 @@ class ComplianceFrameworksEngine:
             ComplianceControl("GDPR-RETENTION", ComplianceFramework.GDPR, "Data Retention",
                 "Define and enforce data retention policies", severity=Severity.MEDIUM,
                 remediation="Implement data retention policies with automated enforcement"),
+        ]
+
+    def _meti_v1_1_controls(self) -> list[ComplianceControl]:
+        """METI AI事業者ガイドライン v1.1 — AI governance controls."""
+        return [
+            ComplianceControl("METI-C01", ComplianceFramework.METI_V1_1, "Human-Centric",
+                "Ensure human dignity and autonomy in AI decision-making", severity=Severity.HIGH,
+                remediation="Establish human oversight processes for AI systems"),
+            ComplianceControl("METI-C02", ComplianceFramework.METI_V1_1, "Safety",
+                "Risk assessment and safe operation of AI systems", severity=Severity.CRITICAL,
+                remediation="Implement AI risk assessment framework and safe-stop procedures"),
+            ComplianceControl("METI-C03", ComplianceFramework.METI_V1_1, "Fairness",
+                "Prevent discriminatory bias in AI outputs", severity=Severity.HIGH,
+                remediation="Implement bias evaluation and remediation processes"),
+            ComplianceControl("METI-C04", ComplianceFramework.METI_V1_1, "Privacy Protection",
+                "Protect personal information in AI systems", severity=Severity.CRITICAL,
+                remediation="Conduct privacy impact assessment and enforce data minimization"),
+            ComplianceControl("METI-C05", ComplianceFramework.METI_V1_1, "Security",
+                "Protect AI systems from adversarial attacks", severity=Severity.CRITICAL,
+                remediation="Implement AI-specific security measures and vulnerability management"),
+            ComplianceControl("METI-C06", ComplianceFramework.METI_V1_1, "Transparency",
+                "Disclose AI usage and explain AI decisions", severity=Severity.HIGH,
+                remediation="Implement explainability features and document AI specifications"),
+            ComplianceControl("METI-C07", ComplianceFramework.METI_V1_1, "Accountability",
+                "Establish AI governance structure and accountability", severity=Severity.HIGH,
+                remediation="Designate AI governance officers and establish governance policies"),
+            ComplianceControl("METI-C08", ComplianceFramework.METI_V1_1, "Education & Literacy",
+                "Provide AI education and user guidance", severity=Severity.MEDIUM,
+                remediation="Implement AI training programs for employees and users"),
+            ComplianceControl("METI-C09", ComplianceFramework.METI_V1_1, "Fair Competition",
+                "Maintain fair competition in AI ecosystem", severity=Severity.LOW,
+                remediation="Establish fair competition policies and IP protection"),
+            ComplianceControl("METI-C10", ComplianceFramework.METI_V1_1, "Innovation",
+                "Contribute to innovation and interoperability", severity=Severity.LOW,
+                remediation="Promote open standards and collaborative AI development"),
+        ]
+
+    def _iso42001_controls(self) -> list[ComplianceControl]:
+        """ISO/IEC 42001:2023 AIMS — AI management system controls."""
+        return [
+            ComplianceControl("ISO42001-4", ComplianceFramework.ISO42001, "Context of Organization",
+                "Understand organizational context and stakeholder needs for AIMS", severity=Severity.HIGH,
+                remediation="Document AIMS scope and stakeholder requirements"),
+            ComplianceControl("ISO42001-5", ComplianceFramework.ISO42001, "Leadership",
+                "Demonstrate leadership commitment to AIMS", severity=Severity.HIGH,
+                remediation="Establish AI policy and assign roles and responsibilities"),
+            ComplianceControl("ISO42001-6", ComplianceFramework.ISO42001, "Planning",
+                "Plan for AI risks, opportunities, and objectives", severity=Severity.CRITICAL,
+                remediation="Implement AI risk assessment and risk treatment processes"),
+            ComplianceControl("ISO42001-7", ComplianceFramework.ISO42001, "Support",
+                "Provide resources, competence, communication, and documentation", severity=Severity.MEDIUM,
+                remediation="Ensure adequate resources, training, and documentation for AIMS"),
+            ComplianceControl("ISO42001-8", ComplianceFramework.ISO42001, "Operation",
+                "Plan and control AIMS operational processes", severity=Severity.CRITICAL,
+                remediation="Execute AI risk assessment and impact evaluation processes"),
+            ComplianceControl("ISO42001-9", ComplianceFramework.ISO42001, "Performance Evaluation",
+                "Monitor, measure, audit, and review AIMS performance", severity=Severity.HIGH,
+                remediation="Implement internal audits and management reviews for AIMS"),
+            ComplianceControl("ISO42001-10", ComplianceFramework.ISO42001, "Improvement",
+                "Address nonconformities and continually improve AIMS", severity=Severity.MEDIUM,
+                remediation="Establish corrective action and continuous improvement processes"),
+        ]
+
+    def _ai_promotion_controls(self) -> list[ComplianceControl]:
+        """AI推進法 — Japanese AI Promotion Act controls."""
+        return [
+            ComplianceControl("APA-CH1", ComplianceFramework.AI_PROMOTION, "Basic Principles",
+                "Comply with fundamental principles of human dignity and sustainability", severity=Severity.HIGH,
+                remediation="Embed AI basic principles into organizational policies"),
+            ComplianceControl("APA-CH2", ComplianceFramework.AI_PROMOTION, "Operator Obligations",
+                "Safety, transparency, and fairness obligations for AI operators", severity=Severity.CRITICAL,
+                remediation="Implement safety, transparency, and fairness measures for AI systems"),
+            ComplianceControl("APA-CH3", ComplianceFramework.AI_PROMOTION, "Safety & Security",
+                "Risk management, privacy protection, security measures, incident reporting", severity=Severity.CRITICAL,
+                remediation="Establish risk management, security, and incident reporting frameworks"),
+            ComplianceControl("APA-CH4", ComplianceFramework.AI_PROMOTION, "Human Resources",
+                "AI talent development and literacy improvement", severity=Severity.MEDIUM,
+                remediation="Implement AI education and training programs"),
+            ComplianceControl("APA-CH5", ComplianceFramework.AI_PROMOTION, "Governance",
+                "AI governance structure and audit readiness", severity=Severity.HIGH,
+                remediation="Establish AI governance body and maintain audit-ready records"),
+            ComplianceControl("APA-CH6", ComplianceFramework.AI_PROMOTION, "Innovation",
+                "IP protection, fair competition, international cooperation", severity=Severity.LOW,
+                remediation="Support innovation through IP protection and international alignment"),
         ]

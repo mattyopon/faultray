@@ -301,9 +301,9 @@ class TestAssessment:
         assert snapshot.compliance_percentage > 0.0
 
     def test_assess_all(self, monitor: ComplianceMonitor, secure_graph: InfraGraph):
-        """assess_all should return snapshots for all 6 frameworks."""
+        """assess_all should return snapshots for all frameworks."""
         results = monitor.assess_all(secure_graph)
-        assert len(results) == 6
+        assert len(results) == 9
         for fw in ComplianceFramework:
             assert fw in results
             assert isinstance(results[fw], ComplianceSnapshot)
