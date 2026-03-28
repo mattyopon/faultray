@@ -7,6 +7,10 @@ from __future__ import annotations
 
 import asyncio
 from pathlib import Path
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from faultray.model.components import Component
 
 import typer
 
@@ -21,6 +25,187 @@ from faultray.simulator.engine import SimulationEngine
 from faultray.discovery.scanner import scan_local
 
 
+def _scan_multi(  # noqa: PLR0912, PLR0913
+    console,  # type: ignore[no-untyped-def]
+    aws: bool,
+    region: str,
+    profile: str | None,
+    gcp: bool,
+    project: str | None,
+    azure: bool,
+    subscription: str | None,
+    resource_group: str | None,
+    k8s: bool,
+    context: str | None,
+    namespace: str | None,
+    sakura: bool,
+    sakura_token: str | None,
+    sakura_secret: str | None,
+    sakura_zone: str,
+    alibaba: bool,
+    alibaba_access_key: str | None,
+    alibaba_access_secret: str | None,
+    alibaba_vpc: str | None,
+    oci: bool,
+    oci_compartment: str | None,
+    oci_config_file: str | None,
+    oci_profile: str,
+    onprem: bool,
+    netbox_url: str | None,
+    netbox_token: str | None,
+    cmdb: Path | None,
+    nmap_xml: Path | None,
+    onprem_region: str,
+) -> InfraGraph:
+    """Scan multiple cloud providers and merge all discovered resources into one graph."""
+    merged = InfraGraph()
+    total_components = 0
+    total_dependencies = 0
+
+    def _merge(result_graph: InfraGraph, label: str) -> None:
+        nonlocal total_components, total_dependencies
+        added_c = 0
+        for comp in result_graph.components.values():
+            merged.add_component(comp)
+            added_c += 1
+        added_d = 0
+        for edge in result_graph.all_dependency_edges():
+            merged.add_dependency(edge)
+            added_d += 1
+        total_components += added_c
+        total_dependencies += added_d
+        console.print(
+            f"  [green]{label}: +{added_c} components, +{added_d} dependencies[/]"
+        )
+
+    console.print("[cyan]Multi-cloud scan started...[/]")
+
+    if aws:
+        from faultray.discovery.aws_scanner import AWSScanner
+        console.print(f"  [dim]Scanning AWS ({region})...[/]")
+        try:
+            r = AWSScanner(region=region, profile=profile).scan()
+            _merge(r.graph, "AWS")
+            for w in r.warnings:
+                console.print(f"  [yellow]AWS Warning: {w}[/]")
+        except Exception as exc:
+            console.print(f"  [yellow]AWS scan skipped: {exc}[/]")
+
+    if gcp and project:
+        from faultray.discovery.gcp_scanner import GCPScanner
+        console.print(f"  [dim]Scanning GCP (project={project})...[/]")
+        try:
+            r = GCPScanner(project_id=project).scan()
+            _merge(r.graph, "GCP")
+            for w in r.warnings:
+                console.print(f"  [yellow]GCP Warning: {w}[/]")
+        except Exception as exc:
+            console.print(f"  [yellow]GCP scan skipped: {exc}[/]")
+
+    if azure and subscription:
+        from faultray.discovery.azure_scanner import AzureScanner
+        console.print(f"  [dim]Scanning Azure (subscription={subscription})...[/]")
+        try:
+            r = AzureScanner(subscription_id=subscription, resource_group=resource_group).scan()
+            _merge(r.graph, "Azure")
+            for w in r.warnings:
+                console.print(f"  [yellow]Azure Warning: {w}[/]")
+        except Exception as exc:
+            console.print(f"  [yellow]Azure scan skipped: {exc}[/]")
+
+    if k8s:
+        from faultray.discovery.k8s_scanner import K8sScanner
+        console.print("  [dim]Scanning Kubernetes...[/]")
+        try:
+            r = K8sScanner(context=context, namespace=namespace).scan()
+            _merge(r.graph, "Kubernetes")
+            for w in r.warnings:
+                console.print(f"  [yellow]K8s Warning: {w}[/]")
+        except Exception as exc:
+            console.print(f"  [yellow]Kubernetes scan skipped: {exc}[/]")
+
+    if sakura and sakura_token and sakura_secret:
+        from faultray.discovery.sakura_scanner import SakuraScanner
+        console.print(f"  [dim]Scanning Sakura Cloud (zone={sakura_zone})...[/]")
+        try:
+            r = SakuraScanner(token=sakura_token, secret=sakura_secret, zone=sakura_zone).scan()
+            _merge(r.graph, "Sakura Cloud")
+            for w in r.warnings:
+                console.print(f"  [yellow]Sakura Warning: {w}[/]")
+        except Exception as exc:
+            console.print(f"  [yellow]Sakura scan skipped: {exc}[/]")
+
+    if alibaba and alibaba_access_key and alibaba_access_secret:
+        from faultray.discovery.alibaba_scanner import AlibabaScanner
+        console.print(f"  [dim]Scanning Alibaba Cloud (region={region})...[/]")
+        try:
+            r = AlibabaScanner(
+                access_key_id=alibaba_access_key,
+                access_key_secret=alibaba_access_secret,
+                region=region,
+                vpc_id=alibaba_vpc,
+            ).scan()
+            _merge(r.graph, "Alibaba Cloud")
+            for w in r.warnings:
+                console.print(f"  [yellow]Alibaba Warning: {w}[/]")
+        except Exception as exc:
+            console.print(f"  [yellow]Alibaba scan skipped: {exc}[/]")
+
+    if oci and oci_compartment:
+        from faultray.discovery.oci_scanner import OCIScanner
+        console.print(f"  [dim]Scanning Oracle Cloud (compartment={oci_compartment})...[/]")
+        try:
+            r = OCIScanner(
+                compartment_id=oci_compartment,
+                config_file=oci_config_file,
+                profile=oci_profile,
+            ).scan()
+            _merge(r.graph, "Oracle Cloud")
+            for w in r.warnings:
+                console.print(f"  [yellow]OCI Warning: {w}[/]")
+        except Exception as exc:
+            console.print(f"  [yellow]OCI scan skipped: {exc}[/]")
+
+    if onprem:
+        from faultray.discovery.onprem_scanner import OnPremScanner
+        if netbox_url and netbox_token:
+            console.print(f"  [dim]Scanning on-premises via NetBox ({netbox_url})...[/]")
+            try:
+                r = OnPremScanner.from_netbox(netbox_url, netbox_token, onprem_region).scan()
+                _merge(r.graph, "On-Premises (NetBox)")
+                for w in r.warnings:
+                    console.print(f"  [yellow]OnPrem Warning: {w}[/]")
+            except Exception as exc:
+                console.print(f"  [yellow]NetBox scan skipped: {exc}[/]")
+        elif cmdb:
+            console.print(f"  [dim]Importing CMDB from {cmdb}...[/]")
+            try:
+                if cmdb.suffix.lower() == ".json":
+                    r = OnPremScanner.from_cmdb_json(cmdb, onprem_region).scan()
+                else:
+                    r = OnPremScanner.from_cmdb_csv(cmdb, onprem_region).scan()
+                _merge(r.graph, "On-Premises (CMDB)")
+                for w in r.warnings:
+                    console.print(f"  [yellow]CMDB Warning: {w}[/]")
+            except Exception as exc:
+                console.print(f"  [yellow]CMDB import skipped: {exc}[/]")
+        elif nmap_xml:
+            console.print(f"  [dim]Importing nmap results from {nmap_xml}...[/]")
+            try:
+                r = OnPremScanner.from_nmap_xml(nmap_xml, onprem_region).scan()
+                _merge(r.graph, "On-Premises (nmap)")
+                for w in r.warnings:
+                    console.print(f"  [yellow]nmap Warning: {w}[/]")
+            except Exception as exc:
+                console.print(f"  [yellow]nmap import skipped: {exc}[/]")
+
+    console.print(
+        f"[green]Multi-cloud scan complete: "
+        f"{total_components} components, {total_dependencies} dependencies[/]"
+    )
+    return merged
+
+
 @app.command()
 def scan(
     output: Path = typer.Option(DEFAULT_MODEL_PATH, "--output", "-o", help="Output model file path"),
@@ -32,13 +217,36 @@ def scan(
     gcp: bool = typer.Option(False, "--gcp", help="Scan GCP infrastructure via google-cloud libraries"),
     azure: bool = typer.Option(False, "--azure", help="Scan Azure infrastructure via azure-mgmt libraries"),
     k8s: bool = typer.Option(False, "--k8s", help="Scan Kubernetes cluster via kubernetes client"),
-    region: str = typer.Option("ap-northeast-1", "--region", help="AWS region (used with --aws)"),
+    sakura: bool = typer.Option(False, "--sakura", help="Scan Sakura Cloud infrastructure"),
+    alibaba: bool = typer.Option(False, "--alibaba", help="Scan Alibaba Cloud (Aliyun) infrastructure"),
+    oci: bool = typer.Option(False, "--oci", help="Scan Oracle Cloud Infrastructure"),
+    onprem: bool = typer.Option(False, "--onprem", help="Discover on-premises infrastructure"),
+    multi: bool = typer.Option(False, "--multi", help="Scan multiple clouds and merge into one graph"),
+    region: str = typer.Option("ap-northeast-1", "--region", help="AWS/Alibaba region"),
     profile: str | None = typer.Option(None, "--profile", help="AWS profile name (used with --aws)"),
     project: str | None = typer.Option(None, "--project", help="GCP project ID (used with --gcp)"),
     subscription: str | None = typer.Option(None, "--subscription", help="Azure subscription ID (used with --azure)"),
     resource_group: str | None = typer.Option(None, "--resource-group", help="Azure resource group (used with --azure)"),
     context: str | None = typer.Option(None, "--context", help="Kubernetes context (used with --k8s)"),
     namespace: str | None = typer.Option(None, "--namespace", help="Kubernetes namespace (used with --k8s)"),
+    # Sakura Cloud options
+    sakura_token: str | None = typer.Option(None, "--token", help="Sakura Cloud API token (used with --sakura)"),
+    sakura_secret: str | None = typer.Option(None, "--secret", help="Sakura Cloud API secret (used with --sakura)"),
+    sakura_zone: str = typer.Option("tk1v", "--zone", help="Sakura Cloud zone (used with --sakura)"),
+    # Alibaba Cloud options
+    alibaba_access_key: str | None = typer.Option(None, "--access-key", help="Alibaba Cloud AccessKey ID"),
+    alibaba_access_secret: str | None = typer.Option(None, "--access-secret", help="Alibaba Cloud AccessKey Secret"),
+    alibaba_vpc: str | None = typer.Option(None, "--vpc", help="Alibaba Cloud VPC ID filter"),
+    # OCI options
+    oci_compartment: str | None = typer.Option(None, "--compartment", help="OCI Compartment OCID (used with --oci)"),
+    oci_config_file: str | None = typer.Option(None, "--oci-config", help="OCI config file path"),
+    oci_profile: str = typer.Option("DEFAULT", "--oci-profile", help="OCI config profile"),
+    # On-premises options
+    netbox_url: str | None = typer.Option(None, "--netbox-url", help="NetBox URL (used with --onprem)"),
+    netbox_token: str | None = typer.Option(None, "--netbox-token", help="NetBox API token"),
+    cmdb: Path | None = typer.Option(None, "--cmdb", help="CMDB inventory file (CSV or JSON)"),
+    nmap_xml: Path | None = typer.Option(None, "--nmap-xml", help="nmap XML scan result file"),
+    onprem_region: str = typer.Option("onprem", "--onprem-region", help="Default region label for on-prem resources"),
     save_yaml: Path | None = typer.Option(
         None, "--save-yaml", help="Export discovered model as YAML to this path"
     ),
@@ -67,6 +275,27 @@ def scan(
         # Scan Azure subscription
         faultray scan --azure --subscription SUB_ID --resource-group my-rg
 
+        # Scan Sakura Cloud
+        faultray scan --sakura --token TOKEN --secret SECRET --zone tk1v
+
+        # Scan Alibaba Cloud
+        faultray scan --alibaba --access-key KEY --access-secret SECRET --region cn-hangzhou
+
+        # Scan Oracle Cloud
+        faultray scan --oci --compartment ocid1.compartment.oc1..xxx
+
+        # Discover on-premises via NetBox
+        faultray scan --onprem --netbox-url http://netbox.local --netbox-token TOKEN
+
+        # Discover on-premises from CMDB CSV
+        faultray scan --onprem --cmdb inventory.csv
+
+        # Discover on-premises from nmap XML
+        faultray scan --onprem --nmap-xml scan.xml
+
+        # Multi-cloud scan (merge all discovered resources)
+        faultray scan --multi --aws --region us-east-1 --gcp --project my-project
+
         # Discover from Prometheus
         faultray scan --prometheus-url http://localhost:9090
 
@@ -79,7 +308,24 @@ def scan(
         # Scan with ML-based hidden dependency inference
         faultray scan --aws --infer-hidden --infer-confidence 0.6
     """
-    if aws:
+    # --multi mode: scan multiple clouds and merge all graphs
+    if multi:
+        graph = _scan_multi(
+            console=console,
+            aws=aws, region=region, profile=profile,
+            gcp=gcp, project=project,
+            azure=azure, subscription=subscription, resource_group=resource_group,
+            k8s=k8s, context=context, namespace=namespace,
+            sakura=sakura, sakura_token=sakura_token, sakura_secret=sakura_secret,
+            sakura_zone=sakura_zone,
+            alibaba=alibaba, alibaba_access_key=alibaba_access_key,
+            alibaba_access_secret=alibaba_access_secret, alibaba_vpc=alibaba_vpc,
+            oci=oci, oci_compartment=oci_compartment, oci_config_file=oci_config_file,
+            oci_profile=oci_profile,
+            onprem=onprem, netbox_url=netbox_url, netbox_token=netbox_token,
+            cmdb=cmdb, nmap_xml=nmap_xml, onprem_region=onprem_region,
+        )
+    elif aws:
         from faultray.discovery.aws_scanner import AWSScanner
 
         console.print(f"[cyan]Scanning AWS infrastructure in {region}...[/]")
@@ -161,6 +407,130 @@ def scan(
         console.print(f"[cyan]Scanning Kubernetes cluster{ctx_msg}{ns_msg}...[/]")
         try:
             scanner = K8sScanner(context=context, namespace=namespace)
+            result = scanner.scan()
+        except RuntimeError as exc:
+            console.print(f"[red]{exc}[/]")
+            raise typer.Exit(1)
+
+        graph = result.graph
+        console.print(
+            f"[green]Discovered {result.components_found} components, "
+            f"{result.dependencies_inferred} dependencies "
+            f"in {result.scan_duration_seconds:.1f}s[/]"
+        )
+        if result.warnings:
+            for w in result.warnings:
+                console.print(f"[yellow]Warning: {w}[/]")
+    elif sakura:
+        from faultray.discovery.sakura_scanner import SakuraScanner
+
+        if not sakura_token or not sakura_secret:
+            console.print("[red]--token and --secret are required with --sakura[/]")
+            raise typer.Exit(1)
+
+        console.print(f"[cyan]Scanning Sakura Cloud infrastructure in zone {sakura_zone}...[/]")
+        try:
+            scanner = SakuraScanner(token=sakura_token, secret=sakura_secret, zone=sakura_zone)
+            result = scanner.scan()
+        except RuntimeError as exc:
+            console.print(f"[red]{exc}[/]")
+            raise typer.Exit(1)
+
+        graph = result.graph
+        console.print(
+            f"[green]Discovered {result.components_found} components, "
+            f"{result.dependencies_inferred} dependencies "
+            f"in {result.scan_duration_seconds:.1f}s[/]"
+        )
+        if result.warnings:
+            for w in result.warnings:
+                console.print(f"[yellow]Warning: {w}[/]")
+    elif alibaba:
+        from faultray.discovery.alibaba_scanner import AlibabaScanner
+
+        if not alibaba_access_key or not alibaba_access_secret:
+            console.print("[red]--access-key and --access-secret are required with --alibaba[/]")
+            raise typer.Exit(1)
+
+        console.print(f"[cyan]Scanning Alibaba Cloud infrastructure in region {region}...[/]")
+        try:
+            scanner = AlibabaScanner(
+                access_key_id=alibaba_access_key,
+                access_key_secret=alibaba_access_secret,
+                region=region,
+                vpc_id=alibaba_vpc,
+            )
+            result = scanner.scan()
+        except RuntimeError as exc:
+            console.print(f"[red]{exc}[/]")
+            raise typer.Exit(1)
+
+        graph = result.graph
+        console.print(
+            f"[green]Discovered {result.components_found} components, "
+            f"{result.dependencies_inferred} dependencies "
+            f"in {result.scan_duration_seconds:.1f}s[/]"
+        )
+        if result.warnings:
+            for w in result.warnings:
+                console.print(f"[yellow]Warning: {w}[/]")
+    elif oci:
+        from faultray.discovery.oci_scanner import OCIScanner
+
+        if not oci_compartment:
+            console.print("[red]--compartment is required with --oci[/]")
+            raise typer.Exit(1)
+
+        console.print(f"[cyan]Scanning Oracle Cloud infrastructure in compartment {oci_compartment}...[/]")
+        try:
+            scanner = OCIScanner(
+                compartment_id=oci_compartment,
+                config_file=oci_config_file,
+                profile=oci_profile,
+            )
+            result = scanner.scan()
+        except RuntimeError as exc:
+            console.print(f"[red]{exc}[/]")
+            raise typer.Exit(1)
+
+        graph = result.graph
+        console.print(
+            f"[green]Discovered {result.components_found} components, "
+            f"{result.dependencies_inferred} dependencies "
+            f"in {result.scan_duration_seconds:.1f}s[/]"
+        )
+        if result.warnings:
+            for w in result.warnings:
+                console.print(f"[yellow]Warning: {w}[/]")
+    elif onprem:
+        from faultray.discovery.onprem_scanner import OnPremScanner
+
+        if netbox_url:
+            if not netbox_token:
+                console.print("[red]--netbox-token is required with --netbox-url[/]")
+                raise typer.Exit(1)
+            console.print(f"[cyan]Discovering on-premises infrastructure from NetBox at {netbox_url}...[/]")
+            scanner = OnPremScanner.from_netbox(
+                url=netbox_url,
+                token=netbox_token,
+                default_region=onprem_region,
+            )
+        elif cmdb:
+            suffix = cmdb.suffix.lower()
+            if suffix == ".json":
+                console.print(f"[cyan]Importing CMDB from JSON: {cmdb}...[/]")
+                scanner = OnPremScanner.from_cmdb_json(cmdb, default_region=onprem_region)
+            else:
+                console.print(f"[cyan]Importing CMDB from CSV: {cmdb}...[/]")
+                scanner = OnPremScanner.from_cmdb_csv(cmdb, default_region=onprem_region)
+        elif nmap_xml:
+            console.print(f"[cyan]Importing nmap scan results from: {nmap_xml}...[/]")
+            scanner = OnPremScanner.from_nmap_xml(nmap_xml, default_region=onprem_region)
+        else:
+            console.print("[red]--onprem requires one of: --netbox-url, --cmdb, or --nmap-xml[/]")
+            raise typer.Exit(1)
+
+        try:
             result = scanner.scan()
         except RuntimeError as exc:
             console.print(f"[red]{exc}[/]")
@@ -504,3 +874,371 @@ def tf_plan(
 
             save_html_report(sim_report, after_graph, html)
             console.print(f"\n[green]HTML report saved to {html}[/]")
+
+
+@app.command(name="iac-gen")
+def iac_gen(
+    model: Path = typer.Argument(
+        ..., help="FaultRay model file (JSON) to generate IaC from"
+    ),
+    provider: str = typer.Option(
+        "aws",
+        "--provider",
+        "-p",
+        help="Target IaC provider: aws, gcp, azure, generic",
+    ),
+    output_dir: Path = typer.Option(
+        Path("terraform"),
+        "--output",
+        "-o",
+        help="Output directory for generated Terraform HCL files",
+    ),
+    mode: str = typer.Option(
+        "remediate",
+        "--mode",
+        "-m",
+        help="Generation mode: 'remediate' (fix issues) or 'export' (current state as IaC)",
+    ),
+    target_score: float = typer.Option(
+        90.0,
+        "--target-score",
+        help="Target resilience score for remediation mode (0-100)",
+    ),
+    dry_run: bool = typer.Option(
+        False,
+        "--dry-run",
+        help="Show what would be generated without writing files",
+    ),
+) -> None:
+    """Generate Terraform IaC from a FaultRay infrastructure model.
+
+    Two modes are available:
+
+    \\b
+    remediate (default): Generate Terraform that fixes detected infrastructure issues.
+      Equivalent to the existing 'faultray auto-fix' workflow.
+
+    \\b
+    export: Generate Terraform that represents the current infrastructure state.
+      Useful for importing discovered infrastructure into version-controlled IaC.
+
+    Examples:
+        # Generate remediation Terraform for AWS
+        faultray iac-gen faultray-model.json --provider aws --output terraform/
+
+        # Export current state as Terraform (IaC import workflow)
+        faultray iac-gen faultray-model.json --mode export --output terraform/
+
+        # Dry-run: preview without writing files
+        faultray iac-gen faultray-model.json --dry-run
+
+        # Target a higher score
+        faultray iac-gen faultray-model.json --target-score 95
+    """
+    if not model.exists():
+        console.print(f"[red]Model file not found: {model}[/]")
+        raise typer.Exit(1)
+
+    graph = InfraGraph.load(model)
+    console.print(
+        f"[cyan]Loaded model: {len(graph.components)} components, "
+        f"resilience score: {graph.resilience_score():.1f}[/]"
+    )
+
+    if mode == "remediate":
+        _iac_gen_remediate(graph, output_dir, target_score, dry_run, provider)
+    elif mode == "export":
+        _iac_gen_export(graph, output_dir, dry_run, provider)
+    else:
+        console.print(f"[red]Unknown mode '{mode}'. Use 'remediate' or 'export'.[/]")
+        raise typer.Exit(1)
+
+
+def _iac_gen_remediate(
+    graph: "InfraGraph",
+    output_dir: Path,
+    target_score: float,
+    dry_run: bool,
+    provider: str,
+) -> None:
+    """Generate remediation Terraform from FaultRay analysis."""
+    from faultray.remediation.iac_generator import IaCGenerator
+
+    generator = IaCGenerator(graph)
+    plan = generator.generate(target_score=target_score)
+
+    if not plan.files:
+        console.print("[green]No remediation needed — infrastructure already meets target score.[/]")
+        return
+
+    if dry_run:
+        console.print("[cyan]Dry run — no files written.[/]")
+        console.print(generator.dry_run(plan))
+        return
+
+    output_dir.mkdir(parents=True, exist_ok=True)
+    files_written = 0
+
+    for f in plan.files:
+        file_path = output_dir / f.path
+        file_path.parent.mkdir(parents=True, exist_ok=True)
+        file_path.write_text(f.content, encoding="utf-8")
+        files_written += 1
+
+    # Write README
+    readme_path = output_dir / "README.md"
+    readme_path.write_text(plan.readme_content, encoding="utf-8")
+
+    console.print(f"[green]Remediation IaC written: {files_written} files in {output_dir}/[/]")
+    console.print(
+        f"[green]Expected score improvement: "
+        f"{plan.expected_score_before:.1f} -> {plan.expected_score_after:.1f} "
+        f"(+{plan.expected_score_after - plan.expected_score_before:.1f})[/]"
+    )
+    console.print(f"[green]Estimated monthly cost: ${plan.total_monthly_cost:.2f}[/]")
+    console.print(f"[dim]Run: cd {output_dir} && terraform init && terraform plan[/]")
+
+
+def _iac_gen_export(
+    graph: "InfraGraph",
+    output_dir: Path,
+    dry_run: bool,
+    provider: str,
+) -> None:
+    """Export current infrastructure state as Terraform HCL (IaC import workflow)."""
+    import re
+
+    def _safe_id(name: str) -> str:
+        """Convert a component name/id to a safe Terraform resource identifier."""
+        return re.sub(r"[^a-zA-Z0-9_]", "_", name).lower().strip("_")
+
+    lines: list[str] = [
+        f'# Generated by FaultRay iac-gen (mode=export, provider={provider})',
+        f'# Components: {len(graph.components)}',
+        '',
+        'terraform {',
+        '  required_version = ">= 1.0"',
+        '}',
+        '',
+    ]
+
+    # Add provider block
+    if provider == "aws":
+        lines += [
+            'provider "aws" {',
+            '  # Configure via environment: AWS_REGION, AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY',
+            '}',
+            '',
+        ]
+    elif provider == "gcp":
+        lines += [
+            'provider "google" {',
+            '  # Configure via environment: GOOGLE_CREDENTIALS, GOOGLE_PROJECT, GOOGLE_REGION',
+            '}',
+            '',
+        ]
+    elif provider == "azure":
+        lines += [
+            'provider "azurerm" {',
+            '  features {}',
+            '  # Configure via environment: ARM_SUBSCRIPTION_ID, ARM_CLIENT_ID, etc.',
+            '}',
+            '',
+        ]
+
+    resource_count = 0
+
+    for comp_id, comp in graph.components.items():
+        tf_id = _safe_id(comp_id)
+        comp_type = comp.type.value
+
+        # Generate appropriate resource block per provider and component type
+        if provider == "aws":
+            block = _aws_export_block(tf_id, comp, comp_type)
+        elif provider == "gcp":
+            block = _gcp_export_block(tf_id, comp, comp_type)
+        elif provider == "azure":
+            block = _azure_export_block(tf_id, comp, comp_type)
+        else:
+            block = _generic_export_block(tf_id, comp, comp_type)
+
+        if block:
+            lines.append(block)
+            resource_count += 1
+
+    content = "\n".join(lines)
+
+    if dry_run:
+        console.print("[cyan]Dry run — no files written.[/]")
+        console.print(content[:3000] + ("..." if len(content) > 3000 else ""))
+        console.print(f"\n[dim]{resource_count} resources would be generated.[/]")
+        return
+
+    output_dir.mkdir(parents=True, exist_ok=True)
+    out_file = output_dir / "main.tf"
+    out_file.write_text(content, encoding="utf-8")
+
+    console.print(f"[green]Exported {resource_count} resources to {out_file}[/]")
+    console.print(
+        "[dim]Note: Review and adjust the generated HCL before running 'terraform import'.[/]"
+    )
+
+
+def _aws_export_block(tf_id: str, comp: "Component", comp_type: str) -> str:
+    """Generate an AWS Terraform resource block for a component."""
+    import json as _json
+
+    name = comp.name
+    private_ip = _json.dumps(comp.host) if comp.host else "null"
+
+    if comp_type == "app_server":
+        return (
+            f'# {name}\n'
+            f'resource "aws_instance" "{tf_id}" {{\n'
+            f'  ami           = "ami-REPLACE_ME"  # Replace with actual AMI\n'
+            f'  instance_type = "t3.medium"\n'
+            f'  private_ip    = {private_ip}\n'
+            f'\n'
+            f'  tags = {{\n'
+            f'    Name = {_json.dumps(name)}\n'
+            f'  }}\n'
+            f'}}\n'
+        )
+    elif comp_type == "database":
+        return (
+            f'# {name}\n'
+            f'resource "aws_db_instance" "{tf_id}" {{\n'
+            f'  identifier        = {_json.dumps(tf_id)}\n'
+            f'  engine            = "mysql"\n'
+            f'  engine_version    = "8.0"\n'
+            f'  instance_class    = "db.t3.medium"\n'
+            f'  allocated_storage = 20\n'
+            f'  port              = {comp.port or 3306}\n'
+            f'  multi_az          = {str(comp.replicas > 1).lower()}\n'
+            f'  skip_final_snapshot = true\n'
+            f'\n'
+            f'  tags = {{\n'
+            f'    Name = {_json.dumps(name)}\n'
+            f'  }}\n'
+            f'}}\n'
+        )
+    elif comp_type == "cache":
+        return (
+            f'# {name}\n'
+            f'resource "aws_elasticache_cluster" "{tf_id}" {{\n'
+            f'  cluster_id        = {_json.dumps(tf_id[:20])}\n'
+            f'  engine            = "redis"\n'
+            f'  node_type         = "cache.t3.micro"\n'
+            f'  num_cache_nodes   = {comp.replicas}\n'
+            f'  port              = {comp.port or 6379}\n'
+            f'}}\n'
+        )
+    elif comp_type == "load_balancer":
+        return (
+            f'# {name}\n'
+            f'resource "aws_lb" "{tf_id}" {{\n'
+            f'  name               = {_json.dumps(tf_id[:32])}\n'
+            f'  internal           = false\n'
+            f'  load_balancer_type = "application"\n'
+            f'}}\n'
+        )
+    elif comp_type == "storage":
+        return (
+            f'# {name}\n'
+            f'resource "aws_s3_bucket" "{tf_id}" {{\n'
+            f'  bucket = {_json.dumps(tf_id.replace("_", "-"))}\n'
+            f'\n'
+            f'  tags = {{\n'
+            f'    Name = {_json.dumps(name)}\n'
+            f'  }}\n'
+            f'}}\n'
+        )
+    return ""
+
+
+def _gcp_export_block(tf_id: str, comp: "Component", comp_type: str) -> str:
+    """Generate a GCP Terraform resource block for a component."""
+    import json as _json
+
+    name = comp.name
+    if comp_type == "app_server":
+        return (
+            f'# {name}\n'
+            f'resource "google_compute_instance" "{tf_id}" {{\n'
+            f'  name         = {_json.dumps(tf_id.replace("_", "-")[:63])}\n'
+            f'  machine_type = "e2-medium"\n'
+            f'  zone         = "us-central1-a"\n'
+            f'\n'
+            f'  boot_disk {{\n'
+            f'    initialize_params {{\n'
+            f'      image = "debian-cloud/debian-11"\n'
+            f'    }}\n'
+            f'  }}\n'
+            f'\n'
+            f'  network_interface {{\n'
+            f'    network = "default"\n'
+            f'  }}\n'
+            f'}}\n'
+        )
+    elif comp_type == "database":
+        return (
+            f'# {name}\n'
+            f'resource "google_sql_database_instance" "{tf_id}" {{\n'
+            f'  name             = {_json.dumps(tf_id.replace("_", "-")[:63])}\n'
+            f'  database_version = "MYSQL_8_0"\n'
+            f'  region           = "us-central1"\n'
+            f'\n'
+            f'  settings {{\n'
+            f'    tier = "db-f1-micro"\n'
+            f'  }}\n'
+            f'}}\n'
+        )
+    return ""
+
+
+def _azure_export_block(tf_id: str, comp: "Component", comp_type: str) -> str:
+    """Generate an Azure Terraform resource block for a component."""
+    import json as _json
+
+    name = comp.name
+    if comp_type == "app_server":
+        return (
+            f'# {name}\n'
+            f'resource "azurerm_linux_virtual_machine" "{tf_id}" {{\n'
+            f'  name                = {_json.dumps(tf_id[:15])}\n'
+            f'  resource_group_name = "rg-faultray-export"\n'
+            f'  location            = "japaneast"\n'
+            f'  size                = "Standard_B2s"\n'
+            f'  admin_username      = "adminuser"\n'
+            f'\n'
+            f'  os_disk {{\n'
+            f'    caching              = "ReadWrite"\n'
+            f'    storage_account_type = "Standard_LRS"\n'
+            f'  }}\n'
+            f'\n'
+            f'  source_image_reference {{\n'
+            f'    publisher = "Canonical"\n'
+            f'    offer     = "0001-com-ubuntu-server-jammy"\n'
+            f'    sku       = "22_04-lts"\n'
+            f'    version   = "latest"\n'
+            f'  }}\n'
+            f'}}\n'
+        )
+    return ""
+
+
+def _generic_export_block(tf_id: str, comp: "Component", comp_type: str) -> str:
+    """Generate a generic Terraform null_resource block for documentation."""
+    import json as _json
+
+    return (
+        f'# {comp.name} ({comp_type})\n'
+        f'# host={comp.host or "unknown"}, port={comp.port}, replicas={comp.replicas}\n'
+        f'resource "null_resource" "{tf_id}" {{\n'
+        f'  triggers = {{\n'
+        f'    name = {_json.dumps(comp.name)}\n'
+        f'    type = {_json.dumps(comp_type)}\n'
+        f'    host = {_json.dumps(comp.host or "")}\n'
+        f'  }}\n'
+        f'}}\n'
+    )
