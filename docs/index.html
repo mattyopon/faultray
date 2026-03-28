@@ -9,23 +9,21 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>FaultRay — DORA-Compliant Resilience Testing</title>
-  <meta name="description" content="FaultRay proves infrastructure resilience mathematically — without touching production. 2,000+ failure scenarios, DORA compliance, audit-ready evidence. Zero risk.">
-  <meta name="keywords" content="DORA compliance, resilience testing, chaos engineering, fault simulation, SLA proof, infrastructure, SRE, DevOps, AI agent testing, fintech">
-  <meta property="og:title" content="FaultRay — DORA-Compliant Resilience Testing">
-  <meta property="og:description" content="2,000+ failure scenarios simulated in memory. Zero production risk. Audit-ready evidence for regulators.">
+  <title>FaultRay — Zero-Risk Chaos Engineering for Infrastructure & AI Agents</title>
+  <meta name="description" content="FaultRay simulates infrastructure failures in memory before they happen in production. Graph-based cascade simulation, multi-layer availability limits, and AI agent failure modeling. Zero risk. Full visibility.">
+  <meta name="keywords" content="chaos engineering, infrastructure resilience, fault simulation, terraform, SRE, DevOps, AI agent testing, availability, SLA, incident prevention">
+  <meta property="og:title" content="FaultRay — Zero-Risk Chaos Engineering">
+  <meta property="og:description" content="Simulate infrastructure failures before they happen in production. Zero risk. Full visibility.">
   <meta property="og:type" content="website">
   <meta property="og:url" content="https://faultray.com">
   <meta property="og:image" content="https://faultray.com/og-image.png">
   <meta name="twitter:card" content="summary_large_image">
-  <meta name="twitter:title" content="FaultRay — DORA-Compliant Resilience Testing">
-  <meta name="twitter:description" content="2,000+ failure scenarios simulated in memory. Zero production risk. Audit-ready evidence for regulators.">
+  <meta name="twitter:title" content="FaultRay — Zero-Risk Chaos Engineering">
+  <meta name="twitter:description" content="Simulate infrastructure failures before they happen in production. Zero risk. Full visibility.">
   <link rel="canonical" href="https://faultray.com">
-  <link rel="icon" href="/favicon-32.png" type="image/png" sizes="32x32">
-  <link rel="apple-touch-icon" href="/favicon-180.png">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600&family=Noto+Sans+JP:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
   <style>
     *, *::before, *::after {
       margin: 0;
@@ -34,72 +32,96 @@
     }
 
     :root {
-      --bg-deep: #090e1a;
-      --bg: #0d1525;
-      --bg-secondary: #111c30;
-      --bg-card: #141d33;
-      --bg-card-hover: #192441;
+      --bg: #0a0e1a;
+      --bg-secondary: #0f1424;
+      --bg-tertiary: #141a2e;
+      --bg-card: #161d33;
       --border: #1e2a4a;
-      --border-light: #263556;
+      --border-light: #2a3a5c;
       --text: #e2e8f0;
-      --text-secondary: #8ca0bb;
-      --text-muted: #5a7194;
-      --cyan: #00c8ff;
-      --cyan-dim: rgba(0, 200, 255, 0.15);
-      --cyan-glow: rgba(0, 200, 255, 0.25);
-      --blue: #2563eb;
-      --blue-hover: #1d4ed8;
-      --blue-glow: rgba(37, 99, 235, 0.3);
+      --text-secondary: #94a3b8;
+      --text-muted: #64748b;
+      --accent: #3b82f6;
+      --accent-hover: #2563eb;
+      --accent-glow: rgba(59, 130, 246, 0.15);
+      --accent-glow-strong: rgba(59, 130, 246, 0.25);
       --green: #22c55e;
-      --green-dim: rgba(34, 197, 94, 0.15);
       --red: #ef4444;
-      --red-dim: rgba(239, 68, 68, 0.12);
-      --amber: #f59e0b;
-      --radius: 12px;
-      --radius-lg: 20px;
+      --yellow: #eab308;
+      --purple: #a855f7;
+      --terminal-bg: #0c0f1a;
+      --terminal-border: #1a2340;
+      --font: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      --mono: 'JetBrains Mono', 'Fira Code', monospace;
     }
 
     html {
       scroll-behavior: smooth;
-      -webkit-text-size-adjust: 100%;
+      font-size: 16px;
     }
 
     body {
-      font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-      background: var(--bg-deep);
+      font-family: var(--font);
+      background: var(--bg);
       color: var(--text);
       line-height: 1.6;
       -webkit-font-smoothing: antialiased;
-      -moz-osx-font-smoothing: grayscale;
+      overflow-x: hidden;
     }
 
-    html[lang="ja"] body {
-      font-family: 'Inter', 'Noto Sans JP', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    /* Animations */
+    @keyframes fadeInUp {
+      from { opacity: 0; transform: translateY(30px); }
+      to { opacity: 1; transform: translateY(0); }
     }
 
-    .container {
-      max-width: 1140px;
-      margin: 0 auto;
-      padding: 0 24px;
+    @keyframes fadeIn {
+      from { opacity: 0; }
+      to { opacity: 1; }
     }
 
-    /* ===== NAV ===== */
-    .nav {
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.5; }
+    }
+
+    @keyframes terminalBlink {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0; }
+    }
+
+    @keyframes gradientShift {
+      0% { background-position: 0% 50%; }
+      50% { background-position: 100% 50%; }
+      100% { background-position: 0% 50%; }
+    }
+
+    .animate-on-scroll {
+      opacity: 0;
+      transform: translateY(30px);
+      transition: opacity 0.6s ease, transform 0.6s ease;
+    }
+
+    .animate-on-scroll.visible {
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    /* Navigation */
+    nav {
       position: fixed;
       top: 0;
       left: 0;
       right: 0;
       z-index: 100;
-      background: rgba(9, 14, 26, 0.88);
-      backdrop-filter: blur(16px);
-      -webkit-backdrop-filter: blur(16px);
-      border-bottom: 1px solid rgba(30, 42, 74, 0.5);
-      padding: 0 24px;
-      transition: background 0.3s;
+      background: rgba(10, 14, 26, 0.8);
+      backdrop-filter: blur(20px);
+      border-bottom: 1px solid var(--border);
+      padding: 0 1.5rem;
     }
 
     .nav-inner {
-      max-width: 1140px;
+      max-width: 1200px;
       margin: 0 auto;
       display: flex;
       align-items: center;
@@ -108,52 +130,47 @@
     }
 
     .nav-logo {
-      font-size: 20px;
+      font-size: 1.25rem;
       font-weight: 800;
-      color: var(--cyan);
+      color: var(--text);
       text-decoration: none;
-      letter-spacing: -0.5px;
-      display: flex;
-      align-items: center;
-      gap: 8px;
+      letter-spacing: -0.02em;
     }
 
     .nav-logo span {
-      font-weight: 400;
-      color: var(--text-secondary);
-      font-size: 14px;
+      color: var(--accent);
     }
 
     .nav-links {
       display: flex;
       align-items: center;
-      gap: 32px;
+      gap: 2rem;
+      list-style: none;
     }
 
     .nav-links a {
       color: var(--text-secondary);
       text-decoration: none;
-      font-size: 14px;
+      font-size: 0.875rem;
       font-weight: 500;
       transition: color 0.2s;
     }
 
     .nav-links a:hover {
-      color: var(--cyan);
+      color: var(--text);
     }
 
     .nav-cta {
-      background: var(--blue);
+      background: var(--accent) !important;
       color: #fff !important;
-      padding: 8px 20px;
+      padding: 0.5rem 1rem;
       border-radius: 8px;
       font-weight: 600 !important;
-      transition: background 0.2s, transform 0.2s !important;
+      transition: background 0.2s !important;
     }
 
     .nav-cta:hover {
-      background: var(--blue-hover);
-      transform: translateY(-1px);
+      background: var(--accent-hover) !important;
     }
 
     .nav-mobile-toggle {
@@ -161,635 +178,627 @@
       background: none;
       border: none;
       color: var(--text);
-      font-size: 24px;
+      font-size: 1.5rem;
       cursor: pointer;
-      padding: 4px;
     }
 
-    /* ===== LANG SWITCH ===== */
-    .lang-switch {
-      display: flex;
-      gap: 4px;
-      background: rgba(255,255,255,0.06);
-      border-radius: 8px;
-      padding: 2px;
-      border: 1px solid rgba(255,255,255,0.08);
+    /* Sections */
+    section {
+      padding: 6rem 1.5rem;
     }
-    .lang-btn {
-      background: transparent;
-      border: none;
-      color: var(--text-muted);
-      font-size: 13px;
+
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+    }
+
+    .section-label {
+      font-size: 0.75rem;
       font-weight: 600;
-      padding: 6px 12px;
-      border-radius: 6px;
-      cursor: pointer;
-      font-family: inherit;
-      transition: all 0.2s;
-    }
-    .lang-btn.active {
-      background: var(--blue);
-      color: #fff;
-    }
-    .lang-btn:hover:not(.active) {
-      color: var(--text);
-      background: rgba(255,255,255,0.08);
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      color: var(--accent);
+      margin-bottom: 1rem;
     }
 
-    /* ===== HERO ===== */
+    .section-title {
+      font-size: clamp(2rem, 4vw, 3rem);
+      font-weight: 800;
+      letter-spacing: -0.03em;
+      line-height: 1.15;
+      margin-bottom: 1.25rem;
+    }
+
+    .section-subtitle {
+      font-size: 1.125rem;
+      color: var(--text-secondary);
+      max-width: 640px;
+      line-height: 1.7;
+    }
+
+    /* Hero */
     .hero {
-      padding: 160px 0 100px;
-      background: linear-gradient(135deg, #090e1a 0%, #0c1a35 40%, #111c30 100%);
+      padding: 10rem 1.5rem 6rem;
+      text-align: center;
       position: relative;
       overflow: hidden;
-      text-align: center;
     }
 
     .hero::before {
       content: '';
       position: absolute;
-      inset: 0;
-      background: radial-gradient(ellipse 60% 50% at 50% 40%, rgba(0, 200, 255, 0.12) 0%, transparent 70%);
+      top: -200px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 800px;
+      height: 800px;
+      background: radial-gradient(circle, var(--accent-glow) 0%, transparent 70%);
       pointer-events: none;
     }
 
-    .hero::after {
-      content: '';
-      position: absolute;
-      inset: 0;
-      background-image: radial-gradient(rgba(255, 255, 255, 0.04) 1px, transparent 1px);
-      background-size: 28px 28px;
-      pointer-events: none;
-    }
-
-    .hero-content {
+    .hero .container {
       position: relative;
       z-index: 1;
-      max-width: 860px;
-      margin: 0 auto;
     }
 
     .hero-badge {
       display: inline-flex;
       align-items: center;
-      gap: 8px;
-      background: var(--cyan-dim);
-      color: var(--cyan);
-      border: 1px solid rgba(0, 200, 255, 0.3);
-      padding: 6px 18px;
+      gap: 0.5rem;
+      padding: 0.375rem 1rem;
+      background: var(--accent-glow);
+      border: 1px solid rgba(59, 130, 246, 0.3);
       border-radius: 100px;
-      font-size: 13px;
-      font-weight: 600;
-      margin-bottom: 28px;
+      font-size: 0.8125rem;
+      font-weight: 500;
+      color: var(--accent);
+      margin-bottom: 2rem;
+      animation: fadeIn 0.8s ease;
     }
 
-    .hero-badge-dot {
-      width: 7px;
-      height: 7px;
-      background: var(--cyan);
+    .hero-badge .dot {
+      width: 6px;
+      height: 6px;
+      background: var(--green);
       border-radius: 50%;
       animation: pulse 2s infinite;
     }
 
-    @keyframes pulse {
-      0%, 100% { opacity: 1; transform: scale(1); }
-      50% { opacity: 0.5; transform: scale(1.4); }
-    }
-
     .hero h1 {
-      font-size: clamp(30px, 5vw, 56px);
-      font-weight: 900;
-      color: #fff;
-      line-height: 1.15;
-      letter-spacing: -1.5px;
-      margin-bottom: 24px;
+      font-size: clamp(2.5rem, 6vw, 4.5rem);
+      font-weight: 800;
+      letter-spacing: -0.04em;
+      line-height: 1.1;
+      margin-bottom: 1.5rem;
+      animation: fadeInUp 0.8s ease;
     }
 
-    .hero h1 .accent {
-      background: linear-gradient(135deg, var(--cyan), #60a5fa);
+    .hero h1 .gradient {
+      background: linear-gradient(135deg, var(--accent), var(--purple));
+      background-size: 200% 200%;
+      animation: gradientShift 6s ease infinite;
       -webkit-background-clip: text;
       -webkit-text-fill-color: transparent;
       background-clip: text;
     }
 
     .hero-sub {
-      font-size: clamp(16px, 2vw, 19px);
+      font-size: clamp(1rem, 2vw, 1.25rem);
       color: var(--text-secondary);
+      max-width: 640px;
+      margin: 0 auto 2.5rem;
       line-height: 1.7;
-      margin-bottom: 40px;
-      max-width: 680px;
-      margin-left: auto;
-      margin-right: auto;
+      animation: fadeInUp 0.8s ease 0.1s both;
     }
 
-    .hero-btns {
+    .hero-buttons {
       display: flex;
-      gap: 16px;
+      gap: 1rem;
       justify-content: center;
       flex-wrap: wrap;
-      margin-bottom: 32px;
+      margin-bottom: 4rem;
+      animation: fadeInUp 0.8s ease 0.2s both;
     }
 
-    .btn-primary {
-      background: var(--blue);
-      color: #fff;
-      padding: 16px 36px;
-      border-radius: 10px;
-      font-size: 17px;
-      font-weight: 700;
-      text-decoration: none;
-      transition: all 0.2s;
-      box-shadow: 0 4px 24px var(--blue-glow);
+    .btn {
       display: inline-flex;
       align-items: center;
-      gap: 8px;
-      border: none;
-      cursor: pointer;
-      font-family: inherit;
-    }
-
-    .btn-primary:hover {
-      background: var(--blue-hover);
-      transform: translateY(-2px);
-      box-shadow: 0 8px 32px rgba(37, 99, 235, 0.5);
-    }
-
-    .btn-secondary {
-      background: rgba(255, 255, 255, 0.06);
-      color: var(--text);
-      padding: 16px 32px;
+      gap: 0.5rem;
+      padding: 0.875rem 1.75rem;
       border-radius: 10px;
-      font-size: 17px;
+      font-size: 0.9375rem;
       font-weight: 600;
       text-decoration: none;
       transition: all 0.2s;
-      border: 1px solid rgba(255, 255, 255, 0.12);
-      backdrop-filter: blur(4px);
-      display: inline-flex;
-      align-items: center;
-      gap: 8px;
+      cursor: pointer;
+      border: none;
+      font-family: var(--font);
+    }
+
+    .btn-primary {
+      background: var(--accent);
+      color: #fff;
+      box-shadow: 0 0 30px var(--accent-glow-strong);
+    }
+
+    .btn-primary:hover {
+      background: var(--accent-hover);
+      box-shadow: 0 0 40px rgba(59, 130, 246, 0.35);
+      transform: translateY(-1px);
+    }
+
+    .btn-secondary {
+      background: var(--bg-tertiary);
+      color: var(--text);
+      border: 1px solid var(--border);
     }
 
     .btn-secondary:hover {
-      background: rgba(255, 255, 255, 0.12);
-      border-color: rgba(255, 255, 255, 0.2);
+      background: var(--bg-card);
+      border-color: var(--border-light);
+      transform: translateY(-1px);
     }
 
-    .hero-install {
-      display: inline-block;
-      background: rgba(0, 0, 0, 0.4);
-      border: 1px solid var(--border);
-      border-radius: 10px;
-      padding: 14px 28px;
-      font-family: 'JetBrains Mono', monospace;
-      font-size: 15px;
-      color: var(--cyan);
-      letter-spacing: -0.3px;
+    /* Terminal */
+    .terminal {
+      max-width: 680px;
+      margin: 0 auto;
+      background: var(--terminal-bg);
+      border: 1px solid var(--terminal-border);
+      border-radius: 12px;
+      overflow: hidden;
+      text-align: left;
+      box-shadow: 0 25px 60px rgba(0, 0, 0, 0.5);
+      animation: fadeInUp 0.8s ease 0.3s both;
     }
 
-    .hero-install .prompt {
+    .terminal-header {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      padding: 0.875rem 1rem;
+      background: rgba(255, 255, 255, 0.03);
+      border-bottom: 1px solid var(--terminal-border);
+    }
+
+    .terminal-dot {
+      width: 12px;
+      height: 12px;
+      border-radius: 50%;
+    }
+
+    .terminal-dot.red { background: #ff5f57; }
+    .terminal-dot.yellow { background: #febc2e; }
+    .terminal-dot.green { background: #28c840; }
+
+    .terminal-title {
+      flex: 1;
+      text-align: center;
+      font-size: 0.75rem;
       color: var(--text-muted);
-      user-select: none;
+      font-family: var(--mono);
     }
 
-    /* ===== STATS ===== */
-    .stats-section {
-      padding: 80px 0;
-      background: var(--bg);
+    .terminal-body {
+      padding: 1.25rem 1.5rem;
+      font-family: var(--mono);
+      font-size: 0.8125rem;
+      line-height: 1.7;
+      overflow-x: auto;
+    }
+
+    .terminal-body .prompt {
+      color: var(--green);
+    }
+
+    .terminal-body .cmd {
+      color: var(--text);
+    }
+
+    .terminal-body .comment {
+      color: var(--text-muted);
+    }
+
+    .terminal-body .box {
+      color: var(--text-secondary);
+    }
+
+    .terminal-body .highlight {
+      color: var(--accent);
+    }
+
+    .terminal-body .warn {
+      color: var(--yellow);
+    }
+
+    .terminal-body .danger {
+      color: var(--red);
+    }
+
+    .terminal-body .score-good {
+      color: var(--green);
+    }
+
+    .terminal-body .cursor {
+      display: inline-block;
+      width: 8px;
+      height: 16px;
+      background: var(--text);
+      animation: terminalBlink 1s step-end infinite;
+      vertical-align: text-bottom;
+    }
+
+    /* Problem section */
+    .problem {
+      background: var(--bg-secondary);
       border-top: 1px solid var(--border);
       border-bottom: 1px solid var(--border);
     }
 
-    .stats-grid {
+    .problem-grid {
       display: grid;
-      grid-template-columns: repeat(4, 1fr);
-      gap: 32px;
-      text-align: center;
-    }
-
-    .stat-item {
-      padding: 24px 16px;
-    }
-
-    .stat-number {
-      font-size: clamp(44px, 8vw, 72px);
-      font-weight: 900;
-      line-height: 1;
-      letter-spacing: -3px;
-      margin-bottom: 12px;
-    }
-
-    .stat-number.cyan { color: var(--cyan); }
-    .stat-number.blue { color: #60a5fa; }
-    .stat-number.green { color: var(--green); }
-    .stat-number.amber { color: var(--amber); }
-
-    .stat-label {
-      font-size: 15px;
-      color: var(--text-secondary);
-      font-weight: 500;
-    }
-
-    /* ===== SECTIONS COMMON ===== */
-    .section {
-      padding: 96px 0;
-    }
-
-    .section-alt {
-      background: var(--bg-secondary);
-    }
-
-    .section-title {
-      font-size: clamp(24px, 4vw, 40px);
-      font-weight: 900;
-      color: #fff;
-      letter-spacing: -0.5px;
-      margin-bottom: 16px;
-    }
-
-    .section-title.text-center { text-align: center; }
-
-    .section-sub {
-      font-size: 17px;
-      color: var(--text-secondary);
-      max-width: 640px;
-      line-height: 1.7;
-    }
-
-    .section-sub.text-center {
-      text-align: center;
-      margin-left: auto;
-      margin-right: auto;
-    }
-
-    .section-label {
-      display: inline-flex;
-      align-items: center;
-      gap: 8px;
-      font-size: 12px;
-      font-weight: 700;
-      letter-spacing: 1.5px;
-      text-transform: uppercase;
-      color: var(--cyan);
-      margin-bottom: 12px;
-    }
-
-    .section-label.text-center {
-      justify-content: center;
-      display: flex;
-    }
-
-    /* ===== PROBLEMS ===== */
-    .problems-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
-      gap: 20px;
-      margin-top: 48px;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 2rem;
+      margin-top: 3rem;
     }
 
     .problem-card {
-      background: var(--bg-card);
+      padding: 2rem;
+      background: var(--bg);
       border: 1px solid var(--border);
-      border-radius: var(--radius);
-      padding: 28px;
-      display: flex;
-      gap: 16px;
-      align-items: flex-start;
-      transition: border-color 0.2s, transform 0.2s;
+      border-radius: 12px;
+      transition: border-color 0.3s, box-shadow 0.3s;
     }
 
     .problem-card:hover {
-      border-color: var(--border-light);
-      transform: translateY(-2px);
+      border-color: var(--red);
+      box-shadow: 0 0 30px rgba(239, 68, 68, 0.08);
     }
 
     .problem-icon {
-      width: 44px;
-      height: 44px;
-      min-width: 44px;
-      background: var(--red-dim);
-      border-radius: 10px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 20px;
+      font-size: 2rem;
+      margin-bottom: 1rem;
     }
 
     .problem-card h3 {
-      font-size: 15px;
+      font-size: 1.0625rem;
       font-weight: 700;
-      color: #fff;
-      margin-bottom: 6px;
+      margin-bottom: 0.75rem;
+      letter-spacing: -0.01em;
     }
 
     .problem-card p {
-      font-size: 14px;
+      font-size: 0.9375rem;
       color: var(--text-secondary);
-      line-height: 1.6;
+      line-height: 1.65;
     }
 
-    /* ===== COST COMPARISON ===== */
-    .cost-grid {
+    /* Solution section */
+    .solution-grid {
       display: grid;
       grid-template-columns: repeat(3, 1fr);
-      gap: 24px;
-      margin-top: 48px;
+      gap: 2rem;
+      margin-top: 3rem;
     }
 
-    .cost-card {
+    .solution-card {
+      padding: 2rem;
       background: var(--bg-card);
       border: 1px solid var(--border);
-      border-radius: var(--radius-lg);
-      padding: 32px 28px;
-      position: relative;
-      transition: border-color 0.2s, transform 0.2s;
+      border-radius: 12px;
+      transition: border-color 0.3s, box-shadow 0.3s, transform 0.3s;
     }
 
-    .cost-card:hover {
-      border-color: var(--border-light);
-      transform: translateY(-3px);
+    .solution-card:hover {
+      border-color: var(--accent);
+      box-shadow: 0 0 40px var(--accent-glow);
+      transform: translateY(-2px);
     }
 
-    .cost-card.highlight {
-      border-color: var(--cyan);
-      border-width: 2px;
-      box-shadow: 0 0 40px rgba(0, 200, 255, 0.1);
-    }
-
-    .cost-card-badge {
-      position: absolute;
-      top: -13px;
-      left: 50%;
-      transform: translateX(-50%);
-      background: var(--cyan);
-      color: #090e1a;
-      font-size: 11px;
-      font-weight: 800;
-      padding: 4px 16px;
-      border-radius: 100px;
-      letter-spacing: 0.5px;
-      text-transform: uppercase;
-    }
-
-    .cost-card h3 {
-      font-size: 18px;
-      font-weight: 800;
-      color: #fff;
-      margin-bottom: 20px;
-      text-align: center;
-    }
-
-    .cost-card ul {
-      list-style: none;
-      display: flex;
-      flex-direction: column;
-      gap: 14px;
-    }
-
-    .cost-card li {
-      font-size: 14px;
-      color: var(--text-secondary);
-      line-height: 1.5;
-      display: flex;
-      align-items: flex-start;
-      gap: 10px;
-    }
-
-    .cost-card li::before {
-      content: '\2717';
-      color: var(--red);
+    .solution-number {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 36px;
+      height: 36px;
+      border-radius: 10px;
+      background: var(--accent-glow);
+      color: var(--accent);
       font-weight: 700;
-      flex-shrink: 0;
-      margin-top: 1px;
+      font-size: 0.875rem;
+      margin-bottom: 1.25rem;
     }
 
-    .cost-card.highlight li::before {
-      content: '\2713';
-      color: var(--green);
+    .solution-card h3 {
+      font-size: 1.125rem;
+      font-weight: 700;
+      margin-bottom: 0.75rem;
+      letter-spacing: -0.01em;
     }
 
-    /* ===== FEATURES ===== */
-    .features-grid {
+    .solution-card p {
+      font-size: 0.9375rem;
+      color: var(--text-secondary);
+      line-height: 1.65;
+    }
+
+    /* How it works */
+    .how-it-works {
+      background: var(--bg-secondary);
+      border-top: 1px solid var(--border);
+      border-bottom: 1px solid var(--border);
+    }
+
+    .steps {
       display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
-      gap: 20px;
-      margin-top: 48px;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 2rem;
+      margin-top: 3rem;
     }
 
-    .feature-card {
-      background: var(--bg-card);
-      border: 1px solid var(--border);
-      border-radius: var(--radius);
-      padding: 28px;
-      transition: box-shadow 0.2s, transform 0.2s, border-color 0.2s;
+    .step {
+      position: relative;
     }
 
-    .feature-card:hover {
-      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
-      transform: translateY(-3px);
-      border-color: var(--border-light);
-    }
-
-    .feature-icon {
-      font-size: 28px;
-      margin-bottom: 14px;
-      display: block;
-    }
-
-    .feature-card h3 {
-      font-size: 15px;
+    .step-number {
+      font-size: 0.75rem;
       font-weight: 700;
-      color: #fff;
-      margin-bottom: 8px;
-    }
-
-    .feature-card p {
-      font-size: 14px;
-      color: var(--text-secondary);
-      line-height: 1.6;
-    }
-
-    .feature-badge {
-      display: inline-block;
-      font-size: 11px;
-      font-weight: 700;
-      padding: 2px 8px;
-      border-radius: 100px;
-      margin-top: 12px;
-    }
-
-    .badge-dora {
-      background: var(--cyan-dim);
-      color: var(--cyan);
-      border: 1px solid rgba(0, 200, 255, 0.25);
-    }
-
-    .badge-ai {
-      background: rgba(168, 85, 247, 0.15);
-      color: #a855f7;
-      border: 1px solid rgba(168, 85, 247, 0.25);
-    }
-
-    .badge-new {
-      background: var(--green-dim);
-      color: var(--green);
-      border: 1px solid rgba(34, 197, 94, 0.25);
-    }
-
-    .badge-security {
-      background: var(--red-dim);
-      color: var(--red);
-      border: 1px solid rgba(239, 68, 68, 0.2);
-    }
-
-    /* ===== COMPARISON TABLE ===== */
-    .compare-wrapper {
-      overflow-x: auto;
-      margin-top: 48px;
-      border-radius: var(--radius-lg);
-      border: 1px solid var(--border);
-    }
-
-    .compare-table {
-      width: 100%;
-      border-collapse: collapse;
-      font-size: 14px;
-      min-width: 700px;
-    }
-
-    .compare-table th {
-      padding: 18px 20px;
-      text-align: left;
-      background: rgba(0, 0, 0, 0.3);
-      color: var(--text-secondary);
-      font-weight: 700;
-      font-size: 13px;
+      color: var(--accent);
       text-transform: uppercase;
-      letter-spacing: 0.5px;
-      border-bottom: 1px solid var(--border);
+      letter-spacing: 0.08em;
+      margin-bottom: 1rem;
     }
 
-    .compare-table th:last-child {
-      color: var(--cyan);
-      background: rgba(0, 200, 255, 0.06);
-    }
-
-    .compare-table td {
-      padding: 16px 20px;
-      border-bottom: 1px solid var(--border);
-      color: var(--text-secondary);
-      vertical-align: middle;
-    }
-
-    .compare-table tr:last-child td {
-      border-bottom: none;
-    }
-
-    .compare-table tr:hover td {
-      background: rgba(255, 255, 255, 0.02);
-    }
-
-    .compare-table td:first-child {
-      font-weight: 600;
-      color: var(--text);
-    }
-
-    .compare-table td:last-child {
-      background: rgba(0, 200, 255, 0.03);
-    }
-
-    .compare-table tr:hover td:last-child {
-      background: rgba(0, 200, 255, 0.06);
-    }
-
-    .check {
-      color: var(--green);
+    .step h3 {
+      font-size: 1.0625rem;
       font-weight: 700;
+      margin-bottom: 1rem;
     }
 
-    .cross {
+    .code-block {
+      background: var(--terminal-bg);
+      border: 1px solid var(--terminal-border);
+      border-radius: 8px;
+      padding: 1rem 1.25rem;
+      font-family: var(--mono);
+      font-size: 0.8125rem;
+      color: var(--text);
+      overflow-x: auto;
+      line-height: 1.7;
+    }
+
+    .code-block .prompt {
+      color: var(--green);
+      user-select: none;
+    }
+
+    .code-block .output {
       color: var(--text-muted);
     }
 
-    .risk-high { color: var(--red); font-weight: 600; }
-    .risk-med { color: var(--amber); font-weight: 600; }
-    .risk-zero { color: var(--green); font-weight: 700; }
-
-    /* ===== FAQ ===== */
-    .faq-list {
-      max-width: 780px;
-      margin: 48px auto 0;
+    /* Integrations */
+    .integrations-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.75rem;
+      justify-content: center;
+      margin-top: 3rem;
     }
 
-    .faq-item {
+    .integration-badge {
+      padding: 0.625rem 1.25rem;
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      font-size: 0.875rem;
+      font-weight: 600;
+      color: var(--text-secondary);
+      transition: border-color 0.2s, color 0.2s;
+    }
+
+    .integration-badge:hover {
+      border-color: var(--border-light);
+      color: var(--text);
+    }
+
+    /* Comparison */
+    .comparison {
+      background: var(--bg-secondary);
+      border-top: 1px solid var(--border);
       border-bottom: 1px solid var(--border);
     }
 
-    .faq-question {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      padding: 22px 4px;
-      font-size: 16px;
+    .comparison-table-wrapper {
+      overflow-x: auto;
+      margin-top: 3rem;
+      border: 1px solid var(--border);
+      border-radius: 12px;
+    }
+
+    .comparison-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.9375rem;
+    }
+
+    .comparison-table th,
+    .comparison-table td {
+      padding: 1rem 1.25rem;
+      text-align: left;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .comparison-table th {
+      background: var(--bg-tertiary);
+      font-weight: 600;
+      font-size: 0.8125rem;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: var(--text-secondary);
+    }
+
+    .comparison-table th:last-child {
+      color: var(--accent);
+    }
+
+    .comparison-table td {
+      color: var(--text-secondary);
+    }
+
+    .comparison-table td:last-child {
+      color: var(--text);
+      font-weight: 600;
+    }
+
+    .comparison-table tr:last-child td {
+      border-bottom: none;
+    }
+
+    .comparison-table td:first-child {
       font-weight: 600;
       color: var(--text);
-      cursor: pointer;
-      user-select: none;
-      gap: 16px;
-      background: none;
-      border: none;
-      width: 100%;
-      font-family: inherit;
-      text-align: left;
-      transition: color 0.2s;
     }
 
-    .faq-question:hover {
-      color: var(--cyan);
+    /* Pricing */
+    .pricing-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 1.5rem;
+      margin-top: 3rem;
     }
 
-    .faq-icon {
-      width: 28px;
-      height: 28px;
-      min-width: 28px;
-      background: var(--blue);
-      color: #fff;
-      border-radius: 50%;
+    .pricing-card {
+      padding: 2.5rem 2rem;
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 16px;
       display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 18px;
+      flex-direction: column;
+      transition: border-color 0.3s, box-shadow 0.3s, transform 0.3s;
+    }
+
+    .pricing-card:hover {
+      transform: translateY(-2px);
+    }
+
+    .pricing-card.featured {
+      border-color: var(--accent);
+      box-shadow: 0 0 50px var(--accent-glow);
+      position: relative;
+    }
+
+    .pricing-card.featured::before {
+      content: 'Most Popular';
+      position: absolute;
+      top: -12px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: var(--accent);
+      color: #fff;
+      padding: 0.25rem 1rem;
+      border-radius: 100px;
+      font-size: 0.75rem;
+      font-weight: 600;
+    }
+
+    .pricing-name {
+      font-size: 1.125rem;
       font-weight: 700;
-      transition: transform 0.25s;
+      margin-bottom: 0.5rem;
+    }
+
+    .pricing-price {
+      font-size: 2.5rem;
+      font-weight: 800;
+      letter-spacing: -0.03em;
+      margin-bottom: 0.25rem;
+    }
+
+    .pricing-price span {
+      font-size: 1rem;
+      font-weight: 500;
+      color: var(--text-muted);
+    }
+
+    .pricing-desc {
+      font-size: 0.875rem;
+      color: var(--text-muted);
+      margin-bottom: 2rem;
+    }
+
+    .pricing-features {
+      list-style: none;
+      flex: 1;
+      margin-bottom: 2rem;
+    }
+
+    .pricing-features li {
+      padding: 0.5rem 0;
+      font-size: 0.9375rem;
+      color: var(--text-secondary);
+      display: flex;
+      align-items: flex-start;
+      gap: 0.625rem;
+    }
+
+    .pricing-features li::before {
+      content: '\2713';
+      color: var(--green);
+      font-weight: 700;
       flex-shrink: 0;
     }
 
-    .faq-item.open .faq-icon {
-      transform: rotate(45deg);
+    .pricing-card .btn {
+      width: 100%;
+      justify-content: center;
     }
 
-    .faq-answer {
-      max-height: 0;
-      overflow: hidden;
-      transition: max-height 0.35s ease;
-    }
-
-    .faq-item.open .faq-answer {
-      max-height: 300px;
-    }
-
-    .faq-answer-inner {
-      font-size: 15px;
-      color: var(--text-secondary);
-      line-height: 1.75;
-      padding: 0 4px 24px;
-    }
-
-    /* ===== CTA ===== */
-    .cta-section {
-      background: linear-gradient(135deg, #0c1a35 0%, #111c30 50%, #0d1525 100%);
-      padding: 96px 0;
+    /* Install */
+    .install-section {
       text-align: center;
+      background: var(--bg-secondary);
+      border-top: 1px solid var(--border);
+      border-bottom: 1px solid var(--border);
+    }
+
+    .install-block {
+      max-width: 500px;
+      margin: 2rem auto 0;
+      position: relative;
+    }
+
+    .install-code {
+      background: var(--terminal-bg);
+      border: 1px solid var(--terminal-border);
+      border-radius: 12px;
+      padding: 1.25rem 1.5rem;
+      font-family: var(--mono);
+      font-size: 1.125rem;
+      color: var(--text);
+      text-align: center;
+      cursor: pointer;
+      transition: border-color 0.2s;
+    }
+
+    .install-code:hover {
+      border-color: var(--accent);
+    }
+
+    .install-code .prompt {
+      color: var(--green);
+      user-select: none;
+    }
+
+    .install-hint {
+      margin-top: 0.75rem;
+      font-size: 0.8125rem;
+      color: var(--text-muted);
+    }
+
+    /* CTA Section */
+    .cta-section {
+      text-align: center;
+      padding: 8rem 1.5rem;
       position: relative;
       overflow: hidden;
     }
@@ -797,200 +806,104 @@
     .cta-section::before {
       content: '';
       position: absolute;
-      inset: 0;
-      background: radial-gradient(ellipse 50% 60% at 50% 50%, rgba(0, 200, 255, 0.08) 0%, transparent 70%);
+      bottom: -300px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 800px;
+      height: 800px;
+      background: radial-gradient(circle, var(--accent-glow) 0%, transparent 70%);
       pointer-events: none;
     }
 
-    .cta-section::after {
-      content: '';
-      position: absolute;
-      inset: 0;
-      background-image: radial-gradient(rgba(255, 255, 255, 0.03) 1px, transparent 1px);
-      background-size: 28px 28px;
-      pointer-events: none;
-    }
-
-    .cta-content {
+    .cta-section .container {
       position: relative;
       z-index: 1;
     }
 
     .cta-section h2 {
-      font-size: clamp(24px, 4vw, 40px);
-      font-weight: 900;
-      color: #fff;
-      margin-bottom: 16px;
-      letter-spacing: -0.5px;
+      font-size: clamp(2rem, 4vw, 3rem);
+      font-weight: 800;
+      letter-spacing: -0.03em;
+      margin-bottom: 1.25rem;
     }
 
     .cta-section p {
+      font-size: 1.125rem;
       color: var(--text-secondary);
-      font-size: 17px;
-      margin-bottom: 40px;
-      max-width: 560px;
-      margin-left: auto;
-      margin-right: auto;
+      max-width: 500px;
+      margin: 0 auto 2.5rem;
     }
 
-    .cta-code {
-      display: inline-block;
-      background: rgba(0, 0, 0, 0.5);
-      border: 1px solid var(--border);
-      border-radius: 12px;
-      padding: 24px 40px;
-      font-family: 'JetBrains Mono', monospace;
-      font-size: 16px;
-      text-align: left;
-      margin-bottom: 32px;
-      line-height: 2;
-    }
-
-    .cta-code .prompt { color: var(--text-muted); user-select: none; }
-    .cta-code .cmd { color: var(--cyan); }
-    .cta-code .arg { color: #60a5fa; }
-
-    .cta-buttons {
-      display: flex;
-      gap: 16px;
-      justify-content: center;
-      flex-wrap: wrap;
-    }
-
-    .btn-github {
-      background: rgba(255, 255, 255, 0.08);
-      color: var(--text);
-      padding: 14px 28px;
-      border-radius: 10px;
-      font-size: 16px;
-      font-weight: 600;
-      text-decoration: none;
-      transition: all 0.2s;
-      border: 1px solid rgba(255, 255, 255, 0.12);
-      display: inline-flex;
-      align-items: center;
-      gap: 10px;
-    }
-
-    .btn-github:hover {
-      background: rgba(255, 255, 255, 0.14);
-      border-color: rgba(255, 255, 255, 0.2);
-      transform: translateY(-1px);
-    }
-
-    .btn-docs {
-      background: transparent;
-      color: var(--cyan);
-      padding: 14px 28px;
-      border-radius: 10px;
-      font-size: 16px;
-      font-weight: 600;
-      text-decoration: none;
-      transition: all 0.2s;
-      border: 1px solid rgba(0, 200, 255, 0.3);
-      display: inline-flex;
-      align-items: center;
-      gap: 10px;
-    }
-
-    .btn-docs:hover {
-      background: var(--cyan-dim);
-      border-color: rgba(0, 200, 255, 0.5);
-      transform: translateY(-1px);
-    }
-
-    /* ===== FOOTER ===== */
-    .footer {
-      background: var(--bg-deep);
+    /* Footer */
+    footer {
+      padding: 3rem 1.5rem;
       border-top: 1px solid var(--border);
-      color: var(--text-muted);
-      padding: 48px 0;
-      font-size: 13px;
     }
 
     .footer-inner {
+      max-width: 1200px;
+      margin: 0 auto;
       display: flex;
-      justify-content: space-between;
-      align-items: flex-start;
       flex-wrap: wrap;
-      gap: 24px;
+      justify-content: space-between;
+      align-items: center;
+      gap: 1.5rem;
+    }
+
+    .footer-left {
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
     }
 
     .footer-brand {
-      display: flex;
-      flex-direction: column;
-      gap: 8px;
+      font-size: 1rem;
+      font-weight: 700;
+      color: var(--text);
     }
 
-    .footer-logo {
-      color: var(--cyan);
-      font-weight: 800;
-      font-size: 18px;
-      text-decoration: none;
+    .footer-brand span {
+      color: var(--accent);
     }
 
-    .footer-tagline {
+    .footer-meta {
+      font-size: 0.8125rem;
       color: var(--text-muted);
-      font-size: 13px;
+      line-height: 1.6;
     }
 
     .footer-links {
       display: flex;
-      gap: 24px;
+      gap: 1.5rem;
       flex-wrap: wrap;
-      align-items: center;
     }
 
     .footer-links a {
-      color: var(--text-muted);
+      color: var(--text-secondary);
       text-decoration: none;
+      font-size: 0.875rem;
+      font-weight: 500;
       transition: color 0.2s;
-      font-size: 13px;
     }
 
     .footer-links a:hover {
-      color: var(--text-secondary);
+      color: var(--text);
     }
 
-    .footer-meta {
-      width: 100%;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      flex-wrap: wrap;
-      gap: 12px;
-      padding-top: 24px;
-      margin-top: 24px;
-      border-top: 1px solid var(--border);
-      font-size: 12px;
-      color: var(--text-muted);
-    }
-
-    .footer-legal {
-      display: flex;
-      gap: 16px;
-      flex-wrap: wrap;
-    }
-
-    /* ===== ANIMATIONS ===== */
-    .fade-in {
-      opacity: 0;
-      transform: translateY(24px);
-      transition: opacity 0.6s ease, transform 0.6s ease;
-    }
-
-    .fade-in.visible {
-      opacity: 1;
-      transform: translateY(0);
-    }
-
-    .fade-in-delay-1 { transition-delay: 0.1s; }
-    .fade-in-delay-2 { transition-delay: 0.2s; }
-    .fade-in-delay-3 { transition-delay: 0.3s; }
-
-    /* ===== RESPONSIVE ===== */
+    /* Responsive */
     @media (max-width: 768px) {
-      .nav-links { display: none; }
+      section {
+        padding: 4rem 1.25rem;
+      }
+
+      .hero {
+        padding: 7rem 1.25rem 4rem;
+      }
+
+      .nav-links {
+        display: none;
+      }
+
       .nav-links.open {
         display: flex;
         flex-direction: column;
@@ -998,351 +911,253 @@
         top: 64px;
         left: 0;
         right: 0;
-        background: rgba(9, 14, 26, 0.96);
-        backdrop-filter: blur(16px);
-        padding: 24px;
-        gap: 16px;
+        background: var(--bg);
         border-bottom: 1px solid var(--border);
-      }
-      .nav-mobile-toggle { display: block; }
-
-      .hero { padding: 120px 0 72px; }
-
-      .stats-grid {
-        grid-template-columns: repeat(2, 1fr);
-        gap: 24px;
+        padding: 1.5rem;
+        gap: 1rem;
       }
 
-      .problems-grid {
+      .nav-mobile-toggle {
+        display: block;
+      }
+
+      .problem-grid,
+      .solution-grid,
+      .steps,
+      .pricing-grid {
         grid-template-columns: 1fr;
       }
 
-      .features-grid {
-        grid-template-columns: 1fr;
-      }
-
-      .cost-grid {
-        grid-template-columns: 1fr;
-      }
-
-      .hero-btns {
+      .hero-buttons {
         flex-direction: column;
         align-items: center;
       }
 
-      .cta-code {
-        padding: 20px 24px;
-        font-size: 14px;
+      .btn {
+        width: 100%;
+        max-width: 320px;
+        justify-content: center;
+      }
+
+      .terminal-body {
+        font-size: 0.6875rem;
+        padding: 1rem;
       }
 
       .footer-inner {
         flex-direction: column;
-        align-items: flex-start;
+        text-align: center;
       }
 
-      .footer-meta {
-        flex-direction: column;
-        align-items: flex-start;
-      }
-
-      .section {
-        padding: 72px 0;
-      }
-
-      .lang-switch {
-        align-self: flex-start;
+      .footer-links {
+        justify-content: center;
       }
     }
 
-    @media (max-width: 480px) {
-      .hero h1 {
-        font-size: 28px;
-        letter-spacing: -0.5px;
-      }
-
-      .stat-number {
-        font-size: 48px;
-      }
-
-      .stats-grid {
+    @media (min-width: 769px) and (max-width: 1024px) {
+      .problem-grid,
+      .solution-grid,
+      .steps {
         grid-template-columns: repeat(2, 1fr);
-        gap: 16px;
       }
 
-      .compare-wrapper {
-        margin-left: -24px;
-        margin-right: -24px;
-        border-radius: 0;
-        border-left: none;
-        border-right: none;
+      .pricing-grid {
+        grid-template-columns: repeat(3, 1fr);
+        gap: 1rem;
       }
-    }
-
-    /* ===== DARK MODE (already dark, enhance for light preferences) ===== */
-    @media (prefers-color-scheme: light) {
-      /* Keep dark — FaultRay is always dark themed for brand consistency */
-    }
-
-    /* ===== SELECTION ===== */
-    ::selection {
-      background: rgba(0, 200, 255, 0.25);
-      color: #fff;
     }
   </style>
 </head>
 <body>
 
-  <!-- NAV -->
-  <nav class="nav" id="nav">
+  <!-- Navigation -->
+  <nav>
     <div class="nav-inner">
-      <a href="#" class="nav-logo"><img src="/logo.png" alt="FaultRay" height="28" style="display:block"></a>
-      <div class="nav-links" id="nav-links">
-        <a href="#problems" data-i18n="nav_why">Why FaultRay</a>
-        <a href="#features" data-i18n="nav_features">Features</a>
-        <a href="#compare" data-i18n="nav_compare">Compare</a>
-        <a href="#faq">FAQ</a>
-        <div class="lang-switch">
-          <button class="lang-btn active" data-lang="en">EN</button>
-          <button class="lang-btn" data-lang="ja">日本語</button>
-        </div>
-        <a href="https://github.com/mattyopon/faultray" class="nav-cta" target="_blank" rel="noopener">GitHub</a>
-      </div>
-      <button class="nav-mobile-toggle" id="nav-toggle" aria-label="Toggle menu">&#9776;</button>
+      <a href="#" class="nav-logo">Fault<span>Ray</span></a>
+      <button class="nav-mobile-toggle" onclick="document.querySelector('.nav-links').classList.toggle('open')" aria-label="Toggle menu">&#9776;</button>
+      <ul class="nav-links">
+        <li><a href="#features">Features</a></li>
+        <li><a href="#how-it-works">How It Works</a></li>
+        <li><a href="#pricing">Pricing</a></li>
+        <li><a href="https://github.com/mattyopon/faultray" target="_blank" rel="noopener">GitHub</a></li>
+        <li><a href="#install" class="nav-cta">Get Started</a></li>
+      </ul>
     </div>
   </nav>
 
-  <!-- HERO -->
+  <!-- Hero -->
   <section class="hero">
     <div class="container">
-      <div class="hero-content">
-        <span class="hero-badge" data-i18n="hero_badge" data-i18n-html>
-          <span class="hero-badge-dot"></span>
-          Patent-Pending Technology &middot; Next-Gen Resilience
-        </span>
-        <h1 data-i18n="hero_title" data-i18n-html>DORA Compliance Still Costs You <span class="accent">$500K</span>?<br>FaultRay Does It for Free.</h1>
-        <p class="hero-sub" data-i18n="hero_sub">Traditional DORA compliance requires months of consulting, dedicated teams, and six-figure budgets. FaultRay simulates 2,000+ failure scenarios in seconds &mdash; with a single pip install. No agents. No consultants. No production risk.</p>
-        <div class="hero-btns">
-          <a href="https://faultray.streamlit.app/" class="btn-primary" target="_blank" rel="noopener" data-i18n="hero_cta_primary">Try Demo Free &rarr;</a>
-          <a href="#features" class="btn-secondary" data-i18n="hero_cta_secondary">Explore Features</a>
+      <div class="hero-badge">
+        <span class="dot"></span>
+        v11.0 — Now with AI Agent Failure Modeling
+      </div>
+      <h1>Stop Breaking Production.<br><span class="gradient">Start Simulating It.</span></h1>
+      <p class="hero-sub">FaultRay simulates infrastructure failures in memory — before they happen in production. Zero risk. Full visibility.</p>
+      <div class="hero-buttons">
+        <a href="#install" class="btn btn-primary">Get Started Free</a>
+        <a href="https://github.com/mattyopon/faultray" target="_blank" rel="noopener" class="btn btn-secondary">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"/></svg>
+          View on GitHub
+        </a>
+      </div>
+
+      <!-- Terminal Mockup -->
+      <div class="terminal">
+        <div class="terminal-header">
+          <span class="terminal-dot red"></span>
+          <span class="terminal-dot yellow"></span>
+          <span class="terminal-dot green"></span>
+          <span class="terminal-title">terminal</span>
         </div>
-        <div class="hero-install">
-          <span class="prompt">$ </span>pip install faultray
+        <div class="terminal-body">
+<span class="prompt">$</span> <span class="cmd">faultray tf-check plan.json</span>
+<br><br>
+<span class="box">&#9581;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472; FaultRay Terraform Guard &#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9584;</span><br>
+<span class="box">&#9474;</span>                                                   <span class="box">&#9474;</span><br>
+<span class="box">&#9474;</span>  Score Before: <span class="score-good">72/100</span>                             <span class="box">&#9474;</span><br>
+<span class="box">&#9474;</span>  Score After:  <span class="danger">45/100</span>  <span class="danger">(-27 points)</span>               <span class="box">&#9474;</span><br>
+<span class="box">&#9474;</span>                                                   <span class="box">&#9474;</span><br>
+<span class="box">&#9474;</span>  <span class="warn">NEW RISKS:</span>                                       <span class="box">&#9474;</span><br>
+<span class="box">&#9474;</span>  <span class="danger">-</span> Database is now a single point of failure      <span class="box">&#9474;</span><br>
+<span class="box">&#9474;</span>  <span class="danger">-</span> Cache has no replication (data loss risk)      <span class="box">&#9474;</span><br>
+<span class="box">&#9474;</span>                                                   <span class="box">&#9474;</span><br>
+<span class="box">&#9474;</span>  Recommendation: <span class="danger">HIGH RISK - Review Required</span>      <span class="box">&#9474;</span><br>
+<span class="box">&#9474;</span>                                                   <span class="box">&#9474;</span><br>
+<span class="box">&#9582;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9583;</span>
         </div>
       </div>
     </div>
   </section>
 
-  <!-- STATS -->
-  <section class="stats-section">
+  <!-- Problem -->
+  <section class="problem" id="problem">
     <div class="container">
-      <div class="stats-grid">
-        <div class="stat-item fade-in">
-          <div class="stat-number green">$0</div>
-          <div class="stat-label" data-i18n="stat_cost">Setup cost &mdash; zero infrastructure required</div>
+      <div class="animate-on-scroll" style="text-align:center">
+        <p class="section-label">The Problem</p>
+        <h2 class="section-title"><code style="background:rgba(239,68,68,0.15);color:var(--red);padding:0.1em 0.4em;border-radius:6px;font-family:var(--mono);font-size:0.85em">terraform apply</code> Broke Production. Again.</h2>
+        <p class="section-subtitle" style="margin:0 auto">Every DevOps engineer has a horror story. A config change that looked harmless. A cascade failure at 2am. The plan output looked fine — and then production fell over.</p>
+      </div>
+      <div class="problem-grid">
+        <div class="problem-card animate-on-scroll">
+          <div class="problem-icon">&#128165;</div>
+          <h3>Cascade Failures from "Harmless" Changes</h3>
+          <p>A single config tweak triggers a chain reaction across your infrastructure. By the time you see it, half your services are down.</p>
         </div>
-        <div class="stat-item fade-in fade-in-delay-1">
-          <div class="stat-number cyan">30s</div>
-          <div class="stat-label" data-i18n="stat_speed">From install to first resilience report</div>
+        <div class="problem-card animate-on-scroll">
+          <div class="problem-icon">&#128064;</div>
+          <h3>Single Points of Failure Nobody Noticed</h3>
+          <p>That database with <code style="background:var(--bg-tertiary);padding:0.1em 0.3em;border-radius:4px;font-family:var(--mono);font-size:0.85em">replicas: 1</code> slipped through code review. You found out at 2am when it went down.</p>
         </div>
-        <div class="stat-item fade-in fade-in-delay-2">
-          <div class="stat-number blue">2,000+</div>
-          <div class="stat-label" data-i18n="stat_scenarios">Failure scenarios per simulation</div>
-        </div>
-        <div class="stat-item fade-in fade-in-delay-3">
-          <div class="stat-number amber">52</div>
-          <div class="stat-label" data-i18n="stat_controls">DORA controls assessed automatically</div>
+        <div class="problem-card animate-on-scroll">
+          <div class="problem-icon">&#129335;</div>
+          <h3>No Way to Test Resilience Before Deploying</h3>
+          <p>Traditional chaos engineering means breaking production. Regulated industries can't do that. Most teams won't risk it.</p>
         </div>
       </div>
     </div>
   </section>
 
-  <!-- PROBLEMS -->
-  <section class="section" id="problems">
+  <!-- Solution -->
+  <section id="features">
     <div class="container">
-      <div class="section-label" data-i18n="problems_label">The Problem</div>
-      <h2 class="section-title" data-i18n="problems_title">Still breaking production to test resilience?</h2>
-      <p class="section-sub" data-i18n="problems_sub">Traditional chaos engineering injects real failures into live systems. In a regulated world, that's no longer acceptable.</p>
-      <div class="problems-grid">
-        <div class="problem-card fade-in">
-          <div class="problem-icon">&#x1F4A5;</div>
-          <div>
-            <h3 data-i18n="problem_chaos_title">Production chaos tests crash systems</h3>
-            <p data-i18n="problem_chaos_desc">Injecting real faults into production causes outages, customer impact, and incident response overhead.</p>
+      <div class="animate-on-scroll" style="text-align:center">
+        <p class="section-label">The Solution</p>
+        <h2 class="section-title">Simulate Before You Ship</h2>
+        <p class="section-subtitle" style="margin:0 auto">FaultRay builds a mathematical model of your entire system and simulates 2,000+ failure scenarios in memory. Nothing breaks. You just get answers.</p>
+      </div>
+      <div class="solution-grid">
+        <div class="solution-card animate-on-scroll">
+          <div class="solution-number">1</div>
+          <h3>Graph-Based Cascade Simulation</h3>
+          <p>Model your entire infra as a dependency graph. Inject faults virtually. See exactly what breaks — and what survives.</p>
+        </div>
+        <div class="solution-card animate-on-scroll">
+          <div class="solution-number">2</div>
+          <h3>Multi-Layer Availability Limits</h3>
+          <p>Mathematically prove your theoretical maximum uptime across hardware, software, operations, and external dependencies.</p>
+        </div>
+        <div class="solution-card animate-on-scroll">
+          <div class="solution-number">3</div>
+          <h3>AI Agent Failure Modeling</h3>
+          <p>First tool to simulate how infrastructure failures cause AI agents to hallucinate, loop, or cascade errors through your system.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- How it works -->
+  <section class="how-it-works" id="how-it-works">
+    <div class="container">
+      <div class="animate-on-scroll" style="text-align:center">
+        <p class="section-label">How It Works</p>
+        <h2 class="section-title">Three Commands. Full Visibility.</h2>
+        <p class="section-subtitle" style="margin:0 auto">No agents to install. No infrastructure changes. No credentials needed beyond what Terraform already has.</p>
+      </div>
+      <div class="steps">
+        <div class="step animate-on-scroll">
+          <div class="step-number">Step 1 — Install</div>
+          <h3>One-line setup</h3>
+          <div class="code-block">
+            <span class="prompt">$ </span>pip install faultray
           </div>
         </div>
-        <div class="problem-card fade-in fade-in-delay-1">
-          <div class="problem-icon">&#x23F0;</div>
-          <div>
-            <h3 data-i18n="problem_dora_title">DORA deadline has passed</h3>
-            <p data-i18n="problem_dora_desc">The Digital Operational Resilience Act took effect January 2025. Non-compliance penalties reach 2% of global revenue.</p>
+        <div class="step animate-on-scroll">
+          <div class="step-number">Step 2 — Define</div>
+          <h3>Import or define your infra</h3>
+          <div class="code-block">
+<span class="prompt">$ </span>faultray tf-import<br>
+<span class="output">Imported 47 resources from terraform state</span><br><br>
+<span class="prompt">$ </span>faultray init<br>
+<span class="output">Created infra.yaml template</span>
           </div>
         </div>
-        <div class="problem-card fade-in fade-in-delay-2">
-          <div class="problem-icon">&#x1F4CB;</div>
-          <div>
-            <h3 data-i18n="problem_audit_title">No audit evidence from simulations</h3>
-            <p data-i18n="problem_audit_desc">Existing tools don't generate the structured evidence packages that regulators and auditors require.</p>
-          </div>
-        </div>
-        <div class="problem-card fade-in">
-          <div class="problem-icon">&#x1F4CA;</div>
-          <div>
-            <h3 data-i18n="problem_sla_title">SLA promises exceed physics</h3>
-            <p data-i18n="problem_sla_desc">Promising 99.99% availability without mathematical proof means your SLA is a guess, not a guarantee.</p>
-          </div>
-        </div>
-        <div class="problem-card fade-in fade-in-delay-1">
-          <div class="problem-icon">&#x1F50D;</div>
-          <div>
-            <h3 data-i18n="problem_spof_title">Hidden single points of failure</h3>
-            <p data-i18n="problem_spof_desc">SPOFs lurk in complex dependency graphs. Manual review misses cascading failure paths.</p>
-          </div>
-        </div>
-        <div class="problem-card fade-in fade-in-delay-2">
-          <div class="problem-icon">&#x2601;</div>
-          <div>
-            <h3 data-i18n="problem_vendor_title">Third-party concentration risk</h3>
-            <p data-i18n="problem_vendor_desc">Over-reliance on a single cloud vendor creates systemic risk that regulators are increasingly scrutinizing.</p>
+        <div class="step animate-on-scroll">
+          <div class="step-number">Step 3 — Simulate</div>
+          <h3>See what breaks</h3>
+          <div class="code-block">
+<span class="prompt">$ </span>faultray simulate<br>
+<span class="output">Resilience Score: 72/100</span><br>
+<span class="output">Scenarios tested: 2,000+</span><br>
+<span class="output">Critical: 3  Warning: 12  Passed: 85</span>
           </div>
         </div>
       </div>
     </div>
   </section>
 
-  <!-- COST COMPARISON -->
-  <section class="section section-alt" id="cost-compare">
-    <div class="container">
-      <div class="section-label text-center" data-i18n="cost_label">Cost Comparison</div>
-      <h2 class="section-title text-center" data-i18n="cost_title">The true cost of DORA compliance</h2>
-      <p class="section-sub text-center" data-i18n="cost_sub">Most organizations spend $200K&ndash;$500K on initial DORA compliance. FaultRay automates what consultants do manually.</p>
-      <div class="cost-grid">
-        <div class="cost-card fade-in">
-          <h3 data-i18n="cost_traditional_title">Traditional Approach</h3>
-          <ul>
-            <li data-i18n="cost_traditional_1">3-6 months preparation</li>
-            <li data-i18n="cost_traditional_2">$200K-500K consulting fees</li>
-            <li data-i18n="cost_traditional_3">Dedicated compliance team (3-5 FTE)</li>
-            <li data-i18n="cost_traditional_4">Manual evidence collection</li>
-            <li data-i18n="cost_traditional_5">Annual reassessment cycle</li>
-          </ul>
-        </div>
-        <div class="cost-card fade-in fade-in-delay-1">
-          <h3 data-i18n="cost_chaos_title">Chaos Engineering Tools</h3>
-          <ul>
-            <li data-i18n="cost_chaos_1">$50K-200K/year licensing</li>
-            <li data-i18n="cost_chaos_2">Agent installation on every host</li>
-            <li data-i18n="cost_chaos_3">Production risk &amp; incident overhead</li>
-            <li data-i18n="cost_chaos_4">No DORA compliance mapping</li>
-            <li data-i18n="cost_chaos_5">AWS/cloud vendor lock-in</li>
-          </ul>
-        </div>
-        <div class="cost-card highlight fade-in fade-in-delay-2">
-          <span class="cost-card-badge" data-i18n="cost_recommended">RECOMMENDED</span>
-          <h3>FaultRay</h3>
-          <ul>
-            <li data-i18n="cost_faultray_1">pip install &mdash; ready in 30 seconds</li>
-            <li data-i18n="cost_faultray_2">Free tier available</li>
-            <li data-i18n="cost_faultray_3">Zero production risk</li>
-            <li data-i18n="cost_faultray_4">52 DORA controls + audit evidence</li>
-            <li data-i18n="cost_faultray_5">Patent-pending simulation engine</li>
-          </ul>
-        </div>
+  <!-- Integrations -->
+  <section id="integrations">
+    <div class="container animate-on-scroll" style="text-align:center">
+      <p class="section-label">Integrations</p>
+      <h2 class="section-title">Works With Your Stack</h2>
+      <p class="section-subtitle" style="margin:0 auto">Vendor-agnostic simulation that works across any infrastructure topology.</p>
+      <div class="integrations-row">
+        <span class="integration-badge">Terraform</span>
+        <span class="integration-badge">AWS</span>
+        <span class="integration-badge">Azure</span>
+        <span class="integration-badge">GCP</span>
+        <span class="integration-badge">Kubernetes</span>
+        <span class="integration-badge">Datadog</span>
+        <span class="integration-badge">PagerDuty</span>
+        <span class="integration-badge">Grafana</span>
+        <span class="integration-badge">OpsGenie</span>
+        <span class="integration-badge">Slack</span>
+        <span class="integration-badge">Prometheus</span>
+        <span class="integration-badge">GitHub Actions</span>
       </div>
     </div>
   </section>
 
-  <!-- FEATURES -->
-  <section class="section" id="features">
-    <div class="container">
-      <div class="section-label text-center" data-i18n="features_label">Capabilities</div>
-      <h2 class="section-title text-center" data-i18n="features_title">Everything you need for resilience compliance</h2>
-      <p class="section-sub text-center" data-i18n="features_sub" data-i18n-html>From mathematical SLA proofs to AI agent failure modeling &mdash; a complete resilience testing platform in a single CLI.</p>
-      <div class="features-grid">
-        <div class="feature-card fade-in">
-          <div class="feature-icon">&#x1F4D0;</div>
-          <h3 data-i18n="feature_availability_title">5-Layer Availability Model</h3>
-          <p data-i18n="feature_availability_desc">Mathematical SLA proof across network, compute, storage, application, and external dependency layers.</p>
-          <span class="feature-badge badge-dora">DORA</span>
-        </div>
-        <div class="feature-card fade-in">
-          <div class="feature-icon">&#x1F30A;</div>
-          <h3 data-i18n="feature_cascade_title">Cascade Failure Analysis</h3>
-          <p data-i18n="feature_cascade_desc">Graph-based failure propagation modeling. Trace how one component failure cascades through your infrastructure.</p>
-        </div>
-        <div class="feature-card fade-in">
-          <div class="feature-icon">&#x26A0;</div>
-          <h3 data-i18n="feature_spof_title">SPOF Detection</h3>
-          <p data-i18n="feature_spof_desc">Automatic detection of single points of failure in your dependency graph before they cause outages.</p>
-        </div>
-        <div class="feature-card fade-in">
-          <div class="feature-icon">&#x1F3DB;</div>
-          <h3 data-i18n="feature_dora5_title">DORA 5-Pillar Assessment</h3>
-          <p data-i18n="feature_dora5_desc">Comprehensive mapping to all 52 controls across ICT Risk Management, Incident Management, Testing, Third-Party, and Information Sharing.</p>
-          <span class="feature-badge badge-dora">DORA</span>
-        </div>
-        <div class="feature-card fade-in">
-          <div class="feature-icon">&#x1F4C4;</div>
-          <h3 data-i18n="feature_evidence_title">DORA Evidence Packages</h3>
-          <p data-i18n="feature_evidence_desc">Generate audit-ready PDF evidence packages with compliance scores, gap analysis, and remediation roadmaps.</p>
-          <span class="feature-badge badge-dora">DORA</span>
-        </div>
-        <div class="feature-card fade-in">
-          <div class="feature-icon">&#x1F4CA;</div>
-          <h3 data-i18n="feature_reports_title">Rich Reports &amp; Dashboards</h3>
-          <p data-i18n="feature_reports_desc">HTML, PDF, and JSON reports. DORA evidence packages. Compliance scorecards. CI/CD integration reports. Export everything for auditors.</p>
-          <span class="feature-badge badge-new">NEW</span>
-        </div>
-        <div class="feature-card fade-in">
-          <div class="feature-icon">&#x1F6E1;</div>
-          <h3 data-i18n="feature_tlpt_title">TLPT Readiness</h3>
-          <p data-i18n="feature_tlpt_desc">Threat-Led Penetration Testing preparation. Model advanced persistent threats against your infrastructure.</p>
-          <span class="feature-badge badge-dora">DORA</span>
-        </div>
-        <div class="feature-card fade-in">
-          <div class="feature-icon">&#x1F4CA;</div>
-          <h3 data-i18n="feature_hhi_title">Concentration Risk (HHI)</h3>
-          <p data-i18n="feature_hhi_desc">Herfindahl-Hirschman Index analysis for ICT third-party concentration risk. Identify vendor lock-in before regulators do.</p>
-        </div>
-        <div class="feature-card fade-in">
-          <div class="feature-icon">&#x1F916;</div>
-          <h3 data-i18n="feature_ai_title">AI Agent Testing</h3>
-          <p data-i18n="feature_ai_desc">7 failure types including hallucination cascades, context window overflows, and tool-call loops in autonomous agents.</p>
-          <span class="feature-badge badge-ai">AI</span>
-        </div>
-        <div class="feature-card fade-in">
-          <div class="feature-icon">&#x2699;</div>
-          <h3 data-i18n="feature_terraform_title">Terraform Integration</h3>
-          <p data-i18n="feature_terraform_desc">Run as a CI/CD gate. Block deployments that reduce resilience below your threshold. Infrastructure-as-code native.</p>
-        </div>
-        <div class="feature-card fade-in">
-          <div class="feature-icon">&#x1F310;</div>
-          <h3 data-i18n="feature_multi_title">Multi-Framework Compliance</h3>
-          <p data-i18n="feature_multi_desc">SOC 2, PCI DSS, ISO 27001, HIPAA, GDPR compliance mapping. One scan, multiple frameworks.</p>
-          <span class="feature-badge badge-new">NEW</span>
-        </div>
-        <div class="feature-card fade-in">
-          <div class="feature-icon">&#x1F4BB;</div>
-          <h3 data-i18n="feature_cli_title">100+ CLI Commands</h3>
-          <p data-i18n="feature_cli_desc" data-i18n-html>From <code style="font-family:'JetBrains Mono',monospace;font-size:12px;background:rgba(0,200,255,0.1);padding:2px 6px;border-radius:4px;color:var(--cyan)">faultray demo</code> to <code style="font-family:'JetBrains Mono',monospace;font-size:12px;background:rgba(0,200,255,0.1);padding:2px 6px;border-radius:4px;color:var(--cyan)">faultray war-room</code> &mdash; a complete resilience CLI toolkit.</p>
-        </div>
-        <div class="feature-card fade-in">
-          <div class="feature-icon">&#x1F4E1;</div>
-          <h3 data-i18n="feature_security_title">Security Feed</h3>
-          <p data-i18n="feature_security_desc">Automatic scenario generation from CVE and CISA advisories. Stay ahead of emerging threats.</p>
-          <span class="feature-badge badge-security">SECURITY</span>
-        </div>
+  <!-- Comparison -->
+  <section class="comparison">
+    <div class="container animate-on-scroll">
+      <div style="text-align:center">
+        <p class="section-label">Comparison</p>
+        <h2 class="section-title">Why Teams Switch to FaultRay</h2>
       </div>
-    </div>
-  </section>
-
-  <!-- COMPARISON -->
-  <section class="section section-alt" id="compare">
-    <div class="container">
-      <div class="section-label text-center" data-i18n="compare_label">Comparison</div>
-      <h2 class="section-title text-center" data-i18n="compare_title">Why not just use chaos engineering?</h2>
-      <p class="section-sub text-center" data-i18n="compare_sub">FaultRay takes a fundamentally different approach. No agents, no injected failures, no production risk.</p>
-      <div class="compare-wrapper fade-in">
-        <table class="compare-table">
+      <div class="comparison-table-wrapper">
+        <table class="comparison-table">
           <thead>
             <tr>
               <th></th>
@@ -1354,53 +1169,53 @@
           </thead>
           <tbody>
             <tr>
-              <td data-i18n="compare_approach">Approach</td>
-              <td data-i18n="compare_injects">Injects real failures</td>
-              <td data-i18n="compare_injects">Injects real failures</td>
-              <td data-i18n="compare_injects">Injects real failures</td>
-              <td class="check" data-i18n="compare_math">Math simulation</td>
+              <td>Approach</td>
+              <td>Breaks real things</td>
+              <td>Breaks real things</td>
+              <td>Breaks real things</td>
+              <td>Math simulation</td>
             </tr>
             <tr>
-              <td data-i18n="compare_prod_risk">Production risk</td>
-              <td class="risk-high" data-i18n="compare_high">High</td>
-              <td class="risk-med" data-i18n="compare_medium">Medium</td>
-              <td class="risk-med" data-i18n="compare_medium">Medium</td>
-              <td class="risk-zero" data-i18n="compare_zero">Zero</td>
+              <td>Production risk</td>
+              <td>Medium-High</td>
+              <td>Medium</td>
+              <td>Medium</td>
+              <td>Zero</td>
             </tr>
             <tr>
-              <td data-i18n="compare_setup">Setup</td>
-              <td data-i18n="compare_agent_host">Agent per host</td>
-              <td data-i18n="compare_agent_host">Agent per host</td>
-              <td data-i18n="compare_aws_only">AWS only</td>
-              <td class="check">pip install</td>
+              <td>Setup</td>
+              <td>Agent per host</td>
+              <td>Agent per host</td>
+              <td>AWS only</td>
+              <td>pip install faultray</td>
             </tr>
             <tr>
-              <td data-i18n="compare_row_cost">Cost</td>
-              <td data-i18n="compare_cost_gremlin">$100K+/yr</td>
-              <td data-i18n="compare_cost_steadybit">$50K+/yr</td>
-              <td data-i18n="compare_cost_fis">Pay-per-use</td>
-              <td class="check" data-i18n="compare_cost_faultray">Free / Enterprise</td>
+              <td>Scenarios</td>
+              <td>Manual</td>
+              <td>Manual</td>
+              <td>AWS only</td>
+              <td>2,000+ auto-generated</td>
             </tr>
             <tr>
-              <td data-i18n="compare_dora_evidence">DORA evidence</td>
-              <td class="cross">&times;</td>
-              <td class="cross">&times;</td>
-              <td class="cross">&times;</td>
-              <td class="check" data-i18n="compare_audit_ready" data-i18n-html>&#10003; Audit-ready</td>
+              <td>Availability proof</td>
+              <td>No</td>
+              <td>No</td>
+              <td>No</td>
+              <td>5-Layer Limit Model</td>
             </tr>
             <tr>
-              <td data-i18n="compare_ai_test">AI agent testing</td>
-              <td class="cross">&times;</td>
-              <td class="cross">&times;</td>
-              <td class="cross">&times;</td>
-              <td class="check" data-i18n="compare_7types" data-i18n-html>&#10003; 7 failure types</td>
+              <td>AI agent testing</td>
+              <td>No</td>
+              <td>No</td>
+              <td>No</td>
+              <td>7 fault types</td>
             </tr>
             <tr>
-              <td data-i18n="compare_sla_proof">SLA proof</td>
-              <td class="cross">&times;</td>
-              <td class="cross">&times;</td>
-              <td class="cross">&times;</td>
-              <td class="check" data-i18n="compare_mathematical" data-i18n-html>&#10003; Mathematical</td>
+              <td>Cost</td>
+              <td>$$$$</td>
+              <td>$$$</td>
+              <td>$$</td>
+              <td>Free / Open Source</td>
             </tr>
           </tbody>
         </table>
@@ -1408,419 +1223,120 @@
     </div>
   </section>
 
-  <!-- FAQ -->
-  <section class="section" id="faq">
+  <!-- Pricing -->
+  <section id="pricing">
     <div class="container">
-      <div class="section-label text-center">FAQ</div>
-      <h2 class="section-title text-center" data-i18n="faq_title">Frequently asked questions</h2>
-      <div class="faq-list">
-        <div class="faq-item fade-in">
-          <button class="faq-question" aria-expanded="false">
-            <span data-i18n="faq_q1">Does FaultRay actually break anything?</span>
-            <span class="faq-icon">+</span>
-          </button>
-          <div class="faq-answer">
-            <div class="faq-answer-inner" data-i18n="faq_a1">No. FaultRay uses pure in-memory mathematical simulation. It models your infrastructure as a directed graph and computes failure probabilities, cascade paths, and availability limits without touching any live systems. Your production environment remains completely untouched.</div>
-          </div>
+      <div class="animate-on-scroll" style="text-align:center">
+        <p class="section-label">Pricing</p>
+        <h2 class="section-title">Start Free. Scale When Ready.</h2>
+        <p class="section-subtitle" style="margin:0 auto">No credit card required. Install and start simulating in under a minute.</p>
+      </div>
+      <div class="pricing-grid">
+        <div class="pricing-card animate-on-scroll">
+          <div class="pricing-name">Free</div>
+          <div class="pricing-price">$0<span>/mo</span></div>
+          <div class="pricing-desc">For individuals and small projects</div>
+          <ul class="pricing-features">
+            <li>5 components</li>
+            <li>10 simulations / month</li>
+            <li>CLI only</li>
+            <li>Community support</li>
+            <li>Cascade simulation engine</li>
+          </ul>
+          <a href="#install" class="btn btn-secondary">Install Free</a>
         </div>
-        <div class="faq-item fade-in">
-          <button class="faq-question" aria-expanded="false">
-            <span data-i18n="faq_q2">How does it help with DORA compliance?</span>
-            <span class="faq-icon">+</span>
-          </button>
-          <div class="faq-answer">
-            <div class="faq-answer-inner" data-i18n="faq_a2">FaultRay maps directly to all 5 DORA pillars and 52 controls. It generates structured evidence packages including gap analysis, risk assessments, and remediation roadmaps that auditors can directly review. Think of it as automated DORA compliance documentation backed by mathematical proof.</div>
-          </div>
+        <div class="pricing-card featured animate-on-scroll">
+          <div class="pricing-name">Pro</div>
+          <div class="pricing-price">$29<span>/mo</span></div>
+          <div class="pricing-desc">For teams running production infrastructure</div>
+          <ul class="pricing-features">
+            <li>50 components</li>
+            <li>Unlimited simulations</li>
+            <li>All 5 simulation engines</li>
+            <li>Compliance reports (SOC 2, ISO, PCI)</li>
+            <li>AI agent failure modeling</li>
+            <li>Web dashboard</li>
+            <li>Email support</li>
+          </ul>
+          <a href="https://github.com/sponsors/mattyopon" target="_blank" rel="noopener" class="btn btn-primary">Sponsor on GitHub</a>
         </div>
-        <div class="faq-item fade-in">
-          <button class="faq-question" aria-expanded="false">
-            <span data-i18n="faq_q3">Can I use it in CI/CD pipelines?</span>
-            <span class="faq-icon">+</span>
-          </button>
-          <div class="faq-answer">
-            <div class="faq-answer-inner" data-i18n="faq_a3">Yes. FaultRay integrates as a Terraform gate, blocking deployments that reduce resilience below your configured threshold. It also works with GitHub Actions for automated resilience checks on every pull request.</div>
-          </div>
+        <div class="pricing-card animate-on-scroll">
+          <div class="pricing-name">Enterprise</div>
+          <div class="pricing-price">$299<span>/mo</span></div>
+          <div class="pricing-desc">For organizations with compliance requirements</div>
+          <ul class="pricing-features">
+            <li>Unlimited components</li>
+            <li>Unlimited simulations</li>
+            <li>SSO / SAML integration</li>
+            <li>Insurance API access</li>
+            <li>Multi-region DR analysis</li>
+            <li>Security feed (CVE/CISA/NVD)</li>
+            <li>Dedicated support</li>
+            <li>Custom integrations</li>
+          </ul>
+          <a href="mailto:ymaeda.it@gmail.com" class="btn btn-secondary">Contact Us</a>
         </div>
-        <div class="faq-item fade-in">
-          <button class="faq-question" aria-expanded="false">
-            <span data-i18n="faq_q4">What about AI agent testing?</span>
-            <span class="faq-icon">+</span>
-          </button>
-          <div class="faq-answer">
-            <div class="faq-answer-inner" data-i18n="faq_a4">FaultRay models 7 AI-specific failure types: hallucination cascades, context window overflows, tool-call infinite loops, permission escalation, data poisoning propagation, multi-agent deadlocks, and graceful degradation failures. Essential for any team deploying autonomous AI agents.</div>
-          </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Install -->
+  <section class="install-section" id="install">
+    <div class="container animate-on-scroll">
+      <p class="section-label">Get Started</p>
+      <h2 class="section-title">Install in Seconds</h2>
+      <p class="section-subtitle" style="margin:0 auto 0">One command. No agents. No infrastructure changes.</p>
+      <div class="install-block">
+        <div class="install-code" onclick="navigator.clipboard.writeText('pip install faultray');this.querySelector('.install-hint-inner').textContent='Copied!'">
+          <span class="prompt">$ </span>pip install faultray
         </div>
-        <div class="faq-item fade-in">
-          <button class="faq-question" aria-expanded="false">
-            <span data-i18n="faq_q5">Is it really free?</span>
-            <span class="faq-icon">+</span>
-          </button>
-          <div class="faq-answer">
-            <div class="faq-answer-inner" data-i18n="faq_a5">FaultRay offers a free tier that includes core simulation capabilities, SPOF detection, and basic DORA assessment. Enterprise licenses add full evidence package generation, advanced compliance frameworks, and priority support for production deployments.</div>
-          </div>
-        </div>
+        <p class="install-hint"><span class="install-hint-inner">Click to copy</span></p>
       </div>
     </div>
   </section>
 
   <!-- CTA -->
-  <section class="cta-section" id="get-started">
-    <div class="container">
-      <div class="cta-content">
-        <h2 data-i18n="cta_title">Stop paying for what should be automated</h2>
-        <p data-i18n="cta_sub">Join teams that prove DORA compliance in minutes, not months. Free forever for open-source use.</p>
-        <div class="cta-code">
-          <span class="prompt">$ </span><span class="cmd">pip install</span> <span class="arg">faultray</span><br>
-          <span class="prompt">$ </span><span class="cmd">faultray</span> <span class="arg">demo</span>
-        </div>
-        <!-- Email signup -->
-        <form style="display:flex;gap:8px;max-width:480px;margin:24px auto 0" onsubmit="handleFaultraySignup(event)">
-          <input id="fr-email" type="email" placeholder="your@email.com" required style="flex:1;padding:12px 16px;border-radius:8px;border:1px solid rgba(255,255,255,.2);background:rgba(255,255,255,.08);color:#fff;font-size:15px;outline:none">
-          <button type="submit" style="padding:12px 24px;border-radius:8px;border:none;background:var(--cyan,#22d3ee);color:#0f172a;font-weight:700;font-size:15px;cursor:pointer;white-space:nowrap" data-i18n="cta_signup">Get Early Access</button>
-        </form>
-        <p id="fr-signup-note" style="text-align:center;font-size:13px;color:rgba(255,255,255,.5);margin-top:8px" data-i18n="cta_signup_note">Free forever for OSS. Enterprise plans coming soon.</p>
-
-        <div class="cta-buttons" style="margin-top:16px">
-          <a href="https://github.com/mattyopon/faultray" class="btn-github" target="_blank" rel="noopener">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"/></svg>
-            <span data-i18n="cta_github">Star on GitHub</span>
-          </a>
-          <a href="https://pypi.org/project/faultray/" class="btn-docs" target="_blank" rel="noopener" data-i18n="cta_pypi" data-i18n-html>
-            PyPI Package &rarr;
-          </a>
-        </div>
+  <section class="cta-section">
+    <div class="container animate-on-scroll">
+      <h2>Ready to Stop Breaking Production?</h2>
+      <p>Join engineering teams who simulate failures before they ship. Free forever for small projects.</p>
+      <div class="hero-buttons">
+        <a href="#install" class="btn btn-primary">Get Started Free</a>
+        <a href="https://github.com/mattyopon/faultray" target="_blank" rel="noopener" class="btn btn-secondary">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"/></svg>
+          Star on GitHub
+        </a>
       </div>
     </div>
   </section>
 
-  <!-- FOOTER -->
-  <footer class="footer">
-    <div class="container">
-      <div class="footer-inner">
-        <div class="footer-brand">
-          <a href="#" class="footer-logo"><img src="/logo.png" alt="FaultRay" height="24"></a>
-          <span class="footer-tagline" data-i18n="footer_tagline">Mathematical resilience testing for regulated industries.</span>
-        </div>
-        <div class="footer-links">
-          <a href="https://github.com/mattyopon/faultray" target="_blank" rel="noopener">GitHub</a>
-          <a href="https://pypi.org/project/faultray/" target="_blank" rel="noopener">PyPI</a>
-          <a href="https://doi.org/10.5281/zenodo.19139911" target="_blank" rel="noopener" data-i18n="footer_paper">Paper (DOI)</a>
-        </div>
+  <!-- Footer -->
+  <footer>
+    <div class="footer-inner">
+      <div class="footer-left">
+        <div class="footer-brand">Fault<span>Ray</span></div>
         <div class="footer-meta">
-          <div class="footer-legal">
-            <span>Patent Pending: US 64/010,200</span>
-            <span>License: BSL-1.1</span>
-          </div>
-          <span>&copy; 2025-2026 Yutaro Maeda. All rights reserved.</span>
+          Patent Pending — US Application 64/010,200 |
+          <a href="https://doi.org/10.5281/zenodo.19139911" style="color: #93c5fd; text-decoration: none;">Research Paper (DOI)</a> |
+          <a href="https://faultray.streamlit.app/" style="color: #93c5fd; text-decoration: none;">Live Demo</a><br>
+          &copy; 2025-2026 Yutaro Maeda
         </div>
+      </div>
+      <div class="footer-links">
+        <a href="https://github.com/mattyopon/faultray" target="_blank" rel="noopener">GitHub</a>
+        <a href="https://faultray.com" target="_blank" rel="noopener">Documentation</a>
+        <a href="https://pypi.org/project/faultray/" target="_blank" rel="noopener">PyPI</a>
+        <a href="https://github.com/mattyopon/faultray/blob/main/LICENSE" target="_blank" rel="noopener">License (BSL-1.1)</a>
       </div>
     </div>
   </footer>
 
+  <!-- Minimal JS for scroll animations -->
   <script>
-    /* ===== I18N ===== */
-    const translations = {
-      en: {
-        // Nav
-        nav_why: "Why FaultRay",
-        nav_features: "Features",
-        nav_compare: "Compare",
-        // Hero
-        hero_badge: '<span class="hero-badge-dot"></span>Patent-Pending Technology \u00b7 Next-Gen Resilience',
-        hero_title: 'DORA Compliance Still Costs You <span class="accent">$500K</span>?<br>FaultRay Does It for Free.',
-        hero_sub: "Traditional DORA compliance requires months of consulting, dedicated teams, and six-figure budgets. FaultRay simulates 2,000+ failure scenarios in seconds \u2014 with a single pip install. No agents. No consultants. No production risk.",
-        hero_cta_primary: "Get Started Free \u2192",
-        hero_cta_secondary: "Explore Features",
-        // Stats
-        stat_cost: "Setup cost \u2014 zero infrastructure required",
-        stat_speed: "From install to first resilience report",
-        stat_scenarios: "Failure scenarios per simulation",
-        stat_controls: "DORA controls assessed automatically",
-        // Problems
-        problems_label: "The Problem",
-        problems_title: "Still breaking production to test resilience?",
-        problems_sub: "Traditional chaos engineering injects real failures into live systems. In a regulated world, that\u2019s no longer acceptable.",
-        problem_chaos_title: "Production chaos tests crash systems",
-        problem_chaos_desc: "Injecting real faults into production causes outages, customer impact, and incident response overhead.",
-        problem_dora_title: "DORA deadline has passed",
-        problem_dora_desc: "The Digital Operational Resilience Act took effect January 2025. Non-compliance penalties reach 2% of global revenue.",
-        problem_audit_title: "No audit evidence from simulations",
-        problem_audit_desc: "Existing tools don\u2019t generate the structured evidence packages that regulators and auditors require.",
-        problem_sla_title: "SLA promises exceed physics",
-        problem_sla_desc: "Promising 99.99% availability without mathematical proof means your SLA is a guess, not a guarantee.",
-        problem_spof_title: "Hidden single points of failure",
-        problem_spof_desc: "SPOFs lurk in complex dependency graphs. Manual review misses cascading failure paths.",
-        problem_vendor_title: "Third-party concentration risk",
-        problem_vendor_desc: "Over-reliance on a single cloud vendor creates systemic risk that regulators are increasingly scrutinizing.",
-        // Cost Comparison
-        cost_label: "Cost Comparison",
-        cost_title: "The true cost of DORA compliance",
-        cost_sub: "Most organizations spend $200K\u2013$500K on initial DORA compliance. FaultRay automates what consultants do manually.",
-        cost_traditional_title: "Traditional Approach",
-        cost_traditional_1: "3-6 months preparation",
-        cost_traditional_2: "$200K-500K consulting fees",
-        cost_traditional_3: "Dedicated compliance team (3-5 FTE)",
-        cost_traditional_4: "Manual evidence collection",
-        cost_traditional_5: "Annual reassessment cycle",
-        cost_chaos_title: "Chaos Engineering Tools",
-        cost_chaos_1: "$50K-200K/year licensing",
-        cost_chaos_2: "Agent installation on every host",
-        cost_chaos_3: "Production risk & incident overhead",
-        cost_chaos_4: "No DORA compliance mapping",
-        cost_chaos_5: "AWS/cloud vendor lock-in",
-        cost_recommended: "RECOMMENDED",
-        cost_faultray_1: "pip install \u2014 ready in 30 seconds",
-        cost_faultray_2: "Free tier available",
-        cost_faultray_3: "Zero production risk",
-        cost_faultray_4: "52 DORA controls + audit evidence",
-        cost_faultray_5: "Patent-pending simulation engine",
-        // Features
-        features_label: "Capabilities",
-        features_title: "Everything you need for resilience compliance",
-        features_sub: 'From mathematical SLA proofs to AI agent failure modeling \u2014 a complete resilience testing platform in a single CLI.',
-        feature_availability_title: "5-Layer Availability Model",
-        feature_availability_desc: "Mathematical SLA proof across network, compute, storage, application, and external dependency layers.",
-        feature_cascade_title: "Cascade Failure Analysis",
-        feature_cascade_desc: "Graph-based failure propagation modeling. Trace how one component failure cascades through your infrastructure.",
-        feature_spof_title: "SPOF Detection",
-        feature_spof_desc: "Automatic detection of single points of failure in your dependency graph before they cause outages.",
-        feature_dora5_title: "DORA 5-Pillar Assessment",
-        feature_dora5_desc: "Comprehensive mapping to all 52 controls across ICT Risk Management, Incident Management, Testing, Third-Party, and Information Sharing.",
-        feature_evidence_title: "DORA Evidence Packages",
-        feature_evidence_desc: "Generate audit-ready PDF evidence packages with compliance scores, gap analysis, and remediation roadmaps.",
-        feature_reports_title: "Rich Reports & Dashboards",
-        feature_reports_desc: "HTML, PDF, and JSON reports. DORA evidence packages. Compliance scorecards. CI/CD integration reports. Export everything for auditors.",
-        feature_tlpt_title: "TLPT Readiness",
-        feature_tlpt_desc: "Threat-Led Penetration Testing preparation. Model advanced persistent threats against your infrastructure.",
-        feature_hhi_title: "Concentration Risk (HHI)",
-        feature_hhi_desc: "Herfindahl-Hirschman Index analysis for ICT third-party concentration risk. Identify vendor lock-in before regulators do.",
-        feature_ai_title: "AI Agent Testing",
-        feature_ai_desc: "7 failure types including hallucination cascades, context window overflows, and tool-call loops in autonomous agents.",
-        feature_terraform_title: "Terraform Integration",
-        feature_terraform_desc: "Run as a CI/CD gate. Block deployments that reduce resilience below your threshold. Infrastructure-as-code native.",
-        feature_multi_title: "Multi-Framework Compliance",
-        feature_multi_desc: "SOC 2, PCI DSS, ISO 27001, HIPAA, GDPR compliance mapping. One scan, multiple frameworks.",
-        feature_cli_title: "100+ CLI Commands",
-        feature_cli_desc: 'From <code style="font-family:\'JetBrains Mono\',monospace;font-size:12px;background:rgba(0,200,255,0.1);padding:2px 6px;border-radius:4px;color:var(--cyan)">faultray demo</code> to <code style="font-family:\'JetBrains Mono\',monospace;font-size:12px;background:rgba(0,200,255,0.1);padding:2px 6px;border-radius:4px;color:var(--cyan)">faultray war-room</code> \u2014 a complete resilience CLI toolkit.',
-        feature_security_title: "Security Feed",
-        feature_security_desc: "Automatic scenario generation from CVE and CISA advisories. Stay ahead of emerging threats.",
-        // Compare
-        compare_label: "Comparison",
-        compare_title: "Why not just use chaos engineering?",
-        compare_sub: "FaultRay takes a fundamentally different approach. No agents, no injected failures, no production risk.",
-        compare_approach: "Approach",
-        compare_injects: "Injects real failures",
-        compare_math: "Math simulation",
-        compare_prod_risk: "Production risk",
-        compare_high: "High",
-        compare_medium: "Medium",
-        compare_zero: "Zero",
-        compare_setup: "Setup",
-        compare_agent_host: "Agent per host",
-        compare_aws_only: "AWS only",
-        compare_row_cost: "Cost",
-        compare_cost_gremlin: "$100K+/yr",
-        compare_cost_steadybit: "$50K+/yr",
-        compare_cost_fis: "Pay-per-use",
-        compare_cost_faultray: "Free / Enterprise",
-        compare_dora_evidence: "DORA evidence",
-        compare_audit_ready: "\u2713 Audit-ready",
-        compare_ai_test: "AI agent testing",
-        compare_7types: "\u2713 7 failure types",
-        compare_sla_proof: "SLA proof",
-        compare_mathematical: "\u2713 Mathematical",
-        // FAQ
-        faq_title: "Frequently asked questions",
-        faq_q1: "Does FaultRay actually break anything?",
-        faq_a1: "No. FaultRay uses pure in-memory mathematical simulation. It models your infrastructure as a directed graph and computes failure probabilities, cascade paths, and availability limits without touching any live systems. Your production environment remains completely untouched.",
-        faq_q2: "How does it help with DORA compliance?",
-        faq_a2: "FaultRay maps directly to all 5 DORA pillars and 52 controls. It generates structured evidence packages including gap analysis, risk assessments, and remediation roadmaps that auditors can directly review. Think of it as automated DORA compliance documentation backed by mathematical proof.",
-        faq_q3: "Can I use it in CI/CD pipelines?",
-        faq_a3: "Yes. FaultRay integrates as a Terraform gate, blocking deployments that reduce resilience below your configured threshold. It also works with GitHub Actions for automated resilience checks on every pull request.",
-        faq_q4: "What about AI agent testing?",
-        faq_a4: "FaultRay models 7 AI-specific failure types: hallucination cascades, context window overflows, tool-call infinite loops, permission escalation, data poisoning propagation, multi-agent deadlocks, and graceful degradation failures. Essential for any team deploying autonomous AI agents.",
-        faq_q5: "Is it really free?",
-        faq_a5: "FaultRay offers a free tier that includes core simulation capabilities, SPOF detection, and basic DORA assessment. Enterprise licenses add full evidence package generation, advanced compliance frameworks, and priority support for production deployments.",
-        // CTA
-        cta_title: "Stop paying for what should be automated",
-        cta_sub: "Join teams that prove DORA compliance in minutes, not months. Free forever for open-source use.",
-        cta_github: "Star on GitHub",
-        cta_pypi: "PyPI Package \u2192",
-        cta_signup: "Get Early Access",
-        cta_signup_note: "Free forever for OSS. Enterprise plans coming soon.",
-        // Footer
-        footer_tagline: "Mathematical resilience testing for regulated industries.",
-        footer_paper: "Paper (DOI)"
-      },
-      ja: {
-        // Nav
-        nav_why: "\u306a\u305cFaultRay",
-        nav_features: "\u6a5f\u80fd",
-        nav_compare: "\u6bd4\u8f03",
-        // Hero
-        hero_badge: '<span class="hero-badge-dot"></span>\u7279\u8a31\u51fa\u613e\u4e2d\u30c6\u30af\u30ce\u30ed\u30b8\u30fc \u00b7 \u6b21\u4e16\u4ee3\u30ec\u30b8\u30ea\u30a8\u30f3\u30b9',
-        hero_title: 'DORA\u6e96\u62e0\u306b\u307e\u3060<span class="accent">5,000\u4e07\u5186</span>\u304b\u3051\u307e\u3059\u304b\uff1f<br>FaultRay\u306a\u3089\u7121\u6599\u3067\u3059\u3002',
-        hero_sub: "\u5f93\u6765\u306eDORA\u6e96\u62e0\u306b\u306f\u30b3\u30f3\u30b5\u30eb\u30bf\u30f3\u30c8\u306e\u6570\u30f6\u6708\u306e\u652f\u63f4\u3001\u5c02\u4efb\u30c1\u30fc\u30e0\u3001\u6570\u5343\u4e07\u5186\u306e\u4e88\u7b97\u304c\u5fc5\u8981\u3067\u3059\u3002FaultRay\u306f\u305f\u3063\u305f1\u884c\u306epip install\u30672,000\u4ee5\u4e0a\u306e\u969c\u5bb3\u30b7\u30ca\u30ea\u30aa\u3092\u6570\u79d2\u3067\u30b7\u30df\u30e5\u30ec\u30fc\u30b7\u30e7\u30f3\u3002\u30a8\u30fc\u30b8\u30a7\u30f3\u30c8\u4e0d\u8981\u3002\u30b3\u30f3\u30b5\u30eb\u4e0d\u8981\u3002\u672c\u756a\u30ea\u30b9\u30af\u30bc\u30ed\u3002",
-        hero_cta_primary: "\u7121\u6599\u3067\u59cb\u3081\u308b \u2192",
-        hero_cta_secondary: "\u6a5f\u80fd\u3092\u898b\u308b",
-        // Stats
-        stat_cost: "\u30bb\u30c3\u30c8\u30a2\u30c3\u30d7\u8cbb\u7528 \u2014 \u30a4\u30f3\u30d5\u30e9\u4e0d\u8981",
-        stat_speed: "\u30a4\u30f3\u30b9\u30c8\u30fc\u30eb\u304b\u3089\u6700\u521d\u306e\u30ec\u30dd\u30fc\u30c8\u307e\u3067",
-        stat_scenarios: "\u30b7\u30df\u30e5\u30ec\u30fc\u30b7\u30e7\u30f3\u3042\u305f\u308a\u306e\u969c\u5bb3\u30b7\u30ca\u30ea\u30aa",
-        stat_controls: "DORA\u30b3\u30f3\u30c8\u30ed\u30fc\u30eb\u3092\u81ea\u52d5\u8a55\u4fa1",
-        // Problems
-        problems_label: "\u8ab2\u984c",
-        problems_title: "\u30ec\u30b8\u30ea\u30a8\u30f3\u30b9\u30c6\u30b9\u30c8\u306e\u305f\u3081\u306b\u3001\u307e\u3060\u672c\u756a\u3092\u58ca\u3057\u3066\u3044\u307e\u3059\u304b\uff1f",
-        problems_sub: "\u5f93\u6765\u306e\u30ab\u30aa\u30b9\u30a8\u30f3\u30b8\u30cb\u30a2\u30ea\u30f3\u30b0\u306f\u672c\u756a\u74b0\u5883\u306b\u5b9f\u969b\u306e\u969c\u5bb3\u3092\u6ce8\u5165\u3057\u307e\u3059\u3002\u898f\u5236\u4e0b\u306b\u3042\u308b\u91d1\u878d\u696d\u754c\u3067\u306f\u3001\u3082\u306f\u3084\u8a31\u5bb9\u3055\u308c\u307e\u305b\u3093\u3002",
-        problem_chaos_title: "\u672c\u756a\u30ab\u30aa\u30b9\u30c6\u30b9\u30c8\u304c\u30b7\u30b9\u30c6\u30e0\u3092\u30c0\u30a6\u30f3\u3055\u305b\u308b",
-        problem_chaos_desc: "\u672c\u756a\u3078\u306e\u969c\u5bb3\u6ce8\u5165\u306f\u3001\u30b7\u30b9\u30c6\u30e0\u505c\u6b62\u30fb\u9867\u5ba2\u5f71\u97ff\u30fb\u30a4\u30f3\u30b7\u30c7\u30f3\u30c8\u5bfe\u5fdc\u30b3\u30b9\u30c8\u3092\u751f\u307f\u307e\u3059\u3002",
-        problem_dora_title: "DORA\u306e\u65bd\u884c\u671f\u9650\u306f\u904e\u304e\u307e\u3057\u305f",
-        problem_dora_desc: "\u30c7\u30b8\u30bf\u30eb\u30aa\u30da\u30ec\u30fc\u30b7\u30e7\u30ca\u30eb\u30ec\u30b8\u30ea\u30a8\u30f3\u30b9\u6cd5\u306f2025\u5e741\u6708\u306b\u65bd\u884c\u6e08\u307f\u3002\u9055\u53cd\u6642\u306e\u7f70\u91d1\u306f\u30b0\u30ed\u30fc\u30d0\u30eb\u58f2\u4e0a\u306e\u6700\u59272%\u3002",
-        problem_audit_title: "\u30b7\u30df\u30e5\u30ec\u30fc\u30b7\u30e7\u30f3\u304b\u3089\u76e3\u67fb\u30a8\u30d3\u30c7\u30f3\u30b9\u304c\u751f\u6210\u3055\u308c\u306a\u3044",
-        problem_audit_desc: "\u65e2\u5b58\u30c4\u30fc\u30eb\u306f\u898f\u5236\u5f53\u5c40\u3084\u76e3\u67fb\u4eba\u304c\u6c42\u3081\u308b\u69cb\u9020\u5316\u3055\u308c\u305f\u30a8\u30d3\u30c7\u30f3\u30b9\u30d1\u30c3\u30b1\u30fc\u30b8\u3092\u751f\u6210\u3057\u307e\u305b\u3093\u3002",
-        problem_sla_title: "SLA\u76ee\u6a19\u304c\u7269\u7406\u7684\u9650\u754c\u3092\u8d85\u3048\u3066\u3044\u308b",
-        problem_sla_desc: "\u6570\u5b66\u7684\u6839\u62e0\u306a\u304f99.99%\u306e\u53ef\u7528\u6027\u3092\u7d04\u675f\u3059\u308b\u3053\u3068\u306f\u3001\u4fdd\u8a3c\u3067\u306f\u306a\u304f\u63a8\u6e2c\u3067\u3059\u3002",
-        problem_spof_title: "\u898b\u3048\u306a\u3044\u5358\u4e00\u969c\u5bb3\u70b9\uff08SPOF\uff09",
-        problem_spof_desc: "SPOF\u306f\u8907\u96d1\u306a\u4f9d\u5b58\u95a2\u4fc2\u30b0\u30e9\u30d5\u306b\u6f5c\u3093\u3067\u3044\u307e\u3059\u3002\u624b\u52d5\u30ec\u30d3\u30e5\u30fc\u3067\u306f\u30ab\u30b9\u30b1\u30fc\u30c9\u969c\u5bb3\u30d1\u30b9\u3092\u898b\u901a\u3057\u307e\u3059\u3002",
-        problem_vendor_title: "\u30b5\u30fc\u30c9\u30d1\u30fc\u30c6\u30a3\u96c6\u4e2d\u30ea\u30b9\u30af",
-        problem_vendor_desc: "\u5358\u4e00\u30af\u30e9\u30a6\u30c9\u30d9\u30f3\u30c0\u30fc\u3078\u306e\u904e\u5ea6\u306a\u4f9d\u5b58\u306f\u30b7\u30b9\u30c6\u30df\u30c3\u30af\u30ea\u30b9\u30af\u3092\u751f\u307f\u3001\u898f\u5236\u5f53\u5c40\u306e\u76e3\u8996\u304c\u5f37\u307e\u3063\u3066\u3044\u307e\u3059\u3002",
-        // Cost Comparison
-        cost_label: "\u30b3\u30b9\u30c8\u6bd4\u8f03",
-        cost_title: "DORA\u6e96\u62e0\u306e\u672c\u5f53\u306e\u30b3\u30b9\u30c8",
-        cost_sub: "\u591a\u304f\u306e\u7d44\u7e54\u304cDORA\u521d\u671f\u5bfe\u5fdc\u306b2,000\u4e07\u301c5,000\u4e07\u5186\u3092\u8cbb\u3084\u3057\u3066\u3044\u307e\u3059\u3002FaultRay\u306f\u30b3\u30f3\u30b5\u30eb\u30bf\u30f3\u30c8\u304c\u624b\u52d5\u3067\u884c\u3046\u3053\u3068\u3092\u81ea\u52d5\u5316\u3057\u307e\u3059\u3002",
-        cost_traditional_title: "\u5f93\u6765\u306e\u30a2\u30d7\u30ed\u30fc\u30c1",
-        cost_traditional_1: "\u6e96\u5099\u306b3\u301c6\u30f6\u6708",
-        cost_traditional_2: "\u30b3\u30f3\u30b5\u30eb\u30c6\u30a3\u30f3\u30b0\u8cbb\u7528 2,000\u4e07\u301c5,000\u4e07\u5186",
-        cost_traditional_3: "\u5c02\u4efb\u30b3\u30f3\u30d7\u30e9\u30a4\u30a2\u30f3\u30b9\u30c1\u30fc\u30e0\uff083\u301c5\u540d\uff09",
-        cost_traditional_4: "\u30a8\u30d3\u30c7\u30f3\u30b9\u306e\u624b\u52d5\u53ce\u96c6",
-        cost_traditional_5: "\u5e74\u6b21\u518d\u8a55\u4fa1\u30b5\u30a4\u30af\u30eb",
-        cost_chaos_title: "\u30ab\u30aa\u30b9\u30a8\u30f3\u30b8\u30cb\u30a2\u30ea\u30f3\u30b0\u30c4\u30fc\u30eb",
-        cost_chaos_1: "\u30e9\u30a4\u30bb\u30f3\u30b9\u8cbb\u7528 \u5e74\u9593500\u4e07\u301c2,000\u4e07\u5186",
-        cost_chaos_2: "\u5168\u30db\u30b9\u30c8\u306b\u30a8\u30fc\u30b8\u30a7\u30f3\u30c8\u30a4\u30f3\u30b9\u30c8\u30fc\u30eb",
-        cost_chaos_3: "\u672c\u756a\u30ea\u30b9\u30af\u3068\u30a4\u30f3\u30b7\u30c7\u30f3\u30c8\u5bfe\u5fdc\u30b3\u30b9\u30c8",
-        cost_chaos_4: "DORA\u30b3\u30f3\u30d7\u30e9\u30a4\u30a2\u30f3\u30b9\u30de\u30c3\u30d4\u30f3\u30b0\u306a\u3057",
-        cost_chaos_5: "AWS/\u30af\u30e9\u30a6\u30c9\u30d9\u30f3\u30c0\u30fc\u30ed\u30c3\u30af\u30a4\u30f3",
-        cost_recommended: "\u304a\u3059\u3059\u3081",
-        cost_faultray_1: "pip install \u2014 30\u79d2\u3067\u6e96\u5099\u5b8c\u4e86",
-        cost_faultray_2: "\u7121\u6599\u30c6\u30a3\u30a2\u3042\u308a",
-        cost_faultray_3: "\u672c\u756a\u30ea\u30b9\u30af\u30bc\u30ed",
-        cost_faultray_4: "52 DORA\u30b3\u30f3\u30c8\u30ed\u30fc\u30eb + \u76e3\u67fb\u30a8\u30d3\u30c7\u30f3\u30b9",
-        cost_faultray_5: "\u7279\u8a31\u51fa\u613e\u4e2d\u306e\u30b7\u30df\u30e5\u30ec\u30fc\u30b7\u30e7\u30f3\u30a8\u30f3\u30b8\u30f3",
-        // Features
-        features_label: "\u6a5f\u80fd\u4e00\u89a7",
-        features_title: "\u30ec\u30b8\u30ea\u30a8\u30f3\u30b9\u30b3\u30f3\u30d7\u30e9\u30a4\u30a2\u30f3\u30b9\u306b\u5fc5\u8981\u306a\u3059\u3079\u3066",
-        features_sub: '\u6570\u5b66\u7684SLA\u8a3c\u660e\u304b\u3089AI\u30a8\u30fc\u30b8\u30a7\u30f3\u30c8\u969c\u5bb3\u30e2\u30c7\u30ea\u30f3\u30b0\u307e\u3067 \u2014 \u5358\u4e00CLI\u3067\u5b8c\u7d50\u3059\u308b\u30ec\u30b8\u30ea\u30a8\u30f3\u30b9\u30c6\u30b9\u30c8\u30d7\u30e9\u30c3\u30c8\u30d5\u30a9\u30fc\u30e0\u3002',
-        feature_availability_title: "5\u5c64\u53ef\u7528\u6027\u30e2\u30c7\u30eb",
-        feature_availability_desc: "\u30cd\u30c3\u30c8\u30ef\u30fc\u30af\u30fb\u30b3\u30f3\u30d4\u30e5\u30fc\u30c8\u30fb\u30b9\u30c8\u30ec\u30fc\u30b8\u30fb\u30a2\u30d7\u30ea\u30b1\u30fc\u30b7\u30e7\u30f3\u30fb\u5916\u90e8\u4f9d\u5b58\u306e\u5404\u5c64\u306b\u307e\u305f\u304c\u308b\u6570\u5b66\u7684SLA\u8a3c\u660e\u3002",
-        feature_cascade_title: "\u30ab\u30b9\u30b1\u30fc\u30c9\u969c\u5bb3\u5206\u6790",
-        feature_cascade_desc: "\u30b0\u30e9\u30d5\u30d9\u30fc\u30b9\u306e\u969c\u5bb3\u4f1d\u64ad\u30e2\u30c7\u30ea\u30f3\u30b0\u30021\u3064\u306e\u30b3\u30f3\u30dd\u30fc\u30cd\u30f3\u30c8\u969c\u5bb3\u304c\u30a4\u30f3\u30d5\u30e9\u5168\u4f53\u306b\u3069\u3046\u6ce2\u53ca\u3059\u308b\u304b\u3092\u8ffd\u8de1\u3002",
-        feature_spof_title: "SPOF\u691c\u51fa",
-        feature_spof_desc: "\u4f9d\u5b58\u95a2\u4fc2\u30b0\u30e9\u30d5\u5185\u306e\u5358\u4e00\u969c\u5bb3\u70b9\u3092\u969c\u5bb3\u767a\u751f\u524d\u306b\u81ea\u52d5\u691c\u51fa\u3002",
-        feature_dora5_title: "DORA 5\u672c\u67f1\u8a55\u4fa1",
-        feature_dora5_desc: "ICT\u30ea\u30b9\u30af\u7ba1\u7406\u30fb\u30a4\u30f3\u30b7\u30c7\u30f3\u30c8\u7ba1\u7406\u30fb\u30c6\u30b9\u30c8\u30fb\u7b2c\u4e09\u8005\u30ea\u30b9\u30af\u30fb\u60c5\u5831\u5171\u6709\u306e\u516852\u30b3\u30f3\u30c8\u30ed\u30fc\u30eb\u3078\u306e\u5305\u62ec\u7684\u30de\u30c3\u30d4\u30f3\u30b0\u3002",
-        feature_evidence_title: "DORA\u30a8\u30d3\u30c7\u30f3\u30b9\u30d1\u30c3\u30b1\u30fc\u30b8",
-        feature_evidence_desc: "\u30b3\u30f3\u30d7\u30e9\u30a4\u30a2\u30f3\u30b9\u30b9\u30b3\u30a2\u30fb\u30ae\u30e3\u30c3\u30d7\u5206\u6790\u30fb\u6539\u5584\u30ed\u30fc\u30c9\u30de\u30c3\u30d7\u3092\u542b\u3080\u76e3\u67fb\u5bfe\u5fdc\u30a8\u30d3\u30c7\u30f3\u30b9\u30d1\u30c3\u30b1\u30fc\u30b8\u3092\u81ea\u52d5\u751f\u6210\u3002",
-        feature_reports_title: "\u30ea\u30c3\u30c1\u30ec\u30dd\u30fc\u30c8\uff06\u30c0\u30c3\u30b7\u30e5\u30dc\u30fc\u30c9",
-        feature_reports_desc: "HTML\u3001PDF\u3001JSON\u5f62\u5f0f\u306e\u30ec\u30dd\u30fc\u30c8\u3002DORA\u30a8\u30d3\u30c7\u30f3\u30b9\u30d1\u30c3\u30b1\u30fc\u30b8\u3002\u30b3\u30f3\u30d7\u30e9\u30a4\u30a2\u30f3\u30b9\u30fb\u30b9\u30b3\u30a2\u30ab\u30fc\u30c9\u3002CI/CD\u7d71\u5408\u30ec\u30dd\u30fc\u30c8\u3002\u76e3\u67fb\u4eba\u5411\u3051\u306b\u3059\u3079\u3066\u30a8\u30af\u30b9\u30dd\u30fc\u30c8\u53ef\u80fd\u3002",
-        feature_tlpt_title: "TLPT\u6e96\u5099\u8a55\u4fa1",
-        feature_tlpt_desc: "\u8105\u5a01\u4e3b\u5c0e\u30da\u30cd\u30c8\u30ec\u30fc\u30b7\u30e7\u30f3\u30c6\u30b9\u30c8\u306e\u6e96\u5099\u72b6\u6cc1\u3092\u8a55\u4fa1\u3002\u30a4\u30f3\u30d5\u30e9\u306b\u5bfe\u3059\u308b\u9ad8\u5ea6\u306a\u6301\u7d9a\u7684\u8105\u5a01\u3092\u30e2\u30c7\u30eb\u5316\u3002",
-        feature_hhi_title: "\u96c6\u4e2d\u30ea\u30b9\u30af\u5206\u6790\uff08HHI\uff09",
-        feature_hhi_desc: "ICT\u7b2c\u4e09\u8005\u96c6\u4e2d\u30ea\u30b9\u30af\u306eHHI\u5206\u6790\u3002\u898f\u5236\u5f53\u5c40\u3088\u308a\u5148\u306b\u30d9\u30f3\u30c0\u30fc\u30ed\u30c3\u30af\u30a4\u30f3\u3092\u7279\u5b9a\u3002",
-        feature_ai_title: "AI\u30a8\u30fc\u30b8\u30a7\u30f3\u30c8\u30c6\u30b9\u30c8",
-        feature_ai_desc: "\u30cf\u30eb\u30b7\u30cd\u30fc\u30b7\u30e7\u30f3\u30fb\u30ab\u30b9\u30b1\u30fc\u30c9\u3001\u30b3\u30f3\u30c6\u30ad\u30b9\u30c8\u30a6\u30a3\u30f3\u30c9\u30a6\u6ea2\u308c\u3001\u30c4\u30fc\u30eb\u547c\u3073\u51fa\u3057\u30eb\u30fc\u30d7\u3092\u542b\u30807\u7a2e\u306e\u969c\u5bb3\u30bf\u30a4\u30d7\u3002",
-        feature_terraform_title: "Terraform\u9023\u643a",
-        feature_terraform_desc: "CI/CD\u30b2\u30fc\u30c8\u3068\u3057\u3066\u5b9f\u884c\u3002\u30ec\u30b8\u30ea\u30a8\u30f3\u30b9\u304c\u95be\u5024\u3092\u4e0b\u56de\u308b\u30c7\u30d7\u30ed\u30a4\u3092\u30d6\u30ed\u30c3\u30af\u3002IaC\u30cd\u30a4\u30c6\u30a3\u30d6\u5bfe\u5fdc\u3002",
-        feature_multi_title: "\u30de\u30eb\u30c1\u30d5\u30ec\u30fc\u30e0\u30ef\u30fc\u30af\u6e96\u62e0",
-        feature_multi_desc: "SOC 2\u3001PCI DSS\u3001ISO 27001\u3001HIPAA\u3001GDPR\u6e96\u62e0\u30de\u30c3\u30d4\u30f3\u30b0\u30021\u56de\u306e\u30b9\u30ad\u30e3\u30f3\u3067\u8907\u6570\u30d5\u30ec\u30fc\u30e0\u30ef\u30fc\u30af\u306b\u5bfe\u5fdc\u3002",
-        feature_cli_title: "100\u4ee5\u4e0a\u306eCLI\u30b3\u30de\u30f3\u30c9",
-        feature_cli_desc: '<code style="font-family:\'JetBrains Mono\',monospace;font-size:12px;background:rgba(0,200,255,0.1);padding:2px 6px;border-radius:4px;color:var(--cyan)">faultray demo</code> \u304b\u3089 <code style="font-family:\'JetBrains Mono\',monospace;font-size:12px;background:rgba(0,200,255,0.1);padding:2px 6px;border-radius:4px;color:var(--cyan)">faultray war-room</code> \u307e\u3067 \u2014 \u5b8c\u5168\u306a\u30ec\u30b8\u30ea\u30a8\u30f3\u30b9CLI\u30c4\u30fc\u30eb\u30ad\u30c3\u30c8\u3002',
-        feature_security_title: "\u30bb\u30ad\u30e5\u30ea\u30c6\u30a3\u30d5\u30a3\u30fc\u30c9",
-        feature_security_desc: "CVE\u30fbCISA\u30a2\u30c9\u30d0\u30a4\u30b6\u30ea\u304b\u3089\u306e\u30b7\u30ca\u30ea\u30aa\u81ea\u52d5\u751f\u6210\u3002\u65b0\u305f\u306a\u8105\u5a01\u306b\u5148\u624b\u3092\u6253\u3064\u3002",
-        // Compare
-        compare_label: "\u6bd4\u8f03",
-        compare_title: "\u306a\u305c\u5f93\u6765\u306e\u30ab\u30aa\u30b9\u30a8\u30f3\u30b8\u30cb\u30a2\u30ea\u30f3\u30b0\u3067\u306f\u30c0\u30e1\u306a\u306e\u304b\uff1f",
-        compare_sub: "FaultRay\u306f\u6839\u672c\u7684\u306b\u7570\u306a\u308b\u30a2\u30d7\u30ed\u30fc\u30c1\u3002\u30a8\u30fc\u30b8\u30a7\u30f3\u30c8\u4e0d\u8981\u3001\u969c\u5bb3\u6ce8\u5165\u306a\u3057\u3001\u672c\u756a\u30ea\u30b9\u30af\u30bc\u30ed\u3002",
-        compare_approach: "\u30a2\u30d7\u30ed\u30fc\u30c1",
-        compare_injects: "\u5b9f\u969b\u306e\u969c\u5bb3\u3092\u6ce8\u5165",
-        compare_math: "\u6570\u5b66\u7684\u30b7\u30df\u30e5\u30ec\u30fc\u30b7\u30e7\u30f3",
-        compare_prod_risk: "\u672c\u756a\u30ea\u30b9\u30af",
-        compare_high: "\u9ad8",
-        compare_medium: "\u4e2d",
-        compare_zero: "\u30bc\u30ed",
-        compare_setup: "\u30bb\u30c3\u30c8\u30a2\u30c3\u30d7",
-        compare_agent_host: "\u30db\u30b9\u30c8\u6bce\u306b\u30a8\u30fc\u30b8\u30a7\u30f3\u30c8",
-        compare_aws_only: "AWS\u9650\u5b9a",
-        compare_row_cost: "\u30b3\u30b9\u30c8",
-        compare_cost_gremlin: "\u5e74\u95931,000\u4e07\u5186\u301c",
-        compare_cost_steadybit: "\u5e74\u9593500\u4e07\u5186\u301c",
-        compare_cost_fis: "\u5f93\u91cf\u8ab2\u91d1",
-        compare_cost_faultray: "\u7121\u6599 / Enterprise",
-        compare_dora_evidence: "DORA\u30a8\u30d3\u30c7\u30f3\u30b9",
-        compare_audit_ready: "\u2713 \u76e3\u67fb\u5bfe\u5fdc",
-        compare_ai_test: "AI\u30a8\u30fc\u30b8\u30a7\u30f3\u30c8\u30c6\u30b9\u30c8",
-        compare_7types: "\u2713 7\u7a2e\u306e\u969c\u5bb3\u30bf\u30a4\u30d7",
-        compare_sla_proof: "SLA\u8a3c\u660e",
-        compare_mathematical: "\u2713 \u6570\u5b66\u7684\u8a3c\u660e",
-        // FAQ
-        faq_title: "\u3088\u304f\u3042\u308b\u8cea\u554f",
-        faq_q1: "FaultRay\u306f\u672c\u5f53\u306b\u4f55\u3082\u58ca\u3057\u307e\u305b\u3093\u304b\uff1f",
-        faq_a1: "\u3044\u3044\u3048\u3002FaultRay\u306f\u7d14\u7c8b\u306a\u30a4\u30f3\u30e1\u30e2\u30ea\u6570\u5b66\u30b7\u30df\u30e5\u30ec\u30fc\u30b7\u30e7\u30f3\u3092\u4f7f\u7528\u3057\u307e\u3059\u3002\u30a4\u30f3\u30d5\u30e9\u3092\u6709\u5411\u30b0\u30e9\u30d5\u3068\u3057\u3066\u30e2\u30c7\u30eb\u5316\u3057\u3001\u969c\u5bb3\u78ba\u7387\u30fb\u30ab\u30b9\u30b1\u30fc\u30c9\u30d1\u30b9\u30fb\u53ef\u7528\u6027\u9650\u754c\u3092\u8a08\u7b97\u3057\u307e\u3059\u3002\u672c\u756a\u74b0\u5883\u306b\u306f\u4e00\u5207\u89e6\u308c\u307e\u305b\u3093\u3002",
-        faq_q2: "DORA\u6e96\u62e0\u306b\u3069\u3046\u5f79\u7acb\u3061\u307e\u3059\u304b\uff1f",
-        faq_a2: "FaultRay\u306fDORA\u306e5\u672c\u67f1\u30fb52\u30b3\u30f3\u30c8\u30ed\u30fc\u30eb\u3059\u3079\u3066\u306b\u76f4\u63a5\u30de\u30c3\u30d4\u30f3\u30b0\u3055\u308c\u307e\u3059\u3002\u30ae\u30e3\u30c3\u30d7\u5206\u6790\u30fb\u30ea\u30b9\u30af\u8a55\u4fa1\u30fb\u6539\u5584\u30ed\u30fc\u30c9\u30de\u30c3\u30d7\u3092\u542b\u3080\u69cb\u9020\u5316\u30a8\u30d3\u30c7\u30f3\u30b9\u30d1\u30c3\u30b1\u30fc\u30b8\u3092\u751f\u6210\u3057\u3001\u76e3\u67fb\u4eba\u304c\u76f4\u63a5\u30ec\u30d3\u30e5\u30fc\u3067\u304d\u307e\u3059\u3002\u6570\u5b66\u7684\u8a3c\u660e\u306b\u88cf\u4ed8\u3051\u3089\u308c\u305f\u81ea\u52d5DORA\u30b3\u30f3\u30d7\u30e9\u30a4\u30a2\u30f3\u30b9\u6587\u66f8\u3068\u8003\u3048\u3066\u304f\u3060\u3055\u3044\u3002",
-        faq_q3: "CI/CD\u30d1\u30a4\u30d7\u30e9\u30a4\u30f3\u3067\u4f7f\u3048\u307e\u3059\u304b\uff1f",
-        faq_a3: "\u306f\u3044\u3002FaultRay\u306fTerraform\u30b2\u30fc\u30c8\u3068\u3057\u3066\u7d71\u5408\u3067\u304d\u3001\u8a2d\u5b9a\u3057\u305f\u95be\u5024\u3092\u4e0b\u56de\u308b\u30c7\u30d7\u30ed\u30a4\u3092\u30d6\u30ed\u30c3\u30af\u3057\u307e\u3059\u3002GitHub Actions\u3068\u3082\u9023\u643a\u3057\u3001\u30d7\u30eb\u30ea\u30af\u30a8\u30b9\u30c8\u6bce\u306b\u81ea\u52d5\u30ec\u30b8\u30ea\u30a8\u30f3\u30b9\u30c1\u30a7\u30c3\u30af\u3092\u5b9f\u884c\u3067\u304d\u307e\u3059\u3002",
-        faq_q4: "AI\u30a8\u30fc\u30b8\u30a7\u30f3\u30c8\u306e\u30c6\u30b9\u30c8\u306f\uff1f",
-        faq_a4: "FaultRay\u306f7\u7a2e\u306eAI\u56fa\u6709\u969c\u5bb3\u30bf\u30a4\u30d7\u3092\u30e2\u30c7\u30eb\u5316\u3057\u307e\u3059\uff1a\u30cf\u30eb\u30b7\u30cd\u30fc\u30b7\u30e7\u30f3\u30fb\u30ab\u30b9\u30b1\u30fc\u30c9\u3001\u30b3\u30f3\u30c6\u30ad\u30b9\u30c8\u30a6\u30a3\u30f3\u30c9\u30a6\u6ea2\u308c\u3001\u30c4\u30fc\u30eb\u547c\u3073\u51fa\u3057\u306e\u7121\u9650\u30eb\u30fc\u30d7\u3001\u6a29\u9650\u6607\u683c\u3001\u30c7\u30fc\u30bf\u6c5a\u67d3\u4f1d\u64ad\u3001\u30de\u30eb\u30c1\u30a8\u30fc\u30b8\u30a7\u30f3\u30c8\u30fb\u30c7\u30c3\u30c9\u30ed\u30c3\u30af\u3001\u30b0\u30ec\u30fc\u30b9\u30d5\u30eb\u30fb\u30c7\u30b0\u30ec\u30fc\u30c7\u30fc\u30b7\u30e7\u30f3\u969c\u5bb3\u3002\u81ea\u5f8b\u578bAI\u30a8\u30fc\u30b8\u30a7\u30f3\u30c8\u3092\u30c7\u30d7\u30ed\u30a4\u3059\u308b\u3059\u3079\u3066\u306e\u30c1\u30fc\u30e0\u306b\u4e0d\u53ef\u6b20\u3067\u3059\u3002",
-        faq_q5: "\u672c\u5f53\u306b\u7121\u6599\u3067\u3059\u304b\uff1f",
-        faq_a5: "FaultRay\u306f\u30b3\u30a2\u30b7\u30df\u30e5\u30ec\u30fc\u30b7\u30e7\u30f3\u3001SPOF\u691c\u51fa\u3001\u57fa\u672c\u7684\u306aDORA\u8a55\u4fa1\u3092\u542b\u3080\u7121\u6599\u30c6\u30a3\u30a2\u3092\u63d0\u4f9b\u3057\u3066\u3044\u307e\u3059\u3002\u30a8\u30f3\u30bf\u30fc\u30d7\u30e9\u30a4\u30ba\u30e9\u30a4\u30bb\u30f3\u30b9\u3067\u306f\u3001\u5b8c\u5168\u306a\u30a8\u30d3\u30c7\u30f3\u30b9\u30d1\u30c3\u30b1\u30fc\u30b8\u751f\u6210\u3001\u9ad8\u5ea6\u306a\u30b3\u30f3\u30d7\u30e9\u30a4\u30a2\u30f3\u30b9\u30d5\u30ec\u30fc\u30e0\u30ef\u30fc\u30af\u3001\u672c\u756a\u30c7\u30d7\u30ed\u30a4\u30e1\u30f3\u30c8\u5411\u3051\u306e\u512a\u5148\u30b5\u30dd\u30fc\u30c8\u304c\u8ffd\u52a0\u3055\u308c\u307e\u3059\u3002",
-        // CTA
-        cta_title: "\u81ea\u52d5\u5316\u3067\u304d\u308b\u3053\u3068\u306b\u3001\u3082\u3046\u8cbb\u7528\u3092\u304b\u3051\u306a\u3044",
-        cta_sub: "\u6570\u30f6\u6708\u3067\u306f\u306a\u304f\u6570\u5206\u3067DORA\u6e96\u62e0\u3092\u8a3c\u660e\u3059\u308b\u30c1\u30fc\u30e0\u306b\u3002\u30aa\u30fc\u30d7\u30f3\u30bd\u30fc\u30b9\u5229\u7528\u306f\u6c38\u4e45\u7121\u6599\u3002",
-        cta_github: "GitHub\u3067Star\u3059\u308b",
-        cta_pypi: "PyPI\u30d1\u30c3\u30b1\u30fc\u30b8 \u2192",
-        cta_signup: "\u30a2\u30fc\u30ea\u30fc\u30a2\u30af\u30bb\u30b9\u306b\u767b\u9332",
-        cta_signup_note: "OSS\u5229\u7528\u306f\u6c38\u4e45\u7121\u6599\u3002Enterprise\u30d7\u30e9\u30f3\u8fd1\u65e5\u516c\u958b\u3002",
-        // Footer
-        footer_tagline: "\u898f\u5236\u696d\u754c\u306e\u305f\u3081\u306e\u6570\u5b66\u7684\u30ec\u30b8\u30ea\u30a8\u30f3\u30b9\u30c6\u30b9\u30c8\u3002",
-        footer_paper: "\u8ad6\u6587 (DOI)"
-      }
-    };
-
-    function setLang(lang) {
-      document.documentElement.lang = lang;
-      document.querySelectorAll('[data-i18n]').forEach(function(el) {
-        var key = el.getAttribute('data-i18n');
-        if (translations[lang] && translations[lang][key]) {
-          if (el.hasAttribute('data-i18n-html')) {
-            el.innerHTML = translations[lang][key];
-          } else {
-            el.textContent = translations[lang][key];
-          }
-        }
-      });
-      document.querySelectorAll('.lang-btn').forEach(function(btn) {
-        btn.classList.toggle('active', btn.dataset.lang === lang);
-      });
-      localStorage.setItem('faultray-lang', lang);
-    }
-
-    // Init language
-    var savedLang = localStorage.getItem('faultray-lang');
-    var browserLang = navigator.language.startsWith('ja') ? 'ja' : 'en';
-    var initialLang = savedLang || browserLang;
-    if (initialLang === 'ja') setLang('ja');
-
-    // Lang button click
-    document.querySelectorAll('.lang-btn').forEach(function(btn) {
-      btn.addEventListener('click', function() { setLang(btn.dataset.lang); });
-    });
-
-    /* ===== INTERSECTION OBSERVER FADE-IN ===== */
-    const observer = new IntersectionObserver(entries => {
+    const observer = new IntersectionObserver((entries) => {
       entries.forEach(entry => {
         if (entry.isIntersecting) {
           entry.target.classList.add('visible');
-          observer.unobserve(entry.target);
         }
       });
     }, {
@@ -1828,109 +1344,14 @@
       rootMargin: '0px 0px -40px 0px'
     });
 
-    document.querySelectorAll('.fade-in').forEach(el => observer.observe(el));
+    document.querySelectorAll('.animate-on-scroll').forEach(el => observer.observe(el));
 
-    /* ===== FAQ ACCORDION ===== */
-    document.querySelectorAll('.faq-question').forEach(question => {
-      const toggle = () => {
-        const item = question.closest('.faq-item');
-        const isOpen = item.classList.contains('open');
-        document.querySelectorAll('.faq-item').forEach(i => {
-          i.classList.remove('open');
-          i.querySelector('.faq-question').setAttribute('aria-expanded', 'false');
-        });
-        if (!isOpen) {
-          item.classList.add('open');
-          question.setAttribute('aria-expanded', 'true');
-        }
-      };
-      question.addEventListener('click', toggle);
-      question.addEventListener('keydown', e => {
-        if (e.key === 'Enter' || e.key === ' ') {
-          e.preventDefault();
-          toggle();
-        }
+    // Close mobile nav on link click
+    document.querySelectorAll('.nav-links a').forEach(link => {
+      link.addEventListener('click', () => {
+        document.querySelector('.nav-links').classList.remove('open');
       });
     });
-
-    /* ===== MOBILE NAV TOGGLE ===== */
-    const navToggle = document.getElementById('nav-toggle');
-    const navLinks = document.getElementById('nav-links');
-    navToggle.addEventListener('click', () => {
-      navLinks.classList.toggle('open');
-    });
-
-    /* Close mobile nav on link click */
-    navLinks.querySelectorAll('a').forEach(a => {
-      a.addEventListener('click', () => {
-        navLinks.classList.remove('open');
-      });
-    });
-
-    /* ===== NAV BACKGROUND ON SCROLL ===== */
-    const nav = document.getElementById('nav');
-    window.addEventListener('scroll', () => {
-      if (window.scrollY > 50) {
-        nav.style.background = 'rgba(9, 14, 26, 0.96)';
-      } else {
-        nav.style.background = 'rgba(9, 14, 26, 0.88)';
-      }
-    });
-
-    /* ===== SMOOTH SCROLL WITH NAV OFFSET ===== */
-    document.querySelectorAll('a[href^="#"]').forEach(anchor => {
-      anchor.addEventListener('click', function(e) {
-        const href = this.getAttribute('href');
-        if (href === '#') return;
-        const target = document.querySelector(href);
-        if (target) {
-          e.preventDefault();
-          const offset = 80;
-          const top = target.getBoundingClientRect().top + window.pageYOffset - offset;
-          window.scrollTo({ top, behavior: 'smooth' });
-        }
-      });
-    });
-  // FaultRay email signup
-  function handleFaultraySignup(e) {
-    e.preventDefault();
-    const email = document.getElementById('fr-email').value;
-    const btn = e.target.querySelector('button');
-    const note = document.getElementById('fr-signup-note');
-    const lang = localStorage.getItem('faultray-lang') || 'en';
-
-    if (!email || !email.includes('@')) {
-      note.textContent = 'Please enter a valid email';
-      note.style.color = '#ef4444';
-      return;
-    }
-
-    btn.disabled = true;
-    btn.textContent = 'Sending...';
-
-    fetch('https://formspree.io/f/maqprkez', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email: email, source: 'faultray-lp', lang: lang })
-    })
-    .then(r => {
-      if (r.ok) {
-        note.textContent = lang === 'ja'
-          ? `✓ ${email} を登録しました。アーリーアクセスのご案内をお送りします。`
-          : `✓ Registered ${email}. We'll send you early access details.`;
-        note.style.color = '#22c55e';
-        btn.textContent = '✓ Registered';
-        btn.style.background = '#22c55e';
-        document.getElementById('fr-email').value = '';
-      } else { throw new Error('fail'); }
-    })
-    .catch(() => {
-      note.textContent = 'Failed. Please try again.';
-      note.style.color = '#ef4444';
-      btn.disabled = false;
-      btn.textContent = 'Get Early Access';
-    });
-  }
   </script>
 </body>
 </html>

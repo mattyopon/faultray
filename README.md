@@ -10,6 +10,7 @@
   <a href="LICENSE"><img src="https://img.shields.io/badge/License-BSL%201.1-orange.svg" alt="License"></a>
   <a href="https://doi.org/10.5281/zenodo.19139911"><img src="https://zenodo.org/badge/DOI/10.5281/zenodo.19139911.svg" alt="DOI"></a>
   <a href="https://github.com/mattyopon/faultray/actions/workflows/ci.yml"><img src="https://github.com/mattyopon/faultray/actions/workflows/ci.yml/badge.svg" alt="CI"></a>
+  <a href="https://faultray.streamlit.app/"><img src="https://static.streamlit.io/badges/streamlit_badge_black_white.svg" alt="Open in Streamlit"></a>
 </p>
 
 ---
