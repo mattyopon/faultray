@@ -27,6 +27,7 @@ body {
   -moz-osx-font-smoothing: grayscale;
 }
 
+/* --- Terminal animations --- */
 @keyframes terminalFadeIn {
   from { opacity: 0; transform: translateY(4px); }
   to { opacity: 1; transform: translateY(0); }
@@ -58,10 +59,101 @@ body {
   opacity: 0;
 }
 
+/* --- Scroll-triggered reveal animations (CSS only) --- */
+@keyframes fadeInUp {
+  from { opacity: 0; transform: translateY(32px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes fadeInScale {
+  from { opacity: 0; transform: scale(0.95); }
+  to { opacity: 1; transform: scale(1); }
+}
+
+@keyframes slideInLeft {
+  from { opacity: 0; transform: translateX(-24px); }
+  to { opacity: 1; transform: translateX(0); }
+}
+
+@keyframes slideInRight {
+  from { opacity: 0; transform: translateX(24px); }
+  to { opacity: 1; transform: translateX(0); }
+}
+
+.animate-on-scroll {
+  animation: fadeInUp 0.7s ease both;
+  animation-timeline: view();
+  animation-range: entry 0% entry 30%;
+}
+
+.animate-on-scroll-scale {
+  animation: fadeInScale 0.6s ease both;
+  animation-timeline: view();
+  animation-range: entry 0% entry 30%;
+}
+
+.animate-slide-left {
+  animation: slideInLeft 0.7s ease both;
+  animation-timeline: view();
+  animation-range: entry 0% entry 30%;
+}
+
+.animate-slide-right {
+  animation: slideInRight 0.7s ease both;
+  animation-timeline: view();
+  animation-range: entry 0% entry 30%;
+}
+
+/* Staggered children animation */
+.stagger-children > *:nth-child(1) { animation-delay: 0ms; }
+.stagger-children > *:nth-child(2) { animation-delay: 80ms; }
+.stagger-children > *:nth-child(3) { animation-delay: 160ms; }
+.stagger-children > *:nth-child(4) { animation-delay: 240ms; }
+.stagger-children > *:nth-child(5) { animation-delay: 320ms; }
+.stagger-children > *:nth-child(6) { animation-delay: 400ms; }
+.stagger-children > *:nth-child(7) { animation-delay: 480ms; }
+.stagger-children > *:nth-child(8) { animation-delay: 560ms; }
+.stagger-children > *:nth-child(9) { animation-delay: 640ms; }
+.stagger-children > *:nth-child(10) { animation-delay: 720ms; }
+
+/* --- Gradient text utility --- */
+.text-gradient-gold {
+  background: linear-gradient(135deg, #FFD700 0%, #FFA500 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* --- Glow effects --- */
+.glow-gold {
+  box-shadow: 0 0 40px rgba(255, 215, 0, 0.08), 0 0 80px rgba(255, 215, 0, 0.04);
+}
+
+.glow-gold-hover:hover {
+  box-shadow: 0 0 40px rgba(255, 215, 0, 0.15), 0 0 80px rgba(255, 215, 0, 0.08);
+}
+
+/* --- N-Layer stack connector --- */
+.layer-stack > div + div {
+  border-top: none !important;
+}
+
+/* --- Taxonomy grid card pulse --- */
+@keyframes subtlePulse {
+  0%, 100% { border-color: rgba(255, 215, 0, 0.1); }
+  50% { border-color: rgba(255, 215, 0, 0.25); }
+}
+
+.taxonomy-card:hover {
+  animation: subtlePulse 2s ease infinite;
+}
+
+/* --- Score fill animation --- */
 @keyframes score-fill {
   from { stroke-dashoffset: 283; }
 }
 
+/* --- Scrollbar --- */
 ::-webkit-scrollbar {
   width: 6px;
   height: 6px;
@@ -78,4 +170,15 @@ body {
 
 ::-webkit-scrollbar-thumb:hover {
   background: #334155;
+}
+
+/* --- Hero background animated gradient --- */
+@keyframes heroGradient {
+  0%, 100% { opacity: 0.3; }
+  50% { opacity: 0.6; }
+}
+
+.hero-radial-glow {
+  background: radial-gradient(ellipse 600px 400px at 50% 40%, rgba(255, 215, 0, 0.06) 0%, transparent 70%);
+  animation: heroGradient 8s ease infinite;
 }

@@ -20,7 +20,7 @@ export const metadata: Metadata = {
     template: "%s | FaultRay",
   },
   description:
-    "Prove your system's availability ceiling mathematically — without touching production. Pure simulation chaos engineering with 150+ scenarios.",
+    "Prove your system's availability ceiling mathematically — without touching production. Pure simulation chaos engineering with 2,000+ scenarios.",
   keywords: [
     "chaos engineering",
     "infrastructure testing",

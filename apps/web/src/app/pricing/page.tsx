@@ -9,7 +9,7 @@ const plans = [
   {
     name: "Free", price: 0,
     desc: "Perfect for individual engineers exploring chaos engineering.",
-    features: ["5 simulations / month", "Up to 5 components", "5 simulation engines", "3-Layer Availability Model", "HTML reports", "Community support"],
+    features: ["5 simulations / month", "Up to 5 components", "100+ simulation engines", "N-Layer Availability Model", "HTML reports", "Community support"],
     disabledFeatures: ["DORA report export", "Custom SSO"],
     cta: "Get Started Free", ctaHref: "/login", popular: false,
   },
@@ -25,15 +25,15 @@ const plans = [
     desc: "For enterprises needing unlimited access, SSO, and dedicated support.",
     features: ["Unlimited simulations", "Unlimited components", "Everything in Pro", "DORA report + Insurance API", "Custom SSO / SAML", "Dedicated support (1h)", "Prometheus integration", "On-premise deployment"],
     disabledFeatures: [],
-    cta: "Contact Us", ctaHref: "mailto:hello@faultray.dev", popular: false,
+    cta: "Contact Us", ctaHref: "mailto:sales@faultray.com", popular: false,
   },
 ];
 
 const featureComparison = [
   { name: "Simulations / month", free: "5", pro: "100", business: "Unlimited" },
   { name: "Components", free: "5", pro: "50", business: "Unlimited" },
-  { name: "Simulation engines", free: "5", pro: "5", business: "5" },
-  { name: "3-Layer Model", free: true, pro: true, business: true },
+  { name: "Simulation engines", free: "100+", pro: "100+", business: "100+" },
+  { name: "N-Layer Model", free: true, pro: true, business: true },
   { name: "DORA report export", free: false, pro: "PDF", business: "PDF + API" },
   { name: "Insurance API", free: false, pro: false, business: true },
   { name: "AI-powered analysis", free: false, pro: true, business: true },
