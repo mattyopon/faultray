@@ -273,12 +273,10 @@ export default async function LangHomePage({
               {dict.hero.cta}
             </Link>
             <Link
-              href="https://faultray.streamlit.app"
-              target="_blank"
+              href="/simulate"
               className="inline-flex items-center gap-2 px-7 py-3 border border-[#1e293b] text-white rounded-xl hover:border-[#64748b] hover:bg-white/[0.03] hover:-translate-y-0.5 transition-all"
             >
               {dict.hero.demo}
-              <ExternalLink size={14} />
             </Link>
           </div>
 
@@ -867,7 +865,7 @@ export default async function LangHomePage({
                   </Link>
                 </li>
                 <li>
-                  <Link href="https://faultray.streamlit.app" target="_blank" className="text-sm text-[#64748b] hover:text-white transition-colors">
+                  <Link href="/simulate" className="text-sm text-[#64748b] hover:text-white transition-colors">
                     {dict.hero.demo}
                   </Link>
                 </li>
