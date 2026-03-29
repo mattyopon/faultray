@@ -3,7 +3,6 @@ import { Logo } from "@/components/logo";
 import {
   Shield,
   Zap,
-  BarChart3,
   Brain,
   FileCheck,
   Lock,

@@ -9,7 +9,6 @@ import {
   CreditCard,
   Key,
   Bell,
-  ExternalLink,
 } from "lucide-react";
 
 export default function SettingsPage() {

@@ -5,7 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { useState, useEffect } from "react";
 import { api, type SimulationRun } from "@/lib/api";
-import { FileText, Download, Filter, ChevronDown } from "lucide-react";
+import { FileText, Download, ChevronDown } from "lucide-react";
 
 export default function ResultsPage() {
   const [runs, setRuns] = useState<SimulationRun[]>([]);

@@ -1,5 +1,7 @@
+let _logoCounter = 0;
+
 export function Logo({ size = 28 }: { size?: number }) {
-  const id = `logo-${Math.random().toString(36).slice(2, 7)}`;
+  const id = `logo-${++_logoCounter}`;
   return (
     <svg
       width={size}
