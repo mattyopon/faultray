@@ -1,0 +1,73 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512">
+  <defs>
+    <!-- Clip path: upper half (above the fault line) -->
+    <clipPath id="upper">
+      <polygon points="0,0 512,0 512,512 0,512"/>
+      <!-- Fault line goes from (0, 307) to (307, 0) at 45deg -->
+      <polygon points="0,0 307,0 0,307"/>
+    </clipPath>
+    <clipPath id="upper-half">
+      <polygon points="0,0 512,0 307,205 0,512"/>
+    </clipPath>
+    <clipPath id="lower-half">
+      <polygon points="307,0 512,0 512,512 0,512 0,307"/>
+    </clipPath>
+  </defs>
+
+  <!-- Background: dark navy rounded square -->
+  <rect width="512" height="512" rx="96" fill="#0a0e1a"/>
+
+  <!-- Upper half grid (aligned, stable) — clipped above fault line -->
+  <g clip-path="url(#upper-half)" opacity="0.18">
+    <!-- Vertical lines -->
+    <line x1="64"  y1="0" x2="64"  y2="512" stroke="#e2e8f0" stroke-width="1.5"/>
+    <line x1="128" y1="0" x2="128" y2="512" stroke="#e2e8f0" stroke-width="1.5"/>
+    <line x1="192" y1="0" x2="192" y2="512" stroke="#e2e8f0" stroke-width="1.5"/>
+    <line x1="256" y1="0" x2="256" y2="512" stroke="#e2e8f0" stroke-width="1.5"/>
+    <line x1="320" y1="0" x2="320" y2="512" stroke="#e2e8f0" stroke-width="1.5"/>
+    <line x1="384" y1="0" x2="384" y2="512" stroke="#e2e8f0" stroke-width="1.5"/>
+    <line x1="448" y1="0" x2="448" y2="512" stroke="#e2e8f0" stroke-width="1.5"/>
+    <!-- Horizontal lines -->
+    <line x1="0" y1="64"  x2="512" y2="64"  stroke="#e2e8f0" stroke-width="1.5"/>
+    <line x1="0" y1="128" x2="512" y2="128" stroke="#e2e8f0" stroke-width="1.5"/>
+    <line x1="0" y1="192" x2="512" y2="192" stroke="#e2e8f0" stroke-width="1.5"/>
+    <line x1="0" y1="256" x2="512" y2="256" stroke="#e2e8f0" stroke-width="1.5"/>
+    <line x1="0" y1="320" x2="512" y2="320" stroke="#e2e8f0" stroke-width="1.5"/>
+    <line x1="0" y1="384" x2="512" y2="384" stroke="#e2e8f0" stroke-width="1.5"/>
+    <line x1="0" y1="448" x2="512" y2="448" stroke="#e2e8f0" stroke-width="1.5"/>
+  </g>
+
+  <!-- Lower half grid (shifted, broken) — clipped below fault line, shifted by +20px,+12px -->
+  <g clip-path="url(#lower-half)" opacity="0.18" transform="translate(20, 12)">
+    <!-- Vertical lines -->
+    <line x1="64"  y1="0" x2="64"  y2="512" stroke="#e2e8f0" stroke-width="1.5"/>
+    <line x1="128" y1="0" x2="128" y2="512" stroke="#e2e8f0" stroke-width="1.5"/>
+    <line x1="192" y1="0" x2="192" y2="512" stroke="#e2e8f0" stroke-width="1.5"/>
+    <line x1="256" y1="0" x2="256" y2="512" stroke="#e2e8f0" stroke-width="1.5"/>
+    <line x1="320" y1="0" x2="320" y2="512" stroke="#e2e8f0" stroke-width="1.5"/>
+    <line x1="384" y1="0" x2="384" y2="512" stroke="#e2e8f0" stroke-width="1.5"/>
+    <line x1="448" y1="0" x2="448" y2="512" stroke="#e2e8f0" stroke-width="1.5"/>
+    <!-- Horizontal lines -->
+    <line x1="0" y1="64"  x2="512" y2="64"  stroke="#e2e8f0" stroke-width="1.5"/>
+    <line x1="0" y1="128" x2="512" y2="128" stroke="#e2e8f0" stroke-width="1.5"/>
+    <line x1="0" y1="192" x2="512" y2="192" stroke="#e2e8f0" stroke-width="1.5"/>
+    <line x1="0" y1="256" x2="512" y2="256" stroke="#e2e8f0" stroke-width="1.5"/>
+    <line x1="0" y1="320" x2="512" y2="320" stroke="#e2e8f0" stroke-width="1.5"/>
+    <line x1="0" y1="384" x2="512" y2="384" stroke="#e2e8f0" stroke-width="1.5"/>
+    <line x1="0" y1="448" x2="512" y2="448" stroke="#e2e8f0" stroke-width="1.5"/>
+  </g>
+
+  <!-- Fault line glow (softer, wider) -->
+  <line x1="0" y1="307" x2="307" y2="0" stroke="#FFD700" stroke-width="28" opacity="0.12" stroke-linecap="round"/>
+
+  <!-- Fault line glow (medium) -->
+  <line x1="0" y1="307" x2="307" y2="0" stroke="#FFD700" stroke-width="14" opacity="0.25" stroke-linecap="round"/>
+
+  <!-- Fault line (main, sharp) -->
+  <line x1="0" y1="307" x2="307" y2="0" stroke="#FFD700" stroke-width="5" stroke-linecap="round"/>
+
+  <!-- Ray 1: extending from fault line center outward (upper-right direction) -->
+  <line x1="153" y1="153" x2="420" y2="60" stroke="#FFD700" stroke-width="2.5" opacity="0.35" stroke-linecap="round"/>
+  <!-- Ray 2: extending from fault line center (lower-left direction) -->
+  <line x1="153" y1="153" x2="90" y2="420" stroke="#FFD700" stroke-width="2.5" opacity="0.35" stroke-linecap="round"/>
+</svg>
