@@ -20,3 +20,4 @@ htmlcov/
 .faultray/
 site/
 .hypothesis/
+.env
