@@ -1,0 +1,219 @@
+{
+  "metadata": {
+    "title": "FaultRay — 무위험 인프라 Chaos Engineering",
+    "description": "프로덕션을 건드리지 않고 시스템 가용성 한계를 수학적으로 증명하세요. 2,000+ 시나리오를 갖춘 순수 시뮬레이션 Chaos Engineering."
+  },
+  "nav": {
+    "features": "기능",
+    "compare": "비교",
+    "pricing": "가격",
+    "signIn": "로그인",
+    "dashboard": "대시보드"
+  },
+  "hero": {
+    "badge": "오픈소스 · BSL 1.1 라이선스",
+    "subtitle": "무위험 인프라 Chaos Engineering",
+    "description": "프로덕션을 건드리지 않고 시스템 가용성 한계를 수학적으로 증명하세요.",
+    "stats": {
+      "scenarios": "시나리오",
+      "engines": "엔진",
+      "layers": "레이어",
+      "tests": "테스트"
+    },
+    "cta": "무료로 시작하기",
+    "demo": "라이브 데모"
+  },
+  "problem": {
+    "title": "문제점",
+    "description": "기존 카오스 도구는 인프라에 <strong>실제 장애</strong>를 주입합니다.",
+    "items": [
+      "프로덕션 또는 스테이징 환경 필요",
+      "테스트 중 실제 장애 발생 위험",
+      "높은 인프라 비용",
+      "복잡한 환경 구성 및 정리",
+      "가용성의 수학적 증명 불가"
+    ]
+  },
+  "solution": {
+    "title": "해결책",
+    "description": "FaultRay는 <strong>순수 수학적 시뮬레이션</strong>을 사용합니다.",
+    "items": [
+      "무위험 — 실제 장애 미주입",
+      "무비용 — 노트북에서 실행",
+      "초 단위 즉각적인 결과",
+      "YAML 토폴로지만으로 작동",
+      "수학적으로 증명된 가용성 한계"
+    ]
+  },
+  "features": {
+    "heading": "필요한 모든 것",
+    "subheading": "무위험 Chaos Engineering의 여섯 가지 기둥",
+    "cards": [
+      {
+        "title": "100+ 시뮬레이션 엔진",
+        "desc": "네트워크, 프로세스, 리소스, 의존성, 레이턴시, 폭발 반경, SLA 계약 검증 등 수십 가지 — Monte Carlo, Markov chains, 큐잉 이론으로 구동됩니다."
+      },
+      {
+        "title": "2,000+ 자동 생성 시나리오",
+        "desc": "단일 노드 장애부터 다중 리전 연쇄 장애까지. 모든 시나리오는 토폴로지 YAML에서 자동 생성 — 일반적인 10개 컴포넌트 토폴로지에서 2,000개 이상의 고유 시나리오."
+      },
+      {
+        "title": "N-Layer(5-Layer) 가용성 모델",
+        "desc": "가용성 한계를 다섯 개의 독립적인 레이어로 분해하는 유일한 도구: 하드웨어, 소프트웨어, 이론적 한계, 운영, 외부 SLA."
+      },
+      {
+        "title": "AI 기반 분석",
+        "desc": "Claude 기반의 근본 원인 분석과 영향도 및 비용 순으로 정렬된 실행 가능한 개선 권고안."
+      },
+      {
+        "title": "DORA 준거 보고서",
+        "desc": "증거 추적 및 위험 평가가 포함된 감사 준비 완료 디지털 운영 회복력법 보고서 생성."
+      },
+      {
+        "title": "보안 피드 통합",
+        "desc": "CVE 데이터와 NVD 피드를 자동으로 통합하여 취약점 트리거 연쇄 장애를 시뮬레이션합니다."
+      }
+    ]
+  },
+  "agentResilience": {
+    "badge": "v11.0 신기능",
+    "heading": "AI Agent 복원력 시뮬레이션",
+    "subheading": "프로덕션에서 발생하기 전에 인프라 장애가 Agent 환각으로 연쇄되는 방식을 시뮬레이션하세요.",
+    "cards": [
+      {
+        "title": "교차 레이어 분석",
+        "desc": "인프라 장애(데이터베이스 다운, 캐시 미스)가 Agent 환각으로 연쇄되는 방식을 추적하세요. 정상처럼 보이지만 잘못된 결과를 생성하는 무음 저하를 노출합니다."
+      },
+      {
+        "title": "PREDICT · ADOPT · MANAGE",
+        "desc": "Agent 복원력을 위한 세 가지 기둥: 카오스 시나리오 시뮬레이션, 폭발 반경 분석으로 배포 위험 평가, 모니터링 규칙 자동 생성."
+      },
+      {
+        "title": "4가지 새로운 컴포넌트 유형",
+        "desc": "AI Agent, LLM Endpoint, Tool Service, Agent Orchestrator를 기존 인프라와 함께 의존성 그래프의 일급 노드로 모델링하세요."
+      },
+      {
+        "title": "10가지 Agent 장애 모드",
+        "desc": "환각, 컨텍스트 오버플로우, LLM 속도 제한, 토큰 소진, 도구 실패, Agent 루프, 프롬프트 인젝션, 신뢰도 오보정, CoT 붕괴, 출력 증폭."
+      }
+    ],
+    "taxonomyHeading": "<span>10가지 모드</span> AI Agent 장애 분류 체계"
+  },
+  "comparison": {
+    "heading": "비교",
+    "subheading": "FaultRay는 근본적으로 다른 접근 방식을 취합니다",
+    "recommended": "추천",
+    "labels": {
+      "approach": "접근 방식",
+      "productionRisk": "프로덕션 위험",
+      "setupTime": "설정 시간",
+      "scenarios": "시나리오",
+      "availabilityProof": "가용성 증명",
+      "aiAgentModeling": "AI Agent 모델링",
+      "startingCost": "시작 비용"
+    },
+    "faultray": {
+      "approach": "수학적 시뮬레이션",
+      "productionRisk": "제로",
+      "setupTime": "5분",
+      "scenarios": "2,000+ 자동 생성",
+      "availabilityProof": "N-Layer 수학적 증명",
+      "aiAgentModeling": "10가지 모드 분류 체계",
+      "startingCost": "무료 / OSS"
+    },
+    "gremlin": {
+      "approach": "실제 장애 주입",
+      "productionRisk": "높음",
+      "setupTime": "며칠",
+      "scenarios": "수동 구성",
+      "startingCost": "$10,000+/년"
+    },
+    "steadybit": {
+      "approach": "실제 장애 주입",
+      "productionRisk": "중간",
+      "setupTime": "몇 시간",
+      "scenarios": "템플릿 기반",
+      "startingCost": "$5,000+/년"
+    },
+    "awsFis": {
+      "approach": "실제 장애 주입",
+      "productionRisk": "높음",
+      "setupTime": "몇 시간",
+      "scenarios": "AWS 서비스만 가능",
+      "startingCost": "사용량 기반 과금"
+    }
+  },
+  "nlayer": {
+    "heading": "N-Layer(5-Layer) 가용성 한계 모델",
+    "subheading": "가용성 한계를 다섯 개의 독립적인 제약 레이어로 분해하는 유일한 도구",
+    "layers": [
+      {
+        "label": "레이어 1: 하드웨어 한계",
+        "desc": "물리적 구성 요소에 의한 제약: 디스크 MTBF, 네트워크 장비, 전원 시스템, 페일오버 전환 시간"
+      },
+      {
+        "label": "레이어 2: 소프트웨어 한계",
+        "desc": "실제 한계: 배포 파이프라인, 설정 오류, 의존성 장애, 인적 오류율"
+      },
+      {
+        "label": "레이어 3: 이론적 한계",
+        "desc": "제거 불가능한 물리적 노이즈 바닥: 네트워크 패킷 손실, GC 일시 정지, 커널 스케줄링 지터"
+      },
+      {
+        "label": "레이어 4: 운영 한계",
+        "desc": "인시던트 대응 시간, 온콜 커버리지, 런북 완성도, 자동화 수준"
+      },
+      {
+        "label": "레이어 5: 외부 SLA",
+        "desc": "서드파티 서비스 가용성이 부과하는 하드 한계 (AWS, GCP, Stripe 등)"
+      }
+    ],
+    "whyTitle": "왜 중요한가",
+    "whyP1": "대부분의 팀은 하드웨어 나인을 추구하지만, 소프트웨어 레이어가 가용성을 4 나인으로 제한합니다. FaultRay는 병목 지점을 정확히 파악하여 올바른 레이어에 투자할 수 있게 합니다.",
+    "whyP2": "N-Layer 모델은 확장 가능합니다: 지리적, 경제적 또는 맞춤형 도메인별 제약 레이어를 추가하여 조직 고유의 가용성 경계에 맞출 수 있습니다.",
+    "bindingTitle": "결합 제약 감지",
+    "bindingDesc": "시뮬레이션이 레이어 한계를 초과하는 가용성을 예측할 때, FaultRay가 이를 플래그 처리하고 인프라 개선의 목표로 결합 제약 레이어를 식별합니다."
+  },
+  "quickstart": {
+    "heading": "빠른 시작",
+    "subheading": "3단계로 가용성 증명 완성",
+    "step1Title": "설치",
+    "step2Title": "토폴로지 정의",
+    "step3Title": "분석 실행"
+  },
+  "pricing": {
+    "heading": "가격",
+    "subheading": "무료로 시작하고, 성장에 따라 확장하세요.",
+    "perMonth": "/월",
+    "mostPopular": "가장 인기 있는",
+    "featureComparison": "기능 비교",
+    "plans": [
+      {
+        "name": "무료",
+        "desc": "Chaos Engineering을 탐색하는 개인 엔지니어에게 적합합니다.",
+        "cta": "무료로 시작하기"
+      },
+      {
+        "name": "Pro",
+        "desc": "DORA 준거 보고서와 더 높은 한도가 필요한 팀을 위한 플랜.",
+        "cta": "Pro 시작하기"
+      },
+      {
+        "name": "Business",
+        "desc": "무제한 액세스, SSO, 전담 지원이 필요한 기업을 위한 플랜.",
+        "cta": "문의하기"
+      }
+    ]
+  },
+  "footer": {
+    "tagline": "무위험 인프라 Chaos Engineering. 가용성 한계를 수학적으로 증명하세요.",
+    "madeIn": "도쿄에서 제작",
+    "product": "제품",
+    "resources": "리소스",
+    "legal": "법적 고지",
+    "copyright": "© 2026 FaultRay. BSL 1.1(비즈니스 소스 라이선스) 하에 오픈소스."
+  },
+  "languageSwitcher": {
+    "label": "언어"
+  }
+}

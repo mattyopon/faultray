@@ -1,7 +1,7 @@
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 
-const locales = ["en", "ja", "de", "fr"];
+const locales = ["en", "ja", "de", "fr", "zh", "ko", "es", "pt"];
 const defaultLocale = "en";
 
 function getPreferredLocale(request: NextRequest): string {

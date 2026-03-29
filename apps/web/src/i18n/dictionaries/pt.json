@@ -1,0 +1,219 @@
+{
+  "metadata": {
+    "title": "FaultRay — Chaos Engineering de Infraestrutura sem Riscos",
+    "description": "Prove matematicamente o limite de disponibilidade do seu sistema — sem tocar na produção. Chaos Engineering de simulação pura com mais de 2.000 cenários."
+  },
+  "nav": {
+    "features": "Funcionalidades",
+    "compare": "Comparar",
+    "pricing": "Preços",
+    "signIn": "Entrar",
+    "dashboard": "Painel"
+  },
+  "hero": {
+    "badge": "Código aberto · Licença BSL 1.1",
+    "subtitle": "Chaos Engineering de Infraestrutura sem Riscos",
+    "description": "Prove matematicamente o limite de disponibilidade do seu sistema — sem tocar na produção.",
+    "stats": {
+      "scenarios": "Cenários",
+      "engines": "Motores",
+      "layers": "Camadas",
+      "tests": "Testes"
+    },
+    "cta": "Começar Grátis",
+    "demo": "Demo ao Vivo"
+  },
+  "problem": {
+    "title": "O Problema",
+    "description": "As ferramentas de chaos existentes injetam <strong>falhas reais</strong> na sua infraestrutura.",
+    "items": [
+      "Requer ambiente de produção ou staging",
+      "Risco de interrupções reais durante os testes",
+      "Custos elevados de infraestrutura",
+      "Configuração e limpeza complexas",
+      "Sem prova matemática de disponibilidade"
+    ]
+  },
+  "solution": {
+    "title": "A Solução",
+    "description": "FaultRay usa <strong>simulação puramente matemática</strong>.",
+    "items": [
+      "Zero risco — sem falhas reais injetadas",
+      "Zero custo — roda em um notebook",
+      "Resultados instantâneos em segundos",
+      "Funciona apenas com a topologia YAML",
+      "Limite de disponibilidade comprovado matematicamente"
+    ]
+  },
+  "features": {
+    "heading": "Tudo que Você Precisa",
+    "subheading": "Seis pilares do chaos engineering sem riscos",
+    "cards": [
+      {
+        "title": "100+ Motores de Simulação",
+        "desc": "Rede, processo, recurso, dependência, latência, raio de explosão, validação de contrato SLA e dezenas mais — impulsionados por Monte Carlo, cadeias de Markov e teoria de filas."
+      },
+      {
+        "title": "2.000+ Cenários Auto-gerados",
+        "desc": "De falhas de nó único a interrupções em cascata multi-região. Cada cenário é gerado a partir do seu YAML de topologia — mais de 2.000 cenários únicos para uma topologia típica de 10 componentes."
+      },
+      {
+        "title": "Modelo de Disponibilidade N-Layer (5 camadas)",
+        "desc": "A única ferramenta que decompõe seu limite de disponibilidade em cinco camadas independentes: Hardware, Software, Teórico, Operacional e SLA Externo."
+      },
+      {
+        "title": "Análise Potencializada por IA",
+        "desc": "Análise de causa raiz impulsionada pelo Claude e recomendações de melhoria acionáveis classificadas por impacto e custo."
+      },
+      {
+        "title": "Relatórios de Conformidade DORA",
+        "desc": "Gere relatórios prontos para auditoria da Lei de Resiliência Operacional Digital com trilhas de evidências e avaliações de risco."
+      },
+      {
+        "title": "Integração de Feed de Segurança",
+        "desc": "Incorpora automaticamente dados de CVE e feeds do NVD para simular falhas em cascata acionadas por vulnerabilidades."
+      }
+    ]
+  },
+  "agentResilience": {
+    "badge": "Novo na v11.0",
+    "heading": "Simulação de Resiliência de AI Agent",
+    "subheading": "Simule como falhas de infraestrutura se propagam em alucinações de agentes — antes que aconteçam em produção.",
+    "cards": [
+      {
+        "title": "Análise entre Camadas",
+        "desc": "Rastreie como falhas de infraestrutura (banco de dados fora do ar, cache miss) se propagam em alucinações de agentes. Exponha degradação silenciosa que parece saudável, mas produz resultados incorretos."
+      },
+      {
+        "title": "PREDICT · ADOPT · MANAGE",
+        "desc": "Três pilares para a resiliência de agentes: simule cenários de chaos, avalie o risco de implantação com análise de raio de explosão e gere regras de monitoramento automaticamente."
+      },
+      {
+        "title": "4 Novos Tipos de Componentes",
+        "desc": "Modele AI Agents, LLM Endpoints, Tool Services e Agent Orchestrators como nós de primeira classe no seu grafo de dependências ao lado da infraestrutura tradicional."
+      },
+      {
+        "title": "10 Modos de Falha de Agentes",
+        "desc": "Alucinação, estouro de contexto, limitação de taxa de LLM, esgotamento de tokens, falha de ferramenta, loops de agente, injeção de prompt, descalibração de confiança, colapso de CoT e amplificação de saída."
+      }
+    ],
+    "taxonomyHeading": "Taxonomia de Falhas de AI Agent de <span>10 Modos</span>"
+  },
+  "comparison": {
+    "heading": "Como Nos Comparamos",
+    "subheading": "FaultRay adota uma abordagem fundamentalmente diferente",
+    "recommended": "Recomendado",
+    "labels": {
+      "approach": "Abordagem",
+      "productionRisk": "Risco em Produção",
+      "setupTime": "Tempo de Configuração",
+      "scenarios": "Cenários",
+      "availabilityProof": "Prova de Disponibilidade",
+      "aiAgentModeling": "Modelagem de AI Agent",
+      "startingCost": "Custo Inicial"
+    },
+    "faultray": {
+      "approach": "Simulação Matemática",
+      "productionRisk": "Zero",
+      "setupTime": "5 minutos",
+      "scenarios": "2.000+ auto-gerados",
+      "availabilityProof": "N-Layer Matemático",
+      "aiAgentModeling": "Taxonomia de 10 modos",
+      "startingCost": "Grátis / OSS"
+    },
+    "gremlin": {
+      "approach": "Injeção de Falhas Reais",
+      "productionRisk": "Alto",
+      "setupTime": "Dias",
+      "scenarios": "Configuração manual",
+      "startingCost": "US$ 10.000+/ano"
+    },
+    "steadybit": {
+      "approach": "Injeção de Falhas Reais",
+      "productionRisk": "Médio",
+      "setupTime": "Horas",
+      "scenarios": "Baseado em templates",
+      "startingCost": "US$ 5.000+/ano"
+    },
+    "awsFis": {
+      "approach": "Injeção de Falhas Reais",
+      "productionRisk": "Alto",
+      "setupTime": "Horas",
+      "scenarios": "Apenas serviços AWS",
+      "startingCost": "Pagamento por uso"
+    }
+  },
+  "nlayer": {
+    "heading": "Modelo de Limite de Disponibilidade N-Layer (5 camadas)",
+    "subheading": "A única ferramenta que decompõe seu limite de disponibilidade em cinco camadas de restrição independentes",
+    "layers": [
+      {
+        "label": "Camada 1: Limite de Hardware",
+        "desc": "Restringido por componentes físicos: MTBF de disco, equipamentos de rede, sistemas de energia, tempo de promoção de failover"
+      },
+      {
+        "label": "Camada 2: Limite de Software",
+        "desc": "Seu teto real: pipelines de implantação, erros de configuração, falhas de dependência, taxa de erro humano"
+      },
+      {
+        "label": "Camada 3: Limite Teórico",
+        "desc": "Piso de ruído físico irredutível: perda de pacotes de rede, pausas de GC, jitter de escalonamento do kernel"
+      },
+      {
+        "label": "Camada 4: Limite Operacional",
+        "desc": "Tempo de resposta a incidentes, cobertura de plantão, completude do runbook, nível de automação"
+      },
+      {
+        "label": "Camada 5: SLA Externo",
+        "desc": "Teto máximo imposto pela disponibilidade de serviços de terceiros (AWS, GCP, Stripe, etc.)"
+      }
+    ],
+    "whyTitle": "Por Que Isso Importa",
+    "whyP1": "A maioria das equipes busca nines de hardware enquanto sua camada de software limita a disponibilidade a 4 nines. FaultRay revela exatamente onde está seu gargalo para que você invista na camada certa.",
+    "whyP2": "O modelo N-Layer é extensível: adicione camadas de restrição geográficas, econômicas ou de domínio específico personalizado para corresponder aos limites de disponibilidade únicos da sua organização.",
+    "bindingTitle": "Detecção de Restrição de Ligação",
+    "bindingDesc": "Quando uma simulação prevê disponibilidade excedendo o teto de qualquer camada, FaultRay sinaliza e identifica a camada de restrição de ligação como alvo para melhoria de infraestrutura."
+  },
+  "quickstart": {
+    "heading": "Início Rápido",
+    "subheading": "Do zero à prova de disponibilidade em 3 passos",
+    "step1Title": "Instalar",
+    "step2Title": "Defina sua Topologia",
+    "step3Title": "Executar Análise"
+  },
+  "pricing": {
+    "heading": "Preços",
+    "subheading": "Comece grátis. Escale conforme cresce.",
+    "perMonth": "/mês",
+    "mostPopular": "Mais Popular",
+    "featureComparison": "Comparação de Funcionalidades",
+    "plans": [
+      {
+        "name": "Grátis",
+        "desc": "Perfeito para engenheiros individuais explorando chaos engineering.",
+        "cta": "Começar Grátis"
+      },
+      {
+        "name": "Pro",
+        "desc": "Para equipes que precisam de relatórios de conformidade DORA e limites maiores.",
+        "cta": "Iniciar Pro"
+      },
+      {
+        "name": "Business",
+        "desc": "Para empresas que precisam de acesso ilimitado, SSO e suporte dedicado.",
+        "cta": "Fale Conosco"
+      }
+    ]
+  },
+  "footer": {
+    "tagline": "Chaos engineering de infraestrutura sem riscos. Prove seu limite de disponibilidade matematicamente.",
+    "madeIn": "Feito em Tóquio",
+    "product": "Produto",
+    "resources": "Recursos",
+    "legal": "Legal",
+    "copyright": "© 2026 FaultRay. Código aberto sob a BSL 1.1 (Business Source License)."
+  },
+  "languageSwitcher": {
+    "label": "Idioma"
+  }
+}

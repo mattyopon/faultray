@@ -1,0 +1,219 @@
+{
+  "metadata": {
+    "title": "FaultRay — 零风险基础设施 Chaos Engineering",
+    "description": "用数学方法证明系统可用性上限——无需触碰生产环境。纯模拟 Chaos Engineering，涵盖 2,000+ 场景。"
+  },
+  "nav": {
+    "features": "功能",
+    "compare": "对比",
+    "pricing": "定价",
+    "signIn": "登录",
+    "dashboard": "控制台"
+  },
+  "hero": {
+    "badge": "开源 · BSL 1.1 许可证",
+    "subtitle": "零风险基础设施 Chaos Engineering",
+    "description": "用数学方法证明系统可用性上限——无需触碰生产环境。",
+    "stats": {
+      "scenarios": "场景数",
+      "engines": "引擎数",
+      "layers": "层级数",
+      "tests": "测试数"
+    },
+    "cta": "免费开始",
+    "demo": "在线演示"
+  },
+  "problem": {
+    "title": "现有问题",
+    "description": "现有混沌工具会向基础设施注入<strong>真实故障</strong>。",
+    "items": [
+      "需要生产或预发布环境",
+      "测试期间存在真实故障风险",
+      "高昂的基础设施成本",
+      "复杂的环境搭建与清理",
+      "无法数学证明可用性"
+    ]
+  },
+  "solution": {
+    "title": "解决方案",
+    "description": "FaultRay 采用<strong>纯数学模拟</strong>。",
+    "items": [
+      "零风险——不注入真实故障",
+      "零成本——在笔记本上运行",
+      "秒级输出结果",
+      "仅需 YAML 拓扑文件即可运行",
+      "数学证明的可用性上限"
+    ]
+  },
+  "features": {
+    "heading": "一切所需",
+    "subheading": "零风险 Chaos Engineering 的六大支柱",
+    "cards": [
+      {
+        "title": "100+ 仿真引擎",
+        "desc": "网络、进程、资源、依赖、延迟、爆炸半径、SLA 合同验证等数十种引擎——由 Monte Carlo、Markov chains 和排队理论驱动。"
+      },
+      {
+        "title": "2,000+ 自动生成场景",
+        "desc": "从单节点故障到级联多区域中断，涵盖一切。每个场景均从拓扑 YAML 自动生成——典型的 10 组件拓扑可生成超过 2,000 个唯一场景。"
+      },
+      {
+        "title": "N-Layer（5 层）可用性模型",
+        "desc": "唯一能将可用性上限分解为五个独立层的工具：硬件层、软件层、理论层、运营层和外部 SLA 层。"
+      },
+      {
+        "title": "AI 智能分析",
+        "desc": "Claude 驱动的根因分析，以及按影响和成本排序的可操作改进建议。"
+      },
+      {
+        "title": "DORA 合规报告",
+        "desc": "生成具备证据链和风险评估的审计就绪型数字运营韧性法案报告。"
+      },
+      {
+        "title": "安全情报集成",
+        "desc": "自动整合 CVE 数据和 NVD 情报，模拟漏洞触发的级联故障。"
+      }
+    ]
+  },
+  "agentResilience": {
+    "badge": "v11.0 新功能",
+    "heading": "AI Agent 韧性仿真",
+    "subheading": "在生产环境中发生之前，模拟基础设施故障如何级联导致 Agent 幻觉。",
+    "cards": [
+      {
+        "title": "跨层分析",
+        "desc": "追踪基础设施故障（数据库宕机、缓存未命中）如何级联为 Agent 幻觉。暴露看似健康但实际产生错误结果的隐性退化。"
+      },
+      {
+        "title": "PREDICT · ADOPT · MANAGE",
+        "desc": "Agent 韧性的三大支柱：模拟混沌场景、通过爆炸半径分析评估部署风险，以及自动生成监控规则。"
+      },
+      {
+        "title": "4 种新组件类型",
+        "desc": "将 AI Agent、LLM Endpoint、Tool Service 和 Agent Orchestrator 作为依赖图中的一等节点，与传统基础设施并列建模。"
+      },
+      {
+        "title": "10 种 Agent 故障模式",
+        "desc": "幻觉、上下文溢出、LLM 限流、Token 耗尽、工具失败、Agent 循环、提示注入、置信度错误校准、CoT 崩溃和输出放大。"
+      }
+    ],
+    "taxonomyHeading": "<span>10 模式</span> AI Agent 故障分类"
+  },
+  "comparison": {
+    "heading": "竞品对比",
+    "subheading": "FaultRay 采用本质上不同的方法",
+    "recommended": "推荐",
+    "labels": {
+      "approach": "方法",
+      "productionRisk": "生产风险",
+      "setupTime": "配置时间",
+      "scenarios": "场景数量",
+      "availabilityProof": "可用性证明",
+      "aiAgentModeling": "AI Agent 建模",
+      "startingCost": "起始费用"
+    },
+    "faultray": {
+      "approach": "数学仿真",
+      "productionRisk": "零",
+      "setupTime": "5 分钟",
+      "scenarios": "2,000+ 自动生成",
+      "availabilityProof": "N-Layer 数学证明",
+      "aiAgentModeling": "10 模式分类法",
+      "startingCost": "免费 / OSS"
+    },
+    "gremlin": {
+      "approach": "真实故障注入",
+      "productionRisk": "高",
+      "setupTime": "数天",
+      "scenarios": "手动配置",
+      "startingCost": "$10,000+/年"
+    },
+    "steadybit": {
+      "approach": "真实故障注入",
+      "productionRisk": "中",
+      "setupTime": "数小时",
+      "scenarios": "基于模板",
+      "startingCost": "$5,000+/年"
+    },
+    "awsFis": {
+      "approach": "真实故障注入",
+      "productionRisk": "高",
+      "setupTime": "数小时",
+      "scenarios": "仅 AWS 服务",
+      "startingCost": "按量付费"
+    }
+  },
+  "nlayer": {
+    "heading": "N-Layer（5 层）可用性极限模型",
+    "subheading": "唯一能将可用性上限分解为五个独立约束层的工具",
+    "layers": [
+      {
+        "label": "第 1 层：硬件极限",
+        "desc": "受物理组件约束：磁盘 MTBF、网络设备、电力系统、故障切换提升时间"
+      },
+      {
+        "label": "第 2 层：软件极限",
+        "desc": "实际上限：部署流水线、配置错误、依赖故障、人为失误率"
+      },
+      {
+        "label": "第 3 层：理论极限",
+        "desc": "不可消除的物理噪声基底：网络丢包、GC 暂停、内核调度抖动"
+      },
+      {
+        "label": "第 4 层：运营极限",
+        "desc": "事件响应时间、值班覆盖率、操作手册完整性、自动化水平"
+      },
+      {
+        "label": "第 5 层：外部 SLA",
+        "desc": "第三方服务可用性强制的硬上限（AWS、GCP、Stripe 等）"
+      }
+    ],
+    "whyTitle": "为何重要",
+    "whyP1": "大多数团队追求硬件层的高可用性，而软件层却将可用性限制在 4 个 9。FaultRay 精准揭示瓶颈所在，让您将投资集中在正确的层级。",
+    "whyP2": "N-Layer 模型具有可扩展性：可添加地理、经济或自定义领域特定约束层，以匹配组织独特的可用性边界。",
+    "bindingTitle": "约束瓶颈检测",
+    "bindingDesc": "当仿真预测的可用性超过任何层的上限时，FaultRay 会标记并识别瓶颈约束层，作为基础设施改进的目标。"
+  },
+  "quickstart": {
+    "heading": "快速开始",
+    "subheading": "三步完成可用性证明",
+    "step1Title": "安装",
+    "step2Title": "定义拓扑",
+    "step3Title": "运行分析"
+  },
+  "pricing": {
+    "heading": "定价",
+    "subheading": "免费起步，随业务增长扩展。",
+    "perMonth": "/月",
+    "mostPopular": "最受欢迎",
+    "featureComparison": "功能对比",
+    "plans": [
+      {
+        "name": "免费版",
+        "desc": "适合探索 Chaos Engineering 的个人工程师。",
+        "cta": "免费开始"
+      },
+      {
+        "name": "Pro 版",
+        "desc": "适合需要 DORA 合规报告和更高配额的团队。",
+        "cta": "开始 Pro"
+      },
+      {
+        "name": "企业版",
+        "desc": "适合需要无限访问、SSO 和专属支持的企业。",
+        "cta": "联系我们"
+      }
+    ]
+  },
+  "footer": {
+    "tagline": "零风险基础设施 Chaos Engineering。用数学方法证明可用性上限。",
+    "madeIn": "日本东京制造",
+    "product": "产品",
+    "resources": "资源",
+    "legal": "法律",
+    "copyright": "© 2026 FaultRay. 基于 BSL 1.1（商业源代码许可证）开源。"
+  },
+  "languageSwitcher": {
+    "label": "语言"
+  }
+}
