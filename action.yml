@@ -1,60 +1,96 @@
-name: 'FaultRay Chaos Check'
-description: 'Run FaultRay chaos simulation on infrastructure YAML files'
+name: 'FaultRay Resilience Check'
+description: 'Score your infrastructure resilience before terraform apply. Catches SPOFs, cascade risks, and availability ceiling violations.'
+author: 'Yutaro Maeda'
 branding:
   icon: 'shield'
-  color: 'orange'
+  color: 'blue'
 
 inputs:
+  plan-file:
+    description: 'Path to Terraform plan JSON file'
+    required: false
+    default: ''
   yaml-file:
-    description: 'Path to FaultRay YAML file'
-    required: true
-  python-version:
-    description: 'Python version'
+    description: 'Path to infrastructure YAML file'
     required: false
-    default: '3.11'
-  comment-on-pr:
-    description: 'Comment results on PR'
+    default: ''
+  min-score:
+    description: 'Minimum resilience score (0-100). Fails if below.'
     required: false
-    default: 'true'
+    default: '0'
+  fail-on-regression:
+    description: 'Fail if resilience score drops from baseline'
+    required: false
+    default: 'false'
+  financial:
+    description: 'Include financial impact analysis'
+    required: false
+    default: 'false'
+  cost-per-hour:
+    description: 'Default cost per hour of downtime (USD)'
+    required: false
+    default: '10000'
 
 outputs:
-  resilience-score:
+  score:
     description: 'Resilience score (0-100)'
-    value: ${{ steps.run.outputs.score }}
+  annual-loss:
+    description: 'Estimated annual financial loss (USD)'
   critical-count:
     description: 'Number of critical findings'
-    value: ${{ steps.run.outputs.critical }}
-  passed:
-    description: 'Whether all checks passed (no critical findings)'
-    value: ${{ steps.run.outputs.passed }}
+  report:
+    description: 'Path to generated report file'
+  badge-url:
+    description: 'Shields.io badge URL for the resilience score'
+  badge-markdown:
+    description: 'Markdown snippet for embedding the resilience badge in a README'
 
 runs:
   using: 'composite'
   steps:
-    - name: Set up Python
-      uses: actions/setup-python@v6
-      with:
-        python-version: ${{ inputs.python-version }}
-
     - name: Install FaultRay
       shell: bash
       run: pip install faultray
 
-    - name: Run FaultRay
-      id: run
+    - name: Run Terraform Check
+      if: inputs.plan-file != ''
+      shell: bash
+      run: |
+        ARGS=""
+        if [ "${{ inputs.min-score }}" != "0" ]; then
+          ARGS="$ARGS --min-score ${{ inputs.min-score }}"
+        fi
+        if [ "${{ inputs.fail-on-regression }}" == "true" ]; then
+          ARGS="$ARGS --fail-on-regression"
+        fi
+        if [ "${{ inputs.financial }}" == "true" ]; then
+          ARGS="$ARGS --financial"
+        fi
+        faultray tf-check "${{ inputs.plan-file }}" $ARGS
+
+    - name: Run YAML Simulation
+      if: inputs.yaml-file != ''
       shell: bash
       run: |
         faultray load "${{ inputs.yaml-file }}"
-        faultray simulate --json /tmp/faultray-results.json 2>&1 | tee /tmp/faultray-output.txt
-
-        # Extract metrics
-        SCORE=$(python3 -c "import json; r=json.load(open('/tmp/faultray-results.json')); print(r.get('resilience_score', 0))" 2>/dev/null || echo "0")
-        CRITICAL=$(python3 -c "import json; r=json.load(open('/tmp/faultray-results.json')); print(len([x for x in r.get('results',[]) if x.get('is_critical')]))" 2>/dev/null || echo "0")
-
-        echo "score=$SCORE" >> $GITHUB_OUTPUT
-        echo "critical=$CRITICAL" >> $GITHUB_OUTPUT
-        if [ "$CRITICAL" = "0" ]; then
-          echo "passed=true" >> $GITHUB_OUTPUT
-        else
-          echo "passed=false" >> $GITHUB_OUTPUT
+        faultray simulate --json > faultray-report.json
+        if [ "${{ inputs.financial }}" == "true" ]; then
+          faultray financial "${{ inputs.yaml-file }}" --cost-per-hour "${{ inputs.cost-per-hour }}"
         fi
+
+    - name: Generate Badge
+      if: inputs.yaml-file != ''
+      shell: bash
+      run: |
+        BADGE_MD=$(faultray badge "${{ inputs.yaml-file }}" 2>/dev/null | head -1)
+        BADGE_URL=$(faultray badge "${{ inputs.yaml-file }}" --url 2>/dev/null)
+        echo "badge-markdown=$BADGE_MD" >> "$GITHUB_OUTPUT"
+        echo "badge-url=$BADGE_URL" >> "$GITHUB_OUTPUT"
+        echo "### Resilience Badge" >> "$GITHUB_STEP_SUMMARY"
+        echo "" >> "$GITHUB_STEP_SUMMARY"
+        echo "$BADGE_MD" >> "$GITHUB_STEP_SUMMARY"
+
+    - name: Run Demo (no input)
+      if: inputs.plan-file == '' && inputs.yaml-file == ''
+      shell: bash
+      run: faultray demo

@@ -11,6 +11,7 @@
   <a href="https://doi.org/10.5281/zenodo.19139911"><img src="https://zenodo.org/badge/DOI/10.5281/zenodo.19139911.svg" alt="DOI"></a>
   <a href="https://github.com/mattyopon/faultray/actions/workflows/ci.yml"><img src="https://github.com/mattyopon/faultray/actions/workflows/ci.yml/badge.svg" alt="CI"></a>
   <a href="https://faultray.streamlit.app/"><img src="https://static.streamlit.io/badges/streamlit_badge_black_white.svg" alt="Open in Streamlit"></a>
+  <a href="https://github.com/mattyopon/faultray"><img src="https://img.shields.io/badge/resilience-72%2F100-green" alt="Resilience Score"></a>
 </p>
 
 ---
@@ -106,7 +107,49 @@ faultray tf-check plan.json --fail-on-regression --min-score 60
     faultray tf-check plan.json --fail-on-regression --min-score 60
 ```
 
-### 2. Define Your Infrastructure
+### 2. GitHub Action (Marketplace)
+
+Add FaultRay to any CI/CD pipeline with our official GitHub Action:
+
+```yaml
+# .github/workflows/resilience.yml
+name: Resilience Check
+on: [pull_request]
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: mattyopon/faultray@v1
+        with:
+          plan-file: plan.json
+          min-score: 60
+          fail-on-regression: true
+          financial: true
+```
+
+Or use it with a YAML infrastructure definition:
+
+```yaml
+      - uses: mattyopon/faultray@v1
+        with:
+          yaml-file: infra.yaml
+          financial: true
+          cost-per-hour: 25000
+```
+
+Available inputs:
+
+| Input | Description | Default |
+|---|---|---|
+| `plan-file` | Path to Terraform plan JSON file | `''` |
+| `yaml-file` | Path to infrastructure YAML file | `''` |
+| `min-score` | Minimum resilience score (0-100). Fails if below. | `0` |
+| `fail-on-regression` | Fail if resilience score drops from baseline | `false` |
+| `financial` | Include financial impact analysis | `false` |
+| `cost-per-hour` | Default cost per hour of downtime (USD) | `10000` |
+
+### 3. Define Your Infrastructure
 
 ```yaml
 # infra.yaml
@@ -135,7 +178,7 @@ faultray load infra.yaml
 faultray simulate --html report.html
 ```
 
-### 3. AI Agent Testing
+### 4. AI Agent Testing
 
 ```bash
 faultray agent assess ai-workflow.yaml     # Risk assessment
@@ -144,7 +187,7 @@ faultray agent scenarios ai-workflow.yaml  # What could go wrong?
 
 Simulates AI-specific failures: hallucination cascades, context overflow, LLM rate limiting, token exhaustion, tool failures, agent loops, prompt injection.
 
-### 4. Continuous Compliance Monitoring
+### 5. Continuous Compliance Monitoring
 
 ```bash
 faultray compliance-monitor model.json --framework dora  # DORA
@@ -153,6 +196,38 @@ faultray compliance-monitor model.json --framework pci   # PCI DSS
 ```
 
 Tracks compliance trends over 90 days with automated drift detection.
+
+## Resilience Badge
+
+Show your infrastructure resilience score in your README:
+
+```bash
+faultray badge infra.yaml
+```
+
+Output:
+
+```
+[![Resilience Score](https://img.shields.io/badge/resilience-72%2F100-green)](https://github.com/mattyopon/faultray)
+```
+
+Which renders as: ![Resilience Score](https://img.shields.io/badge/resilience-72%2F100-green)
+
+The badge color adjusts automatically based on your score:
+
+| Score | Color |
+|-------|-------|
+| 80-100 | Bright green |
+| 60-79 | Green |
+| 40-59 | Yellow |
+| 20-39 | Orange |
+| 0-19 | Red |
+
+For raw URL output (no markdown wrapping):
+
+```bash
+faultray badge infra.yaml --url
+```
 
 ## Key Features
 

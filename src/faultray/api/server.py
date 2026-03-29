@@ -465,6 +465,7 @@ from faultray.api.routes.graph import router as graph_router
 from faultray.api.routes.compliance import router as compliance_router
 from faultray.api.routes.projects import router as projects_router
 from faultray.api.routes.admin import router as admin_router
+from faultray.api.routes.badge import router as badge_router
 
 app.include_router(dashboard_router)
 app.include_router(simulation_router)
@@ -472,6 +473,7 @@ app.include_router(graph_router)
 app.include_router(compliance_router)
 app.include_router(projects_router)
 app.include_router(admin_router)
+app.include_router(badge_router)
 
 
 # ---------------------------------------------------------------------------
