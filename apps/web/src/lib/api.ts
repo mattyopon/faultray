@@ -68,7 +68,7 @@ export interface SimulationRun {
 }
 
 export const api = {
-  simulate: (data: { topology?: string; sample?: string }, token?: string) =>
+  simulate: (data: { topology?: string; topology_yaml?: string; sample?: string }, token?: string) =>
     apiFetch<SimulationResult>("/api/simulate", {
       method: "POST",
       body: data,
