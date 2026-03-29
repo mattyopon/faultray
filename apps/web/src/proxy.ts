@@ -64,7 +64,7 @@ export async function proxy(request: NextRequest) {
 
   // If locale-prefixed app route (e.g. /en/login, /ja/pricing), redirect to non-prefixed version
   if (pathnameHasLocale) {
-    const appPaths = ["/login", "/dashboard", "/simulate", "/results", "/suggestions", "/settings", "/pricing"];
+    const appPaths = ["/login", "/dashboard", "/simulate", "/results", "/suggestions", "/settings", "/pricing", "/demo"];
     let strippedPath = pathname;
     for (const locale of locales) {
       if (pathname.startsWith(`/${locale}/`)) {
