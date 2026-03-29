@@ -47,7 +47,7 @@ export function LanguageSwitcher({ currentLang }: { currentLang: string }) {
         className="appearance-none bg-[#111827] border border-[#1e293b] text-[#94a3b8] text-sm rounded-lg px-3 py-1.5 pr-8 cursor-pointer hover:border-[#64748b] hover:text-white transition-colors focus:outline-none focus:border-[#FFD700]/50"
       >
         {locales.map((locale) => (
-          <option key={locale} value={locale}>
+          <option key={locale} value={locale} className="bg-[#111827] text-[#e2e8f0]">
             {languageNames[locale]}
           </option>
         ))}
@@ -95,7 +95,7 @@ export function NavLanguageSwitcher({ currentLang }: { currentLang: string }) {
       }}
     >
       {locales.map((locale) => (
-        <option key={locale} value={locale}>
+        <option key={locale} value={locale} className="bg-[#111827] text-[#e2e8f0]">
           {languageNames[locale]}
         </option>
       ))}
