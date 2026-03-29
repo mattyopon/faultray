@@ -9,10 +9,37 @@ import {
   CreditCard,
   Key,
   Bell,
+  Globe,
 } from "lucide-react";
+import { useRouter } from "next/navigation";
+
+const LANGUAGES = [
+  { code: "en", label: "English", flag: "🇺🇸" },
+  { code: "ja", label: "日本語", flag: "🇯🇵" },
+  { code: "de", label: "Deutsch", flag: "🇩🇪" },
+  { code: "fr", label: "Français", flag: "🇫🇷" },
+  { code: "zh", label: "中文", flag: "🇨🇳" },
+  { code: "ko", label: "한국어", flag: "🇰🇷" },
+  { code: "es", label: "Español", flag: "🇪🇸" },
+  { code: "pt", label: "Português", flag: "🇧🇷" },
+];
 
 export default function SettingsPage() {
   const { user } = useAuth();
+  const router = useRouter();
+
+  function getCurrentLang(): string {
+    if (typeof document !== "undefined") {
+      const match = document.cookie.match(/NEXT_LOCALE=(\w+)/);
+      if (match) return match[1];
+    }
+    return "en";
+  }
+
+  function setLanguage(lang: string) {
+    document.cookie = `NEXT_LOCALE=${lang};path=/;max-age=31536000`;
+    router.push(`/${lang}`);
+  }
 
   return (
     <div className="max-w-[800px] mx-auto px-6 py-10">
@@ -20,6 +47,30 @@ export default function SettingsPage() {
         <h1 className="text-2xl font-bold mb-1">Settings</h1>
         <p className="text-[#94a3b8] text-sm">Manage your account and subscription</p>
       </div>
+
+      {/* Language */}
+      <Card className="mb-6">
+        <div className="flex items-center gap-3 mb-6">
+          <Globe size={20} className="text-[#FFD700]" />
+          <h2 className="text-lg font-bold">Language</h2>
+        </div>
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+          {LANGUAGES.map((lang) => (
+            <button
+              key={lang.code}
+              onClick={() => setLanguage(lang.code)}
+              className={`flex items-center gap-2 px-4 py-3 rounded-lg border transition-all text-sm ${
+                getCurrentLang() === lang.code
+                  ? "border-[#FFD700] bg-[#FFD700]/10 text-white"
+                  : "border-[#1e293b] text-[#94a3b8] hover:border-[#64748b] hover:text-white"
+              }`}
+            >
+              <span className="text-lg">{lang.flag}</span>
+              <span>{lang.label}</span>
+            </button>
+          ))}
+        </div>
+      </Card>
 
       {/* Profile */}
       <Card className="mb-6">
