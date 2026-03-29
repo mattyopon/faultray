@@ -288,7 +288,7 @@ export default async function LangHomePage({
       </section>
 
       {/* ===== PROBLEM / SOLUTION ===== */}
-      <section className="py-24 animate-on-scroll">
+      <section className="py-24 ">
         <div className="max-w-[1200px] mx-auto px-6">
           <div className="grid md:grid-cols-2 gap-8">
             {/* Problem */}
@@ -331,17 +331,17 @@ export default async function LangHomePage({
       {/* ===== FEATURES ===== */}
       <section id="features" className="py-24 bg-[#0f1424]">
         <div className="max-w-[1200px] mx-auto px-6">
-          <div className="text-center mb-16 animate-on-scroll">
+          <div className="text-center mb-16 ">
             <h2 className="text-[clamp(1.75rem,4vw,2.5rem)] font-bold tracking-tight mb-3">{dict.features.heading}</h2>
             <p className="text-lg text-[#94a3b8] max-w-[540px] mx-auto">{dict.features.subheading}</p>
           </div>
-          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6 stagger-children">
+          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6 ">
             {dict.features.cards.map((f: { title: string; desc: string }, i: number) => {
               const Icon = featureIcons[i];
               return (
                 <div
                   key={f.title}
-                  className="animate-on-scroll-scale p-8 rounded-2xl border border-[#1e293b] bg-[#111827] transition-all duration-200 hover:border-[#FFD700]/30 hover:bg-[#1a2035] hover:-translate-y-0.5 hover:shadow-[0_0_40px_rgba(255,215,0,0.1)]"
+                  className=" p-8 rounded-2xl border border-[#1e293b] bg-[#111827] transition-all duration-200 hover:border-[#FFD700]/30 hover:bg-[#1a2035] hover:-translate-y-0.5 hover:shadow-[0_0_40px_rgba(255,215,0,0.1)]"
                 >
                   <div className="w-14 h-14 flex items-center justify-center rounded-xl bg-[#FFD700]/[0.06] border border-[#FFD700]/10 mb-5">
                     <Icon size={24} className="text-[#FFD700]" />
@@ -358,7 +358,7 @@ export default async function LangHomePage({
       {/* ===== AI AGENT RESILIENCE ===== */}
       <section id="agent-resilience" className="py-24 bg-[#0f1424] border-t border-[#FFD700]/15">
         <div className="max-w-[1200px] mx-auto px-6">
-          <div className="text-center mb-16 animate-on-scroll">
+          <div className="text-center mb-16 ">
             <span className="inline-block px-4 py-1.5 text-[0.8125rem] font-medium text-[#FFD700] border border-[#FFD700]/25 rounded-full bg-[#FFD700]/5 mb-4">
               {dict.agentResilience.badge}
             </span>
@@ -375,7 +375,7 @@ export default async function LangHomePage({
               return (
                 <div
                   key={f.title}
-                  className="animate-on-scroll-scale p-8 rounded-2xl border border-[#1e293b] bg-[#111827] transition-all duration-200 hover:border-[#FFD700]/30 hover:bg-[#1a2035] hover:-translate-y-0.5"
+                  className=" p-8 rounded-2xl border border-[#1e293b] bg-[#111827] transition-all duration-200 hover:border-[#FFD700]/30 hover:bg-[#1a2035] hover:-translate-y-0.5"
                 >
                   <div className="w-14 h-14 flex items-center justify-center rounded-xl bg-[#FFD700]/[0.06] border border-[#FFD700]/10 mb-5">
                     <Icon size={24} className="text-[#FFD700]" />
@@ -388,7 +388,7 @@ export default async function LangHomePage({
           </div>
 
           {/* 10-Mode Failure Taxonomy Table */}
-          <div className="animate-on-scroll max-w-[900px] mx-auto mb-10">
+          <div className=" max-w-[900px] mx-auto mb-10">
             <h3 className="text-xl font-bold text-center mb-6" dangerouslySetInnerHTML={{
               __html: dict.agentResilience.taxonomyHeading.replace(
                 "<span>",
@@ -420,7 +420,7 @@ export default async function LangHomePage({
           </div>
 
           {/* Agent CLI demo */}
-          <div className="animate-on-scroll max-w-[680px] mx-auto">
+          <div className=" max-w-[680px] mx-auto">
             <div className="rounded-xl overflow-hidden border border-[#1e293b] bg-[#0d1117]">
               <div className="flex items-center justify-between px-4 py-2.5 bg-[#161b22] border-b border-[#1e293b]">
                 <span className="text-xs text-[#64748b]">Terminal</span>
@@ -447,11 +447,11 @@ export default async function LangHomePage({
       {/* ===== COMPARISON TABLE ===== */}
       <section id="comparison" className="py-24">
         <div className="max-w-[1200px] mx-auto px-6">
-          <div className="text-center mb-16 animate-on-scroll">
+          <div className="text-center mb-16 ">
             <h2 className="text-[clamp(1.75rem,4vw,2.5rem)] font-bold tracking-tight mb-3">{dict.comparison.heading}</h2>
             <p className="text-lg text-[#94a3b8] max-w-[540px] mx-auto">{dict.comparison.subheading}</p>
           </div>
-          <div className="animate-on-scroll overflow-x-auto rounded-2xl border border-[#1e293b]">
+          <div className=" overflow-x-auto rounded-2xl border border-[#1e293b]">
             <table className="w-full min-w-[700px] border-collapse text-[0.9375rem]">
               <thead>
                 <tr>
@@ -503,7 +503,7 @@ export default async function LangHomePage({
       {/* ===== N-LAYER (5-LAYER) AVAILABILITY MODEL ===== */}
       <section id="model" className="py-24 bg-[#0f1424]">
         <div className="max-w-[1200px] mx-auto px-6">
-          <div className="text-center mb-16 animate-on-scroll">
+          <div className="text-center mb-16 ">
             <h2 className="text-[clamp(1.75rem,4vw,2.5rem)] font-bold tracking-tight mb-3">
               {dict.nlayer.heading}
             </h2>
@@ -513,7 +513,7 @@ export default async function LangHomePage({
           </div>
           <div className="grid lg:grid-cols-2 gap-12 items-start">
             {/* Layer stack */}
-            <div className="animate-slide-left flex flex-col layer-stack">
+            <div className=" flex flex-col layer-stack">
               {dict.nlayer.layers.map((layer: { label: string; desc: string }, i: number) => {
                 const style = layerStyles[i];
                 return (
@@ -541,7 +541,7 @@ export default async function LangHomePage({
             </div>
 
             {/* Insight card */}
-            <div className="animate-slide-right">
+            <div className="">
               <div className="p-8 rounded-2xl border border-[#1e293b] bg-[#111827] mb-6">
                 <h3 className="text-xl font-bold text-[#FFD700] mb-3">{dict.nlayer.whyTitle}</h3>
                 <p className="text-[0.9375rem] text-[#94a3b8] leading-relaxed mb-5">
@@ -575,14 +575,14 @@ export default async function LangHomePage({
       {/* ===== QUICK START ===== */}
       <section id="quickstart" className="py-24">
         <div className="max-w-[1200px] mx-auto px-6">
-          <div className="text-center mb-16 animate-on-scroll">
+          <div className="text-center mb-16 ">
             <h2 className="text-[clamp(1.75rem,4vw,2.5rem)] font-bold tracking-tight mb-3">{dict.quickstart.heading}</h2>
             <p className="text-lg text-[#94a3b8]">{dict.quickstart.subheading}</p>
           </div>
 
           <div className="grid md:grid-cols-3 gap-8 mb-16">
             {/* Step 1 */}
-            <div className="animate-on-scroll-scale">
+            <div className="">
               <div className="flex items-center justify-center w-9 h-9 rounded-full bg-[#FFD700]/10 border border-[#FFD700]/25 text-[#FFD700] font-bold text-sm mb-4">
                 1
               </div>
@@ -600,7 +600,7 @@ export default async function LangHomePage({
             </div>
 
             {/* Step 2 */}
-            <div className="animate-on-scroll-scale">
+            <div className="">
               <div className="flex items-center justify-center w-9 h-9 rounded-full bg-[#FFD700]/10 border border-[#FFD700]/25 text-[#FFD700] font-bold text-sm mb-4">
                 2
               </div>
@@ -626,7 +626,7 @@ export default async function LangHomePage({
             </div>
 
             {/* Step 3 */}
-            <div className="animate-on-scroll-scale">
+            <div className="">
               <div className="flex items-center justify-center w-9 h-9 rounded-full bg-[#FFD700]/10 border border-[#FFD700]/25 text-[#FFD700] font-bold text-sm mb-4">
                 3
               </div>
@@ -653,7 +653,7 @@ export default async function LangHomePage({
           </div>
 
           {/* Dashboard mockup */}
-          <div className="animate-on-scroll max-w-[900px] mx-auto">
+          <div className=" max-w-[900px] mx-auto">
             <div className="rounded-2xl overflow-hidden border border-[#1e293b] shadow-[0_8px_32px_rgba(0,0,0,0.5)]">
               <div className="flex items-center gap-3 px-4 py-3 bg-[#161b22] border-b border-[#1e293b]">
                 <div className="flex gap-2">
@@ -722,7 +722,7 @@ export default async function LangHomePage({
       {/* ===== PRICING ===== */}
       <section id="pricing" className="py-24 bg-[#0f1424]">
         <div className="max-w-[1200px] mx-auto px-6">
-          <div className="text-center mb-16 animate-on-scroll">
+          <div className="text-center mb-16 ">
             <h2 className="text-[clamp(1.75rem,4vw,2.5rem)] font-bold tracking-tight mb-3">{dict.pricing.heading}</h2>
             <p className="text-lg text-[#94a3b8]">{dict.pricing.subheading}</p>
           </div>
@@ -734,7 +734,7 @@ export default async function LangHomePage({
               return (
                 <div
                   key={plan.name}
-                  className={`animate-on-scroll-scale relative p-9 rounded-2xl border flex flex-col transition-all duration-200 hover:-translate-y-1 hover:shadow-[0_8px_32px_rgba(0,0,0,0.5)] ${
+                  className={` relative p-9 rounded-2xl border flex flex-col transition-all duration-200 hover:-translate-y-1 hover:shadow-[0_8px_32px_rgba(0,0,0,0.5)] ${
                     data.popular
                       ? "border-[#FFD700] bg-gradient-to-b from-[#FFD700]/[0.04] to-[#111827] shadow-[0_0_40px_rgba(255,215,0,0.1)]"
                       : "border-[#1e293b] bg-[#111827]"
@@ -782,7 +782,7 @@ export default async function LangHomePage({
           </div>
 
           {/* Feature comparison table */}
-          <div className="animate-on-scroll max-w-[900px] mx-auto">
+          <div className=" max-w-[900px] mx-auto">
             <h3 className="text-xl font-bold text-center mb-8">{dict.pricing.featureComparison}</h3>
             <div className="overflow-x-auto rounded-2xl border border-[#1e293b]">
               <table className="w-full min-w-[600px] border-collapse text-[0.9375rem]">
