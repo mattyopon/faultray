@@ -38,7 +38,8 @@ export default function SettingsPage() {
 
   function setLanguage(lang: string) {
     document.cookie = `NEXT_LOCALE=${lang};path=/;max-age=31536000`;
-    router.push(`/${lang}`);
+    // Stay on current page, just update language preference
+    router.refresh();
   }
 
   return (
