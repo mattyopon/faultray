@@ -126,8 +126,8 @@ export default function HomePage() {
             Open Source &middot; BSL 1.1 License
           </div>
           <h1 className="text-[clamp(3rem,10vw,6rem)] font-extrabold tracking-tighter leading-none mb-5">
-            <span className="text-white">Chaos</span>
-            <span className="text-[#FFD700]">Proof</span>
+            <span className="text-white">Fault</span>
+            <span className="text-[#FFD700]">Ray</span>
           </h1>
           <p className="text-[clamp(1.125rem,3vw,1.5rem)] text-emerald-400 font-semibold mb-3">
             Zero-Risk Infrastructure Chaos Engineering
