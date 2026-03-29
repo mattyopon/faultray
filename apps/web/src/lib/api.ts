@@ -1,4 +1,4 @@
-const API_BASE = process.env.NEXT_PUBLIC_API_URL || "https://api.faultray.com";
+const API_BASE = process.env.NEXT_PUBLIC_API_URL || "";
 
 interface ApiOptions {
   method?: string;
@@ -69,7 +69,7 @@ export interface SimulationRun {
 
 export const api = {
   simulate: (data: { topology?: string; sample?: string }, token?: string) =>
-    apiFetch<SimulationResult>("/api/v1/simulate", {
+    apiFetch<SimulationResult>("/api/simulate", {
       method: "POST",
       body: data,
       token,
@@ -91,7 +91,11 @@ export const api = {
     ),
 
   getCompliance: (framework: string, token?: string) =>
-    apiFetch<Record<string, unknown>>(`/api/v1/compliance/${framework}`, { token }),
+    apiFetch<Record<string, unknown>>("/api/compliance", {
+      method: "POST",
+      body: { framework },
+      token,
+    }),
 
   getAnalysis: (token?: string) =>
     apiFetch<Record<string, unknown>>("/api/v1/analyze", { token }),

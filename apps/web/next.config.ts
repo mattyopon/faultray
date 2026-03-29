@@ -1,14 +1,6 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  async rewrites() {
-    return [
-      {
-        source: "/api/proxy/:path*",
-        destination: `${process.env.FAULTRAY_API_URL || "https://api.faultray.com"}/api/:path*`,
-      },
-    ];
-  },
   async headers() {
     return [
       {
