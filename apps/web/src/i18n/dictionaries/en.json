@@ -1,0 +1,219 @@
+{
+  "metadata": {
+    "title": "FaultRay — Zero-Risk Infrastructure Chaos Engineering",
+    "description": "Prove your system's availability ceiling mathematically — without touching production. Pure simulation chaos engineering with 2,000+ scenarios."
+  },
+  "nav": {
+    "features": "Features",
+    "compare": "Compare",
+    "pricing": "Pricing",
+    "signIn": "Sign In",
+    "dashboard": "Dashboard"
+  },
+  "hero": {
+    "badge": "Open Source · BSL 1.1 License",
+    "subtitle": "Zero-Risk Infrastructure Chaos Engineering",
+    "description": "Prove your system's availability ceiling mathematically — without touching production.",
+    "stats": {
+      "scenarios": "Scenarios",
+      "engines": "Engines",
+      "layers": "Layers",
+      "tests": "Tests"
+    },
+    "cta": "Get Started Free",
+    "demo": "Live Demo"
+  },
+  "problem": {
+    "title": "The Problem",
+    "description": "Existing chaos tools inject <strong>real faults</strong> into your infrastructure.",
+    "items": [
+      "Requires production or staging environment",
+      "Risk of real outages during testing",
+      "Expensive infrastructure costs",
+      "Complex setup and teardown",
+      "No mathematical availability proof"
+    ]
+  },
+  "solution": {
+    "title": "The Solution",
+    "description": "FaultRay uses <strong>pure mathematical simulation</strong>.",
+    "items": [
+      "Zero risk — no real faults injected",
+      "Zero cost — runs on a laptop",
+      "Instant results in seconds",
+      "Works from YAML topology alone",
+      "Mathematically proven availability ceiling"
+    ]
+  },
+  "features": {
+    "heading": "Everything You Need",
+    "subheading": "Six pillars of zero-risk chaos engineering",
+    "cards": [
+      {
+        "title": "100+ Simulation Engines",
+        "desc": "Network, process, resource, dependency, latency, blast radius, SLA contract validation, and dozens more — powered by Monte Carlo, Markov chains, and queuing theory."
+      },
+      {
+        "title": "2,000+ Auto-Generated Scenarios",
+        "desc": "From single-node failures to cascading multi-region outages. Every scenario is generated from your topology YAML — over 2,000 unique scenarios for a typical 10-component topology."
+      },
+      {
+        "title": "N-Layer (5-Layer) Availability Model",
+        "desc": "The only tool that decomposes your availability ceiling into five independent layers: Hardware, Software, Theoretical, Operational, and External SLA."
+      },
+      {
+        "title": "AI-Powered Analysis",
+        "desc": "Claude-driven root cause analysis and actionable improvement recommendations ranked by impact and cost."
+      },
+      {
+        "title": "DORA Compliance Reports",
+        "desc": "Generate audit-ready Digital Operational Resilience Act reports with evidence trails and risk assessments."
+      },
+      {
+        "title": "Security Feed Integration",
+        "desc": "Automatically incorporate CVE data and NVD feeds to simulate vulnerability-triggered cascading failures."
+      }
+    ]
+  },
+  "agentResilience": {
+    "badge": "New in v11.0",
+    "heading": "AI Agent Resilience Simulation",
+    "subheading": "Simulate how infrastructure failures cascade into agent hallucinations — before they happen in production.",
+    "cards": [
+      {
+        "title": "Cross-Layer Analysis",
+        "desc": "Trace how infrastructure failures (database down, cache miss) cascade into agent hallucinations. Expose silent degradation that looks healthy but produces wrong results."
+      },
+      {
+        "title": "PREDICT · ADOPT · MANAGE",
+        "desc": "Three pillars for agent resilience: simulate chaos scenarios, assess deployment risk with blast-radius analysis, and generate monitoring rules automatically."
+      },
+      {
+        "title": "4 New Component Types",
+        "desc": "Model AI Agents, LLM Endpoints, Tool Services, and Agent Orchestrators as first-class nodes in your dependency graph alongside traditional infrastructure."
+      },
+      {
+        "title": "10 Agent Failure Modes",
+        "desc": "Hallucination, context overflow, LLM rate limiting, token exhaustion, tool failure, agent loops, prompt injection, confidence miscalibration, CoT collapse, and output amplification."
+      }
+    ],
+    "taxonomyHeading": "<span>10-Mode</span> AI Agent Failure Taxonomy"
+  },
+  "comparison": {
+    "heading": "How We Compare",
+    "subheading": "FaultRay takes a fundamentally different approach",
+    "recommended": "Recommended",
+    "labels": {
+      "approach": "Approach",
+      "productionRisk": "Production Risk",
+      "setupTime": "Setup Time",
+      "scenarios": "Scenarios",
+      "availabilityProof": "Availability Proof",
+      "aiAgentModeling": "AI Agent Modeling",
+      "startingCost": "Starting Cost"
+    },
+    "faultray": {
+      "approach": "Mathematical Simulation",
+      "productionRisk": "Zero",
+      "setupTime": "5 minutes",
+      "scenarios": "2,000+ auto-generated",
+      "availabilityProof": "N-Layer Mathematical",
+      "aiAgentModeling": "10-mode taxonomy",
+      "startingCost": "Free / OSS"
+    },
+    "gremlin": {
+      "approach": "Real Fault Injection",
+      "productionRisk": "High",
+      "setupTime": "Days",
+      "scenarios": "Manual configuration",
+      "startingCost": "$10,000+/yr"
+    },
+    "steadybit": {
+      "approach": "Real Fault Injection",
+      "productionRisk": "Medium",
+      "setupTime": "Hours",
+      "scenarios": "Template-based",
+      "startingCost": "$5,000+/yr"
+    },
+    "awsFis": {
+      "approach": "Real Fault Injection",
+      "productionRisk": "High",
+      "setupTime": "Hours",
+      "scenarios": "AWS services only",
+      "startingCost": "Pay per use"
+    }
+  },
+  "nlayer": {
+    "heading": "N-Layer (5-Layer) Availability Limit Model",
+    "subheading": "The only tool that decomposes your availability ceiling into five independent constraint layers",
+    "layers": [
+      {
+        "label": "Layer 1: Hardware Limit",
+        "desc": "Constrained by physical components: disk MTBF, network gear, power systems, failover promotion time"
+      },
+      {
+        "label": "Layer 2: Software Limit",
+        "desc": "Your actual ceiling: deploy pipelines, config errors, dependency failures, human error rate"
+      },
+      {
+        "label": "Layer 3: Theoretical Limit",
+        "desc": "Irreducible physical noise floor: network packet loss, GC pauses, kernel scheduling jitter"
+      },
+      {
+        "label": "Layer 4: Operational Limit",
+        "desc": "Incident response time, on-call coverage, runbook completeness, automation level"
+      },
+      {
+        "label": "Layer 5: External SLA",
+        "desc": "Hard ceiling imposed by third-party service availability (AWS, GCP, Stripe, etc.)"
+      }
+    ],
+    "whyTitle": "Why This Matters",
+    "whyP1": "Most teams chase hardware nines while their software layer caps availability at 4 nines. FaultRay reveals exactly where your bottleneck lives so you invest in the right layer.",
+    "whyP2": "The N-Layer model is extensible: add Geographic, Economic, or custom domain-specific constraint layers to match your organization's unique availability boundaries.",
+    "bindingTitle": "Binding Constraint Detection",
+    "bindingDesc": "When a simulation predicts availability exceeding any layer ceiling, FaultRay flags it and identifies the binding constraint layer as the target for infrastructure improvement."
+  },
+  "quickstart": {
+    "heading": "Quick Start",
+    "subheading": "From zero to availability proof in 3 steps",
+    "step1Title": "Install",
+    "step2Title": "Define Your Topology",
+    "step3Title": "Run Analysis"
+  },
+  "pricing": {
+    "heading": "Pricing",
+    "subheading": "Start free. Scale as you grow.",
+    "perMonth": "/month",
+    "mostPopular": "Most Popular",
+    "featureComparison": "Feature Comparison",
+    "plans": [
+      {
+        "name": "Free",
+        "desc": "Perfect for individual engineers exploring chaos engineering.",
+        "cta": "Get Started Free"
+      },
+      {
+        "name": "Pro",
+        "desc": "For teams that need DORA compliance reports and higher limits.",
+        "cta": "Start Pro"
+      },
+      {
+        "name": "Business",
+        "desc": "For enterprises needing unlimited access, SSO, and dedicated support.",
+        "cta": "Contact Us"
+      }
+    ]
+  },
+  "footer": {
+    "tagline": "Zero-risk infrastructure chaos engineering. Prove your availability ceiling mathematically.",
+    "madeIn": "Made in Tokyo",
+    "product": "Product",
+    "resources": "Resources",
+    "legal": "Legal",
+    "copyright": "© 2026 FaultRay. Open source under the BSL 1.1 (Business Source License)."
+  },
+  "languageSwitcher": {
+    "label": "Language"
+  }
+}

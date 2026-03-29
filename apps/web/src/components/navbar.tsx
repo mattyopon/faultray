@@ -3,9 +3,10 @@
 import { Logo } from "@/components/logo";
 import { useAuth } from "@/components/auth-provider";
 import { Button } from "@/components/ui/button";
+import { NavLanguageSwitcher } from "@/components/language-switcher";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import {
   LayoutDashboard,
   Zap,
@@ -16,6 +17,7 @@ import {
   X,
   LogOut,
 } from "lucide-react";
+import { locales } from "@/i18n/config";
 
 const navItems = [
   { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
@@ -37,7 +39,24 @@ export function Navbar() {
     return () => window.removeEventListener("scroll", onScroll);
   }, []);
 
-  const isLanding = pathname === "/";
+  // Detect current locale from URL
+  const currentLang = useMemo(() => {
+    for (const locale of locales) {
+      if (pathname.startsWith(`/${locale}/`) || pathname === `/${locale}`) {
+        return locale;
+      }
+    }
+    return "en";
+  }, [pathname]);
+
+  // Check if we're on a localized LP page
+  const isLocalizedLP = useMemo(() => {
+    return locales.some(
+      (locale) => pathname === `/${locale}` || pathname.startsWith(`/${locale}/`)
+    );
+  }, [pathname]);
+
+  const isLanding = pathname === "/" || isLocalizedLP;
   const isApp = !isLanding && !pathname.startsWith("/login") && !pathname.startsWith("/pricing");
 
   return (
@@ -49,7 +68,7 @@ export function Navbar() {
       }`}
     >
       <div className="max-w-[1200px] mx-auto px-6 flex items-center justify-between h-16">
-        <Link href="/" className="flex items-center gap-2.5 font-bold text-white">
+        <Link href={isLocalizedLP ? `/${currentLang}` : "/"} className="flex items-center gap-2.5 font-bold text-white">
           <Logo size={28} />
           <span>FaultRay</span>
         </Link>
@@ -116,6 +135,9 @@ export function Navbar() {
               >
                 GitHub
               </Link>
+              <div className="ml-2">
+                <NavLanguageSwitcher currentLang={currentLang} />
+              </div>
               {user ? (
                 <Link href="/dashboard">
                   <Button size="sm" className="ml-2">
@@ -190,6 +212,9 @@ export function Navbar() {
               >
                 Sign In
               </Link>
+              <div className="px-3 py-2.5">
+                <NavLanguageSwitcher currentLang={currentLang} />
+              </div>
             </>
           )}
         </div>

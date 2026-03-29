@@ -1,0 +1,219 @@
+{
+  "metadata": {
+    "title": "FaultRay — ゼロリスク・インフラストラクチャ Chaos Engineering",
+    "description": "本番環境に触れることなく、システムの可用性上限を数学的に証明。2,000以上のシナリオによるピュアシミュレーション Chaos Engineering。"
+  },
+  "nav": {
+    "features": "機能",
+    "compare": "比較",
+    "pricing": "料金",
+    "signIn": "サインイン",
+    "dashboard": "ダッシュボード"
+  },
+  "hero": {
+    "badge": "オープンソース · BSL 1.1 License",
+    "subtitle": "ゼロリスク・インフラストラクチャ Chaos Engineering",
+    "description": "本番環境に触れることなく、システムの可用性上限を数学的に証明します。",
+    "stats": {
+      "scenarios": "シナリオ",
+      "engines": "エンジン",
+      "layers": "レイヤー",
+      "tests": "テスト"
+    },
+    "cta": "無料で始める",
+    "demo": "ライブデモ"
+  },
+  "problem": {
+    "title": "課題",
+    "description": "既存の Chaos ツールはインフラストラクチャに<strong>実際の障害</strong>を注入します。",
+    "items": [
+      "本番またはステージング環境が必要",
+      "テスト中に実際の障害が発生するリスク",
+      "高額なインフラストラクチャコスト",
+      "複雑なセットアップと後処理",
+      "数学的な可用性証明がない"
+    ]
+  },
+  "solution": {
+    "title": "解決策",
+    "description": "FaultRay は<strong>純粋な数学的シミュレーション</strong>を使用します。",
+    "items": [
+      "ゼロリスク — 実際の障害を注入しない",
+      "ゼロコスト — ノートPCで実行可能",
+      "数秒で結果を取得",
+      "YAMLトポロジだけで動作",
+      "数学的に証明された可用性上限"
+    ]
+  },
+  "features": {
+    "heading": "必要なすべてを網羅",
+    "subheading": "ゼロリスク Chaos Engineering の6つの柱",
+    "cards": [
+      {
+        "title": "100+ Simulation Engines",
+        "desc": "ネットワーク、プロセス、リソース、依存関係、レイテンシ、影響範囲、SLA契約検証など — Monte Carlo法、マルコフ連鎖、待ち行列理論で駆動。"
+      },
+      {
+        "title": "2,000+ 自動生成シナリオ",
+        "desc": "単一ノード障害からカスケード型マルチリージョン障害まで。すべてのシナリオはトポロジYAMLから生成 — 典型的な10コンポーネント構成で2,000以上のユニークシナリオ。"
+      },
+      {
+        "title": "N-Layer (5-Layer) Availability Model",
+        "desc": "可用性上限を5つの独立レイヤーに分解する唯一のツール: Hardware、Software、Theoretical、Operational、External SLA。"
+      },
+      {
+        "title": "AI分析",
+        "desc": "Claudeによる根本原因分析と、影響度・コスト順にランク付けされた改善提案。"
+      },
+      {
+        "title": "DORA Compliance レポート",
+        "desc": "エビデンストレイルとリスク評価付きの監査対応 Digital Operational Resilience Act レポートを生成。"
+      },
+      {
+        "title": "セキュリティフィード統合",
+        "desc": "CVEデータとNVDフィードを自動取り込みし、脆弱性起因のカスケード障害をシミュレーション。"
+      }
+    ]
+  },
+  "agentResilience": {
+    "badge": "v11.0 新機能",
+    "heading": "AI Agent Resilience Simulation",
+    "subheading": "インフラストラクチャ障害がエージェントのハルシネーションにどうカスケードするか — 本番で発生する前にシミュレーション。",
+    "cards": [
+      {
+        "title": "Cross-Layer Analysis",
+        "desc": "インフラストラクチャ障害（データベースダウン、キャッシュミス）がエージェントのハルシネーションにどうカスケードするかを追跡。正常に見えても誤った結果を出すサイレント劣化を露出。"
+      },
+      {
+        "title": "PREDICT · ADOPT · MANAGE",
+        "desc": "エージェントレジリエンスの3つの柱: Chaos シナリオのシミュレーション、影響範囲分析によるデプロイリスク評価、モニタリングルールの自動生成。"
+      },
+      {
+        "title": "4 New Component Types",
+        "desc": "AI Agents、LLM Endpoints、Tool Services、Agent Orchestrators を従来のインフラストラクチャと並ぶファーストクラスノードとして依存関係グラフにモデリング。"
+      },
+      {
+        "title": "10 Agent Failure Modes",
+        "desc": "Hallucination、Context Overflow、LLM Rate Limiting、Token Exhaustion、Tool Failure、Agent Loops、Prompt Injection、Confidence Miscalibration、CoT Collapse、Output Amplification。"
+      }
+    ],
+    "taxonomyHeading": "<span>10-Mode</span> AI Agent Failure Taxonomy"
+  },
+  "comparison": {
+    "heading": "競合との比較",
+    "subheading": "FaultRay は根本的に異なるアプローチを採用",
+    "recommended": "推奨",
+    "labels": {
+      "approach": "アプローチ",
+      "productionRisk": "本番リスク",
+      "setupTime": "セットアップ時間",
+      "scenarios": "シナリオ",
+      "availabilityProof": "可用性証明",
+      "aiAgentModeling": "AI Agent モデリング",
+      "startingCost": "開始コスト"
+    },
+    "faultray": {
+      "approach": "Mathematical Simulation",
+      "productionRisk": "ゼロ",
+      "setupTime": "5分",
+      "scenarios": "2,000+ 自動生成",
+      "availabilityProof": "N-Layer 数学的証明",
+      "aiAgentModeling": "10-mode taxonomy",
+      "startingCost": "無料 / OSS"
+    },
+    "gremlin": {
+      "approach": "Real Fault Injection",
+      "productionRisk": "高",
+      "setupTime": "数日",
+      "scenarios": "手動設定",
+      "startingCost": "$10,000+/年"
+    },
+    "steadybit": {
+      "approach": "Real Fault Injection",
+      "productionRisk": "中",
+      "setupTime": "数時間",
+      "scenarios": "テンプレートベース",
+      "startingCost": "$5,000+/年"
+    },
+    "awsFis": {
+      "approach": "Real Fault Injection",
+      "productionRisk": "高",
+      "setupTime": "数時間",
+      "scenarios": "AWSサービスのみ",
+      "startingCost": "従量課金"
+    }
+  },
+  "nlayer": {
+    "heading": "N-Layer (5-Layer) Availability Limit Model",
+    "subheading": "可用性上限を5つの独立した制約レイヤーに分解する唯一のツール",
+    "layers": [
+      {
+        "label": "Layer 1: Hardware Limit",
+        "desc": "物理コンポーネントによる制約: ディスクMTBF、ネットワーク機器、電源システム、フェイルオーバー昇格時間"
+      },
+      {
+        "label": "Layer 2: Software Limit",
+        "desc": "実際の上限: デプロイパイプライン、設定エラー、依存関係障害、ヒューマンエラー率"
+      },
+      {
+        "label": "Layer 3: Theoretical Limit",
+        "desc": "不可避の物理ノイズフロア: ネットワークパケットロス、GCポーズ、カーネルスケジューリングジッター"
+      },
+      {
+        "label": "Layer 4: Operational Limit",
+        "desc": "インシデント対応時間、オンコール体制、ランブック完全性、自動化レベル"
+      },
+      {
+        "label": "Layer 5: External SLA",
+        "desc": "サードパーティサービスの可用性による絶対上限 (AWS, GCP, Stripe等)"
+      }
+    ],
+    "whyTitle": "なぜ重要なのか",
+    "whyP1": "多くのチームはハードウェアの nines を追求しますが、ソフトウェアレイヤーが可用性を4 ninesに制限しています。FaultRay はボトルネックの正確な位置を明らかにし、適切なレイヤーへの投資を導きます。",
+    "whyP2": "N-Layer モデルは拡張可能: Geographic、Economic、またはカスタムドメイン固有の制約レイヤーを追加して、組織独自の可用性境界に対応できます。",
+    "bindingTitle": "Binding Constraint Detection",
+    "bindingDesc": "シミュレーションが任意のレイヤー上限を超える可用性を予測した場合、FaultRay はそれをフラグ付けし、インフラストラクチャ改善のターゲットとなる制約レイヤーを特定します。"
+  },
+  "quickstart": {
+    "heading": "クイックスタート",
+    "subheading": "ゼロから可用性証明まで3ステップ",
+    "step1Title": "インストール",
+    "step2Title": "トポロジを定義",
+    "step3Title": "分析を実行"
+  },
+  "pricing": {
+    "heading": "料金プラン",
+    "subheading": "無料で開始。成長に合わせてスケール。",
+    "perMonth": "/月",
+    "mostPopular": "最も人気",
+    "featureComparison": "機能比較",
+    "plans": [
+      {
+        "name": "Free",
+        "desc": "Chaos Engineering を始める個人エンジニアに最適。",
+        "cta": "無料で始める"
+      },
+      {
+        "name": "Pro",
+        "desc": "DORA Compliance レポートとより高い制限が必要なチーム向け。",
+        "cta": "Pro を始める"
+      },
+      {
+        "name": "Business",
+        "desc": "無制限アクセス、SSO、専用サポートが必要なエンタープライズ向け。",
+        "cta": "お問い合わせ"
+      }
+    ]
+  },
+  "footer": {
+    "tagline": "ゼロリスク・インフラストラクチャ Chaos Engineering。可用性上限を数学的に証明。",
+    "madeIn": "Made in Tokyo",
+    "product": "プロダクト",
+    "resources": "リソース",
+    "legal": "法的情報",
+    "copyright": "© 2026 FaultRay. BSL 1.1 (Business Source License) に基づくオープンソース。"
+  },
+  "languageSwitcher": {
+    "label": "言語"
+  }
+}
