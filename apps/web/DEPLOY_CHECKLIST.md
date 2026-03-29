@@ -80,3 +80,4 @@
 - [ ] Stripe Checkout → 決済完了 → Webhook → DB更新
 - [ ] Customer Portal → プラン変更/解約
 - [ ] サンドボックスで全フローをテスト済み
+// redeploy 1774827263
