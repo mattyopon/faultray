@@ -109,7 +109,194 @@ _KNOWN_MODULES: list[str] = [
     "agent_cmd",
     "governance_cmd",
     "iac_cmd",
+    "start_cmd",
+    "badge_cmd",
 ]
+
+
+# ---------------------------------------------------------------------------
+# rich_help_panel mapping — groups commands into categories in --help output.
+# Keys are the canonical CLI command names (as shown in --help).
+# Any command not listed here falls into the default (ungrouped) section.
+# ---------------------------------------------------------------------------
+_HELP_PANELS: dict[str, str] = {
+    # --- Getting Started ---
+    "start": "🚀 Getting Started",
+    "demo": "🚀 Getting Started",
+    "quickstart": "🚀 Getting Started",
+    "init": "🚀 Getting Started",
+    # --- Discovery & Import ---
+    "scan": "🔍 Discovery & Import",
+    "load": "🔍 Discovery & Import",
+    "show": "🔍 Discovery & Import",
+    "tf-import": "🔍 Discovery & Import",
+    "tf-plan": "🔍 Discovery & Import",
+    "tf-check": "🔍 Discovery & Import",
+    "import-metrics": "🔍 Discovery & Import",
+    "calibrate": "🔍 Discovery & Import",
+    # --- Simulation ---
+    "simulate": "🎯 Simulation",
+    "dynamic": "🎯 Simulation",
+    "monte-carlo": "🎯 Simulation",
+    "ops-sim": "🎯 Simulation",
+    "whatif": "🎯 Simulation",
+    "capacity": "🎯 Simulation",
+    "chaos-monkey": "🎯 Simulation",
+    "fuzz": "🎯 Simulation",
+    "gameday": "🎯 Simulation",
+    "dr": "🎯 Simulation",
+    "bayesian": "🎯 Simulation",
+    "markov": "🎯 Simulation",
+    # --- Compliance & Governance ---
+    "dora": "📋 Compliance & Governance",
+    "compliance": "📋 Compliance & Governance",
+    "compliance-monitor": "📋 Compliance & Governance",
+    "governance": "📋 Compliance & Governance",
+    "evidence": "📋 Compliance & Governance",
+    "contract-validate": "📋 Compliance & Governance",
+    "contract-generate": "📋 Compliance & Governance",
+    "contract-diff": "📋 Compliance & Governance",
+    "sre-maturity": "📋 Compliance & Governance",
+    # --- Analysis & Reports ---
+    "analyze": "📊 Analysis & Reports",
+    "report": "📊 Analysis & Reports",
+    "executive": "📊 Analysis & Reports",
+    "cost": "📊 Analysis & Reports",
+    "cost-report": "📊 Analysis & Reports",
+    "cost-optimize": "📊 Analysis & Reports",
+    "cost-attribution": "📊 Analysis & Reports",
+    "financial": "📊 Analysis & Reports",
+    "risk": "📊 Analysis & Reports",
+    "heatmap": "📊 Analysis & Reports",
+    "score-explain": "📊 Analysis & Reports",
+    "benchmark": "📊 Analysis & Reports",
+    "anomaly": "📊 Analysis & Reports",
+    "antipatterns": "📊 Analysis & Reports",
+    "fmea": "📊 Analysis & Reports",
+    "predict": "📊 Analysis & Reports",
+    "evaluate": "📊 Analysis & Reports",
+    # --- Infrastructure as Code ---
+    "iac-export": "🏗️ Infrastructure as Code",
+    "iac-gen": "🏗️ Infrastructure as Code",
+    "export": "🏗️ Infrastructure as Code",
+    "fix": "🏗️ Infrastructure as Code",
+    "auto-fix": "🏗️ Infrastructure as Code",
+    # --- Security ---
+    "security": "🔒 Security",
+    "attack-surface": "🔒 Security",
+    "supply-chain": "🔒 Security",
+    "feed-update": "🔒 Security",
+    "feed-list": "🔒 Security",
+    "feed-sources": "🔒 Security",
+    "feed-clear": "🔒 Security",
+    # --- Operations & Monitoring ---
+    "daemon": "📈 Operations & Monitoring",
+    "history": "📈 Operations & Monitoring",
+    "timeline": "📈 Operations & Monitoring",
+    "drift": "📈 Operations & Monitoring",
+    "diff": "📈 Operations & Monitoring",
+    "topo-diff": "📈 Operations & Monitoring",
+    "compare-envs": "📈 Operations & Monitoring",
+    "env-compare": "📈 Operations & Monitoring",
+    "canary-compare": "📈 Operations & Monitoring",
+    "ab-test": "📈 Operations & Monitoring",
+    "velocity": "📈 Operations & Monitoring",
+    "leaderboard": "📈 Operations & Monitoring",
+    "dora-report": "📈 Operations & Monitoring",
+    # --- AI Agent ---
+    "agent": "🤖 AI Agent",
+    "nl": "🤖 AI Agent",
+    "ask": "🤖 AI Agent",
+    "advise": "🤖 AI Agent",
+    "twin": "🤖 AI Agent",
+    # --- SLA & Contracts ---
+    "sla-validate": "📝 SLA & Contracts",
+    "sla-prove": "📝 SLA & Contracts",
+    "sla-improve": "📝 SLA & Contracts",
+    "slo-budget": "📝 SLA & Contracts",
+    "budget": "📝 SLA & Contracts",
+    # --- Web & API ---
+    "serve": "🌐 Web & API",
+    # --- Utilities ---
+    "config": "🔧 Utilities",
+    "plugin": "🔧 Utilities",
+    "template": "🔧 Utilities",
+    "team": "🔧 Utilities",
+    "gate": "🔧 Utilities",
+    "graph-export": "🔧 Utilities",
+    "deps": "🔧 Utilities",
+    "dna": "🔧 Utilities",
+    "genome": "🔧 Utilities",
+    "carbon": "🔧 Utilities",
+    "marketplace": "🔧 Utilities",
+    "replay": "🔧 Utilities",
+    "replay-timeline": "🔧 Utilities",
+    "calendar": "🔧 Utilities",
+    "runbook": "🔧 Utilities",
+    "postmortem-generate": "🔧 Utilities",
+    "postmortem-list": "🔧 Utilities",
+    "postmortem-summary": "🔧 Utilities",
+    "git-track": "🔧 Utilities",
+    "war-room": "🔧 Utilities",
+    "badge": "🔧 Utilities",
+    "score-custom": "🔧 Utilities",
+    "correlate": "🔧 Utilities",
+    "autoscale": "🔧 Utilities",
+    "backtest": "🔧 Utilities",
+    "plan": "🔧 Utilities",
+    "overmind": "🔧 Utilities",
+    "resilience-hub": "🔧 Utilities",
+    "optimize": "🔧 Utilities",
+}
+
+
+def _apply_help_panels() -> None:
+    """Set ``rich_help_panel`` on all registered commands and groups.
+
+    Handles both ``registered_commands`` (plain ``@app.command()`` entries)
+    and ``registered_groups`` (``app.add_typer()`` sub-apps).  Called at the
+    end of ``_register_commands()`` so every command that has been loaded gets
+    its panel assigned before Typer builds the Click tree.
+    """
+    from faultray.cli.main import app as _app
+
+    for cmd_info in _app.registered_commands:
+        # Derive the canonical CLI name the same way Typer does:
+        # use explicit ``name`` if set, otherwise convert the callback function
+        # name (underscores → hyphens, lowercase).
+        if cmd_info.name is not None:
+            canonical = cmd_info.name
+        elif cmd_info.callback is not None:
+            canonical = cmd_info.callback.__name__.replace("_", "-").lower()
+        else:
+            continue
+
+        panel = _HELP_PANELS.get(canonical)
+        if panel is not None:
+            cmd_info.rich_help_panel = panel
+
+    # Also handle sub-apps registered via app.add_typer() — these appear in
+    # ``registered_groups`` as TyperInfo objects with a ``name`` attribute.
+    for group_info in _app.registered_groups:
+        raw_name = group_info.name
+        # name may itself be a DefaultPlaceholder when no explicit name given
+        if hasattr(raw_name, "value"):
+            raw_name = raw_name.value  # type: ignore[union-attr]
+
+        # Fallback: when add_typer() was called without name=, the name lives
+        # inside the sub-app's own TyperInfo (e.g. typer.Typer(name="...")).
+        if not isinstance(raw_name, str) and group_info.typer_instance is not None:
+            inner_name = group_info.typer_instance.info.name
+            if hasattr(inner_name, "value"):
+                inner_name = inner_name.value  # type: ignore[union-attr]
+            raw_name = inner_name
+
+        if not isinstance(raw_name, str):
+            continue
+
+        panel = _HELP_PANELS.get(raw_name)
+        if panel is not None:
+            group_info.rich_help_panel = panel
 
 
 def _register_commands() -> None:
@@ -149,6 +336,9 @@ def _register_commands() -> None:
                 module_name,
                 exc_info=True,
             )
+
+    # Apply rich_help_panel groupings after all commands are registered.
+    _apply_help_panels()
 
 
 # ---------------------------------------------------------------------------

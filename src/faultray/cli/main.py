@@ -38,7 +38,8 @@ app = typer.Typer(
     name="faultray",
     cls=_ArgCapturingGroup,
     help="FaultRay — Zero-risk infrastructure chaos engineering simulator",
-    no_args_is_help=True,
+    no_args_is_help=False,
+    invoke_without_command=True,
 )
 console = Console()
 
@@ -70,8 +71,9 @@ def _tier_banner() -> str:
     return f"FaultRay v{__version__} [{label}]"
 
 
-@app.callback()
+@app.callback(invoke_without_command=True)
 def main(
+    ctx: typer.Context,
     version: bool = typer.Option(
         False, "--version", "-V", callback=_version_callback, is_eager=True,
         help="Show version and exit.",
@@ -96,6 +98,11 @@ def main(
 
         level = "DEBUG" if debug else "INFO"
         setup_logging(level=level)
+
+    # When invoked with no subcommand, launch the interactive start wizard.
+    if ctx.invoked_subcommand is None:
+        from faultray.cli.start_cmd import start
+        start()
 
 
 def _print_dynamic_results(results: list, con: Console) -> None:
