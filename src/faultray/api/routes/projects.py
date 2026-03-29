@@ -11,7 +11,7 @@ import logging
 from fastapi import APIRouter, Depends, Request
 from fastapi.responses import JSONResponse
 
-from faultray.api.server import _optional_user, _require_permission
+from faultray.api.routes._shared import _optional_user, _require_permission
 
 logger = logging.getLogger(__name__)
 

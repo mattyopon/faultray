@@ -14,7 +14,7 @@ from faultray.api.routes._shared import (
     get_graph,
     templates,
 )
-from faultray.api.server import _require_permission
+from faultray.api.routes._shared import _require_permission
 
 logger = logging.getLogger(__name__)
 

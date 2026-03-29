@@ -18,7 +18,7 @@ from faultray.api.routes._shared import (
     set_last_report,
     templates,
 )
-from faultray.api.server import _require_permission
+from faultray.api.routes._shared import _require_permission
 from faultray.simulator.engine import SimulationEngine
 
 logger = logging.getLogger(__name__)
