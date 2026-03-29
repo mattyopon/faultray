@@ -62,6 +62,23 @@ export async function proxy(request: NextRequest) {
     }
   }
 
+  // If locale-prefixed app route (e.g. /en/login, /ja/pricing), redirect to non-prefixed version
+  if (pathnameHasLocale) {
+    const appPaths = ["/login", "/dashboard", "/simulate", "/results", "/suggestions", "/settings", "/pricing"];
+    let strippedPath = pathname;
+    for (const locale of locales) {
+      if (pathname.startsWith(`/${locale}/`)) {
+        strippedPath = pathname.slice(locale.length + 1);
+        break;
+      }
+    }
+    if (appPaths.some((path) => strippedPath === path || strippedPath.startsWith(path + "/"))) {
+      const url = request.nextUrl.clone();
+      url.pathname = strippedPath;
+      return NextResponse.redirect(url);
+    }
+  }
+
   // Supabase auth handling
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
