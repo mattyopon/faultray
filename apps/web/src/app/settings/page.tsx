@@ -119,21 +119,20 @@ export default function SettingsPage() {
   const [planFeedback, setPlanFeedback] = useState<{ type: "success" | "error"; message: string } | null>(null);
 
   async function handlePlanSwitch(plan: string) {
-    if (!user) return;
+    if (!user?.email) return;
     setSwitchingPlan(true);
     setPlanFeedback(null);
     try {
-      const { createClient } = await import("@/lib/supabase/client");
-      const supabase = createClient();
-      const { error } = await supabase
-        .from("profiles")
-        .update({ plan })
-        .eq("id", user.id);
-      if (error) {
-        setPlanFeedback({ type: "error", message: error.message || "Failed to update plan" });
+      const res = await fetch("/api/health", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "switch-plan", email: user.email, plan }),
+      });
+      const data = await res.json();
+      if (data.error) {
+        setPlanFeedback({ type: "error", message: data.error });
         return;
       }
-      // Re-fetch profile to confirm the change
       await fetchProfile();
       setPlanFeedback({
         type: "success",
