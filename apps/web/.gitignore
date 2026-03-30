@@ -47,3 +47,7 @@ next-env.d.ts
 # CLAUDE
 CLAUDE.md
 AGENTS.md
+api/__pycache__/
+__pycache__/
+tests/screenshots/
+tests/e2e_buttons.py
