@@ -100,7 +100,7 @@ export default function SettingsPage() {
       // Supabase not configured
     }
     try {
-      const res = await fetch("/api/admin-check", {
+      const res = await fetch("/api/health", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email: user.email }),
