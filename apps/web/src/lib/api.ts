@@ -80,6 +80,194 @@ export interface CloudSimulationResult extends SimulationResult {
   scan_summary: ScanSummary;
 }
 
+export interface HeatmapComponent {
+  id: string;
+  name: string;
+  type: string;
+  risk_score: number;
+  category: string;
+}
+
+export interface HeatmapData {
+  components: HeatmapComponent[];
+  categories: string[];
+  max_risk: number;
+}
+
+export interface WhatIfResult {
+  baseline: { overall_score: number; availability_estimate: string; nines: number };
+  modified: { overall_score: number; nines: number };
+  delta: { score: number; direction: string };
+  component_id: string;
+  parameter: string;
+  original_value: number;
+  new_value: number;
+  available_parameters: string[];
+}
+
+export interface ScoreLayer {
+  name: string;
+  score: number;
+  weight: number;
+  weighted_score: number;
+  factors: Array<{ name: string; score: number; impact: string }>;
+}
+
+export interface ScoreExplainData {
+  overall_score: number;
+  layers: ScoreLayer[];
+  top_detractors: Array<{ factor: string; layer: string; score: number; potential_gain: number }>;
+}
+
+export interface CostAnalysis {
+  current: { nines: number; downtime_hours_per_year: number; annual_cost: number };
+  target: { nines: number; downtime_hours_per_year: number; annual_cost: number };
+  potential_savings: number;
+  revenue_per_hour: number;
+  industry: string;
+  improvements: Array<{
+    action: string;
+    cost: number;
+    score_gain: number;
+    nines_gain: number;
+    annual_savings: number;
+    roi_percent: number;
+    payback_days: number;
+  }>;
+}
+
+export interface AttackSurfaceData {
+  summary: {
+    total_components: number;
+    external_facing: number;
+    internal_only: number;
+    risk_level: string;
+    attack_vectors: number;
+  };
+  external_components: Array<{
+    id: string;
+    name: string;
+    exposure: string;
+    ports: number[];
+    protocols: string[];
+    risk_score: number;
+    vulnerabilities: Array<{ type: string; severity: string; mitigation: string }>;
+  }>;
+  internal_components: Array<{ id: string; name: string; risk_score: number }>;
+  recommendations: string[];
+}
+
+export interface FmeaData {
+  analysis_date: string;
+  total_failure_modes: number;
+  critical_rpn_threshold: number;
+  high_rpn_count: number;
+  failure_modes: Array<{
+    id: string;
+    component: string;
+    failure_mode: string;
+    effect: string;
+    severity: number;
+    occurrence: number;
+    detection: number;
+    rpn: number;
+    recommended_action: string;
+    status: string;
+  }>;
+  rpn_distribution: { critical: number; high: number; medium: number; low: number };
+}
+
+export interface ChatResponse {
+  response: string;
+  sources: string[];
+  suggested_actions: Array<{ label: string; href: string }>;
+}
+
+export interface ExecutiveReport {
+  title: string;
+  generated_at: string;
+  executive_summary: {
+    overall_score: number;
+    availability_estimate: string;
+    risk_level: string;
+    total_components: number;
+    total_scenarios_tested: number;
+    critical_issues: number;
+    recommendations_count: number;
+  };
+  key_findings: Array<{
+    severity: string;
+    finding: string;
+    impact: string;
+    recommendation: string;
+  }>;
+  availability_breakdown: {
+    hardware_nines: number;
+    software_nines: number;
+    theoretical_nines: number;
+    bottleneck: string;
+  };
+  compliance_status: Record<string, { status: string; score: number }>;
+  improvement_roadmap: Array<{
+    priority: number;
+    action: string;
+    effort: string;
+    impact: string;
+    timeline: string;
+  }>;
+}
+
+export interface IncidentTimeline {
+  time: string;
+  event: string;
+  component: string;
+  type: string;
+}
+
+export interface Incident {
+  id: string;
+  title: string;
+  severity: string;
+  start_time: string;
+  end_time: string;
+  duration_minutes: number;
+  affected_components: string[];
+  root_cause: string;
+  timeline: IncidentTimeline[];
+}
+
+export interface IncidentsData {
+  incidents: Incident[];
+  summary: {
+    total_incidents: number;
+    critical: number;
+    high: number;
+    medium: number;
+    average_duration_minutes: number;
+    most_affected_component: string;
+  };
+}
+
+export interface BenchmarkCategory {
+  name: string;
+  your_score: number;
+  industry_avg: number;
+  top_10: number;
+}
+
+export interface BenchmarkData {
+  industry: string;
+  industry_id: string;
+  your_score: number;
+  industry_average: number;
+  industry_top_10: number;
+  industry_bottom_10: number;
+  percentile: number;
+  categories: BenchmarkCategory[];
+  regulatory_requirements: string[];
+  typical_sla: string;
+}
+
 export const api = {
   simulate: (data: { topology?: string; topology_yaml?: string; sample?: string }, token?: string) =>
     apiFetch<SimulationResult>("/api/simulate", {
@@ -144,4 +332,51 @@ export const api = {
 
   getAnalysis: (token?: string) =>
     apiFetch<Record<string, unknown>>("/api/v1/analyze", { token }),
+
+  // New API methods
+  getHeatmap: (topologyYaml?: string, token?: string) =>
+    apiFetch<HeatmapData>("/api/heatmap", {
+      method: "POST",
+      body: topologyYaml ? { topology_yaml: topologyYaml } : {},
+      token,
+    }),
+
+  whatIf: (componentId: string, parameter: string, value: number, token?: string) =>
+    apiFetch<WhatIfResult>("/api/whatif", {
+      method: "POST",
+      body: { component_id: componentId, parameter, value },
+      token,
+    }),
+
+  getScoreExplain: (token?: string) =>
+    apiFetch<ScoreExplainData>("/api/score-explain", { token }),
+
+  analyzeCost: (revenuePerHour: number, industry: string, token?: string) =>
+    apiFetch<CostAnalysis>("/api/cost-analyze", {
+      method: "POST",
+      body: { revenue_per_hour: revenuePerHour, industry },
+      token,
+    }),
+
+  getAttackSurface: (token?: string) =>
+    apiFetch<AttackSurfaceData>("/api/attack-surface", { token }),
+
+  getFmea: (token?: string) =>
+    apiFetch<FmeaData>("/api/fmea", { token }),
+
+  chat: (message: string, token?: string) =>
+    apiFetch<ChatResponse>("/api/chat", {
+      method: "POST",
+      body: { message },
+      token,
+    }),
+
+  getExecutiveReport: (format: "json" | "html" = "json", token?: string) =>
+    apiFetch<ExecutiveReport>(`/api/report-executive?format=${format}`, { token }),
+
+  getIncidents: (token?: string) =>
+    apiFetch<IncidentsData>("/api/incidents", { token }),
+
+  getBenchmark: (industry: string, token?: string) =>
+    apiFetch<BenchmarkData>(`/api/benchmark/${industry}`, { token }),
 };
