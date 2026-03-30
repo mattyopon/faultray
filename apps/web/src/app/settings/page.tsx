@@ -15,9 +15,11 @@ import {
   Trash2,
   Plus,
   AlertTriangle,
+  Shield,
+  Clock,
 } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
 
 const LANGUAGES = [
@@ -63,6 +65,61 @@ export default function SettingsPage() {
     scoreDegradation: true,
     weeklySummary: false,
   });
+
+  // Admin plan switch
+  const adminEmails = (process.env.NEXT_PUBLIC_ADMIN_EMAILS || "").split(",").map((e) => e.trim()).filter(Boolean);
+  const isAdmin = !!user?.email && adminEmails.includes(user.email);
+  const [currentPlan, setCurrentPlan] = useState<string>("free");
+  const [switchingPlan, setSwitchingPlan] = useState(false);
+
+  // Trial state
+  const [trialEndsAt, setTrialEndsAt] = useState<string | null>(null);
+  const trialDaysLeft = trialEndsAt
+    ? Math.max(0, Math.ceil((new Date(trialEndsAt).getTime() - Date.now()) / (1000 * 60 * 60 * 24)))
+    : 0;
+  const isTrialActive = trialEndsAt ? new Date(trialEndsAt).getTime() > Date.now() : false;
+
+  // Fetch profile (plan + trial)
+  const fetchProfile = useCallback(async () => {
+    if (!user) return;
+    try {
+      const { createClient } = await import("@/lib/supabase/client");
+      const supabase = createClient();
+      const { data } = await supabase
+        .from("profiles")
+        .select("plan, trial_ends_at")
+        .eq("id", user.id)
+        .single();
+      if (data) {
+        setCurrentPlan(data.plan || "free");
+        setTrialEndsAt(data.trial_ends_at || null);
+      }
+    } catch {
+      // Supabase not configured or profiles table doesn't exist
+    }
+  }, [user]);
+
+  useEffect(() => {
+    fetchProfile();
+  }, [fetchProfile]);
+
+  async function handlePlanSwitch(plan: string) {
+    if (!user) return;
+    setSwitchingPlan(true);
+    try {
+      const { createClient } = await import("@/lib/supabase/client");
+      const supabase = createClient();
+      await supabase
+        .from("profiles")
+        .update({ plan })
+        .eq("id", user.id);
+      setCurrentPlan(plan);
+    } catch {
+      alert("Failed to switch plan");
+    } finally {
+      setSwitchingPlan(false);
+    }
+  }
 
   // Delete account confirmation
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
@@ -161,12 +218,21 @@ export default function SettingsPage() {
             <CreditCard size={20} className="text-[#FFD700]" />
             <h2 className="text-lg font-bold">Subscription</h2>
           </div>
-          <Badge variant="gold">Free Plan</Badge>
+          <Badge variant="gold">{currentPlan.charAt(0).toUpperCase() + currentPlan.slice(1)} Plan</Badge>
         </div>
+        {/* Trial banner */}
+        {isTrialActive && (
+          <div className="flex items-center gap-2 px-4 py-3 mb-4 rounded-lg bg-[#FFD700]/10 border border-[#FFD700]/20">
+            <Clock size={16} className="text-[#FFD700]" />
+            <span className="text-sm text-[#FFD700] font-medium">
+              Pro Trial: {trialDaysLeft} day{trialDaysLeft !== 1 ? "s" : ""} remaining
+            </span>
+          </div>
+        )}
         <div className="space-y-4 mb-6">
           <div className="grid grid-cols-[120px_1fr] items-center gap-4">
             <span className="text-sm text-[#64748b]">Plan</span>
-            <span className="text-sm">Free</span>
+            <span className="text-sm">{currentPlan.charAt(0).toUpperCase() + currentPlan.slice(1)}{isTrialActive ? " (Trial)" : ""}</span>
           </div>
           <div className="grid grid-cols-[120px_1fr] items-center gap-4">
             <span className="text-sm text-[#64748b]">Simulations</span>
@@ -189,6 +255,31 @@ export default function SettingsPage() {
             <CreditCard size={14} /> Upgrade to Pro
           </Button>
         </Link>
+        {/* Admin plan switch */}
+        {isAdmin && (
+          <div className="mt-6 pt-6 border-t border-[#1e293b]">
+            <div className="flex items-center gap-2 mb-3">
+              <Shield size={16} className="text-red-400" />
+              <span className="text-sm font-semibold text-red-400">Admin: Switch Plan</span>
+            </div>
+            <div className="flex gap-2">
+              {(["free", "pro", "business"] as const).map((plan) => (
+                <button
+                  key={plan}
+                  disabled={switchingPlan || currentPlan === plan}
+                  onClick={() => handlePlanSwitch(plan)}
+                  className={`px-4 py-2 text-sm rounded-lg font-medium transition-all ${
+                    currentPlan === plan
+                      ? "bg-[#FFD700] text-[#0a0e1a]"
+                      : "border border-[#1e293b] text-[#94a3b8] hover:border-[#64748b] hover:text-white disabled:opacity-50"
+                  }`}
+                >
+                  {plan.charAt(0).toUpperCase() + plan.slice(1)}
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
       </Card>
 
       {/* API Keys */}

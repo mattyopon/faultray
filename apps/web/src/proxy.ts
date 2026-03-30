@@ -39,7 +39,26 @@ function getPreferredLocale(request: NextRequest): string {
   return defaultLocale;
 }
 
+function isAllowedIp(request: NextRequest): boolean {
+  const allowedIps = process.env.ALLOWED_IPS;
+  if (!allowedIps) return true; // No restriction if not configured
+
+  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL;
+  if (siteUrl === "https://faultray.com") return true; // Production — no restriction
+
+  const forwardedFor = request.headers.get("x-forwarded-for");
+  const clientIp = forwardedFor ? forwardedFor.split(",")[0].trim() : "";
+
+  const allowed = allowedIps.split(",").map((ip) => ip.trim());
+  return allowed.includes(clientIp);
+}
+
 export async function proxy(request: NextRequest) {
+  // Staging IP restriction
+  if (!isAllowedIp(request)) {
+    return new NextResponse("Forbidden", { status: 403 });
+  }
+
   const { pathname } = request.nextUrl;
 
   // Check if the pathname already has a locale prefix

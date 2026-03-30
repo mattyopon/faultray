@@ -17,9 +17,9 @@ const plans = [
   {
     name: "Pro", price: 299,
     desc: "For teams that need DORA compliance reports and higher limits.",
-    features: ["100 simulations / month", "Up to 50 components", "Everything in Free", "DORA report export (PDF)", "AI-powered analysis", "Email support (24h)"],
+    features: ["14-day free trial", "100 simulations / month", "Up to 50 components", "Everything in Free", "DORA report export (PDF)", "AI-powered analysis", "Email support (24h)"],
     disabledFeatures: ["Insurance API", "Custom SSO"],
-    cta: "Start Pro", ctaHref: "/login?plan=pro", popular: true,
+    cta: "Start Free Trial", ctaHref: "/login?plan=pro", popular: true,
     stripePlan: "pro" as "pro" | "business" | null,
   },
   {
@@ -73,6 +73,9 @@ export default function PricingPage() {
       <div className="text-center mb-16">
         <h1 className="text-[clamp(1.75rem,4vw,2.5rem)] font-bold tracking-tight mb-3">Pricing</h1>
         <p className="text-lg text-[#94a3b8]">Start free. Scale as you grow.</p>
+        <div className="mt-4 inline-flex items-center gap-2 px-4 py-2 rounded-full bg-[#FFD700]/10 border border-[#FFD700]/20">
+          <span className="text-sm font-semibold text-[#FFD700]">14-day free trial on Pro</span>
+        </div>
       </div>
 
       {/* Plans */}
