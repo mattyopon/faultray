@@ -23,6 +23,7 @@ import {
   Trophy,
   Bot,
   Settings,
+  HelpCircle,
   Menu,
   X,
   LogOut,
@@ -84,6 +85,7 @@ function getNavGroups(t: Record<string, string>) {
       label: t.account,
       items: [
         { href: "/settings", label: t.settings, icon: Settings },
+        { href: "/help", label: t.help, icon: HelpCircle },
       ],
     },
   ];

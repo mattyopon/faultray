@@ -4,7 +4,21 @@ import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { useEffect, useState, useCallback } from "react";
 import { api } from "@/lib/api";
-import { Network, ArrowRight, Loader2, RefreshCw, AlertTriangle, Shield, Lightbulb, X } from "lucide-react";
+import {
+  Network,
+  ArrowRight,
+  Loader2,
+  RefreshCw,
+  AlertTriangle,
+  Lightbulb,
+  X,
+  Database,
+  Server,
+  Globe,
+  HardDrive,
+  MessageSquare,
+  Info,
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useLocale } from "@/lib/useLocale";
 import type { Locale } from "@/i18n/config";
@@ -70,16 +84,32 @@ const DEMO_RISK: Record<string, NodeRiskData> = {
   cache: { risk_score: 55, failure_scenarios: ["Memory exhaustion causes eviction storm", "Network partition causes split-brain"], suggestions: ["Set memory limits and eviction policies", "Deploy across multiple AZs"] },
 };
 
-const TYPE_LABELS: Record<string, string> = {
-  load_balancer: "LB",
-  app_server: "APP",
-  database: "DB",
-  cache: "CACHE",
-  queue: "QUEUE",
-  dns: "DNS",
-  storage: "STORE",
-  custom: "SVC",
+// Component type config: icon component, color, label
+const TYPE_CONFIG: Record<string, { color: string; bgColor: string; label: string }> = {
+  database: { color: "#f97316", bgColor: "#f9731615", label: "DB" },
+  app_server: { color: "#22c55e", bgColor: "#22c55e15", label: "APP" },
+  load_balancer: { color: "#3b82f6", bgColor: "#3b82f615", label: "LB" },
+  cache: { color: "#ef4444", bgColor: "#ef444415", label: "CACHE" },
+  queue: { color: "#a855f7", bgColor: "#a855f715", label: "QUEUE" },
+  dns: { color: "#06b6d4", bgColor: "#06b6d415", label: "DNS" },
+  storage: { color: "#64748b", bgColor: "#64748b15", label: "STORE" },
+  custom: { color: "#94a3b8", bgColor: "#94a3b815", label: "SVC" },
 };
+
+function getTypeConfig(type: string) {
+  return TYPE_CONFIG[type] || TYPE_CONFIG.custom;
+}
+
+function TypeIcon({ type, size = 16 }: { type: string; size?: number }) {
+  const props = { size, className: "shrink-0" };
+  switch (type) {
+    case "database": return <Database {...props} />;
+    case "cache": return <HardDrive {...props} />;
+    case "load_balancer": return <Globe {...props} />;
+    case "queue": return <MessageSquare {...props} />;
+    default: return <Server {...props} />;
+  }
+}
 
 // Risk-based color (green -> yellow -> red)
 function riskColor(score: number): string {
@@ -152,8 +182,8 @@ function layoutNodes(nodes: GraphNode[], edges: GraphEdge[]) {
   }
 
   const positions: Record<string, { x: number; y: number }> = {};
-  const svgWidth = 900;
-  const layerHeight = 130;
+  const svgWidth = 960;
+  const layerHeight = 150;
 
   for (let i = 0; i < layers.length; i++) {
     const layer = layers[i];
@@ -161,18 +191,19 @@ function layoutNodes(nodes: GraphNode[], edges: GraphEdge[]) {
     for (let j = 0; j < layer.length; j++) {
       positions[layer[j]] = {
         x: spacing * (j + 1),
-        y: 70 + i * layerHeight,
+        y: 80 + i * layerHeight,
       };
     }
   }
 
-  return { positions, height: 70 + layers.length * layerHeight + 50 };
+  return { positions, height: 80 + layers.length * layerHeight + 60 };
 }
 
 export default function TopologyPage() {
   const [data, setData] = useState<GraphData>(DEMO_DATA);
   const [loading, setLoading] = useState(true);
   const [selectedNode, setSelectedNode] = useState<string | null>(null);
+  const [hoveredNode, setHoveredNode] = useState<string | null>(null);
   const [hoveredEdge, setHoveredEdge] = useState<number | null>(null);
   const locale = useLocale();
   const t = appDict.topology[locale] ?? appDict.topology.en;
@@ -201,9 +232,20 @@ export default function TopologyPage() {
   const selected = selectedNode ? nodeMap[selectedNode] : null;
   const selectedRisk = selectedNode ? DEMO_RISK[selectedNode] : null;
 
+  // Find connected edges for highlighting
+  const connectedEdges = new Set<number>();
+  if (hoveredNode || selectedNode) {
+    const targetId = hoveredNode || selectedNode;
+    data.edges.forEach((e, i) => {
+      if (e.source === targetId || e.target === targetId) {
+        connectedEdges.add(i);
+      }
+    });
+  }
+
   return (
     <div className="max-w-[1200px] mx-auto px-6 py-10">
-      <div className="flex items-center justify-between mb-10">
+      <div className="flex items-center justify-between mb-6">
         <div>
           <h1 className="text-2xl font-bold mb-1 flex items-center gap-3">
             <Network size={24} className="text-[#FFD700]" />
@@ -217,28 +259,81 @@ export default function TopologyPage() {
         </Button>
       </div>
 
+      {/* Description banner */}
+      <div className="flex items-start gap-3 p-4 mb-6 rounded-xl bg-[#1e293b]/40 border border-[#1e293b]">
+        <Info size={18} className="text-[#FFD700] mt-0.5 shrink-0" />
+        <p className="text-sm text-[#94a3b8] leading-relaxed">
+          {t.graphDescription}
+        </p>
+      </div>
+
       {loading ? (
         <Card className="flex items-center justify-center py-20">
           <Loader2 size={24} className="animate-spin text-[#FFD700]" />
           <span className="ml-3 text-[#94a3b8]">{t.loading}</span>
         </Card>
       ) : (
-        <div className="grid lg:grid-cols-[1fr_320px] gap-6">
+        <div className="grid lg:grid-cols-[1fr_340px] gap-6">
           <Card className="p-4 overflow-auto">
-            <svg viewBox={`0 0 900 ${height}`} className="w-full" style={{ minHeight: 400 }}>
+            <svg viewBox={`0 0 960 ${height}`} className="w-full" style={{ minHeight: 450 }}>
+              <defs>
+                <marker id="arrow" viewBox="0 0 12 12" refX="12" refY="6" markerWidth="10" markerHeight="10" orient="auto">
+                  <path d="M 0 0 L 12 6 L 0 12 z" fill="#475569" />
+                </marker>
+                <marker id="arrow-active" viewBox="0 0 12 12" refX="12" refY="6" markerWidth="10" markerHeight="10" orient="auto">
+                  <path d="M 0 0 L 12 6 L 0 12 z" fill="#FFD700" />
+                </marker>
+                <marker id="arrow-connected" viewBox="0 0 12 12" refX="12" refY="6" markerWidth="10" markerHeight="10" orient="auto">
+                  <path d="M 0 0 L 12 6 L 0 12 z" fill="#94a3b8" />
+                </marker>
+                {/* Glow filter for high-risk nodes */}
+                <filter id="glow-red" x="-20%" y="-20%" width="140%" height="140%">
+                  <feGaussianBlur stdDeviation="4" result="blur" />
+                  <feFlood floodColor="#ef4444" floodOpacity="0.3" result="color" />
+                  <feComposite in="color" in2="blur" operator="in" result="glow" />
+                  <feMerge>
+                    <feMergeNode in="glow" />
+                    <feMergeNode in="SourceGraphic" />
+                  </feMerge>
+                </filter>
+              </defs>
+
               {/* Edges */}
               {data.edges.map((edge, i) => {
                 const from = positions[edge.source];
                 const to = positions[edge.target];
                 if (!from || !to) return null;
-                const dashArray =
-                  edge.type === "optional" ? "8,4" : edge.type === "async" ? "4,4" : "none";
+
+                const isRequires = edge.type === "requires" || !edge.type;
+                const isOptional = edge.type === "optional";
+                const isAsync = edge.type === "async";
+
+                const dashArray = isOptional ? "10,5" : isAsync ? "5,5" : "none";
                 const isHovered = hoveredEdge === i;
+                const isConnected = connectedEdges.has(i);
+
+                const strokeColor = isHovered ? "#FFD700" : isConnected ? "#94a3b8" : "#334155";
+                const strokeWidth = isRequires
+                  ? (isHovered ? 3.5 : isConnected ? 2.5 : 2.5)
+                  : (isHovered ? 3 : isConnected ? 2 : 1.5);
+
+                const markerEnd = isHovered
+                  ? "url(#arrow-active)"
+                  : isConnected
+                    ? "url(#arrow-connected)"
+                    : "url(#arrow)";
+
                 const edgeLabel = edge.type === "requires"
-                  ? (locale === "ja" ? "必須" : "requires")
+                  ? t.requires
                   : edge.type === "optional"
-                    ? (locale === "ja" ? "任意" : "optional")
-                    : (locale === "ja" ? "非同期" : "async");
+                    ? t.optional
+                    : t.async;
+
+                // Calculate line endpoints to stop at node card edges
+                const nodeHeight = 56;
+                const fromY = from.y + nodeHeight / 2;
+                const toY = to.y - nodeHeight / 2;
+
                 return (
                   <g
                     key={i}
@@ -249,40 +344,41 @@ export default function TopologyPage() {
                     {/* Wider invisible hit area */}
                     <line
                       x1={from.x}
-                      y1={from.y + 22}
+                      y1={fromY}
                       x2={to.x}
-                      y2={to.y - 22}
+                      y2={toY}
                       stroke="transparent"
-                      strokeWidth={16}
+                      strokeWidth={20}
                     />
                     <line
                       x1={from.x}
-                      y1={from.y + 22}
+                      y1={fromY}
                       x2={to.x}
-                      y2={to.y - 22}
-                      stroke={isHovered ? "#FFD700" : "#334155"}
-                      strokeWidth={isHovered ? 2.5 : 2}
+                      y2={toY}
+                      stroke={strokeColor}
+                      strokeWidth={strokeWidth}
                       strokeDasharray={dashArray}
-                      markerEnd={isHovered ? "url(#arrow-active)" : "url(#arrow)"}
+                      markerEnd={markerEnd}
                       className="transition-all duration-200"
+                      strokeLinecap="round"
                     />
                     {isHovered && (
                       <>
                         <rect
-                          x={(from.x + to.x) / 2 - 36}
-                          y={(from.y + to.y) / 2 - 10}
-                          width={72}
-                          height={20}
-                          rx={4}
-                          fill="#0a0e1a"
+                          x={(from.x + to.x) / 2 - 44}
+                          y={(fromY + toY) / 2 - 12}
+                          width={88}
+                          height={24}
+                          rx={6}
+                          fill="#0f172a"
                           stroke="#FFD700"
                           strokeWidth={1}
                         />
                         <text
                           x={(from.x + to.x) / 2}
-                          y={(from.y + to.y) / 2 + 4}
+                          y={(fromY + toY) / 2 + 4}
                           textAnchor="middle"
-                          fontSize="10"
+                          fontSize="11"
                           fill="#FFD700"
                           fontWeight="600"
                         >
@@ -293,70 +389,164 @@ export default function TopologyPage() {
                   </g>
                 );
               })}
-              <defs>
-                <marker id="arrow" viewBox="0 0 10 10" refX="10" refY="5" markerWidth="6" markerHeight="6" orient="auto">
-                  <path d="M 0 0 L 10 5 L 0 10 z" fill="#334155" />
-                </marker>
-                <marker id="arrow-active" viewBox="0 0 10 10" refX="10" refY="5" markerWidth="6" markerHeight="6" orient="auto">
-                  <path d="M 0 0 L 10 5 L 0 10 z" fill="#FFD700" />
-                </marker>
-              </defs>
+
               {/* Nodes */}
               {data.nodes.map((node) => {
                 const pos = positions[node.id];
                 if (!pos) return null;
                 const risk = DEMO_RISK[node.id];
                 const score = risk?.risk_score ?? 0;
-                const nodeColor = riskColor(score);
-                const nodeBorder = riskBorderColor(score);
-                const nodeBg = riskBgColor(score);
+                const typeConf = getTypeConfig(node.type);
                 const isSelected = selectedNode === node.id;
-                // Calculate node width based on name length
-                const nodeWidth = Math.max(140, node.name.length * 8 + 60);
+                const isHovered = hoveredNode === node.id;
+
+                // Card dimensions
+                const cardWidth = 170;
+                const cardHeight = 56;
+                const cardX = pos.x - cardWidth / 2;
+                const cardY = pos.y - cardHeight / 2;
+
+                const isHighRisk = score >= 70;
+
                 return (
                   <g
                     key={node.id}
                     className="cursor-pointer"
                     onClick={() => setSelectedNode(isSelected ? null : node.id)}
+                    onMouseEnter={() => setHoveredNode(node.id)}
+                    onMouseLeave={() => setHoveredNode(null)}
+                    filter={isHighRisk ? "url(#glow-red)" : undefined}
                   >
-                    {/* Glow effect for high risk */}
-                    {score >= 70 && (
-                      <rect
-                        x={pos.x - nodeWidth / 2 - 3}
-                        y={pos.y - 23}
-                        width={nodeWidth + 6}
-                        height={46}
-                        rx={11}
-                        fill="none"
-                        stroke="#ef4444"
-                        strokeWidth={1}
-                        opacity={0.4}
-                        className="animate-pulse"
-                      />
-                    )}
+                    {/* Card background */}
                     <rect
-                      x={pos.x - nodeWidth / 2}
-                      y={pos.y - 20}
-                      width={nodeWidth}
-                      height={40}
-                      rx={8}
-                      fill={isSelected ? nodeBg : "#111827"}
-                      stroke={isSelected ? nodeColor : nodeBorder}
+                      x={cardX}
+                      y={cardY}
+                      width={cardWidth}
+                      height={cardHeight}
+                      rx={10}
+                      fill={isSelected ? "#1e293b" : isHovered ? "#151d2e" : "#111827"}
+                      stroke={isSelected ? typeConf.color : isHovered ? "#475569" : "#1e293b"}
                       strokeWidth={isSelected ? 2 : 1.5}
                     />
-                    {/* Risk score circle */}
-                    <circle cx={pos.x - nodeWidth / 2 + 18} cy={pos.y} r={12} fill={nodeColor + "20"} stroke={nodeColor} strokeWidth={1.5} />
-                    <text x={pos.x - nodeWidth / 2 + 18} y={pos.y + 4} textAnchor="middle" fontSize="8" fill={nodeColor} fontWeight="bold">
+
+                    {/* Type color indicator bar (left side) */}
+                    <rect
+                      x={cardX}
+                      y={cardY}
+                      width={4}
+                      height={cardHeight}
+                      rx={2}
+                      fill={typeConf.color}
+                    />
+                    {/* Fix corner: overlay rounded corners on left */}
+                    <rect
+                      x={cardX}
+                      y={cardY}
+                      width={10}
+                      height={cardHeight}
+                      rx={10}
+                      fill={isSelected ? "#1e293b" : isHovered ? "#151d2e" : "#111827"}
+                      stroke="none"
+                    />
+                    <rect
+                      x={cardX}
+                      y={cardY}
+                      width={5}
+                      height={cardHeight}
+                      fill={typeConf.color}
+                      clipPath={`inset(0 0 0 0 round 10px 0 0 10px)`}
+                    />
+                    {/* Simpler approach: just a colored left border */}
+                    <line
+                      x1={cardX + 1.5}
+                      y1={cardY + 10}
+                      x2={cardX + 1.5}
+                      y2={cardY + cardHeight - 10}
+                      stroke={typeConf.color}
+                      strokeWidth={3}
+                      strokeLinecap="round"
+                    />
+
+                    {/* Risk score badge (top right) */}
+                    <rect
+                      x={cardX + cardWidth - 38}
+                      y={cardY + 6}
+                      width={30}
+                      height={18}
+                      rx={9}
+                      fill={riskBgColor(score)}
+                      stroke={riskBorderColor(score)}
+                      strokeWidth={1}
+                    />
+                    <text
+                      x={cardX + cardWidth - 23}
+                      y={cardY + 19}
+                      textAnchor="middle"
+                      fontSize="10"
+                      fill={riskColor(score)}
+                      fontWeight="bold"
+                      fontFamily="monospace"
+                    >
                       {score}
                     </text>
-                    {/* Type label */}
-                    <text x={pos.x - nodeWidth / 2 + 38} y={pos.y - 4} textAnchor="start" fontSize="8" fill="#64748b" fontWeight="500">
-                      {TYPE_LABELS[node.type] || "?"}
+
+                    {/* Type badge */}
+                    <rect
+                      x={cardX + 12}
+                      y={cardY + 6}
+                      width={36}
+                      height={16}
+                      rx={4}
+                      fill={typeConf.bgColor}
+                    />
+                    <text
+                      x={cardX + 30}
+                      y={cardY + 17}
+                      textAnchor="middle"
+                      fontSize="8"
+                      fill={typeConf.color}
+                      fontWeight="700"
+                      letterSpacing="0.5"
+                    >
+                      {typeConf.label}
                     </text>
-                    {/* Full node name */}
-                    <text x={pos.x - nodeWidth / 2 + 38} y={pos.y + 9} textAnchor="start" fontSize="11" fill="#e2e8f0" fontWeight="500">
+
+                    {/* Node name - full display with wrapping */}
+                    <text
+                      x={cardX + 12}
+                      y={cardY + 38}
+                      textAnchor="start"
+                      fontSize="12"
+                      fill="#e2e8f0"
+                      fontWeight="600"
+                    >
                       {node.name}
                     </text>
+
+                    {/* Replicas indicator */}
+                    {node.replicas && (
+                      <>
+                        <circle
+                          cx={cardX + cardWidth - 23}
+                          cy={cardY + cardHeight - 12}
+                          r={8}
+                          fill="#1e293b"
+                          stroke="#334155"
+                          strokeWidth={1}
+                        />
+                        <text
+                          x={cardX + cardWidth - 23}
+                          y={cardY + cardHeight - 8}
+                          textAnchor="middle"
+                          fontSize="8"
+                          fill="#94a3b8"
+                          fontWeight="600"
+                          fontFamily="monospace"
+                        >
+                          x{node.replicas}
+                        </text>
+                      </>
+                    )}
                   </g>
                 );
               })}
@@ -365,6 +555,23 @@ export default function TopologyPage() {
 
           {/* Sidebar: Legend, Risk Legend, Details */}
           <div className="space-y-6">
+            {/* Component Type Legend */}
+            <Card>
+              <h3 className="text-sm font-semibold text-[#94a3b8] uppercase tracking-wider mb-4">{t.typeLegend}</h3>
+              <div className="space-y-2">
+                {Object.entries(TYPE_CONFIG).filter(([key]) =>
+                  data.nodes.some(n => n.type === key)
+                ).map(([key, conf]) => (
+                  <div key={key} className="flex items-center gap-3">
+                    <div className="w-3 h-3 rounded" style={{ backgroundColor: conf.color }} />
+                    <TypeIcon type={key} size={14} />
+                    <span className="text-sm text-[#e2e8f0]">{conf.label}</span>
+                    <span className="text-xs text-[#64748b]">{key.replace("_", " ")}</span>
+                  </div>
+                ))}
+              </div>
+            </Card>
+
             {/* Risk Color Legend */}
             <Card>
               <h3 className="text-sm font-semibold text-[#94a3b8] uppercase tracking-wider mb-4">{t.riskLegend}</h3>
@@ -388,16 +595,16 @@ export default function TopologyPage() {
               </div>
               <div className="mt-4 pt-4 border-t border-[#1e293b] space-y-2">
                 <div className="flex items-center gap-3">
-                  <div className="w-8 h-0 border-t-2 border-[#334155]" />
-                  <span className="text-xs text-[#64748b]">{t.requires}</span>
+                  <div className="w-8 h-0 border-t-[2.5px] border-[#475569]" />
+                  <span className="text-xs text-[#64748b]">{t.requires} ({t.edgeSolid})</span>
                 </div>
                 <div className="flex items-center gap-3">
-                  <div className="w-8 h-0 border-t-2 border-dashed border-[#334155]" />
-                  <span className="text-xs text-[#64748b]">{t.optional}</span>
+                  <div className="w-8 h-0 border-t-2 border-dashed border-[#475569]" />
+                  <span className="text-xs text-[#64748b]">{t.optional} ({t.edgeDashed})</span>
                 </div>
                 <div className="flex items-center gap-3">
-                  <div className="w-8 h-0 border-t-2 border-dotted border-[#334155]" />
-                  <span className="text-xs text-[#64748b]">{t.async}</span>
+                  <div className="w-8 h-0 border-t-2 border-dotted border-[#475569]" />
+                  <span className="text-xs text-[#64748b]">{t.async} ({t.edgeDotted})</span>
                 </div>
               </div>
             </Card>
@@ -409,15 +616,23 @@ export default function TopologyPage() {
                   <h3 className="text-sm font-semibold text-[#94a3b8] uppercase tracking-wider">
                     {t.componentDetails}
                   </h3>
-                  <button onClick={() => setSelectedNode(null)} className="text-[#64748b] hover:text-white">
+                  <button onClick={() => setSelectedNode(null)} className="text-[#64748b] hover:text-white transition-colors">
                     <X size={14} />
                   </button>
                 </div>
                 <div className="space-y-4">
                   <div>
-                    <p className="text-lg font-bold">{selected.name}</p>
-                    <div className="flex items-center gap-2 mt-1">
-                      <Badge variant="gold">{selected.type.replace("_", " ")}</Badge>
+                    <div className="flex items-center gap-2 mb-2">
+                      <TypeIcon type={selected.type} size={18} />
+                      <p className="text-lg font-bold">{selected.name}</p>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Badge
+                        variant="gold"
+                        style={{ backgroundColor: getTypeConfig(selected.type).bgColor, color: getTypeConfig(selected.type).color, borderColor: getTypeConfig(selected.type).color + "40" }}
+                      >
+                        {selected.type.replace("_", " ")}
+                      </Badge>
                       <Badge variant={selectedRisk.risk_score >= 70 ? "red" : selectedRisk.risk_score >= 50 ? "yellow" : "green"}>
                         {riskLabel(selectedRisk.risk_score, locale)}
                       </Badge>
@@ -492,7 +707,7 @@ export default function TopologyPage() {
             ) : (
               <Card>
                 <p className="text-sm text-[#64748b] text-center py-4">
-                  {locale === "ja" ? "ノードをクリックして詳細を表示" : "Click a node to view details"}
+                  {t.clickToViewDetails}
                 </p>
               </Card>
             )}

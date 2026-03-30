@@ -116,19 +116,34 @@ export default function SettingsPage() {
     fetchProfile();
   }, [fetchProfile]);
 
+  const [planFeedback, setPlanFeedback] = useState<{ type: "success" | "error"; message: string } | null>(null);
+
   async function handlePlanSwitch(plan: string) {
     if (!user) return;
     setSwitchingPlan(true);
+    setPlanFeedback(null);
     try {
       const { createClient } = await import("@/lib/supabase/client");
       const supabase = createClient();
-      await supabase
+      const { error } = await supabase
         .from("profiles")
         .update({ plan })
         .eq("id", user.id);
-      setCurrentPlan(plan);
+      if (error) {
+        setPlanFeedback({ type: "error", message: error.message || "Failed to update plan" });
+        return;
+      }
+      // Re-fetch profile to confirm the change
+      await fetchProfile();
+      setPlanFeedback({
+        type: "success",
+        message: locale === "ja"
+          ? `プランを ${plan.charAt(0).toUpperCase() + plan.slice(1)} に変更しました`
+          : `Plan switched to ${plan.charAt(0).toUpperCase() + plan.slice(1)}`,
+      });
+      setTimeout(() => setPlanFeedback(null), 3000);
     } catch {
-      alert("Failed to switch plan");
+      setPlanFeedback({ type: "error", message: locale === "ja" ? "プラン変更に失敗しました" : "Failed to switch plan" });
     } finally {
       setSwitchingPlan(false);
     }
@@ -284,10 +299,19 @@ export default function SettingsPage() {
                       : "border border-[#1e293b] text-[#94a3b8] hover:border-[#64748b] hover:text-white disabled:opacity-50"
                   }`}
                 >
-                  {plan.charAt(0).toUpperCase() + plan.slice(1)}
+                  {switchingPlan ? "..." : plan.charAt(0).toUpperCase() + plan.slice(1)}
                 </button>
               ))}
             </div>
+            {planFeedback && (
+              <div className={`mt-3 px-4 py-2 rounded-lg text-sm font-medium ${
+                planFeedback.type === "success"
+                  ? "bg-emerald-500/10 text-emerald-400 border border-emerald-500/20"
+                  : "bg-red-500/10 text-red-400 border border-red-500/20"
+              }`}>
+                {planFeedback.message}
+              </div>
+            )}
           </div>
         )}
       </Card>
