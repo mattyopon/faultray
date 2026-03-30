@@ -94,11 +94,11 @@ export default function ReportsPage() {
   const [loading, setLoading] = useState(true);
   const [reportLang, setReportLang] = useState<"en" | "ja">("en");
   const locale = useLocale();
-  const t = locale === "ja" ? appDict.reports.ja : appDict.reports.en;
+  const t = appDict.reports[locale] ?? appDict.reports.en;
 
-  // Sync reportLang with app locale on first load
+  // Sync reportLang with app locale on first load (reports only support en/ja output)
   useEffect(() => {
-    setReportLang(locale);
+    setReportLang(locale === "ja" ? "ja" : "en");
   }, [locale]);
 
   useEffect(() => {

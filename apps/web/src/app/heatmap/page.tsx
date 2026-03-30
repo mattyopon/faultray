@@ -6,6 +6,7 @@ import { useEffect, useState } from "react";
 import { api, type HeatmapData, type HeatmapComponent } from "@/lib/api";
 import { Flame, Loader2 } from "lucide-react";
 import { useLocale } from "@/lib/useLocale";
+import type { Locale } from "@/i18n/config";
 import { appDict } from "@/i18n/app-dict";
 
 const DEMO_DATA: HeatmapData = {
@@ -41,8 +42,8 @@ function riskBg(score: number): string {
   return "bg-emerald-500/5 border-emerald-500/10";
 }
 
-function riskLabel(score: number, locale: "ja" | "en"): string {
-  const t = locale === "ja" ? appDict.heatmap.ja : appDict.heatmap.en;
+function riskLabel(score: number, locale: Locale): string {
+  const t = appDict.heatmap[locale] ?? appDict.heatmap.en;
   if (score >= 70) return t.highRiskLabel;
   if (score >= 50) return t.mediumRiskLabel;
   if (score >= 30) return t.lowMediumRiskLabel;
@@ -54,7 +55,7 @@ export default function HeatmapPage() {
   const [loading, setLoading] = useState(true);
   const [selected, setSelected] = useState<HeatmapComponent | null>(null);
   const locale = useLocale();
-  const t = locale === "ja" ? appDict.heatmap.ja : appDict.heatmap.en;
+  const t = appDict.heatmap[locale] ?? appDict.heatmap.en;
 
   useEffect(() => {
     api

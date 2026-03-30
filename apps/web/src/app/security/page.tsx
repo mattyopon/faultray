@@ -61,7 +61,7 @@ export default function SecurityPage() {
   const [data, setData] = useState<AttackSurfaceData>(DEMO_DATA);
   const [loading, setLoading] = useState(true);
   const locale = useLocale();
-  const t = locale === "ja" ? appDict.security.ja : appDict.security.en;
+  const t = appDict.security[locale] ?? appDict.security.en;
 
   useEffect(() => {
     api

@@ -14,7 +14,7 @@ export default function ResultsPage() {
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState<"all" | "passed" | "failed">("all");
   const locale = useLocale();
-  const t = locale === "ja" ? appDict.results.ja : appDict.results.en;
+  const t = appDict.results[locale] ?? appDict.results.en;
 
   useEffect(() => {
     api.getRuns(undefined, 50)
@@ -91,7 +91,7 @@ export default function ResultsPage() {
                       <Badge variant="default">{run.engine_type}</Badge>
                     </div>
                     <p className="text-xs text-[#64748b]">
-                      {new Date(run.created_at).toLocaleDateString(locale === "ja" ? "ja-JP" : "en-US", { weekday: "short", month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" })}
+                      {new Date(run.created_at).toLocaleDateString(locale, { weekday: "short", month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" })}
                     </p>
                   </div>
                 </div>

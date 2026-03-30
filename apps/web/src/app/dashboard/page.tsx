@@ -53,7 +53,7 @@ export default function DashboardPage() {
   const [runs, setRuns] = useState<SimulationRun[]>([]);
   const [loading, setLoading] = useState(true);
   const locale = useLocale();
-  const t = locale === "ja" ? appDict.dashboard.ja : appDict.dashboard.en;
+  const t = appDict.dashboard[locale] ?? appDict.dashboard.en;
 
   useEffect(() => {
     api.getRuns(undefined, 5)

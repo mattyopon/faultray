@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
-import { locales } from "@/i18n/config";
+import { locales, type Locale } from "@/i18n/config";
 import {
   Zap,
   BarChart3,
@@ -136,14 +136,15 @@ function detectLocale(): "en" | "ja" {
     .find((c) => c.trim().startsWith("NEXT_LOCALE="));
   if (cookie) {
     const val = cookie.split("=")[1]?.trim();
-    if (val === "ja") return "ja";
+    if (val && locales.includes(val as Locale)) {
+      // Onboarding only has en/ja texts; other locales fall back to en
+      return val === "ja" ? "ja" : "en";
+    }
   }
   // Also check URL path
   const path = window.location.pathname;
-  for (const locale of locales) {
-    if (locale === "ja" && (path.startsWith("/ja/") || path === "/ja")) {
-      return "ja";
-    }
+  if (path.startsWith("/ja/") || path === "/ja") {
+    return "ja";
   }
   return "en";
 }

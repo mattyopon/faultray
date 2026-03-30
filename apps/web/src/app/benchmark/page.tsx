@@ -40,7 +40,7 @@ export default function BenchmarkPage() {
   const [data, setData] = useState<BenchmarkData>(DEMO_DATA);
   const [loading, setLoading] = useState(false);
   const locale = useLocale();
-  const t = locale === "ja" ? appDict.benchmark.ja : appDict.benchmark.en;
+  const t = appDict.benchmark[locale] ?? appDict.benchmark.en;
 
   const loadBenchmark = async (industry: string) => {
     setSelectedIndustry(industry);

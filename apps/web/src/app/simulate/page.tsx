@@ -270,7 +270,7 @@ const DEMO_RESULT: SimulationResult = {
 
 export default function SimulatePage() {
   const locale = useLocale();
-  const t = locale === "ja" ? appDict.simulate.ja : appDict.simulate.en;
+  const t = appDict.simulate[locale] ?? appDict.simulate.en;
   const [topTab, setTopTab] = useState<TopTab>("quickstart");
   const [selected, setSelected] = useState<string | null>(null);
   const [yamlText, setYamlText] = useState("");

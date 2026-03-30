@@ -7,16 +7,17 @@ import { useState } from "react";
 import { api } from "@/lib/api";
 import { ShieldCheck, Loader2, CheckCircle2, XCircle, AlertTriangle, ChevronDown, ChevronRight, FileText, ArrowRight } from "lucide-react";
 import { useLocale } from "@/lib/useLocale";
+import type { Locale } from "@/i18n/config";
 import { appDict } from "@/i18n/app-dict";
 
 // DORA 5 Pillar structure
 interface PillarControl {
   id: string;
-  name: { en: string; ja: string };
+  name: Record<string, string>;
   status: "compliant" | "non_compliant" | "partial";
   evidence: boolean;
-  description: { en: string; ja: string };
-  remediation?: { en: string; ja: string };
+  description: Record<string, string>;
+  remediation?: Record<string, string>;
 }
 
 interface DoraPillar {
@@ -73,9 +74,9 @@ const DORA_PILLARS: DoraPillar[] = [
   },
 ];
 
-function PillarCard({ pillar, expanded, onToggle, locale }: { pillar: DoraPillar; expanded: boolean; onToggle: () => void; locale: "ja" | "en" }) {
-  const dp = locale === "ja" ? appDict.doraPillars.ja : appDict.doraPillars.en;
-  const ct = locale === "ja" ? appDict.compliance.ja : appDict.compliance.en;
+function PillarCard({ pillar, expanded, onToggle, locale }: { pillar: DoraPillar; expanded: boolean; onToggle: () => void; locale: Locale }) {
+  const dp = appDict.doraPillars[locale] ?? appDict.doraPillars.en;
+  const ct = appDict.compliance[locale] ?? appDict.compliance.en;
   const pillarName = dp[pillar.nameKey];
   const compliantCount = pillar.controls.filter(c => c.status === "compliant").length;
   const totalCount = pillar.controls.length;
@@ -136,12 +137,12 @@ function PillarCard({ pillar, expanded, onToggle, locale }: { pillar: DoraPillar
                 <div className="flex-1">
                   <div className="flex items-center gap-2 mb-1">
                     <span className="text-sm font-mono text-[#64748b]">{ctrl.id}</span>
-                    <span className="text-sm font-medium">{ctrl.name[locale]}</span>
+                    <span className="text-sm font-medium">{ctrl.name[locale] ?? ctrl.name.en}</span>
                   </div>
-                  <p className="text-xs text-[#94a3b8]">{ctrl.description[locale]}</p>
+                  <p className="text-xs text-[#94a3b8]">{ctrl.description[locale] ?? ctrl.description.en}</p>
                   {ctrl.remediation && (
                     <p className="text-xs text-[#FFD700] mt-2">
-                      {ct.remediation} {ctrl.remediation[locale]}
+                      {ct.remediation} {ctrl.remediation[locale] ?? ctrl.remediation.en}
                     </p>
                   )}
                   <div className="flex items-center gap-2 mt-2">
@@ -167,8 +168,8 @@ function PillarCard({ pillar, expanded, onToggle, locale }: { pillar: DoraPillar
 export default function CompliancePage() {
   const [expandedPillar, setExpandedPillar] = useState<string | null>("pillar1");
   const locale = useLocale();
-  const t = locale === "ja" ? appDict.compliance.ja : appDict.compliance.en;
-  const dp = locale === "ja" ? appDict.doraPillars.ja : appDict.doraPillars.en;
+  const t = appDict.compliance[locale] ?? appDict.compliance.en;
+  const dp = appDict.doraPillars[locale] ?? appDict.doraPillars.en;
 
   // Calculate overall stats
   const allControls = DORA_PILLARS.flatMap(p => p.controls);
@@ -184,8 +185,8 @@ export default function CompliancePage() {
       .map(c => ({
         pillarName: dp[p.nameKey as keyof typeof dp],
         controlId: c.id,
-        controlName: c.name[locale],
-        remediation: c.remediation![locale],
+        controlName: c.name[locale] ?? c.name.en,
+        remediation: c.remediation![locale] ?? c.remediation!.en,
         status: c.status,
         pillarScore: p.score,
       }))

@@ -74,7 +74,7 @@ const suggestions = [
 
 export default function SuggestionsPage() {
   const locale = useLocale();
-  const t = locale === "ja" ? appDict.suggestions.ja : appDict.suggestions.en;
+  const t = appDict.suggestions[locale] ?? appDict.suggestions.en;
   const priorityLabel = (p: string) => {
     if (locale !== "ja") return p;
     return p === "high" ? "高" : p === "medium" ? "中" : "低";
@@ -133,20 +133,20 @@ export default function SuggestionsPage() {
                 </div>
                 <div className="flex-1">
                   <div className="flex items-center gap-2 mb-1">
-                    <h3 className="font-bold">{s.title[locale]}</h3>
+                    <h3 className="font-bold">{(s.title as Record<string,string>)[locale] ?? s.title.en}</h3>
                     <Badge variant={s.priority === "high" ? "red" : s.priority === "medium" ? "yellow" : "default"}>
                       {priorityLabel(s.priority)}
                     </Badge>
-                    <Badge variant="default">{s.category[locale]}</Badge>
+                    <Badge variant="default">{(s.category as Record<string,string>)[locale] ?? s.category.en}</Badge>
                   </div>
-                  <p className="text-sm text-[#94a3b8] leading-relaxed mb-3">{s.description[locale]}</p>
+                  <p className="text-sm text-[#94a3b8] leading-relaxed mb-3">{(s.description as Record<string,string>)[locale] ?? s.description.en}</p>
                   <div className="flex items-center gap-4">
                     <div className="flex items-center gap-1.5 text-emerald-400 text-sm font-semibold">
                       <ArrowUpRight size={14} />
                       {s.impact}
                     </div>
                     <span className="text-[#1e293b]">|</span>
-                    <span className="text-xs text-[#64748b]">{t.effort}: {s.effort[locale]}</span>
+                    <span className="text-xs text-[#64748b]">{t.effort}: {(s.effort as Record<string,string>)[locale] ?? s.effort.en}</span>
                   </div>
                 </div>
               </div>

@@ -48,7 +48,7 @@ export default function SettingsPage() {
   const { user } = useAuth();
   const router = useRouter();
   const locale = useLocale();
-  const t = locale === "ja" ? appDict.settings.ja : appDict.settings.en;
+  const t = appDict.settings[locale] ?? appDict.settings.en;
 
   // Language
   const [currentLang, setCurrentLang] = useState(() => {

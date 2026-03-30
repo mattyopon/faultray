@@ -35,7 +35,7 @@ export default function WhatIfPage() {
   const [result, setResult] = useState<WhatIfResult | null>(null);
 
   const locale = useLocale();
-  const t = locale === "ja" ? appDict.whatif.ja : appDict.whatif.en;
+  const t = appDict.whatif[locale] ?? appDict.whatif.en;
   const selectedParam = PARAMETERS.find((p) => p.id === parameter)!;
 
   const runAnalysis = async () => {

@@ -57,7 +57,7 @@ function scoreColor(score: number): string {
   return "#ef4444";
 }
 
-function LayerCard({ layer, t }: { layer: ScoreLayer; t: typeof appDict.scoreDetail.en | typeof appDict.scoreDetail.ja }) {
+function LayerCard({ layer, t }: { layer: ScoreLayer; t: (typeof appDict.scoreDetail)[keyof typeof appDict.scoreDetail] }) {
   const [expanded, setExpanded] = useState(false);
 
   return (
@@ -113,7 +113,7 @@ export default function ScoreDetailPage() {
   const [data, setData] = useState<ScoreExplainData>(DEMO_DATA);
   const [loading, setLoading] = useState(true);
   const locale = useLocale();
-  const t = locale === "ja" ? appDict.scoreDetail.ja : appDict.scoreDetail.en;
+  const t = appDict.scoreDetail[locale] ?? appDict.scoreDetail.en;
 
   useEffect(() => {
     api

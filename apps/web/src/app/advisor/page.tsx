@@ -27,7 +27,7 @@ const SUGGESTIONS = [
 
 export default function AdvisorPage() {
   const locale = useLocale();
-  const ta = locale === "ja" ? appDict.advisor.ja : appDict.advisor.en;
+  const ta = appDict.advisor[locale] ?? appDict.advisor.en;
   const [messages, setMessages] = useState<Message[]>([
     {
       role: "assistant",

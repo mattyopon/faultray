@@ -27,7 +27,7 @@ export default function CostPage() {
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<CostAnalysis | null>(null);
   const locale = useLocale();
-  const t = locale === "ja" ? appDict.cost.ja : appDict.cost.en;
+  const t = appDict.cost[locale] ?? appDict.cost.en;
 
   const runAnalysis = async () => {
     setLoading(true);

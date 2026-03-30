@@ -28,14 +28,18 @@ import {
   LogOut,
   ChevronDown,
 } from "lucide-react";
-import { locales } from "@/i18n/config";
+import { locales, type Locale } from "@/i18n/config";
 import { appDict } from "@/i18n/app-dict";
 
 function useNavLocale() {
-  const [locale, setLocale] = useState<"ja" | "en">("en");
+  const [locale, setLocale] = useState<Locale>("en");
   useEffect(() => {
     const match = document.cookie.match(/NEXT_LOCALE=(\w+)/);
-    if (match && match[1] === "ja") setLocale("ja");
+    if (match && locales.includes(match[1] as Locale)) {
+      setLocale(match[1] as Locale);
+    } else {
+      setLocale("en");
+    }
   }, []);
   return locale;
 }
@@ -92,7 +96,7 @@ export function Navbar() {
   const [mobileOpen, setMobileOpen] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const locale = useNavLocale();
-  const t = locale === "ja" ? appDict.nav.ja : appDict.nav.en;
+  const t = appDict.nav[locale] ?? appDict.nav.en;
   const navGroups = useMemo(() => getNavGroups(t), [t]);
 
   useEffect(() => {

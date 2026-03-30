@@ -6,6 +6,7 @@ import { useEffect, useState } from "react";
 import { api, type FmeaData } from "@/lib/api";
 import { AlertOctagon, Loader2, CheckCircle2, XCircle } from "lucide-react";
 import { useLocale } from "@/lib/useLocale";
+import type { Locale } from "@/i18n/config";
 import { appDict } from "@/i18n/app-dict";
 
 const DEMO_DATA: FmeaData = {
@@ -33,8 +34,8 @@ function rpnColor(rpn: number): string {
   return "#10b981";
 }
 
-function rpnLabel(rpn: number, locale: "ja" | "en"): string {
-  const t = locale === "ja" ? appDict.fmea.ja : appDict.fmea.en;
+function rpnLabel(rpn: number, locale: Locale): string {
+  const t = appDict.fmea[locale] ?? appDict.fmea.en;
   if (rpn >= 200) return t.critical;
   if (rpn >= 120) return t.high;
   if (rpn >= 60) return t.medium;
@@ -46,7 +47,7 @@ export default function FmeaPage() {
   const [loading, setLoading] = useState(true);
   const [sortBy, setSortBy] = useState<"rpn" | "severity" | "occurrence">("rpn");
   const locale = useLocale();
-  const t = locale === "ja" ? appDict.fmea.ja : appDict.fmea.en;
+  const t = appDict.fmea[locale] ?? appDict.fmea.en;
 
   useEffect(() => {
     api

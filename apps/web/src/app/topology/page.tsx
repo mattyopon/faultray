@@ -7,6 +7,7 @@ import { api } from "@/lib/api";
 import { Network, ArrowRight, Loader2, RefreshCw, AlertTriangle, Shield, Lightbulb, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useLocale } from "@/lib/useLocale";
+import type { Locale } from "@/i18n/config";
 import { appDict } from "@/i18n/app-dict";
 
 interface GraphNode {
@@ -102,8 +103,8 @@ function riskBgColor(score: number): string {
   return "#10b98110";
 }
 
-function riskLabel(score: number, locale: "ja" | "en"): string {
-  const t = locale === "ja" ? appDict.topology.ja : appDict.topology.en;
+function riskLabel(score: number, locale: Locale): string {
+  const t = appDict.topology[locale] ?? appDict.topology.en;
   if (score >= 70) return t.highRisk;
   if (score >= 50) return t.mediumRisk;
   if (score >= 30) return t.lowRisk;
@@ -174,7 +175,7 @@ export default function TopologyPage() {
   const [selectedNode, setSelectedNode] = useState<string | null>(null);
   const [hoveredEdge, setHoveredEdge] = useState<number | null>(null);
   const locale = useLocale();
-  const t = locale === "ja" ? appDict.topology.ja : appDict.topology.en;
+  const t = appDict.topology[locale] ?? appDict.topology.en;
 
   const loadData = useCallback(async () => {
     setLoading(true);

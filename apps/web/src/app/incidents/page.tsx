@@ -156,7 +156,7 @@ export default function IncidentsPage() {
   const [data, setData] = useState<IncidentsData>(DEMO_DATA);
   const [loading, setLoading] = useState(true);
   const locale = useLocale();
-  const t = locale === "ja" ? appDict.incidents.ja : appDict.incidents.en;
+  const t = appDict.incidents[locale] ?? appDict.incidents.en;
 
   useEffect(() => {
     api
