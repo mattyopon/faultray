@@ -8,6 +8,7 @@ import { Suspense } from "react";
 function LoginForm() {
   const searchParams = useSearchParams();
   const redirectTo = searchParams.get("redirectTo") || "/dashboard";
+  const isProduction = process.env.NEXT_PUBLIC_SITE_URL === "https://faultray.com";
 
   const supabase = createClient();
 
@@ -34,6 +35,7 @@ function LoginForm() {
         </div>
 
         <div className="p-8 rounded-2xl border border-[#1e293b] bg-[#111827] space-y-4">
+          {isProduction && (
           <button
             onClick={() => signInWith("github")}
             className="w-full flex items-center justify-center gap-3 px-4 py-3 rounded-xl bg-white text-[#0a0e1a] font-semibold hover:bg-gray-100 transition-colors"
@@ -43,6 +45,7 @@ function LoginForm() {
             </svg>
             Continue with GitHub
           </button>
+          )}
 
           <button
             onClick={() => signInWith("google")}
