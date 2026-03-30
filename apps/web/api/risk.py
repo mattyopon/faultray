@@ -1,15 +1,100 @@
-"""FaultRay FMEA (Failure Mode and Effects Analysis) endpoint.
+"""FaultRay risk analysis endpoint.
 
-GET /api/fmea
+GET /api/risk?action=attack-surface
+GET /api/risk?action=fmea
+POST /api/risk  Body: { "action": "attack-surface" | "fmea" }
 
-Returns failure modes, effects, and RPN scores for each component.
+Dispatches to attack-surface or fmea handler based on 'action' field.
 """
 
 from http.server import BaseHTTPRequestHandler
 import json
+from urllib.parse import urlparse, parse_qs
 
 
-DEMO_DATA = {
+# --- Attack surface data ---
+
+ATTACK_SURFACE_DEMO_DATA = {
+    "summary": {
+        "total_components": 12,
+        "external_facing": 4,
+        "internal_only": 8,
+        "risk_level": "medium",
+        "attack_vectors": 7,
+    },
+    "external_components": [
+        {
+            "id": "cdn",
+            "name": "CDN / Edge",
+            "exposure": "public",
+            "ports": [80, 443],
+            "protocols": ["HTTP", "HTTPS"],
+            "risk_score": 35,
+            "vulnerabilities": [
+                {"type": "DDoS", "severity": "medium", "mitigation": "Rate limiting configured"},
+                {"type": "Cache poisoning", "severity": "low", "mitigation": "Cache-Control headers set"},
+            ],
+        },
+        {
+            "id": "gateway",
+            "name": "API Gateway",
+            "exposure": "public",
+            "ports": [443],
+            "protocols": ["HTTPS"],
+            "risk_score": 45,
+            "vulnerabilities": [
+                {"type": "Injection attacks", "severity": "high", "mitigation": "Input validation in place"},
+                {"type": "Authentication bypass", "severity": "high", "mitigation": "OAuth2 + PKCE configured"},
+                {"type": "Rate limit exhaustion", "severity": "medium", "mitigation": "Per-user rate limits"},
+            ],
+        },
+        {
+            "id": "auth",
+            "name": "Auth Service",
+            "exposure": "semi-public",
+            "ports": [443],
+            "protocols": ["HTTPS"],
+            "risk_score": 55,
+            "vulnerabilities": [
+                {"type": "Brute force", "severity": "medium", "mitigation": "Account lockout after 5 attempts"},
+                {"type": "Session hijacking", "severity": "high", "mitigation": "Secure cookie flags set"},
+            ],
+        },
+        {
+            "id": "dns",
+            "name": "DNS",
+            "exposure": "public",
+            "ports": [53],
+            "protocols": ["DNS", "DNSSEC"],
+            "risk_score": 25,
+            "vulnerabilities": [
+                {"type": "DNS spoofing", "severity": "medium", "mitigation": "DNSSEC enabled"},
+            ],
+        },
+    ],
+    "internal_components": [
+        {"id": "api", "name": "API Server", "risk_score": 30},
+        {"id": "worker", "name": "Background Worker", "risk_score": 15},
+        {"id": "db_primary", "name": "PostgreSQL Primary", "risk_score": 60},
+        {"id": "db_replica", "name": "PostgreSQL Replica", "risk_score": 25},
+        {"id": "cache", "name": "Redis Cache", "risk_score": 40},
+        {"id": "queue", "name": "Message Queue", "risk_score": 20},
+        {"id": "storage", "name": "Object Storage", "risk_score": 15},
+        {"id": "monitor", "name": "Monitoring", "risk_score": 10},
+    ],
+    "recommendations": [
+        "Implement WAF (Web Application Firewall) before API Gateway",
+        "Enable mutual TLS for internal service communication",
+        "Add network segmentation between data and application tiers",
+        "Implement egress filtering to prevent data exfiltration",
+        "Deploy intrusion detection system (IDS) for database tier",
+    ],
+}
+
+
+# --- FMEA data ---
+
+FMEA_DEMO_DATA = {
     "analysis_date": "2026-03-30",
     "total_failure_modes": 18,
     "critical_rpn_threshold": 200,
@@ -148,14 +233,46 @@ DEMO_DATA = {
 class handler(BaseHTTPRequestHandler):
     def do_GET(self):
         try:
-            self._send_json(200, DEMO_DATA)
+            parsed = urlparse(self.path)
+            params = parse_qs(parsed.query)
+            action = params.get("action", ["attack-surface"])[0]
+            if action == "attack-surface":
+                self._send_json(200, ATTACK_SURFACE_DEMO_DATA)
+            elif action == "fmea":
+                self._send_json(200, FMEA_DEMO_DATA)
+            else:
+                self._send_error(400, f"Unknown action '{action}'. Use 'attack-surface' or 'fmea'.")
         except Exception as e:
-            self._send_error(500, f"FMEA error: {e}")
+            self._send_error(500, f"Risk error: {e}")
+
+    def do_POST(self):
+        try:
+            content_length = int(self.headers.get("Content-Length", 0))
+            body = self.rfile.read(content_length)
+            data = json.loads(body) if body else {}
+
+            action = data.get("action", "")
+
+            if action == "attack-surface":
+                self._send_json(200, ATTACK_SURFACE_DEMO_DATA)
+            elif action == "fmea":
+                self._send_json(200, FMEA_DEMO_DATA)
+            else:
+                self._send_error(
+                    400,
+                    "Missing or invalid 'action' field. "
+                    "Must be 'attack-surface' or 'fmea'.",
+                )
+
+        except json.JSONDecodeError:
+            self._send_error(400, "Invalid JSON in request body")
+        except Exception as e:
+            self._send_error(500, f"Risk error: {e}")
 
     def do_OPTIONS(self):
         self.send_response(204)
         self._send_cors_headers()
-        self.send_header("Access-Control-Allow-Methods", "GET, OPTIONS")
+        self.send_header("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
         self.send_header("Access-Control-Allow-Headers", "Content-Type, Authorization")
         self.end_headers()
 

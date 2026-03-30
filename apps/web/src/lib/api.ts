@@ -292,9 +292,9 @@ export const api = {
     }),
 
   parseTerraform: (data: { tfstate_json: string }, token?: string) =>
-    apiFetch<CloudSimulationResult>("/api/parse-terraform", {
+    apiFetch<CloudSimulationResult>("/api/discovery", {
       method: "POST",
-      body: data,
+      body: { action: "terraform", ...data },
       token,
     }),
 
@@ -302,9 +302,9 @@ export const api = {
     data: { manifests: string; namespace?: string },
     token?: string,
   ) =>
-    apiFetch<CloudSimulationResult>("/api/parse-kubernetes", {
+    apiFetch<CloudSimulationResult>("/api/discovery", {
       method: "POST",
-      body: data,
+      body: { action: "kubernetes", ...data },
       token,
     }),
 
@@ -335,34 +335,34 @@ export const api = {
 
   // New API methods
   getHeatmap: (topologyYaml?: string, token?: string) =>
-    apiFetch<HeatmapData>("/api/heatmap", {
+    apiFetch<HeatmapData>("/api/analysis", {
       method: "POST",
-      body: topologyYaml ? { topology_yaml: topologyYaml } : {},
+      body: topologyYaml ? { action: "heatmap", topology_yaml: topologyYaml } : { action: "heatmap" },
       token,
     }),
 
   whatIf: (componentId: string, parameter: string, value: number, token?: string) =>
-    apiFetch<WhatIfResult>("/api/whatif", {
+    apiFetch<WhatIfResult>("/api/analysis", {
       method: "POST",
-      body: { component_id: componentId, parameter, value },
+      body: { action: "whatif", component_id: componentId, parameter, value },
       token,
     }),
 
   getScoreExplain: (token?: string) =>
-    apiFetch<ScoreExplainData>("/api/score-explain", { token }),
+    apiFetch<ScoreExplainData>("/api/analysis?action=score-explain", { token }),
 
   analyzeCost: (revenuePerHour: number, industry: string, token?: string) =>
-    apiFetch<CostAnalysis>("/api/cost-analyze", {
+    apiFetch<CostAnalysis>("/api/finance", {
       method: "POST",
-      body: { revenue_per_hour: revenuePerHour, industry },
+      body: { action: "cost", revenue_per_hour: revenuePerHour, industry },
       token,
     }),
 
   getAttackSurface: (token?: string) =>
-    apiFetch<AttackSurfaceData>("/api/attack-surface", { token }),
+    apiFetch<AttackSurfaceData>("/api/risk?action=attack-surface", { token }),
 
   getFmea: (token?: string) =>
-    apiFetch<FmeaData>("/api/fmea", { token }),
+    apiFetch<FmeaData>("/api/risk?action=fmea", { token }),
 
   chat: (message: string, token?: string) =>
     apiFetch<ChatResponse>("/api/chat", {
@@ -372,11 +372,11 @@ export const api = {
     }),
 
   getExecutiveReport: (format: "json" | "html" = "json", token?: string) =>
-    apiFetch<ExecutiveReport>(`/api/report-executive?format=${format}`, { token }),
+    apiFetch<ExecutiveReport>(`/api/reports?action=report&format=${format}`, { token }),
 
   getIncidents: (token?: string) =>
-    apiFetch<IncidentsData>("/api/incidents", { token }),
+    apiFetch<IncidentsData>("/api/reports?action=incidents", { token }),
 
   getBenchmark: (industry: string, token?: string) =>
-    apiFetch<BenchmarkData>(`/api/benchmark/${industry}`, { token }),
+    apiFetch<BenchmarkData>(`/api/finance?action=benchmark&industry=${industry}`, { token }),
 };
