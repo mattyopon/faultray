@@ -67,9 +67,54 @@ export interface SimulationRun {
   total_scenarios: number;
 }
 
+export interface ScanSummary {
+  region?: string;
+  components_found: number;
+  dependencies_inferred: number;
+  scan_duration_seconds?: number;
+  warnings?: string[];
+  namespace?: string | null;
+}
+
+export interface CloudSimulationResult extends SimulationResult {
+  scan_summary: ScanSummary;
+}
+
 export const api = {
   simulate: (data: { topology?: string; topology_yaml?: string; sample?: string }, token?: string) =>
     apiFetch<SimulationResult>("/api/simulate", {
+      method: "POST",
+      body: data,
+      token,
+    }),
+
+  scanAws: (
+    data: {
+      access_key_id?: string;
+      secret_access_key?: string;
+      role_arn?: string;
+      region: string;
+    },
+    token?: string,
+  ) =>
+    apiFetch<CloudSimulationResult>("/api/scan-aws", {
+      method: "POST",
+      body: data,
+      token,
+    }),
+
+  parseTerraform: (data: { tfstate_json: string }, token?: string) =>
+    apiFetch<CloudSimulationResult>("/api/parse-terraform", {
+      method: "POST",
+      body: data,
+      token,
+    }),
+
+  parseKubernetes: (
+    data: { manifests: string; namespace?: string },
+    token?: string,
+  ) =>
+    apiFetch<CloudSimulationResult>("/api/parse-kubernetes", {
       method: "POST",
       body: data,
       token,

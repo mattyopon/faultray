@@ -3,6 +3,9 @@
   "functions": {
     "api/*.py": {
       "maxDuration": 30
+    },
+    "api/scan-aws.py": {
+      "maxDuration": 60
     }
   }
 }
