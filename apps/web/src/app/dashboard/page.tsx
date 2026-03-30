@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { api, type SimulationRun } from "@/lib/api";
+import { Onboarding } from "@/components/onboarding";
 import {
   Zap,
   TrendingUp,
@@ -62,6 +63,7 @@ export default function DashboardPage() {
 
   return (
     <div className="max-w-[1200px] mx-auto px-6 py-10">
+      <Onboarding />
       {/* Header */}
       <div className="flex items-center justify-between mb-10">
         <div>
