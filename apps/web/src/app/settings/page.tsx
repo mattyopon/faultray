@@ -10,8 +10,15 @@ import {
   Key,
   Bell,
   Globe,
+  Copy,
+  Check,
+  Trash2,
+  Plus,
+  AlertTriangle,
 } from "lucide-react";
 import { useRouter } from "next/navigation";
+import { useState } from "react";
+import Link from "next/link";
 
 const LANGUAGES = [
   { code: "en", label: "English", flag: "🇺🇸" },
@@ -24,22 +31,68 @@ const LANGUAGES = [
   { code: "pt", label: "Português", flag: "🇧🇷" },
 ];
 
+function generateApiKey(): string {
+  const chars = "abcdefghijklmnopqrstuvwxyz0123456789";
+  let key = "fray_sk_";
+  for (let i = 0; i < 32; i++) {
+    key += chars[Math.floor(Math.random() * chars.length)];
+  }
+  return key;
+}
+
 export default function SettingsPage() {
   const { user } = useAuth();
   const router = useRouter();
 
-  function getCurrentLang(): string {
+  // Language
+  const [currentLang, setCurrentLang] = useState(() => {
     if (typeof document !== "undefined") {
       const match = document.cookie.match(/NEXT_LOCALE=(\w+)/);
       if (match) return match[1];
     }
     return "en";
-  }
+  });
+
+  // API Keys
+  const [apiKeys, setApiKeys] = useState<Array<{ key: string; created: string }>>([]);
+  const [copiedKey, setCopiedKey] = useState<string | null>(null);
+
+  // Notifications
+  const [notifications, setNotifications] = useState({
+    simulationCompleted: true,
+    scoreDegradation: true,
+    weeklySummary: false,
+  });
+
+  // Delete account confirmation
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
 
   function setLanguage(lang: string) {
     document.cookie = `NEXT_LOCALE=${lang};path=/;max-age=31536000`;
-    // Stay on current page, just update language preference
+    setCurrentLang(lang);
     router.refresh();
+  }
+
+  function handleGenerateKey() {
+    const newKey = generateApiKey();
+    setApiKeys((prev) => [
+      { key: newKey, created: new Date().toLocaleDateString() },
+      ...prev,
+    ]);
+  }
+
+  function handleCopyKey(key: string) {
+    navigator.clipboard.writeText(key);
+    setCopiedKey(key);
+    setTimeout(() => setCopiedKey(null), 2000);
+  }
+
+  function handleDeleteKey(key: string) {
+    setApiKeys((prev) => prev.filter((k) => k.key !== key));
+  }
+
+  function toggleNotification(key: keyof typeof notifications) {
+    setNotifications((prev) => ({ ...prev, [key]: !prev[key] }));
   }
 
   return (
@@ -61,7 +114,7 @@ export default function SettingsPage() {
               key={lang.code}
               onClick={() => setLanguage(lang.code)}
               className={`flex items-center gap-2 px-4 py-3 rounded-lg border transition-all text-sm ${
-                getCurrentLang() === lang.code
+                currentLang === lang.code
                   ? "border-[#FFD700] bg-[#FFD700]/10 text-white"
                   : "border-[#1e293b] text-[#94a3b8] hover:border-[#64748b] hover:text-white"
               }`}
@@ -131,23 +184,58 @@ export default function SettingsPage() {
             <span className="text-sm">5 max</span>
           </div>
         </div>
-        <Button size="sm">
-          <CreditCard size={14} /> Upgrade to Pro
-        </Button>
+        <Link href="/pricing">
+          <Button size="sm">
+            <CreditCard size={14} /> Upgrade to Pro
+          </Button>
+        </Link>
       </Card>
 
       {/* API Keys */}
       <Card className="mb-6">
-        <div className="flex items-center gap-3 mb-6">
-          <Key size={20} className="text-[#FFD700]" />
-          <h2 className="text-lg font-bold">API Keys</h2>
+        <div className="flex items-center justify-between mb-6">
+          <div className="flex items-center gap-3">
+            <Key size={20} className="text-[#FFD700]" />
+            <h2 className="text-lg font-bold">API Keys</h2>
+          </div>
+          <Button variant="secondary" size="sm" onClick={handleGenerateKey}>
+            <Plus size={14} /> Generate Key
+          </Button>
         </div>
         <p className="text-sm text-[#94a3b8] mb-4">
-          Use API keys to authenticate requests to the FaultRay API from your CI/CD pipeline.
+          Use API keys to authenticate requests to the FaultRay API from your CI/CD pipeline or the FaultRay agent.
         </p>
-        <Button variant="secondary" size="sm">
-          Generate API Key
-        </Button>
+
+        {apiKeys.length === 0 ? (
+          <div className="p-6 rounded-xl border border-dashed border-[#1e293b] text-center">
+            <Key size={20} className="mx-auto mb-2 text-[#64748b]" />
+            <p className="text-sm text-[#94a3b8]">No API keys yet</p>
+            <p className="text-xs text-[#64748b]">Click &quot;Generate Key&quot; to create one</p>
+          </div>
+        ) : (
+          <div className="space-y-3">
+            {apiKeys.map((k) => (
+              <div key={k.key} className="flex items-center gap-3 p-3 rounded-lg bg-[#0d1117] border border-[#1e293b]">
+                <code className="flex-1 text-sm font-mono text-[#e2e8f0] truncate">{k.key}</code>
+                <span className="text-xs text-[#64748b] shrink-0">Created {k.created}</span>
+                <button
+                  onClick={() => handleCopyKey(k.key)}
+                  className="p-1.5 rounded-md hover:bg-white/10 transition-colors text-[#64748b] hover:text-white"
+                  title="Copy"
+                >
+                  {copiedKey === k.key ? <Check size={14} className="text-emerald-400" /> : <Copy size={14} />}
+                </button>
+                <button
+                  onClick={() => handleDeleteKey(k.key)}
+                  className="p-1.5 rounded-md hover:bg-red-500/10 transition-colors text-[#64748b] hover:text-red-400"
+                  title="Delete"
+                >
+                  <Trash2 size={14} />
+                </button>
+              </div>
+            ))}
+          </div>
+        )}
       </Card>
 
       {/* Notifications */}
@@ -157,24 +245,25 @@ export default function SettingsPage() {
           <h2 className="text-lg font-bold">Notifications</h2>
         </div>
         <div className="space-y-4">
-          {[
-            { label: "Simulation completed", desc: "Get notified when a simulation finishes", enabled: true },
-            { label: "Score degradation", desc: "Alert when resilience score drops below threshold", enabled: true },
-            { label: "Weekly summary", desc: "Receive a weekly resilience report", enabled: false },
-          ].map((n) => (
-            <div key={n.label} className="flex items-center justify-between py-2">
+          {([
+            { key: "simulationCompleted" as const, label: "Simulation completed", desc: "Get notified when a simulation finishes" },
+            { key: "scoreDegradation" as const, label: "Score degradation", desc: "Alert when resilience score drops below threshold" },
+            { key: "weeklySummary" as const, label: "Weekly summary", desc: "Receive a weekly resilience report" },
+          ]).map((n) => (
+            <div key={n.key} className="flex items-center justify-between py-2">
               <div>
                 <p className="text-sm font-medium">{n.label}</p>
                 <p className="text-xs text-[#64748b]">{n.desc}</p>
               </div>
               <button
+                onClick={() => toggleNotification(n.key)}
                 className={`relative w-11 h-6 rounded-full transition-colors ${
-                  n.enabled ? "bg-[#FFD700]" : "bg-[#1e293b]"
+                  notifications[n.key] ? "bg-[#FFD700]" : "bg-[#1e293b]"
                 }`}
               >
                 <span
                   className={`absolute top-0.5 w-5 h-5 rounded-full bg-white transition-transform ${
-                    n.enabled ? "left-[22px]" : "left-0.5"
+                    notifications[n.key] ? "left-[22px]" : "left-0.5"
                   }`}
                 />
               </button>
@@ -186,13 +275,39 @@ export default function SettingsPage() {
       {/* Danger Zone */}
       <Card className="border-red-500/20">
         <h2 className="text-lg font-bold text-red-400 mb-4">Danger Zone</h2>
-        <div className="flex items-center justify-between">
-          <div>
-            <p className="text-sm font-medium">Delete Account</p>
-            <p className="text-xs text-[#64748b]">Permanently delete your account and all data</p>
+        {!showDeleteConfirm ? (
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm font-medium">Delete Account</p>
+              <p className="text-xs text-[#64748b]">Permanently delete your account and all data</p>
+            </div>
+            <Button variant="danger" size="sm" onClick={() => setShowDeleteConfirm(true)}>
+              Delete Account
+            </Button>
           </div>
-          <Button variant="danger" size="sm">Delete Account</Button>
-        </div>
+        ) : (
+          <div className="p-4 rounded-xl bg-red-500/5 border border-red-500/20">
+            <div className="flex items-center gap-2 mb-3">
+              <AlertTriangle size={16} className="text-red-400" />
+              <p className="text-sm font-medium text-red-400">Are you sure?</p>
+            </div>
+            <p className="text-xs text-[#94a3b8] mb-4">
+              This action cannot be undone. All your data, API keys, and simulation history will be permanently deleted.
+            </p>
+            <div className="flex gap-3">
+              <Button variant="danger" size="sm" onClick={() => {
+                // TODO: Call Supabase delete account API
+                alert("Account deletion is not yet implemented. Please contact support.");
+                setShowDeleteConfirm(false);
+              }}>
+                Yes, delete my account
+              </Button>
+              <Button variant="secondary" size="sm" onClick={() => setShowDeleteConfirm(false)}>
+                Cancel
+              </Button>
+            </div>
+          </div>
+        )}
       </Card>
     </div>
   );
