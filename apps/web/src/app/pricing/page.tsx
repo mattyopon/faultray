@@ -1,9 +1,9 @@
-import Link from "next/link";
-import { Check, Minus } from "lucide-react";
+"use client";
 
-export const metadata = {
-  title: "Pricing",
-};
+import Link from "next/link";
+import { Check, Minus, Loader2 } from "lucide-react";
+import { useState } from "react";
+import { api } from "@/lib/api";
 
 const plans = [
   {
@@ -12,6 +12,7 @@ const plans = [
     features: ["5 simulations / month", "Up to 5 components", "100+ simulation engines", "N-Layer Availability Model", "HTML reports", "Community support"],
     disabledFeatures: ["DORA report export", "Custom SSO"],
     cta: "Get Started Free", ctaHref: "/login", popular: false,
+    stripePlan: null as "pro" | "business" | null,
   },
   {
     name: "Pro", price: 299,
@@ -19,6 +20,7 @@ const plans = [
     features: ["100 simulations / month", "Up to 50 components", "Everything in Free", "DORA report export (PDF)", "AI-powered analysis", "Email support (24h)"],
     disabledFeatures: ["Insurance API", "Custom SSO"],
     cta: "Start Pro", ctaHref: "/login?plan=pro", popular: true,
+    stripePlan: "pro" as "pro" | "business" | null,
   },
   {
     name: "Business", price: 999,
@@ -26,6 +28,7 @@ const plans = [
     features: ["Unlimited simulations", "Unlimited components", "Everything in Pro", "DORA report + Insurance API", "Custom SSO / SAML", "Dedicated support (1h)", "Prometheus integration", "On-premise deployment"],
     disabledFeatures: [],
     cta: "Contact Us", ctaHref: "mailto:sales@faultray.com", popular: false,
+    stripePlan: null as "pro" | "business" | null,
   },
 ];
 
@@ -48,6 +51,23 @@ function CellValue({ value }: { value: string | boolean }) {
 }
 
 export default function PricingPage() {
+  const [loadingPlan, setLoadingPlan] = useState<string | null>(null);
+
+  const handleCheckout = async (plan: "pro" | "business") => {
+    setLoadingPlan(plan);
+    try {
+      const { url } = await api.createCheckoutSession(plan);
+      if (url) {
+        window.location.href = url;
+      }
+    } catch {
+      // Stripe not configured yet — fall back to login
+      window.location.href = `/login?plan=${plan}`;
+    } finally {
+      setLoadingPlan(null);
+    }
+  };
+
   return (
     <div className="max-w-[1200px] mx-auto px-6 py-20">
       <div className="text-center mb-16">
@@ -79,9 +99,23 @@ export default function PricingPage() {
                 </li>
               ))}
             </ul>
-            <Link href={plan.ctaHref} className={`w-full text-center py-3 rounded-xl font-semibold transition-all ${plan.popular ? "bg-[#FFD700] text-[#0a0e1a] hover:bg-[#ffe44d]" : "border border-[#1e293b] text-white hover:border-[#64748b]"}`}>
-              {plan.cta}
-            </Link>
+            {plan.stripePlan ? (
+              <button
+                onClick={() => handleCheckout(plan.stripePlan!)}
+                disabled={loadingPlan === plan.stripePlan}
+                className={`w-full text-center py-3 rounded-xl font-semibold transition-all flex items-center justify-center gap-2 ${plan.popular ? "bg-[#FFD700] text-[#0a0e1a] hover:bg-[#ffe44d] disabled:opacity-70" : "border border-[#1e293b] text-white hover:border-[#64748b] disabled:opacity-70"}`}
+              >
+                {loadingPlan === plan.stripePlan ? (
+                  <><Loader2 size={16} className="animate-spin" /> Processing...</>
+                ) : (
+                  plan.cta
+                )}
+              </button>
+            ) : (
+              <Link href={plan.ctaHref} className={`w-full text-center py-3 rounded-xl font-semibold transition-all block ${plan.popular ? "bg-[#FFD700] text-[#0a0e1a] hover:bg-[#ffe44d]" : "border border-[#1e293b] text-white hover:border-[#64748b]"}`}>
+                {plan.cta}
+              </Link>
+            )}
           </div>
         ))}
       </div>

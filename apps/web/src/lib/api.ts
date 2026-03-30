@@ -386,4 +386,11 @@ export const api = {
 
   getBenchmark: (industry: string, token?: string) =>
     apiFetch<BenchmarkData>(`/api/finance?action=benchmark&industry=${industry}`, { token }),
+
+  createCheckoutSession: (plan: "pro" | "business", token?: string) =>
+    apiFetch<{ url: string }>("/api/checkout", {
+      method: "POST",
+      body: { plan },
+      token,
+    }),
 };
