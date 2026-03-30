@@ -66,9 +66,8 @@ export default function SettingsPage() {
     weeklySummary: false,
   });
 
-  // Admin plan switch
-  const adminEmails = (process.env.NEXT_PUBLIC_ADMIN_EMAILS || "").split(",").map((e) => e.trim()).filter(Boolean);
-  const isAdmin = !!user?.email && adminEmails.includes(user.email);
+  // Admin plan switch (server-side check — email not exposed to browser)
+  const [isAdmin, setIsAdmin] = useState(false);
   const [currentPlan, setCurrentPlan] = useState<string>("free");
   const [switchingPlan, setSwitchingPlan] = useState(false);
 
@@ -79,7 +78,7 @@ export default function SettingsPage() {
     : 0;
   const isTrialActive = trialEndsAt ? new Date(trialEndsAt).getTime() > Date.now() : false;
 
-  // Fetch profile (plan + trial)
+  // Fetch profile (plan + trial) and admin status
   const fetchProfile = useCallback(async () => {
     if (!user) return;
     try {
@@ -96,6 +95,18 @@ export default function SettingsPage() {
       }
     } catch {
       // Supabase not configured or profiles table doesn't exist
+    }
+    // Admin check via server-side API (email never exposed to browser)
+    try {
+      const res = await fetch("/api/admin-check", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: user.email }),
+      });
+      const { is_admin } = await res.json();
+      setIsAdmin(!!is_admin);
+    } catch {
+      setIsAdmin(false);
     }
   }, [user]);
 
