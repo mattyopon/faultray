@@ -5,7 +5,9 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { useEffect, useState } from "react";
 import { api, type ExecutiveReport } from "@/lib/api";
-import { FileText, Loader2, Download, AlertTriangle, CheckCircle2 } from "lucide-react";
+import { FileText, Loader2, Download, AlertTriangle, CheckCircle2, Globe } from "lucide-react";
+import { useLocale } from "@/lib/useLocale";
+import { appDict } from "@/i18n/app-dict";
 
 const DEMO_REPORT: ExecutiveReport = {
   title: "FaultRay Infrastructure Resilience Report",
@@ -39,6 +41,45 @@ const DEMO_REPORT: ExecutiveReport = {
   ],
 };
 
+// Japanese translations for report content
+const JA_FINDINGS: Record<string, { finding: string; impact: string; recommendation: string }> = {
+  "Single point of failure in primary database": {
+    finding: "プライマリデータベースが単一障害点",
+    impact: "データベース障害時にサービス全面停止",
+    recommendation: "30秒以内のプロモーション時間でフェイルオーバーを自動化",
+  },
+  "Cache cluster lacks partition tolerance": {
+    finding: "キャッシュクラスタにパーティション耐性が欠如",
+    impact: "ネットワーク分断時にレイテンシが30%増加",
+    recommendation: "3ノード以上のRedis Clusterを複数AZに展開",
+  },
+  "No circuit breaker pattern": {
+    finding: "サーキットブレーカーパターン未実装",
+    impact: "カスケード障害が伝播",
+    recommendation: "フォールバック応答付きサーキットブレーカーを実装",
+  },
+  "Health check intervals too long (60s)": {
+    finding: "ヘルスチェック間隔が長すぎる（60秒）",
+    impact: "障害検知の遅延",
+    recommendation: "10秒に短縮",
+  },
+};
+
+const JA_ROADMAP: Record<string, { action: string; effort: string }> = {
+  "Database failover automation": { action: "データベースフェイルオーバーの自動化", effort: "中" },
+  "Circuit breaker implementation": { action: "サーキットブレーカーの実装", effort: "低" },
+  "Cache cluster upgrade": { action: "キャッシュクラスタのアップグレード", effort: "中" },
+  "Health check optimization": { action: "ヘルスチェックの最適化", effort: "低" },
+};
+
+const JA_DORA_PILLARS: Record<string, string> = {
+  "Pillar I": "Pillar I: ICTリスク管理フレームワーク",
+  "Pillar II": "Pillar II: ICTインシデント管理・報告",
+  "Pillar III": "Pillar III: デジタルオペレーショナルレジリエンステスト",
+  "Pillar IV": "Pillar IV: ICTサードパーティリスク管理",
+  "Pillar V": "Pillar V: 情報共有",
+};
+
 function severityBadge(sev: string) {
   switch (sev) {
     case "CRITICAL": return "red" as const;
@@ -51,6 +92,14 @@ function severityBadge(sev: string) {
 export default function ReportsPage() {
   const [report, setReport] = useState<ExecutiveReport>(DEMO_REPORT);
   const [loading, setLoading] = useState(true);
+  const [reportLang, setReportLang] = useState<"en" | "ja">("en");
+  const locale = useLocale();
+  const t = locale === "ja" ? appDict.reports.ja : appDict.reports.en;
+
+  // Sync reportLang with app locale on first load
+  useEffect(() => {
+    setReportLang(locale);
+  }, [locale]);
 
   useEffect(() => {
     api
@@ -61,31 +110,43 @@ export default function ReportsPage() {
   }, []);
 
   const downloadJson = () => {
-    const blob = new Blob([JSON.stringify(report, null, 2)], { type: "application/json" });
+    // Generate report in selected language
+    const outputReport = reportLang === "ja" ? generateJaReport(report) : report;
+    const blob = new Blob([JSON.stringify(outputReport, null, 2)], { type: "application/json" });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
-    a.download = "faultray-report.json";
+    a.download = `faultray-report-${reportLang}.json`;
     a.click();
     URL.revokeObjectURL(url);
   };
 
   const downloadHtml = async () => {
     try {
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || ""}/api/report-executive?format=html`);
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || ""}/api/report-executive?format=html&lang=${reportLang}`);
       const html = await res.text();
       const blob = new Blob([html], { type: "text/html" });
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = url;
-      a.download = "faultray-report.html";
+      a.download = `faultray-report-${reportLang}.html`;
       a.click();
       URL.revokeObjectURL(url);
     } catch {
-      // Fallback: just download JSON
-      downloadJson();
+      // Fallback: generate HTML client-side
+      const htmlContent = generateHtmlReport(report, reportLang);
+      const blob = new Blob([htmlContent], { type: "text/html" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `faultray-report-${reportLang}.html`;
+      a.click();
+      URL.revokeObjectURL(url);
     }
   };
+
+  // Display language for report content
+  const rl = reportLang;
 
   return (
     <div className="max-w-[1200px] mx-auto px-6 py-10">
@@ -93,11 +154,23 @@ export default function ReportsPage() {
         <div>
           <h1 className="text-2xl font-bold mb-1 flex items-center gap-3">
             <FileText size={24} className="text-[#FFD700]" />
-            Reports
+            {t.title}
           </h1>
-          <p className="text-[#94a3b8] text-sm">Executive summary and downloadable reports</p>
+          <p className="text-[#94a3b8] text-sm">{t.subtitle}</p>
         </div>
-        <div className="flex gap-2">
+        <div className="flex items-center gap-2">
+          {/* Language selector for report output */}
+          <div className="flex items-center gap-2 mr-2 px-3 py-1.5 rounded-lg border border-[#1e293b] bg-[#111827]">
+            <Globe size={14} className="text-[#64748b]" />
+            <select
+              value={reportLang}
+              onChange={(e) => setReportLang(e.target.value as "en" | "ja")}
+              className="bg-transparent text-sm text-[#94a3b8] focus:outline-none cursor-pointer"
+            >
+              <option value="en">{t.english}</option>
+              <option value="ja">{t.japanese}</option>
+            </select>
+          </div>
           <Button variant="secondary" size="sm" onClick={downloadJson}>
             <Download size={14} /> JSON
           </Button>
@@ -116,25 +189,25 @@ export default function ReportsPage() {
           {/* Executive Summary */}
           <div className="grid md:grid-cols-4 gap-6">
             <Card className="text-center">
-              <p className="text-xs text-[#64748b] uppercase tracking-wider mb-2">Score</p>
+              <p className="text-xs text-[#64748b] uppercase tracking-wider mb-2">{t.score}</p>
               <p className="text-4xl font-extrabold font-mono text-[#FFD700]">
                 {report.executive_summary.overall_score}
               </p>
             </Card>
             <Card className="text-center">
-              <p className="text-xs text-[#64748b] uppercase tracking-wider mb-2">Availability</p>
+              <p className="text-xs text-[#64748b] uppercase tracking-wider mb-2">{t.availability}</p>
               <p className="text-4xl font-extrabold font-mono text-emerald-400">
                 {report.executive_summary.availability_estimate}
               </p>
             </Card>
             <Card className="text-center">
-              <p className="text-xs text-[#64748b] uppercase tracking-wider mb-2">Scenarios</p>
+              <p className="text-xs text-[#64748b] uppercase tracking-wider mb-2">{t.scenariosLabel}</p>
               <p className="text-4xl font-extrabold font-mono">
                 {report.executive_summary.total_scenarios_tested.toLocaleString()}
               </p>
             </Card>
             <Card className="text-center">
-              <p className="text-xs text-[#64748b] uppercase tracking-wider mb-2">Critical</p>
+              <p className="text-xs text-[#64748b] uppercase tracking-wider mb-2">{t.critical}</p>
               <p className="text-4xl font-extrabold font-mono text-red-400">
                 {report.executive_summary.critical_issues}
               </p>
@@ -145,44 +218,47 @@ export default function ReportsPage() {
           <Card>
             <h3 className="text-lg font-bold mb-4 flex items-center gap-2">
               <AlertTriangle size={18} className="text-red-400" />
-              Key Findings
+              {t.keyFindings}
             </h3>
             <div className="space-y-3">
-              {report.key_findings.map((f, i) => (
-                <div
-                  key={i}
-                  className={`p-4 rounded-xl border ${
-                    f.severity === "CRITICAL"
-                      ? "bg-red-500/5 border-red-500/20"
-                      : f.severity === "HIGH"
-                        ? "bg-yellow-500/5 border-yellow-500/20"
-                        : "bg-white/[0.02] border-[#1e293b]"
-                  }`}
-                >
-                  <div className="flex items-start gap-3">
-                    <Badge variant={severityBadge(f.severity)}>{f.severity}</Badge>
-                    <div className="flex-1">
-                      <p className="text-sm font-medium">{f.finding}</p>
-                      <p className="text-xs text-[#64748b] mt-1">Impact: {f.impact}</p>
-                      <p className="text-xs text-emerald-400 mt-1">
-                        <CheckCircle2 size={10} className="inline mr-1" />
-                        {f.recommendation}
-                      </p>
+              {report.key_findings.map((f, i) => {
+                const jaData = JA_FINDINGS[f.finding];
+                return (
+                  <div
+                    key={i}
+                    className={`p-4 rounded-xl border ${
+                      f.severity === "CRITICAL"
+                        ? "bg-red-500/5 border-red-500/20"
+                        : f.severity === "HIGH"
+                          ? "bg-yellow-500/5 border-yellow-500/20"
+                          : "bg-white/[0.02] border-[#1e293b]"
+                    }`}
+                  >
+                    <div className="flex items-start gap-3">
+                      <Badge variant={severityBadge(f.severity)}>{f.severity}</Badge>
+                      <div className="flex-1">
+                        <p className="text-sm font-medium">{rl === "ja" && jaData ? jaData.finding : f.finding}</p>
+                        <p className="text-xs text-[#64748b] mt-1">{t.impact} {rl === "ja" && jaData ? jaData.impact : f.impact}</p>
+                        <p className="text-xs text-emerald-400 mt-1">
+                          <CheckCircle2 size={10} className="inline mr-1" />
+                          {rl === "ja" && jaData ? jaData.recommendation : f.recommendation}
+                        </p>
+                      </div>
                     </div>
                   </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           </Card>
 
           {/* Availability Breakdown */}
           <Card>
-            <h3 className="text-lg font-bold mb-4">Availability Breakdown</h3>
+            <h3 className="text-lg font-bold mb-4">{t.availabilityBreakdown}</h3>
             <div className="space-y-3">
               {[
-                { label: "Hardware", value: report.availability_breakdown.hardware_nines, color: "bg-emerald-400" },
-                { label: "Software", value: report.availability_breakdown.software_nines, color: "bg-[#FFD700]" },
-                { label: "Theoretical", value: report.availability_breakdown.theoretical_nines, color: "bg-blue-400" },
+                { label: rl === "ja" ? "ハードウェア" : "Hardware", value: report.availability_breakdown.hardware_nines, color: "bg-emerald-400" },
+                { label: rl === "ja" ? "ソフトウェア" : "Software", value: report.availability_breakdown.software_nines, color: "bg-[#FFD700]" },
+                { label: rl === "ja" ? "理論値" : "Theoretical", value: report.availability_breakdown.theoretical_nines, color: "bg-blue-400" },
               ].map((layer) => (
                 <div key={layer.label} className="grid grid-cols-[100px_1fr_60px] items-center gap-4">
                   <span className="text-sm text-[#64748b]">{layer.label}</span>
@@ -197,44 +273,49 @@ export default function ReportsPage() {
               ))}
             </div>
             <p className="text-xs text-[#FFD700] mt-3">
-              Bottleneck: {report.availability_breakdown.bottleneck}
+              {t.bottleneck} {rl === "ja" ? "ソフトウェア層" : report.availability_breakdown.bottleneck}
             </p>
           </Card>
 
           {/* Improvement Roadmap */}
           <Card>
-            <h3 className="text-lg font-bold mb-4">Improvement Roadmap</h3>
+            <h3 className="text-lg font-bold mb-4">{t.improvementRoadmap}</h3>
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
                 <thead>
                   <tr className="border-b border-[#1e293b]">
-                    <th className="text-left py-3 px-2 text-[#64748b] font-medium">#</th>
-                    <th className="text-left py-3 px-2 text-[#64748b] font-medium">Action</th>
-                    <th className="text-left py-3 px-2 text-[#64748b] font-medium">Effort</th>
-                    <th className="text-left py-3 px-2 text-[#64748b] font-medium">Impact</th>
-                    <th className="text-left py-3 px-2 text-[#64748b] font-medium">Timeline</th>
+                    <th className="text-left py-3 px-2 text-[#64748b] font-medium">{t.priority}</th>
+                    <th className="text-left py-3 px-2 text-[#64748b] font-medium">{t.action}</th>
+                    <th className="text-left py-3 px-2 text-[#64748b] font-medium">{t.effort}</th>
+                    <th className="text-left py-3 px-2 text-[#64748b] font-medium">{t.impactCol}</th>
+                    <th className="text-left py-3 px-2 text-[#64748b] font-medium">{t.timeline}</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {report.improvement_roadmap.map((item) => (
-                    <tr key={item.priority} className="border-b border-[#1e293b]/50">
-                      <td className="py-3 px-2 font-bold text-[#FFD700]">{item.priority}</td>
-                      <td className="py-3 px-2">{item.action}</td>
-                      <td className="py-3 px-2">
-                        <Badge variant={item.effort === "Low" ? "green" : "yellow"}>{item.effort}</Badge>
-                      </td>
-                      <td className="py-3 px-2 font-mono text-emerald-400">{item.impact}</td>
-                      <td className="py-3 px-2 text-[#94a3b8]">{item.timeline}</td>
-                    </tr>
-                  ))}
+                  {report.improvement_roadmap.map((item) => {
+                    const jaItem = JA_ROADMAP[item.action];
+                    return (
+                      <tr key={item.priority} className="border-b border-[#1e293b]/50">
+                        <td className="py-3 px-2 font-bold text-[#FFD700]">{item.priority}</td>
+                        <td className="py-3 px-2">{rl === "ja" && jaItem ? jaItem.action : item.action}</td>
+                        <td className="py-3 px-2">
+                          <Badge variant={item.effort === "Low" ? "green" : "yellow"}>
+                            {rl === "ja" && jaItem ? jaItem.effort : item.effort}
+                          </Badge>
+                        </td>
+                        <td className="py-3 px-2 font-mono text-emerald-400">{item.impact}</td>
+                        <td className="py-3 px-2 text-[#94a3b8]">{item.timeline}</td>
+                      </tr>
+                    );
+                  })}
                 </tbody>
               </table>
             </div>
           </Card>
 
-          {/* Compliance Status */}
+          {/* DORA Compliance Status */}
           <Card>
-            <h3 className="text-lg font-bold mb-4">Compliance Status</h3>
+            <h3 className="text-lg font-bold mb-4">{t.complianceStatus}</h3>
             <div className="grid md:grid-cols-3 gap-4">
               {Object.entries(report.compliance_status).map(([fw, status]) => (
                 <div key={fw} className="p-4 rounded-xl border border-[#1e293b] bg-white/[0.02] text-center">
@@ -249,7 +330,9 @@ export default function ReportsPage() {
                     variant={status.status === "compliant" ? "green" : "yellow"}
                     className="mt-2"
                   >
-                    {status.status}
+                    {rl === "ja"
+                      ? (status.status === "compliant" ? "準拠" : "一部準拠")
+                      : status.status}
                   </Badge>
                 </div>
               ))}
@@ -259,4 +342,75 @@ export default function ReportsPage() {
       )}
     </div>
   );
+}
+
+// Generate Japanese version of report for JSON download
+function generateJaReport(report: ExecutiveReport) {
+  return {
+    ...report,
+    title: "FaultRay インフラレジリエンスレポート",
+    executive_summary: {
+      ...report.executive_summary,
+      risk_level: report.executive_summary.risk_level === "Medium" ? "中" : report.executive_summary.risk_level === "High" ? "高" : "低",
+    },
+    key_findings: report.key_findings.map((f) => {
+      const ja = JA_FINDINGS[f.finding];
+      return ja ? { ...f, finding: ja.finding, impact: ja.impact, recommendation: ja.recommendation } : f;
+    }),
+    availability_breakdown: {
+      ...report.availability_breakdown,
+      bottleneck: "ソフトウェア層",
+    },
+    improvement_roadmap: report.improvement_roadmap.map((item) => {
+      const ja = JA_ROADMAP[item.action];
+      return ja ? { ...item, action: ja.action, effort: ja.effort } : item;
+    }),
+  };
+}
+
+// Generate HTML report for download
+function generateHtmlReport(report: ExecutiveReport, lang: "en" | "ja") {
+  const isJa = lang === "ja";
+  const title = isJa ? "FaultRay インフラレジリエンスレポート" : report.title;
+
+  const findingsHtml = report.key_findings.map((f) => {
+    const ja = JA_FINDINGS[f.finding];
+    const finding = isJa && ja ? ja.finding : f.finding;
+    const impact = isJa && ja ? ja.impact : f.impact;
+    const rec = isJa && ja ? ja.recommendation : f.recommendation;
+    return `<tr><td>${f.severity}</td><td>${finding}</td><td>${impact}</td><td>${rec}</td></tr>`;
+  }).join("\n");
+
+  const roadmapHtml = report.improvement_roadmap.map((item) => {
+    const ja = JA_ROADMAP[item.action];
+    const action = isJa && ja ? ja.action : item.action;
+    const effort = isJa && ja ? ja.effort : item.effort;
+    return `<tr><td>${item.priority}</td><td>${action}</td><td>${effort}</td><td>${item.impact}</td><td>${item.timeline}</td></tr>`;
+  }).join("\n");
+
+  return `<!DOCTYPE html>
+<html lang="${lang}">
+<head><meta charset="UTF-8"><title>${title}</title>
+<style>body{font-family:system-ui,sans-serif;max-width:900px;margin:0 auto;padding:40px;background:#0a0e1a;color:#e2e8f0}
+h1{color:#FFD700}h2{color:#94a3b8;border-bottom:1px solid #1e293b;padding-bottom:8px}
+table{width:100%;border-collapse:collapse;margin:16px 0}td,th{text-align:left;padding:8px 12px;border-bottom:1px solid #1e293b}
+th{color:#64748b;font-size:12px;text-transform:uppercase}.score{font-size:48px;font-weight:800;color:#FFD700;font-family:monospace}
+.stat{text-align:center;padding:20px;border:1px solid #1e293b;border-radius:12px;background:#111827}
+.grid{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin:16px 0}
+.critical{color:#ef4444}.high{color:#f59e0b}.medium{color:#eab308}</style>
+</head>
+<body>
+<h1>${title}</h1>
+<p style="color:#64748b">${isJa ? "生成日時" : "Generated"}: ${new Date(report.generated_at).toLocaleString(lang === "ja" ? "ja-JP" : "en-US")}</p>
+<div class="grid">
+<div class="stat"><div class="score">${report.executive_summary.overall_score}</div><div style="color:#64748b">${isJa ? "スコア" : "Score"}</div></div>
+<div class="stat"><div class="score" style="color:#10b981">${report.executive_summary.availability_estimate}</div><div style="color:#64748b">${isJa ? "可用性" : "Availability"}</div></div>
+<div class="stat"><div class="score" style="color:#e2e8f0;font-size:36px">${report.executive_summary.total_scenarios_tested.toLocaleString()}</div><div style="color:#64748b">${isJa ? "テストシナリオ" : "Scenarios"}</div></div>
+<div class="stat"><div class="score" style="color:#ef4444">${report.executive_summary.critical_issues}</div><div style="color:#64748b">${isJa ? "重大な問題" : "Critical Issues"}</div></div>
+</div>
+<h2>${isJa ? "主要な検出事項" : "Key Findings"}</h2>
+<table><tr><th>${isJa ? "深刻度" : "Severity"}</th><th>${isJa ? "検出事項" : "Finding"}</th><th>${isJa ? "影響" : "Impact"}</th><th>${isJa ? "推奨対応" : "Recommendation"}</th></tr>${findingsHtml}</table>
+<h2>${isJa ? "改善ロードマップ" : "Improvement Roadmap"}</h2>
+<table><tr><th>#</th><th>${isJa ? "アクション" : "Action"}</th><th>${isJa ? "工数" : "Effort"}</th><th>${isJa ? "効果" : "Impact"}</th><th>${isJa ? "期間" : "Timeline"}</th></tr>${roadmapHtml}</table>
+</body></html>`;
 }

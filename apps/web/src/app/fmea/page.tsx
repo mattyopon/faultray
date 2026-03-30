@@ -5,6 +5,8 @@ import { Badge } from "@/components/ui/badge";
 import { useEffect, useState } from "react";
 import { api, type FmeaData } from "@/lib/api";
 import { AlertOctagon, Loader2, CheckCircle2, XCircle } from "lucide-react";
+import { useLocale } from "@/lib/useLocale";
+import { appDict } from "@/i18n/app-dict";
 
 const DEMO_DATA: FmeaData = {
   analysis_date: "2026-03-30",
@@ -31,17 +33,20 @@ function rpnColor(rpn: number): string {
   return "#10b981";
 }
 
-function rpnLabel(rpn: number): string {
-  if (rpn >= 200) return "Critical";
-  if (rpn >= 120) return "High";
-  if (rpn >= 60) return "Medium";
-  return "Low";
+function rpnLabel(rpn: number, locale: "ja" | "en"): string {
+  const t = locale === "ja" ? appDict.fmea.ja : appDict.fmea.en;
+  if (rpn >= 200) return t.critical;
+  if (rpn >= 120) return t.high;
+  if (rpn >= 60) return t.medium;
+  return t.low;
 }
 
 export default function FmeaPage() {
   const [data, setData] = useState<FmeaData>(DEMO_DATA);
   const [loading, setLoading] = useState(true);
   const [sortBy, setSortBy] = useState<"rpn" | "severity" | "occurrence">("rpn");
+  const locale = useLocale();
+  const t = locale === "ja" ? appDict.fmea.ja : appDict.fmea.en;
 
   useEffect(() => {
     api
@@ -62,10 +67,10 @@ export default function FmeaPage() {
       <div className="mb-10">
         <h1 className="text-2xl font-bold mb-1 flex items-center gap-3">
           <AlertOctagon size={24} className="text-[#FFD700]" />
-          FMEA Analysis
+          {t.title}
         </h1>
         <p className="text-[#94a3b8] text-sm">
-          Failure Mode and Effects Analysis with RPN scoring
+          {t.subtitle}
         </p>
       </div>
 
@@ -79,27 +84,27 @@ export default function FmeaPage() {
           <div className="grid md:grid-cols-4 gap-6 mb-8">
             <Card className="text-center">
               <p className="text-3xl font-extrabold font-mono">{data.total_failure_modes}</p>
-              <p className="text-xs text-[#64748b] uppercase tracking-wider mt-1">Failure Modes</p>
+              <p className="text-xs text-[#64748b] uppercase tracking-wider mt-1">{t.failureModes}</p>
             </Card>
             <Card className="text-center">
               <p className="text-3xl font-extrabold font-mono text-red-400">{data.rpn_distribution.critical}</p>
-              <p className="text-xs text-[#64748b] uppercase tracking-wider mt-1">Critical RPN</p>
+              <p className="text-xs text-[#64748b] uppercase tracking-wider mt-1">{t.criticalRpn}</p>
             </Card>
             <Card className="text-center">
               <p className="text-3xl font-extrabold font-mono text-[#f59e0b]">{data.rpn_distribution.high}</p>
-              <p className="text-xs text-[#64748b] uppercase tracking-wider mt-1">High RPN</p>
+              <p className="text-xs text-[#64748b] uppercase tracking-wider mt-1">{t.highRpn}</p>
             </Card>
             <Card className="text-center">
               <p className="text-3xl font-extrabold font-mono text-emerald-400">
                 {data.failure_modes.filter((f) => f.status === "mitigated").length}
               </p>
-              <p className="text-xs text-[#64748b] uppercase tracking-wider mt-1">Mitigated</p>
+              <p className="text-xs text-[#64748b] uppercase tracking-wider mt-1">{t.mitigated}</p>
             </Card>
           </div>
 
           {/* Sort Controls */}
           <div className="flex items-center gap-2 mb-4">
-            <span className="text-xs text-[#64748b] uppercase tracking-wider">Sort by:</span>
+            <span className="text-xs text-[#64748b] uppercase tracking-wider">{t.sortBy}</span>
             {(["rpn", "severity", "occurrence"] as const).map((s) => (
               <button
                 key={s}
@@ -121,14 +126,14 @@ export default function FmeaPage() {
               <table className="w-full text-sm">
                 <thead>
                   <tr className="border-b border-[#1e293b]">
-                    <th className="text-left py-3 px-2 text-[#64748b] font-medium">ID</th>
-                    <th className="text-left py-3 px-2 text-[#64748b] font-medium">Component</th>
-                    <th className="text-left py-3 px-2 text-[#64748b] font-medium">Failure Mode</th>
+                    <th className="text-left py-3 px-2 text-[#64748b] font-medium">{t.id}</th>
+                    <th className="text-left py-3 px-2 text-[#64748b] font-medium">{t.component}</th>
+                    <th className="text-left py-3 px-2 text-[#64748b] font-medium">{t.failureMode}</th>
                     <th className="text-center py-3 px-2 text-[#64748b] font-medium">S</th>
                     <th className="text-center py-3 px-2 text-[#64748b] font-medium">O</th>
                     <th className="text-center py-3 px-2 text-[#64748b] font-medium">D</th>
                     <th className="text-center py-3 px-2 text-[#64748b] font-medium">RPN</th>
-                    <th className="text-center py-3 px-2 text-[#64748b] font-medium">Status</th>
+                    <th className="text-center py-3 px-2 text-[#64748b] font-medium">{t.status}</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -154,18 +159,18 @@ export default function FmeaPage() {
                           {fm.rpn}
                         </span>
                         <br />
-                        <span className="text-xs" style={{ color: rpnColor(fm.rpn) }}>{rpnLabel(fm.rpn)}</span>
+                        <span className="text-xs" style={{ color: rpnColor(fm.rpn) }}>{rpnLabel(fm.rpn, locale)}</span>
                       </td>
                       <td className="py-3 px-2 text-center">
                         {fm.status === "mitigated" ? (
                           <Badge variant="green">
                             <CheckCircle2 size={10} className="mr-1" />
-                            Mitigated
+                            {t.mitigated}
                           </Badge>
                         ) : (
                           <Badge variant="red">
                             <XCircle size={10} className="mr-1" />
-                            Open
+                            {t.open}
                           </Badge>
                         )}
                       </td>
@@ -176,7 +181,7 @@ export default function FmeaPage() {
             </div>
             <div className="mt-4 pt-4 border-t border-[#1e293b]">
               <p className="text-xs text-[#64748b]">
-                <strong>S</strong> = Severity (1-10) | <strong>O</strong> = Occurrence (1-10) | <strong>D</strong> = Detection difficulty (1-10) | <strong>RPN</strong> = S x O x D (Risk Priority Number)
+                {t.rpnExplain}
               </p>
             </div>
           </Card>

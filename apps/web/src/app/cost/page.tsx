@@ -6,6 +6,8 @@ import { Button } from "@/components/ui/button";
 import { useState } from "react";
 import { api, type CostAnalysis } from "@/lib/api";
 import { DollarSign, Loader2, TrendingUp, ArrowRight } from "lucide-react";
+import { useLocale } from "@/lib/useLocale";
+import { appDict } from "@/i18n/app-dict";
 
 const INDUSTRIES = [
   { id: "fintech", name: "FinTech" },
@@ -24,6 +26,8 @@ export default function CostPage() {
   const [revenue, setRevenue] = useState(15000);
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<CostAnalysis | null>(null);
+  const locale = useLocale();
+  const t = locale === "ja" ? appDict.cost.ja : appDict.cost.en;
 
   const runAnalysis = async () => {
     setLoading(true);
@@ -55,10 +59,10 @@ export default function CostPage() {
       <div className="mb-10">
         <h1 className="text-2xl font-bold mb-1 flex items-center gap-3">
           <DollarSign size={24} className="text-[#FFD700]" />
-          Cost Analysis
+          {t.title}
         </h1>
         <p className="text-[#94a3b8] text-sm">
-          Calculate downtime costs and improvement ROI
+          {t.subtitle}
         </p>
       </div>
 
@@ -66,7 +70,7 @@ export default function CostPage() {
       <Card className="mb-8">
         <div className="grid md:grid-cols-3 gap-6">
           <div>
-            <label className="text-xs font-medium text-[#94a3b8] mb-2 block">Industry</label>
+            <label className="text-xs font-medium text-[#94a3b8] mb-2 block">{t.industry}</label>
             <div className="space-y-2">
               {INDUSTRIES.map((ind) => (
                 <button
@@ -84,7 +88,7 @@ export default function CostPage() {
             </div>
           </div>
           <div>
-            <label className="text-xs font-medium text-[#94a3b8] mb-2 block">Revenue per Hour ($)</label>
+            <label className="text-xs font-medium text-[#94a3b8] mb-2 block">{t.revenuePerHour}</label>
             <input
               type="number"
               value={revenue}
@@ -110,12 +114,12 @@ export default function CostPage() {
               {loading ? (
                 <>
                   <Loader2 size={16} className="animate-spin" />
-                  Calculating...
+                  {t.calculating}
                 </>
               ) : (
                 <>
                   <DollarSign size={16} />
-                  Calculate Cost
+                  {t.calculateCost}
                 </>
               )}
             </Button>
@@ -129,7 +133,7 @@ export default function CostPage() {
           {/* Cost Comparison */}
           <div className="grid md:grid-cols-3 gap-6">
             <Card className="text-center border-red-500/20">
-              <p className="text-xs text-[#64748b] uppercase tracking-wider mb-2">Current Annual Cost</p>
+              <p className="text-xs text-[#64748b] uppercase tracking-wider mb-2">{t.currentAnnualCost}</p>
               <p className="text-3xl font-extrabold font-mono text-red-400">
                 {formatCurrency(result.current.annual_cost)}
               </p>
@@ -140,11 +144,11 @@ export default function CostPage() {
             <Card className="flex flex-col items-center justify-center">
               <ArrowRight size={24} className="text-[#FFD700] mb-2" />
               <Badge variant="green" className="text-base px-4 py-1">
-                Save {formatCurrency(result.potential_savings)}/yr
+                {t.save} {formatCurrency(result.potential_savings)}{t.perYear}
               </Badge>
             </Card>
             <Card className="text-center border-emerald-500/20">
-              <p className="text-xs text-[#64748b] uppercase tracking-wider mb-2">Target Annual Cost</p>
+              <p className="text-xs text-[#64748b] uppercase tracking-wider mb-2">{t.targetAnnualCost}</p>
               <p className="text-3xl font-extrabold font-mono text-emerald-400">
                 {formatCurrency(result.target.annual_cost)}
               </p>
@@ -158,18 +162,18 @@ export default function CostPage() {
           <Card>
             <h3 className="text-lg font-bold mb-4 flex items-center gap-2">
               <TrendingUp size={18} className="text-[#FFD700]" />
-              Improvement ROI
+              {t.improvementRoi}
             </h3>
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
                 <thead>
                   <tr className="border-b border-[#1e293b]">
-                    <th className="text-left py-3 px-2 text-[#64748b] font-medium">Action</th>
-                    <th className="text-right py-3 px-2 text-[#64748b] font-medium">Cost</th>
-                    <th className="text-right py-3 px-2 text-[#64748b] font-medium">Savings/yr</th>
-                    <th className="text-right py-3 px-2 text-[#64748b] font-medium">ROI</th>
-                    <th className="text-right py-3 px-2 text-[#64748b] font-medium">Payback</th>
-                    <th className="text-right py-3 px-2 text-[#64748b] font-medium">Impact</th>
+                    <th className="text-left py-3 px-2 text-[#64748b] font-medium">{t.action}</th>
+                    <th className="text-right py-3 px-2 text-[#64748b] font-medium">{t.costCol}</th>
+                    <th className="text-right py-3 px-2 text-[#64748b] font-medium">{t.savingsPerYear}</th>
+                    <th className="text-right py-3 px-2 text-[#64748b] font-medium">{t.roi}</th>
+                    <th className="text-right py-3 px-2 text-[#64748b] font-medium">{t.payback}</th>
+                    <th className="text-right py-3 px-2 text-[#64748b] font-medium">{t.impact}</th>
                   </tr>
                 </thead>
                 <tbody>

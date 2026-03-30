@@ -8,6 +8,8 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 import { api, type SimulationRun } from "@/lib/api";
 import { Onboarding } from "@/components/onboarding";
+import { useLocale } from "@/lib/useLocale";
+import { appDict } from "@/i18n/app-dict";
 import {
   Zap,
   TrendingUp,
@@ -50,6 +52,8 @@ export default function DashboardPage() {
   const { user } = useAuth();
   const [runs, setRuns] = useState<SimulationRun[]>([]);
   const [loading, setLoading] = useState(true);
+  const locale = useLocale();
+  const t = locale === "ja" ? appDict.dashboard.ja : appDict.dashboard.en;
 
   useEffect(() => {
     api.getRuns(undefined, 5)
@@ -67,15 +71,15 @@ export default function DashboardPage() {
       {/* Header */}
       <div className="flex items-center justify-between mb-10">
         <div>
-          <h1 className="text-2xl font-bold mb-1">Dashboard</h1>
+          <h1 className="text-2xl font-bold mb-1">{t.title}</h1>
           <p className="text-[#94a3b8] text-sm">
-            Welcome back{user?.user_metadata?.full_name ? `, ${user.user_metadata.full_name}` : ""}
+            {t.welcomeBack}{user?.user_metadata?.full_name ? `, ${user.user_metadata.full_name}` : ""}
           </p>
         </div>
         <Link href="/simulate">
           <Button>
             <Zap size={16} />
-            New Simulation
+            {t.newSimulation}
           </Button>
         </Link>
       </div>
@@ -85,10 +89,10 @@ export default function DashboardPage() {
         <Card className="flex items-center gap-6">
           <ScoreRing score={latestScore} size={100} />
           <div>
-            <p className="text-xs text-[#64748b] uppercase tracking-wider mb-1">Resilience Score</p>
+            <p className="text-xs text-[#64748b] uppercase tracking-wider mb-1">{t.resilienceScore}</p>
             <p className="text-lg font-bold">{latestScore.toFixed(1)} / 100</p>
             <Badge variant={latestScore >= 90 ? "green" : latestScore >= 70 ? "gold" : "red"}>
-              {latestScore >= 90 ? "Excellent" : latestScore >= 70 ? "Good" : "Needs Work"}
+              {latestScore >= 90 ? t.excellent : latestScore >= 70 ? t.good : t.needsWork}
             </Badge>
           </div>
         </Card>
@@ -98,10 +102,10 @@ export default function DashboardPage() {
             <div className="w-10 h-10 rounded-lg bg-emerald-500/10 flex items-center justify-center">
               <TrendingUp size={20} className="text-emerald-400" />
             </div>
-            <p className="text-xs text-[#64748b] uppercase tracking-wider">Availability</p>
+            <p className="text-xs text-[#64748b] uppercase tracking-wider">{t.availability}</p>
           </div>
           <p className="text-2xl font-bold font-mono">99.99%</p>
-          <p className="text-xs text-[#64748b] mt-1">4.00 nines</p>
+          <p className="text-xs text-[#64748b] mt-1">4.00 {t.nines}</p>
         </Card>
 
         <Card>
@@ -109,13 +113,13 @@ export default function DashboardPage() {
             <div className="w-10 h-10 rounded-lg bg-[#FFD700]/10 flex items-center justify-center">
               <Shield size={20} className="text-[#FFD700]" />
             </div>
-            <p className="text-xs text-[#64748b] uppercase tracking-wider">Scenarios</p>
+            <p className="text-xs text-[#64748b] uppercase tracking-wider">{t.scenarios}</p>
           </div>
           <p className="text-2xl font-bold font-mono">{latestRun?.total_scenarios ?? 152}</p>
           <div className="flex items-center gap-2 mt-1">
-            <span className="text-xs text-emerald-400">{latestRun?.scenarios_passed ?? 147} passed</span>
+            <span className="text-xs text-emerald-400">{latestRun?.scenarios_passed ?? 147} {t.passed}</span>
             <span className="text-xs text-[#64748b]">/</span>
-            <span className="text-xs text-red-400">{latestRun?.scenarios_failed ?? 5} failed</span>
+            <span className="text-xs text-red-400">{latestRun?.scenarios_failed ?? 5} {t.failed}</span>
           </div>
         </Card>
 
@@ -124,10 +128,10 @@ export default function DashboardPage() {
             <div className="w-10 h-10 rounded-lg bg-red-500/10 flex items-center justify-center">
               <AlertTriangle size={20} className="text-red-400" />
             </div>
-            <p className="text-xs text-[#64748b] uppercase tracking-wider">Critical Issues</p>
+            <p className="text-xs text-[#64748b] uppercase tracking-wider">{t.criticalIssues}</p>
           </div>
           <p className="text-2xl font-bold font-mono">3</p>
-          <p className="text-xs text-red-400 mt-1">Requires attention</p>
+          <p className="text-xs text-red-400 mt-1">{t.requiresAttention}</p>
         </Card>
       </div>
 
@@ -136,14 +140,14 @@ export default function DashboardPage() {
         <div className="flex items-center justify-between mb-6">
           <h2 className="text-lg font-bold flex items-center gap-2">
             <BarChart3 size={20} className="text-[#FFD700]" />
-            3-Layer Availability Model
+            {t.threeLayerModel}
           </h2>
         </div>
         <div className="space-y-4">
           {[
-            { label: "Software", value: 4.0, max: 7, color: "bg-emerald-400" },
-            { label: "Hardware", value: 5.91, max: 7, color: "bg-[#FFD700]" },
-            { label: "Theoretical", value: 6.65, max: 7, color: "bg-blue-400" },
+            { label: t.software, value: 4.0, max: 7, color: "bg-emerald-400" },
+            { label: t.hardware, value: 5.91, max: 7, color: "bg-[#FFD700]" },
+            { label: t.theoretical, value: 6.65, max: 7, color: "bg-blue-400" },
           ].map((layer) => (
             <div key={layer.label} className="grid grid-cols-[80px_1fr_60px] items-center gap-4">
               <span className="text-sm text-[#64748b]">{layer.label}</span>
@@ -164,19 +168,19 @@ export default function DashboardPage() {
         <div className="flex items-center justify-between mb-6">
           <h2 className="text-lg font-bold flex items-center gap-2">
             <Clock size={20} className="text-[#FFD700]" />
-            Recent Simulations
+            {t.recentSimulations}
           </h2>
           <Link href="/results" className="text-sm text-[#FFD700] hover:underline flex items-center gap-1">
-            View all <ArrowRight size={14} />
+            {t.viewAll} <ArrowRight size={14} />
           </Link>
         </div>
         {loading ? (
-          <div className="text-center py-8 text-[#64748b]">Loading...</div>
+          <div className="text-center py-8 text-[#64748b]">{t.loading}</div>
         ) : runs.length === 0 ? (
           <div className="text-center py-12">
-            <p className="text-[#64748b] mb-4">No simulations yet. Run your first simulation to see results here.</p>
+            <p className="text-[#64748b] mb-4">{t.noSimulations}</p>
             <Link href="/simulate">
-              <Button size="sm"><Zap size={14} /> Run Simulation</Button>
+              <Button size="sm"><Zap size={14} /> {t.runSimulation}</Button>
             </Link>
           </div>
         ) : (
@@ -184,11 +188,11 @@ export default function DashboardPage() {
             <table className="w-full text-sm">
               <thead>
                 <tr className="border-b border-[#1e293b]">
-                  <th className="text-left py-3 px-2 text-[#64748b] font-medium">Date</th>
-                  <th className="text-left py-3 px-2 text-[#64748b] font-medium">Score</th>
-                  <th className="text-left py-3 px-2 text-[#64748b] font-medium">Availability</th>
-                  <th className="text-left py-3 px-2 text-[#64748b] font-medium">Scenarios</th>
-                  <th className="text-right py-3 px-2 text-[#64748b] font-medium">Status</th>
+                  <th className="text-left py-3 px-2 text-[#64748b] font-medium">{t.date}</th>
+                  <th className="text-left py-3 px-2 text-[#64748b] font-medium">{t.score}</th>
+                  <th className="text-left py-3 px-2 text-[#64748b] font-medium">{t.availability}</th>
+                  <th className="text-left py-3 px-2 text-[#64748b] font-medium">{t.scenariosCol}</th>
+                  <th className="text-right py-3 px-2 text-[#64748b] font-medium">{t.status}</th>
                 </tr>
               </thead>
               <tbody>
@@ -208,7 +212,7 @@ export default function DashboardPage() {
                     </td>
                     <td className="py-3 px-2 text-right">
                       <Badge variant={run.scenarios_failed === 0 ? "green" : "yellow"}>
-                        {run.scenarios_failed === 0 ? "All Passed" : `${run.scenarios_failed} Failed`}
+                        {run.scenarios_failed === 0 ? t.allPassed : `${run.scenarios_failed} ${t.xFailed}`}
                       </Badge>
                     </td>
                   </tr>

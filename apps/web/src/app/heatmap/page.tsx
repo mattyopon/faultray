@@ -5,6 +5,8 @@ import { Badge } from "@/components/ui/badge";
 import { useEffect, useState } from "react";
 import { api, type HeatmapData, type HeatmapComponent } from "@/lib/api";
 import { Flame, Loader2 } from "lucide-react";
+import { useLocale } from "@/lib/useLocale";
+import { appDict } from "@/i18n/app-dict";
 
 const DEMO_DATA: HeatmapData = {
   components: [
@@ -39,17 +41,20 @@ function riskBg(score: number): string {
   return "bg-emerald-500/5 border-emerald-500/10";
 }
 
-function riskLabel(score: number): string {
-  if (score >= 70) return "High Risk";
-  if (score >= 50) return "Medium Risk";
-  if (score >= 30) return "Low-Medium";
-  return "Low Risk";
+function riskLabel(score: number, locale: "ja" | "en"): string {
+  const t = locale === "ja" ? appDict.heatmap.ja : appDict.heatmap.en;
+  if (score >= 70) return t.highRiskLabel;
+  if (score >= 50) return t.mediumRiskLabel;
+  if (score >= 30) return t.lowMediumRiskLabel;
+  return t.lowRiskLabel;
 }
 
 export default function HeatmapPage() {
   const [data, setData] = useState<HeatmapData>(DEMO_DATA);
   const [loading, setLoading] = useState(true);
   const [selected, setSelected] = useState<HeatmapComponent | null>(null);
+  const locale = useLocale();
+  const t = locale === "ja" ? appDict.heatmap.ja : appDict.heatmap.en;
 
   useEffect(() => {
     api
@@ -71,37 +76,37 @@ export default function HeatmapPage() {
       <div className="mb-10">
         <h1 className="text-2xl font-bold mb-1 flex items-center gap-3">
           <Flame size={24} className="text-[#FFD700]" />
-          Risk Heatmap
+          {t.title}
         </h1>
-        <p className="text-[#94a3b8] text-sm">Component-level risk visualization</p>
+        <p className="text-[#94a3b8] text-sm">{t.subtitle}</p>
       </div>
 
       {loading ? (
         <Card className="flex items-center justify-center py-20">
           <Loader2 size={24} className="animate-spin text-[#FFD700]" />
-          <span className="ml-3 text-[#94a3b8]">Loading heatmap...</span>
+          <span className="ml-3 text-[#94a3b8]">{t.loading}</span>
         </Card>
       ) : (
         <>
           {/* Color Legend */}
           <Card className="mb-6">
             <div className="flex items-center gap-6 flex-wrap">
-              <span className="text-xs text-[#64748b] uppercase tracking-wider">Risk Level:</span>
+              <span className="text-xs text-[#64748b] uppercase tracking-wider">{t.riskLevel}</span>
               <div className="flex items-center gap-2">
                 <div className="w-4 h-4 rounded" style={{ backgroundColor: "#10b981" }} />
-                <span className="text-xs text-[#94a3b8]">Low (0-29)</span>
+                <span className="text-xs text-[#94a3b8]">{t.low}</span>
               </div>
               <div className="flex items-center gap-2">
                 <div className="w-4 h-4 rounded" style={{ backgroundColor: "#eab308" }} />
-                <span className="text-xs text-[#94a3b8]">Low-Medium (30-49)</span>
+                <span className="text-xs text-[#94a3b8]">{t.lowMedium}</span>
               </div>
               <div className="flex items-center gap-2">
                 <div className="w-4 h-4 rounded" style={{ backgroundColor: "#f59e0b" }} />
-                <span className="text-xs text-[#94a3b8]">Medium (50-69)</span>
+                <span className="text-xs text-[#94a3b8]">{t.medium}</span>
               </div>
               <div className="flex items-center gap-2">
                 <div className="w-4 h-4 rounded" style={{ backgroundColor: "#ef4444" }} />
-                <span className="text-xs text-[#94a3b8]">High (70-100)</span>
+                <span className="text-xs text-[#94a3b8]">{t.high}</span>
               </div>
             </div>
           </Card>
@@ -149,7 +154,7 @@ export default function HeatmapPage() {
               {selected ? (
                 <Card>
                   <h3 className="text-sm font-semibold text-[#94a3b8] uppercase tracking-wider mb-4">
-                    Component Detail
+                    {t.componentDetail}
                   </h3>
                   <div className="text-center mb-4">
                     <span
@@ -158,23 +163,23 @@ export default function HeatmapPage() {
                     >
                       {selected.risk_score}
                     </span>
-                    <p className="text-xs text-[#64748b] mt-1">Risk Score</p>
+                    <p className="text-xs text-[#64748b] mt-1">{t.riskScore}</p>
                   </div>
                   <div className="space-y-3">
                     <div className="flex justify-between text-sm">
-                      <span className="text-[#64748b]">Name</span>
+                      <span className="text-[#64748b]">{t.name}</span>
                       <span className="font-medium">{selected.name}</span>
                     </div>
                     <div className="flex justify-between text-sm">
-                      <span className="text-[#64748b]">Type</span>
+                      <span className="text-[#64748b]">{t.type}</span>
                       <span className="font-mono">{selected.type}</span>
                     </div>
                     <div className="flex justify-between text-sm">
-                      <span className="text-[#64748b]">Category</span>
+                      <span className="text-[#64748b]">{t.category}</span>
                       <span>{selected.category}</span>
                     </div>
                     <div className="flex justify-between text-sm">
-                      <span className="text-[#64748b]">Risk Level</span>
+                      <span className="text-[#64748b]">{t.riskLevelLabel}</span>
                       <Badge
                         variant={
                           selected.risk_score >= 70
@@ -184,7 +189,7 @@ export default function HeatmapPage() {
                               : "green"
                         }
                       >
-                        {riskLabel(selected.risk_score)}
+                        {riskLabel(selected.risk_score, locale)}
                       </Badge>
                     </div>
                   </div>
@@ -192,14 +197,14 @@ export default function HeatmapPage() {
               ) : (
                 <Card>
                   <p className="text-sm text-[#64748b] text-center py-4">
-                    Click a component to view details
+                    {t.clickToView}
                   </p>
                 </Card>
               )}
 
               <Card>
                 <h3 className="text-sm font-semibold text-[#94a3b8] uppercase tracking-wider mb-4">
-                  Top Risks
+                  {t.topRisks}
                 </h3>
                 <div className="space-y-2">
                   {sorted.slice(0, 5).map((comp) => (

@@ -6,6 +6,8 @@ import { Button } from "@/components/ui/button";
 import { useState } from "react";
 import { api, type WhatIfResult } from "@/lib/api";
 import { FlaskConical, Loader2, TrendingUp, TrendingDown, Minus } from "lucide-react";
+import { useLocale } from "@/lib/useLocale";
+import { appDict } from "@/i18n/app-dict";
 
 const COMPONENTS = [
   { id: "api", name: "API Server" },
@@ -32,6 +34,8 @@ export default function WhatIfPage() {
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<WhatIfResult | null>(null);
 
+  const locale = useLocale();
+  const t = locale === "ja" ? appDict.whatif.ja : appDict.whatif.en;
   const selectedParam = PARAMETERS.find((p) => p.id === parameter)!;
 
   const runAnalysis = async () => {
@@ -67,10 +71,10 @@ export default function WhatIfPage() {
       <div className="mb-10">
         <h1 className="text-2xl font-bold mb-1 flex items-center gap-3">
           <FlaskConical size={24} className="text-[#FFD700]" />
-          What-if Analysis
+          {t.title}
         </h1>
         <p className="text-[#94a3b8] text-sm">
-          Simulate parameter changes and see score impact in real-time
+          {t.subtitle}
         </p>
       </div>
 
@@ -78,13 +82,13 @@ export default function WhatIfPage() {
         {/* Controls */}
         <Card>
           <h3 className="text-sm font-semibold text-[#94a3b8] uppercase tracking-wider mb-6">
-            Parameters
+            {t.parameters}
           </h3>
 
           <div className="space-y-6">
             {/* Component Selection */}
             <div>
-              <label className="text-xs font-medium text-[#94a3b8] mb-2 block">Component</label>
+              <label className="text-xs font-medium text-[#94a3b8] mb-2 block">{t.component}</label>
               <div className="grid grid-cols-2 gap-2">
                 {COMPONENTS.map((c) => (
                   <button
@@ -104,7 +108,7 @@ export default function WhatIfPage() {
 
             {/* Parameter Selection */}
             <div>
-              <label className="text-xs font-medium text-[#94a3b8] mb-2 block">Parameter</label>
+              <label className="text-xs font-medium text-[#94a3b8] mb-2 block">{t.parameter}</label>
               <select
                 value={parameter}
                 onChange={(e) => {
@@ -125,7 +129,7 @@ export default function WhatIfPage() {
             {/* Slider */}
             <div>
               <div className="flex items-center justify-between mb-2">
-                <label className="text-xs font-medium text-[#94a3b8]">Value</label>
+                <label className="text-xs font-medium text-[#94a3b8]">{t.value}</label>
                 <span className="text-lg font-bold font-mono text-[#FFD700]">{value}</span>
               </div>
               <input
@@ -139,7 +143,7 @@ export default function WhatIfPage() {
               />
               <div className="flex justify-between text-xs text-[#64748b] mt-1">
                 <span>{selectedParam.min}</span>
-                <span className="text-[#94a3b8]">Default: {selectedParam.default}</span>
+                <span className="text-[#94a3b8]">{t.default} {selectedParam.default}</span>
                 <span>{selectedParam.max}</span>
               </div>
             </div>
@@ -148,12 +152,12 @@ export default function WhatIfPage() {
               {loading ? (
                 <>
                   <Loader2 size={16} className="animate-spin" />
-                  Analyzing...
+                  {t.analyzing}
                 </>
               ) : (
                 <>
                   <FlaskConical size={16} />
-                  Run Analysis
+                  {t.runAnalysis}
                 </>
               )}
             </Button>
@@ -166,18 +170,18 @@ export default function WhatIfPage() {
             <>
               <Card>
                 <h3 className="text-sm font-semibold text-[#94a3b8] uppercase tracking-wider mb-6">
-                  Impact Analysis
+                  {t.impactAnalysis}
                 </h3>
 
                 <div className="grid grid-cols-2 gap-4 mb-6">
                   <div className="p-4 rounded-xl bg-white/[0.02] border border-[#1e293b] text-center">
-                    <p className="text-xs text-[#64748b] uppercase tracking-wider mb-1">Before</p>
+                    <p className="text-xs text-[#64748b] uppercase tracking-wider mb-1">{t.before}</p>
                     <p className="text-3xl font-extrabold font-mono text-[#94a3b8]">
                       {result.baseline.overall_score.toFixed(1)}
                     </p>
                   </div>
                   <div className="p-4 rounded-xl bg-white/[0.02] border border-[#1e293b] text-center">
-                    <p className="text-xs text-[#64748b] uppercase tracking-wider mb-1">After</p>
+                    <p className="text-xs text-[#64748b] uppercase tracking-wider mb-1">{t.after}</p>
                     <p
                       className="text-3xl font-extrabold font-mono"
                       style={{
@@ -225,32 +229,32 @@ export default function WhatIfPage() {
                           : "default"
                     }
                   >
-                    {result.delta.direction}
+                    {t[result.delta.direction as keyof typeof t] || result.delta.direction}
                   </Badge>
                 </div>
               </Card>
 
               <Card>
                 <h3 className="text-sm font-semibold text-[#94a3b8] uppercase tracking-wider mb-4">
-                  Change Summary
+                  {t.changeSummary}
                 </h3>
                 <div className="space-y-3">
                   <div className="flex justify-between text-sm">
-                    <span className="text-[#64748b]">Component</span>
+                    <span className="text-[#64748b]">{t.component}</span>
                     <span className="font-medium">
                       {COMPONENTS.find((c) => c.id === result.component_id)?.name}
                     </span>
                   </div>
                   <div className="flex justify-between text-sm">
-                    <span className="text-[#64748b]">Parameter</span>
+                    <span className="text-[#64748b]">{t.parameter}</span>
                     <span className="font-mono">{result.parameter}</span>
                   </div>
                   <div className="flex justify-between text-sm">
-                    <span className="text-[#64748b]">Original</span>
+                    <span className="text-[#64748b]">{t.original}</span>
                     <span className="font-mono">{result.original_value}</span>
                   </div>
                   <div className="flex justify-between text-sm">
-                    <span className="text-[#64748b]">New Value</span>
+                    <span className="text-[#64748b]">{t.newValue}</span>
                     <span className="font-mono text-[#FFD700]">{result.new_value}</span>
                   </div>
                 </div>
@@ -260,7 +264,7 @@ export default function WhatIfPage() {
             <Card className="flex flex-col items-center justify-center py-16">
               <FlaskConical size={40} className="text-[#1e293b] mb-4" />
               <p className="text-[#64748b] text-sm">
-                Adjust parameters and click &quot;Run Analysis&quot; to see the impact
+                {t.adjustPrompt}
               </p>
             </Card>
           )}

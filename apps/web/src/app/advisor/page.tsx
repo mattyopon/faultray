@@ -6,6 +6,8 @@ import { useState, useRef, useEffect } from "react";
 import { api } from "@/lib/api";
 import { Bot, Send, Loader2, User } from "lucide-react";
 import Link from "next/link";
+import { useLocale } from "@/lib/useLocale";
+import { appDict } from "@/i18n/app-dict";
 
 interface Message {
   role: "user" | "assistant";
@@ -24,11 +26,12 @@ const SUGGESTIONS = [
 ];
 
 export default function AdvisorPage() {
+  const locale = useLocale();
+  const ta = locale === "ja" ? appDict.advisor.ja : appDict.advisor.en;
   const [messages, setMessages] = useState<Message[]>([
     {
       role: "assistant",
-      content:
-        "Hello! I'm the FaultRay AI Advisor. I can help you understand your infrastructure resilience, interpret simulation results, and suggest improvements. What would you like to know?",
+      content: ta.greeting,
     },
   ]);
   const [input, setInput] = useState("");
@@ -65,8 +68,7 @@ export default function AdvisorPage() {
         ...prev,
         {
           role: "assistant",
-          content:
-            "I can help you with infrastructure resilience questions. Try asking about availability, replicas, circuit breakers, failover, compliance, or score interpretation.",
+          content: ta.fallback,
         },
       ]);
     } finally {
@@ -80,10 +82,10 @@ export default function AdvisorPage() {
       <div className="mb-6">
         <h1 className="text-2xl font-bold mb-1 flex items-center gap-3">
           <Bot size={24} className="text-[#FFD700]" />
-          AI Advisor
+          {ta.title}
         </h1>
         <p className="text-[#94a3b8] text-sm">
-          Ask questions about your infrastructure resilience
+          {ta.subtitle}
         </p>
       </div>
 
@@ -171,7 +173,7 @@ export default function AdvisorPage() {
           type="text"
           value={input}
           onChange={(e) => setInput(e.target.value)}
-          placeholder="Ask about your infrastructure..."
+          placeholder={ta.placeholder}
           className="flex-1 px-4 py-3 bg-[#0d1117] border border-[#1e293b] rounded-xl text-sm text-[#e2e8f0] placeholder-[#3a4558] focus:border-[#FFD700]/50 focus:outline-none"
           disabled={loading}
         />

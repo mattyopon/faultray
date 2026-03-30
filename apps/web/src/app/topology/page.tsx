@@ -4,8 +4,10 @@ import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { useEffect, useState, useCallback } from "react";
 import { api } from "@/lib/api";
-import { Network, ArrowRight, Loader2, RefreshCw } from "lucide-react";
+import { Network, ArrowRight, Loader2, RefreshCw, AlertTriangle, Shield, Lightbulb, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { useLocale } from "@/lib/useLocale";
+import { appDict } from "@/i18n/app-dict";
 
 interface GraphNode {
   id: string;
@@ -23,6 +25,13 @@ interface GraphEdge {
 interface GraphData {
   nodes: GraphNode[];
   edges: GraphEdge[];
+}
+
+// Risk data per node - from simulation results
+interface NodeRiskData {
+  risk_score: number;
+  failure_scenarios: string[];
+  suggestions: string[];
 }
 
 const DEMO_DATA: GraphData = {
@@ -48,15 +57,16 @@ const DEMO_DATA: GraphData = {
   ],
 };
 
-const TYPE_COLORS: Record<string, string> = {
-  load_balancer: "#3b82f6",
-  app_server: "#10b981",
-  database: "#f59e0b",
-  cache: "#ef4444",
-  queue: "#8b5cf6",
-  dns: "#06b6d4",
-  storage: "#64748b",
-  custom: "#ec4899",
+// Demo risk data for each node
+const DEMO_RISK: Record<string, NodeRiskData> = {
+  cdn: { risk_score: 12, failure_scenarios: ["DDoS attack overwhelms edge capacity"], suggestions: ["Add rate limiting at edge layer"] },
+  gateway: { risk_score: 25, failure_scenarios: ["Certificate expiry blocks all HTTPS", "Rate limit misconfiguration"], suggestions: ["Automate certificate renewal", "Configure adaptive rate limits"] },
+  auth: { risk_score: 45, failure_scenarios: ["Token validation service outage", "Brute force attack"], suggestions: ["Implement token caching", "Add account lockout policy"] },
+  api: { risk_score: 38, failure_scenarios: ["Thread pool exhaustion under load", "Memory leak in long-running processes"], suggestions: ["Configure connection limits and auto-scaling", "Add memory monitoring alerts"] },
+  worker: { risk_score: 30, failure_scenarios: ["Job queue backlog during peak"], suggestions: ["Implement dead letter queue with monitoring"] },
+  db_primary: { risk_score: 78, failure_scenarios: ["Single point of failure - complete crash causes full outage", "Disk I/O saturation", "Connection pool exhaustion"], suggestions: ["Implement automated failover with < 30s switchover", "Add read replicas for load distribution", "Monitor disk I/O and set alerts at 80%"] },
+  db_replica: { risk_score: 35, failure_scenarios: ["Replication lag exceeds threshold"], suggestions: ["Monitor replication lag, alert at > 5s"] },
+  cache: { risk_score: 55, failure_scenarios: ["Memory exhaustion causes eviction storm", "Network partition causes split-brain"], suggestions: ["Set memory limits and eviction policies", "Deploy across multiple AZs"] },
 };
 
 const TYPE_LABELS: Record<string, string> = {
@@ -70,6 +80,36 @@ const TYPE_LABELS: Record<string, string> = {
   custom: "SVC",
 };
 
+// Risk-based color (green -> yellow -> red)
+function riskColor(score: number): string {
+  if (score >= 70) return "#ef4444";
+  if (score >= 50) return "#f59e0b";
+  if (score >= 30) return "#eab308";
+  return "#10b981";
+}
+
+function riskBorderColor(score: number): string {
+  if (score >= 70) return "#ef444480";
+  if (score >= 50) return "#f59e0b80";
+  if (score >= 30) return "#eab30860";
+  return "#10b98160";
+}
+
+function riskBgColor(score: number): string {
+  if (score >= 70) return "#ef444420";
+  if (score >= 50) return "#f59e0b15";
+  if (score >= 30) return "#eab30810";
+  return "#10b98110";
+}
+
+function riskLabel(score: number, locale: "ja" | "en"): string {
+  const t = locale === "ja" ? appDict.topology.ja : appDict.topology.en;
+  if (score >= 70) return t.highRisk;
+  if (score >= 50) return t.mediumRisk;
+  if (score >= 30) return t.lowRisk;
+  return t.lowRisk;
+}
+
 // Layout nodes in layers
 function layoutNodes(nodes: GraphNode[], edges: GraphEdge[]) {
   const layers: string[][] = [];
@@ -77,9 +117,8 @@ function layoutNodes(nodes: GraphNode[], edges: GraphEdge[]) {
   const targets = new Set(edges.map((e) => e.target));
   const sources = new Set(edges.map((e) => e.source));
 
-  // Roots: sources that are not targets
   const roots = nodes.filter((n) => sources.has(n.id) && !targets.has(n.id));
-  if (roots.length === 0) roots.push(nodes[0]);
+  if (roots.length === 0 && nodes.length > 0) roots.push(nodes[0]);
 
   const queue = roots.map((r) => ({ id: r.id, depth: 0 }));
   const depthMap: Record<string, number> = {};
@@ -104,7 +143,6 @@ function layoutNodes(nodes: GraphNode[], edges: GraphEdge[]) {
     }
   }
 
-  // Place unconnected nodes
   for (const n of nodes) {
     if (!placed.has(n.id)) {
       if (!layers[0]) layers[0] = [];
@@ -114,7 +152,7 @@ function layoutNodes(nodes: GraphNode[], edges: GraphEdge[]) {
 
   const positions: Record<string, { x: number; y: number }> = {};
   const svgWidth = 900;
-  const layerHeight = 120;
+  const layerHeight = 130;
 
   for (let i = 0; i < layers.length; i++) {
     const layer = layers[i];
@@ -122,18 +160,21 @@ function layoutNodes(nodes: GraphNode[], edges: GraphEdge[]) {
     for (let j = 0; j < layer.length; j++) {
       positions[layer[j]] = {
         x: spacing * (j + 1),
-        y: 60 + i * layerHeight,
+        y: 70 + i * layerHeight,
       };
     }
   }
 
-  return { positions, height: 60 + layers.length * layerHeight + 40 };
+  return { positions, height: 70 + layers.length * layerHeight + 50 };
 }
 
 export default function TopologyPage() {
   const [data, setData] = useState<GraphData>(DEMO_DATA);
   const [loading, setLoading] = useState(true);
   const [selectedNode, setSelectedNode] = useState<string | null>(null);
+  const [hoveredEdge, setHoveredEdge] = useState<number | null>(null);
+  const locale = useLocale();
+  const t = locale === "ja" ? appDict.topology.ja : appDict.topology.en;
 
   const loadData = useCallback(async () => {
     setLoading(true);
@@ -157,6 +198,7 @@ export default function TopologyPage() {
   const { positions, height } = layoutNodes(data.nodes, data.edges);
   const nodeMap = Object.fromEntries(data.nodes.map((n) => [n.id, n]));
   const selected = selectedNode ? nodeMap[selectedNode] : null;
+  const selectedRisk = selectedNode ? DEMO_RISK[selectedNode] : null;
 
   return (
     <div className="max-w-[1200px] mx-auto px-6 py-10">
@@ -164,25 +206,23 @@ export default function TopologyPage() {
         <div>
           <h1 className="text-2xl font-bold mb-1 flex items-center gap-3">
             <Network size={24} className="text-[#FFD700]" />
-            Topology Graph
+            {t.title}
           </h1>
-          <p className="text-[#94a3b8] text-sm">
-            Interactive infrastructure dependency graph
-          </p>
+          <p className="text-[#94a3b8] text-sm">{t.subtitle}</p>
         </div>
         <Button variant="secondary" size="sm" onClick={loadData} disabled={loading}>
           <RefreshCw size={14} className={loading ? "animate-spin" : ""} />
-          Refresh
+          {t.refresh}
         </Button>
       </div>
 
       {loading ? (
         <Card className="flex items-center justify-center py-20">
           <Loader2 size={24} className="animate-spin text-[#FFD700]" />
-          <span className="ml-3 text-[#94a3b8]">Loading topology...</span>
+          <span className="ml-3 text-[#94a3b8]">{t.loading}</span>
         </Card>
       ) : (
-        <div className="grid lg:grid-cols-[1fr_300px] gap-6">
+        <div className="grid lg:grid-cols-[1fr_320px] gap-6">
           <Card className="p-4 overflow-auto">
             <svg viewBox={`0 0 900 ${height}`} className="w-full" style={{ minHeight: 400 }}>
               {/* Edges */}
@@ -192,18 +232,63 @@ export default function TopologyPage() {
                 if (!from || !to) return null;
                 const dashArray =
                   edge.type === "optional" ? "8,4" : edge.type === "async" ? "4,4" : "none";
+                const isHovered = hoveredEdge === i;
+                const edgeLabel = edge.type === "requires"
+                  ? (locale === "ja" ? "必須" : "requires")
+                  : edge.type === "optional"
+                    ? (locale === "ja" ? "任意" : "optional")
+                    : (locale === "ja" ? "非同期" : "async");
                 return (
-                  <g key={i}>
+                  <g
+                    key={i}
+                    onMouseEnter={() => setHoveredEdge(i)}
+                    onMouseLeave={() => setHoveredEdge(null)}
+                    className="cursor-pointer"
+                  >
+                    {/* Wider invisible hit area */}
                     <line
                       x1={from.x}
-                      y1={from.y + 20}
+                      y1={from.y + 22}
                       x2={to.x}
-                      y2={to.y - 20}
-                      stroke="#334155"
-                      strokeWidth={2}
-                      strokeDasharray={dashArray}
-                      markerEnd="url(#arrow)"
+                      y2={to.y - 22}
+                      stroke="transparent"
+                      strokeWidth={16}
                     />
+                    <line
+                      x1={from.x}
+                      y1={from.y + 22}
+                      x2={to.x}
+                      y2={to.y - 22}
+                      stroke={isHovered ? "#FFD700" : "#334155"}
+                      strokeWidth={isHovered ? 2.5 : 2}
+                      strokeDasharray={dashArray}
+                      markerEnd={isHovered ? "url(#arrow-active)" : "url(#arrow)"}
+                      className="transition-all duration-200"
+                    />
+                    {isHovered && (
+                      <>
+                        <rect
+                          x={(from.x + to.x) / 2 - 36}
+                          y={(from.y + to.y) / 2 - 10}
+                          width={72}
+                          height={20}
+                          rx={4}
+                          fill="#0a0e1a"
+                          stroke="#FFD700"
+                          strokeWidth={1}
+                        />
+                        <text
+                          x={(from.x + to.x) / 2}
+                          y={(from.y + to.y) / 2 + 4}
+                          textAnchor="middle"
+                          fontSize="10"
+                          fill="#FFD700"
+                          fontWeight="600"
+                        >
+                          {edgeLabel}
+                        </text>
+                      </>
+                    )}
                   </g>
                 );
               })}
@@ -211,35 +296,65 @@ export default function TopologyPage() {
                 <marker id="arrow" viewBox="0 0 10 10" refX="10" refY="5" markerWidth="6" markerHeight="6" orient="auto">
                   <path d="M 0 0 L 10 5 L 0 10 z" fill="#334155" />
                 </marker>
+                <marker id="arrow-active" viewBox="0 0 10 10" refX="10" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+                  <path d="M 0 0 L 10 5 L 0 10 z" fill="#FFD700" />
+                </marker>
               </defs>
               {/* Nodes */}
               {data.nodes.map((node) => {
                 const pos = positions[node.id];
                 if (!pos) return null;
-                const color = TYPE_COLORS[node.type] || "#64748b";
+                const risk = DEMO_RISK[node.id];
+                const score = risk?.risk_score ?? 0;
+                const nodeColor = riskColor(score);
+                const nodeBorder = riskBorderColor(score);
+                const nodeBg = riskBgColor(score);
                 const isSelected = selectedNode === node.id;
+                // Calculate node width based on name length
+                const nodeWidth = Math.max(140, node.name.length * 8 + 60);
                 return (
                   <g
                     key={node.id}
                     className="cursor-pointer"
                     onClick={() => setSelectedNode(isSelected ? null : node.id)}
                   >
+                    {/* Glow effect for high risk */}
+                    {score >= 70 && (
+                      <rect
+                        x={pos.x - nodeWidth / 2 - 3}
+                        y={pos.y - 23}
+                        width={nodeWidth + 6}
+                        height={46}
+                        rx={11}
+                        fill="none"
+                        stroke="#ef4444"
+                        strokeWidth={1}
+                        opacity={0.4}
+                        className="animate-pulse"
+                      />
+                    )}
                     <rect
-                      x={pos.x - 60}
+                      x={pos.x - nodeWidth / 2}
                       y={pos.y - 20}
-                      width={120}
+                      width={nodeWidth}
                       height={40}
                       rx={8}
-                      fill={isSelected ? color + "30" : "#111827"}
-                      stroke={isSelected ? color : "#1e293b"}
-                      strokeWidth={isSelected ? 2 : 1}
+                      fill={isSelected ? nodeBg : "#111827"}
+                      stroke={isSelected ? nodeColor : nodeBorder}
+                      strokeWidth={isSelected ? 2 : 1.5}
                     />
-                    <circle cx={pos.x - 45} cy={pos.y} r={10} fill={color + "20"} stroke={color} strokeWidth={1} />
-                    <text x={pos.x - 45} y={pos.y + 4} textAnchor="middle" fontSize="7" fill={color} fontWeight="bold">
+                    {/* Risk score circle */}
+                    <circle cx={pos.x - nodeWidth / 2 + 18} cy={pos.y} r={12} fill={nodeColor + "20"} stroke={nodeColor} strokeWidth={1.5} />
+                    <text x={pos.x - nodeWidth / 2 + 18} y={pos.y + 4} textAnchor="middle" fontSize="8" fill={nodeColor} fontWeight="bold">
+                      {score}
+                    </text>
+                    {/* Type label */}
+                    <text x={pos.x - nodeWidth / 2 + 38} y={pos.y - 4} textAnchor="start" fontSize="8" fill="#64748b" fontWeight="500">
                       {TYPE_LABELS[node.type] || "?"}
                     </text>
-                    <text x={pos.x + 5} y={pos.y + 4} textAnchor="middle" fontSize="11" fill="#e2e8f0" fontWeight="500">
-                      {node.name.length > 14 ? node.name.slice(0, 13) + "..." : node.name}
+                    {/* Full node name */}
+                    <text x={pos.x - nodeWidth / 2 + 38} y={pos.y + 9} textAnchor="start" fontSize="11" fill="#e2e8f0" fontWeight="500">
+                      {node.name}
                     </text>
                   </g>
                 );
@@ -247,56 +362,89 @@ export default function TopologyPage() {
             </svg>
           </Card>
 
-          {/* Legend & Details */}
+          {/* Sidebar: Legend, Risk Legend, Details */}
           <div className="space-y-6">
+            {/* Risk Color Legend */}
             <Card>
-              <h3 className="text-sm font-semibold text-[#94a3b8] uppercase tracking-wider mb-4">Legend</h3>
+              <h3 className="text-sm font-semibold text-[#94a3b8] uppercase tracking-wider mb-4">{t.riskLegend}</h3>
               <div className="space-y-2">
-                {Object.entries(TYPE_COLORS).map(([type, color]) => (
-                  <div key={type} className="flex items-center gap-3">
-                    <div className="w-3 h-3 rounded-full" style={{ backgroundColor: color }} />
-                    <span className="text-sm text-[#e2e8f0] capitalize">{type.replace("_", " ")}</span>
-                  </div>
-                ))}
+                <div className="flex items-center gap-3">
+                  <div className="w-3 h-3 rounded-full" style={{ backgroundColor: "#10b981" }} />
+                  <span className="text-sm text-[#e2e8f0]">{t.lowRisk} (0-29)</span>
+                </div>
+                <div className="flex items-center gap-3">
+                  <div className="w-3 h-3 rounded-full" style={{ backgroundColor: "#eab308" }} />
+                  <span className="text-sm text-[#e2e8f0]">{t.mediumRisk} (30-49)</span>
+                </div>
+                <div className="flex items-center gap-3">
+                  <div className="w-3 h-3 rounded-full" style={{ backgroundColor: "#f59e0b" }} />
+                  <span className="text-sm text-[#e2e8f0]">{t.mediumRisk} (50-69)</span>
+                </div>
+                <div className="flex items-center gap-3">
+                  <div className="w-3 h-3 rounded-full" style={{ backgroundColor: "#ef4444" }} />
+                  <span className="text-sm text-[#e2e8f0]">{t.highRisk} (70+)</span>
+                </div>
               </div>
               <div className="mt-4 pt-4 border-t border-[#1e293b] space-y-2">
                 <div className="flex items-center gap-3">
                   <div className="w-8 h-0 border-t-2 border-[#334155]" />
-                  <span className="text-xs text-[#64748b]">requires</span>
+                  <span className="text-xs text-[#64748b]">{t.requires}</span>
                 </div>
                 <div className="flex items-center gap-3">
                   <div className="w-8 h-0 border-t-2 border-dashed border-[#334155]" />
-                  <span className="text-xs text-[#64748b]">optional</span>
+                  <span className="text-xs text-[#64748b]">{t.optional}</span>
                 </div>
                 <div className="flex items-center gap-3">
                   <div className="w-8 h-0 border-t-2 border-dotted border-[#334155]" />
-                  <span className="text-xs text-[#64748b]">async</span>
+                  <span className="text-xs text-[#64748b]">{t.async}</span>
                 </div>
               </div>
             </Card>
 
-            {selected && (
+            {/* Node Details Panel */}
+            {selected && selectedRisk ? (
               <Card>
-                <h3 className="text-sm font-semibold text-[#94a3b8] uppercase tracking-wider mb-4">
-                  Component Details
-                </h3>
-                <div className="space-y-3">
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="text-sm font-semibold text-[#94a3b8] uppercase tracking-wider">
+                    {t.componentDetails}
+                  </h3>
+                  <button onClick={() => setSelectedNode(null)} className="text-[#64748b] hover:text-white">
+                    <X size={14} />
+                  </button>
+                </div>
+                <div className="space-y-4">
                   <div>
                     <p className="text-lg font-bold">{selected.name}</p>
-                    <Badge variant="gold">{selected.type.replace("_", " ")}</Badge>
+                    <div className="flex items-center gap-2 mt-1">
+                      <Badge variant="gold">{selected.type.replace("_", " ")}</Badge>
+                      <Badge variant={selectedRisk.risk_score >= 70 ? "red" : selectedRisk.risk_score >= 50 ? "yellow" : "green"}>
+                        {riskLabel(selectedRisk.risk_score, locale)}
+                      </Badge>
+                    </div>
                   </div>
+
+                  {/* Risk Score */}
+                  <div className="flex items-center justify-between p-3 rounded-lg" style={{ backgroundColor: riskBgColor(selectedRisk.risk_score) }}>
+                    <span className="text-sm text-[#94a3b8]">{t.riskScore}</span>
+                    <span className="text-2xl font-extrabold font-mono" style={{ color: riskColor(selectedRisk.risk_score) }}>
+                      {selectedRisk.risk_score}
+                    </span>
+                  </div>
+
                   {selected.replicas && (
                     <div className="flex justify-between text-sm">
-                      <span className="text-[#64748b]">Replicas</span>
+                      <span className="text-[#64748b]">{t.replicas}</span>
                       <span className="font-mono">{selected.replicas}</span>
                     </div>
                   )}
+
+                  {/* Dependencies */}
                   <div>
-                    <p className="text-xs text-[#64748b] mb-2">Dependencies</p>
+                    <p className="text-xs text-[#64748b] mb-2">{t.dependenciesLabel}</p>
                     {data.edges
                       .filter((e) => e.source === selected.id)
                       .map((e) => (
-                        <div key={e.target} className="flex items-center gap-2 text-sm text-[#94a3b8]">
+                        <div key={e.target} className="flex items-center gap-2 text-sm text-[#94a3b8] mb-1">
                           <ArrowRight size={12} />
                           {nodeMap[e.target]?.name || e.target}
                           <Badge variant={e.type === "requires" ? "red" : "default"}>
@@ -305,20 +453,56 @@ export default function TopologyPage() {
                         </div>
                       ))}
                     {data.edges.filter((e) => e.source === selected.id).length === 0 && (
-                      <p className="text-xs text-[#64748b]">No outgoing dependencies</p>
+                      <p className="text-xs text-[#64748b]">{t.noOutgoing}</p>
                     )}
                   </div>
+
+                  {/* Failure Scenarios */}
+                  <div>
+                    <p className="text-xs text-[#64748b] mb-2 flex items-center gap-1">
+                      <AlertTriangle size={12} className="text-red-400" />
+                      {t.failureScenarios}
+                    </p>
+                    <div className="space-y-1">
+                      {selectedRisk.failure_scenarios.map((scenario, i) => (
+                        <div key={i} className="text-xs text-[#94a3b8] p-2 rounded-lg bg-red-500/5 border border-red-500/10">
+                          {scenario}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Suggestions */}
+                  <div>
+                    <p className="text-xs text-[#64748b] mb-2 flex items-center gap-1">
+                      <Lightbulb size={12} className="text-[#FFD700]" />
+                      {t.suggestions}
+                    </p>
+                    <div className="space-y-1">
+                      {selectedRisk.suggestions.map((suggestion, i) => (
+                        <div key={i} className="text-xs text-[#94a3b8] p-2 rounded-lg bg-[#FFD700]/5 border border-[#FFD700]/10">
+                          {suggestion}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
                 </div>
+              </Card>
+            ) : (
+              <Card>
+                <p className="text-sm text-[#64748b] text-center py-4">
+                  {locale === "ja" ? "ノードをクリックして詳細を表示" : "Click a node to view details"}
+                </p>
               </Card>
             )}
 
             <Card>
               <div className="flex justify-between text-sm">
-                <span className="text-[#64748b]">Components</span>
+                <span className="text-[#64748b]">{t.componentsCount}</span>
                 <span className="font-mono font-bold">{data.nodes.length}</span>
               </div>
               <div className="flex justify-between text-sm mt-2">
-                <span className="text-[#64748b]">Dependencies</span>
+                <span className="text-[#64748b]">{t.dependenciesCount}</span>
                 <span className="font-mono font-bold">{data.edges.length}</span>
               </div>
             </Card>

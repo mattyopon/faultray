@@ -5,6 +5,8 @@ import { Badge } from "@/components/ui/badge";
 import { useEffect, useState } from "react";
 import { api, type Incident, type IncidentsData } from "@/lib/api";
 import { Activity, Loader2, ChevronDown, ChevronRight } from "lucide-react";
+import { useLocale } from "@/lib/useLocale";
+import { appDict } from "@/i18n/app-dict";
 
 const DEMO_DATA: IncidentsData = {
   incidents: [
@@ -153,6 +155,8 @@ function IncidentCard({ incident }: { incident: Incident }) {
 export default function IncidentsPage() {
   const [data, setData] = useState<IncidentsData>(DEMO_DATA);
   const [loading, setLoading] = useState(true);
+  const locale = useLocale();
+  const t = locale === "ja" ? appDict.incidents.ja : appDict.incidents.en;
 
   useEffect(() => {
     api
@@ -167,10 +171,10 @@ export default function IncidentsPage() {
       <div className="mb-10">
         <h1 className="text-2xl font-bold mb-1 flex items-center gap-3">
           <Activity size={24} className="text-[#FFD700]" />
-          Incident Replay
+          {t.title}
         </h1>
         <p className="text-[#94a3b8] text-sm">
-          Simulated incident timelines and root cause analysis
+          {t.subtitle}
         </p>
       </div>
 
@@ -184,19 +188,19 @@ export default function IncidentsPage() {
           <div className="grid md:grid-cols-4 gap-6 mb-8">
             <Card className="text-center">
               <p className="text-3xl font-extrabold font-mono">{data.summary.total_incidents}</p>
-              <p className="text-xs text-[#64748b] uppercase tracking-wider mt-1">Total Incidents</p>
+              <p className="text-xs text-[#64748b] uppercase tracking-wider mt-1">{t.totalIncidents}</p>
             </Card>
             <Card className="text-center">
               <p className="text-3xl font-extrabold font-mono text-red-400">{data.summary.critical}</p>
-              <p className="text-xs text-[#64748b] uppercase tracking-wider mt-1">Critical</p>
+              <p className="text-xs text-[#64748b] uppercase tracking-wider mt-1">{t.critical}</p>
             </Card>
             <Card className="text-center">
               <p className="text-3xl font-extrabold font-mono text-[#f59e0b]">{data.summary.high}</p>
-              <p className="text-xs text-[#64748b] uppercase tracking-wider mt-1">High</p>
+              <p className="text-xs text-[#64748b] uppercase tracking-wider mt-1">{t.high}</p>
             </Card>
             <Card className="text-center">
               <p className="text-3xl font-extrabold font-mono">{data.summary.average_duration_minutes}m</p>
-              <p className="text-xs text-[#64748b] uppercase tracking-wider mt-1">Avg Duration</p>
+              <p className="text-xs text-[#64748b] uppercase tracking-wider mt-1">{t.avgDuration}</p>
             </Card>
           </div>
 

@@ -5,6 +5,8 @@ import { Badge } from "@/components/ui/badge";
 import { useState } from "react";
 import { api, type BenchmarkData } from "@/lib/api";
 import { Trophy, Loader2 } from "lucide-react";
+import { useLocale } from "@/lib/useLocale";
+import { appDict } from "@/i18n/app-dict";
 
 const INDUSTRIES = [
   { id: "fintech", name: "FinTech", emoji: "bank" },
@@ -37,6 +39,8 @@ export default function BenchmarkPage() {
   const [selectedIndustry, setSelectedIndustry] = useState<string | null>(null);
   const [data, setData] = useState<BenchmarkData>(DEMO_DATA);
   const [loading, setLoading] = useState(false);
+  const locale = useLocale();
+  const t = locale === "ja" ? appDict.benchmark.ja : appDict.benchmark.en;
 
   const loadBenchmark = async (industry: string) => {
     setSelectedIndustry(industry);
@@ -56,10 +60,10 @@ export default function BenchmarkPage() {
       <div className="mb-10">
         <h1 className="text-2xl font-bold mb-1 flex items-center gap-3">
           <Trophy size={24} className="text-[#FFD700]" />
-          Industry Benchmark
+          {t.title}
         </h1>
         <p className="text-[#94a3b8] text-sm">
-          Compare your resilience score against industry standards
+          {t.subtitle}
         </p>
       </div>
 
@@ -89,26 +93,26 @@ export default function BenchmarkPage() {
           {/* Score Comparison */}
           <div className="grid md:grid-cols-4 gap-6">
             <Card className="text-center">
-              <p className="text-xs text-[#64748b] uppercase tracking-wider mb-2">Your Score</p>
+              <p className="text-xs text-[#64748b] uppercase tracking-wider mb-2">{t.yourScore}</p>
               <p className="text-4xl font-extrabold font-mono text-[#FFD700]">{data.your_score}</p>
             </Card>
             <Card className="text-center">
-              <p className="text-xs text-[#64748b] uppercase tracking-wider mb-2">Industry Avg</p>
+              <p className="text-xs text-[#64748b] uppercase tracking-wider mb-2">{t.industryAvg}</p>
               <p className="text-4xl font-extrabold font-mono text-[#94a3b8]">{data.industry_average}</p>
             </Card>
             <Card className="text-center">
-              <p className="text-xs text-[#64748b] uppercase tracking-wider mb-2">Top 10%</p>
+              <p className="text-xs text-[#64748b] uppercase tracking-wider mb-2">{t.top10}</p>
               <p className="text-4xl font-extrabold font-mono text-emerald-400">{data.industry_top_10}</p>
             </Card>
             <Card className="text-center">
-              <p className="text-xs text-[#64748b] uppercase tracking-wider mb-2">Percentile</p>
+              <p className="text-xs text-[#64748b] uppercase tracking-wider mb-2">{t.percentile}</p>
               <p className="text-4xl font-extrabold font-mono text-blue-400">{data.percentile}th</p>
             </Card>
           </div>
 
           {/* Position Visualization */}
           <Card>
-            <h3 className="text-lg font-bold mb-4">Your Position in {data.industry}</h3>
+            <h3 className="text-lg font-bold mb-4">{data.industry}{t.yourPosition}</h3>
             <div className="relative h-16 bg-white/[0.03] rounded-xl border border-[#1e293b] overflow-hidden">
               {/* Range bar */}
               <div
@@ -148,7 +152,7 @@ export default function BenchmarkPage() {
 
           {/* Category Comparison */}
           <Card>
-            <h3 className="text-lg font-bold mb-6">Category Breakdown</h3>
+            <h3 className="text-lg font-bold mb-6">{t.categoryBreakdown}</h3>
             <div className="space-y-4">
               {data.categories.map((cat) => (
                 <div key={cat.name} className="space-y-1">
@@ -186,29 +190,29 @@ export default function BenchmarkPage() {
             <div className="flex items-center gap-6 mt-4 pt-4 border-t border-[#1e293b]">
               <div className="flex items-center gap-2">
                 <div className="w-3 h-3 rounded-full bg-[#FFD700]" />
-                <span className="text-xs text-[#64748b]">Your Score</span>
+                <span className="text-xs text-[#64748b]">{t.yourScoreLabel}</span>
               </div>
               <div className="flex items-center gap-2">
                 <div className="w-3 h-3 rounded-full bg-[#64748b]/30" />
-                <span className="text-xs text-[#64748b]">Industry Average</span>
+                <span className="text-xs text-[#64748b]">{t.industryAvgLabel}</span>
               </div>
               <div className="flex items-center gap-2">
                 <div className="w-3 h-1 bg-emerald-400" />
-                <span className="text-xs text-[#64748b]">Top 10%</span>
+                <span className="text-xs text-[#64748b]">{t.top10Label}</span>
               </div>
             </div>
           </Card>
 
           {/* Regulatory Requirements */}
           <Card>
-            <h3 className="text-lg font-bold mb-4">Regulatory Requirements</h3>
+            <h3 className="text-lg font-bold mb-4">{t.regulatoryRequirements}</h3>
             <div className="flex flex-wrap gap-2 mb-3">
               {data.regulatory_requirements.map((req) => (
                 <Badge key={req} variant="gold">{req}</Badge>
               ))}
             </div>
             <p className="text-sm text-[#94a3b8]">
-              Typical SLA for {data.industry}: <span className="font-mono font-bold text-[#FFD700]">{data.typical_sla}</span>
+              {data.industry}{t.typicalSla}: <span className="font-mono font-bold text-[#FFD700]">{data.typical_sla}</span>
             </p>
           </Card>
         </div>
@@ -216,7 +220,7 @@ export default function BenchmarkPage() {
         <Card className="flex flex-col items-center justify-center py-16">
           <Trophy size={40} className="text-[#1e293b] mb-4" />
           <p className="text-[#64748b] text-sm">
-            Select an industry to compare your resilience score
+            {t.selectIndustry}
           </p>
         </Card>
       )}

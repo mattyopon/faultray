@@ -29,52 +29,61 @@ import {
   ChevronDown,
 } from "lucide-react";
 import { locales } from "@/i18n/config";
+import { appDict } from "@/i18n/app-dict";
 
-const navGroups = [
-  {
-    label: "ANALYZE",
-    items: [
-      { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
-      { href: "/topology", label: "Topology", icon: Network },
-      { href: "/heatmap", label: "Heatmap", icon: Flame },
-      { href: "/score-detail", label: "Score Detail", icon: BarChart3 },
-    ],
-  },
-  {
-    label: "SIMULATE",
-    items: [
-      { href: "/simulate", label: "Run Simulation", icon: Zap },
-      { href: "/whatif", label: "What-if", icon: FlaskConical },
-      { href: "/fmea", label: "FMEA", icon: AlertOctagon },
-      { href: "/incidents", label: "Incidents", icon: Activity },
-    ],
-  },
-  {
-    label: "COMPLIANCE",
-    items: [
-      { href: "/compliance", label: "Compliance", icon: ShieldCheck },
-      { href: "/security", label: "Security", icon: Shield },
-      { href: "/cost", label: "Cost Analysis", icon: DollarSign },
-      { href: "/reports", label: "Reports", icon: FileText },
-      { href: "/benchmark", label: "Benchmark", icon: Trophy },
-    ],
-  },
-  {
-    label: "AI",
-    items: [
-      { href: "/advisor", label: "AI Advisor", icon: Bot },
-    ],
-  },
-  {
-    label: "ACCOUNT",
-    items: [
-      { href: "/settings", label: "Settings", icon: Settings },
-    ],
-  },
-];
+function useNavLocale() {
+  const [locale, setLocale] = useState<"ja" | "en">("en");
+  useEffect(() => {
+    const match = document.cookie.match(/NEXT_LOCALE=(\w+)/);
+    if (match && match[1] === "ja") setLocale("ja");
+  }, []);
+  return locale;
+}
 
-// Flat list for quick matching
-const allNavItems = navGroups.flatMap((g) => g.items);
+function getNavGroups(t: Record<string, string>) {
+  return [
+    {
+      label: t.analyze,
+      items: [
+        { href: "/dashboard", label: t.dashboard, icon: LayoutDashboard },
+        { href: "/topology", label: t.topology, icon: Network },
+        { href: "/heatmap", label: t.heatmap, icon: Flame },
+        { href: "/score-detail", label: t.scoreDetail, icon: BarChart3 },
+      ],
+    },
+    {
+      label: t.simulate,
+      items: [
+        { href: "/simulate", label: t.runSimulation, icon: Zap },
+        { href: "/whatif", label: t.whatIf, icon: FlaskConical },
+        { href: "/fmea", label: t.fmea, icon: AlertOctagon },
+        { href: "/incidents", label: t.incidents, icon: Activity },
+      ],
+    },
+    {
+      label: t.compliance,
+      items: [
+        { href: "/compliance", label: t.complianceItem, icon: ShieldCheck },
+        { href: "/security", label: t.security, icon: Shield },
+        { href: "/cost", label: t.costAnalysis, icon: DollarSign },
+        { href: "/reports", label: t.reports, icon: FileText },
+        { href: "/benchmark", label: t.benchmark, icon: Trophy },
+      ],
+    },
+    {
+      label: t.ai,
+      items: [
+        { href: "/advisor", label: t.aiAdvisor, icon: Bot },
+      ],
+    },
+    {
+      label: t.account,
+      items: [
+        { href: "/settings", label: t.settings, icon: Settings },
+      ],
+    },
+  ];
+}
 
 export function Navbar() {
   const pathname = usePathname();
@@ -82,6 +91,9 @@ export function Navbar() {
   const [scrolled, setScrolled] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(true);
+  const locale = useNavLocale();
+  const t = locale === "ja" ? appDict.nav.ja : appDict.nav.en;
+  const navGroups = useMemo(() => getNavGroups(t), [t]);
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 20);
@@ -91,9 +103,9 @@ export function Navbar() {
 
   // Detect current locale from URL
   const currentLang = useMemo(() => {
-    for (const locale of locales) {
-      if (pathname.startsWith(`/${locale}/`) || pathname === `/${locale}`) {
-        return locale;
+    for (const loc of locales) {
+      if (pathname.startsWith(`/${loc}/`) || pathname === `/${loc}`) {
+        return loc;
       }
     }
     return "en";
@@ -102,7 +114,7 @@ export function Navbar() {
   // Check if we're on a localized LP page
   const isLocalizedLP = useMemo(() => {
     return locales.some(
-      (locale) => pathname === `/${locale}` || pathname.startsWith(`/${locale}/`)
+      (loc) => pathname === `/${loc}` || pathname.startsWith(`/${loc}/`)
     );
   }, [pathname]);
 
@@ -150,7 +162,7 @@ export function Navbar() {
                 <button
                   onClick={signOut}
                   className="p-2 text-[#64748b] hover:text-red-400 transition-colors"
-                  title="Sign out"
+                  title={t.signOut}
                 >
                   <LogOut size={16} />
                 </button>
@@ -323,7 +335,7 @@ export function Navbar() {
                       className="flex items-center gap-3 px-3 py-2 text-sm text-red-400 w-full"
                     >
                       <LogOut size={16} />
-                      Sign Out
+                      {t.signOut}
                     </button>
                   </div>
                 </div>

@@ -5,6 +5,8 @@ import { Badge } from "@/components/ui/badge";
 import { useEffect, useState } from "react";
 import { api, type AttackSurfaceData } from "@/lib/api";
 import { Shield, Loader2, Globe, Lock, AlertTriangle } from "lucide-react";
+import { useLocale } from "@/lib/useLocale";
+import { appDict } from "@/i18n/app-dict";
 
 const DEMO_DATA: AttackSurfaceData = {
   summary: { total_components: 12, external_facing: 4, internal_only: 8, risk_level: "medium", attack_vectors: 7 },
@@ -58,6 +60,8 @@ function severityColor(sev: string): string {
 export default function SecurityPage() {
   const [data, setData] = useState<AttackSurfaceData>(DEMO_DATA);
   const [loading, setLoading] = useState(true);
+  const locale = useLocale();
+  const t = locale === "ja" ? appDict.security.ja : appDict.security.en;
 
   useEffect(() => {
     api
@@ -72,9 +76,9 @@ export default function SecurityPage() {
       <div className="mb-10">
         <h1 className="text-2xl font-bold mb-1 flex items-center gap-3">
           <Shield size={24} className="text-[#FFD700]" />
-          Attack Surface Analysis
+          {t.title}
         </h1>
-        <p className="text-[#94a3b8] text-sm">External-facing components and vulnerability assessment</p>
+        <p className="text-[#94a3b8] text-sm">{t.subtitle}</p>
       </div>
 
       {loading ? (
@@ -88,24 +92,24 @@ export default function SecurityPage() {
             <Card className="text-center">
               <Globe size={20} className="mx-auto mb-2 text-red-400" />
               <p className="text-3xl font-extrabold font-mono">{data.summary.external_facing}</p>
-              <p className="text-xs text-[#64748b] uppercase tracking-wider">External</p>
+              <p className="text-xs text-[#64748b] uppercase tracking-wider">{t.external}</p>
             </Card>
             <Card className="text-center">
               <Lock size={20} className="mx-auto mb-2 text-emerald-400" />
               <p className="text-3xl font-extrabold font-mono">{data.summary.internal_only}</p>
-              <p className="text-xs text-[#64748b] uppercase tracking-wider">Internal</p>
+              <p className="text-xs text-[#64748b] uppercase tracking-wider">{t.internal}</p>
             </Card>
             <Card className="text-center">
               <AlertTriangle size={20} className="mx-auto mb-2 text-[#FFD700]" />
               <p className="text-3xl font-extrabold font-mono">{data.summary.attack_vectors}</p>
-              <p className="text-xs text-[#64748b] uppercase tracking-wider">Attack Vectors</p>
+              <p className="text-xs text-[#64748b] uppercase tracking-wider">{t.attackVectors}</p>
             </Card>
             <Card className="text-center">
               <Shield size={20} className="mx-auto mb-2 text-[#FFD700]" />
               <Badge variant={data.summary.risk_level === "high" ? "red" : data.summary.risk_level === "medium" ? "yellow" : "green"} className="text-base">
                 {data.summary.risk_level.toUpperCase()}
               </Badge>
-              <p className="text-xs text-[#64748b] uppercase tracking-wider mt-2">Risk Level</p>
+              <p className="text-xs text-[#64748b] uppercase tracking-wider mt-2">{t.riskLevel}</p>
             </Card>
           </div>
 
@@ -113,7 +117,7 @@ export default function SecurityPage() {
           <Card className="mb-6">
             <h3 className="text-lg font-bold mb-4 flex items-center gap-2">
               <Globe size={18} className="text-red-400" />
-              External-Facing Components
+              {t.externalComponents}
             </h3>
             <div className="space-y-4">
               {data.external_components.map((comp) => (
@@ -135,7 +139,7 @@ export default function SecurityPage() {
                       <p className="text-2xl font-bold font-mono" style={{ color: comp.risk_score >= 50 ? "#f59e0b" : "#10b981" }}>
                         {comp.risk_score}
                       </p>
-                      <p className="text-xs text-[#64748b]">Risk Score</p>
+                      <p className="text-xs text-[#64748b]">{t.riskScore}</p>
                     </div>
                   </div>
                   <div className="space-y-2">
@@ -162,7 +166,7 @@ export default function SecurityPage() {
             <Card>
               <h3 className="text-lg font-bold mb-4 flex items-center gap-2">
                 <Lock size={18} className="text-emerald-400" />
-                Internal Components
+                {t.internalComponents}
               </h3>
               <div className="space-y-2">
                 {data.internal_components.sort((a, b) => b.risk_score - a.risk_score).map((comp) => (
@@ -189,7 +193,7 @@ export default function SecurityPage() {
             <Card>
               <h3 className="text-lg font-bold mb-4 flex items-center gap-2">
                 <Shield size={18} className="text-[#FFD700]" />
-                Recommendations
+                {t.recommendations}
               </h3>
               <div className="space-y-3">
                 {data.recommendations.map((rec, i) => (

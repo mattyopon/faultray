@@ -21,16 +21,18 @@ import {
 import { useRouter } from "next/navigation";
 import { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
+import { useLocale } from "@/lib/useLocale";
+import { appDict } from "@/i18n/app-dict";
 
 const LANGUAGES = [
-  { code: "en", label: "English", flag: "🇺🇸" },
-  { code: "ja", label: "日本語", flag: "🇯🇵" },
-  { code: "de", label: "Deutsch", flag: "🇩🇪" },
-  { code: "fr", label: "Français", flag: "🇫🇷" },
-  { code: "zh", label: "中文", flag: "🇨🇳" },
-  { code: "ko", label: "한국어", flag: "🇰🇷" },
-  { code: "es", label: "Español", flag: "🇪🇸" },
-  { code: "pt", label: "Português", flag: "🇧🇷" },
+  { code: "en", label: "English", flag: "\u{1F1FA}\u{1F1F8}" },
+  { code: "ja", label: "\u65E5\u672C\u8A9E", flag: "\u{1F1EF}\u{1F1F5}" },
+  { code: "de", label: "Deutsch", flag: "\u{1F1E9}\u{1F1EA}" },
+  { code: "fr", label: "Fran\u00E7ais", flag: "\u{1F1EB}\u{1F1F7}" },
+  { code: "zh", label: "\u4E2D\u6587", flag: "\u{1F1E8}\u{1F1F3}" },
+  { code: "ko", label: "\uD55C\uAD6D\uC5B4", flag: "\u{1F1F0}\u{1F1F7}" },
+  { code: "es", label: "Espa\u00F1ol", flag: "\u{1F1EA}\u{1F1F8}" },
+  { code: "pt", label: "Portugu\u00EAs", flag: "\u{1F1E7}\u{1F1F7}" },
 ];
 
 function generateApiKey(): string {
@@ -45,6 +47,8 @@ function generateApiKey(): string {
 export default function SettingsPage() {
   const { user } = useAuth();
   const router = useRouter();
+  const locale = useLocale();
+  const t = locale === "ja" ? appDict.settings.ja : appDict.settings.en;
 
   // Language
   const [currentLang, setCurrentLang] = useState(() => {
@@ -66,7 +70,7 @@ export default function SettingsPage() {
     weeklySummary: false,
   });
 
-  // Admin plan switch (server-side check — email not exposed to browser)
+  // Admin plan switch
   const [isAdmin, setIsAdmin] = useState(false);
   const [currentPlan, setCurrentPlan] = useState<string>("free");
   const [switchingPlan, setSwitchingPlan] = useState(false);
@@ -78,7 +82,6 @@ export default function SettingsPage() {
     : 0;
   const isTrialActive = trialEndsAt ? new Date(trialEndsAt).getTime() > Date.now() : false;
 
-  // Fetch profile (plan + trial) and admin status
   const fetchProfile = useCallback(async () => {
     if (!user) return;
     try {
@@ -94,9 +97,8 @@ export default function SettingsPage() {
         setTrialEndsAt(data.trial_ends_at || null);
       }
     } catch {
-      // Supabase not configured or profiles table doesn't exist
+      // Supabase not configured
     }
-    // Admin check via server-side API (email never exposed to browser)
     try {
       const res = await fetch("/api/admin-check", {
         method: "POST",
@@ -132,7 +134,6 @@ export default function SettingsPage() {
     }
   }
 
-  // Delete account confirmation
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
 
   function setLanguage(lang: string) {
@@ -166,15 +167,15 @@ export default function SettingsPage() {
   return (
     <div className="max-w-[800px] mx-auto px-6 py-10">
       <div className="mb-10">
-        <h1 className="text-2xl font-bold mb-1">Settings</h1>
-        <p className="text-[#94a3b8] text-sm">Manage your account and subscription</p>
+        <h1 className="text-2xl font-bold mb-1">{t.title}</h1>
+        <p className="text-[#94a3b8] text-sm">{t.subtitle}</p>
       </div>
 
       {/* Language */}
       <Card className="mb-6">
         <div className="flex items-center gap-3 mb-6">
           <Globe size={20} className="text-[#FFD700]" />
-          <h2 className="text-lg font-bold">Language</h2>
+          <h2 className="text-lg font-bold">{t.language}</h2>
         </div>
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
           {LANGUAGES.map((lang) => (
@@ -198,23 +199,23 @@ export default function SettingsPage() {
       <Card className="mb-6">
         <div className="flex items-center gap-3 mb-6">
           <User size={20} className="text-[#FFD700]" />
-          <h2 className="text-lg font-bold">Profile</h2>
+          <h2 className="text-lg font-bold">{t.profile}</h2>
         </div>
         <div className="space-y-4">
           <div className="grid grid-cols-[120px_1fr] items-center gap-4">
-            <span className="text-sm text-[#64748b]">Email</span>
-            <span className="text-sm">{user?.email || "Not signed in"}</span>
+            <span className="text-sm text-[#64748b]">{t.email}</span>
+            <span className="text-sm">{user?.email || t.notSignedIn}</span>
           </div>
           <div className="grid grid-cols-[120px_1fr] items-center gap-4">
-            <span className="text-sm text-[#64748b]">Name</span>
-            <span className="text-sm">{user?.user_metadata?.full_name || "Not set"}</span>
+            <span className="text-sm text-[#64748b]">{t.name}</span>
+            <span className="text-sm">{user?.user_metadata?.full_name || t.notSet}</span>
           </div>
           <div className="grid grid-cols-[120px_1fr] items-center gap-4">
-            <span className="text-sm text-[#64748b]">Provider</span>
+            <span className="text-sm text-[#64748b]">{t.provider}</span>
             <span className="text-sm capitalize">{user?.app_metadata?.provider || "N/A"}</span>
           </div>
           <div className="grid grid-cols-[120px_1fr] items-center gap-4">
-            <span className="text-sm text-[#64748b]">Member since</span>
+            <span className="text-sm text-[#64748b]">{t.memberSince}</span>
             <span className="text-sm">
               {user?.created_at ? new Date(user.created_at).toLocaleDateString() : "N/A"}
             </span>
@@ -227,51 +228,49 @@ export default function SettingsPage() {
         <div className="flex items-center justify-between mb-6">
           <div className="flex items-center gap-3">
             <CreditCard size={20} className="text-[#FFD700]" />
-            <h2 className="text-lg font-bold">Subscription</h2>
+            <h2 className="text-lg font-bold">{t.subscription}</h2>
           </div>
           <Badge variant="gold">{currentPlan.charAt(0).toUpperCase() + currentPlan.slice(1)} Plan</Badge>
         </div>
-        {/* Trial banner */}
         {isTrialActive && (
           <div className="flex items-center gap-2 px-4 py-3 mb-4 rounded-lg bg-[#FFD700]/10 border border-[#FFD700]/20">
             <Clock size={16} className="text-[#FFD700]" />
             <span className="text-sm text-[#FFD700] font-medium">
-              Pro Trial: {trialDaysLeft} day{trialDaysLeft !== 1 ? "s" : ""} remaining
+              {t.proTrial} {trialDaysLeft} {t.trialRemaining}
             </span>
           </div>
         )}
         <div className="space-y-4 mb-6">
           <div className="grid grid-cols-[120px_1fr] items-center gap-4">
-            <span className="text-sm text-[#64748b]">Plan</span>
+            <span className="text-sm text-[#64748b]">{t.plan}</span>
             <span className="text-sm">{currentPlan.charAt(0).toUpperCase() + currentPlan.slice(1)}{isTrialActive ? " (Trial)" : ""}</span>
           </div>
           <div className="grid grid-cols-[120px_1fr] items-center gap-4">
-            <span className="text-sm text-[#64748b]">Simulations</span>
+            <span className="text-sm text-[#64748b]">{t.simulations}</span>
             <div>
               <div className="flex items-center gap-2">
                 <div className="h-2 w-32 bg-white/5 rounded-full overflow-hidden">
                   <div className="h-full w-2/5 bg-[#FFD700] rounded-full" />
                 </div>
-                <span className="text-xs text-[#64748b]">2 / 5 this month</span>
+                <span className="text-xs text-[#64748b]">2 / 5 {t.thisMonth}</span>
               </div>
             </div>
           </div>
           <div className="grid grid-cols-[120px_1fr] items-center gap-4">
-            <span className="text-sm text-[#64748b]">Components</span>
-            <span className="text-sm">5 max</span>
+            <span className="text-sm text-[#64748b]">{locale === "ja" ? "コンポーネント" : "Components"}</span>
+            <span className="text-sm">5 {t.componentsMax}</span>
           </div>
         </div>
         <Link href="/pricing">
           <Button size="sm">
-            <CreditCard size={14} /> Upgrade to Pro
+            <CreditCard size={14} /> {t.upgradePro}
           </Button>
         </Link>
-        {/* Admin plan switch */}
         {isAdmin && (
           <div className="mt-6 pt-6 border-t border-[#1e293b]">
             <div className="flex items-center gap-2 mb-3">
               <Shield size={16} className="text-red-400" />
-              <span className="text-sm font-semibold text-red-400">Admin: Switch Plan</span>
+              <span className="text-sm font-semibold text-red-400">{t.adminSwitch}</span>
             </div>
             <div className="flex gap-2">
               {(["free", "pro", "business"] as const).map((plan) => (
@@ -298,28 +297,26 @@ export default function SettingsPage() {
         <div className="flex items-center justify-between mb-6">
           <div className="flex items-center gap-3">
             <Key size={20} className="text-[#FFD700]" />
-            <h2 className="text-lg font-bold">API Keys</h2>
+            <h2 className="text-lg font-bold">{t.apiKeys}</h2>
           </div>
           <Button variant="secondary" size="sm" onClick={handleGenerateKey}>
-            <Plus size={14} /> Generate Key
+            <Plus size={14} /> {t.generateKey}
           </Button>
         </div>
-        <p className="text-sm text-[#94a3b8] mb-4">
-          Use API keys to authenticate requests to the FaultRay API from your CI/CD pipeline or the FaultRay agent.
-        </p>
+        <p className="text-sm text-[#94a3b8] mb-4">{t.apiKeysDesc}</p>
 
         {apiKeys.length === 0 ? (
           <div className="p-6 rounded-xl border border-dashed border-[#1e293b] text-center">
             <Key size={20} className="mx-auto mb-2 text-[#64748b]" />
-            <p className="text-sm text-[#94a3b8]">No API keys yet</p>
-            <p className="text-xs text-[#64748b]">Click &quot;Generate Key&quot; to create one</p>
+            <p className="text-sm text-[#94a3b8]">{t.noApiKeys}</p>
+            <p className="text-xs text-[#64748b]">{t.noApiKeysDesc}</p>
           </div>
         ) : (
           <div className="space-y-3">
             {apiKeys.map((k) => (
               <div key={k.key} className="flex items-center gap-3 p-3 rounded-lg bg-[#0d1117] border border-[#1e293b]">
                 <code className="flex-1 text-sm font-mono text-[#e2e8f0] truncate">{k.key}</code>
-                <span className="text-xs text-[#64748b] shrink-0">Created {k.created}</span>
+                <span className="text-xs text-[#64748b] shrink-0">{t.created} {k.created}</span>
                 <button
                   onClick={() => handleCopyKey(k.key)}
                   className="p-1.5 rounded-md hover:bg-white/10 transition-colors text-[#64748b] hover:text-white"
@@ -344,13 +341,13 @@ export default function SettingsPage() {
       <Card className="mb-6">
         <div className="flex items-center gap-3 mb-6">
           <Bell size={20} className="text-[#FFD700]" />
-          <h2 className="text-lg font-bold">Notifications</h2>
+          <h2 className="text-lg font-bold">{t.notifications}</h2>
         </div>
         <div className="space-y-4">
           {([
-            { key: "simulationCompleted" as const, label: "Simulation completed", desc: "Get notified when a simulation finishes" },
-            { key: "scoreDegradation" as const, label: "Score degradation", desc: "Alert when resilience score drops below threshold" },
-            { key: "weeklySummary" as const, label: "Weekly summary", desc: "Receive a weekly resilience report" },
+            { key: "simulationCompleted" as const, label: t.simCompleted, desc: t.simCompletedDesc },
+            { key: "scoreDegradation" as const, label: t.scoreDegradation, desc: t.scoreDegradationDesc },
+            { key: "weeklySummary" as const, label: t.weeklySummary, desc: t.weeklySummaryDesc },
           ]).map((n) => (
             <div key={n.key} className="flex items-center justify-between py-2">
               <div>
@@ -376,36 +373,33 @@ export default function SettingsPage() {
 
       {/* Danger Zone */}
       <Card className="border-red-500/20">
-        <h2 className="text-lg font-bold text-red-400 mb-4">Danger Zone</h2>
+        <h2 className="text-lg font-bold text-red-400 mb-4">{t.dangerZone}</h2>
         {!showDeleteConfirm ? (
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm font-medium">Delete Account</p>
-              <p className="text-xs text-[#64748b]">Permanently delete your account and all data</p>
+              <p className="text-sm font-medium">{t.deleteAccount}</p>
+              <p className="text-xs text-[#64748b]">{t.deleteAccountDesc}</p>
             </div>
             <Button variant="danger" size="sm" onClick={() => setShowDeleteConfirm(true)}>
-              Delete Account
+              {t.deleteAccount}
             </Button>
           </div>
         ) : (
           <div className="p-4 rounded-xl bg-red-500/5 border border-red-500/20">
             <div className="flex items-center gap-2 mb-3">
               <AlertTriangle size={16} className="text-red-400" />
-              <p className="text-sm font-medium text-red-400">Are you sure?</p>
+              <p className="text-sm font-medium text-red-400">{t.areYouSure}</p>
             </div>
-            <p className="text-xs text-[#94a3b8] mb-4">
-              This action cannot be undone. All your data, API keys, and simulation history will be permanently deleted.
-            </p>
+            <p className="text-xs text-[#94a3b8] mb-4">{t.deleteConfirm}</p>
             <div className="flex gap-3">
               <Button variant="danger" size="sm" onClick={() => {
-                // TODO: Call Supabase delete account API
                 alert("Account deletion is not yet implemented. Please contact support.");
                 setShowDeleteConfirm(false);
               }}>
-                Yes, delete my account
+                {t.yesDelete}
               </Button>
               <Button variant="secondary" size="sm" onClick={() => setShowDeleteConfirm(false)}>
-                Cancel
+                {t.cancel}
               </Button>
             </div>
           </div>

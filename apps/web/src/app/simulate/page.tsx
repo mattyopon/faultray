@@ -27,6 +27,8 @@ import {
   RefreshCw,
 } from "lucide-react";
 import Link from "next/link";
+import { useLocale } from "@/lib/useLocale";
+import { appDict } from "@/i18n/app-dict";
 
 const SAMPLES = [
   { id: "web-saas", name: "Web SaaS Platform", desc: "3-tier architecture with API gateway, auth, database, cache", icon: Globe, components: 8 },
@@ -267,6 +269,8 @@ const DEMO_RESULT: SimulationResult = {
 };
 
 export default function SimulatePage() {
+  const locale = useLocale();
+  const t = locale === "ja" ? appDict.simulate.ja : appDict.simulate.en;
   const [topTab, setTopTab] = useState<TopTab>("quickstart");
   const [selected, setSelected] = useState<string | null>(null);
   const [yamlText, setYamlText] = useState("");
@@ -340,8 +344,8 @@ export default function SimulatePage() {
   return (
     <div className="max-w-[1200px] mx-auto px-6 py-10">
       <div className="mb-10">
-        <h1 className="text-2xl font-bold mb-1">Run Simulation</h1>
-        <p className="text-[#94a3b8] text-sm">Test your infrastructure resilience with 2,000+ chaos scenarios</p>
+        <h1 className="text-2xl font-bold mb-1">{t.title}</h1>
+        <p className="text-[#94a3b8] text-sm">{t.subtitle}</p>
       </div>
 
       {!result ? (
