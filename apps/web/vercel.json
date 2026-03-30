@@ -4,5 +4,9 @@
     "api/**/*.py": {
       "maxDuration": 60
     }
-  }
+  },
+  "rewrites": [
+    { "source": "/api/checkout", "destination": "/api/checkout" },
+    { "source": "/api/stripe-webhook", "destination": "/api/stripe-webhook" }
+  ]
 }
