@@ -17,11 +17,14 @@ import {
   ArrowRight,
   Upload,
   FileCode,
-  Pencil,
+  ChevronDown,
+  ChevronRight,
   Shield,
-  Key,
-  Container,
-  Info,
+  Copy,
+  Check,
+  Terminal,
+  Radio,
+  RefreshCw,
 } from "lucide-react";
 import Link from "next/link";
 
@@ -78,13 +81,6 @@ dependencies:
     target: cache
     type: optional
     weight: 0.7`;
-
-const AWS_REGIONS = [
-  "us-east-1", "us-east-2", "us-west-1", "us-west-2",
-  "eu-west-1", "eu-west-2", "eu-west-3", "eu-central-1",
-  "ap-northeast-1", "ap-northeast-2", "ap-southeast-1", "ap-southeast-2",
-  "ap-south-1", "sa-east-1", "ca-central-1",
-];
 
 function ScanPreview({ summary }: { summary: CloudSimulationResult["scan_summary"] }) {
   return (
@@ -202,10 +198,54 @@ function ResultsPanel({ result, scanSummary }: { result: SimulationResult; scanS
   );
 }
 
-type InputMode = "sample" | "yaml" | "upload" | "aws" | "terraform" | "kubernetes";
+type TopTab = "quickstart" | "agent";
 
-// AWS auth mode
-type AwsAuthMode = "keys" | "role";
+// Mock connected agents data (would come from API in production)
+interface ConnectedAgent {
+  id: string;
+  name: string;
+  provider: string;
+  region: string;
+  lastScan: string;
+  components: number;
+  status: "connected" | "scanning" | "error";
+}
+
+const MOCK_AGENTS: ConnectedAgent[] = [];
+
+function CopyButton({ text }: { text: string }) {
+  const [copied, setCopied] = useState(false);
+
+  const handleCopy = () => {
+    navigator.clipboard.writeText(text);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  };
+
+  return (
+    <button
+      onClick={handleCopy}
+      className="p-1.5 rounded-md hover:bg-white/10 transition-colors text-[#64748b] hover:text-white"
+      title="Copy to clipboard"
+    >
+      {copied ? <Check size={14} className="text-emerald-400" /> : <Copy size={14} />}
+    </button>
+  );
+}
+
+function CodeBlock({ code, language = "bash" }: { code: string; language?: string }) {
+  return (
+    <div className="relative group rounded-lg bg-[#0d1117] border border-[#1e293b] overflow-hidden">
+      <div className="flex items-center justify-between px-4 py-2 border-b border-[#1e293b]">
+        <span className="text-xs text-[#64748b] font-mono">{language}</span>
+        <CopyButton text={code} />
+      </div>
+      <pre className="px-4 py-3 text-sm font-mono text-[#e2e8f0] overflow-x-auto">
+        <code>{code}</code>
+      </pre>
+    </div>
+  );
+}
 
 const DEMO_RESULT: SimulationResult = {
   overall_score: 85.2,
@@ -227,7 +267,7 @@ const DEMO_RESULT: SimulationResult = {
 };
 
 export default function SimulatePage() {
-  const [mode, setMode] = useState<InputMode>("sample");
+  const [topTab, setTopTab] = useState<TopTab>("quickstart");
   const [selected, setSelected] = useState<string | null>(null);
   const [yamlText, setYamlText] = useState("");
   const [uploadedFileName, setUploadedFileName] = useState<string | null>(null);
@@ -236,27 +276,13 @@ export default function SimulatePage() {
   const [scanSummary, setScanSummary] = useState<CloudSimulationResult["scan_summary"] | undefined>(undefined);
   const [error, setError] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const tfFileInputRef = useRef<HTMLInputElement>(null);
-  const k8sFileInputRef = useRef<HTMLInputElement>(null);
 
-  // AWS state
-  const [awsAuthMode, setAwsAuthMode] = useState<AwsAuthMode>("keys");
-  const [awsAccessKeyId, setAwsAccessKeyId] = useState("");
-  const [awsSecretAccessKey, setAwsSecretAccessKey] = useState("");
-  const [awsRoleArn, setAwsRoleArn] = useState("");
-  const [awsRegion, setAwsRegion] = useState("us-east-1");
+  // Quick Start sub-sections
+  const [showYamlEditor, setShowYamlEditor] = useState(false);
 
-  // Terraform state
-  const [tfText, setTfText] = useState("");
-  const [tfFileName, setTfFileName] = useState<string | null>(null);
-
-  // Kubernetes state
-  const [k8sText, setK8sText] = useState("");
-  const [k8sFileName, setK8sFileName] = useState<string | null>(null);
-  const [k8sNamespace, setK8sNamespace] = useState("");
-
-  // Progress message for long-running scans
-  const [progressMessage, setProgressMessage] = useState("");
+  // Agent Connect
+  const [apiKey] = useState("fray_sk_" + "xxxxxxxxxxxxxxxxxxxxxxxxxxxx");
+  const [connectedAgents] = useState<ConnectedAgent[]>(MOCK_AGENTS);
 
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -266,49 +292,14 @@ export default function SimulatePage() {
     reader.onload = (ev) => {
       const text = ev.target?.result as string;
       setYamlText(text);
-      setMode("yaml");
-    };
-    reader.readAsText(file);
-  };
-
-  const handleTfFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    setTfFileName(file.name);
-    const reader = new FileReader();
-    reader.onload = (ev) => {
-      setTfText(ev.target?.result as string);
-    };
-    reader.readAsText(file);
-  };
-
-  const handleK8sFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    setK8sFileName(file.name);
-    const reader = new FileReader();
-    reader.onload = (ev) => {
-      setK8sText(ev.target?.result as string);
     };
     reader.readAsText(file);
   };
 
   const canRun = (() => {
-    switch (mode) {
-      case "sample":
-        return !!selected;
-      case "yaml":
-      case "upload":
-        return yamlText.trim().length > 0;
-      case "aws":
-        return awsRegion && (awsAuthMode === "keys" ? (awsAccessKeyId && awsSecretAccessKey) : awsRoleArn);
-      case "terraform":
-        return tfText.trim().length > 0;
-      case "kubernetes":
-        return k8sText.trim().length > 0;
-      default:
-        return false;
-    }
+    if (selected) return true;
+    if (yamlText.trim().length > 0) return true;
+    return false;
   })();
 
   const runSimulation = async () => {
@@ -317,47 +308,23 @@ export default function SimulatePage() {
     setError(null);
     setResult(null);
     setScanSummary(undefined);
-    setProgressMessage("");
 
     try {
-      if (mode === "sample") {
-        const res = await api.simulate({ sample: selected! });
+      if (selected && !yamlText.trim()) {
+        const res = await api.simulate({ sample: selected });
         setResult(res);
-      } else if (mode === "yaml" || mode === "upload") {
+      } else if (yamlText.trim()) {
         const res = await api.simulate({ topology_yaml: yamlText });
-        setResult(res);
-      } else if (mode === "aws") {
-        setProgressMessage("Scanning AWS infrastructure... This may take 30-60 seconds.");
-        const body = awsAuthMode === "keys"
-          ? { action: "aws" as const, access_key_id: awsAccessKeyId, secret_access_key: awsSecretAccessKey, region: awsRegion }
-          : { action: "aws" as const, role_arn: awsRoleArn, region: awsRegion };
-        const res = await api.scanCloud(body);
-        setScanSummary(res.scan_summary);
-        setResult(res);
-      } else if (mode === "terraform") {
-        setProgressMessage("Parsing Terraform state...");
-        const res = await api.parseTerraform({ tfstate_json: tfText });
-        setScanSummary(res.scan_summary);
-        setResult(res);
-      } else if (mode === "kubernetes") {
-        setProgressMessage("Parsing Kubernetes manifests...");
-        const res = await api.parseKubernetes({
-          manifests: k8sText,
-          ...(k8sNamespace ? { namespace: k8sNamespace } : {}),
-        });
-        setScanSummary(res.scan_summary);
         setResult(res);
       }
     } catch (err) {
       if (err instanceof Error && !err.message.includes("fetch")) {
         setError(err.message);
       } else {
-        // Use demo data if API is unavailable
         setResult(DEMO_RESULT);
       }
     } finally {
       setRunning(false);
-      setProgressMessage("");
     }
   };
 
@@ -365,34 +332,10 @@ export default function SimulatePage() {
     setResult(null);
     setScanSummary(undefined);
     setSelected(null);
+    setYamlText("");
+    setUploadedFileName(null);
     setError(null);
   };
-
-  const runButtonLabel = (() => {
-    switch (mode) {
-      case "aws":
-        return "Scan Infrastructure";
-      case "terraform":
-        return "Parse & Simulate";
-      case "kubernetes":
-        return "Parse & Simulate";
-      default:
-        return "Run Simulation";
-    }
-  })();
-
-  const runningLabel = (() => {
-    switch (mode) {
-      case "aws":
-        return "Scanning AWS...";
-      case "terraform":
-        return "Parsing Terraform...";
-      case "kubernetes":
-        return "Parsing K8s Manifests...";
-      default:
-        return "Running 2,000+ Scenarios...";
-    }
-  })();
 
   return (
     <div className="max-w-[1200px] mx-auto px-6 py-10">
@@ -403,454 +346,297 @@ export default function SimulatePage() {
 
       {!result ? (
         <>
-          {/* Mode Tabs */}
-          <div className="flex flex-wrap gap-2 mb-8">
-            {[
-              { id: "sample" as const, label: "Samples", icon: Server },
-              { id: "yaml" as const, label: "Write YAML", icon: Pencil },
-              { id: "upload" as const, label: "Upload", icon: Upload },
-              { id: "aws" as const, label: "AWS Connect", icon: Cloud },
-              { id: "terraform" as const, label: "Terraform", icon: FileCode },
-              { id: "kubernetes" as const, label: "Kubernetes", icon: Container },
-            ].map((tab) => {
-              const Icon = tab.icon;
-              return (
-                <button
-                  key={tab.id}
-                  onClick={() => setMode(tab.id)}
-                  className={`flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-medium transition-all ${
-                    mode === tab.id
-                      ? "bg-[#FFD700]/10 text-[#FFD700] border border-[#FFD700]/30"
-                      : "text-[#94a3b8] border border-[#1e293b] hover:text-white hover:border-[#64748b]"
-                  }`}
-                >
-                  <Icon size={16} />
-                  {tab.label}
-                </button>
-              );
-            })}
-          </div>
-
-          {/* Sample Selection */}
-          {mode === "sample" && (
-            <div className="grid md:grid-cols-2 gap-6 mb-8">
-              {SAMPLES.map((sample) => {
-                const Icon = sample.icon;
-                const isSelected = selected === sample.id;
-                return (
-                  <button
-                    key={sample.id}
-                    onClick={() => setSelected(sample.id)}
-                    className={`text-left p-6 rounded-2xl border transition-all duration-200 ${
-                      isSelected
-                        ? "border-[#FFD700] bg-[#FFD700]/[0.04] shadow-[0_0_30px_rgba(255,215,0,0.1)]"
-                        : "border-[#1e293b] bg-[#111827] hover:border-[#FFD700]/30 hover:bg-[#1a2035]"
-                    }`}
-                  >
-                    <div className="flex items-start gap-4">
-                      <div className={`w-12 h-12 rounded-xl flex items-center justify-center ${isSelected ? "bg-[#FFD700]/20" : "bg-[#FFD700]/[0.06]"} border border-[#FFD700]/10`}>
-                        <Icon size={22} className="text-[#FFD700]" />
-                      </div>
-                      <div className="flex-1">
-                        <div className="flex items-center gap-2 mb-1">
-                          <h3 className="font-bold">{sample.name}</h3>
-                          <Badge variant="gold">{sample.components} nodes</Badge>
-                        </div>
-                        <p className="text-sm text-[#94a3b8]">{sample.desc}</p>
-                      </div>
-                      <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center ${isSelected ? "border-[#FFD700]" : "border-[#1e293b]"}`}>
-                        {isSelected && <div className="w-2.5 h-2.5 rounded-full bg-[#FFD700]" />}
-                      </div>
-                    </div>
-                  </button>
-                );
-              })}
-            </div>
-          )}
-
-          {/* YAML Editor */}
-          {mode === "yaml" && (
-            <div className="mb-8">
-              <div className="flex items-center justify-between mb-3">
-                <div className="flex items-center gap-2">
-                  <FileCode size={16} className="text-[#FFD700]" />
-                  <span className="text-sm font-medium">Infrastructure Topology (YAML)</span>
-                </div>
-                <button
-                  onClick={() => setYamlText(YAML_PLACEHOLDER)}
-                  className="text-xs text-[#FFD700] hover:text-[#ffe44d] transition-colors"
-                >
-                  Load example
-                </button>
-              </div>
-              <textarea
-                value={yamlText}
-                onChange={(e) => setYamlText(e.target.value)}
-                placeholder={YAML_PLACEHOLDER}
-                className="w-full h-[400px] px-4 py-3 bg-[#0d1117] border border-[#1e293b] rounded-xl text-sm font-mono text-[#e2e8f0] placeholder-[#3a4558] focus:border-[#FFD700]/50 focus:outline-none resize-y"
-                spellCheck={false}
-              />
-              <p className="text-xs text-[#64748b] mt-2">
-                Define your components (app_server, database, cache, load_balancer, queue) and dependencies (requires, optional, async)
-              </p>
-            </div>
-          )}
-
-          {/* File Upload */}
-          {mode === "upload" && (
-            <div className="mb-8">
-              <input
-                ref={fileInputRef}
-                type="file"
-                accept=".yaml,.yml,.json"
-                onChange={handleFileUpload}
-                className="hidden"
-              />
-              <button
-                onClick={() => fileInputRef.current?.click()}
-                className="w-full p-12 rounded-2xl border-2 border-dashed border-[#1e293b] hover:border-[#FFD700]/30 transition-colors text-center"
-              >
-                <Upload size={32} className="mx-auto mb-3 text-[#64748b]" />
-                <p className="text-sm font-medium mb-1">
-                  {uploadedFileName ? (
-                    <span className="text-[#FFD700]">{uploadedFileName}</span>
-                  ) : (
-                    "Drop your YAML or JSON file here"
-                  )}
-                </p>
-                <p className="text-xs text-[#64748b]">
-                  Supports .yaml, .yml, .json — Terraform state files also accepted
-                </p>
-              </button>
-              {yamlText && (
-                <div className="mt-4">
-                  <div className="flex items-center justify-between mb-2">
-                    <span className="text-sm font-medium text-[#94a3b8]">Preview</span>
-                    <button
-                      onClick={() => setMode("yaml")}
-                      className="text-xs text-[#FFD700] hover:text-[#ffe44d]"
-                    >
-                      Edit
-                    </button>
-                  </div>
-                  <pre className="p-4 bg-[#0d1117] border border-[#1e293b] rounded-xl text-xs font-mono text-[#94a3b8] max-h-[200px] overflow-auto">
-                    {yamlText.slice(0, 1000)}{yamlText.length > 1000 ? "\n..." : ""}
-                  </pre>
-                </div>
-              )}
-            </div>
-          )}
-
-          {/* AWS Connect */}
-          {mode === "aws" && (
-            <div className="mb-8 space-y-6">
-              {/* Security Notice */}
-              <div className="flex items-start gap-3 p-4 rounded-xl bg-blue-500/5 border border-blue-500/20">
-                <Shield size={18} className="text-blue-400 mt-0.5 shrink-0" />
-                <div>
-                  <p className="text-sm font-medium text-blue-400">Read-Only Access</p>
-                  <p className="text-xs text-[#94a3b8] mt-1">
-                    FaultRay uses read-only API calls to discover your infrastructure. No write operations
-                    are performed. Your credentials are used only for this scan and are never stored.
-                  </p>
-                </div>
-              </div>
-
-              {/* Auth Mode Toggle */}
-              <div>
-                <label className="text-sm font-medium text-[#94a3b8] mb-3 block">Authentication Method</label>
-                <div className="flex gap-2">
-                  <button
-                    onClick={() => setAwsAuthMode("keys")}
-                    className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm transition-all ${
-                      awsAuthMode === "keys"
-                        ? "bg-[#FFD700]/10 text-[#FFD700] border border-[#FFD700]/30"
-                        : "text-[#94a3b8] border border-[#1e293b] hover:border-[#64748b]"
-                    }`}
-                  >
-                    <Key size={14} />
-                    Access Keys
-                  </button>
-                  <button
-                    onClick={() => setAwsAuthMode("role")}
-                    className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm transition-all ${
-                      awsAuthMode === "role"
-                        ? "bg-[#FFD700]/10 text-[#FFD700] border border-[#FFD700]/30"
-                        : "text-[#94a3b8] border border-[#1e293b] hover:border-[#64748b]"
-                    }`}
-                  >
-                    <Shield size={14} />
-                    IAM Role ARN
-                  </button>
-                </div>
-              </div>
-
-              {/* Access Keys Form */}
-              {awsAuthMode === "keys" && (
-                <div className="grid md:grid-cols-2 gap-4">
-                  <div>
-                    <label className="text-xs font-medium text-[#94a3b8] mb-1.5 block">AWS Access Key ID</label>
-                    <input
-                      type="text"
-                      value={awsAccessKeyId}
-                      onChange={(e) => setAwsAccessKeyId(e.target.value)}
-                      placeholder="AKIAIOSFODNN7EXAMPLE"
-                      className="w-full px-3 py-2.5 bg-[#0d1117] border border-[#1e293b] rounded-lg text-sm font-mono text-[#e2e8f0] placeholder-[#3a4558] focus:border-[#FFD700]/50 focus:outline-none"
-                      autoComplete="off"
-                    />
-                  </div>
-                  <div>
-                    <label className="text-xs font-medium text-[#94a3b8] mb-1.5 block">AWS Secret Access Key</label>
-                    <input
-                      type="password"
-                      value={awsSecretAccessKey}
-                      onChange={(e) => setAwsSecretAccessKey(e.target.value)}
-                      placeholder="wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY"
-                      className="w-full px-3 py-2.5 bg-[#0d1117] border border-[#1e293b] rounded-lg text-sm font-mono text-[#e2e8f0] placeholder-[#3a4558] focus:border-[#FFD700]/50 focus:outline-none"
-                      autoComplete="off"
-                    />
-                  </div>
-                </div>
-              )}
-
-              {/* Role ARN Form */}
-              {awsAuthMode === "role" && (
-                <div>
-                  <label className="text-xs font-medium text-[#94a3b8] mb-1.5 block">IAM Read-Only Role ARN</label>
-                  <input
-                    type="text"
-                    value={awsRoleArn}
-                    onChange={(e) => setAwsRoleArn(e.target.value)}
-                    placeholder="arn:aws:iam::123456789012:role/FaultRayReadOnly"
-                    className="w-full px-3 py-2.5 bg-[#0d1117] border border-[#1e293b] rounded-lg text-sm font-mono text-[#e2e8f0] placeholder-[#3a4558] focus:border-[#FFD700]/50 focus:outline-none"
-                    autoComplete="off"
-                  />
-                  <p className="text-xs text-[#64748b] mt-1.5">
-                    The role should have ReadOnlyAccess policy attached. FaultRay will use STS AssumeRole to obtain temporary credentials.
-                  </p>
-                </div>
-              )}
-
-              {/* Region Selector */}
-              <div>
-                <label className="text-xs font-medium text-[#94a3b8] mb-1.5 block">AWS Region</label>
-                <select
-                  value={awsRegion}
-                  onChange={(e) => setAwsRegion(e.target.value)}
-                  className="w-full md:w-auto px-3 py-2.5 bg-[#0d1117] border border-[#1e293b] rounded-lg text-sm font-mono text-[#e2e8f0] focus:border-[#FFD700]/50 focus:outline-none appearance-none cursor-pointer"
-                >
-                  {AWS_REGIONS.map((r) => (
-                    <option key={r} value={r}>{r}</option>
-                  ))}
-                </select>
-              </div>
-
-              {/* Scan targets info */}
-              <div className="flex items-start gap-3 p-4 rounded-xl bg-white/[0.02] border border-[#1e293b]">
-                <Info size={16} className="text-[#64748b] mt-0.5 shrink-0" />
-                <div>
-                  <p className="text-xs text-[#94a3b8]">
-                    <span className="font-medium text-[#e2e8f0]">Scan targets:</span> EC2, RDS, ElastiCache, ELB/ALB, S3, Route53, CloudFront, ECS/EKS, Lambda, SQS/SNS
-                  </p>
-                </div>
-              </div>
-            </div>
-          )}
-
-          {/* Terraform */}
-          {mode === "terraform" && (
-            <div className="mb-8 space-y-4">
-              <div className="flex items-start gap-3 p-4 rounded-xl bg-purple-500/5 border border-purple-500/20">
-                <FileCode size={18} className="text-purple-400 mt-0.5 shrink-0" />
-                <div>
-                  <p className="text-sm font-medium text-purple-400">Terraform State Import</p>
-                  <p className="text-xs text-[#94a3b8] mt-1">
-                    Upload a <code className="text-purple-300">.tfstate</code> file or paste the output of{" "}
-                    <code className="text-purple-300">terraform show -json</code>. FaultRay will parse your resource
-                    definitions and auto-generate the infrastructure topology.
-                  </p>
-                </div>
-              </div>
-
-              {/* File upload */}
-              <div>
-                <input
-                  ref={tfFileInputRef}
-                  type="file"
-                  accept=".tfstate,.json"
-                  onChange={handleTfFileUpload}
-                  className="hidden"
-                />
-                <button
-                  onClick={() => tfFileInputRef.current?.click()}
-                  className="w-full p-8 rounded-2xl border-2 border-dashed border-[#1e293b] hover:border-purple-500/30 transition-colors text-center"
-                >
-                  <Upload size={24} className="mx-auto mb-2 text-[#64748b]" />
-                  <p className="text-sm font-medium mb-1">
-                    {tfFileName ? (
-                      <span className="text-purple-400">{tfFileName}</span>
-                    ) : (
-                      "Upload .tfstate or terraform show -json output"
-                    )}
-                  </p>
-                  <p className="text-xs text-[#64748b]">Supports .tfstate, .json</p>
-                </button>
-              </div>
-
-              {/* Or paste */}
-              <div className="flex items-center gap-3">
-                <div className="h-px flex-1 bg-[#1e293b]" />
-                <span className="text-xs text-[#64748b]">OR</span>
-                <div className="h-px flex-1 bg-[#1e293b]" />
-              </div>
-
-              <div>
-                <label className="text-xs font-medium text-[#94a3b8] mb-1.5 block">
-                  Paste terraform show -json output
-                </label>
-                <textarea
-                  value={tfText}
-                  onChange={(e) => setTfText(e.target.value)}
-                  placeholder='{"format_version":"1.0","terraform_version":"1.5.0","values":{"root_module":{"resources":[...]}}}'
-                  className="w-full h-[250px] px-4 py-3 bg-[#0d1117] border border-[#1e293b] rounded-xl text-sm font-mono text-[#e2e8f0] placeholder-[#3a4558] focus:border-purple-500/50 focus:outline-none resize-y"
-                  spellCheck={false}
-                />
-              </div>
-            </div>
-          )}
-
-          {/* Kubernetes */}
-          {mode === "kubernetes" && (
-            <div className="mb-8 space-y-4">
-              <div className="flex items-start gap-3 p-4 rounded-xl bg-cyan-500/5 border border-cyan-500/20">
-                <Container size={18} className="text-cyan-400 mt-0.5 shrink-0" />
-                <div>
-                  <p className="text-sm font-medium text-cyan-400">Kubernetes Manifest Import</p>
-                  <p className="text-xs text-[#94a3b8] mt-1">
-                    Upload Kubernetes manifests (YAML) or paste the output of{" "}
-                    <code className="text-cyan-300">kubectl get all -o yaml</code>. FaultRay will discover
-                    Deployments, StatefulSets, Services, and Ingresses to build the topology.
-                  </p>
-                </div>
-              </div>
-
-              {/* File upload */}
-              <div>
-                <input
-                  ref={k8sFileInputRef}
-                  type="file"
-                  accept=".yaml,.yml,.json"
-                  onChange={handleK8sFileUpload}
-                  className="hidden"
-                />
-                <button
-                  onClick={() => k8sFileInputRef.current?.click()}
-                  className="w-full p-8 rounded-2xl border-2 border-dashed border-[#1e293b] hover:border-cyan-500/30 transition-colors text-center"
-                >
-                  <Upload size={24} className="mx-auto mb-2 text-[#64748b]" />
-                  <p className="text-sm font-medium mb-1">
-                    {k8sFileName ? (
-                      <span className="text-cyan-400">{k8sFileName}</span>
-                    ) : (
-                      "Upload Kubernetes manifests"
-                    )}
-                  </p>
-                  <p className="text-xs text-[#64748b]">Supports .yaml, .yml, .json</p>
-                </button>
-              </div>
-
-              {/* Or paste */}
-              <div className="flex items-center gap-3">
-                <div className="h-px flex-1 bg-[#1e293b]" />
-                <span className="text-xs text-[#64748b]">OR</span>
-                <div className="h-px flex-1 bg-[#1e293b]" />
-              </div>
-
-              <div>
-                <label className="text-xs font-medium text-[#94a3b8] mb-1.5 block">
-                  Paste kubectl output or manifests
-                </label>
-                <textarea
-                  value={k8sText}
-                  onChange={(e) => setK8sText(e.target.value)}
-                  placeholder={`apiVersion: apps/v1
-kind: Deployment
-metadata:
-  name: web-app
-  namespace: production
-spec:
-  replicas: 3
-  selector:
-    matchLabels:
-      app: web-app
-  template:
-    metadata:
-      labels:
-        app: web-app
-    spec:
-      containers:
-        - name: web
-          image: nginx:latest
-          ports:
-            - containerPort: 80`}
-                  className="w-full h-[250px] px-4 py-3 bg-[#0d1117] border border-[#1e293b] rounded-xl text-sm font-mono text-[#e2e8f0] placeholder-[#3a4558] focus:border-cyan-500/50 focus:outline-none resize-y"
-                  spellCheck={false}
-                />
-              </div>
-
-              {/* Namespace filter */}
-              <div>
-                <label className="text-xs font-medium text-[#94a3b8] mb-1.5 block">
-                  Namespace (optional)
-                </label>
-                <input
-                  type="text"
-                  value={k8sNamespace}
-                  onChange={(e) => setK8sNamespace(e.target.value)}
-                  placeholder="e.g. production, default"
-                  className="w-full md:w-[300px] px-3 py-2.5 bg-[#0d1117] border border-[#1e293b] rounded-lg text-sm font-mono text-[#e2e8f0] placeholder-[#3a4558] focus:border-cyan-500/50 focus:outline-none"
-                />
-                <p className="text-xs text-[#64748b] mt-1">
-                  Filter resources by namespace. Leave empty to include all namespaces.
-                </p>
-              </div>
-            </div>
-          )}
-
-          {error && (
-            <div className="mb-6 p-4 rounded-xl bg-red-500/10 border border-red-500/20 text-red-400 text-sm">
-              {error}
-            </div>
-          )}
-
-          {/* Progress message */}
-          {running && progressMessage && (
-            <div className="mb-6 flex items-center gap-3 p-4 rounded-xl bg-[#FFD700]/5 border border-[#FFD700]/20">
-              <Loader2 size={16} className="animate-spin text-[#FFD700]" />
-              <p className="text-sm text-[#FFD700]">{progressMessage}</p>
-            </div>
-          )}
-
-          <div className="flex justify-center">
-            <Button
-              size="lg"
-              disabled={!canRun || running}
-              onClick={runSimulation}
-              className="min-w-[200px]"
+          {/* Top-level Tabs */}
+          <div className="flex gap-1 mb-8 p-1 rounded-xl bg-[#0d1117] border border-[#1e293b] w-fit">
+            <button
+              onClick={() => setTopTab("quickstart")}
+              className={`flex items-center gap-2 px-5 py-2.5 rounded-lg text-sm font-medium transition-all ${
+                topTab === "quickstart"
+                  ? "bg-[#FFD700]/10 text-[#FFD700] shadow-sm"
+                  : "text-[#94a3b8] hover:text-white"
+              }`}
             >
-              {running ? (
-                <>
-                  <Loader2 size={18} className="animate-spin" />
-                  {runningLabel}
-                </>
-              ) : (
-                <>
-                  <Zap size={18} />
-                  {runButtonLabel}
-                </>
-              )}
-            </Button>
+              <Zap size={16} />
+              Quick Start
+            </button>
+            <button
+              onClick={() => setTopTab("agent")}
+              className={`flex items-center gap-2 px-5 py-2.5 rounded-lg text-sm font-medium transition-all ${
+                topTab === "agent"
+                  ? "bg-[#FFD700]/10 text-[#FFD700] shadow-sm"
+                  : "text-[#94a3b8] hover:text-white"
+              }`}
+            >
+              <Terminal size={16} />
+              Agent Connect
+            </button>
           </div>
+
+          {/* ===== QUICK START TAB ===== */}
+          {topTab === "quickstart" && (
+            <>
+              {/* Sample Selection */}
+              <div className="mb-8">
+                <h2 className="text-sm font-semibold text-[#94a3b8] uppercase tracking-wider mb-4">Choose a sample topology</h2>
+                <div className="grid md:grid-cols-2 gap-4">
+                  {SAMPLES.map((sample) => {
+                    const Icon = sample.icon;
+                    const isSelected = selected === sample.id;
+                    return (
+                      <button
+                        key={sample.id}
+                        onClick={() => { setSelected(sample.id); setYamlText(""); setUploadedFileName(null); }}
+                        className={`text-left p-5 rounded-2xl border transition-all duration-200 ${
+                          isSelected
+                            ? "border-[#FFD700] bg-[#FFD700]/[0.04] shadow-[0_0_30px_rgba(255,215,0,0.1)]"
+                            : "border-[#1e293b] bg-[#111827] hover:border-[#FFD700]/30 hover:bg-[#1a2035]"
+                        }`}
+                      >
+                        <div className="flex items-start gap-4">
+                          <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${isSelected ? "bg-[#FFD700]/20" : "bg-[#FFD700]/[0.06]"} border border-[#FFD700]/10`}>
+                            <Icon size={20} className="text-[#FFD700]" />
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center gap-2 mb-1">
+                              <h3 className="font-bold text-sm">{sample.name}</h3>
+                              <Badge variant="gold">{sample.components} nodes</Badge>
+                            </div>
+                            <p className="text-xs text-[#94a3b8]">{sample.desc}</p>
+                          </div>
+                          <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center shrink-0 ${isSelected ? "border-[#FFD700]" : "border-[#1e293b]"}`}>
+                            {isSelected && <div className="w-2.5 h-2.5 rounded-full bg-[#FFD700]" />}
+                          </div>
+                        </div>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* Divider */}
+              <div className="flex items-center gap-4 mb-8">
+                <div className="h-px flex-1 bg-[#1e293b]" />
+                <span className="text-xs text-[#64748b] font-medium">OR UPLOAD YOUR OWN</span>
+                <div className="h-px flex-1 bg-[#1e293b]" />
+              </div>
+
+              {/* File Upload Area */}
+              <div className="mb-6">
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept=".yaml,.yml,.json,.tfstate"
+                  onChange={handleFileUpload}
+                  className="hidden"
+                />
+                <button
+                  onClick={() => { fileInputRef.current?.click(); }}
+                  className="w-full p-10 rounded-2xl border-2 border-dashed border-[#1e293b] hover:border-[#FFD700]/30 transition-colors text-center"
+                >
+                  <Upload size={28} className="mx-auto mb-3 text-[#64748b]" />
+                  <p className="text-sm font-medium mb-1">
+                    {uploadedFileName ? (
+                      <span className="text-[#FFD700]">{uploadedFileName}</span>
+                    ) : (
+                      "Drop your topology file here"
+                    )}
+                  </p>
+                  <p className="text-xs text-[#64748b]">
+                    Supports .yaml, .yml, .json, .tfstate
+                  </p>
+                </button>
+                {uploadedFileName && yamlText && (
+                  <div className="mt-3">
+                    <pre className="p-4 bg-[#0d1117] border border-[#1e293b] rounded-xl text-xs font-mono text-[#94a3b8] max-h-[150px] overflow-auto">
+                      {yamlText.slice(0, 1000)}{yamlText.length > 1000 ? "\n..." : ""}
+                    </pre>
+                  </div>
+                )}
+              </div>
+
+              {/* YAML Editor Expander */}
+              <div className="mb-8">
+                <button
+                  onClick={() => setShowYamlEditor(!showYamlEditor)}
+                  className="flex items-center gap-2 text-sm text-[#94a3b8] hover:text-white transition-colors"
+                >
+                  {showYamlEditor ? <ChevronDown size={16} /> : <ChevronRight size={16} />}
+                  <FileCode size={14} />
+                  <span>Write YAML manually</span>
+                </button>
+                {showYamlEditor && (
+                  <div className="mt-4">
+                    <div className="flex items-center justify-between mb-2">
+                      <span className="text-xs font-medium text-[#94a3b8]">Infrastructure Topology (YAML)</span>
+                      <button
+                        onClick={() => { setYamlText(YAML_PLACEHOLDER); setSelected(null); setUploadedFileName(null); }}
+                        className="text-xs text-[#FFD700] hover:text-[#ffe44d] transition-colors"
+                      >
+                        Load example
+                      </button>
+                    </div>
+                    <textarea
+                      value={yamlText}
+                      onChange={(e) => { setYamlText(e.target.value); setSelected(null); setUploadedFileName(null); }}
+                      placeholder={YAML_PLACEHOLDER}
+                      className="w-full h-[350px] px-4 py-3 bg-[#0d1117] border border-[#1e293b] rounded-xl text-sm font-mono text-[#e2e8f0] placeholder-[#3a4558] focus:border-[#FFD700]/50 focus:outline-none resize-y"
+                      spellCheck={false}
+                    />
+                    <p className="text-xs text-[#64748b] mt-2">
+                      Define your components (app_server, database, cache, load_balancer, queue) and dependencies (requires, optional, async)
+                    </p>
+                  </div>
+                )}
+              </div>
+
+              {error && (
+                <div className="mb-6 p-4 rounded-xl bg-red-500/10 border border-red-500/20 text-red-400 text-sm">
+                  {error}
+                </div>
+              )}
+
+              <div className="flex justify-center">
+                <Button
+                  size="lg"
+                  disabled={!canRun || running}
+                  onClick={runSimulation}
+                  className="min-w-[200px]"
+                >
+                  {running ? (
+                    <>
+                      <Loader2 size={18} className="animate-spin" />
+                      Running 2,000+ Scenarios...
+                    </>
+                  ) : (
+                    <>
+                      <Zap size={18} />
+                      Run Simulation
+                    </>
+                  )}
+                </Button>
+              </div>
+            </>
+          )}
+
+          {/* ===== AGENT CONNECT TAB ===== */}
+          {topTab === "agent" && (
+            <div className="space-y-8">
+              {/* Security Notice */}
+              <div className="flex items-start gap-3 p-4 rounded-xl bg-emerald-500/5 border border-emerald-500/20">
+                <Shield size={18} className="text-emerald-400 mt-0.5 shrink-0" />
+                <div>
+                  <p className="text-sm font-medium text-emerald-400">Your credentials stay in your VPC</p>
+                  <p className="text-xs text-[#94a3b8] mt-1">
+                    The FaultRay agent runs inside your infrastructure. Only topology data and simulation results
+                    are sent to FaultRay SaaS. Cloud provider credentials never leave your environment.
+                  </p>
+                </div>
+              </div>
+
+              {/* Step 1: API Key */}
+              <div>
+                <div className="flex items-center gap-3 mb-4">
+                  <div className="w-7 h-7 rounded-full bg-[#FFD700]/10 border border-[#FFD700]/30 flex items-center justify-center text-xs font-bold text-[#FFD700]">1</div>
+                  <h3 className="text-sm font-semibold">Get your API key</h3>
+                </div>
+                <div className="ml-10">
+                  <div className="flex items-center gap-3 p-3 rounded-lg bg-[#0d1117] border border-[#1e293b]">
+                    <code className="flex-1 text-sm font-mono text-[#e2e8f0] truncate">{apiKey}</code>
+                    <CopyButton text={apiKey} />
+                  </div>
+                  <p className="text-xs text-[#64748b] mt-2">
+                    Generate a new key in <Link href="/settings" className="text-[#FFD700] hover:underline">Settings</Link>. Keep it secret.
+                  </p>
+                </div>
+              </div>
+
+              {/* Step 2: Install */}
+              <div>
+                <div className="flex items-center gap-3 mb-4">
+                  <div className="w-7 h-7 rounded-full bg-[#FFD700]/10 border border-[#FFD700]/30 flex items-center justify-center text-xs font-bold text-[#FFD700]">2</div>
+                  <h3 className="text-sm font-semibold">Install the agent</h3>
+                </div>
+                <div className="ml-10">
+                  <CodeBlock code="pip install faultray" />
+                </div>
+              </div>
+
+              {/* Step 3: Connect & Scan */}
+              <div>
+                <div className="flex items-center gap-3 mb-4">
+                  <div className="w-7 h-7 rounded-full bg-[#FFD700]/10 border border-[#FFD700]/30 flex items-center justify-center text-xs font-bold text-[#FFD700]">3</div>
+                  <h3 className="text-sm font-semibold">Connect and scan your infrastructure</h3>
+                </div>
+                <div className="ml-10 space-y-3">
+                  <CodeBlock
+                    code={`# Connect the agent to FaultRay SaaS
+faultray agent connect --token YOUR_API_KEY --url https://faultray.com`}
+                  />
+                  <p className="text-xs text-[#94a3b8] mb-3">Then scan your infrastructure:</p>
+                  <CodeBlock
+                    code={`# Scan specific providers
+faultray scan --provider aws --region ap-northeast-1
+faultray scan --provider gcp --project my-project
+faultray scan --provider azure --subscription xxx
+faultray scan --provider kubernetes
+
+# Or scan all providers at once
+faultray scan --all`}
+                  />
+                </div>
+              </div>
+
+              {/* Step 4: Connected Agents */}
+              <div>
+                <div className="flex items-center gap-3 mb-4">
+                  <div className="w-7 h-7 rounded-full bg-[#FFD700]/10 border border-[#FFD700]/30 flex items-center justify-center text-xs font-bold text-[#FFD700]">4</div>
+                  <h3 className="text-sm font-semibold">Connected agents</h3>
+                </div>
+                <div className="ml-10">
+                  {connectedAgents.length === 0 ? (
+                    <div className="p-8 rounded-2xl border border-dashed border-[#1e293b] text-center">
+                      <Radio size={24} className="mx-auto mb-3 text-[#64748b]" />
+                      <p className="text-sm text-[#94a3b8] mb-1">No agents connected yet</p>
+                      <p className="text-xs text-[#64748b]">
+                        Run the commands above to connect your first agent. Results will appear here automatically.
+                      </p>
+                    </div>
+                  ) : (
+                    <div className="space-y-3">
+                      <div className="flex items-center justify-between mb-2">
+                        <span className="text-xs text-[#64748b]">{connectedAgents.length} agent(s) connected</span>
+                        <button className="flex items-center gap-1.5 text-xs text-[#94a3b8] hover:text-white transition-colors">
+                          <RefreshCw size={12} />
+                          Refresh
+                        </button>
+                      </div>
+                      {connectedAgents.map((agent) => (
+                        <Card key={agent.id} className="!p-4">
+                          <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-3">
+                              <div className={`w-2.5 h-2.5 rounded-full ${
+                                agent.status === "connected" ? "bg-emerald-400" :
+                                agent.status === "scanning" ? "bg-[#FFD700] animate-pulse" :
+                                "bg-red-400"
+                              }`} />
+                              <div>
+                                <p className="text-sm font-medium">{agent.name}</p>
+                                <p className="text-xs text-[#64748b]">{agent.provider} / {agent.region}</p>
+                              </div>
+                            </div>
+                            <div className="text-right">
+                              <p className="text-sm font-mono text-[#e2e8f0]">{agent.components} components</p>
+                              <p className="text-xs text-[#64748b]">Last scan: {agent.lastScan}</p>
+                            </div>
+                          </div>
+                        </Card>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+          )}
         </>
       ) : (
         <>
