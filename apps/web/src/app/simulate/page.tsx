@@ -329,9 +329,9 @@ export default function SimulatePage() {
       } else if (mode === "aws") {
         setProgressMessage("Scanning AWS infrastructure... This may take 30-60 seconds.");
         const body = awsAuthMode === "keys"
-          ? { access_key_id: awsAccessKeyId, secret_access_key: awsSecretAccessKey, region: awsRegion }
-          : { role_arn: awsRoleArn, region: awsRegion };
-        const res = await api.scanAws(body);
+          ? { action: "aws" as const, access_key_id: awsAccessKeyId, secret_access_key: awsSecretAccessKey, region: awsRegion }
+          : { action: "aws" as const, role_arn: awsRoleArn, region: awsRegion };
+        const res = await api.scanCloud(body);
         setScanSummary(res.scan_summary);
         setResult(res);
       } else if (mode === "terraform") {

@@ -276,16 +276,23 @@ export const api = {
       token,
     }),
 
-  scanAws: (
+  scanCloud: (
     data: {
+      action: "aws" | "gcp" | "azure";
       access_key_id?: string;
       secret_access_key?: string;
       role_arn?: string;
-      region: string;
+      region?: string;
+      credentials_json?: string;
+      project_id?: string;
+      tenant_id?: string;
+      client_id?: string;
+      client_secret?: string;
+      subscription_id?: string;
     },
     token?: string,
   ) =>
-    apiFetch<CloudSimulationResult>("/api/scan-aws", {
+    apiFetch<CloudSimulationResult>("/api/discovery", {
       method: "POST",
       body: data,
       token,
