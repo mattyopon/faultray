@@ -51,7 +51,13 @@ export async function proxy(request: NextRequest) {
   // Only for the root and LP-related paths
   if (!pathnameHasLocale) {
     // Skip locale redirect for app routes (dashboard, login, etc.), API, auth
-    const skipPaths = ["/dashboard", "/simulate", "/results", "/suggestions", "/settings", "/login", "/auth", "/api", "/pricing"];
+    const skipPaths = [
+      "/dashboard", "/simulate", "/results", "/suggestions", "/settings",
+      "/login", "/auth", "/api", "/pricing", "/demo",
+      "/topology", "/heatmap", "/whatif", "/compliance", "/score-detail",
+      "/cost", "/security", "/fmea", "/advisor", "/reports",
+      "/incidents", "/benchmark",
+    ];
     const shouldSkip = skipPaths.some((path) => pathname.startsWith(path));
 
     if (!shouldSkip) {
@@ -64,7 +70,13 @@ export async function proxy(request: NextRequest) {
 
   // If locale-prefixed app route (e.g. /en/login, /ja/pricing), redirect to non-prefixed version
   if (pathnameHasLocale) {
-    const appPaths = ["/login", "/dashboard", "/simulate", "/results", "/suggestions", "/settings", "/pricing", "/demo"];
+    const appPaths = [
+      "/login", "/dashboard", "/simulate", "/results", "/suggestions",
+      "/settings", "/pricing", "/demo",
+      "/topology", "/heatmap", "/whatif", "/compliance", "/score-detail",
+      "/cost", "/security", "/fmea", "/advisor", "/reports",
+      "/incidents", "/benchmark",
+    ];
     let strippedPath = pathname;
     for (const locale of locales) {
       if (pathname.startsWith(`/${locale}/`)) {
