@@ -21,7 +21,8 @@ import {
 import { useRouter } from "next/navigation";
 import { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
-import { useLocale } from "@/lib/useLocale";
+import { useLocale, useSetLocale } from "@/lib/useLocale";
+import type { Locale } from "@/i18n/config";
 import { appDict } from "@/i18n/app-dict";
 
 const LANGUAGES = [
@@ -48,16 +49,8 @@ export default function SettingsPage() {
   const { user } = useAuth();
   const router = useRouter();
   const locale = useLocale();
+  const setLocale = useSetLocale();
   const t = appDict.settings[locale] ?? appDict.settings.en;
-
-  // Language
-  const [currentLang, setCurrentLang] = useState(() => {
-    if (typeof document !== "undefined") {
-      const match = document.cookie.match(/NEXT_LOCALE=(\w+)/);
-      if (match) return match[1];
-    }
-    return "en";
-  });
 
   // API Keys
   const [apiKeys, setApiKeys] = useState<Array<{ key: string; created: string }>>([]);
@@ -151,10 +144,7 @@ export default function SettingsPage() {
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
 
   function setLanguage(lang: string) {
-    document.cookie = `NEXT_LOCALE=${lang};path=/;max-age=31536000`;
-    setCurrentLang(lang);
-    // Full reload to apply locale change across all components
-    window.location.reload();
+    setLocale(lang as Locale);
   }
 
   function handleGenerateKey() {
@@ -198,7 +188,7 @@ export default function SettingsPage() {
               key={lang.code}
               onClick={() => setLanguage(lang.code)}
               className={`flex items-center gap-2 px-4 py-3 rounded-lg border transition-all text-sm ${
-                currentLang === lang.code
+                locale === lang.code
                   ? "border-[#FFD700] bg-[#FFD700]/10 text-white"
                   : "border-[#1e293b] text-[#94a3b8] hover:border-[#64748b] hover:text-white"
               }`}
