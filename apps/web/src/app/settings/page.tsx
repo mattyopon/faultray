@@ -18,6 +18,7 @@ import {
   Shield,
   Clock,
   Minus,
+  Link2,
 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useState, useEffect, useCallback } from "react";
@@ -143,6 +144,36 @@ export default function SettingsPage() {
   }
 
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+
+  // Integration settings
+  const [integrations, setIntegrations] = useState({
+    jiraDomain: "",
+    backlogSpace: "",
+    slackWebhook: "",
+  });
+  const [integrationsSaved, setIntegrationsSaved] = useState(false);
+
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem("faultray_integrations");
+      if (raw) {
+        const parsed = JSON.parse(raw);
+        setIntegrations({
+          jiraDomain: parsed.jiraDomain || "",
+          backlogSpace: parsed.backlogSpace || "",
+          slackWebhook: parsed.slackWebhook || "",
+        });
+      }
+    } catch {
+      // ignore
+    }
+  }, []);
+
+  function handleSaveIntegrations() {
+    localStorage.setItem("faultray_integrations", JSON.stringify(integrations));
+    setIntegrationsSaved(true);
+    setTimeout(() => setIntegrationsSaved(false), 2500);
+  }
 
   function setLanguage(lang: string) {
     setLocale(lang as Locale);
@@ -439,6 +470,56 @@ export default function SettingsPage() {
               </button>
             </div>
           ))}
+        </div>
+      </Card>
+
+      {/* Integrations */}
+      <Card className="mb-6">
+        <div className="flex items-center gap-3 mb-6">
+          <Link2 size={20} className="text-[#FFD700]" />
+          <h2 className="text-lg font-bold">{t.integrations}</h2>
+        </div>
+        <p className="text-sm text-[#94a3b8] mb-6">{t.integrationsDesc}</p>
+        <div className="space-y-4">
+          <div>
+            <label className="block text-sm text-[#64748b] mb-1">{t.jiraDomain}</label>
+            <input
+              type="text"
+              value={integrations.jiraDomain}
+              onChange={(e) => setIntegrations({ ...integrations, jiraDomain: e.target.value })}
+              className="w-full bg-white/[0.05] border border-[#1e293b] rounded-lg px-3 py-2 text-sm text-white focus:border-[#FFD700] focus:outline-none"
+              placeholder={t.jiraDomainPlaceholder}
+            />
+          </div>
+          <div>
+            <label className="block text-sm text-[#64748b] mb-1">{t.backlogSpace}</label>
+            <input
+              type="text"
+              value={integrations.backlogSpace}
+              onChange={(e) => setIntegrations({ ...integrations, backlogSpace: e.target.value })}
+              className="w-full bg-white/[0.05] border border-[#1e293b] rounded-lg px-3 py-2 text-sm text-white focus:border-[#FFD700] focus:outline-none"
+              placeholder={t.backlogSpacePlaceholder}
+            />
+          </div>
+          <div>
+            <label className="block text-sm text-[#64748b] mb-1">{t.slackWebhook}</label>
+            <input
+              type="text"
+              value={integrations.slackWebhook}
+              onChange={(e) => setIntegrations({ ...integrations, slackWebhook: e.target.value })}
+              className="w-full bg-white/[0.05] border border-[#1e293b] rounded-lg px-3 py-2 text-sm text-white focus:border-[#FFD700] focus:outline-none"
+              placeholder={t.slackWebhookPlaceholder}
+            />
+          </div>
+          <div className="flex items-center gap-3">
+            <Button size="sm" onClick={handleSaveIntegrations}>
+              <Check size={14} />
+              {t.saveIntegrations}
+            </Button>
+            {integrationsSaved && (
+              <span className="text-sm text-emerald-400 font-medium">{t.integrationsSaved}</span>
+            )}
+          </div>
         </div>
       </Card>
 

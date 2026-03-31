@@ -22,6 +22,13 @@ import {
   Check,
   X,
   ListFilter,
+  ChevronDown,
+  Share2,
+  Link2,
+  Mail,
+  MessageSquare,
+  Copy,
+  ExternalLink,
 } from "lucide-react";
 import Link from "next/link";
 import { useLocale } from "@/lib/useLocale";
@@ -65,6 +72,28 @@ type TaskStatesMap = Record<number, TaskState>;
 type TaskFilter = "all" | TaskStatus;
 
 /* ------------------------------------------------------------------ */
+/*  Integration settings helpers                                       */
+/* ------------------------------------------------------------------ */
+
+const INTEGRATION_STORAGE_KEY = "faultray_integrations";
+
+interface IntegrationSettings {
+  jiraDomain: string;
+  backlogSpace: string;
+  slackWebhook: string;
+}
+
+function loadIntegrationSettings(): IntegrationSettings {
+  try {
+    const raw = localStorage.getItem(INTEGRATION_STORAGE_KEY);
+    if (raw) return JSON.parse(raw) as IntegrationSettings;
+  } catch {
+    // ignore
+  }
+  return { jiraDomain: "", backlogSpace: "", slackWebhook: "" };
+}
+
+/* ------------------------------------------------------------------ */
 /*  Demo data (used when no simulation result exists)                   */
 /* ------------------------------------------------------------------ */
 
@@ -74,13 +103,13 @@ const DEMO_ACTIONS: ActionItem[] = [
     titleKey: "dbFailover",
     title: {
       en: "Database Failover Setup",
-      ja: "DBフェイルオーバー構築",
+      ja: "DB\u30D5\u30A7\u30A4\u30EB\u30AA\u30FC\u30D0\u30FC\u69CB\u7BC9",
       de: "Datenbank-Failover-Einrichtung",
       fr: "Configuration du basculement BDD",
-      zh: "数据库故障转移设置",
-      ko: "DB 페일오버 설정",
-      es: "Configuración de failover de BD",
-      pt: "Configuração de failover do banco",
+      zh: "\u6570\u636E\u5E93\u6545\u969C\u8F6C\u79FB\u8BBE\u7F6E",
+      ko: "DB \uD398\uC77C\uC624\uBC84 \uC124\uC815",
+      es: "Configuraci\u00F3n de failover de BD",
+      pt: "Configura\u00E7\u00E3o de failover do banco",
     },
     priority: "critical",
     effortWeeks: 2,
@@ -94,13 +123,13 @@ const DEMO_ACTIONS: ActionItem[] = [
     titleKey: "circuitBreaker",
     title: {
       en: "Circuit Breaker Implementation",
-      ja: "サーキットブレーカー実装",
+      ja: "\u30B5\u30FC\u30AD\u30C3\u30C8\u30D6\u30EC\u30FC\u30AB\u30FC\u5B9F\u88C5",
       de: "Circuit-Breaker-Implementierung",
-      fr: "Implémentation du disjoncteur",
-      zh: "熔断器实现",
-      ko: "서킷 브레이커 구현",
-      es: "Implementación de circuit breaker",
-      pt: "Implementação do circuit breaker",
+      fr: "Impl\u00E9mentation du disjoncteur",
+      zh: "\u7194\u65AD\u5668\u5B9E\u73B0",
+      ko: "\uC11C\uD0B7 \uBE0C\uB808\uC774\uCEE4 \uAD6C\uD604",
+      es: "Implementaci\u00F3n de circuit breaker",
+      pt: "Implementa\u00E7\u00E3o do circuit breaker",
     },
     priority: "high",
     effortWeeks: 1,
@@ -114,13 +143,13 @@ const DEMO_ACTIONS: ActionItem[] = [
     titleKey: "autoScaling",
     title: {
       en: "Auto-Scaling Configuration",
-      ja: "オートスケーリング設定",
+      ja: "\u30AA\u30FC\u30C8\u30B9\u30B1\u30FC\u30EA\u30F3\u30B0\u8A2D\u5B9A",
       de: "Auto-Scaling-Konfiguration",
       fr: "Configuration de l'auto-scaling",
-      zh: "自动扩缩容配置",
-      ko: "오토 스케일링 설정",
-      es: "Configuración de auto-escalado",
-      pt: "Configuração de auto-scaling",
+      zh: "\u81EA\u52A8\u6269\u7F29\u5BB9\u914D\u7F6E",
+      ko: "\uC624\uD1A0 \uC2A4\uCF00\uC77C\uB9C1 \uC124\uC815",
+      es: "Configuraci\u00F3n de auto-escalado",
+      pt: "Configura\u00E7\u00E3o de auto-scaling",
     },
     priority: "high",
     effortWeeks: 3,
@@ -134,13 +163,13 @@ const DEMO_ACTIONS: ActionItem[] = [
     titleKey: "cacheRedundancy",
     title: {
       en: "Cache Redundancy",
-      ja: "キャッシュ冗長化",
+      ja: "\u30AD\u30E3\u30C3\u30B7\u30E5\u5197\u9577\u5316",
       de: "Cache-Redundanz",
       fr: "Redondance du cache",
-      zh: "缓存冗余",
-      ko: "캐시 이중화",
-      es: "Redundancia de caché",
-      pt: "Redundância de cache",
+      zh: "\u7F13\u5B58\u5197\u4F59",
+      ko: "\uCE90\uC2DC \uC774\uC911\uD654",
+      es: "Redundancia de cach\u00E9",
+      pt: "Redund\u00E2ncia de cache",
     },
     priority: "medium",
     effortWeeks: 1,
@@ -154,13 +183,13 @@ const DEMO_ACTIONS: ActionItem[] = [
     titleKey: "incidentReporting",
     title: {
       en: "Automated Incident Reporting",
-      ja: "インシデント自動報告",
+      ja: "\u30A4\u30F3\u30B7\u30C7\u30F3\u30C8\u81EA\u52D5\u5831\u544A",
       de: "Automatisierte Vorfallsmeldung",
-      fr: "Signalement automatisé des incidents",
-      zh: "自动事件报告",
-      ko: "자동 인시던트 보고",
+      fr: "Signalement automatis\u00E9 des incidents",
+      zh: "\u81EA\u52A8\u4E8B\u4EF6\u62A5\u544A",
+      ko: "\uC790\uB3D9 \uC778\uC2DC\uB358\uD2B8 \uBCF4\uACE0",
       es: "Reporte automatizado de incidentes",
-      pt: "Relatório automatizado de incidentes",
+      pt: "Relat\u00F3rio automatizado de incidentes",
     },
     priority: "high",
     effortWeeks: 2,
@@ -200,11 +229,11 @@ function buildRemediationData(sim: SimulationResult): RemediationData {
       titleKey: `failure_${id}`,
       title: {
         en: `Fix: ${failure.scenario}`,
-        ja: `修正: ${failure.scenario}`,
+        ja: `\u4FEE\u6B63: ${failure.scenario}`,
         de: `Beheben: ${failure.scenario}`,
         fr: `Corriger : ${failure.scenario}`,
-        zh: `修复: ${failure.scenario}`,
-        ko: `수정: ${failure.scenario}`,
+        zh: `\u4FEE\u590D: ${failure.scenario}`,
+        ko: `\uC218\uC815: ${failure.scenario}`,
         es: `Corregir: ${failure.scenario}`,
         pt: `Corrigir: ${failure.scenario}`,
       },
@@ -403,6 +432,172 @@ function downloadFile(content: string, filename: string, type: string) {
 }
 
 /* ------------------------------------------------------------------ */
+/*  Excel XML Spreadsheet 2003 export                                   */
+/* ------------------------------------------------------------------ */
+
+function escapeXml(s: string): string {
+  return s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+}
+
+function generateExcelXml(
+  data: RemediationData,
+  taskStates: TaskStatesMap,
+  t: Record<string, string>,
+  locale: string,
+): string {
+  const projected = calcProjectedScore(data);
+  const projectedDora = calcProjectedDora(data);
+  const annualCost = calcAnnualDowntimeCost(data.score);
+  const projectedCost = calcAnnualDowntimeCost(projected);
+  const roi = calcRoi(data);
+  const totalCost = data.actions.reduce((s, a) => s + a.costEur, 0);
+  const maxWeek = Math.max(...data.actions.map((a) => a.startWeek + a.effortWeeks));
+
+  const statusLabel = (s: TaskStatus): string => {
+    const map: Record<TaskStatus, string> = {
+      todo: t.statusTodo ?? "To Do",
+      in_progress: t.statusInProgress ?? "In Progress",
+      in_review: t.statusInReview ?? "In Review",
+      done: t.statusDone ?? "Done",
+    };
+    return map[s] ?? s;
+  };
+
+  // Sheet 1: Executive Summary
+  const sheet1 = `<Worksheet ss:Name="${escapeXml(t.excelSheetSummary ?? "Executive Summary")}">
+<Table>
+<Column ss:Width="200"/><Column ss:Width="150"/>
+<Row><Cell ss:StyleID="Header"><Data ss:Type="String">${escapeXml(t.title)}</Data></Cell></Row>
+<Row><Cell><Data ss:Type="String">${escapeXml(t.currentScore)}</Data></Cell><Cell><Data ss:Type="Number">${data.score}</Data></Cell></Row>
+<Row><Cell><Data ss:Type="String">${escapeXml(t.doraCompliance)}</Data></Cell><Cell><Data ss:Type="String">${data.doraCompliance}%</Data></Cell></Row>
+<Row><Cell><Data ss:Type="String">${escapeXml(t.estimatedAnnualDowntimeCost)}</Data></Cell><Cell><Data ss:Type="Number">${annualCost}</Data></Cell></Row>
+<Row><Cell><Data ss:Type="String">${escapeXml(t.projectedScore)}</Data></Cell><Cell><Data ss:Type="Number">${projected}</Data></Cell></Row>
+<Row><Cell><Data ss:Type="String">${escapeXml(t.roiPayback)}</Data></Cell><Cell><Data ss:Type="String">${roi} ${escapeXml(t.months)}</Data></Cell></Row>
+<Row><Cell><Data ss:Type="String">${escapeXml(t.annualCost)} (${escapeXml(t.after)})</Data></Cell><Cell><Data ss:Type="Number">${projectedCost}</Data></Cell></Row>
+</Table>
+</Worksheet>`;
+
+  // Sheet 2: Action List
+  const actionRows = data.actions.map((a) => {
+    const ts = taskStates[a.id] ?? { assignee: "", status: "todo" as TaskStatus, comment: "", deadline: "" };
+    const { start } = calcActionDates(a);
+    const deadline = ts.deadline || start.toISOString().split("T")[0];
+    return `<Row>
+<Cell><Data ss:Type="Number">${a.id}</Data></Cell>
+<Cell><Data ss:Type="String">${escapeXml(a.title[locale] ?? a.title.en)}</Data></Cell>
+<Cell><Data ss:Type="String">${escapeXml(t[a.priority] ?? a.priority)}</Data></Cell>
+<Cell><Data ss:Type="String">${escapeXml(ts.assignee || (t.unassigned ?? "Unassigned"))}</Data></Cell>
+<Cell><Data ss:Type="String">${escapeXml(statusLabel(ts.status))}</Data></Cell>
+<Cell><Data ss:Type="Number">${a.effortWeeks}</Data></Cell>
+<Cell><Data ss:Type="Number">${a.costEur}</Data></Cell>
+<Cell><Data ss:Type="Number">${a.scoreImpact}</Data></Cell>
+<Cell><Data ss:Type="String">${escapeXml(deadline)}</Data></Cell>
+</Row>`;
+  }).join("\n");
+
+  const sheet2 = `<Worksheet ss:Name="${escapeXml(t.excelSheetActions ?? "Action List")}">
+<Table>
+<Column ss:Width="40"/><Column ss:Width="250"/><Column ss:Width="80"/><Column ss:Width="100"/><Column ss:Width="100"/><Column ss:Width="60"/><Column ss:Width="80"/><Column ss:Width="80"/><Column ss:Width="100"/>
+<Row>
+<Cell ss:StyleID="Header"><Data ss:Type="String">#</Data></Cell>
+<Cell ss:StyleID="Header"><Data ss:Type="String">${escapeXml(t.action)}</Data></Cell>
+<Cell ss:StyleID="Header"><Data ss:Type="String">${escapeXml(t.priority)}</Data></Cell>
+<Cell ss:StyleID="Header"><Data ss:Type="String">${escapeXml(t.assignee)}</Data></Cell>
+<Cell ss:StyleID="Header"><Data ss:Type="String">${escapeXml(t.status ?? "Status")}</Data></Cell>
+<Cell ss:StyleID="Header"><Data ss:Type="String">${escapeXml(t.effort)}</Data></Cell>
+<Cell ss:StyleID="Header"><Data ss:Type="String">${escapeXml(t.cost)}</Data></Cell>
+<Cell ss:StyleID="Header"><Data ss:Type="String">${escapeXml(t.expectedEffect)}</Data></Cell>
+<Cell ss:StyleID="Header"><Data ss:Type="String">${escapeXml(t.deadline)}</Data></Cell>
+</Row>
+${actionRows}
+<Row>
+<Cell></Cell><Cell></Cell><Cell></Cell><Cell></Cell><Cell></Cell>
+<Cell ss:StyleID="Header"><Data ss:Type="String">Total</Data></Cell>
+<Cell ss:StyleID="Header"><Data ss:Type="Number">${totalCost}</Data></Cell>
+<Cell ss:StyleID="Header"><Data ss:Type="Number">${Math.round(data.actions.reduce((s, a) => s + a.scoreImpact, 0) * 10) / 10}</Data></Cell>
+<Cell></Cell>
+</Row>
+</Table>
+</Worksheet>`;
+
+  // Sheet 3: Roadmap
+  const roadmapRows = data.actions.map((a) => {
+    const weekCells = Array.from({ length: maxWeek }, (_, i) => {
+      const w = i + 1;
+      const active = w >= a.startWeek && w < a.startWeek + a.effortWeeks;
+      return `<Cell><Data ss:Type="String">${active ? "\u2588" : ""}</Data></Cell>`;
+    }).join("");
+    return `<Row>
+<Cell><Data ss:Type="String">${escapeXml(a.title[locale] ?? a.title.en)}</Data></Cell>
+${weekCells}
+</Row>`;
+  }).join("\n");
+
+  const weekHeaders = Array.from({ length: maxWeek }, (_, i) =>
+    `<Cell ss:StyleID="Header"><Data ss:Type="String">W${i + 1}</Data></Cell>`
+  ).join("");
+
+  const sheet3 = `<Worksheet ss:Name="${escapeXml(t.excelSheetRoadmap ?? "Roadmap")}">
+<Table>
+<Column ss:Width="250"/>${Array.from({ length: maxWeek }, () => '<Column ss:Width="40"/>').join("")}
+<Row>
+<Cell ss:StyleID="Header"><Data ss:Type="String">${escapeXml(t.action)}</Data></Cell>
+${weekHeaders}
+</Row>
+${roadmapRows}
+</Table>
+</Worksheet>`;
+
+  // Sheet 4: Before/After
+  const sheet4 = `<Worksheet ss:Name="${escapeXml(t.excelSheetBeforeAfter ?? "Before After")}">
+<Table>
+<Column ss:Width="200"/><Column ss:Width="150"/><Column ss:Width="150"/>
+<Row>
+<Cell ss:StyleID="Header"><Data ss:Type="String"></Data></Cell>
+<Cell ss:StyleID="Header"><Data ss:Type="String">${escapeXml(t.before)}</Data></Cell>
+<Cell ss:StyleID="Header"><Data ss:Type="String">${escapeXml(t.after)}</Data></Cell>
+</Row>
+<Row>
+<Cell><Data ss:Type="String">${escapeXml(t.score)}</Data></Cell>
+<Cell><Data ss:Type="Number">${data.score}</Data></Cell>
+<Cell><Data ss:Type="Number">${projected}</Data></Cell>
+</Row>
+<Row>
+<Cell><Data ss:Type="String">${escapeXml(t.availability)}</Data></Cell>
+<Cell><Data ss:Type="String">${data.availability}</Data></Cell>
+<Cell><Data ss:Type="String">${calcProjectedAvailability(data)}</Data></Cell>
+</Row>
+<Row>
+<Cell><Data ss:Type="String">${escapeXml(t.doraComplianceShort)}</Data></Cell>
+<Cell><Data ss:Type="String">${data.doraCompliance}%</Data></Cell>
+<Cell><Data ss:Type="String">${projectedDora}%</Data></Cell>
+</Row>
+<Row>
+<Cell><Data ss:Type="String">${escapeXml(t.annualCost)}</Data></Cell>
+<Cell><Data ss:Type="Number">${annualCost}</Data></Cell>
+<Cell><Data ss:Type="Number">${projectedCost}</Data></Cell>
+</Row>
+</Table>
+</Worksheet>`;
+
+  return `<?xml version="1.0" encoding="UTF-8"?>
+<?mso-application progid="Excel.Sheet"?>
+<Workbook xmlns="urn:schemas-microsoft-com:office:spreadsheet"
+ xmlns:o="urn:schemas-microsoft-com:office:office"
+ xmlns:x="urn:schemas-microsoft-com:office:excel"
+ xmlns:ss="urn:schemas-microsoft-com:office:spreadsheet">
+<Styles>
+<Style ss:ID="Default" ss:Name="Normal"><Font ss:Size="11"/></Style>
+<Style ss:ID="Header"><Font ss:Bold="1" ss:Size="11"/><Interior ss:Color="#F1F5F9" ss:Pattern="Solid"/></Style>
+</Styles>
+${sheet1}
+${sheet2}
+${sheet3}
+${sheet4}
+</Workbook>`;
+}
+
+/* ------------------------------------------------------------------ */
 /*  Google Calendar helpers                                             */
 /* ------------------------------------------------------------------ */
 
@@ -504,12 +699,192 @@ function statusBadgeVariant(status: TaskStatus): "default" | "yellow" | "gold" |
 }
 
 /* ------------------------------------------------------------------ */
+/*  Task export helpers                                                 */
+/* ------------------------------------------------------------------ */
+
+function buildActionDescription(
+  action: ActionItem,
+  locale: string,
+  t: Record<string, string>,
+  taskState?: TaskState,
+): string {
+  const lines = [
+    `${t.priority}: ${t[action.priority] ?? action.priority}`,
+    `${t.effort}: ${action.effortWeeks} ${action.effortWeeks > 1 ? t.weeks : t.week}`,
+    `${t.cost}: ${formatEur(action.costEur)}`,
+    `${t.expectedEffect}: +${action.scoreImpact}`,
+  ];
+  if (taskState?.assignee) lines.push(`${t.assignee}: ${taskState.assignee}`);
+  if (taskState?.deadline) lines.push(`${t.deadline}: ${taskState.deadline}`);
+  if (taskState?.comment) lines.push(`${t.comment}: ${taskState.comment}`);
+  lines.push("", "Generated by FaultRay");
+  return lines.join("\n");
+}
+
+function buildActionMarkdown(
+  action: ActionItem,
+  locale: string,
+  t: Record<string, string>,
+  taskState?: TaskState,
+): string {
+  const title = action.title[locale] ?? action.title.en;
+  const lines = [
+    `## ${title}`,
+    "",
+    `- **${t.priority}**: ${t[action.priority] ?? action.priority}`,
+    `- **${t.effort}**: ${action.effortWeeks} ${action.effortWeeks > 1 ? t.weeks : t.week}`,
+    `- **${t.cost}**: ${formatEur(action.costEur)}`,
+    `- **${t.expectedEffect}**: +${action.scoreImpact}`,
+  ];
+  if (taskState?.assignee) lines.push(`- **${t.assignee}**: ${taskState.assignee}`);
+  if (taskState?.deadline) lines.push(`- **${t.deadline}**: ${taskState.deadline}`);
+  if (taskState?.comment) lines.push("", `> ${taskState.comment}`);
+  return lines.join("\n");
+}
+
+function buildAllActionsMarkdown(
+  actions: ActionItem[],
+  taskStates: TaskStatesMap,
+  locale: string,
+  t: Record<string, string>,
+): string {
+  const header = `| # | ${t.action} | ${t.priority} | ${t.effort} | ${t.cost} | ${t.expectedEffect} |`;
+  const sep = "|---|---|---|---|---|---|";
+  const rows = actions.map((a) => {
+    const title = a.title[locale] ?? a.title.en;
+    return `| ${a.id} | ${title} | ${t[a.priority] ?? a.priority} | ${a.effortWeeks} ${a.effortWeeks > 1 ? t.weeks : t.week} | ${formatEur(a.costEur)} | +${a.scoreImpact} |`;
+  });
+  return [header, sep, ...rows].join("\n");
+}
+
+function buildAllActionsCsv(
+  actions: ActionItem[],
+  taskStates: TaskStatesMap,
+  locale: string,
+  t: Record<string, string>,
+): string {
+  const csvEscape = (s: string) => `"${s.replace(/"/g, '""')}"`;
+  const header = ["#", t.action, t.priority, t.assignee, t.status ?? "Status", t.effort, t.cost, t.expectedEffect, t.deadline].map(csvEscape).join(",");
+  const rows = actions.map((a) => {
+    const ts = taskStates[a.id] ?? { assignee: "", status: "todo" as TaskStatus, comment: "", deadline: "" };
+    const statusMap: Record<TaskStatus, string> = {
+      todo: t.statusTodo ?? "To Do",
+      in_progress: t.statusInProgress ?? "In Progress",
+      in_review: t.statusInReview ?? "In Review",
+      done: t.statusDone ?? "Done",
+    };
+    const { start } = calcActionDates(a);
+    return [
+      String(a.id),
+      csvEscape(a.title[locale] ?? a.title.en),
+      csvEscape(t[a.priority] ?? a.priority),
+      csvEscape(ts.assignee || ""),
+      csvEscape(statusMap[ts.status] ?? ts.status),
+      String(a.effortWeeks),
+      String(a.costEur),
+      `+${a.scoreImpact}`,
+      csvEscape(ts.deadline || start.toISOString().split("T")[0]),
+    ].join(",");
+  });
+  return [header, ...rows].join("\n");
+}
+
+/* ------------------------------------------------------------------ */
+/*  Share helpers                                                       */
+/* ------------------------------------------------------------------ */
+
+function buildShareText(
+  action: ActionItem,
+  locale: string,
+  t: Record<string, string>,
+): string {
+  const title = action.title[locale] ?? action.title.en;
+  return `[FaultRay] ${title}\n${t.priority}: ${t[action.priority] ?? action.priority} | ${t.cost}: ${formatEur(action.costEur)} | ${t.expectedEffect}: +${action.scoreImpact}`;
+}
+
+function buildPlanShareText(
+  data: RemediationData,
+  locale: string,
+  t: Record<string, string>,
+): string {
+  const projected = calcProjectedScore(data);
+  const lines = [
+    `[FaultRay] ${t.title}`,
+    `${t.currentScore}: ${data.score}/100 -> ${t.projectedScore}: ${projected}/100`,
+    `${t.doraCompliance}: ${data.doraCompliance}%`,
+    `${t.action}: ${data.actions.length}`,
+    "",
+    ...data.actions.map((a) => `- ${a.title[locale] ?? a.title.en} (${t[a.priority] ?? a.priority})`),
+  ];
+  return lines.join("\n");
+}
+
+/* ------------------------------------------------------------------ */
+/*  Dropdown Component                                                  */
+/* ------------------------------------------------------------------ */
+
+function DropdownMenu({
+  trigger,
+  items,
+  align = "right",
+}: {
+  trigger: React.ReactNode;
+  items: Array<{ label: string; icon?: React.ReactNode; onClick: () => void; separator?: boolean }>;
+  align?: "left" | "right";
+}) {
+  const [open, setOpen] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    function handleClickOutside(e: MouseEvent) {
+      if (ref.current && !ref.current.contains(e.target as Node)) {
+        setOpen(false);
+      }
+    }
+    if (open) {
+      document.addEventListener("mousedown", handleClickOutside);
+      return () => document.removeEventListener("mousedown", handleClickOutside);
+    }
+  }, [open]);
+
+  return (
+    <div className="relative" ref={ref}>
+      <div onClick={() => setOpen(!open)}>{trigger}</div>
+      {open && (
+        <div
+          className={`absolute z-50 mt-1 min-w-[200px] bg-[#1a1f2e] border border-[#2d3548] rounded-lg shadow-xl py-1 ${
+            align === "right" ? "right-0" : "left-0"
+          }`}
+        >
+          {items.map((item, i) => (
+            <div key={i}>
+              {item.separator && i > 0 && <div className="border-t border-[#2d3548] my-1" />}
+              <button
+                onClick={() => {
+                  item.onClick();
+                  setOpen(false);
+                }}
+                className="w-full flex items-center gap-2 px-3 py-2 text-sm text-[#e2e8f0] hover:bg-white/[0.06] transition-colors text-left"
+              >
+                {item.icon}
+                {item.label}
+              </button>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+/* ------------------------------------------------------------------ */
 /*  Component                                                          */
 /* ------------------------------------------------------------------ */
 
 export default function RemediationPage() {
   const locale = useLocale();
   const t = appDict.remediation[locale] ?? appDict.remediation.en;
+  const tAny = t as unknown as Record<string, string>;
   const [data, setData] = useState<RemediationData | null>(null);
   const [isDemo, setIsDemo] = useState(false);
   const loadedRef = useRef(false);
@@ -517,6 +892,12 @@ export default function RemediationPage() {
   const [taskFilter, setTaskFilter] = useState<TaskFilter>("all");
   const [editingTaskId, setEditingTaskId] = useState<number | null>(null);
   const [editForm, setEditForm] = useState<TaskState>({ assignee: "", status: "todo", comment: "", deadline: "" });
+  const [toast, setToast] = useState<string | null>(null);
+
+  const showToast = useCallback((msg: string) => {
+    setToast(msg);
+    setTimeout(() => setToast(null), 2500);
+  }, []);
 
   useEffect(() => {
     if (loadedRef.current) return;
@@ -540,35 +921,40 @@ export default function RemediationPage() {
 
   const handleDownloadHtml = useCallback(() => {
     if (!data) return;
-    const html = generateHtmlReport(data, t as unknown as Record<string, string>, locale);
+    const html = generateHtmlReport(data, tAny, locale);
     downloadFile(html, `faultray-remediation-plan-${locale}.html`, "text/html;charset=utf-8");
-  }, [data, t, locale]);
+  }, [data, tAny, locale]);
 
   const handleDownloadPdf = useCallback(() => {
     if (!data) return;
-    // Generate HTML and open in new window for printing to PDF
-    const html = generateHtmlReport(data, t as unknown as Record<string, string>, locale);
+    const html = generateHtmlReport(data, tAny, locale);
     const win = window.open("", "_blank");
     if (win) {
       win.document.write(html);
       win.document.close();
       setTimeout(() => win.print(), 500);
     }
-  }, [data, t, locale]);
+  }, [data, tAny, locale]);
+
+  const handleDownloadExcel = useCallback(() => {
+    if (!data) return;
+    const xml = generateExcelXml(data, taskStates, tAny, locale);
+    downloadFile(xml, `faultray-remediation-plan-${locale}.xls`, "application/vnd.ms-excel;charset=utf-8");
+  }, [data, taskStates, tAny, locale]);
 
   const handleAddToGoogleCalendar = useCallback(
     (action: ActionItem) => {
-      const url = buildGoogleCalendarUrl(action, locale, t as unknown as Record<string, string>);
+      const url = buildGoogleCalendarUrl(action, locale, tAny);
       window.open(url, "_blank");
     },
-    [locale, t],
+    [locale, tAny],
   );
 
   const handleExportAllIcs = useCallback(() => {
     if (!data) return;
-    const ics = generateIcsFile(data.actions, locale, t as unknown as Record<string, string>);
+    const ics = generateIcsFile(data.actions, locale, tAny);
     downloadFile(ics, "faultray-remediation-plan.ics", "text/calendar;charset=utf-8");
-  }, [data, locale, t]);
+  }, [data, locale, tAny]);
 
   const handleStartEdit = useCallback(
     (actionId: number) => {
@@ -589,6 +975,151 @@ export default function RemediationPage() {
   const handleCancelEdit = useCallback(() => {
     setEditingTaskId(null);
   }, []);
+
+  /* ---- Task export handlers ---- */
+
+  const handleExportToJira = useCallback(
+    (action: ActionItem) => {
+      const settings = loadIntegrationSettings();
+      if (!settings.jiraDomain) {
+        showToast(tAny.jiraNotConfigured ?? "Jira domain not configured");
+        return;
+      }
+      const title = action.title[locale] ?? action.title.en;
+      const desc = buildActionDescription(action, locale, tAny, taskStates[action.id]);
+      const url = `https://${settings.jiraDomain}/secure/CreateIssue!default.jspa?summary=${encodeURIComponent(title)}&description=${encodeURIComponent(desc)}`;
+      window.open(url, "_blank");
+    },
+    [locale, tAny, taskStates, showToast],
+  );
+
+  const handleExportToBacklog = useCallback(
+    (action: ActionItem) => {
+      const settings = loadIntegrationSettings();
+      if (!settings.backlogSpace) {
+        showToast(tAny.backlogNotConfigured ?? "Backlog space not configured");
+        return;
+      }
+      const title = action.title[locale] ?? action.title.en;
+      const desc = buildActionDescription(action, locale, tAny, taskStates[action.id]);
+      const url = `https://${settings.backlogSpace}/add/FAULTRAY?summary=${encodeURIComponent(title)}&description=${encodeURIComponent(desc)}`;
+      window.open(url, "_blank");
+    },
+    [locale, tAny, taskStates, showToast],
+  );
+
+  const handleExportToTrello = useCallback(
+    (action: ActionItem) => {
+      const title = action.title[locale] ?? action.title.en;
+      const desc = buildActionDescription(action, locale, tAny, taskStates[action.id]);
+      const url = `https://trello.com/add-card?name=${encodeURIComponent(title)}&desc=${encodeURIComponent(desc)}`;
+      window.open(url, "_blank");
+    },
+    [locale, tAny, taskStates],
+  );
+
+  const handleCopyForTool = useCallback(
+    (action: ActionItem) => {
+      const md = buildActionMarkdown(action, locale, tAny, taskStates[action.id]);
+      navigator.clipboard.writeText(md);
+      showToast(tAny.copiedToClipboard ?? "Copied!");
+    },
+    [locale, tAny, taskStates, showToast],
+  );
+
+  const handleDownloadAllCsv = useCallback(() => {
+    if (!data) return;
+    const csv = buildAllActionsCsv(data.actions, taskStates, locale, tAny);
+    downloadFile(csv, `faultray-actions-${locale}.csv`, "text/csv;charset=utf-8");
+  }, [data, taskStates, locale, tAny]);
+
+  const handleCopyAllMarkdown = useCallback(() => {
+    if (!data) return;
+    const md = buildAllActionsMarkdown(data.actions, taskStates, locale, tAny);
+    navigator.clipboard.writeText(md);
+    showToast(tAny.copiedToClipboard ?? "Copied!");
+  }, [data, taskStates, locale, tAny, showToast]);
+
+  /* ---- Share handlers ---- */
+
+  const handleCopyLink = useCallback(() => {
+    navigator.clipboard.writeText(window.location.href);
+    showToast(tAny.copiedToClipboard ?? "Copied!");
+  }, [showToast, tAny]);
+
+  const handleShareEmail = useCallback(
+    (text: string, subject?: string) => {
+      const subj = subject ?? tAny.emailSubject ?? "FaultRay Remediation Plan";
+      window.location.href = `mailto:?subject=${encodeURIComponent(subj)}&body=${encodeURIComponent(text)}`;
+    },
+    [tAny],
+  );
+
+  const handleShareSlack = useCallback(
+    async (text: string) => {
+      const settings = loadIntegrationSettings();
+      if (!settings.slackWebhook) {
+        // Fallback to Slack share URL
+        const url = `https://slack.com/share?text=${encodeURIComponent(text)}`;
+        window.open(url, "_blank");
+        return;
+      }
+      try {
+        await fetch(settings.slackWebhook, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ text }),
+        });
+        showToast(tAny.slackSent ?? "Sent to Slack!");
+      } catch {
+        // CORS likely - fallback to URL
+        const url = `https://slack.com/share?text=${encodeURIComponent(text)}`;
+        window.open(url, "_blank");
+      }
+    },
+    [showToast, tAny],
+  );
+
+  const handleShareTeams = useCallback(
+    (text: string) => {
+      const url = `https://teams.microsoft.com/share?msgText=${encodeURIComponent(text)}&href=${encodeURIComponent(window.location.href)}`;
+      window.open(url, "_blank");
+    },
+    [],
+  );
+
+  const handleCopyText = useCallback(
+    (text: string) => {
+      navigator.clipboard.writeText(text);
+      showToast(tAny.copiedToClipboard ?? "Copied!");
+    },
+    [showToast, tAny],
+  );
+
+  const buildTaskExportItems = useCallback(
+    (action: ActionItem) => [
+      { label: tAny.exportToJira ?? "Create in Jira", icon: <ExternalLink size={14} />, onClick: () => handleExportToJira(action) },
+      { label: tAny.exportToBacklog ?? "Create in Backlog", icon: <ExternalLink size={14} />, onClick: () => handleExportToBacklog(action) },
+      { label: tAny.exportToTrello ?? "Add to Trello", icon: <ExternalLink size={14} />, onClick: () => handleExportToTrello(action) },
+      { label: tAny.copyForAsana ?? "Copy for Asana", icon: <Copy size={14} />, onClick: () => handleCopyForTool(action), separator: true },
+      { label: tAny.copyForNotion ?? "Copy for Notion", icon: <Copy size={14} />, onClick: () => handleCopyForTool(action) },
+    ],
+    [tAny, handleExportToJira, handleExportToBacklog, handleExportToTrello, handleCopyForTool],
+  );
+
+  const buildTaskShareItems = useCallback(
+    (action: ActionItem) => {
+      const text = buildShareText(action, locale, tAny);
+      return [
+        { label: tAny.copyLink ?? "Copy Link", icon: <Link2 size={14} />, onClick: handleCopyLink },
+        { label: tAny.shareByEmail ?? "Share by Email", icon: <Mail size={14} />, onClick: () => handleShareEmail(text) },
+        { label: tAny.sendToSlack ?? "Send to Slack", icon: <MessageSquare size={14} />, onClick: () => handleShareSlack(text), separator: true },
+        { label: tAny.sendToTeams ?? "Send to Teams", icon: <ExternalLink size={14} />, onClick: () => handleShareTeams(text) },
+        { label: tAny.copyText ?? "Copy Text", icon: <Copy size={14} />, onClick: () => handleCopyText(text), separator: true },
+      ];
+    },
+    [locale, tAny, handleCopyLink, handleShareEmail, handleShareSlack, handleShareTeams, handleCopyText],
+  );
 
   /* No simulation data yet */
   if (!data) {
@@ -629,8 +1160,17 @@ export default function RemediationPage() {
   const scoreLabel = data.score >= 85 ? t.excellent : data.score >= 70 ? t.good : t.needsImprovement;
   const scoreColor = data.score >= 85 ? "text-emerald-400" : data.score >= 70 ? "text-yellow-400" : "text-red-400";
 
+  const planShareText = buildPlanShareText(data, locale, tAny);
+
   return (
     <div className="max-w-[1200px] mx-auto px-6 py-10">
+      {/* Toast notification */}
+      {toast && (
+        <div className="fixed top-4 right-4 z-[100] px-4 py-2 rounded-lg bg-emerald-600 text-white text-sm font-medium shadow-lg animate-in fade-in duration-200">
+          {toast}
+        </div>
+      )}
+
       {/* Header */}
       <div className="flex items-center justify-between mb-10">
         <div>
@@ -643,6 +1183,10 @@ export default function RemediationPage() {
           </p>
         </div>
         <div className="flex items-center gap-2">
+          <Button variant="secondary" size="sm" onClick={handleDownloadExcel}>
+            <Download size={14} />
+            {t.downloadExcel}
+          </Button>
           <Button variant="secondary" size="sm" onClick={handleDownloadHtml}>
             <FileText size={14} />
             {t.downloadHtml}
@@ -651,6 +1195,22 @@ export default function RemediationPage() {
             <Download size={14} />
             {t.downloadPdf}
           </Button>
+          <DropdownMenu
+            trigger={
+              <Button variant="secondary" size="sm">
+                <Share2 size={14} />
+                {t.share}
+                <ChevronDown size={12} />
+              </Button>
+            }
+            items={[
+              { label: tAny.copyLink ?? "Copy Link", icon: <Link2 size={14} />, onClick: handleCopyLink },
+              { label: tAny.shareByEmail ?? "Share by Email", icon: <Mail size={14} />, onClick: () => handleShareEmail(planShareText) },
+              { label: tAny.sendToSlack ?? "Send to Slack", icon: <MessageSquare size={14} />, onClick: () => handleShareSlack(planShareText), separator: true },
+              { label: tAny.sendToTeams ?? "Send to Teams", icon: <ExternalLink size={14} />, onClick: () => handleShareTeams(planShareText) },
+              { label: tAny.copyText ?? "Copy Text", icon: <Copy size={14} />, onClick: () => handleCopyText(planShareText), separator: true },
+            ]}
+          />
         </div>
       </div>
 
@@ -903,15 +1463,30 @@ export default function RemediationPage() {
 
         return (
           <Card className="mb-10">
-            {/* Progress bar */}
+            {/* Progress bar + bulk export */}
             <div className="flex items-center justify-between mb-4">
               <span className="text-sm text-[#94a3b8]">
                 {t.progress}: {doneCount}/{totalCount} ({pctDone}%)
               </span>
-              <Button variant="secondary" size="sm" onClick={handleExportAllIcs}>
-                <CalendarPlus size={14} />
-                {t.exportAllToCalendar}
-              </Button>
+              <div className="flex items-center gap-2">
+                <DropdownMenu
+                  trigger={
+                    <Button variant="secondary" size="sm">
+                      <ExternalLink size={14} />
+                      {t.exportAllActions}
+                      <ChevronDown size={12} />
+                    </Button>
+                  }
+                  items={[
+                    { label: tAny.downloadCsv ?? "Download CSV", icon: <Download size={14} />, onClick: handleDownloadAllCsv },
+                    { label: tAny.copyMarkdown ?? "Copy Markdown", icon: <Copy size={14} />, onClick: handleCopyAllMarkdown },
+                  ]}
+                />
+                <Button variant="secondary" size="sm" onClick={handleExportAllIcs}>
+                  <CalendarPlus size={14} />
+                  {t.exportAllToCalendar}
+                </Button>
+              </div>
             </div>
             <div className="w-full h-2 bg-white/[0.05] rounded-full mb-6 overflow-hidden">
               <div
@@ -973,7 +1548,25 @@ export default function RemediationPage() {
                           {statusLabel(ts.status)}
                         </Badge>
                       </div>
-                      <div className="flex items-center gap-2">
+                      <div className="flex items-center gap-1">
+                        <DropdownMenu
+                          trigger={
+                            <Button variant="ghost" size="sm" title={t.exportTo}>
+                              <ExternalLink size={14} />
+                              <ChevronDown size={10} />
+                            </Button>
+                          }
+                          items={buildTaskExportItems(a)}
+                        />
+                        <DropdownMenu
+                          trigger={
+                            <Button variant="ghost" size="sm" title={t.share}>
+                              <Share2 size={14} />
+                              <ChevronDown size={10} />
+                            </Button>
+                          }
+                          items={buildTaskShareItems(a)}
+                        />
                         <Button
                           variant="ghost"
                           size="sm"
@@ -1106,7 +1699,11 @@ export default function RemediationPage() {
       {/* G. Export section */}
       <Card className="text-center py-8">
         <h3 className="font-bold mb-4">{t.exportPlan}</h3>
-        <div className="flex items-center justify-center gap-4">
+        <div className="flex items-center justify-center gap-4 flex-wrap">
+          <Button variant="secondary" onClick={handleDownloadExcel}>
+            <Download size={16} />
+            {t.downloadExcel}
+          </Button>
           <Button variant="secondary" onClick={handleDownloadHtml}>
             <FileText size={16} />
             {t.downloadHtml}
@@ -1114,6 +1711,10 @@ export default function RemediationPage() {
           <Button variant="secondary" onClick={handleExportAllIcs}>
             <CalendarPlus size={16} />
             {t.exportAllToCalendar}
+          </Button>
+          <Button variant="secondary" onClick={handleDownloadAllCsv}>
+            <Download size={16} />
+            {t.downloadCsv}
           </Button>
           <Button onClick={handleDownloadPdf}>
             <Download size={16} />
