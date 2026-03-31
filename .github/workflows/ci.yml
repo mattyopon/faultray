@@ -87,7 +87,7 @@ jobs:
       # ② Upload test proof artifacts
       - name: Upload test proof
         if: always() && matrix.python-version == '3.12'
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: test-proof-${{ github.sha }}
           path: |
@@ -151,7 +151,7 @@ jobs:
 
       - name: Upload E2E results
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: e2e-results-${{ github.sha }}
           path: |
@@ -253,7 +253,7 @@ jobs:
 
       - name: Upload security report
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: security-report-${{ github.sha }}
           path: bandit-report.json
