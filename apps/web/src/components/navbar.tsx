@@ -28,6 +28,7 @@ import {
   X,
   LogOut,
   ChevronDown,
+  ClipboardCheck,
 } from "lucide-react";
 import { locales, type Locale } from "@/i18n/config";
 import { appDict } from "@/i18n/app-dict";
@@ -61,6 +62,7 @@ function getNavGroups(t: Record<string, string>) {
         { href: "/cost", label: t.costAnalysis, icon: DollarSign },
         { href: "/reports", label: t.reports, icon: FileText },
         { href: "/benchmark", label: t.benchmark, icon: Trophy },
+        { href: "/remediation", label: t.remediationPlan, icon: ClipboardCheck },
       ],
     },
     {

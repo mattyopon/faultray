@@ -11,7 +11,9 @@ import {
   GitBranch,
   Gauge,
   AlertTriangle,
+  ClipboardCheck,
 } from "lucide-react";
+import Link from "next/link";
 import { useLocale } from "@/lib/useLocale";
 import { appDict } from "@/i18n/app-dict";
 
@@ -120,6 +122,22 @@ export default function SuggestionsPage() {
           <p className="text-xs text-[#64748b] mt-1">{t.acrossCategories}</p>
         </Card>
       </div>
+
+      {/* Link to Remediation Plan */}
+      <Link href="/remediation">
+        <Card hover className="mb-10 cursor-pointer">
+          <div className="flex items-center gap-4">
+            <div className="w-12 h-12 rounded-xl bg-[#FFD700]/[0.06] border border-[#FFD700]/10 flex items-center justify-center shrink-0">
+              <ClipboardCheck size={22} className="text-[#FFD700]" />
+            </div>
+            <div className="flex-1">
+              <h3 className="font-bold mb-1">{(appDict.remediation[locale] ?? appDict.remediation.en).viewDetailedPlan}</h3>
+              <p className="text-sm text-[#94a3b8]">{(appDict.remediation[locale] ?? appDict.remediation.en).subtitle}</p>
+            </div>
+            <ArrowUpRight size={20} className="text-[#FFD700] shrink-0" />
+          </div>
+        </Card>
+      </Link>
 
       {/* Suggestions List */}
       <div className="space-y-4">
