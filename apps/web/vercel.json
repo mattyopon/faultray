@@ -4,5 +4,11 @@
     "api/**/*.py": {
       "maxDuration": 60
     }
-  }
+  },
+  "rewrites": [
+    {
+      "source": "/api/apm/:path*",
+      "destination": "/api/apm"
+    }
+  ]
 }
