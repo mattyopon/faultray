@@ -92,24 +92,38 @@ interface ScenarioResult {
  * Helpers
  * ============================================================ */
 
+/** Locale → currency, Intl locale, exchange rate from EUR base */
+const LOCALE_CURRENCY: Record<string, { currency: string; intl: string; rate: number }> = {
+  en: { currency: "USD", intl: "en-US", rate: 1.08 },
+  ja: { currency: "JPY", intl: "ja-JP", rate: 160.0 },
+  de: { currency: "EUR", intl: "de-DE", rate: 1.0 },
+  fr: { currency: "EUR", intl: "fr-FR", rate: 1.0 },
+  zh: { currency: "CNY", intl: "zh-CN", rate: 7.8 },
+  ko: { currency: "KRW", intl: "ko-KR", rate: 1420.0 },
+  es: { currency: "EUR", intl: "es-ES", rate: 1.0 },
+  pt: { currency: "BRL", intl: "pt-BR", rate: 5.4 },
+};
+
 function getCurrencyFormatter(locale: string): (n: number) => string {
-  const isJa = locale === "ja";
-  const currency = isJa ? "JPY" : "EUR";
-  const loc = isJa ? "ja-JP" : "de-DE";
-  const fmt = new Intl.NumberFormat(loc, {
+  const config = LOCALE_CURRENCY[locale] ?? LOCALE_CURRENCY.en;
+  const fmt = new Intl.NumberFormat(config.intl, {
     style: "currency",
-    currency,
+    currency: config.currency,
     maximumFractionDigits: 0,
   });
-  return (n: number) => fmt.format(isJa ? Math.round(n * 160) : n);
+  return (n: number) => fmt.format(Math.round(n * config.rate));
 }
 
 function getCurrencySymbol(locale: string): string {
-  return locale === "ja" ? "¥" : "€";
+  const symbols: Record<string, string> = {
+    en: "$", ja: "¥", de: "€", fr: "€", zh: "¥", ko: "₩", es: "€", pt: "R$",
+  };
+  return symbols[locale] ?? "$";
 }
 
 function convertForDisplay(value: number, locale: string): number {
-  return locale === "ja" ? Math.round(value * 160) : value;
+  const config = LOCALE_CURRENCY[locale] ?? LOCALE_CURRENCY.en;
+  return Math.round(value * config.rate);
 }
 
 function ninesFromAvailability(pct: number): number {
