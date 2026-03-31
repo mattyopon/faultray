@@ -8,7 +8,12 @@ import random
 import time
 import json
 from datetime import datetime
-from playwright.sync_api import sync_playwright, Page, TimeoutError as PlaywrightTimeout
+import pytest
+
+pw = pytest.importorskip("playwright.sync_api", reason="playwright not installed")
+sync_playwright = pw.sync_playwright
+Page = pw.Page
+PlaywrightTimeout = pw.TimeoutError
 
 BASE_URL = "http://localhost:8501"
 TOTAL_ACTIONS = 100
