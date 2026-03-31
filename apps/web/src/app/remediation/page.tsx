@@ -344,10 +344,26 @@ function calcProjectedAvailability(data: RemediationData): string {
   return "99.95%";
 }
 
+/** Locale → currency config for remediation costs */
+const _LOCALE_CURRENCY: Record<string, { symbol: string; rate: number }> = {
+  en: { symbol: "$", rate: 1.08 },
+  ja: { symbol: "¥", rate: 160.0 },
+  de: { symbol: "€", rate: 1.0 },
+  fr: { symbol: "€", rate: 1.0 },
+  zh: { symbol: "¥", rate: 7.8 },
+  ko: { symbol: "₩", rate: 1420.0 },
+  es: { symbol: "€", rate: 1.0 },
+  pt: { symbol: "R$", rate: 5.4 },
+};
+
+let _activeLocale = "en";
+
 function formatEur(amount: number): string {
-  if (amount >= 1000000) return `\u20AC${(amount / 1000000).toFixed(1)}M`;
-  if (amount >= 1000) return `\u20AC${Math.round(amount / 1000)}K`;
-  return `\u20AC${amount}`;
+  const cfg = _LOCALE_CURRENCY[_activeLocale] ?? _LOCALE_CURRENCY.en;
+  const converted = Math.round(amount * cfg.rate);
+  if (converted >= 1000000) return `${cfg.symbol}${(converted / 1000000).toFixed(1)}M`;
+  if (converted >= 1000) return `${cfg.symbol}${Math.round(converted / 1000)}K`;
+  return `${cfg.symbol}${converted}`;
 }
 
 function priorityColor(p: string): "red" | "yellow" | "default" | "green" {
@@ -911,9 +927,11 @@ function DropdownMenu({
 
 export default function RemediationPage() {
   const locale = useLocale();
+  _activeLocale = locale;  // Set for formatEur currency conversion
   const t = appDict.remediation[locale] ?? appDict.remediation.en;
   const tAny = t as unknown as Record<string, string>;
   const [data, setData] = useState<RemediationData | null>(null);
+  const [expandedAction, setExpandedAction] = useState<number | null>(null);
   const [isDemo, setIsDemo] = useState(false);
   const loadedRef = useRef(false);
   const [taskStates, setTaskStates] = useState<TaskStatesMap>({});
@@ -1630,6 +1648,95 @@ export default function RemediationPage() {
                       <span className="font-mono">{formatEur(a.costEur)}</span>
                       <span className="font-mono text-emerald-400">+{a.scoreImpact}</span>
                     </div>
+
+                    {/* Expand/Collapse details */}
+                    <button
+                      onClick={() => setExpandedAction(expandedAction === a.id ? null : a.id)}
+                      className="text-xs text-[#FFD700] hover:text-[#FFD700]/80 mt-1 mb-2 flex items-center gap-1 transition-colors"
+                    >
+                      <ChevronDown size={12} className={`transition-transform ${expandedAction === a.id ? "rotate-180" : ""}`} />
+                      {expandedAction === a.id ? (tAny.hideDetails ?? "Hide details") : (tAny.showDetails ?? "Show details")}
+                    </button>
+
+                    {expandedAction === a.id && (
+                      <div className="bg-white/[0.02] border border-[#1e293b] rounded-lg p-4 mb-2 space-y-3 text-sm">
+                        {/* What to do */}
+                        <div>
+                          <p className="text-xs text-[#64748b] uppercase tracking-wider mb-1">{tAny.whatToDo ?? "What to do"}</p>
+                          <p className="text-[#e2e8f0]">
+                            {a.priority === "critical"
+                              ? (tAny.criticalDesc ?? "This is a critical infrastructure vulnerability. Immediate remediation required to prevent service outage. Add redundancy, configure automatic failover, and implement health checks.")
+                              : a.priority === "high"
+                              ? (tAny.highDesc ?? "High priority infrastructure improvement. Address within the current sprint. Add replicas, configure circuit breakers, or improve monitoring coverage.")
+                              : (tAny.mediumDesc ?? "General infrastructure hardening. Enable encryption in transit, add network segmentation, implement chaos engineering practices, and automate disaster recovery testing.")}
+                          </p>
+                        </div>
+
+                        {/* Impact breakdown */}
+                        <div>
+                          <p className="text-xs text-[#64748b] uppercase tracking-wider mb-1">{tAny.impactBreakdown ?? "Impact"}</p>
+                          <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                            <div className="bg-[#0d1117] rounded p-2">
+                              <p className="text-[10px] text-[#475569]">{tAny.scoreGain ?? "Score gain"}</p>
+                              <p className="text-emerald-400 font-mono font-bold">+{a.scoreImpact}</p>
+                            </div>
+                            <div className="bg-[#0d1117] rounded p-2">
+                              <p className="text-[10px] text-[#475569]">{tAny.doraImpactLabel ?? "DORA impact"}</p>
+                              <p className="text-[#FFD700] font-mono font-bold">+{a.doraImpact}%</p>
+                            </div>
+                            <div className="bg-[#0d1117] rounded p-2">
+                              <p className="text-[10px] text-[#475569]">{t.cost}</p>
+                              <p className="text-[#e2e8f0] font-mono font-bold">{formatEur(a.costEur)}</p>
+                            </div>
+                            <div className="bg-[#0d1117] rounded p-2">
+                              <p className="text-[10px] text-[#475569]">{t.effort}</p>
+                              <p className="text-[#e2e8f0] font-mono font-bold">{a.effortWeeks} {a.effortWeeks > 1 ? t.weeks : t.week}</p>
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Steps */}
+                        <div>
+                          <p className="text-xs text-[#64748b] uppercase tracking-wider mb-1">{tAny.steps ?? "Steps"}</p>
+                          <ol className="space-y-1 text-xs text-[#94a3b8] list-decimal list-inside">
+                            {a.priority === "critical" ? (
+                              <>
+                                <li>{tAny.step1Critical ?? "Assess current single point of failure and blast radius"}</li>
+                                <li>{tAny.step2Critical ?? "Design redundancy architecture (active-passive or active-active)"}</li>
+                                <li>{tAny.step3Critical ?? "Implement failover mechanism with automated health checks"}</li>
+                                <li>{tAny.step4Critical ?? "Run FaultRay simulation to verify improvement"}</li>
+                                <li>{tAny.step5Critical ?? "Deploy to production with monitoring alerts"}</li>
+                              </>
+                            ) : a.priority === "high" ? (
+                              <>
+                                <li>{tAny.step1High ?? "Review affected component topology and dependencies"}</li>
+                                <li>{tAny.step2High ?? "Add replica or circuit breaker as appropriate"}</li>
+                                <li>{tAny.step3High ?? "Configure monitoring and alerting thresholds"}</li>
+                                <li>{tAny.step4High ?? "Run FaultRay simulation to verify improvement"}</li>
+                              </>
+                            ) : (
+                              <>
+                                <li>{tAny.step1Medium ?? "Audit current security and reliability posture"}</li>
+                                <li>{tAny.step2Medium ?? "Enable encryption, network segmentation, and access controls"}</li>
+                                <li>{tAny.step3Medium ?? "Set up automated chaos engineering tests"}</li>
+                                <li>{tAny.step4Medium ?? "Implement DR runbooks and test failover procedures"}</li>
+                                <li>{tAny.step5Medium ?? "Run FaultRay simulation to verify all improvements"}</li>
+                              </>
+                            )}
+                          </ol>
+                        </div>
+
+                        {/* Schedule */}
+                        <div className="flex items-center gap-4 text-xs pt-2 border-t border-[#1e293b]">
+                          <span className="text-[#64748b]">{tAny.scheduledStart ?? "Start"}: <span className="text-[#e2e8f0] font-mono">{calcActionDates(a).start.toLocaleDateString(locale === "ja" ? "ja-JP" : locale === "ko" ? "ko-KR" : locale === "zh" ? "zh-CN" : "en-US")}</span></span>
+                          <span className="text-[#64748b]">{tAny.scheduledEnd ?? "End"}: <span className="text-[#e2e8f0] font-mono">{calcActionDates(a).end.toLocaleDateString(locale === "ja" ? "ja-JP" : locale === "ko" ? "ko-KR" : locale === "zh" ? "zh-CN" : "en-US")}</span></span>
+                          <Button variant="ghost" size="sm" onClick={() => handleAddToGoogleCalendar(a)} className="ml-auto">
+                            <CalendarPlus size={12} />
+                            {tAny.addToCalendar ?? "Add to calendar"}
+                          </Button>
+                        </div>
+                      </div>
+                    )}
 
                     {/* Comment display */}
                     {ts.comment && !isEditing && (
