@@ -112,6 +112,7 @@ _KNOWN_MODULES: list[str] = [
     "iac_cmd",
     "start_cmd",
     "badge_cmd",
+    "remediate_cmd",
 ]
 
 
@@ -245,6 +246,7 @@ _HELP_PANELS: dict[str, str] = {
     "score-custom": "🔧 Utilities",
     "correlate": "🔧 Utilities",
     "autoscale": "🔧 Utilities",
+    "remediate": "🔧 Autonomous Remediation",
     "backtest": "🔧 Utilities",
     "plan": "🔧 Utilities",
     "overmind": "🔧 Utilities",
