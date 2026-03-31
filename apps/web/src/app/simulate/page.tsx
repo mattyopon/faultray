@@ -30,6 +30,7 @@ import Link from "next/link";
 import { useLocale } from "@/lib/useLocale";
 import { appDict } from "@/i18n/app-dict";
 import { useSearchParams } from "next/navigation";
+import { Suspense } from "react";
 
 const SAMPLES = [
   { id: "web-saas", name: "Web SaaS Platform", desc: "3-tier architecture with API gateway, auth, database, cache", icon: Globe, components: 8 },
@@ -270,6 +271,14 @@ const DEMO_RESULT: SimulationResult = {
 };
 
 export default function SimulatePage() {
+  return (
+    <Suspense fallback={<div className="max-w-[1200px] mx-auto px-6 py-10 text-[#64748b]">Loading...</div>}>
+      <SimulatePageInner />
+    </Suspense>
+  );
+}
+
+function SimulatePageInner() {
   const locale = useLocale();
   const t = appDict.simulate[locale] ?? appDict.simulate.en;
   const tProjects = appDict.projects[locale] ?? appDict.projects.en;
