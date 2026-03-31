@@ -1,9 +1,8 @@
-"""FaultRay AI advisor chat endpoint.
+"""FaultRay AI advisor chat + health check endpoint (merged).
 
-POST /api/chat
-  Body: { "message": "...", "context": {...} }
-
-Returns AI-generated advice about infrastructure resilience.
+POST /api/chat    Body: { "message": "..." } -> AI advice
+GET  /api/health  -> { status, engine, version }  (rewritten to /api/chat)
+POST /api/health  -> admin check / plan switch     (rewritten to /api/chat)
 """
 
 from http.server import BaseHTTPRequestHandler
@@ -81,29 +80,98 @@ def _generate_response(message: str) -> dict:
     }
 
 
+# ---------------------------------------------------------------------------
+# Health check helpers (merged from health.py)
+# ---------------------------------------------------------------------------
+
+def _is_admin(email: str) -> bool:
+    admin_emails = [e.strip().lower() for e in os.environ.get("ADMIN_EMAILS", "").split(",") if e.strip()]
+    return email.strip().lower() in admin_emails
+
+
+def _switch_plan(email: str, plan: str) -> dict:
+    supabase_url = os.environ.get("NEXT_PUBLIC_SUPABASE_URL")
+    service_key = os.environ.get("SUPABASE_SERVICE_ROLE_KEY")
+    if not supabase_url or not service_key:
+        return {"error": "Supabase not configured"}
+    if plan not in ("free", "pro", "business"):
+        return {"error": f"Invalid plan: {plan}"}
+    data = json.dumps({"plan": plan}).encode()
+    req = urllib.request.Request(
+        f"{supabase_url}/rest/v1/profiles?email=eq.{email}",
+        data=data, method="PATCH",
+        headers={"Content-Type": "application/json", "apikey": service_key,
+                 "Authorization": f"Bearer {service_key}", "Prefer": "return=representation"})
+    try:
+        resp = urllib.request.urlopen(req, timeout=10)
+        result = json.loads(resp.read())
+        if result:
+            return {"ok": True, "plan": result[0].get("plan", plan)}
+        return {"error": "Profile not found"}
+    except Exception as e:
+        return {"error": str(e)}
+
+
+def _is_health_path(path: str) -> bool:
+    return "/health" in path
+
+
 class handler(BaseHTTPRequestHandler):
+    def do_GET(self):
+        # Health check (rewritten from /api/health)
+        try:
+            import faultray
+            version = faultray.__version__
+        except Exception:
+            version = "unknown"
+        self._send_json(200, {"status": "ok", "engine": "faultray", "version": version})
+
     def do_POST(self):
         try:
             content_length = int(self.headers.get("Content-Length", 0))
             body = self.rfile.read(content_length)
             data = json.loads(body) if body else {}
+        except (json.JSONDecodeError, ValueError):
+            self._send_error(400, "Invalid JSON")
+            return
 
-            message = data.get("message", "")
-            if not message:
-                self._send_error(400, "Missing 'message' in request body")
+        parsed = urlparse(self.path)
+        path = parsed.path.rstrip("/")
+
+        # Health/admin routes (rewritten from /api/health)
+        if _is_health_path(path):
+            action = data.get("action", "admin-check")
+            email = data.get("email", "").strip().lower()
+            if not email:
+                self._send_json(400, {"error": "Missing email"})
                 return
+            if action == "admin-check":
+                self._send_json(200, {"is_admin": _is_admin(email)})
+            elif action == "switch-plan":
+                if not _is_admin(email):
+                    self._send_json(403, {"error": "Not authorized"})
+                    return
+                result = _switch_plan(email, data.get("plan", ""))
+                self._send_json(400 if "error" in result else 200, result)
+            else:
+                self._send_json(200, {"is_admin": _is_admin(email)})
+            return
 
+        # Chat route
+        message = data.get("message", "")
+        if not message:
+            self._send_error(400, "Missing 'message' in request body")
+            return
+        try:
             result = _generate_response(message)
             self._send_json(200, result)
-        except json.JSONDecodeError:
-            self._send_error(400, "Invalid JSON")
         except Exception as e:
             self._send_error(500, f"Chat error: {e}")
 
     def do_OPTIONS(self):
         self.send_response(204)
         self._send_cors_headers()
-        self.send_header("Access-Control-Allow-Methods", "POST, OPTIONS")
+        self.send_header("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
         self.send_header("Access-Control-Allow-Headers", "Content-Type, Authorization")
         self.end_headers()
 

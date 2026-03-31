@@ -17,6 +17,10 @@
     {
       "source": "/api/risk",
       "destination": "/api/reports"
+    },
+    {
+      "source": "/api/health",
+      "destination": "/api/chat"
     }
   ]
 }
