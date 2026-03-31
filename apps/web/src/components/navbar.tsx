@@ -31,6 +31,7 @@ import {
   ClipboardCheck,
   FileCheck,
   Radio,
+  FolderKanban,
 } from "lucide-react";
 import { locales, type Locale } from "@/i18n/config";
 import { appDict } from "@/i18n/app-dict";
@@ -41,6 +42,7 @@ function getNavGroups(t: Record<string, string>) {
     {
       label: t.analyze,
       items: [
+        { href: "/projects", label: t.projects, icon: FolderKanban },
         { href: "/dashboard", label: t.dashboard, icon: LayoutDashboard },
         { href: "/topology", label: t.topology, icon: Network },
         { href: "/heatmap", label: t.heatmap, icon: Flame },

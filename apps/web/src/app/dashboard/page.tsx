@@ -6,7 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
 import { useEffect, useState } from "react";
-import { api, type SimulationRun } from "@/lib/api";
+import { api, type SimulationRun, type Project } from "@/lib/api";
 import { Onboarding } from "@/components/onboarding";
 import { useLocale } from "@/lib/useLocale";
 import { appDict } from "@/i18n/app-dict";
@@ -18,6 +18,7 @@ import {
   Clock,
   ArrowRight,
   BarChart3,
+  FolderKanban,
 } from "lucide-react";
 
 function ScoreRing({ score, size = 120 }: { score: number; size?: number }) {
@@ -51,15 +52,17 @@ function ScoreRing({ score, size = 120 }: { score: number; size?: number }) {
 export default function DashboardPage() {
   const { user } = useAuth();
   const [runs, setRuns] = useState<SimulationRun[]>([]);
+  const [projects, setProjects] = useState<Project[]>([]);
   const [loading, setLoading] = useState(true);
   const locale = useLocale();
   const t = appDict.dashboard[locale] ?? appDict.dashboard.en;
+  const tProjects = appDict.projects[locale] ?? appDict.projects.en;
 
   useEffect(() => {
-    api.getRuns(undefined, 5)
-      .then((data) => setRuns(data.runs || []))
-      .catch(() => setRuns([]))
-      .finally(() => setLoading(false));
+    Promise.all([
+      api.getRuns(undefined, 5).then((data) => setRuns(data.runs || [])).catch(() => setRuns([])),
+      api.getProjects().then((data) => setProjects(Array.isArray(data) ? data.slice(0, 3) : [])).catch(() => setProjects([])),
+    ]).finally(() => setLoading(false));
   }, []);
 
   const latestRun = runs[0];
@@ -162,6 +165,48 @@ export default function DashboardPage() {
           ))}
         </div>
       </Card>
+
+      {/* Your Projects */}
+      {projects.length > 0 && (
+        <Card className="mb-10">
+          <div className="flex items-center justify-between mb-6">
+            <h2 className="text-lg font-bold flex items-center gap-2">
+              <FolderKanban size={20} className="text-[#FFD700]" />
+              {tProjects.yourProjects}
+            </h2>
+            <Link href="/projects" className="text-sm text-[#FFD700] hover:underline flex items-center gap-1">
+              {t.viewAll} <ArrowRight size={14} />
+            </Link>
+          </div>
+          <div className="grid md:grid-cols-3 gap-4">
+            {projects.map((project) => {
+              const score = project.last_score;
+              const scoreColor = score == null ? "#64748b" : score >= 90 ? "#10B981" : score >= 70 ? "#FFD700" : "#ef4444";
+              return (
+                <Link key={project.id} href={`/projects/${project.id}`}>
+                  <div className="p-4 rounded-xl bg-white/[0.02] border border-[#1e293b] hover:border-[#FFD700]/30 transition-colors cursor-pointer">
+                    <div className="flex items-center justify-between mb-2">
+                      <p className="font-semibold text-sm truncate flex-1 mr-2">{project.name}</p>
+                      {score != null && (
+                        <span className="text-lg font-bold font-mono shrink-0" style={{ color: scoreColor }}>
+                          {score.toFixed(0)}
+                        </span>
+                      )}
+                    </div>
+                    <p className="text-xs text-[#64748b] line-clamp-1">{project.description || "—"}</p>
+                    <p className="text-xs text-[#475569] mt-2">
+                      {project.run_count ?? 0} {tProjects.runCount}
+                      {project.last_run_at && (
+                        <> · {new Date(project.last_run_at).toLocaleDateString()}</>
+                      )}
+                    </p>
+                  </div>
+                </Link>
+              );
+            })}
+          </div>
+        </Card>
+      )}
 
       {/* Recent Runs */}
       <Card>

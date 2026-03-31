@@ -3,8 +3,8 @@
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { useState, useRef } from "react";
-import { api, type SimulationResult, type CloudSimulationResult } from "@/lib/api";
+import { useState, useRef, useEffect } from "react";
+import { api, type SimulationResult, type CloudSimulationResult, type Project } from "@/lib/api";
 import {
   Zap,
   Server,
@@ -29,6 +29,7 @@ import {
 import Link from "next/link";
 import { useLocale } from "@/lib/useLocale";
 import { appDict } from "@/i18n/app-dict";
+import { useSearchParams } from "next/navigation";
 
 const SAMPLES = [
   { id: "web-saas", name: "Web SaaS Platform", desc: "3-tier architecture with API gateway, auth, database, cache", icon: Globe, components: 8 },
@@ -271,6 +272,10 @@ const DEMO_RESULT: SimulationResult = {
 export default function SimulatePage() {
   const locale = useLocale();
   const t = appDict.simulate[locale] ?? appDict.simulate.en;
+  const tProjects = appDict.projects[locale] ?? appDict.projects.en;
+  const searchParams = useSearchParams();
+  const preselectedProjectId = searchParams?.get("project") ?? null;
+
   const [topTab, setTopTab] = useState<TopTab>("quickstart");
   const [selected, setSelected] = useState<string | null>(null);
   const [yamlText, setYamlText] = useState("");
@@ -281,12 +286,31 @@ export default function SimulatePage() {
   const [error, setError] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  // Project selector
+  const [projects, setProjects] = useState<Project[]>([]);
+  const [selectedProjectId, setSelectedProjectId] = useState<string | null>(preselectedProjectId);
+
   // Quick Start sub-sections
   const [showYamlEditor, setShowYamlEditor] = useState(false);
 
   // Agent Connect
   const [apiKey] = useState("fray_sk_" + "xxxxxxxxxxxxxxxxxxxxxxxxxxxx");
   const [connectedAgents] = useState<ConnectedAgent[]>(MOCK_AGENTS);
+
+  // Load projects for selector
+  useEffect(() => {
+    api.getProjects().then((data) => setProjects(Array.isArray(data) ? data : [])).catch(() => {});
+  }, []);
+
+  // If a project is preselected and has topology_yaml, load it
+  useEffect(() => {
+    if (!selectedProjectId || !projects.length) return;
+    const proj = projects.find((p) => p.id === selectedProjectId);
+    if (proj?.topology_yaml) {
+      setYamlText(proj.topology_yaml);
+      setSelected(null);
+    }
+  }, [selectedProjectId, projects]);
 
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -363,6 +387,37 @@ export default function SimulatePage() {
 
       {!result ? (
         <>
+          {/* Project Selector */}
+          {projects.length > 0 && (
+            <div className="mb-8 flex items-center gap-3">
+              <label className="text-xs text-[#64748b] uppercase tracking-wider shrink-0">
+                {tProjects.title}
+              </label>
+              <select
+                value={selectedProjectId ?? ""}
+                onChange={(e) => {
+                  const val = e.target.value || null;
+                  setSelectedProjectId(val);
+                  if (!val) {
+                    setYamlText("");
+                    setSelected(null);
+                  }
+                }}
+                className="px-3 py-2 bg-[#0d1117] border border-[#1e293b] rounded-lg text-sm text-white focus:outline-none focus:border-[#FFD700]/50 transition-colors max-w-xs"
+              >
+                <option value="">— No project —</option>
+                {projects.map((p) => (
+                  <option key={p.id} value={p.id}>{p.name}</option>
+                ))}
+              </select>
+              {selectedProjectId && (
+                <span className="text-xs text-[#64748b]">
+                  Topology loaded from project
+                </span>
+              )}
+            </div>
+          )}
+
           {/* Top-level Tabs */}
           <div className="flex gap-1 mb-8 p-1 rounded-xl bg-[#0d1117] border border-[#1e293b] w-fit">
             <button

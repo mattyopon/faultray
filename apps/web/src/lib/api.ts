@@ -306,6 +306,28 @@ export interface ApmStats {
   db_size_mb: number;
 }
 
+export interface Project {
+  id: string;
+  name: string;
+  description: string;
+  topology_yaml: string | null;
+  topology_type?: string;
+  status?: string;
+  created_at: string;
+  updated_at: string;
+  // Computed from simulation_runs
+  last_score?: number | null;
+  last_run_at?: string | null;
+  run_count?: number;
+}
+
+export interface ProjectWithRuns extends Project {
+  runs: Array<SimulationRun & {
+    critical_failures?: Array<{ scenario: string; impact: string; severity: string }>;
+    suggestions?: Array<{ title: string; description: string; impact: string; effort: string }>;
+  }>;
+}
+
 export const api = {
   simulate: (data: { topology?: string; topology_yaml?: string; sample?: string }, token?: string) =>
     apiFetch<SimulationResult>("/api/simulate", {
@@ -449,4 +471,25 @@ export const api = {
 
   getApmStats: (token?: string) =>
     apiFetch<ApmStats>("/api/apm/stats", { token }),
+
+  getProjects: (token?: string) =>
+    apiFetch<Project[]>("/api/projects", { token }),
+
+  getProject: (id: string, token?: string) =>
+    apiFetch<ProjectWithRuns>(`/api/projects?id=${id}`, { token }),
+
+  createProject: (
+    data: { name: string; description: string; topology_yaml?: string; topology_type?: string },
+    token?: string,
+  ) =>
+    apiFetch<Project>("/api/projects", { method: "POST", body: data, token }),
+
+  updateProject: (id: string, data: Partial<Project>, token?: string) =>
+    apiFetch<Project>(`/api/projects?id=${id}`, { method: "PATCH", body: data, token }),
+
+  deleteProject: (id: string, token?: string) =>
+    apiFetch<{ ok: boolean; id: string }>(`/api/projects?id=${id}`, { method: "DELETE", token }),
+
+  getProjectRuns: (projectId: string, token?: string) =>
+    apiFetch<ProjectWithRuns>(`/api/projects?id=${projectId}`, { token }),
 };
