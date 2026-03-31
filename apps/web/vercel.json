@@ -9,6 +9,10 @@
     {
       "source": "/api/apm/:path*",
       "destination": "/api/apm"
+    },
+    {
+      "source": "/api/risk",
+      "destination": "/api/reports"
     }
   ]
 }
