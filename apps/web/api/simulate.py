@@ -378,26 +378,74 @@ def _run_simulation(topology_yaml: str) -> dict:
                 }
             )
 
-        # Build suggestions from warnings
+        # Build improvement roadmap from ALL issues (critical + warnings)
         suggestions = []
         seen = set()
-        for r in report.warnings[:10]:
+        remaining_gap = 100.0 - score
+        cumulative_gain = 0.0
+
+        # Phase 1: Critical fixes (highest impact)
+        for r in report.critical_findings:
+            comp_ids = [e.component_id for e in r.cascade.effects] if r.cascade else []
+            # Each critical fix recovers a proportional chunk of the gap
+            gain = min(remaining_gap * 0.25, (r.risk_score / 10.0) * 8.0)
+            cumulative_gain += gain
+            projected = min(100.0, score + cumulative_gain)
+
+            title = f"Fix: {r.scenario.name}"
+            if title not in seen:
+                seen.add(title)
+                suggestions.append({
+                    "title": title,
+                    "description": (
+                        f"CRITICAL (risk {r.risk_score:.1f}/10). "
+                        f"Affects {len(comp_ids)} component(s). "
+                        f"Add redundancy, failover, or circuit breaker."
+                    ),
+                    "impact": f"+{gain:.1f} points (→ {projected:.0f}/100)",
+                    "effort": "High" if r.risk_score >= 8.0 else "Medium",
+                    "priority": 1,
+                    "score_gain": round(gain, 1),
+                    "projected_score": round(projected, 1),
+                })
+
+        # Phase 2: Warning fixes (moderate impact)
+        for r in report.warnings:
+            gain = min(remaining_gap * 0.1, (r.risk_score / 10.0) * 4.0)
+            cumulative_gain += gain
+            projected = min(100.0, score + cumulative_gain)
+
             title = f"Harden: {r.scenario.name}"
             if title not in seen:
                 seen.add(title)
-                suggestions.append(
-                    {
-                        "title": title,
-                        "description": (
-                            f"Scenario risk score: {r.risk_score:.1f}. "
-                            f"Consider adding redundancy or failover."
-                        ),
-                        "impact": f"+{(10 - r.risk_score) * 0.05:.1f} nines",
-                        "effort": (
-                            "Low" if r.risk_score < 5.0 else "Medium"
-                        ),
-                    }
-                )
+                suggestions.append({
+                    "title": title,
+                    "description": (
+                        f"WARNING (risk {r.risk_score:.1f}/10). "
+                        f"Improve monitoring, add health checks, or increase replicas."
+                    ),
+                    "impact": f"+{gain:.1f} points (→ {projected:.0f}/100)",
+                    "effort": "Low" if r.risk_score < 5.0 else "Medium",
+                    "priority": 2,
+                    "score_gain": round(gain, 1),
+                    "projected_score": round(projected, 1),
+                })
+
+        # Phase 3: If still not at 100, add general hardening
+        if cumulative_gain + score < 95.0 and len(suggestions) < 15:
+            final_gap = 100.0 - (score + cumulative_gain)
+            suggestions.append({
+                "title": "General infrastructure hardening",
+                "description": (
+                    "Enable encryption in transit, add network segmentation, "
+                    "implement chaos engineering practices, and automate DR testing."
+                ),
+                "impact": f"+{final_gap:.1f} points (→ 100/100)",
+                "effort": "High",
+                "priority": 3,
+                "score_gain": round(final_gap, 1),
+                "projected_score": 100.0,
+            })
 
         return {
             "overall_score": round(score, 1),
@@ -412,7 +460,14 @@ def _run_simulation(topology_yaml: str) -> dict:
                 "theoretical": round(min(nines * 1.5, 7.0), 2),
             },
             "critical_failures": critical_failures,
-            "suggestions": suggestions[:5],
+            "suggestions": suggestions[:15],
+            "improvement_summary": {
+                "current_score": round(score, 1),
+                "max_projected_score": round(min(100.0, score + cumulative_gain), 1),
+                "total_improvements": len(suggestions),
+                "critical_fixes": sum(1 for s in suggestions if s.get("priority") == 1),
+                "warning_fixes": sum(1 for s in suggestions if s.get("priority") == 2),
+            },
         }
     finally:
         os.unlink(tmp_path)
