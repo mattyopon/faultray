@@ -348,10 +348,13 @@ function SimulatePageInner() {
 
     try {
       let res;
+      const simPayload: Record<string, string> = {};
+      if (selectedProjectId) simPayload.project_id = selectedProjectId;
+
       if (selected && !yamlText.trim()) {
-        res = await api.simulate({ sample: selected });
+        res = await api.simulate({ sample: selected, ...simPayload });
       } else if (yamlText.trim()) {
-        res = await api.simulate({ topology_yaml: yamlText });
+        res = await api.simulate({ topology_yaml: yamlText, ...simPayload });
       }
       if (res) {
         setResult(res);
@@ -361,6 +364,22 @@ function SimulatePageInner() {
           timestamp: new Date().toISOString(),
           source: selected || "custom",
         }));
+
+        // Also persist to Supabase (best-effort)
+        try {
+          await api.saveRun({
+            project_id: selectedProjectId || undefined,
+            overall_score: res.overall_score,
+            availability_estimate: res.availability_estimate,
+            nines: res.nines,
+            scenarios_passed: res.scenarios_passed,
+            scenarios_failed: res.scenarios_failed,
+            total_scenarios: res.total_scenarios,
+            result_data: res as unknown as Record<string, unknown>,
+          });
+        } catch {
+          // Non-critical: localStorage backup already saved
+        }
       }
     } catch (err) {
       if (err instanceof Error && !err.message.includes("fetch")) {

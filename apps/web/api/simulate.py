@@ -418,6 +418,49 @@ def _run_simulation(topology_yaml: str) -> dict:
         os.unlink(tmp_path)
 
 
+def _save_run_to_supabase(data: dict) -> dict:
+    """Persist a simulation run to the Supabase simulation_runs table."""
+    import urllib.request as _urllib_req
+
+    supabase_url = os.environ.get("NEXT_PUBLIC_SUPABASE_URL", "").rstrip("/")
+    service_key = os.environ.get("SUPABASE_SERVICE_ROLE_KEY", "")
+    if not supabase_url or not service_key:
+        return {"ok": True, "id": "demo", "demo": True}
+
+    record = {
+        "overall_score": data.get("overall_score", 0),
+        "availability_estimate": data.get("availability_estimate", ""),
+        "nines": data.get("nines"),
+        "engine_type": data.get("engine_type", "static"),
+        "scenarios_passed": data.get("scenarios_passed", 0),
+        "scenarios_failed": data.get("scenarios_failed", 0),
+        "total_scenarios": data.get("total_scenarios", 0),
+        "result_data": json.dumps(data.get("result_data") or {}),
+    }
+    if data.get("project_id"):
+        record["project_id"] = data["project_id"]
+
+    body = json.dumps(record).encode()
+    req = _urllib_req.Request(
+        f"{supabase_url}/rest/v1/simulation_runs",
+        data=body,
+        method="POST",
+        headers={
+            "Content-Type": "application/json",
+            "apikey": service_key,
+            "Authorization": f"Bearer {service_key}",
+            "Prefer": "return=representation",
+        },
+    )
+    try:
+        resp = _urllib_req.urlopen(req, timeout=10)
+        result = json.loads(resp.read())
+        run_id = result[0]["id"] if isinstance(result, list) and result else "saved"
+        return {"ok": True, "id": run_id}
+    except Exception as e:
+        return {"ok": False, "error": str(e)}
+
+
 class handler(BaseHTTPRequestHandler):
     def do_POST(self):
         try:
@@ -425,7 +468,13 @@ class handler(BaseHTTPRequestHandler):
             body = self.rfile.read(content_length)
             data = json.loads(body) if body else {}
 
-            # Get topology YAML from request
+            # Route: save-run (persist simulation result to Supabase)
+            if data.get("action") == "save-run":
+                result = _save_run_to_supabase(data)
+                self._send_json(200, result)
+                return
+
+            # Route: run simulation
             topology_yaml = data.get("topology_yaml") or data.get("topology")
             sample = data.get("sample")
 
@@ -440,6 +489,16 @@ class handler(BaseHTTPRequestHandler):
                 return
 
             result = _run_simulation(topology_yaml)
+
+            # Auto-save to Supabase if project_id provided
+            project_id = data.get("project_id")
+            if project_id:
+                _save_run_to_supabase({
+                    **result,
+                    "project_id": project_id,
+                    "result_data": result,
+                })
+
             self._send_json(200, result)
 
         except json.JSONDecodeError:

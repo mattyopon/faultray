@@ -492,4 +492,24 @@ export const api = {
 
   getProjectRuns: (projectId: string, token?: string) =>
     apiFetch<ProjectWithRuns>(`/api/projects?id=${projectId}`, { token }),
+
+  saveRun: (
+    data: {
+      project_id?: string;
+      overall_score: number;
+      availability_estimate: string;
+      nines?: number;
+      engine_type?: string;
+      scenarios_passed: number;
+      scenarios_failed: number;
+      total_scenarios: number;
+      result_data?: Record<string, unknown>;
+    },
+    token?: string,
+  ) =>
+    apiFetch<{ ok: boolean; id: string }>("/api/simulate", {
+      method: "POST",
+      body: { action: "save-run", ...data },
+      token,
+    }),
 };
