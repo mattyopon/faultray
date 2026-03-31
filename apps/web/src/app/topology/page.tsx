@@ -29,6 +29,7 @@ interface GraphNode {
   id: string;
   name: string;
   type: string;
+  risk: number;
   replicas?: number;
   provider?: string;
   region?: string;
@@ -56,16 +57,16 @@ interface NodeRiskData {
 
 const DEMO_DATA: GraphData = {
   nodes: [
-    { id: "cdn", name: "CloudFront CDN", type: "cloudfront", replicas: 3, provider: "aws", region: "global" },
-    { id: "gateway", name: "API Gateway", type: "alb", replicas: 2, provider: "aws", region: "ap-northeast-1" },
-    { id: "auth", name: "Auth Service", type: "ec2", replicas: 2, provider: "aws", region: "ap-northeast-1" },
-    { id: "api", name: "API Server", type: "ec2", replicas: 3, provider: "aws", region: "ap-northeast-1" },
-    { id: "users_db", name: "Users DB", type: "rds", replicas: 1, provider: "aws", region: "ap-northeast-1" },
-    { id: "db_primary", name: "Main DB", type: "rds", replicas: 1, provider: "aws", region: "ap-northeast-1" },
-    { id: "cache", name: "Redis Cache", type: "elasticache", replicas: 3, provider: "aws", region: "ap-northeast-1" },
-    { id: "worker", name: "Worker", type: "lambda", replicas: undefined, provider: "aws", region: "ap-northeast-1" },
-    { id: "queue", name: "Job Queue", type: "sqs", replicas: undefined, provider: "aws", region: "ap-northeast-1" },
-    { id: "db_replica", name: "DB Replica", type: "rds", replicas: 2, provider: "aws", region: "ap-northeast-1" },
+    { id: "cdn", name: "CloudFront CDN", type: "cloudfront", risk: 12, replicas: 3, provider: "aws", region: "global" },
+    { id: "gateway", name: "API Gateway", type: "alb", risk: 25, replicas: 2, provider: "aws", region: "ap-northeast-1" },
+    { id: "auth", name: "Auth Service", type: "ec2", risk: 45, replicas: 2, provider: "aws", region: "ap-northeast-1" },
+    { id: "api", name: "API Server", type: "ec2", risk: 38, replicas: 3, provider: "aws", region: "ap-northeast-1" },
+    { id: "users_db", name: "Users DB", type: "rds", risk: 55, replicas: 1, provider: "aws", region: "ap-northeast-1" },
+    { id: "db_primary", name: "Main DB", type: "rds", risk: 78, replicas: 1, provider: "aws", region: "ap-northeast-1" },
+    { id: "cache", name: "Redis Cache", type: "elasticache", risk: 35, replicas: 3, provider: "aws", region: "ap-northeast-1" },
+    { id: "worker", name: "Worker", type: "lambda", risk: 20, replicas: undefined, provider: "aws", region: "ap-northeast-1" },
+    { id: "queue", name: "Job Queue", type: "sqs", risk: 15, replicas: undefined, provider: "aws", region: "ap-northeast-1" },
+    { id: "db_replica", name: "DB Replica", type: "rds", risk: 30, replicas: 2, provider: "aws", region: "ap-northeast-1" },
   ],
   edges: [
     { source: "cdn", target: "gateway", type: "requires" },
@@ -303,10 +304,40 @@ export default function TopologyPage() {
       }
     } catch {
       // Use demo data
-    } finally {
-      setLoading(false);
     }
+
+    // Apply simulation results from localStorage if available
+    try {
+      const saved = localStorage.getItem("faultray_last_simulation");
+      if (saved) {
+        const sim = JSON.parse(saved);
+        if (sim.overall_score !== undefined) {
+          setData((prev) => ({
+            ...prev,
+            nodes: prev.nodes.map((node) => {
+              const isCritical = (sim.critical_failures || []).some(
+                (f: { scenario: string }) => f.scenario.toLowerCase().includes(node.name.toLowerCase().split(" ")[0])
+              );
+              if (isCritical) {
+                return { ...node, risk: Math.max(node.risk, 75) };
+              }
+              const scoreRatio = (100 - sim.overall_score) / 100;
+              return { ...node, risk: Math.round(node.risk * (1 + scoreRatio * 0.3)) };
+            }),
+          }));
+          setSimScore(sim.overall_score);
+          setSimTimestamp(sim.timestamp || null);
+        }
+      }
+    } catch {
+      // localStorage not available
+    }
+
+    setLoading(false);
   }, []);
+
+  const [simScore, setSimScore] = useState<number | null>(null);
+  const [simTimestamp, setSimTimestamp] = useState<string | null>(null);
 
   useEffect(() => {
     loadData();
@@ -385,6 +416,31 @@ export default function TopologyPage() {
           {t.graphDescription}
         </p>
       </div>
+
+      {/* Simulation score banner */}
+      {simScore !== null && (
+        <div className={`flex items-center justify-between p-4 mb-6 rounded-xl border ${
+          simScore >= 80 ? "bg-emerald-500/5 border-emerald-500/20" : simScore >= 60 ? "bg-[#FFD700]/5 border-[#FFD700]/20" : "bg-red-500/5 border-red-500/20"
+        }`}>
+          <div className="flex items-center gap-3">
+            <Activity size={18} className={simScore >= 80 ? "text-emerald-400" : simScore >= 60 ? "text-[#FFD700]" : "text-red-400"} />
+            <div>
+              <span className="text-sm font-semibold">{locale === "ja" ? "最新シミュレーション結果を反映中" : "Reflecting latest simulation results"}</span>
+              {simTimestamp && (
+                <span className="text-xs text-[#64748b] ml-2">
+                  {new Date(simTimestamp).toLocaleString(locale === "ja" ? "ja-JP" : "en-US")}
+                </span>
+              )}
+            </div>
+          </div>
+          <div className="flex items-center gap-2">
+            <span className={`text-2xl font-bold font-mono ${simScore >= 80 ? "text-emerald-400" : simScore >= 60 ? "text-[#FFD700]" : "text-red-400"}`}>
+              {simScore.toFixed(1)}
+            </span>
+            <span className="text-xs text-[#64748b]">/ 100</span>
+          </div>
+        </div>
+      )}
 
       {loading ? (
         <Card className="flex items-center justify-center py-20">

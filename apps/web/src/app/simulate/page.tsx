@@ -314,18 +314,31 @@ export default function SimulatePage() {
     setScanSummary(undefined);
 
     try {
+      let res;
       if (selected && !yamlText.trim()) {
-        const res = await api.simulate({ sample: selected });
-        setResult(res);
+        res = await api.simulate({ sample: selected });
       } else if (yamlText.trim()) {
-        const res = await api.simulate({ topology_yaml: yamlText });
+        res = await api.simulate({ topology_yaml: yamlText });
+      }
+      if (res) {
         setResult(res);
+        // Save to localStorage for topology/dashboard to read
+        localStorage.setItem("faultray_last_simulation", JSON.stringify({
+          ...res,
+          timestamp: new Date().toISOString(),
+          source: selected || "custom",
+        }));
       }
     } catch (err) {
       if (err instanceof Error && !err.message.includes("fetch")) {
         setError(err.message);
       } else {
         setResult(DEMO_RESULT);
+        localStorage.setItem("faultray_last_simulation", JSON.stringify({
+          ...DEMO_RESULT,
+          timestamp: new Date().toISOString(),
+          source: "demo",
+        }));
       }
     } finally {
       setRunning(false);
