@@ -17,6 +17,7 @@ import {
   AlertTriangle,
   Shield,
   Clock,
+  Minus,
 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useState, useEffect, useCallback } from "react";
@@ -245,27 +246,83 @@ export default function SettingsPage() {
             </span>
           </div>
         )}
-        <div className="space-y-4 mb-6">
-          <div className="grid grid-cols-[120px_1fr] items-center gap-4">
-            <span className="text-sm text-[#64748b]">{t.plan}</span>
-            <span className="text-sm">{currentPlan.charAt(0).toUpperCase() + currentPlan.slice(1)}{isTrialActive ? " (Trial)" : ""}</span>
-          </div>
-          <div className="grid grid-cols-[120px_1fr] items-center gap-4">
-            <span className="text-sm text-[#64748b]">{t.simulations}</span>
-            <div>
-              <div className="flex items-center gap-2">
-                <div className="h-2 w-32 bg-white/5 rounded-full overflow-hidden">
-                  <div className="h-full w-2/5 bg-[#FFD700] rounded-full" />
-                </div>
-                <span className="text-xs text-[#64748b]">2 / 5 {t.thisMonth}</span>
+
+        {/* Plan comparison table */}
+        {(() => {
+          const plans = [
+            { id: "free", name: "Free", price: "$0", features: [
+              { label: locale === "ja" ? "シミュレーション" : "Simulations", value: locale === "ja" ? "月5回" : "5 / month" },
+              { label: locale === "ja" ? "コンポーネント" : "Components", value: locale === "ja" ? "最大5個" : "Up to 5" },
+              { label: locale === "ja" ? "DORAレポート" : "DORA Report", value: false },
+              { label: locale === "ja" ? "AI分析" : "AI Analysis", value: false },
+              { label: locale === "ja" ? "カスタムSSO" : "Custom SSO", value: false },
+              { label: locale === "ja" ? "保険API" : "Insurance API", value: false },
+              { label: locale === "ja" ? "サポート" : "Support", value: locale === "ja" ? "コミュニティ" : "Community" },
+            ]},
+            { id: "pro", name: "Pro", price: "$299/mo", features: [
+              { label: locale === "ja" ? "シミュレーション" : "Simulations", value: locale === "ja" ? "月100回" : "100 / month" },
+              { label: locale === "ja" ? "コンポーネント" : "Components", value: locale === "ja" ? "最大50個" : "Up to 50" },
+              { label: locale === "ja" ? "DORAレポート" : "DORA Report", value: "PDF" },
+              { label: locale === "ja" ? "AI分析" : "AI Analysis", value: true },
+              { label: locale === "ja" ? "カスタムSSO" : "Custom SSO", value: false },
+              { label: locale === "ja" ? "保険API" : "Insurance API", value: false },
+              { label: locale === "ja" ? "サポート" : "Support", value: locale === "ja" ? "メール24h" : "Email (24h)" },
+            ]},
+            { id: "business", name: "Business", price: "$999/mo", features: [
+              { label: locale === "ja" ? "シミュレーション" : "Simulations", value: locale === "ja" ? "無制限" : "Unlimited" },
+              { label: locale === "ja" ? "コンポーネント" : "Components", value: locale === "ja" ? "無制限" : "Unlimited" },
+              { label: locale === "ja" ? "DORAレポート" : "DORA Report", value: "PDF + API" },
+              { label: locale === "ja" ? "AI分析" : "AI Analysis", value: true },
+              { label: locale === "ja" ? "カスタムSSO" : "Custom SSO", value: true },
+              { label: locale === "ja" ? "保険API" : "Insurance API", value: true },
+              { label: locale === "ja" ? "サポート" : "Support", value: locale === "ja" ? "専任1h" : "Dedicated (1h)" },
+            ]},
+          ];
+          return (
+            <div className="mb-6">
+              <div className="grid grid-cols-3 gap-3">
+                {plans.map((plan) => {
+                  const isCurrent = currentPlan === plan.id;
+                  return (
+                    <div
+                      key={plan.id}
+                      className={`rounded-xl border p-4 transition-all ${
+                        isCurrent
+                          ? "border-[#FFD700] bg-[#FFD700]/5"
+                          : "border-[#1e293b] bg-[#0d1117]"
+                      }`}
+                    >
+                      <div className="flex items-center justify-between mb-3">
+                        <span className={`text-sm font-bold ${isCurrent ? "text-[#FFD700]" : "text-white"}`}>{plan.name}</span>
+                        <span className="text-xs text-[#64748b]">{plan.price}</span>
+                      </div>
+                      {isCurrent && (
+                        <div className="text-[10px] text-[#FFD700] bg-[#FFD700]/10 rounded px-2 py-0.5 inline-block mb-3">
+                          {locale === "ja" ? "現在のプラン" : "Current"}
+                        </div>
+                      )}
+                      <div className="space-y-2">
+                        {plan.features.map((f) => (
+                          <div key={f.label} className="flex items-center justify-between text-xs">
+                            <span className="text-[#64748b]">{f.label}</span>
+                            {f.value === true ? (
+                              <Check size={14} className="text-emerald-400" />
+                            ) : f.value === false ? (
+                              <Minus size={14} className="text-[#334155]" />
+                            ) : (
+                              <span className="text-[#e2e8f0] font-medium">{f.value}</span>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  );
+                })}
               </div>
             </div>
-          </div>
-          <div className="grid grid-cols-[120px_1fr] items-center gap-4">
-            <span className="text-sm text-[#64748b]">{locale === "ja" ? "コンポーネント" : "Components"}</span>
-            <span className="text-sm">5 {t.componentsMax}</span>
-          </div>
-        </div>
+          );
+        })()}
+
         <Link href="/pricing">
           <Button size="sm">
             <CreditCard size={14} /> {t.upgradePro}
