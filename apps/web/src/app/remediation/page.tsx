@@ -252,8 +252,10 @@ function buildRemediationData(sim: SimulationResult): RemediationData {
     const effortWeeks = effortMap[sug.effort] ?? 2;
     const costMap: Record<string, number> = { Low: 5000, Medium: 12000, High: 20000 };
     const costEur = costMap[sug.effort] ?? 10000;
-    const ninesMatch = sug.impact.match(/([\d.]+)/);
-    const scoreImpact = ninesMatch ? parseFloat(ninesMatch[1]) * 5 : 3;
+    // Use score_gain directly if available (new API), fallback to parsing impact string
+    const scoreImpact = (sug as Record<string, unknown>).score_gain
+      ? Number((sug as Record<string, unknown>).score_gain)
+      : (() => { const m = sug.impact.match(/([\d.]+)/); return m ? parseFloat(m[1]) * 5 : 3; })();
     actions.push({
       id: id++,
       titleKey: `sug_${id}`,
@@ -275,6 +277,32 @@ function buildRemediationData(sim: SimulationResult): RemediationData {
       startWeek,
     });
     startWeek += effortWeeks;
+  }
+
+  // If total score impact doesn't reach 100, add a general hardening action
+  const totalImpact = actions.reduce((sum, a) => sum + a.scoreImpact, 0);
+  if (score + totalImpact < 95 && actions.length < 20) {
+    const gap = 100 - (score + totalImpact);
+    actions.push({
+      id: id++,
+      titleKey: "general_hardening",
+      title: {
+        en: "General infrastructure hardening",
+        ja: "インフラ全般の堅牢化",
+        de: "Allgemeine Infrastruktur-Härtung",
+        fr: "Renforcement général de l'infrastructure",
+        zh: "基础设施全面加固",
+        ko: "인프라 전반 강화",
+        es: "Endurecimiento general de infraestructura",
+        pt: "Endurecimento geral da infraestrutura",
+      },
+      priority: "medium",
+      effortWeeks: 4,
+      costEur: 20000,
+      scoreImpact: Math.round(gap * 10) / 10,
+      doraImpact: Math.round(gap * 0.7),
+      startWeek,
+    });
   }
 
   return { score, doraCompliance, availability: sim.availability_estimate, actions };
