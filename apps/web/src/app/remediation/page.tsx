@@ -17,6 +17,11 @@ import {
   Calendar,
   BarChart3,
   Users,
+  CalendarPlus,
+  Pencil,
+  Check,
+  X,
+  ListFilter,
 } from "lucide-react";
 import Link from "next/link";
 import { useLocale } from "@/lib/useLocale";
@@ -45,6 +50,19 @@ interface RemediationData {
   availability: string;
   actions: ActionItem[];
 }
+
+type TaskStatus = "todo" | "in_progress" | "in_review" | "done";
+
+interface TaskState {
+  assignee: string;
+  status: TaskStatus;
+  comment: string;
+  deadline: string; // ISO date string or ""
+}
+
+type TaskStatesMap = Record<number, TaskState>;
+
+type TaskFilter = "all" | TaskStatus;
 
 /* ------------------------------------------------------------------ */
 /*  Demo data (used when no simulation result exists)                   */
@@ -385,6 +403,107 @@ function downloadFile(content: string, filename: string, type: string) {
 }
 
 /* ------------------------------------------------------------------ */
+/*  Google Calendar helpers                                             */
+/* ------------------------------------------------------------------ */
+
+function calcActionDates(action: ActionItem): { start: Date; end: Date } {
+  const today = new Date();
+  const start = new Date(today);
+  start.setDate(today.getDate() + (action.startWeek - 1) * 7);
+  // Set to 9:00 AM
+  start.setHours(9, 0, 0, 0);
+  const end = new Date(start);
+  end.setDate(start.getDate() + action.effortWeeks * 7);
+  end.setHours(17, 0, 0, 0);
+  return { start, end };
+}
+
+function formatDateForGCal(d: Date): string {
+  return d.toISOString().replace(/[-:]/g, "").replace(/\.\d{3}/, "");
+}
+
+function formatDateForIcs(d: Date): string {
+  return d.toISOString().replace(/[-:]/g, "").replace(/\.\d{3}/, "");
+}
+
+function buildGoogleCalendarUrl(
+  action: ActionItem,
+  locale: string,
+  t: Record<string, string>,
+): string {
+  const { start, end } = calcActionDates(action);
+  const title = `${t.calendarEventPrefix} ${action.title[locale] ?? action.title.en}`;
+  const details = `${t.calendarPriority}: ${t[action.priority] ?? action.priority}\\n${t.calendarCost}: ${formatEur(action.costEur)}\\n${t.calendarExpectedEffect}: +${action.scoreImpact}`;
+  const params = new URLSearchParams({
+    action: "TEMPLATE",
+    text: title,
+    dates: `${formatDateForGCal(start)}/${formatDateForGCal(end)}`,
+    details,
+  });
+  return `https://calendar.google.com/calendar/render?${params.toString()}`;
+}
+
+function generateIcsFile(
+  actions: ActionItem[],
+  locale: string,
+  t: Record<string, string>,
+): string {
+  const events = actions
+    .map((action) => {
+      const { start, end } = calcActionDates(action);
+      const title = `${t.calendarEventPrefix} ${action.title[locale] ?? action.title.en}`;
+      const description = `${t.calendarPriority}: ${t[action.priority] ?? action.priority}\\n${t.calendarCost}: ${formatEur(action.costEur)}\\n${t.calendarExpectedEffect}: +${action.scoreImpact}`;
+      return `BEGIN:VEVENT
+DTSTART:${formatDateForIcs(start)}
+DTEND:${formatDateForIcs(end)}
+SUMMARY:${title}
+DESCRIPTION:${description}
+STATUS:CONFIRMED
+END:VEVENT`;
+    })
+    .join("\n");
+
+  return `BEGIN:VCALENDAR
+VERSION:2.0
+PRODID:-//FaultRay//Remediation Plan//EN
+${events}
+END:VCALENDAR`;
+}
+
+/* ------------------------------------------------------------------ */
+/*  Task management helpers                                             */
+/* ------------------------------------------------------------------ */
+
+const TASK_STORAGE_KEY = "faultray_remediation_tasks";
+
+function loadTaskStates(): TaskStatesMap {
+  try {
+    const raw = localStorage.getItem(TASK_STORAGE_KEY);
+    if (raw) return JSON.parse(raw) as TaskStatesMap;
+  } catch {
+    // ignore
+  }
+  return {};
+}
+
+function saveTaskStates(states: TaskStatesMap): void {
+  localStorage.setItem(TASK_STORAGE_KEY, JSON.stringify(states));
+}
+
+function getTaskState(states: TaskStatesMap, actionId: number): TaskState {
+  return states[actionId] ?? { assignee: "", status: "todo", comment: "", deadline: "" };
+}
+
+function statusBadgeVariant(status: TaskStatus): "default" | "yellow" | "gold" | "green" {
+  switch (status) {
+    case "todo": return "default";
+    case "in_progress": return "yellow";
+    case "in_review": return "gold";
+    case "done": return "green";
+  }
+}
+
+/* ------------------------------------------------------------------ */
 /*  Component                                                          */
 /* ------------------------------------------------------------------ */
 
@@ -394,6 +513,10 @@ export default function RemediationPage() {
   const [data, setData] = useState<RemediationData | null>(null);
   const [isDemo, setIsDemo] = useState(false);
   const loadedRef = useRef(false);
+  const [taskStates, setTaskStates] = useState<TaskStatesMap>({});
+  const [taskFilter, setTaskFilter] = useState<TaskFilter>("all");
+  const [editingTaskId, setEditingTaskId] = useState<number | null>(null);
+  const [editForm, setEditForm] = useState<TaskState>({ assignee: "", status: "todo", comment: "", deadline: "" });
 
   useEffect(() => {
     if (loadedRef.current) return;
@@ -407,6 +530,7 @@ export default function RemediationPage() {
     } catch {
       // ignore parse errors
     }
+    setTaskStates(loadTaskStates());
   }, []);
 
   const loadDemo = useCallback(() => {
@@ -431,6 +555,40 @@ export default function RemediationPage() {
       setTimeout(() => win.print(), 500);
     }
   }, [data, t, locale]);
+
+  const handleAddToGoogleCalendar = useCallback(
+    (action: ActionItem) => {
+      const url = buildGoogleCalendarUrl(action, locale, t as unknown as Record<string, string>);
+      window.open(url, "_blank");
+    },
+    [locale, t],
+  );
+
+  const handleExportAllIcs = useCallback(() => {
+    if (!data) return;
+    const ics = generateIcsFile(data.actions, locale, t as unknown as Record<string, string>);
+    downloadFile(ics, "faultray-remediation-plan.ics", "text/calendar;charset=utf-8");
+  }, [data, locale, t]);
+
+  const handleStartEdit = useCallback(
+    (actionId: number) => {
+      setEditingTaskId(actionId);
+      setEditForm(getTaskState(taskStates, actionId));
+    },
+    [taskStates],
+  );
+
+  const handleSaveTask = useCallback(() => {
+    if (editingTaskId === null) return;
+    const next = { ...taskStates, [editingTaskId]: editForm };
+    setTaskStates(next);
+    saveTaskStates(next);
+    setEditingTaskId(null);
+  }, [editingTaskId, editForm, taskStates]);
+
+  const handleCancelEdit = useCallback(() => {
+    setEditingTaskId(null);
+  }, []);
 
   /* No simulation data yet */
   if (!data) {
@@ -718,13 +876,244 @@ export default function RemediationPage() {
         </Card>
       </div>
 
-      {/* F. Export section */}
+      {/* F. Task Management */}
+      <h2 className="text-lg font-bold mb-4 flex items-center gap-2">
+        <ListFilter size={20} className="text-[#FFD700]" />
+        {t.taskManagement}
+      </h2>
+      {(() => {
+        const statusLabel = (s: TaskStatus): string => {
+          const map: Record<TaskStatus, keyof typeof t> = {
+            todo: "statusTodo",
+            in_progress: "statusInProgress",
+            in_review: "statusInReview",
+            done: "statusDone",
+          };
+          return t[map[s]] ?? s;
+        };
+        const doneCount = data.actions.filter(
+          (a) => getTaskState(taskStates, a.id).status === "done",
+        ).length;
+        const totalCount = data.actions.length;
+        const pctDone = totalCount > 0 ? Math.round((doneCount / totalCount) * 100) : 0;
+        const filtered =
+          taskFilter === "all"
+            ? data.actions
+            : data.actions.filter((a) => getTaskState(taskStates, a.id).status === taskFilter);
+
+        return (
+          <Card className="mb-10">
+            {/* Progress bar */}
+            <div className="flex items-center justify-between mb-4">
+              <span className="text-sm text-[#94a3b8]">
+                {t.progress}: {doneCount}/{totalCount} ({pctDone}%)
+              </span>
+              <Button variant="secondary" size="sm" onClick={handleExportAllIcs}>
+                <CalendarPlus size={14} />
+                {t.exportAllToCalendar}
+              </Button>
+            </div>
+            <div className="w-full h-2 bg-white/[0.05] rounded-full mb-6 overflow-hidden">
+              <div
+                className="h-full bg-emerald-500 rounded-full transition-all duration-500"
+                style={{ width: `${pctDone}%` }}
+              />
+            </div>
+
+            {/* Filter tabs */}
+            <div className="flex flex-wrap gap-2 mb-6">
+              {(["all", "todo", "in_progress", "in_review", "done"] as TaskFilter[]).map((f) => {
+                const labels: Record<TaskFilter, string> = {
+                  all: t.filterAll,
+                  todo: t.filterTodo,
+                  in_progress: t.filterInProgress,
+                  in_review: t.filterInReview,
+                  done: t.filterDone,
+                };
+                return (
+                  <button
+                    key={f}
+                    onClick={() => setTaskFilter(f)}
+                    className={`px-3 py-1.5 text-xs font-semibold rounded-lg transition-colors ${
+                      taskFilter === f
+                        ? "bg-[#FFD700]/20 text-[#FFD700]"
+                        : "bg-white/[0.05] text-[#94a3b8] hover:bg-white/[0.08]"
+                    }`}
+                  >
+                    {labels[f]}
+                  </button>
+                );
+              })}
+            </div>
+
+            {/* Task list */}
+            <div className="space-y-3">
+              {filtered.map((a) => {
+                const ts = getTaskState(taskStates, a.id);
+                const isEditing = editingTaskId === a.id;
+                const { start: actionStart } = calcActionDates(a);
+                const defaultDeadline = ts.deadline || actionStart.toISOString().split("T")[0];
+
+                return (
+                  <div
+                    key={a.id}
+                    className="border border-[#1e293b] rounded-lg p-4 hover:border-[#334155] transition-colors"
+                  >
+                    {/* Header row */}
+                    <div className="flex items-center justify-between mb-2">
+                      <div className="flex items-center gap-3">
+                        <span className="text-xs text-[#64748b] font-mono">#{a.id}</span>
+                        <span className="font-medium text-sm">
+                          {a.title[locale] ?? a.title.en}
+                        </span>
+                        <Badge variant={priorityColor(a.priority)}>
+                          {t[a.priority] ?? a.priority}
+                        </Badge>
+                        <Badge variant={statusBadgeVariant(ts.status)}>
+                          {statusLabel(ts.status)}
+                        </Badge>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => handleAddToGoogleCalendar(a)}
+                          title={t.addToCalendar}
+                        >
+                          <CalendarPlus size={14} />
+                        </Button>
+                        {!isEditing && (
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => handleStartEdit(a.id)}
+                          >
+                            <Pencil size={14} />
+                            {t.edit}
+                          </Button>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Info row */}
+                    <div className="flex items-center gap-4 text-xs text-[#94a3b8] mb-2">
+                      <span>
+                        {t.assignee}: {ts.assignee || t.unassigned}
+                      </span>
+                      <span>
+                        {t.deadline}: {ts.deadline || defaultDeadline}
+                      </span>
+                      <span>
+                        {t.effort}: {a.effortWeeks} {a.effortWeeks > 1 ? t.weeks : t.week}
+                      </span>
+                      <span className="font-mono">{formatEur(a.costEur)}</span>
+                      <span className="font-mono text-emerald-400">+{a.scoreImpact}</span>
+                    </div>
+
+                    {/* Comment display */}
+                    {ts.comment && !isEditing && (
+                      <p className="text-xs text-[#64748b] bg-white/[0.02] rounded px-3 py-2 mt-2">
+                        {ts.comment}
+                      </p>
+                    )}
+
+                    {/* Edit form */}
+                    {isEditing && (
+                      <div className="mt-3 space-y-3 border-t border-[#1e293b] pt-3">
+                        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                          <div>
+                            <label className="block text-[10px] text-[#64748b] uppercase tracking-wider mb-1">
+                              {t.assignee}
+                            </label>
+                            <input
+                              type="text"
+                              value={editForm.assignee}
+                              onChange={(e) =>
+                                setEditForm({ ...editForm, assignee: e.target.value })
+                              }
+                              className="w-full bg-white/[0.05] border border-[#1e293b] rounded-lg px-3 py-1.5 text-sm text-white focus:border-[#FFD700] focus:outline-none"
+                              placeholder={t.unassigned}
+                            />
+                          </div>
+                          <div>
+                            <label className="block text-[10px] text-[#64748b] uppercase tracking-wider mb-1">
+                              Status
+                            </label>
+                            <select
+                              value={editForm.status}
+                              onChange={(e) =>
+                                setEditForm({
+                                  ...editForm,
+                                  status: e.target.value as TaskStatus,
+                                })
+                              }
+                              className="w-full bg-white/[0.05] border border-[#1e293b] rounded-lg px-3 py-1.5 text-sm text-white focus:border-[#FFD700] focus:outline-none"
+                            >
+                              <option value="todo">{t.statusTodo}</option>
+                              <option value="in_progress">{t.statusInProgress}</option>
+                              <option value="in_review">{t.statusInReview}</option>
+                              <option value="done">{t.statusDone}</option>
+                            </select>
+                          </div>
+                          <div>
+                            <label className="block text-[10px] text-[#64748b] uppercase tracking-wider mb-1">
+                              {t.deadline}
+                            </label>
+                            <input
+                              type="date"
+                              value={editForm.deadline || defaultDeadline}
+                              onChange={(e) =>
+                                setEditForm({ ...editForm, deadline: e.target.value })
+                              }
+                              className="w-full bg-white/[0.05] border border-[#1e293b] rounded-lg px-3 py-1.5 text-sm text-white focus:border-[#FFD700] focus:outline-none"
+                            />
+                          </div>
+                        </div>
+                        <div>
+                          <label className="block text-[10px] text-[#64748b] uppercase tracking-wider mb-1">
+                            {t.comment}
+                          </label>
+                          <textarea
+                            value={editForm.comment}
+                            onChange={(e) =>
+                              setEditForm({ ...editForm, comment: e.target.value })
+                            }
+                            rows={2}
+                            className="w-full bg-white/[0.05] border border-[#1e293b] rounded-lg px-3 py-1.5 text-sm text-white focus:border-[#FFD700] focus:outline-none resize-none"
+                            placeholder={t.commentPlaceholder}
+                          />
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <Button size="sm" onClick={handleSaveTask}>
+                            <Check size={14} />
+                            {t.save}
+                          </Button>
+                          <Button variant="secondary" size="sm" onClick={handleCancelEdit}>
+                            <X size={14} />
+                            {t.cancel}
+                          </Button>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          </Card>
+        );
+      })()}
+
+      {/* G. Export section */}
       <Card className="text-center py-8">
         <h3 className="font-bold mb-4">{t.exportPlan}</h3>
         <div className="flex items-center justify-center gap-4">
           <Button variant="secondary" onClick={handleDownloadHtml}>
             <FileText size={16} />
             {t.downloadHtml}
+          </Button>
+          <Button variant="secondary" onClick={handleExportAllIcs}>
+            <CalendarPlus size={16} />
+            {t.exportAllToCalendar}
           </Button>
           <Button onClick={handleDownloadPdf}>
             <Download size={16} />
