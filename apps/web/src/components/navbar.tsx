@@ -31,19 +31,7 @@ import {
 } from "lucide-react";
 import { locales, type Locale } from "@/i18n/config";
 import { appDict } from "@/i18n/app-dict";
-
-function useNavLocale() {
-  const [locale, setLocale] = useState<Locale>("en");
-  useEffect(() => {
-    const match = document.cookie.match(/NEXT_LOCALE=(\w+)/);
-    if (match && locales.includes(match[1] as Locale)) {
-      setLocale(match[1] as Locale);
-    } else {
-      setLocale("en");
-    }
-  }, []);
-  return locale;
-}
+import { useLocale } from "@/lib/useLocale";
 
 function getNavGroups(t: Record<string, string>) {
   return [
@@ -97,7 +85,7 @@ export function Navbar() {
   const [scrolled, setScrolled] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(true);
-  const locale = useNavLocale();
+  const locale = useLocale();
   const t = appDict.nav[locale] ?? appDict.nav.en;
   const navGroups = useMemo(() => getNavGroups(t), [t]);
 
@@ -107,15 +95,7 @@ export function Navbar() {
     return () => window.removeEventListener("scroll", onScroll);
   }, []);
 
-  // Detect current locale from URL
-  const currentLang = useMemo(() => {
-    for (const loc of locales) {
-      if (pathname.startsWith(`/${loc}/`) || pathname === `/${loc}`) {
-        return loc;
-      }
-    }
-    return "en";
-  }, [pathname]);
+  // locale is from Context (useLocale) — no need to detect from URL
 
   // Check if we're on a localized LP page
   const isLocalizedLP = useMemo(() => {
@@ -152,7 +132,7 @@ export function Navbar() {
                 {mobileOpen ? <X size={20} /> : <Menu size={20} />}
               </button>
             )}
-            <Link href={isLocalizedLP ? `/${currentLang}` : "/"} className="flex items-center gap-2.5 font-bold text-white">
+            <Link href={isLocalizedLP ? `/${locale}` : "/"} className="flex items-center gap-2.5 font-bold text-white">
               <Logo size={28} />
               <span>FaultRay</span>
             </Link>
@@ -201,7 +181,7 @@ export function Navbar() {
                   GitHub
                 </Link>
                 <div className="ml-2">
-                  <NavLanguageSwitcher currentLang={currentLang} />
+                  <NavLanguageSwitcher />
                 </div>
                 {user ? (
                   <Link href="/dashboard">
@@ -249,7 +229,7 @@ export function Navbar() {
               Sign In
             </Link>
             <div className="px-3 py-2.5">
-              <NavLanguageSwitcher currentLang={currentLang} />
+              <NavLanguageSwitcher />
             </div>
           </div>
         )}

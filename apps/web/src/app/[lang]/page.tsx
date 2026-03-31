@@ -901,7 +901,7 @@ export default async function LangHomePage({
                 </li>
               </ul>
               <div className="mt-6">
-                <LanguageSwitcher currentLang={lang} />
+                <LanguageSwitcher />
               </div>
             </div>
           </div>

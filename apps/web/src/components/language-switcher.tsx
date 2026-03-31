@@ -1,7 +1,8 @@
 "use client";
 
-import { useRouter, usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { locales, type Locale } from "@/i18n/config";
+import { useLocale, useSetLocale } from "@/lib/useLocale";
 
 const languageNames: Record<Locale, string> = {
   en: "English",
@@ -14,41 +15,36 @@ const languageNames: Record<Locale, string> = {
   pt: "Português",
 };
 
-export function LanguageSwitcher({ currentLang }: { currentLang: string }) {
+export function LanguageSwitcher() {
+  const locale = useLocale();
+  const setLocale = useSetLocale();
   const router = useRouter();
   const pathname = usePathname();
 
   function switchLocale(newLocale: string) {
-    // Set cookie for persistence
-    document.cookie = `NEXT_LOCALE=${newLocale};path=/;max-age=31536000`;
+    setLocale(newLocale as Locale);
 
-    // Replace the locale segment in the current path
-    let newPath = pathname;
-    for (const locale of locales) {
-      if (pathname.startsWith(`/${locale}/`) || pathname === `/${locale}`) {
-        newPath = pathname.replace(`/${locale}`, `/${newLocale}`);
-        break;
+    // If on a locale-prefixed LP page, update the URL
+    for (const loc of locales) {
+      if (pathname.startsWith(`/${loc}/`) || pathname === `/${loc}`) {
+        const newPath = pathname.replace(`/${loc}`, `/${newLocale}`);
+        router.push(newPath);
+        return;
       }
     }
-
-    // If no locale prefix found in path, add one
-    if (newPath === pathname) {
-      newPath = `/${newLocale}${pathname}`;
-    }
-
-    router.push(newPath);
+    // App pages — no URL change needed, Context handles it
   }
 
   return (
     <div className="relative inline-block">
       <select
-        value={currentLang}
+        value={locale}
         onChange={(e) => switchLocale(e.target.value)}
         className="appearance-none bg-[#111827] border border-[#1e293b] text-[#94a3b8] text-sm rounded-lg px-3 py-1.5 pr-8 cursor-pointer hover:border-[#64748b] hover:text-white transition-colors focus:outline-none focus:border-[#FFD700]/50"
       >
-        {locales.map((locale) => (
-          <option key={locale} value={locale} className="bg-[#111827] text-[#e2e8f0]">
-            {languageNames[locale]}
+        {locales.map((l) => (
+          <option key={l} value={l} className="bg-[#111827] text-[#e2e8f0]">
+            {languageNames[l]}
           </option>
         ))}
       </select>
@@ -61,31 +57,26 @@ export function LanguageSwitcher({ currentLang }: { currentLang: string }) {
   );
 }
 
-export function NavLanguageSwitcher({ currentLang }: { currentLang: string }) {
+export function NavLanguageSwitcher() {
+  const locale = useLocale();
+  const setLocale = useSetLocale();
   const router = useRouter();
   const pathname = usePathname();
 
   function switchLocale(newLocale: string) {
-    document.cookie = `NEXT_LOCALE=${newLocale};path=/;max-age=31536000`;
+    setLocale(newLocale as Locale);
 
-    let newPath = pathname;
-    for (const locale of locales) {
-      if (pathname.startsWith(`/${locale}/`) || pathname === `/${locale}`) {
-        newPath = pathname.replace(`/${locale}`, `/${newLocale}`);
-        break;
+    for (const loc of locales) {
+      if (pathname.startsWith(`/${loc}/`) || pathname === `/${loc}`) {
+        router.push(pathname.replace(`/${loc}`, `/${newLocale}`));
+        return;
       }
     }
-
-    if (newPath === pathname) {
-      newPath = `/${newLocale}`;
-    }
-
-    router.push(newPath);
   }
 
   return (
     <select
-      value={currentLang}
+      value={locale}
       onChange={(e) => switchLocale(e.target.value)}
       className="appearance-none bg-transparent border border-[#1e293b] text-[#94a3b8] text-xs rounded-md px-2 py-1 pr-6 cursor-pointer hover:border-[#64748b] hover:text-white transition-colors focus:outline-none focus:border-[#FFD700]/50"
       style={{
@@ -94,9 +85,9 @@ export function NavLanguageSwitcher({ currentLang }: { currentLang: string }) {
         backgroundPosition: "right 4px center",
       }}
     >
-      {locales.map((locale) => (
-        <option key={locale} value={locale} className="bg-[#111827] text-[#e2e8f0]">
-          {languageNames[locale]}
+      {locales.map((l) => (
+        <option key={l} value={l} className="bg-[#111827] text-[#e2e8f0]">
+          {languageNames[l]}
         </option>
       ))}
     </select>
