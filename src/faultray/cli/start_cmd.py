@@ -329,8 +329,122 @@ def _handle_open_dashboard(con: Console) -> None:
         con.print("[dim]Try: faultray serve[/]")
 
 
+def _handle_apm_monitoring(con: Console) -> None:
+    """Choice 7: APM Monitoring — setup and status sub-menu."""
+    con.print(
+        Panel(
+            "[bold cyan]APM Monitoring[/]\n"
+            "[dim]Install once, monitor forever — real-time metrics, anomaly detection, topology auto-discovery\n"
+            "一度インストールするだけで永続監視 — リアルタイムメトリクス・異常検知・トポロジー自動検出[/]",
+            border_style="cyan",
+            title="📡 APM Agent",
+        )
+    )
+
+    con.print("\n[bold]APM Options / APMオプション:[/]\n")
+    sub = Table(show_header=False, box=None, padding=(0, 2))
+    sub.add_row("[cyan][1][/]", "⚡", "[bold]Quick Setup[/]",    "[dim]APMエージェントをインストール・起動 / Install and start agent[/]")
+    sub.add_row("[cyan][2][/]", "📈", "[bold]Check Status[/]",   "[dim]エージェント状態・メトリクス確認 / View agent status and metrics[/]")
+    sub.add_row("[cyan][3][/]", "🌐", "[bold]View Dashboard[/]", "[dim]WebUI でAPMを確認する方法 / How to access APM in web UI[/]")
+    con.print(sub)
+
+    apm_choice = Prompt.ask(
+        "\n[bold]Choose / 選択[/]",
+        choices=["1", "2", "3"],
+        default="1",
+    )
+
+    if apm_choice == "1":
+        # Quick Setup
+        con.print("\n[bold cyan]APM Quick Setup / クイックセットアップ[/]\n")
+        con.print("[dim]This will create an agent configuration and optionally start monitoring.[/]\n")
+
+        collector_url = Prompt.ask(
+            "Collector URL / コレクターURL",
+            default="http://localhost:8080",
+        )
+        api_key = Prompt.ask(
+            "API key (optional, press Enter to skip) / APIキー（任意）",
+            default="",
+        )
+        interval_str = Prompt.ask(
+            "Collection interval in seconds / 収集間隔（秒）",
+            default="15",
+        )
+        try:
+            interval = int(interval_str)
+        except ValueError:
+            interval = 15
+
+        con.print("\n[cyan]Installing APM agent configuration...[/]")
+        try:
+            from faultray.cli.apm_cmd import apm_install
+            apm_install(
+                collector_url=collector_url,
+                api_key=api_key,
+                config_dir=str(Path.home() / ".faultray"),
+                interval=interval,
+            )
+            con.print("\n[bold green]Configuration installed![/]")
+        except Exception as exc:
+            con.print(f"[red]Install failed: {exc}[/]")
+            con.print("[dim]Try: faultray apm install[/]")
+            return
+
+        start_now = Prompt.ask(
+            "\nStart agent now? / 今すぐ起動しますか？",
+            choices=["y", "n"],
+            default="y",
+        )
+        if start_now == "y":
+            con.print("\n[cyan]Starting APM agent in background...[/]")
+            con.print("[dim]Run [cyan]faultray apm status[/dim] to verify.[/]")
+            con.print("[dim]Run [cyan]faultray apm stop[/dim] to stop the agent.[/]")
+            con.print("\n[bold]Or use the interactive wizard:[/]")
+            con.print("  [cyan]faultray apm setup[/]")
+
+        con.print("\n[bold]Next steps / 次のステップ:[/]")
+        con.print("  [cyan]faultray apm status[/]           — Check agent status / 状態確認")
+        con.print("  [cyan]faultray apm agents[/]           — List all registered agents / エージェント一覧")
+        con.print("  [cyan]faultray apm metrics <id>[/]     — View metrics / メトリクス確認")
+        con.print("  [cyan]faultray apm alerts[/]           — View alerts / アラート確認")
+        con.print("  [cyan]faultray apm setup[/]            — Full interactive wizard / 詳細ウィザード")
+
+    elif apm_choice == "2":
+        # Check Status
+        con.print("\n[bold]APM Agent Status / APMエージェント状態[/]\n")
+        try:
+            from faultray.cli.apm_cmd import apm_status
+            apm_status(config=str(Path.home() / ".faultray" / "agent.yaml"))
+        except Exception as exc:
+            con.print(f"[yellow]Could not retrieve status: {exc}[/]")
+
+        con.print("\n[dim]Recent metrics require a running collector.[/]")
+        con.print("[dim]Run [cyan]faultray apm agents[/dim] to list registered agents.[/]")
+        con.print("[dim]Run [cyan]faultray apm metrics <agent-id>[/dim] to view metrics.[/]")
+
+    else:
+        # View Dashboard
+        con.print(
+            Panel(
+                "[bold]Access APM in the Web Dashboard / WebダッシュボードでAPMを確認[/]\n\n"
+                "1. Start the dashboard:\n"
+                "   [cyan]faultray serve[/]\n\n"
+                "2. Open your browser to:\n"
+                "   [cyan]http://localhost:8080[/]\n\n"
+                "3. Navigate to the [bold]APM[/bold] section in the sidebar\n\n"
+                "4. Or go directly to:\n"
+                "   [cyan]http://localhost:8080/apm[/]\n\n"
+                "[dim]The APM dashboard shows real-time metrics, agent topology,\n"
+                "anomaly alerts, and historical trends for all connected agents.[/]",
+                border_style="cyan",
+                title="APM Dashboard",
+            )
+        )
+
+
 def _handle_all_commands(con: Console) -> None:
-    """Choice 7: Show all available commands."""
+    """Choice 8: Show all available commands."""
     con.print("\n[bold]FaultRay — All Commands / 全コマンド一覧[/]\n")
 
     # Invoke --help via typer
@@ -387,6 +501,16 @@ def _print_command_summary(con: Console) -> None:
         ("faultray drift", "Infrastructure drift detection / ドリフト検出"),
         ("faultray predict", "Predictive analytics / 予測分析"),
         ("faultray fmea", "FMEA analysis / FMEA分析"),
+        # APM
+        ("faultray apm setup", "Interactive APM setup wizard / APMセットアップウィザード"),
+        ("faultray apm install", "Install APM agent config / APMエージェント設定"),
+        ("faultray apm start", "Start APM agent / APMエージェント起動"),
+        ("faultray apm stop", "Stop APM agent / APMエージェント停止"),
+        ("faultray apm status", "APM agent status / APMエージェント状態"),
+        ("faultray apm agents", "List registered agents / エージェント一覧"),
+        ("faultray apm metrics <id>", "Query agent metrics / メトリクス照会"),
+        ("faultray apm alerts", "View APM alerts / APMアラート確認"),
+        ("faultray apm help", "Detailed APM help / APM詳細ヘルプ"),
     ]
 
     for cmd, desc in rows:
@@ -428,12 +552,13 @@ def start() -> None:
     table.add_row("[cyan][4][/]", "🏗️ ", "[bold]Import Terraform[/]",      "[dim]既存のTerraform plan/stateをインポート / Import existing Terraform[/]")
     table.add_row("[cyan][5][/]", "✏️ ", "[bold]Write YAML[/]",            "[dim]インフラ構成をガイド付きで作成 / Guided infrastructure authoring[/]")
     table.add_row("[cyan][6][/]", "📊", "[bold]Open Dashboard[/]",         "[dim]WebブラウザでダッシュボードUI起動 / Launch web dashboard[/]")
-    table.add_row("[cyan][7][/]", "📚", "[bold]All Commands[/]",           "[dim]全コマンド一覧 / Full command reference[/]")
+    table.add_row("[cyan][7][/]", "📡", "[bold]APM Monitoring[/]",         "[dim]リアルタイム監視エージェント / Real-time metrics & anomaly detection[/]")
+    table.add_row("[cyan][8][/]", "📚", "[bold]All Commands[/]",           "[dim]全コマンド一覧 / Full command reference[/]")
     console.print(table)
 
     choice = Prompt.ask(
         "\n[bold]Choose / 選択[/]",
-        choices=["1", "2", "3", "4", "5", "6", "7"],
+        choices=["1", "2", "3", "4", "5", "6", "7", "8"],
         default="1",
     )
 
@@ -444,7 +569,8 @@ def start() -> None:
         "4": _handle_import_terraform,
         "5": _handle_write_yaml,
         "6": _handle_open_dashboard,
-        "7": _handle_all_commands,
+        "7": _handle_apm_monitoring,
+        "8": _handle_all_commands,
     }
 
     handler = handlers.get(choice)

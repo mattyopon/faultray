@@ -214,6 +214,64 @@ faultray compliance-monitor model.json --framework pci   # PCI DSS
 
 Tracks compliance trends over 90 days with automated drift detection.
 
+## APM — Application Performance Monitoring
+
+FaultRay includes a lightweight APM agent that collects real-time host metrics and feeds them to the FaultRay collector for anomaly detection, alerting, and topology-aware analysis.
+
+```bash
+# One-command interactive setup
+faultray apm setup
+
+# Or manual setup
+faultray apm install --collector http://localhost:8080
+faultray apm start
+faultray apm status
+```
+
+### Architecture
+
+```
+Your Hosts                          FaultRay Server
+┌────────────────────────────┐      ┌──────────────────────────────┐
+│  APM Agent  (each host)    │      │  Collector  faultray serve   │
+│  ─────────────────────     │      │  ─────────────────────────── │
+│  Collects every 15s:       │─────▶│  Time-Series DB              │
+│  • CPU utilization         │ HTTP │  Anomaly Detection (Z-score) │
+│  • Memory usage            │      │  Alert Rules Engine          │
+│  • Disk usage              │      │  Web Dashboard  :8080/apm    │
+│  • Network I/O             │      └──────────────────────────────┘
+│  • Process count           │
+│  • TCP connections         │
+└────────────────────────────┘
+```
+
+### Metrics Collected
+
+| Metric | Description |
+|---|---|
+| `cpu_percent` | CPU utilization across all cores |
+| `memory_percent` | RAM usage (used / total) |
+| `disk_percent` | Root disk usage |
+| `net_bytes_sent` | Network bytes sent |
+| `net_bytes_recv` | Network bytes received |
+| `process_count` | Number of running processes |
+| `tcp_connections` | Active TCP connections |
+
+### Integration with Simulation
+
+APM real-baseline data feeds directly into chaos simulations:
+
+```bash
+# Capture baseline metrics
+faultray apm metrics <agent-id> --json > baseline.json
+
+# Run simulation using real topology
+faultray simulate infra.yaml
+
+# Correlate simulation results with APM alerts
+faultray apm alerts --severity critical
+```
+
 ## Resilience Badge
 
 Show your infrastructure resilience score in your README:
@@ -259,6 +317,7 @@ faultray badge infra.yaml --url
 | **Terraform Integration** | Pre-apply impact analysis as a CI/CD gate |
 | **Third-Party Risk** | ICT concentration risk analysis (Herfindahl-Hirschman Index) |
 | **Multi-Framework Compliance** | SOC 2, ISO 27001, PCI DSS 4.0, NIST CSF, DORA, HIPAA, GDPR |
+| **APM Agent** | Install once, monitor forever — real-time metrics, anomaly detection, topology auto-discovery |
 | **100+ CLI Commands** | From `faultray demo` to `faultray war-room` |
 
 ## The 5-Layer Availability Model
