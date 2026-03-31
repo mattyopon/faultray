@@ -30,6 +30,7 @@ import {
   ChevronDown,
   ClipboardCheck,
   FileCheck,
+  Radio,
 } from "lucide-react";
 import { locales, type Locale } from "@/i18n/config";
 import { appDict } from "@/i18n/app-dict";
@@ -65,6 +66,12 @@ function getNavGroups(t: Record<string, string>) {
         { href: "/benchmark", label: t.benchmark, icon: Trophy },
         { href: "/remediation", label: t.remediationPlan, icon: ClipboardCheck },
         { href: "/evidence", label: t.evidence, icon: FileCheck },
+      ],
+    },
+    {
+      label: t.monitor,
+      items: [
+        { href: "/apm", label: t.apm, icon: Radio },
       ],
     },
     {

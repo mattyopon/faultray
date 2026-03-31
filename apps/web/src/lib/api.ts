@@ -268,6 +268,44 @@ export interface BenchmarkData {
   typical_sla: string;
 }
 
+export interface ApmAgent {
+  agent_id: string;
+  hostname: string;
+  ip_address: string;
+  status: string;
+  os_info: string;
+  last_seen: string;
+  cpu_percent?: number;
+  memory_percent?: number;
+  disk_percent?: number;
+}
+
+export interface ApmMetricPoint {
+  metric_name: string;
+  value: number;
+  sample_count: number;
+  bucket_epoch: number;
+}
+
+export interface ApmAlert {
+  id: string;
+  severity: string;
+  rule_name: string;
+  agent_id: string;
+  metric_name: string;
+  metric_value: number;
+  threshold: number;
+  fired_at: string;
+}
+
+export interface ApmStats {
+  total_agents: number;
+  active_agents: number;
+  total_metrics: number;
+  total_alerts: number;
+  db_size_mb: number;
+}
+
 export const api = {
   simulate: (data: { topology?: string; topology_yaml?: string; sample?: string }, token?: string) =>
     apiFetch<SimulationResult>("/api/simulate", {
@@ -393,4 +431,22 @@ export const api = {
       body: { plan },
       token,
     }),
+
+  getApmAgents: (token?: string) =>
+    apiFetch<ApmAgent[]>("/api/apm/agents", { token }),
+
+  getApmMetrics: (agentId: string, metric?: string, token?: string) =>
+    apiFetch<ApmMetricPoint[]>(
+      `/api/apm/agents/${agentId}/metrics${metric ? `?metric_name=${metric}` : ""}`,
+      { token }
+    ),
+
+  getApmAlerts: (severity?: string, token?: string) =>
+    apiFetch<ApmAlert[]>(
+      `/api/apm/alerts${severity ? `?severity=${severity}` : ""}`,
+      { token }
+    ),
+
+  getApmStats: (token?: string) =>
+    apiFetch<ApmStats>("/api/apm/stats", { token }),
 };
