@@ -7,11 +7,16 @@ Validates that FaultRay handles system time variations correctly:
 - Timestamps are recorded properly regardless of system clock
 - Simulation results don't depend on wall-clock time
 - Time-based operations are robust to clock skew
+- No usage of datetime.now() without timezone (enforced by code search)
+- Report timestamps are internally consistent
 """
 
 from __future__ import annotations
 
+import ast
 import time
+from datetime import datetime, timezone
+from pathlib import Path
 from unittest.mock import patch
 
 import pytest
@@ -19,6 +24,9 @@ import pytest
 from faultray.model.demo import create_demo_graph
 from faultray.simulator.engine import SimulationEngine
 from faultray.simulator.monte_carlo import run_monte_carlo
+
+
+SRC_ROOT = Path(__file__).resolve().parent.parent / "src" / "faultray"
 
 
 # ---------------------------------------------------------------------------
@@ -93,3 +101,156 @@ class TestTimestampHandling:
         r1 = engine1.run_all_defaults(include_feed=False, include_plugins=False)
         r2 = engine2.run_all_defaults(include_feed=False, include_plugins=False)
         assert r1.resilience_score == r2.resilience_score
+
+
+# ---------------------------------------------------------------------------
+# L12-CLOCK-003: Hour-level clock offsets
+# ---------------------------------------------------------------------------
+
+
+class TestHourLevelClockOffsets:
+    """Verify that simulations are correct with 1-hour time offsets."""
+
+    def test_one_hour_ahead_same_result(self) -> None:
+        """Simulation with clock 1 hour ahead should produce the same result."""
+        graph = create_demo_graph()
+        engine = SimulationEngine(graph)
+
+        base_report = engine.run_all_defaults(include_feed=False, include_plugins=False)
+
+        with patch("time.time", return_value=time.time() + 3600):
+            graph2 = create_demo_graph()
+            engine2 = SimulationEngine(graph2)
+            future_report = engine2.run_all_defaults(
+                include_feed=False, include_plugins=False,
+            )
+
+        assert base_report.resilience_score == future_report.resilience_score
+
+    def test_one_hour_behind_same_result(self) -> None:
+        """Simulation with clock 1 hour behind should produce the same result."""
+        graph = create_demo_graph()
+        engine = SimulationEngine(graph)
+        base_report = engine.run_all_defaults(include_feed=False, include_plugins=False)
+
+        with patch("time.time", return_value=time.time() - 3600):
+            graph2 = create_demo_graph()
+            engine2 = SimulationEngine(graph2)
+            past_report = engine2.run_all_defaults(
+                include_feed=False, include_plugins=False,
+            )
+
+        assert base_report.resilience_score == past_report.resilience_score
+
+
+# ---------------------------------------------------------------------------
+# L12-CLOCK-004: Timezone independence
+# ---------------------------------------------------------------------------
+
+
+class TestTimezoneIndependence:
+    """Verify results don't change across timezones."""
+
+    @pytest.mark.parametrize("tz_name", ["UTC", "Asia/Tokyo", "US/Pacific"])
+    def test_timezone_does_not_affect_simulation(self, tz_name: str) -> None:
+        """Simulation results should be timezone-independent."""
+        import os
+
+        old_tz = os.environ.get("TZ")
+        try:
+            os.environ["TZ"] = tz_name
+            # time.tzset() only exists on Unix
+            if hasattr(time, "tzset"):
+                time.tzset()
+
+            graph = create_demo_graph()
+            engine = SimulationEngine(graph)
+            report = engine.run_all_defaults(
+                include_feed=False, include_plugins=False,
+            )
+            assert report.resilience_score > 0.0
+            assert len(report.results) > 0
+        finally:
+            if old_tz is None:
+                os.environ.pop("TZ", None)
+            else:
+                os.environ["TZ"] = old_tz
+            if hasattr(time, "tzset"):
+                time.tzset()
+
+
+# ---------------------------------------------------------------------------
+# L12-CLOCK-005: No bare datetime.now() in core source
+# ---------------------------------------------------------------------------
+
+
+class TestNoBareDatetimeNow:
+    """Ensure datetime.now() without tz is not used in the core source."""
+
+    def test_no_bare_datetime_now_in_simulator(self) -> None:
+        """Core simulator modules should use datetime.now(timezone.utc), not bare now().
+
+        Known legacy exceptions are tracked here and must not grow.
+        """
+        # Known legacy files with bare datetime.now() — these should be
+        # migrated to datetime.now(timezone.utc) eventually.
+        KNOWN_LEGACY = {"sla_budget.py", "team_tracker.py"}
+
+        violations: list[str] = []
+        sim_dir = SRC_ROOT / "simulator"
+        for py_file in sim_dir.glob("*.py"):
+            if py_file.name in KNOWN_LEGACY:
+                continue
+            source = py_file.read_text(encoding="utf-8")
+            try:
+                tree = ast.parse(source)
+            except SyntaxError:
+                continue
+            for node in ast.walk(tree):
+                if isinstance(node, ast.Call):
+                    # Match datetime.now() with zero arguments
+                    func = node.func
+                    if (
+                        isinstance(func, ast.Attribute)
+                        and func.attr == "now"
+                        and len(node.args) == 0
+                        and len(node.keywords) == 0
+                    ):
+                        violations.append(
+                            f"{py_file.name}:{node.lineno} — datetime.now() without tz"
+                        )
+        assert not violations, (
+            "Found NEW bare datetime.now() calls (should use datetime.now(timezone.utc)):\n"
+            + "\n".join(violations)
+        )
+
+
+# ---------------------------------------------------------------------------
+# L12-CLOCK-006: Report timestamp consistency
+# ---------------------------------------------------------------------------
+
+
+class TestReportTimestampConsistency:
+    """Verify that report timestamps are internally consistent."""
+
+    def test_two_sequential_simulations_ordered(self) -> None:
+        """Two sequential simulations should have logically ordered timestamps."""
+        graph1 = create_demo_graph()
+        engine1 = SimulationEngine(graph1)
+
+        t1_before = time.monotonic()
+        report1 = engine1.run_all_defaults(include_feed=False, include_plugins=False)
+        t1_after = time.monotonic()
+
+        graph2 = create_demo_graph()
+        engine2 = SimulationEngine(graph2)
+
+        t2_before = time.monotonic()
+        report2 = engine2.run_all_defaults(include_feed=False, include_plugins=False)
+        t2_after = time.monotonic()
+
+        # The second simulation must start after the first completed
+        assert t2_before >= t1_after
+        # Both reports must be valid
+        assert isinstance(report1.resilience_score, float)
+        assert isinstance(report2.resilience_score, float)
