@@ -89,9 +89,10 @@ class APMAgent:
         # Main loop
         collect_task = asyncio.create_task(self._collect_loop())
         send_task = asyncio.create_task(self._send_loop())
+        discovery_task = asyncio.create_task(self._discovery_loop())
 
         try:
-            await asyncio.gather(collect_task, send_task)
+            await asyncio.gather(collect_task, send_task, discovery_task)
         except asyncio.CancelledError:
             pass
         finally:
@@ -232,6 +233,101 @@ class APMAgent:
         while self._running:
             await self._interruptible_sleep(self.config.send_interval_seconds)
             await self._flush_buffer()
+
+    async def _discovery_loop(self) -> None:
+        """Periodic auto-discovery + simulation loop.
+
+        Waits for the first two collection cycles to complete so that there is
+        live data available before the topology scan begins, then runs
+        discovery and (optionally) chaos simulation on the discovered graph.
+        The loop repeats every ``config.discovery_interval_seconds`` (default
+        3600 s / 1 h).
+        """
+        if not self.config.auto_simulate:
+            logger.debug("Auto-simulate disabled — discovery loop not started")
+            return
+
+        # Give the collection loop a head-start
+        await self._interruptible_sleep(self.config.collect_interval_seconds * 2)
+
+        while self._running:
+            try:
+                logger.info("Running auto-discovery...")
+                from faultray.apm.auto_discover import AutoDiscoverer
+
+                discoverer = AutoDiscoverer(
+                    cloud_provider=self.config.cloud_provider,
+                    cloud_config=self.config.cloud_config,
+                    model_output_path=self.config.model_output_path,
+                )
+                graph = discoverer.discover_all()
+
+                logger.info(
+                    "Running auto-simulation (%d components)...",
+                    len(graph.components),
+                )
+                from faultray.apm.auto_simulate import AutoSimulator
+                from dataclasses import asdict as _asdict
+
+                simulator = AutoSimulator(graph)
+                report = simulator.run()
+
+                # Log key findings
+                logger.info(
+                    "Simulation complete: score=%d/100, SPOFs=%d, critical=%d",
+                    int(report.score),
+                    len(report.spofs),
+                    report.critical_count,
+                )
+                for spof in report.spofs:
+                    logger.warning(
+                        "SPOF detected: %s (%s)", spof["id"], spof["type"]
+                    )
+
+                # Save report to disk
+                report_path = (
+                    Path(self.config.pid_file).parent / "auto-report.json"
+                )
+                import json as _json
+
+                report_path.parent.mkdir(parents=True, exist_ok=True)
+                report_path.write_text(
+                    _json.dumps(_asdict(report), indent=2), encoding="utf-8"
+                )
+                logger.debug("Auto-simulation report written to %s", report_path)
+
+                # Send report to collector (best-effort)
+                await self._send_report(report)
+
+            except Exception as exc:
+                logger.error(
+                    "Auto-discovery/simulation failed: %s", exc, exc_info=True
+                )
+
+            # Wait for next cycle
+            await self._interruptible_sleep(self.config.discovery_interval_seconds)
+
+    async def _send_report(self, report: object) -> None:
+        """Ship the auto-simulation report to the collector (best-effort).
+
+        Failures here are logged at DEBUG level and never propagate.
+        """
+        import json as _json
+        from dataclasses import asdict as _asdict
+
+        try:
+            payload = _asdict(report)  # type: ignore[arg-type]
+            async with httpx.AsyncClient(timeout=15.0) as client:
+                headers = {"Content-Type": "application/json"}
+                if self.config.api_key:
+                    headers["Authorization"] = f"Bearer {self.config.api_key}"
+                await client.post(
+                    f"{self.config.collector_url}/api/apm/simulation-report",
+                    content=_json.dumps(payload),
+                    headers=headers,
+                )
+        except Exception as exc:
+            logger.debug("Could not send simulation report to collector: %s", exc)
 
     async def _flush_buffer(self) -> None:
         """Send all buffered batches to the collector API."""

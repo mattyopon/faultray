@@ -245,6 +245,27 @@ class AgentConfig(BaseModel):
     log_level: str = "INFO"
     pid_file: str = "/var/run/faultray-agent.pid"
     log_file: str = "/var/log/faultray-agent.log"
+    # Auto-discovery + simulation settings
+    cloud_provider: str | None = Field(
+        default=None,
+        description='Cloud provider for discovery: "aws", "gcp", "azure", or None',
+    )
+    cloud_config: dict[str, Any] = Field(
+        default_factory=dict,
+        description="Provider-specific configuration (region, profile, project_id, etc.)",
+    )
+    discovery_interval_seconds: int = Field(
+        default=3600,
+        description="Interval between auto-discovery + simulation cycles (default: 1 hour)",
+    )
+    auto_simulate: bool = Field(
+        default=True,
+        description="Enable automatic chaos simulation after each discovery cycle",
+    )
+    model_output_path: str = Field(
+        default="",
+        description="Path for saving discovered model JSON (default: ~/.faultray/auto-model.json)",
+    )
 
 
 # ---------------------------------------------------------------------------

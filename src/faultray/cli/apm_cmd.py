@@ -8,6 +8,7 @@ Provides: install, start, stop, status, agents, metrics, alerts subcommands.
 
 from __future__ import annotations
 
+import json
 import os
 import signal
 import sys
@@ -498,6 +499,130 @@ def apm_alerts(
 # ---------------------------------------------------------------------------
 # Onboarding commands
 # ---------------------------------------------------------------------------
+
+
+@apm_app.command("report")
+def apm_report(
+    config: str = typer.Option(
+        str(Path.home() / ".faultray" / "agent.yaml"),
+        "--config",
+        "-f",
+        help="Path to agent config YAML (used to locate the report directory)",
+    ),
+    json_output: bool = typer.Option(False, "--json", help="Output raw JSON"),
+) -> None:
+    """Show the latest auto-discovery simulation report. / 自動シミュレーションレポートを表示。
+
+    Reads the most recent report written by the agent's discovery loop from
+    ``~/.faultray/auto-report.json`` (or the directory derived from the agent
+    config PID file location) and renders it as a Rich table.
+
+    エージェントの自動検出ループが書き込んだ最新レポートを読み込み、
+    Rich テーブルとして表示します。
+
+    Examples:
+        faultray apm report
+        faultray apm report --json
+        faultray apm report --config /etc/faultray/agent.yaml
+
+    See also:
+        faultray apm start   — Start the agent (generates reports periodically)
+        faultray apm status  — Check if agent is running
+    """
+    import yaml
+
+    # Determine report path from config
+    config_path = Path(config)
+    pid_file = str(Path.home() / ".faultray" / "agent.pid")
+
+    if config_path.exists():
+        with open(config_path) as f:
+            data = yaml.safe_load(f) or {}
+        pid_file = data.get("pid_file", pid_file)
+
+    report_path = Path(pid_file).parent / "auto-report.json"
+
+    if not report_path.exists():
+        console.print(
+            f"[yellow]No simulation report found at {report_path}.[/]\n"
+            "Start the agent and wait for the first discovery cycle to complete."
+        )
+        raise typer.Exit(1)
+
+    try:
+        report = json.loads(report_path.read_text(encoding="utf-8"))
+    except Exception as exc:
+        console.print(f"[red]Failed to read report: {exc}[/]")
+        raise typer.Exit(1)
+
+    if json_output:
+        console.print_json(data=report)
+        return
+
+    # Summary panel
+    score = report.get("score", 0)
+    avail = report.get("availability_estimate", "unknown")
+    ts = report.get("timestamp", "")[:19]
+    score_color = "green" if score >= 80 else ("yellow" if score >= 50 else "red")
+
+    console.print(
+        Panel(
+            f"[bold]Resilience Score:[/] [{score_color}]{score}/100[/]\n"
+            f"[bold]Availability Estimate:[/] {avail}\n"
+            f"[bold]Components Analyzed:[/] {report.get('components_analyzed', 0)}\n"
+            f"[bold]Dependencies Analyzed:[/] {report.get('dependencies_analyzed', 0)}\n"
+            f"[bold]Total Scenarios:[/] {report.get('total_scenarios', 0)}\n"
+            f"[bold]Critical:[/] [red]{report.get('critical_count', 0)}[/]   "
+            f"[bold]Warning:[/] [yellow]{report.get('warning_count', 0)}[/]\n"
+            f"[dim]Generated: {ts}[/]",
+            title="Auto-Simulation Report",
+            border_style=score_color,
+        )
+    )
+
+    # SPOFs table
+    spofs = report.get("spofs", [])
+    if spofs:
+        spof_table = Table(title="Single Points of Failure", show_header=True)
+        spof_table.add_column("Component ID", style="red")
+        spof_table.add_column("Name")
+        spof_table.add_column("Type")
+        spof_table.add_column("Replicas", justify="right")
+        spof_table.add_column("Dependents", justify="right")
+        for s in spofs:
+            spof_table.add_row(
+                s.get("id", ""),
+                s.get("name", ""),
+                s.get("type", ""),
+                str(s.get("replicas", 1)),
+                str(len(s.get("dependents", []))),
+            )
+        console.print(spof_table)
+    else:
+        console.print("[green]No single points of failure detected.[/]")
+
+    # Top risks table
+    top_risks = report.get("top_risks", [])
+    if top_risks:
+        risk_table = Table(title="Top Risk Scenarios", show_header=True)
+        risk_table.add_column("Scenario", width=35)
+        risk_table.add_column("Risk Score", justify="right")
+        risk_table.add_column("Critical", justify="center")
+        for r in top_risks:
+            critical_flag = "[red]YES[/]" if r.get("is_critical") else "[dim]no[/]"
+            risk_table.add_row(
+                r.get("scenario_name", ""),
+                f"{r.get('risk_score', 0):.2f}",
+                critical_flag,
+            )
+        console.print(risk_table)
+
+    # Recommendations
+    recs = report.get("recommendations", [])
+    if recs:
+        console.print("\n[bold cyan]Recommendations:[/]")
+        for i, rec in enumerate(recs, 1):
+            console.print(f"  {i}. {rec}")
 
 
 @apm_app.command("setup")
