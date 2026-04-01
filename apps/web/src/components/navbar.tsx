@@ -204,6 +204,15 @@ export function Navbar() {
     setMobileOpen(false);
   }, [pathname]);
 
+  // Set body data-app-page for CSS sidebar offset (prevents layout shift)
+  useEffect(() => {
+    if (isApp) {
+      document.body.setAttribute("data-app-page", sidebarOpen ? "true" : "collapsed");
+    } else {
+      document.body.removeAttribute("data-app-page");
+    }
+  }, [isApp, sidebarOpen]);
+
   return (
     <>
       {/* Top Navbar */}
@@ -424,20 +433,7 @@ export function Navbar() {
             </div>
           )}
 
-          {/* Content offset style for desktop sidebar */}
-          <style>{`
-            @media (min-width: 768px) {
-              main {
-                margin-left: ${sidebarOpen ? "14rem" : "4rem"} !important;
-                transition: margin-left 0.2s;
-              }
-              main > div[class*="max-w"] {
-                max-width: 100% !important;
-                padding-left: 1.5rem;
-                padding-right: 1.5rem;
-              }
-            }
-          `}</style>
+          {/* Sidebar offset managed via CSS in globals.css using data-app-page attribute */}
         </>
       )}
     </>

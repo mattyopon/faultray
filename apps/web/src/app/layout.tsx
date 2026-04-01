@@ -52,6 +52,17 @@ export default function RootLayout({
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
     >
       <body className="min-h-full flex flex-col">
+        {/* Inline script runs before React hydration — prevents layout shift */}
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `(function(){
+              var p=window.location.pathname;
+              var skip=['/','/login','/pricing','/en','/ja','/de','/fr','/zh','/ko','/es','/pt'];
+              var isApp=!skip.some(function(s){return p===s||p.startsWith(s+'/');});
+              if(isApp)document.body.setAttribute('data-app-page','true');
+            })();`,
+          }}
+        />
         <AuthProvider>
           <LocaleProvider>
             <Navbar />

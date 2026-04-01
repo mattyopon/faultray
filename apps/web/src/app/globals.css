@@ -206,3 +206,22 @@ body {
   background: radial-gradient(ellipse 600px 400px at 50% 40%, rgba(255, 215, 0, 0.06) 0%, transparent 70%);
   animation: heroGradient 8s ease infinite;
 }
+
+/* Sidebar layout — reserve space from first paint to prevent layout shift.
+   App pages (not /, /login, /pricing, /[lang]) get sidebar offset via
+   body[data-app-page] set by the Navbar component. */
+@media (min-width: 768px) {
+  body[data-app-page="true"] main {
+    margin-left: 14rem;
+    transition: margin-left 0.2s;
+  }
+  body[data-app-page="collapsed"] main {
+    margin-left: 4rem;
+    transition: margin-left 0.2s;
+  }
+  body[data-app-page] main > div {
+    max-width: 100% !important;
+    padding-left: 1.5rem;
+    padding-right: 1.5rem;
+  }
+}
