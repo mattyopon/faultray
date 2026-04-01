@@ -232,7 +232,9 @@ export function Navbar() {
 
           {/* Desktop nav for non-app pages */}
           <div className="hidden md:flex items-center gap-1">
-            {isApp && user ? (
+            {isApp && authLoading ? (
+              <div className="w-24" /> /* Empty placeholder during auth loading */
+            ) : isApp && user ? (
               <div className="flex items-center gap-2">
                 <span className="text-xs text-[#64748b] truncate max-w-[120px]">
                   {user.email}
