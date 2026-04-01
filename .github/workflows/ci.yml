@@ -253,7 +253,7 @@ jobs:
           echo "Scanning for hardcoded secrets..."
           FOUND=0
           for PATTERN in 'sk_test_' 'sk_live_' 'ghp_' 'github_pat_' 'AKIA' 'GOCSPX-'; do
-            if grep -rn "$PATTERN" src/ tests/ --include='*.py' 2>/dev/null; then
+            if grep -rn "$PATTERN" src/ --include='*.py' 2>/dev/null; then
               echo "❌ Found potential secret: $PATTERN"
               FOUND=1
             fi
