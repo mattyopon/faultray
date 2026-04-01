@@ -18,7 +18,10 @@
       "scenarios": "Escenarios",
       "engines": "Motores",
       "layers": "Capas",
-      "tests": "Pruebas"
+      "tests": "Pruebas",
+      "doraControls": "Controles DORA",
+      "dashboardPages": "Páginas del panel",
+      "languages": "Idiomas"
     },
     "cta": "Comenzar gratis",
     "demo": "Demo en vivo"
@@ -45,9 +48,20 @@
       "Límite de disponibilidad demostrado matemáticamente"
     ]
   },
+  "challenges": {
+    "heading": "Desafíos que Resolvemos",
+    "subheading": "FaultRay aborda las brechas operativas reales que mantienen despiertos a los equipos de ingeniería.",
+    "items": [
+      { "problem": "Gestión de infraestructura manual y dependiente de personas", "solution": "FaultRay automatiza el escaneo de topología y el análisis de resiliencia." },
+      { "problem": "IaC (Terraform) aún no adoptado", "solution": "FaultRay escanea automáticamente su infraestructura AWS / GCP / Azure existente sin necesitar configuración IaC." },
+      { "problem": "Requisitos de disponibilidad y auditoría post-IPO", "solution": "Demuestra automáticamente la conformidad DORA / SOC 2 con cadenas de evidencia generadas por máquina." },
+      { "problem": "Respuesta a incidentes ad hoc sin runbooks", "solution": "FaultRay genera automáticamente runbooks y scripts de remediación desde los resultados de simulación." },
+      { "problem": "Preparación para la gobernanza de IA no iniciada", "solution": "Comprobaciones de conformidad automatizadas METI / ISO 42001 con informes listos para auditoría." }
+    ]
+  },
   "features": {
     "heading": "Todo lo que Necesitas",
-    "subheading": "Seis pilares del chaos engineering sin riesgos",
+    "subheading": "Diez pilares del chaos engineering sin riesgos",
     "cards": [
       {
         "title": "100+ Motores de Simulación",
@@ -72,7 +86,11 @@
       {
         "title": "Integración de Feed de Seguridad",
         "desc": "Incorpora automáticamente datos CVE y feeds NVD para simular fallos en cascada desencadenados por vulnerabilidades."
-      }
+      },
+      { "title": "Monitoreo APM (tiempo real)", "desc": "Métricas de rendimiento en vivo, correlación de trazas y detección de anomalías — integrado en tu panel de resiliencia con 35+ vistas." },
+      { "title": "Gobernanza de IA (METI / ISO 42001)", "desc": "Comprobaciones automáticas de conformidad con las directrices METI y los requisitos ISO 42001. Demuestra un despliegue de IA responsable." },
+      { "title": "Remediación Autónoma", "desc": "Genera automáticamente runbooks, scripts de remediación y parches Terraform. Reduce el tiempo medio de reparación de horas a minutos." },
+      { "title": "35+ Páginas de Panel", "desc": "Panel web completo con editor de topología, explorador de escenarios, drill-down N-Layer, mapa de calor, informes DORA y resúmenes ejecutivos." }
     ]
   },
   "agentResilience": {

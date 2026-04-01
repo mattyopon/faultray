@@ -18,7 +18,10 @@
       "scenarios": "Scenarios",
       "engines": "Engines",
       "layers": "Layers",
-      "tests": "Tests"
+      "tests": "Tests",
+      "doraControls": "DORA Controls",
+      "dashboardPages": "Dashboard Pages",
+      "languages": "Languages"
     },
     "cta": "Get Started Free",
     "demo": "Live Demo"
@@ -45,9 +48,35 @@
       "Mathematically proven availability ceiling"
     ]
   },
+  "challenges": {
+    "heading": "Challenges We Solve",
+    "subheading": "FaultRay addresses the real operational gaps that keep engineering teams up at night.",
+    "items": [
+      {
+        "problem": "Manual, person-dependent infrastructure management",
+        "solution": "FaultRay automates topology scanning and resilience analysis — no tribal knowledge required."
+      },
+      {
+        "problem": "IaC (Terraform) not yet adopted",
+        "solution": "FaultRay auto-scans your existing AWS / GCP / Azure infrastructure without requiring any IaC setup."
+      },
+      {
+        "problem": "Post-IPO availability & audit requirements",
+        "solution": "Prove DORA / SOC 2 compliance automatically with machine-generated evidence trails."
+      },
+      {
+        "problem": "Ad-hoc incident response with no runbooks",
+        "solution": "FaultRay auto-generates runbooks and remediation scripts from simulation findings."
+      },
+      {
+        "problem": "AI governance readiness not started",
+        "solution": "Automated METI / ISO 42001 compliance checks with audit-ready reports."
+      }
+    ]
+  },
   "features": {
     "heading": "Everything You Need",
-    "subheading": "Six pillars of zero-risk chaos engineering",
+    "subheading": "Ten pillars of zero-risk chaos engineering",
     "cards": [
       {
         "title": "100+ Simulation Engines",
@@ -72,6 +101,22 @@
       {
         "title": "Security Feed Integration",
         "desc": "Automatically incorporate CVE data and NVD feeds to simulate vulnerability-triggered cascading failures."
+      },
+      {
+        "title": "APM Monitoring (Real-Time)",
+        "desc": "Live performance metrics, trace correlation, and anomaly detection — integrated directly into your resilience dashboard with 35+ monitoring views."
+      },
+      {
+        "title": "AI Governance (METI / ISO 42001)",
+        "desc": "Automated compliance checks against Japan's METI AI guidelines and ISO 42001 requirements. Prove responsible AI deployment with audit-ready evidence."
+      },
+      {
+        "title": "Autonomous Remediation",
+        "desc": "Auto-generate runbooks, remediation scripts, and Terraform patches from simulation findings. Reduce mean time to repair from hours to minutes."
+      },
+      {
+        "title": "35+ Dashboard Pages",
+        "desc": "Full-featured web dashboard with topology editor, scenario explorer, N-layer drill-down, heatmap, DORA reports, and executive summaries."
       }
     ]
   },

@@ -18,7 +18,10 @@
       "scenarios": "Szenarien",
       "engines": "Engines",
       "layers": "Schichten",
-      "tests": "Tests"
+      "tests": "Tests",
+      "doraControls": "DORA-Kontrollen",
+      "dashboardPages": "Dashboard-Seiten",
+      "languages": "Sprachen"
     },
     "cta": "Kostenlos starten",
     "demo": "Live-Demo"
@@ -45,9 +48,35 @@
       "Mathematisch bewiesene Verfügbarkeitsobergrenze"
     ]
   },
+  "challenges": {
+    "heading": "Herausforderungen, die wir lösen",
+    "subheading": "FaultRay adressiert die realen Betriebslücken, die Engineering-Teams nachts wachhalten.",
+    "items": [
+      {
+        "problem": "Manuelle, personenabhängige Infrastrukturverwaltung",
+        "solution": "FaultRay automatisiert Topologie-Scanning und Resilienzanalyse — kein Stammeswissen erforderlich."
+      },
+      {
+        "problem": "IaC (Terraform) noch nicht eingeführt",
+        "solution": "FaultRay scannt automatisch Ihre bestehende AWS / GCP / Azure-Infrastruktur — kein IaC-Setup erforderlich."
+      },
+      {
+        "problem": "Post-IPO Verfügbarkeits- und Auditanforderungen",
+        "solution": "DORA / SOC 2-Konformität automatisch mit maschinengenerierten Nachweisketten beweisen."
+      },
+      {
+        "problem": "Ad-hoc-Störungsreaktion ohne Runbooks",
+        "solution": "FaultRay generiert automatisch Runbooks und Remediation-Skripte aus Simulationsergebnissen."
+      },
+      {
+        "problem": "KI-Governance-Bereitschaft noch nicht begonnen",
+        "solution": "Automatisierte METI / ISO 42001-Konformitätsprüfungen mit prüfungsfertigen Berichten."
+      }
+    ]
+  },
   "features": {
     "heading": "Alles, was Sie brauchen",
-    "subheading": "Sechs Säulen des risikofreien Chaos-Engineering",
+    "subheading": "Zehn Säulen des risikofreien Chaos-Engineering",
     "cards": [
       {
         "title": "100+ Simulation Engines",
@@ -72,6 +101,22 @@
       {
         "title": "Security-Feed-Integration",
         "desc": "Automatische Einbindung von CVE-Daten und NVD-Feeds zur Simulation schwachstellenbedingter Kaskadenausfälle."
+      },
+      {
+        "title": "APM-Monitoring (Echtzeit)",
+        "desc": "Live-Performance-Metriken, Trace-Korrelation und Anomalieerkennung — integriert in Ihr Resilience-Dashboard mit 35+ Monitoring-Ansichten."
+      },
+      {
+        "title": "KI-Governance (METI / ISO 42001)",
+        "desc": "Automatische Compliance-Prüfungen gegen Japans METI-KI-Richtlinien und ISO 42001-Anforderungen. Verantwortungsvoller KI-Einsatz mit prüfungsfertigen Nachweisen belegen."
+      },
+      {
+        "title": "Autonome Behebung",
+        "desc": "Runbooks, Remediation-Skripte und Terraform-Patches automatisch aus Simulationsbefunden generieren. Mean Time to Repair von Stunden auf Minuten reduzieren."
+      },
+      {
+        "title": "35+ Dashboard-Seiten",
+        "desc": "Vollständiges Web-Dashboard mit Topologie-Editor, Szenario-Explorer, N-Layer-Drill-Down, Heatmap, DORA-Berichten und Management-Zusammenfassungen."
       }
     ]
   },

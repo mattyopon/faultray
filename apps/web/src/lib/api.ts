@@ -31,6 +31,60 @@ async function apiFetch<T>(path: string, options: ApiOptions = {}): Promise<T> {
   return res.json();
 }
 
+export interface CalcFactor {
+  name: string;
+  effect: string;
+  detail: string;
+}
+
+export interface CalcLayer {
+  name: string;
+  nines: number;
+  max_possible: number;
+  factors: CalcFactor[];
+}
+
+export interface CalculationEvidence {
+  layers: CalcLayer[];
+  bottleneck: string;
+  formula: string;
+}
+
+export interface CascadeTimelineEvent {
+  time: string;
+  event: string;
+  component: string;
+  type: "trigger" | "degradation" | "failure" | "cascade" | "outage" | "recovery";
+}
+
+export interface CascadeSimulation {
+  id: string;
+  trigger: string;
+  severity: string;
+  affected_components: number;
+  total_components: number;
+  blast_radius_percent: number;
+  estimated_recovery_minutes: number;
+  timeline: CascadeTimelineEvent[];
+}
+
+export interface SimulationScenario {
+  id: number;
+  name: string;
+  result: "PASSED" | "WARNING" | "CRITICAL";
+  risk_score: number;
+  affected: string[];
+}
+
+export interface SimulationLog {
+  total_scenarios: number;
+  passed: number;
+  critical: number;
+  warning: number;
+  duration_ms: number;
+  scenarios: SimulationScenario[];
+}
+
 export interface SimulationResult {
   overall_score: number;
   availability_estimate: string;
@@ -54,6 +108,9 @@ export interface SimulationResult {
     impact: string;
     effort: string;
   }>;
+  calculation_evidence?: CalculationEvidence;
+  cascade_simulations?: CascadeSimulation[];
+  simulation_log?: SimulationLog;
 }
 
 export interface SimulationRun {

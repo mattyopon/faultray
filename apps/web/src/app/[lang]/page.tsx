@@ -15,6 +15,10 @@ import {
   AlertTriangle,
   Layers,
   ExternalLink,
+  LineChart,
+  Cpu,
+  Wrench,
+  LayoutDashboard,
 } from "lucide-react";
 import { isValidLocale } from "@/i18n/config";
 import { getDictionary } from "@/i18n/get-dictionary";
@@ -68,7 +72,7 @@ function HeroTerminal() {
 /* ================================================================
    DATA — icons for features (order matches dictionary)
    ================================================================ */
-const featureIcons = [Activity, Boxes, Layers, Brain, FileCheck, Lock];
+const featureIcons = [Activity, Boxes, Layers, Brain, FileCheck, Lock, LineChart, Cpu, Wrench, LayoutDashboard];
 const agentFeatureIcons = [Bot, Shield, Boxes, AlertTriangle];
 
 /*
@@ -242,25 +246,30 @@ export default async function LangHomePage({
           </p>
 
           {/* Stats bar */}
-          <div className="flex items-center justify-center gap-8 md:gap-12 mb-10 text-sm">
+          <div className="flex flex-wrap items-center justify-center gap-6 md:gap-10 mb-10 text-sm">
             <div className="text-center">
               <div className="text-2xl font-extrabold text-[#FFD700]">2,000+</div>
               <div className="text-[#64748b]">{dict.hero.stats.scenarios}</div>
             </div>
-            <div className="w-px h-8 bg-[#1e293b]" />
+            <div className="w-px h-8 bg-[#1e293b] hidden md:block" />
             <div className="text-center">
-              <div className="text-2xl font-extrabold text-[#FFD700]">100+</div>
-              <div className="text-[#64748b]">{dict.hero.stats.engines}</div>
+              <div className="text-2xl font-extrabold text-[#FFD700]">52</div>
+              <div className="text-[#64748b]">{dict.hero.stats.doraControls}</div>
             </div>
-            <div className="w-px h-8 bg-[#1e293b]" />
+            <div className="w-px h-8 bg-[#1e293b] hidden md:block" />
             <div className="text-center">
-              <div className="text-2xl font-extrabold text-[#FFD700]">5</div>
-              <div className="text-[#64748b]">{dict.hero.stats.layers}</div>
+              <div className="text-2xl font-extrabold text-[#FFD700]">35+</div>
+              <div className="text-[#64748b]">{dict.hero.stats.dashboardPages}</div>
             </div>
-            <div className="w-px h-8 bg-[#1e293b]" />
+            <div className="w-px h-8 bg-[#1e293b] hidden md:block" />
             <div className="text-center">
-              <div className="text-2xl font-extrabold text-[#FFD700]">29,640</div>
+              <div className="text-2xl font-extrabold text-[#FFD700]">32,000+</div>
               <div className="text-[#64748b]">{dict.hero.stats.tests}</div>
+            </div>
+            <div className="w-px h-8 bg-[#1e293b] hidden md:block" />
+            <div className="text-center">
+              <div className="text-2xl font-extrabold text-[#FFD700]">8</div>
+              <div className="text-[#64748b]">{dict.hero.stats.languages}</div>
             </div>
           </div>
 
@@ -324,6 +333,32 @@ export default async function LangHomePage({
           </div>
         </div>
       </section>
+
+      {/* ===== CHALLENGES ===== */}
+      {dict.challenges && (
+        <section className="py-24 bg-[#0a0e1a]">
+          <div className="max-w-[1200px] mx-auto px-6">
+            <div className="text-center mb-14">
+              <h2 className="text-[clamp(1.75rem,4vw,2.5rem)] font-bold tracking-tight mb-3">{dict.challenges.heading}</h2>
+              <p className="text-lg text-[#94a3b8] max-w-[540px] mx-auto">{dict.challenges.subheading}</p>
+            </div>
+            <div className="space-y-4 max-w-[800px] mx-auto">
+              {(dict.challenges.items as Array<{ problem: string; solution: string }>).map((item, i) => (
+                <div key={i} className="grid md:grid-cols-2 gap-0 rounded-2xl overflow-hidden border border-[#1e293b]">
+                  <div className="flex items-start gap-3 p-5 bg-red-500/[0.03] border-b md:border-b-0 md:border-r border-[#1e293b]">
+                    <XIcon size={16} className="text-red-400 mt-0.5 shrink-0" />
+                    <p className="text-sm text-[#94a3b8]">{item.problem}</p>
+                  </div>
+                  <div className="flex items-start gap-3 p-5 bg-emerald-500/[0.03]">
+                    <Check size={16} className="text-emerald-400 mt-0.5 shrink-0" />
+                    <p className="text-sm text-[#94a3b8]">{item.solution}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </section>
+      )}
 
       {/* ===== FEATURES ===== */}
       <section id="features" className="py-24 bg-[#0f1424]">

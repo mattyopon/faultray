@@ -18,7 +18,10 @@
       "scenarios": "Scénarios",
       "engines": "Moteurs",
       "layers": "Couches",
-      "tests": "Tests"
+      "tests": "Tests",
+      "doraControls": "Contrôles DORA",
+      "dashboardPages": "Pages du tableau de bord",
+      "languages": "Langues"
     },
     "cta": "Commencer gratuitement",
     "demo": "Démo en direct"
@@ -45,9 +48,35 @@
       "Plafond de disponibilité prouvé mathématiquement"
     ]
   },
+  "challenges": {
+    "heading": "Les défis que nous résolvons",
+    "subheading": "FaultRay répond aux lacunes opérationnelles réelles qui empêchent les équipes d'ingénierie de dormir.",
+    "items": [
+      {
+        "problem": "Gestion manuelle et dépendante des personnes",
+        "solution": "FaultRay automatise le scanning de topologie et l'analyse de résilience — aucune connaissance tribale requise."
+      },
+      {
+        "problem": "IaC (Terraform) pas encore adopté",
+        "solution": "FaultRay scanne automatiquement votre infrastructure AWS / GCP / Azure existante sans nécessiter de configuration IaC."
+      },
+      {
+        "problem": "Exigences de disponibilité et d'audit post-IPO",
+        "solution": "Prouvez automatiquement la conformité DORA / SOC 2 avec des pistes de preuves générées par machine."
+      },
+      {
+        "problem": "Réponse aux incidents ad hoc sans runbooks",
+        "solution": "FaultRay génère automatiquement des runbooks et des scripts de remédiation à partir des résultats de simulation."
+      },
+      {
+        "problem": "Préparation à la gouvernance de l'IA non commencée",
+        "solution": "Vérifications de conformité automatisées METI / ISO 42001 avec des rapports prêts pour l'audit."
+      }
+    ]
+  },
   "features": {
     "heading": "Tout ce dont vous avez besoin",
-    "subheading": "Six piliers du Chaos Engineering sans risque",
+    "subheading": "Dix piliers du Chaos Engineering sans risque",
     "cards": [
       {
         "title": "100+ Simulation Engines",
@@ -72,6 +101,22 @@
       {
         "title": "Intégration des flux de sécurité",
         "desc": "Intégration automatique des données CVE et des flux NVD pour simuler les pannes en cascade déclenchées par des vulnérabilités."
+      },
+      {
+        "title": "Monitoring APM (temps réel)",
+        "desc": "Métriques de performance en direct, corrélation de traces et détection d'anomalies — intégrés dans votre tableau de bord de résilience avec 35+ vues de monitoring."
+      },
+      {
+        "title": "Gouvernance IA (METI / ISO 42001)",
+        "desc": "Vérifications automatiques de conformité aux directives IA du METI japonais et aux exigences ISO 42001. Prouvez un déploiement IA responsable avec des preuves prêtes pour l'audit."
+      },
+      {
+        "title": "Remédiation autonome",
+        "desc": "Génération automatique de runbooks, scripts de remédiation et correctifs Terraform à partir des résultats de simulation. Réduisez le temps de réparation moyen de quelques heures à quelques minutes."
+      },
+      {
+        "title": "35+ pages de tableau de bord",
+        "desc": "Tableau de bord web complet avec éditeur de topologie, explorateur de scénarios, drill-down N-Layer, heatmap, rapports DORA et résumés exécutifs."
       }
     ]
   },

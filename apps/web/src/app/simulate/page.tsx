@@ -4,7 +4,7 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useState, useRef, useEffect } from "react";
-import { api, type SimulationResult, type CloudSimulationResult, type Project } from "@/lib/api";
+import { api, type SimulationResult, type CloudSimulationResult, type Project, type CalculationEvidence, type CascadeSimulation, type SimulationLog } from "@/lib/api";
 import {
   Zap,
   Server,
@@ -25,6 +25,12 @@ import {
   Terminal,
   Radio,
   RefreshCw,
+  Download,
+  AlertTriangle,
+  Clock,
+  Layers,
+  Activity,
+  ChevronUp,
 } from "lucide-react";
 import Link from "next/link";
 import { useLocale } from "@/lib/useLocale";
@@ -124,6 +130,327 @@ function ScanPreview({ summary }: { summary: CloudSimulationResult["scan_summary
   );
 }
 
+// ---- Calculation Evidence Section ----
+function CalculationEvidencePanel({ evidence }: { evidence: CalculationEvidence }) {
+  const [open, setOpen] = useState(true);
+  const [expandedLayer, setExpandedLayer] = useState<string | null>(null);
+
+  const layerColors: Record<string, { bar: string; text: string; border: string; bg: string }> = {
+    Software: { bar: "bg-emerald-400", text: "text-emerald-400", border: "border-emerald-500/20", bg: "bg-emerald-500/5" },
+    Hardware: { bar: "bg-[#FFD700]", text: "text-[#FFD700]", border: "border-[#FFD700]/20", bg: "bg-[#FFD700]/5" },
+    Theoretical: { bar: "bg-blue-400", text: "text-blue-400", border: "border-blue-500/20", bg: "bg-blue-500/5" },
+  };
+
+  const bottleneckLayerName = evidence.bottleneck.split(" ")[0];
+
+  return (
+    <Card className="border-[#1e293b]">
+      <button
+        onClick={() => setOpen(!open)}
+        className="flex items-center justify-between w-full"
+      >
+        <div className="flex items-center gap-3">
+          <Layers size={18} className="text-[#FFD700]" />
+          <h3 className="text-base font-bold">Calculation Evidence</h3>
+        </div>
+        {open ? <ChevronUp size={16} className="text-[#64748b]" /> : <ChevronDown size={16} className="text-[#64748b]" />}
+      </button>
+
+      {open && (
+        <div className="mt-5 space-y-3">
+          {evidence.layers.map((layer) => {
+            const colors = layerColors[layer.name] ?? { bar: "bg-[#94a3b8]", text: "text-[#94a3b8]", border: "border-[#1e293b]", bg: "bg-white/[0.02]" };
+            const isBottleneck = layer.name === bottleneckLayerName;
+            const isExpanded = expandedLayer === layer.name;
+
+            return (
+              <div key={layer.name} className={`rounded-xl border ${isBottleneck ? "border-red-500/40 bg-red-500/[0.03]" : colors.border + " " + colors.bg} overflow-hidden`}>
+                <button
+                  onClick={() => setExpandedLayer(isExpanded ? null : layer.name)}
+                  className="w-full p-4 text-left"
+                >
+                  <div className="flex items-center justify-between mb-2">
+                    <div className="flex items-center gap-2">
+                      <span className={`text-sm font-semibold ${colors.text}`}>{layer.name}</span>
+                      {isBottleneck && (
+                        <span className="px-2 py-0.5 text-[0.6875rem] font-bold rounded-full bg-red-500/10 text-red-400">BOTTLENECK</span>
+                      )}
+                    </div>
+                    <div className="flex items-center gap-3">
+                      <span className={`text-sm font-mono font-bold ${colors.text}`}>{layer.nines.toFixed(2)} nines</span>
+                      <span className="text-xs text-[#64748b]">max {layer.max_possible.toFixed(2)}</span>
+                      {isExpanded ? <ChevronUp size={14} className="text-[#64748b]" /> : <ChevronDown size={14} className="text-[#64748b]" />}
+                    </div>
+                  </div>
+                  <div className="h-1.5 bg-white/5 rounded-full overflow-hidden">
+                    <div className={`h-full rounded-full ${colors.bar}`} style={{ width: `${(layer.nines / 7) * 100}%` }} />
+                  </div>
+                </button>
+
+                {isExpanded && (
+                  <div className="px-4 pb-4 space-y-2 border-t border-white/[0.05] pt-3">
+                    {layer.factors.map((factor, fi) => {
+                      const isPositive = factor.effect.startsWith("+");
+                      const isNegative = factor.effect.startsWith("-");
+                      return (
+                        <div key={fi} className="flex items-start justify-between gap-3 text-sm">
+                          <span className="text-[#94a3b8] flex-1">{factor.name}</span>
+                          <span className={`font-mono text-xs shrink-0 ${isPositive ? "text-emerald-400" : isNegative ? "text-red-400" : "text-[#64748b]"}`}>
+                            {factor.effect}
+                          </span>
+                          <span className="text-xs text-[#64748b] max-w-[180px] text-right">{factor.detail}</span>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+            );
+          })}
+
+          <div className="p-3 rounded-xl bg-white/[0.02] border border-[#1e293b]">
+            <p className="text-xs text-red-400 mb-2 font-medium">{evidence.bottleneck}</p>
+            <code className="text-xs font-mono text-emerald-400">{evidence.formula}</code>
+          </div>
+        </div>
+      )}
+    </Card>
+  );
+}
+
+// ---- Cascade Simulation Section ----
+function CascadeSimulationsPanel({ cascades }: { cascades: CascadeSimulation[] }) {
+  const [expandedId, setExpandedId] = useState<string | null>(cascades[0]?.id ?? null);
+
+  const eventTypeStyle: Record<string, { dot: string; label: string }> = {
+    trigger: { dot: "bg-red-500", label: "text-red-400" },
+    degradation: { dot: "bg-orange-400", label: "text-orange-400" },
+    failure: { dot: "bg-red-500", label: "text-red-400" },
+    cascade: { dot: "bg-orange-400", label: "text-orange-300" },
+    outage: { dot: "bg-red-600", label: "text-red-400" },
+    recovery: { dot: "bg-emerald-400", label: "text-emerald-400" },
+  };
+
+  const severityStyle = (s: string) =>
+    s === "CRITICAL" ? "bg-red-500/10 text-red-400 border-red-500/20" : "bg-orange-500/10 text-orange-400 border-orange-500/20";
+
+  return (
+    <Card className="border-[#1e293b]">
+      <div className="flex items-center gap-3 mb-5">
+        <Activity size={18} className="text-orange-400" />
+        <h3 className="text-base font-bold">Cascade Failure Simulation</h3>
+        <span className="text-xs text-[#64748b]">Top {cascades.length} scenarios</span>
+      </div>
+
+      <div className="space-y-3">
+        {cascades.map((cs) => (
+          <div key={cs.id} className="rounded-xl border border-[#1e293b] bg-[#111827] overflow-hidden">
+            <button
+              onClick={() => setExpandedId(expandedId === cs.id ? null : cs.id)}
+              className="w-full p-4 text-left"
+            >
+              <div className="flex items-start justify-between gap-3">
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2 mb-2 flex-wrap">
+                    <span className="text-xs font-mono text-[#64748b]">{cs.id}</span>
+                    <span className={`px-2 py-0.5 text-[0.6875rem] font-bold rounded-full border ${severityStyle(cs.severity)}`}>{cs.severity}</span>
+                  </div>
+                  <p className="text-sm font-medium text-white">{cs.trigger}</p>
+                </div>
+                <div className="flex flex-col items-end gap-1 shrink-0">
+                  <div className="flex items-center gap-1.5 text-xs text-red-400">
+                    <AlertTriangle size={12} />
+                    <span className="font-bold">{cs.blast_radius_percent}%</span>
+                    <span className="text-[#64748b]">blast radius</span>
+                  </div>
+                  <div className="flex items-center gap-1.5 text-xs text-[#64748b]">
+                    <Clock size={12} />
+                    <span>{cs.estimated_recovery_minutes}m recovery</span>
+                  </div>
+                  <div className="text-xs text-[#64748b]">{cs.affected_components}/{cs.total_components} components</div>
+                </div>
+              </div>
+              <div className="flex items-center justify-end mt-2">
+                {expandedId === cs.id ? <ChevronUp size={14} className="text-[#64748b]" /> : <ChevronDown size={14} className="text-[#64748b]" />}
+              </div>
+            </button>
+
+            {expandedId === cs.id && (
+              <div className="px-4 pb-4 border-t border-[#1e293b] pt-4">
+                <div className="relative">
+                  {cs.timeline.map((event, i) => {
+                    const style = eventTypeStyle[event.type] ?? { dot: "bg-[#64748b]", label: "text-[#94a3b8]" };
+                    const isLast = i === cs.timeline.length - 1;
+                    return (
+                      <div key={i} className="flex gap-3 mb-3 last:mb-0">
+                        <div className="flex flex-col items-center">
+                          <div className={`w-2.5 h-2.5 rounded-full mt-1 shrink-0 ${style.dot}`} />
+                          {!isLast && <div className="w-px flex-1 bg-[#1e293b] mt-1" />}
+                        </div>
+                        <div className="pb-1 min-w-0">
+                          <div className="flex items-baseline gap-2 flex-wrap">
+                            <span className="text-xs font-mono text-[#64748b] shrink-0">{event.time}</span>
+                            <span className="text-sm text-white">{event.event}</span>
+                          </div>
+                          <div className="flex items-center gap-2 mt-0.5">
+                            <span className={`text-xs font-mono ${style.label}`}>[{event.component}]</span>
+                            <span className="text-[0.6875rem] text-[#64748b] capitalize">{event.type}</span>
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+          </div>
+        ))}
+      </div>
+    </Card>
+  );
+}
+
+// ---- Simulation Log Section ----
+function SimulationLogPanel({ log }: { log: SimulationLog }) {
+  const [open, setOpen] = useState(false);
+  const [sortBy, setSortBy] = useState<"id" | "risk_score" | "result">("id");
+  const [sortDir, setSortDir] = useState<"asc" | "desc">("asc");
+
+  const toggleSort = (col: "id" | "risk_score" | "result") => {
+    if (sortBy === col) {
+      setSortDir(sortDir === "asc" ? "desc" : "asc");
+    } else {
+      setSortBy(col);
+      setSortDir(col === "risk_score" ? "desc" : "asc");
+    }
+  };
+
+  const sorted = [...log.scenarios].sort((a, b) => {
+    let diff = 0;
+    if (sortBy === "id") diff = a.id - b.id;
+    else if (sortBy === "risk_score") diff = a.risk_score - b.risk_score;
+    else if (sortBy === "result") {
+      const order = { CRITICAL: 0, WARNING: 1, PASSED: 2 };
+      diff = (order[a.result] ?? 3) - (order[b.result] ?? 3);
+    }
+    return sortDir === "asc" ? diff : -diff;
+  });
+
+  const resultBadge = (r: "PASSED" | "WARNING" | "CRITICAL") => {
+    if (r === "CRITICAL") return <span className="px-2 py-0.5 text-[0.6875rem] font-bold rounded-full bg-red-500/10 text-red-400">CRITICAL</span>;
+    if (r === "WARNING") return <span className="px-2 py-0.5 text-[0.6875rem] font-bold rounded-full bg-orange-500/10 text-orange-400">WARNING</span>;
+    return <span className="px-2 py-0.5 text-[0.6875rem] font-bold rounded-full bg-emerald-500/10 text-emerald-400">PASSED</span>;
+  };
+
+  const handleDownload = () => {
+    const blob = new Blob([JSON.stringify(log, null, 2)], { type: "application/json" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "faultray-simulation-log.json";
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
+  const SortIcon = ({ col }: { col: string }) => {
+    if (sortBy !== col) return <ChevronDown size={12} className="text-[#64748b] opacity-40" />;
+    return sortDir === "asc"
+      ? <ChevronUp size={12} className="text-[#FFD700]" />
+      : <ChevronDown size={12} className="text-[#FFD700]" />;
+  };
+
+  return (
+    <Card className="border-[#1e293b]">
+      <button
+        onClick={() => setOpen(!open)}
+        className="flex items-center justify-between w-full"
+      >
+        <div className="flex items-center gap-3">
+          <Activity size={18} className="text-blue-400" />
+          <h3 className="text-base font-bold">Simulation Log</h3>
+        </div>
+        <div className="flex items-center gap-3">
+          <span className="text-xs text-[#64748b]">
+            {log.total_scenarios} scenarios · {log.duration_ms}ms
+          </span>
+          {open ? <ChevronUp size={16} className="text-[#64748b]" /> : <ChevronDown size={16} className="text-[#64748b]" />}
+        </div>
+      </button>
+
+      {/* Summary bar always visible */}
+      <div className="mt-3 flex items-center gap-4 text-xs">
+        <span className="text-emerald-400 font-semibold">{log.passed} passed</span>
+        <span className="text-[#1e293b]">|</span>
+        <span className="text-red-400 font-semibold">{log.critical} critical</span>
+        <span className="text-[#1e293b]">|</span>
+        <span className="text-orange-400 font-semibold">{log.warning} warning</span>
+        <button
+          onClick={handleDownload}
+          className="ml-auto flex items-center gap-1.5 text-xs text-[#94a3b8] hover:text-white transition-colors"
+        >
+          <Download size={12} />
+          Download Full Log (JSON)
+        </button>
+      </div>
+
+      {open && (
+        <div className="mt-4 overflow-x-auto rounded-xl border border-[#1e293b]">
+          <table className="w-full min-w-[600px] border-collapse text-sm">
+            <thead>
+              <tr className="bg-[#0d1117]">
+                <th className="px-4 py-2.5 text-left text-xs font-semibold text-[#64748b]">
+                  <button onClick={() => toggleSort("id")} className="flex items-center gap-1 hover:text-white transition-colors">
+                    # <SortIcon col="id" />
+                  </button>
+                </th>
+                <th className="px-4 py-2.5 text-left text-xs font-semibold text-[#64748b]">Scenario Name</th>
+                <th className="px-4 py-2.5 text-left text-xs font-semibold text-[#64748b]">
+                  <button onClick={() => toggleSort("result")} className="flex items-center gap-1 hover:text-white transition-colors">
+                    Result <SortIcon col="result" />
+                  </button>
+                </th>
+                <th className="px-4 py-2.5 text-left text-xs font-semibold text-[#64748b]">
+                  <button onClick={() => toggleSort("risk_score")} className="flex items-center gap-1 hover:text-white transition-colors">
+                    Risk Score <SortIcon col="risk_score" />
+                  </button>
+                </th>
+                <th className="px-4 py-2.5 text-left text-xs font-semibold text-[#64748b]">Affected</th>
+              </tr>
+            </thead>
+            <tbody>
+              {sorted.map((s, i) => (
+                <tr key={s.id} className={i < sorted.length - 1 ? "border-b border-[#1e293b]" : ""}>
+                  <td className="px-4 py-2.5 font-mono text-xs text-[#64748b]">{s.id}</td>
+                  <td className="px-4 py-2.5 text-[#94a3b8] max-w-[280px]">{s.name}</td>
+                  <td className="px-4 py-2.5">{resultBadge(s.result)}</td>
+                  <td className="px-4 py-2.5 font-mono text-sm">
+                    <span className={s.risk_score >= 8 ? "text-red-400" : s.risk_score >= 5 ? "text-orange-400" : "text-emerald-400"}>
+                      {s.risk_score.toFixed(1)}
+                    </span>
+                    <span className="text-[#64748b] text-xs">/10</span>
+                  </td>
+                  <td className="px-4 py-2.5">
+                    {s.affected.length === 0 ? (
+                      <span className="text-xs text-[#64748b]">none</span>
+                    ) : (
+                      <span className="text-xs text-[#94a3b8]">{s.affected.join(", ")}</span>
+                    )}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+          {log.total_scenarios > log.scenarios.length && (
+            <div className="px-4 py-2.5 bg-[#0d1117] border-t border-[#1e293b] text-xs text-[#64748b] text-center">
+              Showing first {log.scenarios.length} of {log.total_scenarios} scenarios. Download full log for all results.
+            </div>
+          )}
+        </div>
+      )}
+    </Card>
+  );
+}
+
 function ResultsPanel({ result, scanSummary }: { result: SimulationResult; scanSummary?: CloudSimulationResult["scan_summary"] }) {
   const scoreColor = result.overall_score >= 90 ? "text-emerald-400" : result.overall_score >= 70 ? "text-[#FFD700]" : "text-red-400";
 
@@ -131,6 +458,7 @@ function ResultsPanel({ result, scanSummary }: { result: SimulationResult; scanS
     <div className="space-y-6">
       {scanSummary && <ScanPreview summary={scanSummary} />}
 
+      {/* Core score card */}
       <Card className="border-emerald-500/20">
         <div className="flex items-center gap-4 mb-6">
           <CheckCircle2 size={24} className="text-emerald-400" />
@@ -198,6 +526,21 @@ function ResultsPanel({ result, scanSummary }: { result: SimulationResult; scanS
           <Link href="/suggestions"><Button variant="secondary" size="sm">View Suggestions <ArrowRight size={14} /></Button></Link>
         </div>
       </Card>
+
+      {/* Calculation Evidence */}
+      {result.calculation_evidence && (
+        <CalculationEvidencePanel evidence={result.calculation_evidence} />
+      )}
+
+      {/* Cascade Simulations */}
+      {result.cascade_simulations && result.cascade_simulations.length > 0 && (
+        <CascadeSimulationsPanel cascades={result.cascade_simulations} />
+      )}
+
+      {/* Simulation Log */}
+      {result.simulation_log && (
+        <SimulationLogPanel log={result.simulation_log} />
+      )}
     </div>
   );
 }
@@ -268,6 +611,119 @@ const DEMO_RESULT: SimulationResult = {
     { title: "Add database read replica", description: "Implement a read replica to handle failover scenarios", impact: "+0.5 nines", effort: "Medium" },
     { title: "Implement circuit breaker", description: "Add circuit breaker pattern for cascading failure protection", impact: "+0.3 nines", effort: "Low" },
   ],
+  calculation_evidence: {
+    layers: [
+      {
+        name: "Software",
+        nines: 4.0,
+        max_possible: 4.21,
+        factors: [
+          { name: "Replica redundancy", effect: "+0.30 nines", detail: "2x replicas on app_server" },
+          { name: "No automatic failover", effect: "-0.21 nines", detail: "database has no automatic failover" },
+          { name: "Health check interval", effect: "-0.10 nines", detail: "60s interval is too slow" },
+        ],
+      },
+      {
+        name: "Hardware",
+        nines: 5.91,
+        max_possible: 6.06,
+        factors: [
+          { name: "Multi-zone deployment", effect: "+0.50 nines", detail: "Components spread across AZs" },
+          { name: "Storage redundancy", effect: "+0.20 nines", detail: "Replicated storage detected" },
+          { name: "Single region", effect: "-0.15 nines", detail: "No cross-region failover configured" },
+        ],
+      },
+      {
+        name: "Theoretical",
+        nines: 6.65,
+        max_possible: 6.70,
+        factors: [
+          { name: "Markov chain steady-state", effect: "+0.80 nines", detail: "MTBF/MTTR ratio is favorable" },
+          { name: "Reliability block diagram", effect: "+0.30 nines", detail: "Parallel paths increase ceiling" },
+          { name: "Correlated failure risk", effect: "-0.05 nines", detail: "Shared dependencies reduce independence" },
+        ],
+      },
+    ],
+    bottleneck: "Software layer limits overall availability",
+    formula: "Availability = min(SW, HW, TH) = min(4.0, 5.91, 6.65) = 4.0 nines",
+  },
+  cascade_simulations: [
+    {
+      id: "CS-001",
+      trigger: "Primary database disk I/O saturation",
+      severity: "CRITICAL",
+      affected_components: 5,
+      total_components: 9,
+      blast_radius_percent: 56,
+      estimated_recovery_minutes: 12,
+      timeline: [
+        { time: "T+0:00", event: "DB disk I/O reaches 100%", component: "db_primary", type: "trigger" },
+        { time: "T+0:30", event: "Query latency exceeds 5s", component: "db_primary", type: "degradation" },
+        { time: "T+1:00", event: "Connection pool exhausted (200/200)", component: "db_primary", type: "failure" },
+        { time: "T+1:15", event: "API server health check fails", component: "api", type: "cascade" },
+        { time: "T+1:30", event: "Background workers queue backlog", component: "worker", type: "cascade" },
+        { time: "T+2:00", event: "Load balancer marks API unhealthy", component: "gateway", type: "cascade" },
+        { time: "T+5:00", event: "Full service outage", component: "all", type: "outage" },
+        { time: "T+12:00", event: "DB disk cleared, service restored", component: "all", type: "recovery" },
+      ],
+    },
+    {
+      id: "CS-002",
+      trigger: "Cache cluster memory saturation",
+      severity: "HIGH",
+      affected_components: 3,
+      total_components: 9,
+      blast_radius_percent: 33,
+      estimated_recovery_minutes: 8,
+      timeline: [
+        { time: "T+0:00", event: "Cache memory reaches 95%", component: "cache", type: "trigger" },
+        { time: "T+0:20", event: "Cache eviction rate spikes", component: "cache", type: "degradation" },
+        { time: "T+1:00", event: "API response times increase 3x", component: "api", type: "cascade" },
+        { time: "T+2:30", event: "Increased DB load from cache misses", component: "db_primary", type: "cascade" },
+        { time: "T+8:00", event: "Cache scaled and warmed up", component: "cache", type: "recovery" },
+      ],
+    },
+    {
+      id: "CS-003",
+      trigger: "Network partition between availability zones",
+      severity: "HIGH",
+      affected_components: 4,
+      total_components: 9,
+      blast_radius_percent: 44,
+      estimated_recovery_minutes: 5,
+      timeline: [
+        { time: "T+0:00", event: "AZ-B network unreachable", component: "gateway", type: "trigger" },
+        { time: "T+0:15", event: "Replica nodes lose quorum", component: "db_replica", type: "degradation" },
+        { time: "T+0:45", event: "Read traffic fails for 50% of requests", component: "api", type: "cascade" },
+        { time: "T+1:00", event: "Auth service in AZ-B down", component: "auth", type: "cascade" },
+        { time: "T+5:00", event: "Network restored, replicas re-sync", component: "all", type: "recovery" },
+      ],
+    },
+  ],
+  simulation_log: {
+    total_scenarios: 152,
+    passed: 147,
+    critical: 3,
+    warning: 7,
+    duration_ms: 1230,
+    scenarios: [
+      { id: 1, name: "Single node: db_primary failure", result: "CRITICAL", risk_score: 8.5, affected: ["api", "worker", "gateway"] },
+      { id: 2, name: "Single node: cache failure", result: "WARNING", risk_score: 5.2, affected: ["api"] },
+      { id: 3, name: "Single node: gateway failure", result: "PASSED", risk_score: 1.0, affected: [] },
+      { id: 4, name: "Cascading: db_primary → api → worker", result: "CRITICAL", risk_score: 9.1, affected: ["api", "worker", "gateway", "cdn"] },
+      { id: 5, name: "Partition: AZ-B network loss", result: "WARNING", risk_score: 6.3, affected: ["db_replica", "auth"] },
+      { id: 6, name: "Resource: cache memory exhaustion", result: "WARNING", risk_score: 5.8, affected: ["api", "db_primary"] },
+      { id: 7, name: "Single node: cdn failure", result: "PASSED", risk_score: 0.5, affected: [] },
+      { id: 8, name: "Cascading: auth → gateway", result: "CRITICAL", risk_score: 8.2, affected: ["gateway", "api"] },
+      { id: 9, name: "Single node: worker failure", result: "WARNING", risk_score: 4.1, affected: ["worker"] },
+      { id: 10, name: "Single node: auth failure", result: "WARNING", risk_score: 4.8, affected: ["api"] },
+      { id: 11, name: "Single node: db_replica failure", result: "PASSED", risk_score: 2.0, affected: [] },
+      { id: 12, name: "Resource: cpu saturation on api", result: "WARNING", risk_score: 5.5, affected: ["api", "worker"] },
+      { id: 13, name: "Latency: db_primary response > 10s", result: "WARNING", risk_score: 6.0, affected: ["api", "worker"] },
+      { id: 14, name: "Single node: api failure (1 replica)", result: "PASSED", risk_score: 1.5, affected: [] },
+      { id: 15, name: "Single node: api failure (2 replicas)", result: "PASSED", risk_score: 0.8, affected: [] },
+    ],
+  },
 };
 
 export default function SimulatePage() {
