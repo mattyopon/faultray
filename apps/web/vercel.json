@@ -21,6 +21,10 @@
     {
       "source": "/api/health",
       "destination": "/api/chat"
+    },
+    {
+      "source": "/api/governance",
+      "destination": "/api/compliance"
     }
   ]
 }
