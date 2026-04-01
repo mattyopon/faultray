@@ -279,30 +279,106 @@ function buildRemediationData(sim: SimulationResult): RemediationData {
     startWeek += effortWeeks;
   }
 
-  // If total score impact doesn't reach 100, add a general hardening action
+  // If total score impact doesn't reach 100, add specific hardening tasks
   const totalImpact = actions.reduce((sum, a) => sum + a.scoreImpact, 0);
   if (score + totalImpact < 95 && actions.length < 20) {
     const gap = 100 - (score + totalImpact);
-    actions.push({
-      id: id++,
-      titleKey: "general_hardening",
-      title: {
-        en: "General infrastructure hardening",
-        ja: "インフラ全般の堅牢化",
-        de: "Allgemeine Infrastruktur-Härtung",
-        fr: "Renforcement général de l'infrastructure",
-        zh: "基础设施全面加固",
-        ko: "인프라 전반 강화",
-        es: "Endurecimiento general de infraestructura",
-        pt: "Endurecimento geral da infraestrutura",
+    // Break gap into 4 specific tasks proportionally
+    const tlsShare = Math.round(gap * 0.23 * 10) / 10;
+    const netShare = Math.round(gap * 0.23 * 10) / 10;
+    const drShare = Math.round(gap * 0.31 * 10) / 10;
+    const monShare = Math.round((gap - tlsShare - netShare - drShare) * 10) / 10;
+
+    const hardeningTasks: ActionItem[] = [
+      {
+        id: id++,
+        titleKey: "tls_encryption",
+        title: {
+          en: "Enable encryption in transit (TLS)",
+          ja: "転送中の暗号化を有効化 (TLS)",
+          de: "Verschlüsselung im Transit aktivieren (TLS)",
+          fr: "Activer le chiffrement en transit (TLS)",
+          zh: "启用传输加密 (TLS)",
+          ko: "전송 중 암호화 활성화 (TLS)",
+          es: "Habilitar cifrado en tránsito (TLS)",
+          pt: "Habilitar criptografia em trânsito (TLS)",
+        },
+        priority: "medium",
+        effortWeeks: 1,
+        costEur: 5000,
+        scoreImpact: tlsShare,
+        doraImpact: Math.round(tlsShare * 0.7),
+        startWeek,
       },
-      priority: "medium",
-      effortWeeks: 4,
-      costEur: 20000,
-      scoreImpact: Math.round(gap * 10) / 10,
-      doraImpact: Math.round(gap * 0.7),
-      startWeek,
-    });
+      {
+        id: id++,
+        titleKey: "network_segmentation",
+        title: {
+          en: "Add network segmentation",
+          ja: "ネットワークセグメンテーションの導入",
+          de: "Netzwerksegmentierung hinzufügen",
+          fr: "Ajouter la segmentation réseau",
+          zh: "添加网络分段",
+          ko: "네트워크 세분화 추가",
+          es: "Agregar segmentación de red",
+          pt: "Adicionar segmentação de rede",
+        },
+        priority: "medium",
+        effortWeeks: 1,
+        costEur: 7000,
+        scoreImpact: netShare,
+        doraImpact: Math.round(netShare * 0.7),
+        startWeek: startWeek + 1,
+      },
+      {
+        id: id++,
+        titleKey: "dr_testing",
+        title: {
+          en: "Implement automated DR testing",
+          ja: "自動化されたDRテストの実装",
+          de: "Automatisiertes DR-Testing implementieren",
+          fr: "Mettre en œuvre les tests DR automatisés",
+          zh: "实施自动化灾难恢复测试",
+          ko: "자동화된 DR 테스트 구현",
+          es: "Implementar pruebas de DR automatizadas",
+          pt: "Implementar testes de DR automatizados",
+        },
+        priority: "medium",
+        effortWeeks: 2,
+        costEur: 10000,
+        scoreImpact: drShare,
+        doraImpact: Math.round(drShare * 0.7),
+        startWeek: startWeek + 2,
+      },
+      {
+        id: id++,
+        titleKey: "comprehensive_monitoring",
+        title: {
+          en: "Add comprehensive monitoring",
+          ja: "包括的なモニタリングの追加",
+          de: "Umfassendes Monitoring hinzufügen",
+          fr: "Ajouter une surveillance complète",
+          zh: "添加全面监控",
+          ko: "포괄적 모니터링 추가",
+          es: "Agregar monitoreo completo",
+          pt: "Adicionar monitoramento abrangente",
+        },
+        priority: "medium",
+        effortWeeks: 1,
+        costEur: 8000,
+        scoreImpact: monShare,
+        doraImpact: Math.round(monShare * 0.7),
+        startWeek: startWeek + 4,
+      },
+    ];
+
+    // Only add tasks that contribute meaningfully (>0 score impact)
+    for (const task of hardeningTasks) {
+      if (task.scoreImpact > 0 && actions.length < 20) {
+        actions.push(task);
+      }
+    }
+
   }
 
   return { score, doraCompliance, availability: sim.availability_estimate, actions };
@@ -319,8 +395,20 @@ function calcProjectedDora(data: RemediationData): number {
 }
 
 function calcAnnualDowntimeCost(score: number): number {
-  // Industry benchmark: base cost per point below 100
-  return Math.round(((100 - score) / 100) * 500000 * 8.76) / 100 * 100;
+  // Map score to availability nines:
+  // 95+ → 4 nines (99.99%), 90-94 → 3.5 nines, 80-89 → 3 nines (99.9%), 70-79 → 2.5 nines, <70 → 2 nines (99%)
+  let nines: number;
+  if (score >= 95) nines = 4.0;
+  else if (score >= 90) nines = 3.5;
+  else if (score >= 80) nines = 3.0;
+  else if (score >= 70) nines = 2.5;
+  else nines = 2.0;
+
+  const availability = 1 - Math.pow(10, -nines);
+  const downtimeHours = 8760 * (1 - availability);
+  // Industry average revenue impact: €15,000/hour
+  const costPerHour = 15000;
+  return Math.round(downtimeHours * costPerHour);
 }
 
 function calcDowntimePerHour(score: number): number {

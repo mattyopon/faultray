@@ -79,11 +79,7 @@ const RECOMMENDATIONS: {
   },
 ];
 
-const CATEGORY_LABELS: Record<RecoCategory, string> = {
-  "right-sizing": "Right-Sizing",
-  "idle": "Idle Resource",
-  "reserved": "Reserved Instance",
-};
+// Category labels are resolved from i18n keys at render time
 
 const CATEGORY_COLORS: Record<RecoCategory, string> = {
   "right-sizing": "#3b82f6",
@@ -100,7 +96,14 @@ const EFFORT_COLORS: Record<Effort, "green" | "yellow" | "red"> = {
 export default function OptimizePage() {
   const locale = useLocale();
   const t = appDict.optimize[locale] ?? appDict.optimize.en;
+  const tAny = t as unknown as Record<string, string>;
   const [applied, setApplied] = useState<Set<string>>(new Set());
+
+  const CATEGORY_LABELS: Record<RecoCategory, string> = {
+    "right-sizing": tAny.rightSizing ?? "Right-Sizing",
+    "idle": tAny.idle ?? "Idle Resource",
+    "reserved": tAny.reserved ?? "Reserved Instance",
+  };
 
   const handleApply = (id: string) => {
     setApplied((prev) => new Set([...prev, id]));
@@ -148,14 +151,14 @@ export default function OptimizePage() {
         </Card>
         <Card className="text-center">
           <p className="text-3xl font-extrabold font-mono text-[#10b981]">{applied.size}</p>
-          <p className="text-xs text-[#64748b] uppercase tracking-wider mt-1">Applied</p>
+          <p className="text-xs text-[#64748b] uppercase tracking-wider mt-1">{tAny.applied ?? "Applied"}</p>
         </Card>
         <Card className="text-center">
           <div className="flex items-center justify-center gap-1 mb-1">
             <TrendingDown size={16} className="text-[#10b981]" />
             <p className="text-2xl font-extrabold font-mono text-[#10b981]">${appliedSavings.toLocaleString()}</p>
           </div>
-          <p className="text-xs text-[#64748b] uppercase tracking-wider">Locked In</p>
+          <p className="text-xs text-[#64748b] uppercase tracking-wider">{tAny.lockedIn ?? "Locked In"}</p>
         </Card>
       </div>
 
@@ -213,15 +216,15 @@ export default function OptimizePage() {
                     <DollarSign size={14} className="text-[#10b981]" />
                     <p className="text-lg font-extrabold font-mono text-[#10b981]">{rec.monthlySaving}</p>
                   </div>
-                  <p className="text-xs text-[#64748b] mb-3">per month</p>
+                  <p className="text-xs text-[#64748b] mb-3">{tAny.perMonth ?? "per month"}</p>
                   {isApplied ? (
                     <div className="flex items-center gap-1 text-[#10b981]">
                       <CheckCircle2 size={16} />
-                      <span className="text-xs">Applied</span>
+                      <span className="text-xs">{tAny.applied ?? "Applied"}</span>
                     </div>
                   ) : (
                     <Button size="sm" onClick={() => handleApply(rec.id)}>
-                      Apply
+                      {tAny.apply ?? "Apply"}
                     </Button>
                   )}
                 </div>
@@ -235,15 +238,17 @@ export default function OptimizePage() {
       <Card className="mt-8 bg-[#FFD700]/5 border border-[#FFD700]/20">
         <div className="flex items-center justify-between">
           <div>
-            <p className="font-bold text-lg">Annual Savings Potential</p>
-            <p className="text-sm text-[#94a3b8]">If all {RECOMMENDATIONS.length} recommendations are applied</p>
+            <p className="font-bold text-lg">{tAny.annualSavings ?? "Annual Savings Potential"}</p>
+            <p className="text-sm text-[#94a3b8]">
+              {(tAny.ifAllApplied ?? "If all {n} recommendations are applied").replace("{n}", String(RECOMMENDATIONS.length))}
+            </p>
           </div>
           <div className="text-right">
             <div className="flex items-center gap-1">
               <DollarSign size={20} className="text-[#FFD700]" />
               <p className="text-3xl font-extrabold font-mono text-[#FFD700]">{(totalSavings * 12).toLocaleString()}</p>
             </div>
-            <p className="text-sm text-[#64748b]">per year</p>
+            <p className="text-sm text-[#64748b]">{tAny.perYear ?? "per year"}</p>
           </div>
         </div>
       </Card>
