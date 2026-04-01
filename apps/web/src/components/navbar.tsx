@@ -170,7 +170,7 @@ function getNavGroups(t: Record<string, string>, te: Record<string, string>) {
 
 export function Navbar() {
   const pathname = usePathname();
-  const { user, signOut } = useAuth();
+  const { user, loading: authLoading, signOut } = useAuth();
   const [scrolled, setScrolled] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(true);
@@ -195,7 +195,9 @@ export function Navbar() {
   }, [pathname]);
 
   const isLanding = pathname === "/" || isLocalizedLP;
-  const isApp = !isLanding && !pathname.startsWith("/login") && !pathname.startsWith("/pricing");
+  const isAppPath = !isLanding && !pathname.startsWith("/login") && !pathname.startsWith("/pricing");
+  // During auth loading on app paths, treat as app (avoid flash of landing nav)
+  const isApp = isAppPath && (authLoading || !!user);
 
   // Mobile: close sidebar on navigate
   useEffect(() => {
