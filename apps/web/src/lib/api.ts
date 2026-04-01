@@ -96,6 +96,8 @@ export interface SimulationResult {
     software: number;
     hardware: number;
     theoretical: number;
+    operational?: number;
+    external?: number;
   };
   critical_failures: Array<{
     scenario: string;

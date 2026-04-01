@@ -17,6 +17,7 @@ import {
   ChevronDown,
   ChevronRight,
   FileText,
+  Rocket,
 } from "lucide-react";
 import { useLocale } from "@/lib/useLocale";
 import { appDict } from "@/i18n/app-dict";
@@ -441,7 +442,37 @@ export default function DoraPage() {
         </div>
       </Card>
 
-      {/* ── 6. Evidence Package ── */}
+      {/* ── 6. IPO Readiness ── */}
+      <Card className="mb-8 border-[#FFD700]/20 bg-gradient-to-br from-[#0a0e1a] to-[#FFD700]/[0.03]">
+        <div className="flex items-start gap-4">
+          <div className="w-12 h-12 rounded-xl bg-[#FFD700]/10 border border-[#FFD700]/20 flex items-center justify-center shrink-0">
+            <Rocket size={22} className="text-[#FFD700]" />
+          </div>
+          <div className="flex-1">
+            <h3 className="text-lg font-bold text-[#FFD700] mb-2">{t.ipoReadinessTitle ?? "IPO Readiness"}</h3>
+            <p className="text-sm text-[#94a3b8] leading-relaxed mb-4">
+              {t.ipoReadinessDesc ?? "Going public? FaultRay proves your infrastructure meets the audit requirements investors and regulators demand."}
+            </p>
+            <div className="grid sm:grid-cols-2 gap-2">
+              {[
+                t.ipoCheckDora ?? "DORA compliance for financial services",
+                t.ipoCheckSoc2 ?? "SOC2 Type II evidence package",
+                t.ipoCheckIso ?? "ISO27001 control mapping",
+                t.ipoCheckSla ?? "Availability SLA mathematical proof",
+                t.ipoCheckRunbooks ?? "Incident response runbooks",
+                t.ipoCheckAudit ?? "Change management audit trail",
+              ].map((item) => (
+                <div key={item} className="flex items-center gap-2 text-sm text-[#e2e8f0]">
+                  <CheckCircle2 size={14} className="text-emerald-400 shrink-0" />
+                  {item}
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      </Card>
+
+      {/* ── 7. Evidence Package ── */}
       <Card>
         <div className="flex items-center justify-between mb-6">
           <h3 className="text-lg font-bold flex items-center gap-2">

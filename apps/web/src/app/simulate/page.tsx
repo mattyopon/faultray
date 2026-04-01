@@ -35,6 +35,7 @@ import {
 import Link from "next/link";
 import { useLocale } from "@/lib/useLocale";
 import { appDict } from "@/i18n/app-dict";
+import { Info } from "lucide-react";
 import { useSearchParams } from "next/navigation";
 import { Suspense } from "react";
 
@@ -131,7 +132,7 @@ function ScanPreview({ summary }: { summary: CloudSimulationResult["scan_summary
 }
 
 // ---- Calculation Evidence Section ----
-function CalculationEvidencePanel({ evidence }: { evidence: CalculationEvidence }) {
+function CalculationEvidencePanel({ evidence, t }: { evidence: CalculationEvidence; t: Record<string, string> }) {
   const [open, setOpen] = useState(true);
   const [expandedLayer, setExpandedLayer] = useState<string | null>(null);
 
@@ -139,9 +140,16 @@ function CalculationEvidencePanel({ evidence }: { evidence: CalculationEvidence 
     Software: { bar: "bg-emerald-400", text: "text-emerald-400", border: "border-emerald-500/20", bg: "bg-emerald-500/5" },
     Hardware: { bar: "bg-[#FFD700]", text: "text-[#FFD700]", border: "border-[#FFD700]/20", bg: "bg-[#FFD700]/5" },
     Theoretical: { bar: "bg-blue-400", text: "text-blue-400", border: "border-blue-500/20", bg: "bg-blue-500/5" },
+    Operational: { bar: "bg-purple-400", text: "text-purple-400", border: "border-purple-500/20", bg: "bg-purple-500/5" },
+    "External SLA": { bar: "bg-orange-400", text: "text-orange-400", border: "border-orange-500/20", bg: "bg-orange-500/5" },
+    External: { bar: "bg-orange-400", text: "text-orange-400", border: "border-orange-500/20", bg: "bg-orange-500/5" },
   };
 
   const bottleneckLayerName = evidence.bottleneck.split(" ")[0];
+
+  // Find the actual bottleneck layer (lowest nines)
+  const sortedLayers = [...evidence.layers].sort((a, b) => a.nines - b.nines);
+  const lowestLayer = sortedLayers[0];
 
   return (
     <Card className="border-[#1e293b]">
@@ -158,9 +166,18 @@ function CalculationEvidencePanel({ evidence }: { evidence: CalculationEvidence 
 
       {open && (
         <div className="mt-5 space-y-3">
+          {/* Layer explanation banner */}
+          <div className="flex items-start gap-3 p-3 rounded-xl bg-blue-500/[0.05] border border-blue-500/20">
+            <Info size={15} className="text-blue-400 mt-0.5 shrink-0" />
+            <div className="min-w-0">
+              <p className="text-xs text-[#94a3b8] leading-relaxed">{t.layerExplanation ?? "Each layer represents an independent availability ceiling. Your actual availability = min(all layers) = weakest link."}</p>
+              <p className="text-xs text-blue-400 mt-1">{t.focusOnLowest ?? "Focus on improving the lowest-scoring layer first."}</p>
+            </div>
+          </div>
+
           {evidence.layers.map((layer) => {
             const colors = layerColors[layer.name] ?? { bar: "bg-[#94a3b8]", text: "text-[#94a3b8]", border: "border-[#1e293b]", bg: "bg-white/[0.02]" };
-            const isBottleneck = layer.name === bottleneckLayerName;
+            const isBottleneck = lowestLayer?.name === layer.name;
             const isExpanded = expandedLayer === layer.name;
 
             return (
@@ -170,10 +187,13 @@ function CalculationEvidencePanel({ evidence }: { evidence: CalculationEvidence 
                   className="w-full p-4 text-left"
                 >
                   <div className="flex items-center justify-between mb-2">
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-2 flex-wrap">
                       <span className={`text-sm font-semibold ${colors.text}`}>{layer.name}</span>
                       {isBottleneck && (
-                        <span className="px-2 py-0.5 text-[0.6875rem] font-bold rounded-full bg-red-500/10 text-red-400">BOTTLENECK</span>
+                        <>
+                          <span className="px-2 py-0.5 text-[0.6875rem] font-bold rounded-full bg-red-500/10 text-red-400">{t.bottleneckLabel ?? "BOTTLENECK"}</span>
+                          <span className="text-[0.6875rem] text-red-400/80 flex items-center gap-1">← {t.weakestLink ?? "This limits your availability"}</span>
+                        </>
                       )}
                     </div>
                     <div className="flex items-center gap-3">
@@ -451,7 +471,7 @@ function SimulationLogPanel({ log }: { log: SimulationLog }) {
   );
 }
 
-function ResultsPanel({ result, scanSummary }: { result: SimulationResult; scanSummary?: CloudSimulationResult["scan_summary"] }) {
+function ResultsPanel({ result, scanSummary, simulateT }: { result: SimulationResult; scanSummary?: CloudSimulationResult["scan_summary"]; simulateT: Record<string, string> }) {
   const scoreColor = result.overall_score >= 90 ? "text-emerald-400" : result.overall_score >= 70 ? "text-[#FFD700]" : "text-red-400";
 
   return (
@@ -529,7 +549,7 @@ function ResultsPanel({ result, scanSummary }: { result: SimulationResult; scanS
 
       {/* Calculation Evidence */}
       {result.calculation_evidence && (
-        <CalculationEvidencePanel evidence={result.calculation_evidence} />
+        <CalculationEvidencePanel evidence={result.calculation_evidence} t={simulateT} />
       )}
 
       {/* Cascade Simulations */}
@@ -601,7 +621,7 @@ const DEMO_RESULT: SimulationResult = {
   scenarios_passed: 147,
   scenarios_failed: 5,
   total_scenarios: 152,
-  layers: { software: 4.0, hardware: 5.91, theoretical: 6.65 },
+  layers: { software: 4.0, hardware: 5.91, theoretical: 6.65, operational: 5.20, external: 4.85 },
   critical_failures: [
     { scenario: "Cascading database failure", impact: "Full service outage for 12 minutes", severity: "CRITICAL" },
     { scenario: "Cache cluster partition", impact: "Degraded performance, 30% latency increase", severity: "HIGH" },
@@ -643,9 +663,29 @@ const DEMO_RESULT: SimulationResult = {
           { name: "Correlated failure risk", effect: "-0.05 nines", detail: "Shared dependencies reduce independence" },
         ],
       },
+      {
+        name: "Operational",
+        nines: 5.20,
+        max_possible: 5.45,
+        factors: [
+          { name: "Change management process", effect: "+0.40 nines", detail: "Formal change windows enforced" },
+          { name: "On-call coverage", effect: "+0.20 nines", detail: "24/7 on-call rotation active" },
+          { name: "Manual deployment steps", effect: "-0.25 nines", detail: "Human error risk in deployment process" },
+        ],
+      },
+      {
+        name: "External SLA",
+        nines: 4.85,
+        max_possible: 5.00,
+        factors: [
+          { name: "Cloud provider SLA", effect: "+0.50 nines", detail: "AWS 99.99% SLA for managed services" },
+          { name: "DNS provider SLA", effect: "+0.20 nines", detail: "Route53 99.99% SLA" },
+          { name: "Third-party API dependency", effect: "-0.15 nines", detail: "Payment gateway SLA capped at 99.95%" },
+        ],
+      },
     ],
     bottleneck: "Software layer limits overall availability",
-    formula: "Availability = min(SW, HW, TH) = min(4.0, 5.91, 6.65) = 4.0 nines",
+    formula: "Availability = min(SW, HW, TH, OPS, EXT) = min(4.0, 5.91, 6.65, 5.20, 4.85) = 4.0 nines",
   },
   cascade_simulations: [
     {
@@ -1196,7 +1236,7 @@ faultray scan --all`}
         </>
       ) : (
         <>
-          <ResultsPanel result={result} scanSummary={scanSummary} />
+          <ResultsPanel result={result} scanSummary={scanSummary} simulateT={t} />
           <div className="flex justify-center mt-6">
             <Button variant="secondary" onClick={resetState}>
               Run Another Simulation
