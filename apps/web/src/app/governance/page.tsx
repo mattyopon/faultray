@@ -105,7 +105,7 @@ export default function GovernancePage() {
         <h2 className="text-lg font-bold mb-4">{t.policies}</h2>
         <div className="flex flex-wrap gap-2">
           {POLICIES.map((p) => (
-            <Button key={p} variant="outline" size="sm">{p}</Button>
+            <Button key={p} variant="secondary" size="sm">{p}</Button>
           ))}
         </div>
       </Card>

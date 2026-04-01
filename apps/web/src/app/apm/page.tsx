@@ -57,7 +57,7 @@ export default function ApmPage() {
           <Radio size={24} className="text-[#FFD700]" />
           {t.title}
         </h1>
-        <Button variant="outline" size="sm" onClick={load}>
+        <Button variant="secondary" size="sm" onClick={load}>
           <RefreshCw size={14} className="mr-1" /> {t.refresh}
         </Button>
       </div>
