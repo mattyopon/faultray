@@ -44,6 +44,10 @@ import {
   FlaskRound,
   Gauge,
   PackageSearch,
+  FileCode2,
+  Rocket,
+  LayoutTemplate,
+  TrendingUp,
 } from "lucide-react";
 import { locales, type Locale } from "@/i18n/config";
 import { appDict } from "@/i18n/app-dict";
@@ -84,6 +88,15 @@ function getNavGroups(t: Record<string, string>, te: Record<string, string>) {
         { href: "/dora", label: t.dora, icon: ShieldAlert },
         { href: "/governance", label: t.governance, icon: Scale },
         { href: "/sla", label: t.sla, icon: FileCheck },
+        { href: "/iac", label: t.iac, icon: FileCode2 },
+      ],
+    },
+    {
+      label: t.gettingStarted,
+      items: [
+        { href: "/onboarding", label: t.onboarding, icon: Rocket },
+        { href: "/templates", label: t.templates, icon: LayoutTemplate },
+        { href: "/ipo-readiness", label: t.ipoReadiness, icon: TrendingUp },
       ],
     },
     {
