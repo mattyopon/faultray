@@ -6,25 +6,17 @@
     }
   },
   "rewrites": [
-    {
-      "source": "/apm",
-      "destination": "/apm"
-    },
-    {
-      "source": "/api/apm/:path*",
-      "destination": "/api/apm"
-    },
-    {
-      "source": "/api/risk",
-      "destination": "/api/reports"
-    },
-    {
-      "source": "/api/health",
-      "destination": "/api/chat"
-    },
-    {
-      "source": "/api/governance",
-      "destination": "/api/compliance"
-    }
+    { "source": "/api/simulate", "destination": "/api/engine" },
+    { "source": "/api/analysis", "destination": "/api/engine" },
+    { "source": "/api/discovery", "destination": "/api/engine" },
+    { "source": "/api/finance", "destination": "/api/reports" },
+    { "source": "/api/billing", "destination": "/api/reports" },
+    { "source": "/api/risk", "destination": "/api/reports" },
+    { "source": "/api/apm/:path*", "destination": "/api/realtime" },
+    { "source": "/api/projects", "destination": "/api/realtime" },
+    { "source": "/api/chat", "destination": "/api/realtime" },
+    { "source": "/api/health", "destination": "/api/realtime" },
+    { "source": "/api/governance", "destination": "/api/compliance" },
+    { "source": "/apm", "destination": "/apm" }
   ]
 }

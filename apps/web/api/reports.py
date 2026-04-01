@@ -1,20 +1,32 @@
-"""FaultRay reports + risk endpoint (merged to stay within Vercel Hobby function limit).
+"""FaultRay reports + risk + finance + billing endpoint (merged).
 
-GET /api/reports?action=report&format=json
-GET /api/reports?action=report&format=html
-GET /api/reports?action=incidents
-GET /api/risk?action=attack-surface  (rewritten to /api/reports by vercel.json)
-GET /api/risk?action=fmea
+Routes:
+  GET  /api/reports?action=report&format=json
+  GET  /api/reports?action=report&format=html
+  GET  /api/reports?action=incidents
+  GET  /api/risk?action=attack-surface   (rewritten to /api/reports by vercel.json)
+  GET  /api/risk?action=fmea
+  POST /api/reports  Body: { "action": "report" | "incidents" | "attack-surface" | "fmea" }
 
-POST /api/reports  Body: { "action": "report" | "incidents" | "attack-surface" | "fmea" }
+  GET  /api/finance?action=benchmark&industry=fintech
+  POST /api/finance  Body: { "action": "cost", "revenue_per_hour": 10000, "industry": "fintech" }
+  POST /api/finance  Body: { "action": "benchmark", "industry": "saas" }
+
+  POST /api/billing  Body: { "action": "checkout", "plan": "pro" | "business" }
+  POST /api/billing  (Stripe webhook — detected by Stripe-Signature header)
+
+Path routing uses the request path to determine which handler to call.
 """
 
 from http.server import BaseHTTPRequestHandler
 import json
+import os
 from urllib.parse import urlparse, parse_qs
 
 
-# --- Executive report data ---
+# ===========================================================================
+# REPORTS — data and helpers
+# ===========================================================================
 
 DEMO_REPORT = {
     "title": "FaultRay Infrastructure Resilience Report",
@@ -116,8 +128,6 @@ h2 {{ color: #94a3b8; margin-top: 32px; }}
 </body></html>"""
 
 
-# --- Incidents data ---
-
 INCIDENTS_DEMO_DATA = {
     "incidents": [
         {
@@ -192,9 +202,6 @@ INCIDENTS_DEMO_DATA = {
     },
 }
 
-
-# --- Attack surface data (merged from risk.py) ---
-
 ATTACK_SURFACE_DEMO_DATA = {
     "summary": {
         "total_components": 12,
@@ -256,8 +263,6 @@ ATTACK_SURFACE_DEMO_DATA = {
     ],
 }
 
-# --- FMEA data (merged from risk.py) ---
-
 FMEA_DEMO_DATA = {
     "analysis_date": "2026-03-30",
     "total_failure_modes": 18,
@@ -279,14 +284,11 @@ FMEA_DEMO_DATA = {
 }
 
 
-# ---------------------------------------------------------------------------
-# Dispatch
-# ---------------------------------------------------------------------------
-
-def _dispatch(action: str, params: dict, body: dict | None = None):
-    """Route to the correct handler based on action."""
+def _dispatch_reports(action: str, params: dict, body=None):
+    """Route to the correct reports handler based on action."""
+    body = body or {}
     if action == "report":
-        fmt = params.get("format", ["json"])[0] if isinstance(params.get("format"), list) else (body or {}).get("format", "json")
+        fmt = params.get("format", ["json"])[0] if isinstance(params.get("format"), list) else body.get("format", "json")
         if fmt == "html":
             return "html", DEMO_REPORT
         return "json", DEMO_REPORT
@@ -300,72 +302,441 @@ def _dispatch(action: str, params: dict, body: dict | None = None):
         return "error", f"Unknown action '{action}'. Use 'report', 'incidents', 'attack-surface', or 'fmea'."
 
 
+# ===========================================================================
+# FINANCE — data and helpers
+# ===========================================================================
+
+INDUSTRY_DEFAULTS = {
+    "fintech": {"revenue_per_hour": 50000, "penalty_multiplier": 2.5, "reputation_factor": 1.8},
+    "healthcare": {"revenue_per_hour": 30000, "penalty_multiplier": 3.0, "reputation_factor": 2.0},
+    "ecommerce": {"revenue_per_hour": 25000, "penalty_multiplier": 1.2, "reputation_factor": 1.5},
+    "saas": {"revenue_per_hour": 15000, "penalty_multiplier": 1.5, "reputation_factor": 1.3},
+    "media": {"revenue_per_hour": 20000, "penalty_multiplier": 1.0, "reputation_factor": 1.6},
+}
+
+
+def _analyze_cost(revenue_per_hour: float, industry: str) -> dict:
+    """Calculate downtime costs and improvement ROI."""
+    defaults = INDUSTRY_DEFAULTS.get(industry, INDUSTRY_DEFAULTS["saas"])
+    if revenue_per_hour <= 0:
+        revenue_per_hour = defaults["revenue_per_hour"]
+
+    current_nines = 3.5
+    target_nines = 4.0
+    current_downtime_hours = 365.25 * 24 * (1 - (1 - 10 ** (-current_nines)))
+    target_downtime_hours = 365.25 * 24 * (1 - (1 - 10 ** (-target_nines)))
+
+    current_annual_cost = current_downtime_hours * revenue_per_hour * defaults["penalty_multiplier"]
+    target_annual_cost = target_downtime_hours * revenue_per_hour * defaults["penalty_multiplier"]
+    savings = current_annual_cost - target_annual_cost
+
+    improvements = [
+        {
+            "action": "Add database read replica",
+            "cost": 2400,
+            "score_gain": 5.0,
+            "nines_gain": 0.3,
+            "annual_savings": savings * 0.3,
+            "roi_percent": round((savings * 0.3 / 2400) * 100, 0),
+            "payback_days": round(2400 / (savings * 0.3 / 365), 0) if savings > 0 else 999,
+        },
+        {
+            "action": "Implement circuit breaker",
+            "cost": 800,
+            "score_gain": 3.2,
+            "nines_gain": 0.15,
+            "annual_savings": savings * 0.15,
+            "roi_percent": round((savings * 0.15 / 800) * 100, 0),
+            "payback_days": round(800 / (savings * 0.15 / 365), 0) if savings > 0 else 999,
+        },
+        {
+            "action": "Multi-region deployment",
+            "cost": 18000,
+            "score_gain": 8.5,
+            "nines_gain": 0.5,
+            "annual_savings": savings * 0.5,
+            "roi_percent": round((savings * 0.5 / 18000) * 100, 0),
+            "payback_days": round(18000 / (savings * 0.5 / 365), 0) if savings > 0 else 999,
+        },
+        {
+            "action": "Auto-scaling configuration",
+            "cost": 1200,
+            "score_gain": 2.8,
+            "nines_gain": 0.1,
+            "annual_savings": savings * 0.1,
+            "roi_percent": round((savings * 0.1 / 1200) * 100, 0),
+            "payback_days": round(1200 / (savings * 0.1 / 365), 0) if savings > 0 else 999,
+        },
+    ]
+
+    return {
+        "current": {
+            "nines": current_nines,
+            "downtime_hours_per_year": round(current_downtime_hours, 2),
+            "annual_cost": round(current_annual_cost, 0),
+        },
+        "target": {
+            "nines": target_nines,
+            "downtime_hours_per_year": round(target_downtime_hours, 2),
+            "annual_cost": round(target_annual_cost, 0),
+        },
+        "potential_savings": round(savings, 0),
+        "revenue_per_hour": revenue_per_hour,
+        "industry": industry,
+        "improvements": improvements,
+    }
+
+
+BENCHMARKS = {
+    "fintech": {
+        "industry": "Financial Technology",
+        "industry_id": "fintech",
+        "your_score": 85.2,
+        "industry_average": 82.5,
+        "industry_top_10": 95.3,
+        "industry_bottom_10": 62.1,
+        "percentile": 65,
+        "categories": [
+            {"name": "Availability", "your_score": 88, "industry_avg": 90, "top_10": 99},
+            {"name": "Redundancy", "your_score": 82, "industry_avg": 85, "top_10": 96},
+            {"name": "Failover Speed", "your_score": 78, "industry_avg": 80, "top_10": 95},
+            {"name": "Data Protection", "your_score": 90, "industry_avg": 88, "top_10": 98},
+            {"name": "Monitoring", "your_score": 85, "industry_avg": 78, "top_10": 95},
+            {"name": "Compliance", "your_score": 72, "industry_avg": 85, "top_10": 99},
+        ],
+        "regulatory_requirements": ["PCI-DSS", "SOC2", "SOX"],
+        "typical_sla": "99.99%",
+    },
+    "healthcare": {
+        "industry": "Healthcare",
+        "industry_id": "healthcare",
+        "your_score": 85.2,
+        "industry_average": 78.0,
+        "industry_top_10": 93.5,
+        "industry_bottom_10": 55.0,
+        "percentile": 75,
+        "categories": [
+            {"name": "Availability", "your_score": 88, "industry_avg": 82, "top_10": 97},
+            {"name": "Redundancy", "your_score": 82, "industry_avg": 75, "top_10": 94},
+            {"name": "Failover Speed", "your_score": 78, "industry_avg": 70, "top_10": 92},
+            {"name": "Data Protection", "your_score": 90, "industry_avg": 90, "top_10": 99},
+            {"name": "Monitoring", "your_score": 85, "industry_avg": 72, "top_10": 93},
+            {"name": "Compliance", "your_score": 72, "industry_avg": 80, "top_10": 98},
+        ],
+        "regulatory_requirements": ["HIPAA", "HITRUST", "FDA 21 CFR Part 11"],
+        "typical_sla": "99.95%",
+    },
+    "ecommerce": {
+        "industry": "E-Commerce",
+        "industry_id": "ecommerce",
+        "your_score": 85.2,
+        "industry_average": 75.0,
+        "industry_top_10": 92.0,
+        "industry_bottom_10": 50.0,
+        "percentile": 80,
+        "categories": [
+            {"name": "Availability", "your_score": 88, "industry_avg": 80, "top_10": 96},
+            {"name": "Redundancy", "your_score": 82, "industry_avg": 72, "top_10": 93},
+            {"name": "Failover Speed", "your_score": 78, "industry_avg": 68, "top_10": 90},
+            {"name": "Data Protection", "your_score": 90, "industry_avg": 78, "top_10": 95},
+            {"name": "Monitoring", "your_score": 85, "industry_avg": 70, "top_10": 92},
+            {"name": "Compliance", "your_score": 72, "industry_avg": 60, "top_10": 88},
+        ],
+        "regulatory_requirements": ["PCI-DSS", "GDPR"],
+        "typical_sla": "99.9%",
+    },
+    "saas": {
+        "industry": "SaaS",
+        "industry_id": "saas",
+        "your_score": 85.2,
+        "industry_average": 80.0,
+        "industry_top_10": 94.0,
+        "industry_bottom_10": 58.0,
+        "percentile": 70,
+        "categories": [
+            {"name": "Availability", "your_score": 88, "industry_avg": 85, "top_10": 99},
+            {"name": "Redundancy", "your_score": 82, "industry_avg": 80, "top_10": 95},
+            {"name": "Failover Speed", "your_score": 78, "industry_avg": 75, "top_10": 93},
+            {"name": "Data Protection", "your_score": 90, "industry_avg": 82, "top_10": 96},
+            {"name": "Monitoring", "your_score": 85, "industry_avg": 78, "top_10": 95},
+            {"name": "Compliance", "your_score": 72, "industry_avg": 70, "top_10": 92},
+        ],
+        "regulatory_requirements": ["SOC2", "ISO27001", "GDPR"],
+        "typical_sla": "99.9%",
+    },
+}
+
+
+# ===========================================================================
+# BILLING — helpers
+# ===========================================================================
+
+PRICE_IDS = {
+    "pro": os.environ.get("STRIPE_PRO_PRICE_ID", ""),
+    "business": os.environ.get("STRIPE_BUSINESS_PRICE_ID", ""),
+}
+
+
+def _billing_checkout(raw_body: bytes, origin: str) -> tuple:
+    """Handle Stripe checkout session creation. Returns (status, data)."""
+    try:
+        import stripe
+    except ImportError:
+        return 500, {"error": "stripe package not installed"}
+
+    stripe_key = os.environ.get("STRIPE_SECRET_KEY")
+    if not stripe_key:
+        return 500, {"error": "STRIPE_SECRET_KEY not configured"}
+    stripe.api_key = stripe_key
+
+    try:
+        body = json.loads(raw_body) if raw_body else {}
+    except (json.JSONDecodeError, ValueError):
+        return 400, {"error": "Invalid JSON"}
+
+    plan = body.get("plan", "")
+    if plan not in ("pro", "business"):
+        return 400, {"error": "Invalid plan. Must be 'pro' or 'business'"}
+
+    price_id = PRICE_IDS.get(plan)
+    if not price_id:
+        return 500, {"error": f"Price ID not configured for plan: {plan}"}
+
+    try:
+        session = stripe.checkout.Session.create(
+            mode="subscription",
+            line_items=[{"price": price_id, "quantity": 1}],
+            success_url=f"{origin}/dashboard?checkout=success&plan={plan}",
+            cancel_url=f"{origin}/pricing?checkout=cancelled",
+            metadata={"plan": plan},
+        )
+        return 200, {"url": session.url}
+    except Exception as e:
+        return 400, {"error": str(e)}
+
+
+def _billing_webhook(payload: bytes, sig_header: str) -> tuple:
+    """Handle Stripe webhook. Returns (status, data)."""
+    try:
+        import stripe
+    except ImportError:
+        return 500, {"error": "stripe package not installed"}
+
+    stripe_key = os.environ.get("STRIPE_SECRET_KEY")
+    webhook_secret = os.environ.get("STRIPE_WEBHOOK_SECRET")
+    if not stripe_key or not webhook_secret:
+        return 500, {"error": "Stripe not configured"}
+    stripe.api_key = stripe_key
+
+    try:
+        event = stripe.Webhook.construct_event(payload, sig_header, webhook_secret)
+    except (ValueError, stripe.SignatureVerificationError) as e:
+        return 400, {"error": f"Webhook verification failed: {e}"}
+
+    if event["type"] == "checkout.session.completed":
+        session = event["data"]["object"]
+        customer_id = session.get("customer")
+        plan = session.get("metadata", {}).get("plan", "pro")
+        email = session.get("customer_details", {}).get("email")
+        _billing_update_supabase(email, {"plan": plan, "stripe_customer_id": customer_id})
+
+    elif event["type"] == "customer.subscription.deleted":
+        customer_id = event["data"]["object"].get("customer")
+        _billing_update_supabase_by_customer(customer_id, {"plan": "free"})
+
+    return 200, {"received": True}
+
+
+def _billing_update_supabase(email, data):
+    if not email:
+        return
+    supabase_url = os.environ.get("NEXT_PUBLIC_SUPABASE_URL")
+    service_key = os.environ.get("SUPABASE_SERVICE_ROLE_KEY")
+    if not supabase_url or not service_key:
+        return
+    try:
+        import urllib.request
+        req = urllib.request.Request(
+            f"{supabase_url}/rest/v1/profiles?email=eq.{email}",
+            data=json.dumps(data).encode(),
+            method="PATCH",
+            headers={
+                "Content-Type": "application/json",
+                "apikey": service_key,
+                "Authorization": f"Bearer {service_key}",
+                "Prefer": "return=minimal",
+            },
+        )
+        urllib.request.urlopen(req)
+    except Exception:
+        pass
+
+
+def _billing_update_supabase_by_customer(customer_id, data):
+    if not customer_id:
+        return
+    supabase_url = os.environ.get("NEXT_PUBLIC_SUPABASE_URL")
+    service_key = os.environ.get("SUPABASE_SERVICE_ROLE_KEY")
+    if not supabase_url or not service_key:
+        return
+    try:
+        import urllib.request
+        req = urllib.request.Request(
+            f"{supabase_url}/rest/v1/profiles?stripe_customer_id=eq.{customer_id}",
+            data=json.dumps(data).encode(),
+            method="PATCH",
+            headers={
+                "Content-Type": "application/json",
+                "apikey": service_key,
+                "Authorization": f"Bearer {service_key}",
+                "Prefer": "return=minimal",
+            },
+        )
+        urllib.request.urlopen(req)
+    except Exception:
+        pass
+
+
+# ===========================================================================
+# Handler — routes by path
+# ===========================================================================
+
 class handler(BaseHTTPRequestHandler):
+    def do_OPTIONS(self):
+        self.send_response(204)
+        self._cors_headers()
+        self.send_header("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
+        self.send_header("Access-Control-Allow-Headers", "Content-Type, Authorization, Stripe-Signature")
+        self.end_headers()
+
     def do_GET(self):
         try:
             parsed = urlparse(self.path)
+            path = parsed.path.rstrip("/")
             params = parse_qs(parsed.query)
-            action = params.get("action", ["report"])[0]
-            content_type, data = _dispatch(action, params)
 
-            if content_type == "error":
-                self._send_error(400, data)
-            elif content_type == "html":
-                html = _generate_html(data)
-                self.send_response(200)
-                self.send_header("Content-Type", "text/html")
-                self._send_cors_headers()
-                self.end_headers()
-                self.wfile.write(html.encode("utf-8"))
+            if "/finance" in path:
+                self._handle_finance_get(path, params)
             else:
-                self._send_json(200, data)
+                # Default: reports / risk
+                action = params.get("action", ["report"])[0]
+                content_type, data = _dispatch_reports(action, params)
+                self._send_reports_response(content_type, data)
+
         except Exception as e:
-            self._send_error(500, f"Reports error: {e}")
+            self._error(500, f"Reports GET error: {e}")
 
     def do_POST(self):
         try:
             content_length = int(self.headers.get("Content-Length", 0))
-            body = json.loads(self.rfile.read(content_length)) if content_length > 0 else {}
-            action = body.get("action", "")
-            if not action:
-                self._send_error(400, "Missing 'action' field.")
-                return
+            raw_body = self.rfile.read(content_length)
+        except Exception:
+            raw_body = b""
 
-            content_type, data = _dispatch(action, {}, body)
+        parsed = urlparse(self.path)
+        path = parsed.path.rstrip("/")
 
-            if content_type == "error":
-                self._send_error(400, data)
-            elif content_type == "html":
-                html = _generate_html(data)
-                self.send_response(200)
-                self.send_header("Content-Type", "text/html")
-                self._send_cors_headers()
-                self.end_headers()
-                self.wfile.write(html.encode("utf-8"))
-            else:
-                self._send_json(200, data)
-        except json.JSONDecodeError:
-            self._send_error(400, "Invalid JSON in request body")
-        except Exception as e:
-            self._send_error(500, f"Reports error: {e}")
+        if "/finance" in path:
+            self._handle_finance_post(raw_body)
+        elif "/billing" in path:
+            self._handle_billing_post(raw_body)
+        else:
+            # Default: reports / risk
+            self._handle_reports_post(raw_body)
 
-    def do_OPTIONS(self):
-        self.send_response(204)
-        self._send_cors_headers()
-        self.send_header("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
-        self.send_header("Access-Control-Allow-Headers", "Content-Type, Authorization")
-        self.end_headers()
+    # -----------------------------------------------------------------------
+    # Reports
+    # -----------------------------------------------------------------------
 
-    def _send_json(self, status: int, data: dict):
-        body = json.dumps(data)
+    def _handle_reports_post(self, raw_body: bytes):
+        try:
+            body = json.loads(raw_body) if raw_body else {}
+        except (json.JSONDecodeError, ValueError):
+            self._error(400, "Invalid JSON in request body")
+            return
+        action = body.get("action", "")
+        if not action:
+            self._error(400, "Missing 'action' field.")
+            return
+        content_type, data = _dispatch_reports(action, {}, body)
+        self._send_reports_response(content_type, data)
+
+    def _send_reports_response(self, content_type: str, data):
+        if content_type == "error":
+            self._error(400, data)
+        elif content_type == "html":
+            html = _generate_html(data)
+            self.send_response(200)
+            self.send_header("Content-Type", "text/html")
+            self._cors_headers()
+            self.end_headers()
+            self.wfile.write(html.encode("utf-8"))
+        else:
+            self._json(200, data)
+
+    # -----------------------------------------------------------------------
+    # Finance
+    # -----------------------------------------------------------------------
+
+    def _handle_finance_get(self, path: str, params: dict):
+        action = params.get("action", ["benchmark"])[0]
+        if action == "benchmark":
+            industry_list = params.get("industry", ["saas"])
+            industry = industry_list[0] if industry_list else "saas"
+            # Also support path-based: /api/finance/benchmark/fintech
+            parts = path.rstrip("/").split("/")
+            if len(parts) >= 2 and parts[-1] in BENCHMARKS:
+                industry = parts[-1]
+            self._json(200, BENCHMARKS.get(industry, BENCHMARKS["saas"]))
+        else:
+            self._error(400, f"Unknown action '{action}' for GET.")
+
+    def _handle_finance_post(self, raw_body: bytes):
+        try:
+            data = json.loads(raw_body) if raw_body else {}
+        except (json.JSONDecodeError, ValueError):
+            self._error(400, "Invalid JSON")
+            return
+
+        action = data.get("action", "")
+
+        if action == "cost":
+            revenue = data.get("revenue_per_hour", 15000)
+            industry = data.get("industry", "saas")
+            self._json(200, _analyze_cost(float(revenue), industry))
+        elif action == "benchmark":
+            industry = data.get("industry", "saas")
+            self._json(200, BENCHMARKS.get(industry, BENCHMARKS["saas"]))
+        else:
+            self._error(400, "Missing or invalid 'action' field. Must be 'cost' or 'benchmark'.")
+
+    # -----------------------------------------------------------------------
+    # Billing
+    # -----------------------------------------------------------------------
+
+    def _handle_billing_post(self, raw_body: bytes):
+        sig_header = self.headers.get("Stripe-Signature", "")
+        origin = self.headers.get("Origin", "https://faultray.com")
+        if sig_header:
+            status, data = _billing_webhook(raw_body, sig_header)
+        else:
+            status, data = _billing_checkout(raw_body, origin)
+        self._json(status, data)
+
+    # -----------------------------------------------------------------------
+    # Shared helpers
+    # -----------------------------------------------------------------------
+
+    def _json(self, status: int, data):
+        body = json.dumps(data).encode("utf-8")
         self.send_response(status)
         self.send_header("Content-Type", "application/json")
-        self._send_cors_headers()
+        self._cors_headers()
         self.end_headers()
-        self.wfile.write(body.encode("utf-8"))
+        self.wfile.write(body)
 
-    def _send_error(self, status: int, message: str):
-        self._send_json(status, {"error": {"message": message}})
+    def _error(self, status: int, message: str):
+        self._json(status, {"error": {"message": message}})
 
-    def _send_cors_headers(self):
+    def _cors_headers(self):
         self.send_header("Access-Control-Allow-Origin", "*")
