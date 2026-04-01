@@ -424,7 +424,12 @@ export function Navbar() {
             @media (min-width: 768px) {
               main {
                 margin-left: ${sidebarOpen ? "14rem" : "4rem"} !important;
+                margin-right: 0 !important;
                 transition: margin-left 0.2s;
+              }
+              main > div {
+                margin-left: 0 !important;
+                margin-right: auto !important;
               }
             }
           `}</style>
