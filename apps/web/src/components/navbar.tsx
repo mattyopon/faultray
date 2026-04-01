@@ -384,8 +384,8 @@ export function Navbar() {
                   })}
                 </div>
               ))}
-            </div>
               </>)}
+            </div>
           </aside>
 
           {/* Mobile Sidebar Overlay */}
