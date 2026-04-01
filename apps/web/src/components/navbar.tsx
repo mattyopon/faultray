@@ -61,42 +61,56 @@ import { useLocale } from "@/lib/useLocale";
 
 function getNavGroups(t: Record<string, string>, te: Record<string, string>) {
   return [
-    {
-      label: t.gettingStarted,
-      items: [
-        { href: "/onboarding",    label: t.onboarding,   icon: Rocket },
-        { href: "/templates",     label: t.templates,    icon: LayoutTemplate },
-        { href: "/ipo-readiness", label: t.ipoReadiness, icon: TrendingUp },
-      ],
-    },
+    // ── 毎日使う（上） ──
     {
       label: t.observe ?? "OBSERVE",
       items: [
-        { href: "/dashboard", label: t.dashboard,              icon: LayoutDashboard },
-        { href: "/apm",       label: t.apm,                    icon: Radio },
-        { href: "/traces",    label: t.traces ?? "Traces",     icon: Activity },
-        { href: "/logs",      label: t.logs ?? "Logs",         icon: FileText },
+        { href: "/dashboard",     label: t.dashboard,                        icon: LayoutDashboard },
+        { href: "/traffic-light", label: t.trafficLight ?? "Status",         icon: CircleDot },
+        { href: "/apm",           label: t.apm,                              icon: Radio },
+        { href: "/incidents",     label: t.incidents,                        icon: Activity },
+      ],
+    },
+    // ── 週次で見る ──
+    {
+      label: t.simulate,
+      items: [
+        { href: "/simulate",    label: t.runSimulation,                icon: Zap },
+        { href: "/remediation", label: t.remediationPlan,              icon: ClipboardCheck },
+        { href: "/projects",    label: t.projects,                     icon: FolderKanban },
+        { href: "/whatif",      label: t.whatIf,                       icon: FlaskConical },
       ],
     },
     {
       label: t.visualize ?? "VISUALIZE",
       items: [
-        { href: "/topology",      label: t.topology,                       icon: Network },
-        { href: "/dependencies",  label: t.dependencies ?? "Dependencies", icon: GitBranch },
-        { href: "/heatmap",       label: t.heatmap,                        icon: Flame },
-        { href: "/traffic-light", label: t.trafficLight ?? "Traffic Light",  icon: CircleDot },
-        { href: "/people-risk",   label: t.peopleRisk ?? "People Risk",     icon: UserX },
-        { href: "/score-detail",  label: t.scoreDetail,                     icon: BarChart3 },
+        { href: "/topology",     label: t.topology,                       icon: Network },
+        { href: "/dependencies", label: t.dependencies ?? "Dependencies", icon: GitBranch },
+        { href: "/heatmap",      label: t.heatmap,                        icon: Flame },
+        { href: "/people-risk",  label: t.peopleRisk ?? "People Risk",    icon: UserX },
+        { href: "/score-detail", label: t.scoreDetail,                    icon: BarChart3 },
+      ],
+    },
+    // ── 月次/必要時 ──
+    {
+      label: t.compliance,
+      items: [
+        { href: "/dora",         label: t.dora,                            icon: ShieldAlert },
+        { href: "/governance",   label: t.governance,                      icon: Scale },
+        { href: "/sla",          label: t.sla,                             icon: FileCheck },
+        { href: "/compliance",   label: t.complianceItem,                  icon: ShieldCheck },
+        { href: "/evidence",     label: t.evidence,                        icon: FileCheck },
+        { href: "/audit-report", label: t.auditReport ?? "Audit Report",   icon: FileSpreadsheet },
+        { href: "/fisc",         label: t.fisc ?? "FISC",                  icon: Landmark },
       ],
     },
     {
-      label: t.simulate,
+      label: t.improve ?? "IMPROVE",
       items: [
-        { href: "/simulate",  label: t.runSimulation,              icon: Zap },
-        { href: "/whatif",    label: t.whatIf,                     icon: FlaskConical },
-        { href: "/fmea",      label: t.fmea,                       icon: AlertOctagon },
-        { href: "/gameday",   label: t.gameday ?? "GameDay",       icon: Swords },
-        { href: "/incidents", label: t.incidents,                  icon: Activity },
+        { href: "/iac",      label: t.iac,         icon: FileCode2 },
+        { href: "/optimize", label: te.optimize,    icon: Gauge },
+        { href: "/gameday",  label: t.gameday ?? "GameDay", icon: Swords },
+        { href: "/fmea",     label: t.fmea,         icon: AlertOctagon },
       ],
     },
     {
@@ -106,27 +120,7 @@ function getNavGroups(t: Record<string, string>, te: Record<string, string>) {
         { href: "/advisor",        label: t.aiAdvisor,                          icon: Bot },
       ],
     },
-    {
-      label: t.compliance,
-      items: [
-        { href: "/dora",         label: t.dora,                            icon: ShieldAlert },
-        { href: "/governance",   label: t.governance,                      icon: Scale },
-        { href: "/fisc",         label: t.fisc ?? "FISC",                  icon: Landmark },
-        { href: "/compliance",   label: t.complianceItem,                  icon: ShieldCheck },
-        { href: "/sla",          label: t.sla,                             icon: FileCheck },
-        { href: "/evidence",     label: t.evidence,                        icon: FileCheck },
-        { href: "/audit-report", label: t.auditReport ?? "Audit Report",   icon: FileSpreadsheet },
-      ],
-    },
-    {
-      label: t.improve ?? "IMPROVE",
-      items: [
-        { href: "/remediation", label: t.remediationPlan, icon: ClipboardCheck },
-        { href: "/iac",         label: t.iac,              icon: FileCode2 },
-        { href: "/optimize",    label: te.optimize,        icon: Gauge },
-        { href: "/projects",    label: t.projects,         icon: FolderKanban },
-      ],
-    },
+    // ── たまに使う（下） ──
     {
       label: te.operations,
       items: [
@@ -144,6 +138,24 @@ function getNavGroups(t: Record<string, string>, te: Record<string, string>) {
         { href: "/env-compare",  label: te.envCompare,   icon: GitCompare },
         { href: "/canary",       label: te.canary,       icon: FlaskRound },
         { href: "/supply-chain", label: te.supplyChain,  icon: PackageSearch },
+      ],
+    },
+    {
+      label: t.observe ?? "MORE",
+      items: [
+        { href: "/traces",  label: t.traces ?? "Traces", icon: Activity },
+        { href: "/logs",    label: t.logs ?? "Logs",     icon: FileText },
+        { href: "/reports", label: t.reports ?? "Reports", icon: FileText },
+        { href: "/benchmark", label: t.benchmark ?? "Benchmark", icon: BarChart3 },
+      ],
+    },
+    // ── 初回/設定 ──
+    {
+      label: t.gettingStarted,
+      items: [
+        { href: "/onboarding",    label: t.onboarding,   icon: Rocket },
+        { href: "/templates",     label: t.templates,    icon: LayoutTemplate },
+        { href: "/ipo-readiness", label: t.ipoReadiness, icon: TrendingUp },
       ],
     },
     {
