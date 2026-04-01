@@ -171,6 +171,14 @@ function TrendIcon({ trend }: { trend: string }) {
  * ============================================================ */
 
 export default function DoraPage() {
+  try {
+    return <DoraPageInner />;
+  } catch (e) {
+    return <div style={{color: "red", padding: 40}}>DORA Error: {String(e)}</div>;
+  }
+}
+
+function DoraPageInner() {
   const locale = useLocale();
   const t = appDict.dora[locale] ?? appDict.dora.en;
   const [data, setData] = useState<DoraData>(DEMO);
