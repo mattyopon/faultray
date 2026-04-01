@@ -214,9 +214,9 @@ export function Navbar() {
             : "bg-[#0a0e1a]/80"
         }`}
       >
-        <div className={`${isApp && user ? "pl-4 pr-6" : "max-w-[1200px] mx-auto px-6"} flex items-center justify-between h-16`}>
+        <div className={`${isApp ? "pl-4 pr-6" : "max-w-[1200px] mx-auto px-6"} flex items-center justify-between h-16`}>
           <div className="flex items-center gap-2">
-            {isApp && user && (
+            {isApp && !authLoading && user && (
               <button
                 className="p-2 text-[#94a3b8] hover:text-white transition-colors md:hidden"
                 onClick={() => setMobileOpen(!mobileOpen)}
@@ -230,11 +230,9 @@ export function Navbar() {
             </Link>
           </div>
 
-          {/* Desktop nav for non-app pages */}
-          <div className="hidden md:flex items-center gap-1">
-            {isApp && authLoading ? (
-              <div className="w-24" /> /* Empty placeholder during auth loading */
-            ) : isApp && user ? (
+          {/* Desktop nav — hidden entirely during auth loading to prevent flash */}
+          <div className={`hidden md:flex items-center gap-1 transition-opacity duration-200 ${authLoading ? "opacity-0 pointer-events-none" : "opacity-100"}`}>
+            {isApp && user ? (
               <div className="flex items-center gap-2">
                 <span className="text-xs text-[#64748b] truncate max-w-[120px]">
                   {user.email}
@@ -295,7 +293,7 @@ export function Navbar() {
           </div>
 
           {/* Mobile toggle for non-app pages */}
-          {!(isApp && user) && (
+          {!authLoading && !(isApp && user) && (
             <button
               className="md:hidden p-2 text-[#94a3b8]"
               onClick={() => setMobileOpen(!mobileOpen)}
