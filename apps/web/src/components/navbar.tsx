@@ -327,8 +327,8 @@ export function Navbar() {
         )}
       </nav>
 
-      {/* Sidebar for app pages */}
-      {isApp && user && (
+      {/* Sidebar for app pages — render skeleton during auth loading to prevent layout shift */}
+      {isApp && (
         <>
           {/* Desktop Sidebar */}
           <aside
@@ -337,6 +337,8 @@ export function Navbar() {
             }`}
           >
             <div className="py-4">
+              {/* Show nav content only after auth resolved */}
+              {!authLoading && user && (<>
               {/* Collapse toggle */}
               <button
                 onClick={() => setSidebarOpen(!sidebarOpen)}
@@ -374,10 +376,11 @@ export function Navbar() {
                 </div>
               ))}
             </div>
+              </>)}
           </aside>
 
           {/* Mobile Sidebar Overlay */}
-          {mobileOpen && (
+          {!authLoading && user && mobileOpen && (
             <div className="fixed inset-0 z-40 md:hidden">
               <div className="absolute inset-0 bg-black/50" onClick={() => setMobileOpen(false)} />
               <aside className="absolute top-16 left-0 bottom-0 w-64 bg-[#0a0e1a] border-r border-[#1e293b] overflow-y-auto">
