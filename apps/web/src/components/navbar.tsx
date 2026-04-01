@@ -17,6 +17,7 @@ import {
   AlertOctagon,
   Activity,
   ShieldCheck,
+  ShieldAlert,
   Shield,
   DollarSign,
   FileText,
@@ -30,6 +31,7 @@ import {
   ChevronDown,
   ClipboardCheck,
   FileCheck,
+  Scale,
   Radio,
   FolderKanban,
 } from "lucide-react";
@@ -68,6 +70,9 @@ function getNavGroups(t: Record<string, string>) {
         { href: "/benchmark", label: t.benchmark, icon: Trophy },
         { href: "/remediation", label: t.remediationPlan, icon: ClipboardCheck },
         { href: "/evidence", label: t.evidence, icon: FileCheck },
+        { href: "/dora", label: t.dora, icon: ShieldAlert },
+        { href: "/governance", label: t.governance, icon: Scale },
+        { href: "/sla", label: t.sla, icon: FileCheck },
       ],
     },
     {
