@@ -34,12 +34,22 @@ import {
   Scale,
   Radio,
   FolderKanban,
+  BookOpen,
+  FileSearch,
+  CalendarDays,
+  Clock,
+  GitBranch,
+  Users,
+  GitCompare,
+  FlaskRound,
+  Gauge,
+  PackageSearch,
 } from "lucide-react";
 import { locales, type Locale } from "@/i18n/config";
 import { appDict } from "@/i18n/app-dict";
 import { useLocale } from "@/lib/useLocale";
 
-function getNavGroups(t: Record<string, string>) {
+function getNavGroups(t: Record<string, string>, te: Record<string, string>) {
   return [
     {
       label: t.analyze,
@@ -65,6 +75,7 @@ function getNavGroups(t: Record<string, string>) {
       items: [
         { href: "/compliance", label: t.complianceItem, icon: ShieldCheck },
         { href: "/security", label: t.security, icon: Shield },
+        { href: "/supply-chain", label: te.supplyChain, icon: PackageSearch },
         { href: "/cost", label: t.costAnalysis, icon: DollarSign },
         { href: "/reports", label: t.reports, icon: FileText },
         { href: "/benchmark", label: t.benchmark, icon: Trophy },
@@ -79,6 +90,25 @@ function getNavGroups(t: Record<string, string>) {
       label: t.monitor,
       items: [
         { href: "/apm", label: t.apm, icon: Radio },
+      ],
+    },
+    {
+      label: te.operations,
+      items: [
+        { href: "/runbooks", label: te.runbooks, icon: BookOpen },
+        { href: "/postmortems", label: te.postmortems, icon: FileSearch },
+        { href: "/calendar", label: te.calendar, icon: CalendarDays },
+        { href: "/timeline", label: te.timeline, icon: Clock },
+        { href: "/drift", label: te.drift, icon: GitBranch },
+      ],
+    },
+    {
+      label: te.teams,
+      items: [
+        { href: "/teams", label: te.teamMetrics, icon: Users },
+        { href: "/env-compare", label: te.envCompare, icon: GitCompare },
+        { href: "/canary", label: te.canary, icon: FlaskRound },
+        { href: "/optimize", label: te.optimize, icon: Gauge },
       ],
     },
     {
@@ -105,7 +135,8 @@ export function Navbar() {
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const locale = useLocale();
   const t = appDict.nav[locale] ?? appDict.nav.en;
-  const navGroups = useMemo(() => getNavGroups(t), [t]);
+  const te = appDict.navExtra[locale] ?? appDict.navExtra.en;
+  const navGroups = useMemo(() => getNavGroups(t, te), [t, te]);
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 20);
