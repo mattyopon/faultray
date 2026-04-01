@@ -48,6 +48,12 @@ import {
   Rocket,
   LayoutTemplate,
   TrendingUp,
+  Brain,
+  Swords,
+  CircleDot,
+  Landmark,
+  FileSpreadsheet,
+  UserX,
 } from "lucide-react";
 import { locales, type Locale } from "@/i18n/config";
 import { appDict } from "@/i18n/app-dict";
@@ -56,85 +62,95 @@ import { useLocale } from "@/lib/useLocale";
 function getNavGroups(t: Record<string, string>, te: Record<string, string>) {
   return [
     {
-      label: t.analyze,
+      label: t.gettingStarted,
       items: [
-        { href: "/projects", label: t.projects, icon: FolderKanban },
-        { href: "/dashboard", label: t.dashboard, icon: LayoutDashboard },
-        { href: "/topology", label: t.topology, icon: Network },
-        { href: "/heatmap", label: t.heatmap, icon: Flame },
-        { href: "/score-detail", label: t.scoreDetail, icon: BarChart3 },
+        { href: "/onboarding",    label: t.onboarding,   icon: Rocket },
+        { href: "/templates",     label: t.templates,    icon: LayoutTemplate },
+        { href: "/ipo-readiness", label: t.ipoReadiness, icon: TrendingUp },
+      ],
+    },
+    {
+      label: t.observe ?? "OBSERVE",
+      items: [
+        { href: "/dashboard", label: t.dashboard,              icon: LayoutDashboard },
+        { href: "/apm",       label: t.apm,                    icon: Radio },
+        { href: "/traces",    label: t.traces ?? "Traces",     icon: Activity },
+        { href: "/logs",      label: t.logs ?? "Logs",         icon: FileText },
+      ],
+    },
+    {
+      label: t.visualize ?? "VISUALIZE",
+      items: [
+        { href: "/topology",      label: t.topology,                       icon: Network },
+        { href: "/dependencies",  label: t.dependencies ?? "Dependencies", icon: GitBranch },
+        { href: "/heatmap",       label: t.heatmap,                        icon: Flame },
+        { href: "/traffic-light", label: t.trafficLight ?? "Traffic Light",  icon: CircleDot },
+        { href: "/people-risk",   label: t.peopleRisk ?? "People Risk",     icon: UserX },
+        { href: "/score-detail",  label: t.scoreDetail,                     icon: BarChart3 },
       ],
     },
     {
       label: t.simulate,
       items: [
-        { href: "/simulate", label: t.runSimulation, icon: Zap },
-        { href: "/whatif", label: t.whatIf, icon: FlaskConical },
-        { href: "/fmea", label: t.fmea, icon: AlertOctagon },
-        { href: "/incidents", label: t.incidents, icon: Activity },
+        { href: "/simulate",  label: t.runSimulation,              icon: Zap },
+        { href: "/whatif",    label: t.whatIf,                     icon: FlaskConical },
+        { href: "/fmea",      label: t.fmea,                       icon: AlertOctagon },
+        { href: "/gameday",   label: t.gameday ?? "GameDay",       icon: Swords },
+        { href: "/incidents", label: t.incidents,                  icon: Activity },
+      ],
+    },
+    {
+      label: t.aiSecurity ?? "AI & SECURITY",
+      items: [
+        { href: "/ai-reliability", label: t.aiReliability ?? "AI Reliability", icon: Brain },
+        { href: "/advisor",        label: t.aiAdvisor,                          icon: Bot },
       ],
     },
     {
       label: t.compliance,
       items: [
-        { href: "/compliance", label: t.complianceItem, icon: ShieldCheck },
-        { href: "/security", label: t.security, icon: Shield },
-        { href: "/supply-chain", label: te.supplyChain, icon: PackageSearch },
-        { href: "/cost", label: t.costAnalysis, icon: DollarSign },
-        { href: "/reports", label: t.reports, icon: FileText },
-        { href: "/benchmark", label: t.benchmark, icon: Trophy },
+        { href: "/dora",         label: t.dora,                            icon: ShieldAlert },
+        { href: "/governance",   label: t.governance,                      icon: Scale },
+        { href: "/fisc",         label: t.fisc ?? "FISC",                  icon: Landmark },
+        { href: "/compliance",   label: t.complianceItem,                  icon: ShieldCheck },
+        { href: "/sla",          label: t.sla,                             icon: FileCheck },
+        { href: "/evidence",     label: t.evidence,                        icon: FileCheck },
+        { href: "/audit-report", label: t.auditReport ?? "Audit Report",   icon: FileSpreadsheet },
+      ],
+    },
+    {
+      label: t.improve ?? "IMPROVE",
+      items: [
         { href: "/remediation", label: t.remediationPlan, icon: ClipboardCheck },
-        { href: "/evidence", label: t.evidence, icon: FileCheck },
-        { href: "/dora", label: t.dora, icon: ShieldAlert },
-        { href: "/governance", label: t.governance, icon: Scale },
-        { href: "/sla", label: t.sla, icon: FileCheck },
-        { href: "/iac", label: t.iac, icon: FileCode2 },
-      ],
-    },
-    {
-      label: t.gettingStarted,
-      items: [
-        { href: "/onboarding", label: t.onboarding, icon: Rocket },
-        { href: "/templates", label: t.templates, icon: LayoutTemplate },
-        { href: "/ipo-readiness", label: t.ipoReadiness, icon: TrendingUp },
-      ],
-    },
-    {
-      label: t.monitor,
-      items: [
-        { href: "/apm", label: t.apm, icon: Radio },
+        { href: "/iac",         label: t.iac,              icon: FileCode2 },
+        { href: "/optimize",    label: te.optimize,        icon: Gauge },
+        { href: "/projects",    label: t.projects,         icon: FolderKanban },
       ],
     },
     {
       label: te.operations,
       items: [
-        { href: "/runbooks", label: te.runbooks, icon: BookOpen },
+        { href: "/runbooks",    label: te.runbooks,    icon: BookOpen },
         { href: "/postmortems", label: te.postmortems, icon: FileSearch },
-        { href: "/calendar", label: te.calendar, icon: CalendarDays },
-        { href: "/timeline", label: te.timeline, icon: Clock },
-        { href: "/drift", label: te.drift, icon: GitBranch },
+        { href: "/calendar",    label: te.calendar,    icon: CalendarDays },
+        { href: "/timeline",    label: te.timeline,    icon: Clock },
+        { href: "/drift",       label: te.drift,       icon: GitBranch },
       ],
     },
     {
       label: te.teams,
       items: [
-        { href: "/teams", label: te.teamMetrics, icon: Users },
-        { href: "/env-compare", label: te.envCompare, icon: GitCompare },
-        { href: "/canary", label: te.canary, icon: FlaskRound },
-        { href: "/optimize", label: te.optimize, icon: Gauge },
-      ],
-    },
-    {
-      label: t.ai,
-      items: [
-        { href: "/advisor", label: t.aiAdvisor, icon: Bot },
+        { href: "/teams",        label: te.teamMetrics,  icon: Users },
+        { href: "/env-compare",  label: te.envCompare,   icon: GitCompare },
+        { href: "/canary",       label: te.canary,       icon: FlaskRound },
+        { href: "/supply-chain", label: te.supplyChain,  icon: PackageSearch },
       ],
     },
     {
       label: t.account,
       items: [
         { href: "/settings", label: t.settings, icon: Settings },
-        { href: "/help", label: t.help, icon: HelpCircle },
+        { href: "/help",     label: t.help,     icon: HelpCircle },
       ],
     },
   ];
