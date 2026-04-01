@@ -242,14 +242,19 @@ class TestDynamic:
 class TestGovernance:
     """governance コマンド群のE2Eテスト。"""
 
-    def test_governance_assess_auto(self):
+    def test_governance_assess_auto(self, tmp_path):
         """governance assess --auto が動作する。"""
-        result = _run(["governance", "assess", "--auto"])
+        # Generate demo model — assess --auto needs an infrastructure model
+        model = tmp_path / "model.json"
+        model.write_text('{"components": {}, "dependencies": []}')
+        result = _run(["governance", "assess", "--auto", "--model", str(model)])
         _assert_ok(result)
 
-    def test_governance_assess_auto_json(self):
+    def test_governance_assess_auto_json(self, tmp_path):
         """governance assess --auto --json がJSON出力を返す。"""
-        result = _run(["governance", "assess", "--auto", "--json"])
+        model = tmp_path / "model.json"
+        model.write_text('{"components": {}, "dependencies": []}')
+        result = _run(["governance", "assess", "--auto", "--json", "--model", str(model)])
         assert result.returncode in (0, 2)
         output = result.stdout + result.stderr
         assert len(output) >= 10
