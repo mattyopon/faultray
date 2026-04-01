@@ -1242,3 +1242,144 @@ def _generic_export_block(tf_id: str, comp: "Component", comp_type: str) -> str:
         f'  }}\n'
         f'}}\n'
     )
+
+
+@app.command("gas-scan")
+def gas_scan_cmd(
+    credentials: str | None = typer.Option(
+        None,
+        "--credentials",
+        "-c",
+        help="Path to Google service account JSON credentials file.",
+    ),
+    org: str = typer.Option(
+        "Example Corp",
+        "--org",
+        "-o",
+        help="Organization name for the report.",
+    ),
+    domain: str | None = typer.Option(
+        None,
+        "--domain",
+        "-d",
+        help="Google Workspace domain (e.g. example.co.jp). Used with --credentials.",
+    ),
+    json_output: bool = typer.Option(
+        False,
+        "--json",
+        help="Output results as JSON.",
+    ),
+) -> None:
+    """Scan Google Workspace for GAS scripts and personalization risks.
+
+    Without --credentials, runs in demo mode with realistic sample data.
+
+    Examples:
+
+    \b
+        faultray gas-scan
+        faultray gas-scan --credentials creds.json --domain example.co.jp
+        faultray gas-scan --json
+        faultray gas-scan --org "サングローブ"
+    """
+    import json as _json
+
+    from faultray.discovery.gas_scanner import GASScanner
+    from faultray.discovery.personalization_analyzer import PersonalizationAnalyzer
+
+    scanner = GASScanner(credentials_path=credentials, domain=domain)
+
+    if credentials:
+        console.print("[cyan]Google Workspace GAS スキャン開始...[/]")
+        try:
+            result = scanner.scan()
+        except ImportError as exc:
+            console.print(f"[red]依存ライブラリが不足しています: {exc}[/]")
+            console.print(
+                "[yellow]pip install google-api-python-client google-auth を実行してください[/]"
+            )
+            raise typer.Exit(1)
+        except RuntimeError as exc:
+            console.print(f"[red]{exc}[/]")
+            raise typer.Exit(1)
+    else:
+        if not json_output:
+            console.print(
+                "[yellow]--credentials が指定されていません。デモモードで実行します。[/]"
+            )
+        result = scanner.scan_demo(org_name=org)
+
+    analyzer = PersonalizationAnalyzer()
+    report = analyzer.analyze_gas(result)
+
+    if json_output:
+        output = {
+            "scan": result.to_dict(),
+            "personalization_report": report.to_dict(),
+        }
+        console.print_json(_json.dumps(output, ensure_ascii=False, indent=2))
+        return
+
+    # Rich human-readable output
+    console.print()
+    console.print(f"[bold cyan]╔══ GAS スキャン結果: {result.organization} ══╗[/]")
+    console.print(
+        f"  スクリプト総数: [bold]{result.total_scripts}[/]  "
+        f"[red]Critical: {result.critical_count}[/]  "
+        f"[yellow]Warning: {result.warning_count}[/]  "
+        f"[green]OK: {result.ok_count}[/]"
+    )
+    console.print()
+
+    if result.critical_count:
+        console.print("[bold red]■ CRITICAL リスク[/]")
+        for risk in result.risks:
+            if risk.risk_level != "critical":
+                continue
+            script = next((s for s in result.scripts if s.id == risk.script_id), None)
+            if script:
+                console.print(
+                    f"  [red]●[/] {script.name}  "
+                    f"オーナー: {script.owner_name} ({script.owner_status})  "
+                    f"スコア: {risk.risk_score:.0f}/10"
+                )
+                for reason in risk.reasons:
+                    console.print(f"      → {reason}")
+        console.print()
+
+    if result.warning_count:
+        console.print("[bold yellow]■ WARNING リスク[/]")
+        for risk in result.risks:
+            if risk.risk_level != "warning":
+                continue
+            script = next((s for s in result.scripts if s.id == risk.script_id), None)
+            if script:
+                console.print(
+                    f"  [yellow]●[/] {script.name}  "
+                    f"オーナー: {script.owner_name}  "
+                    f"スコア: {risk.risk_score:.0f}/10"
+                )
+        console.print()
+
+    console.print("[bold]■ 属人化レポート[/]")
+    console.print(f"  関係者人数: {report.total_people}")
+    console.print(
+        f"  バスファクター 1 (1人退職で崩壊): [bold red]{report.bus_factor_1}[/] スクリプト"
+    )
+    console.print(
+        f"  バスファクター 2 (2人退職で崩壊): [yellow]{report.bus_factor_2}[/] スクリプト"
+    )
+    console.print()
+
+    if report.improvement_actions:
+        console.print("[bold]■ 改善アクション[/]")
+        priority_color = {"critical": "red", "high": "yellow", "medium": "blue", "low": "dim"}
+        for action in report.improvement_actions:
+            color = priority_color.get(action.get("priority", "low"), "white")
+            console.print(
+                f"  [{color}][{action['priority'].upper()}][/]  {action['title']}"
+            )
+            console.print(f"    {action['description']}")
+        console.print()
+
+    console.print("[bold cyan]╚══════════════════════════════════════════╝[/]")
