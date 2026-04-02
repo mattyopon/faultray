@@ -83,7 +83,7 @@ def backtest(
 
     # JSON output (--json flag or --report json)
     if output_json or report == "json":
-        console.print(json.dumps(summary_data, indent=2))
+        console.print_json(json.dumps(summary_data, indent=2))
         return
 
     # Rich table output

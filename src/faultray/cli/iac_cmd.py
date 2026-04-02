@@ -160,7 +160,7 @@ def iac_export(
             "spof_components": result.spof_components,
             "warnings": result.warnings,
         }
-        console.print(_json.dumps(data, indent=2))
+        console.print_json(_json.dumps(data, indent=2))
         return
 
     # --- Default output paths ------------------------------------------------

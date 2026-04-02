@@ -65,14 +65,14 @@ def governance_assess(
     assessor = GovernanceAssessor()
 
     if auto:
-        result = _auto_assess(assessor, yaml_file, model)
+        result = _auto_assess(assessor, yaml_file, model, quiet=json_output)
     else:
         result = _interactive_assess(assessor)
 
     reporter = GovernanceReporter(result)
 
     if json_output:
-        console.print(reporter.to_json())
+        console.print_json(reporter.to_json())
     else:
         reporter.print_rich()
 
@@ -134,7 +134,7 @@ def governance_report(
             reporter.to_json(output)
             console.print(f"[green]JSON report written to {output}[/]")
     elif json_output:
-        console.print(reporter.to_json())
+        console.print_json(reporter.to_json())
     else:
         reporter.print_rich(framework=fw)
 
@@ -158,7 +158,7 @@ def governance_cross_map(
         import json as json_mod
 
         matrix = get_coverage_matrix()
-        console.print(json_mod.dumps(matrix, ensure_ascii=False, indent=2))
+        console.print_json(json_mod.dumps(matrix, ensure_ascii=False, indent=2))
     else:
         reporter = GovernanceReporter()
         reporter.print_cross_mapping()
@@ -218,7 +218,7 @@ def governance_gap_analysis(
 
     if json_output:
         from dataclasses import asdict
-        console.print(json_mod.dumps(asdict(gap_report), ensure_ascii=False, indent=2))
+        console.print_json(json_mod.dumps(asdict(gap_report), ensure_ascii=False, indent=2))
     else:
         console.print("\n[bold cyan]Gap Analysis Report[/]")
         console.print(f"Total requirements: {gap_report.total_requirements}")
@@ -263,7 +263,7 @@ def governance_roadmap(
 
     if json_output:
         from dataclasses import asdict
-        console.print(json_mod.dumps(asdict(rm), ensure_ascii=False, indent=2))
+        console.print_json(json_mod.dumps(asdict(rm), ensure_ascii=False, indent=2))
     else:
         console.print("\n[bold cyan]Improvement Roadmap[/]\n")
         for phase_label, items in [
@@ -303,7 +303,7 @@ def ai_registry_list(
     systems = list_ai_systems(org_id)
 
     if json_output:
-        console.print(json_mod.dumps([asdict(s) for s in systems], ensure_ascii=False, indent=2))
+        console.print_json(json_mod.dumps([asdict(s) for s in systems], indent=2))
     else:
         if not systems:
             console.print("[dim]No AI systems registered.[/]")
@@ -370,7 +370,7 @@ def evidence_list(
     records = list_evidence(req_id)
 
     if json_output:
-        console.print(json_mod.dumps([asdict(r) for r in records], ensure_ascii=False, indent=2))
+        console.print_json(json_mod.dumps([asdict(r) for r in records], indent=2))
     else:
         if not records:
             console.print("[dim]No evidence records found.[/]")
@@ -512,6 +512,7 @@ def _auto_assess(
     assessor: "GovernanceAssessor",
     yaml_file: Path | None,
     model: Path | None,
+    quiet: bool = False,
 ) -> "AssessmentResult":
     """Auto-assess governance from infrastructure model."""
     from faultray.cli.main import _load_graph_for_analysis, DEFAULT_MODEL_PATH
@@ -538,7 +539,8 @@ def _auto_assess(
     )
     has_logging = any(c.security.log_enabled for c in graph.components.values())
 
-    console.print("[dim]Auto-assessing governance from infrastructure graph...[/]")
+    if not quiet:
+        console.print("[dim]Auto-assessing governance from infrastructure graph...[/]")
 
     return assessor.assess_auto(
         has_monitoring=has_monitoring,
