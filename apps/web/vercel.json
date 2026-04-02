@@ -17,6 +17,14 @@
     { "source": "/api/chat", "destination": "/api/realtime" },
     { "source": "/api/health", "destination": "/api/realtime" },
     { "source": "/api/governance", "destination": "/api/compliance" },
-    { "source": "/apm", "destination": "/apm" }
+    { "source": "/apm", "destination": "/apm" },
+    { "source": "/shadow-it", "destination": "/shadow-it" },
+    { "source": "/bus-factor", "destination": "/bus-factor" },
+    { "source": "/vuln-priority", "destination": "/vuln-priority" },
+    { "source": "/external-impact", "destination": "/external-impact" },
+    { "source": "/:lang/shadow-it", "destination": "/shadow-it" },
+    { "source": "/:lang/bus-factor", "destination": "/bus-factor" },
+    { "source": "/:lang/vuln-priority", "destination": "/vuln-priority" },
+    { "source": "/:lang/external-impact", "destination": "/external-impact" }
   ]
 }
