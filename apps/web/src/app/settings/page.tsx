@@ -19,6 +19,7 @@ import {
   Clock,
   Minus,
   Link2,
+  Gift,
 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useState, useEffect, useCallback } from "react";
@@ -113,6 +114,11 @@ export default function SettingsPage() {
 
   const [planFeedback, setPlanFeedback] = useState<{ type: "success" | "error"; message: string } | null>(null);
 
+  // Coupon code
+  const [couponCode, setCouponCode] = useState("");
+  const [redeemingCoupon, setRedeemingCoupon] = useState(false);
+  const [couponFeedback, setCouponFeedback] = useState<{ type: "success" | "error"; message: string } | null>(null);
+
   async function handlePlanSwitch(plan: string) {
     if (!user?.email) return;
     setSwitchingPlan(true);
@@ -141,6 +147,35 @@ export default function SettingsPage() {
     } finally {
       setSwitchingPlan(false);
     }
+  }
+
+  async function handleRedeemCoupon() {
+    setRedeemingCoupon(true);
+    setCouponFeedback(null);
+    try {
+      const res = await fetch("/api/coupon/redeem", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ code: couponCode }),
+      });
+      const data = await res.json() as { success?: boolean; tier?: string; expires_at?: string; error?: string };
+      if (data.success && data.tier && data.expires_at) {
+        setCouponFeedback({
+          type: "success",
+          message:
+            locale === "ja"
+              ? `${data.tier} プランが ${new Date(data.expires_at).toLocaleDateString("ja-JP")} まで有効になりました`
+              : `${data.tier} plan active until ${new Date(data.expires_at).toLocaleDateString()}`,
+        });
+        setCouponCode("");
+        fetchProfile();
+      } else {
+        setCouponFeedback({ type: "error", message: data.error ?? "Failed to apply coupon" });
+      }
+    } catch {
+      setCouponFeedback({ type: "error", message: "Failed to apply coupon" });
+    }
+    setRedeemingCoupon(false);
   }
 
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
@@ -359,6 +394,34 @@ export default function SettingsPage() {
             <CreditCard size={14} /> {t.upgradePro}
           </Button>
         </Link>
+
+        {/* Coupon Code */}
+        <div className="mt-6 pt-6 border-t border-[#1e293b]">
+          <h3 className="text-sm font-semibold mb-3 flex items-center gap-2">
+            <Gift size={16} className="text-[#FFD700]" />
+            {locale === "ja" ? "クーポンコード" : "Coupon Code"}
+          </h3>
+          <div className="flex gap-2">
+            <input
+              type="text"
+              placeholder="FRAY-XXXX-XXXX-XXXX"
+              value={couponCode}
+              onChange={(e) => setCouponCode(e.target.value.toUpperCase())}
+              className="flex-1 px-3 py-2 rounded-lg bg-[#0d1117] border border-[#1e293b] text-white text-sm placeholder-[#475569] focus:border-[#FFD700] focus:outline-none"
+            />
+            <Button onClick={handleRedeemCoupon} disabled={!couponCode || redeemingCoupon} size="sm">
+              {redeemingCoupon
+                ? (locale === "ja" ? "適用中..." : "Applying...")
+                : (locale === "ja" ? "適用" : "Apply")}
+            </Button>
+          </div>
+          {couponFeedback && (
+            <div className={`mt-2 text-sm ${couponFeedback.type === "success" ? "text-emerald-400" : "text-red-400"}`}>
+              {couponFeedback.message}
+            </div>
+          )}
+        </div>
+
         {isAdmin && (
           <div className="mt-6 pt-6 border-t border-[#1e293b]">
             <div className="flex items-center gap-2 mb-3">
