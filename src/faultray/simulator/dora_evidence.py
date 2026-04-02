@@ -1194,20 +1194,43 @@ class DORAEvidenceEngine:
         """Controls requiring organisational/human verification.
 
         Instead of faking compliance from infrastructure data, these are
-        honestly flagged as requiring manual verification.
+        honestly flagged as requiring manual verification.  Where auditor
+        guidance is available (via :mod:`faultray.simulator.dora_manual_guidance`),
+        the recommendations and evidence items are enriched with specific
+        document requirements, acceptance criteria, responsible roles, and
+        review frequencies.
         """
+        from faultray.simulator.dora_manual_guidance import get_guidance
+
+        guidance = get_guidance(control.control_id)
+
+        recs: list[str] = [
+            f"Provide documentary evidence for: {control.description}",
+            "Upload governance documentation to evidence repository",
+        ]
+        evidence_items: list[str] = [
+            "Manual verification required — not automatable from infrastructure",
+        ]
+
+        if guidance:
+            recs.append(
+                f"Required documents: {', '.join(guidance.required_documents)}"
+            )
+            recs.append(f"Responsible: {guidance.responsible_role}")
+            recs.append(f"Review frequency: {guidance.review_frequency}")
+            evidence_items = [
+                f"Acceptance criteria: {c}" for c in guidance.acceptance_criteria
+            ]
+
         return DORAGapAnalysis(
             control_id=control.control_id,
             status=EvidenceStatus.PARTIALLY_COMPLIANT,
             gaps=[f"{control.description} — requires organisational verification"],
-            recommendations=[
-                f"Provide documentary evidence for: {control.description}",
-                "Upload governance documentation to evidence repository",
-            ],
+            recommendations=recs,
             risk_score=0.2,
             evaluation_method=control.evaluation_method,
             rts_references=control.rts_references,
-            evidence_items=["Manual verification required — not automatable from infrastructure"],
+            evidence_items=evidence_items,
         )
 
     def _eval_external_assessment(self, control: DORAControl) -> DORAGapAnalysis:
