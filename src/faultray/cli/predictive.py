@@ -253,34 +253,49 @@ def bayesian(
 @app.command()
 def gameday(
     yaml_file: Path = typer.Argument(..., help="Infrastructure YAML file"),
-    plan: Path = typer.Option(..., "--plan", "-p", help="Game Day plan YAML file"),
+    plan: Path = typer.Option(
+        None, "--plan", "-p",
+        help="Game Day plan YAML file. Omit to auto-generate scenarios.",
+    ),
+    scenarios: int = typer.Option(
+        5, "--scenarios", "-n",
+        help="Number of scenarios to generate (auto-generate mode).",
+    ),
+    difficulty: str = typer.Option(
+        "medium", "--difficulty", "-d",
+        help="Scenario difficulty: easy, medium, or hard.",
+    ),
+    output: Path = typer.Option(
+        None, "--output", "-o",
+        help="Write HTML GameDay plan to this file.",
+    ),
     json_output: bool = typer.Option(False, "--json", help="Output as JSON"),
 ) -> None:
-    """Execute a Game Day exercise against an infrastructure model.
+    """Execute a Game Day exercise or auto-generate GameDay scenarios.
+
+    Without --plan: generates ranked failure scenarios from the topology.
+    With --plan: executes a structured Game Day exercise.
 
     Examples:
-        # Run a game day exercise
-        faultray gameday infra.yaml --plan gameday-plan.yaml
+        # Auto-generate top 5 scenarios
+        faultray gameday infra.yaml
+
+        # Generate 10 hard scenarios
+        faultray gameday infra.yaml --scenarios 10 --difficulty hard
+
+        # Export HTML GameDay plan
+        faultray gameday infra.yaml --output gameday-plan.html
 
         # JSON output
-        faultray gameday infra.yaml --plan gameday-plan.yaml --json
-    """
-    import yaml
+        faultray gameday infra.yaml --json
 
+        # Run a pre-written exercise plan
+        faultray gameday infra.yaml --plan gameday-plan.yaml
+    """
     from faultray.model.loader import load_yaml
-    from faultray.simulator.gameday_engine import (
-        GameDayEngine,
-        GameDayPlan,
-        GameDayStep,
-    )
-    from faultray.simulator.scenarios import Fault, FaultType
 
     if not yaml_file.exists():
         console.print(f"[red]Infrastructure file not found: {yaml_file}[/]")
-        raise typer.Exit(1)
-
-    if not plan.exists():
-        console.print(f"[red]Game Day plan not found: {plan}[/]")
         raise typer.Exit(1)
 
     try:
@@ -289,85 +304,261 @@ def gameday(
         console.print(f"[red]{exc}[/]")
         raise typer.Exit(1)
 
-    # Parse game day plan
-    raw = yaml.safe_load(plan.read_text(encoding="utf-8"))
-    if not isinstance(raw, dict):
-        console.print("[red]Game Day plan must be a YAML mapping.[/]")
-        raise typer.Exit(1)
+    # -----------------------------------------------------------------------
+    # Mode A: execute a pre-written plan (--plan provided)
+    # -----------------------------------------------------------------------
+    if plan is not None:
+        import yaml
 
-    steps: list[GameDayStep] = []
-    for raw_step in raw.get("steps", []):
-        fault = None
-        if "fault" in raw_step and raw_step["fault"]:
-            fault_data = raw_step["fault"]
-            fault = Fault(
-                target_component_id=fault_data["target_component_id"],
-                fault_type=FaultType(fault_data["fault_type"]),
-                severity=fault_data.get("severity", 1.0),
-                duration_seconds=fault_data.get("duration_seconds", 300),
-            )
-        steps.append(GameDayStep(
-            time_offset_seconds=raw_step.get("time_offset_seconds", 0),
-            action=raw_step.get("action", "manual_check"),
-            fault=fault,
-            expected_outcome=raw_step.get("expected_outcome", ""),
-            runbook_step=raw_step.get("runbook_step", ""),
+        from faultray.simulator.gameday_engine import (
+            GameDayEngine,
+            GameDayPlan,
+            GameDayStep,
+        )
+        from faultray.simulator.scenarios import Fault, FaultType
+
+        if not plan.exists():
+            console.print(f"[red]Game Day plan not found: {plan}[/]")
+            raise typer.Exit(1)
+
+        raw = yaml.safe_load(plan.read_text(encoding="utf-8"))
+        if not isinstance(raw, dict):
+            console.print("[red]Game Day plan must be a YAML mapping.[/]")
+            raise typer.Exit(1)
+
+        steps: list[GameDayStep] = []
+        for raw_step in raw.get("steps", []):
+            fault = None
+            if "fault" in raw_step and raw_step["fault"]:
+                fault_data = raw_step["fault"]
+                fault = Fault(
+                    target_component_id=fault_data["target_component_id"],
+                    fault_type=FaultType(fault_data["fault_type"]),
+                    severity=fault_data.get("severity", 1.0),
+                    duration_seconds=fault_data.get("duration_seconds", 300),
+                )
+            steps.append(GameDayStep(
+                time_offset_seconds=raw_step.get("time_offset_seconds", 0),
+                action=raw_step.get("action", "manual_check"),
+                fault=fault,
+                expected_outcome=raw_step.get("expected_outcome", ""),
+                runbook_step=raw_step.get("runbook_step", ""),
+            ))
+
+        gameday_plan = GameDayPlan(
+            name=raw.get("name", "Unnamed Game Day"),
+            description=raw.get("description", ""),
+            steps=steps,
+            success_criteria=raw.get("success_criteria", []),
+            rollback_plan=raw.get("rollback_plan", ""),
+        )
+
+        engine = GameDayEngine(graph)
+        report = engine.execute(gameday_plan)
+
+        if json_output:
+            import dataclasses
+
+            data = dataclasses.asdict(report)
+            console.print_json(json_lib.dumps(data, indent=2, default=str))
+            return
+
+        from rich.panel import Panel
+        from rich.table import Table
+
+        overall_color = "green" if report.overall == "PASS" else "red"
+        console.print()
+        console.print(Panel(
+            f"[bold]Plan:[/] {report.plan_name}\n"
+            f"[bold]Steps:[/] {len(report.steps)} total, "
+            f"[green]{report.passed} passed[/], "
+            f"[red]{report.failed} failed[/]\n"
+            f"[bold]Overall:[/] [{overall_color}]{report.overall}[/]",
+            title="[bold]Game Day Report[/]",
+            border_style=overall_color,
         ))
 
-    gameday_plan = GameDayPlan(
-        name=raw.get("name", "Unnamed Game Day"),
-        description=raw.get("description", ""),
-        steps=steps,
-        success_criteria=raw.get("success_criteria", []),
-        rollback_plan=raw.get("rollback_plan", ""),
-    )
+        table = Table(title="Step Results", show_header=True)
+        table.add_column("Step", width=6, justify="right")
+        table.add_column("Time", width=8, justify="right")
+        table.add_column("Action", width=16)
+        table.add_column("Outcome", width=8, justify="center")
+        table.add_column("Details", width=50)
 
-    engine = GameDayEngine(graph)
-    report = engine.execute(gameday_plan)
+        for r in report.steps:
+            outcome_color = (
+                "green" if r.outcome == "PASS" else
+                "red" if r.outcome == "FAIL" else "yellow"
+            )
+            table.add_row(
+                str(r.step_index),
+                f"T+{r.time_seconds}s",
+                r.action,
+                f"[{outcome_color}]{r.outcome}[/]",
+                r.details[:50],
+            )
 
+        console.print(table)
+
+        if report.timeline_summary:
+            console.print(f"\n[dim]{report.timeline_summary}[/]")
+        return
+
+    # -----------------------------------------------------------------------
+    # Mode B: auto-generate scenarios from topology
+    # -----------------------------------------------------------------------
+    from faultray.simulator.gameday import GameDayGenerator
+
+    gen = GameDayGenerator(graph)
+    generated = gen.generate_scenarios(count=scenarios, difficulty=difficulty)
+
+    if not generated:
+        console.print("[yellow]No scenarios could be generated for this infrastructure.[/]")
+        raise typer.Exit(0)
+
+    # --- JSON output ---
     if json_output:
         import dataclasses
 
-        data = dataclasses.asdict(report)
+        data = [dataclasses.asdict(s) for s in generated]
         console.print_json(json_lib.dumps(data, indent=2, default=str))
         return
 
-    from rich.panel import Panel
-    from rich.table import Table
+    # --- HTML output ---
+    if output is not None:
+        _write_gameday_html(generated, output, yaml_file.stem, difficulty)
+        console.print(f"[green]GameDay HTML plan written to:[/] {output}")
+        return
 
-    overall_color = "green" if report.overall == "PASS" else "red"
+    # --- Rich terminal output ---
+    _print_gameday_scenarios(generated, difficulty)
+
+
+# ---------------------------------------------------------------------------
+# GameDay generator helpers
+# ---------------------------------------------------------------------------
+
+def _write_gameday_html(
+    scenarios: list,
+    output_path: "Path",
+    infra_name: str,
+    difficulty: str,
+) -> None:
+    """Render the gameday HTML template and write to output_path."""
+    from datetime import datetime, timezone
+    from pathlib import Path as _Path
+
+    from jinja2 import Environment, FileSystemLoader
+
+    _TEMPLATE_DIR = _Path(__file__).resolve().parent.parent / "reporter" / "templates"
+    env = Environment(loader=FileSystemLoader(str(_TEMPLATE_DIR)), autoescape=True)
+    tmpl = env.get_template("gameday_report.html")
+
+    avg_impact = (
+        sum(s.estimated_impact_score for s in scenarios) / len(scenarios)
+        if scenarios else 0.0
+    )
+    avg_mttr = (
+        sum(s.estimated_mttr_minutes for s in scenarios) / len(scenarios)
+        if scenarios else 0.0
+    )
+
+    # Collect unique component IDs across all scenarios
+    all_comp_ids: set[str] = set()
+    for s in scenarios:
+        all_comp_ids.update(s.trigger_components)
+        all_comp_ids.update(s.affected_components)
+    total_components = len(all_comp_ids)
+
+    html = tmpl.render(
+        scenarios=scenarios,
+        generated_date=datetime.now(timezone.utc).strftime("%Y-%m-%d"),
+        infra_name=infra_name,
+        difficulty=difficulty,
+        total_components=total_components,
+        avg_impact=f"{avg_impact:.0f}/100",
+        avg_mttr=f"{avg_mttr:.0f}",
+    )
+    output_path.write_text(html, encoding="utf-8")
+
+
+def _print_gameday_scenarios(scenarios: list, difficulty: str) -> None:
+    """Print GameDay scenarios to the terminal using Rich."""
+    from rich.panel import Panel
+
+    diff_color = {"easy": "green", "medium": "yellow", "hard": "red"}.get(
+        difficulty.lower(), "cyan"
+    )
+
     console.print()
     console.print(Panel(
-        f"[bold]Plan:[/] {report.plan_name}\n"
-        f"[bold]Steps:[/] {len(report.steps)} total, "
-        f"[green]{report.passed} passed[/], "
-        f"[red]{report.failed} failed[/]\n"
-        f"[bold]Overall:[/] [{overall_color}]{report.overall}[/]",
-        title="[bold]Game Day Report[/]",
-        border_style=overall_color,
+        f"[bold]GameDay Scenario Generator[/]\n\n"
+        f"Difficulty: [{diff_color}]{difficulty.upper()}[/{diff_color}]  |  "
+        f"Scenarios: [bold]{len(scenarios)}[/]\n\n"
+        "[dim]Scenarios ranked by estimated impact. "
+        "Use --output to export an HTML plan.[/dim]",
+        title="[bold cyan]GameDay Plan[/]",
+        border_style="cyan",
     ))
 
-    table = Table(title="Step Results", show_header=True)
-    table.add_column("Step", width=6, justify="right")
-    table.add_column("Time", width=8, justify="right")
-    table.add_column("Action", width=16)
-    table.add_column("Outcome", width=8, justify="center")
-    table.add_column("Details", width=50)
+    for sc in scenarios:
+        impact = sc.estimated_impact_score
+        if impact >= 70:
+            impact_color = "red"
+        elif impact >= 40:
+            impact_color = "yellow"
+        else:
+            impact_color = "green"
 
-    for r in report.steps:
-        outcome_color = (
-            "green" if r.outcome == "PASS" else
-            "red" if r.outcome == "FAIL" else "yellow"
+        diff_badge = {
+            "easy": "[green]EASY[/]",
+            "medium": "[yellow]MEDIUM[/]",
+            "hard": "[red]HARD[/]",
+        }.get(sc.difficulty, sc.difficulty.upper())
+
+        header = (
+            f"[bold cyan]{sc.scenario_id}[/] — [bold]{sc.title}[/]  "
+            f"{diff_badge}  [{impact_color}]Impact: {impact:.0f}/100[/{impact_color}]"
         )
-        table.add_row(
-            str(r.step_index),
-            f"T+{r.time_seconds}s",
-            r.action,
-            f"[{outcome_color}]{r.outcome}[/]",
-            r.details[:50],
-        )
+        body_lines = [
+            f"[dim]{sc.description}[/dim]",
+            f"\n[dim]Category:[/dim] {sc.category}  "
+            f"[dim]Mode:[/dim] {sc.failure_mode}  "
+            f"[dim]Cascade depth:[/dim] {sc.cascade_depth}  "
+            f"[dim]MTTR:[/dim] ~{sc.estimated_mttr_minutes:.0f}m  "
+            f"[dim]Users affected:[/dim] {sc.affected_users_pct:.0f}%",
+        ]
+        if sc.trigger_components:
+            body_lines.append(
+                f"[dim]Trigger:[/dim] {', '.join(sc.trigger_components)}"
+            )
+        if sc.affected_components:
+            shown = sc.affected_components[:5]
+            extra = len(sc.affected_components) - len(shown)
+            aff_str = ", ".join(shown)
+            if extra > 0:
+                aff_str += f" (+{extra} more)"
+            body_lines.append(f"[dim]Affected:[/dim] {aff_str}")
 
-    console.print(table)
+        body_lines.append(f"\n[bold]SLO Impact:[/bold] {sc.slo_impact}")
 
-    if report.timeline_summary:
-        console.print(f"\n[dim]{report.timeline_summary}[/]")
+        # Execution steps preview
+        if sc.execution_steps:
+            steps_preview = "\n".join(
+                f"  {i+1}. {s}" for i, s in enumerate(sc.execution_steps[:4])
+            )
+            if len(sc.execution_steps) > 4:
+                steps_preview += f"\n  ... ({len(sc.execution_steps) - 4} more steps)"
+            body_lines.append(f"\n[bold]Execution Steps:[/bold]\n{steps_preview}")
+
+        if sc.success_criteria:
+            crit = "\n".join(f"  [green]+ {c}[/]" for c in sc.success_criteria[:3])
+            body_lines.append(f"\n[bold]Go Criteria:[/bold]\n{crit}")
+
+        body_lines.append(f"\n[dim]Rollback:[/dim] {sc.rollback_plan[:120]}...")
+
+        console.print(Panel(
+            header + "\n\n" + "\n".join(body_lines),
+            border_style=impact_color,
+        ))
+        console.print()
