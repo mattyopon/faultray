@@ -214,7 +214,7 @@ export default async function LangHomePage({
 }: {
   
 }) {
-  const lang = "en" as const;
+  const lang = "en" as "en" | "ja" | "de" | "fr";
   
   const dict = await getDictionary(lang);
 
