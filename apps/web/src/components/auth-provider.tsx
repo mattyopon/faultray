@@ -47,11 +47,24 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const supabase = createClient();
       const { data } = await supabase
         .from("profiles")
-        .select("plan")
+        .select("plan, trial_ends_at")
         .eq("id", uid)
         .single();
       if (data?.plan) {
-        setPlan((data.plan as PlanTier) || "free");
+        // trial_ends_at が過去の場合は free にフォールバック
+        const isExpired =
+          data.trial_ends_at != null &&
+          new Date(data.trial_ends_at as string) < new Date();
+        if (isExpired && data.plan !== "free") {
+          setPlan("free");
+          // 次回読み込み高速化のため DB も更新
+          await supabase
+            .from("profiles")
+            .update({ plan: "free" })
+            .eq("id", uid);
+        } else {
+          setPlan((data.plan as PlanTier) || "free");
+        }
       }
     } catch {
       // Supabase not configured — remain "free"
