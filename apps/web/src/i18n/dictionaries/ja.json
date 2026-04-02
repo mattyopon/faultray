@@ -1,7 +1,7 @@
 {
   "metadata": {
-    "title": "FaultRay — ゼロリスク・インフラストラクチャ Chaos Engineering",
-    "description": "本番環境に触れることなく、システムの可用性上限を数学的に証明。2,000以上のシナリオによるピュアシミュレーション Chaos Engineering。"
+    "title": "FaultRay — 本番環境を壊さず、システムの弱点を自動診断",
+    "description": "本番環境を触らずにシステムの弱点を自動発見。2,000以上のシナリオでシステムの稼働率上限を数学的に証明するSaaS。"
   },
   "nav": {
     "features": "機能",
@@ -12,8 +12,8 @@
   },
   "hero": {
     "badge": "オープンソース · BSL 1.1 License",
-    "subtitle": "ゼロリスク・インフラストラクチャ Chaos Engineering",
-    "description": "本番環境に触れることなく、システムの可用性上限を数学的に証明します。",
+    "subtitle": "本番環境を壊さず、システムの弱点を自動診断",
+    "description": "本番環境を触らずに、システムがどこまで耐えられるかを数学的に証明します。",
     "stats": {
       "scenarios": "シナリオ",
       "engines": "エンジン",
@@ -28,24 +28,24 @@
   },
   "problem": {
     "title": "課題",
-    "description": "既存の Chaos ツールはインフラストラクチャに<strong>実際の障害</strong>を注入します。",
+    "description": "従来のカオステストツールは本番環境に<strong>実際の障害</strong>を起こして検証します。",
     "items": [
       "本番またはステージング環境が必要",
-      "テスト中に実際の障害が発生するリスク",
-      "高額なインフラストラクチャコスト",
-      "複雑なセットアップと後処理",
-      "数学的な可用性証明がない"
+      "テスト中に本当の障害が起きるリスク",
+      "高額なインフラコスト",
+      "複雑なセットアップと後片付け",
+      "稼働率の数学的な証明ができない"
     ]
   },
   "solution": {
     "title": "解決策",
-    "description": "FaultRay は<strong>純粋な数学的シミュレーション</strong>を使用します。",
+    "description": "FaultRay は<strong>純粋な数学的シミュレーション</strong>を使います。",
     "items": [
-      "ゼロリスク — 実際の障害を注入しない",
-      "ゼロコスト — ノートPCで実行可能",
-      "数秒で結果を取得",
-      "YAMLトポロジだけで動作",
-      "数学的に証明された可用性上限"
+      "ゼロリスク — 本番環境に一切触れない",
+      "低コスト — ノートPCで動作",
+      "数秒で結果を確認",
+      "YAMLファイル1つで動作",
+      "数学的に証明された稼働率の上限値"
     ]
   },
   "challenges": {
@@ -53,99 +53,99 @@
     "subheading": "FaultRay はエンジニアリングチームが夜も眠れなくなる本当の運用課題を解決します。",
     "items": [
       {
-        "problem": "属人的・手作業のインフラ管理",
-        "solution": "FaultRay がトポロジスキャンと耐障害性分析を自動化 — 特定の担当者への依存を解消します。"
+        "problem": "インフラ管理が属人化・手作業になっている",
+        "solution": "FaultRay がシステム構成の自動スキャンと障害耐性の分析を自動化。特定の担当者への依存を解消します。"
       },
       {
-        "problem": "IaC（Terraform）が未整備",
-        "solution": "FaultRay が既存の AWS / GCP / Azure インフラを自動スキャン — IaC 導入不要で即日分析開始。"
+        "problem": "Terraform などのコード管理（IaC）が未整備",
+        "solution": "FaultRay が既存の AWS / GCP / Azure 環境を自動スキャン。IaC なしで即日分析を開始できます。"
       },
       {
-        "problem": "IPO後の可用性・監査要件への対応",
-        "solution": "DORA / SOC 2 準拠を機械生成エビデンスで自動証明。監査対応コストを大幅削減。"
+        "problem": "上場後の稼働率・監査要件への対応",
+        "solution": "DORA / SOC 2 準拠を自動生成エビデンスで証明。監査対応コストを大幅に削減します。"
       },
       {
-        "problem": "障害時の対応が場当たり的でランブックがない",
-        "solution": "FaultRay がシミュレーション結果からランブックと修復スクリプトを自動生成。"
+        "problem": "障害対応が場当たり的で手順書（ランブック）がない",
+        "solution": "FaultRay がシミュレーション結果から手順書と復旧スクリプトを自動生成します。"
       },
       {
         "problem": "AIガバナンス対応が未着手",
-        "solution": "METI AI ガイドライン・ISO 42001 への自動適合チェックと監査対応レポートを即時生成。"
+        "solution": "経産省AIガイドライン・ISO 42001 への自動チェックと監査レポートを即時生成します。"
       }
     ]
   },
   "features": {
     "heading": "必要なすべてを網羅",
-    "subheading": "ゼロリスク Chaos Engineering の10の柱",
+    "subheading": "ゼロリスク診断の10の柱",
     "cards": [
       {
-        "title": "100+ Simulation Engines",
-        "desc": "ネットワーク、プロセス、リソース、依存関係、レイテンシ、影響範囲、SLA契約検証など — Monte Carlo法、マルコフ連鎖、待ち行列理論で駆動。"
+        "title": "100種以上のシミュレーションエンジン",
+        "desc": "ネットワーク遅延・プロセス障害・依存関係の連鎖停止など — モンテカルロ法・マルコフ連鎖・待ち行列理論で駆動します。"
       },
       {
-        "title": "2,000+ 自動生成シナリオ",
-        "desc": "単一ノード障害からカスケード型マルチリージョン障害まで。すべてのシナリオはトポロジYAMLから生成 — 典型的な10コンポーネント構成で2,000以上のユニークシナリオ。"
+        "title": "2,000件以上の自動生成シナリオ",
+        "desc": "単一ノードの障害から複数リージョンにまたがる連鎖障害まで。10コンポーネント構成のシステムで2,000件以上のシナリオを自動生成します。"
       },
       {
-        "title": "N-Layer (5-Layer) Availability Model",
-        "desc": "可用性上限を5つの独立レイヤーに分解する唯一のツール: Hardware、Software、Theoretical、Operational、External SLA。"
+        "title": "5層稼働率モデル（N-Layer Model）",
+        "desc": "稼働率の上限を5つの独立した層に分解する唯一のツール: ハードウェア・ソフトウェア・理論値・運用・外部SLA。"
       },
       {
         "title": "AI分析",
-        "desc": "Claudeによる根本原因分析と、影響度・コスト順にランク付けされた改善提案。"
+        "desc": "Claudeによる根本原因分析と、影響度・コスト順に並んだ改善提案を自動生成します。"
       },
       {
-        "title": "DORA Compliance レポート",
-        "desc": "エビデンストレイルとリスク評価付きの監査対応 Digital Operational Resilience Act レポートを生成。"
+        "title": "DORA コンプライアンスレポート",
+        "desc": "証跡とリスク評価付きの監査対応レポートを自動生成。金融システムの規制対応を効率化します。"
       },
       {
-        "title": "セキュリティフィード統合",
-        "desc": "CVEデータとNVDフィードを自動取り込みし、脆弱性起因のカスケード障害をシミュレーション。"
+        "title": "セキュリティ脆弱性フィード連携",
+        "desc": "CVEデータとNVDフィードを自動取り込みし、脆弱性を起点とした連鎖障害をシミュレーションします。"
       },
       {
-        "title": "APM モニタリング（リアルタイム）",
-        "desc": "ライブパフォーマンス指標、トレース相関、異常検知 — 35以上の監視ビューを備えた耐障害性ダッシュボードに統合。"
+        "title": "リアルタイム監視（APM）",
+        "desc": "ライブパフォーマンス指標・トレース相関・異常検知 — 35種以上の監視ビューを備えたダッシュボードに統合します。"
       },
       {
-        "title": "AI ガバナンス（METI / ISO 42001）",
-        "desc": "経済産業省 AI ガイドラインおよび ISO 42001 要件への自動コンプライアンスチェック。監査対応エビデンスで責任あるAI運用を証明。"
+        "title": "AIガバナンス（経産省・ISO 42001）",
+        "desc": "経済産業省のAIガイドラインとISO 42001 要件への自動適合チェック。責任あるAI運用を監査エビデンスで証明します。"
       },
       {
-        "title": "自律型修復",
-        "desc": "シミュレーション結果からランブック、修復スクリプト、Terraform パッチを自動生成。平均修復時間を数時間から数分に短縮。"
+        "title": "自動復旧スクリプト生成",
+        "desc": "シミュレーション結果から手順書・復旧スクリプト・Terraformパッチを自動生成。平均復旧時間を数時間から数分に短縮します。"
       },
       {
-        "title": "35+ ダッシュボード画面",
-        "desc": "トポロジエディタ、シナリオエクスプローラ、N-Layer ドリルダウン、ヒートマップ、DORA レポート、経営サマリーを備えたフル機能 Web ダッシュボード。"
+        "title": "35画面以上のダッシュボード",
+        "desc": "構成エディタ・シナリオ一覧・5層ドリルダウン・ヒートマップ・DORAレポート・経営サマリーを備えたフル機能Webダッシュボード。"
       }
     ]
   },
   "agentResilience": {
     "badge": "v11.0 新機能",
-    "heading": "AI Agent Resilience Simulation",
-    "subheading": "インフラストラクチャ障害がエージェントのハルシネーションにどうカスケードするか — 本番で発生する前にシミュレーション。",
+    "heading": "AIエージェント障害シミュレーション",
+    "subheading": "インフラ障害がAIエージェントの誤回答にどう連鎖するか — 本番環境で発生する前にシミュレーションします。",
     "cards": [
       {
-        "title": "Cross-Layer Analysis",
-        "desc": "インフラストラクチャ障害（データベースダウン、キャッシュミス）がエージェントのハルシネーションにどうカスケードするかを追跡。正常に見えても誤った結果を出すサイレント劣化を露出。"
+        "title": "連鎖障害の横断分析",
+        "desc": "データベースダウンやキャッシュ障害がAIエージェントの誤回答にどう連鎖するかを追跡。正常に動作しているように見えて誤った結果を出す「サイレント劣化」を事前に検出します。"
       },
       {
-        "title": "PREDICT · ADOPT · MANAGE",
-        "desc": "エージェントレジリエンスの3つの柱: Chaos シナリオのシミュレーション、影響範囲分析によるデプロイリスク評価、モニタリングルールの自動生成。"
+        "title": "予測 · 評価 · 管理 の3ステップ",
+        "desc": "AIエージェント耐久性の3つの柱: 障害シナリオのシミュレーション、影響範囲分析によるリリースリスク評価、監視ルールの自動生成。"
       },
       {
-        "title": "4 New Component Types",
-        "desc": "AI Agents、LLM Endpoints、Tool Services、Agent Orchestrators を従来のインフラストラクチャと並ぶファーストクラスノードとして依存関係グラフにモデリング。"
+        "title": "4種類の新コンポーネントタイプ",
+        "desc": "AIエージェント・LLMエンドポイント・ツールサービス・エージェントオーケストレーターを従来のインフラと同じ依存関係グラフに組み込んで分析します。"
       },
       {
-        "title": "10 Agent Failure Modes",
-        "desc": "Hallucination、Context Overflow、LLM Rate Limiting、Token Exhaustion、Tool Failure、Agent Loops、Prompt Injection、Confidence Miscalibration、CoT Collapse、Output Amplification。"
+        "title": "10種類のAIエージェント障害モード",
+        "desc": "誤回答・コンテキスト超過・レート制限・トークン枯渇・ツール障害・無限ループ・プロンプトインジェクション・確信度ズレ・推論崩壊・エラー増幅の10パターン。"
       }
     ],
-    "taxonomyHeading": "<span>10-Mode</span> AI Agent Failure Taxonomy"
+    "taxonomyHeading": "<span>10種類</span> AIエージェント障害モード分類"
   },
   "comparison": {
-    "heading": "競合との比較",
+    "heading": "競合ツールとの比較",
     "subheading": "FaultRay は根本的に異なるアプローチを採用",
     "recommended": "推奨",
     "labels": {
@@ -189,41 +189,41 @@
     }
   },
   "nlayer": {
-    "heading": "N-Layer (5-Layer) Availability Limit Model",
-    "subheading": "可用性上限を5つの独立した制約レイヤーに分解する唯一のツール",
+    "heading": "5層稼働率上限モデル（N-Layer Model）",
+    "subheading": "稼働率の上限を5つの独立した制約層に分解する唯一のツール",
     "layers": [
       {
-        "label": "Layer 1: Hardware Limit",
-        "desc": "物理コンポーネントによる制約: ディスクMTBF、ネットワーク機器、電源システム、フェイルオーバー昇格時間"
+        "label": "層1: ハードウェア上限",
+        "desc": "物理部品の制約: ディスク故障率・ネットワーク機器・電源・フェイルオーバー切り替え時間"
       },
       {
-        "label": "Layer 2: Software Limit",
-        "desc": "実際の上限: デプロイパイプライン、設定エラー、依存関係障害、ヒューマンエラー率"
+        "label": "層2: ソフトウェア上限",
+        "desc": "現実の上限: デプロイ失敗・設定ミス・依存関係の障害・人的ミスの発生率"
       },
       {
-        "label": "Layer 3: Theoretical Limit",
-        "desc": "不可避の物理ノイズフロア: ネットワークパケットロス、GCポーズ、カーネルスケジューリングジッター"
+        "label": "層3: 理論上限",
+        "desc": "避けられない物理的なノイズ: ネットワークパケットロス・GC停止・OSのスケジューリングによる遅延"
       },
       {
-        "label": "Layer 4: Operational Limit",
-        "desc": "インシデント対応時間、オンコール体制、ランブック完全性、自動化レベル"
+        "label": "層4: 運用上限",
+        "desc": "障害対応時間・オンコール体制・手順書の整備度・自動化レベル"
       },
       {
-        "label": "Layer 5: External SLA",
-        "desc": "サードパーティサービスの可用性による絶対上限 (AWS, GCP, Stripe等)"
+        "label": "層5: 外部SLA上限",
+        "desc": "依存する外部サービスの稼働率による絶対的な上限 (AWS, GCP, Stripe等)"
       }
     ],
     "whyTitle": "なぜ重要なのか",
-    "whyP1": "多くのチームはハードウェアの nines を追求しますが、ソフトウェアレイヤーが可用性を4 ninesに制限しています。FaultRay はボトルネックの正確な位置を明らかにし、適切なレイヤーへの投資を導きます。",
-    "whyP2": "N-Layer モデルは拡張可能: Geographic、Economic、またはカスタムドメイン固有の制約レイヤーを追加して、組織独自の可用性境界に対応できます。",
-    "bindingTitle": "Binding Constraint Detection",
-    "bindingDesc": "シミュレーションが任意のレイヤー上限を超える可用性を予測した場合、FaultRay はそれをフラグ付けし、インフラストラクチャ改善のターゲットとなる制約レイヤーを特定します。"
+    "whyP1": "多くのチームはハードウェアの稼働率を上げようとしますが、実はソフトウェア層がボトルネックになっています。FaultRay はどの層が問題かを正確に特定し、投資すべき場所を明示します。",
+    "whyP2": "このモデルは拡張可能です。地理的制約・経済的制約・自社固有の制約層を追加して、組織独自の稼働率限界に対応できます。",
+    "bindingTitle": "ボトルネック層の自動検出",
+    "bindingDesc": "シミュレーション結果がいずれかの層の上限を超えた場合、FaultRay は自動的にフラグを立て、改善すべき制約層を特定します。"
   },
   "quickstart": {
     "heading": "クイックスタート",
-    "subheading": "ゼロから可用性証明まで3ステップ",
+    "subheading": "ゼロから稼働率証明まで3ステップ",
     "step1Title": "インストール",
-    "step2Title": "トポロジを定義",
+    "step2Title": "構成を定義",
     "step3Title": "分析を実行"
   },
   "pricing": {
@@ -235,31 +235,53 @@
     "currency": "¥",
     "prices": [0, 45000, 150000],
     "taxNote": "税別",
+    "japaneseSupportBadge": "日本語サポート込み",
     "plans": [
       {
         "name": "Free",
-        "desc": "Chaos Engineering を始める個人エンジニアに最適。",
+        "desc": "システム診断を試したい個人エンジニアに最適。",
         "cta": "無料で始める"
       },
       {
         "name": "Pro",
-        "desc": "DORA Compliance レポートとより高い制限が必要なチーム向け。",
-        "cta": "Pro を始める"
+        "desc": "DORAコンプライアンスレポートと上限拡張が必要なチーム向け。",
+        "cta": "Proを始める"
       },
       {
         "name": "Business",
-        "desc": "無制限アクセス、SSO、専用サポートが必要なエンタープライズ向け。",
+        "desc": "無制限利用・SSO・専任サポートが必要なエンタープライズ向け。",
         "cta": "お問い合わせ"
       }
     ]
   },
   "footer": {
-    "tagline": "ゼロリスク・インフラストラクチャ Chaos Engineering。可用性上限を数学的に証明。",
+    "tagline": "本番環境を壊さず、システムの弱点を自動診断。稼働率の上限を数学的に証明します。",
     "madeIn": "Made in Tokyo",
     "product": "プロダクト",
     "resources": "リソース",
     "legal": "法的情報",
-    "copyright": "© 2026 FaultRay. BSL 1.1 (Business Source License) に基づくオープンソース。"
+    "copyright": "© 2026 FaultRay. BSL 1.1 (Business Source License) に基づくオープンソース。",
+    "japaneseSupport": "日本語でのサポートに対応しています"
+  },
+  "socialProof": {
+    "heading": "開発者コミュニティからの支持",
+    "githubStars": "GitHub Stars",
+    "betaMessage": "現在ベータテスト中。フィードバックをお寄せください",
+    "betaCta": "フィードバックを送る",
+    "openSource": "オープンソース"
+  },
+  "roi": {
+    "heading": "ROI計算機",
+    "subheading": "FaultRay導入による年間削減額をシミュレーション",
+    "monthlyRevenue": "月間売上（万円）",
+    "incidentCount": "過去1年の障害回数",
+    "incidentHours": "1回あたりの平均障害時間（時間）",
+    "annualLoss": "推定年間損失額",
+    "estimatedReduction": "FaultRay導入後の削減見込み",
+    "roi": "ROI",
+    "annualCost": "年間コスト（Proプラン）",
+    "disclaimer": "※計算式: 年間損失 = 月売上 × (障害時間/720) × 障害回数 × 12。FaultRay効果 = 年間損失の70%削減と試算。",
+    "unit": "万円"
   },
   "languageSwitcher": {
     "label": "言語"

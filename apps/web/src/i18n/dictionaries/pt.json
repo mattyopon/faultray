@@ -208,6 +208,7 @@
     "currency": "$",
     "prices": [0, 299, 999],
     "taxNote": "",
+    "japaneseSupportBadge": "Japanese support included",
     "plans": [
       {
         "name": "Grátis",
@@ -226,13 +227,34 @@
       }
     ]
   },
+  "socialProof": {
+    "heading": "Trusted by the Developer Community",
+    "githubStars": "GitHub Stars",
+    "betaMessage": "Currently in beta. We'd love your feedback.",
+    "betaCta": "Send Feedback",
+    "openSource": "Open Source"
+  },
+  "roi": {
+    "heading": "Calculadora ROI",
+    "subheading": "Estime suas economias anuais com FaultRay",
+    "monthlyRevenue": "Receita mensal ($K)",
+    "incidentCount": "Incidentes por ano",
+    "incidentHours": "Duração média do incidente (horas)",
+    "annualLoss": "Perda anual estimada",
+    "estimatedReduction": "Economia estimada com FaultRay",
+    "roi": "ROI",
+    "annualCost": "Custo anual (plano Pro)",
+    "disclaimer": "Fórmula: Perda anual = Receita mensal × (horas/720) × incidentes × 12. Efeito FaultRay = redução de 70%.",
+    "unit": "K"
+  },
   "footer": {
     "tagline": "Chaos engineering de infraestrutura sem riscos. Prove seu limite de disponibilidade matematicamente.",
     "madeIn": "Feito em Tóquio",
     "product": "Produto",
     "resources": "Recursos",
     "legal": "Legal",
-    "copyright": "© 2026 FaultRay. Código aberto sob a BSL 1.1 (Business Source License)."
+    "copyright": "© 2026 FaultRay. Código aberto sob a BSL 1.1 (Business Source License).",
+    "japaneseSupport": "Japanese support available"
   },
   "languageSwitcher": {
     "label": "Idioma"

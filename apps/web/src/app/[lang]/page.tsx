@@ -24,6 +24,8 @@ import { isValidLocale } from "@/i18n/config";
 import { getDictionary } from "@/i18n/get-dictionary";
 import { notFound } from "next/navigation";
 import { LanguageSwitcher } from "@/components/language-switcher";
+import { SocialProof } from "@/components/social-proof";
+import { RoiCalculator } from "@/components/roi-calculator";
 
 /* ================================================================
    HERO TERMINAL — animated pip install + faultray demo
@@ -216,6 +218,20 @@ export default async function LangHomePage({
   if (!isValidLocale(lang)) notFound();
   const dict = await getDictionary(lang);
 
+  // GitHub Stars (LP-02): fetch at build/request time, fallback to 0 on error
+  let githubStars = 0;
+  try {
+    const ghRes = await fetch("https://api.github.com/repos/mattyopon/faultray", {
+      next: { revalidate: 3600 }, // revalidate every hour
+    });
+    if (ghRes.ok) {
+      const ghData = await ghRes.json() as { stargazers_count?: number };
+      githubStars = ghData.stargazers_count ?? 0;
+    }
+  } catch {
+    // silently fallback to 0
+  }
+
   const comparisonLabels = dict.comparison.labels;
   const comparisonKeys = ["approach", "productionRisk", "setupTime", "scenarios", "availabilityProof", "aiAgentModeling", "startingCost"] as const;
 
@@ -390,6 +406,16 @@ export default async function LangHomePage({
                 </div>
               );
             })}
+          </div>
+          {/* LP-05: Link to /features for full details */}
+          <div className="text-center mt-10">
+            <Link
+              href="/features"
+              className="inline-flex items-center gap-2 px-6 py-3 border border-[#1e293b] text-[#94a3b8] rounded-xl hover:border-[#64748b] hover:text-white hover:bg-white/[0.03] transition-all text-sm"
+            >
+              <ExternalLink size={14} />
+              {lang === "ja" ? "全機能の詳細を見る" : "View Full Feature Details"}
+            </Link>
           </div>
         </div>
       </section>
@@ -786,6 +812,16 @@ export default async function LangHomePage({
         </div>
       </section>
 
+      {/* ===== SOCIAL PROOF (LP-02) ===== */}
+      {dict.socialProof && (
+        <SocialProof dict={dict.socialProof} stars={githubStars} />
+      )}
+
+      {/* ===== ROI CALCULATOR (LP-04) ===== */}
+      {dict.roi && (
+        <RoiCalculator dict={dict.roi} lang={lang} />
+      )}
+
       {/* ===== PRICING ===== */}
       <section id="pricing" className="py-24 bg-[#0f1424]">
         <div className="max-w-[1200px] mx-auto px-6">
@@ -827,7 +863,14 @@ export default async function LangHomePage({
                       </>
                     )}
                   </div>
-                  <p className="text-sm text-[#94a3b8] leading-relaxed mb-6">{plan.desc}</p>
+                  <p className="text-sm text-[#94a3b8] leading-relaxed mb-4">{plan.desc}</p>
+                  {/* LP-07: Japanese support badge on paid plans */}
+                  {i > 0 && dict.pricing.japaneseSupportBadge && (
+                    <div className="inline-flex items-center gap-1.5 px-3 py-1 mb-5 text-xs font-semibold rounded-full bg-[#1e293b] text-[#94a3b8] border border-[#1e293b] w-fit">
+                      <span>🇯🇵</span>
+                      {dict.pricing.japaneseSupportBadge}
+                    </div>
+                  )}
                   <ul className="space-y-3 mb-8 flex-1">
                     {data.features.map((f) => (
                       <li key={f} className="flex items-center gap-2.5 text-sm text-[#94a3b8]">
@@ -1000,7 +1043,14 @@ export default async function LangHomePage({
             </div>
           </div>
 
-          <div className="pt-6 border-t border-[#1e293b] text-center">
+          <div className="pt-6 border-t border-[#1e293b] text-center space-y-2">
+            {/* LP-07: Japanese support notice */}
+            {dict.footer.japaneseSupport && (
+              <p className="text-[0.8125rem] text-[#64748b]">
+                <span className="mr-1.5">🇯🇵</span>
+                {dict.footer.japaneseSupport}
+              </p>
+            )}
             <p className="text-[0.8125rem] text-[#64748b]">
               {dict.footer.copyright}
             </p>

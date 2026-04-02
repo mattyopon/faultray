@@ -235,6 +235,7 @@
     "currency": "$",
     "prices": [0, 299, 999],
     "taxNote": "",
+    "japaneseSupportBadge": "Japanese support included",
     "plans": [
       {
         "name": "Free",
@@ -253,13 +254,34 @@
       }
     ]
   },
+  "socialProof": {
+    "heading": "Trusted by the Developer Community",
+    "githubStars": "GitHub Stars",
+    "betaMessage": "Currently in beta. We'd love your feedback.",
+    "betaCta": "Send Feedback",
+    "openSource": "Open Source"
+  },
+  "roi": {
+    "heading": "ROI-Rechner",
+    "subheading": "Schätzen Sie Ihre jährlichen Einsparungen mit FaultRay",
+    "monthlyRevenue": "Monatlicher Umsatz ($K)",
+    "incidentCount": "Vorfälle pro Jahr",
+    "incidentHours": "Durchschn. Vorfallsdauer (Stunden)",
+    "annualLoss": "Geschätzter jährlicher Verlust",
+    "estimatedReduction": "Geschätzte Einsparungen mit FaultRay",
+    "roi": "ROI",
+    "annualCost": "Jährliche Kosten (Pro-Plan)",
+    "disclaimer": "Formel: Jährlicher Verlust = Monatsumsatz × (Vorfallsstunden/720) × Vorfälle × 12. FaultRay-Effekt = 70% Reduktion.",
+    "unit": "K"
+  },
   "footer": {
     "tagline": "Risikofreies Infrastruktur-Chaos-Engineering. Beweisen Sie Ihre Verfügbarkeitsobergrenze mathematisch.",
     "madeIn": "Made in Tokyo",
     "product": "Produkt",
     "resources": "Ressourcen",
     "legal": "Rechtliches",
-    "copyright": "© 2026 FaultRay. Open Source unter der BSL 1.1 (Business Source License)."
+    "copyright": "© 2026 FaultRay. Open Source unter der BSL 1.1 (Business Source License).",
+    "japaneseSupport": "Japanese support available"
   },
   "languageSwitcher": {
     "label": "Sprache"

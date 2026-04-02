@@ -235,6 +235,7 @@
     "currency": "$",
     "prices": [0, 299, 999],
     "taxNote": "",
+    "japaneseSupportBadge": "Japanese support included",
     "plans": [
       {
         "name": "Free",
@@ -253,13 +254,34 @@
       }
     ]
   },
+  "socialProof": {
+    "heading": "Trusted by the Developer Community",
+    "githubStars": "GitHub Stars",
+    "betaMessage": "Currently in beta. We'd love your feedback.",
+    "betaCta": "Send Feedback",
+    "openSource": "Open Source"
+  },
+  "roi": {
+    "heading": "ROI Calculator",
+    "subheading": "Estimate your annual savings with FaultRay",
+    "monthlyRevenue": "Monthly Revenue ($K)",
+    "incidentCount": "Incidents per Year",
+    "incidentHours": "Avg. Incident Duration (hours)",
+    "annualLoss": "Estimated Annual Loss",
+    "estimatedReduction": "Estimated Savings with FaultRay",
+    "roi": "ROI",
+    "annualCost": "Annual Cost (Pro plan)",
+    "disclaimer": "Formula: Annual loss = Monthly revenue × (incident hours/720) × incidents × 12. FaultRay effect = 70% reduction.",
+    "unit": "K"
+  },
   "footer": {
     "tagline": "Zero-risk infrastructure chaos engineering. Prove your availability ceiling mathematically.",
     "madeIn": "Made in Tokyo",
     "product": "Product",
     "resources": "Resources",
     "legal": "Legal",
-    "copyright": "© 2026 FaultRay. Open source under the BSL 1.1 (Business Source License)."
+    "copyright": "© 2026 FaultRay. Open source under the BSL 1.1 (Business Source License).",
+    "japaneseSupport": "Japanese support available"
   },
   "languageSwitcher": {
     "label": "Language"

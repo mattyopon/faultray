@@ -208,6 +208,7 @@
     "currency": "$",
     "prices": [0, 299, 999],
     "taxNote": "",
+    "japaneseSupportBadge": "Japanese support included",
     "plans": [
       {
         "name": "무료",
@@ -226,13 +227,34 @@
       }
     ]
   },
+  "socialProof": {
+    "heading": "Trusted by the Developer Community",
+    "githubStars": "GitHub Stars",
+    "betaMessage": "Currently in beta. We'd love your feedback.",
+    "betaCta": "Send Feedback",
+    "openSource": "Open Source"
+  },
+  "roi": {
+    "heading": "ROI 계산기",
+    "subheading": "FaultRay 도입으로 예상되는 연간 절감액 시뮬레이션",
+    "monthlyRevenue": "월 매출 ($K)",
+    "incidentCount": "연간 장애 횟수",
+    "incidentHours": "평균 장애 시간 (시간)",
+    "annualLoss": "예상 연간 손실액",
+    "estimatedReduction": "FaultRay 도입 후 예상 절감액",
+    "roi": "ROI",
+    "annualCost": "연간 비용 (Pro 플랜)",
+    "disclaimer": "계산식: 연간 손실 = 월 매출 × (장애시간/720) × 횟수 × 12. FaultRay 효과 = 70% 절감.",
+    "unit": "K"
+  },
   "footer": {
     "tagline": "무위험 인프라 Chaos Engineering. 가용성 한계를 수학적으로 증명하세요.",
     "madeIn": "도쿄에서 제작",
     "product": "제품",
     "resources": "리소스",
     "legal": "법적 고지",
-    "copyright": "© 2026 FaultRay. BSL 1.1(비즈니스 소스 라이선스) 하에 오픈소스."
+    "copyright": "© 2026 FaultRay. BSL 1.1(비즈니스 소스 라이선스) 하에 오픈소스.",
+    "japaneseSupport": "Japanese support available"
   },
   "languageSwitcher": {
     "label": "언어"

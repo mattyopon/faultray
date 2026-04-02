@@ -208,6 +208,7 @@
     "currency": "$",
     "prices": [0, 299, 999],
     "taxNote": "",
+    "japaneseSupportBadge": "Japanese support included",
     "plans": [
       {
         "name": "免费版",
@@ -226,13 +227,34 @@
       }
     ]
   },
+  "socialProof": {
+    "heading": "Trusted by the Developer Community",
+    "githubStars": "GitHub Stars",
+    "betaMessage": "Currently in beta. We'd love your feedback.",
+    "betaCta": "Send Feedback",
+    "openSource": "Open Source"
+  },
+  "roi": {
+    "heading": "ROI计算器",
+    "subheading": "估算使用FaultRay的年度节省",
+    "monthlyRevenue": "月收入（千元）",
+    "incidentCount": "年度故障次数",
+    "incidentHours": "平均故障时间（小时）",
+    "annualLoss": "预计年度损失",
+    "estimatedReduction": "FaultRay预计节省",
+    "roi": "ROI",
+    "annualCost": "年度费用（Pro计划）",
+    "disclaimer": "公式: 年度损失 = 月收入 × (故障时间/720) × 次数 × 12。FaultRay效果 = 减少70%。",
+    "unit": "K"
+  },
   "footer": {
     "tagline": "零风险基础设施 Chaos Engineering。用数学方法证明可用性上限。",
     "madeIn": "日本东京制造",
     "product": "产品",
     "resources": "资源",
     "legal": "法律",
-    "copyright": "© 2026 FaultRay. 基于 BSL 1.1（商业源代码许可证）开源。"
+    "copyright": "© 2026 FaultRay. 基于 BSL 1.1（商业源代码许可证）开源。",
+    "japaneseSupport": "Japanese support available"
   },
   "languageSwitcher": {
     "label": "语言"
