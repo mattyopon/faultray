@@ -1,0 +1,849 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>DORA Resilience Evidence Report — {{ pdf_data.meta.reporting_entity | e }}</title>
+  <style>
+    /* ── Reset & base ───────────────────────────────────────────────────── */
+    *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+      font-size: 13px;
+      line-height: 1.6;
+      color: #1a1a2e;
+      background: #ffffff;
+      max-width: 1100px;
+      margin: 0 auto;
+      padding: 24px 32px;
+    }
+
+    /* ── Cover page ─────────────────────────────────────────────────────── */
+    .cover {
+      page-break-after: always;
+      padding: 60px 0 40px;
+      border-bottom: 4px solid #003087;
+      margin-bottom: 40px;
+      position: relative;
+    }
+    .cover-confidential {
+      position: absolute;
+      top: 0; right: 0;
+      background: #dc3545;
+      color: #fff;
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: 2px;
+      padding: 4px 12px;
+      border-radius: 0 0 0 6px;
+    }
+    .cover-logo {
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      color: #003087;
+      margin-bottom: 32px;
+    }
+    .cover h1 {
+      font-size: 32px;
+      font-weight: 800;
+      color: #003087;
+      line-height: 1.2;
+      margin-bottom: 8px;
+    }
+    .cover-subtitle {
+      font-size: 16px;
+      color: #444;
+      margin-bottom: 40px;
+    }
+    .cover-meta {
+      font-size: 12px;
+      color: #666;
+      line-height: 2;
+    }
+    .cover-meta strong { color: #333; }
+    .cover-entity {
+      font-size: 20px;
+      font-weight: 700;
+      color: #003087;
+      margin-top: 24px;
+      padding: 12px 20px;
+      border-left: 5px solid #003087;
+      background: #f0f4ff;
+    }
+
+    /* ── Table of Contents ──────────────────────────────────────────────── */
+    .toc {
+      page-break-after: always;
+      margin-bottom: 40px;
+    }
+    .toc h2 {
+      font-size: 20px;
+      font-weight: 700;
+      color: #003087;
+      border-bottom: 2px solid #003087;
+      padding-bottom: 8px;
+      margin-bottom: 20px;
+    }
+    .toc-list {
+      list-style: none;
+      counter-reset: toc-counter;
+    }
+    .toc-list > li {
+      counter-increment: toc-counter;
+      display: flex;
+      align-items: baseline;
+      padding: 6px 0;
+      border-bottom: 1px dotted #ccc;
+    }
+    .toc-list > li::before {
+      content: counter(toc-counter);
+      min-width: 28px;
+      font-weight: 600;
+      color: #003087;
+    }
+    .toc-list a {
+      color: #003087;
+      text-decoration: none;
+      flex: 1;
+    }
+    .toc-list a:hover { text-decoration: underline; }
+
+    /* ── Section headings ───────────────────────────────────────────────── */
+    .section {
+      margin-bottom: 36px;
+      page-break-inside: avoid;
+    }
+    .section-header {
+      background: #003087;
+      color: #fff;
+      padding: 10px 16px;
+      border-radius: 4px 4px 0 0;
+      font-size: 15px;
+      font-weight: 700;
+      margin-bottom: 0;
+    }
+    .section-body {
+      border: 1px solid #d0d7e3;
+      border-top: none;
+      border-radius: 0 0 4px 4px;
+      padding: 20px;
+      background: #fff;
+    }
+
+    h3 {
+      font-size: 14px;
+      font-weight: 700;
+      color: #003087;
+      margin: 16px 0 8px;
+    }
+
+    /* ── Executive summary ──────────────────────────────────────────────── */
+    .metric-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+      gap: 14px;
+      margin: 16px 0;
+    }
+    .metric-card {
+      background: #f8f9ff;
+      border: 1px solid #d0d7e3;
+      border-radius: 6px;
+      padding: 14px;
+      text-align: center;
+    }
+    .metric-card .value {
+      font-size: 28px;
+      font-weight: 800;
+      line-height: 1;
+    }
+    .metric-card .label {
+      font-size: 11px;
+      color: #666;
+      margin-top: 4px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+    .value-green  { color: #1a7a3c; }
+    .value-yellow { color: #7a5c00; }
+    .value-red    { color: #a81c1c; }
+    .value-grey   { color: #6c757d; }
+    .value-blue   { color: #003087; }
+
+    /* ── CSS compliance donut ───────────────────────────────────────────── */
+    .donut-wrap {
+      display: flex;
+      align-items: center;
+      gap: 24px;
+      margin: 16px 0;
+    }
+    .donut-container {
+      position: relative;
+      width: 110px;
+      height: 110px;
+      flex-shrink: 0;
+    }
+    .donut-container svg { overflow: visible; }
+    .donut-label {
+      position: absolute;
+      top: 50%; left: 50%;
+      transform: translate(-50%, -50%);
+      text-align: center;
+      line-height: 1.2;
+    }
+    .donut-label .pct   { font-size: 20px; font-weight: 800; color: #003087; }
+    .donut-label .pct-text { font-size: 9px; color: #888; }
+    .donut-legend { font-size: 12px; }
+    .donut-legend li {
+      list-style: none;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      margin-bottom: 4px;
+    }
+    .swatch {
+      width: 12px; height: 12px;
+      border-radius: 2px;
+      display: inline-block;
+    }
+    .sw-green  { background: #28a745; }
+    .sw-yellow { background: #ffc107; }
+    .sw-red    { background: #dc3545; }
+    .sw-grey   { background: #6c757d; }
+
+    /* ── Status badge ───────────────────────────────────────────────────── */
+    .badge {
+      display: inline-block;
+      padding: 2px 8px;
+      border-radius: 10px;
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: 0.4px;
+      text-transform: uppercase;
+      white-space: nowrap;
+    }
+    .badge-compliant         { background: #d4edda; color: #155724; }
+    .badge-partially_compliant { background: #fff3cd; color: #856404; }
+    .badge-non_compliant     { background: #f8d7da; color: #721c24; }
+    .badge-not_applicable    { background: #e2e3e5; color: #383d41; }
+    .badge-critical { background: #f8d7da; color: #721c24; }
+    .badge-high     { background: #ffe5cc; color: #7a3500; }
+    .badge-medium   { background: #fff3cd; color: #856404; }
+    .badge-low      { background: #d4edda; color: #155724; }
+
+    /* Overall status pill */
+    .status-pill {
+      display: inline-block;
+      padding: 6px 18px;
+      border-radius: 20px;
+      font-size: 14px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+    }
+    .pill-compliant         { background: #1a7a3c; color: #fff; }
+    .pill-partially_compliant { background: #7a5c00; color: #fff; }
+    .pill-non_compliant     { background: #a81c1c; color: #fff; }
+    .pill-not_applicable    { background: #6c757d; color: #fff; }
+
+    /* ── Tables ─────────────────────────────────────────────────────────── */
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 12px;
+      margin-top: 12px;
+    }
+    th {
+      background: #eef1f8;
+      color: #333;
+      font-weight: 700;
+      padding: 7px 10px;
+      text-align: left;
+      border-bottom: 2px solid #d0d7e3;
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 0.4px;
+    }
+    td {
+      padding: 7px 10px;
+      border-bottom: 1px solid #eee;
+      vertical-align: top;
+    }
+    tr:last-child td { border-bottom: none; }
+    tr:hover td { background: #f8f9ff; }
+
+    /* ── Pillar sections ─────────────────────────────────────────────────── */
+    .pillar-block {
+      border-left: 4px solid #003087;
+      padding-left: 14px;
+      margin-bottom: 24px;
+    }
+    .pillar-title {
+      font-size: 14px;
+      font-weight: 700;
+      color: #003087;
+      margin-bottom: 8px;
+    }
+    .pillar-desc {
+      font-size: 12px;
+      color: #555;
+      margin-bottom: 10px;
+    }
+    .pillar-articles { display: flex; flex-wrap: wrap; gap: 6px; }
+    .art-tag {
+      background: #eef1f8;
+      border: 1px solid #c0cce0;
+      border-radius: 4px;
+      padding: 3px 8px;
+      font-size: 11px;
+      color: #003087;
+      font-weight: 600;
+    }
+
+    /* ── Disclaimer ─────────────────────────────────────────────────────── */
+    .disclaimer {
+      background: #fffbec;
+      border-left: 4px solid #ffc107;
+      padding: 10px 14px;
+      border-radius: 0 4px 4px 0;
+      font-size: 12px;
+      color: #5c4a00;
+      margin: 12px 0;
+    }
+
+    /* ── Audit trail ────────────────────────────────────────────────────── */
+    .hash-row td:last-child {
+      font-family: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace;
+      font-size: 10px;
+      word-break: break-all;
+      color: #666;
+    }
+
+    /* ── Footer ─────────────────────────────────────────────────────────── */
+    .footer {
+      text-align: center;
+      font-size: 11px;
+      color: #999;
+      padding: 20px 0 8px;
+      border-top: 1px solid #eee;
+      margin-top: 40px;
+    }
+
+    /* ── Print styles ────────────────────────────────────────────────────── */
+    @media print {
+      body {
+        font-size: 11px;
+        padding: 0;
+        max-width: 100%;
+      }
+      .cover        { page-break-after: always; }
+      .toc          { page-break-after: always; }
+      .section      { page-break-inside: avoid; }
+      .section-body { border: 1px solid #ccc; }
+      @page {
+        margin: 20mm 15mm;
+        size: A4;
+      }
+      @page :first {
+        margin: 0;
+      }
+    }
+
+    /* ── Responsive ─────────────────────────────────────────────────────── */
+    @media (max-width: 700px) {
+      body { padding: 12px; }
+      .metric-grid { grid-template-columns: repeat(2, 1fr); }
+    }
+  </style>
+</head>
+<body>
+
+<!-- ═══════════════════════════════════════════════════════════
+     COVER PAGE
+═══════════════════════════════════════════════════════════ -->
+<div class="cover" aria-label="Cover page">
+  <div class="cover-confidential" aria-label="Confidential document">CONFIDENTIAL</div>
+  <div class="cover-logo">FaultRay &mdash; DORA Evidence Generator</div>
+  <h1>DORA Resilience<br>Evidence Report</h1>
+  <div class="cover-subtitle">Digital Operational Resilience Act (EU 2022/2554)</div>
+  <div class="cover-entity">{{ pdf_data.meta.reporting_entity | e }}</div>
+  <br>
+  <div class="cover-meta">
+    <div><strong>Report ID:</strong> {{ pdf_data.meta.report_id | e }}</div>
+    <div><strong>Generated:</strong> {{ pdf_data.meta.generated_at[:19] | e }} UTC</div>
+    <div><strong>Report Period:</strong> {{ pdf_data.meta.report_period | e }}</div>
+    <div><strong>FaultRay Version:</strong> {{ pdf_data.meta.faultray_version | e }}</div>
+    <div><strong>Regulatory Reference:</strong> DORA (EU 2022/2554), Articles 5&ndash;30, 45</div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════
+     TABLE OF CONTENTS
+═══════════════════════════════════════════════════════════ -->
+<nav class="toc" aria-label="Table of contents">
+  <h2>Table of Contents</h2>
+  <ol class="toc-list">
+    <li><a href="#executive-summary">Executive Summary</a></li>
+    <li><a href="#pillar-sections">Pillar-Level Assessment</a></li>
+    <li><a href="#gap-analysis">Gap Analysis</a></li>
+    <li><a href="#evidence-records">Evidence Records</a></li>
+    <li><a href="#remediation-plan">Remediation Plan</a></li>
+    {% if pdf_data.register_of_information %}
+    <li><a href="#register">Information Register (Article 28)</a></li>
+    {% endif %}
+    <li><a href="#audit-trail">Audit Trail</a></li>
+    <li><a href="#appendix">Appendix</a></li>
+  </ol>
+</nav>
+
+<!-- ═══════════════════════════════════════════════════════════
+     SECTION 1 — EXECUTIVE SUMMARY
+═══════════════════════════════════════════════════════════ -->
+{% set exec = pdf_data.executive_summary %}
+{% set meta = pdf_data.meta %}
+<section class="section" id="executive-summary" aria-labelledby="exec-heading">
+  <div class="section-header" id="exec-heading">1. Executive Summary</div>
+  <div class="section-body">
+
+    <p>
+      Overall compliance status:&nbsp;
+      <span class="status-pill pill-{{ exec.overall_status }}">{{ exec.overall_status.upper().replace('_', ' ') }}</span>
+      &nbsp;&nbsp;
+      <strong>Compliance Rate: {{ exec.compliance_rate_percent }}%</strong>
+    </p>
+
+    <!-- Donut chart (pure CSS/SVG) -->
+    {% set total = exec.total_controls %}
+    {% set compliant_pct = (exec.compliant / total * 100) | round(1) if total > 0 else 0 %}
+    {% set partial_pct = (exec.partially_compliant / total * 100) | round(1) if total > 0 else 0 %}
+    {% set nc_pct = (exec.non_compliant / total * 100) | round(1) if total > 0 else 0 %}
+
+    <div class="donut-wrap" aria-label="Compliance breakdown chart">
+      <div class="donut-container">
+        <svg width="110" height="110" viewBox="0 0 42 42" aria-hidden="true">
+          <circle cx="21" cy="21" r="15.92" fill="transparent" stroke="#e2e3e5" stroke-width="4"/>
+          {% if exec.total_controls > 0 %}
+            {# Compliant (green) #}
+            {% set c_dash = (exec.compliant / total * 100) %}
+            <circle cx="21" cy="21" r="15.92" fill="transparent"
+                    stroke="#28a745" stroke-width="4"
+                    stroke-dasharray="{{ c_dash }} {{ 100 - c_dash }}"
+                    stroke-dashoffset="25"
+                    transform="rotate(-90 21 21)"/>
+            {# Partial (yellow) #}
+            {% set p_dash = (exec.partially_compliant / total * 100) %}
+            {% set p_offset = 25 - c_dash %}
+            <circle cx="21" cy="21" r="15.92" fill="transparent"
+                    stroke="#ffc107" stroke-width="4"
+                    stroke-dasharray="{{ p_dash }} {{ 100 - p_dash }}"
+                    stroke-dashoffset="{{ p_offset }}"
+                    transform="rotate(-90 21 21)"/>
+          {% endif %}
+        </svg>
+        <div class="donut-label">
+          <div class="pct">{{ exec.compliance_rate_percent }}%</div>
+          <div class="pct-text">Compliant</div>
+        </div>
+      </div>
+      <ul class="donut-legend" aria-label="Chart legend">
+        <li><span class="swatch sw-green" aria-hidden="true"></span> Compliant: <strong>{{ exec.compliant }}</strong></li>
+        <li><span class="swatch sw-yellow" aria-hidden="true"></span> Partial: <strong>{{ exec.partially_compliant }}</strong></li>
+        <li><span class="swatch sw-red" aria-hidden="true"></span> Non-Compliant: <strong>{{ exec.non_compliant }}</strong></li>
+        <li><span class="swatch sw-grey" aria-hidden="true"></span> N/A: <strong>{{ exec.not_applicable }}</strong></li>
+      </ul>
+    </div>
+
+    <!-- Metric cards -->
+    <div class="metric-grid" aria-label="Key metrics">
+      <div class="metric-card">
+        <div class="value value-blue">{{ exec.total_controls }}</div>
+        <div class="label">Total Controls</div>
+      </div>
+      <div class="metric-card">
+        <div class="value value-green">{{ exec.compliant }}</div>
+        <div class="label">Compliant</div>
+      </div>
+      <div class="metric-card">
+        <div class="value value-yellow">{{ exec.partially_compliant }}</div>
+        <div class="label">Partial</div>
+      </div>
+      <div class="metric-card">
+        <div class="value value-red">{{ exec.non_compliant }}</div>
+        <div class="label">Non-Compliant</div>
+      </div>
+      <div class="metric-card">
+        <div class="value value-grey">{{ exec.not_applicable }}</div>
+        <div class="label">Not Applicable</div>
+      </div>
+    </div>
+
+    <div class="disclaimer" role="note">{{ meta.tlpt_disclaimer | e }}</div>
+
+    <!-- Article-level results table -->
+    {% if exec.article_statuses %}
+    <h3>Article-Level Results</h3>
+    <table aria-label="Article-level compliance results">
+      <thead>
+        <tr>
+          <th scope="col">Article</th>
+          <th scope="col">Status</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% set article_labels = {
+          "article_5": "Art. 5 — ICT Risk Mgmt Framework",
+          "article_6": "Art. 6 — ICT Risk Mgmt Governance",
+          "article_7": "Art. 7 — ICT Systems &amp; Tools",
+          "article_8": "Art. 8 — Identification",
+          "article_9": "Art. 9 — Protection &amp; Prevention",
+          "article_10": "Art. 10 — Detection",
+          "article_11": "Art. 11 — Response &amp; Recovery",
+          "article_12": "Art. 12 — Backup &amp; Recovery",
+          "article_13": "Art. 13 — Learning &amp; Evolving",
+          "article_14": "Art. 14 — Communication",
+          "article_15": "Art. 15 — Simplified ICT Risk Mgmt",
+          "article_16": "Art. 16 — RTS Harmonisation",
+          "article_17": "Art. 17 — Incident Mgmt Process",
+          "article_18": "Art. 18 — Incident Classification",
+          "article_19": "Art. 19 — Incident Reporting",
+          "article_20": "Art. 20 — Reporting Templates",
+          "article_21": "Art. 21 — Centralised Reporting",
+          "article_22": "Art. 22 — Supervisory Feedback",
+          "article_23": "Art. 23 — Payment Incidents",
+          "article_24": "Art. 24 — Testing Programme",
+          "article_25": "Art. 25 — TLPT",
+          "article_26": "Art. 26 — Tester Requirements",
+          "article_27": "Art. 27 — Mutual Recognition",
+          "article_28": "Art. 28 — Third-Party Risk",
+          "article_29": "Art. 29 — Concentration Risk",
+          "article_30": "Art. 30 — Contractual Provisions",
+          "article_45": "Art. 45 — Info Sharing"
+        } %}
+        {% for art_key, art_data in exec.article_statuses.items() %}
+        <tr>
+          <td>{{ article_labels.get(art_key, art_key) }}</td>
+          <td><span class="badge badge-{{ art_data.status }}">{{ art_data.status.upper().replace('_', ' ') }}</span></td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    {% endif %}
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════════════════════════════
+     SECTION 2 — PILLAR-LEVEL ASSESSMENT
+═══════════════════════════════════════════════════════════ -->
+<section class="section" id="pillar-sections" aria-labelledby="pillar-heading">
+  <div class="section-header" id="pillar-heading">2. Pillar-Level Assessment</div>
+  <div class="section-body">
+
+    <div class="pillar-block">
+      <div class="pillar-title">Pillar 1 — ICT Risk Management</div>
+      <div class="pillar-desc">Establishes the governance, identification, protection, detection, response, recovery, and learning capabilities required for operational resilience.</div>
+      <div class="pillar-articles">
+        {% for key in ["article_5","article_6","article_7","article_8","article_9","article_10","article_11","article_12","article_13","article_14","article_15","article_16"] %}
+          {% if key in exec.article_statuses %}
+            <span class="art-tag">{{ article_labels.get(key, key) }}
+              &nbsp;<span class="badge badge-{{ exec.article_statuses[key].status }}">{{ exec.article_statuses[key].status[:4].upper() }}</span>
+            </span>
+          {% endif %}
+        {% endfor %}
+      </div>
+    </div>
+
+    <div class="pillar-block">
+      <div class="pillar-title">Pillar 2 — Incident Management</div>
+      <div class="pillar-desc">Defines requirements for incident detection, classification, reporting to supervisory authorities, and post-incident reviews.</div>
+      <div class="pillar-articles">
+        {% for key in ["article_17","article_18","article_19","article_20","article_21","article_22","article_23"] %}
+          {% if key in exec.article_statuses %}
+            <span class="art-tag">{{ article_labels.get(key, key) }}
+              &nbsp;<span class="badge badge-{{ exec.article_statuses[key].status }}">{{ exec.article_statuses[key].status[:4].upper() }}</span>
+            </span>
+          {% endif %}
+        {% endfor %}
+      </div>
+    </div>
+
+    <div class="pillar-block">
+      <div class="pillar-title">Pillar 3 — Digital Resilience Testing</div>
+      <div class="pillar-desc">Requires a risk-based testing programme including scenario-based tests and, for significant entities, Threat-Led Penetration Tests (TLPT).</div>
+      <div class="pillar-articles">
+        {% for key in ["article_24","article_25","article_26","article_27"] %}
+          {% if key in exec.article_statuses %}
+            <span class="art-tag">{{ article_labels.get(key, key) }}
+              &nbsp;<span class="badge badge-{{ exec.article_statuses[key].status }}">{{ exec.article_statuses[key].status[:4].upper() }}</span>
+            </span>
+          {% endif %}
+        {% endfor %}
+      </div>
+    </div>
+
+    <div class="pillar-block">
+      <div class="pillar-title">Pillar 4 — Third-Party Risk Management</div>
+      <div class="pillar-desc">Governs relationships with ICT third-party service providers including due diligence, contractual arrangements, and concentration risk controls.</div>
+      <div class="pillar-articles">
+        {% for key in ["article_28","article_29","article_30"] %}
+          {% if key in exec.article_statuses %}
+            <span class="art-tag">{{ article_labels.get(key, key) }}
+              &nbsp;<span class="badge badge-{{ exec.article_statuses[key].status }}">{{ exec.article_statuses[key].status[:4].upper() }}</span>
+            </span>
+          {% endif %}
+        {% endfor %}
+      </div>
+    </div>
+
+    <div class="pillar-block">
+      <div class="pillar-title">Pillar 5 — Information Sharing</div>
+      <div class="pillar-desc">Encourages voluntary sharing of cyber threat information and intelligence among financial entities.</div>
+      <div class="pillar-articles">
+        {% if "article_45" in exec.article_statuses %}
+          <span class="art-tag">{{ article_labels.get("article_45", "Art. 45") }}
+            &nbsp;<span class="badge badge-{{ exec.article_statuses['article_45'].status }}">{{ exec.article_statuses['article_45'].status[:4].upper() }}</span>
+          </span>
+        {% endif %}
+      </div>
+    </div>
+
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════════════════════════════
+     SECTION 3 — GAP ANALYSIS
+═══════════════════════════════════════════════════════════ -->
+<section class="section" id="gap-analysis" aria-labelledby="gap-heading">
+  <div class="section-header" id="gap-heading">3. Gap Analysis — All DORA Controls</div>
+  <div class="section-body">
+    {% if pdf_data.gap_analysis_table %}
+    <table aria-label="Gap analysis for all DORA controls">
+      <thead>
+        <tr>
+          <th scope="col">Control</th>
+          <th scope="col">Status</th>
+          <th scope="col">Risk Score</th>
+          <th scope="col">Key Gap</th>
+          <th scope="col">Recommendation</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for gap in pdf_data.gap_analysis_table %}
+        <tr>
+          <td><code>{{ gap.control_id | e }}</code></td>
+          <td><span class="badge badge-{{ gap.status }}">{{ gap.status.upper().replace('_', ' ') }}</span></td>
+          <td>{{ "%.2f" | format(gap.risk_score) }}</td>
+          <td>{{ (gap.gaps[0] if gap.gaps else "—") | e | truncate(100) }}</td>
+          <td>{{ (gap.recommendations[0] if gap.recommendations else "—") | e | truncate(100) }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    {% else %}
+    <p>No gap analysis data available.</p>
+    {% endif %}
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════════════════════════════
+     SECTION 4 — EVIDENCE RECORDS
+═══════════════════════════════════════════════════════════ -->
+{% if pdf_data.evidence_table %}
+<section class="section" id="evidence-records" aria-labelledby="evidence-heading">
+  <div class="section-header" id="evidence-heading">4. Evidence Records</div>
+  <div class="section-body">
+    <table aria-label="Evidence records from testing">
+      <thead>
+        <tr>
+          <th scope="col">Control</th>
+          <th scope="col">Timestamp</th>
+          <th scope="col">Test Type</th>
+          <th scope="col">Result</th>
+          <th scope="col">Severity</th>
+          <th scope="col">Remediation</th>
+          <th scope="col">Sign-off</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for item in pdf_data.evidence_table %}
+        <tr>
+          <td><code>{{ item.control_id | e }}</code></td>
+          <td>{{ item.test_timestamp[:19] | e }}</td>
+          <td>{{ item.test_type | e }}</td>
+          <td>{{ item.result | e }}</td>
+          <td><span class="badge badge-{{ item.severity }}">{{ item.severity.upper() }}</span></td>
+          <td>{{ "Yes" if item.remediation_required else "No" }}</td>
+          <td>{{ item.sign_off_status | e }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</section>
+{% endif %}
+
+<!-- ═══════════════════════════════════════════════════════════
+     SECTION 5 — REMEDIATION PLAN
+═══════════════════════════════════════════════════════════ -->
+{% if pdf_data.remediation_plan %}
+<section class="section" id="remediation-plan" aria-labelledby="remediation-heading">
+  <div class="section-header" id="remediation-heading">5. Remediation Plan</div>
+  <div class="section-body">
+    <table aria-label="Prioritised remediation plan">
+      <thead>
+        <tr>
+          <th scope="col">ID</th>
+          <th scope="col">Control</th>
+          <th scope="col">Severity</th>
+          <th scope="col">Action</th>
+          <th scope="col">Effort</th>
+          <th scope="col">Deadline</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for item in pdf_data.remediation_plan | sort(attribute='severity', reverse=False) %}
+        <tr>
+          <td><code>{{ item.item_id | e }}</code></td>
+          <td><code>{{ item.control_id | e }}</code></td>
+          <td><span class="badge badge-{{ item.severity }}">{{ item.severity.upper() }}</span></td>
+          <td>{{ item.title | e | truncate(80) }}</td>
+          <td>{{ item.effort | e }}</td>
+          <td>{{ item.remediation_deadline | e }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</section>
+{% endif %}
+
+<!-- ═══════════════════════════════════════════════════════════
+     SECTION 6 — REGISTER OF INFORMATION (ART. 28)
+═══════════════════════════════════════════════════════════ -->
+{% if pdf_data.register_of_information %}
+<section class="section" id="register" aria-labelledby="register-heading">
+  <div class="section-header" id="register-heading">6. Information Register — Article 28 Third-Party Providers</div>
+  <div class="section-body">
+    <table aria-label="Article 28 register of information">
+      <thead>
+        <tr>
+          <th scope="col">Provider</th>
+          <th scope="col">Type</th>
+          <th scope="col">Criticality</th>
+          <th scope="col">Dependents</th>
+          <th scope="col">Concentration Risk</th>
+          <th scope="col">Exit Strategy</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for entry in pdf_data.register_of_information %}
+        <tr>
+          <td>{{ entry.provider_name | e }}</td>
+          <td>{{ entry.provider_type | e }}</td>
+          <td><span class="badge badge-{{ entry.criticality if entry.criticality in ['critical','high','medium','low'] else 'medium' }}">{{ entry.criticality.upper() | e }}</span></td>
+          <td>{{ entry.dependent_functions | length }}</td>
+          <td>{{ "Yes" if entry.concentration_risk else "No" }}</td>
+          <td>{{ "Yes" if entry.exit_strategy_documented else "No" }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</section>
+{% endif %}
+
+<!-- ═══════════════════════════════════════════════════════════
+     SECTION 7 — AUDIT TRAIL
+═══════════════════════════════════════════════════════════ -->
+<section class="section" id="audit-trail" aria-labelledby="audit-heading">
+  <div class="section-header" id="audit-heading">{% if pdf_data.register_of_information %}7{% else %}6{% endif %}. Audit Trail</div>
+  <div class="section-body">
+    <p>
+      <strong>Report ID:</strong> {{ meta.report_id | e }}<br>
+      <strong>Generated:</strong> {{ meta.generated_at[:19] | e }} UTC<br>
+      <strong>Signed:</strong> {{ "Yes" if signed else "No" }}<br>
+      <strong>Total Evidence Items:</strong> {{ pdf_data.evidence_table | length }}
+    </p>
+    {% if audit_chain %}
+    <h3>Evidence Chain (SHA-256)</h3>
+    <table class="hash-row" aria-label="Audit evidence hashes">
+      <thead>
+        <tr>
+          <th scope="col">Seq.</th>
+          <th scope="col">Control</th>
+          <th scope="col">Test Type</th>
+          <th scope="col">Timestamp</th>
+          <th scope="col">Integrity Hash</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for entry in audit_chain %}
+        <tr>
+          <td>{{ entry.sequence }}</td>
+          <td><code>{{ entry.control_id | e }}</code></td>
+          <td>{{ entry.test_type | e }}</td>
+          <td>{{ entry.test_timestamp[:19] | e }}</td>
+          <td>{{ entry.integrity_hash | e if entry.integrity_hash is defined else "—" }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    {% endif %}
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════════════════════════════
+     SECTION 8 — APPENDIX
+═══════════════════════════════════════════════════════════ -->
+<section class="section" id="appendix" aria-labelledby="appendix-heading">
+  <div class="section-header" id="appendix-heading">{% if pdf_data.register_of_information %}8{% else %}7{% endif %}. Appendix</div>
+  <div class="section-body">
+
+    <h3>A. Glossary</h3>
+    <table aria-label="Glossary of terms">
+      <thead>
+        <tr><th scope="col">Term</th><th scope="col">Definition</th></tr>
+      </thead>
+      <tbody>
+        <tr><td><strong>DORA</strong></td><td>Digital Operational Resilience Act (EU 2022/2554), applicable from 17 January 2025.</td></tr>
+        <tr><td><strong>ICT</strong></td><td>Information and Communication Technology.</td></tr>
+        <tr><td><strong>TLPT</strong></td><td>Threat-Led Penetration Testing — live production tests by qualified external testers (Art. 25-27).</td></tr>
+        <tr><td><strong>RTO</strong></td><td>Recovery Time Objective — target time to restore operations after an incident.</td></tr>
+        <tr><td><strong>RPO</strong></td><td>Recovery Point Objective — acceptable data loss window measured in time.</td></tr>
+        <tr><td><strong>SPOF</strong></td><td>Single Point of Failure — component whose failure causes system-wide disruption.</td></tr>
+        <tr><td><strong>HHI</strong></td><td>Herfindahl-Hirschman Index — concentration metric for third-party provider risk (Art. 29).</td></tr>
+        <tr><td><strong>ITS</strong></td><td>Implementing Technical Standards — technical specifications issued by ESAs under DORA.</td></tr>
+        <tr><td><strong>RTS</strong></td><td>Regulatory Technical Standards — binding standards issued by ESAs under DORA.</td></tr>
+        <tr><td><strong>NCA</strong></td><td>National Competent Authority — supervisory body receiving DORA incident reports.</td></tr>
+      </tbody>
+    </table>
+
+    <h3>B. Methodology</h3>
+    <p style="font-size:12px;color:#555;margin-top:8px;">
+      This report is generated by <strong>FaultRay</strong> version {{ meta.faultray_version | e }}, a chaos-engineering-based DORA evidence platform.
+      Compliance assessment uses static graph analysis of the infrastructure model to evaluate 52 DORA controls across Articles 5&ndash;30 and 45.
+      Evidence records are produced from chaos scenario execution results mapped to DORA control requirements.
+      Gap scores are calculated as weighted sums of control-level risk indicators.
+      Remediation deadlines are assigned according to severity classification per DORA Article 19.
+    </p>
+    <p style="font-size:12px;color:#888;margin-top:8px;">
+      This assessment covers Article 24 scenario-based testing only.
+      Article 25 TLPT must be performed by qualified external testers on live production systems.
+      This report does not constitute legal advice and should be reviewed by qualified compliance counsel before regulatory submission.
+    </p>
+
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════════════════════════════
+     FOOTER
+═══════════════════════════════════════════════════════════ -->
+<footer class="footer" role="contentinfo">
+  Generated by FaultRay DORA Evidence Generator v{{ meta.faultray_version | e }}
+  &mdash; {{ meta.generated_at[:19] | e }} UTC
+  &mdash; Report ID: {{ meta.report_id | e }}
+</footer>
+
+</body>
+</html>

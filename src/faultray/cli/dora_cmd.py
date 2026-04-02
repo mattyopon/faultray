@@ -82,6 +82,39 @@ def _severity_color(severity: str) -> str:
     }.get(severity, "white")
 
 
+def _render_dora_html(
+    pdf_data: dict,
+    audit_section: dict,
+    signed: bool = False,
+) -> str:
+    """Render a DORA HTML report using the Jinja2 template.
+
+    Args:
+        pdf_data: Structured data from :meth:`DORAuditReportGenerator.export_pdf_data`.
+        audit_section: Audit trail dict from :meth:`DORAuditReportGenerator._build_audit_trail`.
+        signed: Whether the audit trail is cryptographically signed.
+
+    Returns:
+        A complete HTML document string.
+    """
+    from pathlib import Path as _Path
+    from jinja2 import Environment, FileSystemLoader
+
+    _template_dir = _Path(__file__).resolve().parent.parent / "reporter" / "templates"
+    env = Environment(
+        loader=FileSystemLoader(str(_template_dir)),
+        autoescape=True,
+    )
+    template = env.get_template("dora_report.html")
+    audit_chain = audit_section.get("chain", [])
+    return template.render(
+        pdf_data=pdf_data,
+        audit_section=audit_section,
+        audit_chain=audit_chain,
+        signed=signed,
+    )
+
+
 # ---------------------------------------------------------------------------
 # dora assess
 # ---------------------------------------------------------------------------
@@ -521,8 +554,7 @@ def dora_report(
         faultray dora report infra.yaml --output dora-report.html --signed
         faultray dora report infra.yaml --output dora-report.html --simulate
     """
-    import html as html_lib
-    from faultray.reporter.dora_audit_report import DORAuditReportGenerator, TLPT_DISCLAIMER
+    from faultray.reporter.dora_audit_report import DORAuditReportGenerator
 
     graph = _load_graph(model)
 
@@ -548,250 +580,10 @@ def dora_report(
     )
 
     # Build audit trail section
-    if signed:
-        audit_section = gen._build_audit_trail(report, sign=True)
-    else:
-        audit_section = gen._build_audit_trail(report, sign=False)
-
+    audit_section = gen._build_audit_trail(report, sign=signed)
     pdf_data = gen.export_pdf_data(report)
 
-    def _esc(text: str) -> str:
-        return html_lib.escape(str(text))
-
-    def _status_badge(status: str) -> str:
-        colors = {
-            "compliant": "#28a745",
-            "partially_compliant": "#ffc107",
-            "non_compliant": "#dc3545",
-            "not_applicable": "#6c757d",
-        }
-        color = colors.get(status, "#6c757d")
-        return (
-            f'<span style="background:{color};color:#fff;padding:2px 8px;'
-            f'border-radius:4px;font-size:0.85em;">{_esc(status.upper())}' + "</span>"
-        )
-
-    def _severity_badge(severity: str) -> str:
-        colors = {
-            "critical": "#dc3545",
-            "high": "#fd7e14",
-            "medium": "#ffc107",
-            "low": "#28a745",
-        }
-        color = colors.get(severity, "#6c757d")
-        return (
-            f'<span style="background:{color};color:#fff;padding:2px 8px;'
-            f'border-radius:4px;font-size:0.85em;">{_esc(severity.upper())}' + "</span>"
-        )
-
-    # Article summary rows — full 52-control engine (Art. 5-30, 45)
-    art_rows = ""
-    article_labels = {
-        "article_5": "Art. 5 — ICT Risk Mgmt Framework",
-        "article_6": "Art. 6 — ICT Risk Mgmt Governance",
-        "article_7": "Art. 7 — ICT Systems & Tools",
-        "article_8": "Art. 8 — Identification",
-        "article_9": "Art. 9 — Protection & Prevention",
-        "article_10": "Art. 10 — Detection",
-        "article_11": "Art. 11 — Response & Recovery",
-        "article_12": "Art. 12 — Backup & Recovery",
-        "article_13": "Art. 13 — Learning & Evolving",
-        "article_14": "Art. 14 — Communication",
-        "article_15": "Art. 15 — Simplified ICT Risk Mgmt",
-        "article_16": "Art. 16 — RTS Harmonisation",
-        "article_17": "Art. 17 — Incident Mgmt Process",
-        "article_18": "Art. 18 — Incident Classification",
-        "article_19": "Art. 19 — Incident Reporting",
-        "article_20": "Art. 20 — Reporting Templates",
-        "article_21": "Art. 21 — Centralised Reporting",
-        "article_22": "Art. 22 — Supervisory Feedback",
-        "article_23": "Art. 23 — Payment Incidents",
-        "article_24": "Art. 24 — Testing Programme",
-        "article_25": "Art. 25 — TLPT",
-        "article_26": "Art. 26 — Tester Requirements",
-        "article_27": "Art. 27 — Mutual Recognition",
-        "article_28": "Art. 28 — Third-Party Risk",
-        "article_29": "Art. 29 — Concentration Risk",
-        "article_30": "Art. 30 — Contractual Provisions",
-        "article_45": "Art. 45 — Info Sharing",
-    }
-    for art_key, status in report.article_statuses.items():
-        label = article_labels.get(art_key, art_key)
-        art_rows += f"<tr><td>{_esc(label)}</td><td>{_status_badge(status.value)}</td></tr>"
-
-    # Gap analysis rows
-    gap_rows = ""
-    for gap in report.gap_analyses:
-        key_gap = gap.gaps[0] if gap.gaps else "—"
-        key_rec = gap.recommendations[0] if gap.recommendations else "—"
-        gap_rows += (
-            f"<tr><td>{_esc(gap.control_id)}</td>"
-            f"<td>{_status_badge(gap.status.value)}</td>"
-            f"<td>{gap.risk_score:.2f}</td>"
-            f"<td>{_esc(key_gap)}</td>"
-            f"<td>{_esc(key_rec)}</td></tr>"
-        )
-
-    # Evidence rows
-    ev_rows = ""
-    for item in pdf_data.get("evidence_table", []):
-        ev_rows += (
-            f"<tr><td>{_esc(item['control_id'])}</td>"
-            f"<td>{_esc(str(item['test_timestamp'])[:19])}</td>"
-            f"<td>{_esc(item['test_type'])}</td>"
-            f"<td>{_esc(item['result'])}</td>"
-            f"<td>{_severity_badge(item['severity'])}</td>"
-            f"<td>{'Yes' if item['remediation_required'] else 'No'}</td>"
-            f"<td>{_esc(item['sign_off_status'])}</td></tr>"
-        )
-
-    # Remediation rows
-    rem_rows = ""
-    for item in pdf_data.get("remediation_plan", []):
-        rem_rows += (
-            f"<tr><td>{_esc(item['item_id'])}</td>"
-            f"<td>{_esc(item['control_id'])}</td>"
-            f"<td>{_severity_badge(item['severity'])}</td>"
-            f"<td>{_esc(item['title'][:80])}</td>"
-            f"<td>{_esc(item['effort'])}</td>"
-            f"<td>{_esc(item['remediation_deadline'])}</td></tr>"
-        )
-
-    # Register rows
-    reg_rows = ""
-    for entry in pdf_data.get("register_of_information", []):
-        reg_rows += (
-            f"<tr><td>{_esc(entry['provider_name'])}</td>"
-            f"<td>{_esc(entry['criticality'].upper())}</td>"
-            f"<td>{len(entry.get('dependent_functions', []))}</td>"
-            f"<td>{'Yes' if entry['concentration_risk'] else 'No'}</td>"
-            f"<td>{'Yes' if entry['exit_strategy_documented'] else 'No'}</td></tr>"
-        )
-
-    exec_summary = pdf_data["executive_summary"]
-    compliance_rate = exec_summary["compliance_rate_percent"]
-    overall = exec_summary["overall_status"]
-    overall_colors = {
-        "compliant": "#28a745",
-        "partially_compliant": "#ffc107",
-        "non_compliant": "#dc3545",
-        "not_applicable": "#6c757d",
-    }
-    overall_color = overall_colors.get(overall, "#6c757d")
-    ts = report.generated_at[:19].replace("T", " ") + " UTC"
-
-    report_html = f"""<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>DORA Resilience Evidence Report — {_esc(entity)}</title>
-  <style>
-    * {{ margin: 0; padding: 0; box-sizing: border-box; }}
-    body {{ font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-      line-height: 1.6; color: #333; max-width: 1200px; margin: 0 auto; padding: 20px; background: #f5f5f5; }}
-    .header {{ background: linear-gradient(135deg, #1a237e, #283593); color: white;
-      padding: 30px; border-radius: 8px; margin-bottom: 24px; }}
-    .header h1 {{ font-size: 24px; margin-bottom: 8px; }}
-    .header p {{ opacity: 0.9; font-size: 14px; }}
-    .section {{ background: white; border-radius: 8px; padding: 24px; margin-bottom: 20px;
-      box-shadow: 0 1px 3px rgba(0,0,0,0.1); }}
-    .section h2 {{ font-size: 18px; color: #1a237e; border-bottom: 2px solid #e8eaf6;
-      padding-bottom: 8px; margin-bottom: 16px; }}
-    table {{ width: 100%; border-collapse: collapse; margin-top: 12px; font-size: 13px; }}
-    th, td {{ padding: 8px 12px; text-align: left; border-bottom: 1px solid #eee; }}
-    th {{ background: #f5f5f5; font-weight: 600; color: #555; }}
-    tr:hover {{ background: #fafafa; }}
-    .metric-grid {{ display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-      gap: 16px; margin-bottom: 16px; }}
-    .metric-card {{ background: #f8f9fa; border-radius: 6px; padding: 16px; text-align: center; }}
-    .metric-card .value {{ font-size: 28px; font-weight: bold; color: #1a237e; }}
-    .metric-card .label {{ font-size: 12px; color: #666; margin-top: 4px; }}
-    .disclaimer {{ background: #fff3cd; border-left: 4px solid #ffc107;
-      padding: 12px 16px; border-radius: 0 4px 4px 0; margin: 12px 0; font-size: 13px; }}
-    .status-pill {{ display: inline-block; background: {overall_color}; color: white;
-      padding: 4px 12px; border-radius: 16px; font-weight: bold; font-size: 1.1em; }}
-    .footer {{ text-align: center; color: #999; font-size: 12px; padding: 20px 0; }}
-  </style>
-</head>
-<body>
-<div class="header">
-  <h1>DORA Resilience Evidence Report</h1>
-  <p>Digital Operational Resilience Act (EU 2022/2554) | {_esc(entity)}</p>
-  <p>Generated: {_esc(ts)} | FaultRay DORA Evidence Generator | Report ID: {_esc(report.report_id)}</p>
-</div>
-
-<div class="section">
-  <h2>Executive Summary</h2>
-  <p>Overall compliance status: <span class="status-pill">{_esc(overall.upper())}</span>
-     &nbsp; Compliance rate: <strong>{compliance_rate}%</strong></p>
-  <br>
-  <div class="metric-grid">
-    <div class="metric-card"><div class="value">{exec_summary['total_controls']}</div>
-      <div class="label">Total Controls</div></div>
-    <div class="metric-card"><div class="value" style="color:#28a745;">{exec_summary['compliant']}</div>
-      <div class="label">Compliant</div></div>
-    <div class="metric-card"><div class="value" style="color:#ffc107;">{exec_summary['partially_compliant']}</div>
-      <div class="label">Partial</div></div>
-    <div class="metric-card"><div class="value" style="color:#dc3545;">{exec_summary['non_compliant']}</div>
-      <div class="label">Non-Compliant</div></div>
-    <div class="metric-card"><div class="value" style="color:#6c757d;">{exec_summary['not_applicable']}</div>
-      <div class="label">Not Applicable</div></div>
-  </div>
-  <div class="disclaimer">{_esc(TLPT_DISCLAIMER)}</div>
-  <h3 style="margin-top:16px;">Article-Level Results</h3>
-  <table>
-    <thead><tr><th>Article</th><th>Status</th></tr></thead>
-    <tbody>{art_rows}</tbody>
-  </table>
-</div>
-
-<div class="section">
-  <h2>Gap Analysis — All DORA Controls</h2>
-  <table>
-    <thead><tr><th>Control</th><th>Status</th><th>Risk</th><th>Key Gap</th><th>Recommendation</th></tr></thead>
-    <tbody>{gap_rows}</tbody>
-  </table>
-</div>
-
-{"" if not ev_rows else f'''<div class="section">
-  <h2>Evidence Records</h2>
-  <table>
-    <thead><tr><th>Control</th><th>Timestamp</th><th>Test Type</th><th>Result</th>
-      <th>Severity</th><th>Remediation Req.</th><th>Sign-off</th></tr></thead>
-    <tbody>{ev_rows}</tbody>
-  </table>
-</div>'''}
-
-{"" if not rem_rows else f'''<div class="section">
-  <h2>Remediation Plan</h2>
-  <table>
-    <thead><tr><th>ID</th><th>Control</th><th>Severity</th><th>Action</th>
-      <th>Effort</th><th>Deadline</th></tr></thead>
-    <tbody>{rem_rows}</tbody>
-  </table>
-</div>'''}
-
-{"" if not reg_rows else f'''<div class="section">
-  <h2>Article 28 — Register of Information</h2>
-  <table>
-    <thead><tr><th>Provider</th><th>Criticality</th><th>Dependents</th>
-      <th>Concentration Risk</th><th>Exit Strategy</th></tr></thead>
-    <tbody>{reg_rows}</tbody>
-  </table>
-</div>'''}
-
-{"" if not audit_section.get("chain") else f'''<div class="section">
-  <h2>Audit Trail</h2>
-  <p>Total evidence items: <strong>{audit_section["total_evidence_items"]}</strong>
-     &nbsp; Signed: <strong>{"Yes" if signed else "No"}</strong></p>
-</div>'''}
-
-<div class="footer">
-  Generated by FaultRay DORA Evidence Generator | {_esc(ts)}
-</div>
-</body>
-</html>"""
+    report_html = _render_dora_html(pdf_data, audit_section, signed=signed)
 
     compliance_rate_val = round(
         report.compliant_count / max(report.total_controls, 1) * 100, 1
@@ -1349,3 +1141,256 @@ def dora_rts_export(
         title="[bold]DORA RTS/ITS Export[/]",
         border_style="cyan",
     ))
+
+
+# ---------------------------------------------------------------------------
+# dora audit  (one-command full audit package)
+# ---------------------------------------------------------------------------
+
+
+@dora_app.command("audit")
+def dora_audit_cmd(
+    model: Annotated[Path, typer.Argument(help="Infrastructure model file (.yaml/.json)")],
+    output: Annotated[Path, typer.Option("--output", "-o", help="Output directory")] = Path("audit-package"),
+    signed: Annotated[bool, typer.Option("--signed", help="Sign audit trail")] = False,
+    simulate: Annotated[bool, typer.Option("--simulate", help="Run simulation first")] = False,
+    entity: Annotated[str, typer.Option("--entity", help="Reporting entity name")] = "Financial Institution",
+    pdf: Annotated[bool, typer.Option("--pdf/--no-pdf", help="Generate PDF report")] = True,
+    html: Annotated[bool, typer.Option("--html/--no-html", help="Generate HTML report")] = True,
+) -> None:
+    """Generate a complete DORA audit package in one command.
+
+    Produces a structured output directory containing:
+      - dora-compliance-report.pdf   (if --pdf)
+      - dora-compliance-report.html  (if --html)
+      - evidence/     JSON evidence files (executive summary, gap analysis, etc.)
+      - regulatory/   RTS/ITS-compliant register and risk management framework
+      - templates/    Manual control guidance (Markdown)
+      - manifest.json SHA-256 checksums for the full package
+
+    Examples:
+        faultray dora audit infra.yaml --output ./audit-package/
+        faultray dora audit infra.yaml --output ./audit-package/ --signed --simulate
+        faultray dora audit infra.yaml --output ./audit-package/ --entity "Acme Bank"
+        faultray dora audit infra.yaml --output ./audit-package/ --no-pdf
+    """
+    import hashlib
+    import json
+
+    from faultray.reporter.dora_audit_report import DORAuditReportGenerator
+    from faultray.simulator.dora_rts_formats import (
+        RegisterOfInformationFormatter,
+        ThirdPartyProviderRecord,
+        CriticalityAssessment,
+        RiskManagementFrameworkFormatter,
+    )
+    from faultray.simulator.dora_manual_guidance import get_all_guidance
+    from faultray.model.components import ComponentType
+
+    output = Path(output)
+
+    # ── 1. Load graph ────────────────────────────────────────────────────────
+    graph = _load_graph(model)
+
+    # ── 2. Optional simulation ───────────────────────────────────────────────
+    sim_results: list[dict] = []
+    if simulate:
+        console.print("[cyan]Running chaos simulation...[/]")
+        from faultray.simulator.engine import SimulationEngine
+        sim_engine = SimulationEngine(graph)
+        sim_report = sim_engine.run_all_defaults()
+        for result in sim_report.results:
+            sim_results.append({
+                "name": result.scenario.name,
+                "result": "fail" if result.is_critical else ("partial" if result.is_warning else "pass"),
+                "severity": "critical" if result.is_critical else ("high" if result.is_warning else "low"),
+                "description": result.scenario.description,
+            })
+
+    # ── 3. Generate full report ──────────────────────────────────────────────
+    console.print("[cyan]Generating DORA audit report...[/]")
+    gen = DORAuditReportGenerator()
+    report = gen.generate_full_report(
+        graph,
+        simulation_results=sim_results,
+        reporting_entity=entity,
+    )
+
+    # ── 4. Export evidence/ package ──────────────────────────────────────────
+    evidence_dir = output / "evidence"
+    console.print(f"[cyan]Exporting evidence package → {evidence_dir}[/]")
+    gen.export_regulatory_package(report, output_dir=evidence_dir, sign=signed)
+
+    # ── 5. PDF report ────────────────────────────────────────────────────────
+    all_files: list[str] = []
+    if pdf:
+        pdf_path = output / "dora-compliance-report.pdf"
+        output.mkdir(parents=True, exist_ok=True)
+        try:
+            gen.render_pdf(report, pdf_path)
+            all_files.append("dora-compliance-report.pdf")
+            console.print(f"[green]PDF report → {pdf_path}[/]")
+        except ImportError as exc:
+            console.print(f"[yellow]PDF skipped (missing dependency): {exc}[/]")
+
+    # ── 6. HTML report ───────────────────────────────────────────────────────
+    if html:
+        audit_section = gen._build_audit_trail(report, sign=signed)
+        pdf_data = gen.export_pdf_data(report)
+        html_content = _render_dora_html(pdf_data, audit_section, signed=signed)
+        html_path = output / "dora-compliance-report.html"
+        output.mkdir(parents=True, exist_ok=True)
+        html_path.write_text(html_content, encoding="utf-8")
+        all_files.append("dora-compliance-report.html")
+        console.print(f"[green]HTML report → {html_path}[/]")
+
+    # ── 7. RTS/ITS exports → regulatory/ ────────────────────────────────────
+    regulatory_dir = output / "regulatory"
+    regulatory_dir.mkdir(parents=True, exist_ok=True)
+
+    reg_formatter = RegisterOfInformationFormatter()
+    for comp in graph.components.values():
+        if comp.type == ComponentType.EXTERNAL_API:
+            dependents = graph.get_dependents(comp.id)
+            crit = (
+                CriticalityAssessment.CRITICAL if len(dependents) >= 3
+                else CriticalityAssessment.IMPORTANT if len(dependents) >= 1
+                else CriticalityAssessment.NON_CRITICAL
+            )
+            record = ThirdPartyProviderRecord(
+                record_id=comp.id,
+                provider_name=comp.name,
+                provider_type="ICT Third-Party Service Provider",
+                service_description=f"External API service '{comp.name}'",
+                criticality_assessment=crit,
+                concentration_risk_flag=not comp.failover.enabled,
+            )
+            reg_formatter.add_record(record)
+
+    reg_json_path = regulatory_dir / "register_of_information.json"
+    reg_json_path.write_text(reg_formatter.to_json(), encoding="utf-8")
+
+    reg_csv_content = reg_formatter.to_csv()
+    if reg_csv_content:
+        reg_csv_path = regulatory_dir / "register_of_information.csv"
+        reg_csv_path.write_text(reg_csv_content, encoding="utf-8")
+
+    framework_report = RiskManagementFrameworkFormatter.create_blank_report()
+    RiskManagementFrameworkFormatter.compute_scores(framework_report)
+    fw_path = regulatory_dir / "risk_management_framework.json"
+    fw_path.write_text(
+        RiskManagementFrameworkFormatter.to_json(framework_report),
+        encoding="utf-8",
+    )
+
+    # ── 8. Manual guidance → templates/ ─────────────────────────────────────
+    templates_dir = output / "templates"
+    templates_dir.mkdir(parents=True, exist_ok=True)
+    guidance_map = get_all_guidance()
+    guidance_lines: list[str] = [
+        "# DORA Manual Control Guidance\n",
+        "This document provides auditor guidance for controls that require manual evidence.\n",
+    ]
+    for ctrl_id, guidance in sorted(guidance_map.items()):
+        guidance_lines.append(f"\n## {ctrl_id} — {guidance.title}\n")
+        guidance_lines.append(f"**Article:** {guidance.article}  \n")
+        guidance_lines.append(f"**Responsible Role:** {guidance.responsible_role}  \n")
+        guidance_lines.append(f"**Review Frequency:** {guidance.review_frequency}  \n")
+        if guidance.required_documents:
+            guidance_lines.append("\n**Required Documents:**\n")
+            for doc in guidance.required_documents:
+                guidance_lines.append(f"- {doc}\n")
+        if guidance.acceptance_criteria:
+            guidance_lines.append("\n**Acceptance Criteria:**\n")
+            for crit in guidance.acceptance_criteria:
+                guidance_lines.append(f"- {crit}\n")
+        if guidance.example_evidence:
+            guidance_lines.append("\n**Example Evidence:**\n")
+            for ex in guidance.example_evidence:
+                guidance_lines.append(f"- {ex}\n")
+    guidance_path = templates_dir / "manual-control-guidance.md"
+    guidance_path.write_text("".join(guidance_lines), encoding="utf-8")
+
+    # ── 9. Top-level manifest.json with checksums ────────────────────────────
+    output.mkdir(parents=True, exist_ok=True)
+    checksums: dict[str, str] = {}
+
+    def _checksum(file_path: Path) -> str:
+        try:
+            content = file_path.read_bytes()
+            return hashlib.sha256(content).hexdigest()
+        except OSError:
+            return ""
+
+    # Collect all written files for the manifest
+    collected: list[str] = list(all_files)
+    for sub_dir in (evidence_dir, regulatory_dir, templates_dir):
+        if sub_dir.exists():
+            for fpath in sorted(sub_dir.iterdir()):
+                if fpath.is_file():
+                    rel = str(fpath.relative_to(output))
+                    collected.append(rel)
+                    checksums[rel] = _checksum(fpath)
+    for fname in all_files:
+        fpath = output / fname
+        if fpath.exists():
+            checksums[fname] = _checksum(fpath)
+
+    manifest = {
+        "package_id": report.report_id,
+        "generated_at": report.generated_at,
+        "reporting_entity": report.reporting_entity,
+        "faultray_version": report.faultray_version,
+        "regulatory_framework": "DORA (EU 2022/2554)",
+        "articles_covered": [
+            "Article 5-16 (ICT Risk Management)",
+            "Article 17-23 (Incident Management)",
+            "Article 24 (Testing Programme)",
+            "Article 25 (TLPT readiness)",
+            "Article 26-27 (Tester Requirements)",
+            "Article 28-30 (Third-Party Risk)",
+            "Article 45 (Information Sharing)",
+        ],
+        "tlpt_disclaimer": report.tlpt_disclaimer,
+        "overall_compliance_status": report.overall_status.value,
+        "compliance_rate_percent": round(
+            report.compliant_count / max(report.total_controls, 1) * 100, 1
+        ),
+        "signed": signed,
+        "files": collected + ["manifest.json"],
+        "checksums": checksums,
+    }
+    manifest_path = output / "manifest.json"
+    manifest_path.write_text(json.dumps(manifest, indent=2, default=str), encoding="utf-8")
+
+    # ── Summary panel ────────────────────────────────────────────────────────
+    status_val = report.overall_status.value
+    status_color = _status_color(status_val)
+    compliance_rate = round(
+        report.compliant_count / max(report.total_controls, 1) * 100, 1
+    )
+
+    console.print(Panel(
+        f"[bold]Audit package:[/] {output}\n"
+        f"[bold]Entity:[/] {report.reporting_entity}\n"
+        f"[bold]Overall Status:[/] [{status_color}]{status_val.upper()}[/]\n"
+        f"[bold]Compliance Rate:[/] {compliance_rate}%\n"
+        f"[bold]Controls:[/] {report.total_controls} | "
+        f"[green]{report.compliant_count} compliant[/] | "
+        f"[yellow]{report.partially_compliant_count} partial[/] | "
+        f"[red]{report.non_compliant_count} non-compliant[/]\n"
+        f"[bold]Signed:[/] {'Yes' if signed else 'No'}\n"
+        f"[bold]PDF:[/] {'Yes' if pdf else 'No'} | [bold]HTML:[/] {'Yes' if html else 'No'}\n\n"
+        f"  evidence/      — JSON evidence files\n"
+        f"  regulatory/    — RTS/ITS register & framework\n"
+        f"  templates/     — manual-control-guidance.md\n"
+        f"  manifest.json  — SHA-256 checksums",
+        title="[bold]DORA Audit Package Complete[/]",
+        border_style="cyan",
+    ))
+
+    if report.non_compliant_count > 0:
+        console.print(
+            f"\n[yellow]Attention:[/] {report.non_compliant_count} non-compliant control(s). "
+            "Review evidence/remediation-plan.json for prioritised actions."
+        )
