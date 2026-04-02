@@ -210,12 +210,12 @@ function PricingComparisonCell({ value }: { value: string }) {
    MAIN PAGE
    ================================================================ */
 export default async function LangHomePage({
-  params,
+  
 }: {
-  params: Promise<{ lang: string }>;
+  
 }) {
-  const { lang } = await params;
-  if (!isValidLocale(lang)) notFound();
+  const lang = "fr";
+  
   const dict = await getDictionary(lang);
 
   // GitHub Stars (LP-02): fetch at build/request time, fallback to 0 on error
