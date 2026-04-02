@@ -50,6 +50,9 @@ import {
   Landmark,
   FileSpreadsheet,
   UserX,
+  Ghost,
+  Cloud,
+  Map,
 } from "lucide-react";
 import { locales, type Locale } from "@/i18n/config";
 import { appDict } from "@/i18n/app-dict";
@@ -72,32 +75,45 @@ function getNavGroups(t: Record<string, string>, te: Record<string, string>) {
     {
       label: t.analyze ?? "ANALYZE",
       items: [
-        { href: "/simulate",  label: t.runSimulation,              icon: Zap },
-        { href: "/whatif",    label: t.whatIf,                     icon: FlaskConical },
-        { href: "/fmea",      label: t.fmea,                       icon: AlertOctagon },
-        { href: "/benchmark", label: t.benchmark ?? "Monte Carlo", icon: BarChart3 },
+        { href: "/simulate",   label: t.runSimulation,              icon: Zap },
+        { href: "/whatif",     label: t.whatIf,                     icon: FlaskConical },
+        { href: "/fmea",       label: t.fmea,                       icon: AlertOctagon },
+        { href: "/benchmark",  label: t.benchmark ?? "Monte Carlo", icon: BarChart3 },
+        { href: "/sla-budget", label: t.slaBudget ?? "SLA Budget",  icon: Gauge },
       ],
     },
     // ── 可視化 ──
     {
       label: t.visualize ?? "VISUALIZE",
       items: [
-        { href: "/topology",     label: t.topology,                       icon: Network },
-        { href: "/dependencies", label: t.dependencies ?? "Dependencies", icon: GitBranch },
-        { href: "/heatmap",      label: t.heatmap,                        icon: Flame },
-        { href: "/people-risk",  label: t.peopleRisk ?? "People Risk",    icon: UserX },
-        { href: "/score-detail", label: t.scoreDetail,                    icon: BarChart3 },
+        { href: "/topology",      label: t.topology,                          icon: Network },
+        { href: "/dependencies",  label: t.dependencies ?? "Dependencies",   icon: GitBranch },
+        { href: "/heatmap",       label: t.heatmap,                           icon: Flame },
+        { href: "/people-risk",   label: t.peopleRisk ?? "People Risk",       icon: UserX },
+        { href: "/score-detail",  label: t.scoreDetail,                       icon: BarChart3 },
+        { href: "/topology-map",  label: t.topologyMap ?? "Interactive Map",  icon: Map },
       ],
     },
     // ── コンプライアンス ──
     {
       label: t.compliance,
       items: [
-        { href: "/dora",       label: t.dora,           icon: ShieldAlert },
-        { href: "/compliance", label: t.complianceItem, icon: ShieldCheck },
-        { href: "/fisc",       label: t.fisc ?? "FISC", icon: Landmark },
-        { href: "/sla",        label: t.sla,            icon: FileCheck },
-        { href: "/governance", label: t.governance,     icon: Scale },
+        { href: "/dora",              label: t.dora,                                    icon: ShieldAlert },
+        { href: "/compliance",        label: t.complianceItem,                          icon: ShieldCheck },
+        { href: "/fisc",              label: t.fisc ?? "FISC",                          icon: Landmark },
+        { href: "/sla",               label: t.sla,                                     icon: FileCheck },
+        { href: "/governance",        label: t.governance,                              icon: Scale },
+        { href: "/compliance-report", label: t.complianceReport ?? "Evidence Report",  icon: FileSpreadsheet },
+      ],
+    },
+    // ── リスク管理 ──
+    {
+      label: t.riskManagement ?? "RISK",
+      items: [
+        { href: "/shadow-it",       label: t.shadowIt ?? "Shadow IT",        icon: Ghost },
+        { href: "/bus-factor",      label: t.busFactor ?? "Bus Factor",      icon: UserX },
+        { href: "/vuln-priority",   label: t.vulnPriority ?? "Vuln Priority", icon: ShieldAlert },
+        { href: "/external-impact", label: t.externalImpact ?? "SaaS Impact", icon: Cloud },
       ],
     },
     // ── 監査・証跡 ──
