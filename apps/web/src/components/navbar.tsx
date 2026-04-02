@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { NavLanguageSwitcher } from "@/components/language-switcher";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useCallback } from "react";
 import {
   LayoutDashboard,
   Network,
@@ -58,6 +58,7 @@ import {
 import { locales, type Locale } from "@/i18n/config";
 import { appDict } from "@/i18n/app-dict";
 import { useLocale } from "@/lib/useLocale";
+import { CommandPalette, type CommandItem } from "@/components/command-palette";
 
 function getNavGroups(t: Record<string, string>, te: Record<string, string>) {
   return [
@@ -174,10 +175,38 @@ export function Navbar() {
   const [scrolled, setScrolled] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(true);
+  const [cmdOpen, setCmdOpen] = useState(false);
   const locale = useLocale();
   const t = appDict.nav[locale] ?? appDict.nav.en;
   const te = appDict.navExtra[locale] ?? appDict.navExtra.en;
   const navGroups = useMemo(() => getNavGroups(t, te), [t, te]);
+
+  // Flatten nav groups into a list of CommandItems
+  const commandItems = useMemo<CommandItem[]>(
+    () =>
+      navGroups.flatMap((group) =>
+        group.items.map((item) => ({
+          href: item.href,
+          label: item.label,
+          group: group.label,
+          icon: item.icon,
+        }))
+      ),
+    [navGroups]
+  );
+
+  // Global ⌘K / Ctrl+K handler
+  const handleGlobalKeyDown = useCallback((e: KeyboardEvent) => {
+    if ((e.metaKey || e.ctrlKey) && e.key === "k") {
+      e.preventDefault();
+      setCmdOpen((prev) => !prev);
+    }
+  }, []);
+
+  useEffect(() => {
+    window.addEventListener("keydown", handleGlobalKeyDown);
+    return () => window.removeEventListener("keydown", handleGlobalKeyDown);
+  }, [handleGlobalKeyDown]);
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 20);
@@ -215,6 +244,15 @@ export function Navbar() {
 
   return (
     <>
+      {/* Command Palette */}
+      {isApp && (
+        <CommandPalette
+          open={cmdOpen}
+          onClose={() => setCmdOpen(false)}
+          items={commandItems}
+        />
+      )}
+
       {/* Top Navbar */}
       <nav
         className={`fixed top-0 left-0 right-0 z-50 backdrop-blur-xl transition-colors ${
