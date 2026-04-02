@@ -1,0 +1,1269 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Infrastructure Resilience Assessment - Your Organization</title>
+  <style>
+    /* Reset & Base */
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: 'Segoe UI', -apple-system, BlinkMacSystemFont, Roboto, 'Helvetica Neue', Arial, sans-serif;
+      line-height: 1.5;
+      color: #2c3e50;
+      background: #ffffff;
+      font-size: 11pt;
+    }
+
+    /* Print styles */
+    @media print {
+      body { background: white; }
+      .page { page-break-after: always; break-after: page; }
+      .page:last-child { page-break-after: avoid; break-after: avoid; }
+      @page {
+        size: A4;
+        margin: 15mm 20mm;
+        @top-right { content: "Your Organization - Confidential"; font-size: 8pt; color: #999; }
+        @bottom-center { content: "Page " counter(page) " of " counter(pages); font-size: 8pt; color: #999; }
+      }
+    }
+
+    /* Screen styles */
+    @media screen {
+      body { background: #e8e8e8; }
+      .page {
+        max-width: 210mm;
+        min-height: 297mm;
+        margin: 20px auto;
+        padding: 30px 40px;
+        background: white;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+      }
+    }
+
+    /* Page */
+    .page { padding: 30px 40px; position: relative; }
+
+    /* Cover Page */
+    .cover-page {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      background: linear-gradient(135deg, #1a237e 0%, #283593 50%, #1565c0 100%);
+      color: white;
+    }
+    .cover-content { padding: 60px 40px; }
+    .cover-logo { font-size: 14pt; color: rgba(255,255,255,0.7); margin-bottom: 40px; letter-spacing: 2px; }
+    .cover-company { font-size: 28pt; font-weight: 700; margin-bottom: 12px; letter-spacing: 1px; }
+    .cover-title { font-size: 16pt; font-weight: 300; margin-bottom: 30px; opacity: 0.9; }
+    .cover-date { font-size: 12pt; margin-bottom: 40px; opacity: 0.8; }
+    .cover-grade-container { margin: 30px 0; }
+    .cover-grade {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 100px;
+      height: 100px;
+      border-radius: 50%;
+      font-size: 32pt;
+      font-weight: 700;
+      color: white;
+      margin-bottom: 10px;
+    }
+    .cover-grade-label { font-size: 11pt; opacity: 0.8; }
+    .cover-prepared { font-size: 10pt; margin-top: 40px; opacity: 0.7; }
+    .cover-confidential {
+      font-size: 9pt;
+      margin-top: 40px;
+      padding: 8px 20px;
+      border: 1px solid rgba(255,255,255,0.3);
+      border-radius: 4px;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+      opacity: 0.6;
+    }
+
+    /* Section titles */
+    .section-title {
+      font-size: 16pt;
+      color: #1a237e;
+      border-bottom: 3px solid #1a237e;
+      padding-bottom: 8px;
+      margin-bottom: 20px;
+    }
+    .section-subtitle { color: #666; font-size: 10pt; margin-bottom: 16px; }
+    h3 { font-size: 12pt; color: #333; margin: 20px 0 10px; }
+    h4 { font-size: 11pt; color: #1a237e; margin-bottom: 8px; }
+
+    /* Summary text */
+    .summary-text {
+      background: #f0f4ff;
+      border-left: 4px solid #1a237e;
+      padding: 14px 18px;
+      margin-bottom: 20px;
+      font-size: 10pt;
+      border-radius: 0 4px 4px 0;
+    }
+
+    /* Traffic light grid */
+    .traffic-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 12px;
+      margin-bottom: 20px;
+    }
+    .traffic-card {
+      text-align: center;
+      padding: 14px 10px;
+      border-radius: 6px;
+      border: 1px solid #e0e0e0;
+    }
+    .traffic-dot {
+      width: 20px;
+      height: 20px;
+      border-radius: 50%;
+      margin: 0 auto 8px;
+    }
+    .status-green .traffic-dot { background: #28a745; }
+    .status-yellow .traffic-dot { background: #ffc107; }
+    .status-red .traffic-dot { background: #dc3545; }
+    .status-green { border-color: #28a745; }
+    .status-yellow { border-color: #ffc107; }
+    .status-red { border-color: #dc3545; }
+    .traffic-label { font-size: 9pt; color: #666; }
+    .traffic-status { font-size: 10pt; font-weight: 600; }
+    .status-green .traffic-status { color: #28a745; }
+    .status-yellow .traffic-status { color: #b8860b; }
+    .status-red .traffic-status { color: #dc3545; }
+    .traffic-score { font-size: 9pt; color: #999; margin-top: 2px; }
+
+    /* KPI grid */
+    .kpi-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 12px;
+      margin-bottom: 20px;
+    }
+    .kpi-card {
+      text-align: center;
+      padding: 16px 8px;
+      background: #f8f9fa;
+      border-radius: 6px;
+    }
+    .kpi-value { font-size: 22pt; font-weight: 700; color: #1a237e; }
+    .kpi-label { font-size: 9pt; color: #555; margin-top: 4px; }
+    .kpi-sublabel { font-size: 8pt; color: #999; }
+
+    /* Findings list */
+    .findings-list { padding-left: 20px; }
+    .findings-list li { margin-bottom: 6px; font-size: 10pt; }
+
+    /* Risk overview */
+    .risk-summary-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 12px;
+      margin-bottom: 20px;
+    }
+    .risk-summary-card {
+      text-align: center;
+      padding: 16px;
+      border-radius: 6px;
+      color: white;
+    }
+    .risk-card-critical { background: #dc3545; }
+    .risk-card-warning { background: #fd7e14; }
+    .risk-card-passed { background: #28a745; }
+    .risk-card-spof { background: #6f42c1; }
+    .risk-summary-value { font-size: 24pt; font-weight: 700; }
+    .risk-summary-label { font-size: 9pt; opacity: 0.9; }
+
+    /* Risk bar chart */
+    .risk-chart { margin: 10px 0; }
+    .risk-bar-row {
+      display: flex;
+      align-items: center;
+      margin-bottom: 6px;
+    }
+    .risk-bar-label {
+      width: 160px;
+      font-size: 9pt;
+      text-align: right;
+      padding-right: 10px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .risk-bar-track {
+      flex: 1;
+      height: 16px;
+      background: #f0f0f0;
+      border-radius: 3px;
+      overflow: hidden;
+    }
+    .risk-bar-fill {
+      height: 100%;
+      border-radius: 3px;
+      transition: width 0.3s;
+    }
+    .risk-bar-value {
+      width: 40px;
+      text-align: right;
+      font-size: 9pt;
+      color: #666;
+      padding-left: 8px;
+    }
+    .spof-badge {
+      background: #dc3545;
+      color: white;
+      font-size: 7pt;
+      padding: 1px 4px;
+      border-radius: 2px;
+      margin-left: 4px;
+      vertical-align: middle;
+    }
+
+    /* Top risks */
+    .top-risk-item {
+      display: flex;
+      align-items: flex-start;
+      padding: 8px 0;
+      border-bottom: 1px solid #eee;
+    }
+    .top-risk-num {
+      background: #dc3545;
+      color: white;
+      width: 22px;
+      height: 22px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 9pt;
+      font-weight: 700;
+      margin-right: 10px;
+      flex-shrink: 0;
+    }
+    .top-risk-text { font-size: 10pt; }
+
+    /* Financial grid */
+    .financial-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 12px;
+      margin-bottom: 20px;
+    }
+    .financial-card {
+      text-align: center;
+      padding: 18px 10px;
+      background: #f8f9fa;
+      border-radius: 6px;
+      border: 1px solid #e0e0e0;
+    }
+    .financial-icon { font-size: 18pt; margin-bottom: 6px; }
+    .financial-value { font-size: 16pt; font-weight: 700; color: #1a237e; }
+    .financial-label { font-size: 9pt; color: #555; margin-top: 4px; }
+    .financial-sublabel { font-size: 8pt; color: #999; }
+
+    /* Data tables */
+    .data-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 10px 0;
+      font-size: 9pt;
+    }
+    .data-table th, .data-table td {
+      padding: 7px 10px;
+      text-align: left;
+      border-bottom: 1px solid #e0e0e0;
+    }
+    .data-table th {
+      background: #f5f5f5;
+      font-weight: 600;
+      color: #555;
+      font-size: 8pt;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+    .data-table-sm { font-size: 8pt; }
+    .data-table-sm th, .data-table-sm td { padding: 4px 8px; }
+
+    /* Compliance bars */
+    .compliance-bars { margin: 10px 0; }
+    .compliance-bar-row {
+      display: flex;
+      align-items: center;
+      margin-bottom: 8px;
+    }
+    .compliance-fw-name {
+      width: 100px;
+      font-size: 9pt;
+      font-weight: 600;
+      text-align: right;
+      padding-right: 12px;
+    }
+    .compliance-bar-track {
+      flex: 1;
+      height: 20px;
+      background: #f0f0f0;
+      border-radius: 4px;
+      overflow: hidden;
+    }
+    .compliance-bar-fill {
+      height: 100%;
+      border-radius: 4px;
+    }
+    .compliance-bar-pct {
+      width: 45px;
+      text-align: right;
+      font-size: 10pt;
+      font-weight: 700;
+      padding-left: 10px;
+    }
+    .compliance-gap {
+      padding: 6px 12px;
+      background: #fff3cd;
+      border-left: 3px solid #ffc107;
+      margin-bottom: 6px;
+      font-size: 9pt;
+      border-radius: 0 4px 4px 0;
+    }
+    .audit-readiness {
+      text-align: center;
+      margin-bottom: 20px;
+    }
+    .audit-readiness-value {
+      font-size: 36pt;
+      font-weight: 700;
+      color: #1a237e;
+    }
+    .audit-readiness-label {
+      font-size: 10pt;
+      color: #666;
+    }
+
+    /* Recommendations */
+    .recommendations-list { margin: 10px 0; }
+    .rec-item {
+      border: 1px solid #e0e0e0;
+      border-radius: 6px;
+      margin-bottom: 10px;
+      overflow: hidden;
+    }
+    .rec-header {
+      display: flex;
+      align-items: center;
+      padding: 8px 12px;
+      background: #f8f9fa;
+      gap: 8px;
+    }
+    .rec-number {
+      background: #1a237e;
+      color: white;
+      width: 22px;
+      height: 22px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 9pt;
+      font-weight: 700;
+      flex-shrink: 0;
+    }
+    .rec-severity {
+      color: white;
+      padding: 2px 8px;
+      border-radius: 3px;
+      font-size: 8pt;
+      font-weight: 700;
+    }
+    .rec-title { font-size: 10pt; font-weight: 600; flex: 1; }
+    .rec-effort { font-size: 8pt; color: #666; }
+    .rec-body { padding: 10px 12px; font-size: 9pt; }
+    .rec-desc { margin-bottom: 6px; color: #555; }
+    .rec-action { margin-bottom: 4px; }
+    .rec-impact { color: #1a237e; }
+
+    /* Effort/Impact Matrix */
+    .matrix-container {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+    }
+    .matrix-y-label {
+      writing-mode: vertical-lr;
+      transform: rotate(180deg);
+      font-size: 9pt;
+      font-weight: 700;
+      color: #666;
+      letter-spacing: 2px;
+    }
+    .matrix-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      grid-template-rows: 1fr 1fr;
+      gap: 8px;
+      width: 100%;
+      max-width: 500px;
+    }
+    .matrix-cell {
+      padding: 14px;
+      border-radius: 6px;
+      min-height: 120px;
+    }
+    .matrix-cell ul { padding-left: 16px; margin-top: 6px; font-size: 8pt; }
+    .matrix-cell li { margin-bottom: 3px; }
+    .matrix-cell-title { font-size: 10pt; font-weight: 700; }
+    .matrix-cell-subtitle { font-size: 8pt; color: rgba(0,0,0,0.5); margin-bottom: 4px; }
+    .matrix-quick-wins { background: #d4edda; border: 2px solid #28a745; }
+    .matrix-strategic { background: #cce5ff; border: 2px solid #1a73e8; }
+    .matrix-nice { background: #f8f9fa; border: 1px solid #dee2e6; }
+    .matrix-reconsider { background: #fff3cd; border: 1px solid #ffc107; }
+    .matrix-x-label {
+      text-align: center;
+      font-size: 9pt;
+      font-weight: 700;
+      color: #666;
+      letter-spacing: 2px;
+      margin-top: 6px;
+    }
+
+    /* Trend section */
+    .trend-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+      margin-bottom: 20px;
+    }
+    .trend-card {
+      padding: 20px;
+      background: #f8f9fa;
+      border-radius: 6px;
+      text-align: center;
+    }
+    .trend-big-number { font-size: 36pt; font-weight: 700; color: #1a237e; }
+    .trend-unit { font-size: 10pt; color: #666; margin-bottom: 12px; }
+    .trend-bar-container {
+      height: 8px;
+      background: #e0e0e0;
+      border-radius: 4px;
+      overflow: hidden;
+      margin: 8px 20px;
+    }
+    .trend-bar { height: 100%; border-radius: 4px; }
+    .trend-scale { font-size: 8pt; color: #999; }
+    .upgrade-path-box {
+      background: #e8f5e9;
+      border-left: 4px solid #28a745;
+      padding: 14px 18px;
+      border-radius: 0 4px 4px 0;
+      font-size: 10pt;
+    }
+
+    /* Appendix */
+    .appendix-footer {
+      margin-top: 30px;
+      padding-top: 16px;
+      border-top: 1px solid #e0e0e0;
+      text-align: center;
+      font-size: 9pt;
+      color: #999;
+    }
+
+    /* Utilities */
+    .no-data { color: #28a745; font-weight: 600; font-size: 10pt; }
+  </style>
+</head>
+<body>
+
+<div class="page cover-page">
+  <div class="cover-content">
+    <div class="cover-logo">[LOGO]</div>
+    <h1 class="cover-company">Your Organization</h1>
+    <h2 class="cover-title">Infrastructure Resilience Assessment</h2>
+    <div class="cover-date">April 02, 2026</div>
+    <div class="cover-grade-container">
+      <div class="cover-grade" style="background-color: #28a745;">A+</div>
+      <div class="cover-grade-label">Resilience Grade</div>
+    </div>
+    <div class="cover-prepared">Prepared by: FaultRay AI Engine</div>
+    <div class="cover-confidential">CONFIDENTIAL - For authorized recipients only</div>
+  </div>
+</div>
+
+<div class="page">
+  <h2 class="section-title">Executive Summary</h2>
+
+  <div class="summary-text">Your infrastructure (6 components) has 5 critical risk(s) that need immediate attention. Current estimated availability is ~4.5 nines (Excellent). Applying the top recommendations could improve availability from ~4.5 to ~5.0 nines. Additionally, 27 warning-level scenarios were detected during simulation.</div>
+
+  <div class="traffic-grid">
+    
+      <div class="traffic-card status-green">
+        <div class="traffic-dot"></div>
+        <div class="traffic-label">Redundancy</div>
+        <div class="traffic-status">Passed</div>
+        <div class="traffic-score">100%</div>
+      </div>
+      <div class="traffic-card status-red">
+        <div class="traffic-dot"></div>
+        <div class="traffic-label">Security</div>
+        <div class="traffic-status">Critical</div>
+        <div class="traffic-score">0%</div>
+      </div>
+      <div class="traffic-card status-yellow">
+        <div class="traffic-dot"></div>
+        <div class="traffic-label">Availability</div>
+        <div class="traffic-status">Needs Attention</div>
+        <div class="traffic-score">79%</div>
+      </div>
+      <div class="traffic-card status-red">
+        <div class="traffic-dot"></div>
+        <div class="traffic-label">Compliance</div>
+        <div class="traffic-status">Critical</div>
+        <div class="traffic-score">28%</div>
+      </div>
+  </div>
+
+  <div class="kpi-grid">
+    <div class="kpi-card">
+      <div class="kpi-value" style="color: #28a745;">100</div>
+      <div class="kpi-label">Resilience Score</div>
+      <div class="kpi-sublabel">out of 100</div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-value">$186,000</div>
+      <div class="kpi-label">Est. Annual Risk</div>
+      <div class="kpi-sublabel">downtime cost</div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-value">1</div>
+      <div class="kpi-label">Critical Findings</div>
+      <div class="kpi-sublabel">requiring action</div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-value">79.1%</div>
+      <div class="kpi-label">SLA Achievement</div>
+      <div class="kpi-sublabel">scenarios passed</div>
+    </div>
+  </div>
+
+  <h3>Key Findings</h3>
+  <ul class="findings-list">
+    <li>1 critical vulnerabilityy detected</li>
+<li>Failure of nginx (LB) cascades to 6 components (100% of the system).</li>
+<li>Failure of api-server-1 cascades to 7 components (117% of the system).</li>
+<li>Failure of api-server-2 cascades to 8 components (133% of the system).</li>
+
+  </ul>
+</div>
+
+<div class="page">
+  <h2 class="section-title">Risk Overview</h2>
+
+  <div class="risk-summary-grid">
+    <div class="risk-summary-card risk-card-critical">
+      <div class="risk-summary-value">1</div>
+      <div class="risk-summary-label">Critical</div>
+    </div>
+    <div class="risk-summary-card risk-card-warning">
+      <div class="risk-summary-value">27</div>
+      <div class="risk-summary-label">Warnings</div>
+    </div>
+    <div class="risk-summary-card risk-card-passed">
+      <div class="risk-summary-value">106</div>
+      <div class="risk-summary-label">Passed</div>
+    </div>
+    <div class="risk-summary-card risk-card-spof">
+      <div class="risk-summary-value">0</div>
+      <div class="risk-summary-label">SPOFs</div>
+    </div>
+  </div>
+
+  <h3>Risk by Component</h3>
+  <div class="risk-chart">
+    
+      <div class="risk-bar-row">
+        <div class="risk-bar-label">PostgreSQL (primary)</div>
+        <div class="risk-bar-track">
+          <div class="risk-bar-fill" style="width: 20%; background: #ffc107;"></div>
+        </div>
+        <div class="risk-bar-value">20%</div>
+      </div>
+      <div class="risk-bar-row">
+        <div class="risk-bar-label">Redis (cache)</div>
+        <div class="risk-bar-track">
+          <div class="risk-bar-fill" style="width: 20%; background: #ffc107;"></div>
+        </div>
+        <div class="risk-bar-value">20%</div>
+      </div>
+      <div class="risk-bar-row">
+        <div class="risk-bar-label">RabbitMQ</div>
+        <div class="risk-bar-track">
+          <div class="risk-bar-fill" style="width: 20%; background: #ffc107;"></div>
+        </div>
+        <div class="risk-bar-value">20%</div>
+      </div>
+      <div class="risk-bar-row">
+        <div class="risk-bar-label">nginx (LB)</div>
+        <div class="risk-bar-track">
+          <div class="risk-bar-fill" style="width: 10%; background: #28a745;"></div>
+        </div>
+        <div class="risk-bar-value">10%</div>
+      </div>
+      <div class="risk-bar-row">
+        <div class="risk-bar-label">api-server-1</div>
+        <div class="risk-bar-track">
+          <div class="risk-bar-fill" style="width: 10%; background: #28a745;"></div>
+        </div>
+        <div class="risk-bar-value">10%</div>
+      </div>
+      <div class="risk-bar-row">
+        <div class="risk-bar-label">api-server-2</div>
+        <div class="risk-bar-track">
+          <div class="risk-bar-fill" style="width: 10%; background: #28a745;"></div>
+        </div>
+        <div class="risk-bar-value">10%</div>
+      </div>
+  </div>
+
+  <h3>Top Risks</h3>
+  <div class="top-risks">
+    
+      <div class="top-risk-item">
+        <span class="top-risk-num">1</span>
+        <span class="top-risk-text">Failure of nginx (LB) cascades to 6 components (100% of the system).</span>
+      </div>
+      <div class="top-risk-item">
+        <span class="top-risk-num">2</span>
+        <span class="top-risk-text">Failure of api-server-1 cascades to 7 components (117% of the system).</span>
+      </div>
+      <div class="top-risk-item">
+        <span class="top-risk-num">3</span>
+        <span class="top-risk-text">Failure of api-server-2 cascades to 8 components (133% of the system).</span>
+      </div>
+      <div class="top-risk-item">
+        <span class="top-risk-num">4</span>
+        <span class="top-risk-text">Failure of PostgreSQL (primary) cascades to 6 components (100% of the system).</span>
+      </div>
+      <div class="top-risk-item">
+        <span class="top-risk-num">5</span>
+        <span class="top-risk-text">Failure of Redis (cache) cascades to 6 components (100% of the system).</span>
+      </div>
+  </div>
+</div>
+
+<div class="page">
+  <h2 class="section-title">Financial Impact Analysis</h2>
+
+  <div class="financial-grid">
+    <div class="financial-card">
+      <div class="financial-icon">&#9202;</div>
+      <div class="financial-value">$6,000</div>
+      <div class="financial-label">Cost of Downtime</div>
+      <div class="financial-sublabel">per hour</div>
+    </div>
+    <div class="financial-card">
+      <div class="financial-icon">&#9888;</div>
+      <div class="financial-value">$186,000</div>
+      <div class="financial-label">Annual Downtime Risk</div>
+      <div class="financial-sublabel">estimated cost</div>
+    </div>
+    <div class="financial-card">
+      <div class="financial-icon">&#128736;</div>
+      <div class="financial-value">$0</div>
+      <div class="financial-label">Improvement Cost</div>
+      <div class="financial-sublabel">to fix 0 SPOFs</div>
+    </div>
+    <div class="financial-card">
+      <div class="financial-icon">&#128200;</div>
+      <div class="financial-value">+0%</div>
+      <div class="financial-label">ROI</div>
+      <div class="financial-sublabel">on improvements</div>
+    </div>
+  </div>
+
+  <h3>Downtime Cost Breakdown</h3>
+  <table class="data-table">
+    <thead>
+      <tr>
+        <th>Metric</th>
+        <th>Value</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr><td>Revenue per minute at risk</td><td>$100.00</td></tr>
+      <tr><td>Hourly cost of downtime</td><td>$6,000</td></tr>
+      <tr><td>Critical vulnerabilities</td><td>1</td></tr>
+      <tr><td>Estimated annual downtime hours</td><td>31.0h</td></tr>
+      <tr><td>Estimated annual risk</td><td>$186,000</td></tr>
+      <tr><td>Cost to remediate SPOFs</td><td>$0</td></tr>
+      <tr><td>Net benefit of improvements</td><td>$186,000</td></tr>
+    </tbody>
+  </table>
+</div>
+
+<div class="page">
+  <h2 class="section-title">Compliance Status</h2>
+
+  <div class="audit-readiness">
+    <div class="audit-readiness-value">28%</div>
+    <div class="audit-readiness-label">Average Audit Readiness</div>
+  </div>
+
+  <h3>Framework Compliance</h3>
+  <div class="compliance-bars">
+    
+      <div class="compliance-bar-row">
+        <div class="compliance-fw-name">AI-PROMOTION</div>
+        <div class="compliance-bar-track">
+          <div class="compliance-bar-fill" style="width: 40%; background: #dc3545;"></div>
+        </div>
+        <div class="compliance-bar-pct">40%</div>
+      </div>
+      <div class="compliance-bar-row">
+        <div class="compliance-fw-name">DORA</div>
+        <div class="compliance-bar-track">
+          <div class="compliance-bar-fill" style="width: 50%; background: #ffc107;"></div>
+        </div>
+        <div class="compliance-bar-pct">50%</div>
+      </div>
+      <div class="compliance-bar-row">
+        <div class="compliance-fw-name">HIPAA</div>
+        <div class="compliance-bar-track">
+          <div class="compliance-bar-fill" style="width: 12%; background: #dc3545;"></div>
+        </div>
+        <div class="compliance-bar-pct">12%</div>
+      </div>
+      <div class="compliance-bar-row">
+        <div class="compliance-fw-name">ISO 27001</div>
+        <div class="compliance-bar-track">
+          <div class="compliance-bar-fill" style="width: 35%; background: #dc3545;"></div>
+        </div>
+        <div class="compliance-bar-pct">35%</div>
+      </div>
+      <div class="compliance-bar-row">
+        <div class="compliance-fw-name">ISO42001</div>
+        <div class="compliance-bar-track">
+          <div class="compliance-bar-fill" style="width: 33%; background: #dc3545;"></div>
+        </div>
+        <div class="compliance-bar-pct">33%</div>
+      </div>
+      <div class="compliance-bar-row">
+        <div class="compliance-fw-name">METI-V1.1</div>
+        <div class="compliance-bar-track">
+          <div class="compliance-bar-fill" style="width: 17%; background: #dc3545;"></div>
+        </div>
+        <div class="compliance-bar-pct">17%</div>
+      </div>
+      <div class="compliance-bar-row">
+        <div class="compliance-fw-name">NIST CSF</div>
+        <div class="compliance-bar-track">
+          <div class="compliance-bar-fill" style="width: 30%; background: #dc3545;"></div>
+        </div>
+        <div class="compliance-bar-pct">30%</div>
+      </div>
+      <div class="compliance-bar-row">
+        <div class="compliance-fw-name">PCI DSS</div>
+        <div class="compliance-bar-track">
+          <div class="compliance-bar-fill" style="width: 5%; background: #dc3545;"></div>
+        </div>
+        <div class="compliance-bar-pct">5%</div>
+      </div>
+      <div class="compliance-bar-row">
+        <div class="compliance-fw-name">SOC 2</div>
+        <div class="compliance-bar-track">
+          <div class="compliance-bar-fill" style="width: 25%; background: #dc3545;"></div>
+        </div>
+        <div class="compliance-bar-pct">25%</div>
+      </div>
+  </div>
+
+  <h3>Key Gaps</h3>
+  <div class="compliance-gaps">
+    
+      <div class="compliance-gap">
+        <strong>AI-PROMOTION</strong>: 3 non-compliant controls
+      </div>
+      <div class="compliance-gap">
+        <strong>DORA</strong>: 7 non-compliant controls
+      </div>
+      <div class="compliance-gap">
+        <strong>HIPAA</strong>: 6 non-compliant controls
+      </div>
+      <div class="compliance-gap">
+        <strong>ISO 27001</strong>: 6 non-compliant controls
+      </div>
+      <div class="compliance-gap">
+        <strong>ISO42001</strong>: 4 non-compliant controls
+      </div>
+      <div class="compliance-gap">
+        <strong>METI-V1.1</strong>: 5 non-compliant controls
+      </div>
+      <div class="compliance-gap">
+        <strong>NIST CSF</strong>: 6 non-compliant controls
+      </div>
+      <div class="compliance-gap">
+        <strong>PCI DSS</strong>: 9 non-compliant controls
+      </div>
+      <div class="compliance-gap">
+        <strong>SOC 2</strong>: 7 non-compliant controls
+      </div>
+  </div>
+</div>
+
+<div class="page">
+  <h2 class="section-title">Recommendations</h2>
+  <p class="section-subtitle">13 recommendations prioritized by severity and impact.</p>
+  <div class="recommendations-list">
+    
+      <div class="rec-item">
+        <div class="rec-header">
+          <span class="rec-number">1</span>
+          <span class="rec-severity" style="background: #dc3545;">CRITICAL</span>
+          <span class="rec-title">Cascade amplifier: nginx (LB)</span>
+          <span class="rec-effort">Effort: medium</span>
+        </div>
+        <div class="rec-body">
+          <p class="rec-desc">Failure of nginx (LB) cascades to 6 components (100% of the system). 6 component(s) go fully DOWN.</p>
+          <p class="rec-action"><strong>Action:</strong> Add circuit breakers on dependencies to nginx (LB). Implement bulkheads to isolate failure domains. Consider async communication patterns where possible.</p>
+          <p class="rec-impact"><strong>Impact:</strong> Reduces blast radius from 100% to &lt;33% of system</p>
+        </div>
+      </div>
+      <div class="rec-item">
+        <div class="rec-header">
+          <span class="rec-number">2</span>
+          <span class="rec-severity" style="background: #dc3545;">CRITICAL</span>
+          <span class="rec-title">Cascade amplifier: api-server-1</span>
+          <span class="rec-effort">Effort: medium</span>
+        </div>
+        <div class="rec-body">
+          <p class="rec-desc">Failure of api-server-1 cascades to 7 components (117% of the system). 3 component(s) go fully DOWN.</p>
+          <p class="rec-action"><strong>Action:</strong> Add circuit breakers on dependencies to api-server-1. Implement bulkheads to isolate failure domains. Consider async communication patterns where possible.</p>
+          <p class="rec-impact"><strong>Impact:</strong> Reduces blast radius from 117% to &lt;38% of system</p>
+        </div>
+      </div>
+      <div class="rec-item">
+        <div class="rec-header">
+          <span class="rec-number">3</span>
+          <span class="rec-severity" style="background: #dc3545;">CRITICAL</span>
+          <span class="rec-title">Cascade amplifier: api-server-2</span>
+          <span class="rec-effort">Effort: medium</span>
+        </div>
+        <div class="rec-body">
+          <p class="rec-desc">Failure of api-server-2 cascades to 8 components (133% of the system). 3 component(s) go fully DOWN.</p>
+          <p class="rec-action"><strong>Action:</strong> Add circuit breakers on dependencies to api-server-2. Implement bulkheads to isolate failure domains. Consider async communication patterns where possible.</p>
+          <p class="rec-impact"><strong>Impact:</strong> Reduces blast radius from 133% to &lt;44% of system</p>
+        </div>
+      </div>
+      <div class="rec-item">
+        <div class="rec-header">
+          <span class="rec-number">4</span>
+          <span class="rec-severity" style="background: #dc3545;">CRITICAL</span>
+          <span class="rec-title">Cascade amplifier: PostgreSQL (primary)</span>
+          <span class="rec-effort">Effort: medium</span>
+        </div>
+        <div class="rec-body">
+          <p class="rec-desc">Failure of PostgreSQL (primary) cascades to 6 components (100% of the system). 2 component(s) go fully DOWN.</p>
+          <p class="rec-action"><strong>Action:</strong> Add circuit breakers on dependencies to PostgreSQL (primary). Implement bulkheads to isolate failure domains. Consider async communication patterns where possible.</p>
+          <p class="rec-impact"><strong>Impact:</strong> Reduces blast radius from 100% to &lt;33% of system</p>
+        </div>
+      </div>
+      <div class="rec-item">
+        <div class="rec-header">
+          <span class="rec-number">5</span>
+          <span class="rec-severity" style="background: #dc3545;">CRITICAL</span>
+          <span class="rec-title">Cascade amplifier: Redis (cache)</span>
+          <span class="rec-effort">Effort: medium</span>
+        </div>
+        <div class="rec-body">
+          <p class="rec-desc">Failure of Redis (cache) cascades to 6 components (100% of the system). 2 component(s) go fully DOWN.</p>
+          <p class="rec-action"><strong>Action:</strong> Add circuit breakers on dependencies to Redis (cache). Implement bulkheads to isolate failure domains. Consider async communication patterns where possible.</p>
+          <p class="rec-impact"><strong>Impact:</strong> Reduces blast radius from 100% to &lt;33% of system</p>
+        </div>
+      </div>
+      <div class="rec-item">
+        <div class="rec-header">
+          <span class="rec-number">6</span>
+          <span class="rec-severity" style="background: #fd7e14;">HIGH</span>
+          <span class="rec-title">Cascade amplifier: RabbitMQ</span>
+          <span class="rec-effort">Effort: medium</span>
+        </div>
+        <div class="rec-body">
+          <p class="rec-desc">Failure of RabbitMQ cascades to 3 components (50% of the system). 1 component(s) go fully DOWN.</p>
+          <p class="rec-action"><strong>Action:</strong> Add circuit breakers on dependencies to RabbitMQ. Implement bulkheads to isolate failure domains. Consider async communication patterns where possible.</p>
+          <p class="rec-impact"><strong>Impact:</strong> Reduces blast radius from 50% to &lt;16% of system</p>
+        </div>
+      </div>
+      <div class="rec-item">
+        <div class="rec-header">
+          <span class="rec-number">7</span>
+          <span class="rec-severity" style="background: #ffc107;">MEDIUM</span>
+          <span class="rec-title">Capacity bottleneck: api-server-1</span>
+          <span class="rec-effort">Effort: medium</span>
+        </div>
+        <div class="rec-body">
+          <p class="rec-desc">api-server-1 is running hot: Connection pool at 100% (200/200). Under traffic spikes, this component will saturate first.</p>
+          <p class="rec-action"><strong>Action:</strong> Scale api-server-1 by adding replicas or upgrading instance size. Enable autoscaling to handle traffic spikes automatically. </p>
+          <p class="rec-impact"><strong>Impact:</strong> Prevents saturation-induced outages</p>
+        </div>
+      </div>
+      <div class="rec-item">
+        <div class="rec-header">
+          <span class="rec-number">8</span>
+          <span class="rec-severity" style="background: #ffc107;">MEDIUM</span>
+          <span class="rec-title">Capacity bottleneck: api-server-2</span>
+          <span class="rec-effort">Effort: medium</span>
+        </div>
+        <div class="rec-body">
+          <p class="rec-desc">api-server-2 is running hot: Connection pool at 90% (180/200). Under traffic spikes, this component will saturate first.</p>
+          <p class="rec-action"><strong>Action:</strong> Scale api-server-2 by adding replicas or upgrading instance size. Enable autoscaling to handle traffic spikes automatically. </p>
+          <p class="rec-impact"><strong>Impact:</strong> Prevents saturation-induced outages</p>
+        </div>
+      </div>
+      <div class="rec-item">
+        <div class="rec-header">
+          <span class="rec-number">9</span>
+          <span class="rec-severity" style="background: #ffc107;">MEDIUM</span>
+          <span class="rec-title">Capacity bottleneck: Redis (cache)</span>
+          <span class="rec-effort">Effort: medium</span>
+        </div>
+        <div class="rec-body">
+          <p class="rec-desc">Redis (cache) is running hot: Connection pool at 100% (100/100). Under traffic spikes, this component will saturate first.</p>
+          <p class="rec-action"><strong>Action:</strong> Scale Redis (cache) by adding replicas or upgrading instance size. Enable autoscaling to handle traffic spikes automatically. </p>
+          <p class="rec-impact"><strong>Impact:</strong> Prevents saturation-induced outages</p>
+        </div>
+      </div>
+      <div class="rec-item">
+        <div class="rec-header">
+          <span class="rec-number">10</span>
+          <span class="rec-severity" style="background: #ffc107;">MEDIUM</span>
+          <span class="rec-title">Missing circuit breaker and retry strategy: nginx (LB) -&gt; api-server-1</span>
+          <span class="rec-effort">Effort: low</span>
+        </div>
+        <div class="rec-body">
+          <p class="rec-desc">The critical dependency from nginx (LB) to api-server-1 lacks circuit breaker and retry strategy. Without these, failures in api-server-1 will propagate uncontrolled to nginx (LB).</p>
+          <p class="rec-action"><strong>Action:</strong> Enable circuit breaker and retry strategy on the nginx (LB) -&gt; api-server-1 dependency edge. Circuit breakers prevent cascade by fast-failing when the downstream is unhealthy. Retry with exponential backoff and jitter prevents thundering herd on transient failures.</p>
+          <p class="rec-impact"><strong>Impact:</strong> Prevents uncontrolled cascade propagation</p>
+        </div>
+      </div>
+      <div class="rec-item">
+        <div class="rec-header">
+          <span class="rec-number">11</span>
+          <span class="rec-severity" style="background: #ffc107;">MEDIUM</span>
+          <span class="rec-title">Missing circuit breaker and retry strategy: nginx (LB) -&gt; api-server-2</span>
+          <span class="rec-effort">Effort: low</span>
+        </div>
+        <div class="rec-body">
+          <p class="rec-desc">The critical dependency from nginx (LB) to api-server-2 lacks circuit breaker and retry strategy. Without these, failures in api-server-2 will propagate uncontrolled to nginx (LB).</p>
+          <p class="rec-action"><strong>Action:</strong> Enable circuit breaker and retry strategy on the nginx (LB) -&gt; api-server-2 dependency edge. Circuit breakers prevent cascade by fast-failing when the downstream is unhealthy. Retry with exponential backoff and jitter prevents thundering herd on transient failures.</p>
+          <p class="rec-impact"><strong>Impact:</strong> Prevents uncontrolled cascade propagation</p>
+        </div>
+      </div>
+      <div class="rec-item">
+        <div class="rec-header">
+          <span class="rec-number">12</span>
+          <span class="rec-severity" style="background: #ffc107;">MEDIUM</span>
+          <span class="rec-title">Missing circuit breaker and retry strategy: api-server-1 -&gt; PostgreSQL (primary)</span>
+          <span class="rec-effort">Effort: low</span>
+        </div>
+        <div class="rec-body">
+          <p class="rec-desc">The critical dependency from api-server-1 to PostgreSQL (primary) lacks circuit breaker and retry strategy. Without these, failures in PostgreSQL (primary) will propagate uncontrolled to api-server-1.</p>
+          <p class="rec-action"><strong>Action:</strong> Enable circuit breaker and retry strategy on the api-server-1 -&gt; PostgreSQL (primary) dependency edge. Circuit breakers prevent cascade by fast-failing when the downstream is unhealthy. Retry with exponential backoff and jitter prevents thundering herd on transient failures.</p>
+          <p class="rec-impact"><strong>Impact:</strong> Prevents uncontrolled cascade propagation</p>
+        </div>
+      </div>
+      <div class="rec-item">
+        <div class="rec-header">
+          <span class="rec-number">13</span>
+          <span class="rec-severity" style="background: #ffc107;">MEDIUM</span>
+          <span class="rec-title">Missing circuit breaker and retry strategy: api-server-2 -&gt; PostgreSQL (primary)</span>
+          <span class="rec-effort">Effort: low</span>
+        </div>
+        <div class="rec-body">
+          <p class="rec-desc">The critical dependency from api-server-2 to PostgreSQL (primary) lacks circuit breaker and retry strategy. Without these, failures in PostgreSQL (primary) will propagate uncontrolled to api-server-2.</p>
+          <p class="rec-action"><strong>Action:</strong> Enable circuit breaker and retry strategy on the api-server-2 -&gt; PostgreSQL (primary) dependency edge. Circuit breakers prevent cascade by fast-failing when the downstream is unhealthy. Retry with exponential backoff and jitter prevents thundering herd on transient failures.</p>
+          <p class="rec-impact"><strong>Impact:</strong> Prevents uncontrolled cascade propagation</p>
+        </div>
+      </div>
+  </div>
+</div>
+
+<div class="page">
+  <h2 class="section-title">Effort / Impact Matrix</h2>
+  <p class="section-subtitle">Prioritize improvements by effort required and expected impact.</p>
+
+  <div class="matrix-container">
+    <div class="matrix-y-label">IMPACT</div>
+    <div class="matrix-grid">
+      <div class="matrix-cell matrix-quick-wins">
+        <div class="matrix-cell-title">Quick Wins</div>
+        <div class="matrix-cell-subtitle">Do These First</div>
+        <em>None</em>
+      </div>
+      <div class="matrix-cell matrix-strategic">
+        <div class="matrix-cell-title">Strategic</div>
+        <div class="matrix-cell-subtitle">Plan & Execute</div>
+        <ul><li>Cascade amplifier: nginx (LB)</li><li>Cascade amplifier: api-server-1</li><li>Cascade amplifier: api-server-2</li><li>Cascade amplifier: PostgreSQL (primary)</li><li><em>+2 more</em></li></ul>
+      </div>
+      <div class="matrix-cell matrix-nice">
+        <div class="matrix-cell-title">Nice to Have</div>
+        <div class="matrix-cell-subtitle">When Resources Allow</div>
+        <ul><li>Missing circuit breaker and retry strategy: nginx (LB) -&gt; api-server-1</li><li>Missing circuit breaker and retry strategy: nginx (LB) -&gt; api-server-2</li><li>Missing circuit breaker and retry strategy: api-server-1 -&gt; PostgreSQL (primary)</li><li>Missing circuit breaker and retry strategy: api-server-2 -&gt; PostgreSQL (primary)</li></ul>
+      </div>
+      <div class="matrix-cell matrix-reconsider">
+        <div class="matrix-cell-title">Reconsider</div>
+        <div class="matrix-cell-subtitle">Low Priority</div>
+        <ul><li>Capacity bottleneck: api-server-1</li><li>Capacity bottleneck: api-server-2</li><li>Capacity bottleneck: Redis (cache)</li></ul>
+      </div>
+    </div>
+    <div class="matrix-x-label">EFFORT</div>
+  </div>
+</div>
+
+<div class="page">
+  <h2 class="section-title">Resilience Trend & Outlook</h2>
+
+  <div class="trend-grid">
+    <div class="trend-card">
+      <h4>Current Availability</h4>
+      <div class="trend-big-number">4.5</div>
+      <div class="trend-unit">nines</div>
+      <div class="trend-bar-container">
+        <div class="trend-bar" style="width: 90%; background: #1a73e8;"></div>
+      </div>
+      <div class="trend-scale">0 nines &mdash; 5 nines</div>
+    </div>
+    <div class="trend-card">
+      <h4>Achievable Availability</h4>
+      <div class="trend-big-number">5.0</div>
+      <div class="trend-unit">nines (with improvements)</div>
+      <div class="trend-bar-container">
+        <div class="trend-bar" style="width: 100%; background: #28a745;"></div>
+      </div>
+      <div class="trend-scale">0 nines &mdash; 5 nines</div>
+    </div>
+  </div>
+
+  <div class="upgrade-path-box">
+    <h4>Upgrade Path</h4>
+    <p>To reach 5.0 nines (Excellent (4.5+ nines -- ~2.6 min downtime/month)):
+  1. [Critical] Cascade amplifier: nginx (LB): Add circuit breakers on dependencies to nginx (LB)
+  2. [Critical] Cascade amplifier: api-server-1: Add circuit breakers on dependencies to api-server-1
+  3. [Critical] Cascade amplifier: api-server-2: Add circuit breakers on dependencies to api-server-2
+  4. [High] Cascade amplifier: RabbitMQ: Add circuit breakers on dependencies to RabbitMQ</p>
+  </div>
+</div>
+
+<div class="page">
+  <h2 class="section-title">Appendix: Technical Details</h2>
+
+  <h3>Component Inventory</h3>
+  <table class="data-table data-table-sm">
+    <thead>
+      <tr>
+        <th>Component</th><th>Type</th><th>Replicas</th><th>Util.</th>
+        <th>Health</th><th>Dependents</th><th>Failover</th><th>Autoscale</th>
+      </tr>
+    </thead>
+    <tbody>
+        <tr>
+          <td>nginx (LB)</td>
+          <td>load_balancer</td>
+          <td>2</td>
+          <td>25%</td>
+          <td style="color: #28a745; font-weight: bold;">healthy</td>
+          <td>0</td>
+          <td>No</td>
+          <td>No</td>
+        </tr>
+        <tr>
+          <td>api-server-1</td>
+          <td>app_server</td>
+          <td>3</td>
+          <td>25%</td>
+          <td style="color: #28a745; font-weight: bold;">healthy</td>
+          <td>1</td>
+          <td>No</td>
+          <td>No</td>
+        </tr>
+        <tr>
+          <td>api-server-2</td>
+          <td>app_server</td>
+          <td>3</td>
+          <td>24%</td>
+          <td style="color: #28a745; font-weight: bold;">healthy</td>
+          <td>1</td>
+          <td>No</td>
+          <td>No</td>
+        </tr>
+        <tr>
+          <td>PostgreSQL (primary)</td>
+          <td>database</td>
+          <td>2</td>
+          <td>26%</td>
+          <td style="color: #28a745; font-weight: bold;">healthy</td>
+          <td>2</td>
+          <td>No</td>
+          <td>No</td>
+        </tr>
+        <tr>
+          <td>Redis (cache)</td>
+          <td>cache</td>
+          <td>2</td>
+          <td>22%</td>
+          <td style="color: #28a745; font-weight: bold;">healthy</td>
+          <td>2</td>
+          <td>No</td>
+          <td>No</td>
+        </tr>
+        <tr>
+          <td>RabbitMQ</td>
+          <td>queue</td>
+          <td>2</td>
+          <td>20%</td>
+          <td style="color: #28a745; font-weight: bold;">healthy</td>
+          <td>2</td>
+          <td>No</td>
+          <td>No</td>
+        </tr></tbody>
+  </table>
+
+  <h3>Scenario Results (Top 20)</h3>
+  <table class="data-table data-table-sm">
+    <thead>
+      <tr>
+        <th>Scenario</th><th>Status</th><th>Risk Score</th><th>Affected</th>
+      </tr>
+    </thead>
+    <tbody>
+        <tr>
+          <td>Traffic spike (10x)</td>
+          <td style="color: #dc3545; font-weight: bold;">CRITICAL</td>
+          <td>10.0</td>
+          <td>6</td>
+        </tr>
+        <tr>
+          <td>Traffic spike (5x)</td>
+          <td style="color: #ffc107; font-weight: bold;">WARNING</td>
+          <td>6.4</td>
+          <td>6</td>
+        </tr>
+        <tr>
+          <td>Cache stampede: redis + 5.0x traffic</td>
+          <td style="color: #ffc107; font-weight: bold;">WARNING</td>
+          <td>5.4</td>
+          <td>9</td>
+        </tr>
+        <tr>
+          <td>Triple failure: nginx + app-1 + postgres</td>
+          <td style="color: #ffc107; font-weight: bold;">WARNING</td>
+          <td>5.0</td>
+          <td>6</td>
+        </tr>
+        <tr>
+          <td>Triple failure: nginx + app-1 + redis</td>
+          <td style="color: #ffc107; font-weight: bold;">WARNING</td>
+          <td>5.0</td>
+          <td>6</td>
+        </tr>
+        <tr>
+          <td>Triple failure: nginx + app-1 + rabbitmq</td>
+          <td style="color: #ffc107; font-weight: bold;">WARNING</td>
+          <td>5.0</td>
+          <td>6</td>
+        </tr>
+        <tr>
+          <td>Triple failure: nginx + app-2 + postgres</td>
+          <td style="color: #ffc107; font-weight: bold;">WARNING</td>
+          <td>5.0</td>
+          <td>6</td>
+        </tr>
+        <tr>
+          <td>Triple failure: nginx + app-2 + redis</td>
+          <td style="color: #ffc107; font-weight: bold;">WARNING</td>
+          <td>5.0</td>
+          <td>6</td>
+        </tr>
+        <tr>
+          <td>Triple failure: nginx + app-2 + rabbitmq</td>
+          <td style="color: #ffc107; font-weight: bold;">WARNING</td>
+          <td>5.0</td>
+          <td>6</td>
+        </tr>
+        <tr>
+          <td>Triple failure: nginx + app-1 + app-2</td>
+          <td style="color: #ffc107; font-weight: bold;">WARNING</td>
+          <td>4.7</td>
+          <td>5</td>
+        </tr>
+        <tr>
+          <td>Triple failure: nginx + postgres + redis</td>
+          <td style="color: #ffc107; font-weight: bold;">WARNING</td>
+          <td>4.6</td>
+          <td>7</td>
+        </tr>
+        <tr>
+          <td>Triple failure: nginx + postgres + rabbi</td>
+          <td style="color: #ffc107; font-weight: bold;">WARNING</td>
+          <td>4.6</td>
+          <td>7</td>
+        </tr>
+        <tr>
+          <td>Triple failure: nginx + redis + rabbitmq</td>
+          <td style="color: #ffc107; font-weight: bold;">WARNING</td>
+          <td>4.6</td>
+          <td>7</td>
+        </tr>
+        <tr>
+          <td>Triple failure: app-1 + app-2 + postgres</td>
+          <td style="color: #ffc107; font-weight: bold;">WARNING</td>
+          <td>4.6</td>
+          <td>7</td>
+        </tr>
+        <tr>
+          <td>Triple failure: app-1 + app-2 + redis</td>
+          <td style="color: #ffc107; font-weight: bold;">WARNING</td>
+          <td>4.6</td>
+          <td>7</td>
+        </tr>
+        <tr>
+          <td>Triple failure: app-1 + app-2 + rabbitmq</td>
+          <td style="color: #ffc107; font-weight: bold;">WARNING</td>
+          <td>4.6</td>
+          <td>7</td>
+        </tr>
+        <tr>
+          <td>Total infrastructure meltdown</td>
+          <td style="color: #ffc107; font-weight: bold;">WARNING</td>
+          <td>4.6</td>
+          <td>14</td>
+        </tr>
+        <tr>
+          <td>Triple failure: app-1 + postgres + redis</td>
+          <td style="color: #ffc107; font-weight: bold;">WARNING</td>
+          <td>4.2</td>
+          <td>8</td>
+        </tr>
+        <tr>
+          <td>Triple failure: app-1 + postgres + rabbi</td>
+          <td style="color: #ffc107; font-weight: bold;">WARNING</td>
+          <td>4.2</td>
+          <td>8</td>
+        </tr>
+        <tr>
+          <td>Triple failure: app-1 + redis + rabbitmq</td>
+          <td style="color: #ffc107; font-weight: bold;">WARNING</td>
+          <td>4.2</td>
+          <td>8</td>
+        </tr></tbody>
+  </table>
+
+  <div class="appendix-footer">
+    <p>Generated by FaultRay AI Analysis Engine | 2026-04-02 06:46:13 UTC</p>
+    <p>Total scenarios tested: 134 | Resilience score: 100.0/100</p>
+  </div>
+</div>
+</body>
+</html>

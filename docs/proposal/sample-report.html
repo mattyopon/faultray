@@ -1,0 +1,2347 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>FaultRay - Chaos Simulation Report</title>
+<style>
+  :root {
+    --bg-primary: #0d1117;
+    --bg-secondary: #161b22;
+    --bg-tertiary: #21262d;
+    --border: #30363d;
+    --text-primary: #e6edf3;
+    --text-secondary: #8b949e;
+    --text-muted: #6e7681;
+    --accent-green: #3fb950;
+    --accent-yellow: #d29922;
+    --accent-red: #f85149;
+    --accent-blue: #58a6ff;
+    --accent-purple: #bc8cff;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
+    background: var(--bg-primary);
+    color: var(--text-primary);
+    line-height: 1.6;
+    padding: 2rem;
+  }
+
+  .container { max-width: 1100px; margin: 0 auto; }
+
+  h1 {
+    font-size: 1.8rem;
+    margin-bottom: 0.5rem;
+    color: var(--text-primary);
+  }
+
+  h2 {
+    font-size: 1.3rem;
+    margin: 2rem 0 1rem;
+    padding-bottom: 0.5rem;
+    border-bottom: 1px solid var(--border);
+    color: var(--text-primary);
+  }
+
+  .header {
+    text-align: center;
+    padding: 2rem 0;
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 2rem;
+  }
+
+  .header .subtitle {
+    color: var(--text-secondary);
+    font-size: 0.95rem;
+  }
+
+  /* Score badge */
+  .score-container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 2rem;
+    margin: 1.5rem 0;
+    flex-wrap: wrap;
+  }
+
+  .score-badge {
+    width: 140px;
+    height: 140px;
+    border-radius: 50%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    border: 4px solid;
+  }
+
+  .score-badge.green  { border-color: var(--accent-green); }
+  .score-badge.yellow { border-color: var(--accent-yellow); }
+  .score-badge.red    { border-color: var(--accent-red); }
+
+  .score-badge .number {
+    font-size: 2.5rem;
+    font-weight: 700;
+    line-height: 1;
+  }
+
+  .score-badge.green  .number { color: var(--accent-green); }
+  .score-badge.yellow .number { color: var(--accent-yellow); }
+  .score-badge.red    .number { color: var(--accent-red); }
+
+  .score-badge .label {
+    font-size: 0.75rem;
+    color: var(--text-secondary);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
+
+  /* Summary stats */
+  .stats-row {
+    display: flex;
+    justify-content: center;
+    gap: 2rem;
+    flex-wrap: wrap;
+  }
+
+  .stat-card {
+    background: var(--bg-secondary);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 1rem 1.5rem;
+    text-align: center;
+    min-width: 140px;
+  }
+
+  .stat-card .stat-value {
+    font-size: 1.8rem;
+    font-weight: 700;
+  }
+
+  .stat-card .stat-label {
+    font-size: 0.8rem;
+    color: var(--text-secondary);
+    text-transform: uppercase;
+  }
+
+  .stat-card.critical .stat-value { color: var(--accent-red); }
+  .stat-card.warning  .stat-value { color: var(--accent-yellow); }
+  .stat-card.passed   .stat-value { color: var(--accent-green); }
+  .stat-card.total    .stat-value { color: var(--accent-blue); }
+
+  /* Finding cards */
+  .finding {
+    background: var(--bg-secondary);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 1.2rem;
+    margin-bottom: 1rem;
+    border-left: 4px solid;
+  }
+
+  .finding.critical { border-left-color: var(--accent-red); }
+  .finding.warning  { border-left-color: var(--accent-yellow); }
+
+  .finding-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 0.5rem;
+  }
+
+  .finding-title {
+    font-weight: 600;
+    font-size: 1rem;
+  }
+
+  .finding-score {
+    font-size: 0.85rem;
+    font-weight: 600;
+    padding: 0.15rem 0.6rem;
+    border-radius: 999px;
+  }
+
+  .finding.critical .finding-score {
+    background: rgba(248, 81, 73, 0.15);
+    color: var(--accent-red);
+  }
+
+  .finding.warning .finding-score {
+    background: rgba(210, 153, 34, 0.15);
+    color: var(--accent-yellow);
+  }
+
+  .finding-description {
+    color: var(--text-secondary);
+    font-size: 0.9rem;
+    margin-bottom: 0.75rem;
+  }
+
+  /* Cascade path */
+  .cascade {
+    background: var(--bg-tertiary);
+    border-radius: 6px;
+    padding: 0.8rem 1rem;
+    font-size: 0.85rem;
+  }
+
+  .cascade-title {
+    color: var(--text-muted);
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    margin-bottom: 0.5rem;
+  }
+
+  .cascade-step {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.5rem;
+    padding: 0.3rem 0;
+  }
+
+  .cascade-step + .cascade-step {
+    border-top: 1px solid var(--border);
+  }
+
+  .cascade-icon {
+    flex-shrink: 0;
+    width: 20px;
+    text-align: center;
+    font-weight: 600;
+  }
+
+  .cascade-icon.down       { color: var(--accent-red); }
+  .cascade-icon.overloaded { color: var(--accent-yellow); }
+  .cascade-icon.degraded   { color: var(--accent-yellow); }
+  .cascade-icon.healthy    { color: var(--accent-green); }
+
+  .cascade-name { font-weight: 500; }
+
+  .cascade-reason {
+    color: var(--text-muted);
+    font-size: 0.8rem;
+  }
+
+  .cascade-time {
+    color: var(--text-muted);
+    font-size: 0.75rem;
+    margin-left: auto;
+    white-space: nowrap;
+  }
+
+  /* Component table */
+  .comp-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 0.5rem;
+    font-size: 0.9rem;
+  }
+
+  .comp-table th {
+    text-align: left;
+    padding: 0.6rem 0.8rem;
+    border-bottom: 2px solid var(--border);
+    color: var(--text-secondary);
+    font-size: 0.8rem;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+  }
+
+  .comp-table td {
+    padding: 0.6rem 0.8rem;
+    border-bottom: 1px solid var(--border);
+    vertical-align: top;
+  }
+
+  .comp-table tr:hover td {
+    background: var(--bg-secondary);
+  }
+
+  .type-badge {
+    display: inline-block;
+    padding: 0.1rem 0.5rem;
+    border-radius: 999px;
+    font-size: 0.75rem;
+    font-weight: 500;
+    background: var(--bg-tertiary);
+    color: var(--accent-blue);
+    border: 1px solid var(--border);
+  }
+
+  .util-bar {
+    display: inline-block;
+    width: 60px;
+    height: 8px;
+    background: var(--bg-tertiary);
+    border-radius: 4px;
+    overflow: hidden;
+    vertical-align: middle;
+    margin-right: 0.4rem;
+  }
+
+  .util-bar-fill {
+    height: 100%;
+    border-radius: 4px;
+  }
+
+  .util-bar-fill.green  { background: var(--accent-green); }
+  .util-bar-fill.yellow { background: var(--accent-yellow); }
+  .util-bar-fill.red    { background: var(--accent-red); }
+
+  /* Dependency map */
+  .dep-map {
+    background: var(--bg-secondary);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 1.5rem;
+    overflow-x: auto;
+  }
+
+  .dep-map svg {
+    display: block;
+    margin: 0 auto;
+  }
+
+  /* Footer */
+  .footer {
+    text-align: center;
+    color: var(--text-muted);
+    font-size: 0.8rem;
+    margin-top: 3rem;
+    padding-top: 1rem;
+    border-top: 1px solid var(--border);
+  }
+
+  /* Score explanation */
+  .score-explanation {
+    background: var(--bg-secondary);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 1rem 1.2rem;
+    margin-top: 1rem;
+    color: var(--text-secondary);
+    font-size: 0.9rem;
+    line-height: 1.7;
+  }
+
+  .score-explanation-title {
+    font-weight: 600;
+    color: var(--text-primary);
+    margin-bottom: 0.4rem;
+    font-size: 0.85rem;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+  }
+
+  /* Section: no findings */
+  .no-findings {
+    color: var(--text-muted);
+    font-style: italic;
+    padding: 1rem 0;
+  }
+
+  @media (max-width: 700px) {
+    body { padding: 1rem; }
+    .stats-row { gap: 1rem; }
+    .stat-card { min-width: 100px; padding: 0.8rem 1rem; }
+  }
+</style>
+</head>
+<body>
+<div class="container">
+
+  <!-- Header -->
+  <div class="header">
+    <h1>FaultRay Chaos Simulation Report</h1>
+    <div class="subtitle">Generated 2026-04-02 06:46 UTC</div>
+  </div>
+
+  <!-- Executive Summary -->
+  <h2>Executive Summary</h2>
+
+  <div class="score-container">
+    <div class="score-badge green">
+      <span class="number">100</span>
+      <span class="label">Resilience</span>
+    </div>
+
+    <div class="stats-row">
+      <div class="stat-card total">
+        <div class="stat-value">6</div>
+        <div class="stat-label">Components</div>
+      </div>
+      <div class="stat-card critical">
+        <div class="stat-value">1</div>
+        <div class="stat-label">Critical</div>
+      </div>
+      <div class="stat-card warning">
+        <div class="stat-value">27</div>
+        <div class="stat-label">Warnings</div>
+      </div>
+      <div class="stat-card passed">
+        <div class="stat-value">106</div>
+        <div class="stat-label">Passed</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Score Explanation -->
+  
+  <div class="score-explanation">
+    <div class="score-explanation-title">Score Explanation</div>
+    
+    <p>The resilience score measures structural health: single points of failure (SPOFs), resource utilization headroom, and dependency chain depth.</p>
+    
+    <p>1 critical scenario(s) detected cascade failures that could cause widespread outages.</p>
+    
+  </div>
+  
+
+  <!-- Critical Findings -->
+  <h2>Critical Findings</h2>
+  
+  
+  <div class="finding critical">
+    <div class="finding-header">
+      <span class="finding-title">Traffic spike (10x)</span>
+      <span class="finding-score">10.0/10</span>
+    </div>
+    <div class="finding-description">Traffic DDoS-level (10x normal) across all entry points</div>
+    
+    <div class="cascade">
+      <div class="cascade-title">Cascade path</div>
+      
+      <div class="cascade-step">
+        <span class="cascade-icon down">DOWN</span>
+        <span class="cascade-name">nginx (LB)</span>
+        <span class="cascade-reason">Capacity exceeded: 250% (max 100%)</span>
+        
+      </div>
+      
+      <div class="cascade-step">
+        <span class="cascade-icon down">DOWN</span>
+        <span class="cascade-name">api-server-1</span>
+        <span class="cascade-reason">Capacity exceeded: 250% (max 100%)</span>
+        
+      </div>
+      
+      <div class="cascade-step">
+        <span class="cascade-icon down">DOWN</span>
+        <span class="cascade-name">api-server-2</span>
+        <span class="cascade-reason">Capacity exceeded: 240% (max 100%)</span>
+        
+      </div>
+      
+      <div class="cascade-step">
+        <span class="cascade-icon down">DOWN</span>
+        <span class="cascade-name">PostgreSQL (primary)</span>
+        <span class="cascade-reason">Capacity exceeded: 260% (max 100%)</span>
+        
+      </div>
+      
+      <div class="cascade-step">
+        <span class="cascade-icon down">DOWN</span>
+        <span class="cascade-name">Redis (cache)</span>
+        <span class="cascade-reason">Capacity exceeded: 220% (max 100%)</span>
+        
+      </div>
+      
+      <div class="cascade-step">
+        <span class="cascade-icon down">DOWN</span>
+        <span class="cascade-name">RabbitMQ</span>
+        <span class="cascade-reason">Capacity exceeded: 200% (max 100%)</span>
+        
+      </div>
+      
+    </div>
+    
+  </div>
+  
+  
+
+  <!-- Warnings -->
+  <h2>Warnings</h2>
+  
+  
+  <div class="finding warning">
+    <div class="finding-header">
+      <span class="finding-title">Traffic spike (5x)</span>
+      <span class="finding-score">6.4/10</span>
+    </div>
+    <div class="finding-description">Traffic viral event (5x normal) across all entry points</div>
+    
+    <div class="cascade">
+      <div class="cascade-title">Cascade path</div>
+      
+      <div class="cascade-step">
+        <span class="cascade-icon down">DOWN</span>
+        <span class="cascade-name">nginx (LB)</span>
+        <span class="cascade-reason">Capacity exceeded: 125% (max 100%)</span>
+        
+      </div>
+      
+      <div class="cascade-step">
+        <span class="cascade-icon down">DOWN</span>
+        <span class="cascade-name">api-server-1</span>
+        <span class="cascade-reason">Capacity exceeded: 125% (max 100%)</span>
+        
+      </div>
+      
+      <div class="cascade-step">
+        <span class="cascade-icon down">DOWN</span>
+        <span class="cascade-name">api-server-2</span>
+        <span class="cascade-reason">Capacity exceeded: 120% (max 100%)</span>
+        
+      </div>
+      
+      <div class="cascade-step">
+        <span class="cascade-icon down">DOWN</span>
+        <span class="cascade-name">PostgreSQL (primary)</span>
+        <span class="cascade-reason">Capacity exceeded: 130% (max 100%)</span>
+        
+      </div>
+      
+      <div class="cascade-step">
+        <span class="cascade-icon down">DOWN</span>
+        <span class="cascade-name">Redis (cache)</span>
+        <span class="cascade-reason">Capacity exceeded: 110% (max 100%)</span>
+        
+      </div>
+      
+      <div class="cascade-step">
+        <span class="cascade-icon overloaded">OVER</span>
+        <span class="cascade-name">RabbitMQ</span>
+        <span class="cascade-reason">Near capacity: 100%</span>
+        
+      </div>
+      
+    </div>
+    
+  </div>
+  
+  <div class="finding warning">
+    <div class="finding-header">
+      <span class="finding-title">Cache stampede: redis + 5.0x traffic</span>
+      <span class="finding-score">5.4/10</span>
+    </div>
+    <div class="finding-description">Cache redis fails, all requests hit DB. Traffic at 5.0x. Thundering herd pattern.</div>
+    
+    <div class="cascade">
+      <div class="cascade-title">Cascade path</div>
+      
+      <div class="cascade-step">
+        <span class="cascade-icon down">DOWN</span>
+        <span class="cascade-name">nginx (LB)</span>
+        <span class="cascade-reason">Capacity exceeded: 125% (max 100%)</span>
+        
+      </div>
+      
+      <div class="cascade-step">
+        <span class="cascade-icon down">DOWN</span>
+        <span class="cascade-name">api-server-1</span>
+        <span class="cascade-reason">Capacity exceeded: 125% (max 100%)</span>
+        
+      </div>
+      
+      <div class="cascade-step">
+        <span class="cascade-icon down">DOWN</span>
+        <span class="cascade-name">api-server-2</span>
+        <span class="cascade-reason">Capacity exceeded: 120% (max 100%)</span>
+        
+      </div>
+      
+      <div class="cascade-step">
+        <span class="cascade-icon down">DOWN</span>
+        <span class="cascade-name">PostgreSQL (primary)</span>
+        <span class="cascade-reason">Capacity exceeded: 130% (max 100%)</span>
+        
+      </div>
+      
+      <div class="cascade-step">
+        <span class="cascade-icon down">DOWN</span>
+        <span class="cascade-name">Redis (cache)</span>
+        <span class="cascade-reason">Capacity exceeded: 110% (max 100%)</span>
+        
+      </div>
+      
+      <div class="cascade-step">
+        <span class="cascade-icon overloaded">OVER</span>
+        <span class="cascade-name">RabbitMQ</span>
+        <span class="cascade-reason">Near capacity: 100%</span>
+        
+      </div>
+      
+      <div class="cascade-step">
+        <span class="cascade-icon down">DOWN</span>
+        <span class="cascade-name">Redis (cache)</span>
+        <span class="cascade-reason">Component failure (simulated)</span>
+        
+      </div>
+      
+      <div class="cascade-step">
+        <span class="cascade-icon degraded">WARN</span>
+        <span class="cascade-name">api-server-1</span>
+        <span class="cascade-reason">Optional dependency Redis (cache) is down</span>
+        <span class="cascade-time">+10s</span>
+      </div>
+      
+      <div class="cascade-step">
+        <span class="cascade-icon degraded">WARN</span>
+        <span class="cascade-name">api-server-2</span>
+        <span class="cascade-reason">Optional dependency Redis (cache) is down</span>
+        <span class="cascade-time">+0s</span>
+      </div>
+      
+    </div>
+    
+  </div>
+  
+  <div class="finding warning">
+    <div class="finding-header">
+      <span class="finding-title">Triple failure: nginx + app-1 + postgres</span>
+      <span class="finding-score">5.0/10</span>
+    </div>
+    <div class="finding-description">Simultaneous failure of nginx + app-1 + postgres</div>
+    
+    <div class="cascade">
+      <div class="cascade-title">Cascade path</div>
+      
+      <div class="cascade-step">
+        <span class="cascade-icon down">DOWN</span>
+        <span class="cascade-name">nginx (LB)</span>
+        <span class="cascade-reason">Component failure (simulated)</span>
+        
+      </div>
+      
+      <div class="cascade-step">
+        <span class="cascade-icon down">DOWN</span>
+        <span class="cascade-name">api-server-1</span>
+        <span class="cascade-reason">Component failure (simulated)</span>
+        
+      </div>
+      
+      <div class="cascade-step">
+        <span class="cascade-icon degraded">WARN</span>
+        <span class="cascade-name">nginx (LB)</span>
+        <span class="cascade-reason">Dependency api-server-1 is down, remaining replicas handling load (1 left)</span>
+        <span class="cascade-time">+5s</span>
+      </div>
+      
+      <div class="cascade-step">
+        <span class="cascade-icon down">DOWN</span>
+        <span class="cascade-name">PostgreSQL (primary)</span>
+        <span class="cascade-reason">Component failure (simulated)</span>
+        
+      </div>
+      
+      <div class="cascade-step">
+        <span class="cascade-icon degraded">WARN</span>
+        <span class="cascade-name">api-server-1</span>
+        <span class="cascade-reason">Dependency PostgreSQL (primary) is down, remaining replicas handling load (2 left)</span>
+        <span class="cascade-time">+0s</span>
+      </div>
+      
+      <div class="cascade-step">
+        <span class="cascade-icon degraded">WARN</span>
+        <span class="cascade-name">api-server-2</span>
+        <span class="cascade-reason">Dependency PostgreSQL (primary) is down, remaining replicas handling load (2 left)</span>
+        <span class="cascade-time">+0s</span>
+      </div>
+      
+    </div>
+    
+  </div>
+  
+  <div class="finding warning">
+    <div class="finding-header">
+      <span class="finding-title">Triple failure: nginx + app-1 + redis</span>
+      <span class="finding-score">5.0/10</span>
+    </div>
+    <div class="finding-description">Simultaneous failure of nginx + app-1 + redis</div>
+    
+    <div class="cascade">
+      <div class="cascade-title">Cascade path</div>
+      
+      <div class="cascade-step">
+        <span class="cascade-icon down">DOWN</span>
+        <span class="cascade-name">nginx (LB)</span>
+        <span class="cascade-reason">Component failure (simulated)</span>
+        
+      </div>
+      
+      <div class="cascade-step">
+        <span class="cascade-icon down">DOWN</span>
+        <span class="cascade-name">api-server-1</span>
+        <span class="cascade-reason">Component failure (simulated)</span>
+        
+      </div>
+      
+      <div class="cascade-step">
+        <span class="cascade-icon degraded">WARN</span>
+        <span class="cascade-name">nginx (LB)</span>
+        <span class="cascade-reason">Dependency api-server-1 is down, remaining replicas handling load (1 left)</span>
+        <span class="cascade-time">+5s</span>
+      </div>
+      
+      <div class="cascade-step">
+        <span class="cascade-icon down">DOWN</span>
+        <span class="cascade-name">Redis (cache)</span>
+        <span class="cascade-reason">Component failure (simulated)</span>
+        
+      </div>
+      
+      <div class="cascade-step">
+        <span class="cascade-icon degraded">WARN</span>
+        <span class="cascade-name">api-server-1</span>
+        <span class="cascade-reason">Optional dependency Redis (cache) is down</span>
+        <span class="cascade-time">+5s</span>
+      </div>
+      
+      <div class="cascade-step">
+        <span class="cascade-icon degraded">WARN</span>
+        <span class="cascade-name">api-server-2</span>
+        <span class="cascade-reason">Optional dependency Redis (cache) is down</span>
+        <span class="cascade-time">+0s</span>
+      </div>
+      
+    </div>
+    
+  </div>
+  
+  <div class="finding warning">
+    <div class="finding-header">
+      <span class="finding-title">Triple failure: nginx + app-1 + rabbitmq</span>
+      <span class="finding-score">5.0/10</span>
+    </div>
+    <div class="finding-description">Simultaneous failure of nginx + app-1 + rabbitmq</div>
+    
+    <div class="cascade">
+      <div class="cascade-title">Cascade path</div>
+      
+      <div class="cascade-step">
+        <span class="cascade-icon down">DOWN</span>
+        <span class="cascade-name">nginx (LB)</span>
+        <span class="cascade-reason">Component failure (simulated)</span>
+        
+      </div>
+      
+      <div class="cascade-step">
+        <span class="cascade-icon down">DOWN</span>
+        <span class="cascade-name">api-server-1</span>
+        <span class="cascade-reason">Component failure (simulated)</span>
+        
+      </div>
+      
+      <div class="cascade-step">
+        <span class="cascade-icon degraded">WARN</span>
+        <span class="cascade-name">nginx (LB)</span>
+        <span class="cascade-reason">Dependency api-server-1 is down, remaining replicas handling load (1 left)</span>
+        <span class="cascade-time">+5s</span>
+      </div>
+      
+      <div class="cascade-step">
+        <span class="cascade-icon down">DOWN</span>
+        <span class="cascade-name">RabbitMQ</span>
+        <span class="cascade-reason">Component failure (simulated)</span>
+        
+      </div>
+      
+      <div class="cascade-step">
+        <span class="cascade-icon degraded">WARN</span>
+        <span class="cascade-name">api-server-1</span>
+        <span class="cascade-reason">Async dependency RabbitMQ is down, queue building up</span>
+        <span class="cascade-time">+55s</span>
+      </div>
+      
+      <div class="cascade-step">
+        <span class="cascade-icon degraded">WARN</span>
+        <span class="cascade-name">api-server-2</span>
+        <span class="cascade-reason">Async dependency RabbitMQ is down, queue building up</span>
+        <span class="cascade-time">+0s</span>
+      </div>
+      
+    </div>
+    
+  </div>
+  
+  <div class="finding warning">
+    <div class="finding-header">
+      <span class="finding-title">Triple failure: nginx + app-2 + postgres</span>
+      <span class="finding-score">5.0/10</span>
+    </div>
+    <div class="finding-description">Simultaneous failure of nginx + app-2 + postgres</div>
+    
+    <div class="cascade">
+      <div class="cascade-title">Cascade path</div>
+      
+      <div class="cascade-step">
+        <span class="cascade-icon down">DOWN</span>
+        <span class="cascade-name">nginx (LB)</span>
+        <span class="cascade-reason">Component failure (simulated)</span>
+        
+      </div>
+      
+      <div class="cascade-step">
+        <span class="cascade-icon down">DOWN</span>
+        <span class="cascade-name">api-server-2</span>
+        <span class="cascade-reason">Component failure (simulated)</span>
+        
+      </div>
+      
+      <div class="cascade-step">
+        <span class="cascade-icon degraded">WARN</span>
+        <span class="cascade-name">nginx (LB)</span>
+        <span class="cascade-reason">Dependency api-server-2 is down, remaining replicas handling load (1 left)</span>
+        <span class="cascade-time">+5s</span>
+      </div>
+      
+      <div class="cascade-step">
+        <span class="cascade-icon down">DOWN</span>
+        <span class="cascade-name">PostgreSQL (primary)</span>
+        <span class="cascade-reason">Component failure (simulated)</span>
+        
+      </div>
+      
+      <div class="cascade-step">
+        <span class="cascade-icon degraded">WARN</span>
+        <span class="cascade-name">api-server-1</span>
+        <span class="cascade-reason">Dependency PostgreSQL (primary) is down, remaining replicas handling load (2 left)</span>
+        <span class="cascade-time">+0s</span>
+      </div>
+      
+      <div class="cascade-step">
+        <span class="cascade-icon degraded">WARN</span>
+        <span class="cascade-name">api-server-2</span>
+        <span class="cascade-reason">Dependency PostgreSQL (primary) is down, remaining replicas handling load (2 left)</span>
+        <span class="cascade-time">+0s</span>
+      </div>
+      
+    </div>
+    
+  </div>
+  
+  <div class="finding warning">
+    <div class="finding-header">
+      <span class="finding-title">Triple failure: nginx + app-2 + redis</span>
+      <span class="finding-score">5.0/10</span>
+    </div>
+    <div class="finding-description">Simultaneous failure of nginx + app-2 + redis</div>
+    
+    <div class="cascade">
+      <div class="cascade-title">Cascade path</div>
+      
+      <div class="cascade-step">
+        <span class="cascade-icon down">DOWN</span>
+        <span class="cascade-name">nginx (LB)</span>
+        <span class="cascade-reason">Component failure (simulated)</span>
+        
+      </div>
+      
+      <div class="cascade-step">
+        <span class="cascade-icon down">DOWN</span>
+        <span class="cascade-name">api-server-2</span>
+        <span class="cascade-reason">Component failure (simulated)</span>
+        
+      </div>
+      
+      <div class="cascade-step">
+        <span class="cascade-icon degraded">WARN</span>
+        <span class="cascade-name">nginx (LB)</span>
+        <span class="cascade-reason">Dependency api-server-2 is down, remaining replicas handling load (1 left)</span>
+        <span class="cascade-time">+5s</span>
+      </div>
+      
+      <div class="cascade-step">
+        <span class="cascade-icon down">DOWN</span>
+        <span class="cascade-name">Redis (cache)</span>
+        <span class="cascade-reason">Component failure (simulated)</span>
+        
+      </div>
+      
+      <div class="cascade-step">
+        <span class="cascade-icon degraded">WARN</span>
+        <span class="cascade-name">api-server-1</span>
+        <span class="cascade-reason">Optional dependency Redis (cache) is down</span>
+        <span class="cascade-time">+5s</span>
+      </div>
+      
+      <div class="cascade-step">
+        <span class="cascade-icon degraded">WARN</span>
+        <span class="cascade-name">api-server-2</span>
+        <span class="cascade-reason">Optional dependency Redis (cache) is down</span>
+        <span class="cascade-time">+0s</span>
+      </div>
+      
+    </div>
+    
+  </div>
+  
+  <div class="finding warning">
+    <div class="finding-header">
+      <span class="finding-title">Triple failure: nginx + app-2 + rabbitmq</span>
+      <span class="finding-score">5.0/10</span>
+    </div>
+    <div class="finding-description">Simultaneous failure of nginx + app-2 + rabbitmq</div>
+    
+    <div class="cascade">
+      <div class="cascade-title">Cascade path</div>
+      
+      <div class="cascade-step">
+        <span class="cascade-icon down">DOWN</span>
+        <span class="cascade-name">nginx (LB)</span>
+        <span class="cascade-reason">Component failure (simulated)</span>
+        
+      </div>
+      
+      <div class="cascade-step">
+        <span class="cascade-icon down">DOWN</span>
+        <span class="cascade-name">api-server-2</span>
+        <span class="cascade-reason">Component failure (simulated)</span>
+        
+      </div>
+      
+      <div class="cascade-step">
+        <span class="cascade-icon degraded">WARN</span>
+        <span class="cascade-name">nginx (LB)</span>
+        <span class="cascade-reason">Dependency api-server-2 is down, remaining replicas handling load (1 left)</span>
+        <span class="cascade-time">+5s</span>
+      </div>
+      
+      <div class="cascade-step">
+        <span class="cascade-icon down">DOWN</span>
+        <span class="cascade-name">RabbitMQ</span>
+        <span class="cascade-reason">Component failure (simulated)</span>
+        
+      </div>
+      
+      <div class="cascade-step">
+        <span class="cascade-icon degraded">WARN</span>
+        <span class="cascade-name">api-server-1</span>
+        <span class="cascade-reason">Async dependency RabbitMQ is down, queue building up</span>
+        <span class="cascade-time">+55s</span>
+      </div>
+      
+      <div class="cascade-step">
+        <span class="cascade-icon degraded">WARN</span>
+        <span class="cascade-name">api-server-2</span>
+        <span class="cascade-reason">Async dependency RabbitMQ is down, queue building up</span>
+        <span class="cascade-time">+0s</span>
+      </div>
+      
+    </div>
+    
+  </div>
+  
+  <div class="finding warning">
+    <div class="finding-header">
+      <span class="finding-title">Triple failure: nginx + app-1 + app-2</span>
+      <span class="finding-score">4.7/10</span>
+    </div>
+    <div class="finding-description">Simultaneous failure of nginx + app-1 + app-2</div>
+    
+    <div class="cascade">
+      <div class="cascade-title">Cascade path</div>
+      
+      <div class="cascade-step">
+        <span class="cascade-icon down">DOWN</span>
+        <span class="cascade-name">nginx (LB)</span>
+        <span class="cascade-reason">Component failure (simulated)</span>
+        
+      </div>
+      
+      <div class="cascade-step">
+        <span class="cascade-icon down">DOWN</span>
+        <span class="cascade-name">api-server-1</span>
+        <span class="cascade-reason">Component failure (simulated)</span>
+        
+      </div>
+      
+      <div class="cascade-step">
+        <span class="cascade-icon degraded">WARN</span>
+        <span class="cascade-name">nginx (LB)</span>
+        <span class="cascade-reason">Dependency api-server-1 is down, remaining replicas handling load (1 left)</span>
+        <span class="cascade-time">+5s</span>
+      </div>
+      
+      <div class="cascade-step">
+        <span class="cascade-icon down">DOWN</span>
+        <span class="cascade-name">api-server-2</span>
+        <span class="cascade-reason">Component failure (simulated)</span>
+        
+      </div>
+      
+      <div class="cascade-step">
+        <span class="cascade-icon degraded">WARN</span>
+        <span class="cascade-name">nginx (LB)</span>
+        <span class="cascade-reason">Dependency api-server-2 is down, remaining replicas handling load (1 left)</span>
+        <span class="cascade-time">+0s</span>
+      </div>
+      
+    </div>
+    
+  </div>
+  
+  <div class="finding warning">
+    <div class="finding-header">
+      <span class="finding-title">Triple failure: nginx + postgres + redis</span>
+      <span class="finding-score">4.6/10</span>
+    </div>
+    <div class="finding-description">Simultaneous failure of nginx + postgres + redis</div>
+    
+    <div class="cascade">
+      <div class="cascade-title">Cascade path</div>
+      
+      <div class="cascade-step">
+        <span class="cascade-icon down">DOWN</span>
+        <span class="cascade-name">nginx (LB)</span>
+        <span class="cascade-reason">Component failure (simulated)</span>
+        
+      </div>
+      
+      <div class="cascade-step">
+        <span class="cascade-icon down">DOWN</span>
+        <span class="cascade-name">PostgreSQL (primary)</span>
+        <span class="cascade-reason">Component failure (simulated)</span>
+        
+      </div>
+      
+      <div class="cascade-step">
+        <span class="cascade-icon degraded">WARN</span>
+        <span class="cascade-name">api-server-1</span>
+        <span class="cascade-reason">Dependency PostgreSQL (primary) is down, remaining replicas handling load (2 left)</span>
+        <span class="cascade-time">+5s</span>
+      </div>
+      
+      <div class="cascade-step">
+        <span class="cascade-icon degraded">WARN</span>
+        <span class="cascade-name">api-server-2</span>
+        <span class="cascade-reason">Dependency PostgreSQL (primary) is down, remaining replicas handling load (2 left)</span>
+        <span class="cascade-time">+0s</span>
+      </div>
+      
+      <div class="cascade-step">
+        <span class="cascade-icon down">DOWN</span>
+        <span class="cascade-name">Redis (cache)</span>
+        <span class="cascade-reason">Component failure (simulated)</span>
+        
+      </div>
+      
+      <div class="cascade-step">
+        <span class="cascade-icon degraded">WARN</span>
+        <span class="cascade-name">api-server-1</span>
+        <span class="cascade-reason">Optional dependency Redis (cache) is down</span>
+        <span class="cascade-time">+5s</span>
+      </div>
+      
+      <div class="cascade-step">
+        <span class="cascade-icon degraded">WARN</span>
+        <span class="cascade-name">api-server-2</span>
+        <span class="cascade-reason">Optional dependency Redis (cache) is down</span>
+        <span class="cascade-time">+0s</span>
+      </div>
+      
+    </div>
+    
+  </div>
+  
+  <div class="finding warning">
+    <div class="finding-header">
+      <span class="finding-title">Triple failure: nginx + postgres + rabbitmq</span>
+      <span class="finding-score">4.6/10</span>
+    </div>
+    <div class="finding-description">Simultaneous failure of nginx + postgres + rabbitmq</div>
+    
+    <div class="cascade">
+      <div class="cascade-title">Cascade path</div>
+      
+      <div class="cascade-step">
+        <span class="cascade-icon down">DOWN</span>
+        <span class="cascade-name">nginx (LB)</span>
+        <span class="cascade-reason">Component failure (simulated)</span>
+        
+      </div>
+      
+      <div class="cascade-step">
+        <span class="cascade-icon down">DOWN</span>
+        <span class="cascade-name">PostgreSQL (primary)</span>
+        <span class="cascade-reason">Component failure (simulated)</span>
+        
+      </div>
+      
+      <div class="cascade-step">
+        <span class="cascade-icon degraded">WARN</span>
+        <span class="cascade-name">api-server-1</span>
+        <span class="cascade-reason">Dependency PostgreSQL (primary) is down, remaining replicas handling load (2 left)</span>
+        <span class="cascade-time">+5s</span>
+      </div>
+      
+      <div class="cascade-step">
+        <span class="cascade-icon degraded">WARN</span>
+        <span class="cascade-name">api-server-2</span>
+        <span class="cascade-reason">Dependency PostgreSQL (primary) is down, remaining replicas handling load (2 left)</span>
+        <span class="cascade-time">+0s</span>
+      </div>
+      
+      <div class="cascade-step">
+        <span class="cascade-icon down">DOWN</span>
+        <span class="cascade-name">RabbitMQ</span>
+        <span class="cascade-reason">Component failure (simulated)</span>
+        
+      </div>
+      
+      <div class="cascade-step">
+        <span class="cascade-icon degraded">WARN</span>
+        <span class="cascade-name">api-server-1</span>
+        <span class="cascade-reason">Async dependency RabbitMQ is down, queue building up</span>
+        <span class="cascade-time">+55s</span>
+      </div>
+      
+      <div class="cascade-step">
+        <span class="cascade-icon degraded">WARN</span>
+        <span class="cascade-name">api-server-2</span>
+        <span class="cascade-reason">Async dependency RabbitMQ is down, queue building up</span>
+        <span class="cascade-time">+0s</span>
+      </div>
+      
+    </div>
+    
+  </div>
+  
+  <div class="finding warning">
+    <div class="finding-header">
+      <span class="finding-title">Triple failure: nginx + redis + rabbitmq</span>
+      <span class="finding-score">4.6/10</span>
+    </div>
+    <div class="finding-description">Simultaneous failure of nginx + redis + rabbitmq</div>
+    
+    <div class="cascade">
+      <div class="cascade-title">Cascade path</div>
+      
+      <div class="cascade-step">
+        <span class="cascade-icon down">DOWN</span>
+        <span class="cascade-name">nginx (LB)</span>
+        <span class="cascade-reason">Component failure (simulated)</span>
+        
+      </div>
+      
+      <div class="cascade-step">
+        <span class="cascade-icon down">DOWN</span>
+        <span class="cascade-name">Redis (cache)</span>
+        <span class="cascade-reason">Component failure (simulated)</span>
+        
+      </div>
+      
+      <div class="cascade-step">
+        <span class="cascade-icon degraded">WARN</span>
+        <span class="cascade-name">api-server-1</span>
+        <span class="cascade-reason">Optional dependency Redis (cache) is down</span>
+        <span class="cascade-time">+10s</span>
+      </div>
+      
+      <div class="cascade-step">
+        <span class="cascade-icon degraded">WARN</span>
+        <span class="cascade-name">api-server-2</span>
+        <span class="cascade-reason">Optional dependency Redis (cache) is down</span>
+        <span class="cascade-time">+0s</span>
+      </div>
+      
+      <div class="cascade-step">
+        <span class="cascade-icon down">DOWN</span>
+        <span class="cascade-name">RabbitMQ</span>
+        <span class="cascade-reason">Component failure (simulated)</span>
+        
+      </div>
+      
+      <div class="cascade-step">
+        <span class="cascade-icon degraded">WARN</span>
+        <span class="cascade-name">api-server-1</span>
+        <span class="cascade-reason">Async dependency RabbitMQ is down, queue building up</span>
+        <span class="cascade-time">+50s</span>
+      </div>
+      
+      <div class="cascade-step">
+        <span class="cascade-icon degraded">WARN</span>
+        <span class="cascade-name">api-server-2</span>
+        <span class="cascade-reason">Async dependency RabbitMQ is down, queue building up</span>
+        <span class="cascade-time">+0s</span>
+      </div>
+      
+    </div>
+    
+  </div>
+  
+  <div class="finding warning">
+    <div class="finding-header">
+      <span class="finding-title">Triple failure: app-1 + app-2 + postgres</span>
+      <span class="finding-score">4.6/10</span>
+    </div>
+    <div class="finding-description">Simultaneous failure of app-1 + app-2 + postgres</div>
+    
+    <div class="cascade">
+      <div class="cascade-title">Cascade path</div>
+      
+      <div class="cascade-step">
+        <span class="cascade-icon down">DOWN</span>
+        <span class="cascade-name">api-server-1</span>
+        <span class="cascade-reason">Component failure (simulated)</span>
+        
+      </div>
+      
+      <div class="cascade-step">
+        <span class="cascade-icon degraded">WARN</span>
+        <span class="cascade-name">nginx (LB)</span>
+        <span class="cascade-reason">Dependency api-server-1 is down, remaining replicas handling load (1 left)</span>
+        <span class="cascade-time">+5s</span>
+      </div>
+      
+      <div class="cascade-step">
+        <span class="cascade-icon down">DOWN</span>
+        <span class="cascade-name">api-server-2</span>
+        <span class="cascade-reason">Component failure (simulated)</span>
+        
+      </div>
+      
+      <div class="cascade-step">
+        <span class="cascade-icon degraded">WARN</span>
+        <span class="cascade-name">nginx (LB)</span>
+        <span class="cascade-reason">Dependency api-server-2 is down, remaining replicas handling load (1 left)</span>
+        <span class="cascade-time">+0s</span>
+      </div>
+      
+      <div class="cascade-step">
+        <span class="cascade-icon down">DOWN</span>
+        <span class="cascade-name">PostgreSQL (primary)</span>
+        <span class="cascade-reason">Component failure (simulated)</span>
+        
+      </div>
+      
+      <div class="cascade-step">
+        <span class="cascade-icon degraded">WARN</span>
+        <span class="cascade-name">api-server-1</span>
+        <span class="cascade-reason">Dependency PostgreSQL (primary) is down, remaining replicas handling load (2 left)</span>
+        <span class="cascade-time">+0s</span>
+      </div>
+      
+      <div class="cascade-step">
+        <span class="cascade-icon degraded">WARN</span>
+        <span class="cascade-name">api-server-2</span>
+        <span class="cascade-reason">Dependency PostgreSQL (primary) is down, remaining replicas handling load (2 left)</span>
+        <span class="cascade-time">+0s</span>
+      </div>
+      
+    </div>
+    
+  </div>
+  
+  <div class="finding warning">
+    <div class="finding-header">
+      <span class="finding-title">Triple failure: app-1 + app-2 + redis</span>
+      <span class="finding-score">4.6/10</span>
+    </div>
+    <div class="finding-description">Simultaneous failure of app-1 + app-2 + redis</div>
+    
+    <div class="cascade">
+      <div class="cascade-title">Cascade path</div>
+      
+      <div class="cascade-step">
+        <span class="cascade-icon down">DOWN</span>
+        <span class="cascade-name">api-server-1</span>
+        <span class="cascade-reason">Component failure (simulated)</span>
+        
+      </div>
+      
+      <div class="cascade-step">
+        <span class="cascade-icon degraded">WARN</span>
+        <span class="cascade-name">nginx (LB)</span>
+        <span class="cascade-reason">Dependency api-server-1 is down, remaining replicas handling load (1 left)</span>
+        <span class="cascade-time">+5s</span>
+      </div>
+      
+      <div class="cascade-step">
+        <span class="cascade-icon down">DOWN</span>
+        <span class="cascade-name">api-server-2</span>
+        <span class="cascade-reason">Component failure (simulated)</span>
+        
+      </div>
+      
+      <div class="cascade-step">
+        <span class="cascade-icon degraded">WARN</span>
+        <span class="cascade-name">nginx (LB)</span>
+        <span class="cascade-reason">Dependency api-server-2 is down, remaining replicas handling load (1 left)</span>
+        <span class="cascade-time">+0s</span>
+      </div>
+      
+      <div class="cascade-step">
+        <span class="cascade-icon down">DOWN</span>
+        <span class="cascade-name">Redis (cache)</span>
+        <span class="cascade-reason">Component failure (simulated)</span>
+        
+      </div>
+      
+      <div class="cascade-step">
+        <span class="cascade-icon degraded">WARN</span>
+        <span class="cascade-name">api-server-1</span>
+        <span class="cascade-reason">Optional dependency Redis (cache) is down</span>
+        <span class="cascade-time">+5s</span>
+      </div>
+      
+      <div class="cascade-step">
+        <span class="cascade-icon degraded">WARN</span>
+        <span class="cascade-name">api-server-2</span>
+        <span class="cascade-reason">Optional dependency Redis (cache) is down</span>
+        <span class="cascade-time">+0s</span>
+      </div>
+      
+    </div>
+    
+  </div>
+  
+  <div class="finding warning">
+    <div class="finding-header">
+      <span class="finding-title">Triple failure: app-1 + app-2 + rabbitmq</span>
+      <span class="finding-score">4.6/10</span>
+    </div>
+    <div class="finding-description">Simultaneous failure of app-1 + app-2 + rabbitmq</div>
+    
+    <div class="cascade">
+      <div class="cascade-title">Cascade path</div>
+      
+      <div class="cascade-step">
+        <span class="cascade-icon down">DOWN</span>
+        <span class="cascade-name">api-server-1</span>
+        <span class="cascade-reason">Component failure (simulated)</span>
+        
+      </div>
+      
+      <div class="cascade-step">
+        <span class="cascade-icon degraded">WARN</span>
+        <span class="cascade-name">nginx (LB)</span>
+        <span class="cascade-reason">Dependency api-server-1 is down, remaining replicas handling load (1 left)</span>
+        <span class="cascade-time">+5s</span>
+      </div>
+      
+      <div class="cascade-step">
+        <span class="cascade-icon down">DOWN</span>
+        <span class="cascade-name">api-server-2</span>
+        <span class="cascade-reason">Component failure (simulated)</span>
+        
+      </div>
+      
+      <div class="cascade-step">
+        <span class="cascade-icon degraded">WARN</span>
+        <span class="cascade-name">nginx (LB)</span>
+        <span class="cascade-reason">Dependency api-server-2 is down, remaining replicas handling load (1 left)</span>
+        <span class="cascade-time">+0s</span>
+      </div>
+      
+      <div class="cascade-step">
+        <span class="cascade-icon down">DOWN</span>
+        <span class="cascade-name">RabbitMQ</span>
+        <span class="cascade-reason">Component failure (simulated)</span>
+        
+      </div>
+      
+      <div class="cascade-step">
+        <span class="cascade-icon degraded">WARN</span>
+        <span class="cascade-name">api-server-1</span>
+        <span class="cascade-reason">Async dependency RabbitMQ is down, queue building up</span>
+        <span class="cascade-time">+55s</span>
+      </div>
+      
+      <div class="cascade-step">
+        <span class="cascade-icon degraded">WARN</span>
+        <span class="cascade-name">api-server-2</span>
+        <span class="cascade-reason">Async dependency RabbitMQ is down, queue building up</span>
+        <span class="cascade-time">+0s</span>
+      </div>
+      
+    </div>
+    
+  </div>
+  
+  <div class="finding warning">
+    <div class="finding-header">
+      <span class="finding-title">Total infrastructure meltdown</span>
+      <span class="finding-score">4.6/10</span>
+    </div>
+    <div class="finding-description">Complete failure of all components simultaneously (worst case, extremely unlikely — simultaneous all-down)</div>
+    
+    <div class="cascade">
+      <div class="cascade-title">Cascade path</div>
+      
+      <div class="cascade-step">
+        <span class="cascade-icon down">DOWN</span>
+        <span class="cascade-name">nginx (LB)</span>
+        <span class="cascade-reason">Component failure (simulated)</span>
+        
+      </div>
+      
+      <div class="cascade-step">
+        <span class="cascade-icon down">DOWN</span>
+        <span class="cascade-name">api-server-1</span>
+        <span class="cascade-reason">Component failure (simulated)</span>
+        
+      </div>
+      
+      <div class="cascade-step">
+        <span class="cascade-icon degraded">WARN</span>
+        <span class="cascade-name">nginx (LB)</span>
+        <span class="cascade-reason">Dependency api-server-1 is down, remaining replicas handling load (1 left)</span>
+        <span class="cascade-time">+5s</span>
+      </div>
+      
+      <div class="cascade-step">
+        <span class="cascade-icon down">DOWN</span>
+        <span class="cascade-name">api-server-2</span>
+        <span class="cascade-reason">Component failure (simulated)</span>
+        
+      </div>
+      
+      <div class="cascade-step">
+        <span class="cascade-icon degraded">WARN</span>
+        <span class="cascade-name">nginx (LB)</span>
+        <span class="cascade-reason">Dependency api-server-2 is down, remaining replicas handling load (1 left)</span>
+        <span class="cascade-time">+0s</span>
+      </div>
+      
+      <div class="cascade-step">
+        <span class="cascade-icon down">DOWN</span>
+        <span class="cascade-name">PostgreSQL (primary)</span>
+        <span class="cascade-reason">Component failure (simulated)</span>
+        
+      </div>
+      
+      <div class="cascade-step">
+        <span class="cascade-icon degraded">WARN</span>
+        <span class="cascade-name">api-server-1</span>
+        <span class="cascade-reason">Dependency PostgreSQL (primary) is down, remaining replicas handling load (2 left)</span>
+        <span class="cascade-time">+0s</span>
+      </div>
+      
+      <div class="cascade-step">
+        <span class="cascade-icon degraded">WARN</span>
+        <span class="cascade-name">api-server-2</span>
+        <span class="cascade-reason">Dependency PostgreSQL (primary) is down, remaining replicas handling load (2 left)</span>
+        <span class="cascade-time">+0s</span>
+      </div>
+      
+      <div class="cascade-step">
+        <span class="cascade-icon down">DOWN</span>
+        <span class="cascade-name">Redis (cache)</span>
+        <span class="cascade-reason">Component failure (simulated)</span>
+        
+      </div>
+      
+      <div class="cascade-step">
+        <span class="cascade-icon degraded">WARN</span>
+        <span class="cascade-name">api-server-1</span>
+        <span class="cascade-reason">Optional dependency Redis (cache) is down</span>
+        <span class="cascade-time">+5s</span>
+      </div>
+      
+      <div class="cascade-step">
+        <span class="cascade-icon degraded">WARN</span>
+        <span class="cascade-name">api-server-2</span>
+        <span class="cascade-reason">Optional dependency Redis (cache) is down</span>
+        <span class="cascade-time">+0s</span>
+      </div>
+      
+      <div class="cascade-step">
+        <span class="cascade-icon down">DOWN</span>
+        <span class="cascade-name">RabbitMQ</span>
+        <span class="cascade-reason">Component failure (simulated)</span>
+        
+      </div>
+      
+      <div class="cascade-step">
+        <span class="cascade-icon degraded">WARN</span>
+        <span class="cascade-name">api-server-1</span>
+        <span class="cascade-reason">Async dependency RabbitMQ is down, queue building up</span>
+        <span class="cascade-time">+50s</span>
+      </div>
+      
+      <div class="cascade-step">
+        <span class="cascade-icon degraded">WARN</span>
+        <span class="cascade-name">api-server-2</span>
+        <span class="cascade-reason">Async dependency RabbitMQ is down, queue building up</span>
+        <span class="cascade-time">+0s</span>
+      </div>
+      
+    </div>
+    
+  </div>
+  
+  <div class="finding warning">
+    <div class="finding-header">
+      <span class="finding-title">Triple failure: app-1 + postgres + redis</span>
+      <span class="finding-score">4.2/10</span>
+    </div>
+    <div class="finding-description">Simultaneous failure of app-1 + postgres + redis</div>
+    
+    <div class="cascade">
+      <div class="cascade-title">Cascade path</div>
+      
+      <div class="cascade-step">
+        <span class="cascade-icon down">DOWN</span>
+        <span class="cascade-name">api-server-1</span>
+        <span class="cascade-reason">Component failure (simulated)</span>
+        
+      </div>
+      
+      <div class="cascade-step">
+        <span class="cascade-icon degraded">WARN</span>
+        <span class="cascade-name">nginx (LB)</span>
+        <span class="cascade-reason">Dependency api-server-1 is down, remaining replicas handling load (1 left)</span>
+        <span class="cascade-time">+5s</span>
+      </div>
+      
+      <div class="cascade-step">
+        <span class="cascade-icon down">DOWN</span>
+        <span class="cascade-name">PostgreSQL (primary)</span>
+        <span class="cascade-reason">Component failure (simulated)</span>
+        
+      </div>
+      
+      <div class="cascade-step">
+        <span class="cascade-icon degraded">WARN</span>
+        <span class="cascade-name">api-server-1</span>
+        <span class="cascade-reason">Dependency PostgreSQL (primary) is down, remaining replicas handling load (2 left)</span>
+        <span class="cascade-time">+0s</span>
+      </div>
+      
+      <div class="cascade-step">
+        <span class="cascade-icon degraded">WARN</span>
+        <span class="cascade-name">api-server-2</span>
+        <span class="cascade-reason">Dependency PostgreSQL (primary) is down, remaining replicas handling load (2 left)</span>
+        <span class="cascade-time">+0s</span>
+      </div>
+      
+      <div class="cascade-step">
+        <span class="cascade-icon down">DOWN</span>
+        <span class="cascade-name">Redis (cache)</span>
+        <span class="cascade-reason">Component failure (simulated)</span>
+        
+      </div>
+      
+      <div class="cascade-step">
+        <span class="cascade-icon degraded">WARN</span>
+        <span class="cascade-name">api-server-1</span>
+        <span class="cascade-reason">Optional dependency Redis (cache) is down</span>
+        <span class="cascade-time">+5s</span>
+      </div>
+      
+      <div class="cascade-step">
+        <span class="cascade-icon degraded">WARN</span>
+        <span class="cascade-name">api-server-2</span>
+        <span class="cascade-reason">Optional dependency Redis (cache) is down</span>
+        <span class="cascade-time">+0s</span>
+      </div>
+      
+    </div>
+    
+  </div>
+  
+  <div class="finding warning">
+    <div class="finding-header">
+      <span class="finding-title">Triple failure: app-1 + postgres + rabbitmq</span>
+      <span class="finding-score">4.2/10</span>
+    </div>
+    <div class="finding-description">Simultaneous failure of app-1 + postgres + rabbitmq</div>
+    
+    <div class="cascade">
+      <div class="cascade-title">Cascade path</div>
+      
+      <div class="cascade-step">
+        <span class="cascade-icon down">DOWN</span>
+        <span class="cascade-name">api-server-1</span>
+        <span class="cascade-reason">Component failure (simulated)</span>
+        
+      </div>
+      
+      <div class="cascade-step">
+        <span class="cascade-icon degraded">WARN</span>
+        <span class="cascade-name">nginx (LB)</span>
+        <span class="cascade-reason">Dependency api-server-1 is down, remaining replicas handling load (1 left)</span>
+        <span class="cascade-time">+5s</span>
+      </div>
+      
+      <div class="cascade-step">
+        <span class="cascade-icon down">DOWN</span>
+        <span class="cascade-name">PostgreSQL (primary)</span>
+        <span class="cascade-reason">Component failure (simulated)</span>
+        
+      </div>
+      
+      <div class="cascade-step">
+        <span class="cascade-icon degraded">WARN</span>
+        <span class="cascade-name">api-server-1</span>
+        <span class="cascade-reason">Dependency PostgreSQL (primary) is down, remaining replicas handling load (2 left)</span>
+        <span class="cascade-time">+0s</span>
+      </div>
+      
+      <div class="cascade-step">
+        <span class="cascade-icon degraded">WARN</span>
+        <span class="cascade-name">api-server-2</span>
+        <span class="cascade-reason">Dependency PostgreSQL (primary) is down, remaining replicas handling load (2 left)</span>
+        <span class="cascade-time">+0s</span>
+      </div>
+      
+      <div class="cascade-step">
+        <span class="cascade-icon down">DOWN</span>
+        <span class="cascade-name">RabbitMQ</span>
+        <span class="cascade-reason">Component failure (simulated)</span>
+        
+      </div>
+      
+      <div class="cascade-step">
+        <span class="cascade-icon degraded">WARN</span>
+        <span class="cascade-name">api-server-1</span>
+        <span class="cascade-reason">Async dependency RabbitMQ is down, queue building up</span>
+        <span class="cascade-time">+55s</span>
+      </div>
+      
+      <div class="cascade-step">
+        <span class="cascade-icon degraded">WARN</span>
+        <span class="cascade-name">api-server-2</span>
+        <span class="cascade-reason">Async dependency RabbitMQ is down, queue building up</span>
+        <span class="cascade-time">+0s</span>
+      </div>
+      
+    </div>
+    
+  </div>
+  
+  <div class="finding warning">
+    <div class="finding-header">
+      <span class="finding-title">Triple failure: app-1 + redis + rabbitmq</span>
+      <span class="finding-score">4.2/10</span>
+    </div>
+    <div class="finding-description">Simultaneous failure of app-1 + redis + rabbitmq</div>
+    
+    <div class="cascade">
+      <div class="cascade-title">Cascade path</div>
+      
+      <div class="cascade-step">
+        <span class="cascade-icon down">DOWN</span>
+        <span class="cascade-name">api-server-1</span>
+        <span class="cascade-reason">Component failure (simulated)</span>
+        
+      </div>
+      
+      <div class="cascade-step">
+        <span class="cascade-icon degraded">WARN</span>
+        <span class="cascade-name">nginx (LB)</span>
+        <span class="cascade-reason">Dependency api-server-1 is down, remaining replicas handling load (1 left)</span>
+        <span class="cascade-time">+5s</span>
+      </div>
+      
+      <div class="cascade-step">
+        <span class="cascade-icon down">DOWN</span>
+        <span class="cascade-name">Redis (cache)</span>
+        <span class="cascade-reason">Component failure (simulated)</span>
+        
+      </div>
+      
+      <div class="cascade-step">
+        <span class="cascade-icon degraded">WARN</span>
+        <span class="cascade-name">api-server-1</span>
+        <span class="cascade-reason">Optional dependency Redis (cache) is down</span>
+        <span class="cascade-time">+5s</span>
+      </div>
+      
+      <div class="cascade-step">
+        <span class="cascade-icon degraded">WARN</span>
+        <span class="cascade-name">api-server-2</span>
+        <span class="cascade-reason">Optional dependency Redis (cache) is down</span>
+        <span class="cascade-time">+0s</span>
+      </div>
+      
+      <div class="cascade-step">
+        <span class="cascade-icon down">DOWN</span>
+        <span class="cascade-name">RabbitMQ</span>
+        <span class="cascade-reason">Component failure (simulated)</span>
+        
+      </div>
+      
+      <div class="cascade-step">
+        <span class="cascade-icon degraded">WARN</span>
+        <span class="cascade-name">api-server-1</span>
+        <span class="cascade-reason">Async dependency RabbitMQ is down, queue building up</span>
+        <span class="cascade-time">+50s</span>
+      </div>
+      
+      <div class="cascade-step">
+        <span class="cascade-icon degraded">WARN</span>
+        <span class="cascade-name">api-server-2</span>
+        <span class="cascade-reason">Async dependency RabbitMQ is down, queue building up</span>
+        <span class="cascade-time">+0s</span>
+      </div>
+      
+    </div>
+    
+  </div>
+  
+  <div class="finding warning">
+    <div class="finding-header">
+      <span class="finding-title">Triple failure: app-2 + postgres + redis</span>
+      <span class="finding-score">4.2/10</span>
+    </div>
+    <div class="finding-description">Simultaneous failure of app-2 + postgres + redis</div>
+    
+    <div class="cascade">
+      <div class="cascade-title">Cascade path</div>
+      
+      <div class="cascade-step">
+        <span class="cascade-icon down">DOWN</span>
+        <span class="cascade-name">api-server-2</span>
+        <span class="cascade-reason">Component failure (simulated)</span>
+        
+      </div>
+      
+      <div class="cascade-step">
+        <span class="cascade-icon degraded">WARN</span>
+        <span class="cascade-name">nginx (LB)</span>
+        <span class="cascade-reason">Dependency api-server-2 is down, remaining replicas handling load (1 left)</span>
+        <span class="cascade-time">+5s</span>
+      </div>
+      
+      <div class="cascade-step">
+        <span class="cascade-icon down">DOWN</span>
+        <span class="cascade-name">PostgreSQL (primary)</span>
+        <span class="cascade-reason">Component failure (simulated)</span>
+        
+      </div>
+      
+      <div class="cascade-step">
+        <span class="cascade-icon degraded">WARN</span>
+        <span class="cascade-name">api-server-1</span>
+        <span class="cascade-reason">Dependency PostgreSQL (primary) is down, remaining replicas handling load (2 left)</span>
+        <span class="cascade-time">+0s</span>
+      </div>
+      
+      <div class="cascade-step">
+        <span class="cascade-icon degraded">WARN</span>
+        <span class="cascade-name">api-server-2</span>
+        <span class="cascade-reason">Dependency PostgreSQL (primary) is down, remaining replicas handling load (2 left)</span>
+        <span class="cascade-time">+0s</span>
+      </div>
+      
+      <div class="cascade-step">
+        <span class="cascade-icon down">DOWN</span>
+        <span class="cascade-name">Redis (cache)</span>
+        <span class="cascade-reason">Component failure (simulated)</span>
+        
+      </div>
+      
+      <div class="cascade-step">
+        <span class="cascade-icon degraded">WARN</span>
+        <span class="cascade-name">api-server-1</span>
+        <span class="cascade-reason">Optional dependency Redis (cache) is down</span>
+        <span class="cascade-time">+5s</span>
+      </div>
+      
+      <div class="cascade-step">
+        <span class="cascade-icon degraded">WARN</span>
+        <span class="cascade-name">api-server-2</span>
+        <span class="cascade-reason">Optional dependency Redis (cache) is down</span>
+        <span class="cascade-time">+0s</span>
+      </div>
+      
+    </div>
+    
+  </div>
+  
+  <div class="finding warning">
+    <div class="finding-header">
+      <span class="finding-title">Triple failure: app-2 + postgres + rabbitmq</span>
+      <span class="finding-score">4.2/10</span>
+    </div>
+    <div class="finding-description">Simultaneous failure of app-2 + postgres + rabbitmq</div>
+    
+    <div class="cascade">
+      <div class="cascade-title">Cascade path</div>
+      
+      <div class="cascade-step">
+        <span class="cascade-icon down">DOWN</span>
+        <span class="cascade-name">api-server-2</span>
+        <span class="cascade-reason">Component failure (simulated)</span>
+        
+      </div>
+      
+      <div class="cascade-step">
+        <span class="cascade-icon degraded">WARN</span>
+        <span class="cascade-name">nginx (LB)</span>
+        <span class="cascade-reason">Dependency api-server-2 is down, remaining replicas handling load (1 left)</span>
+        <span class="cascade-time">+5s</span>
+      </div>
+      
+      <div class="cascade-step">
+        <span class="cascade-icon down">DOWN</span>
+        <span class="cascade-name">PostgreSQL (primary)</span>
+        <span class="cascade-reason">Component failure (simulated)</span>
+        
+      </div>
+      
+      <div class="cascade-step">
+        <span class="cascade-icon degraded">WARN</span>
+        <span class="cascade-name">api-server-1</span>
+        <span class="cascade-reason">Dependency PostgreSQL (primary) is down, remaining replicas handling load (2 left)</span>
+        <span class="cascade-time">+0s</span>
+      </div>
+      
+      <div class="cascade-step">
+        <span class="cascade-icon degraded">WARN</span>
+        <span class="cascade-name">api-server-2</span>
+        <span class="cascade-reason">Dependency PostgreSQL (primary) is down, remaining replicas handling load (2 left)</span>
+        <span class="cascade-time">+0s</span>
+      </div>
+      
+      <div class="cascade-step">
+        <span class="cascade-icon down">DOWN</span>
+        <span class="cascade-name">RabbitMQ</span>
+        <span class="cascade-reason">Component failure (simulated)</span>
+        
+      </div>
+      
+      <div class="cascade-step">
+        <span class="cascade-icon degraded">WARN</span>
+        <span class="cascade-name">api-server-1</span>
+        <span class="cascade-reason">Async dependency RabbitMQ is down, queue building up</span>
+        <span class="cascade-time">+55s</span>
+      </div>
+      
+      <div class="cascade-step">
+        <span class="cascade-icon degraded">WARN</span>
+        <span class="cascade-name">api-server-2</span>
+        <span class="cascade-reason">Async dependency RabbitMQ is down, queue building up</span>
+        <span class="cascade-time">+0s</span>
+      </div>
+      
+    </div>
+    
+  </div>
+  
+  <div class="finding warning">
+    <div class="finding-header">
+      <span class="finding-title">Triple failure: app-2 + redis + rabbitmq</span>
+      <span class="finding-score">4.2/10</span>
+    </div>
+    <div class="finding-description">Simultaneous failure of app-2 + redis + rabbitmq</div>
+    
+    <div class="cascade">
+      <div class="cascade-title">Cascade path</div>
+      
+      <div class="cascade-step">
+        <span class="cascade-icon down">DOWN</span>
+        <span class="cascade-name">api-server-2</span>
+        <span class="cascade-reason">Component failure (simulated)</span>
+        
+      </div>
+      
+      <div class="cascade-step">
+        <span class="cascade-icon degraded">WARN</span>
+        <span class="cascade-name">nginx (LB)</span>
+        <span class="cascade-reason">Dependency api-server-2 is down, remaining replicas handling load (1 left)</span>
+        <span class="cascade-time">+5s</span>
+      </div>
+      
+      <div class="cascade-step">
+        <span class="cascade-icon down">DOWN</span>
+        <span class="cascade-name">Redis (cache)</span>
+        <span class="cascade-reason">Component failure (simulated)</span>
+        
+      </div>
+      
+      <div class="cascade-step">
+        <span class="cascade-icon degraded">WARN</span>
+        <span class="cascade-name">api-server-1</span>
+        <span class="cascade-reason">Optional dependency Redis (cache) is down</span>
+        <span class="cascade-time">+5s</span>
+      </div>
+      
+      <div class="cascade-step">
+        <span class="cascade-icon degraded">WARN</span>
+        <span class="cascade-name">api-server-2</span>
+        <span class="cascade-reason">Optional dependency Redis (cache) is down</span>
+        <span class="cascade-time">+0s</span>
+      </div>
+      
+      <div class="cascade-step">
+        <span class="cascade-icon down">DOWN</span>
+        <span class="cascade-name">RabbitMQ</span>
+        <span class="cascade-reason">Component failure (simulated)</span>
+        
+      </div>
+      
+      <div class="cascade-step">
+        <span class="cascade-icon degraded">WARN</span>
+        <span class="cascade-name">api-server-1</span>
+        <span class="cascade-reason">Async dependency RabbitMQ is down, queue building up</span>
+        <span class="cascade-time">+50s</span>
+      </div>
+      
+      <div class="cascade-step">
+        <span class="cascade-icon degraded">WARN</span>
+        <span class="cascade-name">api-server-2</span>
+        <span class="cascade-reason">Async dependency RabbitMQ is down, queue building up</span>
+        <span class="cascade-time">+0s</span>
+      </div>
+      
+    </div>
+    
+  </div>
+  
+  <div class="finding warning">
+    <div class="finding-header">
+      <span class="finding-title">Pair failure: postgres + redis</span>
+      <span class="finding-score">4.0/10</span>
+    </div>
+    <div class="finding-description">Simultaneous failure of postgres and redis</div>
+    
+    <div class="cascade">
+      <div class="cascade-title">Cascade path</div>
+      
+      <div class="cascade-step">
+        <span class="cascade-icon down">DOWN</span>
+        <span class="cascade-name">PostgreSQL (primary)</span>
+        <span class="cascade-reason">Component failure (simulated)</span>
+        
+      </div>
+      
+      <div class="cascade-step">
+        <span class="cascade-icon degraded">WARN</span>
+        <span class="cascade-name">api-server-1</span>
+        <span class="cascade-reason">Dependency PostgreSQL (primary) is down, remaining replicas handling load (2 left)</span>
+        <span class="cascade-time">+5s</span>
+      </div>
+      
+      <div class="cascade-step">
+        <span class="cascade-icon degraded">WARN</span>
+        <span class="cascade-name">api-server-2</span>
+        <span class="cascade-reason">Dependency PostgreSQL (primary) is down, remaining replicas handling load (2 left)</span>
+        <span class="cascade-time">+0s</span>
+      </div>
+      
+      <div class="cascade-step">
+        <span class="cascade-icon down">DOWN</span>
+        <span class="cascade-name">Redis (cache)</span>
+        <span class="cascade-reason">Component failure (simulated)</span>
+        
+      </div>
+      
+      <div class="cascade-step">
+        <span class="cascade-icon degraded">WARN</span>
+        <span class="cascade-name">api-server-1</span>
+        <span class="cascade-reason">Optional dependency Redis (cache) is down</span>
+        <span class="cascade-time">+5s</span>
+      </div>
+      
+      <div class="cascade-step">
+        <span class="cascade-icon degraded">WARN</span>
+        <span class="cascade-name">api-server-2</span>
+        <span class="cascade-reason">Optional dependency Redis (cache) is down</span>
+        <span class="cascade-time">+0s</span>
+      </div>
+      
+    </div>
+    
+  </div>
+  
+  <div class="finding warning">
+    <div class="finding-header">
+      <span class="finding-title">Pair failure: postgres + rabbitmq</span>
+      <span class="finding-score">4.0/10</span>
+    </div>
+    <div class="finding-description">Simultaneous failure of postgres and rabbitmq</div>
+    
+    <div class="cascade">
+      <div class="cascade-title">Cascade path</div>
+      
+      <div class="cascade-step">
+        <span class="cascade-icon down">DOWN</span>
+        <span class="cascade-name">PostgreSQL (primary)</span>
+        <span class="cascade-reason">Component failure (simulated)</span>
+        
+      </div>
+      
+      <div class="cascade-step">
+        <span class="cascade-icon degraded">WARN</span>
+        <span class="cascade-name">api-server-1</span>
+        <span class="cascade-reason">Dependency PostgreSQL (primary) is down, remaining replicas handling load (2 left)</span>
+        <span class="cascade-time">+5s</span>
+      </div>
+      
+      <div class="cascade-step">
+        <span class="cascade-icon degraded">WARN</span>
+        <span class="cascade-name">api-server-2</span>
+        <span class="cascade-reason">Dependency PostgreSQL (primary) is down, remaining replicas handling load (2 left)</span>
+        <span class="cascade-time">+0s</span>
+      </div>
+      
+      <div class="cascade-step">
+        <span class="cascade-icon down">DOWN</span>
+        <span class="cascade-name">RabbitMQ</span>
+        <span class="cascade-reason">Component failure (simulated)</span>
+        
+      </div>
+      
+      <div class="cascade-step">
+        <span class="cascade-icon degraded">WARN</span>
+        <span class="cascade-name">api-server-1</span>
+        <span class="cascade-reason">Async dependency RabbitMQ is down, queue building up</span>
+        <span class="cascade-time">+55s</span>
+      </div>
+      
+      <div class="cascade-step">
+        <span class="cascade-icon degraded">WARN</span>
+        <span class="cascade-name">api-server-2</span>
+        <span class="cascade-reason">Async dependency RabbitMQ is down, queue building up</span>
+        <span class="cascade-time">+0s</span>
+      </div>
+      
+    </div>
+    
+  </div>
+  
+  <div class="finding warning">
+    <div class="finding-header">
+      <span class="finding-title">Pair failure: redis + rabbitmq</span>
+      <span class="finding-score">4.0/10</span>
+    </div>
+    <div class="finding-description">Simultaneous failure of redis and rabbitmq</div>
+    
+    <div class="cascade">
+      <div class="cascade-title">Cascade path</div>
+      
+      <div class="cascade-step">
+        <span class="cascade-icon down">DOWN</span>
+        <span class="cascade-name">Redis (cache)</span>
+        <span class="cascade-reason">Component failure (simulated)</span>
+        
+      </div>
+      
+      <div class="cascade-step">
+        <span class="cascade-icon degraded">WARN</span>
+        <span class="cascade-name">api-server-1</span>
+        <span class="cascade-reason">Optional dependency Redis (cache) is down</span>
+        <span class="cascade-time">+10s</span>
+      </div>
+      
+      <div class="cascade-step">
+        <span class="cascade-icon degraded">WARN</span>
+        <span class="cascade-name">api-server-2</span>
+        <span class="cascade-reason">Optional dependency Redis (cache) is down</span>
+        <span class="cascade-time">+0s</span>
+      </div>
+      
+      <div class="cascade-step">
+        <span class="cascade-icon down">DOWN</span>
+        <span class="cascade-name">RabbitMQ</span>
+        <span class="cascade-reason">Component failure (simulated)</span>
+        
+      </div>
+      
+      <div class="cascade-step">
+        <span class="cascade-icon degraded">WARN</span>
+        <span class="cascade-name">api-server-1</span>
+        <span class="cascade-reason">Async dependency RabbitMQ is down, queue building up</span>
+        <span class="cascade-time">+50s</span>
+      </div>
+      
+      <div class="cascade-step">
+        <span class="cascade-icon degraded">WARN</span>
+        <span class="cascade-name">api-server-2</span>
+        <span class="cascade-reason">Async dependency RabbitMQ is down, queue building up</span>
+        <span class="cascade-time">+0s</span>
+      </div>
+      
+    </div>
+    
+  </div>
+  
+  <div class="finding warning">
+    <div class="finding-header">
+      <span class="finding-title">Triple failure: postgres + redis + rabbitmq</span>
+      <span class="finding-score">4.0/10</span>
+    </div>
+    <div class="finding-description">Simultaneous failure of postgres + redis + rabbitmq</div>
+    
+    <div class="cascade">
+      <div class="cascade-title">Cascade path</div>
+      
+      <div class="cascade-step">
+        <span class="cascade-icon down">DOWN</span>
+        <span class="cascade-name">PostgreSQL (primary)</span>
+        <span class="cascade-reason">Component failure (simulated)</span>
+        
+      </div>
+      
+      <div class="cascade-step">
+        <span class="cascade-icon degraded">WARN</span>
+        <span class="cascade-name">api-server-1</span>
+        <span class="cascade-reason">Dependency PostgreSQL (primary) is down, remaining replicas handling load (2 left)</span>
+        <span class="cascade-time">+5s</span>
+      </div>
+      
+      <div class="cascade-step">
+        <span class="cascade-icon degraded">WARN</span>
+        <span class="cascade-name">api-server-2</span>
+        <span class="cascade-reason">Dependency PostgreSQL (primary) is down, remaining replicas handling load (2 left)</span>
+        <span class="cascade-time">+0s</span>
+      </div>
+      
+      <div class="cascade-step">
+        <span class="cascade-icon down">DOWN</span>
+        <span class="cascade-name">Redis (cache)</span>
+        <span class="cascade-reason">Component failure (simulated)</span>
+        
+      </div>
+      
+      <div class="cascade-step">
+        <span class="cascade-icon degraded">WARN</span>
+        <span class="cascade-name">api-server-1</span>
+        <span class="cascade-reason">Optional dependency Redis (cache) is down</span>
+        <span class="cascade-time">+5s</span>
+      </div>
+      
+      <div class="cascade-step">
+        <span class="cascade-icon degraded">WARN</span>
+        <span class="cascade-name">api-server-2</span>
+        <span class="cascade-reason">Optional dependency Redis (cache) is down</span>
+        <span class="cascade-time">+0s</span>
+      </div>
+      
+      <div class="cascade-step">
+        <span class="cascade-icon down">DOWN</span>
+        <span class="cascade-name">RabbitMQ</span>
+        <span class="cascade-reason">Component failure (simulated)</span>
+        
+      </div>
+      
+      <div class="cascade-step">
+        <span class="cascade-icon degraded">WARN</span>
+        <span class="cascade-name">api-server-1</span>
+        <span class="cascade-reason">Async dependency RabbitMQ is down, queue building up</span>
+        <span class="cascade-time">+50s</span>
+      </div>
+      
+      <div class="cascade-step">
+        <span class="cascade-icon degraded">WARN</span>
+        <span class="cascade-name">api-server-2</span>
+        <span class="cascade-reason">Async dependency RabbitMQ is down, queue building up</span>
+        <span class="cascade-time">+0s</span>
+      </div>
+      
+    </div>
+    
+  </div>
+  
+  <div class="finding warning">
+    <div class="finding-header">
+      <span class="finding-title">Cascading meltdown (root-cause)</span>
+      <span class="finding-score">4.0/10</span>
+    </div>
+    <div class="finding-description">Critical root-cause components fail (postgres, redis), cascade engine determines realistic spread through dependency graph</div>
+    
+    <div class="cascade">
+      <div class="cascade-title">Cascade path</div>
+      
+      <div class="cascade-step">
+        <span class="cascade-icon down">DOWN</span>
+        <span class="cascade-name">PostgreSQL (primary)</span>
+        <span class="cascade-reason">Component failure (simulated)</span>
+        
+      </div>
+      
+      <div class="cascade-step">
+        <span class="cascade-icon degraded">WARN</span>
+        <span class="cascade-name">api-server-1</span>
+        <span class="cascade-reason">Dependency PostgreSQL (primary) is down, remaining replicas handling load (2 left)</span>
+        <span class="cascade-time">+5s</span>
+      </div>
+      
+      <div class="cascade-step">
+        <span class="cascade-icon degraded">WARN</span>
+        <span class="cascade-name">api-server-2</span>
+        <span class="cascade-reason">Dependency PostgreSQL (primary) is down, remaining replicas handling load (2 left)</span>
+        <span class="cascade-time">+0s</span>
+      </div>
+      
+      <div class="cascade-step">
+        <span class="cascade-icon down">DOWN</span>
+        <span class="cascade-name">Redis (cache)</span>
+        <span class="cascade-reason">Component failure (simulated)</span>
+        
+      </div>
+      
+      <div class="cascade-step">
+        <span class="cascade-icon degraded">WARN</span>
+        <span class="cascade-name">api-server-1</span>
+        <span class="cascade-reason">Optional dependency Redis (cache) is down</span>
+        <span class="cascade-time">+5s</span>
+      </div>
+      
+      <div class="cascade-step">
+        <span class="cascade-icon degraded">WARN</span>
+        <span class="cascade-name">api-server-2</span>
+        <span class="cascade-reason">Optional dependency Redis (cache) is down</span>
+        <span class="cascade-time">+0s</span>
+      </div>
+      
+    </div>
+    
+  </div>
+  
+  
+
+  <!-- Infrastructure Overview -->
+  <h2>Infrastructure Overview</h2>
+  <table class="comp-table">
+    <thead>
+      <tr>
+        <th>Name</th>
+        <th>Type</th>
+        <th>Host</th>
+        <th>Replicas</th>
+        <th>Utilization</th>
+        <th>CPU</th>
+        <th>Memory</th>
+        <th>Disk</th>
+        <th>Connections</th>
+      </tr>
+    </thead>
+    <tbody>
+      
+      <tr>
+        <td>nginx (LB)</td>
+        <td><span class="type-badge">load_balancer</span></td>
+        <td>web01:443</td>
+        <td>2</td>
+        <td>
+          <span class="util-bar"><span class="util-bar-fill green" style="width:25.0%"></span></span>
+          25%
+        </td>
+        <td>15%</td>
+        <td>20%</td>
+        <td>25%</td>
+        <td>0</td>
+      </tr>
+      
+      <tr>
+        <td>api-server-1</td>
+        <td><span class="type-badge">app_server</span></td>
+        <td>app01:8080</td>
+        <td>3</td>
+        <td>
+          <span class="util-bar"><span class="util-bar-fill green" style="width:25.0%"></span></span>
+          25%
+        </td>
+        <td>22%</td>
+        <td>25%</td>
+        <td>22%</td>
+        <td>200</td>
+      </tr>
+      
+      <tr>
+        <td>api-server-2</td>
+        <td><span class="type-badge">app_server</span></td>
+        <td>app02:8080</td>
+        <td>3</td>
+        <td>
+          <span class="util-bar"><span class="util-bar-fill green" style="width:24.0%"></span></span>
+          24%
+        </td>
+        <td>20%</td>
+        <td>24%</td>
+        <td>20%</td>
+        <td>180</td>
+      </tr>
+      
+      <tr>
+        <td>PostgreSQL (primary)</td>
+        <td><span class="type-badge">database</span></td>
+        <td>db01:5432</td>
+        <td>2</td>
+        <td>
+          <span class="util-bar"><span class="util-bar-fill green" style="width:26.0%"></span></span>
+          26%
+        </td>
+        <td>20%</td>
+        <td>26%</td>
+        <td>24%</td>
+        <td>40</td>
+      </tr>
+      
+      <tr>
+        <td>Redis (cache)</td>
+        <td><span class="type-badge">cache</span></td>
+        <td>cache01:6379</td>
+        <td>2</td>
+        <td>
+          <span class="util-bar"><span class="util-bar-fill green" style="width:22.0%"></span></span>
+          22%
+        </td>
+        <td>8%</td>
+        <td>22%</td>
+        <td>0%</td>
+        <td>100</td>
+      </tr>
+      
+      <tr>
+        <td>RabbitMQ</td>
+        <td><span class="type-badge">queue</span></td>
+        <td>mq01:5672</td>
+        <td>2</td>
+        <td>
+          <span class="util-bar"><span class="util-bar-fill green" style="width:20.0%"></span></span>
+          20%
+        </td>
+        <td>10%</td>
+        <td>20%</td>
+        <td>15%</td>
+        <td>25</td>
+      </tr>
+      
+    </tbody>
+  </table>
+
+  <!-- Dependency Map -->
+  <h2>Dependency Map</h2>
+  <div class="dep-map">
+    <svg xmlns="http://www.w3.org/2000/svg" width="620" height="420" viewBox="0 0 620 420">
+<defs><marker id="arrowhead" markerWidth="10" markerHeight="7" refX="10" refY="3.5" orient="auto"><polygon points="0 0, 10 3.5, 0 7" fill="#58a6ff"/></marker></defs>
+<line x1="310.0" y1="70" x2="210.0" y2="150" stroke="#58a6ff" stroke-width="1.5" marker-end="url(#arrowhead)" opacity="0.7"/>
+<line x1="310.0" y1="70" x2="410.0" y2="150" stroke="#58a6ff" stroke-width="1.5" marker-end="url(#arrowhead)" opacity="0.7"/>
+<line x1="210.0" y1="190" x2="110.0" y2="270" stroke="#58a6ff" stroke-width="1.5" marker-end="url(#arrowhead)" opacity="0.7"/>
+<line x1="210.0" y1="190" x2="310.0" y2="270" stroke="#58a6ff" stroke-width="1.5" marker-end="url(#arrowhead)" opacity="0.7"/>
+<line x1="210.0" y1="190" x2="510.0" y2="270" stroke="#58a6ff" stroke-width="1.5" marker-end="url(#arrowhead)" opacity="0.7"/>
+<line x1="410.0" y1="190" x2="110.0" y2="270" stroke="#58a6ff" stroke-width="1.5" marker-end="url(#arrowhead)" opacity="0.7"/>
+<line x1="410.0" y1="190" x2="310.0" y2="270" stroke="#58a6ff" stroke-width="1.5" marker-end="url(#arrowhead)" opacity="0.7"/>
+<line x1="410.0" y1="190" x2="510.0" y2="270" stroke="#58a6ff" stroke-width="1.5" marker-end="url(#arrowhead)" opacity="0.7"/>
+<rect x="230" y="30" width="160" height="40" rx="6" ry="6" fill="#161b22" stroke="#bc8cff" stroke-width="1.5"/>
+<text x="310.0" y="55.0" fill="#bc8cff" font-size="12" font-family="sans-serif" text-anchor="middle">nginx (LB)</text>
+<rect x="130" y="150" width="160" height="40" rx="6" ry="6" fill="#161b22" stroke="#58a6ff" stroke-width="1.5"/>
+<text x="210.0" y="175.0" fill="#58a6ff" font-size="12" font-family="sans-serif" text-anchor="middle">api-server-1</text>
+<rect x="330" y="150" width="160" height="40" rx="6" ry="6" fill="#161b22" stroke="#58a6ff" stroke-width="1.5"/>
+<text x="410.0" y="175.0" fill="#58a6ff" font-size="12" font-family="sans-serif" text-anchor="middle">api-server-2</text>
+<rect x="30" y="270" width="160" height="40" rx="6" ry="6" fill="#161b22" stroke="#3fb950" stroke-width="1.5"/>
+<text x="110.0" y="295.0" fill="#3fb950" font-size="12" font-family="sans-serif" text-anchor="middle">PostgreSQL (primary)</text>
+<rect x="230" y="270" width="160" height="40" rx="6" ry="6" fill="#161b22" stroke="#d29922" stroke-width="1.5"/>
+<text x="310.0" y="295.0" fill="#d29922" font-size="12" font-family="sans-serif" text-anchor="middle">Redis (cache)</text>
+<rect x="430" y="270" width="160" height="40" rx="6" ry="6" fill="#161b22" stroke="#d29922" stroke-width="1.5"/>
+<text x="510.0" y="295.0" fill="#d29922" font-size="12" font-family="sans-serif" text-anchor="middle">RabbitMQ</text>
+</svg>
+  </div>
+
+  <div class="footer">
+    FaultRay &mdash; Virtual Infrastructure Chaos Engineering Simulator
+  </div>
+
+</div>
+</body>
+</html>
