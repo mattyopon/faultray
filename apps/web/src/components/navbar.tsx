@@ -53,7 +53,12 @@ import {
   Ghost,
   Cloud,
   Map,
+  Lock,
 } from "lucide-react";
+import type { PlanTier } from "@/components/auth-provider";
+
+/** Pages accessible on Free plan */
+const FREE_PAGES = new Set(["/dashboard", "/simulate", "/topology", "/dora", "/reports"]);
 import { locales, type Locale } from "@/i18n/config";
 import { appDict } from "@/i18n/app-dict";
 import { useLocale } from "@/lib/useLocale";
@@ -67,7 +72,7 @@ function getNavGroups(t: Record<string, string>, te: Record<string, string>) {
       items: [
         { href: "/dashboard",     label: t.dashboard,                        icon: LayoutDashboard },
         { href: "/traffic-light", label: t.trafficLight ?? "Status",         icon: CircleDot },
-        { href: "/apm",           label: t.apm,                              icon: Radio },
+        { href: "/apm",           label: t.monitor ?? "Monitor",             icon: Radio },
         { href: "/incidents",     label: t.incidents,                        icon: Activity },
       ],
     },
@@ -191,9 +196,59 @@ function getNavGroups(t: Record<string, string>, te: Record<string, string>) {
   ];
 }
 
+function SidebarNavItem({
+  href,
+  label,
+  icon: Icon,
+  active,
+  sidebarOpen,
+  isFree,
+}: {
+  href: string;
+  label: string;
+  icon: React.ComponentType<{ size?: number; className?: string }>;
+  active: boolean;
+  sidebarOpen: boolean;
+  isFree: boolean;
+}) {
+  const locked = isFree && !FREE_PAGES.has(href);
+
+  if (locked) {
+    return (
+      <Link
+        href="/pricing"
+        className="flex items-center gap-3 mx-2 px-3 py-2 rounded-lg text-sm transition-colors text-[#475569] hover:text-[#64748b] hover:bg-white/5"
+        title={label}
+      >
+        <Icon size={16} className="shrink-0 opacity-40" />
+        {sidebarOpen && (
+          <span className="truncate flex-1 opacity-40">{label}</span>
+        )}
+        {sidebarOpen && <Lock size={10} className="shrink-0 opacity-40" />}
+      </Link>
+    );
+  }
+
+  return (
+    <Link
+      href={href}
+      className={`flex items-center gap-3 mx-2 px-3 py-2 rounded-lg text-sm transition-colors ${
+        active
+          ? "text-[#FFD700] bg-[#FFD700]/10"
+          : "text-[#94a3b8] hover:text-white hover:bg-white/5"
+      }`}
+      title={label}
+    >
+      <Icon size={16} className="shrink-0" />
+      {sidebarOpen && <span className="truncate">{label}</span>}
+    </Link>
+  );
+}
+
 export function Navbar() {
   const pathname = usePathname();
-  const { user, loading: authLoading, signOut } = useAuth();
+  const { user, loading: authLoading, plan, signOut } = useAuth();
+  const isFree = plan === "free";
   const [scrolled, setScrolled] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(true);
@@ -424,22 +479,17 @@ export function Navbar() {
                     </p>
                   )}
                   {group.items.map((item) => {
-                    const Icon = item.icon;
                     const active = pathname === item.href || pathname.startsWith(item.href + "/");
                     return (
-                      <Link
+                      <SidebarNavItem
                         key={item.href}
                         href={item.href}
-                        className={`flex items-center gap-3 mx-2 px-3 py-2 rounded-lg text-sm transition-colors ${
-                          active
-                            ? "text-[#FFD700] bg-[#FFD700]/10"
-                            : "text-[#94a3b8] hover:text-white hover:bg-white/5"
-                        }`}
-                        title={item.label}
-                      >
-                        <Icon size={16} className="shrink-0" />
-                        {sidebarOpen && <span className="truncate">{item.label}</span>}
-                      </Link>
+                        label={item.label}
+                        icon={item.icon}
+                        active={active}
+                        sidebarOpen={sidebarOpen}
+                        isFree={isFree}
+                      />
                     );
                   })}
                 </div>
@@ -460,21 +510,17 @@ export function Navbar() {
                         {group.label}
                       </p>
                       {group.items.map((item) => {
-                        const Icon = item.icon;
                         const active = pathname === item.href || pathname.startsWith(item.href + "/");
                         return (
-                          <Link
+                          <SidebarNavItem
                             key={item.href}
                             href={item.href}
-                            className={`flex items-center gap-3 mx-2 px-3 py-2 rounded-lg text-sm transition-colors ${
-                              active
-                                ? "text-[#FFD700] bg-[#FFD700]/10"
-                                : "text-[#94a3b8] hover:text-white hover:bg-white/5"
-                            }`}
-                          >
-                            <Icon size={16} className="shrink-0" />
-                            <span>{item.label}</span>
-                          </Link>
+                            label={item.label}
+                            icon={item.icon}
+                            active={active}
+                            sidebarOpen={true}
+                            isFree={isFree}
+                          />
                         );
                       })}
                     </div>

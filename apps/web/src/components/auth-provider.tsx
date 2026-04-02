@@ -6,18 +6,27 @@ import {
   useContext,
   useEffect,
   useState,
+  useCallback,
   type ReactNode,
 } from "react";
+
+export type PlanTier = "free" | "pro" | "business";
 
 interface AuthContextType {
   user: User | null;
   loading: boolean;
+  plan: PlanTier;
+  planLoading: boolean;
+  refreshPlan: () => Promise<void>;
   signOut: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType>({
   user: null,
   loading: true,
+  plan: "free",
+  planLoading: false,
+  refreshPlan: async () => {},
   signOut: async () => {},
 });
 
@@ -28,6 +37,32 @@ export function useAuth() {
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
+  const [plan, setPlan] = useState<PlanTier>("free");
+  const [planLoading, setPlanLoading] = useState(false);
+
+  const fetchPlan = useCallback(async (uid: string) => {
+    setPlanLoading(true);
+    try {
+      const { createClient } = await import("@/lib/supabase/client");
+      const supabase = createClient();
+      const { data } = await supabase
+        .from("profiles")
+        .select("plan")
+        .eq("id", uid)
+        .single();
+      if (data?.plan) {
+        setPlan((data.plan as PlanTier) || "free");
+      }
+    } catch {
+      // Supabase not configured — remain "free"
+    } finally {
+      setPlanLoading(false);
+    }
+  }, []);
+
+  const refreshPlan = useCallback(async () => {
+    if (user) await fetchPlan(user.id);
+  }, [user, fetchPlan]);
 
   useEffect(() => {
     const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
@@ -44,15 +79,21 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const {
         data: { subscription },
       } = supabase.auth.onAuthStateChange((_event, session) => {
-        setUser(session?.user ?? null);
+        const nextUser = session?.user ?? null;
+        setUser(nextUser);
         setLoading(false);
+        if (nextUser) {
+          fetchPlan(nextUser.id);
+        } else {
+          setPlan("free");
+        }
       });
 
       return () => subscription.unsubscribe();
     }).catch(() => {
       setLoading(false);
     });
-  }, []);
+  }, [fetchPlan]);
 
   const signOut = async () => {
     try {
@@ -67,7 +108,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   return (
-    <AuthContext.Provider value={{ user, loading, signOut }}>
+    <AuthContext.Provider value={{ user, loading, plan, planLoading, refreshPlan, signOut }}>
       {children}
     </AuthContext.Provider>
   );

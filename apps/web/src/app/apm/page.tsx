@@ -8,8 +8,14 @@ import { Radio, RefreshCw } from "lucide-react";
 import { useLocale } from "@/lib/useLocale";
 
 const T: Record<string, Record<string, string>> = {
-  en: { title: "APM Dashboard", subtitle: "Real-time monitoring of connected agents, metrics, and alerts", agents: "Connected Agents", alerts: "Active Alerts", cpu: "Avg CPU", mem: "Avg Memory", agentTable: "Agents", alertTable: "Recent Alerts", refresh: "Refresh" },
-  ja: { title: "APM ダッシュボード", subtitle: "接続エージェント・メトリクス・アラートのリアルタイム監視", agents: "接続エージェント", alerts: "アクティブアラート", cpu: "平均CPU", mem: "平均メモリ", agentTable: "エージェント", alertTable: "最近のアラート", refresh: "更新" },
+  en: { title: "Infrastructure Monitor", subtitle: "Real-time infrastructure metrics linked to simulation results — correlate live performance with modeled failure scenarios", agents: "Connected Agents", alerts: "Active Alerts", cpu: "Avg CPU", mem: "Avg Memory", agentTable: "Agents", alertTable: "Recent Alerts", refresh: "Refresh" },
+  ja: { title: "インフラストラクチャ モニター", subtitle: "シミュレーション結果とリアルタイムメトリクスの連携 — モデル化された障害シナリオと実際のパフォーマンスを照合", agents: "接続エージェント", alerts: "アクティブアラート", cpu: "平均CPU", mem: "平均メモリ", agentTable: "エージェント", alertTable: "最近のアラート", refresh: "更新" },
+  de: { title: "Infrastruktur-Monitor", subtitle: "Echtzeit-Infrastrukturmetriken verknüpft mit Simulationsergebnissen", agents: "Verbundene Agents", alerts: "Aktive Warnungen", cpu: "Ø CPU", mem: "Ø Speicher", agentTable: "Agents", alertTable: "Aktuelle Warnungen", refresh: "Aktualisieren" },
+  fr: { title: "Moniteur d'Infrastructure", subtitle: "Métriques d'infrastructure en temps réel liées aux résultats de simulation", agents: "Agents connectés", alerts: "Alertes actives", cpu: "CPU moy.", mem: "Mémoire moy.", agentTable: "Agents", alertTable: "Alertes récentes", refresh: "Actualiser" },
+  zh: { title: "基础设施监控", subtitle: "实时基础设施指标与模拟结果关联 — 将实时性能与模型故障场景相关联", agents: "已连接代理", alerts: "活跃警报", cpu: "平均CPU", mem: "平均内存", agentTable: "代理", alertTable: "最近警报", refresh: "刷新" },
+  ko: { title: "인프라 모니터", subtitle: "시뮬레이션 결과와 연동된 실시간 인프라 메트릭", agents: "연결된 에이전트", alerts: "활성 경고", cpu: "평균 CPU", mem: "평균 메모리", agentTable: "에이전트", alertTable: "최근 경고", refresh: "새로 고침" },
+  es: { title: "Monitor de Infraestructura", subtitle: "Métricas de infraestructura en tiempo real vinculadas a resultados de simulación", agents: "Agentes conectados", alerts: "Alertas activas", cpu: "CPU prom.", mem: "Memoria prom.", agentTable: "Agentes", alertTable: "Alertas recientes", refresh: "Actualizar" },
+  pt: { title: "Monitor de Infraestrutura", subtitle: "Métricas de infraestrutura em tempo real vinculadas aos resultados de simulação", agents: "Agentes conectados", alerts: "Alertas ativos", cpu: "CPU méd.", mem: "Memória méd.", agentTable: "Agentes", alertTable: "Alertas recentes", refresh: "Atualizar" },
 };
 
 interface Agent { id: string; hostname: string; status: string; cpu: number; mem: number; }

@@ -876,6 +876,34 @@ function SimulatePageInner() {
         } catch {
           // Non-critical: localStorage backup already saved
         }
+
+        // Send Slack notification if webhook URL is configured (best-effort)
+        try {
+          const rawIntegrations = localStorage.getItem("faultray_integrations");
+          if (rawIntegrations) {
+            const integrations = JSON.parse(rawIntegrations) as Record<string, string>;
+            const webhookUrl = integrations.slackWebhook;
+            if (webhookUrl && webhookUrl.startsWith("https://hooks.slack.com/")) {
+              const criticalCount = res.critical_failures.length;
+              const topRecommendation = res.suggestions[0]?.title;
+              fetch("/api/notify/slack", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                  webhookUrl,
+                  score: res.overall_score,
+                  critical: criticalCount,
+                  topRecommendation,
+                  source: selected || "custom",
+                }),
+              }).catch(() => {
+                // Non-critical: notification failure does not affect simulation
+              });
+            }
+          }
+        } catch {
+          // Non-critical: notification failure does not affect simulation
+        }
       }
     } catch (err) {
       if (err instanceof Error && !err.message.includes("fetch")) {
