@@ -115,6 +115,7 @@ _KNOWN_MODULES: list[str] = [
     "remediate_cmd",
     "coupon_cmd",
     "slo_impact_cmd",
+    "autopilot_cmd",
 ]
 
 
@@ -129,6 +130,7 @@ _HELP_PANELS: dict[str, str] = {
     "demo": "🚀 Getting Started",
     "quickstart": "🚀 Getting Started",
     "init": "🚀 Getting Started",
+    "autopilot": "🚀 Getting Started",
     # --- Discovery & Import ---
     "scan": "🔍 Discovery & Import",
     "load": "🔍 Discovery & Import",
