@@ -52,11 +52,26 @@
     "heading": "우리가 해결하는 과제",
     "subheading": "FaultRay는 엔지니어링 팀을 밤새 잠 못 들게 하는 실제 운영 격차를 해결합니다.",
     "items": [
-      { "problem": "수동적이고 사람에 의존하는 인프라 관리", "solution": "FaultRay가 토폴로지 스캐닝과 복원력 분석을 자동화합니다." },
-      { "problem": "IaC(Terraform) 미도입", "solution": "FaultRay가 기존 AWS / GCP / Azure 인프라를 자동 스캔합니다." },
-      { "problem": "IPO 이후 가용성 및 감사 요건", "solution": "DORA / SOC 2 준수를 기계 생성 증거로 자동 증명합니다." },
-      { "problem": "런북 없는 임시 인시던트 대응", "solution": "FaultRay가 시뮬레이션 결과로 런북과 수정 스크립트를 자동 생성합니다." },
-      { "problem": "AI 거버넌스 준비 미착수", "solution": "METI / ISO 42001 자동 컴플라이언스 체크와 감사 준비 보고서를 즉시 제공합니다." }
+      {
+        "problem": "수동적이고 사람에 의존하는 인프라 관리",
+        "solution": "FaultRay가 토폴로지 스캐닝과 복원력 분석을 자동화합니다."
+      },
+      {
+        "problem": "IaC(Terraform) 미도입",
+        "solution": "FaultRay가 기존 AWS / GCP / Azure 인프라를 자동 스캔합니다."
+      },
+      {
+        "problem": "IPO 이후 가용성 및 감사 요건",
+        "solution": "DORA / SOC 2 준수를 기계 생성 증거로 자동 증명합니다."
+      },
+      {
+        "problem": "런북 없는 임시 인시던트 대응",
+        "solution": "FaultRay가 시뮬레이션 결과로 런북과 수정 스크립트를 자동 생성합니다."
+      },
+      {
+        "problem": "AI 거버넌스 준비 미착수",
+        "solution": "METI / ISO 42001 자동 컴플라이언스 체크와 감사 준비 보고서를 즉시 제공합니다."
+      }
     ]
   },
   "features": {
@@ -87,11 +102,24 @@
         "title": "보안 피드 통합",
         "desc": "CVE 데이터와 NVD 피드를 자동으로 통합하여 취약점 트리거 연쇄 장애를 시뮬레이션합니다."
       },
-      { "title": "APM 모니터링 (실시간)", "desc": "라이브 성능 지표, 트레이스 연관, 이상 감지 — 35+ 모니터링 뷰를 갖춘 복원력 대시보드에 통합됩니다." },
-      { "title": "AI 거버넌스 (METI / ISO 42001)", "desc": "일본 METI AI 가이드라인 및 ISO 42001 요건에 대한 자동 준수 검사. 감사 준비 증거로 책임 있는 AI 배포를 증명합니다." },
-      { "title": "자율 수정", "desc": "시뮬레이션 결과에서 런북, 수정 스크립트, Terraform 패치를 자동 생성합니다." },
-      { "title": "35+ 대시보드 페이지", "desc": "토폴로지 에디터, 시나리오 탐색기, N-Layer 드릴다운, 히트맵, DORA 보고서, 경영 요약을 갖춘 완전한 웹 대시보드." }
-    ]
+      {
+        "title": "APM 모니터링 (실시간)",
+        "desc": "라이브 성능 지표, 트레이스 연관, 이상 감지 — 35+ 모니터링 뷰를 갖춘 복원력 대시보드에 통합됩니다."
+      },
+      {
+        "title": "AI 거버넌스 (METI / ISO 42001)",
+        "desc": "일본 METI AI 가이드라인 및 ISO 42001 요건에 대한 자동 준수 검사. 감사 준비 증거로 책임 있는 AI 배포를 증명합니다."
+      },
+      {
+        "title": "자율 수정",
+        "desc": "시뮬레이션 결과에서 런북, 수정 스크립트, Terraform 패치를 자동 생성합니다."
+      },
+      {
+        "title": "35+ 대시보드 페이지",
+        "desc": "토폴로지 에디터, 시나리오 탐색기, N-Layer 드릴다운, 히트맵, DORA 보고서, 경영 요약을 갖춘 완전한 웹 대시보드."
+      }
+    ],
+    "viewAll": "View Full Feature Details"
   },
   "agentResilience": {
     "badge": "v11.0 신기능",
@@ -206,7 +234,11 @@
     "mostPopular": "가장 인기 있는",
     "featureComparison": "기능 비교",
     "currency": "$",
-    "prices": [0, 299, 999],
+    "prices": [
+      0,
+      299,
+      999
+    ],
     "taxNote": "",
     "japaneseSupportBadge": "Japanese support included",
     "plans": [

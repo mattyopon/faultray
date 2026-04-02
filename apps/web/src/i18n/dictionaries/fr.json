@@ -118,7 +118,8 @@
         "title": "35+ pages de tableau de bord",
         "desc": "Tableau de bord web complet avec éditeur de topologie, explorateur de scénarios, drill-down N-Layer, heatmap, rapports DORA et résumés exécutifs."
       }
-    ]
+    ],
+    "viewAll": "View Full Feature Details"
   },
   "agentResilience": {
     "badge": "Nouveau dans v11.0",
@@ -233,7 +234,11 @@
     "mostPopular": "Le plus populaire",
     "featureComparison": "Comparaison des fonctionnalités",
     "currency": "$",
-    "prices": [0, 299, 999],
+    "prices": [
+      0,
+      299,
+      999
+    ],
     "taxNote": "",
     "japaneseSupportBadge": "Japanese support included",
     "plans": [

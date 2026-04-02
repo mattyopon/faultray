@@ -414,7 +414,7 @@ export default async function LangHomePage({
               className="inline-flex items-center gap-2 px-6 py-3 border border-[#1e293b] text-[#94a3b8] rounded-xl hover:border-[#64748b] hover:text-white hover:bg-white/[0.03] transition-all text-sm"
             >
               <ExternalLink size={14} />
-              {lang === "ja" ? "全機能の詳細を見る" : "View Full Feature Details"}
+              {dict.features?.viewAll ?? "View Full Feature Details"}
             </Link>
           </div>
         </div>

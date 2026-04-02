@@ -52,11 +52,26 @@
     "heading": "我们解决的挑战",
     "subheading": "FaultRay 解决让工程团队夜不能寐的真实运营缺口。",
     "items": [
-      { "problem": "手动、依赖个人的基础设施管理", "solution": "FaultRay 自动化拓扑扫描和弹性分析——无需特定人员知识。" },
-      { "problem": "IaC（Terraform）尚未采用", "solution": "FaultRay 自动扫描现有 AWS / GCP / Azure 基础设施，无需任何 IaC 设置。" },
-      { "problem": "IPO 后的可用性与审计要求", "solution": "通过机器生成的证据链自动证明 DORA / SOC 2 合规性。" },
-      { "problem": "无运行手册的临时事故响应", "solution": "FaultRay 从模拟结果自动生成运行手册和修复脚本。" },
-      { "problem": "AI 治理准备尚未启动", "solution": "自动化 METI / ISO 42001 合规检查，提供审计就绪报告。" }
+      {
+        "problem": "手动、依赖个人的基础设施管理",
+        "solution": "FaultRay 自动化拓扑扫描和弹性分析——无需特定人员知识。"
+      },
+      {
+        "problem": "IaC（Terraform）尚未采用",
+        "solution": "FaultRay 自动扫描现有 AWS / GCP / Azure 基础设施，无需任何 IaC 设置。"
+      },
+      {
+        "problem": "IPO 后的可用性与审计要求",
+        "solution": "通过机器生成的证据链自动证明 DORA / SOC 2 合规性。"
+      },
+      {
+        "problem": "无运行手册的临时事故响应",
+        "solution": "FaultRay 从模拟结果自动生成运行手册和修复脚本。"
+      },
+      {
+        "problem": "AI 治理准备尚未启动",
+        "solution": "自动化 METI / ISO 42001 合规检查，提供审计就绪报告。"
+      }
     ]
   },
   "features": {
@@ -87,11 +102,24 @@
         "title": "安全情报集成",
         "desc": "自动整合 CVE 数据和 NVD 情报，模拟漏洞触发的级联故障。"
       },
-      { "title": "APM 监控（实时）", "desc": "实时性能指标、追踪关联和异常检测——集成到您的弹性仪表盘，提供 35+ 监控视图。" },
-      { "title": "AI 治理（METI / ISO 42001）", "desc": "针对日本 METI AI 指南和 ISO 42001 要求的自动合规检查，提供审计就绪的证明文件。" },
-      { "title": "自主修复", "desc": "从模拟结果自动生成运行手册、修复脚本和 Terraform 补丁，将平均修复时间从数小时缩短至数分钟。" },
-      { "title": "35+ 仪表盘页面", "desc": "完整的 Web 仪表盘，包含拓扑编辑器、场景浏览器、N-Layer 钻取、热力图、DORA 报告和高管摘要。" }
-    ]
+      {
+        "title": "APM 监控（实时）",
+        "desc": "实时性能指标、追踪关联和异常检测——集成到您的弹性仪表盘，提供 35+ 监控视图。"
+      },
+      {
+        "title": "AI 治理（METI / ISO 42001）",
+        "desc": "针对日本 METI AI 指南和 ISO 42001 要求的自动合规检查，提供审计就绪的证明文件。"
+      },
+      {
+        "title": "自主修复",
+        "desc": "从模拟结果自动生成运行手册、修复脚本和 Terraform 补丁，将平均修复时间从数小时缩短至数分钟。"
+      },
+      {
+        "title": "35+ 仪表盘页面",
+        "desc": "完整的 Web 仪表盘，包含拓扑编辑器、场景浏览器、N-Layer 钻取、热力图、DORA 报告和高管摘要。"
+      }
+    ],
+    "viewAll": "View Full Feature Details"
   },
   "agentResilience": {
     "badge": "v11.0 新功能",
@@ -206,7 +234,11 @@
     "mostPopular": "最受欢迎",
     "featureComparison": "功能对比",
     "currency": "$",
-    "prices": [0, 299, 999],
+    "prices": [
+      0,
+      299,
+      999
+    ],
     "taxNote": "",
     "japaneseSupportBadge": "Japanese support included",
     "plans": [

@@ -118,7 +118,8 @@
         "title": "35+ Dashboard Pages",
         "desc": "Full-featured web dashboard with topology editor, scenario explorer, N-layer drill-down, heatmap, DORA reports, and executive summaries."
       }
-    ]
+    ],
+    "viewAll": "View Full Feature Details"
   },
   "agentResilience": {
     "badge": "New in v11.0",
@@ -233,7 +234,11 @@
     "mostPopular": "Most Popular",
     "featureComparison": "Feature Comparison",
     "currency": "$",
-    "prices": [0, 299, 999],
+    "prices": [
+      0,
+      299,
+      999
+    ],
     "taxNote": "",
     "japaneseSupportBadge": "Japanese support included",
     "plans": [

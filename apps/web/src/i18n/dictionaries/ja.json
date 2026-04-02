@@ -118,7 +118,8 @@
         "title": "35画面以上のダッシュボード",
         "desc": "構成エディタ・シナリオ一覧・5層ドリルダウン・ヒートマップ・DORAレポート・経営サマリーを備えたフル機能Webダッシュボード。"
       }
-    ]
+    ],
+    "viewAll": "全機能の詳細を見る"
   },
   "agentResilience": {
     "badge": "v11.0 新機能",
@@ -233,7 +234,11 @@
     "mostPopular": "最も人気",
     "featureComparison": "機能比較",
     "currency": "¥",
-    "prices": [0, 45000, 150000],
+    "prices": [
+      0,
+      45000,
+      150000
+    ],
     "taxNote": "税別",
     "japaneseSupportBadge": "日本語サポート込み",
     "plans": [
