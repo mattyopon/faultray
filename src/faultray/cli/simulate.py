@@ -249,7 +249,11 @@ def simulate(
         console.print(f"[cyan]Loading plugins from {plugins_dir}...[/]")
         PluginRegistry.load_plugins_from_dir(plugins_dir)
 
-    if not json_output:
+    if json_output:
+        # Suppress logging to stdout so JSON output is parseable
+        import logging as _logging
+        _logging.getLogger("faultray").setLevel(_logging.ERROR)
+    else:
         console.print("[cyan]Loading infrastructure model...[/]")
     graph = InfraGraph.load(model)
 
