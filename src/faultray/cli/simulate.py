@@ -64,20 +64,54 @@ def _static_report_to_json(report: object) -> dict:
     scenarios = []
     for r in results:
         scenario = getattr(r, "scenario", None)
+        risk_score = getattr(r, "risk_score", 0.0)
+        is_critical = getattr(r, "is_critical", False)
+        is_warning = getattr(r, "is_warning", False)
+        cascade = getattr(r, "cascade", None)
+
+        if is_critical:
+            severity = "critical"
+        elif is_warning:
+            severity = "warning"
+        elif risk_score > 0:
+            severity = "info"
+        else:
+            severity = "passed"
+
+        affected = []
+        if cascade:
+            for eff in getattr(cascade, "effects", []):
+                affected.append({
+                    "component": getattr(eff, "component_name", getattr(eff, "component_id", "?")),
+                    "health": getattr(eff, "health", "unknown").value if hasattr(getattr(eff, "health", None), "value") else str(getattr(eff, "health", "unknown")),
+                    "reason": getattr(eff, "reason", ""),
+                })
+
         scenarios.append({
             "name": getattr(scenario, "name", "unknown") if scenario else "unknown",
-            "severity": getattr(r, "severity", "info"),
-            "message": getattr(r, "message", ""),
+            "description": getattr(scenario, "description", "") if scenario else "",
+            "severity": severity,
+            "risk_score": round(risk_score, 2),
+            "affected_components": affected,
+            "cascade_trigger": getattr(cascade, "trigger", "") if cascade else "",
         })
+
+    # Count top-level totals from per-scenario severity so they are consistent
+    # with the scenario-level breakdown (not from the legacy list properties).
+    n_critical = sum(1 for s in scenarios if s["severity"] == "critical")
+    n_warning = sum(1 for s in scenarios if s["severity"] == "warning")
+    n_info = sum(1 for s in scenarios if s["severity"] == "info")
+    n_passed = sum(1 for s in scenarios if s["severity"] == "passed")
 
     return {
         "resilience_score": round(getattr(report, "resilience_score", 0.0), 1),
         "total_scenarios": len(results),
         "total_generated": getattr(report, "total_generated", len(results)),
         "was_truncated": getattr(report, "was_truncated", False),
-        "critical": len(critical_findings),
-        "warning": len(warnings),
-        "passed": len(passed),
+        "critical": n_critical,
+        "warning": n_warning,
+        "info": n_info,
+        "passed": n_passed,
         "scenarios": scenarios,
     }
 

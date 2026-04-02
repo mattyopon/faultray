@@ -363,6 +363,13 @@ class InfraGraph:
         import logging
 
         _logger = logging.getLogger(__name__)
+
+        # Delegate YAML files to the dedicated YAML loader so that callers can
+        # pass either .json or .yaml/.yml without caring about the format.
+        if str(path).endswith((".yaml", ".yml")):
+            from faultray.model.loader import load_yaml
+            return load_yaml(path)
+
         data = json.loads(path.read_text())
         # Handle missing schema_version gracefully
         file_version = data.get("schema_version")

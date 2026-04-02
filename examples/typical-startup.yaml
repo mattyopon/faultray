@@ -1,0 +1,105 @@
+# FaultRay - Typical startup infrastructure with common reliability issues
+#
+# This example represents a real-world startup stack that "just works" but
+# has not yet been hardened for production reliability.
+#
+# Load with:
+#   faultray load examples/typical-startup.yaml
+#   faultray simulate --json
+#
+# Expected resilience score: ~55-65 (compared to ~100 for demo-infra.yaml)
+#
+# Known issues modelled here:
+#   - Single-replica database (SPOF)
+#   - Single-replica app server (SPOF)
+#   - High utilization on DB and app (> 80%)
+#   - No failover or autoscaling configured anywhere
+#   - No circuit breakers on critical dependency edges
+
+components:
+  - id: nginx
+    name: "nginx (LB)"
+    type: load_balancer
+    host: web01
+    port: 443
+    replicas: 1
+    capacity:
+      max_connections: 5000
+      max_rps: 10000
+    metrics:
+      cpu_percent: 30
+      memory_percent: 25
+
+  - id: app
+    name: "api-server"
+    type: app_server
+    host: app01
+    port: 8080
+    replicas: 1
+    capacity:
+      max_connections: 500
+      max_rps: 2000
+      timeout_seconds: 30
+    metrics:
+      cpu_percent: 82
+      memory_percent: 78
+      network_connections: 410
+
+  - id: postgres
+    name: "PostgreSQL (primary)"
+    type: database
+    host: db01
+    port: 5432
+    replicas: 1
+    capacity:
+      max_connections: 100
+      max_disk_gb: 200
+    metrics:
+      cpu_percent: 85
+      memory_percent: 80
+      disk_percent: 72
+      network_connections: 88
+
+  - id: redis
+    name: "Redis (cache)"
+    type: cache
+    host: cache01
+    port: 6379
+    replicas: 1
+    capacity:
+      max_connections: 1000
+    metrics:
+      cpu_percent: 20
+      memory_percent: 45
+
+  - id: file-storage
+    name: "Local File Storage"
+    type: storage
+    host: app01
+    port: 0
+    replicas: 1
+    capacity:
+      max_disk_gb: 100
+    metrics:
+      disk_percent: 88
+
+dependencies:
+  - source: nginx
+    target: app
+    type: requires
+    weight: 1.0
+
+  - source: app
+    target: postgres
+    type: requires
+    weight: 1.0
+
+  - source: app
+    target: redis
+    type: optional
+    weight: 0.6
+
+  - source: app
+    target: file-storage
+    type: requires
+    weight: 0.8
