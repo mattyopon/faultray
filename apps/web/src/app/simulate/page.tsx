@@ -971,6 +971,53 @@ function SimulatePageInner() {
           {/* ===== QUICK START TAB ===== */}
           {topTab === "quickstart" && (
             <>
+              {/* Try Demo 1-click */}
+              <div className="mb-8 p-5 rounded-xl border border-[#FFD700]/20 bg-[#FFD700]/[0.04] flex items-center justify-between gap-4 flex-wrap">
+                <div>
+                  <p className="text-sm font-semibold text-white mb-0.5">まずはデモを試してみましょう</p>
+                  <p className="text-xs text-[#94a3b8]">Web SaaS テンプレートで即座にシミュレーションを体験できます</p>
+                </div>
+                <Button
+                  variant="primary"
+                  size="sm"
+                  disabled={running}
+                  onClick={async () => {
+                    setSelected("web-saas");
+                    setYamlText("");
+                    setUploadedFileName(null);
+                    setError(null);
+                    setResult(null);
+                    setScanSummary(undefined);
+                    setRunning(true);
+                    try {
+                      const simPayload: Record<string, string> = {};
+                      if (selectedProjectId) simPayload.project_id = selectedProjectId;
+                      let res;
+                      try {
+                        res = await api.simulate({ sample: "web-saas", ...simPayload });
+                      } catch {
+                        res = DEMO_RESULT;
+                      }
+                      setResult(res);
+                      localStorage.setItem("faultray_last_simulation", JSON.stringify({
+                        ...res,
+                        timestamp: new Date().toISOString(),
+                        source: "web-saas",
+                      }));
+                    } finally {
+                      setRunning(false);
+                    }
+                  }}
+                  className="shrink-0"
+                >
+                  {running ? (
+                    <><Loader2 size={14} className="animate-spin" /> Running...</>
+                  ) : (
+                    <><Zap size={14} /> Try Demo (1-click)</>
+                  )}
+                </Button>
+              </div>
+
               {/* Sample Selection */}
               <div className="mb-8">
                 <h2 className="text-sm font-semibold text-[#94a3b8] uppercase tracking-wider mb-4">Choose a sample topology</h2>

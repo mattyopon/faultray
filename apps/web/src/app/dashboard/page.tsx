@@ -19,7 +19,20 @@ import {
   ArrowRight,
   BarChart3,
   FolderKanban,
+  Info,
+  CheckCircle2,
+  Circle,
+  X,
 } from "lucide-react";
+
+// ---- Sample data shown when no simulation runs exist ----
+const SAMPLE_SCORE = 72;
+const SAMPLE_COMPONENTS = 6;
+const SAMPLE_CRITICAL = 2;
+const SAMPLE_WARNING = 5;
+
+// ---- Getting Started checklist (localStorage key) ----
+const CHECKLIST_STORAGE_KEY = "faultray_checklist_dismissed";
 
 function ScoreRing({ score, size = 120 }: { score: number; size?: number }) {
   const radius = 45;
@@ -45,6 +58,113 @@ function ScoreRing({ score, size = 120 }: { score: number; size?: number }) {
         <span className="text-2xl font-extrabold" style={{ color }}>{score.toFixed(1)}</span>
         <span className="text-[10px] text-[#64748b] uppercase tracking-wider">Score</span>
       </div>
+    </div>
+  );
+}
+
+// ---- Getting Started Checklist Component ----
+function GettingStartedChecklist({ hasRun }: { hasRun: boolean }) {
+  const [dismissed, setDismissed] = useState(false);
+  const [checkedItems, setCheckedItems] = useState<Record<number, boolean>>({});
+
+  useEffect(() => {
+    try {
+      if (localStorage.getItem(CHECKLIST_STORAGE_KEY) === "true") {
+        setDismissed(true);
+      }
+      const stored = localStorage.getItem("faultray_checklist_checked");
+      if (stored) setCheckedItems(JSON.parse(stored));
+    } catch { /* ignore */ }
+  }, []);
+
+  // Step 2 is auto-checked when a run exists
+  useEffect(() => {
+    if (hasRun) {
+      setCheckedItems((prev) => {
+        const next = { ...prev, 1: true };
+        try { localStorage.setItem("faultray_checklist_checked", JSON.stringify(next)); } catch { /* ignore */ }
+        return next;
+      });
+    }
+  }, [hasRun]);
+
+  const dismiss = () => {
+    setDismissed(true);
+    try { localStorage.setItem(CHECKLIST_STORAGE_KEY, "true"); } catch { /* ignore */ }
+  };
+
+  const toggle = (idx: number) => {
+    setCheckedItems((prev) => {
+      const next = { ...prev, [idx]: !prev[idx] };
+      try { localStorage.setItem("faultray_checklist_checked", JSON.stringify(next)); } catch { /* ignore */ }
+      return next;
+    });
+  };
+
+  const steps = [
+    { label: "アカウント作成", href: null, alwaysDone: true },
+    { label: "最初のシミュレーション実行", href: "/simulate", alwaysDone: false },
+    { label: "レポートを確認", href: "/reports", alwaysDone: false },
+    { label: "DORA診断を実行", href: "/dora", alwaysDone: false },
+    { label: "チームメンバーを招待", href: "/teams", alwaysDone: false },
+  ];
+
+  const allDone = steps.every((s, i) => s.alwaysDone || checkedItems[i]);
+
+  if (dismissed || allDone) return null;
+
+  return (
+    <div className="mb-8 p-5 rounded-xl border border-[#1e293b] bg-[#0d1117]">
+      <div className="flex items-center justify-between mb-4">
+        <h3 className="text-sm font-semibold flex items-center gap-2">
+          <Zap size={14} className="text-[#FFD700]" />
+          Getting Started
+        </h3>
+        <button
+          onClick={dismiss}
+          className="p-1 text-[#64748b] hover:text-white transition-colors rounded"
+          aria-label="Close checklist"
+        >
+          <X size={14} />
+        </button>
+      </div>
+      <div className="space-y-2">
+        {steps.map((step, i) => {
+          const done = step.alwaysDone || !!checkedItems[i];
+          return (
+            <div key={i} className="flex items-center gap-3">
+              <button
+                onClick={() => !step.alwaysDone && toggle(i)}
+                className="shrink-0 transition-colors"
+                aria-label={done ? "Done" : "Mark done"}
+                disabled={step.alwaysDone}
+              >
+                {done
+                  ? <CheckCircle2 size={16} className="text-emerald-400" />
+                  : <Circle size={16} className="text-[#334155]" />}
+              </button>
+              {step.href ? (
+                <Link
+                  href={step.href}
+                  className={`text-sm transition-colors hover:text-[#FFD700] ${done ? "line-through text-[#475569]" : "text-[#94a3b8]"}`}
+                >
+                  {step.label}
+                </Link>
+              ) : (
+                <span className={`text-sm ${done ? "line-through text-[#475569]" : "text-[#94a3b8]"}`}>
+                  {step.label}
+                </span>
+              )}
+            </div>
+          );
+        })}
+      </div>
+      <button
+        onClick={dismiss}
+        className="mt-4 text-xs text-[#64748b] hover:text-white transition-colors"
+      >
+        閉じる
+      </button>
     </div>
   );
 }
@@ -88,7 +208,8 @@ export default function DashboardPage() {
   }, [user]);
 
   const latestRun = runs[0];
-  const latestScore = latestRun?.overall_score ?? 85.2;
+  const isSampleMode = !loading && runs.length === 0;
+  const latestScore = isSampleMode ? SAMPLE_SCORE : (latestRun?.overall_score ?? 85.2);
 
   return (
     <div className="max-w-[1200px] mx-auto px-6 py-10">
@@ -114,6 +235,27 @@ export default function DashboardPage() {
           </Link>
         </div>
       )}
+
+      {/* Sample data banner */}
+      {isSampleMode && (
+        <div className="mb-6 px-5 py-3.5 rounded-xl border border-blue-500/30 bg-blue-500/[0.06] flex items-center justify-between gap-4 flex-wrap">
+          <div className="flex items-center gap-2.5">
+            <Info size={16} className="text-blue-400 shrink-0" />
+            <span className="text-sm text-[#94a3b8]">
+              これはサンプルデータです。自分のインフラで試してみましょう
+            </span>
+          </div>
+          <Link
+            href="/simulate"
+            className="flex items-center gap-1.5 text-xs font-semibold text-blue-400 border border-blue-500/30 px-3 py-1.5 rounded-lg hover:bg-blue-500/10 transition-colors whitespace-nowrap"
+          >
+            シミュレーションを実行 <ArrowRight size={12} />
+          </Link>
+        </div>
+      )}
+
+      {/* Getting Started Checklist */}
+      <GettingStartedChecklist hasRun={runs.length > 0} />
 
       {/* Header */}
       <div className="flex items-center justify-between mb-10">
@@ -162,11 +304,19 @@ export default function DashboardPage() {
             </div>
             <p className="text-xs text-[#64748b] uppercase tracking-wider">{t.scenarios}</p>
           </div>
-          <p className="text-2xl font-bold font-mono">{latestRun?.total_scenarios ?? 152}</p>
+          <p className="text-2xl font-bold font-mono">
+            {isSampleMode ? SAMPLE_COMPONENTS : (latestRun?.total_scenarios ?? 152)}
+          </p>
           <div className="flex items-center gap-2 mt-1">
-            <span className="text-xs text-emerald-400">{latestRun?.scenarios_passed ?? 147} {t.passed}</span>
-            <span className="text-xs text-[#64748b]">/</span>
-            <span className="text-xs text-red-400">{latestRun?.scenarios_failed ?? 5} {t.failed}</span>
+            {isSampleMode ? (
+              <span className="text-xs text-[#64748b]">コンポーネント数</span>
+            ) : (
+              <>
+                <span className="text-xs text-emerald-400">{latestRun?.scenarios_passed ?? 147} {t.passed}</span>
+                <span className="text-xs text-[#64748b]">/</span>
+                <span className="text-xs text-red-400">{latestRun?.scenarios_failed ?? 5} {t.failed}</span>
+              </>
+            )}
           </div>
         </Card>
 
@@ -177,8 +327,14 @@ export default function DashboardPage() {
             </div>
             <p className="text-xs text-[#64748b] uppercase tracking-wider">{t.criticalIssues}</p>
           </div>
-          <p className="text-2xl font-bold font-mono">3</p>
-          <p className="text-xs text-red-400 mt-1">{t.requiresAttention}</p>
+          <p className="text-2xl font-bold font-mono">
+            {isSampleMode ? SAMPLE_CRITICAL : 3}
+          </p>
+          <p className="text-xs text-red-400 mt-1">
+            {isSampleMode
+              ? `WARNING ${SAMPLE_WARNING}件`
+              : t.requiresAttention}
+          </p>
         </Card>
       </div>
 
