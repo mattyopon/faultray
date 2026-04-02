@@ -18,10 +18,7 @@ import {
   Activity,
   ShieldCheck,
   ShieldAlert,
-  Shield,
-  DollarSign,
   FileText,
-  Trophy,
   Bot,
   Settings,
   HelpCircle,
@@ -29,7 +26,6 @@ import {
   X,
   LogOut,
   ChevronDown,
-  ClipboardCheck,
   FileCheck,
   Scale,
   Radio,
@@ -72,16 +68,17 @@ function getNavGroups(t: Record<string, string>, te: Record<string, string>) {
         { href: "/incidents",     label: t.incidents,                        icon: Activity },
       ],
     },
-    // ── 週次で見る ──
+    // ── 分析 ──
     {
-      label: t.simulate,
+      label: t.analyze ?? "ANALYZE",
       items: [
-        { href: "/simulate",    label: t.runSimulation,                icon: Zap },
-        { href: "/remediation", label: t.remediationPlan,              icon: ClipboardCheck },
-        { href: "/projects",    label: t.projects,                     icon: FolderKanban },
-        { href: "/whatif",      label: t.whatIf,                       icon: FlaskConical },
+        { href: "/simulate",  label: t.runSimulation,              icon: Zap },
+        { href: "/whatif",    label: t.whatIf,                     icon: FlaskConical },
+        { href: "/fmea",      label: t.fmea,                       icon: AlertOctagon },
+        { href: "/benchmark", label: t.benchmark ?? "Monte Carlo", icon: BarChart3 },
       ],
     },
+    // ── 可視化 ──
     {
       label: t.visualize ?? "VISUALIZE",
       items: [
@@ -92,36 +89,44 @@ function getNavGroups(t: Record<string, string>, te: Record<string, string>) {
         { href: "/score-detail", label: t.scoreDetail,                    icon: BarChart3 },
       ],
     },
-    // ── 月次/必要時 ──
+    // ── コンプライアンス ──
     {
       label: t.compliance,
       items: [
-        { href: "/dora",         label: t.dora,                            icon: ShieldAlert },
-        { href: "/governance",   label: t.governance,                      icon: Scale },
-        { href: "/sla",          label: t.sla,                             icon: FileCheck },
-        { href: "/compliance",   label: t.complianceItem,                  icon: ShieldCheck },
-        { href: "/evidence",     label: t.evidence,                        icon: FileCheck },
-        { href: "/audit-report", label: t.auditReport ?? "Audit Report",   icon: FileSpreadsheet },
-        { href: "/fisc",         label: t.fisc ?? "FISC",                  icon: Landmark },
+        { href: "/dora",       label: t.dora,           icon: ShieldAlert },
+        { href: "/compliance", label: t.complianceItem, icon: ShieldCheck },
+        { href: "/fisc",       label: t.fisc ?? "FISC", icon: Landmark },
+        { href: "/sla",        label: t.sla,            icon: FileCheck },
+        { href: "/governance", label: t.governance,     icon: Scale },
       ],
     },
+    // ── 監査・証跡 ──
     {
-      label: t.improve ?? "IMPROVE",
+      label: te.audit ?? "AUDIT",
       items: [
-        { href: "/iac",      label: t.iac,         icon: FileCode2 },
-        { href: "/optimize", label: te.optimize,    icon: Gauge },
-        { href: "/gameday",  label: t.gameday ?? "GameDay", icon: Swords },
-        { href: "/fmea",     label: t.fmea,         icon: AlertOctagon },
+        { href: "/evidence",     label: t.evidence,                      icon: FileCheck },
+        { href: "/audit-report", label: t.auditReport ?? "Audit Report", icon: FileSpreadsheet },
       ],
     },
+    // ── 改善アクション ──
     {
-      label: t.aiSecurity ?? "AI & SECURITY",
+      label: te.improveActions ?? "IMPROVE",
+      items: [
+        { href: "/projects",  label: t.remediationPlan,      icon: FolderKanban },
+        { href: "/iac",       label: t.iac,                  icon: FileCode2 },
+        { href: "/optimize",  label: te.optimize,            icon: Gauge },
+        { href: "/gameday",   label: t.gameday ?? "GameDay", icon: Swords },
+      ],
+    },
+    // ── AI ──
+    {
+      label: t.aiSecurity ?? "AI",
       items: [
         { href: "/ai-reliability", label: t.aiReliability ?? "AI Reliability", icon: Brain },
         { href: "/advisor",        label: t.aiAdvisor,                          icon: Bot },
       ],
     },
-    // ── たまに使う（下） ──
+    // ── 運用 ──
     {
       label: te.operations,
       items: [
@@ -132,22 +137,23 @@ function getNavGroups(t: Record<string, string>, te: Record<string, string>) {
         { href: "/drift",       label: te.drift,       icon: GitBranch },
       ],
     },
+    // ── チーム・環境 ──
     {
       label: te.teams,
       items: [
-        { href: "/teams",        label: te.teamMetrics,  icon: Users },
-        { href: "/env-compare",  label: te.envCompare,   icon: GitCompare },
-        { href: "/canary",       label: te.canary,       icon: FlaskRound },
-        { href: "/supply-chain", label: te.supplyChain,  icon: PackageSearch },
+        { href: "/teams",        label: te.teamMetrics, icon: Users },
+        { href: "/env-compare",  label: te.envCompare,  icon: GitCompare },
+        { href: "/canary",       label: te.canary,      icon: FlaskRound },
+        { href: "/supply-chain", label: te.supplyChain, icon: PackageSearch },
       ],
     },
+    // ── レポート・ログ ──
     {
-      label: t.moreTools ?? "MORE",
+      label: t.moreTools ?? "REPORTS",
       items: [
-        { href: "/traces",  label: t.traces ?? "Traces", icon: Activity },
-        { href: "/logs",    label: t.logs ?? "Logs",     icon: FileText },
-        { href: "/reports", label: t.reports ?? "Reports", icon: FileText },
-        { href: "/benchmark", label: t.benchmark ?? "Benchmark", icon: BarChart3 },
+        { href: "/traces",  label: t.traces ?? "Traces",   icon: Activity },
+        { href: "/logs",    label: t.logs ?? "Logs",        icon: FileText },
+        { href: "/reports", label: t.reports ?? "Reports",  icon: FileText },
       ],
     },
     // ── 初回/設定 ──
