@@ -282,6 +282,13 @@ export default async function LangHomePage({
               {dict.hero.cta}
             </Link>
             <Link
+              href="/contact"
+              className="inline-flex items-center gap-2 px-7 py-3 bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 font-semibold rounded-xl hover:bg-emerald-500/20 hover:border-emerald-500/50 hover:-translate-y-0.5 transition-all"
+            >
+              <ExternalLink size={16} />
+              {"Book a Free Demo"}
+            </Link>
+            <Link
               href="/simulate"
               className="inline-flex items-center gap-2 px-7 py-3 border border-[#1e293b] text-white rounded-xl hover:border-[#64748b] hover:bg-white/[0.03] hover:-translate-y-0.5 transition-all"
             >
@@ -751,6 +758,34 @@ export default async function LangHomePage({
         </div>
       </section>
 
+      {/* ===== MID-PAGE CTA ===== */}
+      <section className="py-16 bg-gradient-to-r from-[#0a0e1a] via-[#111827] to-[#0a0e1a] border-y border-[#1e293b]">
+        <div className="max-w-[900px] mx-auto px-6 text-center">
+          <h2 className="text-[clamp(1.5rem,3vw,2rem)] font-bold tracking-tight mb-3">
+            Ready to prove your availability ceiling?
+          </h2>
+          <p className="text-[#94a3b8] mb-8 max-w-[540px] mx-auto leading-relaxed">
+            See FaultRay in action with your own infrastructure. Our team will walk you through a live simulation in 30 minutes.
+          </p>
+          <div className="flex gap-4 justify-center flex-wrap">
+            <Link
+              href="/contact"
+              className="inline-flex items-center gap-2 px-8 py-3.5 bg-[#FFD700] text-[#0a0e1a] font-semibold rounded-xl shadow-[0_0_20px_rgba(255,215,0,0.2)] hover:bg-[#ffe44d] hover:shadow-[0_0_30px_rgba(255,215,0,0.35)] hover:-translate-y-0.5 transition-all"
+            >
+              <ExternalLink size={16} />
+              Book a Free Demo
+            </Link>
+            <Link
+              href="/login"
+              className="inline-flex items-center gap-2 px-8 py-3.5 border border-[#1e293b] text-white rounded-xl hover:border-[#64748b] hover:bg-white/[0.03] hover:-translate-y-0.5 transition-all"
+            >
+              <Zap size={16} />
+              Start Free
+            </Link>
+          </div>
+        </div>
+      </section>
+
       {/* ===== PRICING ===== */}
       <section id="pricing" className="py-24 bg-[#0f1424]">
         <div className="max-w-[1200px] mx-auto px-6">
@@ -779,9 +814,18 @@ export default async function LangHomePage({
                   )}
                   <div className="text-lg font-bold mb-4">{plan.name}</div>
                   <div className="flex items-baseline gap-0.5 mb-4">
-                    <span className="text-xl font-semibold text-[#94a3b8]">$</span>
-                    <span className="text-4xl font-extrabold tracking-tight">{data.price}</span>
-                    <span className="text-sm text-[#64748b] ml-1">{dict.pricing.perMonth}</span>
+                    {dict.pricing.prices[i] === 0 ? (
+                      <span className="text-4xl font-extrabold tracking-tight">Free</span>
+                    ) : (
+                      <>
+                        <span className="text-xl font-semibold text-[#94a3b8]">{dict.pricing.currency}</span>
+                        <span className="text-4xl font-extrabold tracking-tight">{dict.pricing.prices[i].toLocaleString()}</span>
+                        <span className="text-sm text-[#64748b] ml-1">{dict.pricing.perMonth}</span>
+                        {dict.pricing.taxNote && (
+                          <span className="text-xs text-[#64748b] ml-1">{dict.pricing.taxNote}</span>
+                        )}
+                      </>
+                    )}
                   </div>
                   <p className="text-sm text-[#94a3b8] leading-relaxed mb-6">{plan.desc}</p>
                   <ul className="space-y-3 mb-8 flex-1">
@@ -927,6 +971,11 @@ export default async function LangHomePage({
                     className="text-sm text-[#64748b] hover:text-white transition-colors"
                   >
                     BSL 1.1 (Business Source License)
+                  </Link>
+                </li>
+                <li>
+                  <Link href="/contact" className="text-sm text-[#64748b] hover:text-white transition-colors">
+                    Book a Demo
                   </Link>
                 </li>
                 <li>

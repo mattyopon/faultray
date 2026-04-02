@@ -228,10 +228,13 @@
   },
   "pricing": {
     "heading": "料金プラン",
-    "subheading": "無料で開始。成長に合わせてスケール。",
+    "subheading": "月4.5万円から。無料で開始、成長に合わせてスケール。",
     "perMonth": "/月",
     "mostPopular": "最も人気",
     "featureComparison": "機能比較",
+    "currency": "¥",
+    "prices": [0, 45000, 150000],
+    "taxNote": "税別",
     "plans": [
       {
         "name": "Free",

@@ -205,6 +205,9 @@
     "perMonth": "/月",
     "mostPopular": "最受欢迎",
     "featureComparison": "功能对比",
+    "currency": "$",
+    "prices": [0, 299, 999],
+    "taxNote": "",
     "plans": [
       {
         "name": "免费版",

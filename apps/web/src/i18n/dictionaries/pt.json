@@ -205,6 +205,9 @@
     "perMonth": "/mês",
     "mostPopular": "Mais Popular",
     "featureComparison": "Comparação de Funcionalidades",
+    "currency": "$",
+    "prices": [0, 299, 999],
+    "taxNote": "",
     "plans": [
       {
         "name": "Grátis",
