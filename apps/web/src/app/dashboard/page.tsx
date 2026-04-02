@@ -58,6 +58,13 @@ export default function DashboardPage() {
   const t = appDict.dashboard[locale] ?? appDict.dashboard.en;
   const tProjects = appDict.projects[locale] ?? appDict.projects.en;
 
+  // Trial state
+  const [trialEndsAt, setTrialEndsAt] = useState<string | null>(null);
+  const trialDaysLeft = trialEndsAt
+    ? Math.max(0, Math.ceil((new Date(trialEndsAt).getTime() - Date.now()) / (1000 * 60 * 60 * 24)))
+    : 0;
+  const isTrialActive = trialEndsAt ? new Date(trialEndsAt).getTime() > Date.now() : false;
+
   useEffect(() => {
     Promise.all([
       api.getRuns(undefined, 5).then((data) => setRuns(data.runs || [])).catch(() => setRuns([])),
@@ -65,12 +72,49 @@ export default function DashboardPage() {
     ]).finally(() => setLoading(false));
   }, []);
 
+  useEffect(() => {
+    if (!user) return;
+    import("@/lib/supabase/client").then(({ createClient }) => {
+      const supabase = createClient();
+      supabase
+        .from("profiles")
+        .select("trial_ends_at")
+        .eq("id", user.id)
+        .maybeSingle()
+        .then(({ data }) => {
+          if (data?.trial_ends_at) setTrialEndsAt(data.trial_ends_at as string);
+        });
+    }).catch(() => {/* Supabase not configured */});
+  }, [user]);
+
   const latestRun = runs[0];
   const latestScore = latestRun?.overall_score ?? 85.2;
 
   return (
     <div className="max-w-[1200px] mx-auto px-6 py-10">
       <Onboarding />
+
+      {/* Trial banner */}
+      {isTrialActive && (
+        <div className="mb-6 px-5 py-3.5 rounded-xl border border-[#FFD700]/30 bg-[#FFD700]/[0.06] flex items-center justify-between gap-4 flex-wrap">
+          <div className="flex items-center gap-2.5">
+            <Clock size={16} className="text-[#FFD700] shrink-0" />
+            <span className="text-sm font-semibold text-[#FFD700]">
+              Business Trial —
+            </span>
+            <span className="text-sm text-[#94a3b8]">
+              {trialDaysLeft} day{trialDaysLeft !== 1 ? "s" : ""} remaining. Full access to all features.
+            </span>
+          </div>
+          <Link
+            href="/pricing"
+            className="text-xs font-semibold text-[#FFD700] border border-[#FFD700]/30 px-3 py-1.5 rounded-lg hover:bg-[#FFD700]/10 transition-colors whitespace-nowrap"
+          >
+            Upgrade Plan
+          </Link>
+        </div>
+      )}
+
       {/* Header */}
       <div className="flex items-center justify-between mb-10">
         <div>
