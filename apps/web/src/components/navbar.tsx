@@ -141,7 +141,7 @@ function getNavGroups(t: Record<string, string>, te: Record<string, string>) {
       ],
     },
     {
-      label: t.observe ?? "MORE",
+      label: t.moreTools ?? "MORE",
       items: [
         { href: "/traces",  label: t.traces ?? "Traces", icon: Activity },
         { href: "/logs",    label: t.logs ?? "Logs",     icon: FileText },
