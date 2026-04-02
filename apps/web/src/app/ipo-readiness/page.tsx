@@ -286,7 +286,7 @@ export default function IpoReadinessPage() {
 
   return (
     <main className="min-h-screen bg-[#0a0e1a] text-white pt-20 pb-12">
-      <div className="max-w-4xl mx-auto px-4 sm:px-6">
+      <div className="max-w-6xl mx-auto px-4 sm:px-6">
         {/* Header */}
         <div className="mb-8">
           <div className="flex items-center gap-3 mb-2">
