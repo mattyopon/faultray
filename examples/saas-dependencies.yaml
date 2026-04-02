@@ -1,0 +1,99 @@
+# FaultRay - External SaaS Dependency Example
+#
+# Demonstrates external_impact analysis:
+#   faultray external-impact examples/saas-dependencies.yaml
+#   faultray external-impact examples/saas-dependencies.yaml --service stripe
+#   faultray external-impact examples/saas-dependencies.yaml --json
+
+components:
+  - id: web-app
+    name: "Web Application"
+    type: app_server
+    replicas: 2
+    cost_profile:
+      revenue_per_minute: 10.0
+
+  - id: stripe
+    name: "Stripe Payment API"
+    type: external_api
+    host: api.stripe.com
+    port: 443
+
+  - id: s3
+    name: "AWS S3"
+    type: external_api
+    host: s3.amazonaws.com
+    port: 443
+
+  - id: sendgrid
+    name: "SendGrid Email"
+    type: external_api
+    host: api.sendgrid.com
+    port: 443
+
+  - id: db
+    name: "PostgreSQL"
+    type: database
+    replicas: 2
+    failover:
+      enabled: true
+      promotion_time_seconds: 30
+
+  - id: auth0
+    name: "Auth0"
+    type: external_api
+    host: yourapp.auth0.com
+    port: 443
+
+  - id: datadog
+    name: "Datadog"
+    type: external_api
+    host: api.datadoghq.com
+    port: 443
+
+dependencies:
+  - source_id: web-app
+    target_id: stripe
+    dependency_type: requires
+    weight: 1.0
+    circuit_breaker:
+      enabled: false
+
+  - source_id: web-app
+    target_id: s3
+    dependency_type: requires
+    weight: 0.8
+    circuit_breaker:
+      enabled: true
+      failure_threshold: 5
+      recovery_timeout_seconds: 30
+
+  - source_id: web-app
+    target_id: sendgrid
+    dependency_type: optional
+    weight: 0.3
+    circuit_breaker:
+      enabled: false
+
+  - source_id: web-app
+    target_id: db
+    dependency_type: requires
+    weight: 1.0
+    circuit_breaker:
+      enabled: true
+      failure_threshold: 3
+      recovery_timeout_seconds: 60
+
+  - source_id: web-app
+    target_id: auth0
+    dependency_type: requires
+    weight: 1.0
+    circuit_breaker:
+      enabled: false
+
+  - source_id: web-app
+    target_id: datadog
+    dependency_type: optional
+    weight: 0.1
+    circuit_breaker:
+      enabled: false
