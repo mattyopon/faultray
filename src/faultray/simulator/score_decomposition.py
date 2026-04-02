@@ -269,9 +269,10 @@ class ScoreDecomposer:
             if comp.replicas >= 2 and comp.host:
                 dependents = graph.get_dependents(comp.id)
                 if len(dependents) > 0:
-                    penalty = min(10, len(dependents) * 3)
-                    total_host_penalty += penalty
+                    total_host_penalty += min(5, len(dependents) * 2)
                     host_colocated_comps.append(comp.id)
+
+        total_host_penalty = min(20, total_host_penalty)  # cap
 
         if total_host_penalty > 0:
             factors.append(ScoreFactor(
@@ -296,9 +297,10 @@ class ScoreDecomposer:
         for comp in graph.components.values():
             dependents = graph.get_dependents(comp.id)
             if len(dependents) > 0 and not comp.failover.enabled:
-                penalty = min(5, len(dependents) * 1.5)
-                total_failover_penalty += penalty
+                total_failover_penalty += min(3, len(dependents) * 1)
                 no_failover_comps.append(comp.id)
+
+        total_failover_penalty = min(15, total_failover_penalty)  # cap
 
         if total_failover_penalty > 0:
             factors.append(ScoreFactor(
