@@ -117,6 +117,12 @@ _KNOWN_MODULES: list[str] = [
     "slo_impact_cmd",
     "autopilot_cmd",
     "shadow_it_cmd",
+    "bus_factor_cmd",
+    "sla_budget_cmd",
+    "compliance_pdf_cmd",
+    "vuln_priority_cmd",
+    "external_dep_cmd",
+    "topology_cmd",
 ]
 
 
@@ -154,10 +160,12 @@ _HELP_PANELS: dict[str, str] = {
     "dr": "🎯 Simulation",
     "bayesian": "🎯 Simulation",
     "markov": "🎯 Simulation",
+    "external-impact": "🎯 Simulation",
     # --- Compliance & Governance ---
     "dora": "📋 Compliance & Governance",
     "compliance": "📋 Compliance & Governance",
     "compliance-monitor": "📋 Compliance & Governance",
+    "compliance-report": "📋 Compliance & Governance",
     "governance": "📋 Compliance & Governance",
     "evidence": "📋 Compliance & Governance",
     "contract-validate": "📋 Compliance & Governance",
@@ -191,6 +199,7 @@ _HELP_PANELS: dict[str, str] = {
     # --- Security ---
     "security": "🔒 Security",
     "attack-surface": "🔒 Security",
+    "vuln-priority": "🔒 Security",
     "supply-chain": "🔒 Security",
     "feed-update": "🔒 Security",
     "feed-list": "🔒 Security",
@@ -234,6 +243,7 @@ _HELP_PANELS: dict[str, str] = {
     "team": "🔧 Utilities",
     "gate": "🔧 Utilities",
     "graph-export": "🔧 Utilities",
+    "topology-map": "🔧 Utilities",
     "deps": "🔧 Utilities",
     "dna": "🔧 Utilities",
     "genome": "🔧 Utilities",
@@ -261,6 +271,10 @@ _HELP_PANELS: dict[str, str] = {
     "optimize": "🔧 Utilities",
     # --- Shadow IT ---
     "shadow-it": "🔍 Discovery & Import",
+    # --- Organizational Risk ---
+    "bus-factor": "📊 Analysis & Reports",
+    # --- SLA Budget ---
+    "sla-budget": "📝 SLA & Contracts",
 }
 
 
