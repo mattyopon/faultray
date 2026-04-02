@@ -19,11 +19,56 @@ import json
 import logging
 import secrets
 import string
+import warnings
+from contextlib import contextmanager
 from dataclasses import asdict, dataclass
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
+from typing import Generator
+
+try:
+    import fcntl as _fcntl
+
+    _FCNTL_AVAILABLE = True
+except ImportError:  # Windows
+    _FCNTL_AVAILABLE = False
 
 logger = logging.getLogger(__name__)
+
+
+# ---------------------------------------------------------------------------
+# File-based locking
+# ---------------------------------------------------------------------------
+
+_LOCK_FILE = Path.home() / ".faultray" / ".coupon.lock"
+
+
+@contextmanager
+def _coupon_lock() -> Generator[None, None, None]:
+    """Exclusive file lock for atomic coupon read-modify-write operations.
+
+    On POSIX systems this uses ``fcntl.flock`` for advisory locking.
+    On Windows (where fcntl is unavailable) the lock is skipped and a
+    warning is emitted, because concurrent access on Windows is unlikely in
+    the current CLI-centric usage pattern.
+    """
+    if not _FCNTL_AVAILABLE:
+        warnings.warn(
+            "fcntl is not available on this platform; coupon operations are "
+            "not protected against concurrent access.",
+            RuntimeWarning,
+            stacklevel=3,
+        )
+        yield
+        return
+
+    _LOCK_FILE.parent.mkdir(parents=True, exist_ok=True)
+    with open(_LOCK_FILE, "w") as _lf:
+        _fcntl.flock(_lf, _fcntl.LOCK_EX)
+        try:
+            yield
+        finally:
+            _fcntl.flock(_lf, _fcntl.LOCK_UN)
 
 # ---------------------------------------------------------------------------
 # Constants
@@ -266,27 +311,28 @@ def create_coupon(
     now = datetime.now(tz=timezone.utc)
     expires = now + timedelta(days=days)
 
-    # Ensure uniqueness
-    existing_codes = {c.code for c in _load_coupons()}
-    code = generate_code()
-    while code in existing_codes:
+    with _coupon_lock():
+        # Ensure uniqueness
+        existing_codes = {c.code for c in _load_coupons()}
         code = generate_code()
+        while code in existing_codes:
+            code = generate_code()
 
-    coupon = Coupon(
-        code=code,
-        tier=tier,
-        days=days,
-        max_uses=max_uses,
-        current_uses=0,
-        created_at=now.isoformat(),
-        expires_at=expires.isoformat(),
-        note=note,
-        revoked=False,
-    )
+        coupon = Coupon(
+            code=code,
+            tier=tier,
+            days=days,
+            max_uses=max_uses,
+            current_uses=0,
+            created_at=now.isoformat(),
+            expires_at=expires.isoformat(),
+            note=note,
+            revoked=False,
+        )
 
-    coupons = _load_coupons()
-    coupons.append(coupon)
-    _save_coupons(coupons)
+        coupons = _load_coupons()
+        coupons.append(coupon)
+        _save_coupons(coupons)
     return coupon
 
 
@@ -309,32 +355,33 @@ def redeem_coupon(code: str) -> RedeemedCoupon:
         If the code is not found, already revoked, expired, or exhausted.
     """
     code = code.strip().upper()
-    coupons = _load_coupons()
-    for i, coupon in enumerate(coupons):
-        if coupon.code != code:
-            continue
-        if coupon.revoked:
-            raise ValueError(f"Coupon {code} has been revoked.")
-        if not coupon.is_valid():
-            raise ValueError(f"Coupon {code} is expired or has reached its usage limit.")
+    with _coupon_lock():
+        coupons = _load_coupons()
+        for i, coupon in enumerate(coupons):
+            if coupon.code != code:
+                continue
+            if coupon.revoked:
+                raise ValueError(f"Coupon {code} has been revoked.")
+            if not coupon.is_valid():
+                raise ValueError(f"Coupon {code} is expired or has reached its usage limit.")
 
-        now = datetime.now(tz=timezone.utc)
-        active_until = now + timedelta(days=coupon.days)
+            now = datetime.now(tz=timezone.utc)
+            active_until = now + timedelta(days=coupon.days)
 
-        # Increment usage counter
-        coupons[i].current_uses += 1
-        _save_coupons(coupons)
+            # Increment usage counter
+            coupons[i].current_uses += 1
+            _save_coupons(coupons)
 
-        redeemed = RedeemedCoupon(
-            code=code,
-            tier=coupon.tier,
-            redeemed_at=now.isoformat(),
-            active_until=active_until.isoformat(),
-        )
-        _save_license(redeemed)
-        return redeemed
+            redeemed = RedeemedCoupon(
+                code=code,
+                tier=coupon.tier,
+                redeemed_at=now.isoformat(),
+                active_until=active_until.isoformat(),
+            )
+            _save_license(redeemed)
+            return redeemed
 
-    raise ValueError(f"Coupon code '{code}' not found.")
+        raise ValueError(f"Coupon code '{code}' not found.")
 
 
 def revoke_coupon(code: str) -> Coupon:
@@ -351,13 +398,14 @@ def revoke_coupon(code: str) -> Coupon:
         If the code is not found.
     """
     code = code.strip().upper()
-    coupons = _load_coupons()
-    for i, coupon in enumerate(coupons):
-        if coupon.code == code:
-            coupons[i].revoked = True
-            _save_coupons(coupons)
-            return coupons[i]
-    raise ValueError(f"Coupon code '{code}' not found.")
+    with _coupon_lock():
+        coupons = _load_coupons()
+        for i, coupon in enumerate(coupons):
+            if coupon.code == code:
+                coupons[i].revoked = True
+                _save_coupons(coupons)
+                return coupons[i]
+        raise ValueError(f"Coupon code '{code}' not found.")
 
 
 def list_coupons() -> list[Coupon]:

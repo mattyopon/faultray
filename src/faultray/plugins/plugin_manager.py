@@ -38,6 +38,123 @@ logger = logging.getLogger(__name__)
 # Default user plugin directory
 _DEFAULT_PLUGIN_DIR = Path.home() / ".faultzero" / "plugins"
 
+# ---------------------------------------------------------------------------
+# Plugin sandbox: restricted __builtins__ for exec()-loaded plugins
+# ---------------------------------------------------------------------------
+
+#: Modules that plugins are permitted to import at runtime.
+_PLUGIN_ALLOWED_MODULES: frozenset[str] = frozenset(
+    {
+        "json",
+        "math",
+        "datetime",
+        "collections",
+        "dataclasses",
+        "re",
+        "typing",
+        "pathlib",
+    }
+)
+
+
+def _make_safe_import(real_import: Any) -> Any:
+    """Return an ``__import__`` replacement that allows only whitelisted modules."""
+
+    def _safe_import(name: str, *args: Any, **kwargs: Any) -> Any:
+        base = name.split(".")[0]
+        if base not in _PLUGIN_ALLOWED_MODULES:
+            raise ImportError(
+                f"Plugin cannot import '{name}' — allowed modules: "
+                + ", ".join(sorted(_PLUGIN_ALLOWED_MODULES))
+            )
+        return real_import(name, *args, **kwargs)
+
+    return _safe_import
+
+
+def _build_plugin_builtins() -> dict[str, Any]:
+    """Build a restricted ``__builtins__`` mapping for exec()-loaded plugins."""
+    import builtins as _builtins_mod
+
+    real_import = _builtins_mod.__import__
+    return {
+        # Boolean / None constants
+        "True": True,
+        "False": False,
+        "None": None,
+        # Safe built-in functions
+        "print": print,
+        "len": len,
+        "range": range,
+        "enumerate": enumerate,
+        "zip": zip,
+        "map": map,
+        "filter": filter,
+        "sorted": sorted,
+        "reversed": reversed,
+        "min": min,
+        "max": max,
+        "sum": sum,
+        "abs": abs,
+        "round": round,
+        "divmod": divmod,
+        "pow": pow,
+        "hash": hash,
+        "id": id,
+        "repr": repr,
+        # Type constructors
+        "int": int,
+        "float": float,
+        "str": str,
+        "bool": bool,
+        "bytes": bytes,
+        "list": list,
+        "dict": dict,
+        "set": set,
+        "frozenset": frozenset,
+        "tuple": tuple,
+        # Reflection helpers
+        "isinstance": isinstance,
+        "issubclass": issubclass,
+        "hasattr": hasattr,
+        "getattr": getattr,
+        "setattr": setattr,
+        "delattr": delattr,
+        "type": type,
+        "callable": callable,
+        "dir": dir,
+        "vars": vars,
+        # Iteration / functional helpers
+        "iter": iter,
+        "next": next,
+        "any": any,
+        "all": all,
+        # String / bytes helpers
+        "chr": chr,
+        "ord": ord,
+        "hex": hex,
+        "oct": oct,
+        "bin": bin,
+        "format": format,
+        # Common exceptions
+        "ValueError": ValueError,
+        "TypeError": TypeError,
+        "KeyError": KeyError,
+        "IndexError": IndexError,
+        "AttributeError": AttributeError,
+        "RuntimeError": RuntimeError,
+        "NotImplementedError": NotImplementedError,
+        "StopIteration": StopIteration,
+        "ImportError": ImportError,
+        "Exception": Exception,
+        "BaseException": BaseException,
+        # Restricted import
+        "__import__": _make_safe_import(real_import),
+    }
+
+
+_PLUGIN_SAFE_BUILTINS: dict[str, Any] = _build_plugin_builtins()
+
 
 # ---------------------------------------------------------------------------
 # PluginType enum
@@ -375,7 +492,10 @@ class PluginManager:
 
         module = types.ModuleType(f"_fz_plugin_{py_file.stem}")
         module.__file__ = str(py_file)
-        exec(code, module.__dict__)  # noqa: S102
+        # Execute with a restricted __builtins__ to limit the attack surface.
+        # _PLUGIN_SAFE_BUILTINS allows only a whitelist of built-ins and
+        # blocks unrestricted __import__ to prevent loading arbitrary modules.
+        exec(code, {**module.__dict__, "__builtins__": _PLUGIN_SAFE_BUILTINS})  # noqa: S102
         self._plugin_modules[plugin_name] = module
 
         # Look for a class that matches PluginInterface (has name, version, execute)

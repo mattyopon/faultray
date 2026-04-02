@@ -654,7 +654,11 @@ async def api_anomalies(
             target_type = AnomalyType(anomaly_type)
             anomalies = [a for a in anomalies if a.anomaly_type == target_type]
         except ValueError:
-            pass
+            logger.warning(
+                "Unknown anomaly_type filter value %r — returning all anomalies",
+                anomaly_type,
+                exc_info=True,
+            )
 
     if severity:
         anomalies = [a for a in anomalies if a.severity == severity]

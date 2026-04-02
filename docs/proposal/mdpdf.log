@@ -1,179 +1,186 @@
-    INFO: 2026-04-02 20:44:53,973:               log.py:   20: Logging to /home/user/repos/faultray/docs/proposal/mdpdf.log
-   DEBUG: 2026-04-02 20:44:53,973:               cli.py:  103: service-proposal.md
-    INFO: 2026-04-02 20:44:53,977:         converter.py:   14: service-proposal.md
-   DEBUG: 2026-04-02 20:44:53,986:      pdf_renderer.py:  470: printSegment: FaultRay — ITインフラ障害シミュレーション診断サービス
-   DEBUG: 2026-04-02 20:44:54,060:      pdf_renderer.py:  470: printSegment: 提供者:
-   DEBUG: 2026-04-02 20:44:54,116:      pdf_renderer.py:  470: printSegment:  前田 勇太郎（個人事業主）
-   DEBUG: 2026-04-02 20:44:54,209:      pdf_renderer.py:  470: printSegment: 連絡先:
-   DEBUG: 2026-04-02 20:44:54,265:      pdf_renderer.py:  470: printSegment:  
-   DEBUG: 2026-04-02 20:44:54,266:      pdf_renderer.py:  470: printSegment: [
-   DEBUG: 2026-04-02 20:44:54,267:      pdf_renderer.py:  470: printSegment: TO BE FILLED
-   DEBUG: 2026-04-02 20:44:54,267:      pdf_renderer.py:  470: printSegment: ]
-   DEBUG: 2026-04-02 20:44:54,268:      pdf_renderer.py:  470: printSegment: 
-   DEBUG: 2026-04-02 20:44:54,268:      pdf_renderer.py:  470: printSegment: 発行日:
-   DEBUG: 2026-04-02 20:44:54,269:      pdf_renderer.py:  470: printSegment:  2026年4月1日
-   DEBUG: 2026-04-02 20:44:54,271:      pdf_renderer.py:  470: printSegment: ○○株式会社 御中
-   DEBUG: 2026-04-02 20:44:54,272:      pdf_renderer.py:  470: printSegment: 平素よりお世話になっております。このたびは、ITインフラの障害耐性を「本番環境を一切触らずに」診断するサービス 
-   DEBUG: 2026-04-02 20:44:54,272:      pdf_renderer.py:  470: printSegment: FaultRay
-   DEBUG: 2026-04-02 20:44:54,273:      pdf_renderer.py:  470: printSegment:  をご紹介させていただきます。
-   DEBUG: 2026-04-02 20:44:54,274:      pdf_renderer.py:  470: printSegment: サービス概要
-   DEBUG: 2026-04-02 20:44:54,274:      pdf_renderer.py:  470: printSegment: FaultRay は、貴社のITインフラ構成をもとに 
-   DEBUG: 2026-04-02 20:44:54,275:      pdf_renderer.py:  470: printSegment: 100〜400の障害シナリオを自動生成・数学的にシミュレーション
-   DEBUG: 2026-04-02 20:44:54,319:      pdf_renderer.py:  470: printSegment: （構成規模に応じて最大2,000）し、システムが本当に止まらないかをレポートするサービスです。本番環境に一切手を加えず、ヒアリングから最短数日でレポートを納品します。
-   DEBUG: 2026-04-02 20:44:54,321:      pdf_renderer.py:  470: printSegment: なぜ今、障害シミュレーション診断が必要か
-   DEBUG: 2026-04-02 20:44:54,322:      pdf_renderer.py:  470: printSegment: 1. IPA「情報セキュリティ10大脅威 2026」でインフラ関連リスクが上位
-   DEBUG: 2026-04-02 20:44:54,322:      pdf_renderer.py:  470: printSegment: IPAが毎年発表する10大脅威において、ITインフラへの攻撃・障害は組織部門で継続的に上位にランクインしています。「起きてから対応する」では事業継続が間に合いません。
-   DEBUG: 2026-04-02 20:44:54,323:      pdf_renderer.py:  470: printSegment: 2. 個人情報保護法・安全管理措置義務の強化
-   DEBUG: 2026-04-02 20:44:54,324:      pdf_renderer.py:  470: printSegment: 改正個人情報保護法により、個人データを扱うすべての事業者は「技術的安全管理措置」の実施が義務付けられています。障害時のデータ保護体制を
-   DEBUG: 2026-04-02 20:44:54,325:      pdf_renderer.py:  470: printSegment: 事前に証明できるか
-   DEBUG: 2026-04-02 20:44:54,326:      pdf_renderer.py:  470: printSegment: が問われています。
-   DEBUG: 2026-04-02 20:44:54,327:      pdf_renderer.py:  470: printSegment: 3. CrowdStrike障害（2024年）の教訓 — 推定被害額54億ドル
-   DEBUG: 2026-04-02 20:44:54,408:      pdf_renderer.py:  470: printSegment: 2024年7月のCrowdStrike社ソフトウェア更新に起因する世界規模のシステム障害は、航空・金融・医療など幅広い業種に影響を与え、推定54億ドルの被害をもたらしました。
-   DEBUG: 2026-04-02 20:44:54,409:      pdf_renderer.py:  470: printSegment: **
-   DEBUG: 2026-04-02 20:44:54,410:      pdf_renderer.py:  470: printSegment: 「信頼しているベンダーが起因でも自社が止まる」
-   DEBUG: 2026-04-02 20:44:54,411:      pdf_renderer.py:  470: printSegment: **
-   DEBUG: 2026-04-02 20:44:54,412:      pdf_renderer.py:  470: printSegment: という現実をこの事故は示しています。事前のシミュレーションで「どこが連鎖障害の引き金になるか」を把握しておくことが、被害を最小化する唯一の方法です。
-   DEBUG: 2026-04-02 20:44:54,413:      pdf_renderer.py:  470: printSegment: サービスの流れ
-   DEBUG: 2026-04-02 20:44:54,414:      pdf_renderer.py:  470: printSegment: | ステップ | 内容 | 所要時間 |
-   DEBUG: 2026-04-02 20:44:54,415:      pdf_renderer.py:  470: printSegment:  
-   DEBUG: 2026-04-02 20:44:54,416:      pdf_renderer.py:  470: printSegment: |---|---|---|
-   DEBUG: 2026-04-02 20:44:54,417:      pdf_renderer.py:  470: printSegment:  
-   DEBUG: 2026-04-02 20:44:54,417:      pdf_renderer.py:  470: printSegment: | 
-   DEBUG: 2026-04-02 20:44:54,419:      pdf_renderer.py:  470: printSegment: ① ヒアリング
-   DEBUG: 2026-04-02 20:44:54,419:      pdf_renderer.py:  470: printSegment:  | 現在のインフラ構成（サーバー・DB・CDN等）を30分でヒアリング | 30分 |
-   DEBUG: 2026-04-02 20:44:54,420:      pdf_renderer.py:  470: printSegment:  
-   DEBUG: 2026-04-02 20:44:54,421:      pdf_renderer.py:  470: printSegment: | 
-   DEBUG: 2026-04-02 20:44:54,421:      pdf_renderer.py:  470: printSegment: ② YAML変換
-   DEBUG: 2026-04-02 20:44:54,422:      pdf_renderer.py:  470: printSegment:  | ヒアリング内容をFaultRay専用の構成定義ファイル（YAML）に変換 | 1〜2営業日 |
-   DEBUG: 2026-04-02 20:44:54,423:      pdf_renderer.py:  470: printSegment:  
-   DEBUG: 2026-04-02 20:44:54,424:      pdf_renderer.py:  470: printSegment: | 
-   DEBUG: 2026-04-02 20:44:54,425:      pdf_renderer.py:  470: printSegment: ③ シミュレーション実行
-   DEBUG: 2026-04-02 20:44:54,426:      pdf_renderer.py:  470: printSegment:  | 134〜2,000以上の障害シナリオを自動生成・実行 | 即時（ツール内） |
-   DEBUG: 2026-04-02 20:44:54,426:      pdf_renderer.py:  470: printSegment:  
-   DEBUG: 2026-04-02 20:44:54,427:      pdf_renderer.py:  470: printSegment: | 
-   DEBUG: 2026-04-02 20:44:54,427:      pdf_renderer.py:  470: printSegment: ④ レポート納品
-   DEBUG: 2026-04-02 20:44:54,428:      pdf_renderer.py:  470: printSegment:  | 経営層向けエグゼクティブレポート + 詳細技術レポートをHTMLで納品 |
-   DEBUG: 2026-04-02 20:44:54,429:      pdf_renderer.py:  470: printSegment: 最短翌営業日 |
-   DEBUG: 2026-04-02 20:44:54,430:      pdf_renderer.py:  470: printSegment: 料金
-   DEBUG: 2026-04-02 20:44:54,431:      pdf_renderer.py:  470: printSegment: | サービス | 料金 |
-   DEBUG: 2026-04-02 20:44:54,431:      pdf_renderer.py:  470: printSegment:  
-   DEBUG: 2026-04-02 20:44:54,432:      pdf_renderer.py:  470: printSegment: |---|---|
-   DEBUG: 2026-04-02 20:44:54,432:      pdf_renderer.py:  470: printSegment:  
-   DEBUG: 2026-04-02 20:44:54,433:      pdf_renderer.py:  470: printSegment: | 
-   DEBUG: 2026-04-02 20:44:54,434:      pdf_renderer.py:  470: printSegment: 障害シミュレーション診断（スポット）
-   DEBUG: 2026-04-02 20:44:54,519:      pdf_renderer.py:  470: printSegment:  | 15〜20万円 / 件 |
-   DEBUG: 2026-04-02 20:44:54,519:      pdf_renderer.py:  470: printSegment:  
-   DEBUG: 2026-04-02 20:44:54,520:      pdf_renderer.py:  470: printSegment: | 
-   DEBUG: 2026-04-02 20:44:54,521:      pdf_renderer.py:  470: printSegment: 月額セキュリティ顧問（継続）
-   DEBUG: 2026-04-02 20:44:54,522:      pdf_renderer.py:  470: printSegment:  | 5万円 / 月 |
-   DEBUG: 2026-04-02 20:44:54,522:      pdf_renderer.py:  470: printSegment: l
-   DEBUG: 2026-04-02 20:44:54,524:      pdf_renderer.py:  470: printSegment: スポット診断：構成定義〜レポート納品まで一式。追加修正1回含む。
-   DEBUG: 2026-04-02 20:44:54,610:      pdf_renderer.py:  470: printSegment: l
-   DEBUG: 2026-04-02 20:44:54,612:      pdf_renderer.py:  470: printSegment: 月額顧問：毎月1回の診断実行 + 構成変更時の随時チェック + メール相談対応。
-   DEBUG: 2026-04-02 20:44:54,613:      pdf_renderer.py:  470: printSegment: l
-   DEBUG: 2026-04-02 20:44:54,614:      pdf_renderer.py:  470: printSegment: 消費税別途。
-   DEBUG: 2026-04-02 20:44:54,616:      pdf_renderer.py:  470: printSegment: レポートサンプル
-   DEBUG: 2026-04-02 20:44:54,616:      pdf_renderer.py:  470: printSegment: 添付の 
-   DEBUG: 2026-04-02 20:44:54,618:      pdf_renderer.py:  470: printSegment: sample-report.html
-   DEBUG: 2026-04-02 20:44:54,618:      pdf_renderer.py:  470: printSegment: （シミュレーション詳細）および 
-   DEBUG: 2026-04-02 20:44:54,619:      pdf_renderer.py:  470: printSegment: executive-report.html
-   DEBUG: 2026-04-02 20:44:54,620:      pdf_renderer.py:  470: printSegment: （経営層向けサマリー）が、実際のレポート出力例です。ブラウザで開いてご確認ください。
-   DEBUG: 2026-04-02 20:44:54,623:      pdf_renderer.py:  470: printSegment: 分析機能一覧
-   DEBUG: 2026-04-02 20:44:54,624:      pdf_renderer.py:  470: printSegment: | 機能 | 内容 |
-   DEBUG: 2026-04-02 20:44:54,625:      pdf_renderer.py:  470: printSegment:  
-   DEBUG: 2026-04-02 20:44:54,625:      pdf_renderer.py:  470: printSegment: |---|---|
-   DEBUG: 2026-04-02 20:44:54,626:      pdf_renderer.py:  470: printSegment:  
-   DEBUG: 2026-04-02 20:44:54,627:      pdf_renderer.py:  470: printSegment: | 
-   DEBUG: 2026-04-02 20:44:54,627:      pdf_renderer.py:  470: printSegment: 障害シミュレーション
-   DEBUG: 2026-04-02 20:44:54,628:      pdf_renderer.py:  470: printSegment:  | 100〜400のシナリオを自動生成（単一障害・複合障害・トラフィックスパイク等。大規模構成で最大2,000） |
-   DEBUG: 2026-04-02 20:44:54,629:      pdf_renderer.py:  470: printSegment:  
-   DEBUG: 2026-04-02 20:44:54,629:      pdf_renderer.py:  470: printSegment: | 
-   DEBUG: 2026-04-02 20:44:54,630:      pdf_renderer.py:  470: printSegment: カスケード障害分析
-   DEBUG: 2026-04-02 20:44:54,631:      pdf_renderer.py:  470: printSegment:  | あるコンポーネントの障害が連鎖してどこまで波及するかをトレース |
-   DEBUG: 2026-04-02 20:44:54,631:      pdf_renderer.py:  470: printSegment:  
-   DEBUG: 2026-04-02 20:44:54,632:      pdf_renderer.py:  470: printSegment: | 
-   DEBUG: 2026-04-02 20:44:54,632:      pdf_renderer.py:  470: printSegment: Monte Carlo分析
-   DEBUG: 2026-04-02 20:44:54,633:      pdf_renderer.py:  470: printSegment:  | 10,000試行による可用性（稼働率）の統計的算出 |
-   DEBUG: 2026-04-02 20:44:54,633:      pdf_renderer.py:  470: printSegment:  
-   DEBUG: 2026-04-02 20:44:54,634:      pdf_renderer.py:  470: printSegment: | 
-   DEBUG: 2026-04-02 20:44:54,634:      pdf_renderer.py:  470: printSegment: FMEA（故障モード分析）
-   DEBUG: 2026-04-02 20:44:54,635:      pdf_renderer.py:  470: printSegment:  | 全コンポーネントの故障モード・影響・リスク優先度（RPN）を評価 |
-   DEBUG: 2026-04-02 20:44:54,635:      pdf_renderer.py:  470: printSegment:  
-   DEBUG: 2026-04-02 20:44:54,636:      pdf_renderer.py:  470: printSegment: | 
-   DEBUG: 2026-04-02 20:44:54,636:      pdf_renderer.py:  470: printSegment: コンプライアンスチェック
-   DEBUG: 2026-04-02 20:44:54,637:      pdf_renderer.py:  470: printSegment:  | SOC2 /
-   DEBUG: 2026-04-02 20:44:54,638:      pdf_renderer.py:  470: printSegment: ISO27001 / DORA（EU規制）対応状況の自動評価 |
-   DEBUG: 2026-04-02 20:44:54,639:      pdf_renderer.py:  470: printSegment:  
-   DEBUG: 2026-04-02 20:44:54,640:      pdf_renderer.py:  470: printSegment: | 
-   DEBUG: 2026-04-02 20:44:54,640:      pdf_renderer.py:  470: printSegment: SLA検証
-   DEBUG: 2026-04-02 20:44:54,641:      pdf_renderer.py:  470: printSegment:  | 目標可用性（例：99.9%）が統計的に達成可能かを証明 |
-   DEBUG: 2026-04-02 20:44:54,642:      pdf_renderer.py:  470: printSegment:  
-   DEBUG: 2026-04-02 20:44:54,642:      pdf_renderer.py:  470: printSegment: | 
-   DEBUG: 2026-04-02 20:44:54,643:      pdf_renderer.py:  470: printSegment: エグゼクティブレポート
-   DEBUG: 2026-04-02 20:44:54,643:      pdf_renderer.py:  470: printSegment:  | 経営層・役員向けのサマリーHTMLレポートを自動生成 |
-   DEBUG: 2026-04-02 20:44:54,644:      pdf_renderer.py:  470: printSegment:  
-   DEBUG: 2026-04-02 20:44:54,645:      pdf_renderer.py:  470: printSegment: | 
-   DEBUG: 2026-04-02 20:44:54,645:      pdf_renderer.py:  470: printSegment: リスク財務試算
-   DEBUG: 2026-04-02 20:44:54,646:      pdf_renderer.py:  470: printSegment:  | 障害発生時の推定損失額・ビジネスインパクトを算出 |
-   DEBUG: 2026-04-02 20:44:54,647:      pdf_renderer.py:  470: printSegment: 実績・信頼性
-   DEBUG: 2026-04-02 20:44:54,648:      pdf_renderer.py:  470: printSegment: l
-   DEBUG: 2026-04-02 20:44:54,648:      pdf_renderer.py:  470: printSegment: 米国特許出願済み（USPTO）
-   DEBUG: 2026-04-02 20:44:54,649:      pdf_renderer.py:  470: printSegment:  — 障害シミュレーション手法を特許出願中
-   DEBUG: 2026-04-02 20:44:54,650:      pdf_renderer.py:  470: printSegment: l
-   DEBUG: 2026-04-02 20:44:54,651:      pdf_renderer.py:  470: printSegment: 30,000件以上のテスト通過
-   DEBUG: 2026-04-02 20:44:54,651:      pdf_renderer.py:  470: printSegment:  — 継続的インテグレーション（CI）により品質を担保
-   DEBUG: 2026-04-02 20:44:54,652:      pdf_renderer.py:  470: printSegment: l
-   DEBUG: 2026-04-02 20:44:54,653:      pdf_renderer.py:  470: printSegment: PyPIで一般公開
-   DEBUG: 2026-04-02 20:44:54,654:      pdf_renderer.py:  470: printSegment:  — 
-   DEBUG: 2026-04-02 20:44:54,656:      pdf_renderer.py:  470: printSegment: pip install faultray
-   DEBUG: 2026-04-02 20:44:54,658:      pdf_renderer.py:  470: printSegment:  で誰でも試用可能（ツール自体は透明）
-   DEBUG: 2026-04-02 20:44:54,659:      pdf_renderer.py:  470: printSegment: l
-   DEBUG: 2026-04-02 20:44:54,659:      pdf_renderer.py:  470: printSegment: OSS審査済み
-   DEBUG: 2026-04-02 20:44:54,660:      pdf_renderer.py:  470: printSegment:  — コードはGitHubで公開、第三者によるレビューが可能
-   DEBUG: 2026-04-02 20:44:54,661:      pdf_renderer.py:  470: printSegment: 競合との比較
-   DEBUG: 2026-04-02 20:44:54,662:      pdf_renderer.py:  470: printSegment: | | 大手コンサルティング | クラウドベンダー障害テスト | 
-   DEBUG: 2026-04-02 20:44:54,663:      pdf_renderer.py:  470: printSegment: FaultRay
-   DEBUG: 2026-04-02 20:44:54,664:      pdf_renderer.py:  470: printSegment:  |
-   DEBUG: 2026-04-02 20:44:54,665:      pdf_renderer.py:  470: printSegment:  
-   DEBUG: 2026-04-02 20:44:54,666:      pdf_renderer.py:  470: printSegment: |---|---|---|---|
-   DEBUG: 2026-04-02 20:44:54,667:      pdf_renderer.py:  470: printSegment:  
-   DEBUG: 2026-04-02 20:44:54,668:      pdf_renderer.py:  470: printSegment: | 費用 | 100〜400万円 / 件 | クラウド依存・要エージェント | 
-   DEBUG: 2026-04-02 20:44:54,670:      pdf_renderer.py:  470: printSegment: 15〜20万円 / 件
-   DEBUG: 2026-04-02 20:44:54,671:      pdf_renderer.py:  470: printSegment:  |
-   DEBUG: 2026-04-02 20:44:54,672:      pdf_renderer.py:  470: printSegment:  
-   DEBUG: 2026-04-02 20:44:54,673:      pdf_renderer.py:  470: printSegment: | 本番リスク | 要調整 | 本番に実注入 | 
-   DEBUG: 2026-04-02 20:44:54,675:      pdf_renderer.py:  470: printSegment: ゼロ（シミュレーションのみ）
-   DEBUG: 2026-04-02 20:44:54,676:      pdf_renderer.py:  470: printSegment:  |
-   DEBUG: 2026-04-02 20:44:54,677:      pdf_renderer.py:  470: printSegment:  
-   DEBUG: 2026-04-02 20:44:54,677:      pdf_renderer.py:  470: printSegment: | 導入の手軽さ | 数ヶ月〜 | クラウド環境限定 | 
-   DEBUG: 2026-04-02 20:44:54,678:      pdf_renderer.py:  470: printSegment: ヒアリング30分〜
-   DEBUG: 2026-04-02 20:44:54,679:      pdf_renderer.py:  470: printSegment:  |
-   DEBUG: 2026-04-02 20:44:54,680:      pdf_renderer.py:  470: printSegment:  
-   DEBUG: 2026-04-02 20:44:54,682:      pdf_renderer.py:  470: printSegment: | レポート | 紙の報告書 | 限定的 | 
-   DEBUG: 2026-04-02 20:44:54,683:      pdf_renderer.py:  470: printSegment: HTML即納品・印刷可
-   DEBUG: 2026-04-02 20:44:54,684:      pdf_renderer.py:  470: printSegment:  |
-   DEBUG: 2026-04-02 20:44:54,686:      pdf_renderer.py:  470: printSegment: 大手コンサルの 
-   DEBUG: 2026-04-02 20:44:54,687:      pdf_renderer.py:  470: printSegment: 1/10以下の費用
-   DEBUG: 2026-04-02 20:44:54,688:      pdf_renderer.py:  470: printSegment:  で、同等以上の障害分析を提供します。
-   DEBUG: 2026-04-02 20:44:54,690:      pdf_renderer.py:  470: printSegment: ご連絡先
-   DEBUG: 2026-04-02 20:44:54,691:      pdf_renderer.py:  470: printSegment: 前田 勇太郎（個人事業主）
-   DEBUG: 2026-04-02 20:44:54,691:      pdf_renderer.py:  470: printSegment: 
-   DEBUG: 2026-04-02 20:44:54,691:      pdf_renderer.py:  470: printSegment: Email: 
-   DEBUG: 2026-04-02 20:44:54,692:      pdf_renderer.py:  470: printSegment: [
-   DEBUG: 2026-04-02 20:44:54,693:      pdf_renderer.py:  470: printSegment: TO BE FILLED
-   DEBUG: 2026-04-02 20:44:54,693:      pdf_renderer.py:  470: printSegment: ]
-   DEBUG: 2026-04-02 20:44:54,694:      pdf_renderer.py:  470: printSegment: ご質問・ご相談はメールにてお気軽にどうぞ。デモのご要望も承ります。
-   DEBUG: 2026-04-02 20:44:54,696:      pdf_renderer.py:  470: printSegment: 本資料に記載の料金・仕様は予告なく変更する場合があります。
-   DEBUG: 2026-04-02 20:44:54,746:      pdf_renderer.py:   53: 0, [1, 'FaultRay — ITインフラ障害シミュレーション診断サービス', 1, 68.0]
-   DEBUG: 2026-04-02 20:44:54,746:      pdf_renderer.py:   53: 1, [2, 'サービス概要', 1, 208.0]
-   DEBUG: 2026-04-02 20:44:54,747:      pdf_renderer.py:   53: 2, [2, 'なぜ今、障害シミュレーション診断が必要か', 1, 271.6]
-   DEBUG: 2026-04-02 20:44:54,747:      pdf_renderer.py:   53: 3, [3, '1. IPA「情報セキュリティ10大脅威 2026」でインフラ関連リスクが上位', 1, 304.8]
-   DEBUG: 2026-04-02 20:44:54,747:      pdf_renderer.py:   53: 4, [3, '2. 個人情報保護法・安全管理措置義務の強化', 1, 351.59999999999997]
-   DEBUG: 2026-04-02 20:44:54,747:      pdf_renderer.py:   53: 5, [3, '3. CrowdStrike障害（2024年）の教訓 — 推定被害額54億ドル', 1, 398.3999999999999]
-   DEBUG: 2026-04-02 20:44:54,747:      pdf_renderer.py:   53: 6, [2, 'サービスの流れ', 1, 457.5999999999999]
-   DEBUG: 2026-04-02 20:44:54,747:      pdf_renderer.py:   53: 7, [2, '料金', 1, 533.1999999999998]
-   DEBUG: 2026-04-02 20:44:54,747:      pdf_renderer.py:   53: 8, [2, 'レポートサンプル', 1, 656.7999999999997]
-   DEBUG: 2026-04-02 20:44:54,747:      pdf_renderer.py:   53: 9, [2, '分析機能一覧', 2, 70.0]
-   DEBUG: 2026-04-02 20:44:54,747:      pdf_renderer.py:   53: 10, [2, '実績・信頼性', 2, 145.60000000000002]
-   DEBUG: 2026-04-02 20:44:54,747:      pdf_renderer.py:   53: 11, [2, '競合との比較', 2, 251.20000000000005]
-   DEBUG: 2026-04-02 20:44:54,747:      pdf_renderer.py:   53: 12, [2, 'ご連絡先', 2, 332.80000000000007]
+    INFO: 2026-04-02 21:04:04,516:               log.py:   20: Logging to /home/user/repos/faultray/docs/proposal/mdpdf.log
+   DEBUG: 2026-04-02 21:04:04,516:               cli.py:  103: service-proposal.md
+    INFO: 2026-04-02 21:04:04,518:         converter.py:   14: service-proposal.md
+   DEBUG: 2026-04-02 21:04:04,526:      pdf_renderer.py:  470: printSegment: FaultRay — ITインフラ障害シミュレーション診断サービス
+   DEBUG: 2026-04-02 21:04:04,581:      pdf_renderer.py:  470: printSegment: 提供者:
+   DEBUG: 2026-04-02 21:04:04,630:      pdf_renderer.py:  470: printSegment:  前田 勇太郎（個人事業主）
+   DEBUG: 2026-04-02 21:04:04,700:      pdf_renderer.py:  470: printSegment: 連絡先:
+   DEBUG: 2026-04-02 21:04:04,755:      pdf_renderer.py:  470: printSegment:  
+   DEBUG: 2026-04-02 21:04:04,755:      pdf_renderer.py:  470: printSegment: [
+   DEBUG: 2026-04-02 21:04:04,756:      pdf_renderer.py:  470: printSegment: TO BE FILLED
+   DEBUG: 2026-04-02 21:04:04,757:      pdf_renderer.py:  470: printSegment: ]
+   DEBUG: 2026-04-02 21:04:04,757:      pdf_renderer.py:  470: printSegment: 
+   DEBUG: 2026-04-02 21:04:04,758:      pdf_renderer.py:  470: printSegment: 発行日:
+   DEBUG: 2026-04-02 21:04:04,758:      pdf_renderer.py:  470: printSegment:  2026年4月1日
+   DEBUG: 2026-04-02 21:04:04,759:      pdf_renderer.py:  470: printSegment: ○○株式会社 御中
+   DEBUG: 2026-04-02 21:04:04,760:      pdf_renderer.py:  470: printSegment: 平素よりお世話になっております。このたびは、ITインフラの障害耐性を「本番環境を一切触らずに」診断するサービス 
+   DEBUG: 2026-04-02 21:04:04,761:      pdf_renderer.py:  470: printSegment: FaultRay
+   DEBUG: 2026-04-02 21:04:04,761:      pdf_renderer.py:  470: printSegment:  をご紹介させていただきます。
+   DEBUG: 2026-04-02 21:04:04,762:      pdf_renderer.py:  470: printSegment: サービス概要
+   DEBUG: 2026-04-02 21:04:04,763:      pdf_renderer.py:  470: printSegment: FaultRay は、貴社のITインフラ構成をもとに 
+   DEBUG: 2026-04-02 21:04:04,764:      pdf_renderer.py:  470: printSegment: 100〜400の障害シナリオを自動生成・数学的にシミュレーション
+   DEBUG: 2026-04-02 21:04:04,810:      pdf_renderer.py:  470: printSegment: （構成規模に応じて最大2,000）し、システムが本当に止まらないかをレポートするサービスです。本番環境に一切手を加えず、ヒアリングから最短数日でレポートを納品します。
+   DEBUG: 2026-04-02 21:04:04,812:      pdf_renderer.py:  470: printSegment: なぜ今、障害シミュレーション診断が必要か
+   DEBUG: 2026-04-02 21:04:04,813:      pdf_renderer.py:  470: printSegment: 1. IPA「情報セキュリティ10大脅威 2026」でインフラ関連リスクが上位
+   DEBUG: 2026-04-02 21:04:04,815:      pdf_renderer.py:  470: printSegment: IPAが毎年発表する10大脅威において、ITインフラへの攻撃・障害は組織部門で継続的に上位にランクインしています。「起きてから対応する」では事業継続が間に合いません。
+   DEBUG: 2026-04-02 21:04:04,816:      pdf_renderer.py:  470: printSegment: 2. 個人情報保護法・安全管理措置義務の強化
+   DEBUG: 2026-04-02 21:04:04,816:      pdf_renderer.py:  470: printSegment: 改正個人情報保護法により、個人データを扱うすべての事業者は「技術的安全管理措置」の実施が義務付けられています。障害時のデータ保護体制を
+   DEBUG: 2026-04-02 21:04:04,817:      pdf_renderer.py:  470: printSegment: 事前に証明できるか
+   DEBUG: 2026-04-02 21:04:04,818:      pdf_renderer.py:  470: printSegment: が問われています。
+   DEBUG: 2026-04-02 21:04:04,818:      pdf_renderer.py:  470: printSegment: 3. CrowdStrike障害（2024年）の教訓 — 推定被害額54億ドル
+   DEBUG: 2026-04-02 21:04:04,889:      pdf_renderer.py:  470: printSegment: 2024年7月のCrowdStrike社ソフトウェア更新に起因する世界規模のシステム障害は、航空・金融・医療など幅広い業種に影響を与え、推定54億ドルの被害をもたらしました。
+   DEBUG: 2026-04-02 21:04:04,890:      pdf_renderer.py:  470: printSegment: **
+   DEBUG: 2026-04-02 21:04:04,891:      pdf_renderer.py:  470: printSegment: 「信頼しているベンダーが起因でも自社が止まる」
+   DEBUG: 2026-04-02 21:04:04,892:      pdf_renderer.py:  470: printSegment: **
+   DEBUG: 2026-04-02 21:04:04,892:      pdf_renderer.py:  470: printSegment: という現実をこの事故は示しています。事前のシミュレーションで「どこが連鎖障害の引き金になるか」を把握しておくことが、被害を最小化する唯一の方法です。
+   DEBUG: 2026-04-02 21:04:04,893:      pdf_renderer.py:  470: printSegment: サービスの流れ
+   DEBUG: 2026-04-02 21:04:04,894:      pdf_renderer.py:  470: printSegment: | ステップ | 内容 | 所要時間 |
+   DEBUG: 2026-04-02 21:04:04,895:      pdf_renderer.py:  470: printSegment:  
+   DEBUG: 2026-04-02 21:04:04,895:      pdf_renderer.py:  470: printSegment: |---|---|---|
+   DEBUG: 2026-04-02 21:04:04,896:      pdf_renderer.py:  470: printSegment:  
+   DEBUG: 2026-04-02 21:04:04,897:      pdf_renderer.py:  470: printSegment: | 
+   DEBUG: 2026-04-02 21:04:04,897:      pdf_renderer.py:  470: printSegment: ① ヒアリング
+   DEBUG: 2026-04-02 21:04:04,898:      pdf_renderer.py:  470: printSegment:  | 現在のインフラ構成（サーバー・DB・CDN等）を30分でヒアリング | 30分 |
+   DEBUG: 2026-04-02 21:04:04,899:      pdf_renderer.py:  470: printSegment:  
+   DEBUG: 2026-04-02 21:04:04,899:      pdf_renderer.py:  470: printSegment: | 
+   DEBUG: 2026-04-02 21:04:04,900:      pdf_renderer.py:  470: printSegment: ② YAML変換
+   DEBUG: 2026-04-02 21:04:04,901:      pdf_renderer.py:  470: printSegment:  | ヒアリング内容をFaultRay専用の構成定義ファイル（YAML）に変換 | 1〜2営業日 |
+   DEBUG: 2026-04-02 21:04:04,901:      pdf_renderer.py:  470: printSegment:  
+   DEBUG: 2026-04-02 21:04:04,904:      pdf_renderer.py:  470: printSegment: | 
+   DEBUG: 2026-04-02 21:04:04,905:      pdf_renderer.py:  470: printSegment: ③ シミュレーション実行
+   DEBUG: 2026-04-02 21:04:04,906:      pdf_renderer.py:  470: printSegment:  | 134〜2,000以上の障害シナリオを自動生成・実行 | 即時（ツール内） |
+   DEBUG: 2026-04-02 21:04:04,906:      pdf_renderer.py:  470: printSegment:  
+   DEBUG: 2026-04-02 21:04:04,907:      pdf_renderer.py:  470: printSegment: | 
+   DEBUG: 2026-04-02 21:04:04,909:      pdf_renderer.py:  470: printSegment: ④ レポート納品
+   DEBUG: 2026-04-02 21:04:04,910:      pdf_renderer.py:  470: printSegment:  | 経営層向けエグゼクティブレポート + 詳細技術レポートをHTMLで納品 |
+   DEBUG: 2026-04-02 21:04:04,911:      pdf_renderer.py:  470: printSegment: 最短翌営業日 |
+   DEBUG: 2026-04-02 21:04:04,912:      pdf_renderer.py:  470: printSegment: 料金
+   DEBUG: 2026-04-02 21:04:04,912:      pdf_renderer.py:  470: printSegment: | サービス | 料金 |
+   DEBUG: 2026-04-02 21:04:04,913:      pdf_renderer.py:  470: printSegment:  
+   DEBUG: 2026-04-02 21:04:04,914:      pdf_renderer.py:  470: printSegment: |---|---|
+   DEBUG: 2026-04-02 21:04:04,915:      pdf_renderer.py:  470: printSegment:  
+   DEBUG: 2026-04-02 21:04:04,916:      pdf_renderer.py:  470: printSegment: | 
+   DEBUG: 2026-04-02 21:04:04,917:      pdf_renderer.py:  470: printSegment: 障害シミュレーション診断（スポット）
+   DEBUG: 2026-04-02 21:04:05,016:      pdf_renderer.py:  470: printSegment:  | 15〜20万円 / 件 |
+   DEBUG: 2026-04-02 21:04:05,017:      pdf_renderer.py:  470: printSegment:  
+   DEBUG: 2026-04-02 21:04:05,018:      pdf_renderer.py:  470: printSegment: | 
+   DEBUG: 2026-04-02 21:04:05,019:      pdf_renderer.py:  470: printSegment: 月額セキュリティ顧問（継続）
+   DEBUG: 2026-04-02 21:04:05,020:      pdf_renderer.py:  470: printSegment:  | 5万円 / 月 |
+   DEBUG: 2026-04-02 21:04:05,021:      pdf_renderer.py:  470: printSegment: l
+   DEBUG: 2026-04-02 21:04:05,022:      pdf_renderer.py:  470: printSegment: スポット診断：構成定義〜レポート納品まで一式。追加修正1回含む。
+   DEBUG: 2026-04-02 21:04:05,114:      pdf_renderer.py:  470: printSegment: l
+   DEBUG: 2026-04-02 21:04:05,118:      pdf_renderer.py:  470: printSegment: 月額顧問：毎月1回の診断実行 + 構成変更時の随時チェック + メール相談対応。
+   DEBUG: 2026-04-02 21:04:05,119:      pdf_renderer.py:  470: printSegment: l
+   DEBUG: 2026-04-02 21:04:05,120:      pdf_renderer.py:  470: printSegment: 消費税別途。
+   DEBUG: 2026-04-02 21:04:05,124:      pdf_renderer.py:  470: printSegment: レポートサンプル
+   DEBUG: 2026-04-02 21:04:05,126:      pdf_renderer.py:  470: printSegment: 添付の 
+   DEBUG: 2026-04-02 21:04:05,127:      pdf_renderer.py:  470: printSegment: sample-report.html
+   DEBUG: 2026-04-02 21:04:05,128:      pdf_renderer.py:  470: printSegment: （シミュレーション詳細）および 
+   DEBUG: 2026-04-02 21:04:05,129:      pdf_renderer.py:  470: printSegment: executive-report.html
+   DEBUG: 2026-04-02 21:04:05,129:      pdf_renderer.py:  470: printSegment: （経営層向けサマリー）が、実際のレポート出力例です。ブラウザで開いてご確認ください。
+   DEBUG: 2026-04-02 21:04:05,131:      pdf_renderer.py:  470: printSegment: 分析機能一覧
+   DEBUG: 2026-04-02 21:04:05,132:      pdf_renderer.py:  470: printSegment: | 機能 | 内容 |
+   DEBUG: 2026-04-02 21:04:05,132:      pdf_renderer.py:  470: printSegment:  
+   DEBUG: 2026-04-02 21:04:05,135:      pdf_renderer.py:  470: printSegment: |---|---|
+   DEBUG: 2026-04-02 21:04:05,135:      pdf_renderer.py:  470: printSegment:  
+   DEBUG: 2026-04-02 21:04:05,136:      pdf_renderer.py:  470: printSegment: | 
+   DEBUG: 2026-04-02 21:04:05,136:      pdf_renderer.py:  470: printSegment: 障害シミュレーション
+   DEBUG: 2026-04-02 21:04:05,137:      pdf_renderer.py:  470: printSegment:  | 100〜400のシナリオを自動生成（単一障害・複合障害・トラフィックスパイク等。大規模構成で最大2,000） |
+   DEBUG: 2026-04-02 21:04:05,138:      pdf_renderer.py:  470: printSegment:  
+   DEBUG: 2026-04-02 21:04:05,138:      pdf_renderer.py:  470: printSegment: | 
+   DEBUG: 2026-04-02 21:04:05,141:      pdf_renderer.py:  470: printSegment: レジリエンススコア
+   DEBUG: 2026-04-02 21:04:05,142:      pdf_renderer.py:  470: printSegment:  | インフラの構造的弱点（SPOF・冗長性不足・高負荷）を0〜100で評価。
+   DEBUG: 2026-04-02 21:04:05,143:      pdf_renderer.py:  470: printSegment: 「普段は動くが、障害時に脆い箇所」
+   DEBUG: 2026-04-02 21:04:05,143:      pdf_renderer.py:  470: printSegment: を発見 |
+   DEBUG: 2026-04-02 21:04:05,144:      pdf_renderer.py:  470: printSegment:  
+   DEBUG: 2026-04-02 21:04:05,145:      pdf_renderer.py:  470: printSegment: | 
+   DEBUG: 2026-04-02 21:04:05,145:      pdf_renderer.py:  470: printSegment: カスケード障害分析
+   DEBUG: 2026-04-02 21:04:05,146:      pdf_renderer.py:  470: printSegment:  | あるコンポーネントの障害が連鎖してどこまで波及するかをトレース |
+   DEBUG: 2026-04-02 21:04:05,146:      pdf_renderer.py:  470: printSegment:  
+   DEBUG: 2026-04-02 21:04:05,147:      pdf_renderer.py:  470: printSegment: | 
+   DEBUG: 2026-04-02 21:04:05,148:      pdf_renderer.py:  470: printSegment: Monte Carlo分析
+   DEBUG: 2026-04-02 21:04:05,148:      pdf_renderer.py:  470: printSegment:  | 10,000試行による可用性（稼働率）の統計的算出。スコアとは異なり
+   DEBUG: 2026-04-02 21:04:05,149:      pdf_renderer.py:  470: printSegment: 確率的な稼働率
+   DEBUG: 2026-04-02 21:04:05,149:      pdf_renderer.py:  470: printSegment: を計算 |
+   DEBUG: 2026-04-02 21:04:05,150:      pdf_renderer.py:  470: printSegment:  
+   DEBUG: 2026-04-02 21:04:05,150:      pdf_renderer.py:  470: printSegment: | 
+   DEBUG: 2026-04-02 21:04:05,151:      pdf_renderer.py:  470: printSegment: FMEA（故障モード分析）
+   DEBUG: 2026-04-02 21:04:05,153:      pdf_renderer.py:  470: printSegment:  | 全コンポーネントの故障モード・影響・リスク優先度（RPN）を評価 |
+   DEBUG: 2026-04-02 21:04:05,155:      pdf_renderer.py:  470: printSegment:  
+   DEBUG: 2026-04-02 21:04:05,156:      pdf_renderer.py:  470: printSegment: | 
+   DEBUG: 2026-04-02 21:04:05,159:      pdf_renderer.py:  470: printSegment: コンプライアンスチェック
+   DEBUG: 2026-04-02 21:04:05,161:      pdf_renderer.py:  470: printSegment:  | SOC2 / ISO27001 / DORA（EU規制）対応状況の自動評価 |
+   DEBUG: 2026-04-02 21:04:05,162:      pdf_renderer.py:  470: printSegment:  
+   DEBUG: 2026-04-02 21:04:05,163:      pdf_renderer.py:  470: printSegment: | 
+   DEBUG: 2026-04-02 21:04:05,164:      pdf_renderer.py:  470: printSegment: SLA検証
+   DEBUG: 2026-04-02 21:04:05,165:      pdf_renderer.py:  470: printSegment:  | 目標可用性（例：99.9%）が統計的に達成可能かを証明 |
+   DEBUG: 2026-04-02 21:04:05,166:      pdf_renderer.py:  470: printSegment:  
+   DEBUG: 2026-04-02 21:04:05,167:      pdf_renderer.py:  470: printSegment: | 
+   DEBUG: 2026-04-02 21:04:05,168:      pdf_renderer.py:  470: printSegment: エグゼクティブレポート
+   DEBUG: 2026-04-02 21:04:05,169:      pdf_renderer.py:  470: printSegment:  | 経営層・役員向けのサマリーHTMLレポートを自動生成 |
+   DEBUG: 2026-04-02 21:04:05,170:      pdf_renderer.py:  470: printSegment:  
+   DEBUG: 2026-04-02 21:04:05,171:      pdf_renderer.py:  470: printSegment: | 
+   DEBUG: 2026-04-02 21:04:05,172:      pdf_renderer.py:  470: printSegment: リスク財務試算
+   DEBUG: 2026-04-02 21:04:05,173:      pdf_renderer.py:  470: printSegment:  | 障害発生時の推定損失額・ビジネスインパクトを算出 |
+   DEBUG: 2026-04-02 21:04:05,174:      pdf_renderer.py:  470: printSegment: 実績・信頼性
+   DEBUG: 2026-04-02 21:04:05,176:      pdf_renderer.py:  470: printSegment: l
+   DEBUG: 2026-04-02 21:04:05,177:      pdf_renderer.py:  470: printSegment: 米国特許出願済み（USPTO）
+   DEBUG: 2026-04-02 21:04:05,179:      pdf_renderer.py:  470: printSegment:  — 障害シミュレーション手法を特許出願中
+   DEBUG: 2026-04-02 21:04:05,181:      pdf_renderer.py:  470: printSegment: l
+   DEBUG: 2026-04-02 21:04:05,181:      pdf_renderer.py:  470: printSegment: 30,000件以上のテスト通過
+   DEBUG: 2026-04-02 21:04:05,184:      pdf_renderer.py:  470: printSegment:  — 継続的インテグレーション（CI）により品質を担保
+   DEBUG: 2026-04-02 21:04:05,186:      pdf_renderer.py:  470: printSegment: l
+   DEBUG: 2026-04-02 21:04:05,188:      pdf_renderer.py:  470: printSegment: PyPIで一般公開
+   DEBUG: 2026-04-02 21:04:05,188:      pdf_renderer.py:  470: printSegment:  — 
+   DEBUG: 2026-04-02 21:04:05,190:      pdf_renderer.py:  470: printSegment: pip install faultray
+   DEBUG: 2026-04-02 21:04:05,192:      pdf_renderer.py:  470: printSegment:  で誰でも試用可能（ツール自体は透明）
+   DEBUG: 2026-04-02 21:04:05,194:      pdf_renderer.py:  470: printSegment: l
+   DEBUG: 2026-04-02 21:04:05,195:      pdf_renderer.py:  470: printSegment: OSS審査済み
+   DEBUG: 2026-04-02 21:04:05,196:      pdf_renderer.py:  470: printSegment:  — コードはGitHubで公開、第三者によるレビューが可能
+   DEBUG: 2026-04-02 21:04:05,199:      pdf_renderer.py:  470: printSegment: 競合との比較
+   DEBUG: 2026-04-02 21:04:05,200:      pdf_renderer.py:  470: printSegment: | | 大手コンサルティング | クラウドベンダー障害テスト | 
+   DEBUG: 2026-04-02 21:04:05,201:      pdf_renderer.py:  470: printSegment: FaultRay
+   DEBUG: 2026-04-02 21:04:05,204:      pdf_renderer.py:  470: printSegment:  |
+   DEBUG: 2026-04-02 21:04:05,205:      pdf_renderer.py:  470: printSegment:  
+   DEBUG: 2026-04-02 21:04:05,206:      pdf_renderer.py:  470: printSegment: |---|---|---|---|
+   DEBUG: 2026-04-02 21:04:05,207:      pdf_renderer.py:  470: printSegment:  
+   DEBUG: 2026-04-02 21:04:05,209:      pdf_renderer.py:  470: printSegment: | 費用 | 100〜400万円 / 件 | クラウド依存・要エージェント | 
+   DEBUG: 2026-04-02 21:04:05,210:      pdf_renderer.py:  470: printSegment: 15〜20万円 / 件
+   DEBUG: 2026-04-02 21:04:05,211:      pdf_renderer.py:  470: printSegment:  |
+   DEBUG: 2026-04-02 21:04:05,212:      pdf_renderer.py:  470: printSegment:  
+   DEBUG: 2026-04-02 21:04:05,213:      pdf_renderer.py:  470: printSegment: | 本番リスク | 要調整 | 本番に実注入 | 
+   DEBUG: 2026-04-02 21:04:05,213:      pdf_renderer.py:  470: printSegment: ゼロ（シミュレーションのみ）
+   DEBUG: 2026-04-02 21:04:05,215:      pdf_renderer.py:  470: printSegment:  |
+   DEBUG: 2026-04-02 21:04:05,215:      pdf_renderer.py:  470: printSegment:  
+   DEBUG: 2026-04-02 21:04:05,218:      pdf_renderer.py:  470: printSegment: | 導入の手軽さ | 数ヶ月〜 | クラウド環境限定 | 
+   DEBUG: 2026-04-02 21:04:05,220:      pdf_renderer.py:  470: printSegment: ヒアリング30分〜
+   DEBUG: 2026-04-02 21:04:05,221:      pdf_renderer.py:  470: printSegment:  |
+   DEBUG: 2026-04-02 21:04:05,224:      pdf_renderer.py:  470: printSegment:  
+   DEBUG: 2026-04-02 21:04:05,226:      pdf_renderer.py:  470: printSegment: | レポート | 紙の報告書 | 限定的 | 
+   DEBUG: 2026-04-02 21:04:05,227:      pdf_renderer.py:  470: printSegment: HTML即納品・印刷可
+   DEBUG: 2026-04-02 21:04:05,227:      pdf_renderer.py:  470: printSegment:  |
+   DEBUG: 2026-04-02 21:04:05,228:      pdf_renderer.py:  470: printSegment: 大手コンサルの 
+   DEBUG: 2026-04-02 21:04:05,229:      pdf_renderer.py:  470: printSegment: 1/10以下の費用
+   DEBUG: 2026-04-02 21:04:05,229:      pdf_renderer.py:  470: printSegment:  で、同等以上の障害分析を提供します。
+   DEBUG: 2026-04-02 21:04:05,231:      pdf_renderer.py:  470: printSegment: ご連絡先
+   DEBUG: 2026-04-02 21:04:05,232:      pdf_renderer.py:  470: printSegment: 前田 勇太郎（個人事業主）
+   DEBUG: 2026-04-02 21:04:05,233:      pdf_renderer.py:  470: printSegment: 
+   DEBUG: 2026-04-02 21:04:05,234:      pdf_renderer.py:  470: printSegment: Email: 
+   DEBUG: 2026-04-02 21:04:05,235:      pdf_renderer.py:  470: printSegment: [
+   DEBUG: 2026-04-02 21:04:05,238:      pdf_renderer.py:  470: printSegment: TO BE FILLED
+   DEBUG: 2026-04-02 21:04:05,239:      pdf_renderer.py:  470: printSegment: ]
+   DEBUG: 2026-04-02 21:04:05,241:      pdf_renderer.py:  470: printSegment: ご質問・ご相談はメールにてお気軽にどうぞ。デモのご要望も承ります。
+   DEBUG: 2026-04-02 21:04:05,245:      pdf_renderer.py:  470: printSegment: 本資料に記載の料金・仕様は予告なく変更する場合があります。
+   DEBUG: 2026-04-02 21:04:05,306:      pdf_renderer.py:   53: 0, [1, 'FaultRay — ITインフラ障害シミュレーション診断サービス', 1, 68.0]
+   DEBUG: 2026-04-02 21:04:05,306:      pdf_renderer.py:   53: 1, [2, 'サービス概要', 1, 208.0]
+   DEBUG: 2026-04-02 21:04:05,306:      pdf_renderer.py:   53: 2, [2, 'なぜ今、障害シミュレーション診断が必要か', 1, 271.6]
+   DEBUG: 2026-04-02 21:04:05,306:      pdf_renderer.py:   53: 3, [3, '1. IPA「情報セキュリティ10大脅威 2026」でインフラ関連リスクが上位', 1, 304.8]
+   DEBUG: 2026-04-02 21:04:05,306:      pdf_renderer.py:   53: 4, [3, '2. 個人情報保護法・安全管理措置義務の強化', 1, 351.59999999999997]
+   DEBUG: 2026-04-02 21:04:05,306:      pdf_renderer.py:   53: 5, [3, '3. CrowdStrike障害（2024年）の教訓 — 推定被害額54億ドル', 1, 398.3999999999999]
+   DEBUG: 2026-04-02 21:04:05,306:      pdf_renderer.py:   53: 6, [2, 'サービスの流れ', 1, 457.5999999999999]
+   DEBUG: 2026-04-02 21:04:05,306:      pdf_renderer.py:   53: 7, [2, '料金', 1, 533.1999999999998]
+   DEBUG: 2026-04-02 21:04:05,306:      pdf_renderer.py:   53: 8, [2, 'レポートサンプル', 1, 656.7999999999997]
+   DEBUG: 2026-04-02 21:04:05,306:      pdf_renderer.py:   53: 9, [2, '分析機能一覧', 2, 70.0]
+   DEBUG: 2026-04-02 21:04:05,306:      pdf_renderer.py:   53: 10, [2, '実績・信頼性', 2, 145.60000000000002]
+   DEBUG: 2026-04-02 21:04:05,306:      pdf_renderer.py:   53: 11, [2, '競合との比較', 2, 251.20000000000005]
+   DEBUG: 2026-04-02 21:04:05,306:      pdf_renderer.py:   53: 12, [2, 'ご連絡先', 2, 332.80000000000007]
