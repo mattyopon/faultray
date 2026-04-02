@@ -150,6 +150,20 @@ class InfraGraph:
 
                 score -= penalty
 
+        # Penalize replicas on the same host (false redundancy)
+        for comp in self._components.values():
+            if comp.replicas >= 2 and comp.host:
+                # All replicas share the same host → host is a SPOF
+                dependents = self.get_dependents(comp.id)
+                if len(dependents) > 0:
+                    score -= min(10, len(dependents) * 3)
+
+        # Penalize lack of failover on critical components
+        for comp in self._components.values():
+            dependents = self.get_dependents(comp.id)
+            if len(dependents) > 0 and not comp.failover.enabled:
+                score -= min(5, len(dependents) * 1.5)
+
         # Penalize high utilization
         for comp in self._components.values():
             util = comp.utilization()

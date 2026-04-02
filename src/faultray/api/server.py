@@ -20,6 +20,7 @@ from pathlib import Path
 
 from fastapi import Depends, FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
+from starlette.middleware.sessions import SessionMiddleware
 from fastapi.responses import HTMLResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
@@ -186,6 +187,7 @@ async def lifespan(application: FastAPI):
 # FastAPI application
 # ---------------------------------------------------------------------------
 
+
 from faultray.api.openapi_config import OPENAPI_CONFIG, OPENAPI_TAGS
 from faultray.api.v1.routes import router as v1_router
 
@@ -228,6 +230,15 @@ app.add_middleware(
     allow_credentials=_allow_credentials,
     allow_methods=["*"],
     allow_headers=["*"],
+)
+
+# Session middleware — used by Web UI OAuth flow (HTTP-only cookie session)
+# Bearer token auth is unaffected by this middleware.
+app.add_middleware(
+    SessionMiddleware,
+    secret_key=os.environ.get("FAULTRAY_SESSION_SECRET", "faultray-dev-session-key"),
+    https_only=False,  # Allow HTTP in development; set True in production
+    same_site="lax",
 )
 
 
