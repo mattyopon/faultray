@@ -84,6 +84,9 @@ export async function proxy(request: NextRequest) {
       "/traces", "/logs", "/dependencies", "/gameday",
       "/ai-reliability", "/fisc", "/audit-report", "/traffic-light",
       "/people-risk",
+      "/shadow-it", "/bus-factor", "/vuln-priority", "/external-impact",
+      "/sla-budget", "/compliance-report", "/topology-map",
+      "/contact", "/features", "/privacy", "/terms",
     ];
     const shouldSkip = skipPaths.some((path) => pathname.startsWith(path));
 
@@ -111,6 +114,9 @@ export async function proxy(request: NextRequest) {
       "/traces", "/logs", "/dependencies", "/gameday",
       "/ai-reliability", "/fisc", "/audit-report", "/traffic-light",
       "/people-risk",
+      "/shadow-it", "/bus-factor", "/vuln-priority", "/external-impact",
+      "/sla-budget", "/compliance-report", "/topology-map",
+      "/contact", "/features", "/privacy", "/terms",
     ];
     let strippedPath = pathname;
     for (const locale of locales) {
