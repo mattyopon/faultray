@@ -983,6 +983,16 @@ export default async function LangHomePage({
                     Contact
                   </Link>
                 </li>
+                <li>
+                  <Link href="/privacy" className="text-sm text-[#64748b] hover:text-white transition-colors">
+                    Privacy Policy
+                  </Link>
+                </li>
+                <li>
+                  <Link href="/terms" className="text-sm text-[#64748b] hover:text-white transition-colors">
+                    Terms of Service
+                  </Link>
+                </li>
               </ul>
               <div className="mt-6">
                 <LanguageSwitcher />
