@@ -616,7 +616,7 @@ class GameDayGenerator:
         gd.recovery_steps = _get_recovery_steps(failure_mode)
 
         gd.success_criteria = _build_success_criteria(
-            trigger_ids, affected_ids, failure_mode, has_failover, mttr
+            trigger_ids, affected_ids, failure_mode, has_failover, max(mttr, 5.0)
         )
         gd.failure_indicators = _build_failure_indicators(
             trigger_ids, failure_mode, mttr

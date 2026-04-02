@@ -125,13 +125,19 @@ def slo_impact(
             else f"[{risk_color}]ALREADY VIOLATED[/]"
         )
 
+        import math
+        budget_consumed_text = (
+            "N/A (no budget)"
+            if math.isinf(result.error_budget_consumption_pct)
+            else f"{result.error_budget_consumption_pct:.1f}%"
+        )
         summary = (
             f"[bold]Component:[/] {result.component_name} ({result.component_id})\n"
             f"[bold]Type:[/] {result.component_type}\n"
             f"[bold]Affected Services:[/] {result.affected_service_count} "
             f"({', '.join(result.affected_services) or 'none'})\n"
             f"[bold]Estimated MTTR:[/] {result.estimated_mttr_minutes:.1f} minutes\n"
-            f"[bold]Error Budget Consumed:[/] {result.error_budget_consumption_pct:.1f}%\n"
+            f"[bold]Error Budget Consumed:[/] {budget_consumed_text}\n"
             f"[bold]SLO Violation In:[/] {violation_text}\n"
             f"[bold]Risk Level:[/] [{risk_color}]{result.risk_level.upper()}[/]\n\n"
             f"[bold]Recommendation:[/] {result.recommendation}"
@@ -229,6 +235,7 @@ def slo_impact(
         table.add_column("Violation\nIn (min)", justify="right", width=12)
         table.add_column("Risk", width=10)
 
+        import math as _math
         for i, r in enumerate(results, 1):
             rc = _risk_color(r.risk_level)
             violation_str = (
@@ -236,13 +243,18 @@ def slo_impact(
                 if r.minutes_to_slo_violation > 0
                 else "IMMEDIATE"
             )
+            budget_consumed_str = (
+                "N/A"
+                if _math.isinf(r.error_budget_consumption_pct)
+                else f"{r.error_budget_consumption_pct:.1f}%"
+            )
             table.add_row(
                 str(i),
                 r.component_name[:28],
                 r.component_type[:16],
                 str(r.affected_service_count),
                 f"{r.estimated_mttr_minutes:.1f}",
-                f"{r.error_budget_consumption_pct:.1f}%",
+                budget_consumed_str,
                 f"[{rc}]{violation_str}[/]",
                 f"[{rc}]{r.risk_level.upper()}[/]",
             )
@@ -259,17 +271,24 @@ def _parse_window_days(window: str) -> int:
     window = window.strip().lower()
     if window.endswith("d"):
         try:
-            return int(window[:-1])
+            days = int(window[:-1])
         except ValueError:
-            pass
+            days = None
+        else:
+            if days <= 0:
+                raise typer.BadParameter("budget window must be positive")
+            return days
     # Try plain integer
     try:
-        return int(window)
+        days = int(window)
     except ValueError:
         console.print(
             f"[yellow]Warning: could not parse window '{window}', using 30d.[/]"
         )
         return 30
+    if days <= 0:
+        raise typer.BadParameter("budget window must be positive")
+    return days
 
 
 def _risk_color(risk_level: str) -> str:

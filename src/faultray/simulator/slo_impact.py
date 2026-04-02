@@ -205,10 +205,10 @@ class SLOImpactSimulator:
 
         # Compute Error Budget consumption
         budget = self.calculate_error_budget()
-        consumption_pct = (
+        consumption_pct: float = (
             (mttr / budget.total_budget_minutes * 100.0)
             if budget.total_budget_minutes > 0
-            else 0.0
+            else float("inf")
         )
 
         # Minutes remaining until SLO violation after this incident

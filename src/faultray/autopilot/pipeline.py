@@ -151,7 +151,8 @@ class AutopilotPipeline:
     # ------------------------------------------------------------------
 
     def _run_steps_2_to_4(self, result: PipelineResult) -> PipelineResult:
-        assert result.spec is not None  # guaranteed by callers
+        if result.spec is None:
+            raise ValueError("_run_steps_2_to_4: result.spec must not be None")
 
         # Step 2: Design topology
         try:
@@ -175,7 +176,8 @@ class AutopilotPipeline:
 
     def _step_3_simulate(self, result: PipelineResult) -> PipelineResult:
         """Run SimulationEngine against the designed graph."""
-        assert result.graph is not None
+        if result.graph is None:
+            raise ValueError("_step_3_simulate: result.graph must not be None")
 
         try:
             engine = SimulationEngine(result.graph)
@@ -204,8 +206,10 @@ class AutopilotPipeline:
         self, result: PipelineResult, generate_only: bool = False
     ) -> PipelineResult:
         """Generate Terraform HCL from InfraGraph."""
-        assert result.graph is not None
-        assert result.spec is not None
+        if result.graph is None:
+            raise ValueError("_step_4_terraform: result.graph must not be None")
+        if result.spec is None:
+            raise ValueError("_step_4_terraform: result.spec must not be None")
 
         try:
             tf_output = self._tf_gen.generate(result.graph, result.spec)

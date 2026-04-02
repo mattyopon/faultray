@@ -132,7 +132,8 @@ def autopilot(
         result = pipeline.run_from_file(requirements)
 
     else:
-        assert requirements_text is not None
+        if requirements_text is None:
+            raise ValueError("requirements_text must not be None when no requirements file is given")
         if not json_output:
             console.print("\n[bold]Step 1:[/bold] Parsing inline requirements")
         if interactive and not typer.confirm("Continue to topology design?", default=True):
