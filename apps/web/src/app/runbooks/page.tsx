@@ -314,6 +314,12 @@ export default function RunbooksPage() {
         <p className="text-[#94a3b8] text-sm">{t.subtitle}</p>
       </div>
 
+      {/* DEMO-05: Sample data notice */}
+      <div className="mb-6 px-4 py-2.5 rounded-lg border border-amber-500/20 bg-amber-500/[0.06] flex items-center gap-2 text-xs text-amber-400">
+        <span className="shrink-0">📋</span>
+        <span>{locale === "ja" ? "サンプルデータを表示中。ランブック作成後に実際のデータが表示されます。" : "Showing sample data. Your runbooks will appear here after creation."}</span>
+      </div>
+
       {/* Search */}
       <div className="relative mb-6">
         <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-[#64748b]" />

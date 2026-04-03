@@ -235,6 +235,12 @@ export default function PostmortemsPage() {
         <Button size="sm" className="shrink-0">{t.newPostmortem}</Button>
       </div>
 
+      {/* DEMO-05: Sample data notice */}
+      <div className="mb-6 px-4 py-2.5 rounded-lg border border-amber-500/20 bg-amber-500/[0.06] flex items-center gap-2 text-xs text-amber-400">
+        <span className="shrink-0">📋</span>
+        <span>{locale === "ja" ? "サンプルデータを表示中。実際の障害データはシミュレーション実行後に蓄積されます。" : "Showing sample data. Real incident data accumulates after running simulations."}</span>
+      </div>
+
       {/* Summary */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
         <Card className="text-center">

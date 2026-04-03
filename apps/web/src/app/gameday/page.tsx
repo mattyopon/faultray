@@ -175,7 +175,7 @@ function roleColor(role: Participant["role"]): string {
  * ============================================================ */
 
 export default function GameDayPage() {
-  useLocale();
+  const locale = useLocale();
 
   const [selectedScenario, setSelectedScenario] = useState(SCENARIOS[0]);
   const [expandedGameDay, setExpandedGameDay] = useState<string | null>("gd-2026-04-10");
@@ -195,6 +195,12 @@ export default function GameDayPage() {
         <p className="text-[#94a3b8] text-sm">
           Plan and run chaos engineering exercises to build resilience muscle memory (Layer 2)
         </p>
+      </div>
+
+      {/* DEMO-05: Sample data notice */}
+      <div className="mb-6 px-4 py-2.5 rounded-lg border border-amber-500/20 bg-amber-500/[0.06] flex items-center gap-2 text-xs text-amber-400">
+        <span className="shrink-0">📋</span>
+        <span>{locale === "ja" ? "サンプルデータを表示中。実際のゲームデー演習を計画すると実データが表示されます。" : "Showing sample data. Your actual GameDay exercises will appear here."}</span>
       </div>
 
       {/* Stats */}
