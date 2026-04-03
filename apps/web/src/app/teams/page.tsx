@@ -258,7 +258,7 @@ export default function TeamsPage() {
     } finally {
       setOrgLoading(false);
     }
-  }, []);
+  }, [locale]);
 
   const fetchTasks = useCallback(async () => {
     setTasksLoading(true);

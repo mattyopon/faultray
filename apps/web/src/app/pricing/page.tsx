@@ -108,7 +108,7 @@ export default function PricingPage() {
       }
     } catch {
       // Stripe not configured — show retry UI instead of silent redirect
-      setCheckoutError({ plan, message: "決済処理に失敗しました。再試行するか、サポートにお問い合わせください。" });
+      setCheckoutError({ plan, message: isJa ? "決済処理に失敗しました。再試行するか、サポートにお問い合わせください。" : "Payment failed. Please retry or contact support." });
     } finally {
       setLoadingPlan(null);
     }
@@ -128,13 +128,13 @@ export default function PricingPage() {
                 disabled={loadingPlan !== null}
                 className="px-3 py-1.5 text-xs font-medium rounded bg-red-500/20 text-red-300 hover:bg-red-500/30 border border-red-500/30 transition-colors disabled:opacity-50"
               >
-                再試行
+                {isJa ? "再試行" : "Retry"}
               </button>
               <a
-                href="mailto:support@faultray.io?subject=決済エラー"
+                href={`mailto:support@faultray.io?subject=${isJa ? "決済エラー" : "Payment%20Error"}`}
                 className="px-3 py-1.5 text-xs font-medium rounded bg-[#1e293b] text-[#94a3b8] hover:text-white border border-[#334155] transition-colors"
               >
-                サポートに連絡
+                {isJa ? "サポートに連絡" : "Contact support"}
               </a>
             </div>
           </div>
@@ -176,10 +176,12 @@ export default function PricingPage() {
           <span className="hidden sm:block">·</span>
           <span>Cancel anytime</span>
         </div>
-        {/* JP-05: 日本語サポートの保証を明示 */}
-        <div className="mt-4 inline-flex items-center gap-2 px-4 py-2 rounded-full bg-blue-500/10 border border-blue-500/20">
-          <span className="text-sm font-semibold text-blue-400">日本語サポート対応 — 日本語でのメール・稟議書サポートを提供</span>
-        </div>
+        {/* JP-05: 日本語サポートの保証を明示 (Japanese locale only) */}
+        {isJa && (
+          <div className="mt-4 inline-flex items-center gap-2 px-4 py-2 rounded-full bg-blue-500/10 border border-blue-500/20">
+            <span className="text-sm font-semibold text-blue-400">日本語サポート対応 — 日本語でのメール・稟議書サポートを提供</span>
+          </div>
+        )}
       </div>
 
       {/* Billing toggle */}
@@ -384,23 +386,32 @@ export default function PricingPage() {
 
       {/* PAY-01: 請求書払い（銀行振込）対応のお知らせ */}
       <div className="max-w-[900px] mx-auto mt-8 p-4 rounded-xl border border-[#1e293b] bg-[#111827] flex items-start gap-3">
-        <span className="text-lg shrink-0">🏦</span>
+        <span className="text-lg shrink-0" aria-hidden="true">🏦</span>
         <div>
           <p className="text-sm text-[#94a3b8]">
-            <span className="text-white font-semibold">請求書払い・銀行振込に対応しています。</span>{" "}
-            年間契約をご希望の企業様は <a href="mailto:sales@faultray.com" className="text-[#FFD700] hover:underline">sales@faultray.com</a> までお問い合わせください。
-            インボイス制度対応の適格請求書を発行いたします。
+            {isJa ? (
+              <>
+                <span className="text-white font-semibold">請求書払い・銀行振込に対応しています。</span>{" "}
+                年間契約をご希望の企業様は <a href="mailto:sales@faultray.com" className="text-[#FFD700] hover:underline">sales@faultray.com</a> までお問い合わせください。
+                インボイス制度対応の適格請求書を発行いたします。
+              </>
+            ) : (
+              <>
+                <span className="text-white font-semibold">Invoice and bank transfer payment available.</span>{" "}
+                For annual enterprise billing, contact <a href="mailto:sales@faultray.com" className="text-[#FFD700] hover:underline">sales@faultray.com</a>.
+              </>
+            )}
           </p>
-          <p className="text-xs text-[#64748b] mt-1">Invoice payment (bank transfer) available for annual plans. Contact us for enterprise billing.</p>
+          {isJa && <p className="text-xs text-[#64748b] mt-1">Invoice payment (bank transfer) available for annual plans. Contact us for enterprise billing.</p>}
         </div>
       </div>
 
       {/* Footer links */}
       <div className="max-w-[900px] mx-auto mt-8 pt-8 border-t border-[#1e293b] flex flex-wrap justify-center gap-6 text-sm text-[#64748b]">
-        <Link href="/privacy" className="hover:text-white transition-colors">Privacy Policy</Link>
-        <Link href="/terms" className="hover:text-white transition-colors">Terms of Service</Link>
-        <Link href="/tokushoho" className="hover:text-white transition-colors">特定商取引法に基づく表記</Link>
-        <a href="mailto:sales@faultray.com" className="hover:text-white transition-colors">Contact Sales</a>
+        <Link href="/privacy" className="hover:text-white transition-colors">{isJa ? "プライバシーポリシー" : "Privacy Policy"}</Link>
+        <Link href="/terms" className="hover:text-white transition-colors">{isJa ? "利用規約" : "Terms of Service"}</Link>
+        {isJa && <Link href="/tokushoho" className="hover:text-white transition-colors">特定商取引法に基づく表記</Link>}
+        <a href="mailto:sales@faultray.com" className="hover:text-white transition-colors">{isJa ? "セールスに問い合わせ" : "Contact Sales"}</a>
       </div>
     </div>
   );

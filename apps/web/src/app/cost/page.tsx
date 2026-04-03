@@ -3,7 +3,7 @@
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { useState, useEffect, useCallback, useMemo } from "react";
+import { useState, useCallback, useMemo } from "react";
 import {
   DollarSign,
   TrendingUp,
@@ -362,7 +362,7 @@ export default function CostPage() {
   const [cyberInsurancePremium, setCyberInsurancePremium] = useState(50000);
 
   // ── Simulation data from localStorage ──
-  const [simData, setSimData] = useState<SimulationData | null>(() => {
+  const [simData] = useState<SimulationData | null>(() => {
     try {
       const raw = localStorage.getItem("faultray_last_simulation");
       if (raw) {

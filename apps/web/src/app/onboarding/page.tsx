@@ -59,15 +59,14 @@ function getScoreColor(score: number): string {
   return "text-red-400";
 }
 
-function getScoreLabel(score: number, _t: Record<string, string>): string {
+function getScoreLabel(score: number): string {
   if (score >= 70) return "Good foundation";
   if (score >= 45) return "Needs improvement";
   return "Critical gaps identified";
 }
 
 function getRecommendations(
-  answers: Record<number, boolean | null>,
-  _t: Record<string, string>
+  answers: Record<number, boolean | null>
 ): Recommendation[] {
   const recs: Recommendation[] = [
     {
@@ -172,7 +171,7 @@ export default function OnboardingPage() {
   ];
 
   const score = calcScore(state.answers);
-  const recommendations = getRecommendations(state.answers, t);
+  const recommendations = getRecommendations(state.answers);
 
   const canProceedStep1 = state.cloud !== null && state.industry !== null;
   const canProceedStep2 = Object.keys(state.answers).length === 5;
@@ -353,7 +352,7 @@ export default function OnboardingPage() {
                 </span>
               </div>
               <p className={`text-sm font-semibold ${getScoreColor(score)}`}>
-                {getScoreLabel(score, t)}
+                {getScoreLabel(score)}
               </p>
             </div>
 

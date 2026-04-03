@@ -108,7 +108,7 @@ export default function LogsPage() {
   const [filterLevel, setFilterLevel]     = useState<string>("all");
   const [filterService, setFilterService] = useState<string>("all");
   const [showAnomaly, setShowAnomaly]     = useState(false);
-  const [refreshKey, setRefreshKey]       = useState(0);
+  const [, setRefreshKey]       = useState(0);
 
   const filtered = useMemo(() => {
     return DEMO_LOGS.filter((log) => {
