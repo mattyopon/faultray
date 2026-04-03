@@ -193,7 +193,7 @@ export default function AuditLogPage() {
   const [outcomeFilter, setOutcomeFilter] = useState<"ALL" | "SUCCESS" | "FAILURE">("ALL");
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [entries, setEntries] = useState<AuditEntry[]>(DEMO_AUDIT_LOG);
-  const [loading, setLoading] = useState(true);
+  const [_loading, setLoading] = useState(true);
 
   useEffect(() => {
     fetch("/api/audit-log")
@@ -229,7 +229,7 @@ export default function AuditLogPage() {
       const matchesOutcome = outcomeFilter === "ALL" || entry.outcome === outcomeFilter;
       return matchesSearch && matchesOutcome;
     });
-  }, [search, outcomeFilter]);
+  }, [search, outcomeFilter, entries]);
 
   // Export as CSV (client-side)
   const exportCsv = () => {
