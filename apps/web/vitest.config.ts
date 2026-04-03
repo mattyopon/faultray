@@ -15,6 +15,13 @@ export default defineConfig({
       provider: "v8",
       include: ["src/**/*.ts", "src/**/*.tsx"],
       exclude: ["src/**/*.d.ts"],
+      // TESTQUAL-05: カバレッジ品質基準
+      thresholds: {
+        lines: 60,
+        functions: 60,
+        branches: 50,
+        statements: 60,
+      },
     },
   },
   resolve: {

@@ -45,13 +45,14 @@ describe("api module", () => {
 
       const result = await api.simulate({ sample: "web-app" }, "tok123");
 
-      expect(globalThis.fetch).toHaveBeenCalledOnce();
+      // PYTEST-05: カスタムメッセージ付きアサーション
+      expect(globalThis.fetch, "fetch should have been called exactly once").toHaveBeenCalledOnce();
       const [url, opts] = (globalThis.fetch as ReturnType<typeof vi.fn>).mock.calls[0];
-      expect(url).toBe("/api/simulate");
-      expect(opts.method).toBe("POST");
-      expect(JSON.parse(opts.body)).toEqual({ sample: "web-app" });
-      expect(opts.headers["Authorization"]).toBe("Bearer tok123");
-      expect(result).toEqual(fakeResult);
+      expect(url, "POST先URLが/api/simulateであること").toBe("/api/simulate");
+      expect(opts.method, "HTTPメソッドがPOSTであること").toBe("POST");
+      expect(JSON.parse(opts.body), "リクエストボディにsample:'web-app'が含まれること").toEqual({ sample: "web-app" });
+      expect(opts.headers["Authorization"], "Authorizationヘッダーにtokenが含まれること").toBe("Bearer tok123");
+      expect(result, "シミュレーション結果がモックと一致すること").toEqual(fakeResult);
     });
   });
 
@@ -62,9 +63,9 @@ describe("api module", () => {
       const result = await api.getProjects("tok");
 
       const [url, opts] = (globalThis.fetch as ReturnType<typeof vi.fn>).mock.calls[0];
-      expect(url).toBe("/api/projects");
-      expect(opts.method).toBe("GET");
-      expect(result).toEqual([{ id: "1", name: "test" }]);
+      expect(url, "GETリクエスト先URLが/api/projectsであること").toBe("/api/projects");
+      expect(opts.method, "HTTPメソッドがGETであること").toBe("GET");
+      expect(result, "プロジェクト一覧がモックと一致すること").toEqual([{ id: "1", name: "test" }]);
     });
   });
 

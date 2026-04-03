@@ -244,6 +244,21 @@ body {
   --z-tooltip:  300;
 }
 
+/* UICOMP-08: ホバー効果の統一ユーティリティ */
+.hover-card {
+  transition: border-color 0.2s, background-color 0.2s, transform 0.2s;
+}
+.hover-card:hover {
+  border-color: rgba(255, 215, 0, 0.2);
+  background-color: var(--bg-card-hover);
+}
+.hover-lift:hover {
+  transform: translateY(-2px);
+}
+.hover-glow:hover {
+  box-shadow: 0 0 24px rgba(255, 215, 0, 0.08);
+}
+
 /* CSS-06: @media print — 印刷スタイル */
 @media print {
   /* サイドバー・ナビ・クッキーバナーを非表示 */
