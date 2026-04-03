@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { applyRateLimit } from "@/lib/rate-limit";
 
 export const dynamic = "force-dynamic";
 
@@ -18,6 +19,9 @@ export async function PATCH(
   request: Request,
   { params }: { params: Promise<{ id: string }> }
 ) {
+  const limited = applyRateLimit(request, { limit: 10, windowMs: 60_000 });
+  if (limited) return limited;
+
   const { id } = await params;
 
   let body: Partial<PatchTaskBody>;
@@ -118,9 +122,12 @@ export async function PATCH(
 }
 
 export async function DELETE(
-  _request: Request,
+  request: Request,
   { params }: { params: Promise<{ id: string }> }
 ) {
+  const limited = applyRateLimit(request, { limit: 5, windowMs: 60_000 });
+  if (limited) return limited;
+
   const { id } = await params;
 
   let supabase: Awaited<ReturnType<typeof import("@/lib/supabase/server").createClient>>;

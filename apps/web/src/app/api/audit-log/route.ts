@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { requireAuth } from "@/lib/api-auth";
+import { applyRateLimit } from "@/lib/rate-limit";
 
 export const dynamic = "force-dynamic";
 
@@ -8,6 +9,9 @@ export const dynamic = "force-dynamic";
  * Query params: ?action=LOGIN&outcome=FAILURE&limit=50&offset=0
  */
 export async function GET(request: Request) {
+  const limited = applyRateLimit(request, { limit: 30, windowMs: 60_000 });
+  if (limited) return limited;
+
   const { user, error } = await requireAuth();
   if (error) return error;
 
@@ -57,6 +61,9 @@ export async function GET(request: Request) {
  * Called internally by other API routes when actions occur.
  */
 export async function POST(request: Request) {
+  const limited = applyRateLimit(request, { limit: 10, windowMs: 60_000 });
+  if (limited) return limited;
+
   const { user, error } = await requireAuth();
   if (error) return error;
 

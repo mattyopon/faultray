@@ -7,10 +7,14 @@
  * Requires: authenticated session (via Supabase SSR cookie).
  */
 import { NextResponse } from "next/server";
+import { applyRateLimit } from "@/lib/rate-limit";
 
 export const dynamic = "force-dynamic";
 
 export async function DELETE(request: Request) {
+  const limited = applyRateLimit(request, { limit: 5, windowMs: 60_000 });
+  if (limited) return limited;
+
   // Parse optional confirmation body
   let body: { confirm?: boolean } = {};
   try {

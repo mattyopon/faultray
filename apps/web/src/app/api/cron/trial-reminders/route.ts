@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { sendEmail } from "@/lib/email";
 import { trialReminderEmail } from "@/lib/email-templates";
+import { applyRateLimit } from "@/lib/rate-limit";
 
 export const dynamic = "force-dynamic";
 
@@ -11,6 +12,9 @@ export const dynamic = "force-dynamic";
  * Protected by CRON_SECRET to prevent unauthorized invocation.
  */
 export async function POST(request: Request) {
+  const limited = applyRateLimit(request, { limit: 5, windowMs: 60_000 });
+  if (limited) return limited;
+
   const cronSecret = process.env.CRON_SECRET;
   const authHeader = request.headers.get("authorization");
 

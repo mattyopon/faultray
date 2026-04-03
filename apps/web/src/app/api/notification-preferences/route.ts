@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { requireAuth } from "@/lib/api-auth";
+import { applyRateLimit } from "@/lib/rate-limit";
 
 export const dynamic = "force-dynamic";
 
@@ -14,7 +15,10 @@ const VALID_KEYS = [
 /**
  * GET /api/notification-preferences — Read notification settings for the current user.
  */
-export async function GET() {
+export async function GET(request: Request) {
+  const limited = applyRateLimit(request, { limit: 30, windowMs: 60_000 });
+  if (limited) return limited;
+
   const { user, error } = await requireAuth();
   if (error) return error;
 
@@ -46,6 +50,9 @@ export async function GET() {
  * Body: { "simulationCompleted": false, "weeklySummary": true }
  */
 export async function PATCH(request: Request) {
+  const limited = applyRateLimit(request, { limit: 10, windowMs: 60_000 });
+  if (limited) return limited;
+
   const { user, error } = await requireAuth();
   if (error) return error;
 

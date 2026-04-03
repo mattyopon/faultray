@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import Stripe from "stripe";
+import { applyRateLimit } from "@/lib/rate-limit";
 
 // Stripe webhook handler must read the raw body
 export const dynamic = "force-dynamic";
@@ -58,6 +59,10 @@ async function updateUserByCustomerId(
 }
 
 export async function POST(request: Request) {
+  // Defense-in-depth: generous limit to allow Stripe retries
+  const limited = applyRateLimit(request, { limit: 60, windowMs: 60_000 });
+  if (limited) return limited;
+
   const secretKey = process.env.STRIPE_SECRET_KEY;
   const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET;
 

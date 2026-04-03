@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { applyRateLimit } from "@/lib/rate-limit";
 
 export const dynamic = "force-dynamic";
 
@@ -7,6 +8,9 @@ interface CreateOrgBody {
 }
 
 export async function POST(request: Request) {
+  const limited = applyRateLimit(request, { limit: 10, windowMs: 60_000 });
+  if (limited) return limited;
+
   let body: Partial<CreateOrgBody>;
   try {
     body = (await request.json()) as Partial<CreateOrgBody>;

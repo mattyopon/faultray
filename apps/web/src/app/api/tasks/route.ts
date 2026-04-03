@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { applyRateLimit } from "@/lib/rate-limit";
 
 export const dynamic = "force-dynamic";
 
@@ -42,7 +43,10 @@ async function getOrgId(
   return null;
 }
 
-export async function GET() {
+export async function GET(request: Request) {
+  const limited = applyRateLimit(request, { limit: 30, windowMs: 60_000 });
+  if (limited) return limited;
+
   let supabase: Awaited<ReturnType<typeof import("@/lib/supabase/server").createClient>>;
   try {
     const { createClient } = await import("@/lib/supabase/server");
@@ -80,6 +84,9 @@ export async function GET() {
 }
 
 export async function POST(request: Request) {
+  const limited = applyRateLimit(request, { limit: 10, windowMs: 60_000 });
+  if (limited) return limited;
+
   let body: Partial<CreateTaskBody>;
   try {
     body = (await request.json()) as Partial<CreateTaskBody>;
