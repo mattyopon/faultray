@@ -1867,6 +1867,7 @@ export default function RemediationPage() {
                               onChange={(e) =>
                                 setEditForm({ ...editForm, assignee: e.target.value })
                               }
+                              aria-label={t.assignee}
                               className="w-full bg-white/[0.05] border border-[#1e293b] rounded-lg px-3 py-1.5 text-sm text-white focus:border-[#FFD700] focus:outline-none"
                               placeholder={t.unassigned}
                             />
@@ -1902,6 +1903,7 @@ export default function RemediationPage() {
                               onChange={(e) =>
                                 setEditForm({ ...editForm, deadline: e.target.value })
                               }
+                              aria-label={t.deadline}
                               className="w-full bg-white/[0.05] border border-[#1e293b] rounded-lg px-3 py-1.5 text-sm text-white focus:border-[#FFD700] focus:outline-none"
                             />
                           </div>
@@ -1916,6 +1918,7 @@ export default function RemediationPage() {
                               setEditForm({ ...editForm, comment: e.target.value })
                             }
                             rows={2}
+                            aria-label={t.comment}
                             className="w-full bg-white/[0.05] border border-[#1e293b] rounded-lg px-3 py-1.5 text-sm text-white focus:border-[#FFD700] focus:outline-none resize-none"
                             placeholder={t.commentPlaceholder}
                           />

@@ -667,6 +667,7 @@ export default function TeamsPage() {
                 type="date"
                 value={newTaskDue}
                 onChange={(e) => setNewTaskDue(e.target.value)}
+                aria-label={locale === "ja" ? "期限日" : "Due date"}
                 className="bg-[#111827] border border-[#1e293b] rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:border-[#FFD700]/40 col-span-2 sm:col-span-1"
               />
             </div>
