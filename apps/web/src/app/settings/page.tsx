@@ -754,7 +754,7 @@ export default function SettingsPage() {
               ))}
             </div>
             {planFeedback && (
-              <div className={`mt-3 px-4 py-2 rounded-lg text-sm font-medium ${
+              <div role="alert" className={`mt-3 px-4 py-2 rounded-lg text-sm font-medium ${
                 planFeedback.type === "success"
                   ? "bg-emerald-500/10 text-emerald-400 border border-emerald-500/20"
                   : "bg-red-500/10 text-red-400 border border-red-500/20"

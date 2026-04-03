@@ -412,7 +412,7 @@ export default function TeamsPage() {
         </div>
 
         {orgError && (
-          <div className="mb-6 p-4 bg-red-500/10 border border-red-500/20 rounded-xl text-red-400 text-sm flex items-center gap-2">
+          <div role="alert" className="mb-6 p-4 bg-red-500/10 border border-red-500/20 rounded-xl text-red-400 text-sm flex items-center gap-2">
             <AlertCircle size={16} />
             {orgError}
           </div>
@@ -590,6 +590,7 @@ export default function TeamsPage() {
           </div>
           {inviteMsg && (
             <div
+              role="alert"
               className={`mt-3 p-3 rounded-lg text-sm flex items-center gap-2 ${
                 inviteMsg.type === "success"
                   ? "bg-emerald-500/10 text-emerald-400"
