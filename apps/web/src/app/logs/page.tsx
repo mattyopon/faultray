@@ -130,20 +130,22 @@ export default function LogsPage() {
       <div className="mb-8">
         <h1 className="text-2xl font-bold mb-1 flex items-center gap-3">
           <FileText size={24} className="text-[#FFD700]" />
-          Log Explorer
+          {locale === "ja" ? "ログエクスプローラー" : "Log Explorer"}
         </h1>
         <p className="text-[#94a3b8] text-sm">
-          Structured log search with anomaly detection across all services (Layer 0)
+          {locale === "ja"
+            ? "全サービスの構造化ログ検索・異常検知 (Layer 0)"
+            : "Structured log search with anomaly detection across all services (Layer 0)"}
         </p>
       </div>
 
       {/* Stats */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
         {[
-          { label: "Total Entries", value: DEMO_LOGS.length, color: "#e2e8f0" },
-          { label: "Errors",        value: errorCount,        color: "#ef4444" },
-          { label: "Warnings",      value: warnCount,         color: "#f59e0b" },
-          { label: "Anomalies",     value: anomalyCount,      color: "#a855f7" },
+          { label: locale === "ja" ? "総エントリー数" : "Total Entries", value: DEMO_LOGS.length, color: "#e2e8f0" },
+          { label: locale === "ja" ? "エラー" : "Errors",                value: errorCount,        color: "#ef4444" },
+          { label: locale === "ja" ? "警告" : "Warnings",                value: warnCount,         color: "#f59e0b" },
+          { label: locale === "ja" ? "異常検知" : "Anomalies",           value: anomalyCount,      color: "#a855f7" },
         ].map((stat) => (
           <Card key={stat.label} className="text-center">
             <p className="text-xs text-[#64748b] uppercase tracking-wider mb-1">{stat.label}</p>
@@ -157,7 +159,7 @@ export default function LogsPage() {
         <div className="flex flex-wrap items-center gap-3">
           <div className="flex items-center gap-2 text-[#64748b]">
             <Filter size={14} />
-            <span className="text-xs font-medium uppercase tracking-wider">Filters</span>
+            <span className="text-xs font-medium uppercase tracking-wider">{locale === "ja" ? "フィルター" : "Filters"}</span>
           </div>
 
           {/* Search */}
@@ -166,6 +168,7 @@ export default function LogsPage() {
             <input
               className="w-full bg-white/5 border border-[#1e293b] rounded-lg pl-8 pr-3 py-1.5 text-sm text-[#e2e8f0] placeholder-[#475569] focus:outline-none focus:border-[#FFD700]/40 font-mono"
               placeholder='message contains "timeout" OR service:db'
+              aria-label={locale === "ja" ? "ログメッセージを検索" : "Search log messages"}
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
             />
@@ -176,9 +179,9 @@ export default function LogsPage() {
             className="bg-[#0d1526] border border-[#1e293b] rounded-lg px-3 py-1.5 text-sm text-[#94a3b8] focus:outline-none"
             value={filterLevel}
             onChange={(e) => setFilterLevel(e.target.value)}
-            aria-label="Filter by log level"
+            aria-label={locale === "ja" ? "ログレベルでフィルター" : "Filter by log level"}
           >
-            <option value="all">All Levels</option>
+            <option value="all">{locale === "ja" ? "全レベル" : "All Levels"}</option>
             {ALL_LEVELS.map((l) => <option key={l} value={l}>{l}</option>)}
           </select>
 
@@ -187,9 +190,9 @@ export default function LogsPage() {
             className="bg-[#0d1526] border border-[#1e293b] rounded-lg px-3 py-1.5 text-sm text-[#94a3b8] focus:outline-none"
             value={filterService}
             onChange={(e) => setFilterService(e.target.value)}
-            aria-label="Filter by service"
+            aria-label={locale === "ja" ? "サービスでフィルター" : "Filter by service"}
           >
-            <option value="all">All Services</option>
+            <option value="all">{locale === "ja" ? "全サービス" : "All Services"}</option>
             {ALL_SERVICES.map((s) => <option key={s} value={s}>{s}</option>)}
           </select>
 
@@ -203,7 +206,7 @@ export default function LogsPage() {
             onClick={() => setShowAnomaly(!showAnomaly)}
           >
             <Zap size={13} />
-            Anomalies Only
+            {locale === "ja" ? "異常のみ表示" : "Anomalies Only"}
           </button>
 
           <Button
@@ -212,7 +215,7 @@ export default function LogsPage() {
             onClick={() => setRefreshKey((k) => k + 1)}
           >
             <RefreshCw size={13} />
-            Refresh
+            {locale === "ja" ? "更新" : "Refresh"}
           </Button>
         </div>
       </Card>
@@ -237,7 +240,9 @@ export default function LogsPage() {
 
         <div className="space-y-1.5 font-mono text-xs">
           {filtered.length === 0 && (
-            <p className="text-center text-[#64748b] py-8">No log entries match the current filters.</p>
+            <p className="text-center text-[#64748b] py-8">
+              {locale === "ja" ? "現在のフィルターに一致するログがありません。" : "No log entries match the current filters."}
+            </p>
           )}
 
           {filtered.map((log) => (
@@ -287,14 +292,14 @@ export default function LogsPage() {
 
       {/* FLOW-11: Cross-links to related observability pages */}
       <div className="flex items-center gap-3 mt-6 pt-4 border-t border-[#1e293b]">
-        <span className="text-xs text-[#475569]">Related:</span>
+        <span className="text-xs text-[#475569]">{locale === "ja" ? "関連:" : "Related:"}</span>
         <Link href="/traces" className="flex items-center gap-1.5 text-xs text-[#64748b] hover:text-[#94a3b8] transition-colors">
           <Activity size={12} />
-          Traces
+          {locale === "ja" ? "トレース" : "Traces"}
         </Link>
         <Link href="/reports" className="flex items-center gap-1.5 text-xs text-[#64748b] hover:text-[#94a3b8] transition-colors">
           <BookOpen size={12} />
-          Reports
+          {locale === "ja" ? "レポート" : "Reports"}
         </Link>
       </div>
     </div>
