@@ -918,7 +918,7 @@ const DEMO_RESULT: SimulationResult = {
 
 export default function SimulatePage() {
   return (
-    <Suspense fallback={<div className="max-w-[1200px] mx-auto px-6 py-10 text-[#64748b]">読み込み中...</div>}>
+    <Suspense fallback={<div className="max-w-[1200px] mx-auto px-6 py-10 text-[#64748b]">Loading… / 読み込み中…</div>}>
       <SimulatePageInner />
     </Suspense>
   );
@@ -1243,8 +1243,8 @@ function SimulatePageInner() {
               {/* Try Demo 1-click */}
               <div className="mb-8 p-5 rounded-xl border border-[#FFD700]/20 bg-[#FFD700]/[0.04] flex items-center justify-between gap-4 flex-wrap">
                 <div>
-                  <p className="text-sm font-semibold text-white mb-0.5">まずはデモを試してみましょう</p>
-                  <p className="text-xs text-[#94a3b8]">Web SaaS テンプレートで即座にシミュレーションを体験できます</p>
+                  <p className="text-sm font-semibold text-white mb-0.5">{locale === "ja" ? "まずはデモを試してみましょう" : "Try the demo first"}</p>
+                  <p className="text-xs text-[#94a3b8]">{locale === "ja" ? "Web SaaS テンプレートで即座にシミュレーションを体験できます" : "Experience an instant simulation with the Web SaaS template"}</p>
                 </div>
                 <Button
                   variant="primary"
