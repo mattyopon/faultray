@@ -111,7 +111,7 @@ def _generate_html(report: dict) -> str:
     return f"""<!DOCTYPE html>
 <html><head><title>{esc(report.get("title", "FaultRay Report"))}</title>
 <style>
-body {{ font-family: -apple-system, sans-serif; background: #0a0e1a; color: #e2e8f0; max-width: 800px; margin: 0 auto; padding: 40px 20px; }}
+body {{ font-family: -apple-system, "Yu Gothic", "Hiragino Sans", "Meiryo", "Noto Sans CJK JP", sans-serif; background: #0a0e1a; color: #e2e8f0; max-width: 800px; margin: 0 auto; padding: 40px 20px; }}
 h1 {{ color: #FFD700; border-bottom: 2px solid #1e293b; padding-bottom: 16px; }}
 h2 {{ color: #94a3b8; margin-top: 32px; }}
 .score {{ font-size: 48px; font-weight: bold; color: #FFD700; }}

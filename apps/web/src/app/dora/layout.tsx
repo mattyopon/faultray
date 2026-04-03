@@ -5,6 +5,7 @@ export const metadata: Metadata = {
   description:
     "Track and prove DORA compliance with FaultRay — automated reports aligned to Digital Operational Resilience Act requirements.",
   alternates: { canonical: "https://faultray.com/dora" },
+  robots: { index: false, follow: false },
 };
 
 export default function DoraLayout({
