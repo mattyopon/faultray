@@ -90,6 +90,36 @@ async function apiFetch<T>(path: string, options: ApiOptions = {}): Promise<T> {
   }
 }
 
+// FETCHPAT-06: 軽量なランタイム型ガード
+// null/undefined・期待するフィールドの欠如を検出してクラッシュを防ぐ
+function assertObject(value: unknown, context: string): asserts value is Record<string, unknown> {
+  if (value === null || typeof value !== "object" || Array.isArray(value)) {
+    throw new Error(`[API] Expected object at ${context}, got ${typeof value}`);
+  }
+}
+
+function assertArray(value: unknown, context: string): asserts value is unknown[] {
+  if (!Array.isArray(value)) {
+    throw new Error(`[API] Expected array at ${context}, got ${typeof value}`);
+  }
+}
+
+/** 重要なシミュレーションレスポンスの最低限のフィールドを検証 */
+function validateSimulationResult(raw: unknown): void {
+  assertObject(raw, "SimulationResult");
+  if (typeof raw.overall_score !== "number") {
+    throw new Error("[API] SimulationResult.overall_score is missing or not a number");
+  }
+  if (typeof raw.availability_estimate !== "string") {
+    throw new Error("[API] SimulationResult.availability_estimate is missing or not a string");
+  }
+  if (!Array.isArray(raw.critical_failures)) {
+    throw new Error("[API] SimulationResult.critical_failures is missing or not an array");
+  }
+}
+
+export { assertObject, assertArray, validateSimulationResult };
+
 export interface CalcFactor {
   name: string;
   effect: string;
@@ -447,12 +477,16 @@ export interface ProjectWithRuns extends Project {
 }
 
 export const api = {
-  simulate: (data: { topology?: string; topology_yaml?: string; sample?: string }, token?: string) =>
-    apiFetch<SimulationResult>("/api/simulate", {
+  simulate: async (data: { topology?: string; topology_yaml?: string; sample?: string }, token?: string): Promise<SimulationResult> => {
+    const result = await apiFetch<SimulationResult>("/api/simulate", {
       method: "POST",
       body: data,
       token,
-    }),
+    });
+    // FETCHPAT-06: ランタイム型検証 — 予期しない構造でのクラッシュを防止
+    validateSimulationResult(result);
+    return result;
+  },
 
   scanCloud: (
     data: {
