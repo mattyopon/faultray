@@ -504,6 +504,7 @@ function businessSummary(score: number, availability: string, criticalCount: num
  * Stores opted-in state to localStorage to avoid repeated prompts.
  */
 function NurtureEmailCapture() {
+  const locale = useLocale();
   const [email, setEmail] = useState("");
   const [submitted, setSubmitted] = useState(false);
   const [dismissed, setDismissed] = useState(false);
@@ -571,7 +572,7 @@ function NurtureEmailCapture() {
             <button
               onClick={handleDismiss}
               className="text-[#475569] hover:text-white text-xs transition-colors"
-              aria-label="Dismiss"
+              aria-label={locale === "ja" ? "閉じる" : "Dismiss"}
             >
               ✕
             </button>
@@ -586,7 +587,7 @@ function NurtureEmailCapture() {
               value={email}
               onChange={(e) => { setEmail(e.target.value); }}
               placeholder="your@company.com"
-              aria-label="Email address"
+              aria-label={locale === "ja" ? "メールアドレス" : "Email address"}
               className="flex-1 min-w-0 px-3 py-2 rounded-lg bg-[#0d1117] border border-[#1e293b] text-sm text-white placeholder-[#475569] focus:outline-none focus:border-[#FFD700]/50 transition-colors"
             />
             <button

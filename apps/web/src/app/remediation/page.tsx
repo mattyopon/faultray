@@ -1874,7 +1874,7 @@ export default function RemediationPage() {
                           </div>
                           <div>
                             <label className="block text-[10px] text-[#64748b] uppercase tracking-wider mb-1">
-                              Status
+                              {t.status}
                             </label>
                             <select
                               value={editForm.status}
@@ -1884,7 +1884,7 @@ export default function RemediationPage() {
                                   status: e.target.value as TaskStatus,
                                 })
                               }
-                              aria-label="Task status"
+                              aria-label={locale === "ja" ? "タスクのステータス" : "Task status"}
                               className="w-full bg-white/[0.05] border border-[#1e293b] rounded-lg px-3 py-1.5 text-sm text-white focus:border-[#FFD700] focus:outline-none"
                             >
                               <option value="todo">{t.statusTodo}</option>

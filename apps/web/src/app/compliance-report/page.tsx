@@ -248,7 +248,7 @@ export default function ComplianceReportPage() {
                 <button
                   type="button"
                   className="text-[#FFD700] hover:text-[#ffe44d] shrink-0"
-                  aria-label="View details"
+                  aria-label={locale === "ja" ? "詳細を表示" : "View details"}
                 >
                   <ExternalLink size={14} />
                 </button>

@@ -266,7 +266,7 @@ export default function LoginPage() {
   return (
     <Suspense fallback={
       <div className="min-h-screen flex items-center justify-center">
-        <div className="animate-pulse text-[#64748b]">読み込み中...</div>
+        <div className="animate-pulse text-[#64748b]">Loading… / 読み込み中…</div>
       </div>
     }>
       <LoginForm />

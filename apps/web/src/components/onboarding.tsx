@@ -264,7 +264,7 @@ export function Onboarding() {
         <button
           onClick={handleSkip}
           className="absolute top-4 right-4 p-1.5 text-[#64748b] hover:text-white transition-colors rounded-lg hover:bg-white/5"
-          aria-label="Close"
+          aria-label={locale === "ja" ? "閉じる" : "Close"}
         >
           <X size={18} />
         </button>

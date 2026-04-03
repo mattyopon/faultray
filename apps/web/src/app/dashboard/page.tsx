@@ -65,6 +65,7 @@ function ScoreRing({ score, size = 120 }: { score: number; size?: number }) {
 
 // ---- Getting Started Checklist Component ----
 function GettingStartedChecklist({ hasRun }: { hasRun: boolean }) {
+  const locale = useLocale();
   const [dismissed, setDismissed] = useState(false);
   const [checkedItems, setCheckedItems] = useState<Record<number, boolean>>({});
 
@@ -124,7 +125,7 @@ function GettingStartedChecklist({ hasRun }: { hasRun: boolean }) {
         <button
           onClick={dismiss}
           className="p-1 text-[#64748b] hover:text-white transition-colors rounded"
-          aria-label="Close checklist"
+          aria-label={locale === "ja" ? "チェックリストを閉じる" : "Close checklist"}
         >
           <X size={14} />
         </button>
