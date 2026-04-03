@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect } from "react";
+import { useLocale } from "@/lib/useLocale";
 
 export default function Error({
   error,
@@ -9,6 +10,8 @@ export default function Error({
   error: Error & { digest?: string };
   unstable_retry: () => void;
 }) {
+  const locale = useLocale();
+
   useEffect(() => {
     console.error(error);
   }, [error]);
@@ -20,21 +23,21 @@ export default function Error({
           FaultRay
         </p>
         <h1 className="text-4xl font-bold text-red-500 mb-4">
-          Something went wrong
+          {locale === "ja" ? "エラーが発生しました" : "Something went wrong"}
         </h1>
         <p className="text-[#94a3b8] mb-2 text-sm break-words">
-          {error.message ?? "An unexpected error occurred."}
+          {error.message ?? (locale === "ja" ? "予期しないエラーが発生しました。" : "An unexpected error occurred.")}
         </p>
         {error.digest && (
           <p className="text-[#475569] text-xs mb-8 font-mono">
-            Error ID: {error.digest}
+            {locale === "ja" ? "エラーID:" : "Error ID:"} {error.digest}
           </p>
         )}
         <button
           onClick={unstable_retry}
           className="inline-block px-6 py-3 bg-[#FFD700] text-black rounded-lg font-semibold hover:bg-yellow-400 transition-colors"
         >
-          Try again
+          {locale === "ja" ? "再試行" : "Try again"}
         </button>
       </div>
     </div>
