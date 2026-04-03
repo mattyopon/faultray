@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { ChevronRight, Home } from "lucide-react";
+import { useLocale } from "@/lib/useLocale";
 
 /** Map of path segments to human-readable labels */
 const SEGMENT_LABELS: Record<string, string> = {
@@ -60,6 +61,7 @@ const SEGMENT_LABELS: Record<string, string> = {
 };
 
 export function Breadcrumb() {
+  const locale = useLocale();
   const pathname = usePathname();
 
   // Strip locale prefix if present (e.g. /ja/dashboard → /dashboard)
@@ -87,13 +89,13 @@ export function Breadcrumb() {
 
   return (
     <nav
-      aria-label="Breadcrumb"
+      aria-label={locale === "ja" ? "パンくずリスト" : "Breadcrumb"}
       className="flex items-center gap-1.5 px-4 py-2 text-xs text-[#64748b] border-b border-[#1e293b] bg-[#0a0f1a]"
     >
       <Link
         href="/dashboard"
         className="flex items-center gap-1 hover:text-white transition-colors"
-        aria-label="Dashboard home"
+        aria-label={locale === "ja" ? "ダッシュボードホーム" : "Dashboard home"}
       >
         <Home size={12} />
       </Link>
