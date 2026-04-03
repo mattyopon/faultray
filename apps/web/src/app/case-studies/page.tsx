@@ -151,8 +151,41 @@ export default function CaseStudiesPage() {
         ))}
       </div>
 
+      {/* ACCURACY-06: 方法論・検証根拠の開示 */}
+      <div className="mt-10 p-6 rounded-2xl border border-[#1e293b] bg-[#111827]/50">
+        <h2 className="text-sm font-bold text-[#94a3b8] uppercase tracking-wider mb-3">Methodology & Accuracy</h2>
+        <p className="text-xs text-[#64748b] leading-relaxed mb-3">
+          Simulation results are generated using N-Layer availability modeling, Monte Carlo simulation (10,000+ iterations per topology),
+          and Markov chain analysis. The mathematical framework is grounded in:
+        </p>
+        <ul className="space-y-1.5 text-xs text-[#475569]">
+          <li>
+            <a href="https://sre.google/sre-book/table-of-contents/" target="_blank" rel="noopener noreferrer" className="text-blue-400/70 hover:text-blue-400 underline underline-offset-2">
+              Google SRE Book
+            </a>
+            {" "}— availability and error budget methodology
+          </li>
+          <li>
+            <a href="https://aws.amazon.com/builders-library/avoiding-fallback-in-distributed-systems/" target="_blank" rel="noopener noreferrer" className="text-blue-400/70 hover:text-blue-400 underline underline-offset-2">
+              AWS Builder&apos;s Library
+            </a>
+            {" "}— distributed systems failure patterns
+          </li>
+          <li>
+            <a href="https://cloud.google.com/devops/state-of-devops" target="_blank" rel="noopener noreferrer" className="text-blue-400/70 hover:text-blue-400 underline underline-offset-2">
+              DORA State of DevOps Report
+            </a>
+            {" "}— industry benchmark data for DORA metrics
+          </li>
+        </ul>
+        <p className="text-xs text-[#475569] mt-3 italic">
+          Case study metrics represent anonymized, composite examples from beta program participants.
+          Formal case studies with named customers available upon request.
+        </p>
+      </div>
+
       {/* CTA */}
-      <div className="mt-14 p-8 rounded-2xl border border-[#FFD700]/20 bg-gradient-to-br from-[#FFD700]/[0.04] to-[#111827] text-center">
+      <div className="mt-10 p-8 rounded-2xl border border-[#FFD700]/20 bg-gradient-to-br from-[#FFD700]/[0.04] to-[#111827] text-center">
         <h2 className="text-xl font-bold mb-2">Ready to prove your own resilience?</h2>
         <p className="text-[#94a3b8] mb-6 text-sm">
           Join teams who use FaultRay to get math-backed availability proofs in under an hour.

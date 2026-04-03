@@ -289,6 +289,29 @@ export default async function LangHomePage({
             </div>
           </div>
 
+          {/* COMPDIFF-05: 業界権威データ引用 — State of DevOps, DORA Report */}
+          <div className="flex flex-wrap items-center justify-center gap-4 mb-8 text-xs text-[#475569]">
+            <a
+              href="https://cloud.google.com/devops/state-of-devops"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center gap-1.5 hover:text-[#64748b] transition-colors"
+            >
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+              State of DevOps: Elite performers deploy 182x more frequently
+            </a>
+            <span className="text-[#1e293b]">·</span>
+            <a
+              href="https://www.ibm.com/downloads/cas/JEJBYKAW"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center gap-1.5 hover:text-[#64748b] transition-colors"
+            >
+              <span className="w-1.5 h-1.5 rounded-full bg-blue-500" />
+              IBM: avg data breach costs $4.45M
+            </a>
+          </div>
+
           {/* COPY-03: Primary CTA → simulation action, secondary → signup */}
           <div className="flex gap-4 justify-center flex-wrap mb-14">
             <Link

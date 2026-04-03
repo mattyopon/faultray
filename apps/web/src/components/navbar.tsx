@@ -295,6 +295,11 @@ export function Navbar() {
     return () => window.removeEventListener("scroll", onScroll);
   }, []);
 
+  // NAV-DETAIL-08: ルート変更時にモバイルメニューを自動で閉じる
+  useEffect(() => {
+    setMobileOpen(false);
+  }, [pathname]);
+
   // locale is from Context (useLocale) — no need to detect from URL
 
   // Check if we're on a localized LP page
