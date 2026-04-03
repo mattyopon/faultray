@@ -80,6 +80,7 @@ export function RoiCalculator({ dict, lang }: RoiCalculatorProps) {
                 step={isJa ? 100 : 50}
                 value={monthlyRevenue}
                 onChange={(e) => setMonthlyRevenue(Number(e.target.value))}
+                aria-label={dict.monthlyRevenue}
                 className="w-full h-2 rounded-full appearance-none cursor-pointer accent-[#FFD700] bg-[#1e293b]"
               />
               <div className="flex justify-between text-xs text-[#64748b] mt-1">
@@ -101,6 +102,7 @@ export function RoiCalculator({ dict, lang }: RoiCalculatorProps) {
                 step={1}
                 value={incidentCount}
                 onChange={(e) => setIncidentCount(Number(e.target.value))}
+                aria-label={dict.incidentCount}
                 className="w-full h-2 rounded-full appearance-none cursor-pointer accent-[#FFD700] bg-[#1e293b]"
               />
               <div className="flex justify-between text-xs text-[#64748b] mt-1">
@@ -122,6 +124,7 @@ export function RoiCalculator({ dict, lang }: RoiCalculatorProps) {
                 step={0.5}
                 value={incidentHours}
                 onChange={(e) => setIncidentHours(Number(e.target.value))}
+                aria-label={dict.incidentHours}
                 className="w-full h-2 rounded-full appearance-none cursor-pointer accent-[#FFD700] bg-[#1e293b]"
               />
               <div className="flex justify-between text-xs text-[#64748b] mt-1">
