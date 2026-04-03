@@ -338,26 +338,26 @@ export default function PeopleRiskDashboard() {
             {[
               {
                 href: "/people-risk/members",
-                label: "メンバー一覧",
-                desc: `${summary.totalMembers}名の管理状況`,
+                label: locale === "ja" ? "メンバー一覧" : "Members",
+                desc: locale === "ja" ? `${summary.totalMembers}名の管理状況` : `${summary.totalMembers} members`,
                 icon: Users,
               },
               {
                 href: "/people-risk/systems",
-                label: "システム一覧",
-                desc: `GAS棚卸し含む ${summary.totalSystems}件`,
+                label: locale === "ja" ? "システム一覧" : "Systems",
+                desc: locale === "ja" ? `GAS棚卸し含む ${summary.totalSystems}件` : `${summary.totalSystems} systems`,
                 icon: Server,
               },
               {
                 href: "/people-risk/blast-radius",
-                label: "退職シミュレーション",
-                desc: "影響範囲を即座に確認",
+                label: locale === "ja" ? "退職シミュレーション" : "Blast Radius",
+                desc: locale === "ja" ? "影響範囲を即座に確認" : "Simulate departure impact",
                 icon: Zap,
               },
               {
                 href: "/people-risk/actions",
-                label: "改善アクション",
-                desc: `${pendingActions.length}件が対応待ち`,
+                label: locale === "ja" ? "改善アクション" : t.actionsTitle,
+                desc: locale === "ja" ? `${pendingActions.length}件が対応待ち` : `${pendingActions.length} pending`,
                 icon: CheckCircle2,
               },
             ].map((link) => {
@@ -391,18 +391,18 @@ export default function PeopleRiskDashboard() {
           <div className="flex items-center justify-between mb-4">
             <h2 className="text-sm font-semibold text-white flex items-center gap-2">
               <AlertTriangle size={16} className="text-red-400" />
-              緊急対応アクション
+              {locale === "ja" ? "緊急対応アクション" : "Critical Actions"}
             </h2>
             <Link href="/people-risk/actions">
               <Badge variant="gold" className="cursor-pointer">
-                全{pendingActions.length}件
+                {locale === "ja" ? `全${pendingActions.length}件` : `${pendingActions.length} total`}
               </Badge>
             </Link>
           </div>
           <div className="space-y-2">
             {criticalActions.length === 0 ? (
               <p className="text-sm text-[#64748b]">
-                緊急対応が必要なアクションはありません
+                {locale === "ja" ? "緊急対応が必要なアクションはありません" : "No critical actions pending."}
               </p>
             ) : (
               criticalActions.slice(0, 5).map((action) => (
@@ -418,12 +418,12 @@ export default function PeopleRiskDashboard() {
                     <p className="text-sm text-white">{action.title}</p>
                     {action.systems && (
                       <p className="text-xs text-[#64748b] mt-0.5">
-                        対象: {action.systems.name}
+                        {locale === "ja" ? "対象:" : "System:"} {action.systems.name}
                       </p>
                     )}
                   </div>
                   <Badge variant="red" className="ml-auto shrink-0">
-                    {action.status === "in_progress" ? "対応中" : "未対応"}
+                    {action.status === "in_progress" ? (locale === "ja" ? "対応中" : "In Progress") : (locale === "ja" ? "未対応" : "Pending")}
                   </Badge>
                 </div>
               ))
