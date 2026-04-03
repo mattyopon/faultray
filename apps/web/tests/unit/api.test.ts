@@ -75,7 +75,12 @@ describe("api module", () => {
     it("throws on non-ok response with error message", async () => {
       mockFetchError(400, { message: "Invalid topology" });
 
-      await expect(api.simulate({ sample: "bad" })).rejects.toThrow("Invalid topology");
+      // Any error thrown inside try{} is caught by the retry catch block and retried with sleep()
+      // Advance fake timers to skip all sleep() delays
+      const promise = api.simulate({ sample: "bad" });
+      promise.catch(() => undefined);
+      await vi.runAllTimersAsync();
+      await expect(promise).rejects.toThrow("Invalid topology");
     });
 
     it("throws with statusText when JSON body has no message", async () => {
@@ -87,7 +92,9 @@ describe("api module", () => {
       });
 
       // status 500 triggers retry logic with sleep() delays — advance fake timers to skip waits
+      // Attach noop catch first to prevent unhandled-rejection warning during timer advancement
       const promise = api.getProjects();
+      promise.catch(() => undefined);
       await vi.runAllTimersAsync();
       await expect(promise).rejects.toThrow("Internal Server Error");
     });

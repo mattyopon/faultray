@@ -19,15 +19,25 @@ afterEach(() => {
   vi.resetModules();
 });
 
+/**
+ * Advance all fake timers so that sleep() delays in retry logic complete instantly.
+ * Attaches a noop catch first to prevent unhandled-rejection warnings during advancement.
+ */
+async function advanceRetryTimers<T>(promise: Promise<T>): Promise<void> {
+  // Suppress "unhandled rejection" while timers are advancing
+  promise.catch(() => undefined);
+  await vi.runAllTimersAsync();
+}
+
 describe("L9: Offline / Network Failure Handling", () => {
   it("throws a meaningful error on network failure", async () => {
     (globalThis.fetch as ReturnType<typeof vi.fn>).mockRejectedValue(
       new TypeError("Failed to fetch")
     );
 
-    // Network errors trigger retry logic with sleep() delays — advance fake timers to skip waits
+    // Network errors trigger retry logic with sleep() delays — advance fake timers
     const promise = api.getProjects("tok");
-    await vi.runAllTimersAsync();
+    await advanceRetryTimers(promise);
     await expect(promise).rejects.toThrow("Failed to fetch");
   });
 
@@ -36,8 +46,10 @@ describe("L9: Offline / Network Failure Handling", () => {
       new DOMException("The operation was aborted.", "AbortError")
     );
 
-    // AbortError is NOT retried — resolves immediately without timer advancement needed
-    await expect(api.getProjects("tok")).rejects.toThrow("aborted");
+    // AbortError is NOT retried, but fake timers may still need advancing for cleanup
+    const promise = api.getProjects("tok");
+    await advanceRetryTimers(promise);
+    await expect(promise).rejects.toThrow("aborted");
   });
 
   it("handles 503 Service Unavailable gracefully", async () => {
@@ -48,9 +60,9 @@ describe("L9: Offline / Network Failure Handling", () => {
       json: () => Promise.resolve({ message: "Server overloaded" }),
     });
 
-    // 503 triggers retry logic with sleep() delays — advance fake timers to skip waits
+    // 503 triggers retry logic with sleep() delays — advance fake timers
     const promise = api.simulate({ sample: "test" });
-    await vi.runAllTimersAsync();
+    await advanceRetryTimers(promise);
     await expect(promise).rejects.toThrow("Server overloaded");
   });
 
@@ -62,9 +74,9 @@ describe("L9: Offline / Network Failure Handling", () => {
       json: () => Promise.reject(new Error("empty body")),
     });
 
-    // 502 triggers retry logic with sleep() delays — advance fake timers to skip waits
+    // 502 triggers retry logic with sleep() delays — advance fake timers
     const promise = api.simulate({ sample: "test" });
-    await vi.runAllTimersAsync();
+    await advanceRetryTimers(promise);
     await expect(promise).rejects.toThrow("Bad Gateway");
   });
 });
