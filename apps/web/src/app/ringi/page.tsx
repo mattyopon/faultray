@@ -178,6 +178,35 @@ export default function RingiPage() {
         </section>
       </div>
 
+      {/* JP-06: IT導入補助金との相性 */}
+      <div className="mt-12 p-6 rounded-2xl border border-blue-500/20 bg-blue-500/[0.04]">
+        <h3 className="text-base font-bold text-white mb-2 flex items-center gap-2">
+          <CheckCircle2 size={16} className="text-blue-400" />
+          IT導入補助金の活用について
+        </h3>
+        <p className="text-sm text-[#94a3b8] mb-3">
+          FaultRayはITツールとしてIT導入補助金の対象となる可能性がありますが、
+          補助金申請には以下の条件確認が必要です：
+        </p>
+        <ul className="space-y-2 text-sm text-[#94a3b8]">
+          <li className="flex items-start gap-2">
+            <span className="text-blue-400 shrink-0">•</span>
+            <span>FaultRayがITツール登録業者のリストに掲載されていることが条件となります（現在申請手続き中）</span>
+          </li>
+          <li className="flex items-start gap-2">
+            <span className="text-blue-400 shrink-0">•</span>
+            <span>補助金申請の際は、FaultRayの「プロセス改善への寄与」と「生産性向上効果」を定量的に示す必要があります</span>
+          </li>
+          <li className="flex items-start gap-2">
+            <span className="text-blue-400 shrink-0">•</span>
+            <span>当社のレポート機能（可用性スコア改善率、インシデント削減数）が効果測定書類として活用できます</span>
+          </li>
+        </ul>
+        <p className="text-xs text-[#64748b] mt-3">
+          詳細はsales@faultray.comまでお問い合わせください。申請サポートも承っております。
+        </p>
+      </div>
+
       {/* Actions */}
       <div className="mt-12 flex flex-wrap items-center gap-4">
         <a
