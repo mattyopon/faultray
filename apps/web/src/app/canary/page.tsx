@@ -164,16 +164,16 @@ export default function CanaryPage() {
                 {/* Metrics comparison */}
                 <div className="mb-4">
                   <div className="grid grid-cols-4 gap-2 mb-2 px-3">
-                    <p className="text-xs text-[#64748b]">Metric</p>
+                    <p className="text-xs text-[#64748b]">{locale === "ja" ? "メトリクス" : "Metric"}</p>
                     <p className="text-xs text-[#64748b] text-center">{t.baseline}</p>
                     <p className="text-xs text-[#FFD700] text-center">{t.canaryLabel}</p>
-                    <p className="text-xs text-[#64748b] text-right">Delta</p>
+                    <p className="text-xs text-[#64748b] text-right">{locale === "ja" ? "差分" : "Delta"}</p>
                   </div>
                   <div className="space-y-1.5">
                     <MetricRow label={t.errorRate} baseline={canary.baseline.errorRate} canary={canary.canary.errorRate} unit="%" lowerIsBetter />
                     <MetricRow label={t.latencyP99} baseline={canary.baseline.latencyP99} canary={canary.canary.latencyP99} unit="ms" lowerIsBetter />
-                    <MetricRow label="Success Rate" baseline={canary.baseline.successRate} canary={canary.canary.successRate} unit="%" />
-                    <MetricRow label="Req/min" baseline={canary.baseline.requestsPerMin} canary={canary.canary.requestsPerMin} />
+                    <MetricRow label={locale === "ja" ? "成功率" : "Success Rate"} baseline={canary.baseline.successRate} canary={canary.canary.successRate} unit="%" />
+                    <MetricRow label={locale === "ja" ? "リクエスト/分" : "Req/min"} baseline={canary.baseline.requestsPerMin} canary={canary.canary.requestsPerMin} />
                   </div>
                 </div>
 
@@ -202,7 +202,7 @@ export default function CanaryPage() {
 
       {/* History */}
       <Card>
-        <p className="text-sm font-semibold text-[#FFD700] mb-4">Canary History</p>
+        <p className="text-sm font-semibold text-[#FFD700] mb-4">{locale === "ja" ? "カナリア履歴" : "Canary History"}</p>
         <div className="space-y-2">
           {CANARY_HISTORY.map((h) => (
             <div key={h.id} className="flex items-center justify-between bg-[#0a0e1a] rounded-lg px-3 py-2.5">

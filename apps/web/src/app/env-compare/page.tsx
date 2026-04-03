@@ -86,7 +86,7 @@ export default function EnvComparePage() {
           <p className={`text-4xl font-extrabold font-mono ${envA.score >= 85 ? "text-[#10b981]" : "text-[#f59e0b]"}`}>
             {envA.score}
           </p>
-          <p className="text-xs text-[#64748b] mt-1">Resilience Score</p>
+          <p className="text-xs text-[#64748b] mt-1">{locale === "ja" ? "レジリエンススコア" : "Resilience Score"}</p>
         </Card>
         <Card className="text-center flex flex-col items-center justify-center">
           <ArrowRight size={24} className="text-[#64748b]" />
@@ -97,23 +97,23 @@ export default function EnvComparePage() {
           <p className={`text-4xl font-extrabold font-mono ${envB.score >= 85 ? "text-[#10b981]" : "text-[#f59e0b]"}`}>
             {envB.score}
           </p>
-          <p className="text-xs text-[#64748b] mt-1">Resilience Score</p>
+          <p className="text-xs text-[#64748b] mt-1">{locale === "ja" ? "レジリエンススコア" : "Resilience Score"}</p>
         </Card>
       </div>
 
       {/* Component comparison */}
       <Card className="mb-6">
-        <p className="text-sm font-semibold text-[#FFD700] mb-4">{t.component} Comparison</p>
+        <p className="text-sm font-semibold text-[#FFD700] mb-4">{t.component} {locale === "ja" ? "比較" : "Comparison"}</p>
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
               <tr className="text-[#64748b] text-xs uppercase tracking-wider border-b border-[#1e293b]">
                 <th scope="col" className="text-left py-2 pr-4">{t.component}</th>
                 <th scope="col" className="text-center py-2 pr-4">{envA.label} Score</th>
-                <th scope="col" className="text-center py-2 pr-4">Version (A)</th>
+                <th scope="col" className="text-center py-2 pr-4">{locale === "ja" ? "バージョン（A）" : "Version (A)"}</th>
                 <th scope="col" className="text-center py-2 pr-4">{envB.label} Score</th>
-                <th scope="col" className="text-center py-2 pr-4">Version (B)</th>
-                <th scope="col" className="text-left py-2">Delta</th>
+                <th scope="col" className="text-center py-2 pr-4">{locale === "ja" ? "バージョン（B）" : "Version (B)"}</th>
+                <th scope="col" className="text-left py-2">{locale === "ja" ? "差分" : "Delta"}</th>
               </tr>
             </thead>
             <tbody>
