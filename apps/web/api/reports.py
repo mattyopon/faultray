@@ -88,18 +88,28 @@ DEMO_REPORT = {
 
 def _generate_html(report: dict) -> str:
     """Generate HTML report from data."""
+    # REPORT-GEN-03: html.escape() でXSSを防止 — ユーザーデータを直接HTML埋め込みしない
+    def esc(val: object) -> str:
+        return html.escape(str(val), quote=True)
+
     findings_html = ""
     for f in report["key_findings"]:
-        color = "#ef4444" if f["severity"] == "CRITICAL" else "#f59e0b" if f["severity"] == "HIGH" else "#3b82f6"
+        sev = esc(f.get("severity", ""))
+        color = "#ef4444" if sev == "CRITICAL" else "#f59e0b" if sev == "HIGH" else "#3b82f6"
         findings_html += f"""
         <div style="border-left: 4px solid {color}; padding: 12px 16px; margin: 12px 0; background: #111827; border-radius: 0 8px 8px 0;">
-            <strong style="color: {color};">[{f["severity"]}]</strong> {f["finding"]}<br/>
-            <small style="color: #94a3b8;">Impact: {f["impact"]}</small><br/>
-            <small style="color: #10b981;">Recommendation: {f["recommendation"]}</small>
+            <strong style="color: {color};">[{sev}]</strong> {esc(f.get("finding", ""))}<br/>
+            <small style="color: #94a3b8;">Impact: {esc(f.get("impact", ""))}</small><br/>
+            <small style="color: #10b981;">Recommendation: {esc(f.get("recommendation", ""))}</small>
         </div>"""
 
+    roadmap_rows = "".join(
+        f'<tr style="border-bottom: 1px solid #1e293b/50;"><td style="padding: 8px;">{esc(r.get("priority",""))}</td><td style="padding: 8px;">{esc(r.get("action",""))}</td><td style="padding: 8px; color: #10b981;">{esc(r.get("impact",""))}</td><td style="padding: 8px;">{esc(r.get("timeline",""))}</td></tr>'
+        for r in report.get("improvement_roadmap", [])
+    )
+
     return f"""<!DOCTYPE html>
-<html><head><title>{report["title"]}</title>
+<html><head><title>{esc(report.get("title", "FaultRay Report"))}</title>
 <style>
 body {{ font-family: -apple-system, sans-serif; background: #0a0e1a; color: #e2e8f0; max-width: 800px; margin: 0 auto; padding: 40px 20px; }}
 h1 {{ color: #FFD700; border-bottom: 2px solid #1e293b; padding-bottom: 16px; }}
@@ -110,20 +120,20 @@ h2 {{ color: #94a3b8; margin-top: 32px; }}
 .stat-value {{ font-size: 24px; font-weight: bold; font-family: monospace; }}
 .stat-label {{ font-size: 12px; color: #64748b; text-transform: uppercase; letter-spacing: 1px; }}
 </style></head><body>
-<h1>{report["title"]}</h1>
-<p style="color: #64748b;">Generated: {report["generated_at"]}</p>
+<h1>{esc(report.get("title", "FaultRay Report"))}</h1>
+<p style="color: #64748b;">Generated: {esc(report.get("generated_at", ""))}</p>
 <h2>Executive Summary</h2>
 <div class="grid">
-<div class="stat"><div class="stat-value" style="color: #FFD700;">{report["executive_summary"]["overall_score"]}</div><div class="stat-label">Resilience Score</div></div>
-<div class="stat"><div class="stat-value" style="color: #10b981;">{report["executive_summary"]["availability_estimate"]}</div><div class="stat-label">Availability</div></div>
-<div class="stat"><div class="stat-value" style="color: #ef4444;">{report["executive_summary"]["critical_issues"]}</div><div class="stat-label">Critical Issues</div></div>
+<div class="stat"><div class="stat-value" style="color: #FFD700;">{esc(report.get("executive_summary", {}).get("overall_score", ""))}</div><div class="stat-label">Resilience Score</div></div>
+<div class="stat"><div class="stat-value" style="color: #10b981;">{esc(report.get("executive_summary", {}).get("availability_estimate", ""))}</div><div class="stat-label">Availability</div></div>
+<div class="stat"><div class="stat-value" style="color: #ef4444;">{esc(report.get("executive_summary", {}).get("critical_issues", ""))}</div><div class="stat-label">Critical Issues</div></div>
 </div>
 <h2>Key Findings</h2>
 {findings_html}
 <h2>Improvement Roadmap</h2>
 <table style="width: 100%; border-collapse: collapse;">
 <tr style="border-bottom: 1px solid #1e293b;"><th style="text-align: left; padding: 8px; color: #64748b;">Priority</th><th style="text-align: left; padding: 8px; color: #64748b;">Action</th><th style="text-align: left; padding: 8px; color: #64748b;">Impact</th><th style="text-align: left; padding: 8px; color: #64748b;">Timeline</th></tr>
-{"".join(f'<tr style="border-bottom: 1px solid #1e293b/50;"><td style="padding: 8px;">{r["priority"]}</td><td style="padding: 8px;">{r["action"]}</td><td style="padding: 8px; color: #10b981;">{r["impact"]}</td><td style="padding: 8px;">{r["timeline"]}</td></tr>' for r in report["improvement_roadmap"])}
+{roadmap_rows}
 </table>
 </body></html>"""
 
