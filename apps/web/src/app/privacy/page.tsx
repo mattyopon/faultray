@@ -43,9 +43,9 @@ export default function PrivacyPage() {
             <table className="w-full text-sm border-collapse">
               <thead>
                 <tr className="border-b border-[#1e293b] bg-[#141a2e]">
-                  <th className="px-5 py-3 text-left text-[#94a3b8] font-semibold">Category</th>
-                  <th className="px-5 py-3 text-left text-[#94a3b8] font-semibold">Examples</th>
-                  <th className="px-5 py-3 text-left text-[#94a3b8] font-semibold">Purpose</th>
+                  <th scope="col" className="px-5 py-3 text-left text-[#94a3b8] font-semibold">Category</th>
+                  <th scope="col" className="px-5 py-3 text-left text-[#94a3b8] font-semibold">Examples</th>
+                  <th scope="col" className="px-5 py-3 text-left text-[#94a3b8] font-semibold">Purpose</th>
                 </tr>
               </thead>
               <tbody>
@@ -255,9 +255,9 @@ export default function PrivacyPage() {
             <table className="w-full text-sm border-collapse">
               <thead>
                 <tr className="border-b border-[#1e293b] bg-[#141a2e]">
-                  <th className="px-5 py-3 text-left text-[#94a3b8] font-semibold">Data Category</th>
-                  <th className="px-5 py-3 text-left text-[#94a3b8] font-semibold">Retention Period</th>
-                  <th className="px-5 py-3 text-left text-[#94a3b8] font-semibold">Legal Basis</th>
+                  <th scope="col" className="px-5 py-3 text-left text-[#94a3b8] font-semibold">Data Category</th>
+                  <th scope="col" className="px-5 py-3 text-left text-[#94a3b8] font-semibold">Retention Period</th>
+                  <th scope="col" className="px-5 py-3 text-left text-[#94a3b8] font-semibold">Legal Basis</th>
                 </tr>
               </thead>
               <tbody>

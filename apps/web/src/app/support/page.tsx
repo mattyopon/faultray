@@ -279,9 +279,9 @@ export default function SupportPage() {
           <table className="w-full text-sm">
             <thead>
               <tr className="border-b border-[#1e293b]">
-                <th className="text-left py-2 pr-4 text-[#64748b] font-medium">Plan</th>
-                <th className="text-left py-2 pr-4 text-[#64748b] font-medium">Channel</th>
-                <th className="text-left py-2 text-[#64748b] font-medium">
+                <th scope="col" className="text-left py-2 pr-4 text-[#64748b] font-medium">Plan</th>
+                <th scope="col" className="text-left py-2 pr-4 text-[#64748b] font-medium">Channel</th>
+                <th scope="col" className="text-left py-2 text-[#64748b] font-medium">
                   <Clock size={12} className="inline mr-1" />
                   Response SLA
                 </th>

@@ -309,12 +309,12 @@ export default function ProjectDetailPage() {
             <table className="w-full text-sm">
               <thead>
                 <tr className="border-b border-[#1e293b]">
-                  <th className="text-left py-3 px-3 text-[#64748b] font-medium">{t.date}</th>
-                  <th className="text-left py-3 px-3 text-[#64748b] font-medium">{t.score}</th>
-                  <th className="text-left py-3 px-3 text-[#64748b] font-medium">{t.availability}</th>
-                  <th className="text-left py-3 px-3 text-[#64748b] font-medium">{t.scenarios}</th>
-                  <th className="text-right py-3 px-3 text-[#64748b] font-medium">Status</th>
-                  <th className="w-6" />
+                  <th scope="col" className="text-left py-3 px-3 text-[#64748b] font-medium">{t.date}</th>
+                  <th scope="col" className="text-left py-3 px-3 text-[#64748b] font-medium">{t.score}</th>
+                  <th scope="col" className="text-left py-3 px-3 text-[#64748b] font-medium">{t.availability}</th>
+                  <th scope="col" className="text-left py-3 px-3 text-[#64748b] font-medium">{t.scenarios}</th>
+                  <th scope="col" className="text-right py-3 px-3 text-[#64748b] font-medium">Status</th>
+                  <th scope="col" className="w-6" />
                 </tr>
               </thead>
               <tbody>

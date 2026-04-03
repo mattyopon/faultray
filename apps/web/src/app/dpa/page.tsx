@@ -73,8 +73,8 @@ export default function DpaPage() {
             <table className="w-full text-sm border-collapse">
               <thead>
                 <tr className="border-b border-[#1e293b] bg-[#141a2e]">
-                  <th className="px-5 py-3 text-left text-[#94a3b8] font-semibold">Item</th>
-                  <th className="px-5 py-3 text-left text-[#94a3b8] font-semibold">Details</th>
+                  <th scope="col" className="px-5 py-3 text-left text-[#94a3b8] font-semibold">Item</th>
+                  <th scope="col" className="px-5 py-3 text-left text-[#94a3b8] font-semibold">Details</th>
                 </tr>
               </thead>
               <tbody>
@@ -147,9 +147,9 @@ export default function DpaPage() {
             <table className="w-full text-sm border-collapse">
               <thead>
                 <tr className="border-b border-[#1e293b] bg-[#141a2e]">
-                  <th className="px-5 py-3 text-left text-[#94a3b8] font-semibold">Sub-processor</th>
-                  <th className="px-5 py-3 text-left text-[#94a3b8] font-semibold">Purpose</th>
-                  <th className="px-5 py-3 text-left text-[#94a3b8] font-semibold">Location</th>
+                  <th scope="col" className="px-5 py-3 text-left text-[#94a3b8] font-semibold">Sub-processor</th>
+                  <th scope="col" className="px-5 py-3 text-left text-[#94a3b8] font-semibold">Purpose</th>
+                  <th scope="col" className="px-5 py-3 text-left text-[#94a3b8] font-semibold">Location</th>
                 </tr>
               </thead>
               <tbody>

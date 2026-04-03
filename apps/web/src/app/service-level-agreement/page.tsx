@@ -34,9 +34,9 @@ export default function SlaDocPage() {
             <table className="w-full text-sm border-collapse">
               <thead>
                 <tr className="border-b border-[#1e293b] bg-[#141a2e]">
-                  <th className="px-5 py-3 text-left text-[#94a3b8] font-semibold">Plan</th>
-                  <th className="px-5 py-3 text-left text-[#94a3b8] font-semibold">Uptime Guarantee</th>
-                  <th className="px-5 py-3 text-left text-[#94a3b8] font-semibold">Max Monthly Downtime</th>
+                  <th scope="col" className="px-5 py-3 text-left text-[#94a3b8] font-semibold">Plan</th>
+                  <th scope="col" className="px-5 py-3 text-left text-[#94a3b8] font-semibold">Uptime Guarantee</th>
+                  <th scope="col" className="px-5 py-3 text-left text-[#94a3b8] font-semibold">Max Monthly Downtime</th>
                 </tr>
               </thead>
               <tbody>
@@ -76,8 +76,8 @@ export default function SlaDocPage() {
             <table className="w-full text-sm border-collapse">
               <thead>
                 <tr className="border-b border-[#1e293b] bg-[#141a2e]">
-                  <th className="px-5 py-3 text-left text-[#94a3b8] font-semibold">Monthly Uptime</th>
-                  <th className="px-5 py-3 text-left text-[#94a3b8] font-semibold">Service Credit</th>
+                  <th scope="col" className="px-5 py-3 text-left text-[#94a3b8] font-semibold">Monthly Uptime</th>
+                  <th scope="col" className="px-5 py-3 text-left text-[#94a3b8] font-semibold">Service Credit</th>
                 </tr>
               </thead>
               <tbody>
@@ -111,10 +111,10 @@ export default function SlaDocPage() {
             <table className="w-full text-sm border-collapse">
               <thead>
                 <tr className="border-b border-[#1e293b] bg-[#141a2e]">
-                  <th className="px-5 py-3 text-left text-[#94a3b8] font-semibold">Plan</th>
-                  <th className="px-5 py-3 text-left text-[#94a3b8] font-semibold">Channel</th>
-                  <th className="px-5 py-3 text-left text-[#94a3b8] font-semibold">P1 Response</th>
-                  <th className="px-5 py-3 text-left text-[#94a3b8] font-semibold">P2–P3 Response</th>
+                  <th scope="col" className="px-5 py-3 text-left text-[#94a3b8] font-semibold">Plan</th>
+                  <th scope="col" className="px-5 py-3 text-left text-[#94a3b8] font-semibold">Channel</th>
+                  <th scope="col" className="px-5 py-3 text-left text-[#94a3b8] font-semibold">P1 Response</th>
+                  <th scope="col" className="px-5 py-3 text-left text-[#94a3b8] font-semibold">P2–P3 Response</th>
                 </tr>
               </thead>
               <tbody>

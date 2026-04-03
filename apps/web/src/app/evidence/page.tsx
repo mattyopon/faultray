@@ -596,13 +596,13 @@ function RegisterTab({ locale }: { locale: Locale }) {
         <table className="w-full text-sm">
           <thead>
             <tr className="border-b border-[#1e293b] text-left">
-              <th className="pb-3 pr-4 text-xs text-[#64748b] font-semibold">{ct.providerName}</th>
-              <th className="pb-3 pr-4 text-xs text-[#64748b] font-semibold">LEI / EUID</th>
-              <th className="pb-3 pr-4 text-xs text-[#64748b] font-semibold">{ct.serviceDescription}</th>
-              <th className="pb-3 pr-4 text-xs text-[#64748b] font-semibold">{ct.criticality}</th>
-              <th className="pb-3 pr-4 text-xs text-[#64748b] font-semibold">{ct.contractPeriod}</th>
-              <th className="pb-3 pr-4 text-xs text-[#64748b] font-semibold">{ct.dataLocation}</th>
-              <th className="pb-3 text-xs text-[#64748b] font-semibold text-right">{ct.annualCost}</th>
+              <th scope="col" className="pb-3 pr-4 text-xs text-[#64748b] font-semibold">{ct.providerName}</th>
+              <th scope="col" className="pb-3 pr-4 text-xs text-[#64748b] font-semibold">LEI / EUID</th>
+              <th scope="col" className="pb-3 pr-4 text-xs text-[#64748b] font-semibold">{ct.serviceDescription}</th>
+              <th scope="col" className="pb-3 pr-4 text-xs text-[#64748b] font-semibold">{ct.criticality}</th>
+              <th scope="col" className="pb-3 pr-4 text-xs text-[#64748b] font-semibold">{ct.contractPeriod}</th>
+              <th scope="col" className="pb-3 pr-4 text-xs text-[#64748b] font-semibold">{ct.dataLocation}</th>
+              <th scope="col" className="pb-3 text-xs text-[#64748b] font-semibold text-right">{ct.annualCost}</th>
             </tr>
           </thead>
           <tbody>

@@ -1456,12 +1456,12 @@ export default function RemediationPage() {
         <table className="w-full text-sm">
           <thead>
             <tr className="border-b border-[#1e293b] text-[#64748b] text-xs uppercase tracking-wider">
-              <th className="py-3 px-4 text-left">#</th>
-              <th className="py-3 px-4 text-left">{t.action}</th>
-              <th className="py-3 px-4 text-left">{t.priority}</th>
-              <th className="py-3 px-4 text-left">{t.effort}</th>
-              <th className="py-3 px-4 text-left">{t.cost}</th>
-              <th className="py-3 px-4 text-left">{t.expectedEffect}</th>
+              <th scope="col" className="py-3 px-4 text-left">#</th>
+              <th scope="col" className="py-3 px-4 text-left">{t.action}</th>
+              <th scope="col" className="py-3 px-4 text-left">{t.priority}</th>
+              <th scope="col" className="py-3 px-4 text-left">{t.effort}</th>
+              <th scope="col" className="py-3 px-4 text-left">{t.cost}</th>
+              <th scope="col" className="py-3 px-4 text-left">{t.expectedEffect}</th>
             </tr>
           </thead>
           <tbody>

@@ -602,11 +602,11 @@ export default function DashboardPage() {
             <table className="w-full text-sm">
               <thead>
                 <tr className="border-b border-[#1e293b]">
-                  <th className="text-left py-3 px-2 text-[#64748b] font-medium">{t.date}</th>
-                  <th className="text-left py-3 px-2 text-[#64748b] font-medium">{t.score}</th>
-                  <th className="text-left py-3 px-2 text-[#64748b] font-medium">{t.availability}</th>
-                  <th className="text-left py-3 px-2 text-[#64748b] font-medium">{t.scenariosCol}</th>
-                  <th className="text-right py-3 px-2 text-[#64748b] font-medium">{t.status}</th>
+                  <th scope="col" className="text-left py-3 px-2 text-[#64748b] font-medium">{t.date}</th>
+                  <th scope="col" className="text-left py-3 px-2 text-[#64748b] font-medium">{t.score}</th>
+                  <th scope="col" className="text-left py-3 px-2 text-[#64748b] font-medium">{t.availability}</th>
+                  <th scope="col" className="text-left py-3 px-2 text-[#64748b] font-medium">{t.scenariosCol}</th>
+                  <th scope="col" className="text-right py-3 px-2 text-[#64748b] font-medium">{t.status}</th>
                 </tr>
               </thead>
               <tbody>

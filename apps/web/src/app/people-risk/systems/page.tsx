@@ -177,19 +177,19 @@ export default function SystemsPage() {
           <table className="w-full text-sm">
             <thead>
               <tr className="text-[#64748b] border-b border-[#1e293b] text-xs bg-[#0f1424]">
-                <th className="text-left py-3 px-4 font-medium">システム名</th>
-                <th className="text-left py-3 px-4 font-medium">種別</th>
-                <th className="text-left py-3 px-4 font-medium">ステータス</th>
-                <th className="text-center py-3 px-4 font-medium">
+                <th scope="col" className="text-left py-3 px-4 font-medium">システム名</th>
+                <th scope="col" className="text-left py-3 px-4 font-medium">種別</th>
+                <th scope="col" className="text-left py-3 px-4 font-medium">ステータス</th>
+                <th scope="col" className="text-center py-3 px-4 font-medium">
                   担当者数
                 </th>
-                <th className="text-center py-3 px-4 font-medium">
+                <th scope="col" className="text-center py-3 px-4 font-medium">
                   Bus Factor
                 </th>
-                <th className="text-left py-3 px-4 font-medium">
+                <th scope="col" className="text-left py-3 px-4 font-medium">
                   オーナー
                 </th>
-                <th className="text-left py-3 px-4 font-medium">最終更新</th>
+                <th scope="col" className="text-left py-3 px-4 font-medium">最終更新</th>
               </tr>
             </thead>
             <tbody>

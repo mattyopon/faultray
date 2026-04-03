@@ -233,12 +233,12 @@ export default function MemberDetailPage({
           <table className="w-full text-sm">
             <thead>
               <tr className="text-[#64748b] border-b border-[#1e293b] text-xs">
-                <th className="text-left py-3 font-medium">システム名</th>
-                <th className="text-left py-3 font-medium">種別</th>
-                <th className="text-left py-3 font-medium">権限</th>
-                <th className="text-center py-3 font-medium">唯一の管理者</th>
-                <th className="text-left py-3 font-medium">ステータス</th>
-                <th className="text-left py-3 font-medium">リスク</th>
+                <th scope="col" className="text-left py-3 font-medium">システム名</th>
+                <th scope="col" className="text-left py-3 font-medium">種別</th>
+                <th scope="col" className="text-left py-3 font-medium">権限</th>
+                <th scope="col" className="text-center py-3 font-medium">唯一の管理者</th>
+                <th scope="col" className="text-left py-3 font-medium">ステータス</th>
+                <th scope="col" className="text-left py-3 font-medium">リスク</th>
               </tr>
             </thead>
             <tbody>

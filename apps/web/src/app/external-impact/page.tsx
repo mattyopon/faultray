@@ -148,13 +148,13 @@ export default function ExternalImpactPage() {
               <table className="w-full text-sm">
                 <thead>
                   <tr className="border-b border-[#1e293b]">
-                    <th className="text-left py-3 px-3 text-[#64748b] font-medium">{t.service}</th>
-                    <th className="text-left py-3 px-3 text-[#64748b] font-medium">{t.category}</th>
-                    <th className="text-center py-3 px-3 text-[#64748b] font-medium">{t.blastRadius}</th>
-                    <th className="text-center py-3 px-3 text-[#64748b] font-medium">{t.downtime}</th>
-                    <th className="text-center py-3 px-3 text-[#64748b] font-medium">SLA</th>
-                    <th className="text-center py-3 px-3 text-[#64748b] font-medium">{t.fallback}</th>
-                    <th className="text-center py-3 px-3 text-[#64748b] font-medium">{t.risk}</th>
+                    <th scope="col" className="text-left py-3 px-3 text-[#64748b] font-medium">{t.service}</th>
+                    <th scope="col" className="text-left py-3 px-3 text-[#64748b] font-medium">{t.category}</th>
+                    <th scope="col" className="text-center py-3 px-3 text-[#64748b] font-medium">{t.blastRadius}</th>
+                    <th scope="col" className="text-center py-3 px-3 text-[#64748b] font-medium">{t.downtime}</th>
+                    <th scope="col" className="text-center py-3 px-3 text-[#64748b] font-medium">SLA</th>
+                    <th scope="col" className="text-center py-3 px-3 text-[#64748b] font-medium">{t.fallback}</th>
+                    <th scope="col" className="text-center py-3 px-3 text-[#64748b] font-medium">{t.risk}</th>
                   </tr>
                 </thead>
                 <tbody>

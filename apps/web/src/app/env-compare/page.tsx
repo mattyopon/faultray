@@ -108,12 +108,12 @@ export default function EnvComparePage() {
           <table className="w-full text-sm">
             <thead>
               <tr className="text-[#64748b] text-xs uppercase tracking-wider border-b border-[#1e293b]">
-                <th className="text-left py-2 pr-4">{t.component}</th>
-                <th className="text-center py-2 pr-4">{envA.label} Score</th>
-                <th className="text-center py-2 pr-4">Version (A)</th>
-                <th className="text-center py-2 pr-4">{envB.label} Score</th>
-                <th className="text-center py-2 pr-4">Version (B)</th>
-                <th className="text-left py-2">Delta</th>
+                <th scope="col" className="text-left py-2 pr-4">{t.component}</th>
+                <th scope="col" className="text-center py-2 pr-4">{envA.label} Score</th>
+                <th scope="col" className="text-center py-2 pr-4">Version (A)</th>
+                <th scope="col" className="text-center py-2 pr-4">{envB.label} Score</th>
+                <th scope="col" className="text-center py-2 pr-4">Version (B)</th>
+                <th scope="col" className="text-left py-2">Delta</th>
               </tr>
             </thead>
             <tbody>

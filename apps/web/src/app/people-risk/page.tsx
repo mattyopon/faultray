@@ -286,10 +286,10 @@ export default function PeopleRiskDashboard() {
                 <table className="w-full text-xs">
                   <thead>
                     <tr className="text-[#64748b] border-b border-[#1e293b]">
-                      <th className="text-left py-2 font-medium">週</th>
-                      <th className="text-right py-2 font-medium">リスクスコア</th>
-                      <th className="text-right py-2 font-medium">BF=1</th>
-                      <th className="text-right py-2 font-medium">システム数</th>
+                      <th scope="col" className="text-left py-2 font-medium">週</th>
+                      <th scope="col" className="text-right py-2 font-medium">リスクスコア</th>
+                      <th scope="col" className="text-right py-2 font-medium">BF=1</th>
+                      <th scope="col" className="text-right py-2 font-medium">システム数</th>
                     </tr>
                   </thead>
                   <tbody>

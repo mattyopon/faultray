@@ -365,11 +365,11 @@ export default function ReportsPage() {
               <table className="w-full text-sm">
                 <thead>
                   <tr className="border-b border-[#1e293b]">
-                    <th className="text-left py-3 px-2 text-[#64748b] font-medium">{t.priority}</th>
-                    <th className="text-left py-3 px-2 text-[#64748b] font-medium">{t.action}</th>
-                    <th className="text-left py-3 px-2 text-[#64748b] font-medium">{t.effort}</th>
-                    <th className="text-left py-3 px-2 text-[#64748b] font-medium">{t.impactCol}</th>
-                    <th className="text-left py-3 px-2 text-[#64748b] font-medium">{t.timeline}</th>
+                    <th scope="col" className="text-left py-3 px-2 text-[#64748b] font-medium">{t.priority}</th>
+                    <th scope="col" className="text-left py-3 px-2 text-[#64748b] font-medium">{t.action}</th>
+                    <th scope="col" className="text-left py-3 px-2 text-[#64748b] font-medium">{t.effort}</th>
+                    <th scope="col" className="text-left py-3 px-2 text-[#64748b] font-medium">{t.impactCol}</th>
+                    <th scope="col" className="text-left py-3 px-2 text-[#64748b] font-medium">{t.timeline}</th>
                   </tr>
                 </thead>
                 <tbody>

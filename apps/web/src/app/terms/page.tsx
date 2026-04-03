@@ -74,10 +74,10 @@ export default function TermsPage() {
             <table className="w-full text-sm border-collapse">
               <thead>
                 <tr className="border-b border-[#1e293b] bg-[#141a2e]">
-                  <th className="px-5 py-3 text-left text-[#94a3b8] font-semibold">Plan</th>
-                  <th className="px-5 py-3 text-left text-[#94a3b8] font-semibold">Monthly</th>
-                  <th className="px-5 py-3 text-left text-[#94a3b8] font-semibold">Annual (20% off)</th>
-                  <th className="px-5 py-3 text-left text-[#94a3b8] font-semibold">SLA</th>
+                  <th scope="col" className="px-5 py-3 text-left text-[#94a3b8] font-semibold">Plan</th>
+                  <th scope="col" className="px-5 py-3 text-left text-[#94a3b8] font-semibold">Monthly</th>
+                  <th scope="col" className="px-5 py-3 text-left text-[#94a3b8] font-semibold">Annual (20% off)</th>
+                  <th scope="col" className="px-5 py-3 text-left text-[#94a3b8] font-semibold">SLA</th>
                 </tr>
               </thead>
               <tbody>

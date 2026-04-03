@@ -127,14 +127,14 @@ export default function FmeaPage() {
               <table className="w-full text-sm">
                 <thead>
                   <tr className="border-b border-[#1e293b]">
-                    <th className="text-left py-3 px-2 text-[#64748b] font-medium">{t.id}</th>
-                    <th className="text-left py-3 px-2 text-[#64748b] font-medium">{t.component}</th>
-                    <th className="text-left py-3 px-2 text-[#64748b] font-medium">{t.failureMode}</th>
-                    <th className="text-center py-3 px-2 text-[#64748b] font-medium">S</th>
-                    <th className="text-center py-3 px-2 text-[#64748b] font-medium">O</th>
-                    <th className="text-center py-3 px-2 text-[#64748b] font-medium">D</th>
-                    <th className="text-center py-3 px-2 text-[#64748b] font-medium">RPN</th>
-                    <th className="text-center py-3 px-2 text-[#64748b] font-medium">{t.status}</th>
+                    <th scope="col" className="text-left py-3 px-2 text-[#64748b] font-medium">{t.id}</th>
+                    <th scope="col" className="text-left py-3 px-2 text-[#64748b] font-medium">{t.component}</th>
+                    <th scope="col" className="text-left py-3 px-2 text-[#64748b] font-medium">{t.failureMode}</th>
+                    <th scope="col" className="text-center py-3 px-2 text-[#64748b] font-medium">S</th>
+                    <th scope="col" className="text-center py-3 px-2 text-[#64748b] font-medium">O</th>
+                    <th scope="col" className="text-center py-3 px-2 text-[#64748b] font-medium">D</th>
+                    <th scope="col" className="text-center py-3 px-2 text-[#64748b] font-medium">RPN</th>
+                    <th scope="col" className="text-center py-3 px-2 text-[#64748b] font-medium">{t.status}</th>
                   </tr>
                 </thead>
                 <tbody>

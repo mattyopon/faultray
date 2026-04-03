@@ -526,17 +526,17 @@ export default async function LangHomePage({
             <table className="w-full min-w-[700px] border-collapse text-[0.9375rem]">
               <thead>
                 <tr>
-                  <th className="px-5 py-4 text-left bg-[#141a2e] text-[#94a3b8] font-semibold text-sm" />
-                  <th className="px-5 py-4 text-left bg-[#FFD700]/[0.06] text-[#FFD700] font-semibold text-sm">
+                  <th scope="col" className="px-5 py-4 text-left bg-[#141a2e] text-[#94a3b8] font-semibold text-sm" />
+                  <th scope="col" className="px-5 py-4 text-left bg-[#FFD700]/[0.06] text-[#FFD700] font-semibold text-sm">
                     <span className="inline-block px-2 py-0.5 text-[0.6875rem] font-bold text-[#0a0e1a] bg-[#FFD700] rounded-full uppercase tracking-wide mb-1">
                       {dict.comparison.recommended}
                     </span>
                     <br />
                     FaultRay
                   </th>
-                  <th className="px-5 py-4 text-left bg-[#141a2e] text-[#94a3b8] font-semibold text-sm">Gremlin</th>
-                  <th className="px-5 py-4 text-left bg-[#141a2e] text-[#94a3b8] font-semibold text-sm">Steadybit</th>
-                  <th className="px-5 py-4 text-left bg-[#141a2e] text-[#94a3b8] font-semibold text-sm">AWS FIS</th>
+                  <th scope="col" className="px-5 py-4 text-left bg-[#141a2e] text-[#94a3b8] font-semibold text-sm">Gremlin</th>
+                  <th scope="col" className="px-5 py-4 text-left bg-[#141a2e] text-[#94a3b8] font-semibold text-sm">Steadybit</th>
+                  <th scope="col" className="px-5 py-4 text-left bg-[#141a2e] text-[#94a3b8] font-semibold text-sm">AWS FIS</th>
                 </tr>
               </thead>
               <tbody>
@@ -913,10 +913,10 @@ export default async function LangHomePage({
               <table className="w-full min-w-[600px] border-collapse text-[0.9375rem]">
                 <thead>
                   <tr>
-                    <th className="px-5 py-4 text-left bg-[#141a2e] text-[#94a3b8] font-semibold text-sm">Feature</th>
-                    <th className="px-5 py-4 text-center bg-[#141a2e] text-[#94a3b8] font-semibold text-sm">Free</th>
-                    <th className="px-5 py-4 text-center bg-[#FFD700]/[0.06] text-[#FFD700] font-semibold text-sm">Pro</th>
-                    <th className="px-5 py-4 text-center bg-[#141a2e] text-[#94a3b8] font-semibold text-sm">Business</th>
+                    <th scope="col" className="px-5 py-4 text-left bg-[#141a2e] text-[#94a3b8] font-semibold text-sm">Feature</th>
+                    <th scope="col" className="px-5 py-4 text-center bg-[#141a2e] text-[#94a3b8] font-semibold text-sm">Free</th>
+                    <th scope="col" className="px-5 py-4 text-center bg-[#FFD700]/[0.06] text-[#FFD700] font-semibold text-sm">Pro</th>
+                    <th scope="col" className="px-5 py-4 text-center bg-[#141a2e] text-[#94a3b8] font-semibold text-sm">Business</th>
                   </tr>
                 </thead>
                 <tbody>

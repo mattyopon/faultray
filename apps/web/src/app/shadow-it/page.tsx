@@ -159,13 +159,13 @@ export default function ShadowItPage() {
               <table className="w-full text-sm">
                 <thead>
                   <tr className="border-b border-[#1e293b]">
-                    <th className="text-left py-3 px-3 text-[#64748b] font-medium">{t.component}</th>
-                    <th className="text-left py-3 px-3 text-[#64748b] font-medium">{t.type}</th>
-                    <th className="text-center py-3 px-3 text-[#64748b] font-medium">{t.reason}</th>
-                    <th className="text-left py-3 px-3 text-[#64748b] font-medium">{t.owner}</th>
-                    <th className="text-left py-3 px-3 text-[#64748b] font-medium">{t.lastSeen}</th>
-                    <th className="text-center py-3 px-3 text-[#64748b] font-medium">{t.riskScore}</th>
-                    <th className="text-center py-3 px-3 text-[#64748b] font-medium">{t.level}</th>
+                    <th scope="col" className="text-left py-3 px-3 text-[#64748b] font-medium">{t.component}</th>
+                    <th scope="col" className="text-left py-3 px-3 text-[#64748b] font-medium">{t.type}</th>
+                    <th scope="col" className="text-center py-3 px-3 text-[#64748b] font-medium">{t.reason}</th>
+                    <th scope="col" className="text-left py-3 px-3 text-[#64748b] font-medium">{t.owner}</th>
+                    <th scope="col" className="text-left py-3 px-3 text-[#64748b] font-medium">{t.lastSeen}</th>
+                    <th scope="col" className="text-center py-3 px-3 text-[#64748b] font-medium">{t.riskScore}</th>
+                    <th scope="col" className="text-center py-3 px-3 text-[#64748b] font-medium">{t.level}</th>
                   </tr>
                 </thead>
                 <tbody>

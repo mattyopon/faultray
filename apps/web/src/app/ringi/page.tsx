@@ -93,9 +93,9 @@ export default function RingiPage() {
             <table className="w-full text-sm">
               <thead>
                 <tr className="border-b border-[#1e293b] bg-[#0d1117]">
-                  <th className="px-4 py-3 text-left text-[#64748b] font-semibold">項目</th>
-                  <th className="px-4 py-3 text-right text-[#64748b] font-semibold">Proプラン</th>
-                  <th className="px-4 py-3 text-right text-[#64748b] font-semibold">Businessプラン</th>
+                  <th scope="col" className="px-4 py-3 text-left text-[#64748b] font-semibold">項目</th>
+                  <th scope="col" className="px-4 py-3 text-right text-[#64748b] font-semibold">Proプラン</th>
+                  <th scope="col" className="px-4 py-3 text-right text-[#64748b] font-semibold">Businessプラン</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-[#1e293b]">

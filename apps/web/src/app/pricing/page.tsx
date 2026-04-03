@@ -323,10 +323,10 @@ export default function PricingPage() {
           <table className="w-full border-collapse text-sm">
             <thead>
               <tr>
-                <th className="px-5 py-4 text-left bg-[#141a2e] text-[#94a3b8] font-semibold">Feature</th>
-                <th className="px-5 py-4 text-center bg-[#141a2e] text-[#94a3b8] font-semibold">Free</th>
-                <th className="px-5 py-4 text-center bg-[#FFD700]/[0.06] text-[#FFD700] font-semibold">Pro</th>
-                <th className="px-5 py-4 text-center bg-[#141a2e] text-[#94a3b8] font-semibold">Business</th>
+                <th scope="col" className="px-5 py-4 text-left bg-[#141a2e] text-[#94a3b8] font-semibold">Feature</th>
+                <th scope="col" className="px-5 py-4 text-center bg-[#141a2e] text-[#94a3b8] font-semibold">Free</th>
+                <th scope="col" className="px-5 py-4 text-center bg-[#FFD700]/[0.06] text-[#FFD700] font-semibold">Pro</th>
+                <th scope="col" className="px-5 py-4 text-center bg-[#141a2e] text-[#94a3b8] font-semibold">Business</th>
               </tr>
             </thead>
             <tbody>

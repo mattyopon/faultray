@@ -132,13 +132,13 @@ export default function SupplyChainPage() {
           <table className="w-full text-sm">
             <thead>
               <tr className="text-[#64748b] text-xs uppercase tracking-wider border-b border-[#1e293b]">
-                <th className="text-left py-2 pr-4">{t.dependency}</th>
-                <th className="text-left py-2 pr-4">{t.version}</th>
-                <th className="text-left py-2 pr-4">{t.vendor}</th>
-                <th className="text-left py-2 pr-4">{t.license}</th>
-                <th className="text-left py-2 pr-4">{t.riskScore}</th>
-                <th className="text-left py-2 pr-4">{t.cveId}</th>
-                <th className="text-left py-2">{t.patchStatus}</th>
+                <th scope="col" className="text-left py-2 pr-4">{t.dependency}</th>
+                <th scope="col" className="text-left py-2 pr-4">{t.version}</th>
+                <th scope="col" className="text-left py-2 pr-4">{t.vendor}</th>
+                <th scope="col" className="text-left py-2 pr-4">{t.license}</th>
+                <th scope="col" className="text-left py-2 pr-4">{t.riskScore}</th>
+                <th scope="col" className="text-left py-2 pr-4">{t.cveId}</th>
+                <th scope="col" className="text-left py-2">{t.patchStatus}</th>
               </tr>
             </thead>
             <tbody>

@@ -421,23 +421,23 @@ function SimulationLogPanel({ log }: { log: SimulationLog }) {
           <table className="w-full min-w-[600px] border-collapse text-sm">
             <thead>
               <tr className="bg-[#0d1117]">
-                <th className="px-4 py-2.5 text-left text-xs font-semibold text-[#64748b]">
+                <th scope="col" className="px-4 py-2.5 text-left text-xs font-semibold text-[#64748b]">
                   <button onClick={() => toggleSort("id")} className="flex items-center gap-1 hover:text-white transition-colors">
                     # <SortIcon col="id" />
                   </button>
                 </th>
-                <th className="px-4 py-2.5 text-left text-xs font-semibold text-[#64748b]">Scenario Name</th>
-                <th className="px-4 py-2.5 text-left text-xs font-semibold text-[#64748b]">
+                <th scope="col" className="px-4 py-2.5 text-left text-xs font-semibold text-[#64748b]">Scenario Name</th>
+                <th scope="col" className="px-4 py-2.5 text-left text-xs font-semibold text-[#64748b]">
                   <button onClick={() => toggleSort("result")} className="flex items-center gap-1 hover:text-white transition-colors">
                     Result <SortIcon col="result" />
                   </button>
                 </th>
-                <th className="px-4 py-2.5 text-left text-xs font-semibold text-[#64748b]">
+                <th scope="col" className="px-4 py-2.5 text-left text-xs font-semibold text-[#64748b]">
                   <button onClick={() => toggleSort("risk_score")} className="flex items-center gap-1 hover:text-white transition-colors">
                     Risk Score <SortIcon col="risk_score" />
                   </button>
                 </th>
-                <th className="px-4 py-2.5 text-left text-xs font-semibold text-[#64748b]">Affected</th>
+                <th scope="col" className="px-4 py-2.5 text-left text-xs font-semibold text-[#64748b]">Affected</th>
               </tr>
             </thead>
             <tbody>

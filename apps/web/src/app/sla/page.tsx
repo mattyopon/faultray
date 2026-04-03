@@ -337,11 +337,11 @@ export default function SlaPage() {
           <table className="w-full text-sm">
             <thead>
               <tr className="border-b border-[#1e293b]">
-                <th className="text-left py-3 px-2 text-[#64748b] font-medium">{t.metric}</th>
-                <th className="text-right py-3 px-2 text-[#64748b] font-medium">{t.target}</th>
-                <th className="text-right py-3 px-2 text-[#64748b] font-medium">{t.current}</th>
-                <th className="text-left py-3 px-2 text-[#64748b] font-medium">{t.compliance}</th>
-                <th className="text-left py-3 px-2 text-[#64748b] font-medium">{t.trend}</th>
+                <th scope="col" className="text-left py-3 px-2 text-[#64748b] font-medium">{t.metric}</th>
+                <th scope="col" className="text-right py-3 px-2 text-[#64748b] font-medium">{t.target}</th>
+                <th scope="col" className="text-right py-3 px-2 text-[#64748b] font-medium">{t.current}</th>
+                <th scope="col" className="text-left py-3 px-2 text-[#64748b] font-medium">{t.compliance}</th>
+                <th scope="col" className="text-left py-3 px-2 text-[#64748b] font-medium">{t.trend}</th>
               </tr>
             </thead>
             <tbody>
@@ -493,7 +493,7 @@ export default function SlaPage() {
                   "RPO",
                   locale === "ja" ? "例" : "Example",
                 ].map((h) => (
-                  <th key={h} className="text-left py-3 px-3 text-[#64748b] font-medium whitespace-nowrap">{h}</th>
+                  <th key={h} scope="col" className="text-left py-3 px-3 text-[#64748b] font-medium whitespace-nowrap">{h}</th>
                 ))}
               </tr>
             </thead>
@@ -560,11 +560,11 @@ export default function SlaPage() {
           <table className="w-full text-sm">
             <thead>
               <tr className="border-b border-[#1e293b]">
-                <th className="text-left py-3 px-2 text-[#64748b] font-medium">{t.provider}</th>
-                <th className="text-right py-3 px-2 text-[#64748b] font-medium">{t.slaTarget}</th>
-                <th className="text-left py-3 px-2 text-[#64748b] font-medium">{t.penaltyTerms}</th>
-                <th className="text-left py-3 px-2 text-[#64748b] font-medium">{t.expiry}</th>
-                <th className="text-left py-3 px-2 text-[#64748b] font-medium">{t.statusCol}</th>
+                <th scope="col" className="text-left py-3 px-2 text-[#64748b] font-medium">{t.provider}</th>
+                <th scope="col" className="text-right py-3 px-2 text-[#64748b] font-medium">{t.slaTarget}</th>
+                <th scope="col" className="text-left py-3 px-2 text-[#64748b] font-medium">{t.penaltyTerms}</th>
+                <th scope="col" className="text-left py-3 px-2 text-[#64748b] font-medium">{t.expiry}</th>
+                <th scope="col" className="text-left py-3 px-2 text-[#64748b] font-medium">{t.statusCol}</th>
               </tr>
             </thead>
             <tbody>

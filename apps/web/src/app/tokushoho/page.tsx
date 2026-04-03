@@ -72,7 +72,7 @@ export default function TokushohoPage() {
                 key={row.label}
                 className={i < rows.length - 1 ? "border-b border-[#1e293b]" : ""}
               >
-                <th className="px-6 py-4 text-left font-semibold text-[#94a3b8] bg-[#141a2e] w-40 align-top whitespace-nowrap">
+                <th scope="col" className="px-6 py-4 text-left font-semibold text-[#94a3b8] bg-[#141a2e] w-40 align-top whitespace-nowrap">
                   {row.label}
                 </th>
                 <td className="px-6 py-4 text-white bg-[#111827] leading-relaxed">

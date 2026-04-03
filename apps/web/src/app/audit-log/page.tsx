@@ -285,23 +285,23 @@ export default function AuditLogPage() {
           <table className="w-full text-sm">
             <thead>
               <tr className="border-b border-[#1e293b]">
-                <th className="text-left py-3 px-3 text-[#64748b] font-medium whitespace-nowrap">
+                <th scope="col" className="text-left py-3 px-3 text-[#64748b] font-medium whitespace-nowrap">
                   {locale === "ja" ? "日時" : "Timestamp"}
                 </th>
-                <th className="text-left py-3 px-3 text-[#64748b] font-medium">
+                <th scope="col" className="text-left py-3 px-3 text-[#64748b] font-medium">
                   {locale === "ja" ? "ユーザー" : "Actor"}
                 </th>
-                <th className="text-left py-3 px-3 text-[#64748b] font-medium">
+                <th scope="col" className="text-left py-3 px-3 text-[#64748b] font-medium">
                   {locale === "ja" ? "操作" : "Action"}
                 </th>
-                <th className="text-left py-3 px-3 text-[#64748b] font-medium hidden md:table-cell">
+                <th scope="col" className="text-left py-3 px-3 text-[#64748b] font-medium hidden md:table-cell">
                   {locale === "ja" ? "対象リソース" : "Resource"}
                 </th>
-                <th className="text-left py-3 px-3 text-[#64748b] font-medium">
+                <th scope="col" className="text-left py-3 px-3 text-[#64748b] font-medium">
                   {locale === "ja" ? "結果" : "Outcome"}
                 </th>
-                <th className="text-left py-3 px-3 text-[#64748b] font-medium hidden lg:table-cell">IP</th>
-                <th className="py-3 px-3" />
+                <th scope="col" className="text-left py-3 px-3 text-[#64748b] font-medium hidden lg:table-cell">IP</th>
+                <th scope="col" className="py-3 px-3" />
               </tr>
             </thead>
             <tbody>

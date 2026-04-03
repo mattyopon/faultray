@@ -130,13 +130,13 @@ export default function VulnPriorityPage() {
               <table className="w-full text-sm">
                 <thead>
                   <tr className="border-b border-[#1e293b]">
-                    <th className="text-center py-3 px-2 text-[#64748b] font-medium w-10">{t.rank}</th>
-                    <th className="text-left py-3 px-3 text-[#64748b] font-medium">{t.component}</th>
-                    <th className="text-left py-3 px-3 text-[#64748b] font-medium">CVE / ID</th>
-                    <th className="text-center py-3 px-2 text-[#64748b] font-medium">{t.vulnScore}</th>
-                    <th className="text-center py-3 px-2 text-[#64748b] font-medium">{t.blastRadius}</th>
-                    <th className="text-center py-3 px-2 text-[#64748b] font-medium">{t.priorityScore}</th>
-                    <th className="text-center py-3 px-2 text-[#64748b] font-medium">{t.status}</th>
+                    <th scope="col" className="text-center py-3 px-2 text-[#64748b] font-medium w-10">{t.rank}</th>
+                    <th scope="col" className="text-left py-3 px-3 text-[#64748b] font-medium">{t.component}</th>
+                    <th scope="col" className="text-left py-3 px-3 text-[#64748b] font-medium">CVE / ID</th>
+                    <th scope="col" className="text-center py-3 px-2 text-[#64748b] font-medium">{t.vulnScore}</th>
+                    <th scope="col" className="text-center py-3 px-2 text-[#64748b] font-medium">{t.blastRadius}</th>
+                    <th scope="col" className="text-center py-3 px-2 text-[#64748b] font-medium">{t.priorityScore}</th>
+                    <th scope="col" className="text-center py-3 px-2 text-[#64748b] font-medium">{t.status}</th>
                   </tr>
                 </thead>
                 <tbody>

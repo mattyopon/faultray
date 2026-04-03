@@ -956,13 +956,13 @@ export default function CostPage() {
               <table className="w-full text-sm">
                 <thead>
                   <tr className="border-b border-[#1e293b]">
-                    <th className="text-left py-3 px-2 text-[#64748b] font-medium">{t.scenario}</th>
-                    <th className="text-right py-3 px-2 text-[#64748b] font-medium">{t.directLoss}</th>
-                    <th className="text-right py-3 px-2 text-[#64748b] font-medium">{t.slaPenalty}</th>
-                    <th className="text-right py-3 px-2 text-[#64748b] font-medium">{t.doraFine}</th>
-                    <th className="text-right py-3 px-2 text-[#64748b] font-medium">{t.insurance}</th>
-                    <th className="text-right py-3 px-2 text-[#64748b] font-medium">{t.humanCostLabel}</th>
-                    <th className="text-right py-3 px-2 text-[#64748b] font-medium">{t.totalCol}</th>
+                    <th scope="col" className="text-left py-3 px-2 text-[#64748b] font-medium">{t.scenario}</th>
+                    <th scope="col" className="text-right py-3 px-2 text-[#64748b] font-medium">{t.directLoss}</th>
+                    <th scope="col" className="text-right py-3 px-2 text-[#64748b] font-medium">{t.slaPenalty}</th>
+                    <th scope="col" className="text-right py-3 px-2 text-[#64748b] font-medium">{t.doraFine}</th>
+                    <th scope="col" className="text-right py-3 px-2 text-[#64748b] font-medium">{t.insurance}</th>
+                    <th scope="col" className="text-right py-3 px-2 text-[#64748b] font-medium">{t.humanCostLabel}</th>
+                    <th scope="col" className="text-right py-3 px-2 text-[#64748b] font-medium">{t.totalCol}</th>
                   </tr>
                 </thead>
                 <tbody>
