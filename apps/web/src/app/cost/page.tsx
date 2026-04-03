@@ -1008,6 +1008,71 @@ export default function CostPage() {
             </p>
           </Card>
 
+          {/* ━━ 9. Cost Optimization Actions ━━ */}
+          <Card>
+            <h3 className="text-lg font-bold mb-4 flex items-center gap-2">
+              <TrendingUp size={18} className="text-emerald-400" />
+              {locale === "ja" ? "具体的なコスト削減アクション" : "Specific Cost Reduction Actions"}
+            </h3>
+            <p className="text-xs text-[#94a3b8] mb-4">
+              {locale === "ja"
+                ? "以下の改善を実施することで、推定年間コストを削減できます。"
+                : "Implement these changes to reduce your estimated annual costs."}
+            </p>
+            <div className="space-y-3">
+              {[
+                {
+                  action: locale === "ja" ? "RDS Multi-AZ レプリカの追加" : "Add RDS Multi-AZ replica",
+                  saving: Math.round(totalSavings * 0.25),
+                  effort: locale === "ja" ? "1日" : "1 day",
+                  impact: locale === "ja" ? "DB障害時のダウンタイムをゼロに" : "Eliminate DB downtime on failure",
+                },
+                {
+                  action: locale === "ja" ? "ALBヘルスチェックの最適化" : "Optimize ALB health checks",
+                  saving: Math.round(totalSavings * 0.15),
+                  effort: locale === "ja" ? "2時間" : "2 hours",
+                  impact: locale === "ja" ? "障害検知時間を60秒→10秒に" : "Reduce detection from 60s to 10s",
+                },
+                {
+                  action: locale === "ja" ? "Auto Scaling最小台数を2に増加" : "Increase ASG min to 2",
+                  saving: Math.round(totalSavings * 0.20),
+                  effort: locale === "ja" ? "30分" : "30 min",
+                  impact: locale === "ja" ? "単一障害点を排除" : "Eliminate single point of failure",
+                },
+                {
+                  action: locale === "ja" ? "サーキットブレーカーパターンの実装" : "Implement circuit breaker pattern",
+                  saving: Math.round(totalSavings * 0.18),
+                  effort: locale === "ja" ? "1週間" : "1 week",
+                  impact: locale === "ja" ? "カスケード障害を防止" : "Prevent cascade failures",
+                },
+                {
+                  action: locale === "ja" ? "バックアップの自動化とクロスリージョンレプリケーション" : "Automate backups + cross-region replication",
+                  saving: Math.round(totalSavings * 0.22),
+                  effort: locale === "ja" ? "3日" : "3 days",
+                  impact: locale === "ja" ? "DR復旧時間をRTO 15分以内に" : "Reduce DR RTO to < 15 min",
+                },
+              ].map((item, i) => (
+                <div key={i} className="flex items-center justify-between gap-4 p-3 rounded-lg bg-white/[0.02] border border-[#1e293b]">
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-medium">{item.action}</p>
+                    <p className="text-xs text-[#64748b] mt-0.5">{item.impact}</p>
+                  </div>
+                  <div className="flex items-center gap-2 shrink-0">
+                    <Badge variant="default">{item.effort}</Badge>
+                    <Badge variant="green">-{formatCurrency(item.saving)}</Badge>
+                  </div>
+                </div>
+              ))}
+            </div>
+            <div className="mt-4 pt-3 border-t border-[#1e293b] text-right">
+              <p className="text-xs text-[#64748b]">
+                {locale === "ja"
+                  ? `全アクション実施で推定 ${formatCurrency(totalSavings)}/年 の削減効果`
+                  : `Total estimated savings: ${formatCurrency(totalSavings)}/year`}
+              </p>
+            </div>
+          </Card>
+
           {/* ━━ Export ━━ */}
           <div className="flex gap-3 justify-end print:hidden">
             <Button variant="secondary" size="sm" onClick={downloadExcel}>

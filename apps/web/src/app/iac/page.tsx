@@ -362,6 +362,108 @@ export default function IaCPage() {
           <p className="text-[#94a3b8]">{t.subtitle}</p>
         </div>
 
+        {/* IaC Coverage Score */}
+        <Card className="bg-[#0f1629] border-[#1e293b] p-5 mb-6">
+          <div className="flex items-center justify-between mb-3">
+            <h2 className="text-sm font-semibold text-white">{t.iacScoreTitle}</h2>
+            <div className="flex items-center gap-3 text-xs text-[#64748b]">
+              <span className="flex items-center gap-1">
+                <span className="w-2.5 h-2.5 rounded-sm bg-[#334155] inline-block" />
+                {t.iacScoreCurrent}: <span className="text-white font-semibold ml-1">35%</span>
+              </span>
+              <span className="flex items-center gap-1">
+                <span className="w-2.5 h-2.5 rounded-sm bg-[#FFD700] inline-block" />
+                {t.iacScoreTarget}: <span className="text-[#FFD700] font-semibold ml-1">92%</span>
+              </span>
+            </div>
+          </div>
+          {/* Progress bar */}
+          <div className="relative w-full h-4 bg-[#1e293b] rounded-full overflow-hidden mb-2">
+            {/* Target bar (gold, behind) */}
+            <div
+              className="absolute inset-y-0 left-0 bg-[#FFD700]/30 rounded-full"
+              style={{ width: "92%" }}
+            />
+            {/* Current bar (gray, on top) */}
+            <div
+              className="absolute inset-y-0 left-0 bg-[#475569] rounded-full transition-all"
+              style={{ width: "35%" }}
+            />
+            {/* 35% label */}
+            <span className="absolute inset-y-0 flex items-center text-[10px] font-bold text-white" style={{ left: "calc(35% - 22px)" }}>
+              35%
+            </span>
+            {/* 92% label */}
+            <span className="absolute inset-y-0 flex items-center text-[10px] font-bold text-[#FFD700]" style={{ left: "calc(92% - 24px)" }}>
+              92%
+            </span>
+          </div>
+          <p className="text-xs text-[#64748b] mt-1">{t.iacScoreNote}</p>
+        </Card>
+
+        {/* Terraform Roadmap */}
+        <Card className="bg-[#0f1629] border-[#1e293b] p-5 mb-6">
+          <h2 className="text-sm font-semibold text-white mb-5">{t.roadmapTitle}</h2>
+          <div className="space-y-0">
+            {PHASES.map((p, idx) => {
+              const Icon = p.icon;
+              const efforts = [t.roadmapEffort1, t.roadmapEffort2, t.roadmapEffort3];
+              const resourcesList = [t.roadmapResources1, t.roadmapResources2, t.roadmapResources3];
+              const isLast = idx === PHASES.length - 1;
+              return (
+                <div key={p.phase} className="flex gap-4">
+                  {/* Stepper line */}
+                  <div className="flex flex-col items-center">
+                    <div className="w-8 h-8 rounded-full bg-[#FFD700]/10 border border-[#FFD700]/30 flex items-center justify-center flex-shrink-0 z-10">
+                      <span className="text-xs font-bold text-[#FFD700]">{p.phase}</span>
+                    </div>
+                    {!isLast && (
+                      <div className="w-px flex-1 bg-[#1e293b] my-1" style={{ minHeight: "24px" }} />
+                    )}
+                  </div>
+                  {/* Content */}
+                  <div className={`flex-1 pb-5 ${isLast ? "" : ""}`}>
+                    <div className="flex items-start justify-between gap-3 mb-2">
+                      <div className="flex items-center gap-2">
+                        <Icon size={14} className="text-[#FFD700] mt-0.5 flex-shrink-0" />
+                        <p className="text-sm font-semibold text-white">
+                          {(t as Record<string, string>)[p.labelKey]}
+                        </p>
+                      </div>
+                      <Badge className="text-[9px] bg-green-500/10 text-green-400 border-green-500/20 flex-shrink-0">
+                        {p.scoreGain} pt
+                      </Badge>
+                    </div>
+                    <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-[#64748b] mb-2">
+                      <span>{t.roadmapEffort}: <span className="text-[#94a3b8]">{efforts[idx]}</span></span>
+                      <span>{t.roadmapResources}: <span className="text-[#94a3b8]">{p.files.length}</span></span>
+                    </div>
+                    <p className="text-[10px] text-[#475569] mb-3 font-mono">{resourcesList[idx]}</p>
+                    <Button
+                      size="sm"
+                      variant="secondary"
+                      onClick={() => {
+                        const code = p.code;
+                        const blob = new Blob([code], { type: "text/plain" });
+                        const url = URL.createObjectURL(blob);
+                        const a = document.createElement("a");
+                        a.href = url;
+                        a.download = `faultray-phase${p.phase}-remediation.tf`;
+                        a.click();
+                        URL.revokeObjectURL(url);
+                      }}
+                      className="h-7 text-xs border-[#1e293b] text-[#94a3b8] hover:text-white"
+                    >
+                      <Download size={12} className="mr-1" />
+                      {t.roadmapDownload}
+                    </Button>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </Card>
+
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* Left column: Input + Format */}
           <div className="lg:col-span-1 space-y-6">
