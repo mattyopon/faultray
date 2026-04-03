@@ -730,6 +730,7 @@ const MOCK_AGENTS: ConnectedAgent[] = [];
 
 function CopyButton({ text }: { text: string }) {
   const [copied, setCopied] = useState(false);
+  const locale = useLocale();
 
   const handleCopy = () => {
     navigator.clipboard.writeText(text);
@@ -741,7 +742,8 @@ function CopyButton({ text }: { text: string }) {
     <button
       onClick={handleCopy}
       className="p-1.5 rounded-md hover:bg-white/10 transition-colors text-[#64748b] hover:text-white"
-      title="Copy to clipboard"
+      title={locale === "ja" ? "クリップボードにコピー" : "Copy to clipboard"}
+      aria-label={locale === "ja" ? "クリップボードにコピー" : "Copy to clipboard"}
     >
       {copied ? <Check size={14} className="text-emerald-400" /> : <Copy size={14} />}
     </button>

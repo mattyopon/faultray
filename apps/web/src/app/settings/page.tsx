@@ -794,14 +794,16 @@ export default function SettingsPage() {
                 <button
                   onClick={() => handleCopyKey(k.key)}
                   className="p-1.5 rounded-md hover:bg-white/10 transition-colors text-[#64748b] hover:text-white"
-                  title="Copy"
+                  title={locale === "ja" ? "コピー" : "Copy"}
+                  aria-label={locale === "ja" ? "APIキーをコピー" : "Copy API key"}
                 >
                   {copiedKey === k.key ? <Check size={14} className="text-emerald-400" /> : <Copy size={14} />}
                 </button>
                 <button
                   onClick={() => handleDeleteKey(k.key)}
                   className="p-1.5 rounded-md hover:bg-red-500/10 transition-colors text-[#64748b] hover:text-red-400"
-                  title="Delete"
+                  title={locale === "ja" ? "削除" : "Delete"}
+                  aria-label={locale === "ja" ? "APIキーを削除" : "Delete API key"}
                 >
                   <Trash2 size={14} />
                 </button>
