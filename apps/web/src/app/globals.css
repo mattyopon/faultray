@@ -368,9 +368,9 @@ html[data-theme="dark"] .hero-radial-glow {
     margin-left: 4rem;
     transition: margin-left 0.2s;
   }
-  body[data-app-page] main > div {
+  body[data-app-page] main > div,
+  body[data-app-page] main > div > div,
+  body[data-app-page] main > main > div {
     max-width: 100% !important;
-    padding-left: 1.5rem;
-    padding-right: 1.5rem;
   }
 }
