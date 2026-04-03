@@ -66,6 +66,7 @@ const EVENT_COLORS: Record<string, string> = {
 
 function IncidentCard({ incident }: { incident: Incident }) {
   const [expanded, setExpanded] = useState(false);
+  const locale = useLocale();
 
   return (
     <Card>
@@ -98,11 +99,11 @@ function IncidentCard({ incident }: { incident: Incident }) {
       {expanded && (
         <div className="mt-6 pt-4 border-t border-[#1e293b]">
           <div className="mb-4">
-            <p className="text-xs text-[#64748b] uppercase tracking-wider mb-1">Root Cause</p>
+            <p className="text-xs text-[#64748b] uppercase tracking-wider mb-1">{locale === "ja" ? "根本原因" : "Root Cause"}</p>
             <p className="text-sm">{incident.root_cause}</p>
           </div>
           <div className="mb-4">
-            <p className="text-xs text-[#64748b] uppercase tracking-wider mb-1">Affected Components</p>
+            <p className="text-xs text-[#64748b] uppercase tracking-wider mb-1">{locale === "ja" ? "影響コンポーネント" : "Affected Components"}</p>
             <div className="flex gap-2">
               {incident.affected_components.map((c) => (
                 <Badge key={c} variant="default">{c}</Badge>
@@ -112,7 +113,7 @@ function IncidentCard({ incident }: { incident: Incident }) {
 
           {/* Timeline */}
           <div>
-            <p className="text-xs text-[#64748b] uppercase tracking-wider mb-3">Timeline</p>
+            <p className="text-xs text-[#64748b] uppercase tracking-wider mb-3">{locale === "ja" ? "タイムライン" : "Timeline"}</p>
             <div className="relative pl-6">
               {/* Vertical line */}
               <div className="absolute left-[9px] top-0 bottom-0 w-0.5 bg-[#1e293b]" />

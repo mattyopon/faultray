@@ -362,15 +362,15 @@ export default function AuditLogPage() {
                               <p className="text-white">{entry.details ?? "—"}</p>
                             </div>
                             <div>
-                              <p className="text-[#64748b] mb-0.5">IP Address</p>
+                              <p className="text-[#64748b] mb-0.5">{locale === "ja" ? "IPアドレス" : "IP Address"}</p>
                               <p className="text-white font-mono">{entry.ipAddress}</p>
                             </div>
                             <div>
-                              <p className="text-[#64748b] mb-0.5">User Agent</p>
+                              <p className="text-[#64748b] mb-0.5">{locale === "ja" ? "ユーザーエージェント" : "User Agent"}</p>
                               <p className="text-white">{entry.userAgent}</p>
                             </div>
                             <div>
-                              <p className="text-[#64748b] mb-0.5">Event ID</p>
+                              <p className="text-[#64748b] mb-0.5">{locale === "ja" ? "イベントID" : "Event ID"}</p>
                               <p className="text-white font-mono">{entry.id}</p>
                             </div>
                           </div>
