@@ -178,8 +178,9 @@ function LoginForm() {
               </div>
             ) : (
               <div className="space-y-3">
-                <label className="block text-sm text-[#94a3b8] font-medium">{t.emailLabel}</label>
+                <label htmlFor="login-email" className="block text-sm text-[#94a3b8] font-medium">{t.emailLabel}</label>
                 <input
+                  id="login-email"
                   type="email"
                   value={emailInput}
                   onChange={(e) => setEmailInput(e.target.value)}

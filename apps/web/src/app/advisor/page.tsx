@@ -186,7 +186,7 @@ export default function AdvisorPage() {
             </span>
           )}
         </div>
-        <Button type="submit" disabled={!input.trim() || loading} aria-label="Send message">
+        <Button type="submit" disabled={!input.trim() || loading} aria-label={locale === "ja" ? "メッセージを送信" : "Send message"}>
           {loading ? <Loader2 size={16} className="animate-spin" /> : <Send size={16} />}
         </Button>
       </form>
