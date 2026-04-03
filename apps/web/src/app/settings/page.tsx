@@ -22,6 +22,9 @@ import {
   Gift,
   X,
   Tag,
+  Sun,
+  Moon,
+  Monitor,
 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useState, useEffect, useCallback, useRef } from "react";
@@ -56,6 +59,21 @@ export default function SettingsPage() {
   const locale = useLocale();
   const setLocale = useSetLocale();
   const t = appDict.settings[locale] ?? appDict.settings.en;
+
+  // BRAND-02: テーマ設定（ライトモード / ダークモード / システム）
+  const [theme, setTheme] = useState<"dark" | "light" | "system">(() => {
+    if (typeof window === "undefined") return "dark";
+    return (localStorage.getItem("faultray_theme") as "dark" | "light" | "system") ?? "dark";
+  });
+
+  const applyTheme = useCallback((t: "dark" | "light" | "system") => {
+    setTheme(t);
+    localStorage.setItem("faultray_theme", t);
+    const resolved = t === "system"
+      ? (window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light")
+      : t;
+    document.documentElement.setAttribute("data-theme", resolved === "light" ? "light" : "dark");
+  }, []);
 
   // API Keys
   const [apiKeys, setApiKeys] = useState<Array<{ key: string; created: string }>>([]);
@@ -366,6 +384,34 @@ export default function SettingsPage() {
             >
               <span className="text-lg">{lang.flag}</span>
               <span>{lang.label}</span>
+            </button>
+          ))}
+        </div>
+      </Card>
+
+      {/* BRAND-02: テーマ設定 */}
+      <Card className="mb-6">
+        <div className="flex items-center gap-3 mb-4">
+          <Sun size={20} className="text-[#FFD700]" />
+          <h2 className="text-lg font-bold">{locale === "ja" ? "表示テーマ" : "Appearance"}</h2>
+        </div>
+        <div className="flex gap-3">
+          {([
+            { value: "dark" as const, label: locale === "ja" ? "ダーク" : "Dark", Icon: Moon },
+            { value: "light" as const, label: locale === "ja" ? "ライト" : "Light", Icon: Sun },
+            { value: "system" as const, label: locale === "ja" ? "システム" : "System", Icon: Monitor },
+          ]).map(({ value, label, Icon }) => (
+            <button
+              key={value}
+              onClick={() => applyTheme(value)}
+              className={`flex items-center gap-2 px-4 py-3 rounded-lg border transition-all text-sm ${
+                theme === value
+                  ? "border-[#FFD700] bg-[#FFD700]/10 text-white"
+                  : "border-[#1e293b] text-[#94a3b8] hover:border-[#64748b] hover:text-white"
+              }`}
+            >
+              <Icon size={14} />
+              {label}
             </button>
           ))}
         </div>
