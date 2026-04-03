@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 
 export default function GlobalError({
   error,
@@ -9,6 +9,13 @@ export default function GlobalError({
   error: Error & { digest?: string };
   unstable_retry: () => void;
 }) {
+  const [isJa, setIsJa] = useState(false);
+
+  useEffect(() => {
+    const match = document.cookie.match(/(?:^|;\s*)NEXT_LOCALE=([^;,\s]+)/);
+    setIsJa(match?.[1] === "ja");
+  }, []);
+
   useEffect(() => {
     // ERROR-04: エラー監視 — NEXT_PUBLIC_SENTRY_DSNが設定されている場合は自動送信
     // Sentry未設定の環境ではconsole.errorにフォールバック
@@ -29,7 +36,7 @@ export default function GlobalError({
   }, [error]);
 
   return (
-    <html lang="en">
+    <html lang={isJa ? "ja" : "en"}>
       <body style={{ margin: 0, background: "#0a0e1a", fontFamily: "sans-serif" }}>
         <div
           style={{
@@ -60,10 +67,10 @@ export default function GlobalError({
                 marginBottom: 16,
               }}
             >
-              Critical error
+              {isJa ? "重大なエラーが発生しました" : "Critical error"}
             </h1>
             <p style={{ color: "#94a3b8", marginBottom: 8, fontSize: 14 }}>
-              {error.message ?? "An unexpected error occurred."}
+              {error.message ?? (isJa ? "予期しないエラーが発生しました。" : "An unexpected error occurred.")}
             </p>
             {error.digest && (
               <p
@@ -74,7 +81,7 @@ export default function GlobalError({
                   marginBottom: 32,
                 }}
               >
-                Error ID: {error.digest}
+                {isJa ? "エラーID:" : "Error ID:"} {error.digest}
               </p>
             )}
             <button
@@ -90,7 +97,7 @@ export default function GlobalError({
                 cursor: "pointer",
               }}
             >
-              Try again
+              {isJa ? "再試行" : "Try again"}
             </button>
           </div>
         </div>

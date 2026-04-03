@@ -4,7 +4,7 @@ export default function GlobalLoading() {
     <div className="flex items-center justify-center min-h-[60vh]">
       <div className="flex flex-col items-center gap-4">
         <div className="w-8 h-8 border-2 border-[#FFD700] border-t-transparent rounded-full animate-spin" />
-        <p className="text-sm text-[#64748b]">読み込み中…</p>
+        <p className="text-sm text-[#64748b]" aria-live="polite">Loading… / 読み込み中…</p>
       </div>
     </div>
   );
