@@ -97,37 +97,38 @@ dependencies:
     weight: 0.7`;
 
 function ScanPreview({ summary }: { summary: CloudSimulationResult["scan_summary"] }) {
+  const locale = useLocale();
   return (
     <div className="p-4 rounded-xl bg-emerald-500/5 border border-emerald-500/20 mb-6">
       <div className="flex items-center gap-2 mb-3">
         <CheckCircle2 size={16} className="text-emerald-400" />
-        <span className="text-sm font-semibold text-emerald-400">Infrastructure Discovered</span>
+        <span className="text-sm font-semibold text-emerald-400">{locale === "ja" ? "インフラが検出されました" : "Infrastructure Discovered"}</span>
       </div>
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         <div>
           <p className="text-2xl font-bold font-mono text-white">{summary.components_found}</p>
-          <p className="text-xs text-[#64748b]">Components</p>
+          <p className="text-xs text-[#64748b]">{locale === "ja" ? "コンポーネント" : "Components"}</p>
         </div>
         <div>
           <p className="text-2xl font-bold font-mono text-white">{summary.dependencies_inferred}</p>
-          <p className="text-xs text-[#64748b]">Dependencies</p>
+          <p className="text-xs text-[#64748b]">{locale === "ja" ? "依存関係" : "Dependencies"}</p>
         </div>
         {summary.region && (
           <div>
             <p className="text-sm font-mono text-white">{summary.region}</p>
-            <p className="text-xs text-[#64748b]">Region</p>
+            <p className="text-xs text-[#64748b]">{locale === "ja" ? "リージョン" : "Region"}</p>
           </div>
         )}
         {summary.scan_duration_seconds != null && (
           <div>
             <p className="text-sm font-mono text-white">{summary.scan_duration_seconds}s</p>
-            <p className="text-xs text-[#64748b]">Scan Time</p>
+            <p className="text-xs text-[#64748b]">{locale === "ja" ? "スキャン時間" : "Scan Time"}</p>
           </div>
         )}
       </div>
       {summary.warnings && summary.warnings.length > 0 && (
         <div className="mt-3 pt-3 border-t border-emerald-500/10">
-          <p className="text-xs text-[#94a3b8]">{summary.warnings.length} warning(s) during scan</p>
+          <p className="text-xs text-[#94a3b8]">{locale === "ja" ? `スキャン中に${summary.warnings.length}件の警告が発生しました` : `${summary.warnings.length} warning(s) during scan`}</p>
         </div>
       )}
     </div>
