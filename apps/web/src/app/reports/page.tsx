@@ -5,7 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { useEffect, useState } from "react";
 import { api, type ExecutiveReport } from "@/lib/api";
-import { FileText, Loader2, Download, AlertTriangle, CheckCircle2, XCircle, Globe, Printer, Activity } from "lucide-react";
+import { FileText, Loader2, Download, AlertTriangle, CheckCircle2, XCircle, Globe, Printer, Activity, Code2 } from "lucide-react";
 import Link from "next/link";
 import { useLocale } from "@/lib/useLocale";
 import { appDict } from "@/i18n/app-dict";
@@ -435,6 +435,11 @@ export default function ReportsPage() {
         <Link href="/compliance" className="flex items-center gap-1.5 text-xs text-[#64748b] hover:text-[#94a3b8] transition-colors">
           <CheckCircle2 size={12} />
           {locale === "ja" ? "コンプライアンス" : "Compliance"}
+        </Link>
+        {/* FLOW-02: 改善提案からIaCページへの遷移リンク */}
+        <Link href="/iac" className="flex items-center gap-1.5 text-xs text-[#64748b] hover:text-[#94a3b8] transition-colors">
+          <Code2 size={12} />
+          {locale === "ja" ? "IaC修正コード" : "IaC Fixes"}
         </Link>
       </div>
     </div>

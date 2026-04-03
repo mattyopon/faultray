@@ -7,10 +7,18 @@ import { CheckCircle2, AlertTriangle, XCircle, Info } from "lucide-react";
 
 export type ToastVariant = "success" | "warning" | "error" | "info";
 
+interface ToastAction {
+  label: string;
+  onClick: () => void;
+}
+
 interface ToastProps {
   message: string;
   variant?: ToastVariant;
   className?: string;
+  // NOTIFY-05: アクション付きトースト（Undo/Retry等）
+  action?: ToastAction;
+  onDismiss?: () => void;
 }
 
 const variantConfig: Record<ToastVariant, {
@@ -50,7 +58,7 @@ const variantConfig: Record<ToastVariant, {
   },
 };
 
-export function Toast({ message, variant = "success", className }: ToastProps) {
+export function Toast({ message, variant = "success", className, action, onDismiss }: ToastProps) {
   const cfg = variantConfig[variant];
   return (
     <div
@@ -68,7 +76,25 @@ export function Toast({ message, variant = "success", className }: ToastProps) {
       )}
     >
       <cfg.Icon size={15} className="shrink-0" aria-hidden="true" />
-      <span>{message}</span>
+      <span className="flex-1">{message}</span>
+      {/* NOTIFY-05: アクション付きトースト */}
+      {action && (
+        <button
+          onClick={action.onClick}
+          className="ml-2 text-xs font-bold underline underline-offset-2 hover:opacity-75 transition-opacity whitespace-nowrap"
+        >
+          {action.label}
+        </button>
+      )}
+      {onDismiss && (
+        <button
+          onClick={onDismiss}
+          aria-label="Dismiss"
+          className="ml-2 hover:opacity-75 transition-opacity leading-none text-base"
+        >
+          &times;
+        </button>
+      )}
     </div>
   );
 }

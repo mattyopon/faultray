@@ -168,6 +168,7 @@ export default function ContactPage() {
               name="company"
               type="text"
               required
+              maxLength={100}
               value={form.company}
               onChange={handleChange}
               placeholder="Acme Corp"
@@ -188,6 +189,7 @@ export default function ContactPage() {
               name="name"
               type="text"
               required
+              maxLength={100}
               value={form.name}
               onChange={handleChange}
               placeholder="Jane Smith"

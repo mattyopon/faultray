@@ -335,6 +335,11 @@ export default function CompliancePage() {
           <Wrench size={12} />
           {locale === "ja" ? "改善アクション" : "Remediation"}
         </Link>
+        {/* FLOW-03: complianceからaudit-reportへの遷移リンク */}
+        <Link href="/audit-report" className="flex items-center gap-1.5 text-xs text-[#64748b] hover:text-[#94a3b8] transition-colors">
+          <BookOpen size={12} />
+          {locale === "ja" ? "監査レポート" : "Audit Report"}
+        </Link>
       </div>
     </div>
   );

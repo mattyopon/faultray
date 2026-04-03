@@ -973,15 +973,23 @@ function DropdownMenu({
         setOpen(false);
       }
     }
+    // KEYBOARD-06: Escキーでドロップダウンを閉じる
+    function handleKeyDown(e: KeyboardEvent) {
+      if (e.key === "Escape") setOpen(false);
+    }
     if (open) {
       document.addEventListener("mousedown", handleClickOutside);
-      return () => document.removeEventListener("mousedown", handleClickOutside);
+      document.addEventListener("keydown", handleKeyDown);
+      return () => {
+        document.removeEventListener("mousedown", handleClickOutside);
+        document.removeEventListener("keydown", handleKeyDown);
+      };
     }
   }, [open]);
 
   return (
     <div className="relative" ref={ref}>
-      <div onClick={() => setOpen(!open)}>{trigger}</div>
+      <div role="button" tabIndex={0} aria-expanded={open} onClick={() => setOpen(!open)} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); setOpen(!open); } }}>{trigger}</div>
       {open && (
         <div
           className={`absolute z-50 mt-1 min-w-[200px] bg-[#1a1f2e] border border-[#2d3548] rounded-lg shadow-xl py-1 ${

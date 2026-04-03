@@ -5,8 +5,12 @@ import { createClient } from "@/lib/supabase/client";
 import { useSearchParams } from "next/navigation";
 import { Suspense, useState } from "react";
 import { Mail, Loader2, CheckCircle2 } from "lucide-react";
+import { useLocale } from "@/lib/useLocale";
+import { appDict } from "@/i18n/app-dict";
 
 function LoginForm() {
+  const locale = useLocale();
+  const t = appDict.login[locale] ?? appDict.login.en;
   const searchParams = useSearchParams();
   // Validate redirectTo to prevent open redirect — only allow internal paths
   const rawRedirectTo = searchParams.get("redirectTo") || "/dashboard";
@@ -91,10 +95,10 @@ function LoginForm() {
       <div className="hidden lg:flex flex-col gap-8 max-w-[380px]">
         <div>
           <h2 className="text-2xl font-bold text-white mb-2">
-            Why SRE teams choose FaultRay
+            {t.whyTitle}
           </h2>
           <p className="text-[#64748b] text-sm">
-            Chaos engineering that proves resilience — without the risk.
+            {t.whySubtitle}
           </p>
         </div>
         <ul className="space-y-5">
@@ -125,7 +129,7 @@ function LoginForm() {
           ))}
         </ul>
         <p className="text-xs text-[#475569]">
-          Trusted by SRE teams at companies of all sizes.
+          {t.trustedBy}
         </p>
       </div>
 
@@ -134,21 +138,21 @@ function LoginForm() {
           <div className="flex justify-center mb-4">
             <Logo size={48} />
           </div>
-          <h1 className="text-2xl font-bold mb-2">Welcome to FaultRay</h1>
+          <h1 className="text-2xl font-bold mb-2">{t.title}</h1>
           <p className="text-[#94a3b8] text-sm">
-            Sign in to access your chaos engineering dashboard
+            {t.subtitle}
           </p>
         </div>
 
         {/* AUTH-01: OAuth error display */}
         {errorMessage && (
           <div role="alert" className="mb-4 p-4 rounded-xl bg-red-500/10 border border-red-500/30 text-red-400 text-sm">
-            <p className="font-semibold mb-1">Sign-in failed</p>
+            <p className="font-semibold mb-1">{t.signInFailed}</p>
             <p>{errorMessage}</p>
             <p className="mt-2 text-xs text-red-300">
-              Need help?{" "}
+              {t.needHelp}{" "}
               <a href="mailto:support@faultray.com" className="underline hover:text-red-200">
-                Contact support
+                {t.contactSupport}
               </a>
             </p>
           </div>
@@ -160,27 +164,27 @@ function LoginForm() {
             otpSent ? (
               <div className="text-center py-4">
                 <CheckCircle2 size={40} className="text-emerald-400 mx-auto mb-3" />
-                <p className="font-semibold text-white mb-1">Check your email</p>
+                <p className="font-semibold text-white mb-1">{t.checkEmail}</p>
                 <p className="text-sm text-[#94a3b8]">
-                  We sent a magic link to <span className="text-white font-medium">{emailInput}</span>.
-                  Click the link to sign in — no password required.
+                  {t.magicLinkSent} <span className="text-white font-medium">{emailInput}</span>.{" "}
+                  {t.magicLinkDesc}
                 </p>
                 <button
                   onClick={() => { setOtpSent(false); setEmailMode(false); setEmailInput(""); }}
                   className="mt-4 text-sm text-[#FFD700] hover:underline"
                 >
-                  Back to sign in
+                  {t.backToSignIn}
                 </button>
               </div>
             ) : (
               <div className="space-y-3">
-                <label className="block text-sm text-[#94a3b8] font-medium">Email address</label>
+                <label className="block text-sm text-[#94a3b8] font-medium">{t.emailLabel}</label>
                 <input
                   type="email"
                   value={emailInput}
                   onChange={(e) => setEmailInput(e.target.value)}
                   onKeyDown={(e) => { if (e.key === "Enter") sendOtp(); }}
-                  placeholder="you@company.com"
+                  placeholder={t.emailPlaceholder}
                   autoFocus
                   className="w-full px-4 py-3 rounded-xl bg-[#0a0e1a] border border-[#1e293b] text-white placeholder-[#475569] focus:outline-none focus:border-[#FFD700]/50 text-sm"
                 />
@@ -193,13 +197,13 @@ function LoginForm() {
                   className="w-full flex items-center justify-center gap-2 px-4 py-3 rounded-xl bg-[#FFD700] text-[#0a0e1a] font-semibold hover:bg-yellow-400 disabled:opacity-60 transition-colors"
                 >
                   {otpSending ? <Loader2 size={16} className="animate-spin" /> : <Mail size={16} />}
-                  {otpSending ? "Sending..." : "Send magic link"}
+                  {otpSending ? t.sending : t.sendMagicLink}
                 </button>
                 <button
                   onClick={() => { setEmailMode(false); setEmailError(null); }}
                   className="w-full text-center text-sm text-[#64748b] hover:text-white transition-colors"
                 >
-                  Back to social sign in
+                  {t.backToSocial}
                 </button>
               </div>
             )
@@ -213,7 +217,7 @@ function LoginForm() {
                 <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
                   <path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z" />
                 </svg>
-                Continue with GitHub
+                {t.continueGithub}
               </button>
               )}
 
@@ -227,12 +231,12 @@ function LoginForm() {
                   <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05" />
                   <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335" />
                 </svg>
-                Continue with Google
+                {t.continueGoogle}
               </button>
 
               <div className="relative flex items-center">
                 <div className="flex-1 border-t border-[#1e293b]" />
-                <span className="mx-3 text-xs text-[#475569]">or</span>
+                <span className="mx-3 text-xs text-[#475569]">{t.or}</span>
                 <div className="flex-1 border-t border-[#1e293b]" />
               </div>
 
@@ -242,14 +246,14 @@ function LoginForm() {
                 className="w-full flex items-center justify-center gap-3 px-4 py-3 rounded-xl border border-[#1e293b] text-[#94a3b8] font-medium hover:bg-white/5 hover:text-white transition-colors text-sm min-h-[48px]"
               >
                 <Mail size={16} />
-                Continue with Email
+                {t.continueEmail}
               </button>
             </>
           )}
         </div>
 
         <p className="text-center text-xs text-[#64748b] mt-6">
-          By signing in, you agree to our Terms of Service and Privacy Policy.
+          {t.terms}
         </p>
       </div>
     </div>

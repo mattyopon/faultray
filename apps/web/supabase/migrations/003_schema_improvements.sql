@@ -32,3 +32,12 @@ alter table public.simulation_runs
 update public.simulation_runs
   set updated_at = created_at
   where updated_at is null;
+
+-- RLS-06: profilesのUPDATEポリシーにWITH CHECKを追加（間接参照の防止）
+-- 既存のポリシーを削除して WITH CHECK を含む安全なポリシーで再作成
+drop policy if exists "Users can update own profile" on public.profiles;
+create policy "Users can update own profile"
+  on public.profiles for update
+  using (auth.uid() = id)
+  with check (auth.uid() = id);
+

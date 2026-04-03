@@ -5,7 +5,8 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { useState, useEffect } from "react";
 import { api, type SimulationRun } from "@/lib/api";
-import { FileText, Download, ChevronDown } from "lucide-react";
+import { FileText, Download, ChevronDown, BookOpen } from "lucide-react";
+import Link from "next/link";
 import { useLocale } from "@/lib/useLocale";
 import { appDict } from "@/i18n/app-dict";
 
@@ -60,6 +61,17 @@ export default function ResultsPage() {
             <Download size={14} /> {t.export}
           </Button>
         </div>
+      </div>
+
+      {/* FLOW-01: 結果画面からレポートへのリンク */}
+      <div className="flex items-center gap-3 mb-6 p-3 rounded-lg bg-[#111827] border border-[#1e293b]">
+        <BookOpen size={14} className="text-[#FFD700] shrink-0" />
+        <span className="text-xs text-[#94a3b8]">
+          {locale === "ja" ? "詳細なエグゼクティブレポートと改善ロードマップを確認:" : "View detailed executive report and improvement roadmap:"}
+        </span>
+        <Link href="/reports" className="text-xs text-[#FFD700] hover:underline font-medium shrink-0">
+          {locale === "ja" ? "レポートを見る →" : "View Reports →"}
+        </Link>
       </div>
 
       {loading ? (
