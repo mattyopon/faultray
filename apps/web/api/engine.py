@@ -12,9 +12,18 @@ Path routing uses the request path to determine which handler to call.
 
 from http.server import BaseHTTPRequestHandler
 import json
+import logging
 import os
 import tempfile
 from urllib.parse import urlparse, parse_qs
+
+# API-07: 構造化ロギング設定
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s %(levelname)s %(name)s %(message)s",
+    datefmt="%Y-%m-%dT%H:%M:%SZ",
+)
+_logger = logging.getLogger("faultray.engine")
 
 
 # ===========================================================================
@@ -1349,8 +1358,11 @@ class handler(BaseHTTPRequestHandler):
 
     def do_GET(self):
         """Handle GET requests — only analysis/score-explain is supported via GET."""
+        # API-07: リクエストロギング
+        _logger.info("GET %s from %s", self.path, self.client_address[0])
         if not self._authenticate():
             return
+        _t0 = time.monotonic()
         try:
             parsed = urlparse(self.path)
             path = parsed.path.rstrip("/")
@@ -1368,6 +1380,9 @@ class handler(BaseHTTPRequestHandler):
             self._error(500, f"Engine GET error: {e}")
 
     def do_POST(self):
+        # API-07: リクエストロギング
+        _logger.info("POST %s from %s", self.path, self.client_address[0])
+        _t0 = time.monotonic()
         # ENG-02 fix: authenticate before processing any request
         if not self._authenticate():
             return
@@ -1382,6 +1397,7 @@ class handler(BaseHTTPRequestHandler):
         parsed = urlparse(self.path)
         path = parsed.path.rstrip("/")
         params = parse_qs(parsed.query)
+        _ = _t0  # suppress unused warning; timing logged in _handle_* methods
 
         if "/simulate" in path:
             self._handle_simulate(body)

@@ -168,6 +168,47 @@ export default function HelpPage() {
           <FaqItem question={t.faqQ3} answer={t.faqA3} />
         </div>
       </Section>
+
+      {/* COMP-03: コミュニティ・教育コンテンツ */}
+      <Section icon={Terminal} title={locale === "ja" ? "コミュニティ & リソース" : "Community & Resources"}>
+        <div className="space-y-3">
+          {[
+            {
+              href: "https://github.com/mattyopon/faultray/discussions",
+              label: locale === "ja" ? "GitHub Discussions — 質問・アイデア共有" : "GitHub Discussions — Q&A and ideas",
+              badge: locale === "ja" ? "コミュニティ" : "Community",
+            },
+            {
+              href: "https://github.com/mattyopon/faultray/blob/main/docs/",
+              label: locale === "ja" ? "公式ドキュメント — YAML リファレンス・API仕様" : "Official Docs — YAML reference & API spec",
+              badge: locale === "ja" ? "ドキュメント" : "Docs",
+            },
+            {
+              href: "https://github.com/mattyopon/faultray/blob/main/CHANGELOG.md",
+              label: locale === "ja" ? "リリースノート — 最新の更新内容" : "Changelog — latest updates",
+              badge: locale === "ja" ? "更新情報" : "Updates",
+            },
+            {
+              href: "/case-studies",
+              label: locale === "ja" ? "導入事例 — チームの成功例" : "Case Studies — real team results",
+              badge: locale === "ja" ? "事例" : "Case Studies",
+            },
+          ].map((item) => (
+            <a
+              key={item.href}
+              href={item.href}
+              target={item.href.startsWith("http") ? "_blank" : undefined}
+              rel={item.href.startsWith("http") ? "noopener noreferrer" : undefined}
+              className="flex items-center justify-between p-3 rounded-lg hover:bg-white/5 transition-colors group"
+            >
+              <span className="text-sm text-[#94a3b8] group-hover:text-white transition-colors">{item.label}</span>
+              <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-[#1e293b] text-[#64748b] group-hover:text-white transition-colors shrink-0 ml-4">
+                {item.badge}
+              </span>
+            </a>
+          ))}
+        </div>
+      </Section>
     </div>
   );
 }
