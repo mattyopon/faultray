@@ -6,7 +6,7 @@ The web application for [faultray.com](https://faultray.com) — chaos engineeri
 
 ## Tech Stack
 
-- **Framework**: Next.js 15 (App Router)
+- **Framework**: Next.js 16 (App Router)
 - **Auth**: Supabase (GitHub OAuth + Google OAuth)
 - **Payments**: Stripe (Pro / Business plans)
 - **Styling**: Tailwind CSS

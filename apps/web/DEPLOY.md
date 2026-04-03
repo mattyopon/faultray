@@ -78,7 +78,7 @@ flyctl secrets set \
 2. Add `api.faultray.com`:
    - Type: CNAME
    - Name: api
-   - Target: faultray-demo.fly.dev
+   - Target: (API server endpoint — update when provisioned)
    - Proxy: DNS only (grey cloud)
 
 ## Environment Variables Reference
