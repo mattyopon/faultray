@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { NavLanguageSwitcher } from "@/components/language-switcher";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useState, useEffect, useMemo, useCallback } from "react";
+import { useState, useEffect, useMemo, useCallback, useRef } from "react";
 import {
   LayoutDashboard,
   Network,
@@ -232,11 +232,26 @@ export function Navbar() {
     [navGroups]
   );
 
-  // Global ⌘K / Ctrl+K handler
+  // NAV-DETAIL-06: キーボードショートカット — ⌘K, G+D/S/R/H ナビ
+  const gPending = useRef(false);
   const handleGlobalKeyDown = useCallback((e: KeyboardEvent) => {
+    const tag = (e.target as HTMLElement).tagName;
+    if (tag === "INPUT" || tag === "TEXTAREA") return;
     if ((e.metaKey || e.ctrlKey) && e.key === "k") {
       e.preventDefault();
       setCmdOpen((prev) => !prev);
+      return;
+    }
+    if (e.key === "g" || e.key === "G") {
+      gPending.current = true;
+      setTimeout(() => { gPending.current = false; }, 800);
+      return;
+    }
+    if (gPending.current && typeof window !== "undefined") {
+      const routes: Record<string, string> = { d: "/dashboard", s: "/simulate", r: "/results", h: "/help" };
+      const route = routes[e.key.toLowerCase()];
+      if (route) { e.preventDefault(); window.location.href = route; }
+      gPending.current = false;
     }
   }, []);
 

@@ -40,6 +40,21 @@ export default function ResultsPage() {
 
   const { page, setPage, totalPages, paginatedItems: pagedRuns } = usePagination(filteredRuns, 10);
 
+  // TABLE-02: CSVエクスポート実装
+  const exportCsv = () => {
+    const header = "id,date,score,availability,engine,passed,failed,total";
+    const rows = filteredRuns.map((r) =>
+      [r.id, r.created_at, r.overall_score.toFixed(1), r.availability_estimate, r.engine_type, r.scenarios_passed, r.scenarios_failed, r.total_scenarios].join(",")
+    );
+    const blob = new Blob([[header, ...rows].join("\n")], { type: "text/csv" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `faultray-results-${new Date().toISOString().slice(0, 10)}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
   return (
     <div className="max-w-[1200px] mx-auto px-6 py-10">
       <div className="flex items-center justify-between mb-10">
@@ -60,7 +75,7 @@ export default function ResultsPage() {
             </select>
             <ChevronDown size={14} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-[#64748b] pointer-events-none" />
           </div>
-          <Button variant="secondary" size="sm">
+          <Button variant="secondary" size="sm" onClick={exportCsv}>
             <Download size={14} /> {t.export}
           </Button>
         </div>
