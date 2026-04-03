@@ -4,6 +4,7 @@ export const metadata: Metadata = {
   title: "Run Simulation",
   description:
     "Run chaos engineering simulations against your infrastructure topology — zero production risk, 2,000+ failure scenarios.",
+  alternates: { canonical: "https://faultray.com/simulate" },
 };
 
 export default function SimulateLayout({

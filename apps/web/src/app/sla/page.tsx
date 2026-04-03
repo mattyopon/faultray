@@ -470,6 +470,86 @@ export default function SlaPage() {
         </div>
       </Card>
 
+      {/* ── SLA-DESIGN-01: Incident Severity SLA Matrix ── */}
+      <Card className="mb-6">
+        <h3 className="text-lg font-bold mb-4 flex items-center gap-2">
+          <Shield size={18} className="text-[#FFD700]" />
+          {locale === "ja" ? "障害レベル別SLA定義" : "Incident Severity SLA Matrix"}
+        </h3>
+        <p className="text-xs text-[#64748b] mb-4">
+          {locale === "ja"
+            ? "各障害レベルの定義・応答時間・復旧目標時間（RTO）・復旧目標時点（RPO）を定義します。"
+            : "Response Time, RTO and RPO targets by incident severity level."}
+        </p>
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm">
+            <thead>
+              <tr className="border-b border-[#1e293b]">
+                {[
+                  locale === "ja" ? "レベル" : "Level",
+                  locale === "ja" ? "定義" : "Definition",
+                  locale === "ja" ? "応答時間" : "Response Time",
+                  "RTO",
+                  "RPO",
+                  locale === "ja" ? "例" : "Example",
+                ].map((h) => (
+                  <th key={h} className="text-left py-3 px-3 text-[#64748b] font-medium whitespace-nowrap">{h}</th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {[
+                {
+                  level: "P1 — Critical",
+                  color: "text-red-400",
+                  def: locale === "ja" ? "全サービス停止・データ損失" : "Complete service outage or data loss",
+                  response: "15 min",
+                  rto: "1h",
+                  rpo: "5 min",
+                  example: locale === "ja" ? "本番DBダウン、全ユーザー影響" : "Production DB down, all users impacted",
+                },
+                {
+                  level: "P2 — High",
+                  color: "text-orange-400",
+                  def: locale === "ja" ? "主要機能の重大な劣化" : "Major feature degraded, significant user impact",
+                  response: "1h",
+                  rto: "4h",
+                  rpo: "1h",
+                  example: locale === "ja" ? "決済不可、50%以上のユーザーに影響" : "Payments failing, >50% users affected",
+                },
+                {
+                  level: "P3 — Medium",
+                  color: "text-yellow-400",
+                  def: locale === "ja" ? "一部機能の劣化・ワークアラウンドあり" : "Partial degradation with workaround available",
+                  response: "4h",
+                  rto: "24h",
+                  rpo: "4h",
+                  example: locale === "ja" ? "レポート生成が遅い、一部エラー" : "Reports slow, isolated errors",
+                },
+                {
+                  level: "P4 — Low",
+                  color: "text-blue-400",
+                  def: locale === "ja" ? "軽微な問題・UI不具合" : "Minor issue, cosmetic bug, low impact",
+                  response: "1 business day",
+                  rto: "1 week",
+                  rpo: "1 day",
+                  example: locale === "ja" ? "UIの文字ずれ、ドキュメントの誤字" : "UI misalignment, docs typo",
+                },
+              ].map((row) => (
+                <tr key={row.level} className="border-b border-[#1e293b]/50 hover:bg-white/[0.02]">
+                  <td className={`py-3 px-3 font-semibold whitespace-nowrap text-xs ${row.color}`}>{row.level}</td>
+                  <td className="py-3 px-3 text-xs text-[#94a3b8] max-w-[180px]">{row.def}</td>
+                  <td className="py-3 px-3 text-xs font-mono font-bold text-white whitespace-nowrap">{row.response}</td>
+                  <td className="py-3 px-3 text-xs font-mono font-bold text-emerald-400 whitespace-nowrap">{row.rto}</td>
+                  <td className="py-3 px-3 text-xs font-mono font-bold text-blue-400 whitespace-nowrap">{row.rpo}</td>
+                  <td className="py-3 px-3 text-xs text-[#64748b] max-w-[180px]">{row.example}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </Card>
+
       {/* ── 5. Contract Summary ── */}
       <Card>
         <h3 className="text-lg font-bold mb-4 flex items-center gap-2">

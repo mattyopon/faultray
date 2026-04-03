@@ -177,6 +177,10 @@ export default function HelpPage() {
           <FaqItem question={t.faqQ1} answer={t.faqA1} />
           <FaqItem question={t.faqQ2} answer={t.faqA2} />
           <FaqItem question={t.faqQ3} answer={t.faqA3} />
+          {/* SCRIPT-02: 複雑システムへの対応 反論FAQ */}
+          {t.faqQ4 && t.faqA4 && (
+            <FaqItem question={t.faqQ4} answer={t.faqA4} />
+          )}
         </div>
       </Section>
 

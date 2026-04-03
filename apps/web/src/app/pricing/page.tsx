@@ -4,6 +4,7 @@ import Link from "next/link";
 import { Check, Minus, Loader2, ShieldCheck } from "lucide-react";
 import { useState } from "react";
 import { api } from "@/lib/api";
+import { useLocale } from "@/lib/useLocale";
 
 type BillingCycle = "monthly" | "annual";
 
@@ -92,6 +93,9 @@ export default function PricingPage() {
   const [loadingPlan, setLoadingPlan] = useState<string | null>(null);
   const [billing, setBilling] = useState<BillingCycle>("monthly");
   const [checkoutError, setCheckoutError] = useState<{ plan: "pro" | "business"; message: string } | null>(null);
+  // COPY-NEW-06: ロケール検出して日本語UIに対応
+  const locale = useLocale();
+  const isJa = locale === "ja";
 
   const handleCheckout = async (plan: "pro" | "business") => {
     setLoadingPlan(plan);
@@ -139,13 +143,15 @@ export default function PricingPage() {
       )}
       <div className="text-center mb-10">
         <h1 className="text-[clamp(1.75rem,4vw,2.5rem)] font-bold tracking-tight mb-3">
-          Invest in reliability. Prevent the outage before it costs you.
+          {isJa ? "信頼性に投資し、障害が発生する前に防ぐ。" : "Invest in reliability. Prevent the outage before it costs you."}
         </h1>
         {/* PSYCH-02: Loss aversion framing — emphasize cost of NOT having FaultRay */}
         <p className="text-lg text-[#94a3b8]">
-          A single hour of downtime costs{" "}
-          <span className="text-white font-semibold">$100,000+</span> for mid-size SaaS.
-          FaultRay finds the weak points before they find you.
+          {isJa ? (
+            <>中規模SaaSでは1時間のダウンタイムで{" "}<span className="text-white font-semibold">1,000万円以上</span>の損失。FaultRayが弱点を先に見つけます。</>
+          ) : (
+            <>A single hour of downtime costs{" "}<span className="text-white font-semibold">$100,000+</span> for mid-size SaaS. FaultRay finds the weak points before they find you.</>
+          )}
         </p>
         <div className="mt-4 flex flex-wrap items-center justify-center gap-3">
           <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-[#FFD700]/10 border border-[#FFD700]/20">
@@ -179,11 +185,12 @@ export default function PricingPage() {
       {/* Billing toggle */}
       <div className="flex items-center justify-center gap-4 mb-12">
         <span className={`text-sm font-medium transition-colors ${billing === "monthly" ? "text-white" : "text-[#64748b]"}`}>
-          Monthly
+          {isJa ? "月額" : "Monthly"}
         </span>
         <button
           role="switch"
           aria-checked={billing === "annual"}
+          aria-label={isJa ? "年額と月額を切り替え" : "Toggle annual billing"}
           onClick={() => setBilling((b) => (b === "monthly" ? "annual" : "monthly"))}
           className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-[#FFD700] ${
             billing === "annual" ? "bg-[#FFD700]" : "bg-[#1e293b]"
@@ -196,11 +203,11 @@ export default function PricingPage() {
           />
         </button>
         <span className={`text-sm font-medium transition-colors ${billing === "annual" ? "text-white" : "text-[#64748b]"}`}>
-          Annual
+          {isJa ? "年額" : "Annual"}
         </span>
         {billing === "annual" && (
           <span className="px-2 py-0.5 text-xs font-bold text-[#0a0e1a] bg-[#FFD700] rounded-full">
-            SAVE 20%
+            {isJa ? "20%お得" : "SAVE 20%"}
           </span>
         )}
       </div>
@@ -288,6 +295,26 @@ export default function PricingPage() {
           </div>
         </div>
       )}
+
+      {/* PRICE-02: Value anchoring — cost of $299/mo vs. cost of 1 downtime incident */}
+      <div className="max-w-[900px] mx-auto mb-12">
+        <div className="grid md:grid-cols-3 gap-4 text-center">
+          {[
+            { label: "Average cost of 1 hour downtime", value: "$100,000+", color: "text-red-400", icon: "⚠️" },
+            { label: "FaultRay Pro — per month", value: "$299", color: "text-[#FFD700]", icon: "✅" },
+            { label: "ROI if it prevents 1 incident/year", value: "33,000%+", color: "text-emerald-400", icon: "📈" },
+          ].map((stat) => (
+            <div key={stat.label} className="p-5 rounded-xl border border-[#1e293b] bg-[#111827]">
+              <p className="text-2xl mb-1">{stat.icon}</p>
+              <p className={`text-2xl font-extrabold font-mono mb-1 ${stat.color}`}>{stat.value}</p>
+              <p className="text-xs text-[#64748b]">{stat.label}</p>
+            </div>
+          ))}
+        </div>
+        <p className="text-center text-xs text-[#475569] mt-3">
+          Industry average: $5,600/minute downtime cost (Gartner, 2024). One incident prevented pays for 27+ years of Pro.
+        </p>
+      </div>
 
       {/* Feature Comparison Table */}
       <div className="max-w-[900px] mx-auto">

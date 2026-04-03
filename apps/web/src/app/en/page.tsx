@@ -825,6 +825,49 @@ export default async function LangHomePage({
         </div>
       </section>
 
+      {/* ===== MARKET-02: Industry news — sales conversation starters ===== */}
+      <section className="py-16 bg-[#0a0e1a]">
+        <div className="max-w-[1100px] mx-auto px-6">
+          <p className="text-xs font-bold uppercase tracking-widest text-[#64748b] mb-6 text-center">
+            Why resilience engineering is urgent right now
+          </p>
+          <div className="grid md:grid-cols-3 gap-4">
+            {[
+              {
+                source: "DORA Report 2024",
+                headline: "Top performers deploy 4× faster and have 10× lower change failure rates than low performers",
+                relevance: "FaultRay helps you measure and close that gap — before auditors ask.",
+                color: "border-[#FFD700]/20",
+                badge: "DORA Compliance",
+              },
+              {
+                source: "IBM Cost of a Data Breach 2024",
+                headline: "Average cost of a data breach reached $4.88M in 2024 — highest ever recorded",
+                relevance: "Infrastructure failures are the #1 breach vector. Simulate before production breaks.",
+                color: "border-red-500/20",
+                badge: "Risk Management",
+              },
+              {
+                source: "EU Digital Operational Resilience Act (DORA)",
+                headline: "DORA became mandatory for EU financial entities in January 2025 — non-compliance = up to 1% annual revenue",
+                relevance: "FaultRay generates Article 25-compliant ICT resilience test reports in one click.",
+                color: "border-blue-500/20",
+                badge: "Regulatory",
+              },
+            ].map((item) => (
+              <div key={item.source} className={`p-5 rounded-xl border ${item.color} bg-[#111827]`}>
+                <span className="text-[10px] font-bold uppercase tracking-wider text-[#64748b] bg-white/5 px-2 py-0.5 rounded-full">
+                  {item.badge}
+                </span>
+                <p className="text-xs font-semibold text-[#64748b] mt-3 mb-1">{item.source}</p>
+                <p className="text-sm font-bold text-white mb-2 leading-snug">&ldquo;{item.headline}&rdquo;</p>
+                <p className="text-xs text-[#64748b] leading-relaxed">{item.relevance}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
       {/* ===== MID-PAGE CTA ===== */}
       <section className="py-16 bg-gradient-to-r from-[#0a0e1a] via-[#111827] to-[#0a0e1a] border-y border-[#1e293b]">
         <div className="max-w-[900px] mx-auto px-6 text-center">

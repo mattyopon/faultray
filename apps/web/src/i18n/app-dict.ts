@@ -2926,7 +2926,7 @@ export const appDict = {
       controls: "コントロール項目",
       pass: "合格",
       fail: "不合格",
-      remediation: "是正措置：",
+      remediation: "改善措置：",
       keyFindings: "主要な検出事項",
       recommendations: "推奨事項",
       selectFramework: "コンプライアンスフレームワークを選択して評価を開始してください",
@@ -4664,6 +4664,9 @@ export const appDict = {
       faqA2: "Yes. FaultRay generates DORA-compliant reports with evidence trails and risk assessments that are suitable for regulatory audit submissions.",
       faqQ3: "What are the differences between pricing plans?",
       faqA3: "The Free plan includes basic simulation with limited components. Pro adds DORA compliance reports, higher limits, and AI advisor. Business includes unlimited access, SSO, and dedicated support.",
+      // SCRIPT-02: 「複雑なシステムへの対応」反論
+      faqQ4: "Our system is too complex — will FaultRay work for us?",
+      faqA4: "Yes. FaultRay is designed for complex, multi-layered systems. You describe your topology in a simple YAML format — 5 components or 500. The N-Layer Availability Model handles hierarchical dependencies, cascading failures, and cross-region redundancy. If your topology is too large to describe manually, our Import feature can parse Terraform state files automatically. We have customers running simulations with 200+ components across 4 cloud providers.",
     },
     ja: {
       title: "ヘルプセンター",
@@ -4716,6 +4719,9 @@ export const appDict = {
       faqA2: "はい。FaultRayはエビデンストレイルとリスク評価を含むDORA準拠レポートを生成し、規制監査の提出に適しています。",
       faqQ3: "料金プランの違いは？",
       faqA3: "Freeプランはコンポーネント数制限付きの基本シミュレーションが含まれます。ProはDORAコンプライアンスレポート、より高い制限、AIアドバイザーが追加されます。Businessは無制限アクセス、SSO、専用サポートが含まれます。",
+      // SCRIPT-02: 複雑なシステムへの対応 FAQ
+      faqQ4: "うちのシステムは複雑すぎませんか？",
+      faqA4: "大丈夫です。FaultRayはまさに複雑な多層システム向けに設計されています。シンプルなYAML形式でトポロジーを記述するだけで、5コンポーネントから500コンポーネントまで対応します。N-Layer可用性モデルは階層依存、カスケード障害、クロスリージョン冗長性を処理します。手動記述が難しい場合はTerraformのstateファイルを自動インポートできます。200以上のコンポーネントを持つ複数クラウド環境での利用実績もあります。",
     },
     de: {
       title: "Hilfezentrum",
@@ -4768,6 +4774,8 @@ export const appDict = {
       faqA2: "Ja. FaultRay erstellt DORA-konforme Berichte mit Nachweisketten und Risikobewertungen, die für regulatorische Audit-Einreichungen geeignet sind.",
       faqQ3: "Was sind die Unterschiede zwischen den Preisplänen?",
       faqA3: "Der Free-Plan umfasst grundlegende Simulation mit begrenzten Komponenten. Pro fügt DORA-Compliance-Berichte, höhere Limits und KI-Berater hinzu. Business umfasst unbegrenzten Zugang, SSO und dedizierten Support.",
+      faqQ4: "Ist unser System nicht zu komplex für FaultRay?",
+      faqA4: "Nein. FaultRay ist genau für komplexe Systeme gebaut. Beschreiben Sie Ihre Topologie in einer einfachen YAML-Datei — 5 oder 500 Komponenten. Das N-Layer-Modell verarbeitet Abhängigkeiten, Kaskadenausfälle und Multi-Cloud-Redundanz. Terraform-State-Import ist verfügbar.",
     },
     fr: {
       title: "Centre d'aide",
@@ -4820,6 +4828,8 @@ export const appDict = {
       faqA2: "Oui. FaultRay génère des rapports conformes DORA avec des pistes d'audit et des évaluations des risques adaptés aux soumissions d'audit réglementaire.",
       faqQ3: "Quelles sont les différences entre les plans tarifaires ?",
       faqA3: "Le plan Free comprend une simulation de base avec des composants limités. Pro ajoute des rapports DORA, des limites plus élevées et un conseiller IA. Business comprend un accès illimité, SSO et un support dédié.",
+      faqQ4: "Notre système est-il trop complexe pour FaultRay ?",
+      faqA4: "Non. FaultRay est conçu pour les systèmes complexes multi-couches. Décrivez votre topologie en YAML — 5 ou 500 composants. Le modèle N-Layer gère les dépendances, les pannes en cascade et la redondance multi-cloud. L'import Terraform est disponible.",
     },
     zh: {
       title: "帮助中心",
@@ -4872,6 +4882,8 @@ export const appDict = {
       faqA2: "可以。FaultRay 生成符合 DORA 的报告，包含证据链和风险评估，适合提交给监管审计。",
       faqQ3: "定价方案有什么区别？",
       faqA3: "Free 方案包含组件数量有限的基本模拟。Pro 添加了 DORA 合规报告、更高限制和 AI 顾问。Business 包含无限访问、SSO 和专属支持。",
+      faqQ4: "我们的系统太复杂了，FaultRay 能处理吗？",
+      faqA4: "可以。FaultRay 专为复杂的多层系统设计。用简单的 YAML 格式描述您的拓扑结构——5 个或 500 个组件均可。N-Layer 模型处理层级依赖、级联故障和多云冗余。支持 Terraform 状态文件自动导入。",
     },
     ko: {
       title: "도움말 센터",
@@ -4924,6 +4936,8 @@ export const appDict = {
       faqA2: "네. FaultRay는 증거 추적 및 위험 평가가 포함된 DORA 준수 보고서를 생성하며, 규제 감사 제출에 적합합니다.",
       faqQ3: "요금제의 차이점은?",
       faqA3: "Free 플랜은 제한된 컴포넌트의 기본 시뮬레이션을 포함합니다. Pro는 DORA 컴플라이언스 보고서, 높은 제한, AI 어드바이저를 추가합니다. Business는 무제한 액세스, SSO, 전담 지원을 포함합니다.",
+      faqQ4: "우리 시스템이 너무 복잡하지 않을까요?",
+      faqA4: "아닙니다. FaultRay는 복잡한 다계층 시스템을 위해 설계되었습니다. 간단한 YAML 형식으로 토폴로지를 설명하면 됩니다 — 5개 또는 500개 컴포넌트 모두 지원합니다. N-Layer 모델은 계층적 의존성, 연쇄 장애, 멀티 클라우드 이중화를 처리합니다.",
     },
     es: {
       title: "Centro de ayuda",
@@ -4976,6 +4990,8 @@ export const appDict = {
       faqA2: "Sí. FaultRay genera informes conformes con DORA con evidencias y evaluaciones de riesgos aptos para auditorías regulatorias.",
       faqQ3: "¿Cuáles son las diferencias entre los planes de precios?",
       faqA3: "El plan Free incluye simulación básica con componentes limitados. Pro añade informes DORA, límites más altos y asesor IA. Business incluye acceso ilimitado, SSO y soporte dedicado.",
+      faqQ4: "¿Nuestro sistema es demasiado complejo para FaultRay?",
+      faqA4: "No. FaultRay está diseñado para sistemas complejos de múltiples capas. Describa su topología en YAML — 5 o 500 componentes. El modelo N-Layer maneja dependencias jerárquicas, fallos en cascada y redundancia multi-nube. La importación de Terraform está disponible.",
     },
     pt: {
       title: "Central de ajuda",
@@ -5028,6 +5044,8 @@ export const appDict = {
       faqA2: "Sim. O FaultRay gera relatórios conformes com DORA com trilhas de evidência e avaliações de risco adequados para auditorias regulatórias.",
       faqQ3: "Quais são as diferenças entre os planos de preços?",
       faqA3: "O plano Free inclui simulação básica com componentes limitados. O Pro adiciona relatórios DORA, limites mais altos e consultor IA. O Business inclui acesso ilimitado, SSO e suporte dedicado.",
+      faqQ4: "Nosso sistema é complexo demais para o FaultRay?",
+      faqA4: "Não. FaultRay é projetado para sistemas complexos de múltiplas camadas. Descreva sua topologia em YAML — 5 ou 500 componentes. O modelo N-Layer lida com dependências hierárquicas, falhas em cascata e redundância multi-nuvem. A importação do Terraform está disponível.",
     },
   },
 

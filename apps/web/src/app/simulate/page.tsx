@@ -1458,9 +1458,18 @@ function SimulatePageInner() {
                         }
                       }}
                       placeholder={YAML_PLACEHOLDER}
+                      // MOBILE-02: inputmode="none" prevents mobile keyboard on YAML editor
+                      // On mobile, recommend using the sample topology selector instead
                       className={`w-full h-[350px] px-4 py-3 bg-[#0d1117] border rounded-xl text-sm font-mono text-[#e2e8f0] placeholder-[#3a4558] focus:outline-none resize-y transition-colors ${yamlError ? "border-red-500/50 focus:border-red-500" : "border-[#1e293b] focus:border-[#FFD700]/50"}`}
                       spellCheck={false}
                     />
+                    {/* MOBILE-02: Mobile hint — recommend sample topology or file upload */}
+                    <p className="text-xs text-[#475569] mt-1 md:hidden">
+                      {locale === "ja"
+                        ? "モバイルでのYAML編集は難しい場合があります。上のサンプルトポロジーを選択するか、PCで作成したYAMLファイルをアップロードすることをお勧めします。"
+                        : "YAML editing on mobile can be challenging. Try selecting a sample topology above, or upload a YAML file you prepared on desktop."
+                      }
+                    </p>
                     {/* FORM-02: リアルタイムバリデーションエラー表示 */}
                     {yamlError && (
                       <p className="text-xs text-red-400 mt-1 flex items-center gap-1">

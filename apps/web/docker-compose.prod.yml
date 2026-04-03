@@ -29,6 +29,15 @@ services:
       timeout: 10s
       retries: 3
       start_period: 40s
+    # SCALE-02: リソース上限 — 最小構成(1GB/1CPU)から適切なスケールに引き上げ
+    deploy:
+      resources:
+        limits:
+          cpus: "2.0"
+          memory: 2G
+        reservations:
+          cpus: "0.5"
+          memory: 512M
     logging:
       driver: "json-file"
       options:
@@ -55,8 +64,24 @@ services:
       timeout: 10s
       retries: 3
       start_period: 20s
+    # SCALE-02: エンジンは計算集約型 — 4CPU/4GBを確保
+    deploy:
+      resources:
+        limits:
+          cpus: "4.0"
+          memory: 4G
+        reservations:
+          cpus: "1.0"
+          memory: 1G
     logging:
       driver: "json-file"
       options:
         max-size: "10m"
         max-file: "3"
+
+# SCALE-03: Supabase PgBouncer接続プール設定メモ
+# Supabase側で以下を有効化すること:
+# - Connection pooling: Transaction mode
+# - Pool size: 20 (Freeプラン) / 50 (Proプラン以上)
+# - ダッシュボード: https://supabase.com/dashboard/project/_/settings/database
+# - 接続文字列: postgresql://postgres.[ref]:[pass]@aws-0-[region].pooler.supabase.com:6543/postgres

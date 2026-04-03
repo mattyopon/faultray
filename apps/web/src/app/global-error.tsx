@@ -10,7 +10,22 @@ export default function GlobalError({
   unstable_retry: () => void;
 }) {
   useEffect(() => {
-    console.error(error);
+    // ERROR-04: エラー監視 — NEXT_PUBLIC_SENTRY_DSNが設定されている場合は自動送信
+    // Sentry未設定の環境ではconsole.errorにフォールバック
+    // ERROR-04: エラー監視 — NEXT_PUBLIC_SENTRY_DSN設定時はwindow.__sentryCapture経由で送信
+    // @sentry/nextjs をインストールして next.config.jsにwithSentryConfig()を追加すること
+    const sentryDsn = process.env.NEXT_PUBLIC_SENTRY_DSN;
+    if (sentryDsn && typeof window !== "undefined") {
+      // Use the globally initialized Sentry client (injected via sentry.client.config.ts)
+      const sentryCapture = (window as unknown as Record<string, unknown>).__sentryCapture;
+      if (typeof sentryCapture === "function") {
+        (sentryCapture as (e: Error) => void)(error);
+      } else {
+        console.error("[FaultRay] Uncaught error (Sentry not initialized):", error);
+      }
+    } else {
+      console.error("[FaultRay] Uncaught error:", error);
+    }
   }, [error]);
 
   return (

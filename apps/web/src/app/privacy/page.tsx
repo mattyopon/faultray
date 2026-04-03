@@ -244,14 +244,49 @@ export default function PrivacyPage() {
           </p>
         </section>
 
-        {/* 7. Data Retention */}
+        {/* 7. Data Retention — RETENTION-DESIGN-01 */}
         <section>
           <h2 className="text-xl font-semibold text-white mb-4">7. Data Retention</h2>
-          <p>
+          <p className="mb-4">
             We retain your personal data for as long as your account is active or as needed to
-            provide the Service. If you delete your account, we will delete or anonymize your
-            personal data within 90 days, except where we are legally required to retain it
-            (e.g., financial records for 7 years under applicable law).
+            provide the Service. The table below defines retention periods by data category:
+          </p>
+          <div className="overflow-x-auto rounded-xl border border-[#1e293b] mb-4">
+            <table className="w-full text-sm border-collapse">
+              <thead>
+                <tr className="border-b border-[#1e293b] bg-[#141a2e]">
+                  <th className="px-5 py-3 text-left text-[#94a3b8] font-semibold">Data Category</th>
+                  <th className="px-5 py-3 text-left text-[#94a3b8] font-semibold">Retention Period</th>
+                  <th className="px-5 py-3 text-left text-[#94a3b8] font-semibold">Legal Basis</th>
+                </tr>
+              </thead>
+              <tbody>
+                {[
+                  { category: "Account data (email, profile)", period: "Until account deletion + 90 days", basis: "Contract performance" },
+                  { category: "Simulation results & reports", period: "Free: 30 days  |  Pro/Business: 1 year", basis: "Service provision" },
+                  { category: "Audit logs", period: "90 days (Business: 1 year)", basis: "Security / Compliance" },
+                  { category: "Billing records", period: "7 years", basis: "Legal obligation (tax law)" },
+                  { category: "Infrastructure topology YAML", period: "Until project deleted + 30 days", basis: "Contract performance" },
+                  { category: "Analytics data (anonymized)", period: "26 months", basis: "Legitimate interest" },
+                  { category: "Support tickets", period: "3 years", basis: "Legitimate interest" },
+                ].map((row) => (
+                  <tr key={row.category} className="border-b border-[#1e293b] last:border-0">
+                    <td className="px-5 py-3 font-medium text-white bg-[#111827]">{row.category}</td>
+                    <td className="px-5 py-3 bg-[#111827] font-mono text-xs">{row.period}</td>
+                    <td className="px-5 py-3 bg-[#111827] text-[#64748b] text-xs">{row.basis}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+          <p>
+            If you delete your account, we will delete or anonymize your personal data within
+            90 days, except where legally required to retain it (e.g., financial records for
+            7 years). You may request early deletion by emailing{" "}
+            <a href="mailto:privacy@faultray.com" className="text-[#FFD700] hover:underline">
+              privacy@faultray.com
+            </a>
+            .
           </p>
         </section>
 

@@ -17,7 +17,8 @@ export function LocaleProvider({ children }: { children: ReactNode }) {
   const [locale, setLocaleState] = useState<Locale>(defaultLocale);
 
   useEffect(() => {
-    const match = document.cookie.match(/NEXT_LOCALE=(\w+)/);
+    // LIB-06: ロケールcookieのパース — (\w+)ではハイフン等が含まれないため[^;,\s]+に拡張
+    const match = document.cookie.match(/(?:^|;\s*)NEXT_LOCALE=([^;,\s]+)/);
     if (match && locales.includes(match[1] as Locale)) {
       setLocaleState(match[1] as Locale);
     }
