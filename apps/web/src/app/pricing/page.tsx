@@ -55,6 +55,20 @@ const plans: Plan[] = [
     sla: "99.9% Uptime SLA",
   },
   {
+    name: "Starter",
+    monthlyPrice: 99,
+    annualMonthlyPrice: 79,
+    annualTotal: 949,
+    desc: "For small teams getting started with reliability testing. 30 simulations covers most ongoing monitoring needs.",
+    features: ["30 simulations / month", "Up to 20 components", "Everything in Free", "Email support (48h)", "Basic remediation suggestions"],
+    disabledFeatures: ["DORA report export", "AI-powered analysis", "Custom SSO"],
+    cta: "Start Starter",
+    ctaHref: "/login?plan=starter",
+    popular: false,
+    stripePlan: null,
+    sla: null,
+  },
+  {
     name: "Free",
     monthlyPrice: 0,
     annualMonthlyPrice: 0,
@@ -71,16 +85,16 @@ const plans: Plan[] = [
 ];
 
 const featureComparison = [
-  { name: "Simulations / month", free: "5", pro: "100", business: "Unlimited" },
-  { name: "Components", free: "5", pro: "50", business: "Unlimited" },
-  { name: "Simulation engines", free: "100+", pro: "100+", business: "100+" },
-  { name: "N-Layer Model", free: true, pro: true, business: true },
-  { name: "DORA report export", free: false, pro: "PDF", business: "PDF + API" },
-  { name: "Insurance API", free: false, pro: false, business: true },
-  { name: "AI-powered analysis", free: false, pro: true, business: true },
-  { name: "Custom SSO / SAML", free: false, pro: false, business: true },
-  { name: "99.9% Uptime SLA", free: false, pro: true, business: true },
-  { name: "Support", free: "Community", pro: "Email (24h)", business: "Dedicated (1h)" },
+  { name: "Simulations / month", free: "5", starter: "30", pro: "100", business: "Unlimited" },
+  { name: "Components", free: "5", starter: "20", pro: "50", business: "Unlimited" },
+  { name: "Simulation engines", free: "100+", starter: "100+", pro: "100+", business: "100+" },
+  { name: "N-Layer Model", free: true, starter: true, pro: true, business: true },
+  { name: "DORA report export", free: false, starter: false, pro: "PDF", business: "PDF + API" },
+  { name: "Insurance API", free: false, starter: false, pro: false, business: true },
+  { name: "AI-powered analysis", free: false, starter: false, pro: true, business: true },
+  { name: "Custom SSO / SAML", free: false, starter: false, pro: false, business: true },
+  { name: "99.9% Uptime SLA", free: false, starter: false, pro: true, business: true },
+  { name: "Support", free: "Community", starter: "Email (48h)", pro: "Email (24h)", business: "Dedicated (1h)" },
 ];
 
 function CellValue({ value }: { value: string | boolean }) {
@@ -213,9 +227,12 @@ export default function PricingPage() {
       </div>
 
       {/* Plans */}
-      <div className="grid md:grid-cols-3 gap-6 max-w-[1000px] mx-auto mb-20">
+      <div className="grid md:grid-cols-4 gap-6 max-w-[1300px] mx-auto mb-20">
         {plans.map((plan) => {
           const displayPrice = billing === "annual" ? plan.annualMonthlyPrice : plan.monthlyPrice;
+          // JP-STARTER: Starter plan Japanese price display
+          const jaMonthlyPrice: Record<string, string> = { Starter: "¥15,000" };
+          const jaAnnualMonthlyPrice: Record<string, string> = { Starter: "¥11,900" };
           return (
             <div key={plan.name} className={`relative p-9 rounded-2xl border flex flex-col transition-all duration-200 hover:-translate-y-1 hover:shadow-[0_8px_32px_rgba(0,0,0,0.5)] ${plan.popular ? "border-[#FFD700] bg-gradient-to-b from-[#FFD700]/[0.04] to-[#111827] shadow-[0_0_40px_rgba(255,215,0,0.1)]" : "border-[#1e293b] bg-[#111827]"}`}>
               {plan.popular && (
@@ -233,11 +250,20 @@ export default function PricingPage() {
                 </div>
               )}
 
-              <div className="flex items-baseline gap-0.5 mb-1">
-                <span className="text-xl font-semibold text-[#94a3b8]">$</span>
-                <span className="text-4xl font-extrabold tracking-tight">{displayPrice}</span>
-                <span className="text-sm text-[#64748b] ml-1">/month</span>
-              </div>
+              {isJa && plan.name in jaMonthlyPrice ? (
+                <div className="flex items-baseline gap-0.5 mb-1">
+                  <span className="text-4xl font-extrabold tracking-tight">
+                    {billing === "annual" ? jaAnnualMonthlyPrice[plan.name] : jaMonthlyPrice[plan.name]}
+                  </span>
+                  <span className="text-sm text-[#64748b] ml-1">/月</span>
+                </div>
+              ) : (
+                <div className="flex items-baseline gap-0.5 mb-1">
+                  <span className="text-xl font-semibold text-[#94a3b8]">$</span>
+                  <span className="text-4xl font-extrabold tracking-tight">{displayPrice}</span>
+                  <span className="text-sm text-[#64748b] ml-1">/month</span>
+                </div>
+              )}
               {billing === "annual" && plan.annualTotal > 0 && (
                 <p className="text-xs text-[#64748b] mb-4">
                   Billed annually (${plan.annualTotal.toLocaleString()}/yr)
@@ -325,6 +351,7 @@ export default function PricingPage() {
               <tr>
                 <th scope="col" className="px-5 py-4 text-left bg-[#141a2e] text-[#94a3b8] font-semibold">Feature</th>
                 <th scope="col" className="px-5 py-4 text-center bg-[#141a2e] text-[#94a3b8] font-semibold">Free</th>
+                <th scope="col" className="px-5 py-4 text-center bg-[#141a2e] text-[#94a3b8] font-semibold">Starter</th>
                 <th scope="col" className="px-5 py-4 text-center bg-[#FFD700]/[0.06] text-[#FFD700] font-semibold">Pro</th>
                 <th scope="col" className="px-5 py-4 text-center bg-[#141a2e] text-[#94a3b8] font-semibold">Business</th>
               </tr>
@@ -334,6 +361,7 @@ export default function PricingPage() {
                 <tr key={row.name} className={i < featureComparison.length - 1 ? "border-b border-[#1e293b]" : ""}>
                   <td className="px-5 py-4 font-medium text-white bg-[#111827]">{row.name}</td>
                   <td className="px-5 py-4 text-center bg-[#111827] text-[#94a3b8]"><CellValue value={row.free} /></td>
+                  <td className="px-5 py-4 text-center bg-[#111827] text-[#94a3b8]"><CellValue value={row.starter} /></td>
                   <td className="px-5 py-4 text-center bg-[#FFD700]/[0.03] text-white"><CellValue value={row.pro} /></td>
                   <td className="px-5 py-4 text-center bg-[#111827] text-[#94a3b8]"><CellValue value={row.business} /></td>
                 </tr>
