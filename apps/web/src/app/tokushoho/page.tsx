@@ -29,7 +29,7 @@ const rows: Row[] = [
   },
   {
     label: "電話番号",
-    value: "050-XXXX-XXXX（お問い合わせはメールフォームよりお願いいたします）",
+    value: "メールにてお問い合わせください（contact@faultray.com）",
   },
   {
     label: "販売価格",
