@@ -255,31 +255,26 @@ export default async function LangHomePage() {
             {dict.hero.description}
           </p>
 
-          {/* COPY-02: Business impact stats */}
+          {/* COPY-02: Business impact — SRE cost comparison */}
           <div className="flex flex-wrap items-center justify-center gap-6 md:gap-10 mb-10 text-sm">
             <div className="text-center">
-              <div className="text-2xl font-extrabold text-red-400">推定50万円</div>
-              <div className="text-[var(--text-muted)]">1時間の障害損失</div>
+              <div className="text-2xl font-extrabold text-red-500">年700-1200万</div>
+              <div className="text-[var(--text-muted)]">SRE正社員の採用コスト</div>
+            </div>
+            <div className="w-px h-8 bg-[var(--border-color)] hidden md:block" />
+            <div className="text-center">
+              <div className="text-2xl font-extrabold text-emerald-500">月4.5万</div>
+              <div className="text-[var(--text-muted)]">FaultRay Pro</div>
             </div>
             <div className="w-px h-8 bg-[var(--border-color)] hidden md:block" />
             <div className="text-center">
               <div className="text-2xl font-extrabold text-[var(--gold)]">2,000+</div>
-              <div className="text-[var(--text-muted)]">{dict.hero.stats.scenarios}</div>
+              <div className="text-[var(--text-muted)]">障害シナリオを網羅</div>
             </div>
             <div className="w-px h-8 bg-[var(--border-color)] hidden md:block" />
             <div className="text-center">
-              <div className="text-2xl font-extrabold text-emerald-400">30分</div>
-              <div className="text-[var(--text-muted)]">で改善計画生成</div>
-            </div>
-            <div className="w-px h-8 bg-[var(--border-color)] hidden md:block" />
-            <div className="text-center">
-              <div className="text-2xl font-extrabold text-[var(--gold)]">52</div>
-              <div className="text-[var(--text-muted)]">{dict.hero.stats.doraControls}</div>
-            </div>
-            <div className="w-px h-8 bg-[var(--border-color)] hidden md:block" />
-            <div className="text-center">
-              <div className="text-2xl font-extrabold text-[var(--gold)]">8</div>
-              <div className="text-[var(--text-muted)]">{dict.hero.stats.languages}</div>
+              <div className="text-2xl font-extrabold text-[var(--gold)]">30分</div>
+              <div className="text-[var(--text-muted)]">で改善計画を自動生成</div>
             </div>
           </div>
 
@@ -854,6 +849,78 @@ export default async function LangHomePage() {
       {dict.roi && (
         <RoiCalculator dict={dict.roi} lang={lang} />
       )}
+
+      {/* ===== COPY-02: WHY FAULTRAY — SRE Cost Comparison ===== */}
+      <section className="py-20 bg-[var(--bg-primary)]">
+        <div className="max-w-[800px] mx-auto px-6">
+          <h2 className="text-[clamp(1.75rem,4vw,2.5rem)] font-bold tracking-tight mb-3 text-center">なぜFaultRayか？</h2>
+          <p className="text-lg text-[var(--text-secondary)] text-center mb-12">SRE人材に頼らず、インフラの弱点を即座に可視化</p>
+          <div className="overflow-x-auto rounded-2xl border border-[var(--border-color)]">
+            <table className="w-full min-w-[500px] border-collapse text-sm">
+              <thead>
+                <tr>
+                  <th scope="col" className="px-5 py-4 text-left bg-[var(--bg-tertiary)] text-[var(--text-secondary)] font-semibold">選択肢</th>
+                  <th scope="col" className="px-5 py-4 text-center bg-[var(--bg-tertiary)] text-[var(--text-secondary)] font-semibold">月額コスト</th>
+                  <th scope="col" className="px-5 py-4 text-center bg-[var(--bg-tertiary)] text-[var(--text-secondary)] font-semibold">開始まで</th>
+                </tr>
+              </thead>
+              <tbody>
+                {[
+                  { option: "SRE正社員", cost: "58〜100万/月", time: "採用3〜6ヶ月", highlight: false },
+                  { option: "技術顧問", cost: "10〜90万/月", time: "契約1〜2週間", highlight: false },
+                  { option: "副業SRE", cost: "約24万/月", time: "マッチング1ヶ月", highlight: false },
+                  { option: "FaultRay Pro", cost: "4.5万/月", time: "即日開始", highlight: true },
+                ].map((row, i) => (
+                  <tr key={row.option} className={`${i < 3 ? "border-b border-[var(--border-color)]" : ""} ${row.highlight ? "bg-[var(--gold)]/[0.04]" : "bg-[var(--bg-card)]"}`}>
+                    <td className={`px-5 py-4 font-semibold ${row.highlight ? "text-[var(--gold)]" : "text-[var(--text-primary)]"}`}>{row.option}</td>
+                    <td className={`px-5 py-4 text-center ${row.highlight ? "text-[var(--gold)] font-bold" : "text-[var(--text-secondary)]"}`}>{row.cost}</td>
+                    <td className={`px-5 py-4 text-center ${row.highlight ? "text-emerald-600 font-bold" : "text-[var(--text-muted)]"}`}>{row.time}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      {/* ===== PAIN POINTS — 9つの課題 ===== */}
+      <section className="py-20 bg-[var(--bg-secondary)]">
+        <div className="max-w-[800px] mx-auto px-6">
+          <h2 className="text-[clamp(1.5rem,3vw,2rem)] font-bold tracking-tight mb-3 text-center">こんな課題、ありませんか？</h2>
+          <p className="text-[var(--text-secondary)] text-center mb-10">チェックが1つでも当てはまるなら、FaultRayが解決します</p>
+          <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-10">
+            {[
+              { text: "ECS/K8sを導入したいが、何から始めればいいかわからない", href: "/iac" },
+              { text: "インフラをTerraform化したいが、工数が読めない", href: "/iac" },
+              { text: "SREを採用したいが、年収1,000万は出せない", href: "/pricing" },
+              { text: "運用・監視体制を整えたいが、何を監視すべきかわからない", href: "/apm" },
+              { text: "マルチクラウド構成に挑戦したい", href: "/topology" },
+              { text: "Datadogを導入したが、使いこなせていない", href: "/apm" },
+              { text: "インフラコストを月30%削減したい", href: "/cost" },
+              { text: "0→1でプロダクトを立ち上げるが、アーキテクチャに自信がない", href: "/simulate" },
+              { text: "CI/CD基盤がレガシーで、デプロイに時間がかかる", href: "/dora" },
+            ].map((item) => (
+              <Link
+                key={item.text}
+                href={item.href}
+                className="flex items-start gap-3 p-4 rounded-xl border border-[var(--border-color)] bg-[var(--bg-card)] hover:border-[var(--gold)] hover:shadow-md transition-all"
+              >
+                <span className="text-[var(--gold)] mt-0.5 shrink-0">☐</span>
+                <span className="text-sm text-[var(--text-secondary)] leading-relaxed">{item.text}</span>
+              </Link>
+            ))}
+          </div>
+          <div className="text-center">
+            <Link
+              href="/simulate"
+              className="inline-flex items-center gap-2 px-7 py-3 bg-[var(--gold)] text-white font-semibold rounded-xl shadow-md hover:bg-[#044a99] hover:shadow-lg transition-all"
+            >
+              <Zap size={16} />
+              FaultRayで無料診断する
+            </Link>
+          </div>
+        </div>
+      </section>
 
       {/* ===== PRICING ===== */}
       <section id="pricing" className="py-24 bg-[var(--bg-secondary)]">
