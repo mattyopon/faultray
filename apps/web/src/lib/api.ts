@@ -506,10 +506,10 @@ export const api = {
   getBenchmark: (industry: string, token?: string) =>
     apiFetch<BenchmarkData>(`/api/finance?action=benchmark&industry=${industry}`, { token }),
 
-  createCheckoutSession: (plan: "pro" | "business", token?: string) =>
-    apiFetch<{ url: string }>("/api/billing", {
+  createCheckoutSession: (plan: "pro" | "business", interval: "month" | "year" = "month", token?: string) =>
+    apiFetch<{ url: string }>("/api/stripe/checkout", {
       method: "POST",
-      body: { plan },
+      body: { plan, interval },
       token,
     }),
 

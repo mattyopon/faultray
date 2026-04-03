@@ -93,7 +93,8 @@ export default function PricingPage() {
   const handleCheckout = async (plan: "pro" | "business") => {
     setLoadingPlan(plan);
     try {
-      const { url } = await api.createCheckoutSession(plan);
+      const interval = billing === "annual" ? "year" : "month";
+      const { url } = await api.createCheckoutSession(plan, interval);
       if (url) {
         window.location.href = url;
       }
@@ -279,6 +280,7 @@ export default function PricingPage() {
       <div className="max-w-[900px] mx-auto mt-16 pt-8 border-t border-[#1e293b] flex flex-wrap justify-center gap-6 text-sm text-[#64748b]">
         <Link href="/privacy" className="hover:text-white transition-colors">Privacy Policy</Link>
         <Link href="/terms" className="hover:text-white transition-colors">Terms of Service</Link>
+        <Link href="/tokushoho" className="hover:text-white transition-colors">特定商取引法に基づく表記</Link>
         <a href="mailto:sales@faultray.com" className="hover:text-white transition-colors">Contact Sales</a>
       </div>
     </div>
