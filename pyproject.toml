@@ -138,6 +138,7 @@ line-length = 100
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 asyncio_mode = "auto"
+markers = ["e2e: end-to-end tests"]
 
 [tool.mypy]
 python_version = "3.11"

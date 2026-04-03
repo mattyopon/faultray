@@ -544,3 +544,66 @@ result = getattr(f, "bar")
         ns: dict = {}
         exec(code, {"__builtins__": _PLUGIN_SAFE_BUILTINS}, ns)
         assert ns["result"] == 42
+
+    def test_direct_subclasses_on_base_exception_blocked(self):
+        """Direct attribute access BaseException.__subclasses__() must be blocked.
+
+        This is the core attack vector that bypasses _safe_getattr:
+          BaseException.__subclasses__() → os._wrap_close → __globals__ → os.system
+        The safe proxy must prevent this even with direct '.' attribute access.
+        """
+        from faultray.plugins.plugin_manager import _PLUGIN_SAFE_BUILTINS
+
+        code = "result = BaseException.__subclasses__()"
+        with pytest.raises((AttributeError, TypeError)):
+            exec(code, {"__builtins__": _PLUGIN_SAFE_BUILTINS})
+
+    def test_direct_subclasses_on_exception_blocked(self):
+        """Direct attribute access Exception.__subclasses__() must be blocked."""
+        from faultray.plugins.plugin_manager import _PLUGIN_SAFE_BUILTINS
+
+        code = "result = Exception.__subclasses__()"
+        with pytest.raises((AttributeError, TypeError)):
+            exec(code, {"__builtins__": _PLUGIN_SAFE_BUILTINS})
+
+    def test_concrete_exception_still_catchable(self):
+        """Concrete exception classes (ValueError, RuntimeError etc.) remain usable
+        inside the sandbox with 'except <ConcreteType>:' syntax."""
+        from faultray.plugins.plugin_manager import _PLUGIN_SAFE_BUILTINS
+
+        code = """
+try:
+    raise ValueError("boom")
+except ValueError:
+    caught = True
+"""
+        ns: dict = {}
+        exec(code, {"__builtins__": _PLUGIN_SAFE_BUILTINS}, ns)
+        assert ns.get("caught") is True
+
+    def test_runtime_error_still_catchable(self):
+        """RuntimeError can be caught by name inside the sandbox."""
+        from faultray.plugins.plugin_manager import _PLUGIN_SAFE_BUILTINS
+
+        code = """
+try:
+    raise RuntimeError("boom")
+except RuntimeError:
+    caught = True
+"""
+        ns: dict = {}
+        exec(code, {"__builtins__": _PLUGIN_SAFE_BUILTINS}, ns)
+        assert ns.get("caught") is True
+
+    def test_full_escape_chain_blocked(self):
+        """Full classic sandbox-escape chain must be blocked end-to-end.
+
+        Attack: BaseException.__subclasses__() iterates all live subclasses,
+        finds one with __globals__ that contains 'os', then calls os.system().
+        """
+        from faultray.plugins.plugin_manager import _PLUGIN_SAFE_BUILTINS
+
+        # Step 1 of the chain — must raise before any iteration happens
+        code = "subs = BaseException.__subclasses__()"
+        with pytest.raises((AttributeError, TypeError)):
+            exec(code, {"__builtins__": _PLUGIN_SAFE_BUILTINS})
