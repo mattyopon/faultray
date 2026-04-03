@@ -211,7 +211,7 @@ export default function SystemsPage() {
                       ms.access_level === "admin"
                   )
                   .map((ms) => ms.members);
-                const hasLeftOwner = owners.some((m) => m.status === "left");
+                const _hasLeftOwner = owners.some((m) => m.status === "left");
 
                 return (
                   <tr

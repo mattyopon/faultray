@@ -1,7 +1,6 @@
 "use client";
 
 import { Card } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
 import { GitCompare, ArrowRight } from "lucide-react";
 import { useLocale } from "@/lib/useLocale";
 import { appDict } from "@/i18n/app-dict";
@@ -49,7 +48,7 @@ const ENVS = {
   },
 };
 
-type EnvKey = keyof typeof ENVS;
+type _EnvKey = keyof typeof ENVS;
 
 function ScorePill({ score }: { score: number }) {
   const color = score >= 85 ? "#10b981" : score >= 70 ? "#f59e0b" : "#ef4444";

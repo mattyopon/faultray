@@ -33,12 +33,6 @@ import {
   FolderKanban,
   BookOpen,
   FileSearch,
-  CalendarDays,
-  Clock,
-  GitBranch,
-  Users,
-  GitCompare,
-  FlaskRound,
   Gauge,
   PackageSearch,
   FileCode2,
@@ -47,20 +41,17 @@ import {
   TrendingUp,
   TrendingDown,
   Brain,
-  Swords,
   CircleDot,
   Landmark,
   FileSpreadsheet,
   Ghost,
   Cloud,
-  Map,
   Lock,
 } from "lucide-react";
-import type { PlanTier } from "@/components/auth-provider";
 
 /** Pages accessible on Free plan */
 const FREE_PAGES = new Set(["/dashboard", "/simulate", "/topology", "/dora", "/reports", "/help", "/support", "/changelog", "/admin"]);
-import { locales, type Locale } from "@/i18n/config";
+import { locales } from "@/i18n/config";
 import { appDict } from "@/i18n/app-dict";
 import { useLocale } from "@/lib/useLocale";
 import { CommandPalette, type CommandItem } from "@/components/command-palette";
@@ -268,6 +259,7 @@ export function Navbar() {
 
   // NAV-DETAIL-08: ルート変更時にモバイルメニューを自動で閉じる
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setMobileOpen(false);
   }, [pathname]);
 
@@ -287,6 +279,7 @@ export function Navbar() {
 
   // Mobile: close sidebar on navigate
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setMobileOpen(false);
   }, [pathname]);
 

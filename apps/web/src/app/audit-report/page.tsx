@@ -3,7 +3,7 @@
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { useState } from "react";
+import { useState, useRef } from "react";
 import {
   FileSpreadsheet,
   Download,
@@ -151,6 +151,8 @@ function scoreColor(score: number): string {
 export default function AuditReportPage() {
   useLocale();
 
+  // eslint-disable-next-line react-hooks/purity
+  const reportSizeKb = useRef(Math.round(Math.random() * 200 + 150));
   const [selectedFramework, setSelectedFramework] = useState<Framework>("SOC2");
   const [selectedFormat, setSelectedFormat] = useState<Format>("PDF");
   const [isGenerating, setIsGenerating] = useState(false);
@@ -274,7 +276,7 @@ export default function AuditReportPage() {
             {generated && (
               <p className="text-xs text-emerald-400 text-center mt-2 flex items-center justify-center gap-1">
                 <CheckCircle2 size={11} />
-                Report ready · {Math.round(Math.random() * 200 + 150)} KB
+                Report ready · {reportSizeKb.current} KB
               </p>
             )}
           </Card>

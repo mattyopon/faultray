@@ -9,7 +9,6 @@ import {
   Users,
   CheckCircle2,
   XCircle,
-  ChevronRight,
   Info,
   ArrowRight,
 } from "lucide-react";
@@ -196,7 +195,7 @@ export default function DependenciesPage() {
           Dependency Map
         </h1>
         <p className="text-[#94a3b8] text-sm">
-          "If X stops, what breaks?" — Blast radius analysis for non-engineers (Layer 1)
+          &ldquo;If X stops, what breaks?&rdquo; — Blast radius analysis for non-engineers (Layer 1)
         </p>
       </div>
 

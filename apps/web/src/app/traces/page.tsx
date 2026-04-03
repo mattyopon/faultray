@@ -2,7 +2,6 @@
 
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
 import { useState } from "react";
 import {
   Activity,
@@ -19,7 +18,6 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { useLocale } from "@/lib/useLocale";
-import { appDict } from "@/i18n/app-dict";
 
 /* ============================================================
  * Types
@@ -189,9 +187,6 @@ function WaterfallBar({ span, totalMs }: { span: Span; totalMs: number }) {
 
 export default function TracesPage() {
   const locale = useLocale();
-  const t = (appDict as Record<string, Record<string, Record<string, string>>>).traces?.[locale]
-         ?? (appDict as Record<string, Record<string, Record<string, string>>>).traces?.en
-         ?? {};
 
   const [expandedTrace, setExpandedTrace] = useState<string | null>(null);
   const [filterService, setFilterService] = useState<string>("all");

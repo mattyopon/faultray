@@ -20,6 +20,7 @@ export function LocaleProvider({ children }: { children: ReactNode }) {
     // LIB-06: ロケールcookieのパース — (\w+)ではハイフン等が含まれないため[^;,\s]+に拡張
     const match = document.cookie.match(/(?:^|;\s*)NEXT_LOCALE=([^;,\s]+)/);
     if (match && locales.includes(match[1] as Locale)) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setLocaleState(match[1] as Locale);
     }
   }, []);

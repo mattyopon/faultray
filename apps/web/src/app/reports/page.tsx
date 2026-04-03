@@ -73,7 +73,7 @@ const JA_ROADMAP: Record<string, { action: string; effort: string }> = {
   "Health check optimization": { action: "ヘルスチェックの最適化", effort: "低" },
 };
 
-const JA_DORA_PILLARS: Record<string, string> = {
+const _JA_DORA_PILLARS: Record<string, string> = {
   "Pillar I": "Pillar I: ICTリスク管理フレームワーク",
   "Pillar II": "Pillar II: ICTインシデント管理・報告",
   "Pillar III": "Pillar III: デジタルオペレーショナルレジリエンステスト",
@@ -112,6 +112,7 @@ export default function ReportsPage() {
 
   // Sync reportLang with app locale on first load (reports only support en/ja output)
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setReportLang(locale === "ja" ? "ja" : "en");
   }, [locale]);
 

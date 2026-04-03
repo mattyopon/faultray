@@ -168,6 +168,7 @@ export function Onboarding() {
   const t = texts[locale];
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setLocale(detectLocale());
     try {
       const onboarded = localStorage.getItem(STORAGE_KEY);

@@ -7,7 +7,6 @@ import { useState } from "react";
 import {
   LayoutTemplate,
   DollarSign,
-  Activity,
   Heart,
   ShoppingCart,
   Layers,
@@ -186,7 +185,7 @@ export default function TemplatesPage() {
     router.push("/simulate");
   }
 
-  const previewTemplate = TEMPLATES.find((t) => t.id === previewId);
+  const _previewTemplate = TEMPLATES.find((tmpl) => tmpl.id === previewId);
 
   return (
     <main className="min-h-screen bg-[#0a0e1a] text-white pt-20 pb-12">

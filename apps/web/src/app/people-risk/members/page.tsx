@@ -7,8 +7,6 @@ import Link from "next/link";
 import {
   Users,
   AlertTriangle,
-  CheckCircle2,
-  XCircle,
   Search,
   ChevronRight,
 } from "lucide-react";

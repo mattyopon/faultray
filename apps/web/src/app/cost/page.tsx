@@ -12,7 +12,6 @@ import {
   Users,
   AlertTriangle,
   BarChart3,
-  Download,
   Printer,
   FileSpreadsheet,
 } from "lucide-react";
@@ -121,19 +120,7 @@ function getCurrencySymbol(locale: string): string {
   return symbols[locale] ?? "$";
 }
 
-function convertForDisplay(value: number, locale: string): number {
-  const config = LOCALE_CURRENCY[locale] ?? LOCALE_CURRENCY.en;
-  return Math.round(value * config.rate);
-}
 
-function ninesFromAvailability(pct: number): number {
-  if (pct >= 99.999) return 5;
-  if (pct >= 99.99) return 4;
-  if (pct >= 99.95) return 3.75;
-  if (pct >= 99.9) return 3;
-  if (pct >= 99.5) return 2.5;
-  return 2;
-}
 
 function downtimeHoursPerYear(nines: number): number {
   const availability = 1 - Math.pow(10, -nines);
@@ -385,6 +372,7 @@ export default function CostPage() {
       if (raw) {
         const parsed = JSON.parse(raw) as SimulationData;
         if (parsed.overall_score) {
+          // eslint-disable-next-line react-hooks/set-state-in-effect
           setSimData(parsed);
         }
       }

@@ -149,7 +149,7 @@ function CalculationEvidencePanel({ evidence, t }: { evidence: CalculationEviden
     External: { bar: "bg-orange-400", text: "text-orange-400", border: "border-orange-500/20", bg: "bg-orange-500/5" },
   };
 
-  const bottleneckLayerName = evidence.bottleneck.split(" ")[0];
+  const _bottleneckLayerName = evidence.bottleneck.split(" ")[0];
 
   // Find the actual bottleneck layer (lowest nines)
   const sortedLayers = [...evidence.layers].sort((a, b) => a.nines - b.nines);
@@ -376,7 +376,7 @@ function SimulationLogPanel({ log }: { log: SimulationLog }) {
     URL.revokeObjectURL(url);
   };
 
-  const SortIcon = ({ col }: { col: string }) => {
+  const renderSortIcon = (col: string) => {
     if (sortBy !== col) return <ChevronDown size={12} className="text-[#64748b] opacity-40" />;
     return sortDir === "asc"
       ? <ChevronUp size={12} className="text-[#FFD700]" />
@@ -424,18 +424,18 @@ function SimulationLogPanel({ log }: { log: SimulationLog }) {
               <tr className="bg-[#0d1117]">
                 <th scope="col" className="px-4 py-2.5 text-left text-xs font-semibold text-[#64748b]">
                   <button onClick={() => toggleSort("id")} className="flex items-center gap-1 hover:text-white transition-colors">
-                    # <SortIcon col="id" />
+                    # {renderSortIcon("id")}
                   </button>
                 </th>
                 <th scope="col" className="px-4 py-2.5 text-left text-xs font-semibold text-[#64748b]">Scenario Name</th>
                 <th scope="col" className="px-4 py-2.5 text-left text-xs font-semibold text-[#64748b]">
                   <button onClick={() => toggleSort("result")} className="flex items-center gap-1 hover:text-white transition-colors">
-                    Result <SortIcon col="result" />
+                    Result {renderSortIcon("result")}
                   </button>
                 </th>
                 <th scope="col" className="px-4 py-2.5 text-left text-xs font-semibold text-[#64748b]">
                   <button onClick={() => toggleSort("risk_score")} className="flex items-center gap-1 hover:text-white transition-colors">
-                    Risk Score <SortIcon col="risk_score" />
+                    Risk Score {renderSortIcon("risk_score")}
                   </button>
                 </th>
                 <th scope="col" className="px-4 py-2.5 text-left text-xs font-semibold text-[#64748b]">Affected</th>
@@ -513,6 +513,7 @@ function NurtureEmailCapture() {
     try {
       const prefs = JSON.parse(localStorage.getItem("faultray_notifications") ?? "{}") as Record<string, unknown>;
       if (prefs.nurtureOptedIn === true || prefs.nurtureDismissed === true) {
+        // eslint-disable-next-line react-hooks/set-state-in-effect
         setDismissed(true);
       }
     } catch {
@@ -764,7 +765,7 @@ function CodeBlock({ code, language = "bash" }: { code: string; language?: strin
   );
 }
 
-const DEMO_RESULT: SimulationResult = {
+const _DEMO_RESULT: SimulationResult = {
   overall_score: 85.2,
   availability_estimate: "99.99%",
   nines: 4.0,
@@ -939,6 +940,7 @@ function SimulatePageInner() {
   const [uploadedFileName, setUploadedFileName] = useState<string | null>(null);
   const [running, setRunning] = useState(false);
   const [runProgress, setRunProgress] = useState(0); // DEMO-03: progress display
+  const [runProgressLabel, setRunProgressLabel] = useState(""); // DEMO-03: stage label
   const [result, setResult] = useState<SimulationResult | null>(null);
   const [scanSummary, setScanSummary] = useState<CloudSimulationResult["scan_summary"] | undefined>(undefined);
   const [error, setError] = useState<string | null>(null);
@@ -1032,8 +1034,8 @@ function SimulatePageInner() {
       { pct: 95, delay: 2400, label: locale === "ja" ? "レポートを生成中..." : "Generating report..." },
     ];
     const timers: ReturnType<typeof setTimeout>[] = [];
-    progressSteps.forEach(({ pct, delay }) => {
-      timers.push(setTimeout(() => setRunProgress(pct), delay));
+    progressSteps.forEach(({ pct, delay, label }) => {
+      timers.push(setTimeout(() => { setRunProgress(pct); setRunProgressLabel(label); }, delay));
     });
 
     try {
@@ -1535,22 +1537,45 @@ function SimulatePageInner() {
                   )}
                 </Button>
                 {/* DEMO-03: プログレスバー — 実行中の待ち時間を視覚化 */}
+                {/* DEMO-03: Enhanced progress bar with stage labels and ETA */}
                 {running && (
                   <div className="w-full max-w-[400px]">
                     <div className="flex justify-between text-xs text-[#64748b] mb-1.5">
-                      <span>{locale === "ja" ? "進行中..." : "Processing..."}</span>
+                      <span className="text-[#94a3b8] font-medium">{runProgressLabel || (locale === "ja" ? "準備中..." : "Initializing...")}</span>
                       <span>{runProgress}%</span>
                     </div>
-                    <div className="h-2 bg-[#1e293b] rounded-full overflow-hidden">
+                    <div className="h-2.5 bg-[#1e293b] rounded-full overflow-hidden">
                       <div
-                        className="h-full bg-[#FFD700] rounded-full transition-all duration-500"
+                        className="h-full bg-gradient-to-r from-[#FFD700] to-[#ffe44d] rounded-full transition-all duration-500"
                         style={{ width: `${runProgress}%` }}
                       />
                     </div>
+                    {/* DEMO-03: Step indicators */}
+                    <div className="flex justify-between mt-2">
+                      {[
+                        { pct: 15, label: locale === "ja" ? "解析" : "Parse" },
+                        { pct: 35, label: locale === "ja" ? "生成" : "Gen" },
+                        { pct: 60, label: locale === "ja" ? "実行" : "Run" },
+                        { pct: 80, label: locale === "ja" ? "分析" : "Analyze" },
+                        { pct: 95, label: locale === "ja" ? "出力" : "Report" },
+                      ].map((step) => (
+                        <div key={step.pct} className="flex flex-col items-center">
+                          <div className={`w-2 h-2 rounded-full mb-1 transition-colors ${runProgress >= step.pct ? "bg-[#FFD700]" : "bg-[#1e293b]"}`} />
+                          <span className={`text-[10px] ${runProgress >= step.pct ? "text-[#FFD700]" : "text-[#475569]"}`}>{step.label}</span>
+                        </div>
+                      ))}
+                    </div>
+                    {/* DEMO-03: Estimated time remaining */}
                     <p className="text-[11px] text-[#475569] text-center mt-2">
+                      {runProgress < 95
+                        ? (locale === "ja"
+                            ? `推定残り ${Math.max(1, Math.round((100 - runProgress) / 100 * 5))} 秒`
+                            : `~${Math.max(1, Math.round((100 - runProgress) / 100 * 5))}s remaining`)
+                        : (locale === "ja" ? "まもなく完了..." : "Almost done...")}
+                      {" · "}
                       {locale === "ja"
-                        ? "本番環境には一切アクセスしません。純粋なシミュレーションです。"
-                        : "No production access. Pure simulation — your infra is untouched."}
+                        ? "本番環境には一切アクセスしません"
+                        : "No production access"}
                     </p>
                   </div>
                 )}

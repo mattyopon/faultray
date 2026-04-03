@@ -292,6 +292,8 @@ export default function TopologyPage() {
   const containerRef = useRef<HTMLDivElement>(null);
   const [containerWidth, setContainerWidth] = useState(1100);
   const locale = useLocale();
+  const [simScore, setSimScore] = useState<number | null>(null);
+  const [simTimestamp, setSimTimestamp] = useState<string | null>(null);
   const t = appDict.topology[locale] ?? appDict.topology.en;
 
   const loadData = useCallback(async () => {
@@ -336,10 +338,8 @@ export default function TopologyPage() {
     setLoading(false);
   }, []);
 
-  const [simScore, setSimScore] = useState<number | null>(null);
-  const [simTimestamp, setSimTimestamp] = useState<string | null>(null);
-
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     loadData();
   }, [loadData]);
 

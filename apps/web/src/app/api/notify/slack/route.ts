@@ -14,7 +14,7 @@ interface SlackNotifyRequest {
 
 export async function POST(request: Request) {
   // API-01: 認証チェック
-  const { user, error } = await requireAuth();
+  const { error } = await requireAuth();
   if (error) return error;
 
   // API-08: レート制限 — 10 requests / minute per IP

@@ -1027,6 +1027,7 @@ function DropdownMenu({
 
 export default function RemediationPage() {
   const locale = useLocale();
+  // eslint-disable-next-line react-hooks/globals
   _activeLocale = locale;  // Set for formatEur currency conversion
   const t = appDict.remediation[locale] ?? appDict.remediation.en;
   const tAny = t as unknown as Record<string, string>;

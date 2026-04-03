@@ -35,6 +35,7 @@ export function CommandPalette({ open, onClose, items }: CommandPaletteProps) {
   // Reset state when modal opens/closes
   useEffect(() => {
     if (open) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setQuery("");
       setActiveIndex(0);
       // Focus input after paint
@@ -98,6 +99,7 @@ export function CommandPalette({ open, onClose, items }: CommandPaletteProps) {
 
   // Reset activeIndex when filtered results change
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setActiveIndex(0);
   }, [query]);
 

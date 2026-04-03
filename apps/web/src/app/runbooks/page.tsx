@@ -2,7 +2,6 @@
 
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
 import { useState } from "react";
 import { BookOpen, ChevronDown, ChevronRight, Copy, Search } from "lucide-react";
 import { useLocale } from "@/lib/useLocale";

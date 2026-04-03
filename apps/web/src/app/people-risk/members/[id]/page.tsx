@@ -6,7 +6,6 @@ import { Button } from "@/components/ui/button";
 import { useEffect, useState, use } from "react";
 import Link from "next/link";
 import {
-  User,
   ArrowLeft,
   Server,
   AlertTriangle,

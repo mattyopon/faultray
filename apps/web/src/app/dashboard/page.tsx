@@ -8,6 +8,7 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 import { api, type SimulationRun, type Project } from "@/lib/api";
 import { Onboarding } from "@/components/onboarding";
+import { GettingStarted } from "@/components/dashboard/getting-started";
 import { useLocale } from "@/lib/useLocale";
 import { appDict } from "@/i18n/app-dict";
 import {
@@ -20,9 +21,6 @@ import {
   BarChart3,
   FolderKanban,
   Info,
-  CheckCircle2,
-  Circle,
-  X,
   Activity,
 } from "lucide-react";
 
@@ -31,9 +29,6 @@ const SAMPLE_SCORE = 72;
 const SAMPLE_COMPONENTS = 6;
 const SAMPLE_CRITICAL = 2;
 const SAMPLE_WARNING = 5;
-
-// ---- Getting Started checklist (localStorage key) ----
-const CHECKLIST_STORAGE_KEY = "faultray_checklist_dismissed";
 
 function ScoreRing({ score, size = 120 }: { score: number; size?: number }) {
   const radius = 45;
@@ -59,113 +54,6 @@ function ScoreRing({ score, size = 120 }: { score: number; size?: number }) {
         <span className="text-2xl font-extrabold" style={{ color }}>{score.toFixed(1)}</span>
         <span className="text-[10px] text-[#64748b] uppercase tracking-wider">Score</span>
       </div>
-    </div>
-  );
-}
-
-// ---- Getting Started Checklist Component ----
-function GettingStartedChecklist({ hasRun }: { hasRun: boolean }) {
-  const [dismissed, setDismissed] = useState(false);
-  const [checkedItems, setCheckedItems] = useState<Record<number, boolean>>({});
-
-  useEffect(() => {
-    try {
-      if (localStorage.getItem(CHECKLIST_STORAGE_KEY) === "true") {
-        setDismissed(true);
-      }
-      const stored = localStorage.getItem("faultray_checklist_checked");
-      if (stored) setCheckedItems(JSON.parse(stored));
-    } catch { /* ignore */ }
-  }, []);
-
-  // Step 2 is auto-checked when a run exists
-  useEffect(() => {
-    if (hasRun) {
-      setCheckedItems((prev) => {
-        const next = { ...prev, 1: true };
-        try { localStorage.setItem("faultray_checklist_checked", JSON.stringify(next)); } catch { /* ignore */ }
-        return next;
-      });
-    }
-  }, [hasRun]);
-
-  const dismiss = () => {
-    setDismissed(true);
-    try { localStorage.setItem(CHECKLIST_STORAGE_KEY, "true"); } catch { /* ignore */ }
-  };
-
-  const toggle = (idx: number) => {
-    setCheckedItems((prev) => {
-      const next = { ...prev, [idx]: !prev[idx] };
-      try { localStorage.setItem("faultray_checklist_checked", JSON.stringify(next)); } catch { /* ignore */ }
-      return next;
-    });
-  };
-
-  const steps = [
-    { label: "アカウント作成", href: null, alwaysDone: true },
-    { label: "最初のシミュレーション実行", href: "/simulate", alwaysDone: false },
-    { label: "レポートを確認", href: "/reports", alwaysDone: false },
-    { label: "DORA診断を実行", href: "/dora", alwaysDone: false },
-    { label: "チームメンバーを招待", href: "/teams", alwaysDone: false },
-  ];
-
-  const allDone = steps.every((s, i) => s.alwaysDone || checkedItems[i]);
-
-  if (dismissed || allDone) return null;
-
-  return (
-    <div className="mb-8 p-5 rounded-xl border border-[#1e293b] bg-[#0d1117]">
-      <div className="flex items-center justify-between mb-4">
-        <h3 className="text-sm font-semibold flex items-center gap-2">
-          <Zap size={14} className="text-[#FFD700]" />
-          Getting Started
-        </h3>
-        <button
-          onClick={dismiss}
-          className="p-1 text-[#64748b] hover:text-white transition-colors rounded"
-          aria-label="Close checklist"
-        >
-          <X size={14} />
-        </button>
-      </div>
-      <div className="space-y-2">
-        {steps.map((step, i) => {
-          const done = step.alwaysDone || !!checkedItems[i];
-          return (
-            <div key={i} className="flex items-center gap-3">
-              <button
-                onClick={() => !step.alwaysDone && toggle(i)}
-                className="shrink-0 transition-colors"
-                aria-label={done ? "Done" : "Mark done"}
-                disabled={step.alwaysDone}
-              >
-                {done
-                  ? <CheckCircle2 size={16} className="text-emerald-400" />
-                  : <Circle size={16} className="text-[#334155]" />}
-              </button>
-              {step.href ? (
-                <Link
-                  href={step.href}
-                  className={`text-sm transition-colors hover:text-[#FFD700] ${done ? "line-through text-[#475569]" : "text-[#94a3b8]"}`}
-                >
-                  {step.label}
-                </Link>
-              ) : (
-                <span className={`text-sm ${done ? "line-through text-[#475569]" : "text-[#94a3b8]"}`}>
-                  {step.label}
-                </span>
-              )}
-            </div>
-          );
-        })}
-      </div>
-      <button
-        onClick={dismiss}
-        className="mt-4 text-xs text-[#64748b] hover:text-white transition-colors"
-      >
-        閉じる
-      </button>
     </div>
   );
 }
@@ -374,8 +262,8 @@ export default function DashboardPage() {
         </div>
       )}
 
-      {/* Getting Started Checklist */}
-      <GettingStartedChecklist hasRun={runs.length > 0} />
+      {/* UX-03: Getting Started Checklist (extracted component) */}
+      <GettingStarted hasRun={runs.length > 0} locale={locale} />
 
       {/* Header */}
       <div className="flex items-center justify-between mb-10">

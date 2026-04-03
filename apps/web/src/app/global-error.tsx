@@ -13,6 +13,7 @@ export default function GlobalError({
 
   useEffect(() => {
     const match = document.cookie.match(/(?:^|;\s*)NEXT_LOCALE=([^;,\s]+)/);
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setIsJa(match?.[1] === "ja");
   }, []);
 

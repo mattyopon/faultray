@@ -16,7 +16,6 @@ import {
   Shield,
   FileCode2,
   BookOpen,
-  TrendingUp,
   Zap,
 } from "lucide-react";
 import Link from "next/link";
@@ -60,7 +59,7 @@ function getScoreColor(score: number): string {
   return "text-red-400";
 }
 
-function getScoreLabel(score: number, t: Record<string, string>): string {
+function getScoreLabel(score: number, _t: Record<string, string>): string {
   if (score >= 70) return "Good foundation";
   if (score >= 45) return "Needs improvement";
   return "Critical gaps identified";
@@ -68,7 +67,7 @@ function getScoreLabel(score: number, t: Record<string, string>): string {
 
 function getRecommendations(
   answers: Record<number, boolean | null>,
-  t: Record<string, string>
+  _t: Record<string, string>
 ): Recommendation[] {
   const recs: Recommendation[] = [
     {
