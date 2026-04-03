@@ -149,8 +149,6 @@ function CalculationEvidencePanel({ evidence, t }: { evidence: CalculationEviden
     External: { bar: "bg-orange-400", text: "text-orange-400", border: "border-orange-500/20", bg: "bg-orange-500/5" },
   };
 
-  const bottleneckLayerName = evidence.bottleneck.split(" ")[0];
-
   // Find the actual bottleneck layer (lowest nines)
   const sortedLayers = [...evidence.layers].sort((a, b) => a.nines - b.nines);
   const lowestLayer = sortedLayers[0];
@@ -507,19 +505,14 @@ function NurtureEmailCapture() {
   const locale = useLocale();
   const [email, setEmail] = useState("");
   const [submitted, setSubmitted] = useState(false);
-  const [dismissed, setDismissed] = useState(false);
-
-  // Check if user already opted in or dismissed
-  useEffect(() => {
+  const [dismissed, setDismissed] = useState(() => {
     try {
       const prefs = JSON.parse(localStorage.getItem("faultray_notifications") ?? "{}") as Record<string, unknown>;
-      if (prefs.nurtureOptedIn === true || prefs.nurtureDismissed === true) {
-        setDismissed(true);
-      }
+      return prefs.nurtureOptedIn === true || prefs.nurtureDismissed === true;
     } catch {
-      // localStorage unavailable — skip
+      return false;
     }
-  }, []);
+  });
 
   if (dismissed) return null;
 
@@ -558,8 +551,8 @@ function NurtureEmailCapture() {
         <div className="flex items-center gap-3">
           <Star size={20} className="text-[#FFD700] shrink-0" />
           <div>
-            <p className="text-sm font-semibold text-[#e2e8f0]">You&apos;re in! Weekly reliability tips coming your way.</p>
-            <p className="text-xs text-[#64748b] mt-0.5">Check your inbox — unsubscribe anytime.</p>
+            <p className="text-sm font-semibold text-[#e2e8f0]">{locale === "ja" ? "登録完了！毎週信頼性のヒントをお届けします。" : "You're in! Weekly reliability tips coming your way."}</p>
+            <p className="text-xs text-[#64748b] mt-0.5">{locale === "ja" ? "受信トレイをご確認ください。いつでも配信停止できます。" : "Check your inbox — unsubscribe anytime."}</p>
           </div>
         </div>
       ) : (
@@ -567,7 +560,7 @@ function NurtureEmailCapture() {
           <div className="flex items-start justify-between mb-3">
             <div className="flex items-center gap-2">
               <Mail size={18} className="text-[#FFD700]" />
-              <p className="text-sm font-semibold">Get Weekly Reliability Insights</p>
+              <p className="text-sm font-semibold">{locale === "ja" ? "毎週の信頼性インサイトを受け取る" : "Get Weekly Reliability Insights"}</p>
             </div>
             <button
               onClick={handleDismiss}
@@ -578,7 +571,7 @@ function NurtureEmailCapture() {
             </button>
           </div>
           <p className="text-xs text-[#94a3b8] mb-4">
-            One email/week: reliability benchmarks, failure case studies, and new FaultRay features. No spam.
+            {locale === "ja" ? "週1回のメール：信頼性ベンチマーク、障害事例、新機能情報。スパムなし。" : "One email/week: reliability benchmarks, failure case studies, and new FaultRay features. No spam."}
           </p>
           <form onSubmit={handleSubmit} className="flex gap-2">
             <input
@@ -594,7 +587,7 @@ function NurtureEmailCapture() {
               type="submit"
               className="px-4 py-2 rounded-lg bg-[#FFD700] text-[#0a0e1a] text-sm font-semibold hover:bg-[#ffe44d] transition-colors shrink-0"
             >
-              Subscribe
+              {locale === "ja" ? "登録する" : "Subscribe"}
             </button>
           </form>
         </div>

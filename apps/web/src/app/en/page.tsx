@@ -20,9 +20,7 @@ import {
   Wrench,
   LayoutDashboard,
 } from "lucide-react";
-import { isValidLocale } from "@/i18n/config";
 import { getDictionary } from "@/i18n/get-dictionary";
-import { notFound } from "next/navigation";
 import { LanguageSwitcher } from "@/components/language-switcher";
 import { SocialProof } from "@/components/social-proof";
 import { RoiCalculator } from "@/components/roi-calculator";
@@ -318,11 +316,11 @@ export default async function LangHomePage() {
               Run Free Simulation
             </Link>
             <Link
-              href="/contact"
+              href="mailto:contact@faultray.com?subject=FaultRay Demo Request"
               className="inline-flex items-center gap-2 px-7 py-3 bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 font-semibold rounded-xl hover:bg-emerald-500/20 hover:border-emerald-500/50 hover:-translate-y-0.5 transition-all"
             >
               <ExternalLink size={16} />
-              {"Book a Guided Demo"}
+              Book a Free Demo
             </Link>
             <Link
               href="/login"
@@ -946,6 +944,27 @@ export default async function LangHomePage() {
         </div>
       </section>
 
+      {/* ===== DEMO CTA (LP-03) ===== */}
+      <section className="py-16 bg-[#0a0e1a] border-t border-[#1e293b]">
+        <div className="max-w-[900px] mx-auto px-6 text-center">
+          <p className="text-xs text-emerald-400 uppercase tracking-widest font-semibold mb-4">Free Demo</p>
+          <h2 className="text-[clamp(1.5rem,3vw,2rem)] font-bold tracking-tight mb-4">
+            See FaultRay in action — in 30 minutes
+          </h2>
+          <p className="text-[#94a3b8] mb-8 max-w-[560px] mx-auto">
+            Our engineers will walk you through a live simulation with your actual infrastructure scenarios. No setup required.
+          </p>
+          <Link
+            href="mailto:contact@faultray.com?subject=FaultRay Demo Request"
+            className="inline-flex items-center gap-2 px-8 py-3.5 bg-[#FFD700] text-[#0a0e1a] font-bold rounded-xl shadow-[0_0_20px_rgba(255,215,0,0.25)] hover:bg-[#ffe44d] hover:shadow-[0_0_30px_rgba(255,215,0,0.4)] hover:-translate-y-0.5 transition-all text-[1.0625rem]"
+          >
+            <ExternalLink size={18} />
+            Book a Free Demo
+          </Link>
+          <p className="text-xs text-[#475569] mt-4">No credit card required · Responds within 1 business day</p>
+        </div>
+      </section>
+
       {/* ===== ROI CALCULATOR (LP-04) ===== */}
       {dict.roi && (
         <RoiCalculator dict={dict.roi} lang={lang} />
@@ -1182,6 +1201,11 @@ export default async function LangHomePage() {
                 <li>
                   <Link href="/dpa" className="text-sm text-[#64748b] hover:text-white transition-colors">
                     DPA
+                  </Link>
+                </li>
+                <li>
+                  <Link href="/tokushoho" className="text-sm text-[#64748b] hover:text-white transition-colors">
+                    特定商取引法に基づく表記
                   </Link>
                 </li>
                 <li>

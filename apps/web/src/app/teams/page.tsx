@@ -383,8 +383,8 @@ export default function TeamsPage() {
     return (
       <div className="max-w-[1200px] mx-auto px-6 py-20 text-center">
         <Users size={40} className="text-[#FFD700] mx-auto mb-4" />
-        <h1 className="text-2xl font-bold mb-2">Organization & Tasks</h1>
-        <p className="text-[#64748b]">Sign in to manage your organization and tasks.</p>
+        <h1 className="text-2xl font-bold mb-2">{locale === "ja" ? "組織・タスク" : "Organization & Tasks"}</h1>
+        <p className="text-[#64748b]">{locale === "ja" ? "組織とタスクを管理するにはサインインしてください。" : "Sign in to manage your organization and tasks."}</p>
       </div>
     );
   }

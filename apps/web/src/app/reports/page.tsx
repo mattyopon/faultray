@@ -73,14 +73,6 @@ const JA_ROADMAP: Record<string, { action: string; effort: string }> = {
   "Health check optimization": { action: "ヘルスチェックの最適化", effort: "低" },
 };
 
-const JA_DORA_PILLARS: Record<string, string> = {
-  "Pillar I": "Pillar I: ICTリスク管理フレームワーク",
-  "Pillar II": "Pillar II: ICTインシデント管理・報告",
-  "Pillar III": "Pillar III: デジタルオペレーショナルレジリエンステスト",
-  "Pillar IV": "Pillar IV: ICTサードパーティリスク管理",
-  "Pillar V": "Pillar V: 情報共有",
-};
-
 function severityBadge(sev: string) {
   switch (sev) {
     case "CRITICAL": return "red" as const;

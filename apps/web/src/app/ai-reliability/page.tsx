@@ -2,19 +2,13 @@
 
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
 import { useState } from "react";
 import {
   Brain,
-  AlertTriangle,
-  CheckCircle2,
-  XCircle,
   Activity,
   Zap,
   ArrowRight,
-  TrendingUp,
   TrendingDown,
-  Minus,
   Bot,
   ShieldAlert,
 } from "lucide-react";

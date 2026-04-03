@@ -20,9 +20,7 @@ import {
   Wrench,
   LayoutDashboard,
 } from "lucide-react";
-import { isValidLocale } from "@/i18n/config";
 import { getDictionary } from "@/i18n/get-dictionary";
-import { notFound } from "next/navigation";
 import { LanguageSwitcher } from "@/components/language-switcher";
 import { SocialProof } from "@/components/social-proof";
 import { RoiCalculator } from "@/components/roi-calculator";

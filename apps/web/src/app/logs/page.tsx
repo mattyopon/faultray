@@ -118,7 +118,7 @@ export default function LogsPage() {
       if (searchQuery && !log.message.toLowerCase().includes(searchQuery.toLowerCase()) && !log.service.toLowerCase().includes(searchQuery.toLowerCase())) return false;
       return true;
     });
-  }, [searchQuery, filterLevel, filterService, showAnomaly, refreshKey]);
+  }, [searchQuery, filterLevel, filterService, showAnomaly]);
 
   const errorCount = DEMO_LOGS.filter((l) => l.level === "ERROR").length;
   const warnCount  = DEMO_LOGS.filter((l) => l.level === "WARN").length;

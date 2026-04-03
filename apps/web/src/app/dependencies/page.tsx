@@ -9,7 +9,6 @@ import {
   Users,
   CheckCircle2,
   XCircle,
-  ChevronRight,
   Info,
   ArrowRight,
 } from "lucide-react";

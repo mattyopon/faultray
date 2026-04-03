@@ -2,10 +2,8 @@
 
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
 import { useState } from "react";
-import { api } from "@/lib/api";
-import { ShieldCheck, Loader2, CheckCircle2, XCircle, AlertTriangle, ChevronDown, ChevronRight, FileText, ArrowRight, BookOpen, Wrench } from "lucide-react";
+import { ShieldCheck, CheckCircle2, XCircle, AlertTriangle, ChevronDown, ChevronRight, FileText, ArrowRight, BookOpen, Wrench } from "lucide-react";
 import Link from "next/link";
 import { useLocale } from "@/lib/useLocale";
 import type { Locale } from "@/i18n/config";

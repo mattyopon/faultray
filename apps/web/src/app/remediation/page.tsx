@@ -1028,11 +1028,21 @@ export default function RemediationPage() {
   // locale is passed directly to formatEur
   const t = appDict.remediation[locale] ?? appDict.remediation.en;
   const tAny = t as unknown as Record<string, string>;
-  const [data, setData] = useState<RemediationData | null>(null);
+  const [data, setData] = useState<RemediationData | null>(() => {
+    try {
+      const raw = localStorage.getItem("faultray_last_simulation");
+      if (raw) {
+        const sim: SimulationResult = JSON.parse(raw);
+        return buildRemediationData(sim);
+      }
+    } catch {
+      // ignore parse errors
+    }
+    return null;
+  });
   const [expandedAction, setExpandedAction] = useState<number | null>(null);
   const [isDemo, setIsDemo] = useState(false);
-  const loadedRef = useRef(false);
-  const [taskStates, setTaskStates] = useState<TaskStatesMap>({});
+  const [taskStates, setTaskStates] = useState<TaskStatesMap>(() => loadTaskStates());
   const [taskFilter, setTaskFilter] = useState<TaskFilter>("all");
   const [editingTaskId, setEditingTaskId] = useState<number | null>(null);
   const [editForm, setEditForm] = useState<TaskState>({ assignee: "", status: "todo", comment: "", deadline: "" });
@@ -1041,21 +1051,6 @@ export default function RemediationPage() {
   const showToast = useCallback((msg: string) => {
     setToast(msg);
     setTimeout(() => setToast(null), 2500);
-  }, []);
-
-  useEffect(() => {
-    if (loadedRef.current) return;
-    loadedRef.current = true;
-    try {
-      const raw = localStorage.getItem("faultray_last_simulation");
-      if (raw) {
-        const sim: SimulationResult = JSON.parse(raw);
-        setData(buildRemediationData(sim));
-      }
-    } catch {
-      // ignore parse errors
-    }
-    setTaskStates(loadTaskStates());
   }, []);
 
   const loadDemo = useCallback(() => {

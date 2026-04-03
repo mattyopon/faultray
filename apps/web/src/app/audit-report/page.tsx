@@ -3,7 +3,7 @@
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { useState, useRef } from "react";
+import { useState } from "react";
 import {
   FileSpreadsheet,
   Download,
@@ -148,6 +148,9 @@ function scoreColor(score: number): string {
  * Main Page
  * ============================================================ */
 
+// Generated once at module load time to avoid impure function call during render
+const REPORT_SIZE_KB = Math.round(Math.random() * 200 + 150);
+
 export default function AuditReportPage() {
   const locale = useLocale();
 
@@ -157,8 +160,6 @@ export default function AuditReportPage() {
   const [generated, setGenerated] = useState(false);
   const [expandedSection, setExpandedSection] = useState<string | null>("exec");
   const [expandedFinding, setExpandedFinding] = useState<string | null>(null);
-  const reportSizeKbRef = useRef(Math.round(Math.random() * 200 + 150));
-
   const meta = REPORT_METADATA[selectedFramework];
 
   function handleGenerate() {
@@ -275,7 +276,7 @@ export default function AuditReportPage() {
             {generated && (
               <p className="text-xs text-emerald-400 text-center mt-2 flex items-center justify-center gap-1">
                 <CheckCircle2 size={11} />
-                {locale === "ja" ? "レポート完成" : "Report ready"} · {reportSizeKbRef.current} KB
+                {locale === "ja" ? "レポート完成" : "Report ready"} · {REPORT_SIZE_KB} KB
               </p>
             )}
           </Card>
