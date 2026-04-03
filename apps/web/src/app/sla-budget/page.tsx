@@ -103,19 +103,19 @@ export default function SlaBudgetPage() {
   const progressPercent = Math.round((data.days_elapsed / data.days_total) * 100);
 
   return (
-    <div className="max-w-[1200px] mx-auto px-6 py-10">
+    <div className="w-full px-6 py-10">
       <div className="mb-10">
         <h1 className="text-2xl font-bold mb-1 flex items-center gap-3">
-          <Timer size={24} className="text-[#FFD700]" />
+          <Timer size={24} className="text-[var(--gold)]" />
           {t.title}
         </h1>
-        <p className="text-[#94a3b8] text-sm">{t.subtitle}</p>
+        <p className="text-[var(--text-secondary)] text-sm">{t.subtitle}</p>
       </div>
 
       {loading ? (
         <Card className="flex items-center justify-center py-20">
-          <Loader2 size={24} className="animate-spin text-[#FFD700]" />
-          <span className="ml-3 text-[#94a3b8]">{t.loading}</span>
+          <Loader2 size={24} className="animate-spin text-[var(--gold)]" />
+          <span className="ml-3 text-[var(--text-secondary)]">{t.loading}</span>
         </Card>
       ) : (
         <>
@@ -124,49 +124,49 @@ export default function SlaBudgetPage() {
             <div className="flex items-center justify-between mb-3">
               <div>
                 <p className="font-semibold">{t.period}: {data.period}</p>
-                <p className="text-xs text-[#64748b] mt-0.5">{t.daysElapsed}: {data.days_elapsed} / {data.days_total}</p>
+                <p className="text-xs text-[var(--text-muted)] mt-0.5">{t.daysElapsed}: {data.days_elapsed} / {data.days_total}</p>
               </div>
               <Badge variant={data.overall_status === "healthy" ? "green" : data.overall_status === "warning" ? "yellow" : "red"}>
                 {data.overall_status.toUpperCase()}
               </Badge>
             </div>
             <div className="w-full h-2 bg-white/5 rounded-full overflow-hidden">
-              <div className="h-full rounded-full bg-[#FFD700]/50" style={{ width: `${progressPercent}%` }} />
+              <div className="h-full rounded-full bg-[var(--gold)]/50" style={{ width: `${progressPercent}%` }} />
             </div>
-            <p className="text-xs text-[#64748b] mt-1">{progressPercent}% {locale === "ja" ? "経過" : "of month elapsed"}</p>
+            <p className="text-xs text-[var(--text-muted)] mt-1">{progressPercent}% {locale === "ja" ? "経過" : "of month elapsed"}</p>
           </Card>
 
           {/* Summary */}
           <div className="grid md:grid-cols-4 gap-4 mb-8">
             <Card className="text-center">
-              <p className="text-3xl font-extrabold font-mono text-[#94a3b8]">{data.entries.length}</p>
-              <p className="text-xs text-[#64748b] uppercase tracking-wider mt-1">{t.totalComponents}</p>
+              <p className="text-3xl font-extrabold font-mono text-[var(--text-secondary)]">{data.entries.length}</p>
+              <p className="text-xs text-[var(--text-muted)] uppercase tracking-wider mt-1">{t.totalComponents}</p>
             </Card>
             <Card className="text-center">
               <p className="text-3xl font-extrabold font-mono text-red-400">{exhaustedCount}</p>
-              <p className="text-xs text-[#64748b] uppercase tracking-wider mt-1">{t.exhausted}</p>
+              <p className="text-xs text-[var(--text-muted)] uppercase tracking-wider mt-1">{t.exhausted}</p>
             </Card>
             <Card className="text-center">
               <p className="text-3xl font-extrabold font-mono text-red-400">{criticalCount}</p>
-              <p className="text-xs text-[#64748b] uppercase tracking-wider mt-1">{t.critical}</p>
+              <p className="text-xs text-[var(--text-muted)] uppercase tracking-wider mt-1">{t.critical}</p>
             </Card>
             <Card className="text-center">
               <p className="text-3xl font-extrabold font-mono text-[#f59e0b]">{warningCount}</p>
-              <p className="text-xs text-[#64748b] uppercase tracking-wider mt-1">{t.warning}</p>
+              <p className="text-xs text-[var(--text-muted)] uppercase tracking-wider mt-1">{t.warning}</p>
             </Card>
           </div>
 
           {/* Sort */}
           <div className="flex items-center gap-2 mb-4">
-            <span className="text-xs text-[#64748b] uppercase tracking-wider">{t.sortBy}</span>
+            <span className="text-xs text-[var(--text-muted)] uppercase tracking-wider">{t.sortBy}</span>
             {(["burn_rate", "remaining", "tier"] as const).map((s) => (
               <button
                 key={s}
                 onClick={() => setSortBy(s)}
                 className={`px-3 py-1 rounded-lg text-xs font-medium transition-all ${
                   sortBy === s
-                    ? "bg-[#FFD700]/10 text-[#FFD700] border border-[#FFD700]/30"
-                    : "text-[#94a3b8] border border-[#1e293b] hover:border-[#64748b]"
+                    ? "bg-[var(--gold)]/10 text-[var(--gold)] border border-[var(--gold)]/30"
+                    : "text-[var(--text-secondary)] border border-[var(--border-color)] hover:border-[#64748b]"
                 }`}
               >
                 {s.replace("_", " ").toUpperCase()}
@@ -177,38 +177,38 @@ export default function SlaBudgetPage() {
           {/* SLA Budget Table */}
           <Card>
             <div className="flex items-center gap-2 mb-4">
-              <TrendingDown size={16} className="text-[#FFD700]" />
-              <h3 className="text-sm font-semibold text-[#94a3b8] uppercase tracking-wider">{t.budgetTable}</h3>
+              <TrendingDown size={16} className="text-[var(--gold)]" />
+              <h3 className="text-sm font-semibold text-[var(--text-secondary)] uppercase tracking-wider">{t.budgetTable}</h3>
             </div>
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
                 <thead>
-                  <tr className="border-b border-[#1e293b]">
-                    <th scope="col" className="text-left py-3 px-3 text-[#64748b] font-medium">{t.component}</th>
-                    <th scope="col" className="text-left py-3 px-3 text-[#64748b] font-medium">{t.tier}</th>
-                    <th scope="col" className="text-center py-3 px-3 text-[#64748b] font-medium">{t.target}</th>
-                    <th scope="col" className="text-center py-3 px-3 text-[#64748b] font-medium">{t.allowed}</th>
-                    <th scope="col" className="text-center py-3 px-3 text-[#64748b] font-medium">{t.consumed}</th>
-                    <th scope="col" className="text-center py-3 px-3 text-[#64748b] font-medium">{t.remaining}</th>
-                    <th scope="col" className="text-left py-3 px-3 text-[#64748b] font-medium">{t.burnRate}</th>
-                    <th scope="col" className="text-center py-3 px-3 text-[#64748b] font-medium">{t.status}</th>
+                  <tr className="border-b border-[var(--border-color)]">
+                    <th scope="col" className="text-left py-3 px-3 text-[var(--text-muted)] font-medium">{t.component}</th>
+                    <th scope="col" className="text-left py-3 px-3 text-[var(--text-muted)] font-medium">{t.tier}</th>
+                    <th scope="col" className="text-center py-3 px-3 text-[var(--text-muted)] font-medium">{t.target}</th>
+                    <th scope="col" className="text-center py-3 px-3 text-[var(--text-muted)] font-medium">{t.allowed}</th>
+                    <th scope="col" className="text-center py-3 px-3 text-[var(--text-muted)] font-medium">{t.consumed}</th>
+                    <th scope="col" className="text-center py-3 px-3 text-[var(--text-muted)] font-medium">{t.remaining}</th>
+                    <th scope="col" className="text-left py-3 px-3 text-[var(--text-muted)] font-medium">{t.burnRate}</th>
+                    <th scope="col" className="text-center py-3 px-3 text-[var(--text-muted)] font-medium">{t.status}</th>
                   </tr>
                 </thead>
                 <tbody>
                   {sorted.map((entry) => (
                     <tr
                       key={entry.id}
-                      className={`border-b border-[#1e293b]/50 hover:bg-white/[0.02] ${entry.status === "exhausted" ? "bg-red-500/5" : ""}`}
+                      className={`border-b border-[var(--border-color)]/50 hover:bg-white/[0.02] ${entry.status === "exhausted" ? "bg-red-500/5" : ""}`}
                     >
                       <td className="py-3 px-3">
                         <p className="font-medium">{entry.component}</p>
                         {entry.incidents_this_month > 0 && (
-                          <p className="text-xs text-[#64748b]">{entry.incidents_this_month} {locale === "ja" ? "件" : "incidents"}</p>
+                          <p className="text-xs text-[var(--text-muted)]">{entry.incidents_this_month} {locale === "ja" ? "件" : "incidents"}</p>
                         )}
                       </td>
-                      <td className="py-3 px-3 text-xs text-[#64748b]">{entry.tier}</td>
-                      <td className="py-3 px-3 text-center font-mono text-xs text-[#94a3b8]">{entry.sla_target_percent}%</td>
-                      <td className="py-3 px-3 text-center font-mono text-xs text-[#94a3b8]">{entry.allowed_minutes_per_month.toFixed(1)}m</td>
+                      <td className="py-3 px-3 text-xs text-[var(--text-muted)]">{entry.tier}</td>
+                      <td className="py-3 px-3 text-center font-mono text-xs text-[var(--text-secondary)]">{entry.sla_target_percent}%</td>
+                      <td className="py-3 px-3 text-center font-mono text-xs text-[var(--text-secondary)]">{entry.allowed_minutes_per_month.toFixed(1)}m</td>
                       <td className="py-3 px-3 text-center font-mono text-xs" style={{ color: statusColor(entry.status) }}>
                         {entry.consumed_minutes.toFixed(1)}m
                       </td>

@@ -374,16 +374,16 @@ export default function SettingsPage() {
   }
 
   return (
-    <div className="max-w-[800px] mx-auto px-6 py-10">
+    <div className="w-full px-6 py-10">
       <div className="mb-10">
         <h1 className="text-2xl font-bold mb-1">{t.title}</h1>
-        <p className="text-[#94a3b8] text-sm">{t.subtitle}</p>
+        <p className="text-[var(--text-secondary)] text-sm">{t.subtitle}</p>
       </div>
 
       {/* Language */}
       <Card className="mb-6">
         <div className="flex items-center gap-3 mb-6">
-          <Globe size={20} className="text-[#FFD700]" />
+          <Globe size={20} className="text-[var(--gold)]" />
           <h2 className="text-lg font-bold">{t.language}</h2>
         </div>
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
@@ -393,8 +393,8 @@ export default function SettingsPage() {
               onClick={() => setLanguage(lang.code)}
               className={`flex items-center gap-2 px-4 py-3 rounded-lg border transition-all text-sm ${
                 locale === lang.code
-                  ? "border-[#FFD700] bg-[#FFD700]/10 text-white"
-                  : "border-[#1e293b] text-[#94a3b8] hover:border-[#64748b] hover:text-white"
+                  ? "border-[var(--gold)] bg-[var(--gold)]/10 text-white"
+                  : "border-[var(--border-color)] text-[var(--text-secondary)] hover:border-[#64748b] hover:text-white"
               }`}
             >
               <span className="text-lg">{lang.flag}</span>
@@ -407,7 +407,7 @@ export default function SettingsPage() {
       {/* BRAND-02: テーマ設定 */}
       <Card className="mb-6">
         <div className="flex items-center gap-3 mb-4">
-          <Sun size={20} className="text-[#FFD700]" />
+          <Sun size={20} className="text-[var(--gold)]" />
           <h2 className="text-lg font-bold">{locale === "ja" ? "表示テーマ" : "Appearance"}</h2>
         </div>
         <div className="flex gap-3">
@@ -421,8 +421,8 @@ export default function SettingsPage() {
               onClick={() => applyTheme(value)}
               className={`flex items-center gap-2 px-4 py-3 rounded-lg border transition-all text-sm ${
                 theme === value
-                  ? "border-[#FFD700] bg-[#FFD700]/10 text-white"
-                  : "border-[#1e293b] text-[#94a3b8] hover:border-[#64748b] hover:text-white"
+                  ? "border-[var(--gold)] bg-[var(--gold)]/10 text-white"
+                  : "border-[var(--border-color)] text-[var(--text-secondary)] hover:border-[#64748b] hover:text-white"
               }`}
             >
               <Icon size={14} />
@@ -435,24 +435,24 @@ export default function SettingsPage() {
       {/* Profile */}
       <Card className="mb-6">
         <div className="flex items-center gap-3 mb-6">
-          <User size={20} className="text-[#FFD700]" />
+          <User size={20} className="text-[var(--gold)]" />
           <h2 className="text-lg font-bold">{t.profile}</h2>
         </div>
         <div className="space-y-4">
           <div className="grid grid-cols-[120px_1fr] items-center gap-4">
-            <span className="text-sm text-[#64748b]">{t.email}</span>
+            <span className="text-sm text-[var(--text-muted)]">{t.email}</span>
             <span className="text-sm">{user?.email || t.notSignedIn}</span>
           </div>
           <div className="grid grid-cols-[120px_1fr] items-center gap-4">
-            <span className="text-sm text-[#64748b]">{t.name}</span>
+            <span className="text-sm text-[var(--text-muted)]">{t.name}</span>
             <span className="text-sm">{user?.user_metadata?.full_name || t.notSet}</span>
           </div>
           <div className="grid grid-cols-[120px_1fr] items-center gap-4">
-            <span className="text-sm text-[#64748b]">{t.provider}</span>
+            <span className="text-sm text-[var(--text-muted)]">{t.provider}</span>
             <span className="text-sm capitalize">{user?.app_metadata?.provider || "N/A"}</span>
           </div>
           <div className="grid grid-cols-[120px_1fr] items-center gap-4">
-            <span className="text-sm text-[#64748b]">{t.memberSince}</span>
+            <span className="text-sm text-[var(--text-muted)]">{t.memberSince}</span>
             <span className="text-sm">
               {user?.created_at ? new Date(user.created_at).toLocaleDateString() : "N/A"}
             </span>
@@ -464,7 +464,7 @@ export default function SettingsPage() {
       <Card className="mb-6">
         <div className="flex items-center justify-between mb-6">
           <div className="flex items-center gap-3">
-            <CreditCard size={20} className="text-[#FFD700]" />
+            <CreditCard size={20} className="text-[var(--gold)]" />
             <h2 className="text-lg font-bold">{t.subscription}</h2>
           </div>
           <Badge variant="gold">{currentPlan.charAt(0).toUpperCase() + currentPlan.slice(1)} Plan</Badge>
@@ -476,11 +476,11 @@ export default function SettingsPage() {
               ? "bg-red-500/10 border-red-500/20"
               : trialDaysLeft <= 7
               ? "bg-amber-500/10 border-amber-500/20"
-              : "bg-[#FFD700]/10 border-[#FFD700]/20"
+              : "bg-[var(--gold)]/10 border-[var(--gold)]/20"
           }`}>
             <div className="flex items-center gap-2">
-              <Clock size={16} className={trialDaysLeft <= 3 ? "text-red-400" : trialDaysLeft <= 7 ? "text-amber-400" : "text-[#FFD700]"} />
-              <span className={`text-sm font-medium ${trialDaysLeft <= 3 ? "text-red-300" : trialDaysLeft <= 7 ? "text-amber-300" : "text-[#FFD700]"}`}>
+              <Clock size={16} className={trialDaysLeft <= 3 ? "text-red-400" : trialDaysLeft <= 7 ? "text-amber-400" : "text-[var(--gold)]"} />
+              <span className={`text-sm font-medium ${trialDaysLeft <= 3 ? "text-red-300" : trialDaysLeft <= 7 ? "text-amber-300" : "text-[var(--gold)]"}`}>
                 {t.proTrial} {trialDaysLeft} {t.trialRemaining}
                 {trialDaysLeft <= 3 && (
                   <span className="ml-2 text-xs font-semibold">
@@ -547,23 +547,23 @@ export default function SettingsPage() {
                       key={plan.id}
                       className={`rounded-xl border p-4 transition-all ${
                         isCurrent
-                          ? "border-[#FFD700] bg-[#FFD700]/5"
-                          : "border-[#1e293b] bg-[#0d1117]"
+                          ? "border-[var(--gold)] bg-[var(--gold)]/5"
+                          : "border-[var(--border-color)] bg-[var(--bg-tertiary)]"
                       }`}
                     >
                       <div className="flex items-center justify-between mb-3">
-                        <span className={`text-sm font-bold ${isCurrent ? "text-[#FFD700]" : "text-white"}`}>{plan.name}</span>
-                        <span className="text-xs text-[#64748b]">{plan.price}</span>
+                        <span className={`text-sm font-bold ${isCurrent ? "text-[var(--gold)]" : "text-white"}`}>{plan.name}</span>
+                        <span className="text-xs text-[var(--text-muted)]">{plan.price}</span>
                       </div>
                       {isCurrent && (
-                        <div className="text-[10px] text-[#FFD700] bg-[#FFD700]/10 rounded px-2 py-0.5 inline-block mb-3">
+                        <div className="text-[10px] text-[var(--gold)] bg-[var(--gold)]/10 rounded px-2 py-0.5 inline-block mb-3">
                           {locale === "ja" ? "現在のプラン" : "Current"}
                         </div>
                       )}
                       <div className="space-y-2">
                         {plan.features.map((f) => (
                           <div key={f.label} className="flex items-center justify-between text-xs">
-                            <span className="text-[#64748b]">{f.label}</span>
+                            <span className="text-[var(--text-muted)]">{f.label}</span>
                             {f.value === true ? (
                               <Check size={14} className="text-emerald-400" />
                             ) : f.value === false ? (
@@ -598,7 +598,7 @@ export default function SettingsPage() {
           {(currentPlan === "pro" || currentPlan === "business") && (
             <button
               onClick={() => { setShowChurnModal(true); }}
-              className="text-xs text-[#475569] hover:text-[#94a3b8] underline transition-colors"
+              className="text-xs text-[var(--text-muted)] hover:text-[var(--text-secondary)] underline transition-colors"
             >
               {locale === "ja" ? "キャンセルまたはダウングレード" : "Cancel or downgrade"}
             </button>
@@ -608,22 +608,22 @@ export default function SettingsPage() {
         {/* RETAIN-01: Churn Prevention Modal */}
         {showChurnModal && (
           <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm" onClick={(e) => { if (e.target === e.currentTarget) setShowChurnModal(false); }}>
-            <div ref={churnModalRef} tabIndex={-1} role="dialog" aria-modal="true" aria-label={locale === "ja" ? "キャンセル確認" : "Cancel subscription"} className="bg-[#111827] border border-[#1e293b] rounded-2xl p-6 max-w-md w-full shadow-2xl outline-none">
+            <div ref={churnModalRef} tabIndex={-1} role="dialog" aria-modal="true" aria-label={locale === "ja" ? "キャンセル確認" : "Cancel subscription"} className="bg-[var(--bg-card)] border border-[var(--border-color)] rounded-2xl p-6 max-w-md w-full shadow-2xl outline-none">
               <div className="flex items-start justify-between mb-4">
                 <h3 className="text-lg font-bold">
                   {locale === "ja" ? "本当にキャンセルしますか？" : "Before you go…"}
                 </h3>
-                <button onClick={() => { setShowChurnModal(false); }} className="text-[#475569] hover:text-white" aria-label={locale === "ja" ? "閉じる" : "Close"}>
+                <button onClick={() => { setShowChurnModal(false); }} className="text-[var(--text-muted)] hover:text-white" aria-label={locale === "ja" ? "閉じる" : "Close"}>
                   <X size={18} />
                 </button>
               </div>
 
               {/* Value reminder */}
-              <div className="mb-5 p-4 rounded-xl bg-[#FFD700]/[0.04] border border-[#FFD700]/20">
+              <div className="mb-5 p-4 rounded-xl bg-[var(--gold)]/[0.04] border border-[var(--gold)]/20">
                 <p className="text-sm text-[#e2e8f0] mb-2 font-medium">
                   {locale === "ja" ? "解約すると以下を失います:" : "You&apos;ll lose access to:"}
                 </p>
-                <ul className="space-y-1.5 text-sm text-[#94a3b8]">
+                <ul className="space-y-1.5 text-sm text-[var(--text-secondary)]">
                   {(currentPlan === "pro"
                     ? [
                         locale === "ja" ? "DORA コンプライアンスレポート (PDF)" : "DORA compliance reports (PDF)",
@@ -639,7 +639,7 @@ export default function SettingsPage() {
                       ]
                   ).map((item) => (
                     <li key={item} className="flex items-center gap-2">
-                      <Check size={12} className="text-[#FFD700] shrink-0" />
+                      <Check size={12} className="text-[var(--gold)] shrink-0" />
                       {item}
                     </li>
                   ))}
@@ -654,7 +654,7 @@ export default function SettingsPage() {
                     {locale === "ja" ? "特別オファー: 30%割引クーポン" : "Special offer: 30% off coupon"}
                   </p>
                 </div>
-                <p className="text-xs text-[#94a3b8] mb-3">
+                <p className="text-xs text-[var(--text-secondary)] mb-3">
                   {locale === "ja"
                     ? "キャンセルする前に、次の3ヶ月を30%オフでお試しください。"
                     : "Try 3 more months at 30% off before canceling."}
@@ -674,7 +674,7 @@ export default function SettingsPage() {
 
               {/* Cancellation reason */}
               <div className="mb-5">
-                <p className="text-xs text-[#64748b] mb-2">
+                <p className="text-xs text-[var(--text-muted)] mb-2">
                   {locale === "ja" ? "解約理由を教えてください（任意）:" : "What's your reason for canceling? (optional)"}
                 </p>
                 <div className="grid grid-cols-2 gap-2">
@@ -687,8 +687,8 @@ export default function SettingsPage() {
                       onClick={() => { setChurnReason(reason); }}
                       className={`text-xs px-3 py-2 rounded-lg border transition-colors ${
                         churnReason === reason
-                          ? "border-[#FFD700]/40 text-[#FFD700] bg-[#FFD700]/10"
-                          : "border-[#1e293b] text-[#94a3b8] hover:border-[#334155]"
+                          ? "border-[var(--gold)]/40 text-[var(--gold)] bg-[var(--gold)]/10"
+                          : "border-[var(--border-color)] text-[var(--text-secondary)] hover:border-[var(--border-color)]"
                       }`}
                     >
                       {reason}
@@ -701,14 +701,14 @@ export default function SettingsPage() {
               <div className="flex gap-3">
                 <button
                   onClick={() => { setShowChurnModal(false); }}
-                  className="flex-1 py-2.5 rounded-xl bg-[#FFD700] text-[#0a0e1a] text-sm font-bold hover:bg-[#ffe44d] transition-colors"
+                  className="flex-1 py-2.5 rounded-xl bg-[var(--gold)] text-[#0a0e1a] text-sm font-bold hover:bg-[#ffe44d] transition-colors"
                 >
                   {locale === "ja" ? "プランを維持する" : "Keep my plan"}
                 </button>
                 <a
                   href="mailto:support@faultray.com?subject=Cancel%20subscription"
                   onClick={() => { setShowChurnModal(false); }}
-                  className="flex-1 py-2.5 rounded-xl border border-[#1e293b] text-[#64748b] text-sm text-center hover:text-white hover:border-[#334155] transition-colors"
+                  className="flex-1 py-2.5 rounded-xl border border-[var(--border-color)] text-[var(--text-muted)] text-sm text-center hover:text-white hover:border-[var(--border-color)] transition-colors"
                 >
                   {locale === "ja" ? "解約を続ける" : "Proceed to cancel"}
                 </a>
@@ -718,9 +718,9 @@ export default function SettingsPage() {
         )}
 
         {/* Coupon Code */}
-        <div id="coupon-section" className="mt-6 pt-6 border-t border-[#1e293b]">
+        <div id="coupon-section" className="mt-6 pt-6 border-t border-[var(--border-color)]">
           <h3 className="text-sm font-semibold mb-3 flex items-center gap-2">
-            <Gift size={16} className="text-[#FFD700]" />
+            <Gift size={16} className="text-[var(--gold)]" />
             {locale === "ja" ? "クーポンコード" : "Coupon Code"}
           </h3>
           <div className="flex gap-2">
@@ -731,7 +731,7 @@ export default function SettingsPage() {
               placeholder="FRAY-XXXX-XXXX-XXXX"
               value={couponCode}
               onChange={(e) => setCouponCode(e.target.value.toUpperCase())}
-              className="flex-1 px-3 py-2 rounded-lg bg-[#0d1117] border border-[#1e293b] text-white text-sm placeholder-[#475569] focus:border-[#FFD700] focus:outline-none"
+              className="flex-1 px-3 py-2 rounded-lg bg-[var(--bg-tertiary)] border border-[var(--border-color)] text-white text-sm placeholder-[var(--text-muted)] focus:border-[var(--gold)] focus:outline-none"
             />
             <Button onClick={handleRedeemCoupon} disabled={!couponCode || redeemingCoupon} size="sm">
               {redeemingCoupon
@@ -747,7 +747,7 @@ export default function SettingsPage() {
         </div>
 
         {isAdmin && (
-          <div className="mt-6 pt-6 border-t border-[#1e293b]">
+          <div className="mt-6 pt-6 border-t border-[var(--border-color)]">
             <div className="flex items-center gap-2 mb-3">
               <Shield size={16} className="text-red-400" />
               <span className="text-sm font-semibold text-red-400">{t.adminSwitch}</span>
@@ -760,8 +760,8 @@ export default function SettingsPage() {
                   onClick={() => handlePlanSwitch(plan)}
                   className={`px-4 py-2 text-sm rounded-lg font-medium transition-all ${
                     currentPlan === plan
-                      ? "bg-[#FFD700] text-[#0a0e1a]"
-                      : "border border-[#1e293b] text-[#94a3b8] hover:border-[#64748b] hover:text-white disabled:opacity-50"
+                      ? "bg-[var(--gold)] text-[#0a0e1a]"
+                      : "border border-[var(--border-color)] text-[var(--text-secondary)] hover:border-[#64748b] hover:text-white disabled:opacity-50"
                   }`}
                 >
                   {switchingPlan ? "..." : plan.charAt(0).toUpperCase() + plan.slice(1)}
@@ -785,30 +785,30 @@ export default function SettingsPage() {
       <Card className="mb-6">
         <div className="flex items-center justify-between mb-6">
           <div className="flex items-center gap-3">
-            <Key size={20} className="text-[#FFD700]" />
+            <Key size={20} className="text-[var(--gold)]" />
             <h2 className="text-lg font-bold">{t.apiKeys}</h2>
           </div>
           <Button variant="secondary" size="sm" onClick={handleGenerateKey}>
             <Plus size={14} /> {t.generateKey}
           </Button>
         </div>
-        <p className="text-sm text-[#94a3b8] mb-4">{t.apiKeysDesc}</p>
+        <p className="text-sm text-[var(--text-secondary)] mb-4">{t.apiKeysDesc}</p>
 
         {apiKeys.length === 0 ? (
-          <div className="p-6 rounded-xl border border-dashed border-[#1e293b] text-center">
-            <Key size={20} className="mx-auto mb-2 text-[#64748b]" />
-            <p className="text-sm text-[#94a3b8]">{t.noApiKeys}</p>
-            <p className="text-xs text-[#64748b]">{t.noApiKeysDesc}</p>
+          <div className="p-6 rounded-xl border border-dashed border-[var(--border-color)] text-center">
+            <Key size={20} className="mx-auto mb-2 text-[var(--text-muted)]" />
+            <p className="text-sm text-[var(--text-secondary)]">{t.noApiKeys}</p>
+            <p className="text-xs text-[var(--text-muted)]">{t.noApiKeysDesc}</p>
           </div>
         ) : (
           <div className="space-y-3">
             {apiKeys.map((k) => (
-              <div key={k.key} className="flex items-center gap-3 p-3 rounded-lg bg-[#0d1117] border border-[#1e293b]">
+              <div key={k.key} className="flex items-center gap-3 p-3 rounded-lg bg-[var(--bg-tertiary)] border border-[var(--border-color)]">
                 <code className="flex-1 text-sm font-mono text-[#e2e8f0] truncate">{k.key}</code>
-                <span className="text-xs text-[#64748b] shrink-0">{t.created} {k.created}</span>
+                <span className="text-xs text-[var(--text-muted)] shrink-0">{t.created} {k.created}</span>
                 <button
                   onClick={() => handleCopyKey(k.key)}
-                  className="p-1.5 rounded-md hover:bg-white/10 transition-colors text-[#64748b] hover:text-white"
+                  className="p-1.5 rounded-md hover:bg-white/10 transition-colors text-[var(--text-muted)] hover:text-white"
                   title={locale === "ja" ? "コピー" : "Copy"}
                   aria-label={locale === "ja" ? "APIキーをコピー" : "Copy API key"}
                 >
@@ -816,7 +816,7 @@ export default function SettingsPage() {
                 </button>
                 <button
                   onClick={() => handleDeleteKey(k.key)}
-                  className="p-1.5 rounded-md hover:bg-red-500/10 transition-colors text-[#64748b] hover:text-red-400"
+                  className="p-1.5 rounded-md hover:bg-red-500/10 transition-colors text-[var(--text-muted)] hover:text-red-400"
                   title={locale === "ja" ? "削除" : "Delete"}
                   aria-label={locale === "ja" ? "APIキーを削除" : "Delete API key"}
                 >
@@ -831,16 +831,16 @@ export default function SettingsPage() {
       {/* JOURNEY-05: 紹介プログラム */}
       <Card className="mb-6">
         <div className="flex items-center gap-3 mb-4">
-          <Gift size={20} className="text-[#FFD700]" />
+          <Gift size={20} className="text-[var(--gold)]" />
           <h2 className="text-lg font-bold">{locale === "ja" ? "紹介プログラム" : "Refer a Friend"}</h2>
         </div>
-        <p className="text-sm text-[#94a3b8] mb-4">
+        <p className="text-sm text-[var(--text-secondary)] mb-4">
           {locale === "ja"
             ? "FaultRayをチームに紹介してください。紹介した方がProプランに登録すると、両者に1ヶ月分のクレジットを付与します。"
             : "Share FaultRay with your team. When they subscribe to Pro, you both get 1 month free."}
         </p>
-        <div className="p-4 rounded-xl bg-[#0d1117] border border-[#1e293b] flex items-center gap-3">
-          <code className="flex-1 text-sm font-mono text-[#FFD700]">
+        <div className="p-4 rounded-xl bg-[var(--bg-tertiary)] border border-[var(--border-color)] flex items-center gap-3">
+          <code className="flex-1 text-sm font-mono text-[var(--gold)]">
             https://faultray.com/?ref={user?.email?.split("@")[0] ?? "yourname"}
           </code>
           <button
@@ -848,13 +848,13 @@ export default function SettingsPage() {
               const url = `https://faultray.com/?ref=${user?.email?.split("@")[0] ?? "yourname"}`;
               navigator.clipboard.writeText(url);
             }}
-            className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-lg bg-[#1e293b] text-[#94a3b8] hover:text-white hover:bg-[#2d3748] transition-colors shrink-0"
+            className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-lg bg-[var(--border-color)] text-[var(--text-secondary)] hover:text-white hover:bg-[#2d3748] transition-colors shrink-0"
           >
             <Copy size={12} />
             {locale === "ja" ? "コピー" : "Copy"}
           </button>
         </div>
-        <p className="text-xs text-[#475569] mt-3">
+        <p className="text-xs text-[var(--text-muted)] mt-3">
           {locale === "ja"
             ? "※ クレジットは紹介先の有料登録確認後に付与されます。紹介プログラムは近日公開予定です。"
             : "Credits are applied after the referred user's paid subscription is confirmed. Program coming soon."}
@@ -865,7 +865,7 @@ export default function SettingsPage() {
       <Card className="mb-6">
         <div className="flex items-center justify-between mb-6">
           <div className="flex items-center gap-3">
-            <Bell size={20} className="text-[#FFD700]" />
+            <Bell size={20} className="text-[var(--gold)]" />
             <h2 className="text-lg font-bold">{t.notifications}</h2>
           </div>
           {notificationSaved && (
@@ -898,12 +898,12 @@ export default function SettingsPage() {
             <div key={n.key} className="flex items-center justify-between py-2">
               <div>
                 <p className="text-sm font-medium">{n.label}</p>
-                <p className="text-xs text-[#64748b]">{n.desc}</p>
+                <p className="text-xs text-[var(--text-muted)]">{n.desc}</p>
               </div>
               <button
                 onClick={() => toggleNotification(n.key)}
                 className={`relative w-11 h-6 rounded-full transition-colors ${
-                  notifications[n.key] ? "bg-[#FFD700]" : "bg-[#1e293b]"
+                  notifications[n.key] ? "bg-[var(--gold)]" : "bg-[var(--border-color)]"
                 }`}
               >
                 <span
@@ -920,10 +920,10 @@ export default function SettingsPage() {
       {/* Integrations */}
       <Card className="mb-6">
         <div className="flex items-center gap-3 mb-6">
-          <Link2 size={20} className="text-[#FFD700]" />
+          <Link2 size={20} className="text-[var(--gold)]" />
           <h2 className="text-lg font-bold">{t.integrations}</h2>
         </div>
-        <p className="text-sm text-[#94a3b8] mb-4">{t.integrationsDesc}</p>
+        <p className="text-sm text-[var(--text-secondary)] mb-4">{t.integrationsDesc}</p>
         {/* LSTORAGE-01: Webhook URLのlocalStorage保存に関するセキュリティ注記 */}
         <div className="flex items-start gap-2 p-3 mb-4 rounded-lg bg-amber-500/[0.06] border border-amber-500/20">
           <AlertTriangle size={14} className="text-amber-400 shrink-0 mt-0.5" />
@@ -935,46 +935,46 @@ export default function SettingsPage() {
         </div>
         <div className="space-y-4">
           <div>
-            <label htmlFor="settings-jira-domain" className="block text-sm text-[#64748b] mb-1">{t.jiraDomain}</label>
+            <label htmlFor="settings-jira-domain" className="block text-sm text-[var(--text-muted)] mb-1">{t.jiraDomain}</label>
             <input
               id="settings-jira-domain"
               type="text"
               value={integrations.jiraDomain}
               onChange={(e) => setIntegrations({ ...integrations, jiraDomain: e.target.value })}
-              className="w-full bg-white/[0.05] border border-[#1e293b] rounded-lg px-3 py-2 text-sm text-white focus:border-[#FFD700] focus:outline-none"
+              className="w-full bg-white/[0.05] border border-[var(--border-color)] rounded-lg px-3 py-2 text-sm text-white focus:border-[var(--gold)] focus:outline-none"
               placeholder={t.jiraDomainPlaceholder}
             />
           </div>
           <div>
-            <label htmlFor="settings-backlog-space" className="block text-sm text-[#64748b] mb-1">{t.backlogSpace}</label>
+            <label htmlFor="settings-backlog-space" className="block text-sm text-[var(--text-muted)] mb-1">{t.backlogSpace}</label>
             <input
               id="settings-backlog-space"
               type="text"
               value={integrations.backlogSpace}
               onChange={(e) => setIntegrations({ ...integrations, backlogSpace: e.target.value })}
-              className="w-full bg-white/[0.05] border border-[#1e293b] rounded-lg px-3 py-2 text-sm text-white focus:border-[#FFD700] focus:outline-none"
+              className="w-full bg-white/[0.05] border border-[var(--border-color)] rounded-lg px-3 py-2 text-sm text-white focus:border-[var(--gold)] focus:outline-none"
               placeholder={t.backlogSpacePlaceholder}
             />
           </div>
           <div>
-            <label htmlFor="settings-slack-webhook" className="block text-sm text-[#64748b] mb-1">{t.slackWebhook}</label>
+            <label htmlFor="settings-slack-webhook" className="block text-sm text-[var(--text-muted)] mb-1">{t.slackWebhook}</label>
             <input
               id="settings-slack-webhook"
               type="text"
               value={integrations.slackWebhook}
               onChange={(e) => setIntegrations({ ...integrations, slackWebhook: e.target.value })}
-              className="w-full bg-white/[0.05] border border-[#1e293b] rounded-lg px-3 py-2 text-sm text-white focus:border-[#FFD700] focus:outline-none"
+              className="w-full bg-white/[0.05] border border-[var(--border-color)] rounded-lg px-3 py-2 text-sm text-white focus:border-[var(--gold)] focus:outline-none"
               placeholder={t.slackWebhookPlaceholder}
             />
           </div>
           <div>
-            <label htmlFor="settings-teams-webhook" className="block text-sm text-[#64748b] mb-1">{t.teamsWebhook ?? "Microsoft Teams Webhook URL"}</label>
+            <label htmlFor="settings-teams-webhook" className="block text-sm text-[var(--text-muted)] mb-1">{t.teamsWebhook ?? "Microsoft Teams Webhook URL"}</label>
             <input
               id="settings-teams-webhook"
               type="text"
               value={integrations.teamsWebhook}
               onChange={(e) => setIntegrations({ ...integrations, teamsWebhook: e.target.value })}
-              className="w-full bg-white/[0.05] border border-[#1e293b] rounded-lg px-3 py-2 text-sm text-white focus:border-[#FFD700] focus:outline-none"
+              className="w-full bg-white/[0.05] border border-[var(--border-color)] rounded-lg px-3 py-2 text-sm text-white focus:border-[var(--gold)] focus:outline-none"
               placeholder={t.teamsWebhookPlaceholder ?? "https://outlook.office.com/webhook/..."}
             />
           </div>
@@ -1003,7 +1003,7 @@ export default function SettingsPage() {
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm font-medium">{t.deleteAccount}</p>
-              <p className="text-xs text-[#64748b]">{t.deleteAccountDesc}</p>
+              <p className="text-xs text-[var(--text-muted)]">{t.deleteAccountDesc}</p>
             </div>
             <Button variant="danger" size="sm" onClick={() => setShowDeleteConfirm(true)}>
               {t.deleteAccount}
@@ -1015,7 +1015,7 @@ export default function SettingsPage() {
               <AlertTriangle size={16} className="text-red-400" />
               <p className="text-sm font-medium text-red-400">{t.areYouSure}</p>
             </div>
-            <p className="text-xs text-[#94a3b8] mb-4">{t.deleteConfirm}</p>
+            <p className="text-xs text-[var(--text-secondary)] mb-4">{t.deleteConfirm}</p>
             {deleteError && (
               <p className="text-xs text-red-400 mb-3 flex items-center gap-1">
                 <AlertTriangle size={12} />

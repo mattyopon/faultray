@@ -229,19 +229,19 @@ export default function FiscPage() {
   const overallScore = Math.round(DEMO_CATEGORIES.reduce((s, c) => s + c.score, 0) / DEMO_CATEGORIES.length);
 
   return (
-    <div className="max-w-[1200px] mx-auto px-6 py-10">
+    <div className="w-full px-6 py-10">
       {/* Header */}
       <div className="mb-8">
         <div className="flex items-center gap-3 mb-2">
           <h1 className="text-2xl font-bold flex items-center gap-3">
-            <Landmark size={24} className="text-[#FFD700]" />
+            <Landmark size={24} className="text-[var(--gold)]" />
             FISC 安全対策基準
           </h1>
-          <div className="px-3 py-1 rounded-full bg-[#1e293b] border border-[#334155] text-xs font-semibold text-[#94a3b8]">
+          <div className="px-3 py-1 rounded-full bg-[var(--border-color)] border border-[var(--border-color)] text-xs font-semibold text-[var(--text-secondary)]">
             Japan Financial
           </div>
         </div>
-        <p className="text-[#94a3b8] text-sm">
+        <p className="text-[var(--text-secondary)] text-sm">
           金融情報システムセンター（FISC）安全対策基準への準拠状況 (Layer 4)
         </p>
       </div>
@@ -249,26 +249,26 @@ export default function FiscPage() {
       {/* Overview Score */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
         <Card className="text-center">
-          <p className="text-xs text-[#64748b] uppercase tracking-wider mb-1">総合スコア</p>
+          <p className="text-xs text-[var(--text-muted)] uppercase tracking-wider mb-1">総合スコア</p>
           <p className="text-5xl font-extrabold font-mono" style={{ color: scoreColor(overallScore) }}>{overallScore}%</p>
           <Badge variant={overallScore >= 80 ? "green" : overallScore >= 60 ? "yellow" : "red"} className="mt-2">
             {overallScore >= 80 ? "準拠" : overallScore >= 60 ? "一部準拠" : "要対応"}
           </Badge>
         </Card>
         <Card className="text-center">
-          <p className="text-xs text-[#64748b] uppercase tracking-wider mb-1">準拠コントロール</p>
+          <p className="text-xs text-[var(--text-muted)] uppercase tracking-wider mb-1">準拠コントロール</p>
           <p className="text-4xl font-extrabold font-mono text-emerald-400">{compliantCount}</p>
-          <p className="text-xs text-[#64748b] mt-1">/ {totalControls} 件</p>
+          <p className="text-xs text-[var(--text-muted)] mt-1">/ {totalControls} 件</p>
         </Card>
         <Card className="text-center">
-          <p className="text-xs text-[#64748b] uppercase tracking-wider mb-1">重大ギャップ</p>
+          <p className="text-xs text-[var(--text-muted)] uppercase tracking-wider mb-1">重大ギャップ</p>
           <p className="text-4xl font-extrabold font-mono text-red-400">{DEMO_GAPS.filter((g) => g.severity === "critical").length}</p>
-          <p className="text-xs text-[#64748b] mt-1">即時対応が必要</p>
+          <p className="text-xs text-[var(--text-muted)] mt-1">即時対応が必要</p>
         </Card>
         <Card className="text-center">
-          <p className="text-xs text-[#64748b] uppercase tracking-wider mb-1">カテゴリ数</p>
+          <p className="text-xs text-[var(--text-muted)] uppercase tracking-wider mb-1">カテゴリ数</p>
           <p className="text-4xl font-extrabold font-mono text-[#e2e8f0]">{DEMO_CATEGORIES.length}</p>
-          <p className="text-xs text-[#64748b] mt-1">管理領域</p>
+          <p className="text-xs text-[var(--text-muted)] mt-1">管理領域</p>
         </Card>
       </div>
 
@@ -276,7 +276,7 @@ export default function FiscPage() {
       <Card className="mb-8">
         <div className="flex items-center justify-between mb-4">
           <h3 className="text-base font-bold flex items-center gap-2">
-            <Shield size={16} className="text-[#FFD700]" />
+            <Shield size={16} className="text-[var(--gold)]" />
             管理カテゴリ別スコア
           </h3>
           <Button size="sm" variant="secondary">
@@ -293,16 +293,16 @@ export default function FiscPage() {
               >
                 <div className="flex items-center gap-3 py-2">
                   {expandedCategory === cat.id
-                    ? <ChevronDown size={13} className="text-[#64748b] shrink-0" />
-                    : <ChevronRight size={13} className="text-[#64748b] shrink-0" />}
+                    ? <ChevronDown size={13} className="text-[var(--text-muted)] shrink-0" />
+                    : <ChevronRight size={13} className="text-[var(--text-muted)] shrink-0" />}
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center justify-between mb-1">
                       <div className="flex items-center gap-2">
                         <span className="text-sm font-medium text-[#e2e8f0]">{cat.nameJa}</span>
-                        <span className="text-xs text-[#475569]">({cat.nameEn})</span>
+                        <span className="text-xs text-[var(--text-muted)]">({cat.nameEn})</span>
                       </div>
                       <div className="flex items-center gap-3 shrink-0 ml-4">
-                        <span className="text-xs text-[#64748b]">{cat.compliant}/{cat.total}</span>
+                        <span className="text-xs text-[var(--text-muted)]">{cat.compliant}/{cat.total}</span>
                         <Badge variant={statusVariant(cat.status)}>{statusLabel(cat.status)}</Badge>
                         <span className="text-sm font-bold font-mono min-w-[44px] text-right" style={{ color: scoreColor(cat.score) }}>
                           {cat.score}%
@@ -337,9 +337,9 @@ export default function FiscPage() {
                         : ctrl.status === "partial"
                           ? <AlertTriangle size={13} className="text-yellow-400 shrink-0" />
                           : <XCircle size={13} className="text-red-400 shrink-0" />}
-                      <span className="font-mono text-xs text-[#64748b] shrink-0">{ctrl.id}</span>
+                      <span className="font-mono text-xs text-[var(--text-muted)] shrink-0">{ctrl.id}</span>
                       <span className="flex-1">{ctrl.description}</span>
-                      <span className="text-xs text-[#64748b] shrink-0 hidden md:block">{ctrl.lastAssessed}</span>
+                      <span className="text-xs text-[var(--text-muted)] shrink-0 hidden md:block">{ctrl.lastAssessed}</span>
                       {ctrl.evidence
                         ? <Badge variant="default" className="shrink-0"><FileText size={10} className="mr-1" />あり</Badge>
                         : <Badge variant="red" className="shrink-0">未提出</Badge>}
@@ -355,7 +355,7 @@ export default function FiscPage() {
       {/* Gap Analysis */}
       <Card>
         <h3 className="text-base font-bold mb-4 flex items-center gap-2">
-          <AlertTriangle size={16} className="text-[#FFD700]" />
+          <AlertTriangle size={16} className="text-[var(--gold)]" />
           ギャップ分析 — 優先対応事項
         </h3>
         <div className="space-y-3">
@@ -369,16 +369,16 @@ export default function FiscPage() {
               }`}
             >
               <div className="flex items-start gap-3">
-                <span className="text-sm font-bold text-[#FFD700] shrink-0 w-5">{i + 1}.</span>
+                <span className="text-sm font-bold text-[var(--gold)] shrink-0 w-5">{i + 1}.</span>
                 <div className="flex-1">
                   <div className="flex items-center gap-2 mb-1 flex-wrap">
-                    <span className="font-mono text-xs text-[#64748b]">{gap.controlId}</span>
+                    <span className="font-mono text-xs text-[var(--text-muted)]">{gap.controlId}</span>
                     <Badge variant={gap.severity === "critical" ? "red" : "yellow"}>
                       {gap.severity === "critical" ? "重大" : "高"}
                     </Badge>
                   </div>
                   <p className="text-sm text-[#e2e8f0] mb-1">{gap.description}</p>
-                  <p className="text-xs text-[#FFD700] flex items-center gap-1">
+                  <p className="text-xs text-[var(--gold)] flex items-center gap-1">
                     <ArrowRight size={10} />
                     {gap.remediation}
                   </p>
@@ -387,7 +387,7 @@ export default function FiscPage() {
             </div>
           ))}
         </div>
-        <p className="text-xs text-[#475569] mt-4 border-t border-[#1e293b] pt-3">
+        <p className="text-xs text-[var(--text-muted)] mt-4 border-t border-[var(--border-color)] pt-3">
           FISC安全対策基準 第10版（2024年改訂）に基づく評価 · 次回定期評価: 2026-07-01
         </p>
       </Card>

@@ -85,11 +85,11 @@ function StatCard({
     <Card className="p-6">
       <div className="flex items-start justify-between">
         <div>
-          <p className="text-xs text-[#64748b] uppercase tracking-wider mb-1">
+          <p className="text-xs text-[var(--text-muted)] uppercase tracking-wider mb-1">
             {label}
           </p>
           <p className="text-2xl font-bold text-white">{value}</p>
-          {sub && <p className="text-xs text-[#94a3b8] mt-1">{sub}</p>}
+          {sub && <p className="text-xs text-[var(--text-secondary)] mt-1">{sub}</p>}
         </div>
         <div className={`p-2.5 rounded-lg ${color}`}>
           <Icon size={20} />
@@ -145,15 +145,15 @@ function PeopleRiskPreview({ locale }: { locale: string }) {
     <div className="min-h-screen bg-[#0a0f1e] text-white">
       {/* Hero */}
       <div className="px-6 py-16 md:py-24 max-w-5xl mx-auto text-center">
-        <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-[#FFD700]/10 border border-[#FFD700]/20 text-[#FFD700] text-xs font-semibold mb-6">
+        <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-[var(--gold)]/10 border border-[var(--gold)]/20 text-[var(--gold)] text-xs font-semibold mb-6">
           <Lock size={12} />
           {isJa ? "ログインが必要です" : "Login required"}
         </div>
         <h1 className="text-3xl md:text-4xl font-bold text-white mb-4">
-          <span className="text-[#FFD700]">People Risk</span>{" "}
+          <span className="text-[var(--gold)]">People Risk</span>{" "}
           {isJa ? "— 属人化リスクを可視化する" : "— Visualize Personalization Risk"}
         </h1>
-        <p className="text-[#94a3b8] text-base md:text-lg max-w-2xl mx-auto mb-8">
+        <p className="text-[var(--text-secondary)] text-base md:text-lg max-w-2xl mx-auto mb-8">
           {isJa
             ? "誰が退職したら何が壊れるか、今すぐ把握しましょう。GAS棚卸しから退職シミュレーションまで、属人化リスクを一元管理。"
             : "Know exactly what breaks if someone leaves — today. From GAS inventory to departure simulation, manage all personalization risk in one place."}
@@ -174,12 +174,12 @@ function PeopleRiskPreview({ locale }: { locale: string }) {
       </div>
 
       {/* Stats bar */}
-      <div className="border-y border-[#1e293b] py-8">
+      <div className="border-y border-[var(--border-color)] py-8">
         <div className="max-w-3xl mx-auto grid grid-cols-3 gap-6 px-6 text-center">
           {stats.map((s) => (
             <div key={s.label}>
-              <p className="text-2xl font-bold text-[#FFD700]">{s.value}</p>
-              <p className="text-xs text-[#64748b] mt-1">{s.label}</p>
+              <p className="text-2xl font-bold text-[var(--gold)]">{s.value}</p>
+              <p className="text-xs text-[var(--text-muted)] mt-1">{s.label}</p>
             </div>
           ))}
         </div>
@@ -196,12 +196,12 @@ function PeopleRiskPreview({ locale }: { locale: string }) {
             return (
               <Card key={f.title} className="p-6">
                 <div className="flex items-start gap-4">
-                  <div className="w-10 h-10 rounded-lg bg-[#FFD700]/10 flex items-center justify-center shrink-0">
-                    <Icon size={20} className="text-[#FFD700]" />
+                  <div className="w-10 h-10 rounded-lg bg-[var(--gold)]/10 flex items-center justify-center shrink-0">
+                    <Icon size={20} className="text-[var(--gold)]" />
                   </div>
                   <div>
                     <h3 className="text-sm font-semibold text-white mb-1">{f.title}</h3>
-                    <p className="text-xs text-[#64748b] leading-relaxed">{f.desc}</p>
+                    <p className="text-xs text-[var(--text-muted)] leading-relaxed">{f.desc}</p>
                   </div>
                 </div>
               </Card>
@@ -212,11 +212,11 @@ function PeopleRiskPreview({ locale }: { locale: string }) {
 
       {/* CTA */}
       <div className="px-6 pb-20 max-w-xl mx-auto text-center">
-        <Card className="p-8 border-[#FFD700]/20">
+        <Card className="p-8 border-[var(--gold)]/20">
           <h3 className="text-lg font-bold text-white mb-2">
             {isJa ? "今すぐ属人化リスクを把握する" : "Start mapping your people risk now"}
           </h3>
-          <p className="text-sm text-[#64748b] mb-6">
+          <p className="text-sm text-[var(--text-muted)] mb-6">
             {isJa
               ? "無料プランで最大5名・5システムまで登録可能。クレジットカード不要。"
               : "Free plan supports up to 5 members and 5 systems. No credit card required."}
@@ -265,10 +265,10 @@ export default function PeopleRiskDashboard() {
     return (
       <div className="p-6 md:p-10 max-w-7xl mx-auto">
         <div className="animate-pulse space-y-6">
-          <div className="h-8 w-64 bg-[#1e293b] rounded" />
+          <div className="h-8 w-64 bg-[var(--border-color)] rounded" />
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
             {[...Array(4)].map((_, i) => (
-              <div key={i} className="h-28 bg-[#1e293b] rounded-2xl" />
+              <div key={i} className="h-28 bg-[var(--border-color)] rounded-2xl" />
             ))}
           </div>
         </div>
@@ -285,10 +285,10 @@ export default function PeopleRiskDashboard() {
     return (
       <div className="p-6 md:p-10 max-w-7xl mx-auto">
         <div className="animate-pulse space-y-6">
-          <div className="h-8 w-64 bg-[#1e293b] rounded" />
+          <div className="h-8 w-64 bg-[var(--border-color)] rounded" />
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
             {[...Array(4)].map((_, i) => (
-              <div key={i} className="h-28 bg-[#1e293b] rounded-2xl" />
+              <div key={i} className="h-28 bg-[var(--border-color)] rounded-2xl" />
             ))}
           </div>
         </div>
@@ -309,10 +309,10 @@ export default function PeopleRiskDashboard() {
       <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold text-white flex items-center gap-2">
-            <UserX size={24} className="text-[#FFD700]" />
+            <UserX size={24} className="text-[var(--gold)]" />
             {t.title}
           </h1>
-          <p className="text-sm text-[#94a3b8] mt-1">
+          <p className="text-sm text-[var(--text-secondary)] mt-1">
             {t.subtitle}
           </p>
         </div>
@@ -369,7 +369,7 @@ export default function PeopleRiskDashboard() {
         {/* Risk Distribution */}
         <Card className="p-6">
           <h2 className="text-sm font-semibold text-white mb-4 flex items-center gap-2">
-            <Shield size={16} className="text-[#FFD700]" />
+            <Shield size={16} className="text-[var(--gold)]" />
             {locale === "ja" ? "リスクレベル分布" : "Risk Level Distribution"}
           </h2>
           <div className="space-y-3">
@@ -404,11 +404,11 @@ export default function PeopleRiskDashboard() {
                 <div key={item.label}>
                   <div className="flex items-center justify-between text-xs mb-1">
                     <span className={item.textColor}>{item.label}</span>
-                    <span className="text-[#94a3b8]">
+                    <span className="text-[var(--text-secondary)]">
                       {item.count}件 ({pct}%)
                     </span>
                   </div>
-                  <div className="h-2 bg-[#1e293b] rounded-full overflow-hidden">
+                  <div className="h-2 bg-[var(--border-color)] rounded-full overflow-hidden">
                     <div
                       className={`h-full ${item.color} rounded-full transition-all duration-500`}
                       style={{ width: `${pct}%` }}
@@ -432,7 +432,7 @@ export default function PeopleRiskDashboard() {
                 <Sparkline
                   data={snapshots.map((s) => s.avg_risk_score ?? 0)}
                 />
-                <div className="text-xs text-[#94a3b8]">
+                <div className="text-xs text-[var(--text-secondary)]">
                   <p>
                     最新:{" "}
                     <span className="text-white font-semibold">
@@ -454,7 +454,7 @@ export default function PeopleRiskDashboard() {
               <div className="overflow-x-auto">
                 <table className="w-full text-xs">
                   <thead>
-                    <tr className="text-[#64748b] border-b border-[#1e293b]">
+                    <tr className="text-[var(--text-muted)] border-b border-[var(--border-color)]">
                       <th scope="col" className="text-left py-2 font-medium">週</th>
                       <th scope="col" className="text-right py-2 font-medium">リスクスコア</th>
                       <th scope="col" className="text-right py-2 font-medium">BF=1</th>
@@ -468,9 +468,9 @@ export default function PeopleRiskDashboard() {
                       .map((s) => (
                         <tr
                           key={s.id}
-                          className="border-b border-[#1e293b]/50"
+                          className="border-b border-[var(--border-color)]/50"
                         >
-                          <td className="py-2 text-[#94a3b8]">
+                          <td className="py-2 text-[var(--text-secondary)]">
                             {s.week_start}
                           </td>
                           <td className="py-2 text-right text-white">
@@ -479,7 +479,7 @@ export default function PeopleRiskDashboard() {
                           <td className="py-2 text-right text-yellow-400">
                             {s.bus_factor_1_count}
                           </td>
-                          <td className="py-2 text-right text-[#94a3b8]">
+                          <td className="py-2 text-right text-[var(--text-secondary)]">
                             {s.total_systems}
                           </td>
                         </tr>
@@ -489,7 +489,7 @@ export default function PeopleRiskDashboard() {
               </div>
             </div>
           ) : (
-            <p className="text-sm text-[#64748b]">データがありません</p>
+            <p className="text-sm text-[var(--text-muted)]">データがありません</p>
           )}
         </Card>
       </div>
@@ -529,20 +529,20 @@ export default function PeopleRiskDashboard() {
               const Icon = link.icon;
               return (
                 <Link key={link.href} href={link.href}>
-                  <div className="flex items-center gap-3 p-3 rounded-lg border border-[#1e293b] hover:border-[#FFD700]/30 hover:bg-[#1a2035] transition-all group">
+                  <div className="flex items-center gap-3 p-3 rounded-lg border border-[var(--border-color)] hover:border-[var(--gold)]/30 hover:bg-[var(--bg-card-hover)] transition-all group">
                     <Icon
                       size={18}
-                      className="text-[#64748b] group-hover:text-[#FFD700] transition-colors shrink-0"
+                      className="text-[var(--text-muted)] group-hover:text-[var(--gold)] transition-colors shrink-0"
                     />
                     <div className="min-w-0">
-                      <p className="text-sm font-medium text-white group-hover:text-[#FFD700] transition-colors">
+                      <p className="text-sm font-medium text-white group-hover:text-[var(--gold)] transition-colors">
                         {link.label}
                       </p>
-                      <p className="text-xs text-[#64748b]">{link.desc}</p>
+                      <p className="text-xs text-[var(--text-muted)]">{link.desc}</p>
                     </div>
                     <ArrowRight
                       size={14}
-                      className="ml-auto text-[#475569] group-hover:text-[#FFD700] transition-colors shrink-0"
+                      className="ml-auto text-[var(--text-muted)] group-hover:text-[var(--gold)] transition-colors shrink-0"
                     />
                   </div>
                 </Link>
@@ -566,7 +566,7 @@ export default function PeopleRiskDashboard() {
           </div>
           <div className="space-y-2">
             {criticalActions.length === 0 ? (
-              <p className="text-sm text-[#64748b]">
+              <p className="text-sm text-[var(--text-muted)]">
                 {locale === "ja" ? "緊急対応が必要なアクションはありません" : "No critical actions pending."}
               </p>
             ) : (
@@ -582,7 +582,7 @@ export default function PeopleRiskDashboard() {
                   <div className="min-w-0">
                     <p className="text-sm text-white">{action.title}</p>
                     {action.systems && (
-                      <p className="text-xs text-[#64748b] mt-0.5">
+                      <p className="text-xs text-[var(--text-muted)] mt-0.5">
                         {locale === "ja" ? "対象:" : "System:"} {action.systems.name}
                       </p>
                     )}

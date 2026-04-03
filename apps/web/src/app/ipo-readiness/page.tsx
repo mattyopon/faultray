@@ -290,40 +290,40 @@ export default function IpoReadinessPage() {
         {/* Header */}
         <div className="mb-8">
           <div className="flex items-center gap-3 mb-2">
-            <TrendingUp size={28} className="text-[#FFD700]" />
+            <TrendingUp size={28} className="text-[var(--gold)]" />
             <h1 className="text-2xl font-bold">{t.title}</h1>
           </div>
-          <p className="text-[#94a3b8]">{t.subtitle}</p>
+          <p className="text-[var(--text-secondary)]">{t.subtitle}</p>
         </div>
 
         {/* Score overview */}
-        <Card className="bg-[#0f1629] border-[#1e293b] p-6 mb-6">
+        <Card className="bg-[#0f1629] border-[var(--border-color)] p-6 mb-6">
           <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-4">
             <div>
-              <p className="text-xs text-[#64748b] uppercase tracking-wider mb-1">{t.overallScore}</p>
+              <p className="text-xs text-[var(--text-muted)] uppercase tracking-wider mb-1">{t.overallScore}</p>
               <div className="flex items-baseline gap-2">
                 <span className={`text-5xl font-bold ${overallColor}`}>{overall}</span>
-                <span className="text-[#475569] text-lg">/100</span>
+                <span className="text-[var(--text-muted)] text-lg">/100</span>
               </div>
             </div>
             <div className="flex items-center gap-4 text-sm">
               <div className="flex items-center gap-1.5">
                 <CheckCircle2 size={14} className="text-green-400" />
-                <span className="text-[#94a3b8]">{ready} {t.statusReady}</span>
+                <span className="text-[var(--text-secondary)]">{ready} {t.statusReady}</span>
               </div>
               <div className="flex items-center gap-1.5">
                 <AlertTriangle size={14} className="text-yellow-400" />
-                <span className="text-[#94a3b8]">{needsWork} {t.statusNeedsWork}</span>
+                <span className="text-[var(--text-secondary)]">{needsWork} {t.statusNeedsWork}</span>
               </div>
               <div className="flex items-center gap-1.5">
                 <XCircle size={14} className="text-red-400" />
-                <span className="text-[#94a3b8]">{notStarted} {t.statusNotStarted}</span>
+                <span className="text-[var(--text-secondary)]">{notStarted} {t.statusNotStarted}</span>
               </div>
             </div>
           </div>
 
           {/* Progress bar */}
-          <div className="w-full bg-[#1e293b] rounded-full h-2.5 overflow-hidden">
+          <div className="w-full bg-[var(--border-color)] rounded-full h-2.5 overflow-hidden">
             <div
               className={`h-2.5 rounded-full transition-all duration-700 ${
                 overall >= 80 ? "bg-green-400" : overall >= 60 ? "bg-yellow-400" : "bg-red-400"
@@ -331,7 +331,7 @@ export default function IpoReadinessPage() {
               style={{ width: progressWidth }}
             />
           </div>
-          <div className="flex justify-between text-[10px] text-[#475569] mt-1">
+          <div className="flex justify-between text-[10px] text-[var(--text-muted)] mt-1">
             <span>0</span>
             <span>50</span>
             <span>100</span>
@@ -339,7 +339,7 @@ export default function IpoReadinessPage() {
         </Card>
 
         {/* Checklist */}
-        <Card className="bg-[#0f1629] border-[#1e293b] p-6 mb-6">
+        <Card className="bg-[#0f1629] border-[var(--border-color)] p-6 mb-6">
           <h2 className="text-sm font-semibold text-white mb-4">{t.checklistTitle}</h2>
           <div className="space-y-2">
             {CHECKLIST.map((item) => {
@@ -349,7 +349,7 @@ export default function IpoReadinessPage() {
                 <div
                   key={item.id}
                   className={`rounded-lg border transition-colors ${
-                    isExpanded ? "border-[#334155] bg-[#060b16]" : "border-[#1e293b] hover:border-[#334155]"
+                    isExpanded ? "border-[var(--border-color)] bg-[#060b16]" : "border-[var(--border-color)] hover:border-[var(--border-color)]"
                   }`}
                 >
                   {/* Row */}
@@ -357,15 +357,15 @@ export default function IpoReadinessPage() {
                     className="w-full flex items-center gap-3 p-4 text-left"
                     onClick={() => setExpandedId(isExpanded ? null : item.id)}
                   >
-                    <div className="w-8 h-8 rounded-lg bg-[#1e293b] flex items-center justify-center shrink-0">
-                      <Icon size={15} className="text-[#64748b]" />
+                    <div className="w-8 h-8 rounded-lg bg-[var(--border-color)] flex items-center justify-center shrink-0">
+                      <Icon size={15} className="text-[var(--text-muted)]" />
                     </div>
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2 mb-0.5">
                         {getStatusIcon(item.status)}
                         <p className="text-sm font-medium text-white">{t[item.titleKey]}</p>
                       </div>
-                      <p className="text-xs text-[#64748b] truncate">{t[item.descKey]}</p>
+                      <p className="text-xs text-[var(--text-muted)] truncate">{t[item.descKey]}</p>
                     </div>
                     <div className="flex items-center gap-3 shrink-0">
                       <Badge className={`text-[9px] ${getStatusColor(item.status)}`}>
@@ -384,19 +384,19 @@ export default function IpoReadinessPage() {
                       </span>
                       <ChevronRight
                         size={14}
-                        className={`text-[#475569] transition-transform ${isExpanded ? "rotate-90" : ""}`}
+                        className={`text-[var(--text-muted)] transition-transform ${isExpanded ? "rotate-90" : ""}`}
                       />
                     </div>
                   </button>
 
                   {/* Expanded details */}
                   {isExpanded && (
-                    <div className="px-4 pb-4 border-t border-[#1e293b]">
+                    <div className="px-4 pb-4 border-t border-[var(--border-color)]">
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5 mt-3 mb-3">
                         {item.details.map((detail, i) => (
                           <div key={i} className="flex items-start gap-2">
                             <div className="w-1 h-1 rounded-full bg-[#475569] mt-1.5 shrink-0" />
-                            <p className="text-xs text-[#64748b]">{detail}</p>
+                            <p className="text-xs text-[var(--text-muted)]">{detail}</p>
                           </div>
                         ))}
                       </div>
@@ -404,7 +404,7 @@ export default function IpoReadinessPage() {
                         <Button
                           size="sm"
                           variant="secondary"
-                          className="h-7 text-xs border-[#334155] text-[#94a3b8] hover:text-white"
+                          className="h-7 text-xs border-[var(--border-color)] text-[var(--text-secondary)] hover:text-white"
                         >
                           {t.viewPage} <ChevronRight size={11} className="ml-1" />
                         </Button>
@@ -418,14 +418,14 @@ export default function IpoReadinessPage() {
         </Card>
 
         {/* Generate package */}
-        <Card className="bg-[#0f1629] border-[#1e293b] p-6">
+        <Card className="bg-[#0f1629] border-[var(--border-color)] p-6">
           <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
             <div className="flex-1">
               <div className="flex items-center gap-2 mb-1">
-                <FileSearch size={18} className="text-[#FFD700]" />
+                <FileSearch size={18} className="text-[var(--gold)]" />
                 <h3 className="text-sm font-semibold text-white">{t.generatePackage}</h3>
               </div>
-              <p className="text-xs text-[#64748b]">{t.packageDesc}</p>
+              <p className="text-xs text-[var(--text-muted)]">{t.packageDesc}</p>
             </div>
             <div className="flex items-center gap-3 shrink-0">
               {reportReady && (
@@ -441,7 +441,7 @@ export default function IpoReadinessPage() {
               <Button
                 onClick={handleGenerate}
                 disabled={generating}
-                className="bg-[#FFD700] text-black hover:bg-[#FFD700]/90 disabled:opacity-60"
+                className="bg-[var(--gold)] text-black hover:bg-[var(--gold)]/90 disabled:opacity-60"
               >
                 {generating ? (
                   <>
@@ -465,8 +465,8 @@ export default function IpoReadinessPage() {
                 const Icon = item.icon;
                 return (
                   <div key={item.id} className="bg-[#060b16] rounded-lg p-3 text-center">
-                    <Icon size={16} className="text-[#475569] mx-auto mb-1" />
-                    <p className="text-[10px] text-[#475569] mb-1 truncate">{t[item.titleKey]}</p>
+                    <Icon size={16} className="text-[var(--text-muted)] mx-auto mb-1" />
+                    <p className="text-[10px] text-[var(--text-muted)] mb-1 truncate">{t[item.titleKey]}</p>
                     <p className={`text-lg font-bold ${
                       item.score >= 85 ? "text-green-400" : item.score >= 65 ? "text-yellow-400" : "text-red-400"
                     }`}>{item.score}</p>

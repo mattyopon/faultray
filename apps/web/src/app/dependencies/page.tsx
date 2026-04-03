@@ -187,14 +187,14 @@ export default function DependenciesPage() {
   const downCount = DEMO_SERVICES.filter((s) => s.status === "red").length;
 
   return (
-    <div className="max-w-[1200px] mx-auto px-6 py-10">
+    <div className="w-full px-6 py-10">
       {/* Header */}
       <div className="mb-8">
         <h1 className="text-2xl font-bold mb-1 flex items-center gap-3">
-          <GitBranch size={24} className="text-[#FFD700]" />
+          <GitBranch size={24} className="text-[var(--gold)]" />
           Dependency Map
         </h1>
-        <p className="text-[#94a3b8] text-sm">
+        <p className="text-[var(--text-secondary)] text-sm">
           &ldquo;If X stops, what breaks?&rdquo; — Blast radius analysis for non-engineers (Layer 1)
         </p>
       </div>
@@ -208,7 +208,7 @@ export default function DependenciesPage() {
           { label: "Healthy", value: DEMO_SERVICES.filter((s) => s.status === "green").length, color: "#10b981" },
         ].map((stat) => (
           <Card key={stat.label} className="text-center">
-            <p className="text-xs text-[#64748b] uppercase tracking-wider mb-1">{stat.label}</p>
+            <p className="text-xs text-[var(--text-muted)] uppercase tracking-wider mb-1">{stat.label}</p>
             <p className="text-3xl font-extrabold font-mono" style={{ color: stat.color }}>{stat.value}</p>
           </Card>
         ))}
@@ -222,7 +222,7 @@ export default function DependenciesPage() {
             <p className="text-sm font-semibold text-yellow-300">
               Personalization Alert: {alertCount} services with ≤2 owners
             </p>
-            <p className="text-xs text-[#94a3b8] mt-0.5">
+            <p className="text-xs text-[var(--text-secondary)] mt-0.5">
               These services are a knowledge risk. If the owner leaves or is unavailable, the team may not be able to respond to incidents.
             </p>
           </div>
@@ -233,7 +233,7 @@ export default function DependenciesPage() {
         {/* Service Grid */}
         <div className="lg:col-span-3">
           <Card>
-            <h3 className="text-sm font-semibold text-[#94a3b8] uppercase tracking-wider mb-4 flex items-center gap-2">
+            <h3 className="text-sm font-semibold text-[var(--text-secondary)] uppercase tracking-wider mb-4 flex items-center gap-2">
               <GitBranch size={14} />
               Services · Click to see blast radius
             </h3>
@@ -247,10 +247,10 @@ export default function DependenciesPage() {
                     key={svc.id}
                     className={`text-left p-4 rounded-xl border transition-all ${
                       isSelected
-                        ? "border-[#FFD700]/40 bg-[#FFD700]/5"
+                        ? "border-[var(--gold)]/40 bg-[var(--gold)]/5"
                         : isAffected
                           ? "border-red-500/30 bg-red-500/5"
-                          : "border-[#1e293b] bg-white/[0.02] hover:bg-white/[0.04] hover:border-[#334155]"
+                          : "border-[var(--border-color)] bg-white/[0.02] hover:bg-white/[0.04] hover:border-[var(--border-color)]"
                     }`}
                     onClick={() => setSelectedService(isSelected ? null : svc.id)}
                   >
@@ -264,10 +264,10 @@ export default function DependenciesPage() {
                       )}
                     </div>
 
-                    <p className="text-xs text-[#64748b] mb-3 leading-relaxed">{svc.description}</p>
+                    <p className="text-xs text-[var(--text-muted)] mb-3 leading-relaxed">{svc.description}</p>
 
                     <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-1.5 text-xs text-[#64748b]">
+                      <div className="flex items-center gap-1.5 text-xs text-[var(--text-muted)]">
                         <Users size={12} />
                         <span>
                           {svc.ownerCount} {svc.ownerCount === 1 ? "owner" : "owners"}
@@ -283,9 +283,9 @@ export default function DependenciesPage() {
 
                     {svc.dependsOn.length > 0 && (
                       <div className="mt-2 flex flex-wrap gap-1">
-                        <span className="text-[10px] text-[#475569]">depends on:</span>
+                        <span className="text-[10px] text-[var(--text-muted)]">depends on:</span>
                         {svc.dependsOn.map((dep) => (
-                          <span key={dep} className="text-[10px] bg-white/5 px-1.5 rounded text-[#94a3b8]">{dep}</span>
+                          <span key={dep} className="text-[10px] bg-white/5 px-1.5 rounded text-[var(--text-secondary)]">{dep}</span>
                         ))}
                       </div>
                     )}
@@ -299,7 +299,7 @@ export default function DependenciesPage() {
         {/* Blast Radius Panel */}
         <div className="lg:col-span-2">
           <Card className="sticky top-24">
-            <h3 className="text-sm font-semibold text-[#94a3b8] uppercase tracking-wider mb-4 flex items-center gap-2">
+            <h3 className="text-sm font-semibold text-[var(--text-secondary)] uppercase tracking-wider mb-4 flex items-center gap-2">
               <AlertTriangle size={14} />
               Blast Radius
             </h3>
@@ -307,22 +307,22 @@ export default function DependenciesPage() {
             {!selected ? (
               <div className="text-center py-8">
                 <GitBranch size={32} className="text-[#1e293b] mx-auto mb-3" />
-                <p className="text-sm text-[#64748b]">{locale === "ja" ? "サービスを選択して、停止時の影響を確認してください。" : "Select a service to see what breaks if it stops."}</p>
+                <p className="text-sm text-[var(--text-muted)]">{locale === "ja" ? "サービスを選択して、停止時の影響を確認してください。" : "Select a service to see what breaks if it stops."}</p>
               </div>
             ) : (
               <div>
                 {/* Selected service */}
-                <div className="p-3 rounded-xl border border-[#FFD700]/30 bg-[#FFD700]/5 mb-4">
+                <div className="p-3 rounded-xl border border-[var(--gold)]/30 bg-[var(--gold)]/5 mb-4">
                   <div className="flex items-center gap-2 mb-1">
                     <TrafficLight status={selected.status} />
-                    <span className="text-sm font-bold text-[#FFD700]">{selected.name}</span>
+                    <span className="text-sm font-bold text-[var(--gold)]">{selected.name}</span>
                   </div>
-                  <p className="text-xs text-[#94a3b8]">{selected.description}</p>
+                  <p className="text-xs text-[var(--text-secondary)]">{selected.description}</p>
                 </div>
 
                 <div className="flex items-center gap-2 mb-3">
                   <ArrowRight size={14} className="text-red-400" />
-                  <span className="text-xs text-[#94a3b8]">
+                  <span className="text-xs text-[var(--text-secondary)]">
                     If this stops, <strong className="text-red-400">{blastRadius.length}</strong> service{blastRadius.length !== 1 ? "s" : ""} will be affected:
                   </span>
                 </div>
@@ -330,7 +330,7 @@ export default function DependenciesPage() {
                 {blastRadius.length === 0 ? (
                   <div className="flex items-center gap-2 p-3 rounded-lg bg-emerald-500/5 border border-emerald-500/15">
                     <CheckCircle2 size={14} className="text-emerald-400 shrink-0" />
-                    <p className="text-xs text-[#94a3b8]">{locale === "ja" ? "下流の依存がありません。安全にオフラインにできます。" : "No downstream dependents. Safe to take offline."}</p>
+                    <p className="text-xs text-[var(--text-secondary)]">{locale === "ja" ? "下流の依存がありません。安全にオフラインにできます。" : "No downstream dependents. Safe to take offline."}</p>
                   </div>
                 ) : (
                   <div className="space-y-2">
@@ -342,17 +342,17 @@ export default function DependenciesPage() {
                         <XCircle size={14} className="text-red-400 shrink-0" />
                         <div className="flex-1 min-w-0">
                           <p className="text-sm font-medium text-[#e2e8f0]">{affected.name}</p>
-                          <p className="text-xs text-[#64748b] truncate">{affected.description}</p>
+                          <p className="text-xs text-[var(--text-muted)] truncate">{affected.description}</p>
                         </div>
                         <TrafficLight status={affected.status} />
                       </div>
                     ))}
 
-                    <div className="mt-3 p-3 rounded-lg border border-[#1e293b] bg-white/[0.02]">
-                      <p className="text-xs text-[#64748b] flex items-start gap-1">
+                    <div className="mt-3 p-3 rounded-lg border border-[var(--border-color)] bg-white/[0.02]">
+                      <p className="text-xs text-[var(--text-muted)] flex items-start gap-1">
                         <Info size={11} className="shrink-0 mt-0.5" />
                         Total users impacted by this outage: estimate{" "}
-                        <strong className="text-[#94a3b8] ml-1">
+                        <strong className="text-[var(--text-secondary)] ml-1">
                           {blastRadius.some((s) => s.id === "web" || s.id === "api") ? "100%" : "partial"}
                         </strong>
                       </p>
@@ -361,8 +361,8 @@ export default function DependenciesPage() {
                 )}
 
                 {/* Owners */}
-                <div className="mt-4 pt-4 border-t border-[#1e293b]">
-                  <p className="text-xs text-[#64748b] mb-2 flex items-center gap-1">
+                <div className="mt-4 pt-4 border-t border-[var(--border-color)]">
+                  <p className="text-xs text-[var(--text-muted)] mb-2 flex items-center gap-1">
                     <Users size={11} />
                     Service owners:
                   </p>
@@ -370,7 +370,7 @@ export default function DependenciesPage() {
                     {Array.from({ length: selected.ownerCount }).map((_, i) => (
                       <div
                         key={i}
-                        className="w-7 h-7 rounded-full bg-[#1e293b] border border-[#334155] flex items-center justify-center text-xs text-[#64748b]"
+                        className="w-7 h-7 rounded-full bg-[var(--border-color)] border border-[var(--border-color)] flex items-center justify-center text-xs text-[var(--text-muted)]"
                       >
                         {String.fromCharCode(65 + i)}
                       </div>
@@ -389,15 +389,15 @@ export default function DependenciesPage() {
 
           {/* Legend */}
           <Card className="mt-4">
-            <h4 className="text-xs font-semibold text-[#64748b] uppercase tracking-wider mb-3">{locale === "ja" ? "凡例" : "Legend"}</h4>
+            <h4 className="text-xs font-semibold text-[var(--text-muted)] uppercase tracking-wider mb-3">{locale === "ja" ? "凡例" : "Legend"}</h4>
             <div className="space-y-2">
               {(["green", "yellow", "red"] as ServiceStatus[]).map((status) => (
-                <div key={status} className="flex items-center gap-3 text-xs text-[#94a3b8]">
+                <div key={status} className="flex items-center gap-3 text-xs text-[var(--text-secondary)]">
                   <TrafficLight status={status} />
                   <span>{statusLabel(status)} — {locale === "ja" ? (status === "green" ? "正常稼働中" : status === "yellow" ? "パフォーマンス低下" : "サービス停止") : (status === "green" ? "operating normally" : status === "yellow" ? "degraded performance" : "service is down")}</span>
                 </div>
               ))}
-              <div className="flex items-center gap-3 text-xs text-[#94a3b8]">
+              <div className="flex items-center gap-3 text-xs text-[var(--text-secondary)]">
                 <AlertTriangle size={14} className="text-yellow-400" />
                 <span>Personalization alert: ≤2 people know this service</span>
               </div>

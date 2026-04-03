@@ -49,10 +49,10 @@ function ScoreRing({ score, size = 64 }: { score: number; size?: number }) {
 }
 
 function TopologyIcon({ type }: { type?: string }) {
-  if (type === "aws_scan") return <Cloud size={14} className="text-[#FFD700]" />;
+  if (type === "aws_scan") return <Cloud size={14} className="text-[var(--gold)]" />;
   if (type === "k8s_scan") return <Server size={14} className="text-blue-400" />;
   if (type === "terraform") return <GitBranch size={14} className="text-purple-400" />;
-  return <FileCode size={14} className="text-[#64748b]" />;
+  return <FileCode size={14} className="text-[var(--text-muted)]" />;
 }
 
 function TopologyLabel({ type, t }: { type?: string; t: Record<string, string> }) {
@@ -128,27 +128,27 @@ function NewProjectModal({
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
       <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={onClose} />
-      <div ref={modalRef} tabIndex={-1} role="dialog" aria-modal="true" aria-label={t.newProject} className="relative w-full max-w-md bg-[#111827] border border-[#1e293b] rounded-2xl p-6 shadow-2xl outline-none">
+      <div ref={modalRef} tabIndex={-1} role="dialog" aria-modal="true" aria-label={t.newProject} className="relative w-full max-w-md bg-[var(--bg-card)] border border-[var(--border-color)] rounded-2xl p-6 shadow-2xl outline-none">
         <div className="flex items-center justify-between mb-6">
           <h2 className="text-lg font-bold">{t.newProject}</h2>
-          <button onClick={onClose} className="text-[#64748b] hover:text-white transition-colors" aria-label={locale === "ja" ? "閉じる" : "Close"}>
+          <button onClick={onClose} className="text-[var(--text-muted)] hover:text-white transition-colors" aria-label={locale === "ja" ? "閉じる" : "Close"}>
             <X size={20} />
           </button>
         </div>
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
-            <label className="block text-xs text-[#64748b] uppercase tracking-wider mb-2">{t.name}</label>
+            <label className="block text-xs text-[var(--text-muted)] uppercase tracking-wider mb-2">{t.name}</label>
             <input
               value={name}
               onChange={(e) => setName(e.target.value)}
               placeholder="e.g. Production AWS"
               aria-label={t.name}
               required
-              className="w-full px-4 py-2.5 bg-[#0a0e1a] border border-[#1e293b] rounded-lg text-sm text-white placeholder-[#475569] focus:outline-none focus:border-[#FFD700]/50 transition-colors"
+              className="w-full px-4 py-2.5 border border-[var(--border-color)] rounded-lg text-sm text-white placeholder-[var(--text-muted)] focus:outline-none focus:border-[var(--gold)]/50 transition-colors"
             />
           </div>
           <div>
-            <label className="block text-xs text-[#64748b] uppercase tracking-wider mb-2">{t.description}</label>
+            <label className="block text-xs text-[var(--text-muted)] uppercase tracking-wider mb-2">{t.description}</label>
             <textarea
               value={description}
               onChange={(e) => setDescription(e.target.value)}
@@ -156,7 +156,7 @@ function NewProjectModal({
               aria-label={t.description}
               rows={3}
               maxLength={500}
-              className="w-full px-4 py-2.5 bg-[#0a0e1a] border border-[#1e293b] rounded-lg text-sm text-white placeholder-[#475569] focus:outline-none focus:border-[#FFD700]/50 transition-colors resize-none"
+              className="w-full px-4 py-2.5 border border-[var(--border-color)] rounded-lg text-sm text-white placeholder-[var(--text-muted)] focus:outline-none focus:border-[var(--gold)]/50 transition-colors resize-none"
             />
           </div>
           <div className="flex gap-3 pt-2">
@@ -195,7 +195,7 @@ export default function ProjectsPage() {
   }, []);
 
   return (
-    <div className="max-w-[1200px] mx-auto px-6 py-10">
+    <div className="w-full px-6 py-10">
       {fetchError && (
         <div className="mb-4 p-3 bg-red-500/10 border border-red-500/20 rounded-lg text-red-400 text-sm">
           {fetchError}
@@ -206,10 +206,10 @@ export default function ProjectsPage() {
       <div className="flex items-center justify-between mb-10">
         <div>
           <h1 className="text-2xl font-bold mb-1 flex items-center gap-3">
-            <FolderKanban size={24} className="text-[#FFD700]" />
+            <FolderKanban size={24} className="text-[var(--gold)]" />
             {t.title}
           </h1>
-          <p className="text-[#94a3b8] text-sm">{t.subtitle}</p>
+          <p className="text-[var(--text-secondary)] text-sm">{t.subtitle}</p>
         </div>
         <Button onClick={() => setModalOpen(true)}>
           <Plus size={16} />
@@ -221,14 +221,14 @@ export default function ProjectsPage() {
       {loading ? (
         <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
           {[1, 2, 3].map((i) => (
-            <div key={i} className="h-48 rounded-2xl bg-[#111827] border border-[#1e293b] animate-pulse" />
+            <div key={i} className="h-48 rounded-2xl bg-[var(--bg-card)] border border-[var(--border-color)] animate-pulse" />
           ))}
         </div>
       ) : projects.length === 0 ? (
         <div className="text-center py-24">
           <FolderKanban size={48} className="text-[#1e293b] mx-auto mb-4" />
           <p className="text-white font-semibold mb-2">{t.noProjects}</p>
-          <p className="text-[#64748b] text-sm mb-6">{t.createFirst}</p>
+          <p className="text-[var(--text-muted)] text-sm mb-6">{t.createFirst}</p>
           <Button onClick={() => setModalOpen(true)}>
             <Plus size={16} />
             {t.newProject}
@@ -238,28 +238,28 @@ export default function ProjectsPage() {
         <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
           {projects.map((project) => (
             <Link key={project.id} href={`/projects/${project.id}`}>
-              <Card className="group cursor-pointer hover:border-[#FFD700]/30 hover:bg-[#1a2035] transition-all duration-200 h-full">
+              <Card className="group cursor-pointer hover:border-[var(--gold)]/30 hover:bg-[var(--bg-card-hover)] transition-all duration-200 h-full">
                 {/* Card Header */}
                 <div className="flex items-start justify-between mb-4">
                   <div className="flex-1 min-w-0 pr-3">
-                    <h3 className="font-bold text-white truncate group-hover:text-[#FFD700] transition-colors">
+                    <h3 className="font-bold text-white truncate group-hover:text-[var(--gold)] transition-colors">
                       {project.name}
                     </h3>
-                    <p className="text-xs text-[#64748b] mt-1 line-clamp-2">
+                    <p className="text-xs text-[var(--text-muted)] mt-1 line-clamp-2">
                       {project.description || "—"}
                     </p>
                   </div>
                   {project.last_score != null ? (
                     <ScoreRing score={project.last_score} size={56} />
                   ) : (
-                    <div className="w-14 h-14 rounded-full border-2 border-[#1e293b] flex items-center justify-center shrink-0">
-                      <span className="text-[10px] text-[#475569]">N/A</span>
+                    <div className="w-14 h-14 rounded-full border-2 border-[var(--border-color)] flex items-center justify-center shrink-0">
+                      <span className="text-[10px] text-[var(--text-muted)]">N/A</span>
                     </div>
                   )}
                 </div>
 
                 {/* Meta */}
-                <div className="space-y-2 text-xs text-[#64748b]">
+                <div className="space-y-2 text-xs text-[var(--text-muted)]">
                   <div className="flex items-center gap-2">
                     <TopologyIcon type={project.topology_type} />
                     <span><TopologyLabel type={project.topology_type} t={t} /></span>
@@ -279,7 +279,7 @@ export default function ProjectsPage() {
                 </div>
 
                 {/* Footer */}
-                <div className="flex items-center justify-between mt-4 pt-4 border-t border-[#1e293b]">
+                <div className="flex items-center justify-between mt-4 pt-4 border-t border-[var(--border-color)]">
                   <Badge variant={project.status === "archived" ? "default" : "green"}>
                     {project.status === "archived" ? t.archived : t.active}
                   </Badge>
@@ -288,7 +288,7 @@ export default function ProjectsPage() {
                       e.preventDefault();
                       router.push(`/simulate?project=${project.id}`);
                     }}
-                    className="flex items-center gap-1.5 text-xs text-[#FFD700] hover:underline"
+                    className="flex items-center gap-1.5 text-xs text-[var(--gold)] hover:underline"
                   >
                     <Zap size={12} />
                     {t.runSimulation}

@@ -75,13 +75,13 @@ export default function TimelinePage() {
   ];
 
   return (
-    <div className="max-w-[1200px] mx-auto px-6 py-10">
+    <div className="w-full px-6 py-10">
       <div className="mb-8">
         <h1 className="text-2xl font-bold mb-1 flex items-center gap-3">
-          <Clock size={24} className="text-[#FFD700]" />
+          <Clock size={24} className="text-[var(--gold)]" />
           {t.title}
         </h1>
-        <p className="text-[#94a3b8] text-sm">{t.subtitle}</p>
+        <p className="text-[var(--text-secondary)] text-sm">{t.subtitle}</p>
       </div>
 
       {/* Filters */}
@@ -93,8 +93,8 @@ export default function TimelinePage() {
               onClick={() => setTypeFilter(key)}
               className={`px-3 py-1.5 text-xs rounded-md border transition-colors ${
                 typeFilter === key
-                  ? "border-[#FFD700]/50 bg-[#FFD700]/10 text-[#FFD700]"
-                  : "border-[#1e293b] text-[#64748b] hover:text-white"
+                  ? "border-[var(--gold)]/50 bg-[var(--gold)]/10 text-[var(--gold)]"
+                  : "border-[var(--border-color)] text-[var(--text-muted)] hover:text-white"
               }`}
             >
               {label}
@@ -108,8 +108,8 @@ export default function TimelinePage() {
               onClick={() => setTimeRange(range)}
               className={`px-3 py-1.5 text-xs rounded-md border transition-colors ${
                 timeRange === range
-                  ? "border-[#FFD700]/50 bg-[#FFD700]/10 text-[#FFD700]"
-                  : "border-[#1e293b] text-[#64748b] hover:text-white"
+                  ? "border-[var(--gold)]/50 bg-[var(--gold)]/10 text-[var(--gold)]"
+                  : "border-[var(--border-color)] text-[var(--text-muted)] hover:text-white"
               }`}
             >
               {range === "24h" ? t.last24h : range === "3d" ? t.last3d : t.last7d}
@@ -125,7 +125,7 @@ export default function TimelinePage() {
           return (
             <div key={type} className="flex items-center gap-2 text-sm">
               <div className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: TYPE_COLORS[type] }} />
-              <span className="text-[#64748b] capitalize">{type}</span>
+              <span className="text-[var(--text-muted)] capitalize">{type}</span>
               <span className="text-white font-mono font-bold">{count}</span>
             </div>
           );
@@ -135,12 +135,12 @@ export default function TimelinePage() {
       {/* Timeline */}
       {filtered.length === 0 ? (
         <Card className="text-center py-12">
-          <p className="text-[#64748b]">{t.noEvents}</p>
+          <p className="text-[var(--text-muted)]">{t.noEvents}</p>
         </Card>
       ) : (
         <div className="relative pl-8">
           {/* Vertical line */}
-          <div className="absolute left-[15px] top-0 bottom-0 w-0.5 bg-[#1e293b]" />
+          <div className="absolute left-[15px] top-0 bottom-0 w-0.5 bg-[var(--border-color)]" />
 
           <div className="space-y-4">
             {filtered.map((ev) => {
@@ -165,9 +165,9 @@ export default function TimelinePage() {
                           <Badge variant="default">{ev.component}</Badge>
                         </div>
                         <p className="font-semibold text-sm mb-1">{ev.title}</p>
-                        <p className="text-xs text-[#94a3b8]">{ev.description}</p>
+                        <p className="text-xs text-[var(--text-secondary)]">{ev.description}</p>
                       </div>
-                      <p className="text-xs text-[#475569] shrink-0 font-mono whitespace-nowrap">{ev.timestamp}</p>
+                      <p className="text-xs text-[var(--text-muted)] shrink-0 font-mono whitespace-nowrap">{ev.timestamp}</p>
                     </div>
                   </Card>
                 </div>

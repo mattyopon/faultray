@@ -107,28 +107,28 @@ function ScanPreview({ summary }: { summary: CloudSimulationResult["scan_summary
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         <div>
           <p className="text-2xl font-bold font-mono text-white">{summary.components_found}</p>
-          <p className="text-xs text-[#64748b]">{locale === "ja" ? "コンポーネント" : "Components"}</p>
+          <p className="text-xs text-[var(--text-muted)]">{locale === "ja" ? "コンポーネント" : "Components"}</p>
         </div>
         <div>
           <p className="text-2xl font-bold font-mono text-white">{summary.dependencies_inferred}</p>
-          <p className="text-xs text-[#64748b]">{locale === "ja" ? "依存関係" : "Dependencies"}</p>
+          <p className="text-xs text-[var(--text-muted)]">{locale === "ja" ? "依存関係" : "Dependencies"}</p>
         </div>
         {summary.region && (
           <div>
             <p className="text-sm font-mono text-white">{summary.region}</p>
-            <p className="text-xs text-[#64748b]">{locale === "ja" ? "リージョン" : "Region"}</p>
+            <p className="text-xs text-[var(--text-muted)]">{locale === "ja" ? "リージョン" : "Region"}</p>
           </div>
         )}
         {summary.scan_duration_seconds != null && (
           <div>
             <p className="text-sm font-mono text-white">{summary.scan_duration_seconds}s</p>
-            <p className="text-xs text-[#64748b]">{locale === "ja" ? "スキャン時間" : "Scan Time"}</p>
+            <p className="text-xs text-[var(--text-muted)]">{locale === "ja" ? "スキャン時間" : "Scan Time"}</p>
           </div>
         )}
       </div>
       {summary.warnings && summary.warnings.length > 0 && (
         <div className="mt-3 pt-3 border-t border-emerald-500/10">
-          <p className="text-xs text-[#94a3b8]">{locale === "ja" ? `スキャン中に${summary.warnings.length}件の警告が発生しました` : `${summary.warnings.length} warning(s) during scan`}</p>
+          <p className="text-xs text-[var(--text-secondary)]">{locale === "ja" ? `スキャン中に${summary.warnings.length}件の警告が発生しました` : `${summary.warnings.length} warning(s) during scan`}</p>
         </div>
       )}
     </div>
@@ -142,7 +142,7 @@ function CalculationEvidencePanel({ evidence, t }: { evidence: CalculationEviden
 
   const layerColors: Record<string, { bar: string; text: string; border: string; bg: string }> = {
     Software: { bar: "bg-emerald-400", text: "text-emerald-400", border: "border-emerald-500/20", bg: "bg-emerald-500/5" },
-    Hardware: { bar: "bg-[#FFD700]", text: "text-[#FFD700]", border: "border-[#FFD700]/20", bg: "bg-[#FFD700]/5" },
+    Hardware: { bar: "bg-[var(--gold)]", text: "text-[var(--gold)]", border: "border-[var(--gold)]/20", bg: "bg-[var(--gold)]/5" },
     Theoretical: { bar: "bg-blue-400", text: "text-blue-400", border: "border-blue-500/20", bg: "bg-blue-500/5" },
     Operational: { bar: "bg-purple-400", text: "text-purple-400", border: "border-purple-500/20", bg: "bg-purple-500/5" },
     "External SLA": { bar: "bg-orange-400", text: "text-orange-400", border: "border-orange-500/20", bg: "bg-orange-500/5" },
@@ -156,16 +156,16 @@ function CalculationEvidencePanel({ evidence, t }: { evidence: CalculationEviden
   const lowestLayer = sortedLayers[0];
 
   return (
-    <Card className="border-[#1e293b]">
+    <Card className="border-[var(--border-color)]">
       <button
         onClick={() => setOpen(!open)}
         className="flex items-center justify-between w-full"
       >
         <div className="flex items-center gap-3">
-          <Layers size={18} className="text-[#FFD700]" />
+          <Layers size={18} className="text-[var(--gold)]" />
           <h3 className="text-base font-bold">Calculation Evidence</h3>
         </div>
-        {open ? <ChevronUp size={16} className="text-[#64748b]" /> : <ChevronDown size={16} className="text-[#64748b]" />}
+        {open ? <ChevronUp size={16} className="text-[var(--text-muted)]" /> : <ChevronDown size={16} className="text-[var(--text-muted)]" />}
       </button>
 
       {open && (
@@ -174,13 +174,13 @@ function CalculationEvidencePanel({ evidence, t }: { evidence: CalculationEviden
           <div className="flex items-start gap-3 p-3 rounded-xl bg-blue-500/[0.05] border border-blue-500/20">
             <Info size={15} className="text-blue-400 mt-0.5 shrink-0" />
             <div className="min-w-0">
-              <p className="text-xs text-[#94a3b8] leading-relaxed">{t.layerExplanation ?? "Each layer represents an independent availability ceiling. Your actual availability = min(all layers) = weakest link."}</p>
+              <p className="text-xs text-[var(--text-secondary)] leading-relaxed">{t.layerExplanation ?? "Each layer represents an independent availability ceiling. Your actual availability = min(all layers) = weakest link."}</p>
               <p className="text-xs text-blue-400 mt-1">{t.focusOnLowest ?? "Focus on improving the lowest-scoring layer first."}</p>
             </div>
           </div>
 
           {evidence.layers.map((layer) => {
-            const colors = layerColors[layer.name] ?? { bar: "bg-[#94a3b8]", text: "text-[#94a3b8]", border: "border-[#1e293b]", bg: "bg-white/[0.02]" };
+            const colors = layerColors[layer.name] ?? { bar: "bg-[#94a3b8]", text: "text-[var(--text-secondary)]", border: "border-[var(--border-color)]", bg: "bg-white/[0.02]" };
             const isBottleneck = lowestLayer?.name === layer.name;
             const isExpanded = expandedLayer === layer.name;
 
@@ -202,8 +202,8 @@ function CalculationEvidencePanel({ evidence, t }: { evidence: CalculationEviden
                     </div>
                     <div className="flex items-center gap-3">
                       <span className={`text-sm font-mono font-bold ${colors.text}`}>{layer.nines.toFixed(2)} nines</span>
-                      <span className="text-xs text-[#64748b]">max {layer.max_possible.toFixed(2)}</span>
-                      {isExpanded ? <ChevronUp size={14} className="text-[#64748b]" /> : <ChevronDown size={14} className="text-[#64748b]" />}
+                      <span className="text-xs text-[var(--text-muted)]">max {layer.max_possible.toFixed(2)}</span>
+                      {isExpanded ? <ChevronUp size={14} className="text-[var(--text-muted)]" /> : <ChevronDown size={14} className="text-[var(--text-muted)]" />}
                     </div>
                   </div>
                   <div className="h-1.5 bg-white/5 rounded-full overflow-hidden">
@@ -218,11 +218,11 @@ function CalculationEvidencePanel({ evidence, t }: { evidence: CalculationEviden
                       const isNegative = factor.effect.startsWith("-");
                       return (
                         <div key={fi} className="flex items-start justify-between gap-3 text-sm">
-                          <span className="text-[#94a3b8] flex-1">{factor.name}</span>
-                          <span className={`font-mono text-xs shrink-0 ${isPositive ? "text-emerald-400" : isNegative ? "text-red-400" : "text-[#64748b]"}`}>
+                          <span className="text-[var(--text-secondary)] flex-1">{factor.name}</span>
+                          <span className={`font-mono text-xs shrink-0 ${isPositive ? "text-emerald-400" : isNegative ? "text-red-400" : "text-[var(--text-muted)]"}`}>
                             {factor.effect}
                           </span>
-                          <span className="text-xs text-[#64748b] max-w-[180px] text-right">{factor.detail}</span>
+                          <span className="text-xs text-[var(--text-muted)] max-w-[180px] text-right">{factor.detail}</span>
                         </div>
                       );
                     })}
@@ -232,7 +232,7 @@ function CalculationEvidencePanel({ evidence, t }: { evidence: CalculationEviden
             );
           })}
 
-          <div className="p-3 rounded-xl bg-white/[0.02] border border-[#1e293b]">
+          <div className="p-3 rounded-xl bg-white/[0.02] border border-[var(--border-color)]">
             <p className="text-xs text-red-400 mb-2 font-medium">{evidence.bottleneck}</p>
             <code className="text-xs font-mono text-emerald-400">{evidence.formula}</code>
           </div>
@@ -259,16 +259,16 @@ function CascadeSimulationsPanel({ cascades }: { cascades: CascadeSimulation[] }
     s === "CRITICAL" ? "bg-red-500/10 text-red-400 border-red-500/20" : "bg-orange-500/10 text-orange-400 border-orange-500/20";
 
   return (
-    <Card className="border-[#1e293b]">
+    <Card className="border-[var(--border-color)]">
       <div className="flex items-center gap-3 mb-5">
         <Activity size={18} className="text-orange-400" />
         <h3 className="text-base font-bold">Cascade Failure Simulation</h3>
-        <span className="text-xs text-[#64748b]">Top {cascades.length} scenarios</span>
+        <span className="text-xs text-[var(--text-muted)]">Top {cascades.length} scenarios</span>
       </div>
 
       <div className="space-y-3">
         {cascades.map((cs) => (
-          <div key={cs.id} className="rounded-xl border border-[#1e293b] bg-[#111827] overflow-hidden">
+          <div key={cs.id} className="rounded-xl border border-[var(--border-color)] bg-[var(--bg-card)] overflow-hidden">
             <button
               onClick={() => setExpandedId(expandedId === cs.id ? null : cs.id)}
               className="w-full p-4 text-left"
@@ -276,7 +276,7 @@ function CascadeSimulationsPanel({ cascades }: { cascades: CascadeSimulation[] }
               <div className="flex items-start justify-between gap-3">
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2 mb-2 flex-wrap">
-                    <span className="text-xs font-mono text-[#64748b]">{cs.id}</span>
+                    <span className="text-xs font-mono text-[var(--text-muted)]">{cs.id}</span>
                     <span className={`px-2 py-0.5 text-[0.6875rem] font-bold rounded-full border ${severityStyle(cs.severity)}`}>{cs.severity}</span>
                   </div>
                   <p className="text-sm font-medium text-white">{cs.trigger}</p>
@@ -285,40 +285,40 @@ function CascadeSimulationsPanel({ cascades }: { cascades: CascadeSimulation[] }
                   <div className="flex items-center gap-1.5 text-xs text-red-400">
                     <AlertTriangle size={12} />
                     <span className="font-bold">{cs.blast_radius_percent}%</span>
-                    <span className="text-[#64748b]">blast radius</span>
+                    <span className="text-[var(--text-muted)]">blast radius</span>
                   </div>
-                  <div className="flex items-center gap-1.5 text-xs text-[#64748b]">
+                  <div className="flex items-center gap-1.5 text-xs text-[var(--text-muted)]">
                     <Clock size={12} />
                     <span>{cs.estimated_recovery_minutes}m recovery</span>
                   </div>
-                  <div className="text-xs text-[#64748b]">{cs.affected_components}/{cs.total_components} components</div>
+                  <div className="text-xs text-[var(--text-muted)]">{cs.affected_components}/{cs.total_components} components</div>
                 </div>
               </div>
               <div className="flex items-center justify-end mt-2">
-                {expandedId === cs.id ? <ChevronUp size={14} className="text-[#64748b]" /> : <ChevronDown size={14} className="text-[#64748b]" />}
+                {expandedId === cs.id ? <ChevronUp size={14} className="text-[var(--text-muted)]" /> : <ChevronDown size={14} className="text-[var(--text-muted)]" />}
               </div>
             </button>
 
             {expandedId === cs.id && (
-              <div className="px-4 pb-4 border-t border-[#1e293b] pt-4">
+              <div className="px-4 pb-4 border-t border-[var(--border-color)] pt-4">
                 <div className="relative">
                   {cs.timeline.map((event, i) => {
-                    const style = eventTypeStyle[event.type] ?? { dot: "bg-[#64748b]", label: "text-[#94a3b8]" };
+                    const style = eventTypeStyle[event.type] ?? { dot: "bg-[#64748b]", label: "text-[var(--text-secondary)]" };
                     const isLast = i === cs.timeline.length - 1;
                     return (
                       <div key={i} className="flex gap-3 mb-3 last:mb-0">
                         <div className="flex flex-col items-center">
                           <div className={`w-2.5 h-2.5 rounded-full mt-1 shrink-0 ${style.dot}`} />
-                          {!isLast && <div className="w-px flex-1 bg-[#1e293b] mt-1" />}
+                          {!isLast && <div className="w-px flex-1 bg-[var(--border-color)] mt-1" />}
                         </div>
                         <div className="pb-1 min-w-0">
                           <div className="flex items-baseline gap-2 flex-wrap">
-                            <span className="text-xs font-mono text-[#64748b] shrink-0">{event.time}</span>
+                            <span className="text-xs font-mono text-[var(--text-muted)] shrink-0">{event.time}</span>
                             <span className="text-sm text-white">{event.event}</span>
                           </div>
                           <div className="flex items-center gap-2 mt-0.5">
                             <span className={`text-xs font-mono ${style.label}`}>[{event.component}]</span>
-                            <span className="text-[0.6875rem] text-[#64748b] capitalize">{event.type}</span>
+                            <span className="text-[0.6875rem] text-[var(--text-muted)] capitalize">{event.type}</span>
                           </div>
                         </div>
                       </div>
@@ -377,14 +377,14 @@ function SimulationLogPanel({ log }: { log: SimulationLog }) {
   };
 
   const renderSortIcon = (col: string) => {
-    if (sortBy !== col) return <ChevronDown size={12} className="text-[#64748b] opacity-40" />;
+    if (sortBy !== col) return <ChevronDown size={12} className="text-[var(--text-muted)] opacity-40" />;
     return sortDir === "asc"
-      ? <ChevronUp size={12} className="text-[#FFD700]" />
-      : <ChevronDown size={12} className="text-[#FFD700]" />;
+      ? <ChevronUp size={12} className="text-[var(--gold)]" />
+      : <ChevronDown size={12} className="text-[var(--gold)]" />;
   };
 
   return (
-    <Card className="border-[#1e293b]">
+    <Card className="border-[var(--border-color)]">
       <button
         onClick={() => setOpen(!open)}
         className="flex items-center justify-between w-full"
@@ -394,10 +394,10 @@ function SimulationLogPanel({ log }: { log: SimulationLog }) {
           <h3 className="text-base font-bold">Simulation Log</h3>
         </div>
         <div className="flex items-center gap-3">
-          <span className="text-xs text-[#64748b]">
+          <span className="text-xs text-[var(--text-muted)]">
             {log.total_scenarios} scenarios · {log.duration_ms}ms
           </span>
-          {open ? <ChevronUp size={16} className="text-[#64748b]" /> : <ChevronDown size={16} className="text-[#64748b]" />}
+          {open ? <ChevronUp size={16} className="text-[var(--text-muted)]" /> : <ChevronDown size={16} className="text-[var(--text-muted)]" />}
         </div>
       </button>
 
@@ -410,7 +410,7 @@ function SimulationLogPanel({ log }: { log: SimulationLog }) {
         <span className="text-orange-400 font-semibold">{log.warning} warning</span>
         <button
           onClick={handleDownload}
-          className="ml-auto flex items-center gap-1.5 text-xs text-[#94a3b8] hover:text-white transition-colors"
+          className="ml-auto flex items-center gap-1.5 text-xs text-[var(--text-secondary)] hover:text-white transition-colors"
         >
           <Download size={12} />
           Download Full Log (JSON)
@@ -418,46 +418,46 @@ function SimulationLogPanel({ log }: { log: SimulationLog }) {
       </div>
 
       {open && (
-        <div className="mt-4 overflow-x-auto rounded-xl border border-[#1e293b]">
+        <div className="mt-4 overflow-x-auto rounded-xl border border-[var(--border-color)]">
           <table className="w-full min-w-[600px] border-collapse text-sm">
             <thead>
-              <tr className="bg-[#0d1117]">
-                <th scope="col" className="px-4 py-2.5 text-left text-xs font-semibold text-[#64748b]">
+              <tr className="bg-[var(--bg-tertiary)]">
+                <th scope="col" className="px-4 py-2.5 text-left text-xs font-semibold text-[var(--text-muted)]">
                   <button onClick={() => toggleSort("id")} className="flex items-center gap-1 hover:text-white transition-colors">
                     # {renderSortIcon("id")}
                   </button>
                 </th>
-                <th scope="col" className="px-4 py-2.5 text-left text-xs font-semibold text-[#64748b]">Scenario Name</th>
-                <th scope="col" className="px-4 py-2.5 text-left text-xs font-semibold text-[#64748b]">
+                <th scope="col" className="px-4 py-2.5 text-left text-xs font-semibold text-[var(--text-muted)]">Scenario Name</th>
+                <th scope="col" className="px-4 py-2.5 text-left text-xs font-semibold text-[var(--text-muted)]">
                   <button onClick={() => toggleSort("result")} className="flex items-center gap-1 hover:text-white transition-colors">
                     Result {renderSortIcon("result")}
                   </button>
                 </th>
-                <th scope="col" className="px-4 py-2.5 text-left text-xs font-semibold text-[#64748b]">
+                <th scope="col" className="px-4 py-2.5 text-left text-xs font-semibold text-[var(--text-muted)]">
                   <button onClick={() => toggleSort("risk_score")} className="flex items-center gap-1 hover:text-white transition-colors">
                     Risk Score {renderSortIcon("risk_score")}
                   </button>
                 </th>
-                <th scope="col" className="px-4 py-2.5 text-left text-xs font-semibold text-[#64748b]">Affected</th>
+                <th scope="col" className="px-4 py-2.5 text-left text-xs font-semibold text-[var(--text-muted)]">Affected</th>
               </tr>
             </thead>
             <tbody>
               {sorted.map((s, i) => (
-                <tr key={s.id} className={i < sorted.length - 1 ? "border-b border-[#1e293b]" : ""}>
-                  <td className="px-4 py-2.5 font-mono text-xs text-[#64748b]">{s.id}</td>
-                  <td className="px-4 py-2.5 text-[#94a3b8] max-w-[280px]">{s.name}</td>
+                <tr key={s.id} className={i < sorted.length - 1 ? "border-b border-[var(--border-color)]" : ""}>
+                  <td className="px-4 py-2.5 font-mono text-xs text-[var(--text-muted)]">{s.id}</td>
+                  <td className="px-4 py-2.5 text-[var(--text-secondary)] max-w-[280px]">{s.name}</td>
                   <td className="px-4 py-2.5">{resultBadge(s.result)}</td>
                   <td className="px-4 py-2.5 font-mono text-sm">
                     <span className={s.risk_score >= 8 ? "text-red-400" : s.risk_score >= 5 ? "text-orange-400" : "text-emerald-400"}>
                       {s.risk_score.toFixed(1)}
                     </span>
-                    <span className="text-[#64748b] text-xs">/10</span>
+                    <span className="text-[var(--text-muted)] text-xs">/10</span>
                   </td>
                   <td className="px-4 py-2.5">
                     {s.affected.length === 0 ? (
-                      <span className="text-xs text-[#64748b]">none</span>
+                      <span className="text-xs text-[var(--text-muted)]">none</span>
                     ) : (
-                      <span className="text-xs text-[#94a3b8]">{s.affected.join(", ")}</span>
+                      <span className="text-xs text-[var(--text-secondary)]">{s.affected.join(", ")}</span>
                     )}
                   </td>
                 </tr>
@@ -465,7 +465,7 @@ function SimulationLogPanel({ log }: { log: SimulationLog }) {
             </tbody>
           </table>
           {log.total_scenarios > log.scenarios.length && (
-            <div className="px-4 py-2.5 bg-[#0d1117] border-t border-[#1e293b] text-xs text-[#64748b] text-center">
+            <div className="px-4 py-2.5 bg-[var(--bg-tertiary)] border-t border-[var(--border-color)] text-xs text-[var(--text-muted)] text-center">
               Showing first {log.scenarios.length} of {log.total_scenarios} scenarios. Download full log for all results.
             </div>
           )}
@@ -553,31 +553,31 @@ function NurtureEmailCapture() {
   }
 
   return (
-    <div className="p-5 rounded-2xl border border-[#FFD700]/20 bg-gradient-to-br from-[#FFD700]/[0.04] to-transparent">
+    <div className="p-5 rounded-2xl border border-[var(--gold)]/20 bg-gradient-to-br from-[#FFD700]/[0.04] to-transparent">
       {submitted ? (
         <div className="flex items-center gap-3">
-          <Star size={20} className="text-[#FFD700] shrink-0" />
+          <Star size={20} className="text-[var(--gold)] shrink-0" />
           <div>
             <p className="text-sm font-semibold text-[#e2e8f0]">You&apos;re in! Weekly reliability tips coming your way.</p>
-            <p className="text-xs text-[#64748b] mt-0.5">Check your inbox — unsubscribe anytime.</p>
+            <p className="text-xs text-[var(--text-muted)] mt-0.5">Check your inbox — unsubscribe anytime.</p>
           </div>
         </div>
       ) : (
         <div>
           <div className="flex items-start justify-between mb-3">
             <div className="flex items-center gap-2">
-              <Mail size={18} className="text-[#FFD700]" />
+              <Mail size={18} className="text-[var(--gold)]" />
               <p className="text-sm font-semibold">Get Weekly Reliability Insights</p>
             </div>
             <button
               onClick={handleDismiss}
-              className="text-[#475569] hover:text-white text-xs transition-colors"
+              className="text-[var(--text-muted)] hover:text-white text-xs transition-colors"
               aria-label="Dismiss"
             >
               ✕
             </button>
           </div>
-          <p className="text-xs text-[#94a3b8] mb-4">
+          <p className="text-xs text-[var(--text-secondary)] mb-4">
             One email/week: reliability benchmarks, failure case studies, and new FaultRay features. No spam.
           </p>
           <form onSubmit={handleSubmit} className="flex gap-2">
@@ -588,11 +588,11 @@ function NurtureEmailCapture() {
               onChange={(e) => { setEmail(e.target.value); }}
               placeholder="your@company.com"
               aria-label="Email address"
-              className="flex-1 min-w-0 px-3 py-2 rounded-lg bg-[#0d1117] border border-[#1e293b] text-sm text-white placeholder-[#475569] focus:outline-none focus:border-[#FFD700]/50 transition-colors"
+              className="flex-1 min-w-0 px-3 py-2 rounded-lg bg-[var(--bg-tertiary)] border border-[var(--border-color)] text-sm text-white placeholder-[var(--text-muted)] focus:outline-none focus:border-[var(--gold)]/50 transition-colors"
             />
             <button
               type="submit"
-              className="px-4 py-2 rounded-lg bg-[#FFD700] text-[#0a0e1a] text-sm font-semibold hover:bg-[#ffe44d] transition-colors shrink-0"
+              className="px-4 py-2 rounded-lg bg-[var(--gold)] text-[#0a0e1a] text-sm font-semibold hover:bg-[#ffe44d] transition-colors shrink-0"
             >
               Subscribe
             </button>
@@ -604,7 +604,7 @@ function NurtureEmailCapture() {
 }
 
 function ResultsPanel({ result, scanSummary, simulateT }: { result: SimulationResult; scanSummary?: CloudSimulationResult["scan_summary"]; simulateT: Record<string, string> }) {
-  const scoreColor = result.overall_score >= 90 ? "text-emerald-400" : result.overall_score >= 70 ? "text-[#FFD700]" : "text-red-400";
+  const scoreColor = result.overall_score >= 90 ? "text-emerald-400" : result.overall_score >= 70 ? "text-[var(--gold)]" : "text-red-400";
   const summary = businessSummary(result.overall_score, result.availability_estimate, result.critical_failures.length);
 
   return (
@@ -620,8 +620,8 @@ function ResultsPanel({ result, scanSummary, simulateT }: { result: SimulationRe
           : "border-red-500/20 bg-red-500/[0.05]"
       }`}>
         <p className={`text-lg font-bold mb-1 ${scoreColor}`}>{summary.headline}</p>
-        <p className="text-sm text-[#94a3b8] mb-2">{summary.detail}</p>
-        <p className="text-xs text-[#64748b]">{summary.action}</p>
+        <p className="text-sm text-[var(--text-secondary)] mb-2">{summary.detail}</p>
+        <p className="text-xs text-[var(--text-muted)]">{summary.action}</p>
       </div>
 
       {/* Core score card */}
@@ -632,34 +632,34 @@ function ResultsPanel({ result, scanSummary, simulateT }: { result: SimulationRe
         </div>
 
         <div className="grid md:grid-cols-4 gap-6 mb-6">
-          <div className="text-center p-4 rounded-xl bg-white/[0.02] border border-[#1e293b]">
+          <div className="text-center p-4 rounded-xl bg-white/[0.02] border border-[var(--border-color)]">
             <p className={`text-3xl font-extrabold font-mono ${scoreColor}`}>{result.overall_score.toFixed(1)}</p>
-            <p className="text-xs text-[#64748b] uppercase tracking-wider mt-1">Score</p>
+            <p className="text-xs text-[var(--text-muted)] uppercase tracking-wider mt-1">Score</p>
           </div>
-          <div className="text-center p-4 rounded-xl bg-white/[0.02] border border-[#1e293b]">
+          <div className="text-center p-4 rounded-xl bg-white/[0.02] border border-[var(--border-color)]">
             <p className="text-3xl font-extrabold font-mono text-emerald-400">{result.availability_estimate}</p>
-            <p className="text-xs text-[#64748b] uppercase tracking-wider mt-1">Availability</p>
+            <p className="text-xs text-[var(--text-muted)] uppercase tracking-wider mt-1">Availability</p>
           </div>
-          <div className="text-center p-4 rounded-xl bg-white/[0.02] border border-[#1e293b]">
+          <div className="text-center p-4 rounded-xl bg-white/[0.02] border border-[var(--border-color)]">
             <p className="text-3xl font-extrabold font-mono text-emerald-400">{result.scenarios_passed}</p>
-            <p className="text-xs text-[#64748b] uppercase tracking-wider mt-1">Passed</p>
+            <p className="text-xs text-[var(--text-muted)] uppercase tracking-wider mt-1">Passed</p>
           </div>
-          <div className="text-center p-4 rounded-xl bg-white/[0.02] border border-[#1e293b]">
+          <div className="text-center p-4 rounded-xl bg-white/[0.02] border border-[var(--border-color)]">
             <p className="text-3xl font-extrabold font-mono text-red-400">{result.scenarios_failed}</p>
-            <p className="text-xs text-[#64748b] uppercase tracking-wider mt-1">Failed</p>
+            <p className="text-xs text-[var(--text-muted)] uppercase tracking-wider mt-1">Failed</p>
           </div>
         </div>
 
         {result.layers && (
           <div className="space-y-3 mb-6">
-            <h4 className="text-sm font-semibold text-[#94a3b8]">N-Layer Availability</h4>
+            <h4 className="text-sm font-semibold text-[var(--text-secondary)]">N-Layer Availability</h4>
             {[
               { label: "Software", value: result.layers.software, color: "bg-emerald-400" },
-              { label: "Hardware", value: result.layers.hardware, color: "bg-[#FFD700]" },
+              { label: "Hardware", value: result.layers.hardware, color: "bg-[var(--gold)]" },
               { label: "Theoretical", value: result.layers.theoretical, color: "bg-blue-400" },
             ].map((l) => (
               <div key={l.label} className="grid grid-cols-[80px_1fr_60px] items-center gap-3">
-                <span className="text-xs text-[#64748b]">{l.label}</span>
+                <span className="text-xs text-[var(--text-muted)]">{l.label}</span>
                 <div className="h-2 bg-white/5 rounded-full overflow-hidden">
                   <div className={`h-full rounded-full ${l.color}`} style={{ width: `${(l.value / 7) * 100}%` }} />
                 </div>
@@ -678,7 +678,7 @@ function ResultsPanel({ result, scanSummary, simulateT }: { result: SimulationRe
                   <XCircle size={16} className="text-red-400 mt-0.5 shrink-0" />
                   <div>
                     <p className="text-sm font-medium">{f.scenario}</p>
-                    <p className="text-xs text-[#94a3b8] mt-0.5">{f.impact}</p>
+                    <p className="text-xs text-[var(--text-secondary)] mt-0.5">{f.impact}</p>
                   </div>
                   <Badge variant="red" className="ml-auto shrink-0">{f.severity}</Badge>
                 </div>
@@ -742,7 +742,7 @@ function CopyButton({ text }: { text: string }) {
   return (
     <button
       onClick={handleCopy}
-      className="p-1.5 rounded-md hover:bg-white/10 transition-colors text-[#64748b] hover:text-white"
+      className="p-1.5 rounded-md hover:bg-white/10 transition-colors text-[var(--text-muted)] hover:text-white"
       title={locale === "ja" ? "クリップボードにコピー" : "Copy to clipboard"}
       aria-label={locale === "ja" ? "クリップボードにコピー" : "Copy to clipboard"}
     >
@@ -753,9 +753,9 @@ function CopyButton({ text }: { text: string }) {
 
 function CodeBlock({ code, language = "bash" }: { code: string; language?: string }) {
   return (
-    <div className="relative group rounded-lg bg-[#0d1117] border border-[#1e293b] overflow-hidden">
-      <div className="flex items-center justify-between px-4 py-2 border-b border-[#1e293b]">
-        <span className="text-xs text-[#64748b] font-mono">{language}</span>
+    <div className="relative group rounded-lg bg-[var(--bg-tertiary)] border border-[var(--border-color)] overflow-hidden">
+      <div className="flex items-center justify-between px-4 py-2 border-b border-[var(--border-color)]">
+        <span className="text-xs text-[var(--text-muted)] font-mono">{language}</span>
         <CopyButton text={code} />
       </div>
       <pre className="px-4 py-3 text-sm font-mono text-[#e2e8f0] overflow-x-auto">
@@ -919,7 +919,7 @@ const _DEMO_RESULT: SimulationResult = {
 
 export default function SimulatePage() {
   return (
-    <Suspense fallback={<div className="max-w-[1200px] mx-auto px-6 py-10 text-[#64748b]">読み込み中...</div>}>
+    <Suspense fallback={<div className="w-full px-6 py-10 text-[var(--text-muted)]">読み込み中...</div>}>
       <SimulatePageInner />
     </Suspense>
   );
@@ -1162,10 +1162,10 @@ function SimulatePageInner() {
   };
 
   return (
-    <div className="max-w-[1200px] mx-auto px-6 py-10">
+    <div className="w-full px-6 py-10">
       <div className="mb-10">
         <h1 className="text-2xl font-bold mb-1">{t.title}</h1>
-        <p className="text-[#94a3b8] text-sm">{t.subtitle}</p>
+        <p className="text-[var(--text-secondary)] text-sm">{t.subtitle}</p>
       </div>
 
       {!result ? (
@@ -1173,7 +1173,7 @@ function SimulatePageInner() {
           {/* Project Selector */}
           {projects.length > 0 && (
             <div className="mb-8 flex items-center gap-3">
-              <label className="text-xs text-[#64748b] uppercase tracking-wider shrink-0">
+              <label className="text-xs text-[var(--text-muted)] uppercase tracking-wider shrink-0">
                 {tProjects.title}
               </label>
               <select
@@ -1187,7 +1187,7 @@ function SimulatePageInner() {
                   }
                 }}
                 aria-label={tProjects.title}
-                className="px-3 py-2 bg-[#0d1117] border border-[#1e293b] rounded-lg text-sm text-white focus:outline-none focus:border-[#FFD700]/50 transition-colors max-w-xs"
+                className="px-3 py-2 bg-[var(--bg-tertiary)] border border-[var(--border-color)] rounded-lg text-sm text-white focus:outline-none focus:border-[var(--gold)]/50 transition-colors max-w-xs"
               >
                 <option value="">— No project —</option>
                 {projects.map((p) => (
@@ -1195,7 +1195,7 @@ function SimulatePageInner() {
                 ))}
               </select>
               {selectedProjectId && (
-                <span className="text-xs text-[#64748b]">
+                <span className="text-xs text-[var(--text-muted)]">
                   Topology loaded from project
                 </span>
               )}
@@ -1203,13 +1203,13 @@ function SimulatePageInner() {
           )}
 
           {/* Top-level Tabs */}
-          <div className="flex gap-1 mb-8 p-1 rounded-xl bg-[#0d1117] border border-[#1e293b] w-fit flex-wrap">
+          <div className="flex gap-1 mb-8 p-1 rounded-xl bg-[var(--bg-tertiary)] border border-[var(--border-color)] w-fit flex-wrap">
             <button
               onClick={() => setTopTab("quickstart")}
               className={`flex items-center gap-2 px-5 py-2.5 rounded-lg text-sm font-medium transition-all ${
                 topTab === "quickstart"
-                  ? "bg-[#FFD700]/10 text-[#FFD700] shadow-sm"
-                  : "text-[#94a3b8] hover:text-white"
+                  ? "bg-[var(--gold)]/10 text-[var(--gold)] shadow-sm"
+                  : "text-[var(--text-secondary)] hover:text-white"
               }`}
             >
               <Zap size={16} />
@@ -1219,8 +1219,8 @@ function SimulatePageInner() {
               onClick={() => setTopTab("cloud")}
               className={`flex items-center gap-2 px-5 py-2.5 rounded-lg text-sm font-medium transition-all ${
                 topTab === "cloud"
-                  ? "bg-[#FFD700]/10 text-[#FFD700] shadow-sm"
-                  : "text-[#94a3b8] hover:text-white"
+                  ? "bg-[var(--gold)]/10 text-[var(--gold)] shadow-sm"
+                  : "text-[var(--text-secondary)] hover:text-white"
               }`}
             >
               <Cloud size={16} />
@@ -1230,8 +1230,8 @@ function SimulatePageInner() {
               onClick={() => setTopTab("agent")}
               className={`flex items-center gap-2 px-5 py-2.5 rounded-lg text-sm font-medium transition-all ${
                 topTab === "agent"
-                  ? "bg-[#FFD700]/10 text-[#FFD700] shadow-sm"
-                  : "text-[#94a3b8] hover:text-white"
+                  ? "bg-[var(--gold)]/10 text-[var(--gold)] shadow-sm"
+                  : "text-[var(--text-secondary)] hover:text-white"
               }`}
             >
               <Terminal size={16} />
@@ -1243,10 +1243,10 @@ function SimulatePageInner() {
           {topTab === "quickstart" && (
             <>
               {/* Try Demo 1-click */}
-              <div className="mb-8 p-5 rounded-xl border border-[#FFD700]/20 bg-[#FFD700]/[0.04] flex items-center justify-between gap-4 flex-wrap">
+              <div className="mb-8 p-5 rounded-xl border border-[var(--gold)]/20 bg-[var(--gold)]/[0.04] flex items-center justify-between gap-4 flex-wrap">
                 <div>
                   <p className="text-sm font-semibold text-white mb-0.5">まずはデモを試してみましょう</p>
-                  <p className="text-xs text-[#94a3b8]">Web SaaS テンプレートで即座にシミュレーションを体験できます</p>
+                  <p className="text-xs text-[var(--text-secondary)]">Web SaaS テンプレートで即座にシミュレーションを体験できます</p>
                 </div>
                 <Button
                   variant="primary"
@@ -1293,7 +1293,7 @@ function SimulatePageInner() {
 
               {/* Sample Selection */}
               <div className="mb-8">
-                <h2 className="text-sm font-semibold text-[#94a3b8] uppercase tracking-wider mb-4">Choose a sample topology</h2>
+                <h2 className="text-sm font-semibold text-[var(--text-secondary)] uppercase tracking-wider mb-4">Choose a sample topology</h2>
                 <div className="grid md:grid-cols-2 gap-4">
                   {SAMPLES.map((sample) => {
                     const Icon = sample.icon;
@@ -1304,23 +1304,23 @@ function SimulatePageInner() {
                         onClick={() => { setSelected(sample.id); setYamlText(""); setUploadedFileName(null); }}
                         className={`text-left p-5 rounded-2xl border transition-all duration-200 ${
                           isSelected
-                            ? "border-[#FFD700] bg-[#FFD700]/[0.04] shadow-[0_0_30px_rgba(255,215,0,0.1)]"
-                            : "border-[#1e293b] bg-[#111827] hover:border-[#FFD700]/30 hover:bg-[#1a2035]"
+                            ? "border-[var(--gold)] bg-[var(--gold)]/[0.04] shadow-[0_0_30px_rgba(255,215,0,0.1)]"
+                            : "border-[var(--border-color)] bg-[var(--bg-card)] hover:border-[var(--gold)]/30 hover:bg-[var(--bg-card-hover)]"
                         }`}
                       >
                         <div className="flex items-start gap-4">
-                          <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${isSelected ? "bg-[#FFD700]/20" : "bg-[#FFD700]/[0.06]"} border border-[#FFD700]/10`}>
-                            <Icon size={20} className="text-[#FFD700]" />
+                          <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${isSelected ? "bg-[var(--gold)]/20" : "bg-[var(--gold)]/[0.06]"} border border-[var(--gold)]/10`}>
+                            <Icon size={20} className="text-[var(--gold)]" />
                           </div>
                           <div className="flex-1 min-w-0">
                             <div className="flex items-center gap-2 mb-1">
                               <h3 className="font-bold text-sm">{sample.name}</h3>
                               <Badge variant="gold">{sample.components} nodes</Badge>
                             </div>
-                            <p className="text-xs text-[#94a3b8]">{sample.desc}</p>
+                            <p className="text-xs text-[var(--text-secondary)]">{sample.desc}</p>
                           </div>
-                          <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center shrink-0 ${isSelected ? "border-[#FFD700]" : "border-[#1e293b]"}`}>
-                            {isSelected && <div className="w-2.5 h-2.5 rounded-full bg-[#FFD700]" />}
+                          <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center shrink-0 ${isSelected ? "border-[var(--gold)]" : "border-[var(--border-color)]"}`}>
+                            {isSelected && <div className="w-2.5 h-2.5 rounded-full bg-[var(--gold)]" />}
                           </div>
                         </div>
                       </button>
@@ -1331,9 +1331,9 @@ function SimulatePageInner() {
 
               {/* Divider */}
               <div className="flex items-center gap-4 mb-8">
-                <div className="h-px flex-1 bg-[#1e293b]" />
-                <span className="text-xs text-[#64748b] font-medium">OR UPLOAD YOUR OWN</span>
-                <div className="h-px flex-1 bg-[#1e293b]" />
+                <div className="h-px flex-1 bg-[var(--border-color)]" />
+                <span className="text-xs text-[var(--text-muted)] font-medium">OR UPLOAD YOUR OWN</span>
+                <div className="h-px flex-1 bg-[var(--border-color)]" />
               </div>
 
               {/* File Upload Area */}
@@ -1348,23 +1348,23 @@ function SimulatePageInner() {
                 />
                 <button
                   onClick={() => { fileInputRef.current?.click(); }}
-                  className="w-full p-10 rounded-2xl border-2 border-dashed border-[#1e293b] hover:border-[#FFD700]/30 transition-colors text-center"
+                  className="w-full p-10 rounded-2xl border-2 border-dashed border-[var(--border-color)] hover:border-[var(--gold)]/30 transition-colors text-center"
                 >
-                  <Upload size={28} className="mx-auto mb-3 text-[#64748b]" />
+                  <Upload size={28} className="mx-auto mb-3 text-[var(--text-muted)]" />
                   <p className="text-sm font-medium mb-1">
                     {uploadedFileName ? (
-                      <span className="text-[#FFD700]">{uploadedFileName}</span>
+                      <span className="text-[var(--gold)]">{uploadedFileName}</span>
                     ) : (
                       "Drop your topology file here"
                     )}
                   </p>
-                  <p className="text-xs text-[#64748b]">
+                  <p className="text-xs text-[var(--text-muted)]">
                     Supports .yaml, .yml, .json, .tfstate
                   </p>
                 </button>
                 {uploadedFileName && yamlText && (
                   <div className="mt-3">
-                    <pre className="p-4 bg-[#0d1117] border border-[#1e293b] rounded-xl text-xs font-mono text-[#94a3b8] max-h-[150px] overflow-auto">
+                    <pre className="p-4 bg-[var(--bg-tertiary)] border border-[var(--border-color)] rounded-xl text-xs font-mono text-[var(--text-secondary)] max-h-[150px] overflow-auto">
                       {yamlText.slice(0, 1000)}{yamlText.length > 1000 ? "\n..." : ""}
                     </pre>
                   </div>
@@ -1375,7 +1375,7 @@ function SimulatePageInner() {
               <div className="mb-8">
                 <button
                   onClick={() => setShowYamlEditor(!showYamlEditor)}
-                  className="flex items-center gap-2 text-sm text-[#94a3b8] hover:text-white transition-colors"
+                  className="flex items-center gap-2 text-sm text-[var(--text-secondary)] hover:text-white transition-colors"
                 >
                   {showYamlEditor ? <ChevronDown size={16} /> : <ChevronRight size={16} />}
                   <FileCode size={14} />
@@ -1388,7 +1388,7 @@ function SimulatePageInner() {
                 {showYamlEditor && (
                   <div className="mt-4">
                     {/* JOURNEY-03: Quick-start guide for YAML newcomers */}
-                    <div className="mb-4 p-4 rounded-xl border border-blue-500/15 bg-blue-500/[0.05] text-xs text-[#94a3b8] space-y-1.5">
+                    <div className="mb-4 p-4 rounded-xl border border-blue-500/15 bg-blue-500/[0.05] text-xs text-[var(--text-secondary)] space-y-1.5">
                       <p className="font-semibold text-blue-300">
                         {locale === "ja" ? "YAMLの書き方（3分で覚えられます）" : "YAML quick guide — learn in 3 minutes"}
                       </p>
@@ -1409,7 +1409,7 @@ function SimulatePageInner() {
                       </p>
                     </div>
                     <div className="flex items-center justify-between mb-2">
-                      <span className="text-xs font-medium text-[#94a3b8]">Infrastructure Topology (YAML)</span>
+                      <span className="text-xs font-medium text-[var(--text-secondary)]">Infrastructure Topology (YAML)</span>
                       <div className="flex items-center gap-3">
                         {/* EXPORT-02: YAML構成データの再ダウンロード */}
                         {yamlText.trim() && (
@@ -1423,14 +1423,14 @@ function SimulatePageInner() {
                               a.click();
                               URL.revokeObjectURL(url);
                             }}
-                            className="text-xs text-[#64748b] hover:text-white transition-colors"
+                            className="text-xs text-[var(--text-muted)] hover:text-white transition-colors"
                           >
                             {locale === "ja" ? "YAMLをダウンロード" : "Download YAML"}
                           </button>
                         )}
                         <button
                           onClick={() => { setYamlText(YAML_PLACEHOLDER); setSelected(null); setUploadedFileName(null); }}
-                          className="text-xs text-[#FFD700] hover:text-[#ffe44d] transition-colors"
+                          className="text-xs text-[var(--gold)] hover:text-[#ffe44d] transition-colors"
                         >
                           {locale === "ja" ? "サンプルを読み込む" : "Load example"}
                         </button>
@@ -1478,13 +1478,13 @@ function SimulatePageInner() {
                       placeholder={YAML_PLACEHOLDER}
                       // MOBILE-02: inputmode="none" prevents mobile keyboard on YAML editor
                       // On mobile, recommend using the sample topology selector instead
-                      className={`w-full h-[350px] px-4 py-3 bg-[#0d1117] border rounded-xl text-sm font-mono text-[#e2e8f0] placeholder-[#3a4558] focus:outline-none resize-y transition-colors ${yamlError ? "border-red-500/50 focus:border-red-500" : "border-[#1e293b] focus:border-[#FFD700]/50"}`}
+                      className={`w-full h-[350px] px-4 py-3 bg-[var(--bg-tertiary)] border rounded-xl text-sm font-mono text-[#e2e8f0] placeholder-[#3a4558] focus:outline-none resize-y transition-colors ${yamlError ? "border-red-500/50 focus:border-red-500" : "border-[var(--border-color)] focus:border-[var(--gold)]/50"}`}
                       aria-label={locale === "ja" ? "YAMLトポロジー定義" : "YAML topology definition"}
                       spellCheck={false}
                       maxLength={100000}
                     />
                     {/* MOBILE-02: Mobile hint — recommend sample topology or file upload */}
-                    <p className="text-xs text-[#475569] mt-1 md:hidden">
+                    <p className="text-xs text-[var(--text-muted)] mt-1 md:hidden">
                       {locale === "ja"
                         ? "モバイルでのYAML編集は難しい場合があります。上のサンプルトポロジーを選択するか、PCで作成したYAMLファイルをアップロードすることをお勧めします。"
                         : "YAML editing on mobile can be challenging. Try selecting a sample topology above, or upload a YAML file you prepared on desktop."
@@ -1496,7 +1496,7 @@ function SimulatePageInner() {
                         <span>&#9888;</span> {yamlError}
                       </p>
                     )}
-                    <p className="text-xs text-[#64748b] mt-2">
+                    <p className="text-xs text-[var(--text-muted)] mt-2">
                       {locale === "ja"
                         ? "コンポーネント種別: app_server, database, cache, load_balancer, queue / 依存関係: requires, optional, async"
                         : "Component types: app_server, database, cache, load_balancer, queue | Dependencies: requires, optional, async"}
@@ -1540,11 +1540,11 @@ function SimulatePageInner() {
                 {/* DEMO-03: Enhanced progress bar with stage labels and ETA */}
                 {running && (
                   <div className="w-full max-w-[400px]">
-                    <div className="flex justify-between text-xs text-[#64748b] mb-1.5">
-                      <span className="text-[#94a3b8] font-medium">{runProgressLabel || (locale === "ja" ? "準備中..." : "Initializing...")}</span>
+                    <div className="flex justify-between text-xs text-[var(--text-muted)] mb-1.5">
+                      <span className="text-[var(--text-secondary)] font-medium">{runProgressLabel || (locale === "ja" ? "準備中..." : "Initializing...")}</span>
                       <span>{runProgress}%</span>
                     </div>
-                    <div className="h-2.5 bg-[#1e293b] rounded-full overflow-hidden">
+                    <div className="h-2.5 bg-[var(--border-color)] rounded-full overflow-hidden">
                       <div
                         className="h-full bg-gradient-to-r from-[#FFD700] to-[#ffe44d] rounded-full transition-all duration-500"
                         style={{ width: `${runProgress}%` }}
@@ -1560,13 +1560,13 @@ function SimulatePageInner() {
                         { pct: 95, label: locale === "ja" ? "出力" : "Report" },
                       ].map((step) => (
                         <div key={step.pct} className="flex flex-col items-center">
-                          <div className={`w-2 h-2 rounded-full mb-1 transition-colors ${runProgress >= step.pct ? "bg-[#FFD700]" : "bg-[#1e293b]"}`} />
-                          <span className={`text-[10px] ${runProgress >= step.pct ? "text-[#FFD700]" : "text-[#475569]"}`}>{step.label}</span>
+                          <div className={`w-2 h-2 rounded-full mb-1 transition-colors ${runProgress >= step.pct ? "bg-[var(--gold)]" : "bg-[var(--border-color)]"}`} />
+                          <span className={`text-[10px] ${runProgress >= step.pct ? "text-[var(--gold)]" : "text-[var(--text-muted)]"}`}>{step.label}</span>
                         </div>
                       ))}
                     </div>
                     {/* DEMO-03: Estimated time remaining */}
-                    <p className="text-[11px] text-[#475569] text-center mt-2">
+                    <p className="text-[11px] text-[var(--text-muted)] text-center mt-2">
                       {runProgress < 95
                         ? (locale === "ja"
                             ? `推定残り ${Math.max(1, Math.round((100 - runProgress) / 100 * 5))} 秒`
@@ -1593,7 +1593,7 @@ function SimulatePageInner() {
                   <p className="text-sm font-semibold text-blue-300 mb-1">
                     {locale === "ja" ? "クラウド構成を自動取り込み" : "Auto-discover your cloud topology"}
                   </p>
-                  <p className="text-xs text-[#94a3b8]">
+                  <p className="text-xs text-[var(--text-secondary)]">
                     {locale === "ja"
                       ? "読み取り専用の権限で AWS・GCP・Azure のリソースを自動検出し、シミュレーション可能なトポロジーに変換します。"
                       : "Connect with read-only credentials to auto-discover AWS, GCP, or Azure resources and convert them to a simulatable topology."}
@@ -1603,7 +1603,7 @@ function SimulatePageInner() {
 
               {/* Provider selection */}
               <div>
-                <p className="text-xs font-semibold text-[#64748b] uppercase tracking-wide mb-4">
+                <p className="text-xs font-semibold text-[var(--text-muted)] uppercase tracking-wide mb-4">
                   {locale === "ja" ? "クラウドプロバイダーを選択" : "Select cloud provider"}
                 </p>
                 <div className="grid sm:grid-cols-3 gap-4">
@@ -1619,7 +1619,7 @@ function SimulatePageInner() {
                           <Server size={16} className={meta.color} />
                           <span className={`text-sm font-bold ${meta.color}`}>{meta.label}</span>
                         </div>
-                        <p className="text-[11px] text-[#64748b]">{meta.badge}</p>
+                        <p className="text-[11px] text-[var(--text-muted)]">{meta.badge}</p>
                         <div className="mt-auto">
                           <button
                             onClick={() => { setTopTab("agent"); }}
@@ -1635,13 +1635,13 @@ function SimulatePageInner() {
               </div>
 
               {/* Terraform Import */}
-              <div className="p-5 rounded-xl border border-[#1e293b] bg-[#0d1117]">
+              <div className="p-5 rounded-xl border border-[var(--border-color)] bg-[var(--bg-tertiary)]">
                 <div className="flex items-center gap-2 mb-3">
                   <Database size={16} className="text-purple-400" />
                   <p className="text-sm font-semibold">{locale === "ja" ? "Terraform State インポート" : "Terraform State Import"}</p>
                   <Badge variant="default" className="text-[10px]">tfstate</Badge>
                 </div>
-                <p className="text-xs text-[#94a3b8] mb-4">
+                <p className="text-xs text-[var(--text-secondary)] mb-4">
                   {locale === "ja"
                     ? "terraform.tfstate ファイルを貼り付けるか、アップロードするとトポロジーを自動生成します。"
                     : "Paste or upload your terraform.tfstate file to auto-generate a topology for simulation."}
@@ -1655,7 +1655,7 @@ function SimulatePageInner() {
                       if (el) el.scrollIntoView({ behavior: "smooth" });
                     }, 100);
                   }}
-                  className="text-xs font-medium text-[#FFD700] hover:underline"
+                  className="text-xs font-medium text-[var(--gold)] hover:underline"
                 >
                   {locale === "ja" ? "ファイルアップロードへ →" : "Go to file upload →"}
                 </button>
@@ -1663,7 +1663,7 @@ function SimulatePageInner() {
 
               {/* IAM policy snippet */}
               <div>
-                <p className="text-xs font-semibold text-[#64748b] uppercase tracking-wide mb-3">
+                <p className="text-xs font-semibold text-[var(--text-muted)] uppercase tracking-wide mb-3">
                   {locale === "ja" ? "最小権限 IAM ポリシー（AWS 例）" : "Minimum IAM policy (AWS example)"}
                 </p>
                 <CodeBlock language="json" code={`{
@@ -1683,7 +1683,7 @@ function SimulatePageInner() {
     "Resource": "*"
   }]
 }`} />
-                <p className="text-xs text-[#64748b] mt-2">
+                <p className="text-xs text-[var(--text-muted)] mt-2">
                   <Shield size={11} className="inline mr-1 text-emerald-400" />
                   {locale === "ja"
                     ? "読み取り専用アクション（Describe*/List*/Get*）のみ。書き込み権限は不要です。"
@@ -1693,7 +1693,7 @@ function SimulatePageInner() {
 
               {/* Terraform: export tfstate guide */}
               <div>
-                <p className="text-xs font-semibold text-[#64748b] uppercase tracking-wide mb-3">
+                <p className="text-xs font-semibold text-[var(--text-muted)] uppercase tracking-wide mb-3">
                   {locale === "ja" ? "tfstate のエクスポート方法" : "How to export tfstate"}
                 </p>
                 <CodeBlock language="bash" code={`# Export local state
@@ -1714,7 +1714,7 @@ terraform state pull > topology.tfstate`} />
                 <Shield size={18} className="text-emerald-400 mt-0.5 shrink-0" />
                 <div>
                   <p className="text-sm font-medium text-emerald-400">Your credentials stay in your VPC</p>
-                  <p className="text-xs text-[#94a3b8] mt-1">
+                  <p className="text-xs text-[var(--text-secondary)] mt-1">
                     The FaultRay agent runs inside your infrastructure. Only topology data and simulation results
                     are sent to FaultRay SaaS. Cloud provider credentials never leave your environment.
                   </p>
@@ -1724,16 +1724,16 @@ terraform state pull > topology.tfstate`} />
               {/* Step 1: API Key */}
               <div>
                 <div className="flex items-center gap-3 mb-4">
-                  <div className="w-7 h-7 rounded-full bg-[#FFD700]/10 border border-[#FFD700]/30 flex items-center justify-center text-xs font-bold text-[#FFD700]">1</div>
+                  <div className="w-7 h-7 rounded-full bg-[var(--gold)]/10 border border-[var(--gold)]/30 flex items-center justify-center text-xs font-bold text-[var(--gold)]">1</div>
                   <h3 className="text-sm font-semibold">Get your API key</h3>
                 </div>
                 <div className="ml-10">
-                  <div className="flex items-center gap-3 p-3 rounded-lg bg-[#0d1117] border border-[#1e293b]">
+                  <div className="flex items-center gap-3 p-3 rounded-lg bg-[var(--bg-tertiary)] border border-[var(--border-color)]">
                     <code className="flex-1 text-sm font-mono text-[#e2e8f0] truncate">{apiKey}</code>
                     <CopyButton text={apiKey} />
                   </div>
-                  <p className="text-xs text-[#64748b] mt-2">
-                    Generate a new key in <Link href="/settings" className="text-[#FFD700] hover:underline">Settings</Link>. Keep it secret.
+                  <p className="text-xs text-[var(--text-muted)] mt-2">
+                    Generate a new key in <Link href="/settings" className="text-[var(--gold)] hover:underline">Settings</Link>. Keep it secret.
                   </p>
                 </div>
               </div>
@@ -1741,7 +1741,7 @@ terraform state pull > topology.tfstate`} />
               {/* Step 2: Install */}
               <div>
                 <div className="flex items-center gap-3 mb-4">
-                  <div className="w-7 h-7 rounded-full bg-[#FFD700]/10 border border-[#FFD700]/30 flex items-center justify-center text-xs font-bold text-[#FFD700]">2</div>
+                  <div className="w-7 h-7 rounded-full bg-[var(--gold)]/10 border border-[var(--gold)]/30 flex items-center justify-center text-xs font-bold text-[var(--gold)]">2</div>
                   <h3 className="text-sm font-semibold">Install the agent</h3>
                 </div>
                 <div className="ml-10">
@@ -1752,7 +1752,7 @@ terraform state pull > topology.tfstate`} />
               {/* Step 3: Connect & Scan */}
               <div>
                 <div className="flex items-center gap-3 mb-4">
-                  <div className="w-7 h-7 rounded-full bg-[#FFD700]/10 border border-[#FFD700]/30 flex items-center justify-center text-xs font-bold text-[#FFD700]">3</div>
+                  <div className="w-7 h-7 rounded-full bg-[var(--gold)]/10 border border-[var(--gold)]/30 flex items-center justify-center text-xs font-bold text-[var(--gold)]">3</div>
                   <h3 className="text-sm font-semibold">Connect and scan your infrastructure</h3>
                 </div>
                 <div className="ml-10 space-y-3">
@@ -1760,7 +1760,7 @@ terraform state pull > topology.tfstate`} />
                     code={`# Connect the agent to FaultRay SaaS
 faultray agent connect --token YOUR_API_KEY --url https://faultray.com`}
                   />
-                  <p className="text-xs text-[#94a3b8] mb-3">Then scan your infrastructure:</p>
+                  <p className="text-xs text-[var(--text-secondary)] mb-3">Then scan your infrastructure:</p>
                   <CodeBlock
                     code={`# Scan specific providers
 faultray scan --provider aws --region ap-northeast-1
@@ -1777,23 +1777,23 @@ faultray scan --all`}
               {/* Step 4: Connected Agents */}
               <div>
                 <div className="flex items-center gap-3 mb-4">
-                  <div className="w-7 h-7 rounded-full bg-[#FFD700]/10 border border-[#FFD700]/30 flex items-center justify-center text-xs font-bold text-[#FFD700]">4</div>
+                  <div className="w-7 h-7 rounded-full bg-[var(--gold)]/10 border border-[var(--gold)]/30 flex items-center justify-center text-xs font-bold text-[var(--gold)]">4</div>
                   <h3 className="text-sm font-semibold">Connected agents</h3>
                 </div>
                 <div className="ml-10">
                   {connectedAgents.length === 0 ? (
-                    <div className="p-8 rounded-2xl border border-dashed border-[#1e293b] text-center">
-                      <Radio size={24} className="mx-auto mb-3 text-[#64748b]" />
-                      <p className="text-sm text-[#94a3b8] mb-1">No agents connected yet</p>
-                      <p className="text-xs text-[#64748b]">
+                    <div className="p-8 rounded-2xl border border-dashed border-[var(--border-color)] text-center">
+                      <Radio size={24} className="mx-auto mb-3 text-[var(--text-muted)]" />
+                      <p className="text-sm text-[var(--text-secondary)] mb-1">No agents connected yet</p>
+                      <p className="text-xs text-[var(--text-muted)]">
                         Run the commands above to connect your first agent. Results will appear here automatically.
                       </p>
                     </div>
                   ) : (
                     <div className="space-y-3">
                       <div className="flex items-center justify-between mb-2">
-                        <span className="text-xs text-[#64748b]">{connectedAgents.length} agent(s) connected</span>
-                        <button className="flex items-center gap-1.5 text-xs text-[#94a3b8] hover:text-white transition-colors">
+                        <span className="text-xs text-[var(--text-muted)]">{connectedAgents.length} agent(s) connected</span>
+                        <button className="flex items-center gap-1.5 text-xs text-[var(--text-secondary)] hover:text-white transition-colors">
                           <RefreshCw size={12} />
                           Refresh
                         </button>
@@ -1804,17 +1804,17 @@ faultray scan --all`}
                             <div className="flex items-center gap-3">
                               <div className={`w-2.5 h-2.5 rounded-full ${
                                 agent.status === "connected" ? "bg-emerald-400" :
-                                agent.status === "scanning" ? "bg-[#FFD700] animate-pulse" :
+                                agent.status === "scanning" ? "bg-[var(--gold)] animate-pulse" :
                                 "bg-red-400"
                               }`} />
                               <div>
                                 <p className="text-sm font-medium">{agent.name}</p>
-                                <p className="text-xs text-[#64748b]">{agent.provider} / {agent.region}</p>
+                                <p className="text-xs text-[var(--text-muted)]">{agent.provider} / {agent.region}</p>
                               </div>
                             </div>
                             <div className="text-right">
                               <p className="text-sm font-mono text-[#e2e8f0]">{agent.components} components</p>
-                              <p className="text-xs text-[#64748b]">Last scan: {agent.lastScan}</p>
+                              <p className="text-xs text-[var(--text-muted)]">Last scan: {agent.lastScan}</p>
                             </div>
                           </div>
                         </Card>

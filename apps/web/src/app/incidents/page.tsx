@@ -76,10 +76,10 @@ function IncidentCard({ incident }: { incident: Incident }) {
       >
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
-            {expanded ? <ChevronDown size={16} className="text-[#64748b]" /> : <ChevronRight size={16} className="text-[#64748b]" />}
+            {expanded ? <ChevronDown size={16} className="text-[var(--text-muted)]" /> : <ChevronRight size={16} className="text-[var(--text-muted)]" />}
             <div>
               <div className="flex items-center gap-2">
-                <span className="font-mono text-xs text-[#64748b]">{incident.id}</span>
+                <span className="font-mono text-xs text-[var(--text-muted)]">{incident.id}</span>
                 <Badge variant={incident.severity === "critical" ? "red" : "yellow"}>
                   {incident.severity}
                 </Badge>
@@ -89,7 +89,7 @@ function IncidentCard({ incident }: { incident: Incident }) {
           </div>
           <div className="text-right">
             <p className="font-mono text-sm">{incident.duration_minutes}min</p>
-            <p className="text-xs text-[#64748b]">
+            <p className="text-xs text-[var(--text-muted)]">
               {new Date(incident.start_time).toLocaleDateString()}
             </p>
           </div>
@@ -97,13 +97,13 @@ function IncidentCard({ incident }: { incident: Incident }) {
       </button>
 
       {expanded && (
-        <div className="mt-6 pt-4 border-t border-[#1e293b]">
+        <div className="mt-6 pt-4 border-t border-[var(--border-color)]">
           <div className="mb-4">
-            <p className="text-xs text-[#64748b] uppercase tracking-wider mb-1">{locale === "ja" ? "根本原因" : "Root Cause"}</p>
+            <p className="text-xs text-[var(--text-muted)] uppercase tracking-wider mb-1">{locale === "ja" ? "根本原因" : "Root Cause"}</p>
             <p className="text-sm">{incident.root_cause}</p>
           </div>
           <div className="mb-4">
-            <p className="text-xs text-[#64748b] uppercase tracking-wider mb-1">{locale === "ja" ? "影響コンポーネント" : "Affected Components"}</p>
+            <p className="text-xs text-[var(--text-muted)] uppercase tracking-wider mb-1">{locale === "ja" ? "影響コンポーネント" : "Affected Components"}</p>
             <div className="flex gap-2">
               {incident.affected_components.map((c) => (
                 <Badge key={c} variant="default">{c}</Badge>
@@ -113,20 +113,20 @@ function IncidentCard({ incident }: { incident: Incident }) {
 
           {/* Timeline */}
           <div>
-            <p className="text-xs text-[#64748b] uppercase tracking-wider mb-3">{locale === "ja" ? "タイムライン" : "Timeline"}</p>
+            <p className="text-xs text-[var(--text-muted)] uppercase tracking-wider mb-3">{locale === "ja" ? "タイムライン" : "Timeline"}</p>
             <div className="relative pl-6">
               {/* Vertical line */}
-              <div className="absolute left-[9px] top-0 bottom-0 w-0.5 bg-[#1e293b]" />
+              <div className="absolute left-[9px] top-0 bottom-0 w-0.5 bg-[var(--border-color)]" />
               <div className="space-y-3">
                 {incident.timeline.map((event, i) => (
                   <div key={i} className="relative flex items-start gap-3">
                     <div
-                      className="absolute left-[-15px] w-3 h-3 rounded-full border-2 bg-[#111827]"
+                      className="absolute left-[-15px] w-3 h-3 rounded-full border-2 bg-[var(--bg-card)]"
                       style={{ borderColor: EVENT_COLORS[event.type] || "#64748b" }}
                     />
                     <div className="flex-1 pl-2">
                       <div className="flex items-center gap-2">
-                        <span className="text-xs font-mono text-[#64748b]">{event.time}</span>
+                        <span className="text-xs font-mono text-[var(--text-muted)]">{event.time}</span>
                         <Badge
                           variant={
                             event.type === "trigger" || event.type === "failure"
@@ -140,7 +140,7 @@ function IncidentCard({ incident }: { incident: Incident }) {
                         </Badge>
                       </div>
                       <p className="text-sm mt-1">{event.event}</p>
-                      <p className="text-xs text-[#64748b]">{event.component}</p>
+                      <p className="text-xs text-[var(--text-muted)]">{event.component}</p>
                     </div>
                   </div>
                 ))}
@@ -168,20 +168,20 @@ export default function IncidentsPage() {
   }, []);
 
   return (
-    <div className="max-w-[1200px] mx-auto px-6 py-10">
+    <div className="w-full px-6 py-10">
       <div className="mb-10">
         <h1 className="text-2xl font-bold mb-1 flex items-center gap-3">
-          <Activity size={24} className="text-[#FFD700]" />
+          <Activity size={24} className="text-[var(--gold)]" />
           {t.title}
         </h1>
-        <p className="text-[#94a3b8] text-sm">
+        <p className="text-[var(--text-secondary)] text-sm">
           {t.subtitle}
         </p>
       </div>
 
       {loading ? (
         <Card className="flex items-center justify-center py-20">
-          <Loader2 size={24} className="animate-spin text-[#FFD700]" />
+          <Loader2 size={24} className="animate-spin text-[var(--gold)]" />
         </Card>
       ) : (
         <>
@@ -189,19 +189,19 @@ export default function IncidentsPage() {
           <div className="grid md:grid-cols-4 gap-6 mb-8">
             <Card className="text-center">
               <p className="text-3xl font-extrabold font-mono">{data.summary.total_incidents}</p>
-              <p className="text-xs text-[#64748b] uppercase tracking-wider mt-1">{t.totalIncidents}</p>
+              <p className="text-xs text-[var(--text-muted)] uppercase tracking-wider mt-1">{t.totalIncidents}</p>
             </Card>
             <Card className="text-center">
               <p className="text-3xl font-extrabold font-mono text-red-400">{data.summary.critical}</p>
-              <p className="text-xs text-[#64748b] uppercase tracking-wider mt-1">{t.critical}</p>
+              <p className="text-xs text-[var(--text-muted)] uppercase tracking-wider mt-1">{t.critical}</p>
             </Card>
             <Card className="text-center">
               <p className="text-3xl font-extrabold font-mono text-[#f59e0b]">{data.summary.high}</p>
-              <p className="text-xs text-[#64748b] uppercase tracking-wider mt-1">{t.high}</p>
+              <p className="text-xs text-[var(--text-muted)] uppercase tracking-wider mt-1">{t.high}</p>
             </Card>
             <Card className="text-center">
               <p className="text-3xl font-extrabold font-mono">{data.summary.average_duration_minutes}m</p>
-              <p className="text-xs text-[#64748b] uppercase tracking-wider mt-1">{t.avgDuration}</p>
+              <p className="text-xs text-[var(--text-muted)] uppercase tracking-wider mt-1">{t.avgDuration}</p>
             </Card>
           </div>
 

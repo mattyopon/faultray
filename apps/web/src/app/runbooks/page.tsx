@@ -205,10 +205,10 @@ function RunbookCard({ rb, t }: { rb: typeof DEMO_RUNBOOKS[0]; t: Record<string,
       <button className="w-full text-left" onClick={() => setExpanded(!expanded)}>
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
-            {expanded ? <ChevronDown size={16} className="text-[#64748b]" /> : <ChevronRight size={16} className="text-[#64748b]" />}
+            {expanded ? <ChevronDown size={16} className="text-[var(--text-muted)]" /> : <ChevronRight size={16} className="text-[var(--text-muted)]" />}
             <div>
               <div className="flex items-center gap-2 mb-1">
-                <span className="font-mono text-xs text-[#64748b]">{rb.id}</span>
+                <span className="font-mono text-xs text-[var(--text-muted)]">{rb.id}</span>
                 <Badge variant={rb.severity === "critical" ? "red" : "yellow"}>{rb.severity}</Badge>
                 <Badge variant="default">{rb.component}</Badge>
               </div>
@@ -216,25 +216,25 @@ function RunbookCard({ rb, t }: { rb: typeof DEMO_RUNBOOKS[0]; t: Record<string,
             </div>
           </div>
           <div className="text-right shrink-0 ml-4">
-            <p className="text-xs text-[#64748b]">{t.avgMttr}: <span className="text-white font-mono">{rb.avgMttr}</span></p>
-            <p className="text-xs text-[#64748b] mt-1">{t.lastUpdated}: {rb.lastUpdated}</p>
+            <p className="text-xs text-[var(--text-muted)]">{t.avgMttr}: <span className="text-white font-mono">{rb.avgMttr}</span></p>
+            <p className="text-xs text-[var(--text-muted)] mt-1">{t.lastUpdated}: {rb.lastUpdated}</p>
           </div>
         </div>
       </button>
 
       {expanded && (
-        <div className="mt-6 pt-4 border-t border-[#1e293b]">
+        <div className="mt-6 pt-4 border-t border-[var(--border-color)]">
           {/* Tabs */}
           <div className="flex gap-2 mb-4">
             <button
               onClick={() => setActiveTab("steps")}
-              className={`px-3 py-1.5 text-sm rounded-md transition-colors ${activeTab === "steps" ? "bg-[#FFD700]/10 text-[#FFD700]" : "text-[#64748b] hover:text-white"}`}
+              className={`px-3 py-1.5 text-sm rounded-md transition-colors ${activeTab === "steps" ? "bg-[var(--gold)]/10 text-[var(--gold)]" : "text-[var(--text-muted)] hover:text-white"}`}
             >
               {locale === "ja" ? "対応手順" : "Response Steps"}
             </button>
             <button
               onClick={() => setActiveTab("templates")}
-              className={`px-3 py-1.5 text-sm rounded-md transition-colors ${activeTab === "templates" ? "bg-[#FFD700]/10 text-[#FFD700]" : "text-[#64748b] hover:text-white"}`}
+              className={`px-3 py-1.5 text-sm rounded-md transition-colors ${activeTab === "templates" ? "bg-[var(--gold)]/10 text-[var(--gold)]" : "text-[var(--text-muted)] hover:text-white"}`}
             >
               {locale === "ja" ? "通知テンプレート" : "Comm Templates"}
             </button>
@@ -249,12 +249,12 @@ function RunbookCard({ rb, t }: { rb: typeof DEMO_RUNBOOKS[0]; t: Record<string,
                 { label: t.recovery, items: rb.recovery, color: "#10b981" },
                 { label: t.postIncident, items: rb.postIncident, color: "#8b5cf6" },
               ].map(({ label, items, color }) => (
-                <div key={label} className="bg-[#0a0e1a] rounded-lg p-3">
+                <div key={label} className="bg-[var(--bg-tertiary)] rounded-lg p-3">
                   <p className="text-xs font-semibold uppercase tracking-wider mb-2" style={{ color }}>{label}</p>
                   <ol className="space-y-1.5">
                     {items.map((item, i) => (
-                      <li key={i} className="text-xs text-[#94a3b8] flex gap-2">
-                        <span className="text-[#475569] shrink-0">{i + 1}.</span>
+                      <li key={i} className="text-xs text-[var(--text-secondary)] flex gap-2">
+                        <span className="text-[var(--text-muted)] shrink-0">{i + 1}.</span>
                         <span className="font-mono">{item}</span>
                       </li>
                     ))}
@@ -270,18 +270,18 @@ function RunbookCard({ rb, t }: { rb: typeof DEMO_RUNBOOKS[0]; t: Record<string,
                 { label: t.slackTemplate, content: rb.slackTemplate, key: "slack" },
                 { label: t.emailTemplate, content: rb.emailTemplate, key: "email" },
               ].map(({ label, content, key }) => (
-                <div key={key} className="bg-[#0a0e1a] rounded-lg p-3">
+                <div key={key} className="bg-[var(--bg-tertiary)] rounded-lg p-3">
                   <div className="flex items-center justify-between mb-2">
-                    <p className="text-xs font-semibold text-[#64748b] uppercase tracking-wider">{label}</p>
+                    <p className="text-xs font-semibold text-[var(--text-muted)] uppercase tracking-wider">{label}</p>
                     <button
                       onClick={() => handleCopy(content, key)}
-                      className="flex items-center gap-1 text-xs text-[#64748b] hover:text-[#FFD700] transition-colors"
+                      className="flex items-center gap-1 text-xs text-[var(--text-muted)] hover:text-[var(--gold)] transition-colors"
                     >
                       <Copy size={12} />
                       {copied === key ? (locale === "ja" ? "コピー済み!" : "Copied!") : t.copyTemplate}
                     </button>
                   </div>
-                  <pre className="text-xs text-[#94a3b8] whitespace-pre-wrap font-mono">{content}</pre>
+                  <pre className="text-xs text-[var(--text-secondary)] whitespace-pre-wrap font-mono">{content}</pre>
                 </div>
               ))}
             </div>
@@ -305,13 +305,13 @@ export default function RunbooksPage() {
   );
 
   return (
-    <div className="max-w-[1200px] mx-auto px-6 py-10">
+    <div className="w-full px-6 py-10">
       <div className="mb-8">
         <h1 className="text-2xl font-bold mb-1 flex items-center gap-3">
-          <BookOpen size={24} className="text-[#FFD700]" />
+          <BookOpen size={24} className="text-[var(--gold)]" />
           {t.title}
         </h1>
-        <p className="text-[#94a3b8] text-sm">{t.subtitle}</p>
+        <p className="text-[var(--text-secondary)] text-sm">{t.subtitle}</p>
       </div>
 
       {/* DEMO-05: Sample data notice */}
@@ -322,13 +322,13 @@ export default function RunbooksPage() {
 
       {/* Search */}
       <div className="relative mb-6">
-        <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-[#64748b]" />
+        <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--text-muted)]" />
         <input
           value={search}
           onChange={(e) => setSearch(e.target.value)}
           placeholder={t.searchPlaceholder}
           aria-label={t.searchPlaceholder}
-          className="w-full bg-[#111827] border border-[#1e293b] rounded-lg pl-9 pr-4 py-2.5 text-sm text-white placeholder-[#475569] focus:outline-none focus:border-[#FFD700]/50"
+          className="w-full bg-[var(--bg-card)] border border-[var(--border-color)] rounded-lg pl-9 pr-4 py-2.5 text-sm text-white placeholder-[var(--text-muted)] focus:outline-none focus:border-[var(--gold)]/50"
         />
       </div>
 
@@ -336,23 +336,23 @@ export default function RunbooksPage() {
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
         <Card className="text-center">
           <p className="text-3xl font-extrabold font-mono">{DEMO_RUNBOOKS.length}</p>
-          <p className="text-xs text-[#64748b] uppercase tracking-wider mt-1">{locale === "ja" ? "ランブック総数" : "Total Runbooks"}</p>
+          <p className="text-xs text-[var(--text-muted)] uppercase tracking-wider mt-1">{locale === "ja" ? "ランブック総数" : "Total Runbooks"}</p>
         </Card>
         <Card className="text-center">
           <p className="text-3xl font-extrabold font-mono text-red-400">
             {DEMO_RUNBOOKS.filter((r) => r.severity === "critical").length}
           </p>
-          <p className="text-xs text-[#64748b] uppercase tracking-wider mt-1">{locale === "ja" ? "クリティカル" : "Critical"}</p>
+          <p className="text-xs text-[var(--text-muted)] uppercase tracking-wider mt-1">{locale === "ja" ? "クリティカル" : "Critical"}</p>
         </Card>
         <Card className="text-center">
           <p className="text-3xl font-extrabold font-mono text-[#f59e0b]">
             {DEMO_RUNBOOKS.filter((r) => r.severity === "high").length}
           </p>
-          <p className="text-xs text-[#64748b] uppercase tracking-wider mt-1">{locale === "ja" ? "高" : "High"}</p>
+          <p className="text-xs text-[var(--text-muted)] uppercase tracking-wider mt-1">{locale === "ja" ? "高" : "High"}</p>
         </Card>
         <Card className="text-center">
           <p className="text-3xl font-extrabold font-mono text-[#10b981]">11 min</p>
-          <p className="text-xs text-[#64748b] uppercase tracking-wider mt-1">{t.avgMttr} Avg</p>
+          <p className="text-xs text-[var(--text-muted)] uppercase tracking-wider mt-1">{t.avgMttr} Avg</p>
         </Card>
       </div>
 
@@ -363,7 +363,7 @@ export default function RunbooksPage() {
         ))}
         {filtered.length === 0 && (
           <Card className="text-center py-12">
-            <p className="text-[#64748b]">{locale === "ja" ? "検索に一致するランブックがありません。" : "No runbooks match your search."}</p>
+            <p className="text-[var(--text-muted)]">{locale === "ja" ? "検索に一致するランブックがありません。" : "No runbooks match your search."}</p>
           </Card>
         )}
       </div>

@@ -156,19 +156,19 @@ export default function DoraPage() {
   const displayScore = score ?? Math.round(DEFAULT_PILLARS.reduce((s, p) => s + p.score, 0) / DEFAULT_PILLARS.length);
 
   return (
-    <div className="max-w-[1200px] mx-auto px-6 py-10">
+    <div className="w-full px-6 py-10">
       <h1 className="text-2xl font-bold mb-1 flex items-center gap-3">
-        <ShieldAlert size={24} className="text-[#FFD700]" />
+        <ShieldAlert size={24} className="text-[var(--gold)]" />
         {t.title}
       </h1>
-      <p className="text-[#94a3b8] text-sm mb-6">{t.subtitle}</p>
+      <p className="text-[var(--text-secondary)] text-sm mb-6">{t.subtitle}</p>
 
       {/* DORA-02: Context banner — clarify applicability for Japanese SMEs */}
       <div className="mb-8 p-4 rounded-xl border border-blue-500/20 bg-blue-500/[0.05] flex gap-3">
         <Info size={16} className="text-blue-400 shrink-0 mt-0.5" />
         <div>
           <p className="text-sm font-semibold text-blue-300 mb-1">{t.contextTitle}</p>
-          <p className="text-sm text-[#94a3b8] leading-relaxed mb-2">{t.contextBody}</p>
+          <p className="text-sm text-[var(--text-secondary)] leading-relaxed mb-2">{t.contextBody}</p>
           <a
             href="https://eur-lex.europa.eu/legal-content/EN/TXT/?uri=CELEX:32022R2554"
             target="_blank"
@@ -183,20 +183,20 @@ export default function DoraPage() {
 
       <div className="grid md:grid-cols-3 gap-4 mb-8">
         <Card>
-          <p className="text-xs text-[#64748b] uppercase mb-2">{t.overallScore}</p>
-          <p className="text-3xl font-bold text-[#FFD700]">{displayScore}%</p>
+          <p className="text-xs text-[var(--text-muted)] uppercase mb-2">{t.overallScore}</p>
+          <p className="text-3xl font-bold text-[var(--gold)]">{displayScore}%</p>
           {!isFromApi && (
-            <p className="text-[10px] text-[#475569] mt-1">{locale === "ja" ? "サンプルデータ" : "Sample data"}</p>
+            <p className="text-[10px] text-[var(--text-muted)] mt-1">{locale === "ja" ? "サンプルデータ" : "Sample data"}</p>
           )}
         </Card>
         <Card>
-          <p className="text-xs text-[#64748b] uppercase mb-2">{t.status}</p>
+          <p className="text-xs text-[var(--text-muted)] uppercase mb-2">{t.status}</p>
           <Badge variant={displayScore >= 80 ? "green" : displayScore >= 60 ? "yellow" : "red"}>
             {displayScore >= 80 ? t.compliant : displayScore >= 60 ? t.partial : t.nonCompliant}
           </Badge>
         </Card>
         <Card>
-          <p className="text-xs text-[#64748b] uppercase mb-2">{t.pillars}</p>
+          <p className="text-xs text-[var(--text-muted)] uppercase mb-2">{t.pillars}</p>
           <p className="text-2xl font-bold">{pillars.length}</p>
         </Card>
       </div>
@@ -206,8 +206,8 @@ export default function DoraPage() {
         <div className="space-y-3">
           {pillars.map((p) => (
             <div key={p.id} className="flex items-center gap-4">
-              <span className="w-48 text-sm text-[#94a3b8]">{p.name}</span>
-              <div className="flex-1 h-3 bg-[#1e293b] rounded-full overflow-hidden">
+              <span className="w-48 text-sm text-[var(--text-secondary)]">{p.name}</span>
+              <div className="flex-1 h-3 bg-[var(--border-color)] rounded-full overflow-hidden">
                 <div
                   className={`h-full rounded-full transition-all duration-500 ${p.score >= 80 ? "bg-emerald-400" : p.score >= 60 ? "bg-amber-400" : "bg-red-400"}`}
                   style={{ width: `${p.score}%` }}
@@ -221,7 +221,7 @@ export default function DoraPage() {
           ))}
         </div>
         {!isFromApi && (
-          <p className="text-xs text-[#475569] mt-4 pt-3 border-t border-[#1e293b] flex items-center gap-1.5">
+          <p className="text-xs text-[var(--text-muted)] mt-4 pt-3 border-t border-[var(--border-color)] flex items-center gap-1.5">
             <Info size={11} />
             {t.dataNote}
           </p>
@@ -239,7 +239,7 @@ export default function DoraPage() {
 
             {/* Level indicator dots */}
             <div className="flex items-center gap-3 mb-6">
-              <span className="text-xs text-[#64748b] uppercase mr-1">{t.sreLevel}</span>
+              <span className="text-xs text-[var(--text-muted)] uppercase mr-1">{t.sreLevel}</span>
               {SRE_LEVEL_NAMES.map((name, i) => {
                 const lv = i + 1;
                 const isActive = lv === level;
@@ -249,15 +249,15 @@ export default function DoraPage() {
                     <div
                       className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold border transition-colors ${
                         isActive
-                          ? "bg-[#FFD700] border-[#FFD700] text-black"
+                          ? "bg-[var(--gold)] border-[var(--gold)] text-black"
                           : isPast
                           ? "bg-emerald-500/20 border-emerald-500/40 text-emerald-400"
-                          : "bg-[#1e293b] border-[#334155] text-[#475569]"
+                          : "bg-[var(--border-color)] border-[var(--border-color)] text-[var(--text-muted)]"
                       }`}
                     >
                       {lv}
                     </div>
-                    <span className={`text-[9px] leading-tight text-center ${isActive ? "text-[#FFD700]" : isPast ? "text-emerald-400" : "text-[#475569]"}`}>
+                    <span className={`text-[9px] leading-tight text-center ${isActive ? "text-[var(--gold)]" : isPast ? "text-emerald-400" : "text-[var(--text-muted)]"}`}>
                       {locale === "ja" ? name.ja : name.en}
                     </span>
                   </div>
@@ -265,18 +265,18 @@ export default function DoraPage() {
               })}
             </div>
 
-            <p className="text-xs text-[#64748b] uppercase mb-1">{t.currentLevel}</p>
+            <p className="text-xs text-[var(--text-muted)] uppercase mb-1">{t.currentLevel}</p>
             <p className="text-sm font-semibold text-[#e2e8f0] mb-5">
               {t.sreLevel} {level} — {locale === "ja" ? levelName.ja : levelName.en}
             </p>
 
             {level < 5 && (
               <>
-                <p className="text-xs text-[#64748b] uppercase mb-3">{t.nextActions}</p>
+                <p className="text-xs text-[var(--text-muted)] uppercase mb-3">{t.nextActions}</p>
                 <div className="space-y-2">
                   {actions.map((action, i) => (
-                    <div key={i} className="p-3 rounded-lg bg-white/[0.02] border border-[#1e293b] flex items-center gap-3">
-                      <span className="flex-1 text-sm text-[#94a3b8]">
+                    <div key={i} className="p-3 rounded-lg bg-white/[0.02] border border-[var(--border-color)] flex items-center gap-3">
+                      <span className="flex-1 text-sm text-[var(--text-secondary)]">
                         {locale === "ja" ? action.label.ja : action.label.en}
                       </span>
                       <Badge variant="default">

@@ -189,14 +189,14 @@ export default function AiReliabilityPage() {
   const highRiskPrompts = DEMO_PROMPT_SCORES.filter((p) => p.risk === "high").length;
 
   return (
-    <div className="max-w-[1200px] mx-auto px-6 py-10">
+    <div className="w-full px-6 py-10">
       {/* Header */}
       <div className="mb-8">
         <h1 className="text-2xl font-bold mb-1 flex items-center gap-3">
-          <Brain size={24} className="text-[#FFD700]" />
+          <Brain size={24} className="text-[var(--gold)]" />
           AI Reliability Dashboard
         </h1>
-        <p className="text-[#94a3b8] text-sm">
+        <p className="text-[var(--text-secondary)] text-sm">
           Monitor LLM/AI system health, hallucination rates, and dependency risks (Layer 3)
         </p>
       </div>
@@ -210,7 +210,7 @@ export default function AiReliabilityPage() {
           { label: "Avg Hallucination Rate", value: `${overallHallucinationRate}%`, color: hallucinationColor(parseFloat(overallHallucinationRate)) },
         ].map((stat) => (
           <Card key={stat.label} className="text-center">
-            <p className="text-xs text-[#64748b] uppercase tracking-wider mb-1">{stat.label}</p>
+            <p className="text-xs text-[var(--text-muted)] uppercase tracking-wider mb-1">{stat.label}</p>
             <p className="text-3xl font-extrabold font-mono" style={{ color: stat.color }}>{stat.value}</p>
           </Card>
         ))}
@@ -220,10 +220,10 @@ export default function AiReliabilityPage() {
       <Card className="mb-6">
         <div className="flex items-center justify-between mb-4">
           <h3 className="text-base font-bold flex items-center gap-2">
-            <Activity size={16} className="text-[#FFD700]" />
+            <Activity size={16} className="text-[var(--gold)]" />
             Hallucination Rate — Last 24h
           </h3>
-          <div className="flex items-center gap-3 text-xs text-[#64748b]">
+          <div className="flex items-center gap-3 text-xs text-[var(--text-muted)]">
             <span className="flex items-center gap-1"><span className="w-3 h-0.5 bg-red-500 inline-block" />Actual rate</span>
             <span className="flex items-center gap-1"><span className="w-3 h-0.5 bg-yellow-500 inline-block border-dashed border" />3% threshold</span>
           </div>
@@ -232,11 +232,11 @@ export default function AiReliabilityPage() {
           <HallucinationChart data={HALLUCINATION_HISTORY} width={400} height={72} />
           <div className="space-y-2 pb-1">
             <div>
-              <p className="text-xs text-[#64748b]">{locale === "ja" ? "現在のレート" : "Current rate"}</p>
+              <p className="text-xs text-[var(--text-muted)]">{locale === "ja" ? "現在のレート" : "Current rate"}</p>
               <p className="text-2xl font-extrabold font-mono" style={{ color: hallucinationColor(2.3) }}>2.3%</p>
             </div>
             <div>
-              <p className="text-xs text-[#64748b]">{locale === "ja" ? "ピーク (10:00)" : "Peak (10:00)"}</p>
+              <p className="text-xs text-[var(--text-muted)]">{locale === "ja" ? "ピーク (10:00)" : "Peak (10:00)"}</p>
               <p className="text-lg font-bold font-mono text-yellow-400">3.4%</p>
             </div>
             <div className="flex items-center gap-1 text-xs text-emerald-400">
@@ -249,7 +249,7 @@ export default function AiReliabilityPage() {
 
       {/* AI Systems */}
       <div className="space-y-4 mb-8">
-        <h3 className="text-sm font-semibold text-[#94a3b8] uppercase tracking-wider">AI Systems</h3>
+        <h3 className="text-sm font-semibold text-[var(--text-secondary)] uppercase tracking-wider">AI Systems</h3>
         {DEMO_AI_SYSTEMS.map((ai) => {
           const isExpanded = expandedSystem === ai.id;
 
@@ -268,13 +268,13 @@ export default function AiReliabilityPage() {
                         {ai.status === "healthy" ? "Healthy" : ai.status === "degraded" ? "Degraded" : "Down"}
                       </Badge>
                     </div>
-                    <div className="flex flex-wrap gap-4 text-xs text-[#64748b]">
+                    <div className="flex flex-wrap gap-4 text-xs text-[var(--text-muted)]">
                       <span>Hallucination: <strong style={{ color: hallucinationColor(ai.hallucinationRate) }}>{ai.hallucinationRate}%</strong></span>
-                      <span>P99: <strong className="text-[#94a3b8]">{ai.latencyP99}ms</strong></span>
-                      <span>RPM: <strong className="text-[#94a3b8]">{ai.requestsPerMin.toLocaleString()}</strong></span>
+                      <span>P99: <strong className="text-[var(--text-secondary)]">{ai.latencyP99}ms</strong></span>
+                      <span>RPM: <strong className="text-[var(--text-secondary)]">{ai.requestsPerMin.toLocaleString()}</strong></span>
                     </div>
                   </div>
-                  <div className="flex items-center gap-2 text-xs text-[#64748b]">
+                  <div className="flex items-center gap-2 text-xs text-[var(--text-muted)]">
                     <Bot size={13} />
                     {ai.businessFlows.length} flows
                   </div>
@@ -282,17 +282,17 @@ export default function AiReliabilityPage() {
               </button>
 
               {isExpanded && (
-                <div className="mt-4 pt-4 border-t border-[#1e293b] grid md:grid-cols-2 gap-4">
+                <div className="mt-4 pt-4 border-t border-[var(--border-color)] grid md:grid-cols-2 gap-4">
                   {/* Business Flows */}
                   <div>
-                    <h5 className="text-xs font-semibold text-[#64748b] uppercase tracking-wider mb-2 flex items-center gap-1">
+                    <h5 className="text-xs font-semibold text-[var(--text-muted)] uppercase tracking-wider mb-2 flex items-center gap-1">
                       <Zap size={11} />
                       Business Flows Using This AI
                     </h5>
                     <div className="space-y-1.5">
                       {ai.businessFlows.map((flow) => (
-                        <div key={flow} className="flex items-center gap-2 text-sm text-[#94a3b8]">
-                          <ArrowRight size={11} className="text-[#FFD700] shrink-0" />
+                        <div key={flow} className="flex items-center gap-2 text-sm text-[var(--text-secondary)]">
+                          <ArrowRight size={11} className="text-[var(--gold)] shrink-0" />
                           {flow}
                         </div>
                       ))}
@@ -301,19 +301,19 @@ export default function AiReliabilityPage() {
 
                   {/* Fallback Chain */}
                   <div>
-                    <h5 className="text-xs font-semibold text-[#64748b] uppercase tracking-wider mb-2 flex items-center gap-1">
+                    <h5 className="text-xs font-semibold text-[var(--text-muted)] uppercase tracking-wider mb-2 flex items-center gap-1">
                       <ShieldAlert size={11} />
                       Fallback Chain
                     </h5>
                     <div className="space-y-2">
                       {ai.fallbackChain.map((fb, i) => (
                         <div key={i} className="flex items-center gap-3">
-                          <span className="text-xs text-[#475569] w-4 text-right">{i + 1}.</span>
+                          <span className="text-xs text-[var(--text-muted)] w-4 text-right">{i + 1}.</span>
                           <div
                             className="w-2 h-2 rounded-full shrink-0"
                             style={{ backgroundColor: fallbackColor(fb.status) }}
                           />
-                          <span className="text-sm text-[#94a3b8] flex-1">{fb.label}</span>
+                          <span className="text-sm text-[var(--text-secondary)] flex-1">{fb.label}</span>
                           <Badge variant={statusVariant(fb.status)} className="text-[10px]">
                             {fb.status}
                           </Badge>
@@ -332,7 +332,7 @@ export default function AiReliabilityPage() {
       <Card>
         <div className="flex items-center justify-between mb-4">
           <h3 className="text-base font-bold flex items-center gap-2">
-            <ShieldAlert size={16} className="text-[#FFD700]" />
+            <ShieldAlert size={16} className="text-[var(--gold)]" />
             Prompt Risk Scoring
           </h3>
           {highRiskPrompts > 0 && (
@@ -356,7 +356,7 @@ export default function AiReliabilityPage() {
                   <span className="text-sm font-mono font-medium text-[#e2e8f0]">{p.name}</span>
                   <Badge variant={riskVariant(p.risk)}>{p.risk.toUpperCase()} RISK</Badge>
                 </div>
-                <p className="text-xs text-[#64748b] leading-relaxed">{p.reason}</p>
+                <p className="text-xs text-[var(--text-muted)] leading-relaxed">{p.reason}</p>
               </div>
               <div className="text-right shrink-0">
                 <p
@@ -365,13 +365,13 @@ export default function AiReliabilityPage() {
                 >
                   {p.score}
                 </p>
-                <p className="text-xs text-[#64748b]">safety score</p>
+                <p className="text-xs text-[var(--text-muted)]">safety score</p>
               </div>
             </div>
           ))}
         </div>
 
-        <p className="text-xs text-[#475569] mt-4 border-t border-[#1e293b] pt-3">
+        <p className="text-xs text-[var(--text-muted)] mt-4 border-t border-[var(--border-color)] pt-3">
           Prompt risk scores are computed by analyzing: PII exposure, output format constraints, temperature settings, context length, and post-processing guardrails.
         </p>
       </Card>

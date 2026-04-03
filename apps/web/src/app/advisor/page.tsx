@@ -143,10 +143,10 @@ export default function AdvisorPage() {
     <div className="max-w-[900px] mx-auto px-6 py-10 flex flex-col" style={{ height: "calc(100vh - 64px)" }}>
       <div className="mb-6">
         <h1 className="text-2xl font-bold mb-1 flex items-center gap-3">
-          <Bot size={24} className="text-[#FFD700]" />
+          <Bot size={24} className="text-[var(--gold)]" />
           {ta.title}
         </h1>
-        <p className="text-[#94a3b8] text-sm">
+        <p className="text-[var(--text-secondary)] text-sm">
           {ta.subtitle}
         </p>
       </div>
@@ -154,13 +154,13 @@ export default function AdvisorPage() {
       {/* Configuration Wizard */}
       <Card className="mb-6 p-5">
         <h2 className="text-base font-bold mb-4 flex items-center gap-2">
-          <Target size={16} className="text-[#FFD700]" />
+          <Target size={16} className="text-[var(--gold)]" />
           {isJa ? "構成提案ウィザード" : "Architecture Advisor Wizard"}
         </h2>
 
         {/* Step 1: Industry */}
         <div className="mb-4">
-          <p className="text-xs text-[#64748b] uppercase tracking-wide mb-2">
+          <p className="text-xs text-[var(--text-muted)] uppercase tracking-wide mb-2">
             {isJa ? "1. 業種を選択" : "1. Select your industry"}
           </p>
           <div className="flex flex-wrap gap-2">
@@ -172,8 +172,8 @@ export default function AdvisorPage() {
                   onClick={() => setWizardIndustry(ind.key)}
                   className={`inline-flex items-center gap-1.5 px-3 py-2 rounded-lg border text-sm transition-all ${
                     wizardIndustry === ind.key
-                      ? "border-[#FFD700] bg-[#FFD700]/10 text-[#FFD700]"
-                      : "border-[#1e293b] text-[#94a3b8] hover:border-[#334155]"
+                      ? "border-[var(--gold)] bg-[var(--gold)]/10 text-[var(--gold)]"
+                      : "border-[var(--border-color)] text-[var(--text-secondary)] hover:border-[var(--border-color)]"
                   }`}
                 >
                   <Icon size={14} />
@@ -187,7 +187,7 @@ export default function AdvisorPage() {
         {/* Step 2: Challenge */}
         {wizardIndustry && (
           <div className="mb-4">
-            <p className="text-xs text-[#64748b] uppercase tracking-wide mb-2">
+            <p className="text-xs text-[var(--text-muted)] uppercase tracking-wide mb-2">
               {isJa ? "2. 課題を選択" : "2. Select your challenge"}
             </p>
             <div className="flex flex-wrap gap-2">
@@ -197,8 +197,8 @@ export default function AdvisorPage() {
                   onClick={() => setWizardChallenge(ch.key)}
                   className={`px-3 py-2 rounded-lg border text-sm transition-all ${
                     wizardChallenge === ch.key
-                      ? "border-[#FFD700] bg-[#FFD700]/10 text-[#FFD700]"
-                      : "border-[#1e293b] text-[#94a3b8] hover:border-[#334155]"
+                      ? "border-[var(--gold)] bg-[var(--gold)]/10 text-[var(--gold)]"
+                      : "border-[var(--border-color)] text-[var(--text-secondary)] hover:border-[var(--border-color)]"
                   }`}
                 >
                   {isJa ? ch.ja : ch.en}
@@ -216,7 +216,7 @@ export default function AdvisorPage() {
                 <p className="text-sm font-bold text-emerald-300">
                   {isJa ? wizardResult.titleJa : wizardResult.title}
                 </p>
-                <p className="text-xs text-[#94a3b8] mt-1">
+                <p className="text-xs text-[var(--text-secondary)] mt-1">
                   {isJa ? wizardResult.descJa : wizardResult.desc}
                 </p>
               </div>
@@ -224,13 +224,13 @@ export default function AdvisorPage() {
             </div>
             <div className="flex flex-wrap gap-1.5 mt-3">
               {wizardResult.services.map((s) => (
-                <span key={s} className="px-2 py-1 rounded text-[11px] font-mono bg-[#1e293b] text-[#94a3b8]">
+                <span key={s} className="px-2 py-1 rounded text-[11px] font-mono bg-[var(--border-color)] text-[var(--text-secondary)]">
                   {s}
                 </span>
               ))}
             </div>
             <div className="mt-3 pt-3 border-t border-emerald-500/10">
-              <Link href={`/simulate?sample=web-saas`} className="text-xs text-[#FFD700] hover:underline inline-flex items-center gap-1">
+              <Link href={`/simulate?sample=web-saas`} className="text-xs text-[var(--gold)] hover:underline inline-flex items-center gap-1">
                 {isJa ? "この構成でシミュレーションを実行 →" : "Simulate this architecture →"}
               </Link>
             </div>
@@ -244,20 +244,20 @@ export default function AdvisorPage() {
           {messages.map((msg, i) => (
             <div key={i} className={`flex gap-3 ${msg.role === "user" ? "justify-end" : ""}`}>
               {msg.role === "assistant" && (
-                <div className="w-8 h-8 rounded-lg bg-[#FFD700]/10 flex items-center justify-center shrink-0">
-                  <Bot size={16} className="text-[#FFD700]" />
+                <div className="w-8 h-8 rounded-lg bg-[var(--gold)]/10 flex items-center justify-center shrink-0">
+                  <Bot size={16} className="text-[var(--gold)]" />
                 </div>
               )}
               <div
                 className={`max-w-[80%] rounded-xl p-4 ${
                   msg.role === "user"
-                    ? "bg-[#FFD700]/10 text-[#e2e8f0]"
-                    : "bg-white/[0.03] border border-[#1e293b]"
+                    ? "bg-[var(--gold)]/10 text-[#e2e8f0]"
+                    : "bg-white/[0.03] border border-[var(--border-color)]"
                 }`}
               >
                 <div className="text-sm whitespace-pre-wrap">{msg.content}</div>
                 {msg.actions && msg.actions.length > 0 && (
-                  <div className="flex flex-wrap gap-2 mt-3 pt-3 border-t border-[#1e293b]">
+                  <div className="flex flex-wrap gap-2 mt-3 pt-3 border-t border-[var(--border-color)]">
                     {msg.actions.map((action) => (
                       <Link key={action.href} href={action.href}>
                         <Button variant="secondary" size="sm">
@@ -268,7 +268,7 @@ export default function AdvisorPage() {
                   </div>
                 )}
                 {msg.sources && msg.sources.length > 0 && (
-                  <div className="mt-2 text-xs text-[#64748b]">
+                  <div className="mt-2 text-xs text-[var(--text-muted)]">
                     Sources: {msg.sources.join(", ")}
                   </div>
                 )}
@@ -282,11 +282,11 @@ export default function AdvisorPage() {
           ))}
           {loading && (
             <div className="flex gap-3">
-              <div className="w-8 h-8 rounded-lg bg-[#FFD700]/10 flex items-center justify-center shrink-0">
-                <Bot size={16} className="text-[#FFD700]" />
+              <div className="w-8 h-8 rounded-lg bg-[var(--gold)]/10 flex items-center justify-center shrink-0">
+                <Bot size={16} className="text-[var(--gold)]" />
               </div>
-              <div className="bg-white/[0.03] border border-[#1e293b] rounded-xl p-4">
-                <Loader2 size={16} className="animate-spin text-[#FFD700]" />
+              <div className="bg-white/[0.03] border border-[var(--border-color)] rounded-xl p-4">
+                <Loader2 size={16} className="animate-spin text-[var(--gold)]" />
               </div>
             </div>
           )}
@@ -301,7 +301,7 @@ export default function AdvisorPage() {
             <button
               key={s}
               onClick={() => sendMessage(s)}
-              className="px-3 py-1.5 rounded-full text-xs border border-[#1e293b] text-[#94a3b8] hover:border-[#FFD700]/30 hover:text-[#FFD700] transition-all"
+              className="px-3 py-1.5 rounded-full text-xs border border-[var(--border-color)] text-[var(--text-secondary)] hover:border-[var(--gold)]/30 hover:text-[var(--gold)] transition-all"
             >
               {s}
             </button>
@@ -324,13 +324,13 @@ export default function AdvisorPage() {
             value={input}
             onChange={(e) => setInput(e.target.value)}
             placeholder={ta.placeholder}
-            className="w-full px-4 py-3 bg-[#0d1117] border border-[#1e293b] rounded-xl text-sm text-[#e2e8f0] placeholder-[#3a4558] focus:border-[#FFD700]/50 focus:outline-none pr-16"
+            className="w-full px-4 py-3 bg-[var(--bg-tertiary)] border border-[var(--border-color)] rounded-xl text-sm text-[#e2e8f0] placeholder-[#3a4558] focus:border-[var(--gold)]/50 focus:outline-none pr-16"
             disabled={loading}
             maxLength={500}
             aria-label={ta.placeholder}
           />
           {input.length > 400 && (
-            <span className={`absolute right-3 top-1/2 -translate-y-1/2 text-xs ${input.length >= 490 ? "text-red-400" : "text-[#64748b]"}`}>
+            <span className={`absolute right-3 top-1/2 -translate-y-1/2 text-xs ${input.length >= 490 ? "text-red-400" : "text-[var(--text-muted)]"}`}>
               {input.length}/500
             </span>
           )}
@@ -339,7 +339,7 @@ export default function AdvisorPage() {
           {loading ? <Loader2 size={16} className="animate-spin" /> : <Send size={16} />}
         </Button>
       </form>
-      <p className="text-xs text-[#475569] mt-2 text-right">
+      <p className="text-xs text-[var(--text-muted)] mt-2 text-right">
         {locale === "ja" ? "Enter で送信" : "Press Enter to send"}
       </p>
     </div>

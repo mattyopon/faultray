@@ -481,8 +481,8 @@ function EvidenceManagementTab({ locale }: { locale: Locale }) {
             onClick={() => setActivePillar(tab.key)}
             className={`px-4 py-2 text-xs font-semibold rounded-lg whitespace-nowrap transition-colors ${
               activePillar === tab.key
-                ? "bg-[#FFD700]/10 text-[#FFD700] border border-[#FFD700]/30"
-                : "text-[#94a3b8] hover:text-white hover:bg-white/5 border border-transparent"
+                ? "bg-[var(--gold)]/10 text-[var(--gold)] border border-[var(--gold)]/30"
+                : "text-[var(--text-secondary)] hover:text-white hover:bg-white/5 border border-transparent"
             }`}
           >
             {tab.label}
@@ -505,22 +505,22 @@ function EvidenceManagementTab({ locale }: { locale: Locale }) {
                 )}
                 <div className="min-w-0">
                   <div className="flex items-center gap-2 mb-1 flex-wrap">
-                    <span className="text-sm font-mono text-[#64748b]">{ctrl.id}</span>
+                    <span className="text-sm font-mono text-[var(--text-muted)]">{ctrl.id}</span>
                     <span className="text-sm font-medium">{ctrl.name[locale] ?? ctrl.name.en}</span>
                     <StatusBadge status={ctrl.status} locale={locale} />
                   </div>
-                  <p className="text-xs text-[#94a3b8] mb-3">{ctrl.description[locale] ?? ctrl.description.en}</p>
+                  <p className="text-xs text-[var(--text-secondary)] mb-3">{ctrl.description[locale] ?? ctrl.description.en}</p>
 
                   {/* Evidence Files */}
                   <div className="mb-2">
-                    <p className="text-xs font-semibold text-[#64748b] mb-1">{ct.evidenceFiles}</p>
+                    <p className="text-xs font-semibold text-[var(--text-muted)] mb-1">{ct.evidenceFiles}</p>
                     {ctrl.evidence.length > 0 ? (
                       <div className="space-y-1">
                         {ctrl.evidence.map((ev, i) => (
                           <div key={i} className="flex items-center gap-2 text-xs">
-                            <FileText size={12} className="text-[#64748b] shrink-0" />
-                            <span className="text-[#94a3b8]">{ev.fileName}</span>
-                            <span className="text-[#475569]">
+                            <FileText size={12} className="text-[var(--text-muted)] shrink-0" />
+                            <span className="text-[var(--text-secondary)]">{ev.fileName}</span>
+                            <span className="text-[var(--text-muted)]">
                               {new Date(ev.uploadedAt).toLocaleDateString(locale === "ja" ? "ja-JP" : "en-US")}
                             </span>
                           </div>
@@ -532,7 +532,7 @@ function EvidenceManagementTab({ locale }: { locale: Locale }) {
                   </div>
 
                   {/* Review info */}
-                  <div className="flex items-center gap-4 text-xs text-[#475569]">
+                  <div className="flex items-center gap-4 text-xs text-[var(--text-muted)]">
                     <span className="flex items-center gap-1">
                       <Clock size={10} />
                       {ct.lastReview}: {ctrl.lastReviewDate}
@@ -587,7 +587,7 @@ function RegisterTab({ locale }: { locale: Locale }) {
 
   return (
     <div>
-      <p className="text-xs text-[#94a3b8] mb-4">
+      <p className="text-xs text-[var(--text-secondary)] mb-4">
         {ct.registerDescription}
       </p>
 
@@ -595,26 +595,26 @@ function RegisterTab({ locale }: { locale: Locale }) {
       <div className="overflow-x-auto mb-4">
         <table className="w-full text-sm">
           <thead>
-            <tr className="border-b border-[#1e293b] text-left">
-              <th scope="col" className="pb-3 pr-4 text-xs text-[#64748b] font-semibold">{ct.providerName}</th>
-              <th scope="col" className="pb-3 pr-4 text-xs text-[#64748b] font-semibold">LEI / EUID</th>
-              <th scope="col" className="pb-3 pr-4 text-xs text-[#64748b] font-semibold">{ct.serviceDescription}</th>
-              <th scope="col" className="pb-3 pr-4 text-xs text-[#64748b] font-semibold">{ct.criticality}</th>
-              <th scope="col" className="pb-3 pr-4 text-xs text-[#64748b] font-semibold">{ct.contractPeriod}</th>
-              <th scope="col" className="pb-3 pr-4 text-xs text-[#64748b] font-semibold">{ct.dataLocation}</th>
-              <th scope="col" className="pb-3 text-xs text-[#64748b] font-semibold text-right">{ct.annualCost}</th>
+            <tr className="border-b border-[var(--border-color)] text-left">
+              <th scope="col" className="pb-3 pr-4 text-xs text-[var(--text-muted)] font-semibold">{ct.providerName}</th>
+              <th scope="col" className="pb-3 pr-4 text-xs text-[var(--text-muted)] font-semibold">LEI / EUID</th>
+              <th scope="col" className="pb-3 pr-4 text-xs text-[var(--text-muted)] font-semibold">{ct.serviceDescription}</th>
+              <th scope="col" className="pb-3 pr-4 text-xs text-[var(--text-muted)] font-semibold">{ct.criticality}</th>
+              <th scope="col" className="pb-3 pr-4 text-xs text-[var(--text-muted)] font-semibold">{ct.contractPeriod}</th>
+              <th scope="col" className="pb-3 pr-4 text-xs text-[var(--text-muted)] font-semibold">{ct.dataLocation}</th>
+              <th scope="col" className="pb-3 text-xs text-[var(--text-muted)] font-semibold text-right">{ct.annualCost}</th>
             </tr>
           </thead>
           <tbody>
             {ICT_PROVIDERS.map((provider) => (
-              <tr key={provider.name} className="border-b border-[#1e293b]/50 hover:bg-white/[0.02]">
+              <tr key={provider.name} className="border-b border-[var(--border-color)]/50 hover:bg-white/[0.02]">
                 <td className="py-3 pr-4 font-medium text-sm">{provider.name}</td>
-                <td className="py-3 pr-4 text-xs text-[#64748b] font-mono">{provider.leiEuid}</td>
-                <td className="py-3 pr-4 text-xs text-[#94a3b8]">{provider.service[locale] ?? provider.service.en}</td>
+                <td className="py-3 pr-4 text-xs text-[var(--text-muted)] font-mono">{provider.leiEuid}</td>
+                <td className="py-3 pr-4 text-xs text-[var(--text-secondary)]">{provider.service[locale] ?? provider.service.en}</td>
                 <td className="py-3 pr-4"><CriticalityBadge criticality={provider.criticality} locale={locale} /></td>
-                <td className="py-3 pr-4 text-xs text-[#94a3b8]">{provider.contractPeriod}</td>
-                <td className="py-3 pr-4 text-xs text-[#94a3b8]">{provider.dataLocation}</td>
-                <td className="py-3 text-xs text-[#94a3b8] text-right font-mono">
+                <td className="py-3 pr-4 text-xs text-[var(--text-secondary)]">{provider.contractPeriod}</td>
+                <td className="py-3 pr-4 text-xs text-[var(--text-secondary)]">{provider.dataLocation}</td>
+                <td className="py-3 text-xs text-[var(--text-secondary)] text-right font-mono">
                   {provider.annualCostEur.toLocaleString("en-US")}
                 </td>
               </tr>
@@ -667,7 +667,7 @@ function IncidentReportTab({ locale }: { locale: Locale }) {
 
   return (
     <div>
-      <p className="text-xs text-[#94a3b8] mb-4">
+      <p className="text-xs text-[var(--text-secondary)] mb-4">
         DORA ITS 2025/302
       </p>
 
@@ -679,8 +679,8 @@ function IncidentReportTab({ locale }: { locale: Locale }) {
             onClick={() => setActiveReport(btn.key)}
             className={`px-4 py-2 text-xs font-semibold rounded-lg whitespace-nowrap transition-colors ${
               activeReport === btn.key
-                ? "bg-[#FFD700]/10 text-[#FFD700] border border-[#FFD700]/30"
-                : "text-[#94a3b8] hover:text-white hover:bg-white/5 border border-transparent"
+                ? "bg-[var(--gold)]/10 text-[var(--gold)] border border-[var(--gold)]/30"
+                : "text-[var(--text-secondary)] hover:text-white hover:bg-white/5 border border-transparent"
             }`}
           >
             {btn.label}
@@ -691,10 +691,10 @@ function IncidentReportTab({ locale }: { locale: Locale }) {
       {/* Report Form */}
       <Card className="mb-4">
         <div className="flex items-center gap-2 mb-1">
-          <AlertOctagon size={16} className="text-[#FFD700]" />
+          <AlertOctagon size={16} className="text-[var(--gold)]" />
           <h3 className="text-sm font-bold">{report.title[locale] ?? report.title.en}</h3>
         </div>
-        <p className="text-xs text-[#64748b] mb-4 flex items-center gap-1">
+        <p className="text-xs text-[var(--text-muted)] mb-4 flex items-center gap-1">
           <Clock size={10} />
           {report.deadline[locale] ?? report.deadline.en}
         </p>
@@ -702,10 +702,10 @@ function IncidentReportTab({ locale }: { locale: Locale }) {
         <div className="space-y-3">
           {report.fields.map((field, i) => (
             <div key={i} className="grid grid-cols-[180px_1fr] gap-3 items-start">
-              <label className="text-xs font-semibold text-[#64748b] pt-2">
+              <label className="text-xs font-semibold text-[var(--text-muted)] pt-2">
                 {field.label[locale] ?? field.label.en}
               </label>
-              <div className="bg-white/[0.03] border border-[#1e293b] rounded-lg px-3 py-2 text-sm text-[#94a3b8] whitespace-pre-wrap">
+              <div className="bg-white/[0.03] border border-[var(--border-color)] rounded-lg px-3 py-2 text-sm text-[var(--text-secondary)] whitespace-pre-wrap">
                 {field.value}
               </div>
             </div>
@@ -739,14 +739,14 @@ export default function EvidencePage() {
   ];
 
   return (
-    <div className="max-w-[1200px] mx-auto px-6 py-10">
+    <div className="w-full px-6 py-10">
       {/* Header */}
       <div className="mb-8">
         <h1 className="text-2xl font-bold mb-1 flex items-center gap-3">
-          <ShieldCheck size={24} className="text-[#FFD700]" />
+          <ShieldCheck size={24} className="text-[var(--gold)]" />
           {ct.pageTitle}
         </h1>
-        <p className="text-[#94a3b8] text-sm">{ct.pageSubtitle}</p>
+        <p className="text-[var(--text-secondary)] text-sm">{ct.pageSubtitle}</p>
       </div>
 
       {/* Main Tabs */}
@@ -759,8 +759,8 @@ export default function EvidencePage() {
               onClick={() => setActiveTab(tab.key)}
               className={`flex items-center gap-2 px-5 py-2.5 text-sm font-semibold rounded-xl whitespace-nowrap transition-all ${
                 activeTab === tab.key
-                  ? "bg-[#FFD700]/10 text-[#FFD700] border border-[#FFD700]/30 shadow-[0_0_15px_rgba(255,215,0,0.08)]"
-                  : "text-[#94a3b8] hover:text-white hover:bg-white/5 border border-[#1e293b]"
+                  ? "bg-[var(--gold)]/10 text-[var(--gold)] border border-[var(--gold)]/30 shadow-[0_0_15px_rgba(255,215,0,0.08)]"
+                  : "text-[var(--text-secondary)] hover:text-white hover:bg-white/5 border border-[var(--border-color)]"
               }`}
             >
               <Icon size={16} />

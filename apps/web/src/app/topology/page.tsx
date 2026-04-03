@@ -398,10 +398,10 @@ export default function TopologyPage() {
       <div className="flex items-center justify-between mb-6">
         <div>
           <h1 className="text-2xl font-bold mb-1 flex items-center gap-3">
-            <Network size={24} className="text-[#FFD700]" />
+            <Network size={24} className="text-[var(--gold)]" />
             {t.title}
           </h1>
-          <p className="text-[#94a3b8] text-sm">{t.subtitle}</p>
+          <p className="text-[var(--text-secondary)] text-sm">{t.subtitle}</p>
         </div>
         <Button variant="secondary" size="sm" onClick={loadData} disabled={loading}>
           <RefreshCw size={14} className={loading ? "animate-spin" : ""} />
@@ -410,9 +410,9 @@ export default function TopologyPage() {
       </div>
 
       {/* Description banner */}
-      <div className="flex items-start gap-3 p-4 mb-6 rounded-xl bg-[#1e293b]/40 border border-[#1e293b]">
-        <Info size={18} className="text-[#FFD700] mt-0.5 shrink-0" />
-        <p className="text-sm text-[#94a3b8] leading-relaxed">
+      <div className="flex items-start gap-3 p-4 mb-6 rounded-xl bg-[var(--border-color)]/40 border border-[var(--border-color)]">
+        <Info size={18} className="text-[var(--gold)] mt-0.5 shrink-0" />
+        <p className="text-sm text-[var(--text-secondary)] leading-relaxed">
           {t.graphDescription}
         </p>
       </div>
@@ -420,40 +420,40 @@ export default function TopologyPage() {
       {/* Simulation score banner */}
       {simScore !== null && (
         <div className={`flex items-center justify-between p-4 mb-6 rounded-xl border ${
-          simScore >= 80 ? "bg-emerald-500/5 border-emerald-500/20" : simScore >= 60 ? "bg-[#FFD700]/5 border-[#FFD700]/20" : "bg-red-500/5 border-red-500/20"
+          simScore >= 80 ? "bg-emerald-500/5 border-emerald-500/20" : simScore >= 60 ? "bg-[var(--gold)]/5 border-[var(--gold)]/20" : "bg-red-500/5 border-red-500/20"
         }`}>
           <div className="flex items-center gap-3">
-            <Activity size={18} className={simScore >= 80 ? "text-emerald-400" : simScore >= 60 ? "text-[#FFD700]" : "text-red-400"} />
+            <Activity size={18} className={simScore >= 80 ? "text-emerald-400" : simScore >= 60 ? "text-[var(--gold)]" : "text-red-400"} />
             <div>
               <span className="text-sm font-semibold">{locale === "ja" ? "最新シミュレーション結果を反映中" : "Reflecting latest simulation results"}</span>
               {simTimestamp && (
-                <span className="text-xs text-[#64748b] ml-2">
+                <span className="text-xs text-[var(--text-muted)] ml-2">
                   {new Date(simTimestamp).toLocaleString(locale === "ja" ? "ja-JP" : "en-US")}
                 </span>
               )}
             </div>
           </div>
           <div className="flex items-center gap-2">
-            <span className={`text-2xl font-bold font-mono ${simScore >= 80 ? "text-emerald-400" : simScore >= 60 ? "text-[#FFD700]" : "text-red-400"}`}>
+            <span className={`text-2xl font-bold font-mono ${simScore >= 80 ? "text-emerald-400" : simScore >= 60 ? "text-[var(--gold)]" : "text-red-400"}`}>
               {simScore.toFixed(1)}
             </span>
-            <span className="text-xs text-[#64748b]">/ 100</span>
+            <span className="text-xs text-[var(--text-muted)]">/ 100</span>
           </div>
         </div>
       )}
 
       {loading ? (
         <Card className="flex items-center justify-center py-20">
-          <Loader2 size={24} className="animate-spin text-[#FFD700]" />
-          <span className="ml-3 text-[#94a3b8]">{t.loading}</span>
+          <Loader2 size={24} className="animate-spin text-[var(--gold)]" />
+          <span className="ml-3 text-[var(--text-secondary)]">{t.loading}</span>
         </Card>
       ) : (
         <div className="grid lg:grid-cols-[1fr_360px] gap-6">
           {/* Main Graph Canvas */}
           <div ref={containerRef}>
           <Card className="p-0 overflow-auto">
-            <div className="p-4 border-b border-[#1e293b] flex items-center justify-between">
-              <div className="flex items-center gap-4 text-xs text-[#64748b]">
+            <div className="p-4 border-b border-[var(--border-color)] flex items-center justify-between">
+              <div className="flex items-center gap-4 text-xs text-[var(--text-muted)]">
                 <span className="flex items-center gap-1.5">
                   <span className="w-6 h-0 border-t-[2.5px] border-[#475569] inline-block" />
                   {t.requires}
@@ -467,7 +467,7 @@ export default function TopologyPage() {
                   {t.async}
                 </span>
               </div>
-              <div className="flex items-center gap-3 text-xs text-[#64748b]">
+              <div className="flex items-center gap-3 text-xs text-[var(--text-muted)]">
                 <span>{t.componentsCount}: <strong className="text-white font-mono">{data.nodes.length}</strong></span>
                 <span>{t.dependenciesCount}: <strong className="text-white font-mono">{data.edges.length}</strong></span>
               </div>
@@ -854,12 +854,12 @@ export default function TopologyPage() {
           <div className="space-y-4">
             {/* Component Types Legend */}
             <Card className="p-5">
-              <h3 className="text-xs font-semibold text-[#64748b] uppercase tracking-wider mb-3">{t.typeLegend}</h3>
+              <h3 className="text-xs font-semibold text-[var(--text-muted)] uppercase tracking-wider mb-3">{t.typeLegend}</h3>
               <div className="grid grid-cols-2 gap-2">
                 {Array.from(new Set(data.nodes.map(n => n.type))).map((type) => {
                   const svc = getServiceColor(type);
                   return (
-                    <div key={type} className="flex items-center gap-2 p-1.5 rounded-lg hover:bg-[#1e293b]/50 transition-colors">
+                    <div key={type} className="flex items-center gap-2 p-1.5 rounded-lg hover:bg-[var(--border-color)]/50 transition-colors">
                       <CloudIcon type={type} size={20} />
                       <span className="text-xs text-[#e2e8f0] font-medium truncate">{svc.label}</span>
                     </div>
@@ -870,7 +870,7 @@ export default function TopologyPage() {
 
             {/* Risk Level Legend */}
             <Card className="p-5">
-              <h3 className="text-xs font-semibold text-[#64748b] uppercase tracking-wider mb-3">{t.riskLegend}</h3>
+              <h3 className="text-xs font-semibold text-[var(--text-muted)] uppercase tracking-wider mb-3">{t.riskLegend}</h3>
               <div className="space-y-2">
                 {[
                   { color: "#10b981", label: t.lowRisk, range: "0-29" },
@@ -880,8 +880,8 @@ export default function TopologyPage() {
                 ].map((item) => (
                   <div key={item.range} className="flex items-center gap-3">
                     <div className="w-8 h-2 rounded-full" style={{ backgroundColor: item.color, opacity: 0.8 }} />
-                    <span className="text-xs text-[#94a3b8]">{item.label}</span>
-                    <span className="text-xs text-[#475569] ml-auto font-mono">{item.range}</span>
+                    <span className="text-xs text-[var(--text-secondary)]">{item.label}</span>
+                    <span className="text-xs text-[var(--text-muted)] ml-auto font-mono">{item.range}</span>
                   </div>
                 ))}
               </div>
@@ -891,10 +891,10 @@ export default function TopologyPage() {
             {selected && selectedRisk ? (
               <Card className="p-5">
                 <div className="flex items-center justify-between mb-4">
-                  <h3 className="text-xs font-semibold text-[#64748b] uppercase tracking-wider">
+                  <h3 className="text-xs font-semibold text-[var(--text-muted)] uppercase tracking-wider">
                     {t.componentDetails}
                   </h3>
-                  <button onClick={() => setSelectedNode(null)} className="text-[#64748b] hover:text-white transition-colors" aria-label={locale === "ja" ? "詳細を閉じる" : "Close details"}>
+                  <button onClick={() => setSelectedNode(null)} className="text-[var(--text-muted)] hover:text-white transition-colors" aria-label={locale === "ja" ? "詳細を閉じる" : "Close details"}>
                     <X size={14} />
                   </button>
                 </div>
@@ -926,12 +926,12 @@ export default function TopologyPage() {
                   {/* Risk Score Bar */}
                   <div className="p-3 rounded-xl" style={{ backgroundColor: riskBgColor(selectedRisk.risk_score) }}>
                     <div className="flex items-center justify-between mb-2">
-                      <span className="text-xs text-[#94a3b8]">{t.riskScore}</span>
+                      <span className="text-xs text-[var(--text-secondary)]">{t.riskScore}</span>
                       <span className="text-2xl font-extrabold font-mono" style={{ color: riskColor(selectedRisk.risk_score) }}>
                         {selectedRisk.risk_score}
                       </span>
                     </div>
-                    <div className="w-full h-2 rounded-full bg-[#1e293b]">
+                    <div className="w-full h-2 rounded-full bg-[var(--border-color)]">
                       <div
                         className="h-2 rounded-full transition-all duration-500"
                         style={{
@@ -947,24 +947,24 @@ export default function TopologyPage() {
                   {selectedRisk.metrics && (
                     <div className="grid grid-cols-3 gap-2">
                       {selectedRisk.metrics.latency_p99 && (
-                        <div className="text-center p-2 rounded-lg bg-[#1e293b]/50">
-                          <Activity size={12} className="mx-auto mb-1 text-[#64748b]" />
+                        <div className="text-center p-2 rounded-lg bg-[var(--border-color)]/50">
+                          <Activity size={12} className="mx-auto mb-1 text-[var(--text-muted)]" />
                           <p className="text-xs font-mono font-bold text-white">{selectedRisk.metrics.latency_p99}</p>
-                          <p className="text-[9px] text-[#475569]">P99</p>
+                          <p className="text-[9px] text-[var(--text-muted)]">P99</p>
                         </div>
                       )}
                       {selectedRisk.metrics.throughput && (
-                        <div className="text-center p-2 rounded-lg bg-[#1e293b]/50">
-                          <Zap size={12} className="mx-auto mb-1 text-[#64748b]" />
+                        <div className="text-center p-2 rounded-lg bg-[var(--border-color)]/50">
+                          <Zap size={12} className="mx-auto mb-1 text-[var(--text-muted)]" />
                           <p className="text-xs font-mono font-bold text-white">{selectedRisk.metrics.throughput}</p>
-                          <p className="text-[9px] text-[#475569]">{locale === "ja" ? "スループット" : "Throughput"}</p>
+                          <p className="text-[9px] text-[var(--text-muted)]">{locale === "ja" ? "スループット" : "Throughput"}</p>
                         </div>
                       )}
                       {selectedRisk.metrics.error_rate && (
-                        <div className="text-center p-2 rounded-lg bg-[#1e293b]/50">
-                          <Shield size={12} className="mx-auto mb-1 text-[#64748b]" />
+                        <div className="text-center p-2 rounded-lg bg-[var(--border-color)]/50">
+                          <Shield size={12} className="mx-auto mb-1 text-[var(--text-muted)]" />
                           <p className="text-xs font-mono font-bold text-white">{selectedRisk.metrics.error_rate}</p>
-                          <p className="text-[9px] text-[#475569]">{locale === "ja" ? "エラー率" : "Error"}</p>
+                          <p className="text-[9px] text-[var(--text-muted)]">{locale === "ja" ? "エラー率" : "Error"}</p>
                         </div>
                       )}
                     </div>
@@ -974,19 +974,19 @@ export default function TopologyPage() {
                   <div className="space-y-1.5 text-sm">
                     {selected.replicas && (
                       <div className="flex justify-between">
-                        <span className="text-[#64748b]">{t.replicas}</span>
+                        <span className="text-[var(--text-muted)]">{t.replicas}</span>
                         <span className="font-mono text-white">{selected.replicas}</span>
                       </div>
                     )}
                     {selected.provider && (
                       <div className="flex justify-between">
-                        <span className="text-[#64748b]">{locale === "ja" ? "プロバイダー" : "Provider"}</span>
+                        <span className="text-[var(--text-muted)]">{locale === "ja" ? "プロバイダー" : "Provider"}</span>
                         <span className="font-mono text-white uppercase">{selected.provider}</span>
                       </div>
                     )}
                     {selected.region && (
                       <div className="flex justify-between">
-                        <span className="text-[#64748b]">{locale === "ja" ? "リージョン" : "Region"}</span>
+                        <span className="text-[var(--text-muted)]">{locale === "ja" ? "リージョン" : "Region"}</span>
                         <span className="font-mono text-white">{selected.region}</span>
                       </div>
                     )}
@@ -994,13 +994,13 @@ export default function TopologyPage() {
 
                   {/* Dependencies */}
                   <div>
-                    <p className="text-xs text-[#64748b] mb-2">{t.dependenciesLabel}</p>
+                    <p className="text-xs text-[var(--text-muted)] mb-2">{t.dependenciesLabel}</p>
                     {data.edges
                       .filter((e) => e.source === selected.id)
                       .map((e) => (
                         <div
                           key={e.target}
-                          className="flex items-center gap-2 text-sm text-[#94a3b8] mb-1 p-1.5 rounded-lg hover:bg-[#1e293b]/50 cursor-pointer transition-colors"
+                          className="flex items-center gap-2 text-sm text-[var(--text-secondary)] mb-1 p-1.5 rounded-lg hover:bg-[var(--border-color)]/50 cursor-pointer transition-colors"
                           onClick={(ev) => { ev.stopPropagation(); setSelectedNode(e.target); }}
                         >
                           <ArrowRight size={12} />
@@ -1011,19 +1011,19 @@ export default function TopologyPage() {
                         </div>
                       ))}
                     {data.edges.filter((e) => e.source === selected.id).length === 0 && (
-                      <p className="text-xs text-[#475569]">{t.noOutgoing}</p>
+                      <p className="text-xs text-[var(--text-muted)]">{t.noOutgoing}</p>
                     )}
                   </div>
 
                   {/* Failure Scenarios */}
                   <div>
-                    <p className="text-xs text-[#64748b] mb-2 flex items-center gap-1">
+                    <p className="text-xs text-[var(--text-muted)] mb-2 flex items-center gap-1">
                       <AlertTriangle size={12} className="text-red-400" />
                       {t.failureScenarios}
                     </p>
                     <div className="space-y-1.5">
                       {selectedRisk.failure_scenarios.map((scenario, i) => (
-                        <div key={i} className="text-xs text-[#94a3b8] p-2.5 rounded-lg bg-red-500/5 border border-red-500/10 leading-relaxed">
+                        <div key={i} className="text-xs text-[var(--text-secondary)] p-2.5 rounded-lg bg-red-500/5 border border-red-500/10 leading-relaxed">
                           {scenario}
                         </div>
                       ))}
@@ -1032,13 +1032,13 @@ export default function TopologyPage() {
 
                   {/* Suggestions */}
                   <div>
-                    <p className="text-xs text-[#64748b] mb-2 flex items-center gap-1">
-                      <Lightbulb size={12} className="text-[#FFD700]" />
+                    <p className="text-xs text-[var(--text-muted)] mb-2 flex items-center gap-1">
+                      <Lightbulb size={12} className="text-[var(--gold)]" />
                       {t.suggestions}
                     </p>
                     <div className="space-y-1.5">
                       {selectedRisk.suggestions.map((suggestion, i) => (
-                        <div key={i} className="text-xs text-[#94a3b8] p-2.5 rounded-lg bg-[#FFD700]/5 border border-[#FFD700]/10 leading-relaxed">
+                        <div key={i} className="text-xs text-[var(--text-secondary)] p-2.5 rounded-lg bg-[var(--gold)]/5 border border-[var(--gold)]/10 leading-relaxed">
                           {suggestion}
                         </div>
                       ))}
@@ -1048,7 +1048,7 @@ export default function TopologyPage() {
               </Card>
             ) : (
               <Card className="p-5">
-                <p className="text-sm text-[#475569] text-center py-6">
+                <p className="text-sm text-[var(--text-muted)] text-center py-6">
                   {t.clickToViewDetails}
                 </p>
               </Card>

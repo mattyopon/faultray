@@ -1282,12 +1282,12 @@ export default function RemediationPage() {
       <div className="w-full px-6 py-10">
         <div className="mb-10">
           <h1 className="text-2xl font-bold mb-1">{t.title}</h1>
-          <p className="text-[#94a3b8] text-sm">{t.subtitle}</p>
+          <p className="text-[var(--text-secondary)] text-sm">{t.subtitle}</p>
         </div>
         <Card className="text-center py-16">
-          <ClipboardCheck size={48} className="mx-auto text-[#475569] mb-4" />
+          <ClipboardCheck size={48} className="mx-auto text-[var(--text-muted)] mb-4" />
           <h2 className="text-xl font-bold mb-2">{t.noSimulation}</h2>
-          <p className="text-[#94a3b8] mb-6">{t.noSimulationDesc}</p>
+          <p className="text-[var(--text-secondary)] mb-6">{t.noSimulationDesc}</p>
           <div className="flex items-center justify-center gap-4">
             <Button onClick={loadDemo} variant="secondary">
               <BarChart3 size={16} />
@@ -1330,7 +1330,7 @@ export default function RemediationPage() {
       <div className="flex items-center justify-between mb-10">
         <div>
           <h1 className="text-2xl font-bold mb-1">{t.title}</h1>
-          <p className="text-[#94a3b8] text-sm">
+          <p className="text-[var(--text-secondary)] text-sm">
             {t.subtitle}
             {isDemo && (
               <Badge variant="yellow" className="ml-2">DEMO</Badge>
@@ -1371,19 +1371,19 @@ export default function RemediationPage() {
 
       {/* A. Executive Summary */}
       <h2 className="text-lg font-bold mb-4 flex items-center gap-2">
-        <BarChart3 size={20} className="text-[#FFD700]" />
+        <BarChart3 size={20} className="text-[var(--gold)]" />
         {t.executiveSummary}
       </h2>
       <div className="grid md:grid-cols-5 gap-4 mb-10">
         <Card>
-          <p className="text-[10px] text-[#64748b] uppercase tracking-wider mb-1">{t.currentScore}</p>
+          <p className="text-[10px] text-[var(--text-muted)] uppercase tracking-wider mb-1">{t.currentScore}</p>
           <p className={`text-2xl font-bold font-mono ${scoreColor}`}>
-            {data.score} <span className="text-sm text-[#475569]">/ 100</span>
+            {data.score} <span className="text-sm text-[var(--text-muted)]">/ 100</span>
           </p>
           <p className={`text-xs ${scoreColor}`}>{scoreLabel}</p>
         </Card>
         <Card>
-          <p className="text-[10px] text-[#64748b] uppercase tracking-wider mb-1">{t.doraCompliance}</p>
+          <p className="text-[10px] text-[var(--text-muted)] uppercase tracking-wider mb-1">{t.doraCompliance}</p>
           <p className={`text-2xl font-bold font-mono ${data.doraCompliance < 80 ? "text-red-400" : "text-yellow-400"}`}>
             {data.doraCompliance}%
           </p>
@@ -1392,19 +1392,19 @@ export default function RemediationPage() {
           )}
         </Card>
         <Card>
-          <p className="text-[10px] text-[#64748b] uppercase tracking-wider mb-1">{t.estimatedAnnualDowntimeCost}</p>
+          <p className="text-[10px] text-[var(--text-muted)] uppercase tracking-wider mb-1">{t.estimatedAnnualDowntimeCost}</p>
           <p className="text-2xl font-bold font-mono text-red-400">{formatEur(annualCost)}</p>
         </Card>
         <Card>
-          <p className="text-[10px] text-[#64748b] uppercase tracking-wider mb-1">{t.projectedScore}</p>
+          <p className="text-[10px] text-[var(--text-muted)] uppercase tracking-wider mb-1">{t.projectedScore}</p>
           <p className="text-2xl font-bold font-mono text-emerald-400">
-            {projected} <span className="text-sm text-[#475569]">/ 100</span>
+            {projected} <span className="text-sm text-[var(--text-muted)]">/ 100</span>
           </p>
         </Card>
         <Card>
-          <p className="text-[10px] text-[#64748b] uppercase tracking-wider mb-1">{t.roiPayback}</p>
-          <p className="text-2xl font-bold font-mono text-[#FFD700]">
-            {roi} <span className="text-sm text-[#475569]">{t.months}</span>
+          <p className="text-[10px] text-[var(--text-muted)] uppercase tracking-wider mb-1">{t.roiPayback}</p>
+          <p className="text-2xl font-bold font-mono text-[var(--gold)]">
+            {roi} <span className="text-sm text-[var(--text-muted)]">{t.months}</span>
           </p>
         </Card>
       </div>
@@ -1414,21 +1414,21 @@ export default function RemediationPage() {
         <AlertTriangle size={20} className="text-red-400" />
         {t.riskMotivation}
       </h2>
-      <p className="text-sm text-[#94a3b8] mb-4">{t.whyFix}</p>
+      <p className="text-sm text-[var(--text-secondary)] mb-4">{t.whyFix}</p>
       <div className="grid md:grid-cols-4 gap-4 mb-10">
         <Card>
           <div className="w-10 h-10 rounded-lg bg-red-500/10 flex items-center justify-center mb-3">
             <Shield size={20} className="text-red-400" />
           </div>
           <p className="font-bold text-sm mb-1">{t.doraPenaltyRisk}</p>
-          <p className="text-xs text-[#94a3b8]">{t.doraPenaltyDesc}</p>
+          <p className="text-xs text-[var(--text-secondary)]">{t.doraPenaltyDesc}</p>
         </Card>
         <Card>
           <div className="w-10 h-10 rounded-lg bg-orange-500/10 flex items-center justify-center mb-3">
             <DollarSign size={20} className="text-orange-400" />
           </div>
           <p className="font-bold text-sm mb-1">{t.downtimeCost}</p>
-          <p className="text-xs text-[#94a3b8]">
+          <p className="text-xs text-[var(--text-secondary)]">
             {formatEur(calcDowntimePerHour(data.score))} {t.perHour}
           </p>
         </Card>
@@ -1437,26 +1437,26 @@ export default function RemediationPage() {
             <DollarSign size={20} className="text-yellow-400" />
           </div>
           <p className="font-bold text-sm mb-1">{t.cyberInsurance}</p>
-          <p className="text-xs text-[#94a3b8]">{t.cyberInsuranceDesc}</p>
+          <p className="text-xs text-[var(--text-secondary)]">{t.cyberInsuranceDesc}</p>
         </Card>
         <Card>
           <div className="w-10 h-10 rounded-lg bg-purple-500/10 flex items-center justify-center mb-3">
             <Users size={20} className="text-purple-400" />
           </div>
           <p className="font-bold text-sm mb-1">{t.reputationRisk}</p>
-          <p className="text-xs text-[#94a3b8]">{t.reputationRiskDesc}</p>
+          <p className="text-xs text-[var(--text-secondary)]">{t.reputationRiskDesc}</p>
         </Card>
       </div>
 
       {/* C. Prioritized Action List */}
       <h2 className="text-lg font-bold mb-4 flex items-center gap-2">
-        <ClipboardCheck size={20} className="text-[#FFD700]" />
+        <ClipboardCheck size={20} className="text-[var(--gold)]" />
         {t.prioritizedActions}
       </h2>
       <Card className="mb-10 overflow-x-auto">
         <table className="w-full text-sm">
           <thead>
-            <tr className="border-b border-[#1e293b] text-[#64748b] text-xs uppercase tracking-wider">
+            <tr className="border-b border-[var(--border-color)] text-[var(--text-muted)] text-xs uppercase tracking-wider">
               <th scope="col" className="py-3 px-4 text-left">#</th>
               <th scope="col" className="py-3 px-4 text-left">{t.action}</th>
               <th scope="col" className="py-3 px-4 text-left">{t.priority}</th>
@@ -1467,24 +1467,24 @@ export default function RemediationPage() {
           </thead>
           <tbody>
             {data.actions.map((a) => (
-              <tr key={a.id} className="border-b border-[#1e293b]/50 hover:bg-white/[0.02]">
-                <td className="py-3 px-4 font-mono text-[#64748b]">{a.id}</td>
+              <tr key={a.id} className="border-b border-[var(--border-color)]/50 hover:bg-white/[0.02]">
+                <td className="py-3 px-4 font-mono text-[var(--text-muted)]">{a.id}</td>
                 <td className="py-3 px-4 font-medium">{a.title[locale] ?? a.title.en}</td>
                 <td className="py-3 px-4">
                   <Badge variant={priorityColor(a.priority)}>
                     {t[a.priority] ?? a.priority}
                   </Badge>
                 </td>
-                <td className="py-3 px-4 text-[#94a3b8]">
+                <td className="py-3 px-4 text-[var(--text-secondary)]">
                   {a.effortWeeks} {a.effortWeeks > 1 ? t.weeks : t.week}
                 </td>
-                <td className="py-3 px-4 font-mono text-[#94a3b8]">{formatEur(a.costEur)}</td>
+                <td className="py-3 px-4 font-mono text-[var(--text-secondary)]">{formatEur(a.costEur)}</td>
                 <td className="py-3 px-4 font-mono text-emerald-400">+{a.scoreImpact}</td>
               </tr>
             ))}
             <tr className="bg-white/[0.02]">
               <td className="py-3 px-4" colSpan={3} />
-              <td className="py-3 px-4 font-bold text-xs text-[#64748b] uppercase">Total</td>
+              <td className="py-3 px-4 font-bold text-xs text-[var(--text-muted)] uppercase">Total</td>
               <td className="py-3 px-4 font-mono font-bold">{formatEur(totalActionCost)}</td>
               <td className="py-3 px-4 font-mono font-bold text-emerald-400">
                 +{Math.round(data.actions.reduce((s, a) => s + a.scoreImpact, 0) * 10) / 10}
@@ -1496,7 +1496,7 @@ export default function RemediationPage() {
 
       {/* D. Implementation Roadmap */}
       <h2 className="text-lg font-bold mb-4 flex items-center gap-2">
-        <Calendar size={20} className="text-[#FFD700]" />
+        <Calendar size={20} className="text-[var(--gold)]" />
         {t.implementationRoadmap}
       </h2>
       <Card className="mb-10">
@@ -1515,7 +1515,7 @@ export default function RemediationPage() {
                   : "bg-blue-500/60";
             return (
               <div key={a.id} className="flex items-center gap-4">
-                <div className="w-48 shrink-0 text-xs text-[#94a3b8] truncate" title={a.title[locale] ?? a.title.en}>
+                <div className="w-48 shrink-0 text-xs text-[var(--text-secondary)] truncate" title={a.title[locale] ?? a.title.en}>
                   {a.title[locale] ?? a.title.en}
                 </div>
                 <div className="flex-1 relative h-7 bg-white/[0.03] rounded-md overflow-hidden">
@@ -1526,14 +1526,14 @@ export default function RemediationPage() {
                     W{a.startWeek}-{a.startWeek + a.effortWeeks - 1}
                   </div>
                 </div>
-                <div className="w-20 text-right text-xs text-[#94a3b8] font-mono shrink-0">
+                <div className="w-20 text-right text-xs text-[var(--text-secondary)] font-mono shrink-0">
                   {Math.min(100, Math.round(cumulativeScore * 10) / 10)}pts
                 </div>
               </div>
             );
           })}
         </div>
-        <p className="text-[10px] text-[#475569] mt-4">{t.predictedScoreAfterPhase}</p>
+        <p className="text-[10px] text-[var(--text-muted)] mt-4">{t.predictedScoreAfterPhase}</p>
       </Card>
 
       {/* E. Before/After */}
@@ -1543,48 +1543,48 @@ export default function RemediationPage() {
       </h2>
       <div className="grid md:grid-cols-[1fr_auto_1fr] gap-4 items-center mb-10">
         <Card>
-          <p className="text-xs text-[#64748b] uppercase tracking-wider mb-3 font-semibold">{t.before}</p>
+          <p className="text-xs text-[var(--text-muted)] uppercase tracking-wider mb-3 font-semibold">{t.before}</p>
           <div className="space-y-3">
             <div className="flex justify-between">
-              <span className="text-sm text-[#94a3b8]">{t.score}</span>
+              <span className="text-sm text-[var(--text-secondary)]">{t.score}</span>
               <span className="font-mono font-bold">{data.score}</span>
             </div>
             <div className="flex justify-between">
-              <span className="text-sm text-[#94a3b8]">{t.availability}</span>
+              <span className="text-sm text-[var(--text-secondary)]">{t.availability}</span>
               <span className="font-mono font-bold">{data.availability}</span>
             </div>
             <div className="flex justify-between">
-              <span className="text-sm text-[#94a3b8]">{t.doraComplianceShort}</span>
+              <span className="text-sm text-[var(--text-secondary)]">{t.doraComplianceShort}</span>
               <span className="font-mono font-bold">{data.doraCompliance}%</span>
             </div>
             <div className="flex justify-between">
-              <span className="text-sm text-[#94a3b8]">{t.annualCost}</span>
+              <span className="text-sm text-[var(--text-secondary)]">{t.annualCost}</span>
               <span className="font-mono font-bold text-red-400">{formatEur(annualCost)}</span>
             </div>
           </div>
         </Card>
         <div className="flex justify-center">
-          <div className="w-12 h-12 rounded-full bg-[#FFD700]/10 flex items-center justify-center">
-            <ArrowRight size={24} className="text-[#FFD700]" />
+          <div className="w-12 h-12 rounded-full bg-[var(--gold)]/10 flex items-center justify-center">
+            <ArrowRight size={24} className="text-[var(--gold)]" />
           </div>
         </div>
         <Card className="border-emerald-500/20">
           <p className="text-xs text-emerald-400 uppercase tracking-wider mb-3 font-semibold">{t.after}</p>
           <div className="space-y-3">
             <div className="flex justify-between">
-              <span className="text-sm text-[#94a3b8]">{t.score}</span>
+              <span className="text-sm text-[var(--text-secondary)]">{t.score}</span>
               <span className="font-mono font-bold text-emerald-400">{projected} <span className="text-xs text-emerald-500">(+{Math.round((projected - data.score) * 10) / 10})</span></span>
             </div>
             <div className="flex justify-between">
-              <span className="text-sm text-[#94a3b8]">{t.availability}</span>
+              <span className="text-sm text-[var(--text-secondary)]">{t.availability}</span>
               <span className="font-mono font-bold text-emerald-400">{calcProjectedAvailability(data)}</span>
             </div>
             <div className="flex justify-between">
-              <span className="text-sm text-[#94a3b8]">{t.doraComplianceShort}</span>
+              <span className="text-sm text-[var(--text-secondary)]">{t.doraComplianceShort}</span>
               <span className="font-mono font-bold text-emerald-400">{projectedDora}% <span className="text-xs text-emerald-500">(+{projectedDora - data.doraCompliance}%)</span></span>
             </div>
             <div className="flex justify-between">
-              <span className="text-sm text-[#94a3b8]">{t.annualCost}</span>
+              <span className="text-sm text-[var(--text-secondary)]">{t.annualCost}</span>
               <span className="font-mono font-bold text-emerald-400">{formatEur(projectedCost)} <span className="text-xs text-emerald-500">(-{formatEur(annualCost - projectedCost)})</span></span>
             </div>
           </div>
@@ -1593,7 +1593,7 @@ export default function RemediationPage() {
 
       {/* F. Task Management */}
       <h2 className="text-lg font-bold mb-4 flex items-center gap-2">
-        <ListFilter size={20} className="text-[#FFD700]" />
+        <ListFilter size={20} className="text-[var(--gold)]" />
         {t.taskManagement}
       </h2>
       {(() => {
@@ -1620,7 +1620,7 @@ export default function RemediationPage() {
           <Card className="mb-10">
             {/* Progress bar + bulk export */}
             <div className="flex items-center justify-between mb-4">
-              <span className="text-sm text-[#94a3b8]">
+              <span className="text-sm text-[var(--text-secondary)]">
                 {t.progress}: {doneCount}/{totalCount} ({pctDone}%)
               </span>
               <div className="flex items-center gap-2">
@@ -1666,8 +1666,8 @@ export default function RemediationPage() {
                     onClick={() => setTaskFilter(f)}
                     className={`px-3 py-1.5 text-xs font-semibold rounded-lg transition-colors ${
                       taskFilter === f
-                        ? "bg-[#FFD700]/20 text-[#FFD700]"
-                        : "bg-white/[0.05] text-[#94a3b8] hover:bg-white/[0.08]"
+                        ? "bg-[var(--gold)]/20 text-[var(--gold)]"
+                        : "bg-white/[0.05] text-[var(--text-secondary)] hover:bg-white/[0.08]"
                     }`}
                   >
                     {labels[f]}
@@ -1687,12 +1687,12 @@ export default function RemediationPage() {
                 return (
                   <div
                     key={a.id}
-                    className="border border-[#1e293b] rounded-lg p-4 hover:border-[#334155] transition-colors"
+                    className="border border-[var(--border-color)] rounded-lg p-4 hover:border-[var(--border-color)] transition-colors"
                   >
                     {/* Header row */}
                     <div className="flex items-center justify-between mb-2">
                       <div className="flex items-center gap-3">
-                        <span className="text-xs text-[#64748b] font-mono">#{a.id}</span>
+                        <span className="text-xs text-[var(--text-muted)] font-mono">#{a.id}</span>
                         <span className="font-medium text-sm">
                           {a.title[locale] ?? a.title.en}
                         </span>
@@ -1744,7 +1744,7 @@ export default function RemediationPage() {
                     </div>
 
                     {/* Info row */}
-                    <div className="flex items-center gap-4 text-xs text-[#94a3b8] mb-2">
+                    <div className="flex items-center gap-4 text-xs text-[var(--text-secondary)] mb-2">
                       <span>
                         {t.assignee}: {ts.assignee || t.unassigned}
                       </span>
@@ -1761,17 +1761,17 @@ export default function RemediationPage() {
                     {/* Expand/Collapse details */}
                     <button
                       onClick={() => setExpandedAction(expandedAction === a.id ? null : a.id)}
-                      className="text-xs text-[#FFD700] hover:text-[#FFD700]/80 mt-1 mb-2 flex items-center gap-1 transition-colors"
+                      className="text-xs text-[var(--gold)] hover:text-[var(--gold)]/80 mt-1 mb-2 flex items-center gap-1 transition-colors"
                     >
                       <ChevronDown size={12} className={`transition-transform ${expandedAction === a.id ? "rotate-180" : ""}`} />
                       {expandedAction === a.id ? (tAny.hideDetails ?? "Hide details") : (tAny.showDetails ?? "Show details")}
                     </button>
 
                     {expandedAction === a.id && (
-                      <div className="bg-white/[0.02] border border-[#1e293b] rounded-lg p-4 mb-2 space-y-3 text-sm">
+                      <div className="bg-white/[0.02] border border-[var(--border-color)] rounded-lg p-4 mb-2 space-y-3 text-sm">
                         {/* What to do */}
                         <div>
-                          <p className="text-xs text-[#64748b] uppercase tracking-wider mb-1">{tAny.whatToDo ?? "What to do"}</p>
+                          <p className="text-xs text-[var(--text-muted)] uppercase tracking-wider mb-1">{tAny.whatToDo ?? "What to do"}</p>
                           <p className="text-[#e2e8f0]">
                             {a.priority === "critical"
                               ? (tAny.criticalDesc ?? "This is a critical infrastructure vulnerability. Immediate remediation required to prevent service outage. Add redundancy, configure automatic failover, and implement health checks.")
@@ -1783,22 +1783,22 @@ export default function RemediationPage() {
 
                         {/* Impact breakdown */}
                         <div>
-                          <p className="text-xs text-[#64748b] uppercase tracking-wider mb-1">{tAny.impactBreakdown ?? "Impact"}</p>
+                          <p className="text-xs text-[var(--text-muted)] uppercase tracking-wider mb-1">{tAny.impactBreakdown ?? "Impact"}</p>
                           <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-                            <div className="bg-[#0d1117] rounded p-2">
-                              <p className="text-[10px] text-[#475569]">{tAny.scoreGain ?? "Score gain"}</p>
+                            <div className="bg-[var(--bg-tertiary)] rounded p-2">
+                              <p className="text-[10px] text-[var(--text-muted)]">{tAny.scoreGain ?? "Score gain"}</p>
                               <p className="text-emerald-400 font-mono font-bold">+{a.scoreImpact}</p>
                             </div>
-                            <div className="bg-[#0d1117] rounded p-2">
-                              <p className="text-[10px] text-[#475569]">{tAny.doraImpactLabel ?? "DORA impact"}</p>
-                              <p className="text-[#FFD700] font-mono font-bold">+{a.doraImpact}%</p>
+                            <div className="bg-[var(--bg-tertiary)] rounded p-2">
+                              <p className="text-[10px] text-[var(--text-muted)]">{tAny.doraImpactLabel ?? "DORA impact"}</p>
+                              <p className="text-[var(--gold)] font-mono font-bold">+{a.doraImpact}%</p>
                             </div>
-                            <div className="bg-[#0d1117] rounded p-2">
-                              <p className="text-[10px] text-[#475569]">{t.cost}</p>
+                            <div className="bg-[var(--bg-tertiary)] rounded p-2">
+                              <p className="text-[10px] text-[var(--text-muted)]">{t.cost}</p>
                               <p className="text-[#e2e8f0] font-mono font-bold">{formatEur(a.costEur)}</p>
                             </div>
-                            <div className="bg-[#0d1117] rounded p-2">
-                              <p className="text-[10px] text-[#475569]">{t.effort}</p>
+                            <div className="bg-[var(--bg-tertiary)] rounded p-2">
+                              <p className="text-[10px] text-[var(--text-muted)]">{t.effort}</p>
                               <p className="text-[#e2e8f0] font-mono font-bold">{a.effortWeeks} {a.effortWeeks > 1 ? t.weeks : t.week}</p>
                             </div>
                           </div>
@@ -1806,8 +1806,8 @@ export default function RemediationPage() {
 
                         {/* Steps */}
                         <div>
-                          <p className="text-xs text-[#64748b] uppercase tracking-wider mb-1">{tAny.steps ?? "Steps"}</p>
-                          <ol className="space-y-1 text-xs text-[#94a3b8] list-decimal list-inside">
+                          <p className="text-xs text-[var(--text-muted)] uppercase tracking-wider mb-1">{tAny.steps ?? "Steps"}</p>
+                          <ol className="space-y-1 text-xs text-[var(--text-secondary)] list-decimal list-inside">
                             {a.priority === "critical" ? (
                               <>
                                 <li>{tAny.step1Critical ?? "Assess current single point of failure and blast radius"}</li>
@@ -1836,9 +1836,9 @@ export default function RemediationPage() {
                         </div>
 
                         {/* Schedule */}
-                        <div className="flex items-center gap-4 text-xs pt-2 border-t border-[#1e293b]">
-                          <span className="text-[#64748b]">{tAny.scheduledStart ?? "Start"}: <span className="text-[#e2e8f0] font-mono">{calcActionDates(a).start.toLocaleDateString(locale === "ja" ? "ja-JP" : locale === "ko" ? "ko-KR" : locale === "zh" ? "zh-CN" : "en-US")}</span></span>
-                          <span className="text-[#64748b]">{tAny.scheduledEnd ?? "End"}: <span className="text-[#e2e8f0] font-mono">{calcActionDates(a).end.toLocaleDateString(locale === "ja" ? "ja-JP" : locale === "ko" ? "ko-KR" : locale === "zh" ? "zh-CN" : "en-US")}</span></span>
+                        <div className="flex items-center gap-4 text-xs pt-2 border-t border-[var(--border-color)]">
+                          <span className="text-[var(--text-muted)]">{tAny.scheduledStart ?? "Start"}: <span className="text-[#e2e8f0] font-mono">{calcActionDates(a).start.toLocaleDateString(locale === "ja" ? "ja-JP" : locale === "ko" ? "ko-KR" : locale === "zh" ? "zh-CN" : "en-US")}</span></span>
+                          <span className="text-[var(--text-muted)]">{tAny.scheduledEnd ?? "End"}: <span className="text-[#e2e8f0] font-mono">{calcActionDates(a).end.toLocaleDateString(locale === "ja" ? "ja-JP" : locale === "ko" ? "ko-KR" : locale === "zh" ? "zh-CN" : "en-US")}</span></span>
                           <Button variant="ghost" size="sm" onClick={() => handleAddToGoogleCalendar(a)} className="ml-auto">
                             <CalendarPlus size={12} />
                             {tAny.addToCalendar ?? "Add to calendar"}
@@ -1849,17 +1849,17 @@ export default function RemediationPage() {
 
                     {/* Comment display */}
                     {ts.comment && !isEditing && (
-                      <p className="text-xs text-[#64748b] bg-white/[0.02] rounded px-3 py-2 mt-2">
+                      <p className="text-xs text-[var(--text-muted)] bg-white/[0.02] rounded px-3 py-2 mt-2">
                         {ts.comment}
                       </p>
                     )}
 
                     {/* Edit form */}
                     {isEditing && (
-                      <div className="mt-3 space-y-3 border-t border-[#1e293b] pt-3">
+                      <div className="mt-3 space-y-3 border-t border-[var(--border-color)] pt-3">
                         <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
                           <div>
-                            <label className="block text-[10px] text-[#64748b] uppercase tracking-wider mb-1">
+                            <label className="block text-[10px] text-[var(--text-muted)] uppercase tracking-wider mb-1">
                               {t.assignee}
                             </label>
                             <input
@@ -1869,12 +1869,12 @@ export default function RemediationPage() {
                                 setEditForm({ ...editForm, assignee: e.target.value })
                               }
                               aria-label={t.assignee}
-                              className="w-full bg-white/[0.05] border border-[#1e293b] rounded-lg px-3 py-1.5 text-sm text-white focus:border-[#FFD700] focus:outline-none"
+                              className="w-full bg-white/[0.05] border border-[var(--border-color)] rounded-lg px-3 py-1.5 text-sm text-white focus:border-[var(--gold)] focus:outline-none"
                               placeholder={t.unassigned}
                             />
                           </div>
                           <div>
-                            <label className="block text-[10px] text-[#64748b] uppercase tracking-wider mb-1">
+                            <label className="block text-[10px] text-[var(--text-muted)] uppercase tracking-wider mb-1">
                               Status
                             </label>
                             <select
@@ -1886,7 +1886,7 @@ export default function RemediationPage() {
                                 })
                               }
                               aria-label="Task status"
-                              className="w-full bg-white/[0.05] border border-[#1e293b] rounded-lg px-3 py-1.5 text-sm text-white focus:border-[#FFD700] focus:outline-none"
+                              className="w-full bg-white/[0.05] border border-[var(--border-color)] rounded-lg px-3 py-1.5 text-sm text-white focus:border-[var(--gold)] focus:outline-none"
                             >
                               <option value="todo">{t.statusTodo}</option>
                               <option value="in_progress">{t.statusInProgress}</option>
@@ -1895,7 +1895,7 @@ export default function RemediationPage() {
                             </select>
                           </div>
                           <div>
-                            <label className="block text-[10px] text-[#64748b] uppercase tracking-wider mb-1">
+                            <label className="block text-[10px] text-[var(--text-muted)] uppercase tracking-wider mb-1">
                               {t.deadline}
                             </label>
                             <input
@@ -1905,12 +1905,12 @@ export default function RemediationPage() {
                                 setEditForm({ ...editForm, deadline: e.target.value })
                               }
                               aria-label={t.deadline}
-                              className="w-full bg-white/[0.05] border border-[#1e293b] rounded-lg px-3 py-1.5 text-sm text-white focus:border-[#FFD700] focus:outline-none"
+                              className="w-full bg-white/[0.05] border border-[var(--border-color)] rounded-lg px-3 py-1.5 text-sm text-white focus:border-[var(--gold)] focus:outline-none"
                             />
                           </div>
                         </div>
                         <div>
-                          <label className="block text-[10px] text-[#64748b] uppercase tracking-wider mb-1">
+                          <label className="block text-[10px] text-[var(--text-muted)] uppercase tracking-wider mb-1">
                             {t.comment}
                           </label>
                           <textarea
@@ -1920,7 +1920,7 @@ export default function RemediationPage() {
                             }
                             rows={2}
                             aria-label={t.comment}
-                            className="w-full bg-white/[0.05] border border-[#1e293b] rounded-lg px-3 py-1.5 text-sm text-white focus:border-[#FFD700] focus:outline-none resize-none"
+                            className="w-full bg-white/[0.05] border border-[var(--border-color)] rounded-lg px-3 py-1.5 text-sm text-white focus:border-[var(--gold)] focus:outline-none resize-none"
                             placeholder={t.commentPlaceholder}
                           />
                         </div>

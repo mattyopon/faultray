@@ -108,10 +108,10 @@ function PostmortemCard({ pm, t }: { pm: typeof DEMO_POSTMORTEMS[0]; t: Record<s
       <button className="w-full text-left" onClick={() => setExpanded(!expanded)}>
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
-            {expanded ? <ChevronDown size={16} className="text-[#64748b]" /> : <ChevronRight size={16} className="text-[#64748b]" />}
+            {expanded ? <ChevronDown size={16} className="text-[var(--text-muted)]" /> : <ChevronRight size={16} className="text-[var(--text-muted)]" />}
             <div>
               <div className="flex items-center gap-2 mb-1">
-                <span className="font-mono text-xs text-[#64748b]">{pm.id}</span>
+                <span className="font-mono text-xs text-[var(--text-muted)]">{pm.id}</span>
                 <Badge variant={pm.severity === "critical" ? "red" : "yellow"}>{pm.severity}</Badge>
                 <Badge variant="green">{t.resolved}</Badge>
               </div>
@@ -119,7 +119,7 @@ function PostmortemCard({ pm, t }: { pm: typeof DEMO_POSTMORTEMS[0]; t: Record<s
             </div>
           </div>
           <div className="text-right shrink-0 ml-4">
-            <p className="text-xs text-[#64748b]">{pm.date}</p>
+            <p className="text-xs text-[var(--text-muted)]">{pm.date}</p>
             <p className="text-xs text-[#10b981] mt-1">
               {t.actionItems}: {complete}/{pm.actionItems.length}
             </p>
@@ -128,41 +128,41 @@ function PostmortemCard({ pm, t }: { pm: typeof DEMO_POSTMORTEMS[0]; t: Record<s
       </button>
 
       {expanded && (
-        <div className="mt-6 pt-4 border-t border-[#1e293b] space-y-6">
+        <div className="mt-6 pt-4 border-t border-[var(--border-color)] space-y-6">
           {/* Stats */}
           <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-            <div className="bg-[#0a0e1a] rounded-lg p-3 text-center">
-              <p className="text-lg font-bold font-mono text-[#FFD700]">{pm.timeToDetect}</p>
-              <p className="text-xs text-[#64748b] mt-1">{t.detecting}</p>
+            <div className="bg-[var(--bg-tertiary)] rounded-lg p-3 text-center">
+              <p className="text-lg font-bold font-mono text-[var(--gold)]">{pm.timeToDetect}</p>
+              <p className="text-xs text-[var(--text-muted)] mt-1">{t.detecting}</p>
             </div>
-            <div className="bg-[#0a0e1a] rounded-lg p-3 text-center">
-              <p className="text-lg font-bold font-mono text-[#FFD700]">{pm.timeToResolve}</p>
-              <p className="text-xs text-[#64748b] mt-1">{t.resolving}</p>
+            <div className="bg-[var(--bg-tertiary)] rounded-lg p-3 text-center">
+              <p className="text-lg font-bold font-mono text-[var(--gold)]">{pm.timeToResolve}</p>
+              <p className="text-xs text-[var(--text-muted)] mt-1">{t.resolving}</p>
             </div>
-            <div className="bg-[#0a0e1a] rounded-lg p-3 text-center col-span-2">
+            <div className="bg-[var(--bg-tertiary)] rounded-lg p-3 text-center col-span-2">
               <p className="text-sm font-bold text-[#10b981]">{complete}/{pm.actionItems.length} completed</p>
-              <p className="text-xs text-[#64748b] mt-1">{t.actionItems}</p>
+              <p className="text-xs text-[var(--text-muted)] mt-1">{t.actionItems}</p>
             </div>
           </div>
 
           {/* Root cause */}
           <div>
-            <p className="text-xs text-[#64748b] uppercase tracking-wider mb-2">{t.rootCause}</p>
-            <p className="text-sm text-[#94a3b8] bg-[#0a0e1a] rounded-lg p-3">{pm.rootCause}</p>
+            <p className="text-xs text-[var(--text-muted)] uppercase tracking-wider mb-2">{t.rootCause}</p>
+            <p className="text-sm text-[var(--text-secondary)] rounded-lg p-3">{pm.rootCause}</p>
           </div>
 
           {/* Timeline */}
           <div>
-            <p className="text-xs text-[#64748b] uppercase tracking-wider mb-3">{t.timeline}</p>
+            <p className="text-xs text-[var(--text-muted)] uppercase tracking-wider mb-3">{t.timeline}</p>
             <div className="relative pl-6">
-              <div className="absolute left-[9px] top-0 bottom-0 w-0.5 bg-[#1e293b]" />
+              <div className="absolute left-[9px] top-0 bottom-0 w-0.5 bg-[var(--border-color)]" />
               <div className="space-y-3">
                 {pm.timeline.map((item, i) => (
                   <div key={i} className="relative flex items-start gap-3">
-                    <div className="absolute left-[-15px] w-3 h-3 rounded-full border-2 border-[#FFD700] bg-[#111827]" />
+                    <div className="absolute left-[-15px] w-3 h-3 rounded-full border-2 border-[var(--gold)] bg-[var(--bg-card)]" />
                     <div>
-                      <span className="text-xs font-mono text-[#FFD700]">{item.time}</span>
-                      <p className="text-xs text-[#94a3b8] mt-0.5">{item.event}</p>
+                      <span className="text-xs font-mono text-[var(--gold)]">{item.time}</span>
+                      <p className="text-xs text-[var(--text-secondary)] mt-0.5">{item.event}</p>
                     </div>
                   </div>
                 ))}
@@ -172,11 +172,11 @@ function PostmortemCard({ pm, t }: { pm: typeof DEMO_POSTMORTEMS[0]; t: Record<s
 
           {/* Lessons learned */}
           <div>
-            <p className="text-xs text-[#64748b] uppercase tracking-wider mb-2">{t.lessonsLearned}</p>
+            <p className="text-xs text-[var(--text-muted)] uppercase tracking-wider mb-2">{t.lessonsLearned}</p>
             <ul className="space-y-1.5">
               {pm.lessonsLearned.map((lesson, i) => (
-                <li key={i} className="text-sm text-[#94a3b8] flex gap-2">
-                  <span className="text-[#FFD700] shrink-0">•</span>
+                <li key={i} className="text-sm text-[var(--text-secondary)] flex gap-2">
+                  <span className="text-[var(--gold)] shrink-0">•</span>
                   {lesson}
                 </li>
               ))}
@@ -185,21 +185,21 @@ function PostmortemCard({ pm, t }: { pm: typeof DEMO_POSTMORTEMS[0]; t: Record<s
 
           {/* Action items */}
           <div>
-            <p className="text-xs text-[#64748b] uppercase tracking-wider mb-3">{t.actionItems}</p>
+            <p className="text-xs text-[var(--text-muted)] uppercase tracking-wider mb-3">{t.actionItems}</p>
             <div className="space-y-2">
               {pm.actionItems.map((item) => (
-                <div key={item.id} className="flex items-center justify-between bg-[#0a0e1a] rounded-lg p-3">
+                <div key={item.id} className="flex items-center justify-between rounded-lg p-3">
                   <div className="flex items-start gap-2">
                     {item.status === "complete" ? (
                       <CheckCircle2 size={16} className="text-[#10b981] shrink-0 mt-0.5" />
                     ) : item.status === "inProgress" ? (
                       <Clock size={16} className="text-[#f59e0b] shrink-0 mt-0.5" />
                     ) : (
-                      <Circle size={16} className="text-[#475569] shrink-0 mt-0.5" />
+                      <Circle size={16} className="text-[var(--text-muted)] shrink-0 mt-0.5" />
                     )}
                     <div>
                       <p className="text-sm">{item.text}</p>
-                      <p className="text-xs text-[#64748b] mt-0.5">{item.owner} · Due: {item.dueDate}</p>
+                      <p className="text-xs text-[var(--text-muted)] mt-0.5">{item.owner} · Due: {item.dueDate}</p>
                     </div>
                   </div>
                   <Badge variant={STATUS_BADGE[item.status] ?? "default"}>
@@ -223,14 +223,14 @@ export default function PostmortemsPage() {
   const completedActions = totalActions.filter((a) => a.status === "complete").length;
 
   return (
-    <div className="max-w-[1200px] mx-auto px-6 py-10">
+    <div className="w-full px-6 py-10">
       <div className="flex items-start justify-between mb-8">
         <div>
           <h1 className="text-2xl font-bold mb-1 flex items-center gap-3">
-            <FileSearch size={24} className="text-[#FFD700]" />
+            <FileSearch size={24} className="text-[var(--gold)]" />
             {t.title}
           </h1>
-          <p className="text-[#94a3b8] text-sm">{t.subtitle}</p>
+          <p className="text-[var(--text-secondary)] text-sm">{t.subtitle}</p>
         </div>
         <Button size="sm" className="shrink-0">{t.newPostmortem}</Button>
       </div>
@@ -245,23 +245,23 @@ export default function PostmortemsPage() {
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
         <Card className="text-center">
           <p className="text-3xl font-extrabold font-mono">{DEMO_POSTMORTEMS.length}</p>
-          <p className="text-xs text-[#64748b] uppercase tracking-wider mt-1">{locale === "ja" ? "ポストモーテム" : "Post-Mortems"}</p>
+          <p className="text-xs text-[var(--text-muted)] uppercase tracking-wider mt-1">{locale === "ja" ? "ポストモーテム" : "Post-Mortems"}</p>
         </Card>
         <Card className="text-center">
           <p className="text-3xl font-extrabold font-mono text-red-400">
             {DEMO_POSTMORTEMS.filter((p) => p.severity === "critical").length}
           </p>
-          <p className="text-xs text-[#64748b] uppercase tracking-wider mt-1">{locale === "ja" ? "クリティカル" : "Critical"}</p>
+          <p className="text-xs text-[var(--text-muted)] uppercase tracking-wider mt-1">{locale === "ja" ? "クリティカル" : "Critical"}</p>
         </Card>
         <Card className="text-center">
           <p className="text-3xl font-extrabold font-mono text-[#10b981]">{completedActions}</p>
-          <p className="text-xs text-[#64748b] uppercase tracking-wider mt-1">{locale === "ja" ? "完了アクション" : "Actions Done"}</p>
+          <p className="text-xs text-[var(--text-muted)] uppercase tracking-wider mt-1">{locale === "ja" ? "完了アクション" : "Actions Done"}</p>
         </Card>
         <Card className="text-center">
-          <p className="text-3xl font-extrabold font-mono text-[#FFD700]">
+          <p className="text-3xl font-extrabold font-mono text-[var(--gold)]">
             {totalActions.length - completedActions}
           </p>
-          <p className="text-xs text-[#64748b] uppercase tracking-wider mt-1">{locale === "ja" ? "未完了" : "Remaining"}</p>
+          <p className="text-xs text-[var(--text-muted)] uppercase tracking-wider mt-1">{locale === "ja" ? "未完了" : "Remaining"}</p>
         </Card>
       </div>
 

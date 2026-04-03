@@ -166,8 +166,8 @@ function WaterfallBar({ span, totalMs }: { span: Span; totalMs: number }) {
 
   return (
     <div className="flex items-center gap-3 py-1 text-xs">
-      <span className="w-16 text-right text-[#64748b] shrink-0">{span.service}</span>
-      <span className="w-40 truncate text-[#94a3b8] shrink-0">{span.operation}</span>
+      <span className="w-16 text-right text-[var(--text-muted)] shrink-0">{span.service}</span>
+      <span className="w-40 truncate text-[var(--text-secondary)] shrink-0">{span.operation}</span>
       <div className="flex-1 h-5 bg-white/5 rounded relative overflow-hidden">
         <div
           className="absolute top-0 h-full rounded opacity-80"
@@ -203,14 +203,14 @@ export default function TracesPage() {
   });
 
   return (
-    <div className="max-w-[1200px] mx-auto px-6 py-10">
+    <div className="w-full px-6 py-10">
       {/* Header */}
       <div className="mb-8">
         <h1 className="text-2xl font-bold mb-1 flex items-center gap-3">
-          <Activity size={24} className="text-[#FFD700]" />
+          <Activity size={24} className="text-[var(--gold)]" />
           {locale === "ja" ? "分散トレーシング" : "Distributed Tracing"}
         </h1>
-        <p className="text-[#94a3b8] text-sm">
+        <p className="text-[var(--text-secondary)] text-sm">
           {locale === "ja"
             ? "サービス間のエンドツーエンドリクエストトレース — ボトルネックと障害を特定 (Layer 0)"
             : "End-to-end request traces across services — identify bottlenecks and failures (Layer 0)"}
@@ -232,7 +232,7 @@ export default function TracesPage() {
           { label: locale === "ja" ? "平均レイテンシ" : "Avg Latency", value: `${Math.round(DEMO_TRACES.reduce((s, t) => s + t.durationMs, 0) / DEMO_TRACES.length)}ms`, color: "#10b981" },
         ].map((stat) => (
           <Card key={stat.label} className="text-center">
-            <p className="text-xs text-[#64748b] uppercase tracking-wider mb-1">{stat.label}</p>
+            <p className="text-xs text-[var(--text-muted)] uppercase tracking-wider mb-1">{stat.label}</p>
             <p className="text-3xl font-extrabold font-mono" style={{ color: stat.color }}>{stat.value}</p>
           </Card>
         ))}
@@ -241,14 +241,14 @@ export default function TracesPage() {
       {/* Filters */}
       <Card className="mb-6">
         <div className="flex flex-wrap items-center gap-3">
-          <div className="flex items-center gap-2 text-[#64748b]">
+          <div className="flex items-center gap-2 text-[var(--text-muted)]">
             <Filter size={14} />
             <span className="text-xs font-medium uppercase tracking-wider">{locale === "ja" ? "フィルター" : "Filters"}</span>
           </div>
           <div className="relative flex-1 min-w-[200px]">
-            <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-[#64748b]" />
+            <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--text-muted)]" />
             <input
-              className="w-full bg-white/5 border border-[#1e293b] rounded-lg pl-8 pr-3 py-1.5 text-sm text-[#e2e8f0] placeholder-[#475569] focus:outline-none focus:border-[#FFD700]/40"
+              className="w-full bg-white/5 border border-[var(--border-color)] rounded-lg pl-8 pr-3 py-1.5 text-sm text-[#e2e8f0] placeholder-[var(--text-muted)] focus:outline-none focus:border-[var(--gold)]/40"
               placeholder={locale === "ja" ? "オペレーション名で検索..." : "Search by operation name..."}
               aria-label={locale === "ja" ? "オペレーション名で検索" : "Search by operation name"}
               value={searchQuery}
@@ -256,7 +256,7 @@ export default function TracesPage() {
             />
           </div>
           <select
-            className="bg-[#0d1526] border border-[#1e293b] rounded-lg px-3 py-1.5 text-sm text-[#94a3b8] focus:outline-none focus:border-[#FFD700]/30"
+            className="bg-[var(--bg-tertiary)] border border-[var(--border-color)] rounded-lg px-3 py-1.5 text-sm text-[var(--text-secondary)] focus:outline-none focus:border-[var(--gold)]/30"
             value={filterService}
             onChange={(e) => setFilterService(e.target.value)}
             aria-label={locale === "ja" ? "サービスでフィルター" : "Filter by service"}
@@ -265,7 +265,7 @@ export default function TracesPage() {
             {ALL_SERVICES.map((s) => <option key={s} value={s}>{s}</option>)}
           </select>
           <select
-            className="bg-[#0d1526] border border-[#1e293b] rounded-lg px-3 py-1.5 text-sm text-[#94a3b8] focus:outline-none focus:border-[#FFD700]/30"
+            className="bg-[var(--bg-tertiary)] border border-[var(--border-color)] rounded-lg px-3 py-1.5 text-sm text-[var(--text-secondary)] focus:outline-none focus:border-[var(--gold)]/30"
             value={filterStatus}
             onChange={(e) => setFilterStatus(e.target.value)}
             aria-label={locale === "ja" ? "ステータスでフィルター" : "Filter by status"}
@@ -276,7 +276,7 @@ export default function TracesPage() {
             <option value="error">{locale === "ja" ? "エラー" : "Error"}</option>
           </select>
           <select
-            className="bg-[#0d1526] border border-[#1e293b] rounded-lg px-3 py-1.5 text-sm text-[#94a3b8] focus:outline-none focus:border-[#FFD700]/30"
+            className="bg-[var(--bg-tertiary)] border border-[var(--border-color)] rounded-lg px-3 py-1.5 text-sm text-[var(--text-secondary)] focus:outline-none focus:border-[var(--gold)]/30"
             value={filterLatency}
             onChange={(e) => setFilterLatency(Number(e.target.value))}
             aria-label={locale === "ja" ? "レイテンシでフィルター" : "Filter by latency"}
@@ -293,7 +293,7 @@ export default function TracesPage() {
       <Card>
         <div className="space-y-1">
           {/* Header row */}
-          <div className="flex items-center gap-3 px-3 py-2 text-[10px] text-[#475569] uppercase tracking-wider border-b border-[#1e293b] mb-2">
+          <div className="flex items-center gap-3 px-3 py-2 text-[10px] text-[var(--text-muted)] uppercase tracking-wider border-b border-[var(--border-color)] mb-2">
             <span className="w-5" />
             <span className="flex-1">{locale === "ja" ? "トレース / オペレーション" : "Trace / Operation"}</span>
             <span className="w-32 hidden md:block">{locale === "ja" ? "サービス" : "Services"}</span>
@@ -304,7 +304,7 @@ export default function TracesPage() {
           </div>
 
           {filtered.length === 0 && (
-            <p className="text-center text-[#64748b] py-8 text-sm">{locale === "ja" ? "フィルター条件に一致するトレースがありません。" : "No traces match the current filters."}</p>
+            <p className="text-center text-[var(--text-muted)] py-8 text-sm">{locale === "ja" ? "フィルター条件に一致するトレースがありません。" : "No traces match the current filters."}</p>
           )}
 
           {filtered.map((trace) => {
@@ -319,11 +319,11 @@ export default function TracesPage() {
                 >
                   <div className="flex items-center gap-3 px-3 py-3">
                     {isExpanded
-                      ? <ChevronDown size={14} className="text-[#64748b] shrink-0" />
-                      : <ChevronRight size={14} className="text-[#64748b] shrink-0" />}
+                      ? <ChevronDown size={14} className="text-[var(--text-muted)] shrink-0" />
+                      : <ChevronRight size={14} className="text-[var(--text-muted)] shrink-0" />}
                     <div className="flex-1 min-w-0">
                       <p className="text-sm font-medium text-[#e2e8f0] truncate">{trace.name}</p>
-                      <p className="text-xs text-[#64748b] font-mono">{trace.id.slice(0, 12)}...</p>
+                      <p className="text-xs text-[var(--text-muted)] font-mono">{trace.id.slice(0, 12)}...</p>
                     </div>
                     <div className="w-32 hidden md:flex gap-1 flex-wrap">
                       {trace.services.map((svc) => (
@@ -336,7 +336,7 @@ export default function TracesPage() {
                         </span>
                       ))}
                     </div>
-                    <span className="w-20 text-right text-sm text-[#94a3b8]">{trace.spanCount}</span>
+                    <span className="w-20 text-right text-sm text-[var(--text-secondary)]">{trace.spanCount}</span>
                     <span
                       className="w-28 text-right text-sm font-mono font-bold"
                       style={{ color: latencyColor(trace.durationMs) }}
@@ -350,7 +350,7 @@ export default function TracesPage() {
                         {trace.status === "ok" ? "OK" : trace.status === "slow" ? "SLOW" : "ERROR"}
                       </Badge>
                     </span>
-                    <span className="w-32 hidden lg:block text-right text-xs text-[#64748b]">
+                    <span className="w-32 hidden lg:block text-right text-xs text-[var(--text-muted)]">
                       {new Date(trace.startTime).toLocaleTimeString()}
                     </span>
                   </div>
@@ -358,15 +358,15 @@ export default function TracesPage() {
 
                 {/* Waterfall View */}
                 {isExpanded && (
-                  <div className="mx-3 mb-4 p-4 rounded-xl bg-white/[0.02] border border-[#1e293b]">
+                  <div className="mx-3 mb-4 p-4 rounded-xl bg-white/[0.02] border border-[var(--border-color)]">
                     <div className="flex items-center justify-between mb-3">
-                      <h4 className="text-xs font-semibold text-[#64748b] uppercase tracking-wider flex items-center gap-2">
+                      <h4 className="text-xs font-semibold text-[var(--text-muted)] uppercase tracking-wider flex items-center gap-2">
                         <Clock size={12} />
                         Span Waterfall — total {traceMax}ms
                       </h4>
                       <div className="flex gap-3">
                         {trace.services.map((svc) => (
-                          <span key={svc} className="flex items-center gap-1 text-xs text-[#64748b]">
+                          <span key={svc} className="flex items-center gap-1 text-xs text-[var(--text-muted)]">
                             <span className="w-3 h-3 rounded-sm inline-block" style={{ backgroundColor: SERVICE_COLORS[svc] }} />
                             {svc}
                           </span>
@@ -387,10 +387,10 @@ export default function TracesPage() {
                       ))}
                     </div>
                     {/* Tags for root span */}
-                    <div className="mt-3 pt-3 border-t border-[#1e293b] flex flex-wrap gap-2">
+                    <div className="mt-3 pt-3 border-t border-[var(--border-color)] flex flex-wrap gap-2">
                       {Object.entries(trace.spans[0]?.tags ?? {}).map(([k, v]) => (
                         <span key={k} className="text-xs bg-white/5 rounded px-2 py-0.5 font-mono">
-                          <span className="text-[#64748b]">{k}=</span>
+                          <span className="text-[var(--text-muted)]">{k}=</span>
                           <span className="text-[#e2e8f0]">{v}</span>
                         </span>
                       ))}
@@ -405,8 +405,8 @@ export default function TracesPage() {
 
       {/* Service Legend */}
       <div className="mt-6 flex items-center gap-2 flex-wrap">
-        <Server size={14} className="text-[#64748b]" />
-        <span className="text-xs text-[#64748b]">Services:</span>
+        <Server size={14} className="text-[var(--text-muted)]" />
+        <span className="text-xs text-[var(--text-muted)]">Services:</span>
         {ALL_SERVICES.map((svc) => (
           <span
             key={svc}
@@ -423,13 +423,13 @@ export default function TracesPage() {
       </div>
 
       {/* FLOW-11: Cross-links to related observability pages */}
-      <div className="flex items-center gap-3 mt-6 pt-4 border-t border-[#1e293b]">
-        <span className="text-xs text-[#475569]">{locale === "ja" ? "関連ページ:" : "Related:"}</span>
-        <Link href="/logs" className="flex items-center gap-1.5 text-xs text-[#64748b] hover:text-[#94a3b8] transition-colors">
+      <div className="flex items-center gap-3 mt-6 pt-4 border-t border-[var(--border-color)]">
+        <span className="text-xs text-[var(--text-muted)]">{locale === "ja" ? "関連ページ:" : "Related:"}</span>
+        <Link href="/logs" className="flex items-center gap-1.5 text-xs text-[var(--text-muted)] hover:text-[var(--text-secondary)] transition-colors">
           <FileText size={12} />
           {locale === "ja" ? "ログ" : "Logs"}
         </Link>
-        <Link href="/reports" className="flex items-center gap-1.5 text-xs text-[#64748b] hover:text-[#94a3b8] transition-colors">
+        <Link href="/reports" className="flex items-center gap-1.5 text-xs text-[var(--text-muted)] hover:text-[var(--text-secondary)] transition-colors">
           <BookOpen size={12} />
           {locale === "ja" ? "レポート" : "Reports"}
         </Link>

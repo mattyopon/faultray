@@ -233,7 +233,7 @@ export default function RootLayout({
           dangerouslySetInnerHTML={{
             __html: `(function(){
               var p=window.location.pathname;
-              var pub=['/','/login','/pricing','/en','/ja','/de','/fr','/zh','/ko','/es','/pt',
+              var pub=['/','/login','/pricing','/en','/ja','/de','/fr',
                 '/terms','/privacy','/dpa','/tokushoho','/contact','/demo','/help','/support',
                 '/status','/features','/case-studies','/ringi','/changelog'];
               var isApp=!pub.some(function(s){return p===s||p.startsWith(s+'/');});

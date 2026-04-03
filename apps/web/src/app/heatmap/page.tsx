@@ -73,41 +73,41 @@ export default function HeatmapPage() {
   const sorted = [...data.components].sort((a, b) => b.risk_score - a.risk_score);
 
   return (
-    <div className="max-w-[1200px] mx-auto px-6 py-10">
+    <div className="w-full px-6 py-10">
       <div className="mb-10">
         <h1 className="text-2xl font-bold mb-1 flex items-center gap-3">
-          <Flame size={24} className="text-[#FFD700]" />
+          <Flame size={24} className="text-[var(--gold)]" />
           {t.title}
         </h1>
-        <p className="text-[#94a3b8] text-sm">{t.subtitle}</p>
+        <p className="text-[var(--text-secondary)] text-sm">{t.subtitle}</p>
       </div>
 
       {loading ? (
         <Card className="flex items-center justify-center py-20">
-          <Loader2 size={24} className="animate-spin text-[#FFD700]" />
-          <span className="ml-3 text-[#94a3b8]">{t.loading}</span>
+          <Loader2 size={24} className="animate-spin text-[var(--gold)]" />
+          <span className="ml-3 text-[var(--text-secondary)]">{t.loading}</span>
         </Card>
       ) : (
         <>
           {/* Color Legend */}
           <Card className="mb-6">
             <div className="flex items-center gap-6 flex-wrap">
-              <span className="text-xs text-[#64748b] uppercase tracking-wider">{t.riskLevel}</span>
+              <span className="text-xs text-[var(--text-muted)] uppercase tracking-wider">{t.riskLevel}</span>
               <div className="flex items-center gap-2">
                 <div className="w-4 h-4 rounded" style={{ backgroundColor: "#10b981" }} />
-                <span className="text-xs text-[#94a3b8]">{t.low}</span>
+                <span className="text-xs text-[var(--text-secondary)]">{t.low}</span>
               </div>
               <div className="flex items-center gap-2">
                 <div className="w-4 h-4 rounded" style={{ backgroundColor: "#eab308" }} />
-                <span className="text-xs text-[#94a3b8]">{t.lowMedium}</span>
+                <span className="text-xs text-[var(--text-secondary)]">{t.lowMedium}</span>
               </div>
               <div className="flex items-center gap-2">
                 <div className="w-4 h-4 rounded" style={{ backgroundColor: "#f59e0b" }} />
-                <span className="text-xs text-[#94a3b8]">{t.medium}</span>
+                <span className="text-xs text-[var(--text-secondary)]">{t.medium}</span>
               </div>
               <div className="flex items-center gap-2">
                 <div className="w-4 h-4 rounded" style={{ backgroundColor: "#ef4444" }} />
-                <span className="text-xs text-[#94a3b8]">{t.high}</span>
+                <span className="text-xs text-[var(--text-secondary)]">{t.high}</span>
               </div>
             </div>
           </Card>
@@ -117,7 +117,7 @@ export default function HeatmapPage() {
             <div className="space-y-6">
               {grouped.map((group) => (
                 <Card key={group.category}>
-                  <h3 className="text-sm font-semibold text-[#94a3b8] uppercase tracking-wider mb-4">
+                  <h3 className="text-sm font-semibold text-[var(--text-secondary)] uppercase tracking-wider mb-4">
                     {group.category}
                   </h3>
                   <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
@@ -142,7 +142,7 @@ export default function HeatmapPage() {
                           />
                         </div>
                         <p className="text-sm font-medium text-[#e2e8f0] truncate">{comp.name}</p>
-                        <p className="text-xs text-[#64748b]">{comp.type.replace("_", " ")}</p>
+                        <p className="text-xs text-[var(--text-muted)]">{comp.type.replace("_", " ")}</p>
                       </button>
                     ))}
                   </div>
@@ -154,7 +154,7 @@ export default function HeatmapPage() {
             <div className="space-y-6">
               {selected ? (
                 <Card>
-                  <h3 className="text-sm font-semibold text-[#94a3b8] uppercase tracking-wider mb-4">
+                  <h3 className="text-sm font-semibold text-[var(--text-secondary)] uppercase tracking-wider mb-4">
                     {t.componentDetail}
                   </h3>
                   <div className="text-center mb-4">
@@ -164,23 +164,23 @@ export default function HeatmapPage() {
                     >
                       {selected.risk_score}
                     </span>
-                    <p className="text-xs text-[#64748b] mt-1">{t.riskScore}</p>
+                    <p className="text-xs text-[var(--text-muted)] mt-1">{t.riskScore}</p>
                   </div>
                   <div className="space-y-3">
                     <div className="flex justify-between text-sm">
-                      <span className="text-[#64748b]">{t.name}</span>
+                      <span className="text-[var(--text-muted)]">{t.name}</span>
                       <span className="font-medium">{selected.name}</span>
                     </div>
                     <div className="flex justify-between text-sm">
-                      <span className="text-[#64748b]">{t.type}</span>
+                      <span className="text-[var(--text-muted)]">{t.type}</span>
                       <span className="font-mono">{selected.type}</span>
                     </div>
                     <div className="flex justify-between text-sm">
-                      <span className="text-[#64748b]">{t.category}</span>
+                      <span className="text-[var(--text-muted)]">{t.category}</span>
                       <span>{selected.category}</span>
                     </div>
                     <div className="flex justify-between text-sm">
-                      <span className="text-[#64748b]">{t.riskLevelLabel}</span>
+                      <span className="text-[var(--text-muted)]">{t.riskLevelLabel}</span>
                       <Badge
                         variant={
                           selected.risk_score >= 70
@@ -197,14 +197,14 @@ export default function HeatmapPage() {
                 </Card>
               ) : (
                 <Card>
-                  <p className="text-sm text-[#64748b] text-center py-4">
+                  <p className="text-sm text-[var(--text-muted)] text-center py-4">
                     {t.clickToView}
                   </p>
                 </Card>
               )}
 
               <Card>
-                <h3 className="text-sm font-semibold text-[#94a3b8] uppercase tracking-wider mb-4">
+                <h3 className="text-sm font-semibold text-[var(--text-secondary)] uppercase tracking-wider mb-4">
                   {t.topRisks}
                 </h3>
                 <div className="space-y-2">

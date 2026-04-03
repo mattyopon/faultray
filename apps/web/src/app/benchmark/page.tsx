@@ -56,13 +56,13 @@ export default function BenchmarkPage() {
   };
 
   return (
-    <div className="max-w-[1200px] mx-auto px-6 py-10">
+    <div className="w-full px-6 py-10">
       <div className="mb-10">
         <h1 className="text-2xl font-bold mb-1 flex items-center gap-3">
-          <Trophy size={24} className="text-[#FFD700]" />
+          <Trophy size={24} className="text-[var(--gold)]" />
           {t.title}
         </h1>
-        <p className="text-[#94a3b8] text-sm">
+        <p className="text-[var(--text-secondary)] text-sm">
           {t.subtitle}
         </p>
       </div>
@@ -75,8 +75,8 @@ export default function BenchmarkPage() {
             onClick={() => loadBenchmark(ind.id)}
             className={`p-4 rounded-xl border text-center transition-all ${
               selectedIndustry === ind.id
-                ? "border-[#FFD700] bg-[#FFD700]/[0.04]"
-                : "border-[#1e293b] bg-[#111827] hover:border-[#FFD700]/30"
+                ? "border-[var(--gold)] bg-[var(--gold)]/[0.04]"
+                : "border-[var(--border-color)] bg-[var(--bg-card)] hover:border-[var(--gold)]/30"
             }`}
           >
             <p className="font-bold text-lg">{ind.name}</p>
@@ -86,26 +86,26 @@ export default function BenchmarkPage() {
 
       {loading ? (
         <Card className="flex items-center justify-center py-20">
-          <Loader2 size={24} className="animate-spin text-[#FFD700]" />
+          <Loader2 size={24} className="animate-spin text-[var(--gold)]" />
         </Card>
       ) : selectedIndustry ? (
         <div className="space-y-6">
           {/* Score Comparison */}
           <div className="grid md:grid-cols-4 gap-6">
             <Card className="text-center">
-              <p className="text-xs text-[#64748b] uppercase tracking-wider mb-2">{t.yourScore}</p>
-              <p className="text-4xl font-extrabold font-mono text-[#FFD700]">{data.your_score}</p>
+              <p className="text-xs text-[var(--text-muted)] uppercase tracking-wider mb-2">{t.yourScore}</p>
+              <p className="text-4xl font-extrabold font-mono text-[var(--gold)]">{data.your_score}</p>
             </Card>
             <Card className="text-center">
-              <p className="text-xs text-[#64748b] uppercase tracking-wider mb-2">{t.industryAvg}</p>
-              <p className="text-4xl font-extrabold font-mono text-[#94a3b8]">{data.industry_average}</p>
+              <p className="text-xs text-[var(--text-muted)] uppercase tracking-wider mb-2">{t.industryAvg}</p>
+              <p className="text-4xl font-extrabold font-mono text-[var(--text-secondary)]">{data.industry_average}</p>
             </Card>
             <Card className="text-center">
-              <p className="text-xs text-[#64748b] uppercase tracking-wider mb-2">{t.top10}</p>
+              <p className="text-xs text-[var(--text-muted)] uppercase tracking-wider mb-2">{t.top10}</p>
               <p className="text-4xl font-extrabold font-mono text-emerald-400">{data.industry_top_10}</p>
             </Card>
             <Card className="text-center">
-              <p className="text-xs text-[#64748b] uppercase tracking-wider mb-2">{t.percentile}</p>
+              <p className="text-xs text-[var(--text-muted)] uppercase tracking-wider mb-2">{t.percentile}</p>
               <p className="text-4xl font-extrabold font-mono text-blue-400">{data.percentile}th</p>
             </Card>
           </div>
@@ -113,7 +113,7 @@ export default function BenchmarkPage() {
           {/* Position Visualization */}
           <Card>
             <h3 className="text-lg font-bold mb-4">{data.industry}{t.yourPosition}</h3>
-            <div className="relative h-16 bg-white/[0.03] rounded-xl border border-[#1e293b] overflow-hidden">
+            <div className="relative h-16 bg-white/[0.03] rounded-xl border border-[var(--border-color)] overflow-hidden">
               {/* Range bar */}
               <div
                 className="absolute top-0 bottom-0 bg-gradient-to-r from-red-500/20 via-yellow-500/20 to-emerald-500/20"
@@ -125,24 +125,24 @@ export default function BenchmarkPage() {
                 style={{ left: `${data.industry_average}%` }}
               />
               <div
-                className="absolute top-1 text-xs text-[#64748b]"
+                className="absolute top-1 text-xs text-[var(--text-muted)]"
                 style={{ left: `${data.industry_average}%`, transform: "translateX(-50%)" }}
               >
                 Avg
               </div>
               {/* Your position */}
               <div
-                className="absolute top-1/2 -translate-y-1/2 w-4 h-4 rounded-full bg-[#FFD700] border-2 border-[#FFD700] shadow-[0_0_10px_rgba(255,215,0,0.5)]"
+                className="absolute top-1/2 -translate-y-1/2 w-4 h-4 rounded-full bg-[var(--gold)] border-2 border-[var(--gold)] shadow-[0_0_10px_rgba(255,215,0,0.5)]"
                 style={{ left: `${data.your_score}%`, transform: "translateX(-50%) translateY(-50%)" }}
               />
               <div
-                className="absolute bottom-1 text-xs font-bold text-[#FFD700]"
+                className="absolute bottom-1 text-xs font-bold text-[var(--gold)]"
                 style={{ left: `${data.your_score}%`, transform: "translateX(-50%)" }}
               >
                 You
               </div>
             </div>
-            <div className="flex justify-between text-xs text-[#64748b] mt-2">
+            <div className="flex justify-between text-xs text-[var(--text-muted)] mt-2">
               <span>0</span>
               <span>Bottom 10%: {data.industry_bottom_10}</span>
               <span>Top 10%: {data.industry_top_10}</span>
@@ -159,8 +159,8 @@ export default function BenchmarkPage() {
                   <div className="flex items-center justify-between">
                     <span className="text-sm font-medium">{cat.name}</span>
                     <div className="flex items-center gap-3 text-xs font-mono">
-                      <span className="text-[#FFD700]">{cat.your_score}</span>
-                      <span className="text-[#64748b]">{cat.industry_avg}</span>
+                      <span className="text-[var(--gold)]">{cat.your_score}</span>
+                      <span className="text-[var(--text-muted)]">{cat.industry_avg}</span>
                       <span className="text-emerald-400">{cat.top_10}</span>
                     </div>
                   </div>
@@ -187,18 +187,18 @@ export default function BenchmarkPage() {
                 </div>
               ))}
             </div>
-            <div className="flex items-center gap-6 mt-4 pt-4 border-t border-[#1e293b]">
+            <div className="flex items-center gap-6 mt-4 pt-4 border-t border-[var(--border-color)]">
               <div className="flex items-center gap-2">
-                <div className="w-3 h-3 rounded-full bg-[#FFD700]" />
-                <span className="text-xs text-[#64748b]">{t.yourScoreLabel}</span>
+                <div className="w-3 h-3 rounded-full bg-[var(--gold)]" />
+                <span className="text-xs text-[var(--text-muted)]">{t.yourScoreLabel}</span>
               </div>
               <div className="flex items-center gap-2">
                 <div className="w-3 h-3 rounded-full bg-[#64748b]/30" />
-                <span className="text-xs text-[#64748b]">{t.industryAvgLabel}</span>
+                <span className="text-xs text-[var(--text-muted)]">{t.industryAvgLabel}</span>
               </div>
               <div className="flex items-center gap-2">
                 <div className="w-3 h-1 bg-emerald-400" />
-                <span className="text-xs text-[#64748b]">{t.top10Label}</span>
+                <span className="text-xs text-[var(--text-muted)]">{t.top10Label}</span>
               </div>
             </div>
           </Card>
@@ -211,15 +211,15 @@ export default function BenchmarkPage() {
                 <Badge key={req} variant="gold">{req}</Badge>
               ))}
             </div>
-            <p className="text-sm text-[#94a3b8]">
-              {data.industry}{t.typicalSla}: <span className="font-mono font-bold text-[#FFD700]">{data.typical_sla}</span>
+            <p className="text-sm text-[var(--text-secondary)]">
+              {data.industry}{t.typicalSla}: <span className="font-mono font-bold text-[var(--gold)]">{data.typical_sla}</span>
             </p>
           </Card>
         </div>
       ) : (
         <Card className="flex flex-col items-center justify-center py-16">
           <Trophy size={40} className="text-[#1e293b] mb-4" />
-          <p className="text-[#64748b] text-sm">
+          <p className="text-[var(--text-muted)] text-sm">
             {t.selectIndustry}
           </p>
         </Card>

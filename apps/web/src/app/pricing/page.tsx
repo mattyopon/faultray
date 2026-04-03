@@ -129,7 +129,7 @@ export default function PricingPage() {
   };
 
   return (
-    <div className="max-w-[1200px] mx-auto px-6 py-20">
+    <div className="w-full px-6 py-20">
       {/* ERRMSG-07: Payment failure retry UI */}
       {checkoutError && (
         <div role="alert" className="mb-6 p-4 rounded-lg border border-red-500/40 bg-red-500/10 flex items-start gap-3">

@@ -122,10 +122,10 @@ export default function OptimizePage() {
       <div className="flex items-start justify-between mb-8">
         <div>
           <h1 className="text-2xl font-bold mb-1 flex items-center gap-3">
-            <Gauge size={24} className="text-[#FFD700]" />
+            <Gauge size={24} className="text-[var(--gold)]" />
             {t.title}
           </h1>
-          <p className="text-[#94a3b8] text-sm">{t.subtitle}</p>
+          <p className="text-[var(--text-secondary)] text-sm">{t.subtitle}</p>
         </div>
         <Button
           size="sm"
@@ -140,25 +140,25 @@ export default function OptimizePage() {
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
         <Card className="text-center">
           <div className="flex items-center justify-center gap-1 mb-1">
-            <DollarSign size={18} className="text-[#FFD700]" />
-            <p className="text-3xl font-extrabold font-mono text-[#FFD700]">${totalSavings.toLocaleString()}</p>
+            <DollarSign size={18} className="text-[var(--gold)]" />
+            <p className="text-3xl font-extrabold font-mono text-[var(--gold)]">${totalSavings.toLocaleString()}</p>
           </div>
-          <p className="text-xs text-[#64748b] uppercase tracking-wider">{t.totalSavings}</p>
+          <p className="text-xs text-[var(--text-muted)] uppercase tracking-wider">{t.totalSavings}</p>
         </Card>
         <Card className="text-center">
           <p className="text-3xl font-extrabold font-mono">{RECOMMENDATIONS.length}</p>
-          <p className="text-xs text-[#64748b] uppercase tracking-wider mt-1">{t.recommendations}</p>
+          <p className="text-xs text-[var(--text-muted)] uppercase tracking-wider mt-1">{t.recommendations}</p>
         </Card>
         <Card className="text-center">
           <p className="text-3xl font-extrabold font-mono text-[#10b981]">{applied.size}</p>
-          <p className="text-xs text-[#64748b] uppercase tracking-wider mt-1">{tAny.applied ?? "Applied"}</p>
+          <p className="text-xs text-[var(--text-muted)] uppercase tracking-wider mt-1">{tAny.applied ?? "Applied"}</p>
         </Card>
         <Card className="text-center">
           <div className="flex items-center justify-center gap-1 mb-1">
             <TrendingDown size={16} className="text-[#10b981]" />
             <p className="text-2xl font-extrabold font-mono text-[#10b981]">${appliedSavings.toLocaleString()}</p>
           </div>
-          <p className="text-xs text-[#64748b] uppercase tracking-wider">{tAny.lockedIn ?? "Locked In"}</p>
+          <p className="text-xs text-[var(--text-muted)] uppercase tracking-wider">{tAny.lockedIn ?? "Locked In"}</p>
         </Card>
       </div>
 
@@ -171,7 +171,7 @@ export default function OptimizePage() {
               <div className="w-3 h-10 rounded-full shrink-0" style={{ backgroundColor: CATEGORY_COLORS[cat] }} />
               <div>
                 <p className="font-semibold text-sm">{CATEGORY_LABELS[cat]}</p>
-                <p className="text-xs text-[#64748b]">{categoryCounts[cat]} items · <span className="text-[#10b981]">${savings}/mo</span></p>
+                <p className="text-xs text-[var(--text-muted)]">{categoryCounts[cat]} items · <span className="text-[#10b981]">${savings}/mo</span></p>
               </div>
             </Card>
           );
@@ -196,16 +196,16 @@ export default function OptimizePage() {
                     <Badge variant="default">{rec.type}</Badge>
                   </div>
                   <p className="font-bold text-sm mb-1 font-mono">{rec.resource}</p>
-                  <p className="text-xs text-[#94a3b8] mb-3">{rec.reason}</p>
+                  <p className="text-xs text-[var(--text-secondary)] mb-3">{rec.reason}</p>
 
                   {/* Spec comparison */}
                   <div className="grid md:grid-cols-2 gap-2">
-                    <div className="bg-[#0a0e1a] rounded-lg p-2.5">
-                      <p className="text-xs text-[#64748b] mb-1">{t.currentSpec}</p>
-                      <p className="text-xs font-mono text-[#94a3b8]">{rec.currentSpec}</p>
+                    <div className="bg-[var(--bg-tertiary)] rounded-lg p-2.5">
+                      <p className="text-xs text-[var(--text-muted)] mb-1">{t.currentSpec}</p>
+                      <p className="text-xs font-mono text-[var(--text-secondary)]">{rec.currentSpec}</p>
                     </div>
                     <div className="bg-[#10b981]/5 border border-[#10b981]/20 rounded-lg p-2.5">
-                      <p className="text-xs text-[#64748b] mb-1">{t.suggestedSpec}</p>
+                      <p className="text-xs text-[var(--text-muted)] mb-1">{t.suggestedSpec}</p>
                       <p className="text-xs font-mono text-[#10b981]">{rec.suggestedSpec}</p>
                     </div>
                   </div>
@@ -216,7 +216,7 @@ export default function OptimizePage() {
                     <DollarSign size={14} className="text-[#10b981]" />
                     <p className="text-lg font-extrabold font-mono text-[#10b981]">{rec.monthlySaving}</p>
                   </div>
-                  <p className="text-xs text-[#64748b] mb-3">{tAny.perMonth ?? "per month"}</p>
+                  <p className="text-xs text-[var(--text-muted)] mb-3">{tAny.perMonth ?? "per month"}</p>
                   {isApplied ? (
                     <div className="flex items-center gap-1 text-[#10b981]">
                       <CheckCircle2 size={16} />
@@ -235,20 +235,20 @@ export default function OptimizePage() {
       </div>
 
       {/* Annual summary */}
-      <Card className="mt-8 bg-[#FFD700]/5 border border-[#FFD700]/20">
+      <Card className="mt-8 bg-[var(--gold)]/5 border border-[var(--gold)]/20">
         <div className="flex items-center justify-between">
           <div>
             <p className="font-bold text-lg">{tAny.annualSavings ?? "Annual Savings Potential"}</p>
-            <p className="text-sm text-[#94a3b8]">
+            <p className="text-sm text-[var(--text-secondary)]">
               {(tAny.ifAllApplied ?? "If all {n} recommendations are applied").replace("{n}", String(RECOMMENDATIONS.length))}
             </p>
           </div>
           <div className="text-right">
             <div className="flex items-center gap-1">
-              <DollarSign size={20} className="text-[#FFD700]" />
-              <p className="text-3xl font-extrabold font-mono text-[#FFD700]">{(totalSavings * 12).toLocaleString()}</p>
+              <DollarSign size={20} className="text-[var(--gold)]" />
+              <p className="text-3xl font-extrabold font-mono text-[var(--gold)]">{(totalSavings * 12).toLocaleString()}</p>
             </div>
-            <p className="text-sm text-[#64748b]">{tAny.perYear ?? "per year"}</p>
+            <p className="text-sm text-[var(--text-muted)]">{tAny.perYear ?? "per year"}</p>
           </div>
         </div>
       </Card>

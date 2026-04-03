@@ -74,7 +74,7 @@ const TYPE_COLORS: Record<string, { bg: string; text: string; dot: string }> = {
   maintenance: { bg: "bg-blue-500/20", text: "text-blue-400", dot: "#3b82f6" },
   blackout: { bg: "bg-red-500/20", text: "text-red-400", dot: "#ef4444" },
   deployment: { bg: "bg-green-500/20", text: "text-green-400", dot: "#10b981" },
-  simulation: { bg: "bg-[#FFD700]/20", text: "text-[#FFD700]", dot: "#FFD700" },
+  simulation: { bg: "bg-[var(--gold)]/20", text: "text-[var(--gold)]", dot: "#FFD700" },
 };
 
 function getDaysInMonth(year: number, month: number) {
@@ -114,13 +114,13 @@ export default function CalendarPage() {
   };
 
   return (
-    <div className="max-w-[1200px] mx-auto px-6 py-10">
+    <div className="w-full px-6 py-10">
       <div className="mb-8">
         <h1 className="text-2xl font-bold mb-1 flex items-center gap-3">
-          <CalendarDays size={24} className="text-[#FFD700]" />
+          <CalendarDays size={24} className="text-[var(--gold)]" />
           {t.title}
         </h1>
-        <p className="text-[#94a3b8] text-sm">{t.subtitle}</p>
+        <p className="text-[var(--text-secondary)] text-sm">{t.subtitle}</p>
       </div>
 
       {/* Legend */}
@@ -128,7 +128,7 @@ export default function CalendarPage() {
         {Object.entries(TYPE_COLORS).map(([type, colors]) => (
           <div key={type} className="flex items-center gap-2">
             <div className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: colors.dot }} />
-            <span className="text-xs text-[#94a3b8] capitalize">
+            <span className="text-xs text-[var(--text-secondary)] capitalize">
               {t[type as keyof typeof t] ?? type}
             </span>
           </div>
@@ -140,11 +140,11 @@ export default function CalendarPage() {
         <Card className="md:col-span-2">
           {/* Header */}
           <div className="flex items-center justify-between mb-4">
-            <button onClick={prevMonth} className="p-1.5 text-[#64748b] hover:text-white transition-colors" aria-label={locale === "ja" ? "前月" : "Previous month"}>
+            <button onClick={prevMonth} className="p-1.5 text-[var(--text-muted)] hover:text-white transition-colors" aria-label={locale === "ja" ? "前月" : "Previous month"}>
               <ChevronLeft size={18} />
             </button>
             <p className="font-bold">{monthLabel}</p>
-            <button onClick={nextMonth} className="p-1.5 text-[#64748b] hover:text-white transition-colors" aria-label={locale === "ja" ? "翌月" : "Next month"}>
+            <button onClick={nextMonth} className="p-1.5 text-[var(--text-muted)] hover:text-white transition-colors" aria-label={locale === "ja" ? "翌月" : "Next month"}>
               <ChevronRight size={18} />
             </button>
           </div>
@@ -152,7 +152,7 @@ export default function CalendarPage() {
           {/* Day labels */}
           <div className="grid grid-cols-7 mb-2">
             {["Su", "Mo", "Tu", "We", "Th", "Fr", "Sa"].map((d) => (
-              <div key={d} className="text-center text-xs text-[#475569] py-1">{d}</div>
+              <div key={d} className="text-center text-xs text-[var(--text-muted)] py-1">{d}</div>
             ))}
           </div>
 
@@ -174,13 +174,13 @@ export default function CalendarPage() {
                   onClick={() => setSelectedDate(isSelected ? null : dateStr)}
                   className={`relative rounded-lg p-1 min-h-[52px] text-left transition-colors ${
                     isSelected
-                      ? "bg-[#FFD700]/10 border border-[#FFD700]/50"
+                      ? "bg-[var(--gold)]/10 border border-[var(--gold)]/50"
                       : isToday
-                      ? "bg-white/5 border border-[#1e293b]"
+                      ? "bg-white/5 border border-[var(--border-color)]"
                       : "hover:bg-white/3 border border-transparent"
                   }`}
                 >
-                  <span className={`text-xs font-mono ${isToday ? "text-[#FFD700] font-bold" : "text-[#94a3b8]"}`}>
+                  <span className={`text-xs font-mono ${isToday ? "text-[var(--gold)] font-bold" : "text-[var(--text-secondary)]"}`}>
                     {day}
                   </span>
                   <div className="mt-1 space-y-0.5">
@@ -192,7 +192,7 @@ export default function CalendarPage() {
                       />
                     ))}
                     {dayEvents.length > 2 && (
-                      <p className="text-[10px] text-[#64748b]">+{dayEvents.length - 2}</p>
+                      <p className="text-[10px] text-[var(--text-muted)]">+{dayEvents.length - 2}</p>
                     )}
                   </div>
                 </button>
@@ -204,11 +204,11 @@ export default function CalendarPage() {
         {/* Event details panel */}
         <div>
           <Card>
-            <p className="text-sm font-semibold text-[#FFD700] mb-4">{t.eventDetails}</p>
+            <p className="text-sm font-semibold text-[var(--gold)] mb-4">{t.eventDetails}</p>
             {!selectedDate ? (
-              <p className="text-sm text-[#64748b]">{t.clickForDetails}</p>
+              <p className="text-sm text-[var(--text-muted)]">{t.clickForDetails}</p>
             ) : selectedEvents.length === 0 ? (
-              <p className="text-sm text-[#64748b]">{t.noEvents}</p>
+              <p className="text-sm text-[var(--text-muted)]">{t.noEvents}</p>
             ) : (
               <div className="space-y-4">
                 {selectedEvents.map((ev) => {
@@ -221,21 +221,21 @@ export default function CalendarPage() {
                         </Badge>
                       </div>
                       <p className="font-semibold text-sm mb-2">{ev.title}</p>
-                      <div className="space-y-1 text-xs text-[#94a3b8]">
+                      <div className="space-y-1 text-xs text-[var(--text-secondary)]">
                         <div className="flex justify-between">
-                          <span className="text-[#64748b]">{t.startTime}</span>
+                          <span className="text-[var(--text-muted)]">{t.startTime}</span>
                           <span>{ev.startTime}</span>
                         </div>
                         <div className="flex justify-between">
-                          <span className="text-[#64748b]">{t.endTime}</span>
+                          <span className="text-[var(--text-muted)]">{t.endTime}</span>
                           <span>{ev.endTime}</span>
                         </div>
                         <div className="flex justify-between">
-                          <span className="text-[#64748b]">{t.duration}</span>
+                          <span className="text-[var(--text-muted)]">{t.duration}</span>
                           <span>{ev.duration}</span>
                         </div>
                         <div className="flex justify-between">
-                          <span className="text-[#64748b]">{t.team}</span>
+                          <span className="text-[var(--text-muted)]">{t.team}</span>
                           <span>{ev.team}</span>
                         </div>
                       </div>
@@ -248,7 +248,7 @@ export default function CalendarPage() {
 
           {/* Upcoming events list */}
           <Card className="mt-4">
-            <p className="text-sm font-semibold text-[#FFD700] mb-3">{locale === "ja" ? "今後の予定" : "Upcoming"}</p>
+            <p className="text-sm font-semibold text-[var(--gold)] mb-3">{locale === "ja" ? "今後の予定" : "Upcoming"}</p>
             <div className="space-y-2">
               {DEMO_EVENTS.sort((a, b) => a.date.localeCompare(b.date)).map((ev) => {
                 const colors = TYPE_COLORS[ev.type] ?? { dot: "#64748b" };
@@ -257,7 +257,7 @@ export default function CalendarPage() {
                     <div className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: colors.dot }} />
                     <div className="flex-1 min-w-0">
                       <p className="text-xs truncate">{ev.title}</p>
-                      <p className="text-[10px] text-[#64748b]">{ev.date}</p>
+                      <p className="text-[10px] text-[var(--text-muted)]">{ev.date}</p>
                     </div>
                   </div>
                 );

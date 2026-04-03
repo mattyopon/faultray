@@ -144,9 +144,9 @@ const T = {
 } as const;
 
 const BADGE_STYLES: Record<string, string> = {
-  free: "bg-[#1e293b] text-[#94a3b8]",
+  free: "bg-[var(--border-color)] text-[var(--text-secondary)]",
   pro: "bg-blue-500/20 text-blue-300",
-  business: "bg-[#FFD700]/20 text-[#FFD700]",
+  business: "bg-[var(--gold)]/20 text-[var(--gold)]",
   enterprise: "bg-purple-500/20 text-purple-300",
 };
 
@@ -160,30 +160,30 @@ export default function SupportPage() {
       {/* Header */}
       <div className="mb-10">
         <h1 className="text-3xl font-bold mb-2 flex items-center gap-3">
-          <HelpCircle size={28} className="text-[#FFD700]" />
+          <HelpCircle size={28} className="text-[var(--gold)]" />
           {t.title}
         </h1>
-        <p className="text-[#94a3b8]">{t.subtitle}</p>
+        <p className="text-[var(--text-secondary)]">{t.subtitle}</p>
       </div>
 
       {/* Support channel cards */}
-      <h2 className="text-sm font-semibold text-[#64748b] uppercase tracking-wide mb-4">
+      <h2 className="text-sm font-semibold text-[var(--text-muted)] uppercase tracking-wide mb-4">
         {t.channels}
       </h2>
       <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-12">
         {/* Community */}
         <Card className="flex flex-col">
           <div className="flex items-center justify-between mb-3">
-            <GitBranch size={20} className="text-[#94a3b8]" />
+            <GitBranch size={20} className="text-[var(--text-secondary)]" />
             <Badge variant="default" className="text-xs">{t.communityBadge}</Badge>
           </div>
           <h3 className="font-semibold mb-2">{t.communityTitle}</h3>
-          <p className="text-sm text-[#94a3b8] mb-4 flex-1">{t.communityDesc}</p>
+          <p className="text-sm text-[var(--text-secondary)] mb-4 flex-1">{t.communityDesc}</p>
           <a
             href="https://github.com/mattyopon/faultray/discussions"
             target="_blank"
             rel="noopener noreferrer"
-            className="inline-flex items-center gap-1.5 text-sm text-[#FFD700] hover:underline"
+            className="inline-flex items-center gap-1.5 text-sm text-[var(--gold)] hover:underline"
           >
             {t.communityLink} <ExternalLink size={12} />
           </a>
@@ -195,12 +195,12 @@ export default function SupportPage() {
             <BookOpen size={20} className="text-blue-400" />
           </div>
           <h3 className="font-semibold mb-2">{t.docsTitle}</h3>
-          <p className="text-sm text-[#94a3b8] mb-4 flex-1">{t.docsDesc}</p>
+          <p className="text-sm text-[var(--text-secondary)] mb-4 flex-1">{t.docsDesc}</p>
           <a
             href="https://github.com/mattyopon/faultray/blob/main/docs/"
             target="_blank"
             rel="noopener noreferrer"
-            className="inline-flex items-center gap-1.5 text-sm text-[#FFD700] hover:underline"
+            className="inline-flex items-center gap-1.5 text-sm text-[var(--gold)] hover:underline"
           >
             {t.docsLink} <ExternalLink size={12} />
           </a>
@@ -212,10 +212,10 @@ export default function SupportPage() {
             <MessageCircle size={20} className="text-emerald-400" />
           </div>
           <h3 className="font-semibold mb-2">{t.helpTitle}</h3>
-          <p className="text-sm text-[#94a3b8] mb-4 flex-1">{t.helpDesc}</p>
+          <p className="text-sm text-[var(--text-secondary)] mb-4 flex-1">{t.helpDesc}</p>
           <Link
             href="/help"
-            className="inline-flex items-center gap-1.5 text-sm text-[#FFD700] hover:underline"
+            className="inline-flex items-center gap-1.5 text-sm text-[var(--gold)] hover:underline"
           >
             {t.helpLink} <ExternalLink size={12} />
           </Link>
@@ -228,26 +228,26 @@ export default function SupportPage() {
             <Badge variant="default" className="text-xs">{t.emailBadge}</Badge>
           </div>
           <h3 className="font-semibold mb-2">{t.emailTitle}</h3>
-          <p className="text-sm text-[#94a3b8] mb-4 flex-1">{t.emailDesc}</p>
+          <p className="text-sm text-[var(--text-secondary)] mb-4 flex-1">{t.emailDesc}</p>
           <a
             href="mailto:support@faultray.com"
-            className="inline-flex items-center gap-1.5 text-sm text-[#FFD700] hover:underline"
+            className="inline-flex items-center gap-1.5 text-sm text-[var(--gold)] hover:underline"
           >
             {t.emailLink} <ExternalLink size={12} />
           </a>
         </Card>
 
         {/* Slack */}
-        <Card className="flex flex-col border-[#FFD700]/20">
+        <Card className="flex flex-col border-[var(--gold)]/20">
           <div className="flex items-center justify-between mb-3">
-            <MessagesSquare size={20} className="text-[#FFD700]" />
+            <MessagesSquare size={20} className="text-[var(--gold)]" />
             <Badge variant="gold" className="text-xs">{t.slackBadge}</Badge>
           </div>
           <h3 className="font-semibold mb-2">{t.slackTitle}</h3>
-          <p className="text-sm text-[#94a3b8] mb-4 flex-1">{t.slackDesc}</p>
+          <p className="text-sm text-[var(--text-secondary)] mb-4 flex-1">{t.slackDesc}</p>
           <Link
             href="/contact"
-            className="inline-flex items-center gap-1.5 text-sm text-[#FFD700] hover:underline"
+            className="inline-flex items-center gap-1.5 text-sm text-[var(--gold)] hover:underline"
           >
             {t.slackLink} <ExternalLink size={12} />
           </Link>
@@ -259,10 +259,10 @@ export default function SupportPage() {
             <FileText size={20} className="text-red-400" />
           </div>
           <h3 className="font-semibold mb-2">{t.contactTitle}</h3>
-          <p className="text-sm text-[#94a3b8] mb-4 flex-1">{t.contactDesc}</p>
+          <p className="text-sm text-[var(--text-secondary)] mb-4 flex-1">{t.contactDesc}</p>
           <Link
             href="/contact"
-            className="inline-flex items-center gap-1.5 text-sm text-[#FFD700] hover:underline"
+            className="inline-flex items-center gap-1.5 text-sm text-[var(--gold)] hover:underline"
           >
             {t.contactLink} <ExternalLink size={12} />
           </Link>
@@ -272,16 +272,16 @@ export default function SupportPage() {
       {/* SLA table by plan */}
       <Card className="mb-12">
         <div className="flex items-center gap-2 mb-4">
-          <Clock size={18} className="text-[#FFD700]" />
+          <Clock size={18} className="text-[var(--gold)]" />
           <h2 className="font-bold">{t.planSla}</h2>
         </div>
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
-              <tr className="border-b border-[#1e293b]">
-                <th scope="col" className="text-left py-2 pr-4 text-[#64748b] font-medium">Plan</th>
-                <th scope="col" className="text-left py-2 pr-4 text-[#64748b] font-medium">Channel</th>
-                <th scope="col" className="text-left py-2 text-[#64748b] font-medium">
+              <tr className="border-b border-[var(--border-color)]">
+                <th scope="col" className="text-left py-2 pr-4 text-[var(--text-muted)] font-medium">Plan</th>
+                <th scope="col" className="text-left py-2 pr-4 text-[var(--text-muted)] font-medium">Channel</th>
+                <th scope="col" className="text-left py-2 text-[var(--text-muted)] font-medium">
                   <Clock size={12} className="inline mr-1" />
                   Response SLA
                 </th>
@@ -289,13 +289,13 @@ export default function SupportPage() {
             </thead>
             <tbody>
               {t.slaRows.map((row) => (
-                <tr key={row.plan} className="border-b border-[#1e293b] last:border-0">
+                <tr key={row.plan} className="border-b border-[var(--border-color)] last:border-0">
                   <td className="py-3 pr-4">
                     <span className={`text-xs font-bold px-2 py-0.5 rounded-full ${BADGE_STYLES[row.badge] ?? ""}`}>
                       {row.plan}
                     </span>
                   </td>
-                  <td className="py-3 pr-4 text-[#94a3b8]">{row.channel}</td>
+                  <td className="py-3 pr-4 text-[var(--text-secondary)]">{row.channel}</td>
                   <td className="py-3">
                     <span className="flex items-center gap-1.5">
                       <CheckCircle2 size={13} className="text-emerald-400 shrink-0" />
@@ -307,9 +307,9 @@ export default function SupportPage() {
             </tbody>
           </table>
         </div>
-        <p className="text-xs text-[#64748b] mt-4">
+        <p className="text-xs text-[var(--text-muted)] mt-4">
           {t.upgradePrompt}{" "}
-          <Link href="/pricing" className="text-[#FFD700] hover:underline">
+          <Link href="/pricing" className="text-[var(--gold)] hover:underline">
             {t.upgradeLink}
           </Link>
         </p>
@@ -318,14 +318,14 @@ export default function SupportPage() {
       {/* FAQ */}
       <Card>
         <div className="flex items-center gap-2 mb-5">
-          <Zap size={18} className="text-[#FFD700]" />
+          <Zap size={18} className="text-[var(--gold)]" />
           <h2 className="font-bold">{t.faq}</h2>
         </div>
         <div className="space-y-4">
           {t.faqs.map((item) => (
-            <div key={item.q} className="border-b border-[#1e293b] pb-4 last:border-0 last:pb-0">
+            <div key={item.q} className="border-b border-[var(--border-color)] pb-4 last:border-0 last:pb-0">
               <p className="text-sm font-semibold text-[#e2e8f0] mb-1.5">{item.q}</p>
-              <p className="text-sm text-[#94a3b8] leading-relaxed">{item.a}</p>
+              <p className="text-sm text-[var(--text-secondary)] leading-relaxed">{item.a}</p>
             </div>
           ))}
         </div>

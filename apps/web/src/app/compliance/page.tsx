@@ -85,10 +85,10 @@ function PillarCard({ pillar, expanded, onToggle, locale }: { pillar: DoraPillar
       <button className="w-full text-left" onClick={onToggle}>
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
-            {expanded ? <ChevronDown size={16} className="text-[#64748b]" /> : <ChevronRight size={16} className="text-[#64748b]" />}
+            {expanded ? <ChevronDown size={16} className="text-[var(--text-muted)]" /> : <ChevronRight size={16} className="text-[var(--text-muted)]" />}
             <div className="flex-1">
               <p className="font-bold text-sm">{pillarName}</p>
-              <p className="text-xs text-[#64748b] mt-0.5">{compliantCount}/{totalCount} {locale === "ja" ? "コントロール準拠" : "controls compliant"}</p>
+              <p className="text-xs text-[var(--text-muted)] mt-0.5">{compliantCount}/{totalCount} {locale === "ja" ? "コントロール準拠" : "controls compliant"}</p>
             </div>
           </div>
           <div className="flex items-center gap-3">
@@ -113,7 +113,7 @@ function PillarCard({ pillar, expanded, onToggle, locale }: { pillar: DoraPillar
       </button>
 
       {expanded && (
-        <div className="mt-4 pt-4 border-t border-[#1e293b] space-y-3">
+        <div className="mt-4 pt-4 border-t border-[var(--border-color)] space-y-3">
           {pillar.controls.map((ctrl) => (
             <div
               key={ctrl.id}
@@ -135,12 +135,12 @@ function PillarCard({ pillar, expanded, onToggle, locale }: { pillar: DoraPillar
                 )}
                 <div className="flex-1">
                   <div className="flex items-center gap-2 mb-1">
-                    <span className="text-sm font-mono text-[#64748b]">{ctrl.id}</span>
+                    <span className="text-sm font-mono text-[var(--text-muted)]">{ctrl.id}</span>
                     <span className="text-sm font-medium">{ctrl.name[locale] ?? ctrl.name.en}</span>
                   </div>
-                  <p className="text-xs text-[#94a3b8]">{ctrl.description[locale] ?? ctrl.description.en}</p>
+                  <p className="text-xs text-[var(--text-secondary)]">{ctrl.description[locale] ?? ctrl.description.en}</p>
                   {ctrl.remediation && (
-                    <p className="text-xs text-[#FFD700] mt-2">
+                    <p className="text-xs text-[var(--gold)] mt-2">
                       {ct.remediation} {ctrl.remediation[locale] ?? ctrl.remediation.en}
                     </p>
                   )}
@@ -195,13 +195,13 @@ export default function CompliancePage() {
     .sort((a, b) => a.pillarScore - b.pillarScore);
 
   return (
-    <div className="max-w-[1200px] mx-auto px-6 py-10">
+    <div className="w-full px-6 py-10">
       <div className="mb-10">
         <h1 className="text-2xl font-bold mb-1 flex items-center gap-3">
-          <ShieldCheck size={24} className="text-[#FFD700]" />
+          <ShieldCheck size={24} className="text-[var(--gold)]" />
           DORA {t.title}
         </h1>
-        <p className="text-[#94a3b8] text-sm">
+        <p className="text-[var(--text-secondary)] text-sm">
           {locale === "ja"
             ? "DORA 5 Pillarごとの準拠状況と推奨アクション"
             : "DORA 5 Pillar compliance status and recommended actions"}
@@ -211,7 +211,7 @@ export default function CompliancePage() {
       {/* Overall Score */}
       <div className="grid md:grid-cols-4 gap-6 mb-8">
         <Card className="text-center">
-          <p className="text-xs text-[#64748b] uppercase tracking-wider mb-2">
+          <p className="text-xs text-[var(--text-muted)] uppercase tracking-wider mb-2">
             {locale === "ja" ? "DORA 総合準拠率" : "DORA Overall Compliance"}
           </p>
           <p
@@ -228,34 +228,34 @@ export default function CompliancePage() {
           </Badge>
         </Card>
         <Card className="text-center">
-          <p className="text-xs text-[#64748b] uppercase tracking-wider mb-2">{t.controlsPassed}</p>
+          <p className="text-xs text-[var(--text-muted)] uppercase tracking-wider mb-2">{t.controlsPassed}</p>
           <p className="text-5xl font-extrabold font-mono text-emerald-400">{compliantCount}</p>
-          <p className="text-xs text-[#64748b] mt-2">{allControls.length} {locale === "ja" ? "件中" : "total"}</p>
+          <p className="text-xs text-[var(--text-muted)] mt-2">{allControls.length} {locale === "ja" ? "件中" : "total"}</p>
         </Card>
         <Card className="text-center">
-          <p className="text-xs text-[#64748b] uppercase tracking-wider mb-2">{locale === "ja" ? "一部準拠" : "Partial"}</p>
+          <p className="text-xs text-[var(--text-muted)] uppercase tracking-wider mb-2">{locale === "ja" ? "一部準拠" : "Partial"}</p>
           <p className="text-5xl font-extrabold font-mono text-[#f59e0b]">{partialCount}</p>
-          <p className="text-xs text-[#64748b] mt-2">{locale === "ja" ? "追加対応が必要" : "needs improvement"}</p>
+          <p className="text-xs text-[var(--text-muted)] mt-2">{locale === "ja" ? "追加対応が必要" : "needs improvement"}</p>
         </Card>
         <Card className="text-center">
-          <p className="text-xs text-[#64748b] uppercase tracking-wider mb-2">{t.nonCompliantCount}</p>
+          <p className="text-xs text-[var(--text-muted)] uppercase tracking-wider mb-2">{t.nonCompliantCount}</p>
           <p className="text-5xl font-extrabold font-mono text-red-400">{nonCompliantCount}</p>
-          <p className="text-xs text-[#64748b] mt-2">{t.requiresRemediation}</p>
+          <p className="text-xs text-[var(--text-muted)] mt-2">{t.requiresRemediation}</p>
         </Card>
       </div>
 
       {/* DORA-03: サマリー/詳細切替ボタン */}
       <div className="flex justify-end mb-4">
-        <div className="flex rounded-lg overflow-hidden border border-[#1e293b]">
+        <div className="flex rounded-lg overflow-hidden border border-[var(--border-color)]">
           <button
             onClick={() => setDetailMode(false)}
-            className={`px-4 py-2 text-xs font-semibold transition-colors ${!detailMode ? "bg-[#FFD700] text-[#0a0e1a]" : "text-[#94a3b8] hover:text-white hover:bg-white/5"}`}
+            className={`px-4 py-2 text-xs font-semibold transition-colors ${!detailMode ? "bg-[var(--gold)] text-[#0a0e1a]" : "text-[var(--text-secondary)] hover:text-white hover:bg-white/5"}`}
           >
             {locale === "ja" ? "サマリー" : "Summary"}
           </button>
           <button
             onClick={() => setDetailMode(true)}
-            className={`px-4 py-2 text-xs font-semibold transition-colors ${detailMode ? "bg-[#FFD700] text-[#0a0e1a]" : "text-[#94a3b8] hover:text-white hover:bg-white/5"}`}
+            className={`px-4 py-2 text-xs font-semibold transition-colors ${detailMode ? "bg-[var(--gold)] text-[#0a0e1a]" : "text-[var(--text-secondary)] hover:text-white hover:bg-white/5"}`}
           >
             {locale === "ja" ? "詳細" : "Details"}
           </button>
@@ -265,7 +265,7 @@ export default function CompliancePage() {
       {/* 5 Pillar Progress Overview */}
       <Card className="mb-8">
         <h3 className="text-lg font-bold mb-4 flex items-center gap-2">
-          <ShieldCheck size={18} className="text-[#FFD700]" />
+          <ShieldCheck size={18} className="text-[var(--gold)]" />
           DORA 5 Pillar {locale === "ja" ? "準拠概要" : "Overview"}
         </h3>
         <div className="space-y-4">
@@ -273,7 +273,7 @@ export default function CompliancePage() {
             const shortName = dp[`${pillar.nameKey}Short` as keyof typeof dp];
             return (
               <div key={pillar.id} className="grid grid-cols-[200px_1fr_60px] items-center gap-4">
-                <span className="text-sm text-[#94a3b8] truncate">{shortName}</span>
+                <span className="text-sm text-[var(--text-secondary)] truncate">{shortName}</span>
                 <div className="h-3 bg-white/5 rounded-full overflow-hidden">
                   <div
                     className="h-full rounded-full transition-all duration-700"
@@ -313,31 +313,31 @@ export default function CompliancePage() {
       {/* Priority Action List */}
       <Card>
         <h3 className="text-lg font-bold mb-4 flex items-center gap-2">
-          <AlertTriangle size={18} className="text-[#FFD700]" />
+          <AlertTriangle size={18} className="text-[var(--gold)]" />
           {locale === "ja" ? "優先対応アクション" : "Priority Action Items"}
         </h3>
-        <p className="text-xs text-[#64748b] mb-4">
+        <p className="text-xs text-[var(--text-muted)] mb-4">
           {locale === "ja"
             ? "準拠率が低いPillarから優先順位付けされています"
             : "Prioritized by lowest pillar compliance score"}
         </p>
         <div className="space-y-3">
           {priorityActions.map((action, i) => (
-            <div key={action.controlId} className="flex items-start gap-3 p-3 rounded-lg bg-white/[0.02] border border-[#1e293b]">
-              <span className="text-sm font-bold text-[#FFD700] shrink-0 w-6">{i + 1}.</span>
+            <div key={action.controlId} className="flex items-start gap-3 p-3 rounded-lg bg-white/[0.02] border border-[var(--border-color)]">
+              <span className="text-sm font-bold text-[var(--gold)] shrink-0 w-6">{i + 1}.</span>
               <div className="flex-1">
                 <div className="flex items-center gap-2 mb-1">
-                  <span className="text-sm font-mono text-[#64748b]">{action.controlId}</span>
+                  <span className="text-sm font-mono text-[var(--text-muted)]">{action.controlId}</span>
                   <span className="text-sm font-medium">{action.controlName}</span>
                   <Badge variant={action.status === "partial" ? "yellow" : "red"}>
                     {action.status === "partial" ? (locale === "ja" ? "一部準拠" : "Partial") : (locale === "ja" ? "非準拠" : "Non-Compliant")}
                   </Badge>
                 </div>
-                <p className="text-xs text-[#94a3b8]">
-                  <ArrowRight size={10} className="inline mr-1 text-[#FFD700]" />
+                <p className="text-xs text-[var(--text-secondary)]">
+                  <ArrowRight size={10} className="inline mr-1 text-[var(--gold)]" />
                   {action.remediation}
                 </p>
-                <p className="text-xs text-[#64748b] mt-1">{action.pillarName}</p>
+                <p className="text-xs text-[var(--text-muted)] mt-1">{action.pillarName}</p>
               </div>
             </div>
           ))}
@@ -345,18 +345,18 @@ export default function CompliancePage() {
       </Card>
 
       {/* FLOW-12: 改善提案の統一導線 */}
-      <div className="flex items-center gap-3 mt-6 pt-4 border-t border-[#1e293b]">
-        <span className="text-xs text-[#475569]">{locale === "ja" ? "関連ページ:" : "Related:"}</span>
-        <Link href="/reports" className="flex items-center gap-1.5 text-xs text-[#64748b] hover:text-[#94a3b8] transition-colors">
+      <div className="flex items-center gap-3 mt-6 pt-4 border-t border-[var(--border-color)]">
+        <span className="text-xs text-[var(--text-muted)]">{locale === "ja" ? "関連ページ:" : "Related:"}</span>
+        <Link href="/reports" className="flex items-center gap-1.5 text-xs text-[var(--text-muted)] hover:text-[var(--text-secondary)] transition-colors">
           <BookOpen size={12} />
           {locale === "ja" ? "エグゼクティブレポート" : "Executive Report"}
         </Link>
-        <Link href="/remediation" className="flex items-center gap-1.5 text-xs text-[#64748b] hover:text-[#94a3b8] transition-colors">
+        <Link href="/remediation" className="flex items-center gap-1.5 text-xs text-[var(--text-muted)] hover:text-[var(--text-secondary)] transition-colors">
           <Wrench size={12} />
           {locale === "ja" ? "改善アクション" : "Remediation"}
         </Link>
         {/* FLOW-03: complianceからaudit-reportへの遷移リンク */}
-        <Link href="/audit-report" className="flex items-center gap-1.5 text-xs text-[#64748b] hover:text-[#94a3b8] transition-colors">
+        <Link href="/audit-report" className="flex items-center gap-1.5 text-xs text-[var(--text-muted)] hover:text-[var(--text-secondary)] transition-colors">
           <BookOpen size={12} />
           {locale === "ja" ? "監査レポート" : "Audit Report"}
         </Link>

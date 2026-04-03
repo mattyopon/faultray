@@ -70,9 +70,9 @@ const releases: Release[] = [
 ];
 
 const typeBadge: Record<Release["type"], { label: string; className: string }> = {
-  major: { label: "Major", className: "bg-[#FFD700]/10 text-[#FFD700] border border-[#FFD700]/20" },
+  major: { label: "Major", className: "bg-[var(--gold)]/10 text-[var(--gold)] border border-[var(--gold)]/20" },
   minor: { label: "Minor", className: "bg-blue-500/10 text-blue-400 border border-blue-500/20" },
-  patch: { label: "Patch", className: "bg-[#1e293b] text-[#94a3b8] border border-[#334155]" },
+  patch: { label: "Patch", className: "bg-[var(--border-color)] text-[var(--text-secondary)] border border-[var(--border-color)]" },
 };
 
 export default function ChangelogPage() {
@@ -80,16 +80,16 @@ export default function ChangelogPage() {
     <div className="w-full px-6 py-10">
       <div className="mb-12">
         <h1 className="text-3xl font-bold tracking-tight mb-3">Changelog</h1>
-        <p className="text-[#94a3b8]">
+        <p className="text-[var(--text-secondary)]">
           New features, improvements, and fixes — updated with each release.
         </p>
-        <p className="text-sm text-[#64748b] mt-2">
+        <p className="text-sm text-[var(--text-muted)] mt-2">
           Subscribe to{" "}
           <a
             href="https://github.com/mattyopon/faultray/releases"
             target="_blank"
             rel="noopener noreferrer"
-            className="text-[#94a3b8] underline hover:text-white transition-colors"
+            className="text-[var(--text-secondary)] underline hover:text-white transition-colors"
           >
             GitHub Releases
           </a>{" "}
@@ -101,8 +101,8 @@ export default function ChangelogPage() {
         {releases.map((release) => {
           const badge = typeBadge[release.type];
           return (
-            <div key={release.version} className="relative pl-8 border-l border-[#1e293b]">
-              <div className="absolute -left-1.5 top-1.5 w-3 h-3 rounded-full bg-[#FFD700]" />
+            <div key={release.version} className="relative pl-8 border-l border-[var(--border-color)]">
+              <div className="absolute -left-1.5 top-1.5 w-3 h-3 rounded-full bg-[var(--gold)]" />
 
               <div className="flex flex-wrap items-center gap-3 mb-4">
                 <h2 className="text-xl font-bold">v{release.version}</h2>
@@ -111,7 +111,7 @@ export default function ChangelogPage() {
                 >
                   {badge.label}
                 </span>
-                <time className="text-sm text-[#64748b]" dateTime={release.date}>
+                <time className="text-sm text-[var(--text-muted)]" dateTime={release.date}>
                   {new Date(release.date).toLocaleDateString("en-US", {
                     year: "numeric",
                     month: "long",
@@ -146,7 +146,7 @@ export default function ChangelogPage() {
         })}
       </div>
 
-      <div className="mt-16 pt-8 border-t border-[#1e293b] flex flex-wrap gap-4 text-sm text-[#64748b]">
+      <div className="mt-16 pt-8 border-t border-[var(--border-color)] flex flex-wrap gap-4 text-sm text-[var(--text-muted)]">
         <Link href="/features" className="hover:text-white transition-colors">
           Features
         </Link>

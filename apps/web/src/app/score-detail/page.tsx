@@ -78,12 +78,12 @@ function LayerCard({ layer, t }: { layer: ScoreLayer; t: (typeof appDict.scoreDe
           style={{ width: `${layer.score}%`, backgroundColor: scoreColor(layer.score) }}
         />
       </div>
-      <p className="text-xs text-[#64748b]">
+      <p className="text-xs text-[var(--text-muted)]">
         {t.weightedContribution} {layer.weighted_score.toFixed(2)} {t.points}
       </p>
 
       {expanded && (
-        <div className="mt-4 pt-4 border-t border-[#1e293b] space-y-2">
+        <div className="mt-4 pt-4 border-t border-[var(--border-color)] space-y-2">
           {layer.factors.map((f) => (
             <div key={f.name} className="flex items-center justify-between">
               <div className="flex items-center gap-2">
@@ -94,7 +94,7 @@ function LayerCard({ layer, t }: { layer: ScoreLayer; t: (typeof appDict.scoreDe
                       f.impact === "positive" ? "#10b981" : f.impact === "negative" ? "#ef4444" : "#64748b",
                   }}
                 />
-                <span className="text-sm text-[#94a3b8]">{f.name}</span>
+                <span className="text-sm text-[var(--text-secondary)]">{f.name}</span>
               </div>
               <span className="text-sm font-mono font-semibold" style={{ color: scoreColor(f.score) }}>
                 {f.score}
@@ -104,7 +104,7 @@ function LayerCard({ layer, t }: { layer: ScoreLayer; t: (typeof appDict.scoreDe
         </div>
       )}
 
-      <p className="text-xs text-[#64748b] mt-2">{expanded ? t.clickCollapse : t.clickExpand}</p>
+      <p className="text-xs text-[var(--text-muted)] mt-2">{expanded ? t.clickCollapse : t.clickExpand}</p>
     </Card>
   );
 }
@@ -124,28 +124,28 @@ export default function ScoreDetailPage() {
   }, []);
 
   return (
-    <div className="max-w-[1200px] mx-auto px-6 py-10">
+    <div className="w-full px-6 py-10">
       <div className="mb-10">
         <h1 className="text-2xl font-bold mb-1 flex items-center gap-3">
-          <BarChart3 size={24} className="text-[#FFD700]" />
+          <BarChart3 size={24} className="text-[var(--gold)]" />
           {t.title}
         </h1>
-        <p className="text-[#94a3b8] text-sm">{t.subtitle}</p>
+        <p className="text-[var(--text-secondary)] text-sm">{t.subtitle}</p>
       </div>
 
       {loading ? (
         <Card className="flex items-center justify-center py-20">
-          <Loader2 size={24} className="animate-spin text-[#FFD700]" />
-          <span className="ml-3 text-[#94a3b8]">{t.loading}</span>
+          <Loader2 size={24} className="animate-spin text-[var(--gold)]" />
+          <span className="ml-3 text-[var(--text-secondary)]">{t.loading}</span>
         </Card>
       ) : (
         <>
           <Card className="mb-6 text-center">
-            <p className="text-xs text-[#64748b] uppercase tracking-wider mb-2">{t.overallScore}</p>
+            <p className="text-xs text-[var(--text-muted)] uppercase tracking-wider mb-2">{t.overallScore}</p>
             <p className="text-6xl font-extrabold font-mono" style={{ color: scoreColor(data.overall_score) }}>
               {data.overall_score.toFixed(1)}
             </p>
-            <p className="text-sm text-[#94a3b8] mt-2">{t.sumOfWeighted}</p>
+            <p className="text-sm text-[var(--text-secondary)] mt-2">{t.sumOfWeighted}</p>
           </Card>
 
           {/* DEMO-04: 経営者向けサマリー */}
@@ -191,9 +191,9 @@ export default function ScoreDetailPage() {
             };
 
             return (
-              <Card className="mb-6 p-6 border-[#FFD700]/20 bg-gradient-to-br from-[#FFD700]/[0.03] to-transparent">
+              <Card className="mb-6 p-6 border-[var(--gold)]/20 bg-gradient-to-br from-[#FFD700]/[0.03] to-transparent">
                 <h2 className="text-lg font-bold mb-5 flex items-center gap-2">
-                  <Briefcase size={20} className="text-[#FFD700]" />
+                  <Briefcase size={20} className="text-[var(--gold)]" />
                   {locale === "ja" ? "経営者サマリー" : "Executive Summary"}
                 </h2>
 
@@ -201,13 +201,13 @@ export default function ScoreDetailPage() {
                   <div className="p-4 rounded-xl bg-red-500/5 border border-red-500/10">
                     <div className="flex items-center gap-2 mb-1">
                       <AlertTriangle size={14} className="text-red-400" />
-                      <p className="text-xs text-[#64748b]">
+                      <p className="text-xs text-[var(--text-muted)]">
                         {locale === "ja" ? "年間推定障害リスク回数" : "Est. Annual Incidents"}
                       </p>
                     </div>
                     <p className="text-2xl font-extrabold font-mono text-red-400">
                       {incidentCount}
-                      <span className="text-sm font-normal text-[#94a3b8] ml-1">
+                      <span className="text-sm font-normal text-[var(--text-secondary)] ml-1">
                         {locale === "ja" ? "回" : "times"}
                       </span>
                     </p>
@@ -216,7 +216,7 @@ export default function ScoreDetailPage() {
                   <div className="p-4 rounded-xl bg-orange-500/5 border border-orange-500/10">
                     <div className="flex items-center gap-2 mb-1">
                       <TrendingDown size={14} className="text-orange-400" />
-                      <p className="text-xs text-[#64748b]">
+                      <p className="text-xs text-[var(--text-muted)]">
                         {locale === "ja" ? "推定年間損失額" : "Est. Annual Loss"}
                       </p>
                     </div>
@@ -225,18 +225,18 @@ export default function ScoreDetailPage() {
 
                   <div className="p-4 rounded-xl bg-white/[0.02] border border-white/5">
                     <div className="flex items-center gap-2 mb-1">
-                      <Target size={14} className="text-[#64748b]" />
-                      <p className="text-xs text-[#64748b]">
+                      <Target size={14} className="text-[var(--text-muted)]" />
+                      <p className="text-xs text-[var(--text-muted)]">
                         {locale === "ja" ? "同業他社平均スコア" : "Industry Avg Score"}
                       </p>
                     </div>
-                    <p className="text-2xl font-extrabold font-mono text-[#94a3b8]">{industryAvg.toFixed(1)}</p>
+                    <p className="text-2xl font-extrabold font-mono text-[var(--text-secondary)]">{industryAvg.toFixed(1)}</p>
                   </div>
 
                   <div className="p-4 rounded-xl bg-white/[0.02] border border-white/5">
                     <div className="flex items-center gap-2 mb-1">
-                      <TrendingUp size={14} className="text-[#FFD700]" />
-                      <p className="text-xs text-[#64748b]">
+                      <TrendingUp size={14} className="text-[var(--gold)]" />
+                      <p className="text-xs text-[var(--text-muted)]">
                         {locale === "ja" ? "あなたのスコア" : "Your Score"}
                       </p>
                     </div>
@@ -250,14 +250,14 @@ export default function ScoreDetailPage() {
                 </div>
 
                 <div>
-                  <h3 className="text-sm font-semibold text-[#94a3b8] mb-3">
+                  <h3 className="text-sm font-semibold text-[var(--text-secondary)] mb-3">
                     {locale === "ja" ? "推奨アクション TOP3" : "Recommended Actions TOP3"}
                   </h3>
                   <div className="space-y-2">
                     {top3.map((d, i) => (
                       <div key={d.factor} className="flex items-center justify-between p-3 rounded-lg bg-white/[0.02] border border-white/5">
                         <div className="flex items-center gap-3">
-                          <span className="w-5 h-5 rounded-full bg-[#FFD700]/10 text-[#FFD700] text-xs font-bold flex items-center justify-center">
+                          <span className="w-5 h-5 rounded-full bg-[var(--gold)]/10 text-[var(--gold)] text-xs font-bold flex items-center justify-center">
                             {i + 1}
                           </span>
                           <span className="text-sm text-[#e2e8f0]">{factorLabel(d.factor)}</span>
@@ -284,7 +284,7 @@ export default function ScoreDetailPage() {
                   <TrendingDown size={18} className="text-red-400" />
                   {t.topDetractors}
                 </h3>
-                <p className="text-xs text-[#64748b] mb-4">{t.topDetractorsDesc}</p>
+                <p className="text-xs text-[var(--text-muted)] mb-4">{t.topDetractorsDesc}</p>
                 <div className="space-y-3">
                   {data.top_detractors.map((d) => (
                     <div key={d.factor} className="p-3 rounded-xl bg-red-500/5 border border-red-500/10">
@@ -293,7 +293,7 @@ export default function ScoreDetailPage() {
                         <span className="text-sm font-mono text-red-400">{d.score}</span>
                       </div>
                       <div className="flex items-center justify-between">
-                        <span className="text-xs text-[#64748b]">{d.layer}</span>
+                        <span className="text-xs text-[var(--text-muted)]">{d.layer}</span>
                         <Badge variant="green">+{d.potential_gain.toFixed(1)} {t.pts}</Badge>
                       </div>
                     </div>

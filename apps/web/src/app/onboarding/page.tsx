@@ -109,10 +109,10 @@ function StepIndicator({ current, total }: StepIndicatorProps) {
           <div
             className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-semibold transition-colors ${
               i + 1 < current
-                ? "bg-[#FFD700] text-black"
+                ? "bg-[var(--gold)] text-black"
                 : i + 1 === current
-                ? "bg-[#FFD700]/20 border border-[#FFD700]/40 text-[#FFD700]"
-                : "bg-[#1e293b] text-[#475569]"
+                ? "bg-[var(--gold)]/20 border border-[var(--gold)]/40 text-[var(--gold)]"
+                : "bg-[var(--border-color)] text-[var(--text-muted)]"
             }`}
           >
             {i + 1 < current ? <CheckCircle2 size={14} /> : i + 1}
@@ -120,7 +120,7 @@ function StepIndicator({ current, total }: StepIndicatorProps) {
           {i < total - 1 && (
             <div
               className={`h-px w-8 transition-colors ${
-                i + 1 < current ? "bg-[#FFD700]" : "bg-[#1e293b]"
+                i + 1 < current ? "bg-[var(--gold)]" : "bg-[var(--border-color)]"
               }`}
             />
           )}
@@ -182,11 +182,11 @@ export default function OnboardingPage() {
       <div className="w-full px-6 py-10">
         {/* Header */}
         <div className="text-center mb-8">
-          <div className="inline-flex items-center justify-center w-14 h-14 rounded-xl bg-[#FFD700]/10 border border-[#FFD700]/20 mb-4">
-            <Rocket size={28} className="text-[#FFD700]" />
+          <div className="inline-flex items-center justify-center w-14 h-14 rounded-xl bg-[var(--gold)]/10 border border-[var(--gold)]/20 mb-4">
+            <Rocket size={28} className="text-[var(--gold)]" />
           </div>
           <h1 className="text-2xl font-bold mb-2">{t.title}</h1>
-          <p className="text-[#94a3b8] text-sm">{t.subtitle}</p>
+          <p className="text-[var(--text-secondary)] text-sm">{t.subtitle}</p>
         </div>
 
         {/* Step indicator */}
@@ -196,12 +196,12 @@ export default function OnboardingPage() {
 
         {/* Step 1: Stack selection */}
         {step === 1 && (
-          <Card className="bg-[#0f1629] border-[#1e293b] p-6">
+          <Card className="bg-[#0f1629] border-[var(--border-color)] p-6">
             <h2 className="text-lg font-semibold mb-1">{t.step1}</h2>
-            <p className="text-sm text-[#64748b] mb-6">{t.step1Desc}</p>
+            <p className="text-sm text-[var(--text-muted)] mb-6">{t.step1Desc}</p>
 
             <div className="mb-6">
-              <p className="text-xs font-medium text-[#94a3b8] uppercase tracking-wider mb-3">
+              <p className="text-xs font-medium text-[var(--text-secondary)] uppercase tracking-wider mb-3">
                 {t.cloud}
               </p>
               <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
@@ -211,11 +211,11 @@ export default function OnboardingPage() {
                     onClick={() => setState((s) => ({ ...s, cloud: id }))}
                     className={`flex items-center gap-2 p-3 rounded-lg border text-sm transition-colors ${
                       state.cloud === id
-                        ? "border-[#FFD700]/40 bg-[#FFD700]/5 text-white"
-                        : "border-[#1e293b] text-[#94a3b8] hover:border-[#334155] hover:text-white"
+                        ? "border-[var(--gold)]/40 bg-[var(--gold)]/5 text-white"
+                        : "border-[var(--border-color)] text-[var(--text-secondary)] hover:border-[var(--border-color)] hover:text-white"
                     }`}
                   >
-                    <Icon size={16} className={state.cloud === id ? "text-[#FFD700]" : "text-[#475569]"} />
+                    <Icon size={16} className={state.cloud === id ? "text-[var(--gold)]" : "text-[var(--text-muted)]"} />
                     {label}
                   </button>
                 ))}
@@ -223,7 +223,7 @@ export default function OnboardingPage() {
             </div>
 
             <div className="mb-8">
-              <p className="text-xs font-medium text-[#94a3b8] uppercase tracking-wider mb-3">
+              <p className="text-xs font-medium text-[var(--text-secondary)] uppercase tracking-wider mb-3">
                 {t.industry}
               </p>
               <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
@@ -233,8 +233,8 @@ export default function OnboardingPage() {
                     onClick={() => setState((s) => ({ ...s, industry: id }))}
                     className={`p-3 rounded-lg border text-sm transition-colors ${
                       state.industry === id
-                        ? "border-[#FFD700]/40 bg-[#FFD700]/5 text-white"
-                        : "border-[#1e293b] text-[#94a3b8] hover:border-[#334155] hover:text-white"
+                        ? "border-[var(--gold)]/40 bg-[var(--gold)]/5 text-white"
+                        : "border-[var(--border-color)] text-[var(--text-secondary)] hover:border-[var(--border-color)] hover:text-white"
                     }`}
                   >
                     {label}
@@ -246,7 +246,7 @@ export default function OnboardingPage() {
             <Button
               onClick={() => setStep(2)}
               disabled={!canProceedStep1}
-              className="w-full bg-[#FFD700] text-black hover:bg-[#FFD700]/90 disabled:opacity-40"
+              className="w-full bg-[var(--gold)] text-black hover:bg-[var(--gold)]/90 disabled:opacity-40"
             >
               {t.next}
               <ChevronRight size={16} className="ml-1" />
@@ -256,17 +256,17 @@ export default function OnboardingPage() {
 
         {/* Step 2: Quick Assessment */}
         {step === 2 && (
-          <Card className="bg-[#0f1629] border-[#1e293b] p-6">
+          <Card className="bg-[#0f1629] border-[var(--border-color)] p-6">
             <h2 className="text-lg font-semibold mb-1">{t.step2}</h2>
-            <p className="text-sm text-[#64748b] mb-6">{t.step2Desc}</p>
+            <p className="text-sm text-[var(--text-muted)] mb-6">{t.step2Desc}</p>
 
             <div className="space-y-3 mb-8">
               {questions.map(({ id, label }) => (
                 <div
                   key={id}
-                  className="flex items-center justify-between p-4 rounded-lg border border-[#1e293b] bg-[#060b16]"
+                  className="flex items-center justify-between p-4 rounded-lg border border-[var(--border-color)] bg-[#060b16]"
                 >
-                  <p className="text-sm text-[#94a3b8] pr-4">{label}</p>
+                  <p className="text-sm text-[var(--text-secondary)] pr-4">{label}</p>
                   <div className="flex items-center gap-2 shrink-0">
                     <button
                       onClick={() =>
@@ -278,7 +278,7 @@ export default function OnboardingPage() {
                       className={`px-4 py-1.5 rounded-md text-sm font-medium transition-colors border ${
                         state.answers[id] === true
                           ? "bg-green-500/10 border-green-500/30 text-green-400"
-                          : "border-[#1e293b] text-[#64748b] hover:border-[#334155] hover:text-white"
+                          : "border-[var(--border-color)] text-[var(--text-muted)] hover:border-[var(--border-color)] hover:text-white"
                       }`}
                     >
                       {t.yes}
@@ -293,7 +293,7 @@ export default function OnboardingPage() {
                       className={`px-4 py-1.5 rounded-md text-sm font-medium transition-colors border ${
                         state.answers[id] === false
                           ? "bg-red-500/10 border-red-500/30 text-red-400"
-                          : "border-[#1e293b] text-[#64748b] hover:border-[#334155] hover:text-white"
+                          : "border-[var(--border-color)] text-[var(--text-muted)] hover:border-[var(--border-color)] hover:text-white"
                       }`}
                     >
                       {t.no}
@@ -307,7 +307,7 @@ export default function OnboardingPage() {
               <Button
                 variant="secondary"
                 onClick={() => setStep(1)}
-                className="border-[#1e293b] text-[#94a3b8] hover:text-white"
+                className="border-[var(--border-color)] text-[var(--text-secondary)] hover:text-white"
               >
                 <ChevronLeft size={16} className="mr-1" />
                 {t.back}
@@ -315,7 +315,7 @@ export default function OnboardingPage() {
               <Button
                 onClick={() => setStep(3)}
                 disabled={!canProceedStep2}
-                className="flex-1 bg-[#FFD700] text-black hover:bg-[#FFD700]/90 disabled:opacity-40"
+                className="flex-1 bg-[var(--gold)] text-black hover:bg-[var(--gold)]/90 disabled:opacity-40"
               >
                 {t.next}
                 <ChevronRight size={16} className="ml-1" />
@@ -326,13 +326,13 @@ export default function OnboardingPage() {
 
         {/* Step 3: Results */}
         {step === 3 && (
-          <Card className="bg-[#0f1629] border-[#1e293b] p-6">
+          <Card className="bg-[#0f1629] border-[var(--border-color)] p-6">
             <h2 className="text-lg font-semibold mb-1">{t.step3}</h2>
-            <p className="text-sm text-[#64748b] mb-6">{t.step3Desc}</p>
+            <p className="text-sm text-[var(--text-muted)] mb-6">{t.step3Desc}</p>
 
             {/* Score */}
             <div className="bg-[#060b16] rounded-xl p-6 text-center mb-6">
-              <p className="text-xs text-[#64748b] uppercase tracking-wider mb-2">{t.yourScore}</p>
+              <p className="text-xs text-[var(--text-muted)] uppercase tracking-wider mb-2">{t.yourScore}</p>
               <div className="relative inline-flex items-center justify-center w-28 h-28 mb-3">
                 <svg viewBox="0 0 36 36" className="w-28 h-28 -rotate-90">
                   <circle
@@ -359,7 +359,7 @@ export default function OnboardingPage() {
 
             {/* Recommendations */}
             <div className="mb-6">
-              <p className="text-xs font-medium text-[#94a3b8] uppercase tracking-wider mb-3">
+              <p className="text-xs font-medium text-[var(--text-secondary)] uppercase tracking-wider mb-3">
                 {t.recommendations}
               </p>
               <div className="space-y-2">
@@ -369,12 +369,12 @@ export default function OnboardingPage() {
                     <Link
                       key={idx}
                       href={rec.href}
-                      className="flex items-center gap-3 p-3 rounded-lg border border-[#1e293b] hover:border-[#334155] transition-colors group"
+                      className="flex items-center gap-3 p-3 rounded-lg border border-[var(--border-color)] hover:border-[var(--border-color)] transition-colors group"
                     >
-                      <div className="w-8 h-8 rounded-lg bg-[#FFD700]/10 flex items-center justify-center shrink-0">
-                        <Icon size={15} className="text-[#FFD700]" />
+                      <div className="w-8 h-8 rounded-lg bg-[var(--gold)]/10 flex items-center justify-center shrink-0">
+                        <Icon size={15} className="text-[var(--gold)]" />
                       </div>
-                      <span className="text-sm text-[#94a3b8] group-hover:text-white transition-colors flex-1">
+                      <span className="text-sm text-[var(--text-secondary)] group-hover:text-white transition-colors flex-1">
                         {t[rec.labelKey]}
                       </span>
                       <Badge className={`text-[9px] shrink-0 ${
@@ -386,7 +386,7 @@ export default function OnboardingPage() {
                       }`}>
                         {rec.priority}
                       </Badge>
-                      <ChevronRight size={14} className="text-[#475569] group-hover:text-[#94a3b8]" />
+                      <ChevronRight size={14} className="text-[var(--text-muted)] group-hover:text-[var(--text-secondary)]" />
                     </Link>
                   );
                 })}
@@ -397,7 +397,7 @@ export default function OnboardingPage() {
             <div className="space-y-3">
               {/* FLOW-05: Auto-redirect to simulate after onboarding completion */}
               <Button
-                className="w-full bg-[#FFD700] text-black hover:bg-[#FFD700]/90 font-semibold"
+                className="w-full bg-[var(--gold)] text-black hover:bg-[var(--gold)]/90 font-semibold"
                 onClick={() => router.push("/simulate")}
               >
                 <Zap size={16} className="mr-2" />
@@ -405,7 +405,7 @@ export default function OnboardingPage() {
               </Button>
               <Button
                 variant="secondary"
-                className="w-full border-[#1e293b] text-[#64748b] hover:text-white hover:border-[#334155]"
+                className="w-full border-[var(--border-color)] text-[var(--text-muted)] hover:text-white hover:border-[var(--border-color)]"
                 onClick={() => router.push("/dashboard")}
               >
                 {t.skipOnboarding}
@@ -425,7 +425,7 @@ export default function OnboardingPage() {
                 }
               }}
               className={`w-2 h-2 rounded-full transition-colors ${
-                s === step ? "bg-[#FFD700]" : s < step ? "bg-[#FFD700]/40" : "bg-[#1e293b]"
+                s === step ? "bg-[var(--gold)]" : s < step ? "bg-[var(--gold)]/40" : "bg-[var(--border-color)]"
               }`}
             />
           ))}

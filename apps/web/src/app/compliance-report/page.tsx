@@ -150,18 +150,18 @@ export default function ComplianceReportPage() {
   };
 
   return (
-    <div className="max-w-[1200px] mx-auto px-6 py-10">
+    <div className="w-full px-6 py-10">
       <div className="mb-10">
         <h1 className="text-2xl font-bold mb-1 flex items-center gap-3">
-          <FileText size={24} className="text-[#FFD700]" />
+          <FileText size={24} className="text-[var(--gold)]" />
           {t.title}
         </h1>
-        <p className="text-[#94a3b8] text-sm">{t.subtitle}</p>
+        <p className="text-[var(--text-secondary)] text-sm">{t.subtitle}</p>
       </div>
 
       {/* Framework Selector */}
       <Card className="mb-6">
-        <p className="text-xs text-[#64748b] uppercase tracking-wider mb-3">{t.selectFramework}</p>
+        <p className="text-xs text-[var(--text-muted)] uppercase tracking-wider mb-3">{t.selectFramework}</p>
         <div className="flex flex-wrap gap-3">
           {(["SOC2", "ISO27001", "DORA", "FISC"] as Framework[]).map((fw) => (
             <button
@@ -169,8 +169,8 @@ export default function ComplianceReportPage() {
               onClick={() => setSelected(fw)}
               className={`px-5 py-2.5 rounded-xl text-sm font-semibold transition-all border ${
                 selected === fw
-                  ? "bg-[#FFD700]/10 text-[#FFD700] border-[#FFD700]/30"
-                  : "text-[#94a3b8] border-[#1e293b] hover:border-[#64748b]"
+                  ? "bg-[var(--gold)]/10 text-[var(--gold)] border-[var(--gold)]/30"
+                  : "text-[var(--text-secondary)] border-[var(--border-color)] hover:border-[#64748b]"
               }`}
             >
               {fw}
@@ -192,27 +192,27 @@ export default function ComplianceReportPage() {
       <div className="grid md:grid-cols-4 gap-4 mb-8">
         <Card className="text-center">
           <div className="flex items-center justify-center mb-2">
-            <ShieldCheck size={20} className="text-[#FFD700]" />
+            <ShieldCheck size={20} className="text-[var(--gold)]" />
           </div>
           <p className="text-5xl font-extrabold font-mono" style={{ color: fw.score >= 80 ? "#10b981" : fw.score >= 60 ? "#f59e0b" : "#ef4444" }}>
             {fw.score}%
           </p>
-          <p className="text-xs text-[#64748b] uppercase tracking-wider mt-2">{t.complianceScore}</p>
+          <p className="text-xs text-[var(--text-muted)] uppercase tracking-wider mt-2">{t.complianceScore}</p>
           <Badge variant={fw.score >= 80 ? "green" : fw.score >= 60 ? "yellow" : "red"} className="mt-2">
             {fw.score >= 80 ? t.compliant : fw.score >= 60 ? t.partial : t.nonCompliant}
           </Badge>
         </Card>
         <Card className="text-center">
           <p className="text-3xl font-extrabold font-mono text-emerald-400">{fw.controls_pass}</p>
-          <p className="text-xs text-[#64748b] uppercase tracking-wider mt-1">{t.pass}</p>
+          <p className="text-xs text-[var(--text-muted)] uppercase tracking-wider mt-1">{t.pass}</p>
         </Card>
         <Card className="text-center">
           <p className="text-3xl font-extrabold font-mono text-yellow-400">{fw.controls_partial}</p>
-          <p className="text-xs text-[#64748b] uppercase tracking-wider mt-1">{t.partial}</p>
+          <p className="text-xs text-[var(--text-muted)] uppercase tracking-wider mt-1">{t.partial}</p>
         </Card>
         <Card className="text-center">
           <p className="text-3xl font-extrabold font-mono text-red-400">{fw.controls_fail}</p>
-          <p className="text-xs text-[#64748b] uppercase tracking-wider mt-1">{t.fail}</p>
+          <p className="text-xs text-[var(--text-muted)] uppercase tracking-wider mt-1">{t.fail}</p>
         </Card>
       </div>
 
@@ -229,7 +229,7 @@ export default function ComplianceReportPage() {
 
       {/* Controls List */}
       <Card>
-        <h3 className="text-sm font-semibold text-[#94a3b8] uppercase tracking-wider mb-4">
+        <h3 className="text-sm font-semibold text-[var(--text-secondary)] uppercase tracking-wider mb-4">
           {t.controlsDetail} — {fw.name}
         </h3>
         <div className="space-y-2">
@@ -247,16 +247,16 @@ export default function ComplianceReportPage() {
               {statusIcon(ctrl.status)}
               <div className="flex-1">
                 <div className="flex items-center gap-2 mb-0.5">
-                  <span className="font-mono text-xs text-[#64748b]">{ctrl.id}</span>
+                  <span className="font-mono text-xs text-[var(--text-muted)]">{ctrl.id}</span>
                   <span className="text-sm font-medium">{ctrl.name}</span>
                   <Badge variant={statusBadge(ctrl.status)}>{ctrl.status.toUpperCase()}</Badge>
                 </div>
-                <p className="text-xs text-[#94a3b8]">{ctrl.notes}</p>
+                <p className="text-xs text-[var(--text-secondary)]">{ctrl.notes}</p>
               </div>
               {ctrl.status !== "pass" && (
                 <button
                   type="button"
-                  className="text-[#FFD700] hover:text-[#ffe44d] shrink-0"
+                  className="text-[var(--gold)] hover:text-[#ffe44d] shrink-0"
                   aria-label={locale === "ja" ? "詳細を表示" : "View details"}
                 >
                   <ExternalLink size={14} />

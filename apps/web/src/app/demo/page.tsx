@@ -189,7 +189,7 @@ export default function DemoPage() {
             <Link
               key={link.href}
               href={link.href}
-              className="text-xs font-medium px-3 py-1.5 rounded-lg border border-[var(--border-color)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:border-[#334155] transition-colors"
+              className="text-xs font-medium px-3 py-1.5 rounded-lg border border-[var(--border-color)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:border-[var(--border-color)] transition-colors"
             >
               {link.label}
             </Link>
@@ -247,7 +247,7 @@ export default function DemoPage() {
               className={`px-4 py-3 rounded-xl border text-sm font-medium transition-all ${
                 selectedIndustry === ind.key
                   ? "border-[var(--gold)] bg-[var(--gold)]/10 text-[var(--gold)]"
-                  : "border-[var(--border-color)] text-[var(--text-secondary)] hover:border-[#334155] hover:text-[var(--text-primary)]"
+                  : "border-[var(--border-color)] text-[var(--text-secondary)] hover:border-[var(--border-color)] hover:text-[var(--text-primary)]"
               }`}
             >
               {ind.label}

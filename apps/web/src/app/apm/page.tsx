@@ -59,34 +59,34 @@ export default function ApmPage() {
   const avgMem = agentList.filter((a) => a.status !== "offline").reduce((s, a) => s + a.mem, 0) / Math.max(1, agentList.filter((a) => a.status !== "offline").length);
 
   return (
-    <div className="max-w-[1200px] mx-auto px-6 py-10">
+    <div className="w-full px-6 py-10">
       <div className="flex items-center justify-between mb-1">
         <h1 className="text-2xl font-bold flex items-center gap-3">
-          <Radio size={24} className="text-[#FFD700]" />
+          <Radio size={24} className="text-[var(--gold)]" />
           {t.title}
         </h1>
         <Button variant="secondary" size="sm" onClick={load}>
           <RefreshCw size={14} className="mr-1" /> {t.refresh}
         </Button>
       </div>
-      <p className="text-[#94a3b8] text-sm mb-8">{t.subtitle}</p>
+      <p className="text-[var(--text-secondary)] text-sm mb-8">{t.subtitle}</p>
 
       <div className="grid md:grid-cols-4 gap-4 mb-8">
         <Card>
-          <p className="text-xs text-[#64748b] uppercase mb-2">{t.agents}</p>
-          <p className="text-3xl font-bold text-[#FFD700]">{agentList.length}</p>
+          <p className="text-xs text-[var(--text-muted)] uppercase mb-2">{t.agents}</p>
+          <p className="text-3xl font-bold text-[var(--gold)]">{agentList.length}</p>
         </Card>
         <Card>
-          <p className="text-xs text-[#64748b] uppercase mb-2">{t.alerts}</p>
-          <p className="text-3xl font-bold text-[#FFD700]">{alertList.length}</p>
+          <p className="text-xs text-[var(--text-muted)] uppercase mb-2">{t.alerts}</p>
+          <p className="text-3xl font-bold text-[var(--gold)]">{alertList.length}</p>
         </Card>
         <Card>
-          <p className="text-xs text-[#64748b] uppercase mb-2">{t.cpu}</p>
-          <p className="text-3xl font-bold text-[#FFD700]">{avgCpu.toFixed(0)}%</p>
+          <p className="text-xs text-[var(--text-muted)] uppercase mb-2">{t.cpu}</p>
+          <p className="text-3xl font-bold text-[var(--gold)]">{avgCpu.toFixed(0)}%</p>
         </Card>
         <Card>
-          <p className="text-xs text-[#64748b] uppercase mb-2">{t.mem}</p>
-          <p className="text-3xl font-bold text-[#FFD700]">{avgMem.toFixed(0)}%</p>
+          <p className="text-xs text-[var(--text-muted)] uppercase mb-2">{t.mem}</p>
+          <p className="text-3xl font-bold text-[var(--gold)]">{avgMem.toFixed(0)}%</p>
         </Card>
       </div>
 
@@ -96,8 +96,8 @@ export default function ApmPage() {
           <div className="space-y-2">
             {agentList.map((a) => (
               <div key={a.id} className="flex items-center gap-3 text-sm">
-                <span className="font-mono text-xs text-[#475569] w-20">{a.id}</span>
-                <span className="flex-1 text-[#94a3b8]">{a.hostname}</span>
+                <span className="font-mono text-xs text-[var(--text-muted)] w-20">{a.id}</span>
+                <span className="flex-1 text-[var(--text-secondary)]">{a.hostname}</span>
                 <Badge variant={a.status === "running" ? "green" : a.status === "degraded" ? "yellow" : "red"}>{a.status}</Badge>
                 <span className="font-mono w-14 text-right">CPU {a.cpu}%</span>
                 <span className="font-mono w-14 text-right">Mem {a.mem}%</span>
@@ -113,8 +113,8 @@ export default function ApmPage() {
               <div key={a.id} className="flex items-start gap-3">
                 <Badge variant={a.severity === "critical" ? "red" : a.severity === "warning" ? "yellow" : "default"}>{a.severity}</Badge>
                 <div>
-                  <p className="text-sm text-[#94a3b8]">{a.message}</p>
-                  <p className="text-xs text-[#475569]">{a.agent}</p>
+                  <p className="text-sm text-[var(--text-secondary)]">{a.message}</p>
+                  <p className="text-xs text-[var(--text-muted)]">{a.agent}</p>
                 </div>
               </div>
             ))}

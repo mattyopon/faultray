@@ -83,23 +83,23 @@ export default function CaseStudiesPage() {
     <div className="max-w-[960px] mx-auto px-6 py-20">
       {/* Back */}
       <div className="mb-10">
-        <Link href="/" className="text-sm text-[#64748b] hover:text-white transition-colors">
+        <Link href="/" className="text-sm text-[var(--text-muted)] hover:text-white transition-colors">
           &larr; Back to Home
         </Link>
       </div>
 
       {/* Header */}
       <div className="flex items-center gap-4 mb-4">
-        <BookOpen size={28} className="text-[#FFD700]" />
+        <BookOpen size={28} className="text-[var(--gold)]" />
         <h1 className="text-3xl font-bold tracking-tight">Customer Success Stories</h1>
       </div>
-      <p className="text-[#94a3b8] mb-4 text-lg">
+      <p className="text-[var(--text-secondary)] mb-4 text-lg">
         Real results from teams using FaultRay to prove infrastructure resilience — without touching production.
       </p>
-      <p className="text-sm text-[#475569] mb-14">
+      <p className="text-sm text-[var(--text-muted)] mb-14">
         These are anonymized composite examples from our beta program. Formal signed case studies are in progress.
         If you&apos;d like to be featured,{" "}
-        <Link href="/contact" className="text-[#FFD700] hover:underline">
+        <Link href="/contact" className="text-[var(--gold)] hover:underline">
           contact us
         </Link>
         .
@@ -117,12 +117,12 @@ export default function CaseStudiesPage() {
             {/* Challenge / Solution */}
             <div className="grid md:grid-cols-2 gap-8 mb-8">
               <div>
-                <h3 className="text-sm font-bold text-[#64748b] uppercase tracking-wider mb-2">Challenge</h3>
-                <p className="text-[#94a3b8] text-sm leading-relaxed">{cs.challenge}</p>
+                <h3 className="text-sm font-bold text-[var(--text-muted)] uppercase tracking-wider mb-2">Challenge</h3>
+                <p className="text-[var(--text-secondary)] text-sm leading-relaxed">{cs.challenge}</p>
               </div>
               <div>
-                <h3 className="text-sm font-bold text-[#64748b] uppercase tracking-wider mb-2">Solution</h3>
-                <p className="text-[#94a3b8] text-sm leading-relaxed">{cs.solution}</p>
+                <h3 className="text-sm font-bold text-[var(--text-muted)] uppercase tracking-wider mb-2">Solution</h3>
+                <p className="text-[var(--text-secondary)] text-sm leading-relaxed">{cs.solution}</p>
               </div>
             </div>
 
@@ -134,7 +134,7 @@ export default function CaseStudiesPage() {
                   <div key={r.metric} className="text-center p-4 rounded-xl bg-white/[0.03] border border-white/[0.06]">
                     <Icon size={16} className={`${cs.accentClass} mx-auto mb-2`} />
                     <p className={`text-lg font-bold ${cs.accentClass}`}>{r.value}</p>
-                    <p className="text-[10px] text-[#64748b] mt-1">{r.metric}</p>
+                    <p className="text-[10px] text-[var(--text-muted)] mt-1">{r.metric}</p>
                   </div>
                 );
               })}
@@ -145,20 +145,20 @@ export default function CaseStudiesPage() {
               <p className={`text-sm italic ${cs.accentClass} leading-relaxed mb-1`}>
                 &ldquo;{cs.quote}&rdquo;
               </p>
-              <footer className="text-xs text-[#64748b]">&mdash; {cs.role}</footer>
+              <footer className="text-xs text-[var(--text-muted)]">&mdash; {cs.role}</footer>
             </blockquote>
           </div>
         ))}
       </div>
 
       {/* ACCURACY-06: 方法論・検証根拠の開示 */}
-      <div className="mt-10 p-6 rounded-2xl border border-[#1e293b] bg-[#111827]/50">
-        <h2 className="text-sm font-bold text-[#94a3b8] uppercase tracking-wider mb-3">Methodology & Accuracy</h2>
-        <p className="text-xs text-[#64748b] leading-relaxed mb-3">
+      <div className="mt-10 p-6 rounded-2xl border border-[var(--border-color)] bg-[var(--bg-card)]/50">
+        <h2 className="text-sm font-bold text-[var(--text-secondary)] uppercase tracking-wider mb-3">Methodology & Accuracy</h2>
+        <p className="text-xs text-[var(--text-muted)] leading-relaxed mb-3">
           Simulation results are generated using N-Layer availability modeling, Monte Carlo simulation (10,000+ iterations per topology),
           and Markov chain analysis. The mathematical framework is grounded in:
         </p>
-        <ul className="space-y-1.5 text-xs text-[#475569]">
+        <ul className="space-y-1.5 text-xs text-[var(--text-muted)]">
           <li>
             <a href="https://sre.google/sre-book/table-of-contents/" target="_blank" rel="noopener noreferrer" className="text-blue-400/70 hover:text-blue-400 underline underline-offset-2">
               Google SRE Book
@@ -178,29 +178,29 @@ export default function CaseStudiesPage() {
             {" "}— industry benchmark data for DORA metrics
           </li>
         </ul>
-        <p className="text-xs text-[#475569] mt-3 italic">
+        <p className="text-xs text-[var(--text-muted)] mt-3 italic">
           Case study metrics represent anonymized, composite examples from beta program participants.
           Formal case studies with named customers available upon request.
         </p>
       </div>
 
       {/* CTA */}
-      <div className="mt-10 p-8 rounded-2xl border border-[#FFD700]/20 bg-gradient-to-br from-[#FFD700]/[0.04] to-[#111827] text-center">
+      <div className="mt-10 p-8 rounded-2xl border border-[var(--gold)]/20 bg-gradient-to-br from-[#FFD700]/[0.04] to-[#111827] text-center">
         <h2 className="text-xl font-bold mb-2">Ready to prove your own resilience?</h2>
-        <p className="text-[#94a3b8] mb-6 text-sm">
+        <p className="text-[var(--text-secondary)] mb-6 text-sm">
           Join teams who use FaultRay to get math-backed availability proofs in under an hour.
         </p>
         <div className="flex flex-wrap items-center justify-center gap-4">
           <Link
             href="/simulate"
-            className="inline-flex items-center gap-2 px-6 py-3 bg-[#FFD700] text-[#0a0e1a] font-bold rounded-xl hover:bg-[#ffe44d] transition-colors"
+            className="inline-flex items-center gap-2 px-6 py-3 bg-[var(--gold)] text-[#0a0e1a] font-bold rounded-xl hover:bg-[#ffe44d] transition-colors"
           >
             Run Free Simulation
             <ArrowRight size={16} />
           </Link>
           <Link
             href="/contact"
-            className="inline-flex items-center gap-2 px-6 py-3 border border-[#FFD700]/30 text-[#FFD700] font-semibold rounded-xl hover:bg-[#FFD700]/10 transition-colors"
+            className="inline-flex items-center gap-2 px-6 py-3 border border-[var(--gold)]/30 text-[var(--gold)] font-semibold rounded-xl hover:bg-[var(--gold)]/10 transition-colors"
           >
             Book a Guided Demo
           </Link>

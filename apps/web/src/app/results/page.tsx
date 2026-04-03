@@ -56,11 +56,11 @@ export default function ResultsPage() {
   };
 
   return (
-    <div className="max-w-[1200px] mx-auto px-6 py-10">
+    <div className="w-full px-6 py-10">
       <div className="flex items-center justify-between mb-10">
         <div>
           <h1 className="text-2xl font-bold mb-1">{t.title}</h1>
-          <p className="text-[#94a3b8] text-sm">{t.subtitle}</p>
+          <p className="text-[var(--text-secondary)] text-sm">{t.subtitle}</p>
         </div>
         <div className="flex items-center gap-3">
           <div className="relative">
@@ -68,13 +68,13 @@ export default function ResultsPage() {
               value={filter}
               onChange={(e) => setFilter(e.target.value as "all" | "passed" | "failed")}
               aria-label={locale === "ja" ? "結果をフィルター" : "Filter results"}
-              className="appearance-none bg-[#111827] border border-[#1e293b] rounded-lg px-4 py-2 pr-8 text-sm text-[#94a3b8] focus:outline-none focus:border-[#FFD700]/50"
+              className="appearance-none bg-[var(--bg-card)] border border-[var(--border-color)] rounded-lg px-4 py-2 pr-8 text-sm text-[var(--text-secondary)] focus:outline-none focus:border-[var(--gold)]/50"
             >
               <option value="all">{t.allResults}</option>
               <option value="passed">{t.allPassed}</option>
               <option value="failed">{t.hasFailures}</option>
             </select>
-            <ChevronDown size={14} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-[#64748b] pointer-events-none" />
+            <ChevronDown size={14} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-[var(--text-muted)] pointer-events-none" />
           </div>
           <Button variant="secondary" size="sm" onClick={exportCsv}>
             <Download size={14} /> {t.export}
@@ -83,23 +83,23 @@ export default function ResultsPage() {
       </div>
 
       {/* FLOW-01: 結果画面からレポートへのリンク */}
-      <div className="flex items-center gap-3 mb-6 p-3 rounded-lg bg-[#111827] border border-[#1e293b]">
-        <BookOpen size={14} className="text-[#FFD700] shrink-0" />
-        <span className="text-xs text-[#94a3b8]">
+      <div className="flex items-center gap-3 mb-6 p-3 rounded-lg bg-[var(--bg-card)] border border-[var(--border-color)]">
+        <BookOpen size={14} className="text-[var(--gold)] shrink-0" />
+        <span className="text-xs text-[var(--text-secondary)]">
           {locale === "ja" ? "詳細なエグゼクティブレポートと改善ロードマップを確認:" : "View detailed executive report and improvement roadmap:"}
         </span>
-        <Link href="/reports" className="text-xs text-[#FFD700] hover:underline font-medium shrink-0">
+        <Link href="/reports" className="text-xs text-[var(--gold)] hover:underline font-medium shrink-0">
           {locale === "ja" ? "レポートを見る →" : "View Reports →"}
         </Link>
       </div>
 
       {loading ? (
-        <div className="text-center py-20 text-[#64748b]">{t.loading}</div>
+        <div className="text-center py-20 text-[var(--text-muted)]">{t.loading}</div>
       ) : filteredRuns.length === 0 ? (
         <Card className="text-center py-16">
           <FileText size={48} className="text-[#1e293b] mx-auto mb-4" />
-          <p className="text-[#64748b] mb-2">{t.noResults}</p>
-          <p className="text-xs text-[#64748b]">{t.noResultsDesc}</p>
+          <p className="text-[var(--text-muted)] mb-2">{t.noResults}</p>
+          <p className="text-xs text-[var(--text-muted)]">{t.noResultsDesc}</p>
         </Card>
       ) : (
         <>
@@ -110,19 +110,19 @@ export default function ResultsPage() {
                 <div className="flex items-center gap-6">
                   <div className="text-center min-w-[80px]">
                     <p className={`text-2xl font-extrabold font-mono ${
-                      run.overall_score >= 90 ? "text-emerald-400" : run.overall_score >= 70 ? "text-[#FFD700]" : "text-red-400"
+                      run.overall_score >= 90 ? "text-emerald-400" : run.overall_score >= 70 ? "text-[var(--gold)]" : "text-red-400"
                     }`}>
                       {run.overall_score.toFixed(1)}
                     </p>
-                    <p className="text-[10px] text-[#64748b] uppercase tracking-wider">{t.score}</p>
+                    <p className="text-[10px] text-[var(--text-muted)] uppercase tracking-wider">{t.score}</p>
                   </div>
-                  <div className="h-12 w-px bg-[#1e293b]" />
+                  <div className="h-12 w-px bg-[var(--border-color)]" />
                   <div>
                     <div className="flex items-center gap-2 mb-1">
                       <p className="font-semibold">{run.availability_estimate}</p>
                       <Badge variant="default">{run.engine_type}</Badge>
                     </div>
-                    <p className="text-xs text-[#64748b]">
+                    <p className="text-xs text-[var(--text-muted)]">
                       {new Date(run.created_at).toLocaleDateString(locale, { weekday: "short", month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" })}
                     </p>
                   </div>
@@ -131,9 +131,9 @@ export default function ResultsPage() {
                   <div className="text-right">
                     <p className="text-sm">
                       <span className="text-emerald-400 font-mono">{run.scenarios_passed}</span>
-                      <span className="text-[#64748b]"> / {run.total_scenarios}</span>
+                      <span className="text-[var(--text-muted)]"> / {run.total_scenarios}</span>
                     </p>
-                    <p className="text-xs text-[#64748b]">{t.scenariosPassed}</p>
+                    <p className="text-xs text-[var(--text-muted)]">{t.scenariosPassed}</p>
                   </div>
                   <Badge variant={run.scenarios_failed === 0 ? "green" : run.scenarios_failed <= 5 ? "yellow" : "red"}>
                     {run.scenarios_failed === 0 ? t.allPassed : `${run.scenarios_failed} ${locale === "ja" ? "件失敗" : "Failed"}`}

@@ -243,10 +243,10 @@ function sloCompliance(slo: SloItem): boolean {
 }
 
 function SloIcon({ name }: { name: string }) {
-  if (name.includes("Latency")) return <Clock size={14} className="text-[#64748b] shrink-0" />;
-  if (name.includes("Error")) return <AlertTriangle size={14} className="text-[#64748b] shrink-0" />;
-  if (name.includes("Throughput")) return <Zap size={14} className="text-[#64748b] shrink-0" />;
-  return <Activity size={14} className="text-[#64748b] shrink-0" />;
+  if (name.includes("Latency")) return <Clock size={14} className="text-[var(--text-muted)] shrink-0" />;
+  if (name.includes("Error")) return <AlertTriangle size={14} className="text-[var(--text-muted)] shrink-0" />;
+  if (name.includes("Throughput")) return <Zap size={14} className="text-[var(--text-muted)] shrink-0" />;
+  return <Activity size={14} className="text-[var(--text-muted)] shrink-0" />;
 }
 
 /* ============================================================
@@ -274,26 +274,26 @@ export default function SlaPage() {
   const budgetUsedPct = 100 - ov.error_budget_remaining_pct;
 
   return (
-    <div className="max-w-[1200px] mx-auto px-6 py-10">
+    <div className="w-full px-6 py-10">
       {/* Header */}
       <div className="mb-10">
         <h1 className="text-2xl font-bold mb-1 flex items-center gap-3">
-          <FileCheck size={24} className="text-[#FFD700]" />
+          <FileCheck size={24} className="text-[var(--gold)]" />
           {t.title}
         </h1>
-        <p className="text-[#94a3b8] text-sm">{t.subtitle}</p>
-        {loading && <p className="text-xs text-[#64748b] mt-1">{t.loading}</p>}
+        <p className="text-[var(--text-secondary)] text-sm">{t.subtitle}</p>
+        {loading && <p className="text-xs text-[var(--text-muted)] mt-1">{t.loading}</p>}
       </div>
 
       {/* ── 1. SLA Overview ── */}
       <div className="grid md:grid-cols-4 gap-6 mb-8">
         <Card className="text-center">
-          <p className="text-xs text-[#64748b] uppercase tracking-wider mb-2">{t.slaTarget}</p>
-          <p className="text-4xl font-extrabold font-mono text-[#FFD700]">{ov.target}%</p>
-          <p className="text-xs text-[#64748b] mt-2">{t.contractedSla}</p>
+          <p className="text-xs text-[var(--text-muted)] uppercase tracking-wider mb-2">{t.slaTarget}</p>
+          <p className="text-4xl font-extrabold font-mono text-[var(--gold)]">{ov.target}%</p>
+          <p className="text-xs text-[var(--text-muted)] mt-2">{t.contractedSla}</p>
         </Card>
         <Card className="text-center">
-          <p className="text-xs text-[#64748b] uppercase tracking-wider mb-2">{t.currentAvailability}</p>
+          <p className="text-xs text-[var(--text-muted)] uppercase tracking-wider mb-2">{t.currentAvailability}</p>
           <p
             className="text-4xl font-extrabold font-mono"
             style={{ color: isMeetingSla ? "#10b981" : "#ef4444" }}
@@ -305,19 +305,19 @@ export default function SlaPage() {
           </Badge>
         </Card>
         <Card className="text-center">
-          <p className="text-xs text-[#64748b] uppercase tracking-wider mb-2">{t.errorBudgetUsed}</p>
+          <p className="text-xs text-[var(--text-muted)] uppercase tracking-wider mb-2">{t.errorBudgetUsed}</p>
           <p
             className="text-4xl font-extrabold font-mono"
             style={{ color: budgetUsedPct > 80 ? "#ef4444" : budgetUsedPct > 50 ? "#f59e0b" : "#10b981" }}
           >
             {budgetUsedPct.toFixed(0)}%
           </p>
-          <p className="text-xs text-[#64748b] mt-2">
+          <p className="text-xs text-[var(--text-muted)] mt-2">
             {ov.error_budget_used_minutes.toFixed(0)}m / {ov.error_budget_total_minutes.toFixed(0)}m
           </p>
         </Card>
         <Card className="text-center">
-          <p className="text-xs text-[#64748b] uppercase tracking-wider mb-2">{t.budgetRemaining}</p>
+          <p className="text-xs text-[var(--text-muted)] uppercase tracking-wider mb-2">{t.budgetRemaining}</p>
           <p className="text-4xl font-extrabold font-mono text-emerald-400">
             {ov.error_budget_remaining_pct.toFixed(0)}%
           </p>
@@ -330,18 +330,18 @@ export default function SlaPage() {
       {/* ── 2. SLO Breakdown ── */}
       <Card className="mb-8">
         <h3 className="text-lg font-bold mb-4 flex items-center gap-2">
-          <Activity size={18} className="text-[#FFD700]" />
+          <Activity size={18} className="text-[var(--gold)]" />
           {t.sloBreakdown}
         </h3>
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
-              <tr className="border-b border-[#1e293b]">
-                <th scope="col" className="text-left py-3 px-2 text-[#64748b] font-medium">{t.metric}</th>
-                <th scope="col" className="text-right py-3 px-2 text-[#64748b] font-medium">{t.target}</th>
-                <th scope="col" className="text-right py-3 px-2 text-[#64748b] font-medium">{t.current}</th>
-                <th scope="col" className="text-left py-3 px-2 text-[#64748b] font-medium">{t.compliance}</th>
-                <th scope="col" className="text-left py-3 px-2 text-[#64748b] font-medium">{t.trend}</th>
+              <tr className="border-b border-[var(--border-color)]">
+                <th scope="col" className="text-left py-3 px-2 text-[var(--text-muted)] font-medium">{t.metric}</th>
+                <th scope="col" className="text-right py-3 px-2 text-[var(--text-muted)] font-medium">{t.target}</th>
+                <th scope="col" className="text-right py-3 px-2 text-[var(--text-muted)] font-medium">{t.current}</th>
+                <th scope="col" className="text-left py-3 px-2 text-[var(--text-muted)] font-medium">{t.compliance}</th>
+                <th scope="col" className="text-left py-3 px-2 text-[var(--text-muted)] font-medium">{t.trend}</th>
               </tr>
             </thead>
             <tbody>
@@ -355,14 +355,14 @@ export default function SlaPage() {
                     : (slo.current / (slo.target * 1.2)) * 100;
 
                 return (
-                  <tr key={slo.name} className="border-b border-[#1e293b]/50 hover:bg-white/[0.02]">
+                  <tr key={slo.name} className="border-b border-[var(--border-color)]/50 hover:bg-white/[0.02]">
                     <td className="py-3 px-2">
                       <div className="flex items-center gap-2">
                         <SloIcon name={slo.name} />
                         <span className="text-[#e2e8f0]">{slo.name}</span>
                       </div>
                     </td>
-                    <td className="py-3 px-2 text-right font-mono text-[#64748b]">
+                    <td className="py-3 px-2 text-right font-mono text-[var(--text-muted)]">
                       {slo.target} {slo.unit}
                     </td>
                     <td
@@ -403,16 +403,16 @@ export default function SlaPage() {
       {/* ── 3. Error Budget Burn-Down ── */}
       <Card className="mb-8">
         <h3 className="text-lg font-bold mb-2 flex items-center gap-2">
-          <TrendingDown size={18} className="text-[#FFD700]" />
+          <TrendingDown size={18} className="text-[var(--gold)]" />
           {t.errorBudgetTitle}
         </h3>
-        <p className="text-xs text-[#64748b] mb-4">
+        <p className="text-xs text-[var(--text-muted)] mb-4">
           {t.errorBudgetSubtitle.replace("{pct}", ov.error_budget_remaining_pct.toFixed(0))}
         </p>
         <ErrorBudgetChart history={data.error_budget_history} t={t} />
-        <div className="flex items-center gap-6 mt-4 text-xs text-[#64748b]">
+        <div className="flex items-center gap-6 mt-4 text-xs text-[var(--text-muted)]">
           <span className="flex items-center gap-1">
-            <span className="w-3 h-1 rounded-full bg-[#FFD700] inline-block" />
+            <span className="w-3 h-1 rounded-full bg-[var(--gold)] inline-block" />
             {t.budgetConsumed}
           </span>
           <span className="flex items-center gap-1">
@@ -429,7 +429,7 @@ export default function SlaPage() {
       {/* ── 4. SLA Validation ── */}
       <Card className="mb-8">
         <h3 className="text-lg font-bold mb-4 flex items-center gap-2">
-          <Shield size={18} className="text-[#FFD700]" />
+          <Shield size={18} className="text-[var(--gold)]" />
           {t.validationTitle}
         </h3>
         <div className="flex items-center gap-3 mb-4 p-3 rounded-lg bg-emerald-500/5 border border-emerald-500/20">
@@ -447,24 +447,24 @@ export default function SlaPage() {
         {/* Layer availability breakdown */}
         <div className="grid md:grid-cols-3 gap-4 mb-4">
           {(Object.entries(data.validation.availability_by_layer) as [string, { nines: number; availability: number }][]).map(([layer, val]) => (
-            <div key={layer} className="p-3 rounded-lg border border-[#1e293b] bg-white/[0.02] text-center">
-              <p className="text-xs text-[#64748b] uppercase mb-1">{layer}</p>
+            <div key={layer} className="p-3 rounded-lg border border-[var(--border-color)] bg-white/[0.02] text-center">
+              <p className="text-xs text-[var(--text-muted)] uppercase mb-1">{layer}</p>
               <p className="text-xl font-bold font-mono text-[#e2e8f0]">{val.nines.toFixed(2)}</p>
-              <p className="text-xs text-[#64748b]">{t.nines}</p>
+              <p className="text-xs text-[var(--text-muted)]">{t.nines}</p>
               <p className="text-xs font-mono text-emerald-400 mt-1">{val.availability.toFixed(4)}%</p>
             </div>
           ))}
         </div>
 
-        <p className="text-xs text-[#94a3b8] mb-4 p-3 bg-white/[0.02] rounded-lg border border-[#1e293b]">
+        <p className="text-xs text-[var(--text-secondary)] mb-4 p-3 bg-white/[0.02] rounded-lg border border-[var(--border-color)]">
           {data.validation.proof}
         </p>
 
         <div className="space-y-2">
           {data.validation.recommendations.map((rec, i) => (
             <div key={i} className="flex items-start gap-2 text-sm">
-              <span className="text-[#FFD700] font-bold shrink-0">{i + 1}.</span>
-              <span className="text-[#94a3b8]">{rec}</span>
+              <span className="text-[var(--gold)] font-bold shrink-0">{i + 1}.</span>
+              <span className="text-[var(--text-secondary)]">{rec}</span>
             </div>
           ))}
         </div>
@@ -473,10 +473,10 @@ export default function SlaPage() {
       {/* ── SLA-DESIGN-01: Incident Severity SLA Matrix ── */}
       <Card className="mb-6">
         <h3 className="text-lg font-bold mb-4 flex items-center gap-2">
-          <Shield size={18} className="text-[#FFD700]" />
+          <Shield size={18} className="text-[var(--gold)]" />
           {locale === "ja" ? "障害レベル別SLA定義" : "Incident Severity SLA Matrix"}
         </h3>
-        <p className="text-xs text-[#64748b] mb-4">
+        <p className="text-xs text-[var(--text-muted)] mb-4">
           {locale === "ja"
             ? "各障害レベルの定義・応答時間・復旧目標時間（RTO）・復旧目標時点（RPO）を定義します。"
             : "Response Time, RTO and RPO targets by incident severity level."}
@@ -484,7 +484,7 @@ export default function SlaPage() {
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
-              <tr className="border-b border-[#1e293b]">
+              <tr className="border-b border-[var(--border-color)]">
                 {[
                   locale === "ja" ? "レベル" : "Level",
                   locale === "ja" ? "定義" : "Definition",
@@ -493,7 +493,7 @@ export default function SlaPage() {
                   "RPO",
                   locale === "ja" ? "例" : "Example",
                 ].map((h) => (
-                  <th key={h} scope="col" className="text-left py-3 px-3 text-[#64748b] font-medium whitespace-nowrap">{h}</th>
+                  <th key={h} scope="col" className="text-left py-3 px-3 text-[var(--text-muted)] font-medium whitespace-nowrap">{h}</th>
                 ))}
               </tr>
             </thead>
@@ -536,13 +536,13 @@ export default function SlaPage() {
                   example: locale === "ja" ? "UIの文字ずれ、ドキュメントの誤字" : "UI misalignment, docs typo",
                 },
               ].map((row) => (
-                <tr key={row.level} className="border-b border-[#1e293b]/50 hover:bg-white/[0.02]">
+                <tr key={row.level} className="border-b border-[var(--border-color)]/50 hover:bg-white/[0.02]">
                   <td className={`py-3 px-3 font-semibold whitespace-nowrap text-xs ${row.color}`}>{row.level}</td>
-                  <td className="py-3 px-3 text-xs text-[#94a3b8] max-w-[180px]">{row.def}</td>
+                  <td className="py-3 px-3 text-xs text-[var(--text-secondary)] max-w-[180px]">{row.def}</td>
                   <td className="py-3 px-3 text-xs font-mono font-bold text-white whitespace-nowrap">{row.response}</td>
                   <td className="py-3 px-3 text-xs font-mono font-bold text-emerald-400 whitespace-nowrap">{row.rto}</td>
                   <td className="py-3 px-3 text-xs font-mono font-bold text-blue-400 whitespace-nowrap">{row.rpo}</td>
-                  <td className="py-3 px-3 text-xs text-[#64748b] max-w-[180px]">{row.example}</td>
+                  <td className="py-3 px-3 text-xs text-[var(--text-muted)] max-w-[180px]">{row.example}</td>
                 </tr>
               ))}
             </tbody>
@@ -553,36 +553,36 @@ export default function SlaPage() {
       {/* ── 5. Contract Summary ── */}
       <Card>
         <h3 className="text-lg font-bold mb-4 flex items-center gap-2">
-          <FileCheck size={18} className="text-[#FFD700]" />
+          <FileCheck size={18} className="text-[var(--gold)]" />
           {t.contractSummary}
         </h3>
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
-              <tr className="border-b border-[#1e293b]">
-                <th scope="col" className="text-left py-3 px-2 text-[#64748b] font-medium">{t.provider}</th>
-                <th scope="col" className="text-right py-3 px-2 text-[#64748b] font-medium">{t.slaTarget}</th>
-                <th scope="col" className="text-left py-3 px-2 text-[#64748b] font-medium">{t.penaltyTerms}</th>
-                <th scope="col" className="text-left py-3 px-2 text-[#64748b] font-medium">{t.expiry}</th>
-                <th scope="col" className="text-left py-3 px-2 text-[#64748b] font-medium">{t.statusCol}</th>
+              <tr className="border-b border-[var(--border-color)]">
+                <th scope="col" className="text-left py-3 px-2 text-[var(--text-muted)] font-medium">{t.provider}</th>
+                <th scope="col" className="text-right py-3 px-2 text-[var(--text-muted)] font-medium">{t.slaTarget}</th>
+                <th scope="col" className="text-left py-3 px-2 text-[var(--text-muted)] font-medium">{t.penaltyTerms}</th>
+                <th scope="col" className="text-left py-3 px-2 text-[var(--text-muted)] font-medium">{t.expiry}</th>
+                <th scope="col" className="text-left py-3 px-2 text-[var(--text-muted)] font-medium">{t.statusCol}</th>
               </tr>
             </thead>
             <tbody>
               {data.contracts.map((contract) => (
-                <tr key={contract.id} className="border-b border-[#1e293b]/50 hover:bg-white/[0.02]">
+                <tr key={contract.id} className="border-b border-[var(--border-color)]/50 hover:bg-white/[0.02]">
                   <td className="py-3 px-2">
                     <div className="flex items-center gap-2">
-                      <Shield size={12} className="text-[#64748b]" />
+                      <Shield size={12} className="text-[var(--text-muted)]" />
                       <span className="text-[#e2e8f0] font-medium">{contract.provider}</span>
                     </div>
                   </td>
-                  <td className="py-3 px-2 text-right font-mono font-bold text-[#FFD700]">
+                  <td className="py-3 px-2 text-right font-mono font-bold text-[var(--gold)]">
                     {contract.target}%
                   </td>
-                  <td className="py-3 px-2 text-xs text-[#64748b] max-w-[200px]">
+                  <td className="py-3 px-2 text-xs text-[var(--text-muted)] max-w-[200px]">
                     {contract.penalty_terms}
                   </td>
-                  <td className="py-3 px-2 text-xs text-[#94a3b8]">{contract.expiry}</td>
+                  <td className="py-3 px-2 text-xs text-[var(--text-secondary)]">{contract.expiry}</td>
                   <td className="py-3 px-2">
                     <Badge variant={statusVariant(contract.status)}>
                       {contract.status.charAt(0).toUpperCase() + contract.status.slice(1)}

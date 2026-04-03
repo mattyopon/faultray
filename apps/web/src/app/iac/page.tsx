@@ -356,32 +356,32 @@ export default function IaCPage() {
         {/* Header */}
         <div className="mb-8">
           <div className="flex items-center gap-3 mb-2">
-            <FileCode2 size={28} className="text-[#FFD700]" />
+            <FileCode2 size={28} className="text-[var(--gold)]" />
             <h1 className="text-2xl font-bold">{t.title}</h1>
           </div>
-          <p className="text-[#94a3b8]">{t.subtitle}</p>
+          <p className="text-[var(--text-secondary)]">{t.subtitle}</p>
         </div>
 
         {/* IaC Coverage Score */}
-        <Card className="bg-[#0f1629] border-[#1e293b] p-5 mb-6">
+        <Card className="bg-[#0f1629] border-[var(--border-color)] p-5 mb-6">
           <div className="flex items-center justify-between mb-3">
             <h2 className="text-sm font-semibold text-white">{t.iacScoreTitle}</h2>
-            <div className="flex items-center gap-3 text-xs text-[#64748b]">
+            <div className="flex items-center gap-3 text-xs text-[var(--text-muted)]">
               <span className="flex items-center gap-1">
-                <span className="w-2.5 h-2.5 rounded-sm bg-[#334155] inline-block" />
+                <span className="w-2.5 h-2.5 rounded-sm bg-[var(--border-color)] inline-block" />
                 {t.iacScoreCurrent}: <span className="text-white font-semibold ml-1">35%</span>
               </span>
               <span className="flex items-center gap-1">
-                <span className="w-2.5 h-2.5 rounded-sm bg-[#FFD700] inline-block" />
-                {t.iacScoreTarget}: <span className="text-[#FFD700] font-semibold ml-1">92%</span>
+                <span className="w-2.5 h-2.5 rounded-sm bg-[var(--gold)] inline-block" />
+                {t.iacScoreTarget}: <span className="text-[var(--gold)] font-semibold ml-1">92%</span>
               </span>
             </div>
           </div>
           {/* Progress bar */}
-          <div className="relative w-full h-4 bg-[#1e293b] rounded-full overflow-hidden mb-2">
+          <div className="relative w-full h-4 bg-[var(--border-color)] rounded-full overflow-hidden mb-2">
             {/* Target bar (gold, behind) */}
             <div
-              className="absolute inset-y-0 left-0 bg-[#FFD700]/30 rounded-full"
+              className="absolute inset-y-0 left-0 bg-[var(--gold)]/30 rounded-full"
               style={{ width: "92%" }}
             />
             {/* Current bar (gray, on top) */}
@@ -394,15 +394,15 @@ export default function IaCPage() {
               35%
             </span>
             {/* 92% label */}
-            <span className="absolute inset-y-0 flex items-center text-[10px] font-bold text-[#FFD700]" style={{ left: "calc(92% - 24px)" }}>
+            <span className="absolute inset-y-0 flex items-center text-[10px] font-bold text-[var(--gold)]" style={{ left: "calc(92% - 24px)" }}>
               92%
             </span>
           </div>
-          <p className="text-xs text-[#64748b] mt-1">{t.iacScoreNote}</p>
+          <p className="text-xs text-[var(--text-muted)] mt-1">{t.iacScoreNote}</p>
         </Card>
 
         {/* Terraform Roadmap */}
-        <Card className="bg-[#0f1629] border-[#1e293b] p-5 mb-6">
+        <Card className="bg-[#0f1629] border-[var(--border-color)] p-5 mb-6">
           <h2 className="text-sm font-semibold text-white mb-5">{t.roadmapTitle}</h2>
           <div className="space-y-0">
             {PHASES.map((p, idx) => {
@@ -414,18 +414,18 @@ export default function IaCPage() {
                 <div key={p.phase} className="flex gap-4">
                   {/* Stepper line */}
                   <div className="flex flex-col items-center">
-                    <div className="w-8 h-8 rounded-full bg-[#FFD700]/10 border border-[#FFD700]/30 flex items-center justify-center flex-shrink-0 z-10">
-                      <span className="text-xs font-bold text-[#FFD700]">{p.phase}</span>
+                    <div className="w-8 h-8 rounded-full bg-[var(--gold)]/10 border border-[var(--gold)]/30 flex items-center justify-center flex-shrink-0 z-10">
+                      <span className="text-xs font-bold text-[var(--gold)]">{p.phase}</span>
                     </div>
                     {!isLast && (
-                      <div className="w-px flex-1 bg-[#1e293b] my-1" style={{ minHeight: "24px" }} />
+                      <div className="w-px flex-1 bg-[var(--border-color)] my-1" style={{ minHeight: "24px" }} />
                     )}
                   </div>
                   {/* Content */}
                   <div className={`flex-1 pb-5 ${isLast ? "" : ""}`}>
                     <div className="flex items-start justify-between gap-3 mb-2">
                       <div className="flex items-center gap-2">
-                        <Icon size={14} className="text-[#FFD700] mt-0.5 flex-shrink-0" />
+                        <Icon size={14} className="text-[var(--gold)] mt-0.5 flex-shrink-0" />
                         <p className="text-sm font-semibold text-white">
                           {(t as Record<string, string>)[p.labelKey]}
                         </p>
@@ -434,11 +434,11 @@ export default function IaCPage() {
                         {p.scoreGain} pt
                       </Badge>
                     </div>
-                    <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-[#64748b] mb-2">
-                      <span>{t.roadmapEffort}: <span className="text-[#94a3b8]">{efforts[idx]}</span></span>
-                      <span>{t.roadmapResources}: <span className="text-[#94a3b8]">{p.files.length}</span></span>
+                    <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-[var(--text-muted)] mb-2">
+                      <span>{t.roadmapEffort}: <span className="text-[var(--text-secondary)]">{efforts[idx]}</span></span>
+                      <span>{t.roadmapResources}: <span className="text-[var(--text-secondary)]">{p.files.length}</span></span>
                     </div>
-                    <p className="text-[10px] text-[#475569] mb-3 font-mono">{resourcesList[idx]}</p>
+                    <p className="text-[10px] text-[var(--text-muted)] mb-3 font-mono">{resourcesList[idx]}</p>
                     <Button
                       size="sm"
                       variant="secondary"
@@ -452,7 +452,7 @@ export default function IaCPage() {
                         a.click();
                         URL.revokeObjectURL(url);
                       }}
-                      className="h-7 text-xs border-[#1e293b] text-[#94a3b8] hover:text-white"
+                      className="h-7 text-xs border-[var(--border-color)] text-[var(--text-secondary)] hover:text-white"
                     >
                       <Download size={12} className="mr-1" />
                       {t.roadmapDownload}
@@ -468,7 +468,7 @@ export default function IaCPage() {
           {/* Left column: Input + Format */}
           <div className="lg:col-span-1 space-y-6">
             {/* Section 1: Input */}
-            <Card className="bg-[#0f1629] border-[#1e293b] p-5">
+            <Card className="bg-[#0f1629] border-[var(--border-color)] p-5">
               <h2 className="text-sm font-semibold text-white mb-4">{t.inputTitle}</h2>
 
               {/* Mode selector */}
@@ -478,8 +478,8 @@ export default function IaCPage() {
                     key={mode}
                     className={`flex items-start gap-3 p-3 rounded-lg border cursor-pointer transition-colors ${
                       inputMode === mode
-                        ? "border-[#FFD700]/40 bg-[#FFD700]/5"
-                        : "border-[#1e293b] hover:border-[#334155]"
+                        ? "border-[var(--gold)]/40 bg-[var(--gold)]/5"
+                        : "border-[var(--border-color)] hover:border-[var(--border-color)]"
                     }`}
                   >
                     <input
@@ -495,7 +495,7 @@ export default function IaCPage() {
                         {mode === "latest" ? t.optionLatest : mode === "sample" ? t.optionSample : t.optionPaste}
                       </p>
                       {mode === "latest" && (
-                        <p className="text-xs text-[#64748b] mt-0.5">{t.optionLatestDesc}</p>
+                        <p className="text-xs text-[var(--text-muted)] mt-0.5">{t.optionLatestDesc}</p>
                       )}
                     </div>
                   </label>
@@ -511,8 +511,8 @@ export default function IaCPage() {
                       onClick={() => setSampleTopology(topo)}
                       className={`px-3 py-2 rounded-lg text-xs font-medium transition-colors border ${
                         sampleTopology === topo
-                          ? "border-[#FFD700]/40 bg-[#FFD700]/10 text-[#FFD700]"
-                          : "border-[#1e293b] text-[#94a3b8] hover:border-[#334155] hover:text-white"
+                          ? "border-[var(--gold)]/40 bg-[var(--gold)]/10 text-[var(--gold)]"
+                          : "border-[var(--border-color)] text-[var(--text-secondary)] hover:border-[var(--border-color)] hover:text-white"
                       }`}
                     >
                       {topo === "web-saas" ? t.webSaas : topo === "microservices" ? t.microservices : topo === "data-pipeline" ? t.dataPipeline : t.multiRegion}
@@ -524,7 +524,7 @@ export default function IaCPage() {
               {/* YAML paste */}
               {inputMode === "paste" && (
                 <textarea
-                  className="w-full h-32 bg-[#060b16] border border-[#1e293b] rounded-lg p-3 text-xs text-[#94a3b8] font-mono resize-none focus:outline-none focus:border-[#334155]"
+                  className="w-full h-32 bg-[#060b16] border border-[var(--border-color)] rounded-lg p-3 text-xs text-[var(--text-secondary)] font-mono resize-none focus:outline-none focus:border-[var(--border-color)]"
                   placeholder={t.pastePlaceholder}
                   aria-label={t.pastePlaceholder}
                   value={pastedYaml}
@@ -535,7 +535,7 @@ export default function IaCPage() {
             </Card>
 
             {/* Section 2: Format cards */}
-            <Card className="bg-[#0f1629] border-[#1e293b] p-5">
+            <Card className="bg-[#0f1629] border-[var(--border-color)] p-5">
               <h2 className="text-sm font-semibold text-white mb-4">{t.formatTitle}</h2>
               <div className="grid grid-cols-2 gap-2">
                 {FORMAT_CARDS.map((fmt) => {
@@ -546,19 +546,19 @@ export default function IaCPage() {
                       key={fmt.id}
                       className={`relative p-3 rounded-lg border transition-colors ${
                         isSelected
-                          ? "border-[#FFD700]/40 bg-[#FFD700]/5"
-                          : "border-[#1e293b] hover:border-[#334155]"
+                          ? "border-[var(--gold)]/40 bg-[var(--gold)]/5"
+                          : "border-[var(--border-color)] hover:border-[var(--border-color)]"
                       }`}
                     >
                       {fmt.popular && (
-                        <Badge className="absolute -top-2 -right-2 text-[9px] px-1.5 py-0.5 bg-[#FFD700] text-black border-0">
+                        <Badge className="absolute -top-2 -right-2 text-[9px] px-1.5 py-0.5 bg-[var(--gold)] text-black border-0">
                           Popular
                         </Badge>
                       )}
                       <div className="flex flex-col gap-2">
-                        <Icon size={18} className={isSelected ? "text-[#FFD700]" : "text-[#64748b]"} />
+                        <Icon size={18} className={isSelected ? "text-[var(--gold)]" : "text-[var(--text-muted)]"} />
                         <p className="text-xs font-medium text-white">{fmt.nameKey}</p>
-                        <p className="text-[10px] text-[#64748b] leading-tight">
+                        <p className="text-[10px] text-[var(--text-muted)] leading-tight">
                           {(t as Record<string, string>)[fmt.descKey]}
                         </p>
                         <Button
@@ -566,8 +566,8 @@ export default function IaCPage() {
                           onClick={() => handleGenerate(fmt.id)}
                           className={`w-full text-xs h-7 ${
                             isSelected
-                              ? "bg-[#FFD700] text-black hover:bg-[#FFD700]/90"
-                              : "bg-[#1e293b] text-[#94a3b8] hover:bg-[#334155] hover:text-white"
+                              ? "bg-[var(--gold)] text-black hover:bg-[var(--gold)]/90"
+                              : "bg-[var(--border-color)] text-[var(--text-secondary)] hover:bg-[var(--border-color)] hover:text-white"
                           }`}
                         >
                           {t.generateBtn}
@@ -585,18 +585,18 @@ export default function IaCPage() {
             {generated ? (
               <>
                 {/* Phase tabs */}
-                <Card className="bg-[#0f1629] border-[#1e293b] p-5">
+                <Card className="bg-[#0f1629] border-[var(--border-color)] p-5">
                   <div className="flex items-center justify-between mb-4">
                     <h2 className="text-sm font-semibold text-white">{t.generatedTitle}</h2>
                     <div className="flex items-center gap-2">
-                      <span className="text-xs text-[#64748b]">
+                      <span className="text-xs text-[var(--text-muted)]">
                         faultray-phase{activePhase}-remediation.tf
                       </span>
                       <Button
                         size="sm"
                         variant="secondary"
                         onClick={handleCopy}
-                        className="h-7 text-xs border-[#1e293b] text-[#94a3b8] hover:text-white"
+                        className="h-7 text-xs border-[var(--border-color)] text-[var(--text-secondary)] hover:text-white"
                       >
                         {copied ? <CheckCircle2 size={12} className="mr-1 text-green-400" /> : <Copy size={12} className="mr-1" />}
                         {copied ? "Copied!" : t.copyBtn}
@@ -605,7 +605,7 @@ export default function IaCPage() {
                         size="sm"
                         variant="secondary"
                         onClick={handleDownload}
-                        className="h-7 text-xs border-[#1e293b] text-[#94a3b8] hover:text-white"
+                        className="h-7 text-xs border-[var(--border-color)] text-[var(--text-secondary)] hover:text-white"
                       >
                         <Download size={12} className="mr-1" />
                         {t.downloadBtn}
@@ -621,8 +621,8 @@ export default function IaCPage() {
                         onClick={() => setActivePhase(p.phase)}
                         className={`px-3 py-1.5 rounded-md text-xs font-medium transition-colors ${
                           activePhase === p.phase
-                            ? "bg-[#FFD700]/10 text-[#FFD700] border border-[#FFD700]/20"
-                            : "text-[#64748b] hover:text-white border border-transparent hover:border-[#1e293b]"
+                            ? "bg-[var(--gold)]/10 text-[var(--gold)] border border-[var(--gold)]/20"
+                            : "text-[var(--text-muted)] hover:text-white border border-transparent hover:border-[var(--border-color)]"
                         }`}
                       >
                         {t.tabPhase} {p.phase}
@@ -632,7 +632,7 @@ export default function IaCPage() {
 
                   {/* Code block */}
                   <div className="bg-[#060b16] rounded-lg p-4 overflow-x-auto">
-                    <pre className="text-xs text-[#94a3b8] font-mono whitespace-pre leading-relaxed">
+                    <pre className="text-xs text-[var(--text-secondary)] font-mono whitespace-pre leading-relaxed">
                       {currentCode.split("\n").map((line, i) => {
                         const isComment = line.trim().startsWith("#");
                         const isKey = /^\s*\w+ *=/.test(line) || /^\s*\w+ *\{/.test(line);
@@ -640,10 +640,10 @@ export default function IaCPage() {
                         return (
                           <span key={i} className="block">
                             <span className={
-                              isComment ? "text-[#475569]" :
+                              isComment ? "text-[var(--text-muted)]" :
                               isResource ? "text-[#38bdf8]" :
                               isKey ? "text-[#a78bfa]" :
-                              "text-[#94a3b8]"
+                              "text-[var(--text-secondary)]"
                             }>
                               {line}
                             </span>
@@ -655,13 +655,13 @@ export default function IaCPage() {
                 </Card>
 
                 {/* Remediation Plan */}
-                <Card className="bg-[#0f1629] border-[#1e293b] p-5">
+                <Card className="bg-[#0f1629] border-[var(--border-color)] p-5">
                   <h2 className="text-sm font-semibold text-white mb-4">{t.remediationTitle}</h2>
-                  <p className="text-xs text-[#64748b] mb-4">{t.remediationDesc}</p>
+                  <p className="text-xs text-[var(--text-muted)] mb-4">{t.remediationDesc}</p>
 
                   <div className="grid grid-cols-3 gap-3 mb-4">
                     <div className="bg-[#060b16] rounded-lg p-3 text-center">
-                      <p className="text-xs text-[#64748b] mb-1">{t.scoreFrom}</p>
+                      <p className="text-xs text-[var(--text-muted)] mb-1">{t.scoreFrom}</p>
                       <p className="text-xl font-bold text-white">85.5</p>
                     </div>
                     <div className="bg-[#060b16] rounded-lg p-3 text-center flex flex-col items-center justify-center">
@@ -669,23 +669,23 @@ export default function IaCPage() {
                       <p className="text-sm font-bold text-green-400">+{totalScore.toFixed(1)}</p>
                     </div>
                     <div className="bg-[#060b16] rounded-lg p-3 text-center">
-                      <p className="text-xs text-[#64748b] mb-1">{t.scoreTo}</p>
-                      <p className="text-xl font-bold text-[#FFD700]">{(85.5 + totalScore).toFixed(1)}</p>
+                      <p className="text-xs text-[var(--text-muted)] mb-1">{t.scoreTo}</p>
+                      <p className="text-xl font-bold text-[var(--gold)]">{(85.5 + totalScore).toFixed(1)}</p>
                     </div>
                   </div>
 
                   <div className="flex items-center gap-2 bg-[#060b16] rounded-lg p-3 mb-4">
-                    <DollarSign size={16} className="text-[#64748b]" />
-                    <span className="text-xs text-[#64748b]">{t.estimatedCost}:</span>
+                    <DollarSign size={16} className="text-[var(--text-muted)]" />
+                    <span className="text-xs text-[var(--text-muted)]">{t.estimatedCost}:</span>
                     <span className="text-sm font-semibold text-white">$1,830 / mo</span>
                   </div>
 
                   <div className="space-y-2">
                     {SPOF_FIXES.map((fix) => (
-                      <div key={fix.name} className="flex items-center justify-between py-1.5 border-b border-[#1e293b] last:border-0">
+                      <div key={fix.name} className="flex items-center justify-between py-1.5 border-b border-[var(--border-color)] last:border-0">
                         <div className="flex items-center gap-2">
                           <CheckCircle2 size={14} className="text-green-400" />
-                          <span className="text-xs text-[#94a3b8]">{fix.name}</span>
+                          <span className="text-xs text-[var(--text-secondary)]">{fix.name}</span>
                         </div>
                         <Badge className={`text-[9px] ${
                           fix.impact === "Critical" ? "bg-red-500/10 text-red-400 border-red-500/20" :
@@ -700,7 +700,7 @@ export default function IaCPage() {
                 </Card>
 
                 {/* Phase Breakdown */}
-                <Card className="bg-[#0f1629] border-[#1e293b] p-5">
+                <Card className="bg-[#0f1629] border-[var(--border-color)] p-5">
                   <h2 className="text-sm font-semibold text-white mb-4">{t.phasesTitle}</h2>
                   <div className="space-y-3">
                     {PHASES.map((p) => {
@@ -710,15 +710,15 @@ export default function IaCPage() {
                           key={p.phase}
                           className={`p-4 rounded-lg border transition-colors cursor-pointer ${
                             activePhase === p.phase
-                              ? "border-[#FFD700]/30 bg-[#FFD700]/5"
-                              : "border-[#1e293b] hover:border-[#334155]"
+                              ? "border-[var(--gold)]/30 bg-[var(--gold)]/5"
+                              : "border-[var(--border-color)] hover:border-[var(--border-color)]"
                           }`}
                           onClick={() => setActivePhase(p.phase)}
                         >
                           <div className="flex items-center justify-between mb-2">
                             <div className="flex items-center gap-2">
-                              <div className="w-6 h-6 rounded-full bg-[#FFD700]/10 flex items-center justify-center">
-                                <Icon size={13} className="text-[#FFD700]" />
+                              <div className="w-6 h-6 rounded-full bg-[var(--gold)]/10 flex items-center justify-center">
+                                <Icon size={13} className="text-[var(--gold)]" />
                               </div>
                               <p className="text-xs font-semibold text-white">
                                 {(t as Record<string, string>)[p.labelKey]}
@@ -730,21 +730,21 @@ export default function IaCPage() {
                           </div>
                           <div className="grid grid-cols-3 gap-2 text-center">
                             <div>
-                              <p className="text-[10px] text-[#475569]">{t.filesGenerated}</p>
+                              <p className="text-[10px] text-[var(--text-muted)]">{t.filesGenerated}</p>
                               <p className="text-sm font-semibold text-white">{p.files.length}</p>
                             </div>
                             <div>
-                              <p className="text-[10px] text-[#475569]">{t.costEstimate}</p>
+                              <p className="text-[10px] text-[var(--text-muted)]">{t.costEstimate}</p>
                               <p className="text-sm font-semibold text-white">{p.costEstimate}</p>
                             </div>
                             <div>
-                              <p className="text-[10px] text-[#475569]">{t.scoreGain}</p>
+                              <p className="text-[10px] text-[var(--text-muted)]">{t.scoreGain}</p>
                               <p className="text-sm font-semibold text-green-400">{p.scoreGain}</p>
                             </div>
                           </div>
                           <div className="flex flex-wrap gap-1 mt-2">
                             {p.files.map((f) => (
-                              <span key={f} className="text-[9px] text-[#475569] bg-[#0a0e1a] px-1.5 py-0.5 rounded font-mono">
+                              <span key={f} className="text-[9px] text-[var(--text-muted)] px-1.5 py-0.5 rounded font-mono">
                                 {f}
                               </span>
                             ))}
@@ -756,10 +756,10 @@ export default function IaCPage() {
                 </Card>
               </>
             ) : (
-              <Card className="bg-[#0f1629] border-[#1e293b] p-12 flex flex-col items-center justify-center text-center min-h-[400px]">
+              <Card className="bg-[#0f1629] border-[var(--border-color)] p-12 flex flex-col items-center justify-center text-center min-h-[400px]">
                 <FileCode2 size={48} className="text-[#1e293b] mb-4" />
-                <p className="text-[#64748b] text-sm mb-2">Select a format and click Generate</p>
-                <p className="text-[#475569] text-xs">
+                <p className="text-[var(--text-muted)] text-sm mb-2">Select a format and click Generate</p>
+                <p className="text-[var(--text-muted)] text-xs">
                   Generated IaC will appear here with syntax highlighting
                 </p>
               </Card>

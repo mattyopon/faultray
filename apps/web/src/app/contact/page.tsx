@@ -172,7 +172,7 @@ export default function ContactPage() {
               value={form.company}
               onChange={handleChange}
               placeholder="Acme Corp"
-              className="w-full px-4 py-2.5 rounded-xl bg-[#0d1117] border border-[var(--border-color)] text-[var(--text-primary)] placeholder-[var(--text-muted)] focus:outline-none focus:border-[var(--gold)]/50 transition-colors text-sm"
+              className="w-full px-4 py-2.5 rounded-xl bg-[var(--bg-tertiary)] border border-[var(--border-color)] text-[var(--text-primary)] placeholder-[var(--text-muted)] focus:outline-none focus:border-[var(--gold)]/50 transition-colors text-sm"
             />
           </div>
 
@@ -193,7 +193,7 @@ export default function ContactPage() {
               value={form.name}
               onChange={handleChange}
               placeholder="Jane Smith"
-              className="w-full px-4 py-2.5 rounded-xl bg-[#0d1117] border border-[var(--border-color)] text-[var(--text-primary)] placeholder-[var(--text-muted)] focus:outline-none focus:border-[var(--gold)]/50 transition-colors text-sm"
+              className="w-full px-4 py-2.5 rounded-xl bg-[var(--bg-tertiary)] border border-[var(--border-color)] text-[var(--text-primary)] placeholder-[var(--text-muted)] focus:outline-none focus:border-[var(--gold)]/50 transition-colors text-sm"
             />
           </div>
 
@@ -213,7 +213,7 @@ export default function ContactPage() {
               value={form.email}
               onChange={handleChange}
               placeholder="jane@acmecorp.com"
-              className="w-full px-4 py-2.5 rounded-xl bg-[#0d1117] border border-[var(--border-color)] text-[var(--text-primary)] placeholder-[var(--text-muted)] focus:outline-none focus:border-[var(--gold)]/50 transition-colors text-sm"
+              className="w-full px-4 py-2.5 rounded-xl bg-[var(--bg-tertiary)] border border-[var(--border-color)] text-[var(--text-primary)] placeholder-[var(--text-muted)] focus:outline-none focus:border-[var(--gold)]/50 transition-colors text-sm"
             />
           </div>
 
@@ -231,7 +231,7 @@ export default function ContactPage() {
               required
               value={form.companySize}
               onChange={handleChange}
-              className="w-full px-4 py-2.5 rounded-xl bg-[#0d1117] border border-[var(--border-color)] text-[var(--text-primary)] focus:outline-none focus:border-[var(--gold)]/50 transition-colors text-sm appearance-none"
+              className="w-full px-4 py-2.5 rounded-xl bg-[var(--bg-tertiary)] border border-[var(--border-color)] text-[var(--text-primary)] focus:outline-none focus:border-[var(--gold)]/50 transition-colors text-sm appearance-none"
             >
               <option value="" disabled>
                 Select company size
@@ -261,7 +261,7 @@ export default function ContactPage() {
               value={form.message}
               onChange={handleChange}
               placeholder="Describe your infrastructure, current reliability challenges, and what you hope to achieve with FaultRay..."
-              className="w-full px-4 py-2.5 rounded-xl bg-[#0d1117] border border-[var(--border-color)] text-[var(--text-primary)] placeholder-[var(--text-muted)] focus:outline-none focus:border-[var(--gold)]/50 transition-colors text-sm resize-none"
+              className="w-full px-4 py-2.5 rounded-xl bg-[var(--bg-tertiary)] border border-[var(--border-color)] text-[var(--text-primary)] placeholder-[var(--text-muted)] focus:outline-none focus:border-[var(--gold)]/50 transition-colors text-sm resize-none"
             />
           </div>
 

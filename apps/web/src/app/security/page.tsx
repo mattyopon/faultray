@@ -72,18 +72,18 @@ export default function SecurityPage() {
   }, []);
 
   return (
-    <div className="max-w-[1200px] mx-auto px-6 py-10">
+    <div className="w-full px-6 py-10">
       <div className="mb-10">
         <h1 className="text-2xl font-bold mb-1 flex items-center gap-3">
-          <Shield size={24} className="text-[#FFD700]" />
+          <Shield size={24} className="text-[var(--gold)]" />
           {t.title}
         </h1>
-        <p className="text-[#94a3b8] text-sm">{t.subtitle}</p>
+        <p className="text-[var(--text-secondary)] text-sm">{t.subtitle}</p>
       </div>
 
       {loading ? (
         <Card className="flex items-center justify-center py-20">
-          <Loader2 size={24} className="animate-spin text-[#FFD700]" />
+          <Loader2 size={24} className="animate-spin text-[var(--gold)]" />
         </Card>
       ) : (
         <>
@@ -92,24 +92,24 @@ export default function SecurityPage() {
             <Card className="text-center">
               <Globe size={20} className="mx-auto mb-2 text-red-400" />
               <p className="text-3xl font-extrabold font-mono">{data.summary.external_facing}</p>
-              <p className="text-xs text-[#64748b] uppercase tracking-wider">{t.external}</p>
+              <p className="text-xs text-[var(--text-muted)] uppercase tracking-wider">{t.external}</p>
             </Card>
             <Card className="text-center">
               <Lock size={20} className="mx-auto mb-2 text-emerald-400" />
               <p className="text-3xl font-extrabold font-mono">{data.summary.internal_only}</p>
-              <p className="text-xs text-[#64748b] uppercase tracking-wider">{t.internal}</p>
+              <p className="text-xs text-[var(--text-muted)] uppercase tracking-wider">{t.internal}</p>
             </Card>
             <Card className="text-center">
-              <AlertTriangle size={20} className="mx-auto mb-2 text-[#FFD700]" />
+              <AlertTriangle size={20} className="mx-auto mb-2 text-[var(--gold)]" />
               <p className="text-3xl font-extrabold font-mono">{data.summary.attack_vectors}</p>
-              <p className="text-xs text-[#64748b] uppercase tracking-wider">{t.attackVectors}</p>
+              <p className="text-xs text-[var(--text-muted)] uppercase tracking-wider">{t.attackVectors}</p>
             </Card>
             <Card className="text-center">
-              <Shield size={20} className="mx-auto mb-2 text-[#FFD700]" />
+              <Shield size={20} className="mx-auto mb-2 text-[var(--gold)]" />
               <Badge variant={data.summary.risk_level === "high" ? "red" : data.summary.risk_level === "medium" ? "yellow" : "green"} className="text-base">
                 {data.summary.risk_level.toUpperCase()}
               </Badge>
-              <p className="text-xs text-[#64748b] uppercase tracking-wider mt-2">{t.riskLevel}</p>
+              <p className="text-xs text-[var(--text-muted)] uppercase tracking-wider mt-2">{t.riskLevel}</p>
             </Card>
           </div>
 
@@ -121,14 +121,14 @@ export default function SecurityPage() {
             </h3>
             <div className="space-y-4">
               {data.external_components.map((comp) => (
-                <div key={comp.id} className="p-4 rounded-xl border border-[#1e293b] bg-white/[0.02]">
+                <div key={comp.id} className="p-4 rounded-xl border border-[var(--border-color)] bg-white/[0.02]">
                   <div className="flex items-center justify-between mb-3">
                     <div>
                       <p className="font-bold">{comp.name}</p>
                       <div className="flex items-center gap-2 mt-1">
                         <Badge variant="red">{comp.exposure}</Badge>
                         {comp.ports.map((p) => (
-                          <span key={p} className="text-xs font-mono text-[#64748b]">:{p}</span>
+                          <span key={p} className="text-xs font-mono text-[var(--text-muted)]">:{p}</span>
                         ))}
                         {comp.protocols.map((p) => (
                           <Badge key={p} variant="default">{p}</Badge>
@@ -139,7 +139,7 @@ export default function SecurityPage() {
                       <p className="text-2xl font-bold font-mono" style={{ color: comp.risk_score >= 50 ? "#f59e0b" : "#10b981" }}>
                         {comp.risk_score}
                       </p>
-                      <p className="text-xs text-[#64748b]">{t.riskScore}</p>
+                      <p className="text-xs text-[var(--text-muted)]">{t.riskScore}</p>
                     </div>
                   </div>
                   <div className="space-y-2">
@@ -152,7 +152,7 @@ export default function SecurityPage() {
                             {vuln.severity}
                           </Badge>
                         </div>
-                        <span className="text-xs text-[#64748b]">{vuln.mitigation}</span>
+                        <span className="text-xs text-[var(--text-muted)]">{vuln.mitigation}</span>
                       </div>
                     ))}
                   </div>
@@ -192,14 +192,14 @@ export default function SecurityPage() {
             {/* Recommendations */}
             <Card>
               <h3 className="text-lg font-bold mb-4 flex items-center gap-2">
-                <Shield size={18} className="text-[#FFD700]" />
+                <Shield size={18} className="text-[var(--gold)]" />
                 {t.recommendations}
               </h3>
               <div className="space-y-3">
                 {data.recommendations.map((rec, i) => (
-                  <div key={i} className="flex items-start gap-3 p-3 rounded-lg bg-[#FFD700]/5 border border-[#FFD700]/10">
-                    <span className="text-sm font-bold text-[#FFD700] shrink-0">{i + 1}.</span>
-                    <span className="text-sm text-[#94a3b8]">{rec}</span>
+                  <div key={i} className="flex items-start gap-3 p-3 rounded-lg bg-[var(--gold)]/5 border border-[var(--gold)]/10">
+                    <span className="text-sm font-bold text-[var(--gold)] shrink-0">{i + 1}.</span>
+                    <span className="text-sm text-[var(--text-secondary)]">{rec}</span>
                   </div>
                 ))}
               </div>

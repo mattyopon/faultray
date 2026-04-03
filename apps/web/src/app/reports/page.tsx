@@ -173,20 +173,20 @@ export default function ReportsPage() {
       <div className="flex items-center justify-between mb-10">
         <div>
           <h1 className="text-2xl font-bold mb-1 flex items-center gap-3">
-            <FileText size={24} className="text-[#FFD700]" />
+            <FileText size={24} className="text-[var(--gold)]" />
             {t.title}
           </h1>
-          <p className="text-[#94a3b8] text-sm">{t.subtitle}</p>
+          <p className="text-[var(--text-secondary)] text-sm">{t.subtitle}</p>
         </div>
         <div className="flex items-center gap-2">
           {/* Language selector for report output */}
-          <div className="flex items-center gap-2 mr-2 px-3 py-1.5 rounded-lg border border-[#1e293b] bg-[#111827]">
-            <Globe size={14} className="text-[#64748b]" />
+          <div className="flex items-center gap-2 mr-2 px-3 py-1.5 rounded-lg border border-[var(--border-color)] bg-[var(--bg-card)]">
+            <Globe size={14} className="text-[var(--text-muted)]" />
             <select
               value={reportLang}
               onChange={(e) => setReportLang(e.target.value as "en" | "ja")}
               aria-label={locale === "ja" ? "レポート言語" : "Report language"}
-              className="bg-transparent text-sm text-[#94a3b8] focus:outline-none cursor-pointer"
+              className="bg-transparent text-sm text-[var(--text-secondary)] focus:outline-none cursor-pointer"
             >
               <option value="en">{t.english}</option>
               <option value="ja">{t.japanese}</option>
@@ -241,8 +241,8 @@ export default function ReportsPage() {
 
       {/* FUNC-02: セクション表示設定パネル */}
       {showCustomize && (
-        <div className="mb-6 p-4 rounded-xl border border-[#1e293b] bg-[#111827] flex flex-wrap gap-3 items-center">
-          <span className="text-xs font-semibold text-[#64748b] uppercase tracking-wider mr-2">
+        <div className="mb-6 p-4 rounded-xl border border-[var(--border-color)] bg-[var(--bg-card)] flex flex-wrap gap-3 items-center">
+          <span className="text-xs font-semibold text-[var(--text-muted)] uppercase tracking-wider mr-2">
             {locale === "ja" ? "表示セクション:" : "Visible sections:"}
           </span>
           {(Object.keys(DEFAULT_SECTIONS) as ReportSection[]).map((section) => (
@@ -251,8 +251,8 @@ export default function ReportsPage() {
               onClick={() => setShowSections((prev) => ({ ...prev, [section]: !prev[section] }))}
               className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg border text-xs font-medium transition-colors ${
                 showSections[section]
-                  ? "border-[#FFD700]/40 bg-[#FFD700]/[0.08] text-[#FFD700]"
-                  : "border-[#1e293b] text-[#475569] hover:border-[#334155]"
+                  ? "border-[var(--gold)]/40 bg-[var(--gold)]/[0.08] text-[var(--gold)]"
+                  : "border-[var(--border-color)] text-[var(--text-muted)] hover:border-[var(--border-color)]"
               }`}
             >
               {showSections[section] ? <CheckCircle2 size={11} /> : <XCircle size={11} />}
@@ -264,32 +264,32 @@ export default function ReportsPage() {
 
       {loading ? (
         <Card className="flex items-center justify-center py-20">
-          <Loader2 size={24} className="animate-spin text-[#FFD700]" />
+          <Loader2 size={24} className="animate-spin text-[var(--gold)]" />
         </Card>
       ) : (
         <div className="space-y-6">
           {/* Executive Summary — FUNC-02: conditionally shown */}
           {showSections.summary && <div className="grid md:grid-cols-4 gap-6">
             <Card className="text-center">
-              <p className="text-xs text-[#64748b] uppercase tracking-wider mb-2">{t.score}</p>
-              <p className="text-4xl font-extrabold font-mono text-[#FFD700]">
+              <p className="text-xs text-[var(--text-muted)] uppercase tracking-wider mb-2">{t.score}</p>
+              <p className="text-4xl font-extrabold font-mono text-[var(--gold)]">
                 {report.executive_summary.overall_score}
               </p>
             </Card>
             <Card className="text-center">
-              <p className="text-xs text-[#64748b] uppercase tracking-wider mb-2">{t.availability}</p>
+              <p className="text-xs text-[var(--text-muted)] uppercase tracking-wider mb-2">{t.availability}</p>
               <p className="text-4xl font-extrabold font-mono text-emerald-400">
                 {report.executive_summary.availability_estimate}
               </p>
             </Card>
             <Card className="text-center">
-              <p className="text-xs text-[#64748b] uppercase tracking-wider mb-2">{t.scenariosLabel}</p>
+              <p className="text-xs text-[var(--text-muted)] uppercase tracking-wider mb-2">{t.scenariosLabel}</p>
               <p className="text-4xl font-extrabold font-mono">
                 {report.executive_summary.total_scenarios_tested.toLocaleString()}
               </p>
             </Card>
             <Card className="text-center">
-              <p className="text-xs text-[#64748b] uppercase tracking-wider mb-2">{t.critical}</p>
+              <p className="text-xs text-[var(--text-muted)] uppercase tracking-wider mb-2">{t.critical}</p>
               <p className="text-4xl font-extrabold font-mono text-red-400">
                 {report.executive_summary.critical_issues}
               </p>
@@ -313,14 +313,14 @@ export default function ReportsPage() {
                         ? "bg-red-500/5 border-red-500/20"
                         : f.severity === "HIGH"
                           ? "bg-yellow-500/5 border-yellow-500/20"
-                          : "bg-white/[0.02] border-[#1e293b]"
+                          : "bg-white/[0.02] border-[var(--border-color)]"
                     }`}
                   >
                     <div className="flex items-start gap-3">
                       <Badge variant={severityBadge(f.severity)}>{f.severity}</Badge>
                       <div className="flex-1">
                         <p className="text-sm font-medium">{rl === "ja" && jaData ? jaData.finding : f.finding}</p>
-                        <p className="text-xs text-[#64748b] mt-1">{t.impact} {rl === "ja" && jaData ? jaData.impact : f.impact}</p>
+                        <p className="text-xs text-[var(--text-muted)] mt-1">{t.impact} {rl === "ja" && jaData ? jaData.impact : f.impact}</p>
                         <p className="text-xs text-emerald-400 mt-1">
                           <CheckCircle2 size={10} className="inline mr-1" />
                           {rl === "ja" && jaData ? jaData.recommendation : f.recommendation}
@@ -339,11 +339,11 @@ export default function ReportsPage() {
             <div className="space-y-3">
               {[
                 { label: rl === "ja" ? "ハードウェア" : "Hardware", value: report.availability_breakdown.hardware_nines, color: "bg-emerald-400" },
-                { label: rl === "ja" ? "ソフトウェア" : "Software", value: report.availability_breakdown.software_nines, color: "bg-[#FFD700]" },
+                { label: rl === "ja" ? "ソフトウェア" : "Software", value: report.availability_breakdown.software_nines, color: "bg-[var(--gold)]" },
                 { label: rl === "ja" ? "理論値" : "Theoretical", value: report.availability_breakdown.theoretical_nines, color: "bg-blue-400" },
               ].map((layer) => (
                 <div key={layer.label} className="grid grid-cols-[100px_1fr_60px] items-center gap-4">
-                  <span className="text-sm text-[#64748b]">{layer.label}</span>
+                  <span className="text-sm text-[var(--text-muted)]">{layer.label}</span>
                   <div className="h-3 bg-white/5 rounded-full overflow-hidden">
                     <div
                       className={`h-full rounded-full ${layer.color}`}
@@ -354,7 +354,7 @@ export default function ReportsPage() {
                 </div>
               ))}
             </div>
-            <p className="text-xs text-[#FFD700] mt-3">
+            <p className="text-xs text-[var(--gold)] mt-3">
               {t.bottleneck} {rl === "ja" ? "ソフトウェア層" : report.availability_breakdown.bottleneck}
             </p>
           </Card>}
@@ -365,20 +365,20 @@ export default function ReportsPage() {
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
                 <thead>
-                  <tr className="border-b border-[#1e293b]">
-                    <th scope="col" className="text-left py-3 px-2 text-[#64748b] font-medium">{t.priority}</th>
-                    <th scope="col" className="text-left py-3 px-2 text-[#64748b] font-medium">{t.action}</th>
-                    <th scope="col" className="text-left py-3 px-2 text-[#64748b] font-medium">{t.effort}</th>
-                    <th scope="col" className="text-left py-3 px-2 text-[#64748b] font-medium">{t.impactCol}</th>
-                    <th scope="col" className="text-left py-3 px-2 text-[#64748b] font-medium">{t.timeline}</th>
+                  <tr className="border-b border-[var(--border-color)]">
+                    <th scope="col" className="text-left py-3 px-2 text-[var(--text-muted)] font-medium">{t.priority}</th>
+                    <th scope="col" className="text-left py-3 px-2 text-[var(--text-muted)] font-medium">{t.action}</th>
+                    <th scope="col" className="text-left py-3 px-2 text-[var(--text-muted)] font-medium">{t.effort}</th>
+                    <th scope="col" className="text-left py-3 px-2 text-[var(--text-muted)] font-medium">{t.impactCol}</th>
+                    <th scope="col" className="text-left py-3 px-2 text-[var(--text-muted)] font-medium">{t.timeline}</th>
                   </tr>
                 </thead>
                 <tbody>
                   {report.improvement_roadmap.map((item) => {
                     const jaItem = JA_ROADMAP[item.action];
                     return (
-                      <tr key={item.priority} className="border-b border-[#1e293b]/50">
-                        <td className="py-3 px-2 font-bold text-[#FFD700]">{item.priority}</td>
+                      <tr key={item.priority} className="border-b border-[var(--border-color)]/50">
+                        <td className="py-3 px-2 font-bold text-[var(--gold)]">{item.priority}</td>
                         <td className="py-3 px-2">{rl === "ja" && jaItem ? jaItem.action : item.action}</td>
                         <td className="py-3 px-2">
                           <Badge variant={item.effort === "Low" ? "green" : "yellow"}>
@@ -386,7 +386,7 @@ export default function ReportsPage() {
                           </Badge>
                         </td>
                         <td className="py-3 px-2 font-mono text-emerald-400">{item.impact}</td>
-                        <td className="py-3 px-2 text-[#94a3b8]">{item.timeline}</td>
+                        <td className="py-3 px-2 text-[var(--text-secondary)]">{item.timeline}</td>
                       </tr>
                     );
                   })}
@@ -400,7 +400,7 @@ export default function ReportsPage() {
             <h3 className="text-lg font-bold mb-4">{t.complianceStatus}</h3>
             <div className="grid md:grid-cols-3 gap-4">
               {Object.entries(report.compliance_status).map(([fw, status]) => (
-                <div key={fw} className="p-4 rounded-xl border border-[#1e293b] bg-white/[0.02] text-center">
+                <div key={fw} className="p-4 rounded-xl border border-[var(--border-color)] bg-white/[0.02] text-center">
                   <p className="text-lg font-bold uppercase">{fw}</p>
                   <p
                     className="text-3xl font-extrabold font-mono mt-2"
@@ -424,22 +424,22 @@ export default function ReportsPage() {
       )}
 
       {/* FLOW-11: Cross-links to related observability pages */}
-      <div className="flex items-center gap-3 mt-6 pt-4 border-t border-[#1e293b]">
-        <span className="text-xs text-[#475569]">{locale === "ja" ? "関連ページ:" : "Related:"}</span>
-        <Link href="/traces" className="flex items-center gap-1.5 text-xs text-[#64748b] hover:text-[#94a3b8] transition-colors">
+      <div className="flex items-center gap-3 mt-6 pt-4 border-t border-[var(--border-color)]">
+        <span className="text-xs text-[var(--text-muted)]">{locale === "ja" ? "関連ページ:" : "Related:"}</span>
+        <Link href="/traces" className="flex items-center gap-1.5 text-xs text-[var(--text-muted)] hover:text-[var(--text-secondary)] transition-colors">
           <Activity size={12} />
           {locale === "ja" ? "トレース" : "Traces"}
         </Link>
-        <Link href="/logs" className="flex items-center gap-1.5 text-xs text-[#64748b] hover:text-[#94a3b8] transition-colors">
+        <Link href="/logs" className="flex items-center gap-1.5 text-xs text-[var(--text-muted)] hover:text-[var(--text-secondary)] transition-colors">
           <FileText size={12} />
           {locale === "ja" ? "ログ" : "Logs"}
         </Link>
-        <Link href="/compliance" className="flex items-center gap-1.5 text-xs text-[#64748b] hover:text-[#94a3b8] transition-colors">
+        <Link href="/compliance" className="flex items-center gap-1.5 text-xs text-[var(--text-muted)] hover:text-[var(--text-secondary)] transition-colors">
           <CheckCircle2 size={12} />
           {locale === "ja" ? "コンプライアンス" : "Compliance"}
         </Link>
         {/* FLOW-02: 改善提案からIaCページへの遷移リンク */}
-        <Link href="/iac" className="flex items-center gap-1.5 text-xs text-[#64748b] hover:text-[#94a3b8] transition-colors">
+        <Link href="/iac" className="flex items-center gap-1.5 text-xs text-[var(--text-muted)] hover:text-[var(--text-secondary)] transition-colors">
           <Code2 size={12} />
           {locale === "ja" ? "IaC修正コード" : "IaC Fixes"}
         </Link>

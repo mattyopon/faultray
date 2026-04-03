@@ -193,23 +193,23 @@ export default function TemplatesPage() {
         {/* Header */}
         <div className="mb-8">
           <div className="flex items-center gap-3 mb-2">
-            <LayoutTemplate size={28} className="text-[#FFD700]" />
+            <LayoutTemplate size={28} className="text-[var(--gold)]" />
             <h1 className="text-2xl font-bold">{t.title}</h1>
           </div>
-          <p className="text-[#94a3b8]">{t.subtitle}</p>
+          <p className="text-[var(--text-secondary)]">{t.subtitle}</p>
         </div>
 
         {/* Filter + Search bar */}
         <div className="flex flex-col sm:flex-row gap-3 mb-6">
           <div className="relative flex-1">
-            <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-[#475569]" />
+            <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--text-muted)]" />
             <input
               type="text"
               placeholder={t.searchPlaceholder}
               aria-label={t.searchPlaceholder}
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              className="w-full bg-[#0f1629] border border-[#1e293b] rounded-lg pl-9 pr-4 py-2.5 text-sm text-white placeholder-[#475569] focus:outline-none focus:border-[#334155]"
+              className="w-full bg-[#0f1629] border border-[var(--border-color)] rounded-lg pl-9 pr-4 py-2.5 text-sm text-white placeholder-[var(--text-muted)] focus:outline-none focus:border-[var(--border-color)]"
             />
           </div>
           <div className="flex items-center gap-1.5 overflow-x-auto pb-1">
@@ -219,8 +219,8 @@ export default function TemplatesPage() {
                 onClick={() => setFilter(id)}
                 className={`flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-medium whitespace-nowrap transition-colors border ${
                   filter === id
-                    ? "border-[#FFD700]/40 bg-[#FFD700]/5 text-[#FFD700]"
-                    : "border-[#1e293b] text-[#64748b] hover:border-[#334155] hover:text-white"
+                    ? "border-[var(--gold)]/40 bg-[var(--gold)]/5 text-[var(--gold)]"
+                    : "border-[var(--border-color)] text-[var(--text-muted)] hover:border-[var(--border-color)] hover:text-white"
                 }`}
               >
                 <Icon size={13} />
@@ -237,31 +237,31 @@ export default function TemplatesPage() {
             return (
               <Card
                 key={tpl.id}
-                className="bg-[#0f1629] border-[#1e293b] p-5 hover:border-[#334155] transition-colors flex flex-col"
+                className="bg-[#0f1629] border-[var(--border-color)] p-5 hover:border-[var(--border-color)] transition-colors flex flex-col"
               >
                 {/* Card header */}
                 <div className="flex items-start justify-between mb-3">
                   <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-lg bg-[#1e293b] flex items-center justify-center">
+                    <div className="w-10 h-10 rounded-lg bg-[var(--border-color)] flex items-center justify-center">
                       <Icon size={20} className={tpl.iconColor} />
                     </div>
                     <div>
                       <p className="text-sm font-semibold text-white leading-tight">
                         {t[tpl.nameKey]}
                       </p>
-                      <p className="text-[10px] text-[#475569] capitalize mt-0.5">{tpl.industry}</p>
+                      <p className="text-[10px] text-[var(--text-muted)] capitalize mt-0.5">{tpl.industry}</p>
                     </div>
                   </div>
                   <ScoreRing score={tpl.resilienceScore} />
                 </div>
 
                 {/* Description */}
-                <p className="text-xs text-[#64748b] leading-relaxed mb-4 flex-1">
+                <p className="text-xs text-[var(--text-muted)] leading-relaxed mb-4 flex-1">
                   {t[tpl.descKey]}
                 </p>
 
                 {/* Meta row */}
-                <div className="flex items-center gap-3 mb-4 text-xs text-[#475569]">
+                <div className="flex items-center gap-3 mb-4 text-xs text-[var(--text-muted)]">
                   <div className="flex items-center gap-1">
                     <Server size={11} />
                     <span>{tpl.componentCount} {t.components}</span>
@@ -277,7 +277,7 @@ export default function TemplatesPage() {
                   {tpl.compliance.map((c) => (
                     <Badge
                       key={c}
-                      className="text-[9px] px-1.5 py-0.5 bg-[#1e293b] text-[#94a3b8] border-[#334155]"
+                      className="text-[9px] px-1.5 py-0.5 bg-[var(--border-color)] text-[var(--text-secondary)] border-[var(--border-color)]"
                     >
                       <Shield size={8} className="mr-1" />
                       {c}
@@ -291,14 +291,14 @@ export default function TemplatesPage() {
                     size="sm"
                     variant="secondary"
                     onClick={() => setPreviewId(previewId === tpl.id ? null : tpl.id)}
-                    className="flex-1 h-8 text-xs border-[#1e293b] text-[#64748b] hover:text-white hover:border-[#334155]"
+                    className="flex-1 h-8 text-xs border-[var(--border-color)] text-[var(--text-muted)] hover:text-white hover:border-[var(--border-color)]"
                   >
                     {t.preview}
                   </Button>
                   <Button
                     size="sm"
                     onClick={() => handleUseTemplate(tpl)}
-                    className="flex-1 h-8 text-xs bg-[#FFD700] text-black hover:bg-[#FFD700]/90"
+                    className="flex-1 h-8 text-xs bg-[var(--gold)] text-black hover:bg-[var(--gold)]/90"
                   >
                     {t.useTemplate}
                     <ArrowRight size={11} className="ml-1" />
@@ -308,7 +308,7 @@ export default function TemplatesPage() {
                 {/* YAML preview */}
                 {previewId === tpl.id && (
                   <div className="mt-3 bg-[#060b16] rounded-lg p-3 overflow-x-auto">
-                    <pre className="text-[10px] text-[#475569] font-mono leading-relaxed whitespace-pre">
+                    <pre className="text-[10px] text-[var(--text-muted)] font-mono leading-relaxed whitespace-pre">
                       {tpl.yaml}
                     </pre>
                   </div>
@@ -321,19 +321,19 @@ export default function TemplatesPage() {
         {filtered.length === 0 && (
           <div className="text-center py-16">
             <LayoutTemplate size={40} className="text-[#1e293b] mx-auto mb-3" />
-            <p className="text-[#64748b] text-sm">{(t as Record<string, string>).noTemplatesFound ?? "No templates found"}</p>
-            <p className="text-[#475569] text-xs mt-1">{(t as Record<string, string>).noTemplatesDesc ?? "Try adjusting your search or industry filter."}</p>
+            <p className="text-[var(--text-muted)] text-sm">{(t as Record<string, string>).noTemplatesFound ?? "No templates found"}</p>
+            <p className="text-[var(--text-muted)] text-xs mt-1">{(t as Record<string, string>).noTemplatesDesc ?? "Try adjusting your search or industry filter."}</p>
           </div>
         )}
 
         {/* Info footer */}
-        <div className="mt-8 p-4 rounded-lg border border-[#1e293b] bg-[#0f1629] flex items-center gap-3">
-          <Cloud size={18} className="text-[#FFD700] shrink-0" />
-          <p className="text-xs text-[#64748b]">
-            Templates include pre-configured YAML topologies. Click <strong className="text-[#94a3b8]">{t.useTemplate}</strong> to load a template in the simulation engine and run a resilience analysis.
+        <div className="mt-8 p-4 rounded-lg border border-[var(--border-color)] bg-[#0f1629] flex items-center gap-3">
+          <Cloud size={18} className="text-[var(--gold)] shrink-0" />
+          <p className="text-xs text-[var(--text-muted)]">
+            Templates include pre-configured YAML topologies. Click <strong className="text-[var(--text-secondary)]">{t.useTemplate}</strong> to load a template in the simulation engine and run a resilience analysis.
           </p>
           <Link href="/simulate">
-            <Button size="sm" variant="secondary" className="border-[#1e293b] text-[#64748b] hover:text-white whitespace-nowrap">
+            <Button size="sm" variant="secondary" className="border-[var(--border-color)] text-[var(--text-muted)] hover:text-white whitespace-nowrap">
               {t.useTemplate} <ChevronRight size={12} className="ml-1" />
             </Button>
           </Link>

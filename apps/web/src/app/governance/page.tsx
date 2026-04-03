@@ -49,25 +49,25 @@ export default function GovernancePage() {
   }, []);
 
   return (
-    <div className="max-w-[1200px] mx-auto px-6 py-10">
+    <div className="w-full px-6 py-10">
       <h1 className="text-2xl font-bold mb-1 flex items-center gap-3">
-        <Scale size={24} className="text-[#FFD700]" />
+        <Scale size={24} className="text-[var(--gold)]" />
         {t.title}
       </h1>
-      <p className="text-[#94a3b8] text-sm mb-8">{t.subtitle}</p>
+      <p className="text-[var(--text-secondary)] text-sm mb-8">{t.subtitle}</p>
 
       <div className="grid md:grid-cols-3 gap-4 mb-8">
         <Card>
-          <p className="text-xs text-[#64748b] uppercase mb-2">{t.maturity}</p>
-          <p className="text-3xl font-bold text-[#FFD700]">{maturity} / 5</p>
+          <p className="text-xs text-[var(--text-muted)] uppercase mb-2">{t.maturity}</p>
+          <p className="text-3xl font-bold text-[var(--gold)]">{maturity} / 5</p>
         </Card>
         <Card>
-          <p className="text-xs text-[#64748b] uppercase mb-2">{t.meti}</p>
-          <p className="text-3xl font-bold text-[#FFD700]">{metiScore}%</p>
+          <p className="text-xs text-[var(--text-muted)] uppercase mb-2">{t.meti}</p>
+          <p className="text-3xl font-bold text-[var(--gold)]">{metiScore}%</p>
         </Card>
         <Card>
-          <p className="text-xs text-[#64748b] uppercase mb-2">{t.iso}</p>
-          <p className="text-3xl font-bold text-[#FFD700]">{isoScore}%</p>
+          <p className="text-xs text-[var(--text-muted)] uppercase mb-2">{t.iso}</p>
+          <p className="text-3xl font-bold text-[var(--gold)]">{isoScore}%</p>
         </Card>
       </div>
 
@@ -78,13 +78,13 @@ export default function GovernancePage() {
             {FRAMEWORKS.map((f) => (
               <div key={f.name}>
                 <div className="flex justify-between text-sm mb-1">
-                  <span className="text-[#94a3b8]">{f.name}</span>
+                  <span className="text-[var(--text-secondary)]">{f.name}</span>
                   <span className="font-mono">{f.score}%</span>
                 </div>
-                <div className="h-2 bg-[#1e293b] rounded-full overflow-hidden">
+                <div className="h-2 bg-[var(--border-color)] rounded-full overflow-hidden">
                   <div className={`h-full rounded-full ${f.score >= 80 ? "bg-emerald-400" : f.score >= 60 ? "bg-amber-400" : "bg-red-400"}`} style={{ width: `${f.score}%` }} />
                 </div>
-                <p className="text-xs text-[#475569] mt-1">{f.reqs} requirements</p>
+                <p className="text-xs text-[var(--text-muted)] mt-1">{f.reqs} requirements</p>
               </div>
             ))}
           </div>
@@ -96,7 +96,7 @@ export default function GovernancePage() {
             {GAPS.map((g, i) => (
               <div key={i} className="flex items-start gap-3">
                 <Badge variant={g.severity === "critical" ? "red" : g.severity === "high" ? "yellow" : "default"}>{g.severity}</Badge>
-                <span className="text-sm text-[#94a3b8]">{g.title}</span>
+                <span className="text-sm text-[var(--text-secondary)]">{g.title}</span>
               </div>
             ))}
           </div>

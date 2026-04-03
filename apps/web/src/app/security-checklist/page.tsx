@@ -116,17 +116,17 @@ export default function SecurityChecklistPage() {
   return (
     <div className="max-w-[860px] mx-auto px-6 py-20">
       <div className="mb-10">
-        <Link href="/" className="text-sm text-[#64748b] hover:text-white transition-colors">
+        <Link href="/" className="text-sm text-[var(--text-muted)] hover:text-white transition-colors">
           ← Back to Home
         </Link>
       </div>
 
       <div className="flex items-center gap-3 mb-2">
-        <ShieldCheck size={28} className="text-[#FFD700]" />
+        <ShieldCheck size={28} className="text-[var(--gold)]" />
         <h1 className="text-3xl font-bold tracking-tight">Security Questionnaire</h1>
       </div>
-      <p className="text-sm text-[#64748b] mb-2">セキュリティチェックシート</p>
-      <p className="text-sm text-[#94a3b8] mb-10 max-w-xl">
+      <p className="text-sm text-[var(--text-muted)] mb-2">セキュリティチェックシート</p>
+      <p className="text-sm text-[var(--text-secondary)] mb-10 max-w-xl">
         Standard answers for enterprise IT departments, procurement teams, and compliance officers.
         For ISMS / SOC 2 / ISO 27001 review processes.
       </p>
@@ -134,14 +134,14 @@ export default function SecurityChecklistPage() {
       <div className="flex gap-3 mb-10">
         <a
           href="/contact?subject=security-review"
-          className="flex items-center gap-2 px-4 py-2 rounded-lg bg-[#FFD700] text-[#0a0e1a] text-sm font-semibold hover:bg-yellow-400 transition-colors"
+          className="flex items-center gap-2 px-4 py-2 rounded-lg bg-[var(--gold)] text-[#0a0e1a] text-sm font-semibold hover:bg-yellow-400 transition-colors"
         >
           <FileText size={14} />
           Request Full Security Package
         </a>
         <a
           href="mailto:security@faultray.com"
-          className="flex items-center gap-2 px-4 py-2 rounded-lg border border-[#1e293b] text-sm text-[#94a3b8] hover:text-white hover:border-[#64748b] transition-colors"
+          className="flex items-center gap-2 px-4 py-2 rounded-lg border border-[var(--border-color)] text-sm text-[var(--text-secondary)] hover:text-white hover:border-[#64748b] transition-colors"
         >
           <Lock size={14} />
           security@faultray.com
@@ -152,18 +152,18 @@ export default function SecurityChecklistPage() {
         {CHECKLIST.map((section) => (
           <section key={section.category.en}>
             <h2 className="text-lg font-bold text-white mb-4 flex items-center gap-2">
-              <CheckCircle2 size={18} className="text-[#FFD700]" />
+              <CheckCircle2 size={18} className="text-[var(--gold)]" />
               {section.category.en}
-              <span className="text-sm font-normal text-[#64748b] ml-1">/ {section.category.ja}</span>
+              <span className="text-sm font-normal text-[var(--text-muted)] ml-1">/ {section.category.ja}</span>
             </h2>
             <div className="space-y-4">
               {section.items.map((item, i) => (
-                <div key={i} className="p-5 rounded-xl border border-[#1e293b] bg-[#111827]">
+                <div key={i} className="p-5 rounded-xl border border-[var(--border-color)] bg-[var(--bg-card)]">
                   <p className="text-sm font-semibold text-[#e2e8f0] mb-1">Q: {item.en}</p>
-                  <p className="text-xs text-[#64748b] mb-3">Q（日本語）: {item.ja}</p>
-                  <div className="border-t border-[#1e293b] pt-3">
-                    <p className="text-sm text-[#94a3b8]"><span className="text-emerald-400 font-semibold">A:</span> {item.answer.en}</p>
-                    <p className="text-sm text-[#64748b] mt-1">A（日本語）: {item.answer.ja}</p>
+                  <p className="text-xs text-[var(--text-muted)] mb-3">Q（日本語）: {item.ja}</p>
+                  <div className="border-t border-[var(--border-color)] pt-3">
+                    <p className="text-sm text-[var(--text-secondary)]"><span className="text-emerald-400 font-semibold">A:</span> {item.answer.en}</p>
+                    <p className="text-sm text-[var(--text-muted)] mt-1">A（日本語）: {item.answer.ja}</p>
                   </div>
                 </div>
               ))}
@@ -172,23 +172,23 @@ export default function SecurityChecklistPage() {
         ))}
       </div>
 
-      <div className="mt-12 p-6 rounded-xl border border-[#1e293b] bg-[#0d1117]">
+      <div className="mt-12 p-6 rounded-xl border border-[var(--border-color)] bg-[var(--bg-tertiary)]">
         <div className="flex items-center gap-2 mb-3">
-          <Download size={16} className="text-[#FFD700]" />
+          <Download size={16} className="text-[var(--gold)]" />
           <h3 className="text-sm font-bold text-white">Need a signed copy for your vendor assessment?</h3>
         </div>
-        <p className="text-sm text-[#94a3b8] mb-4">
+        <p className="text-sm text-[var(--text-secondary)] mb-4">
           We can provide a signed PDF version of this questionnaire, NDA, and our DPA for formal procurement processes.
         </p>
         <a
           href="/contact?subject=vendor-assessment"
-          className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-[#FFD700] text-[#0a0e1a] text-sm font-semibold hover:bg-yellow-400 transition-colors"
+          className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-[var(--gold)] text-[#0a0e1a] text-sm font-semibold hover:bg-yellow-400 transition-colors"
         >
           Request Signed Documents
         </a>
       </div>
 
-      <div className="mt-12 pt-8 border-t border-[#1e293b] flex flex-wrap gap-6 text-sm text-[#64748b]">
+      <div className="mt-12 pt-8 border-t border-[var(--border-color)] flex flex-wrap gap-6 text-sm text-[var(--text-muted)]">
         <Link href="/terms" className="hover:text-white transition-colors">Terms of Service</Link>
         <Link href="/privacy" className="hover:text-white transition-colors">Privacy Policy</Link>
         <Link href="/dpa" className="hover:text-white transition-colors">DPA</Link>

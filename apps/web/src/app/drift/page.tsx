@@ -68,14 +68,14 @@ export default function DriftPage() {
   };
 
   return (
-    <div className="max-w-[1200px] mx-auto px-6 py-10">
+    <div className="w-full px-6 py-10">
       <div className="flex items-start justify-between mb-8">
         <div>
           <h1 className="text-2xl font-bold mb-1 flex items-center gap-3">
-            <GitBranch size={24} className="text-[#FFD700]" />
+            <GitBranch size={24} className="text-[var(--gold)]" />
             {t.title}
           </h1>
-          <p className="text-[#94a3b8] text-sm">{t.subtitle}</p>
+          <p className="text-[var(--text-secondary)] text-sm">{t.subtitle}</p>
         </div>
         <Button size="sm" className="flex items-center gap-2 shrink-0">
           <RefreshCw size={14} />
@@ -96,7 +96,7 @@ export default function DriftPage() {
               {isDrifted ? t.drifted : t.clean}
             </span>
           </p>
-          <p className="text-sm text-[#94a3b8]">
+          <p className="text-sm text-[var(--text-secondary)]">
             {isDrifted
               ? `${activeDrifts.length} active drift event(s) detected`
               : t.noActiveDrift}
@@ -109,36 +109,36 @@ export default function DriftPage() {
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
         <Card className="text-center">
           <p className="text-3xl font-extrabold font-mono text-[#f59e0b]">{activeDrifts.length}</p>
-          <p className="text-xs text-[#64748b] uppercase tracking-wider mt-1">{locale === "ja" ? "アクティブドリフト" : "Active Drift"}</p>
+          <p className="text-xs text-[var(--text-muted)] uppercase tracking-wider mt-1">{locale === "ja" ? "アクティブドリフト" : "Active Drift"}</p>
         </Card>
         <Card className="text-center">
           <p className="text-3xl font-extrabold font-mono text-[#10b981]">
             {DRIFT_EVENTS.filter((d) => d.status === "resolved").length}
           </p>
-          <p className="text-xs text-[#64748b] uppercase tracking-wider mt-1">{locale === "ja" ? "解決済み" : "Resolved"}</p>
+          <p className="text-xs text-[var(--text-muted)] uppercase tracking-wider mt-1">{locale === "ja" ? "解決済み" : "Resolved"}</p>
         </Card>
         <Card className="text-center">
           <p className="text-3xl font-extrabold font-mono">{DRIFT_EVENTS.length}</p>
-          <p className="text-xs text-[#64748b] uppercase tracking-wider mt-1">{locale === "ja" ? "今週の合計" : "Total This Week"}</p>
+          <p className="text-xs text-[var(--text-muted)] uppercase tracking-wider mt-1">{locale === "ja" ? "今週の合計" : "Total This Week"}</p>
         </Card>
         <Card className="text-center">
           <p className="text-3xl font-extrabold font-mono text-[#3b82f6]">
             {DRIFT_EVENTS.filter((d) => d.autoFix).length}
           </p>
-          <p className="text-xs text-[#64748b] uppercase tracking-wider mt-1">{t.autoRemediation}</p>
+          <p className="text-xs text-[var(--text-muted)] uppercase tracking-wider mt-1">{t.autoRemediation}</p>
         </Card>
       </div>
 
       {/* Active drift events */}
       <div className="mb-8">
-        <p className="text-sm font-semibold text-[#FFD700] mb-4">{t.driftEvents}</p>
+        <p className="text-sm font-semibold text-[var(--gold)] mb-4">{t.driftEvents}</p>
         <div className="space-y-4">
           {DRIFT_EVENTS.map((event) => (
             <Card key={event.id}>
               <div className="flex items-start justify-between gap-4">
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2 mb-2 flex-wrap">
-                    <span className="font-mono text-xs text-[#64748b]">{event.id}</span>
+                    <span className="font-mono text-xs text-[var(--text-muted)]">{event.id}</span>
                     <Badge variant={event.changeType === "new_service" ? "yellow" : "red"}>
                       {event.changeType.replace(/_/g, " ")}
                     </Badge>
@@ -146,16 +146,16 @@ export default function DriftPage() {
                       {event.status}
                     </Badge>
                   </div>
-                  <p className="font-mono text-sm font-semibold text-[#94a3b8] mb-2">{event.component}</p>
-                  <p className="text-sm text-[#94a3b8] mb-3">{event.description}</p>
+                  <p className="font-mono text-sm font-semibold text-[var(--text-secondary)] mb-2">{event.component}</p>
+                  <p className="text-sm text-[var(--text-secondary)] mb-3">{event.description}</p>
 
                   {/* Diff */}
                   <div className="grid md:grid-cols-2 gap-2 mb-3">
-                    <div className="bg-[#0a0e1a] rounded-lg p-2">
-                      <p className="text-xs text-[#64748b] uppercase mb-1">{t.before}</p>
-                      <code className="text-xs text-[#94a3b8] font-mono">{event.before}</code>
+                    <div className="bg-[var(--bg-tertiary)] rounded-lg p-2">
+                      <p className="text-xs text-[var(--text-muted)] uppercase mb-1">{t.before}</p>
+                      <code className="text-xs text-[var(--text-secondary)] font-mono">{event.before}</code>
                     </div>
-                    <div className="bg-[#0a0e1a] rounded-lg p-2">
+                    <div className="bg-[var(--bg-tertiary)] rounded-lg p-2">
                       <p className="text-xs text-[#10b981] uppercase mb-1">{t.after}</p>
                       <code className="text-xs text-[#10b981] font-mono">{event.after}</code>
                     </div>
@@ -163,13 +163,13 @@ export default function DriftPage() {
 
                   {/* Auto-remediation command */}
                   {event.autoFix && (
-                    <div className="bg-[#0a0e1a] rounded-lg p-2">
-                      <p className="text-xs text-[#64748b] uppercase mb-1">{t.autoRemediation}</p>
+                    <div className="bg-[var(--bg-tertiary)] rounded-lg p-2">
+                      <p className="text-xs text-[var(--text-muted)] uppercase mb-1">{t.autoRemediation}</p>
                       <code className="text-xs text-[#3b82f6] font-mono">{event.autoFix}</code>
                     </div>
                   )}
 
-                  <p className="text-xs text-[#64748b] mt-2">{t.detectedAt}: {event.detectedAt}</p>
+                  <p className="text-xs text-[var(--text-muted)] mt-2">{t.detectedAt}: {event.detectedAt}</p>
                 </div>
 
                 {event.status === "active" && (
@@ -181,7 +181,7 @@ export default function DriftPage() {
                     >
                       {remediating === event.id ? "Applying..." : t.remediate}
                     </Button>
-                    <button className="text-xs text-[#64748b] hover:text-white transition-colors px-3 py-1.5">
+                    <button className="text-xs text-[var(--text-muted)] hover:text-white transition-colors px-3 py-1.5">
                       {t.ignore}
                     </button>
                   </div>
@@ -194,7 +194,7 @@ export default function DriftPage() {
 
       {/* Drift history chart */}
       <Card>
-        <p className="text-sm font-semibold text-[#FFD700] mb-4">{t.driftHistory}</p>
+        <p className="text-sm font-semibold text-[var(--gold)] mb-4">{t.driftHistory}</p>
         <div className="flex items-end gap-3 h-24">
           {DRIFT_HISTORY.map((day) => (
             <div key={day.date} className="flex-1 flex flex-col items-center gap-1">
@@ -212,15 +212,15 @@ export default function DriftPage() {
                   />
                 )}
               </div>
-              <p className="text-[10px] text-[#475569]">{day.date.slice(5)}</p>
+              <p className="text-[10px] text-[var(--text-muted)]">{day.date.slice(5)}</p>
             </div>
           ))}
         </div>
         <div className="flex gap-4 mt-2">
-          <div className="flex items-center gap-1.5 text-xs text-[#64748b]">
+          <div className="flex items-center gap-1.5 text-xs text-[var(--text-muted)]">
             <div className="w-3 h-3 rounded-sm bg-[#f59e0b]/60" />Detected
           </div>
-          <div className="flex items-center gap-1.5 text-xs text-[#64748b]">
+          <div className="flex items-center gap-1.5 text-xs text-[var(--text-muted)]">
             <div className="w-3 h-3 rounded-sm bg-[#10b981]/60" />Resolved
           </div>
         </div>

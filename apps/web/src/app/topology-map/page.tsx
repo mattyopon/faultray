@@ -106,19 +106,19 @@ export default function TopologyMapPage() {
   const viewBox = `0 0 800 560`;
 
   return (
-    <div className="max-w-[1200px] mx-auto px-6 py-10">
+    <div className="w-full px-6 py-10">
       <div className="mb-8">
         <h1 className="text-2xl font-bold mb-1 flex items-center gap-3">
-          <Network size={24} className="text-[#FFD700]" />
+          <Network size={24} className="text-[var(--gold)]" />
           {t.title}
         </h1>
-        <p className="text-[#94a3b8] text-sm">{t.subtitle}</p>
+        <p className="text-[var(--text-secondary)] text-sm">{t.subtitle}</p>
       </div>
 
       {loading ? (
         <Card className="flex items-center justify-center py-20">
-          <Loader2 size={24} className="animate-spin text-[#FFD700]" />
-          <span className="ml-3 text-[#94a3b8]">{t.loading}</span>
+          <Loader2 size={24} className="animate-spin text-[var(--gold)]" />
+          <span className="ml-3 text-[var(--text-secondary)]">{t.loading}</span>
         </Card>
       ) : (
         <div className="grid lg:grid-cols-[1fr_280px] gap-6">
@@ -126,7 +126,7 @@ export default function TopologyMapPage() {
           <Card className="p-4">
             {/* Toolbar */}
             <div className="flex items-center gap-2 mb-4">
-              <span className="text-xs text-[#64748b] uppercase tracking-wider flex-1">{t.interactiveMap}</span>
+              <span className="text-xs text-[var(--text-muted)] uppercase tracking-wider flex-1">{t.interactiveMap}</span>
               <Button variant="ghost" size="sm" onClick={() => setZoom((z) => Math.min(z + 0.2, 2))}>
                 <ZoomIn size={14} />
               </Button>
@@ -142,7 +142,7 @@ export default function TopologyMapPage() {
             </div>
 
             {/* SVG Canvas */}
-            <div className="bg-[#0a0e1a] rounded-xl overflow-hidden" style={{ height: 480 }}>
+            <div className="bg-[var(--bg-tertiary)] rounded-xl overflow-hidden" style={{ height: 480 }}>
               <svg
                 ref={svgRef}
                 viewBox={viewBox}
@@ -245,7 +245,7 @@ export default function TopologyMapPage() {
 
             {/* Legend */}
             <div className="flex flex-wrap items-center gap-4 mt-3">
-              <span className="text-xs text-[#64748b]">{t.edges}:</span>
+              <span className="text-xs text-[var(--text-muted)]">{t.edges}:</span>
               {[
                 { color: "#3b82f6", label: "sync", dash: undefined },
                 { color: "#8b5cf6", label: "async", dash: "4 3" },
@@ -253,10 +253,10 @@ export default function TopologyMapPage() {
               ].map((e) => (
                 <div key={e.label} className="flex items-center gap-1.5">
                   <svg width="24" height="8"><line x1="0" y1="4" x2="24" y2="4" stroke={e.color} strokeWidth="1.5" strokeDasharray={e.dash} /></svg>
-                  <span className="text-xs text-[#94a3b8]">{e.label}</span>
+                  <span className="text-xs text-[var(--text-secondary)]">{e.label}</span>
                 </div>
               ))}
-              <span className="text-xs text-[#64748b] ml-2">{t.nodeRisk}:</span>
+              <span className="text-xs text-[var(--text-muted)] ml-2">{t.nodeRisk}:</span>
               {[
                 { color: "#10b981", label: "Low" },
                 { color: "#eab308", label: "Med" },
@@ -265,7 +265,7 @@ export default function TopologyMapPage() {
               ].map((r) => (
                 <div key={r.label} className="flex items-center gap-1">
                   <div className="w-3 h-3 rounded-full" style={{ backgroundColor: r.color }} />
-                  <span className="text-xs text-[#94a3b8]">{r.label}</span>
+                  <span className="text-xs text-[var(--text-secondary)]">{r.label}</span>
                 </div>
               ))}
             </div>
@@ -275,17 +275,17 @@ export default function TopologyMapPage() {
           <div className="space-y-4">
             {selected ? (
               <Card>
-                <h3 className="text-sm font-semibold text-[#94a3b8] uppercase tracking-wider mb-3">{t.nodeDetail}</h3>
+                <h3 className="text-sm font-semibold text-[var(--text-secondary)] uppercase tracking-wider mb-3">{t.nodeDetail}</h3>
                 <div className="text-center mb-4">
                   <span className="text-4xl">{typeIcon(selected.type)}</span>
                   <p className="font-bold mt-2">{selected.name}</p>
-                  <p className="text-xs text-[#64748b]">{selected.type}</p>
+                  <p className="text-xs text-[var(--text-muted)]">{selected.type}</p>
                   {selected.risk_score > 0 && (
                     <div className="mt-2">
                       <span className="text-3xl font-extrabold font-mono" style={{ color: nodeColor(selected.risk_score) }}>
                         {selected.risk_score}
                       </span>
-                      <p className="text-xs text-[#64748b]">{t.riskScore}</p>
+                      <p className="text-xs text-[var(--text-muted)]">{t.riskScore}</p>
                     </div>
                   )}
                   {selected.risk_score > 0 && (
@@ -299,32 +299,32 @@ export default function TopologyMapPage() {
                 </div>
                 <div className="space-y-2 text-sm">
                   <div className="flex justify-between">
-                    <span className="text-[#64748b]">{t.layer}</span>
+                    <span className="text-[var(--text-muted)]">{t.layer}</span>
                     <span>{selected.layer}</span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-[#64748b]">{t.connections}</span>
+                    <span className="text-[var(--text-muted)]">{t.connections}</span>
                     <span>{data.edges.filter((e) => e.source === selected.id || e.target === selected.id).length}</span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-[#64748b]">{t.upstreamDeps}</span>
+                    <span className="text-[var(--text-muted)]">{t.upstreamDeps}</span>
                     <span>{data.edges.filter((e) => e.target === selected.id).length}</span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-[#64748b]">{t.downstreamDeps}</span>
+                    <span className="text-[var(--text-muted)]">{t.downstreamDeps}</span>
                     <span>{data.edges.filter((e) => e.source === selected.id).length}</span>
                   </div>
                 </div>
               </Card>
             ) : (
               <Card>
-                <p className="text-sm text-[#64748b] text-center py-4">{t.clickNode}</p>
+                <p className="text-sm text-[var(--text-muted)] text-center py-4">{t.clickNode}</p>
               </Card>
             )}
 
             {/* Top Risk Nodes */}
             <Card>
-              <h3 className="text-sm font-semibold text-[#94a3b8] uppercase tracking-wider mb-3">{t.topRisk}</h3>
+              <h3 className="text-sm font-semibold text-[var(--text-secondary)] uppercase tracking-wider mb-3">{t.topRisk}</h3>
               <div className="space-y-2">
                 {[...data.nodes]
                   .filter((n) => n.risk_score > 0)

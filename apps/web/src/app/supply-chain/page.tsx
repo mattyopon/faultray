@@ -43,7 +43,7 @@ function RiskBar({ score }: { score: number }) {
   const color = score >= 70 ? "#ef4444" : score >= 40 ? "#f59e0b" : "#10b981";
   return (
     <div className="flex items-center gap-2">
-      <div className="w-20 h-1.5 bg-[#1e293b] rounded-full overflow-hidden">
+      <div className="w-20 h-1.5 bg-[var(--border-color)] rounded-full overflow-hidden">
         <div className="h-full rounded-full" style={{ width: `${Math.min(score, 100)}%`, backgroundColor: color }} />
       </div>
       <span className="text-xs font-mono" style={{ color }}>{score}</span>
@@ -60,17 +60,17 @@ export default function SupplyChainPage() {
   const highCount = DEMO_ADVISORIES.filter((a) => a.severity === "high").length;
 
   return (
-    <div className="max-w-[1200px] mx-auto px-6 py-10">
+    <div className="w-full px-6 py-10">
       <div className="flex items-start justify-between mb-8">
         <div>
           <h1 className="text-2xl font-bold mb-1 flex items-center gap-3">
-            <PackageSearch size={24} className="text-[#FFD700]" />
+            <PackageSearch size={24} className="text-[var(--gold)]" />
             {t.title}
           </h1>
-          <p className="text-[#94a3b8] text-sm">{t.subtitle}</p>
+          <p className="text-[var(--text-secondary)] text-sm">{t.subtitle}</p>
         </div>
         <div className="flex items-center gap-3 shrink-0">
-          <span className="text-xs text-[#64748b]">{t.lastScan}: 2026-04-01 08:00 UTC</span>
+          <span className="text-xs text-[var(--text-muted)]">{t.lastScan}: 2026-04-01 08:00 UTC</span>
           <Button size="sm" className="flex items-center gap-2">
             <RefreshCw size={14} />
             {t.scanNow}
@@ -82,43 +82,43 @@ export default function SupplyChainPage() {
       <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mb-8">
         <Card className="text-center">
           <p className="text-3xl font-extrabold font-mono">{DEMO_DEPS.length}</p>
-          <p className="text-xs text-[#64748b] uppercase tracking-wider mt-1">{t.totalDeps}</p>
+          <p className="text-xs text-[var(--text-muted)] uppercase tracking-wider mt-1">{t.totalDeps}</p>
         </Card>
         <Card className="text-center">
           <p className="text-3xl font-extrabold font-mono text-[#f59e0b]">{vulnCount}</p>
-          <p className="text-xs text-[#64748b] uppercase tracking-wider mt-1">{t.vulnerabilities}</p>
+          <p className="text-xs text-[var(--text-muted)] uppercase tracking-wider mt-1">{t.vulnerabilities}</p>
         </Card>
         <Card className="text-center">
           <p className="text-3xl font-extrabold font-mono text-red-400">{criticalCount}</p>
-          <p className="text-xs text-[#64748b] uppercase tracking-wider mt-1">{t.critical}</p>
+          <p className="text-xs text-[var(--text-muted)] uppercase tracking-wider mt-1">{t.critical}</p>
         </Card>
         <Card className="text-center">
           <p className="text-3xl font-extrabold font-mono text-[#f97316]">{highCount}</p>
-          <p className="text-xs text-[#64748b] uppercase tracking-wider mt-1">{t.high}</p>
+          <p className="text-xs text-[var(--text-muted)] uppercase tracking-wider mt-1">{t.high}</p>
         </Card>
         <Card className="text-center">
           <p className="text-3xl font-extrabold font-mono text-[#10b981]">
             {DEMO_DEPS.filter((d) => !d.cve).length}
           </p>
-          <p className="text-xs text-[#64748b] uppercase tracking-wider mt-1">{locale === "ja" ? "クリーン" : "Clean"}</p>
+          <p className="text-xs text-[var(--text-muted)] uppercase tracking-wider mt-1">{locale === "ja" ? "クリーン" : "Clean"}</p>
         </Card>
       </div>
 
       {/* Recent CVE Advisories */}
       <Card className="mb-6">
-        <p className="text-sm font-semibold text-[#FFD700] mb-4">{t.recentAdvisories}</p>
+        <p className="text-sm font-semibold text-[var(--gold)] mb-4">{t.recentAdvisories}</p>
         <div className="space-y-3">
           {DEMO_ADVISORIES.map((adv) => (
-            <div key={adv.id} className="flex items-start gap-3 bg-[#0a0e1a] rounded-lg p-3">
+            <div key={adv.id} className="flex items-start gap-3 rounded-lg p-3">
               <AlertTriangle size={16} className={adv.severity === "critical" ? "text-red-400 shrink-0 mt-0.5" : "text-[#f59e0b] shrink-0 mt-0.5"} />
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2 flex-wrap">
-                  <span className="font-mono text-xs text-[#64748b]">{adv.id}</span>
+                  <span className="font-mono text-xs text-[var(--text-muted)]">{adv.id}</span>
                   <Badge variant={adv.severity === "critical" ? "red" : "yellow"}>{adv.severity}</Badge>
                   <Badge variant="default">{adv.package}</Badge>
                 </div>
                 <p className="text-sm mt-1">{adv.title}</p>
-                <p className="text-xs text-[#64748b] mt-0.5">{locale === "ja" ? "公開日:" : "Published:"} {adv.publishedAt} · Fix: v{adv.patchVersion}</p>
+                <p className="text-xs text-[var(--text-muted)] mt-0.5">{locale === "ja" ? "公開日:" : "Published:"} {adv.publishedAt} · Fix: v{adv.patchVersion}</p>
               </div>
             </div>
           ))}
@@ -127,11 +127,11 @@ export default function SupplyChainPage() {
 
       {/* Dependency table */}
       <Card>
-        <p className="text-sm font-semibold text-[#FFD700] mb-4">{locale === "ja" ? "依存関係インベントリ" : "Dependency Inventory"}</p>
+        <p className="text-sm font-semibold text-[var(--gold)] mb-4">{locale === "ja" ? "依存関係インベントリ" : "Dependency Inventory"}</p>
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
-              <tr className="text-[#64748b] text-xs uppercase tracking-wider border-b border-[#1e293b]">
+              <tr className="text-[var(--text-muted)] text-xs uppercase tracking-wider border-b border-[var(--border-color)]">
                 <th scope="col" className="text-left py-2 pr-4">{t.dependency}</th>
                 <th scope="col" className="text-left py-2 pr-4">{t.version}</th>
                 <th scope="col" className="text-left py-2 pr-4">{t.vendor}</th>
@@ -143,17 +143,17 @@ export default function SupplyChainPage() {
             </thead>
             <tbody>
               {DEMO_DEPS.map((dep) => (
-                <tr key={dep.name} className="border-b border-[#1e293b]/50 hover:bg-white/2">
+                <tr key={dep.name} className="border-b border-[var(--border-color)]/50 hover:bg-white/2">
                   <td className="py-2.5 pr-4 font-mono font-semibold">{dep.name}</td>
-                  <td className="py-2.5 pr-4 font-mono text-[#94a3b8]">{dep.version}</td>
-                  <td className="py-2.5 pr-4 text-[#94a3b8]">{dep.vendor}</td>
-                  <td className="py-2.5 pr-4 text-[#64748b] text-xs">{dep.license}</td>
+                  <td className="py-2.5 pr-4 font-mono text-[var(--text-secondary)]">{dep.version}</td>
+                  <td className="py-2.5 pr-4 text-[var(--text-secondary)]">{dep.vendor}</td>
+                  <td className="py-2.5 pr-4 text-[var(--text-muted)] text-xs">{dep.license}</td>
                   <td className="py-2.5 pr-4"><RiskBar score={dep.riskScore} /></td>
                   <td className="py-2.5 pr-4">
                     {dep.cve ? (
                       <span className="font-mono text-xs text-red-400">{dep.cve}</span>
                     ) : (
-                      <span className="text-[#475569] text-xs">—</span>
+                      <span className="text-[var(--text-muted)] text-xs">—</span>
                     )}
                   </td>
                   <td className="py-2.5">

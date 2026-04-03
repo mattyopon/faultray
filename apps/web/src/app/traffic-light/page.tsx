@@ -106,14 +106,14 @@ export default function TrafficLightPage() {
   const selectedService = DEMO_SERVICES.find((s) => s.id === selected) ?? null;
 
   return (
-    <div className="max-w-[1200px] mx-auto px-6 py-10">
+    <div className="w-full px-6 py-10">
       {/* Header */}
       <div className="mb-8">
         <h1 className="text-2xl font-bold mb-1 flex items-center gap-3">
-          <CircleDot size={24} className="text-[#FFD700]" />
+          <CircleDot size={24} className="text-[var(--gold)]" />
           System Status
         </h1>
-        <p className="text-[#94a3b8] text-sm">
+        <p className="text-[var(--text-secondary)] text-sm">
           Simple status view for executives and non-technical stakeholders (Layer 1)
         </p>
       </div>
@@ -143,10 +143,10 @@ export default function TrafficLightPage() {
         >
           {overallMessage}
         </p>
-        <p className="text-sm text-[#64748b]">
+        <p className="text-sm text-[var(--text-muted)]">
           {greenCount} healthy · {yellowCount > 0 ? `${yellowCount} degraded · ` : ""}{redCount > 0 ? `${redCount} down · ` : ""}Last updated {lastRefresh.toLocaleTimeString()}
         </p>
-        <div className="mt-3 flex items-center justify-center gap-2 text-xs text-[#475569]">
+        <div className="mt-3 flex items-center justify-center gap-2 text-xs text-[var(--text-muted)]">
           <RefreshCw size={11} />
           Auto-refresh in {countdown}s
         </div>
@@ -163,7 +163,7 @@ export default function TrafficLightPage() {
               className={`text-center p-5 rounded-2xl border transition-all hover:scale-105 active:scale-95 ${
                 isSelected
                   ? "border-white/20 bg-white/5 scale-105"
-                  : "border-[#1e293b] bg-white/[0.02] hover:border-[#334155]"
+                  : "border-[var(--border-color)] bg-white/[0.02] hover:border-[var(--border-color)]"
               }`}
               onClick={() => setSelected(isSelected ? null : service.id)}
             >
@@ -193,7 +193,7 @@ export default function TrafficLightPage() {
                 {service.status === "green" ? "Healthy" : service.status === "yellow" ? "Degraded" : "Down"}
               </p>
               {service.status !== "red" && (
-                <p className="text-[10px] text-[#475569] mt-0.5">{service.uptime} uptime</p>
+                <p className="text-[10px] text-[var(--text-muted)] mt-0.5">{service.uptime} uptime</p>
               )}
             </button>
           );
@@ -221,14 +221,14 @@ export default function TrafficLightPage() {
             </div>
             <div className="flex-1">
               <h3 className="text-lg font-bold text-[#e2e8f0] mb-1">{selectedService.name}</h3>
-              <p className="text-sm text-[#94a3b8] leading-relaxed mb-3">{selectedService.message}</p>
-              <div className="flex flex-wrap gap-4 text-xs text-[#64748b]">
-                <span>Uptime: <strong className="text-[#94a3b8]">{selectedService.uptime}</strong></span>
-                <span>Last checked: <strong className="text-[#94a3b8]">{selectedService.lastChecked}</strong></span>
+              <p className="text-sm text-[var(--text-secondary)] leading-relaxed mb-3">{selectedService.message}</p>
+              <div className="flex flex-wrap gap-4 text-xs text-[var(--text-muted)]">
+                <span>Uptime: <strong className="text-[var(--text-secondary)]">{selectedService.uptime}</strong></span>
+                <span>Last checked: <strong className="text-[var(--text-secondary)]">{selectedService.lastChecked}</strong></span>
               </div>
             </div>
             <button
-              className="text-[#475569] hover:text-[#94a3b8] transition-colors p-1"
+              className="text-[var(--text-muted)] hover:text-[var(--text-secondary)] transition-colors p-1"
               onClick={() => setSelected(null)}
             >
               ×
@@ -238,8 +238,8 @@ export default function TrafficLightPage() {
       )}
 
       {/* Legend */}
-      <Card className="bg-[#0a0e1a]/50">
-        <h4 className="text-xs font-semibold text-[#475569] uppercase tracking-wider mb-3 flex items-center gap-2">
+      <Card className="bg-[var(--bg-tertiary)]/50">
+        <h4 className="text-xs font-semibold text-[var(--text-muted)] uppercase tracking-wider mb-3 flex items-center gap-2">
           <Info size={12} />
           How to read this dashboard
         </h4>
@@ -257,7 +257,7 @@ export default function TrafficLightPage() {
                 <p className="text-sm font-semibold" style={{ color: statusColor(status) }}>
                   {status === "green" ? "Green — Healthy" : status === "yellow" ? "Yellow — Degraded" : "Red — Down"}
                 </p>
-                <p className="text-xs text-[#64748b]">
+                <p className="text-xs text-[var(--text-muted)]">
                   {status === "green"
                     ? "Service is running normally"
                     : status === "yellow"
@@ -268,7 +268,7 @@ export default function TrafficLightPage() {
             </div>
           ))}
         </div>
-        <p className="text-xs text-[#475569] mt-4 border-t border-[#1e293b] pt-3">
+        <p className="text-xs text-[var(--text-muted)] mt-4 border-t border-[var(--border-color)] pt-3">
           Click any service circle to see a plain-language explanation. This dashboard auto-refreshes every 30 seconds. For technical details, see the APM or Dashboard pages.
         </p>
       </Card>

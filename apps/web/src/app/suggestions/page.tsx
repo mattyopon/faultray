@@ -84,10 +84,10 @@ export default function SuggestionsPage() {
   };
 
   return (
-    <div className="max-w-[1200px] mx-auto px-6 py-10">
+    <div className="w-full px-6 py-10">
       <div className="mb-10">
         <h1 className="text-2xl font-bold mb-1">{t.title}</h1>
-        <p className="text-[#94a3b8] text-sm">{t.subtitle}</p>
+        <p className="text-[var(--text-secondary)] text-sm">{t.subtitle}</p>
       </div>
 
       {/* Summary */}
@@ -97,30 +97,30 @@ export default function SuggestionsPage() {
             <div className="w-10 h-10 rounded-lg bg-emerald-500/10 flex items-center justify-center">
               <TrendingUp size={20} className="text-emerald-400" />
             </div>
-            <p className="text-xs text-[#64748b] uppercase tracking-wider">{t.potentialImprovement}</p>
+            <p className="text-xs text-[var(--text-muted)] uppercase tracking-wider">{t.potentialImprovement}</p>
           </div>
           <p className="text-2xl font-bold font-mono text-emerald-400">+2.05 nines</p>
-          <p className="text-xs text-[#64748b] mt-1">{t.ifAll}</p>
+          <p className="text-xs text-[var(--text-muted)] mt-1">{t.ifAll}</p>
         </Card>
         <Card>
           <div className="flex items-center gap-3 mb-2">
             <div className="w-10 h-10 rounded-lg bg-red-500/10 flex items-center justify-center">
               <AlertTriangle size={20} className="text-red-400" />
             </div>
-            <p className="text-xs text-[#64748b] uppercase tracking-wider">{t.highPriority}</p>
+            <p className="text-xs text-[var(--text-muted)] uppercase tracking-wider">{t.highPriority}</p>
           </div>
           <p className="text-2xl font-bold font-mono">3</p>
-          <p className="text-xs text-[#64748b] mt-1">{t.immediateAttention}</p>
+          <p className="text-xs text-[var(--text-muted)] mt-1">{t.immediateAttention}</p>
         </Card>
         <Card>
           <div className="flex items-center gap-3 mb-2">
-            <div className="w-10 h-10 rounded-lg bg-[#FFD700]/10 flex items-center justify-center">
-              <Lightbulb size={20} className="text-[#FFD700]" />
+            <div className="w-10 h-10 rounded-lg bg-[var(--gold)]/10 flex items-center justify-center">
+              <Lightbulb size={20} className="text-[var(--gold)]" />
             </div>
-            <p className="text-xs text-[#64748b] uppercase tracking-wider">{t.totalSuggestions}</p>
+            <p className="text-xs text-[var(--text-muted)] uppercase tracking-wider">{t.totalSuggestions}</p>
           </div>
           <p className="text-2xl font-bold font-mono">6</p>
-          <p className="text-xs text-[#64748b] mt-1">{t.acrossCategories}</p>
+          <p className="text-xs text-[var(--text-muted)] mt-1">{t.acrossCategories}</p>
         </Card>
       </div>
 
@@ -128,14 +128,14 @@ export default function SuggestionsPage() {
       <Link href="/remediation">
         <Card hover className="mb-10 cursor-pointer">
           <div className="flex items-center gap-4">
-            <div className="w-12 h-12 rounded-xl bg-[#FFD700]/[0.06] border border-[#FFD700]/10 flex items-center justify-center shrink-0">
-              <ClipboardCheck size={22} className="text-[#FFD700]" />
+            <div className="w-12 h-12 rounded-xl bg-[var(--gold)]/[0.06] border border-[var(--gold)]/10 flex items-center justify-center shrink-0">
+              <ClipboardCheck size={22} className="text-[var(--gold)]" />
             </div>
             <div className="flex-1">
               <h3 className="font-bold mb-1">{(appDict.remediation[locale] ?? appDict.remediation.en).viewDetailedPlan}</h3>
-              <p className="text-sm text-[#94a3b8]">{(appDict.remediation[locale] ?? appDict.remediation.en).subtitle}</p>
+              <p className="text-sm text-[var(--text-secondary)]">{(appDict.remediation[locale] ?? appDict.remediation.en).subtitle}</p>
             </div>
-            <ArrowUpRight size={20} className="text-[#FFD700] shrink-0" />
+            <ArrowUpRight size={20} className="text-[var(--gold)] shrink-0" />
           </div>
         </Card>
       </Link>
@@ -149,8 +149,8 @@ export default function SuggestionsPage() {
             <div key={i} className="relative">
               <Card hover={!isLocked} className={isLocked ? "cursor-default" : "cursor-pointer"}>
                 <div className={`flex items-start gap-5 ${isLocked ? "blur-[6px] select-none pointer-events-none" : ""}`}>
-                  <div className="w-12 h-12 rounded-xl bg-[#FFD700]/[0.06] border border-[#FFD700]/10 flex items-center justify-center shrink-0">
-                    <Icon size={22} className="text-[#FFD700]" />
+                  <div className="w-12 h-12 rounded-xl bg-[var(--gold)]/[0.06] border border-[var(--gold)]/10 flex items-center justify-center shrink-0">
+                    <Icon size={22} className="text-[var(--gold)]" />
                   </div>
                   <div className="flex-1">
                     <div className="flex items-center gap-2 mb-1">
@@ -160,23 +160,23 @@ export default function SuggestionsPage() {
                       </Badge>
                       <Badge variant="default">{(s.category as Record<string,string>)[locale] ?? s.category.en}</Badge>
                     </div>
-                    <p className="text-sm text-[#94a3b8] leading-relaxed mb-3">{(s.description as Record<string,string>)[locale] ?? s.description.en}</p>
+                    <p className="text-sm text-[var(--text-secondary)] leading-relaxed mb-3">{(s.description as Record<string,string>)[locale] ?? s.description.en}</p>
                     <div className="flex items-center gap-4">
                       <div className="flex items-center gap-1.5 text-emerald-400 text-sm font-semibold">
                         <ArrowUpRight size={14} />
                         {s.impact}
                       </div>
                       <span className="text-[#1e293b]">|</span>
-                      <span className="text-xs text-[#64748b]">{t.effort}: {(s.effort as Record<string,string>)[locale] ?? s.effort.en}</span>
+                      <span className="text-xs text-[var(--text-muted)]">{t.effort}: {(s.effort as Record<string,string>)[locale] ?? s.effort.en}</span>
                     </div>
                   </div>
                 </div>
               </Card>
               {isLocked && (
-                <div className="absolute inset-0 flex items-center justify-center rounded-2xl bg-[#0a0e1a]/60 backdrop-blur-sm">
+                <div className="absolute inset-0 flex items-center justify-center rounded-2xl/60 backdrop-blur-sm">
                   <Link
                     href="/pricing"
-                    className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-[#FFD700] text-[#0a0e1a] font-semibold text-sm hover:bg-[#FFC700] transition-colors"
+                    className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-[var(--gold)] text-[#0a0e1a] font-semibold text-sm hover:bg-[#FFC700] transition-colors"
                   >
                     <Lock size={14} />
                     {locale === "ja" ? "Proプランで詳細を表示" : "Upgrade to Pro for details"}
@@ -189,18 +189,18 @@ export default function SuggestionsPage() {
       </div>
 
       {/* CTA-05: 次アクションCTA */}
-      <div className="mt-10 p-5 rounded-xl border border-[#FFD700]/20 bg-[#FFD700]/[0.04] flex flex-col sm:flex-row items-center gap-4 justify-between">
+      <div className="mt-10 p-5 rounded-xl border border-[var(--gold)]/20 bg-[var(--gold)]/[0.04] flex flex-col sm:flex-row items-center gap-4 justify-between">
         <div>
           <p className="font-semibold text-white mb-1">
             {locale === "ja" ? "今すぐシミュレーションを実行して現状を確認" : "Run a simulation to see your current resilience score"}
           </p>
-          <p className="text-sm text-[#64748b]">
+          <p className="text-sm text-[var(--text-muted)]">
             {locale === "ja" ? "提案事項を実装後、シミュレーションで改善を数値で確認できます" : "After implementing suggestions, verify improvements with a new simulation."}
           </p>
         </div>
         <Link
           href="/simulate"
-          className="shrink-0 px-5 py-2.5 rounded-lg bg-[#FFD700] text-[#0a0e1a] font-semibold text-sm hover:bg-[#FFC700] transition-colors whitespace-nowrap"
+          className="shrink-0 px-5 py-2.5 rounded-lg bg-[var(--gold)] text-[#0a0e1a] font-semibold text-sm hover:bg-[#FFC700] transition-colors whitespace-nowrap"
         >
           {locale === "ja" ? "シミュレーションを実行" : "Run Simulation"}
         </Link>

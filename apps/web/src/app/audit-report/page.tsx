@@ -172,14 +172,14 @@ export default function AuditReportPage() {
   }
 
   return (
-    <div className="max-w-[1200px] mx-auto px-6 py-10">
+    <div className="w-full px-6 py-10">
       {/* Header */}
       <div className="mb-8">
         <h1 className="text-2xl font-bold mb-1 flex items-center gap-3">
-          <FileSpreadsheet size={24} className="text-[#FFD700]" />
+          <FileSpreadsheet size={24} className="text-[var(--gold)]" />
           Audit Report Generator
         </h1>
-        <p className="text-[#94a3b8] text-sm">
+        <p className="text-[var(--text-secondary)] text-sm">
           Generate audit-ready reports for external auditors and regulators (Layer 4)
         </p>
       </div>
@@ -188,19 +188,19 @@ export default function AuditReportPage() {
         {/* Configuration Panel */}
         <div className="lg:col-span-1">
           <Card className="sticky top-24">
-            <h3 className="text-sm font-semibold text-[#94a3b8] uppercase tracking-wider mb-4">Report Configuration</h3>
+            <h3 className="text-sm font-semibold text-[var(--text-secondary)] uppercase tracking-wider mb-4">Report Configuration</h3>
 
             {/* Framework */}
             <div className="mb-4">
-              <label className="text-xs text-[#64748b] mb-2 block font-medium">Framework</label>
+              <label className="text-xs text-[var(--text-muted)] mb-2 block font-medium">Framework</label>
               <div className="grid grid-cols-2 gap-2">
                 {(["SOC2", "DORA", "ISO27001", "FISC"] as Framework[]).map((fw) => (
                   <button
                     key={fw}
                     className={`px-3 py-2 rounded-lg text-sm font-medium border transition-colors ${
                       selectedFramework === fw
-                        ? "bg-[#FFD700]/10 border-[#FFD700]/30 text-[#FFD700]"
-                        : "border-[#1e293b] text-[#64748b] hover:border-[#334155] hover:text-[#94a3b8]"
+                        ? "bg-[var(--gold)]/10 border-[var(--gold)]/30 text-[var(--gold)]"
+                        : "border-[var(--border-color)] text-[var(--text-muted)] hover:border-[var(--border-color)] hover:text-[var(--text-secondary)]"
                     }`}
                     onClick={() => { setSelectedFramework(fw); setGenerated(false); }}
                   >
@@ -212,15 +212,15 @@ export default function AuditReportPage() {
 
             {/* Format */}
             <div className="mb-6">
-              <label className="text-xs text-[#64748b] mb-2 block font-medium">Export Format</label>
+              <label className="text-xs text-[var(--text-muted)] mb-2 block font-medium">Export Format</label>
               <div className="flex gap-2">
                 {(["PDF", "Excel", "HTML"] as Format[]).map((fmt) => (
                   <button
                     key={fmt}
                     className={`flex-1 py-2 rounded-lg text-sm font-medium border transition-colors ${
                       selectedFormat === fmt
-                        ? "bg-[#FFD700]/10 border-[#FFD700]/30 text-[#FFD700]"
-                        : "border-[#1e293b] text-[#64748b] hover:border-[#334155]"
+                        ? "bg-[var(--gold)]/10 border-[var(--gold)]/30 text-[var(--gold)]"
+                        : "border-[var(--border-color)] text-[var(--text-muted)] hover:border-[var(--border-color)]"
                     }`}
                     onClick={() => setSelectedFormat(fmt)}
                   >
@@ -231,21 +231,21 @@ export default function AuditReportPage() {
             </div>
 
             {/* Report Metadata Preview */}
-            <div className="space-y-2 mb-6 p-3 rounded-xl bg-white/[0.02] border border-[#1e293b]">
+            <div className="space-y-2 mb-6 p-3 rounded-xl bg-white/[0.02] border border-[var(--border-color)]">
               <div className="flex justify-between text-xs">
-                <span className="text-[#64748b]">Framework</span>
+                <span className="text-[var(--text-muted)]">Framework</span>
                 <span className="text-[#e2e8f0] font-medium">{meta.name}</span>
               </div>
               <div className="flex justify-between text-xs">
-                <span className="text-[#64748b]">Period</span>
-                <span className="text-[#94a3b8]">{meta.period.split(" ")[0]}…</span>
+                <span className="text-[var(--text-muted)]">Period</span>
+                <span className="text-[var(--text-secondary)]">{meta.period.split(" ")[0]}…</span>
               </div>
               <div className="flex justify-between text-xs">
-                <span className="text-[#64748b]">Score</span>
+                <span className="text-[var(--text-muted)]">Score</span>
                 <span className="font-mono font-bold" style={{ color: scoreColor(meta.score) }}>{meta.score}%</span>
               </div>
               <div className="flex justify-between text-xs">
-                <span className="text-[#64748b]">Status</span>
+                <span className="text-[var(--text-muted)]">Status</span>
                 <Badge variant={meta.score >= 80 ? "green" : "yellow"} className="text-[10px]">{meta.status}</Badge>
               </div>
             </div>
@@ -285,15 +285,15 @@ export default function AuditReportPage() {
         {/* Report Preview */}
         <div className="lg:col-span-2 space-y-4">
           {/* Report Header */}
-          <Card className="border-[#FFD700]/10">
+          <Card className="border-[var(--gold)]/10">
             <div className="flex items-start gap-4">
-              <div className="w-12 h-12 rounded-xl bg-[#FFD700]/10 border border-[#FFD700]/20 flex items-center justify-center shrink-0">
-                <FileText size={20} className="text-[#FFD700]" />
+              <div className="w-12 h-12 rounded-xl bg-[var(--gold)]/10 border border-[var(--gold)]/20 flex items-center justify-center shrink-0">
+                <FileText size={20} className="text-[var(--gold)]" />
               </div>
               <div className="flex-1">
                 <h2 className="text-lg font-bold text-[#e2e8f0] mb-1">{meta.name}</h2>
-                <p className="text-sm text-[#64748b]">{meta.period}</p>
-                <p className="text-xs text-[#475569]">{meta.type} · Generated 2026-04-01 · FaultRay v2.14</p>
+                <p className="text-sm text-[var(--text-muted)]">{meta.period}</p>
+                <p className="text-xs text-[var(--text-muted)]">{meta.type} · Generated 2026-04-01 · FaultRay v2.14</p>
               </div>
               <div className="text-right">
                 <p className="text-3xl font-extrabold font-mono" style={{ color: scoreColor(meta.score) }}>{meta.score}%</p>
@@ -313,14 +313,14 @@ export default function AuditReportPage() {
                 >
                   <div className="flex items-center gap-3">
                     {isExpanded
-                      ? <ChevronDown size={14} className="text-[#64748b] shrink-0" />
-                      : <ChevronRight size={14} className="text-[#64748b] shrink-0" />}
+                      ? <ChevronDown size={14} className="text-[var(--text-muted)] shrink-0" />
+                      : <ChevronRight size={14} className="text-[var(--text-muted)] shrink-0" />}
                     <span className="font-semibold text-[#e2e8f0]">{section.title}</span>
-                    <Eye size={13} className="text-[#475569] ml-auto" />
+                    <Eye size={13} className="text-[var(--text-muted)] ml-auto" />
                   </div>
                 </button>
                 {isExpanded && (
-                  <p className="mt-3 pt-3 border-t border-[#1e293b] text-sm text-[#94a3b8] leading-relaxed">
+                  <p className="mt-3 pt-3 border-t border-[var(--border-color)] text-sm text-[var(--text-secondary)] leading-relaxed">
                     {section.summary}
                   </p>
                 )}
@@ -331,7 +331,7 @@ export default function AuditReportPage() {
           {/* Findings */}
           <Card>
             <h3 className="text-base font-bold mb-4 flex items-center gap-2">
-              <AlertTriangle size={16} className="text-[#FFD700]" />
+              <AlertTriangle size={16} className="text-[var(--gold)]" />
               Findings ({DEMO_FINDINGS.length})
             </h3>
             <div className="space-y-3">
@@ -343,7 +343,7 @@ export default function AuditReportPage() {
                     className={`p-4 rounded-xl border ${
                       finding.severity === "high" ? "bg-red-500/5 border-red-500/15"
                       : finding.severity === "medium" ? "bg-yellow-500/5 border-yellow-500/15"
-                      : "bg-white/[0.02] border-[#1e293b]"
+                      : "bg-white/[0.02] border-[var(--border-color)]"
                     }`}
                   >
                     <button
@@ -352,18 +352,18 @@ export default function AuditReportPage() {
                     >
                       <div className="flex items-center gap-3 flex-wrap">
                         {isExpanded
-                          ? <ChevronDown size={13} className="text-[#64748b]" />
-                          : <ChevronRight size={13} className="text-[#64748b]" />}
-                        <span className="font-mono text-xs text-[#64748b]">{finding.id}</span>
+                          ? <ChevronDown size={13} className="text-[var(--text-muted)]" />
+                          : <ChevronRight size={13} className="text-[var(--text-muted)]" />}
+                        <span className="font-mono text-xs text-[var(--text-muted)]">{finding.id}</span>
                         <Badge variant={severityVariant(finding.severity)}>{finding.severity.toUpperCase()}</Badge>
                         <span className="text-sm font-medium text-[#e2e8f0] flex-1">{finding.title}</span>
-                        <span className="text-xs font-mono text-[#64748b]">{finding.control}</span>
+                        <span className="text-xs font-mono text-[var(--text-muted)]">{finding.control}</span>
                       </div>
                     </button>
                     {isExpanded && (
                       <div className="mt-3 pt-3 border-t border-white/5 space-y-2">
-                        <p className="text-sm text-[#94a3b8]">{finding.description}</p>
-                        <p className="text-sm text-[#FFD700] flex items-start gap-1">
+                        <p className="text-sm text-[var(--text-secondary)]">{finding.description}</p>
+                        <p className="text-sm text-[var(--gold)] flex items-start gap-1">
                           <Shield size={12} className="shrink-0 mt-0.5" />
                           {finding.recommendation}
                         </p>
@@ -378,34 +378,34 @@ export default function AuditReportPage() {
           {/* Audit Trail */}
           <Card>
             <h3 className="text-base font-bold mb-4 flex items-center gap-2">
-              <Hash size={16} className="text-[#FFD700]" />
+              <Hash size={16} className="text-[var(--gold)]" />
               Audit Trail — Hash Chain Integrity
             </h3>
             <div className="space-y-2">
               {AUDIT_TRAIL.map((entry, i) => (
-                <div key={i} className="flex items-start gap-3 p-3 rounded-lg bg-white/[0.02] border border-[#1e293b]">
+                <div key={i} className="flex items-start gap-3 p-3 rounded-lg bg-white/[0.02] border border-[var(--border-color)]">
                   <div className="flex flex-col items-center shrink-0">
                     <div className="w-2 h-2 rounded-full bg-emerald-400 mt-1.5" />
-                    {i < AUDIT_TRAIL.length - 1 && <div className="w-0.5 h-6 bg-[#1e293b] mt-1" />}
+                    {i < AUDIT_TRAIL.length - 1 && <div className="w-0.5 h-6 bg-[var(--border-color)] mt-1" />}
                   </div>
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 flex-wrap mb-0.5">
                       <span className="text-xs font-mono text-emerald-400">{entry.hash.slice(0, 22)}…</span>
                       {entry.prevHash && (
-                        <span className="flex items-center gap-1 text-[10px] text-[#475569]">
+                        <span className="flex items-center gap-1 text-[10px] text-[var(--text-muted)]">
                           <Link size={9} />
                           ← {entry.prevHash.slice(0, 16)}…
                         </span>
                       )}
                     </div>
-                    <p className="text-sm text-[#94a3b8]">{entry.action}</p>
-                    <p className="text-xs text-[#475569]">{entry.author} · {new Date(entry.timestamp).toLocaleString()}</p>
+                    <p className="text-sm text-[var(--text-secondary)]">{entry.action}</p>
+                    <p className="text-xs text-[var(--text-muted)]">{entry.author} · {new Date(entry.timestamp).toLocaleString()}</p>
                   </div>
                   <CheckCircle2 size={13} className="text-emerald-400 shrink-0 mt-1" />
                 </div>
               ))}
             </div>
-            <p className="text-xs text-[#475569] mt-3 border-t border-[#1e293b] pt-3">
+            <p className="text-xs text-[var(--text-muted)] mt-3 border-t border-[var(--border-color)] pt-3">
               All entries are cryptographically linked (SHA-256). Chain integrity verified: <span className="text-emerald-400">VALID</span>
             </p>
           </Card>

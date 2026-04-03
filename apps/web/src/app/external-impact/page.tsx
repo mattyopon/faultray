@@ -88,53 +88,53 @@ export default function ExternalImpactPage() {
   });
 
   return (
-    <div className="max-w-[1200px] mx-auto px-6 py-10">
+    <div className="w-full px-6 py-10">
       <div className="mb-10">
         <h1 className="text-2xl font-bold mb-1 flex items-center gap-3">
-          <Globe size={24} className="text-[#FFD700]" />
+          <Globe size={24} className="text-[var(--gold)]" />
           {t.title}
         </h1>
-        <p className="text-[#94a3b8] text-sm">{t.subtitle}</p>
+        <p className="text-[var(--text-secondary)] text-sm">{t.subtitle}</p>
       </div>
 
       {loading ? (
         <Card className="flex items-center justify-center py-20">
-          <Loader2 size={24} className="animate-spin text-[#FFD700]" />
-          <span className="ml-3 text-[#94a3b8]">{t.loading}</span>
+          <Loader2 size={24} className="animate-spin text-[var(--gold)]" />
+          <span className="ml-3 text-[var(--text-secondary)]">{t.loading}</span>
         </Card>
       ) : (
         <>
           {/* Summary */}
           <div className="grid md:grid-cols-4 gap-4 mb-8">
             <Card className="text-center">
-              <p className="text-3xl font-extrabold font-mono text-[#94a3b8]">{data.total_services}</p>
-              <p className="text-xs text-[#64748b] uppercase tracking-wider mt-1">{t.totalServices}</p>
+              <p className="text-3xl font-extrabold font-mono text-[var(--text-secondary)]">{data.total_services}</p>
+              <p className="text-xs text-[var(--text-muted)] uppercase tracking-wider mt-1">{t.totalServices}</p>
             </Card>
             <Card className="text-center">
               <p className="text-3xl font-extrabold font-mono text-red-400">{data.critical_count}</p>
-              <p className="text-xs text-[#64748b] uppercase tracking-wider mt-1">{t.critical}</p>
+              <p className="text-xs text-[var(--text-muted)] uppercase tracking-wider mt-1">{t.critical}</p>
             </Card>
             <Card className="text-center">
               <p className="text-3xl font-extrabold font-mono text-[#f59e0b]">{data.unprotected_count}</p>
-              <p className="text-xs text-[#64748b] uppercase tracking-wider mt-1">{t.unprotected}</p>
+              <p className="text-xs text-[var(--text-muted)] uppercase tracking-wider mt-1">{t.unprotected}</p>
             </Card>
             <Card className="text-center">
-              <p className="text-3xl font-extrabold font-mono text-[#FFD700]">{data.avg_blast_radius.toFixed(1)}%</p>
-              <p className="text-xs text-[#64748b] uppercase tracking-wider mt-1">{t.avgBlast}</p>
+              <p className="text-3xl font-extrabold font-mono text-[var(--gold)]">{data.avg_blast_radius.toFixed(1)}%</p>
+              <p className="text-xs text-[var(--text-muted)] uppercase tracking-wider mt-1">{t.avgBlast}</p>
             </Card>
           </div>
 
           {/* Sort */}
           <div className="flex items-center gap-2 mb-4">
-            <span className="text-xs text-[#64748b] uppercase tracking-wider">{t.sortBy}</span>
+            <span className="text-xs text-[var(--text-muted)] uppercase tracking-wider">{t.sortBy}</span>
             {(["blast_radius", "risk_level", "downtime"] as const).map((s) => (
               <button
                 key={s}
                 onClick={() => setSortBy(s)}
                 className={`px-3 py-1 rounded-lg text-xs font-medium transition-all ${
                   sortBy === s
-                    ? "bg-[#FFD700]/10 text-[#FFD700] border border-[#FFD700]/30"
-                    : "text-[#94a3b8] border border-[#1e293b] hover:border-[#64748b]"
+                    ? "bg-[var(--gold)]/10 text-[var(--gold)] border border-[var(--gold)]/30"
+                    : "text-[var(--text-secondary)] border border-[var(--border-color)] hover:border-[#64748b]"
                 }`}
               >
                 {s.replace("_", " ").toUpperCase()}
@@ -147,27 +147,27 @@ export default function ExternalImpactPage() {
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
                 <thead>
-                  <tr className="border-b border-[#1e293b]">
-                    <th scope="col" className="text-left py-3 px-3 text-[#64748b] font-medium">{t.service}</th>
-                    <th scope="col" className="text-left py-3 px-3 text-[#64748b] font-medium">{t.category}</th>
-                    <th scope="col" className="text-center py-3 px-3 text-[#64748b] font-medium">{t.blastRadius}</th>
-                    <th scope="col" className="text-center py-3 px-3 text-[#64748b] font-medium">{t.downtime}</th>
-                    <th scope="col" className="text-center py-3 px-3 text-[#64748b] font-medium">SLA</th>
-                    <th scope="col" className="text-center py-3 px-3 text-[#64748b] font-medium">{t.fallback}</th>
-                    <th scope="col" className="text-center py-3 px-3 text-[#64748b] font-medium">{t.risk}</th>
+                  <tr className="border-b border-[var(--border-color)]">
+                    <th scope="col" className="text-left py-3 px-3 text-[var(--text-muted)] font-medium">{t.service}</th>
+                    <th scope="col" className="text-left py-3 px-3 text-[var(--text-muted)] font-medium">{t.category}</th>
+                    <th scope="col" className="text-center py-3 px-3 text-[var(--text-muted)] font-medium">{t.blastRadius}</th>
+                    <th scope="col" className="text-center py-3 px-3 text-[var(--text-muted)] font-medium">{t.downtime}</th>
+                    <th scope="col" className="text-center py-3 px-3 text-[var(--text-muted)] font-medium">SLA</th>
+                    <th scope="col" className="text-center py-3 px-3 text-[var(--text-muted)] font-medium">{t.fallback}</th>
+                    <th scope="col" className="text-center py-3 px-3 text-[var(--text-muted)] font-medium">{t.risk}</th>
                   </tr>
                 </thead>
                 <tbody>
                   {sorted.map((svc) => (
-                    <tr key={svc.id} className="border-b border-[#1e293b]/50 hover:bg-white/[0.02]">
+                    <tr key={svc.id} className="border-b border-[var(--border-color)]/50 hover:bg-white/[0.02]">
                       <td className="py-3 px-3">
                         <p className="font-medium">{svc.name}</p>
-                        <p className="text-xs text-[#64748b] mt-0.5">
+                        <p className="text-xs text-[var(--text-muted)] mt-0.5">
                           {svc.dependent_components.slice(0, 2).join(", ")}
                           {svc.dependent_components.length > 2 && ` +${svc.dependent_components.length - 2}`}
                         </p>
                       </td>
-                      <td className="py-3 px-3 text-xs text-[#64748b]">{svc.category}</td>
+                      <td className="py-3 px-3 text-xs text-[var(--text-muted)]">{svc.category}</td>
                       <td className="py-3 px-3 text-center">
                         <div className="flex items-center justify-center gap-2">
                           <div className="w-16 h-2 bg-white/5 rounded-full overflow-hidden">
@@ -178,10 +178,10 @@ export default function ExternalImpactPage() {
                           </span>
                         </div>
                       </td>
-                      <td className="py-3 px-3 text-center font-mono text-xs text-[#94a3b8]">
+                      <td className="py-3 px-3 text-center font-mono text-xs text-[var(--text-secondary)]">
                         {svc.monthly_downtime_minutes.toFixed(1)} {locale === "ja" ? "分/月" : "min/mo"}
                       </td>
-                      <td className="py-3 px-3 text-center font-mono text-xs text-[#94a3b8]">
+                      <td className="py-3 px-3 text-center font-mono text-xs text-[var(--text-secondary)]">
                         {svc.sla_percent}%
                       </td>
                       <td className="py-3 px-3 text-center">

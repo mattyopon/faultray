@@ -21,7 +21,7 @@ const rows: Row[] = [
     value: (
       <a
         href="mailto:contact@faultray.com"
-        className="text-[#FFD700] hover:underline"
+        className="text-[var(--gold)] hover:underline"
       >
         contact@faultray.com
       </a>
@@ -60,22 +60,22 @@ export default function TokushohoPage() {
       <h1 className="text-2xl font-bold tracking-tight mb-2">
         特定商取引法に基づく表記
       </h1>
-      <p className="text-sm text-[#64748b] mb-10">
+      <p className="text-sm text-[var(--text-muted)] mb-10">
         特定商取引に関する法律第11条に基づき、以下の事項を表示します。
       </p>
 
-      <div className="rounded-2xl border border-[#1e293b] overflow-hidden">
+      <div className="rounded-2xl border border-[var(--border-color)] overflow-hidden">
         <table className="w-full border-collapse text-sm">
           <tbody>
             {rows.map((row, i) => (
               <tr
                 key={row.label}
-                className={i < rows.length - 1 ? "border-b border-[#1e293b]" : ""}
+                className={i < rows.length - 1 ? "border-b border-[var(--border-color)]" : ""}
               >
-                <th scope="col" className="px-6 py-4 text-left font-semibold text-[#94a3b8] bg-[#141a2e] w-40 align-top whitespace-nowrap">
+                <th scope="col" className="px-6 py-4 text-left font-semibold text-[var(--text-secondary)] bg-[#141a2e] w-40 align-top whitespace-nowrap">
                   {row.label}
                 </th>
-                <td className="px-6 py-4 text-white bg-[#111827] leading-relaxed">
+                <td className="px-6 py-4 text-white bg-[var(--bg-card)] leading-relaxed">
                   {row.value}
                 </td>
               </tr>
@@ -84,11 +84,11 @@ export default function TokushohoPage() {
         </table>
       </div>
 
-      <p className="mt-8 text-xs text-[#64748b]">
+      <p className="mt-8 text-xs text-[var(--text-muted)]">
         本表記は予告なく変更される場合があります。最新の情報はこのページをご確認ください。
       </p>
 
-      <div className="mt-10 pt-8 border-t border-[#1e293b] flex flex-wrap gap-6 text-sm text-[#64748b]">
+      <div className="mt-10 pt-8 border-t border-[var(--border-color)] flex flex-wrap gap-6 text-sm text-[var(--text-muted)]">
         <Link href="/privacy" className="hover:text-white transition-colors">
           プライバシーポリシー
         </Link>

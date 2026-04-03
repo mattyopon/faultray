@@ -93,19 +93,19 @@ export default function ShadowItPage() {
   );
 
   return (
-    <div className="max-w-[1200px] mx-auto px-6 py-10">
+    <div className="w-full px-6 py-10">
       <div className="mb-10">
         <h1 className="text-2xl font-bold mb-1 flex items-center gap-3">
-          <Ghost size={24} className="text-[#FFD700]" />
+          <Ghost size={24} className="text-[var(--gold)]" />
           {t.title}
         </h1>
-        <p className="text-[#94a3b8] text-sm">{t.subtitle}</p>
+        <p className="text-[var(--text-secondary)] text-sm">{t.subtitle}</p>
       </div>
 
       {loading ? (
         <Card className="flex items-center justify-center py-20">
-          <Loader2 size={24} className="animate-spin text-[#FFD700]" />
-          <span className="ml-3 text-[#94a3b8]">{t.loading}</span>
+          <Loader2 size={24} className="animate-spin text-[var(--gold)]" />
+          <span className="ml-3 text-[var(--text-secondary)]">{t.loading}</span>
         </Card>
       ) : (
         <>
@@ -115,37 +115,37 @@ export default function ShadowItPage() {
               <p className="text-3xl font-extrabold font-mono" style={{ color: data.overall_risk_score >= 70 ? "#ef4444" : data.overall_risk_score >= 50 ? "#f59e0b" : "#10b981" }}>
                 {data.overall_risk_score}
               </p>
-              <p className="text-xs text-[#64748b] uppercase tracking-wider mt-1">{t.riskScore}</p>
+              <p className="text-xs text-[var(--text-muted)] uppercase tracking-wider mt-1">{t.riskScore}</p>
             </Card>
             <Card className="text-center">
-              <p className="text-3xl font-extrabold font-mono text-[#94a3b8]">{data.total_components}</p>
-              <p className="text-xs text-[#64748b] uppercase tracking-wider mt-1">{t.total}</p>
+              <p className="text-3xl font-extrabold font-mono text-[var(--text-secondary)]">{data.total_components}</p>
+              <p className="text-xs text-[var(--text-muted)] uppercase tracking-wider mt-1">{t.total}</p>
             </Card>
             <Card className="text-center">
               <p className="text-3xl font-extrabold font-mono text-red-400">{data.orphaned}</p>
-              <p className="text-xs text-[#64748b] uppercase tracking-wider mt-1">{t.orphaned}</p>
+              <p className="text-xs text-[var(--text-muted)] uppercase tracking-wider mt-1">{t.orphaned}</p>
             </Card>
             <Card className="text-center">
               <p className="text-3xl font-extrabold font-mono text-[#f59e0b]">{data.stale}</p>
-              <p className="text-xs text-[#64748b] uppercase tracking-wider mt-1">{t.stale}</p>
+              <p className="text-xs text-[var(--text-muted)] uppercase tracking-wider mt-1">{t.stale}</p>
             </Card>
             <Card className="text-center">
               <p className="text-3xl font-extrabold font-mono text-yellow-400">{data.undocumented}</p>
-              <p className="text-xs text-[#64748b] uppercase tracking-wider mt-1">{t.undocumented}</p>
+              <p className="text-xs text-[var(--text-muted)] uppercase tracking-wider mt-1">{t.undocumented}</p>
             </Card>
           </div>
 
           {/* Filter */}
           <div className="flex items-center gap-2 mb-4">
-            <span className="text-xs text-[#64748b] uppercase tracking-wider">{t.filterBy}</span>
+            <span className="text-xs text-[var(--text-muted)] uppercase tracking-wider">{t.filterBy}</span>
             {(["all", "critical", "high", "medium", "low"] as const).map((f) => (
               <button
                 key={f}
                 onClick={() => setFilter(f)}
                 className={`px-3 py-1 rounded-lg text-xs font-medium transition-all ${
                   filter === f
-                    ? "bg-[#FFD700]/10 text-[#FFD700] border border-[#FFD700]/30"
-                    : "text-[#94a3b8] border border-[#1e293b] hover:border-[#64748b]"
+                    ? "bg-[var(--gold)]/10 text-[var(--gold)] border border-[var(--gold)]/30"
+                    : "text-[var(--text-secondary)] border border-[var(--border-color)] hover:border-[#64748b]"
                 }`}
               >
                 {f.toUpperCase()}
@@ -158,31 +158,31 @@ export default function ShadowItPage() {
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
                 <thead>
-                  <tr className="border-b border-[#1e293b]">
-                    <th scope="col" className="text-left py-3 px-3 text-[#64748b] font-medium">{t.component}</th>
-                    <th scope="col" className="text-left py-3 px-3 text-[#64748b] font-medium">{t.type}</th>
-                    <th scope="col" className="text-center py-3 px-3 text-[#64748b] font-medium">{t.reason}</th>
-                    <th scope="col" className="text-left py-3 px-3 text-[#64748b] font-medium">{t.owner}</th>
-                    <th scope="col" className="text-left py-3 px-3 text-[#64748b] font-medium">{t.lastSeen}</th>
-                    <th scope="col" className="text-center py-3 px-3 text-[#64748b] font-medium">{t.riskScore}</th>
-                    <th scope="col" className="text-center py-3 px-3 text-[#64748b] font-medium">{t.level}</th>
+                  <tr className="border-b border-[var(--border-color)]">
+                    <th scope="col" className="text-left py-3 px-3 text-[var(--text-muted)] font-medium">{t.component}</th>
+                    <th scope="col" className="text-left py-3 px-3 text-[var(--text-muted)] font-medium">{t.type}</th>
+                    <th scope="col" className="text-center py-3 px-3 text-[var(--text-muted)] font-medium">{t.reason}</th>
+                    <th scope="col" className="text-left py-3 px-3 text-[var(--text-muted)] font-medium">{t.owner}</th>
+                    <th scope="col" className="text-left py-3 px-3 text-[var(--text-muted)] font-medium">{t.lastSeen}</th>
+                    <th scope="col" className="text-center py-3 px-3 text-[var(--text-muted)] font-medium">{t.riskScore}</th>
+                    <th scope="col" className="text-center py-3 px-3 text-[var(--text-muted)] font-medium">{t.level}</th>
                   </tr>
                 </thead>
                 <tbody>
                   {filtered.map((comp) => (
-                    <tr key={comp.id} className="border-b border-[#1e293b]/50 hover:bg-white/[0.02]">
+                    <tr key={comp.id} className="border-b border-[var(--border-color)]/50 hover:bg-white/[0.02]">
                       <td className="py-3 px-3 font-medium">{comp.name}</td>
-                      <td className="py-3 px-3 font-mono text-xs text-[#64748b]">{comp.type}</td>
+                      <td className="py-3 px-3 font-mono text-xs text-[var(--text-muted)]">{comp.type}</td>
                       <td className="py-3 px-3 text-center">
-                        <span className="text-xs text-[#94a3b8]">
+                        <span className="text-xs text-[var(--text-secondary)]">
                           {reasonIcon(comp.reason)}
                           {comp.reason}
                         </span>
                       </td>
-                      <td className="py-3 px-3 text-sm text-[#94a3b8]">
+                      <td className="py-3 px-3 text-sm text-[var(--text-secondary)]">
                         {comp.owner ?? <span className="text-red-400 flex items-center gap-1"><AlertTriangle size={12} />{t.noOwner}</span>}
                       </td>
-                      <td className="py-3 px-3 font-mono text-xs text-[#64748b]">{comp.last_seen}</td>
+                      <td className="py-3 px-3 font-mono text-xs text-[var(--text-muted)]">{comp.last_seen}</td>
                       <td className="py-3 px-3 text-center">
                         <span className="font-mono font-bold" style={{ color: riskColor(comp.risk_level) }}>
                           {comp.risk_score}

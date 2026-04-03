@@ -185,14 +185,14 @@ export default function GameDayPage() {
   const completed = DEMO_GAMEDAYS.filter((g) => g.status === "completed");
 
   return (
-    <div className="max-w-[1200px] mx-auto px-6 py-10">
+    <div className="w-full px-6 py-10">
       {/* Header */}
       <div className="mb-8">
         <h1 className="text-2xl font-bold mb-1 flex items-center gap-3">
-          <Swords size={24} className="text-[#FFD700]" />
+          <Swords size={24} className="text-[var(--gold)]" />
           GameDay Planner
         </h1>
-        <p className="text-[#94a3b8] text-sm">
+        <p className="text-[var(--text-secondary)] text-sm">
           Plan and run chaos engineering exercises to build resilience muscle memory (Layer 2)
         </p>
       </div>
@@ -212,7 +212,7 @@ export default function GameDayPage() {
           { label: "Avg MTTR (last 3)", value: "18 min", color: "#3b82f6" },
         ].map((stat) => (
           <Card key={stat.label} className="text-center">
-            <p className="text-xs text-[#64748b] uppercase tracking-wider mb-1">{stat.label}</p>
+            <p className="text-xs text-[var(--text-muted)] uppercase tracking-wider mb-1">{stat.label}</p>
             <p className="text-2xl font-extrabold font-mono" style={{ color: stat.color }}>{stat.value}</p>
           </Card>
         ))}
@@ -223,7 +223,7 @@ export default function GameDayPage() {
         <div className="lg:col-span-2 space-y-4">
           {/* New GameDay Button */}
           <div className="flex items-center justify-between">
-            <h3 className="text-sm font-semibold text-[#94a3b8] uppercase tracking-wider">GameDay Schedule</h3>
+            <h3 className="text-sm font-semibold text-[var(--text-secondary)] uppercase tracking-wider">GameDay Schedule</h3>
             <Button size="sm" onClick={() => setShowNewForm(!showNewForm)}>
               <Play size={13} />
               Schedule GameDay
@@ -232,13 +232,13 @@ export default function GameDayPage() {
 
           {/* New GameDay Quick Form */}
           {showNewForm && (
-            <Card className="border-[#FFD700]/20 bg-[#FFD700]/[0.02]">
-              <h4 className="text-sm font-semibold text-[#FFD700] mb-4">New GameDay</h4>
+            <Card className="border-[var(--gold)]/20 bg-[var(--gold)]/[0.02]">
+              <h4 className="text-sm font-semibold text-[var(--gold)] mb-4">New GameDay</h4>
               <div className="grid sm:grid-cols-2 gap-4">
                 <div>
-                  <label className="text-xs text-[#64748b] mb-1 block">Scenario</label>
+                  <label className="text-xs text-[var(--text-muted)] mb-1 block">Scenario</label>
                   <select
-                    className="w-full bg-[#0d1526] border border-[#1e293b] rounded-lg px-3 py-2 text-sm text-[#94a3b8] focus:outline-none focus:border-[#FFD700]/30"
+                    className="w-full bg-[var(--bg-tertiary)] border border-[var(--border-color)] rounded-lg px-3 py-2 text-sm text-[var(--text-secondary)] focus:outline-none focus:border-[var(--gold)]/30"
                     value={selectedScenario}
                     onChange={(e) => setSelectedScenario(e.target.value)}
                     aria-label={locale === "ja" ? "シナリオ選択" : "Select scenario"}
@@ -247,11 +247,11 @@ export default function GameDayPage() {
                   </select>
                 </div>
                 <div>
-                  <label className="text-xs text-[#64748b] mb-1 block">Date</label>
+                  <label className="text-xs text-[var(--text-muted)] mb-1 block">Date</label>
                   <input
                     type="date"
                     defaultValue="2026-04-24"
-                    className="w-full bg-[#0d1526] border border-[#1e293b] rounded-lg px-3 py-2 text-sm text-[#94a3b8] focus:outline-none focus:border-[#FFD700]/30"
+                    className="w-full bg-[var(--bg-tertiary)] border border-[var(--border-color)] rounded-lg px-3 py-2 text-sm text-[var(--text-secondary)] focus:outline-none focus:border-[var(--gold)]/30"
                   />
                 </div>
               </div>
@@ -276,14 +276,14 @@ export default function GameDayPage() {
                 >
                   <div className="flex items-start gap-3">
                     {isExpanded
-                      ? <ChevronDown size={16} className="text-[#64748b] shrink-0 mt-0.5" />
-                      : <ChevronRight size={16} className="text-[#64748b] shrink-0 mt-0.5" />}
+                      ? <ChevronDown size={16} className="text-[var(--text-muted)] shrink-0 mt-0.5" />
+                      : <ChevronRight size={16} className="text-[var(--text-muted)] shrink-0 mt-0.5" />}
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2 flex-wrap mb-1">
                         <span className="text-base font-bold text-[#e2e8f0]">{gd.title}</span>
                         <Badge variant={statusVariant(gd.status)}>{statusLabel(gd.status)}</Badge>
                       </div>
-                      <div className="flex items-center gap-4 text-xs text-[#64748b]">
+                      <div className="flex items-center gap-4 text-xs text-[var(--text-muted)]">
                         <span className="flex items-center gap-1"><Calendar size={11} />{new Date(gd.scheduledAt).toLocaleDateString()}</span>
                         <span className="flex items-center gap-1"><Clock size={11} />{gd.duration}</span>
                         <span className="flex items-center gap-1"><Users size={11} />{gd.participants.length} participants</span>
@@ -294,12 +294,12 @@ export default function GameDayPage() {
 
                 {isExpanded && (
                   <div className="mt-4 space-y-4">
-                    <p className="text-sm text-[#94a3b8] leading-relaxed">{gd.description}</p>
+                    <p className="text-sm text-[var(--text-secondary)] leading-relaxed">{gd.description}</p>
 
                     {/* Pre-Check */}
                     <div>
                       <div className="flex items-center justify-between mb-2">
-                        <h5 className="text-xs font-semibold text-[#64748b] uppercase tracking-wider flex items-center gap-1">
+                        <h5 className="text-xs font-semibold text-[var(--text-muted)] uppercase tracking-wider flex items-center gap-1">
                           <Shield size={12} />
                           Pre-Flight Safety Checks
                         </h5>
@@ -314,7 +314,7 @@ export default function GameDayPage() {
                             {check.passed
                               ? <CheckCircle2 size={13} className="text-emerald-400 shrink-0" />
                               : <XCircle size={13} className="text-red-400 shrink-0" />}
-                            <span className={check.passed ? "text-[#94a3b8]" : "text-red-300"}>{check.label}</span>
+                            <span className={check.passed ? "text-[var(--text-secondary)]" : "text-red-300"}>{check.label}</span>
                           </div>
                         ))}
                       </div>
@@ -322,15 +322,15 @@ export default function GameDayPage() {
 
                     {/* Objectives */}
                     <div>
-                      <h5 className="text-xs font-semibold text-[#64748b] uppercase tracking-wider mb-2 flex items-center gap-1">
+                      <h5 className="text-xs font-semibold text-[var(--text-muted)] uppercase tracking-wider mb-2 flex items-center gap-1">
                         <Zap size={12} />
                         Objectives
                       </h5>
                       <div className="space-y-1.5">
                         {gd.objectives.map((obj, i) => (
                           <div key={i} className="flex items-start gap-2 text-sm">
-                            <span className="text-[#FFD700] font-mono shrink-0">{i + 1}.</span>
-                            <span className="text-[#94a3b8]">{obj}</span>
+                            <span className="text-[var(--gold)] font-mono shrink-0">{i + 1}.</span>
+                            <span className="text-[var(--text-secondary)]">{obj}</span>
                           </div>
                         ))}
                       </div>
@@ -338,13 +338,13 @@ export default function GameDayPage() {
 
                     {/* Participants */}
                     <div>
-                      <h5 className="text-xs font-semibold text-[#64748b] uppercase tracking-wider mb-2 flex items-center gap-1">
+                      <h5 className="text-xs font-semibold text-[var(--text-muted)] uppercase tracking-wider mb-2 flex items-center gap-1">
                         <Users size={12} />
                         Team
                       </h5>
                       <div className="flex flex-wrap gap-2">
                         {gd.participants.map((p) => (
-                          <div key={p.name} className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-white/5 border border-[#1e293b]">
+                          <div key={p.name} className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-white/5 border border-[var(--border-color)]">
                             <span className="w-2 h-2 rounded-full" style={{ backgroundColor: roleColor(p.role) }} />
                             <span className="text-sm text-[#e2e8f0]">{p.name}</span>
                             <span className="text-xs capitalize" style={{ color: roleColor(p.role) }}>{p.role}</span>
@@ -356,17 +356,17 @@ export default function GameDayPage() {
                     {/* Post-Report */}
                     {gd.postReport && (
                       <div className={`p-4 rounded-xl border ${gd.postReport.passed ? "border-emerald-500/20 bg-emerald-500/5" : "border-red-500/20 bg-red-500/5"}`}>
-                        <h5 className="text-xs font-semibold uppercase tracking-wider mb-2 flex items-center gap-1 text-[#64748b]">
+                        <h5 className="text-xs font-semibold uppercase tracking-wider mb-2 flex items-center gap-1 text-[var(--text-muted)]">
                           <FileText size={12} />
                           Post-GameDay Report
                           <span className="ml-1 text-xs font-medium">· MTTR: <strong className="text-[#e2e8f0]">{gd.postReport.mttr}</strong></span>
                         </h5>
-                        <p className="text-sm text-[#94a3b8] leading-relaxed mb-3">{gd.postReport.outcome}</p>
+                        <p className="text-sm text-[var(--text-secondary)] leading-relaxed mb-3">{gd.postReport.outcome}</p>
                         <div className="space-y-1.5">
                           {gd.postReport.findings.map((f, i) => (
                             <div key={i} className="flex items-start gap-2 text-sm">
                               <AlertTriangle size={12} className="text-yellow-400 shrink-0 mt-0.5" />
-                              <span className="text-[#94a3b8]">{f}</span>
+                              <span className="text-[var(--text-secondary)]">{f}</span>
                             </div>
                           ))}
                         </div>
@@ -396,7 +396,7 @@ export default function GameDayPage() {
         {/* Scenario Library Sidebar */}
         <div>
           <Card>
-            <h3 className="text-sm font-semibold text-[#94a3b8] uppercase tracking-wider mb-4 flex items-center gap-2">
+            <h3 className="text-sm font-semibold text-[var(--text-secondary)] uppercase tracking-wider mb-4 flex items-center gap-2">
               <Zap size={14} />
               Scenario Library
             </h3>
@@ -406,8 +406,8 @@ export default function GameDayPage() {
                   key={scenario}
                   className={`w-full text-left px-3 py-2 rounded-lg text-sm transition-colors ${
                     selectedScenario === scenario
-                      ? "bg-[#FFD700]/10 text-[#FFD700] border border-[#FFD700]/20"
-                      : "text-[#94a3b8] hover:bg-white/5 hover:text-white"
+                      ? "bg-[var(--gold)]/10 text-[var(--gold)] border border-[var(--gold)]/20"
+                      : "text-[var(--text-secondary)] hover:bg-white/5 hover:text-white"
                   }`}
                   onClick={() => setSelectedScenario(scenario)}
                 >
@@ -416,9 +416,9 @@ export default function GameDayPage() {
               ))}
             </div>
 
-            <div className="mt-4 pt-4 border-t border-[#1e293b]">
-              <p className="text-xs text-[#64748b] leading-relaxed">
-                <strong className="text-[#94a3b8]">Best practice:</strong> Run a GameDay at least once per quarter. Focus on scenarios that have caused real incidents.
+            <div className="mt-4 pt-4 border-t border-[var(--border-color)]">
+              <p className="text-xs text-[var(--text-muted)] leading-relaxed">
+                <strong className="text-[var(--text-secondary)]">Best practice:</strong> Run a GameDay at least once per quarter. Focus on scenarios that have caused real incidents.
               </p>
             </div>
           </Card>

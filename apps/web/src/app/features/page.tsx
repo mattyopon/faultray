@@ -167,21 +167,21 @@ const agentFeatures = [
 
 export default function FeaturesPage() {
   return (
-    <div className="min-h-screen bg-[#0a0e1a] text-white">
+    <div className="min-h-screen text-white">
       {/* Nav */}
-      <nav className="sticky top-0 z-50 border-b border-[#1e293b] bg-[#0a0e1a]/95 backdrop-blur-sm">
-        <div className="max-w-[1200px] mx-auto px-6 h-16 flex items-center justify-between">
+      <nav className="sticky top-0 z-50 border-b border-[var(--border-color)]/95 backdrop-blur-sm">
+        <div className="w-full px-6 h-16 flex items-center justify-between">
           <Link href="/ja" className="flex items-center gap-2 font-bold">
             <Logo size={24} />
             FaultRay
           </Link>
           <div className="flex items-center gap-4">
-            <Link href="/ja#pricing" className="text-sm text-[#94a3b8] hover:text-white transition-colors">
+            <Link href="/ja#pricing" className="text-sm text-[var(--text-secondary)] hover:text-white transition-colors">
               料金
             </Link>
             <Link
               href="/login"
-              className="inline-flex items-center gap-2 px-4 py-2 bg-[#FFD700] text-[#0a0e1a] font-semibold rounded-xl text-sm hover:bg-[#ffe44d] transition-all"
+              className="inline-flex items-center gap-2 px-4 py-2 bg-[var(--gold)] text-[#0a0e1a] font-semibold rounded-xl text-sm hover:bg-[#ffe44d] transition-all"
             >
               <Zap size={14} />
               無料で始める
@@ -192,27 +192,27 @@ export default function FeaturesPage() {
 
       {/* Hero */}
       <section className="py-20 text-center">
-        <div className="max-w-[800px] mx-auto px-6">
-          <div className="inline-block px-4 py-1.5 text-[0.8125rem] font-medium text-[#FFD700] border border-[#FFD700]/25 rounded-full bg-[#FFD700]/5 mb-6">
+        <div className="w-full px-6">
+          <div className="inline-block px-4 py-1.5 text-[0.8125rem] font-medium text-[var(--gold)] border border-[var(--gold)]/25 rounded-full bg-[var(--gold)]/5 mb-6">
             機能一覧
           </div>
           <h1 className="text-[clamp(2rem,5vw,3.5rem)] font-extrabold tracking-tight mb-4">
             FaultRayの全機能
           </h1>
-          <p className="text-lg text-[#94a3b8] leading-relaxed mb-8">
+          <p className="text-lg text-[var(--text-secondary)] leading-relaxed mb-8">
             本番環境を壊さず、2,000件以上のシナリオでシステムの弱点を自動診断するための機能をすべて網羅しています。
           </p>
           <div className="flex gap-4 justify-center flex-wrap">
             <Link
               href="/login"
-              className="inline-flex items-center gap-2 px-6 py-3 bg-[#FFD700] text-[#0a0e1a] font-semibold rounded-xl hover:bg-[#ffe44d] transition-all"
+              className="inline-flex items-center gap-2 px-6 py-3 bg-[var(--gold)] text-[#0a0e1a] font-semibold rounded-xl hover:bg-[#ffe44d] transition-all"
             >
               <Zap size={16} />
               無料で始める
             </Link>
             <Link
               href="/ja"
-              className="inline-flex items-center gap-2 px-6 py-3 border border-[#1e293b] text-white rounded-xl hover:border-[#64748b] hover:bg-white/[0.03] transition-all"
+              className="inline-flex items-center gap-2 px-6 py-3 border border-[var(--border-color)] text-white rounded-xl hover:border-[#64748b] hover:bg-white/[0.03] transition-all"
             >
               トップページに戻る
             </Link>
@@ -222,25 +222,25 @@ export default function FeaturesPage() {
 
       {/* Core Features */}
       <section className="py-16">
-        <div className="max-w-[1200px] mx-auto px-6">
+        <div className="w-full px-6">
           <h2 className="text-2xl font-bold mb-2 text-center">コア機能</h2>
-          <p className="text-[#94a3b8] text-center mb-12">リスクゼロ診断を支える10のコア機能</p>
+          <p className="text-[var(--text-secondary)] text-center mb-12">リスクゼロ診断を支える10のコア機能</p>
           <div className="grid md:grid-cols-2 gap-8">
             {featureCards.map((f) => {
               const Icon = f.Icon;
               return (
                 <div
                   key={f.title}
-                  className="p-8 rounded-2xl border border-[#1e293b] bg-[#111827] hover:border-[#FFD700]/30 hover:bg-[#1a2035] transition-all duration-200"
+                  className="p-8 rounded-2xl border border-[var(--border-color)] bg-[var(--bg-card)] hover:border-[var(--gold)]/30 hover:bg-[var(--bg-card-hover)] transition-all duration-200"
                 >
-                  <div className="w-12 h-12 flex items-center justify-center rounded-xl bg-[#FFD700]/[0.06] border border-[#FFD700]/10 mb-5">
-                    <Icon size={22} className="text-[#FFD700]" />
+                  <div className="w-12 h-12 flex items-center justify-center rounded-xl bg-[var(--gold)]/[0.06] border border-[var(--gold)]/10 mb-5">
+                    <Icon size={22} className="text-[var(--gold)]" />
                   </div>
                   <h3 className="text-lg font-bold mb-2">{f.title}</h3>
-                  <p className="text-[0.9375rem] text-[#94a3b8] leading-relaxed mb-5">{f.desc}</p>
+                  <p className="text-[0.9375rem] text-[var(--text-secondary)] leading-relaxed mb-5">{f.desc}</p>
                   <ul className="space-y-2">
                     {f.details.map((detail) => (
-                      <li key={detail} className="flex items-start gap-2.5 text-sm text-[#64748b]">
+                      <li key={detail} className="flex items-start gap-2.5 text-sm text-[var(--text-muted)]">
                         <Check size={14} className="text-emerald-400 mt-0.5 shrink-0" />
                         {detail}
                       </li>
@@ -254,14 +254,14 @@ export default function FeaturesPage() {
       </section>
 
       {/* AI Agent Section */}
-      <section className="py-16 bg-[#0f1424] border-t border-[#FFD700]/15">
-        <div className="max-w-[1200px] mx-auto px-6">
+      <section className="py-16 border-t border-[var(--gold)]/15">
+        <div className="w-full px-6">
           <div className="text-center mb-12">
-            <span className="inline-block px-4 py-1.5 text-[0.8125rem] font-medium text-[#FFD700] border border-[#FFD700]/25 rounded-full bg-[#FFD700]/5 mb-4">
+            <span className="inline-block px-4 py-1.5 text-[0.8125rem] font-medium text-[var(--gold)] border border-[var(--gold)]/25 rounded-full bg-[var(--gold)]/5 mb-4">
               v11.0 新機能
             </span>
             <h2 className="text-2xl font-bold mb-2">AIエージェント障害シミュレーション</h2>
-            <p className="text-[#94a3b8] max-w-[600px] mx-auto">
+            <p className="text-[var(--text-secondary)] max-w-[600px] mx-auto">
               インフラ障害がAIエージェントの誤回答にどう連鎖するかを、本番環境で発生する前にシミュレーションします。
             </p>
           </div>
@@ -271,13 +271,13 @@ export default function FeaturesPage() {
               return (
                 <div
                   key={f.title}
-                  className="p-8 rounded-2xl border border-[#1e293b] bg-[#111827] hover:border-[#FFD700]/30 transition-all duration-200"
+                  className="p-8 rounded-2xl border border-[var(--border-color)] bg-[var(--bg-card)] hover:border-[var(--gold)]/30 transition-all duration-200"
                 >
-                  <div className="w-12 h-12 flex items-center justify-center rounded-xl bg-[#FFD700]/[0.06] border border-[#FFD700]/10 mb-5">
-                    <Icon size={22} className="text-[#FFD700]" />
+                  <div className="w-12 h-12 flex items-center justify-center rounded-xl bg-[var(--gold)]/[0.06] border border-[var(--gold)]/10 mb-5">
+                    <Icon size={22} className="text-[var(--gold)]" />
                   </div>
                   <h3 className="text-lg font-bold mb-2">{f.title}</h3>
-                  <p className="text-[0.9375rem] text-[#94a3b8] leading-relaxed">{f.desc}</p>
+                  <p className="text-[0.9375rem] text-[var(--text-secondary)] leading-relaxed">{f.desc}</p>
                 </div>
               );
             })}
@@ -289,13 +289,13 @@ export default function FeaturesPage() {
       <section className="py-20 text-center">
         <div className="max-w-[600px] mx-auto px-6">
           <h2 className="text-2xl font-bold mb-4">今すぐ試す</h2>
-          <p className="text-[#94a3b8] mb-8 leading-relaxed">
+          <p className="text-[var(--text-secondary)] mb-8 leading-relaxed">
             無料プランでFaultRayの主要機能をすべて体験できます。クレジットカード不要。
           </p>
           <div className="flex gap-4 justify-center flex-wrap">
             <Link
               href="/login"
-              className="inline-flex items-center gap-2 px-7 py-3 bg-[#FFD700] text-[#0a0e1a] font-semibold rounded-xl hover:bg-[#ffe44d] shadow-[0_0_20px_rgba(255,215,0,0.2)] hover:shadow-[0_0_30px_rgba(255,215,0,0.35)] transition-all"
+              className="inline-flex items-center gap-2 px-7 py-3 bg-[var(--gold)] text-[#0a0e1a] font-semibold rounded-xl hover:bg-[#ffe44d] shadow-[0_0_20px_rgba(255,215,0,0.2)] hover:shadow-[0_0_30px_rgba(255,215,0,0.35)] transition-all"
             >
               <Zap size={16} />
               無料で始める
@@ -312,8 +312,8 @@ export default function FeaturesPage() {
       </section>
 
       {/* Footer */}
-      <footer className="py-8 border-t border-[#1e293b] text-center">
-        <p className="text-sm text-[#64748b]">
+      <footer className="py-8 border-t border-[var(--border-color)] text-center">
+        <p className="text-sm text-[var(--text-muted)]">
           <span className="mr-2">🇯🇵 日本語でのサポートに対応しています</span>
           ·{" "}
           <Link href="/ja" className="hover:text-white transition-colors">

@@ -136,13 +136,13 @@ function TaskCard({
   };
 
   return (
-    <div className="bg-[#0a0e1a] border border-[#1e293b] rounded-xl p-4 space-y-3 hover:border-[#334155] transition-colors">
+    <div className="bg-[var(--bg-tertiary)] border border-[var(--border-color)] rounded-xl p-4 space-y-3 hover:border-[var(--border-color)] transition-colors">
       <div className="flex items-start justify-between gap-2">
         <p className="text-sm font-semibold leading-tight flex-1">{task.title}</p>
         <button
           onClick={handleDelete}
           disabled={deleting}
-          className="text-[#475569] hover:text-red-400 transition-colors shrink-0 disabled:opacity-50"
+          className="text-[var(--text-muted)] hover:text-red-400 transition-colors shrink-0 disabled:opacity-50"
           aria-label="Delete task"
         >
           {deleting ? (
@@ -154,7 +154,7 @@ function TaskCard({
       </div>
 
       {task.description && (
-        <p className="text-xs text-[#64748b] leading-relaxed line-clamp-2">
+        <p className="text-xs text-[var(--text-muted)] leading-relaxed line-clamp-2">
           {task.description}
         </p>
       )}
@@ -162,7 +162,7 @@ function TaskCard({
       <div className="flex items-center justify-between">
         <Badge variant={priorityCfg.variant}>{priorityCfg.label}</Badge>
         {task.due_date && (
-          <p className="text-xs text-[#475569]">
+          <p className="text-xs text-[var(--text-muted)]">
             {new Date(task.due_date).toLocaleDateString()}
           </p>
         )}
@@ -170,15 +170,15 @@ function TaskCard({
 
       {assignee && (
         <div className="flex items-center gap-2">
-          <div className="w-5 h-5 rounded-full bg-[#1e293b] flex items-center justify-center text-[10px] font-bold text-[#94a3b8] shrink-0">
+          <div className="w-5 h-5 rounded-full bg-[var(--border-color)] flex items-center justify-center text-[10px] font-bold text-[var(--text-secondary)] shrink-0">
             {avatarText(assignee.email)}
           </div>
-          <p className="text-xs text-[#64748b] truncate">{assignee.email}</p>
+          <p className="text-xs text-[var(--text-muted)] truncate">{assignee.email}</p>
         </div>
       )}
 
       {task.source && (
-        <p className="text-[10px] text-[#475569] font-mono">
+        <p className="text-[10px] text-[var(--text-muted)] font-mono">
           src: {task.source}
           {task.source_id ? ` #${task.source_id.slice(0, 8)}` : ""}
         </p>
@@ -186,7 +186,7 @@ function TaskCard({
 
       {/* ステータス変更セレクト */}
       <select
-        className="w-full bg-[#111827] border border-[#1e293b] text-xs text-[#94a3b8] rounded-lg px-2 py-1.5 focus:outline-none focus:border-[#FFD700]/40"
+        className="w-full bg-[var(--bg-card)] border border-[var(--border-color)] text-xs text-[var(--text-secondary)] rounded-lg px-2 py-1.5 focus:outline-none focus:border-[var(--gold)]/40"
         value={task.status}
         onChange={(e) => onStatusChange(task.id, e.target.value)}
         aria-label="Change task status"
@@ -381,10 +381,10 @@ export default function TeamsPage() {
 
   if (!user) {
     return (
-      <div className="max-w-[1200px] mx-auto px-6 py-20 text-center">
-        <Users size={40} className="text-[#FFD700] mx-auto mb-4" />
+      <div className="w-full px-6 py-20 text-center">
+        <Users size={40} className="text-[var(--gold)] mx-auto mb-4" />
         <h1 className="text-2xl font-bold mb-2">Organization & Tasks</h1>
-        <p className="text-[#64748b]">Sign in to manage your organization and tasks.</p>
+        <p className="text-[var(--text-muted)]">Sign in to manage your organization and tasks.</p>
       </div>
     );
   }
@@ -393,7 +393,7 @@ export default function TeamsPage() {
 
   if (orgLoading) {
     return (
-      <div className="max-w-[1200px] mx-auto px-6 py-20 flex items-center justify-center gap-3 text-[#64748b]">
+      <div className="w-full px-6 py-20 flex items-center justify-center gap-3 text-[var(--text-muted)]">
         <Loader2 size={20} className="animate-spin" />
         <span>組織を読み込み中...</span>
       </div>
@@ -404,11 +404,11 @@ export default function TeamsPage() {
 
   if (!org) {
     return (
-      <div className="max-w-[1200px] mx-auto px-6 py-20">
+      <div className="w-full px-6 py-20">
         <div className="text-center mb-10">
-          <Building2 size={40} className="text-[#FFD700] mx-auto mb-4" />
+          <Building2 size={40} className="text-[var(--gold)] mx-auto mb-4" />
           <h1 className="text-2xl font-bold mb-2">Create Your Organization</h1>
-          <p className="text-[#64748b]">Set up an organization to invite members and manage tasks.</p>
+          <p className="text-[var(--text-muted)]">Set up an organization to invite members and manage tasks.</p>
         </div>
 
         {orgError && (
@@ -420,7 +420,7 @@ export default function TeamsPage() {
 
         {creatingOrg ? (
           <Card className="max-w-md mx-auto">
-            <p className="text-sm font-semibold text-[#FFD700] mb-4">New Organization</p>
+            <p className="text-sm font-semibold text-[var(--gold)] mb-4">New Organization</p>
             <input
               type="text"
               placeholder={locale === "ja" ? "組織名" : "Organization name"}
@@ -428,7 +428,7 @@ export default function TeamsPage() {
               value={orgName}
               onChange={(e) => setOrgName(e.target.value)}
               onKeyDown={(e) => e.key === "Enter" && void handleCreateOrg()}
-              className="w-full bg-[#0a0e1a] border border-[#1e293b] rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:border-[#FFD700]/40 mb-4"
+              className="w-full border border-[var(--border-color)] rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:border-[var(--gold)]/40 mb-4"
               autoFocus
             />
             <div className="flex gap-3">
@@ -465,19 +465,19 @@ export default function TeamsPage() {
   const activeMembers = members.filter((m) => m.status === "active");
 
   return (
-    <div className="max-w-[1200px] mx-auto px-6 py-10 space-y-8">
+    <div className="w-full px-6 py-10 space-y-8">
 
       {/* ヘッダー */}
       <div>
         <h1 className="text-2xl font-bold mb-1 flex items-center gap-3">
-          <Building2 size={24} className="text-[#FFD700]" />
+          <Building2 size={24} className="text-[var(--gold)]" />
           {org.name}
         </h1>
         <div className="flex items-center gap-3 mt-1">
           <Badge variant={org.plan === "free" ? "default" : "gold"}>
             {org.plan.toUpperCase()}
           </Badge>
-          <span className="text-[#475569] text-xs">
+          <span className="text-[var(--text-muted)] text-xs">
             {members.length} member{members.length !== 1 ? "s" : ""}
           </span>
         </div>
@@ -486,7 +486,7 @@ export default function TeamsPage() {
       {/* ── メンバー管理 ─────────────────────────────────────────────────── */}
       <Card>
         <div className="flex items-center justify-between mb-6">
-          <p className="text-sm font-semibold text-[#FFD700] flex items-center gap-2">
+          <p className="text-sm font-semibold text-[var(--gold)] flex items-center gap-2">
             <Users size={14} />
             Members
           </p>
@@ -495,7 +495,7 @@ export default function TeamsPage() {
         {/* メンバー一覧 */}
         <div className="space-y-2 mb-6">
           {members.length === 0 && (
-            <p className="text-sm text-[#475569] text-center py-4">No members yet.</p>
+            <p className="text-sm text-[var(--text-muted)] text-center py-4">No members yet.</p>
           )}
           {members.map((member) => {
             // FLOW-08: Determine if current user can change this member's role
@@ -504,14 +504,14 @@ export default function TeamsPage() {
             return (
             <div
               key={member.id}
-              className="flex items-center gap-4 bg-[#0a0e1a] rounded-xl px-4 py-3"
+              className="flex items-center gap-4 rounded-xl px-4 py-3"
             >
-              <div className="w-8 h-8 rounded-full bg-[#1e293b] flex items-center justify-center text-xs font-bold text-[#94a3b8] shrink-0">
+              <div className="w-8 h-8 rounded-full bg-[var(--border-color)] flex items-center justify-center text-xs font-bold text-[var(--text-secondary)] shrink-0">
                 {avatarText(member.email)}
               </div>
               <div className="flex-1 min-w-0">
                 <p className="text-sm font-semibold truncate">{member.email}</p>
-                <p className="text-xs text-[#64748b]">
+                <p className="text-xs text-[var(--text-muted)]">
                   {member.status === "active" && member.joined_at
                     ? `Joined ${new Date(member.joined_at).toLocaleDateString()}`
                     : `Invited ${new Date(member.invited_at).toLocaleDateString()}`}
@@ -537,7 +537,7 @@ export default function TeamsPage() {
                         // Non-critical — role badge stays as-is
                       }
                     }}
-                    className="text-xs bg-[#1e293b] border border-[#334155] text-[#94a3b8] rounded-md px-2 py-1 focus:outline-none focus:border-[#FFD700]/50"
+                    className="text-xs bg-[var(--border-color)] border border-[var(--border-color)] text-[var(--text-secondary)] rounded-md px-2 py-1 focus:outline-none focus:border-[var(--gold)]/50"
                     aria-label={`Change role for ${member.email}`}
                   >
                     <option value="admin">Admin</option>
@@ -555,8 +555,8 @@ export default function TeamsPage() {
         </div>
 
         {/* 招待フォーム */}
-        <div className="border-t border-[#1e293b] pt-6">
-          <p className="text-xs text-[#64748b] uppercase tracking-wider mb-4 flex items-center gap-2">
+        <div className="border-t border-[var(--border-color)] pt-6">
+          <p className="text-xs text-[var(--text-muted)] uppercase tracking-wider mb-4 flex items-center gap-2">
             <Mail size={12} />
             Invite Member
           </p>
@@ -567,13 +567,13 @@ export default function TeamsPage() {
               aria-label={locale === "ja" ? "招待するメールアドレス" : "Invite email address"}
               value={inviteEmail}
               onChange={(e) => setInviteEmail(e.target.value)}
-              className="flex-1 bg-[#0a0e1a] border border-[#1e293b] rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:border-[#FFD700]/40"
+              className="flex-1 border border-[var(--border-color)] rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:border-[var(--gold)]/40"
             />
             <select
               value={inviteRole}
               onChange={(e) => setInviteRole(e.target.value)}
               aria-label={locale === "ja" ? "招待する役割" : "Invite role"}
-              className="bg-[#0a0e1a] border border-[#1e293b] rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:border-[#FFD700]/40"
+              className="bg-[var(--bg-tertiary)] border border-[var(--border-color)] rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:border-[var(--gold)]/40"
             >
               <option value="admin">Admin</option>
               <option value="member">Member</option>
@@ -610,7 +610,7 @@ export default function TeamsPage() {
       {/* ── タスクボード ──────────────────────────────────────────────────── */}
       <Card>
         <div className="flex items-center justify-between mb-6">
-          <p className="text-sm font-semibold text-[#FFD700]">Task Board</p>
+          <p className="text-sm font-semibold text-[var(--gold)]">Task Board</p>
           <Button size="sm" onClick={() => setShowTaskForm((v) => !v)}>
             <Plus size={14} />
             New Task
@@ -619,15 +619,15 @@ export default function TeamsPage() {
 
         {/* タスク作成フォーム */}
         {showTaskForm && (
-          <div className="mb-6 bg-[#0a0e1a] border border-[#1e293b] rounded-xl p-5 space-y-4">
-            <p className="text-sm font-semibold text-[#94a3b8]">Create Task</p>
+          <div className="mb-6 border border-[var(--border-color)] rounded-xl p-5 space-y-4">
+            <p className="text-sm font-semibold text-[var(--text-secondary)]">Create Task</p>
             <input
               type="text"
               placeholder={locale === "ja" ? "タスクタイトル *" : "Task title *"}
               aria-label={locale === "ja" ? "タスクタイトル（必須）" : "Task title (required)"}
               value={newTaskTitle}
               onChange={(e) => setNewTaskTitle(e.target.value)}
-              className="w-full bg-[#111827] border border-[#1e293b] rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:border-[#FFD700]/40"
+              className="w-full bg-[var(--bg-card)] border border-[var(--border-color)] rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:border-[var(--gold)]/40"
               autoFocus
             />
             <textarea
@@ -637,14 +637,14 @@ export default function TeamsPage() {
               onChange={(e) => setNewTaskDesc(e.target.value)}
               rows={2}
               maxLength={300}
-              className="w-full bg-[#111827] border border-[#1e293b] rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:border-[#FFD700]/40 resize-none"
+              className="w-full bg-[var(--bg-card)] border border-[var(--border-color)] rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:border-[var(--gold)]/40 resize-none"
             />
             <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
               <select
                 value={newTaskPriority}
                 onChange={(e) => setNewTaskPriority(e.target.value)}
                 aria-label={locale === "ja" ? "優先度" : "Priority"}
-                className="bg-[#111827] border border-[#1e293b] rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:border-[#FFD700]/40"
+                className="bg-[var(--bg-card)] border border-[var(--border-color)] rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:border-[var(--gold)]/40"
               >
                 <option value="critical">Critical</option>
                 <option value="high">High</option>
@@ -655,7 +655,7 @@ export default function TeamsPage() {
                 value={newTaskAssignee}
                 onChange={(e) => setNewTaskAssignee(e.target.value)}
                 aria-label={locale === "ja" ? "担当者" : "Assignee"}
-                className="bg-[#111827] border border-[#1e293b] rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:border-[#FFD700]/40"
+                className="bg-[var(--bg-card)] border border-[var(--border-color)] rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:border-[var(--gold)]/40"
               >
                 <option value="">Unassigned</option>
                 {activeMembers.map((m) => (
@@ -669,7 +669,7 @@ export default function TeamsPage() {
                 value={newTaskDue}
                 onChange={(e) => setNewTaskDue(e.target.value)}
                 aria-label={locale === "ja" ? "期限日" : "Due date"}
-                className="bg-[#111827] border border-[#1e293b] rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:border-[#FFD700]/40 col-span-2 sm:col-span-1"
+                className="bg-[var(--bg-card)] border border-[var(--border-color)] rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:border-[var(--gold)]/40 col-span-2 sm:col-span-1"
               />
             </div>
             <div className="flex gap-3">
@@ -697,7 +697,7 @@ export default function TeamsPage() {
 
         {/* Kanban ボード */}
         {tasksLoading ? (
-          <div className="flex items-center justify-center py-12 gap-3 text-[#64748b]">
+          <div className="flex items-center justify-center py-12 gap-3 text-[var(--text-muted)]">
             <Loader2 size={18} className="animate-spin" />
             <span>タスクを読み込み中...</span>
           </div>
@@ -712,13 +712,13 @@ export default function TeamsPage() {
                     <p className="text-xs font-semibold uppercase tracking-wider" style={{ color }}>
                       {label}
                     </p>
-                    <span className="ml-auto text-xs font-mono text-[#475569]">
+                    <span className="ml-auto text-xs font-mono text-[var(--text-muted)]">
                       {columnTasks.length}
                     </span>
                   </div>
                   <div className="space-y-3 min-h-[120px]">
                     {columnTasks.length === 0 ? (
-                      <div className="border border-dashed border-[#1e293b] rounded-xl h-20 flex items-center justify-center">
+                      <div className="border border-dashed border-[var(--border-color)] rounded-xl h-20 flex items-center justify-center">
                         <p className="text-xs text-[#334155]">Empty</p>
                       </div>
                     ) : (

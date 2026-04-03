@@ -84,59 +84,59 @@ export default function VulnPriorityPage() {
   }, []);
 
   return (
-    <div className="max-w-[1200px] mx-auto px-6 py-10">
+    <div className="w-full px-6 py-10">
       <div className="mb-10">
         <h1 className="text-2xl font-bold mb-1 flex items-center gap-3">
-          <ShieldAlert size={24} className="text-[#FFD700]" />
+          <ShieldAlert size={24} className="text-[var(--gold)]" />
           {t.title}
         </h1>
-        <p className="text-[#94a3b8] text-sm">{t.subtitle}</p>
+        <p className="text-[var(--text-secondary)] text-sm">{t.subtitle}</p>
       </div>
 
       {loading ? (
         <Card className="flex items-center justify-center py-20">
-          <Loader2 size={24} className="animate-spin text-[#FFD700]" />
-          <span className="ml-3 text-[#94a3b8]">{t.loading}</span>
+          <Loader2 size={24} className="animate-spin text-[var(--gold)]" />
+          <span className="ml-3 text-[var(--text-secondary)]">{t.loading}</span>
         </Card>
       ) : (
         <>
           {/* Summary */}
           <div className="grid md:grid-cols-4 gap-4 mb-8">
             <Card className="text-center">
-              <p className="text-3xl font-extrabold font-mono text-[#94a3b8]">{data.total_vulns}</p>
-              <p className="text-xs text-[#64748b] uppercase tracking-wider mt-1">{t.totalVulns}</p>
+              <p className="text-3xl font-extrabold font-mono text-[var(--text-secondary)]">{data.total_vulns}</p>
+              <p className="text-xs text-[var(--text-muted)] uppercase tracking-wider mt-1">{t.totalVulns}</p>
             </Card>
             <Card className="text-center">
               <p className="text-3xl font-extrabold font-mono text-red-400">{data.critical_count}</p>
-              <p className="text-xs text-[#64748b] uppercase tracking-wider mt-1">{t.critical}</p>
+              <p className="text-xs text-[var(--text-muted)] uppercase tracking-wider mt-1">{t.critical}</p>
             </Card>
             <Card className="text-center">
               <p className="text-3xl font-extrabold font-mono text-[#f59e0b]">{data.high_count}</p>
-              <p className="text-xs text-[#64748b] uppercase tracking-wider mt-1">{t.high}</p>
+              <p className="text-xs text-[var(--text-muted)] uppercase tracking-wider mt-1">{t.high}</p>
             </Card>
             <Card className="text-center">
-              <p className="text-3xl font-extrabold font-mono text-[#FFD700]">{data.avg_priority_score.toFixed(1)}</p>
-              <p className="text-xs text-[#64748b] uppercase tracking-wider mt-1">{t.avgPriority}</p>
+              <p className="text-3xl font-extrabold font-mono text-[var(--gold)]">{data.avg_priority_score.toFixed(1)}</p>
+              <p className="text-xs text-[var(--text-muted)] uppercase tracking-wider mt-1">{t.avgPriority}</p>
             </Card>
           </div>
 
           {/* Priority Matrix */}
           <Card>
             <div className="flex items-center gap-2 mb-4">
-              <TrendingUp size={16} className="text-[#FFD700]" />
-              <h3 className="text-sm font-semibold text-[#94a3b8] uppercase tracking-wider">{t.priorityMatrix}</h3>
+              <TrendingUp size={16} className="text-[var(--gold)]" />
+              <h3 className="text-sm font-semibold text-[var(--text-secondary)] uppercase tracking-wider">{t.priorityMatrix}</h3>
             </div>
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
                 <thead>
-                  <tr className="border-b border-[#1e293b]">
-                    <th scope="col" className="text-center py-3 px-2 text-[#64748b] font-medium w-10">{t.rank}</th>
-                    <th scope="col" className="text-left py-3 px-3 text-[#64748b] font-medium">{t.component}</th>
-                    <th scope="col" className="text-left py-3 px-3 text-[#64748b] font-medium">CVE / ID</th>
-                    <th scope="col" className="text-center py-3 px-2 text-[#64748b] font-medium">{t.vulnScore}</th>
-                    <th scope="col" className="text-center py-3 px-2 text-[#64748b] font-medium">{t.blastRadius}</th>
-                    <th scope="col" className="text-center py-3 px-2 text-[#64748b] font-medium">{t.priorityScore}</th>
-                    <th scope="col" className="text-center py-3 px-2 text-[#64748b] font-medium">{t.status}</th>
+                  <tr className="border-b border-[var(--border-color)]">
+                    <th scope="col" className="text-center py-3 px-2 text-[var(--text-muted)] font-medium w-10">{t.rank}</th>
+                    <th scope="col" className="text-left py-3 px-3 text-[var(--text-muted)] font-medium">{t.component}</th>
+                    <th scope="col" className="text-left py-3 px-3 text-[var(--text-muted)] font-medium">CVE / ID</th>
+                    <th scope="col" className="text-center py-3 px-2 text-[var(--text-muted)] font-medium">{t.vulnScore}</th>
+                    <th scope="col" className="text-center py-3 px-2 text-[var(--text-muted)] font-medium">{t.blastRadius}</th>
+                    <th scope="col" className="text-center py-3 px-2 text-[var(--text-muted)] font-medium">{t.priorityScore}</th>
+                    <th scope="col" className="text-center py-3 px-2 text-[var(--text-muted)] font-medium">{t.status}</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -144,14 +144,14 @@ export default function VulnPriorityPage() {
                     <>
                       <tr
                         key={entry.vuln_id}
-                        className="border-b border-[#1e293b]/50 hover:bg-white/[0.02] cursor-pointer"
+                        className="border-b border-[var(--border-color)]/50 hover:bg-white/[0.02] cursor-pointer"
                         onClick={() => setExpanded(expanded === entry.vuln_id ? null : entry.vuln_id)}
                       >
                         <td className="py-3 px-2 text-center">
-                          <span className="font-mono font-bold text-[#64748b]">#{entry.rank}</span>
+                          <span className="font-mono font-bold text-[var(--text-muted)]">#{entry.rank}</span>
                         </td>
                         <td className="py-3 px-3 font-medium">{entry.component}</td>
-                        <td className="py-3 px-3 font-mono text-xs text-[#64748b]">{entry.vuln_id}</td>
+                        <td className="py-3 px-3 font-mono text-xs text-[var(--text-muted)]">{entry.vuln_id}</td>
                         <td className="py-3 px-2 text-center">
                           <span className="font-mono font-bold" style={{ color: entry.vuln_score >= 9 ? "#ef4444" : entry.vuln_score >= 7 ? "#f59e0b" : "#eab308" }}>
                             {entry.vuln_score.toFixed(1)}
@@ -162,7 +162,7 @@ export default function VulnPriorityPage() {
                             <div className="w-16 h-2 bg-white/5 rounded-full overflow-hidden">
                               <div className="h-full rounded-full" style={{ width: `${entry.blast_radius}%`, backgroundColor: priorityColor(entry.blast_radius) }} />
                             </div>
-                            <span className="font-mono text-xs text-[#64748b]">{entry.blast_radius}%</span>
+                            <span className="font-mono text-xs text-[var(--text-muted)]">{entry.blast_radius}%</span>
                           </div>
                         </td>
                         <td className="py-3 px-2 text-center">
@@ -175,14 +175,14 @@ export default function VulnPriorityPage() {
                         </td>
                       </tr>
                       {expanded === entry.vuln_id && (
-                        <tr key={`${entry.vuln_id}-detail`} className="border-b border-[#1e293b]/50">
+                        <tr key={`${entry.vuln_id}-detail`} className="border-b border-[var(--border-color)]/50">
                           <td colSpan={7} className="px-4 py-3 bg-white/[0.01]">
                             <div className="flex flex-wrap gap-3">
                               {entry.risk_factors.map((rf) => (
                                 <div key={rf.name} className="flex items-center gap-2 bg-white/5 px-3 py-1.5 rounded-lg text-xs">
-                                  <span className="text-[#64748b]">{rf.name}:</span>
-                                  <span className="font-medium text-[#94a3b8]">{rf.value}</span>
-                                  <span className="text-[#FFD700] font-mono">w={rf.weight}</span>
+                                  <span className="text-[var(--text-muted)]">{rf.name}:</span>
+                                  <span className="font-medium text-[var(--text-secondary)]">{rf.value}</span>
+                                  <span className="text-[var(--gold)] font-mono">w={rf.weight}</span>
                                 </div>
                               ))}
                             </div>

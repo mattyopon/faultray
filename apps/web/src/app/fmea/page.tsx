@@ -64,20 +64,20 @@ export default function FmeaPage() {
   });
 
   return (
-    <div className="max-w-[1200px] mx-auto px-6 py-10">
+    <div className="w-full px-6 py-10">
       <div className="mb-10">
         <h1 className="text-2xl font-bold mb-1 flex items-center gap-3">
-          <AlertOctagon size={24} className="text-[#FFD700]" />
+          <AlertOctagon size={24} className="text-[var(--gold)]" />
           {t.title}
         </h1>
-        <p className="text-[#94a3b8] text-sm">
+        <p className="text-[var(--text-secondary)] text-sm">
           {t.subtitle}
         </p>
       </div>
 
       {loading ? (
         <Card className="flex items-center justify-center py-20">
-          <Loader2 size={24} className="animate-spin text-[#FFD700]" />
+          <Loader2 size={24} className="animate-spin text-[var(--gold)]" />
         </Card>
       ) : (
         <>
@@ -85,35 +85,35 @@ export default function FmeaPage() {
           <div className="grid md:grid-cols-4 gap-6 mb-8">
             <Card className="text-center">
               <p className="text-3xl font-extrabold font-mono">{data.total_failure_modes}</p>
-              <p className="text-xs text-[#64748b] uppercase tracking-wider mt-1">{t.failureModes}</p>
+              <p className="text-xs text-[var(--text-muted)] uppercase tracking-wider mt-1">{t.failureModes}</p>
             </Card>
             <Card className="text-center">
               <p className="text-3xl font-extrabold font-mono text-red-400">{data.rpn_distribution.critical}</p>
-              <p className="text-xs text-[#64748b] uppercase tracking-wider mt-1">{t.criticalRpn}</p>
+              <p className="text-xs text-[var(--text-muted)] uppercase tracking-wider mt-1">{t.criticalRpn}</p>
             </Card>
             <Card className="text-center">
               <p className="text-3xl font-extrabold font-mono text-[#f59e0b]">{data.rpn_distribution.high}</p>
-              <p className="text-xs text-[#64748b] uppercase tracking-wider mt-1">{t.highRpn}</p>
+              <p className="text-xs text-[var(--text-muted)] uppercase tracking-wider mt-1">{t.highRpn}</p>
             </Card>
             <Card className="text-center">
               <p className="text-3xl font-extrabold font-mono text-emerald-400">
                 {data.failure_modes.filter((f) => f.status === "mitigated").length}
               </p>
-              <p className="text-xs text-[#64748b] uppercase tracking-wider mt-1">{t.mitigated}</p>
+              <p className="text-xs text-[var(--text-muted)] uppercase tracking-wider mt-1">{t.mitigated}</p>
             </Card>
           </div>
 
           {/* Sort Controls */}
           <div className="flex items-center gap-2 mb-4">
-            <span className="text-xs text-[#64748b] uppercase tracking-wider">{t.sortBy}</span>
+            <span className="text-xs text-[var(--text-muted)] uppercase tracking-wider">{t.sortBy}</span>
             {(["rpn", "severity", "occurrence"] as const).map((s) => (
               <button
                 key={s}
                 onClick={() => setSortBy(s)}
                 className={`px-3 py-1 rounded-lg text-xs font-medium transition-all ${
                   sortBy === s
-                    ? "bg-[#FFD700]/10 text-[#FFD700] border border-[#FFD700]/30"
-                    : "text-[#94a3b8] border border-[#1e293b] hover:border-[#64748b]"
+                    ? "bg-[var(--gold)]/10 text-[var(--gold)] border border-[var(--gold)]/30"
+                    : "text-[var(--text-secondary)] border border-[var(--border-color)] hover:border-[#64748b]"
                 }`}
               >
                 {s.toUpperCase()}
@@ -126,25 +126,25 @@ export default function FmeaPage() {
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
                 <thead>
-                  <tr className="border-b border-[#1e293b]">
-                    <th scope="col" className="text-left py-3 px-2 text-[#64748b] font-medium">{t.id}</th>
-                    <th scope="col" className="text-left py-3 px-2 text-[#64748b] font-medium">{t.component}</th>
-                    <th scope="col" className="text-left py-3 px-2 text-[#64748b] font-medium">{t.failureMode}</th>
-                    <th scope="col" className="text-center py-3 px-2 text-[#64748b] font-medium">S</th>
-                    <th scope="col" className="text-center py-3 px-2 text-[#64748b] font-medium">O</th>
-                    <th scope="col" className="text-center py-3 px-2 text-[#64748b] font-medium">D</th>
-                    <th scope="col" className="text-center py-3 px-2 text-[#64748b] font-medium">RPN</th>
-                    <th scope="col" className="text-center py-3 px-2 text-[#64748b] font-medium">{t.status}</th>
+                  <tr className="border-b border-[var(--border-color)]">
+                    <th scope="col" className="text-left py-3 px-2 text-[var(--text-muted)] font-medium">{t.id}</th>
+                    <th scope="col" className="text-left py-3 px-2 text-[var(--text-muted)] font-medium">{t.component}</th>
+                    <th scope="col" className="text-left py-3 px-2 text-[var(--text-muted)] font-medium">{t.failureMode}</th>
+                    <th scope="col" className="text-center py-3 px-2 text-[var(--text-muted)] font-medium">S</th>
+                    <th scope="col" className="text-center py-3 px-2 text-[var(--text-muted)] font-medium">O</th>
+                    <th scope="col" className="text-center py-3 px-2 text-[var(--text-muted)] font-medium">D</th>
+                    <th scope="col" className="text-center py-3 px-2 text-[var(--text-muted)] font-medium">RPN</th>
+                    <th scope="col" className="text-center py-3 px-2 text-[var(--text-muted)] font-medium">{t.status}</th>
                   </tr>
                 </thead>
                 <tbody>
                   {sorted.map((fm) => (
-                    <tr key={fm.id} className="border-b border-[#1e293b]/50 hover:bg-white/[0.02]">
-                      <td className="py-3 px-2 font-mono text-[#64748b]">{fm.id}</td>
+                    <tr key={fm.id} className="border-b border-[var(--border-color)]/50 hover:bg-white/[0.02]">
+                      <td className="py-3 px-2 font-mono text-[var(--text-muted)]">{fm.id}</td>
                       <td className="py-3 px-2 font-medium">{fm.component}</td>
                       <td className="py-3 px-2">
                         <p>{fm.failure_mode}</p>
-                        <p className="text-xs text-[#64748b] mt-0.5">{fm.effect}</p>
+                        <p className="text-xs text-[var(--text-muted)] mt-0.5">{fm.effect}</p>
                       </td>
                       <td className="py-3 px-2 text-center font-mono font-bold" style={{ color: fm.severity >= 8 ? "#ef4444" : "#94a3b8" }}>
                         {fm.severity}
@@ -180,8 +180,8 @@ export default function FmeaPage() {
                 </tbody>
               </table>
             </div>
-            <div className="mt-4 pt-4 border-t border-[#1e293b]">
-              <p className="text-xs text-[#64748b]">
+            <div className="mt-4 pt-4 border-t border-[var(--border-color)]">
+              <p className="text-xs text-[var(--text-muted)]">
                 {t.rpnExplain}
               </p>
             </div>

@@ -54,8 +54,8 @@ function MetricRow({ label, baseline, canary, unit = "", lowerIsBetter = false }
   const Icon = diff === 0 ? null : isBetter ? TrendingUp : TrendingDown;
 
   return (
-    <div className="grid grid-cols-4 gap-2 bg-[#0a0e1a] rounded-lg px-3 py-2.5 items-center">
-      <p className="text-xs text-[#64748b] col-span-1">{label}</p>
+    <div className="grid grid-cols-4 gap-2 rounded-lg px-3 py-2.5 items-center">
+      <p className="text-xs text-[var(--text-muted)] col-span-1">{label}</p>
       <p className="text-sm font-mono font-bold text-center">{baseline}{unit}</p>
       <p className="text-sm font-mono font-bold text-center" style={{ color }}>{canary}{unit}</p>
       <div className="flex items-center justify-end gap-1" style={{ color }}>
@@ -77,22 +77,22 @@ export default function CanaryPage() {
   };
 
   return (
-    <div className="max-w-[1200px] mx-auto px-6 py-10">
+    <div className="w-full px-6 py-10">
       <div className="mb-8">
         <h1 className="text-2xl font-bold mb-1 flex items-center gap-3">
-          <FlaskRound size={24} className="text-[#FFD700]" />
+          <FlaskRound size={24} className="text-[var(--gold)]" />
           {t.title}
         </h1>
-        <p className="text-[#94a3b8] text-sm">{t.subtitle}</p>
+        <p className="text-[var(--text-secondary)] text-sm">{t.subtitle}</p>
       </div>
 
       {/* Active canaries */}
       <div className="mb-8">
-        <p className="text-sm font-semibold text-[#FFD700] mb-4">{t.activeDeployments}</p>
+        <p className="text-sm font-semibold text-[var(--gold)] mb-4">{t.activeDeployments}</p>
 
         {DEMO_CANARIES.length === 0 ? (
           <Card className="text-center py-12">
-            <p className="text-[#64748b]">{t.noActive}</p>
+            <p className="text-[var(--text-muted)]">{t.noActive}</p>
           </Card>
         ) : (
           <div className="space-y-6">
@@ -107,7 +107,7 @@ export default function CanaryPage() {
                       </Badge>
                       <Badge variant="default">{canary.service}</Badge>
                     </div>
-                    <p className="text-xs text-[#64748b] mt-1">
+                    <p className="text-xs text-[var(--text-muted)] mt-1">
                       {t.deployedAt}: {canary.deployedAt}
                     </p>
                   </div>
@@ -132,28 +132,28 @@ export default function CanaryPage() {
 
                 {/* Version comparison */}
                 <div className="grid md:grid-cols-2 gap-4 mb-6">
-                  <div className="bg-[#0a0e1a] rounded-lg p-3">
-                    <p className="text-xs text-[#64748b] mb-1">{t.baseline} {t.version}</p>
-                    <p className="font-mono font-bold text-[#94a3b8]">{canary.baselineVersion}</p>
+                  <div className="bg-[var(--bg-tertiary)] rounded-lg p-3">
+                    <p className="text-xs text-[var(--text-muted)] mb-1">{t.baseline} {t.version}</p>
+                    <p className="font-mono font-bold text-[var(--text-secondary)]">{canary.baselineVersion}</p>
                   </div>
-                  <div className="bg-[#FFD700]/5 border border-[#FFD700]/20 rounded-lg p-3">
-                    <p className="text-xs text-[#64748b] mb-1">{t.canaryLabel} {t.version}</p>
-                    <p className="font-mono font-bold text-[#FFD700]">{canary.canaryVersion}</p>
+                  <div className="bg-[var(--gold)]/5 border border-[var(--gold)]/20 rounded-lg p-3">
+                    <p className="text-xs text-[var(--text-muted)] mb-1">{t.canaryLabel} {t.version}</p>
+                    <p className="font-mono font-bold text-[var(--gold)]">{canary.canaryVersion}</p>
                   </div>
                 </div>
 
                 {/* Traffic split visualization */}
                 <div className="mb-6">
-                  <p className="text-xs text-[#64748b] uppercase tracking-wider mb-2">{t.trafficSplit}</p>
+                  <p className="text-xs text-[var(--text-muted)] uppercase tracking-wider mb-2">{t.trafficSplit}</p>
                   <div className="flex h-6 rounded-lg overflow-hidden">
                     <div
-                      className="bg-[#1e293b] flex items-center justify-center text-xs text-[#94a3b8]"
+                      className="bg-[var(--border-color)] flex items-center justify-center text-xs text-[var(--text-secondary)]"
                       style={{ width: `${100 - canary.trafficSplit}%` }}
                     >
                       {100 - canary.trafficSplit}% {t.baseline}
                     </div>
                     <div
-                      className="bg-[#FFD700] flex items-center justify-center text-xs text-black font-bold"
+                      className="bg-[var(--gold)] flex items-center justify-center text-xs text-black font-bold"
                       style={{ width: `${canary.trafficSplit}%` }}
                     >
                       {canary.trafficSplit}%
@@ -164,10 +164,10 @@ export default function CanaryPage() {
                 {/* Metrics comparison */}
                 <div className="mb-4">
                   <div className="grid grid-cols-4 gap-2 mb-2 px-3">
-                    <p className="text-xs text-[#64748b]">{locale === "ja" ? "メトリクス" : "Metric"}</p>
-                    <p className="text-xs text-[#64748b] text-center">{t.baseline}</p>
-                    <p className="text-xs text-[#FFD700] text-center">{t.canaryLabel}</p>
-                    <p className="text-xs text-[#64748b] text-right">{locale === "ja" ? "差分" : "Delta"}</p>
+                    <p className="text-xs text-[var(--text-muted)]">{locale === "ja" ? "メトリクス" : "Metric"}</p>
+                    <p className="text-xs text-[var(--text-muted)] text-center">{t.baseline}</p>
+                    <p className="text-xs text-[var(--gold)] text-center">{t.canaryLabel}</p>
+                    <p className="text-xs text-[var(--text-muted)] text-right">{locale === "ja" ? "差分" : "Delta"}</p>
                   </div>
                   <div className="space-y-1.5">
                     <MetricRow label={t.errorRate} baseline={canary.baseline.errorRate} canary={canary.canary.errorRate} unit="%" lowerIsBetter />
@@ -178,20 +178,20 @@ export default function CanaryPage() {
                 </div>
 
                 {/* Auto-rollback config */}
-                <div className="flex items-center justify-between bg-[#0a0e1a] rounded-lg px-3 py-2 mt-4">
+                <div className="flex items-center justify-between rounded-lg px-3 py-2 mt-4">
                   <div className="flex items-center gap-2">
                     {canary.status === "healthy" ? (
                       <CheckCircle2 size={14} className="text-[#10b981]" />
                     ) : (
                       <AlertTriangle size={14} className="text-[#f59e0b]" />
                     )}
-                    <p className="text-xs text-[#64748b]">{t.autoRollback}</p>
+                    <p className="text-xs text-[var(--text-muted)]">{t.autoRollback}</p>
                   </div>
                   <div className="flex items-center gap-2">
                     <Badge variant={canary.autoRollback ? "green" : "default"}>
                       {canary.autoRollback ? t.enabled : t.disabled}
                     </Badge>
-                    <span className="text-xs text-[#64748b]">{t.rollbackThreshold}: <span className="text-white font-mono">{canary.rollbackThreshold}%</span></span>
+                    <span className="text-xs text-[var(--text-muted)]">{t.rollbackThreshold}: <span className="text-white font-mono">{canary.rollbackThreshold}%</span></span>
                   </div>
                 </div>
               </Card>
@@ -202,17 +202,17 @@ export default function CanaryPage() {
 
       {/* History */}
       <Card>
-        <p className="text-sm font-semibold text-[#FFD700] mb-4">{locale === "ja" ? "カナリア履歴" : "Canary History"}</p>
+        <p className="text-sm font-semibold text-[var(--gold)] mb-4">{locale === "ja" ? "カナリア履歴" : "Canary History"}</p>
         <div className="space-y-2">
           {CANARY_HISTORY.map((h) => (
-            <div key={h.id} className="flex items-center justify-between bg-[#0a0e1a] rounded-lg px-3 py-2.5">
+            <div key={h.id} className="flex items-center justify-between rounded-lg px-3 py-2.5">
               <div className="flex items-center gap-3">
                 <Badge variant={h.decision === "promoted" ? "green" : "red"}>
                   {h.decision === "promoted" ? t.promote : t.rollback}
                 </Badge>
                 <div>
                   <p className="text-sm font-semibold">{h.service} {h.version}</p>
-                  <p className="text-xs text-[#64748b]">{h.date} · {h.trafficSplit}% traffic · {h.finalErrorRate}% error rate</p>
+                  <p className="text-xs text-[var(--text-muted)]">{h.date} · {h.trafficSplit}% traffic · {h.finalErrorRate}% error rate</p>
                 </div>
               </div>
             </div>

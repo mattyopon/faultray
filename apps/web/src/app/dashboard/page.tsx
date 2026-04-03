@@ -52,7 +52,7 @@ function ScoreRing({ score, size = 120 }: { score: number; size?: number }) {
       </svg>
       <div className="absolute inset-0 flex flex-col items-center justify-center">
         <span className="text-2xl font-extrabold" style={{ color }}>{score.toFixed(1)}</span>
-        <span className="text-[10px] text-[#64748b] uppercase tracking-wider">Score</span>
+        <span className="text-[10px] text-[var(--text-muted)] uppercase tracking-wider">Score</span>
       </div>
     </div>
   );
@@ -119,7 +119,7 @@ export default function DashboardPage() {
   const latestScore = isSampleMode ? SAMPLE_SCORE : (latestRun?.overall_score ?? 85.2);
 
   return (
-    <div className="max-w-[1200px] mx-auto px-6 py-10">
+    <div className="w-full px-6 py-10">
       <Onboarding />
 
       {fetchError && (
@@ -161,7 +161,7 @@ export default function DashboardPage() {
               <span className="text-sm font-semibold text-purple-300">
                 {locale === "ja" ? "Businessプランへアップグレード" : "Ready for Business?"}
               </span>
-              <span className="block text-xs text-[#94a3b8] mt-0.5">
+              <span className="block text-xs text-[var(--text-secondary)] mt-0.5">
                 {locale === "ja"
                   ? "無制限シミュレーション・SSO・専任サポート・保険APIが利用可能です"
                   : "Unlock unlimited simulations, SSO, dedicated support, and Insurance API"}
@@ -179,16 +179,16 @@ export default function DashboardPage() {
 
       {/* RETAIN-03: Trial banner — 期限切れ3日前は赤色の警告表示 */}
       {isTrialActive && (
-        <div className={`mb-6 px-5 py-3.5 rounded-xl border flex items-center justify-between gap-4 flex-wrap ${trialDaysLeft <= 3 ? "border-red-500/40 bg-red-500/[0.07]" : "border-[#FFD700]/30 bg-[#FFD700]/[0.06]"}`}>
+        <div className={`mb-6 px-5 py-3.5 rounded-xl border flex items-center justify-between gap-4 flex-wrap ${trialDaysLeft <= 3 ? "border-red-500/40 bg-red-500/[0.07]" : "border-[var(--gold)]/30 bg-[var(--gold)]/[0.06]"}`}>
           <div className="flex items-center gap-2.5">
-            <Clock size={16} className={trialDaysLeft <= 3 ? "text-red-400 shrink-0" : "text-[#FFD700] shrink-0"} />
-            <span className={`text-sm font-semibold ${trialDaysLeft <= 3 ? "text-red-400" : "text-[#FFD700]"}`}>
+            <Clock size={16} className={trialDaysLeft <= 3 ? "text-red-400 shrink-0" : "text-[var(--gold)] shrink-0"} />
+            <span className={`text-sm font-semibold ${trialDaysLeft <= 3 ? "text-red-400" : "text-[var(--gold)]"}`}>
               {trialDaysLeft <= 3
                 ? (locale === "ja" ? `トライアル終了まで残り${trialDaysLeft}日` : `Trial ends in ${trialDaysLeft} day${trialDaysLeft !== 1 ? "s" : ""}!`)
                 : "Business Trial —"}
             </span>
             {trialDaysLeft > 3 && (
-              <span className="text-sm text-[#94a3b8]">
+              <span className="text-sm text-[var(--text-secondary)]">
                 {trialDaysLeft} day{trialDaysLeft !== 1 ? "s" : ""} remaining. Full access to all features.
               </span>
             )}
@@ -202,7 +202,7 @@ export default function DashboardPage() {
           </div>
           <Link
             href="/pricing"
-            className={`text-xs font-semibold border px-3 py-1.5 rounded-lg transition-colors whitespace-nowrap ${trialDaysLeft <= 3 ? "text-red-400 border-red-500/40 hover:bg-red-500/10" : "text-[#FFD700] border-[#FFD700]/30 hover:bg-[#FFD700]/10"}`}
+            className={`text-xs font-semibold border px-3 py-1.5 rounded-lg transition-colors whitespace-nowrap ${trialDaysLeft <= 3 ? "text-red-400 border-red-500/40 hover:bg-red-500/10" : "text-[var(--gold)] border-[var(--gold)]/30 hover:bg-[var(--gold)]/10"}`}
           >
             {locale === "ja" ? "今すぐアップグレード" : "Upgrade Now"}
           </Link>
@@ -218,7 +218,7 @@ export default function DashboardPage() {
               <span className="text-xs font-bold text-blue-400 uppercase tracking-wider mr-2">
                 {locale === "ja" ? "サンプルデータ" : "SAMPLE DATA"}
               </span>
-              <span className="text-sm text-[#94a3b8]">
+              <span className="text-sm text-[var(--text-secondary)]">
                 {locale === "ja"
                   ? "実際のデータではありません。自分のインフラで試してみましょう。"
                   : "This is not real data. Run your first simulation to see real results."}
@@ -237,19 +237,19 @@ export default function DashboardPage() {
       {/* UX-02: 初回ユーザー向け — シミュレーション開始への大きな導線 */}
       {!loading && runs.length === 0 && (
         <Link href="/simulate" className="block mb-6">
-          <div className="group p-6 rounded-2xl border-2 border-dashed border-[#FFD700]/30 bg-[#FFD700]/[0.03] hover:border-[#FFD700]/60 hover:bg-[#FFD700]/[0.06] transition-all text-center cursor-pointer">
-            <div className="w-14 h-14 rounded-2xl bg-[#FFD700]/10 border border-[#FFD700]/20 flex items-center justify-center mx-auto mb-4 group-hover:bg-[#FFD700]/20 transition-all">
-              <Zap size={24} className="text-[#FFD700]" />
+          <div className="group p-6 rounded-2xl border-2 border-dashed border-[var(--gold)]/30 bg-[var(--gold)]/[0.03] hover:border-[var(--gold)]/60 hover:bg-[var(--gold)]/[0.06] transition-all text-center cursor-pointer">
+            <div className="w-14 h-14 rounded-2xl bg-[var(--gold)]/10 border border-[var(--gold)]/20 flex items-center justify-center mx-auto mb-4 group-hover:bg-[var(--gold)]/20 transition-all">
+              <Zap size={24} className="text-[var(--gold)]" />
             </div>
             <h3 className="text-lg font-bold mb-1">
               {locale === "ja" ? "最初のシミュレーションを実行する" : "Run Your First Simulation"}
             </h3>
-            <p className="text-sm text-[#94a3b8] mb-3">
+            <p className="text-sm text-[var(--text-secondary)] mb-3">
               {locale === "ja"
                 ? "サンプルトポロジーを選んで、今すぐ2,000+シナリオを実行。本番環境には一切触れません。"
                 : "Pick a sample topology and run 2,000+ chaos scenarios now — no production access required."}
             </p>
-            <span className="inline-flex items-center gap-2 text-sm font-semibold text-[#FFD700]">
+            <span className="inline-flex items-center gap-2 text-sm font-semibold text-[var(--gold)]">
               {locale === "ja" ? "シミュレーションを開始" : "Start Simulation"}
               <ArrowRight size={14} />
             </span>
@@ -284,7 +284,7 @@ export default function DashboardPage() {
       <div className="flex items-center justify-between mb-10">
         <div>
           <h1 className="text-2xl font-bold mb-1">{t.title}</h1>
-          <p className="text-[#94a3b8] text-sm">
+          <p className="text-[var(--text-secondary)] text-sm">
             {t.welcomeBack}{user?.user_metadata?.full_name ? `, ${user.user_metadata.full_name}` : ""}
           </p>
         </div>
@@ -301,7 +301,7 @@ export default function DashboardPage() {
         <Card className="flex items-center gap-6">
           <ScoreRing score={latestScore} size={100} />
           <div>
-            <p className="text-xs text-[#64748b] uppercase tracking-wider mb-1">{t.resilienceScore}</p>
+            <p className="text-xs text-[var(--text-muted)] uppercase tracking-wider mb-1">{t.resilienceScore}</p>
             <p className="text-lg font-bold">{latestScore.toFixed(1)} / 100</p>
             <Badge variant={latestScore >= 90 ? "green" : latestScore >= 70 ? "gold" : "red"}>
               {latestScore >= 90 ? t.excellent : latestScore >= 70 ? t.good : t.needsWork}
@@ -314,29 +314,29 @@ export default function DashboardPage() {
             <div className="w-10 h-10 rounded-lg bg-emerald-500/10 flex items-center justify-center">
               <TrendingUp size={20} className="text-emerald-400" />
             </div>
-            <p className="text-xs text-[#64748b] uppercase tracking-wider">{t.availability}</p>
+            <p className="text-xs text-[var(--text-muted)] uppercase tracking-wider">{t.availability}</p>
           </div>
           <p className="text-2xl font-bold font-mono">99.99%</p>
-          <p className="text-xs text-[#64748b] mt-1">4.00 {t.nines}</p>
+          <p className="text-xs text-[var(--text-muted)] mt-1">4.00 {t.nines}</p>
         </Card>
 
         <Card>
           <div className="flex items-center gap-3 mb-3">
-            <div className="w-10 h-10 rounded-lg bg-[#FFD700]/10 flex items-center justify-center">
-              <Shield size={20} className="text-[#FFD700]" />
+            <div className="w-10 h-10 rounded-lg bg-[var(--gold)]/10 flex items-center justify-center">
+              <Shield size={20} className="text-[var(--gold)]" />
             </div>
-            <p className="text-xs text-[#64748b] uppercase tracking-wider">{t.scenarios}</p>
+            <p className="text-xs text-[var(--text-muted)] uppercase tracking-wider">{t.scenarios}</p>
           </div>
           <p className="text-2xl font-bold font-mono">
             {isSampleMode ? SAMPLE_COMPONENTS : (latestRun?.total_scenarios ?? 152)}
           </p>
           <div className="flex items-center gap-2 mt-1">
             {isSampleMode ? (
-              <span className="text-xs text-[#64748b]">コンポーネント数</span>
+              <span className="text-xs text-[var(--text-muted)]">コンポーネント数</span>
             ) : (
               <>
                 <span className="text-xs text-emerald-400">{latestRun?.scenarios_passed ?? 147} {t.passed}</span>
-                <span className="text-xs text-[#64748b]">/</span>
+                <span className="text-xs text-[var(--text-muted)]">/</span>
                 <span className="text-xs text-red-400">{latestRun?.scenarios_failed ?? 5} {t.failed}</span>
               </>
             )}
@@ -348,7 +348,7 @@ export default function DashboardPage() {
             <div className="w-10 h-10 rounded-lg bg-red-500/10 flex items-center justify-center">
               <AlertTriangle size={20} className="text-red-400" />
             </div>
-            <p className="text-xs text-[#64748b] uppercase tracking-wider">{t.criticalIssues}</p>
+            <p className="text-xs text-[var(--text-muted)] uppercase tracking-wider">{t.criticalIssues}</p>
           </div>
           <p className="text-2xl font-bold font-mono">
             {isSampleMode ? SAMPLE_CRITICAL : 3}
@@ -380,7 +380,7 @@ export default function DashboardPage() {
                   +{delta.toFixed(1)} {locale === "ja" ? "pt 改善" : "pts improved"}
                 </span>
               ) : (
-                <span className="text-xs font-semibold text-[#FFD700] bg-[#FFD700]/10 px-2 py-1 rounded-full">
+                <span className="text-xs font-semibold text-[var(--gold)] bg-[var(--gold)]/10 px-2 py-1 rounded-full">
                   {locale === "ja" ? "シミュレーションを重ねると改善が見えます" : "Keep simulating to track progress"}
                 </span>
               )}
@@ -392,16 +392,16 @@ export default function DashboardPage() {
                 return (
                   <div key={run.id} className="flex-1 flex flex-col items-center gap-1">
                     <div
-                      className={`w-full rounded-t-md transition-all ${isLast ? "bg-[#FFD700]" : "bg-[#1e293b]"}`}
+                      className={`w-full rounded-t-md transition-all ${isLast ? "bg-[var(--gold)]" : "bg-[var(--border-color)]"}`}
                       style={{ height: h }}
                       title={`${run.overall_score.toFixed(1)}`}
                     />
-                    <span className="text-[10px] text-[#64748b] font-mono">{run.overall_score.toFixed(0)}</span>
+                    <span className="text-[10px] text-[var(--text-muted)] font-mono">{run.overall_score.toFixed(0)}</span>
                   </div>
                 );
               })}
             </div>
-            <p className="text-xs text-[#64748b] mt-2">
+            <p className="text-xs text-[var(--text-muted)] mt-2">
               {locale === "ja"
                 ? "過去5回のシミュレーションのスコア推移。毎回実行するほど弱点が明確になります。"
                 : "Score across last 5 simulations. Each run identifies new weaknesses to harden."}
@@ -414,18 +414,18 @@ export default function DashboardPage() {
       <Card className="mb-10">
         <div className="flex items-center justify-between mb-6">
           <h2 className="text-lg font-bold flex items-center gap-2">
-            <BarChart3 size={20} className="text-[#FFD700]" />
+            <BarChart3 size={20} className="text-[var(--gold)]" />
             {t.threeLayerModel}
           </h2>
         </div>
         <div className="space-y-4">
           {[
             { label: t.software, value: 4.0, max: 7, color: "bg-emerald-400" },
-            { label: t.hardware, value: 5.91, max: 7, color: "bg-[#FFD700]" },
+            { label: t.hardware, value: 5.91, max: 7, color: "bg-[var(--gold)]" },
             { label: t.theoretical, value: 6.65, max: 7, color: "bg-blue-400" },
           ].map((layer) => (
             <div key={layer.label} className="grid grid-cols-[80px_1fr_60px] items-center gap-4">
-              <span className="text-sm text-[#64748b]">{layer.label}</span>
+              <span className="text-sm text-[var(--text-muted)]">{layer.label}</span>
               <div className="h-3 bg-white/5 rounded-full overflow-hidden">
                 <div
                   className={`h-full rounded-full ${layer.color} transition-all duration-1000`}
@@ -443,10 +443,10 @@ export default function DashboardPage() {
         <Card className="mb-10">
           <div className="flex items-center justify-between mb-6">
             <h2 className="text-lg font-bold flex items-center gap-2">
-              <FolderKanban size={20} className="text-[#FFD700]" />
+              <FolderKanban size={20} className="text-[var(--gold)]" />
               {tProjects.yourProjects}
             </h2>
-            <Link href="/projects" className="text-sm text-[#FFD700] hover:underline flex items-center gap-1">
+            <Link href="/projects" className="text-sm text-[var(--gold)] hover:underline flex items-center gap-1">
               {t.viewAll} <ArrowRight size={14} />
             </Link>
           </div>
@@ -456,7 +456,7 @@ export default function DashboardPage() {
               const scoreColor = score == null ? "#64748b" : score >= 90 ? "#10B981" : score >= 70 ? "#FFD700" : "#ef4444";
               return (
                 <Link key={project.id} href={`/projects/${project.id}`}>
-                  <div className="p-4 rounded-xl bg-white/[0.02] border border-[#1e293b] hover:border-[#FFD700]/30 transition-colors cursor-pointer">
+                  <div className="p-4 rounded-xl bg-white/[0.02] border border-[var(--border-color)] hover:border-[var(--gold)]/30 transition-colors cursor-pointer">
                     <div className="flex items-center justify-between mb-2">
                       <p className="font-semibold text-sm truncate flex-1 mr-2">{project.name}</p>
                       {score != null && (
@@ -465,8 +465,8 @@ export default function DashboardPage() {
                         </span>
                       )}
                     </div>
-                    <p className="text-xs text-[#64748b] line-clamp-1">{project.description || "—"}</p>
-                    <p className="text-xs text-[#475569] mt-2">
+                    <p className="text-xs text-[var(--text-muted)] line-clamp-1">{project.description || "—"}</p>
+                    <p className="text-xs text-[var(--text-muted)] mt-2">
                       {project.run_count ?? 0} {tProjects.runCount}
                       {project.last_run_at && (
                         <> · {new Date(project.last_run_at).toLocaleDateString()}</>
@@ -484,18 +484,18 @@ export default function DashboardPage() {
       <Card>
         <div className="flex items-center justify-between mb-6">
           <h2 className="text-lg font-bold flex items-center gap-2">
-            <Clock size={20} className="text-[#FFD700]" />
+            <Clock size={20} className="text-[var(--gold)]" />
             {t.recentSimulations}
           </h2>
-          <Link href="/results" className="text-sm text-[#FFD700] hover:underline flex items-center gap-1">
+          <Link href="/results" className="text-sm text-[var(--gold)] hover:underline flex items-center gap-1">
             {t.viewAll} <ArrowRight size={14} />
           </Link>
         </div>
         {loading ? (
-          <div className="text-center py-8 text-[#64748b]">{t.loading}</div>
+          <div className="text-center py-8 text-[var(--text-muted)]">{t.loading}</div>
         ) : runs.length === 0 ? (
           <div className="text-center py-12">
-            <p className="text-[#64748b] mb-4">{t.noSimulations}</p>
+            <p className="text-[var(--text-muted)] mb-4">{t.noSimulations}</p>
             <Link href="/simulate">
               <Button size="sm"><Zap size={14} /> {t.runSimulation}</Button>
             </Link>
@@ -504,25 +504,25 @@ export default function DashboardPage() {
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
-                <tr className="border-b border-[#1e293b]">
-                  <th scope="col" className="text-left py-3 px-2 text-[#64748b] font-medium">{t.date}</th>
-                  <th scope="col" className="text-left py-3 px-2 text-[#64748b] font-medium">{t.score}</th>
-                  <th scope="col" className="text-left py-3 px-2 text-[#64748b] font-medium">{t.availability}</th>
-                  <th scope="col" className="text-left py-3 px-2 text-[#64748b] font-medium">{t.scenariosCol}</th>
-                  <th scope="col" className="text-right py-3 px-2 text-[#64748b] font-medium">{t.status}</th>
+                <tr className="border-b border-[var(--border-color)]">
+                  <th scope="col" className="text-left py-3 px-2 text-[var(--text-muted)] font-medium">{t.date}</th>
+                  <th scope="col" className="text-left py-3 px-2 text-[var(--text-muted)] font-medium">{t.score}</th>
+                  <th scope="col" className="text-left py-3 px-2 text-[var(--text-muted)] font-medium">{t.availability}</th>
+                  <th scope="col" className="text-left py-3 px-2 text-[var(--text-muted)] font-medium">{t.scenariosCol}</th>
+                  <th scope="col" className="text-right py-3 px-2 text-[var(--text-muted)] font-medium">{t.status}</th>
                 </tr>
               </thead>
               <tbody>
                 {runs.map((run) => (
-                  <tr key={run.id} className="border-b border-[#1e293b]/50 hover:bg-white/[0.02]">
-                    <td className="py-3 px-2 text-[#94a3b8]">
+                  <tr key={run.id} className="border-b border-[var(--border-color)]/50 hover:bg-white/[0.02]">
+                    <td className="py-3 px-2 text-[var(--text-secondary)]">
                       {new Date(run.created_at).toLocaleDateString()}
                     </td>
                     <td className="py-3 px-2 font-mono font-semibold">
                       {run.overall_score.toFixed(1)}
                     </td>
-                    <td className="py-3 px-2 text-[#94a3b8]">{run.availability_estimate}</td>
-                    <td className="py-3 px-2 text-[#94a3b8]">
+                    <td className="py-3 px-2 text-[var(--text-secondary)]">{run.availability_estimate}</td>
+                    <td className="py-3 px-2 text-[var(--text-secondary)]">
                       <span className="text-emerald-400">{run.scenarios_passed}</span>
                       {" / "}
                       <span>{run.total_scenarios}</span>

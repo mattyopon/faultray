@@ -67,13 +67,13 @@ export default function WhatIfPage() {
   };
 
   return (
-    <div className="max-w-[1200px] mx-auto px-6 py-10">
+    <div className="w-full px-6 py-10">
       <div className="mb-10">
         <h1 className="text-2xl font-bold mb-1 flex items-center gap-3">
-          <FlaskConical size={24} className="text-[#FFD700]" />
+          <FlaskConical size={24} className="text-[var(--gold)]" />
           {t.title}
         </h1>
-        <p className="text-[#94a3b8] text-sm">
+        <p className="text-[var(--text-secondary)] text-sm">
           {t.subtitle}
         </p>
       </div>
@@ -81,14 +81,14 @@ export default function WhatIfPage() {
       <div className="grid lg:grid-cols-2 gap-6">
         {/* Controls */}
         <Card>
-          <h3 className="text-sm font-semibold text-[#94a3b8] uppercase tracking-wider mb-6">
+          <h3 className="text-sm font-semibold text-[var(--text-secondary)] uppercase tracking-wider mb-6">
             {t.parameters}
           </h3>
 
           <div className="space-y-6">
             {/* Component Selection */}
             <div>
-              <label className="text-xs font-medium text-[#94a3b8] mb-2 block">{t.component}</label>
+              <label className="text-xs font-medium text-[var(--text-secondary)] mb-2 block">{t.component}</label>
               <div className="grid grid-cols-2 gap-2">
                 {COMPONENTS.map((c) => (
                   <button
@@ -96,8 +96,8 @@ export default function WhatIfPage() {
                     onClick={() => setComponent(c.id)}
                     className={`px-3 py-2 rounded-lg text-sm text-left transition-all ${
                       component === c.id
-                        ? "bg-[#FFD700]/10 text-[#FFD700] border border-[#FFD700]/30"
-                        : "text-[#94a3b8] border border-[#1e293b] hover:border-[#64748b]"
+                        ? "bg-[var(--gold)]/10 text-[var(--gold)] border border-[var(--gold)]/30"
+                        : "text-[var(--text-secondary)] border border-[var(--border-color)] hover:border-[#64748b]"
                     }`}
                   >
                     {c.name}
@@ -108,7 +108,7 @@ export default function WhatIfPage() {
 
             {/* Parameter Selection */}
             <div>
-              <label className="text-xs font-medium text-[#94a3b8] mb-2 block">{t.parameter}</label>
+              <label className="text-xs font-medium text-[var(--text-secondary)] mb-2 block">{t.parameter}</label>
               <select
                 value={parameter}
                 onChange={(e) => {
@@ -117,7 +117,7 @@ export default function WhatIfPage() {
                   setValue(p.default);
                 }}
                 aria-label={t.parameter}
-                className="w-full px-3 py-2.5 bg-[#0d1117] border border-[#1e293b] rounded-lg text-sm text-[#e2e8f0] focus:border-[#FFD700]/50 focus:outline-none"
+                className="w-full px-3 py-2.5 bg-[var(--bg-tertiary)] border border-[var(--border-color)] rounded-lg text-sm text-[#e2e8f0] focus:border-[var(--gold)]/50 focus:outline-none"
               >
                 {PARAMETERS.map((p) => (
                   <option key={p.id} value={p.id}>
@@ -130,8 +130,8 @@ export default function WhatIfPage() {
             {/* Slider */}
             <div>
               <div className="flex items-center justify-between mb-2">
-                <label className="text-xs font-medium text-[#94a3b8]">{t.value}</label>
-                <span className="text-lg font-bold font-mono text-[#FFD700]">{value}</span>
+                <label className="text-xs font-medium text-[var(--text-secondary)]">{t.value}</label>
+                <span className="text-lg font-bold font-mono text-[var(--gold)]">{value}</span>
               </div>
               <input
                 type="range"
@@ -143,9 +143,9 @@ export default function WhatIfPage() {
                 aria-label={`${selectedParam.name} slider`}
                 className="w-full accent-[#FFD700]"
               />
-              <div className="flex justify-between text-xs text-[#64748b] mt-1">
+              <div className="flex justify-between text-xs text-[var(--text-muted)] mt-1">
                 <span>{selectedParam.min}</span>
-                <span className="text-[#94a3b8]">{t.default} {selectedParam.default}</span>
+                <span className="text-[var(--text-secondary)]">{t.default} {selectedParam.default}</span>
                 <span>{selectedParam.max}</span>
               </div>
             </div>
@@ -171,19 +171,19 @@ export default function WhatIfPage() {
           {result ? (
             <>
               <Card>
-                <h3 className="text-sm font-semibold text-[#94a3b8] uppercase tracking-wider mb-6">
+                <h3 className="text-sm font-semibold text-[var(--text-secondary)] uppercase tracking-wider mb-6">
                   {t.impactAnalysis}
                 </h3>
 
                 <div className="grid grid-cols-2 gap-4 mb-6">
-                  <div className="p-4 rounded-xl bg-white/[0.02] border border-[#1e293b] text-center">
-                    <p className="text-xs text-[#64748b] uppercase tracking-wider mb-1">{t.before}</p>
-                    <p className="text-3xl font-extrabold font-mono text-[#94a3b8]">
+                  <div className="p-4 rounded-xl bg-white/[0.02] border border-[var(--border-color)] text-center">
+                    <p className="text-xs text-[var(--text-muted)] uppercase tracking-wider mb-1">{t.before}</p>
+                    <p className="text-3xl font-extrabold font-mono text-[var(--text-secondary)]">
                       {result.baseline.overall_score.toFixed(1)}
                     </p>
                   </div>
-                  <div className="p-4 rounded-xl bg-white/[0.02] border border-[#1e293b] text-center">
-                    <p className="text-xs text-[#64748b] uppercase tracking-wider mb-1">{t.after}</p>
+                  <div className="p-4 rounded-xl bg-white/[0.02] border border-[var(--border-color)] text-center">
+                    <p className="text-xs text-[var(--text-muted)] uppercase tracking-wider mb-1">{t.after}</p>
                     <p
                       className="text-3xl font-extrabold font-mono"
                       style={{
@@ -200,13 +200,13 @@ export default function WhatIfPage() {
                   </div>
                 </div>
 
-                <div className="p-4 rounded-xl border border-[#1e293b] flex items-center justify-center gap-3">
+                <div className="p-4 rounded-xl border border-[var(--border-color)] flex items-center justify-center gap-3">
                   {result.delta.direction === "improvement" ? (
                     <TrendingUp size={24} className="text-emerald-400" />
                   ) : result.delta.direction === "degradation" ? (
                     <TrendingDown size={24} className="text-red-400" />
                   ) : (
-                    <Minus size={24} className="text-[#64748b]" />
+                    <Minus size={24} className="text-[var(--text-muted)]" />
                   )}
                   <span
                     className="text-2xl font-bold font-mono"
@@ -237,27 +237,27 @@ export default function WhatIfPage() {
               </Card>
 
               <Card>
-                <h3 className="text-sm font-semibold text-[#94a3b8] uppercase tracking-wider mb-4">
+                <h3 className="text-sm font-semibold text-[var(--text-secondary)] uppercase tracking-wider mb-4">
                   {t.changeSummary}
                 </h3>
                 <div className="space-y-3">
                   <div className="flex justify-between text-sm">
-                    <span className="text-[#64748b]">{t.component}</span>
+                    <span className="text-[var(--text-muted)]">{t.component}</span>
                     <span className="font-medium">
                       {COMPONENTS.find((c) => c.id === result.component_id)?.name}
                     </span>
                   </div>
                   <div className="flex justify-between text-sm">
-                    <span className="text-[#64748b]">{t.parameter}</span>
+                    <span className="text-[var(--text-muted)]">{t.parameter}</span>
                     <span className="font-mono">{result.parameter}</span>
                   </div>
                   <div className="flex justify-between text-sm">
-                    <span className="text-[#64748b]">{t.original}</span>
+                    <span className="text-[var(--text-muted)]">{t.original}</span>
                     <span className="font-mono">{result.original_value}</span>
                   </div>
                   <div className="flex justify-between text-sm">
-                    <span className="text-[#64748b]">{t.newValue}</span>
-                    <span className="font-mono text-[#FFD700]">{result.new_value}</span>
+                    <span className="text-[var(--text-muted)]">{t.newValue}</span>
+                    <span className="font-mono text-[var(--gold)]">{result.new_value}</span>
                   </div>
                 </div>
               </Card>
@@ -265,7 +265,7 @@ export default function WhatIfPage() {
           ) : (
             <Card className="flex flex-col items-center justify-center py-16">
               <FlaskConical size={40} className="text-[#1e293b] mb-4" />
-              <p className="text-[#64748b] text-sm">
+              <p className="text-[var(--text-muted)] text-sm">
                 {t.adjustPrompt}
               </p>
             </Card>

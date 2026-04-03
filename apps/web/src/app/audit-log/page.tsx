@@ -253,10 +253,10 @@ export default function AuditLogPage() {
       <div className="flex items-center justify-between mb-8">
         <div>
           <h1 className="text-2xl font-bold flex items-center gap-2 mb-1">
-            <Shield size={24} className="text-[#FFD700]" />
+            <Shield size={24} className="text-[var(--gold)]" />
             {locale === "ja" ? "監査ログ" : "Audit Log"}
           </h1>
-          <p className="text-sm text-[#64748b]">
+          <p className="text-sm text-[var(--text-muted)]">
             {locale === "ja"
               ? "誰がいつ何の操作をしたかを記録します。SOC 2 / GDPR コンプライアンス対応。"
               : "Immutable record of who did what and when. Supports SOC 2 / GDPR compliance."}
@@ -271,18 +271,18 @@ export default function AuditLogPage() {
       <Card className="mb-6">
         <div className="flex flex-wrap gap-4 items-center">
           <div className="flex items-center gap-2 flex-1 min-w-[200px]">
-            <Search size={14} className="text-[#64748b] shrink-0" />
+            <Search size={14} className="text-[var(--text-muted)] shrink-0" />
             <input
               type="text"
               placeholder={locale === "ja" ? "ユーザー・操作を検索..." : "Search user or action..."}
               aria-label={locale === "ja" ? "ユーザー・操作を検索" : "Search user or action"}
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              className="bg-transparent text-sm text-white placeholder-[#475569] focus:outline-none flex-1"
+              className="bg-transparent text-sm text-white placeholder-[var(--text-muted)] focus:outline-none flex-1"
             />
           </div>
           <div className="flex items-center gap-2">
-            <Filter size={14} className="text-[#64748b]" />
+            <Filter size={14} className="text-[var(--text-muted)]" />
             {(["ALL", "SUCCESS", "FAILURE"] as const).map((val) => (
               <button
                 key={val}
@@ -293,8 +293,8 @@ export default function AuditLogPage() {
                       ? "bg-red-500/20 text-red-400"
                       : val === "SUCCESS"
                       ? "bg-emerald-500/20 text-emerald-400"
-                      : "bg-[#FFD700]/20 text-[#FFD700]"
-                    : "bg-white/5 text-[#64748b] hover:text-white"
+                      : "bg-[var(--gold)]/20 text-[var(--gold)]"
+                    : "bg-white/5 text-[var(--text-muted)] hover:text-white"
                 }`}
               >
                 {val}
@@ -309,23 +309,23 @@ export default function AuditLogPage() {
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
-              <tr className="border-b border-[#1e293b]">
-                <th scope="col" className="text-left py-3 px-3 text-[#64748b] font-medium whitespace-nowrap">
+              <tr className="border-b border-[var(--border-color)]">
+                <th scope="col" className="text-left py-3 px-3 text-[var(--text-muted)] font-medium whitespace-nowrap">
                   {locale === "ja" ? "日時" : "Timestamp"}
                 </th>
-                <th scope="col" className="text-left py-3 px-3 text-[#64748b] font-medium">
+                <th scope="col" className="text-left py-3 px-3 text-[var(--text-muted)] font-medium">
                   {locale === "ja" ? "ユーザー" : "Actor"}
                 </th>
-                <th scope="col" className="text-left py-3 px-3 text-[#64748b] font-medium">
+                <th scope="col" className="text-left py-3 px-3 text-[var(--text-muted)] font-medium">
                   {locale === "ja" ? "操作" : "Action"}
                 </th>
-                <th scope="col" className="text-left py-3 px-3 text-[#64748b] font-medium hidden md:table-cell">
+                <th scope="col" className="text-left py-3 px-3 text-[var(--text-muted)] font-medium hidden md:table-cell">
                   {locale === "ja" ? "対象リソース" : "Resource"}
                 </th>
-                <th scope="col" className="text-left py-3 px-3 text-[#64748b] font-medium">
+                <th scope="col" className="text-left py-3 px-3 text-[var(--text-muted)] font-medium">
                   {locale === "ja" ? "結果" : "Outcome"}
                 </th>
-                <th scope="col" className="text-left py-3 px-3 text-[#64748b] font-medium hidden lg:table-cell">IP</th>
+                <th scope="col" className="text-left py-3 px-3 text-[var(--text-muted)] font-medium hidden lg:table-cell">IP</th>
                 <th scope="col" className="py-3 px-3" />
               </tr>
             </thead>
@@ -337,30 +337,30 @@ export default function AuditLogPage() {
                   <>
                     <tr
                       key={entry.id}
-                      className="border-b border-[#1e293b]/50 hover:bg-white/[0.02] cursor-pointer"
+                      className="border-b border-[var(--border-color)]/50 hover:bg-white/[0.02] cursor-pointer"
                       onClick={() => setExpandedId(isExpanded ? null : entry.id)}
                     >
-                      <td className="py-3 px-3 text-[#64748b] font-mono text-xs whitespace-nowrap">
+                      <td className="py-3 px-3 text-[var(--text-muted)] font-mono text-xs whitespace-nowrap">
                         {new Date(entry.timestamp).toLocaleString()}
                       </td>
                       <td className="py-3 px-3">
                         <div className="flex items-center gap-2">
-                          <div className="w-6 h-6 rounded-full bg-[#1e293b] flex items-center justify-center">
-                            <User size={12} className="text-[#64748b]" />
+                          <div className="w-6 h-6 rounded-full bg-[var(--border-color)] flex items-center justify-center">
+                            <User size={12} className="text-[var(--text-muted)]" />
                           </div>
                           <div>
                             <p className="text-white text-xs font-medium">{entry.actor}</p>
-                            <p className="text-[#475569] text-xs">{entry.actorEmail}</p>
+                            <p className="text-[var(--text-muted)] text-xs">{entry.actorEmail}</p>
                           </div>
                         </div>
                       </td>
                       <td className="py-3 px-3">
                         <div className="flex items-center gap-1.5">
-                          <ActionIcon size={12} className="text-[#FFD700] shrink-0" />
+                          <ActionIcon size={12} className="text-[var(--gold)] shrink-0" />
                           <span className="text-white text-xs whitespace-nowrap">{ACTION_LABELS[entry.action]}</span>
                         </div>
                       </td>
-                      <td className="py-3 px-3 text-[#94a3b8] text-xs hidden md:table-cell max-w-[200px] truncate">
+                      <td className="py-3 px-3 text-[var(--text-secondary)] text-xs hidden md:table-cell max-w-[200px] truncate">
                         {entry.resource ?? "—"}
                       </td>
                       <td className="py-3 px-3">
@@ -368,34 +368,34 @@ export default function AuditLogPage() {
                           {entry.outcome}
                         </Badge>
                       </td>
-                      <td className="py-3 px-3 text-[#475569] text-xs font-mono hidden lg:table-cell">
+                      <td className="py-3 px-3 text-[var(--text-muted)] text-xs font-mono hidden lg:table-cell">
                         {entry.ipAddress}
                       </td>
                       <td className="py-3 px-3 text-right">
                         {isExpanded
-                          ? <ChevronUp size={14} className="text-[#64748b]" />
-                          : <ChevronDown size={14} className="text-[#64748b]" />
+                          ? <ChevronUp size={14} className="text-[var(--text-muted)]" />
+                          : <ChevronDown size={14} className="text-[var(--text-muted)]" />
                         }
                       </td>
                     </tr>
                     {isExpanded && (
-                      <tr key={`${entry.id}-detail`} className="border-b border-[#1e293b]/50 bg-white/[0.01]">
+                      <tr key={`${entry.id}-detail`} className="border-b border-[var(--border-color)]/50 bg-white/[0.01]">
                         <td colSpan={7} className="py-3 px-6">
                           <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-xs">
                             <div>
-                              <p className="text-[#64748b] mb-0.5">{locale === "ja" ? "詳細" : "Details"}</p>
+                              <p className="text-[var(--text-muted)] mb-0.5">{locale === "ja" ? "詳細" : "Details"}</p>
                               <p className="text-white">{entry.details ?? "—"}</p>
                             </div>
                             <div>
-                              <p className="text-[#64748b] mb-0.5">{locale === "ja" ? "IPアドレス" : "IP Address"}</p>
+                              <p className="text-[var(--text-muted)] mb-0.5">{locale === "ja" ? "IPアドレス" : "IP Address"}</p>
                               <p className="text-white font-mono">{entry.ipAddress}</p>
                             </div>
                             <div>
-                              <p className="text-[#64748b] mb-0.5">{locale === "ja" ? "ユーザーエージェント" : "User Agent"}</p>
+                              <p className="text-[var(--text-muted)] mb-0.5">{locale === "ja" ? "ユーザーエージェント" : "User Agent"}</p>
                               <p className="text-white">{entry.userAgent}</p>
                             </div>
                             <div>
-                              <p className="text-[#64748b] mb-0.5">{locale === "ja" ? "イベントID" : "Event ID"}</p>
+                              <p className="text-[var(--text-muted)] mb-0.5">{locale === "ja" ? "イベントID" : "Event ID"}</p>
                               <p className="text-white font-mono">{entry.id}</p>
                             </div>
                           </div>
@@ -407,7 +407,7 @@ export default function AuditLogPage() {
               })}
               {filtered.length === 0 && (
                 <tr>
-                  <td colSpan={7} className="py-12 text-center text-[#64748b]">
+                  <td colSpan={7} className="py-12 text-center text-[var(--text-muted)]">
                     <Eye size={32} className="mx-auto mb-3 opacity-40" />
                     <p>{locale === "ja" ? "該当するログが見つかりません" : "No matching log entries"}</p>
                   </td>
@@ -416,7 +416,7 @@ export default function AuditLogPage() {
             </tbody>
           </table>
         </div>
-        <div className="mt-4 text-xs text-[#475569]">
+        <div className="mt-4 text-xs text-[var(--text-muted)]">
           {locale === "ja"
             ? `${filtered.length}件のログエントリーを表示中。監査ログは90日間保持されます。`
             : `Showing ${filtered.length} entries. Audit logs are retained for 90 days.`}
@@ -424,8 +424,8 @@ export default function AuditLogPage() {
       </Card>
 
       {/* Compliance note */}
-      <div className="mt-6 p-4 rounded-xl border border-[#1e293b] bg-white/[0.01]">
-        <p className="text-xs text-[#64748b] leading-relaxed">
+      <div className="mt-6 p-4 rounded-xl border border-[var(--border-color)] bg-white/[0.01]">
+        <p className="text-xs text-[var(--text-muted)] leading-relaxed">
           <span className="font-semibold text-white">
             {locale === "ja" ? "コンプライアンス情報: " : "Compliance: "}
           </span>

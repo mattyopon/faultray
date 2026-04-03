@@ -555,14 +555,14 @@ export default function CostPage() {
    * ============================================================ */
 
   return (
-    <div className="max-w-[1200px] mx-auto px-6 py-10">
+    <div className="w-full px-6 py-10">
       {/* Header */}
       <div className="mb-10">
         <h1 className="text-2xl font-bold mb-1 flex items-center gap-3">
-          <DollarSign size={24} className="text-[#FFD700]" />
+          <DollarSign size={24} className="text-[var(--gold)]" />
           {t.title}
         </h1>
-        <p className="text-[#94a3b8] text-sm">{t.subtitle}</p>
+        <p className="text-[var(--text-secondary)] text-sm">{t.subtitle}</p>
       </div>
 
       {/* ── Input Section ── */}
@@ -570,7 +570,7 @@ export default function CostPage() {
         <div className="grid md:grid-cols-3 gap-6">
           {/* Column 1: Industry */}
           <div>
-            <label className="text-xs font-medium text-[#94a3b8] mb-2 block">{t.industry}</label>
+            <label className="text-xs font-medium text-[var(--text-secondary)] mb-2 block">{t.industry}</label>
             <div className="space-y-2">
               {INDUSTRIES.map((ind) => (
                 <button
@@ -578,8 +578,8 @@ export default function CostPage() {
                   onClick={() => setIndustry(ind.id)}
                   className={`w-full px-3 py-2 rounded-lg text-sm text-left transition-all ${
                     industry === ind.id
-                      ? "bg-[#FFD700]/10 text-[#FFD700] border border-[#FFD700]/30"
-                      : "text-[#94a3b8] border border-[#1e293b] hover:border-[#64748b]"
+                      ? "bg-[var(--gold)]/10 text-[var(--gold)] border border-[var(--gold)]/30"
+                      : "text-[var(--text-secondary)] border border-[var(--border-color)] hover:border-[#64748b]"
                   }`}
                 >
                   {ind.name}
@@ -591,7 +591,7 @@ export default function CostPage() {
           {/* Column 2: Revenue & SLA */}
           <div className="space-y-4">
             <div>
-              <label className="text-xs font-medium text-[#94a3b8] mb-2 block">
+              <label className="text-xs font-medium text-[var(--text-secondary)] mb-2 block">
                 {t.revenuePerHour} ({currencySymbol})
               </label>
               <input
@@ -599,7 +599,7 @@ export default function CostPage() {
                 value={revenuePerHour}
                 onChange={(e) => setRevenuePerHour(Number(e.target.value))}
                 aria-label={`${t.revenuePerHour} (${currencySymbol})`}
-                className="w-full px-3 py-2.5 bg-[#0d1117] border border-[#1e293b] rounded-lg text-sm font-mono text-[#e2e8f0] focus:border-[#FFD700]/50 focus:outline-none"
+                className="w-full px-3 py-2.5 bg-[var(--bg-tertiary)] border border-[var(--border-color)] rounded-lg text-sm font-mono text-[#e2e8f0] focus:border-[var(--gold)]/50 focus:outline-none"
               />
               <input
                 type="range"
@@ -611,14 +611,14 @@ export default function CostPage() {
                 aria-label={`${t.revenuePerHour} slider`}
                 className="w-full mt-1 accent-[#FFD700]"
               />
-              <div className="flex justify-between text-xs text-[#64748b]">
+              <div className="flex justify-between text-xs text-[var(--text-muted)]">
                 <span>{currencySymbol}1K</span>
                 <span>{currencySymbol}200K</span>
               </div>
             </div>
 
             <div>
-              <label className="text-xs font-medium text-[#94a3b8] mb-2 block">
+              <label className="text-xs font-medium text-[var(--text-secondary)] mb-2 block">
                 {t.annualRevenue} ({currencySymbol})
               </label>
               <input
@@ -626,17 +626,17 @@ export default function CostPage() {
                 value={annualRevenue}
                 onChange={(e) => setAnnualRevenue(Number(e.target.value))}
                 aria-label={`${t.annualRevenue} (${currencySymbol})`}
-                className="w-full px-3 py-2.5 bg-[#0d1117] border border-[#1e293b] rounded-lg text-sm font-mono text-[#e2e8f0] focus:border-[#FFD700]/50 focus:outline-none"
+                className="w-full px-3 py-2.5 bg-[var(--bg-tertiary)] border border-[var(--border-color)] rounded-lg text-sm font-mono text-[#e2e8f0] focus:border-[var(--gold)]/50 focus:outline-none"
               />
             </div>
 
             <div>
-              <label className="text-xs font-medium text-[#94a3b8] mb-2 block">{t.contractSla}</label>
+              <label className="text-xs font-medium text-[var(--text-secondary)] mb-2 block">{t.contractSla}</label>
               <select
                 value={contractSla}
                 onChange={(e) => setContractSla(Number(e.target.value))}
                 aria-label={locale === "ja" ? "契約SLA" : "Contract SLA"}
-                className="w-full px-3 py-2.5 bg-[#0d1117] border border-[#1e293b] rounded-lg text-sm text-[#e2e8f0] focus:border-[#FFD700]/50 focus:outline-none"
+                className="w-full px-3 py-2.5 bg-[var(--bg-tertiary)] border border-[var(--border-color)] rounded-lg text-sm text-[#e2e8f0] focus:border-[var(--gold)]/50 focus:outline-none"
               >
                 {SLA_OPTIONS.map((opt) => (
                   <option key={opt.value} value={opt.value}>
@@ -647,7 +647,7 @@ export default function CostPage() {
             </div>
 
             <div>
-              <label className="text-xs font-medium text-[#94a3b8] mb-2 block">
+              <label className="text-xs font-medium text-[var(--text-secondary)] mb-2 block">
                 {t.slaPenaltyRate} (%)
               </label>
               <input
@@ -657,7 +657,7 @@ export default function CostPage() {
                 value={slaPenaltyRate}
                 onChange={(e) => setSlaPenaltyRate(Number(e.target.value))}
                 aria-label={`${t.slaPenaltyRate} (%)`}
-                className="w-full px-3 py-2.5 bg-[#0d1117] border border-[#1e293b] rounded-lg text-sm font-mono text-[#e2e8f0] focus:border-[#FFD700]/50 focus:outline-none"
+                className="w-full px-3 py-2.5 bg-[var(--bg-tertiary)] border border-[var(--border-color)] rounded-lg text-sm font-mono text-[#e2e8f0] focus:border-[var(--gold)]/50 focus:outline-none"
               />
             </div>
           </div>
@@ -665,7 +665,7 @@ export default function CostPage() {
           {/* Column 3: Team & Insurance */}
           <div className="space-y-4">
             <div>
-              <label className="text-xs font-medium text-[#94a3b8] mb-2 block">{t.incidentTeamSize}</label>
+              <label className="text-xs font-medium text-[var(--text-secondary)] mb-2 block">{t.incidentTeamSize}</label>
               <input
                 type="number"
                 min={1}
@@ -673,12 +673,12 @@ export default function CostPage() {
                 value={incidentTeamSize}
                 onChange={(e) => setIncidentTeamSize(Number(e.target.value))}
                 aria-label={t.incidentTeamSize}
-                className="w-full px-3 py-2.5 bg-[#0d1117] border border-[#1e293b] rounded-lg text-sm font-mono text-[#e2e8f0] focus:border-[#FFD700]/50 focus:outline-none"
+                className="w-full px-3 py-2.5 bg-[var(--bg-tertiary)] border border-[var(--border-color)] rounded-lg text-sm font-mono text-[#e2e8f0] focus:border-[var(--gold)]/50 focus:outline-none"
               />
             </div>
 
             <div>
-              <label className="text-xs font-medium text-[#94a3b8] mb-2 block">
+              <label className="text-xs font-medium text-[var(--text-secondary)] mb-2 block">
                 {t.avgHourlyRate} ({currencySymbol})
               </label>
               <input
@@ -688,12 +688,12 @@ export default function CostPage() {
                 value={avgHourlyRate}
                 onChange={(e) => setAvgHourlyRate(Number(e.target.value))}
                 aria-label={`${t.avgHourlyRate} (${currencySymbol})`}
-                className="w-full px-3 py-2.5 bg-[#0d1117] border border-[#1e293b] rounded-lg text-sm font-mono text-[#e2e8f0] focus:border-[#FFD700]/50 focus:outline-none"
+                className="w-full px-3 py-2.5 bg-[var(--bg-tertiary)] border border-[var(--border-color)] rounded-lg text-sm font-mono text-[#e2e8f0] focus:border-[var(--gold)]/50 focus:outline-none"
               />
             </div>
 
             <div>
-              <label className="text-xs font-medium text-[#94a3b8] mb-2 block">
+              <label className="text-xs font-medium text-[var(--text-secondary)] mb-2 block">
                 {t.cyberInsurance} ({currencySymbol}/{t.perYearLabel})
               </label>
               <input
@@ -702,7 +702,7 @@ export default function CostPage() {
                 value={cyberInsurancePremium}
                 onChange={(e) => setCyberInsurancePremium(Number(e.target.value))}
                 aria-label={`${t.cyberInsurance} (${currencySymbol}/${t.perYearLabel})`}
-                className="w-full px-3 py-2.5 bg-[#0d1117] border border-[#1e293b] rounded-lg text-sm font-mono text-[#e2e8f0] focus:border-[#FFD700]/50 focus:outline-none"
+                className="w-full px-3 py-2.5 bg-[var(--bg-tertiary)] border border-[var(--border-color)] rounded-lg text-sm font-mono text-[#e2e8f0] focus:border-[var(--gold)]/50 focus:outline-none"
               />
             </div>
 
@@ -727,40 +727,40 @@ export default function CostPage() {
           {/* ━━ 1. Dashboard ━━ */}
           <Card>
             <h3 className="text-lg font-bold mb-6 flex items-center gap-2">
-              <DollarSign size={18} className="text-[#FFD700]" />
+              <DollarSign size={18} className="text-[var(--gold)]" />
               {t.dashboardTitle}
             </h3>
             <div className="grid md:grid-cols-3 gap-6">
               <div className="text-center">
-                <p className="text-xs text-[#64748b] uppercase tracking-wider mb-2">{t.totalAnnualCost}</p>
+                <p className="text-xs text-[var(--text-muted)] uppercase tracking-wider mb-2">{t.totalAnnualCost}</p>
                 <p className="text-3xl font-extrabold font-mono text-red-400">
                   {formatCurrency(currentTotalCost)}
                 </p>
-                <p className="text-xs text-[#64748b] mt-2">{t.directPlusIndirect}</p>
+                <p className="text-xs text-[var(--text-muted)] mt-2">{t.directPlusIndirect}</p>
               </div>
-              <div className="text-center border-x border-[#1e293b] px-4">
-                <p className="text-xs text-[#64748b] uppercase tracking-wider mb-2">{t.directLoss}</p>
+              <div className="text-center border-x border-[var(--border-color)] px-4">
+                <p className="text-xs text-[var(--text-muted)] uppercase tracking-wider mb-2">{t.directLoss}</p>
                 <p className="text-2xl font-bold font-mono text-orange-400">
                   {formatCurrency(currentDirectLoss)}
                 </p>
-                <p className="text-xs text-[#64748b] mt-2">{currentDowntimeHours.toFixed(1)}h {t.downtimePerYear}</p>
+                <p className="text-xs text-[var(--text-muted)] mt-2">{currentDowntimeHours.toFixed(1)}h {t.downtimePerYear}</p>
               </div>
               <div className="text-center">
-                <p className="text-xs text-[#64748b] uppercase tracking-wider mb-2">{t.indirectLoss}</p>
+                <p className="text-xs text-[var(--text-muted)] uppercase tracking-wider mb-2">{t.indirectLoss}</p>
                 <p className="text-2xl font-bold font-mono text-yellow-400">
                   {formatCurrency(currentSlaPenalty + expectedDoraFine + currentHumanCost + currentInsuranceCost)}
                 </p>
-                <p className="text-xs text-[#64748b] mt-2">SLA + DORA + {t.humanCostLabel} + {t.insurance}</p>
+                <p className="text-xs text-[var(--text-muted)] mt-2">SLA + DORA + {t.humanCostLabel} + {t.insurance}</p>
               </div>
             </div>
             {/* Savings banner */}
             <div className="mt-6 flex items-center justify-center gap-4 py-4 rounded-xl bg-emerald-500/5 border border-emerald-500/20">
-              <ArrowRight size={20} className="text-[#FFD700]" />
+              <ArrowRight size={20} className="text-[var(--gold)]" />
               <div className="text-center">
                 <Badge variant="green" className="text-base px-6 py-1.5">
                   {t.save} {formatCurrency(totalSavings)}{t.perYear}
                 </Badge>
-                <p className="text-xs text-[#64748b] mt-2">
+                <p className="text-xs text-[var(--text-muted)] mt-2">
                   {t.improvedTo} {improvedNines.toFixed(1)} nines ({improvedAvailability.toFixed(3)}%)
                 </p>
               </div>
@@ -770,23 +770,23 @@ export default function CostPage() {
           {/* ━━ 2. SLA Penalty ━━ */}
           <Card className={slaViolation ? "border-red-500/30" : "border-emerald-500/20"}>
             <h3 className="text-lg font-bold mb-4 flex items-center gap-2">
-              <Shield size={18} className="text-[#FFD700]" />
+              <Shield size={18} className="text-[var(--gold)]" />
               {t.slaPenaltyTitle}
             </h3>
             <div className="grid md:grid-cols-2 gap-6">
               <div className="space-y-3">
                 <div className="flex justify-between text-sm">
-                  <span className="text-[#94a3b8]">{t.contractSla}</span>
+                  <span className="text-[var(--text-secondary)]">{t.contractSla}</span>
                   <span className="font-mono">{contractSla}%</span>
                 </div>
                 <div className="flex justify-between text-sm">
-                  <span className="text-[#94a3b8]">{t.currentAvailability}</span>
+                  <span className="text-[var(--text-secondary)]">{t.currentAvailability}</span>
                   <span className={`font-mono ${slaViolation ? "text-red-400" : "text-emerald-400"}`}>
                     {currentAvailability.toFixed(3)}%
                   </span>
                 </div>
                 <div className="flex justify-between text-sm">
-                  <span className="text-[#94a3b8]">{t.status}</span>
+                  <span className="text-[var(--text-secondary)]">{t.status}</span>
                   {slaViolation ? (
                     <Badge variant="red">{t.slaBreached}</Badge>
                   ) : (
@@ -800,8 +800,8 @@ export default function CostPage() {
                     <p className="text-2xl font-bold font-mono text-red-400">
                       {formatCurrency(currentSlaPenalty)}
                     </p>
-                    <p className="text-xs text-[#64748b] mt-1">{t.annualPenaltyRisk}</p>
-                    <p className="text-xs text-[#94a3b8] mt-2">
+                    <p className="text-xs text-[var(--text-muted)] mt-1">{t.annualPenaltyRisk}</p>
+                    <p className="text-xs text-[var(--text-secondary)] mt-2">
                       {t.slaExplanation.replace("{sla}", String(contractSla)).replace("{avail}", currentAvailability.toFixed(2)).replace("{amount}", formatCurrency(currentSlaPenalty))}
                     </p>
                   </>
@@ -820,22 +820,22 @@ export default function CostPage() {
             </h3>
             <div className="grid md:grid-cols-3 gap-6">
               <div className="text-center">
-                <p className="text-xs text-[#64748b] mb-2">{t.complianceRate}</p>
+                <p className="text-xs text-[var(--text-muted)] mb-2">{t.complianceRate}</p>
                 <p className={`text-3xl font-extrabold font-mono ${doraCompliance < 70 ? "text-red-400" : doraCompliance < 85 ? "text-amber-400" : "text-emerald-400"}`}>
                   {doraCompliance.toFixed(0)}%
                 </p>
               </div>
               <div className="text-center">
-                <p className="text-xs text-[#64748b] mb-2">{t.maxFine} (10%)</p>
-                <p className="text-2xl font-bold font-mono text-[#94a3b8]">{formatCurrency(maxDoraFine)}</p>
+                <p className="text-xs text-[var(--text-muted)] mb-2">{t.maxFine} (10%)</p>
+                <p className="text-2xl font-bold font-mono text-[var(--text-secondary)]">{formatCurrency(maxDoraFine)}</p>
               </div>
               <div className="text-center">
-                <p className="text-xs text-[#64748b] mb-2">{t.expectedFine}</p>
+                <p className="text-xs text-[var(--text-muted)] mb-2">{t.expectedFine}</p>
                 <p className="text-2xl font-bold font-mono text-amber-400">{formatCurrency(expectedDoraFine)}</p>
-                <p className="text-xs text-[#64748b] mt-1">{t.probability}: {(doraProbability * 100).toFixed(0)}%</p>
+                <p className="text-xs text-[var(--text-muted)] mt-1">{t.probability}: {(doraProbability * 100).toFixed(0)}%</p>
               </div>
             </div>
-            <p className="text-xs text-[#64748b] mt-4 border-t border-[#1e293b] pt-3">
+            <p className="text-xs text-[var(--text-muted)] mt-4 border-t border-[var(--border-color)] pt-3">
               {t.doraExplanation.replace("{rate}", doraCompliance.toFixed(0)).replace("{amount}", formatCurrency(expectedDoraFine))}
             </p>
           </Card>
@@ -848,21 +848,21 @@ export default function CostPage() {
             </h3>
             <div className="grid md:grid-cols-3 gap-6">
               <div className="text-center">
-                <p className="text-xs text-[#64748b] mb-2">{t.currentPremium}</p>
+                <p className="text-xs text-[var(--text-muted)] mb-2">{t.currentPremium}</p>
                 <p className="text-2xl font-bold font-mono text-[#e2e8f0]">{formatCurrency(currentInsuranceCost)}</p>
-                <p className="text-xs text-[#64748b] mt-1">{t.score}: {currentScore}</p>
+                <p className="text-xs text-[var(--text-muted)] mt-1">{t.score}: {currentScore}</p>
               </div>
               <div className="text-center">
-                <p className="text-xs text-[#64748b] mb-2">{t.improvedPremium}</p>
+                <p className="text-xs text-[var(--text-muted)] mb-2">{t.improvedPremium}</p>
                 <p className="text-2xl font-bold font-mono text-emerald-400">{formatCurrency(improvedInsuranceCost)}</p>
-                <p className="text-xs text-[#64748b] mt-1">{t.score}: {improvedScore}</p>
+                <p className="text-xs text-[var(--text-muted)] mt-1">{t.score}: {improvedScore}</p>
               </div>
               <div className="text-center">
-                <p className="text-xs text-[#64748b] mb-2">{t.annualSavings}</p>
+                <p className="text-xs text-[var(--text-muted)] mb-2">{t.annualSavings}</p>
                 <Badge variant="green" className="text-lg px-4 py-1">
                   {formatCurrency(insuranceSavings)}
                 </Badge>
-                <p className="text-xs text-[#64748b] mt-2">
+                <p className="text-xs text-[var(--text-muted)] mt-2">
                   {t.reductionPct.replace("{pct}", insuranceReductionPct.toFixed(0))}
                 </p>
               </div>
@@ -877,43 +877,43 @@ export default function CostPage() {
             </h3>
             <div className="grid md:grid-cols-2 gap-8">
               <div>
-                <p className="text-xs text-[#64748b] uppercase tracking-wider mb-3">{t.currentState}</p>
+                <p className="text-xs text-[var(--text-muted)] uppercase tracking-wider mb-3">{t.currentState}</p>
                 <div className="space-y-2 text-sm">
                   <div className="flex justify-between">
-                    <span className="text-[#94a3b8]">{t.annualIncidents}</span>
+                    <span className="text-[var(--text-secondary)]">{t.annualIncidents}</span>
                     <span className="font-mono">{currentIncidents}</span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-[#94a3b8]">{t.hoursPerIncident}</span>
+                    <span className="text-[var(--text-secondary)]">{t.hoursPerIncident}</span>
                     <span className="font-mono">{incidentHours}h</span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-[#94a3b8]">{t.teamSize}</span>
+                    <span className="text-[var(--text-secondary)]">{t.teamSize}</span>
                     <span className="font-mono">{incidentTeamSize}</span>
                   </div>
-                  <div className="flex justify-between border-t border-[#1e293b] pt-2">
-                    <span className="text-[#94a3b8] font-medium">{t.annualHumanCost}</span>
+                  <div className="flex justify-between border-t border-[var(--border-color)] pt-2">
+                    <span className="text-[var(--text-secondary)] font-medium">{t.annualHumanCost}</span>
                     <span className="font-mono text-red-400 font-bold">{formatCurrency(currentHumanCost)}</span>
                   </div>
                 </div>
               </div>
               <div>
-                <p className="text-xs text-[#64748b] uppercase tracking-wider mb-3">{t.afterImprovement}</p>
+                <p className="text-xs text-[var(--text-muted)] uppercase tracking-wider mb-3">{t.afterImprovement}</p>
                 <div className="space-y-2 text-sm">
                   <div className="flex justify-between">
-                    <span className="text-[#94a3b8]">{t.annualIncidents}</span>
+                    <span className="text-[var(--text-secondary)]">{t.annualIncidents}</span>
                     <span className="font-mono text-emerald-400">{improvedIncidents}</span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-[#94a3b8]">{t.hoursPerIncident}</span>
+                    <span className="text-[var(--text-secondary)]">{t.hoursPerIncident}</span>
                     <span className="font-mono">{incidentHours}h</span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-[#94a3b8]">{t.teamSize}</span>
+                    <span className="text-[var(--text-secondary)]">{t.teamSize}</span>
                     <span className="font-mono">{incidentTeamSize}</span>
                   </div>
-                  <div className="flex justify-between border-t border-[#1e293b] pt-2">
-                    <span className="text-[#94a3b8] font-medium">{t.improvedHumanCost}</span>
+                  <div className="flex justify-between border-t border-[var(--border-color)] pt-2">
+                    <span className="text-[var(--text-secondary)] font-medium">{t.improvedHumanCost}</span>
                     <span className="font-mono text-emerald-400 font-bold">{formatCurrency(improvedHumanCost)}</span>
                   </div>
                 </div>
@@ -929,7 +929,7 @@ export default function CostPage() {
           {/* ━━ 6. Cumulative Cost Chart ━━ */}
           <Card>
             <h3 className="text-lg font-bold mb-4 flex items-center gap-2">
-              <TrendingUp size={18} className="text-[#FFD700]" />
+              <TrendingUp size={18} className="text-[var(--gold)]" />
               {t.cumulativeCostTitle}
             </h3>
             <CumulativeCostChart
@@ -950,25 +950,25 @@ export default function CostPage() {
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
                 <thead>
-                  <tr className="border-b border-[#1e293b]">
-                    <th scope="col" className="text-left py-3 px-2 text-[#64748b] font-medium">{t.scenario}</th>
-                    <th scope="col" className="text-right py-3 px-2 text-[#64748b] font-medium">{t.directLoss}</th>
-                    <th scope="col" className="text-right py-3 px-2 text-[#64748b] font-medium">{t.slaPenalty}</th>
-                    <th scope="col" className="text-right py-3 px-2 text-[#64748b] font-medium">{t.doraFine}</th>
-                    <th scope="col" className="text-right py-3 px-2 text-[#64748b] font-medium">{t.insurance}</th>
-                    <th scope="col" className="text-right py-3 px-2 text-[#64748b] font-medium">{t.humanCostLabel}</th>
-                    <th scope="col" className="text-right py-3 px-2 text-[#64748b] font-medium">{t.totalCol}</th>
+                  <tr className="border-b border-[var(--border-color)]">
+                    <th scope="col" className="text-left py-3 px-2 text-[var(--text-muted)] font-medium">{t.scenario}</th>
+                    <th scope="col" className="text-right py-3 px-2 text-[var(--text-muted)] font-medium">{t.directLoss}</th>
+                    <th scope="col" className="text-right py-3 px-2 text-[var(--text-muted)] font-medium">{t.slaPenalty}</th>
+                    <th scope="col" className="text-right py-3 px-2 text-[var(--text-muted)] font-medium">{t.doraFine}</th>
+                    <th scope="col" className="text-right py-3 px-2 text-[var(--text-muted)] font-medium">{t.insurance}</th>
+                    <th scope="col" className="text-right py-3 px-2 text-[var(--text-muted)] font-medium">{t.humanCostLabel}</th>
+                    <th scope="col" className="text-right py-3 px-2 text-[var(--text-muted)] font-medium">{t.totalCol}</th>
                   </tr>
                 </thead>
                 <tbody>
                   {scenarios.map((s, i) => (
                     <tr
                       key={s.label}
-                      className={`border-b border-[#1e293b]/50 ${i === 1 ? "bg-white/[0.02]" : ""}`}
+                      className={`border-b border-[var(--border-color)]/50 ${i === 1 ? "bg-white/[0.02]" : ""}`}
                     >
                       <td className="py-3 px-2 font-medium">
                         {i === 0 && <span className="text-emerald-400 mr-1">&#9650;</span>}
-                        {i === 1 && <span className="text-[#94a3b8] mr-1">&#9644;</span>}
+                        {i === 1 && <span className="text-[var(--text-secondary)] mr-1">&#9644;</span>}
                         {i === 2 && <span className="text-red-400 mr-1">&#9660;</span>}
                         {s.label}
                       </td>
@@ -985,13 +985,13 @@ export default function CostPage() {
                 </tbody>
               </table>
             </div>
-            <p className="text-xs text-[#64748b] mt-3">{t.sensitivityNote}</p>
+            <p className="text-xs text-[var(--text-muted)] mt-3">{t.sensitivityNote}</p>
           </Card>
 
           {/* ━━ 8. Industry Benchmark ━━ */}
           <Card>
             <h3 className="text-lg font-bold mb-4 flex items-center gap-2">
-              <BarChart3 size={18} className="text-[#FFD700]" />
+              <BarChart3 size={18} className="text-[var(--gold)]" />
               {t.benchmarkTitle}
             </h3>
             <BenchmarkBarChart
@@ -1001,7 +1001,7 @@ export default function CostPage() {
               formatCurrency={formatCurrency}
               t={t}
             />
-            <p className="text-sm text-[#94a3b8] mt-4 text-center">
+            <p className="text-sm text-[var(--text-secondary)] mt-4 text-center">
               {currentTotalCost > industryAvgCost
                 ? t.benchmarkAbove.replace("{x}", (currentTotalCost / industryAvgCost).toFixed(1))
                 : t.benchmarkBelow.replace("{x}", (industryAvgCost / currentTotalCost).toFixed(1))}
@@ -1014,7 +1014,7 @@ export default function CostPage() {
               <TrendingUp size={18} className="text-emerald-400" />
               {locale === "ja" ? "具体的なコスト削減アクション" : "Specific Cost Reduction Actions"}
             </h3>
-            <p className="text-xs text-[#94a3b8] mb-4">
+            <p className="text-xs text-[var(--text-secondary)] mb-4">
               {locale === "ja"
                 ? "以下の改善を実施することで、推定年間コストを削減できます。"
                 : "Implement these changes to reduce your estimated annual costs."}
@@ -1052,10 +1052,10 @@ export default function CostPage() {
                   impact: locale === "ja" ? "DR復旧時間をRTO 15分以内に" : "Reduce DR RTO to < 15 min",
                 },
               ].map((item, i) => (
-                <div key={i} className="flex items-center justify-between gap-4 p-3 rounded-lg bg-white/[0.02] border border-[#1e293b]">
+                <div key={i} className="flex items-center justify-between gap-4 p-3 rounded-lg bg-white/[0.02] border border-[var(--border-color)]">
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-medium">{item.action}</p>
-                    <p className="text-xs text-[#64748b] mt-0.5">{item.impact}</p>
+                    <p className="text-xs text-[var(--text-muted)] mt-0.5">{item.impact}</p>
                   </div>
                   <div className="flex items-center gap-2 shrink-0">
                     <Badge variant="default">{item.effort}</Badge>
@@ -1064,8 +1064,8 @@ export default function CostPage() {
                 </div>
               ))}
             </div>
-            <div className="mt-4 pt-3 border-t border-[#1e293b] text-right">
-              <p className="text-xs text-[#64748b]">
+            <div className="mt-4 pt-3 border-t border-[var(--border-color)] text-right">
+              <p className="text-xs text-[var(--text-muted)]">
                 {locale === "ja"
                   ? `全アクション実施で推定 ${formatCurrency(totalSavings)}/年 の削減効果`
                   : `Total estimated savings: ${formatCurrency(totalSavings)}/year`}

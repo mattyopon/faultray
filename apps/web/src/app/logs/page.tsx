@@ -75,7 +75,7 @@ function levelIcon(level: LogLevel) {
     case "ERROR": return <XCircle size={14} className="text-red-400 shrink-0" />;
     case "WARN":  return <AlertTriangle size={14} className="text-yellow-400 shrink-0" />;
     case "INFO":  return <Info size={14} className="text-blue-400 shrink-0" />;
-    case "DEBUG": return <CheckCircle2 size={14} className="text-[#64748b] shrink-0" />;
+    case "DEBUG": return <CheckCircle2 size={14} className="text-[var(--text-muted)] shrink-0" />;
   }
 }
 
@@ -92,8 +92,8 @@ function levelBg(level: LogLevel): string {
   switch (level) {
     case "ERROR": return "bg-red-500/5 border-red-500/15";
     case "WARN":  return "bg-yellow-500/5 border-yellow-500/15";
-    case "INFO":  return "bg-white/[0.02] border-[#1e293b]";
-    case "DEBUG": return "bg-white/[0.01] border-[#1e293b]/50";
+    case "INFO":  return "bg-white/[0.02] border-[var(--border-color)]";
+    case "DEBUG": return "bg-white/[0.01] border-[var(--border-color)]/50";
   }
 }
 
@@ -130,10 +130,10 @@ export default function LogsPage() {
       {/* Header */}
       <div className="mb-8">
         <h1 className="text-2xl font-bold mb-1 flex items-center gap-3">
-          <FileText size={24} className="text-[#FFD700]" />
+          <FileText size={24} className="text-[var(--gold)]" />
           {locale === "ja" ? "ログエクスプローラー" : "Log Explorer"}
         </h1>
-        <p className="text-[#94a3b8] text-sm">
+        <p className="text-[var(--text-secondary)] text-sm">
           {locale === "ja"
             ? "全サービスの構造化ログ検索・異常検知 (Layer 0)"
             : "Structured log search with anomaly detection across all services (Layer 0)"}
@@ -149,7 +149,7 @@ export default function LogsPage() {
           { label: locale === "ja" ? "異常検知" : "Anomalies",           value: anomalyCount,      color: "#a855f7" },
         ].map((stat) => (
           <Card key={stat.label} className="text-center">
-            <p className="text-xs text-[#64748b] uppercase tracking-wider mb-1">{stat.label}</p>
+            <p className="text-xs text-[var(--text-muted)] uppercase tracking-wider mb-1">{stat.label}</p>
             <p className="text-3xl font-extrabold font-mono" style={{ color: stat.color }}>{stat.value}</p>
           </Card>
         ))}
@@ -158,16 +158,16 @@ export default function LogsPage() {
       {/* Search + Filters */}
       <Card className="mb-6">
         <div className="flex flex-wrap items-center gap-3">
-          <div className="flex items-center gap-2 text-[#64748b]">
+          <div className="flex items-center gap-2 text-[var(--text-muted)]">
             <Filter size={14} />
             <span className="text-xs font-medium uppercase tracking-wider">{locale === "ja" ? "フィルター" : "Filters"}</span>
           </div>
 
           {/* Search */}
           <div className="relative flex-1 min-w-[220px]">
-            <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-[#64748b]" />
+            <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--text-muted)]" />
             <input
-              className="w-full bg-white/5 border border-[#1e293b] rounded-lg pl-8 pr-3 py-1.5 text-sm text-[#e2e8f0] placeholder-[#475569] focus:outline-none focus:border-[#FFD700]/40 font-mono"
+              className="w-full bg-white/5 border border-[var(--border-color)] rounded-lg pl-8 pr-3 py-1.5 text-sm text-[#e2e8f0] placeholder-[var(--text-muted)] focus:outline-none focus:border-[var(--gold)]/40 font-mono"
               placeholder={locale === "ja" ? 'メッセージに "timeout" を含む、または service:db' : 'message contains "timeout" OR service:db'}
               aria-label={locale === "ja" ? "ログメッセージを検索" : "Search log messages"}
               value={searchQuery}
@@ -177,7 +177,7 @@ export default function LogsPage() {
 
           {/* Level filter */}
           <select
-            className="bg-[#0d1526] border border-[#1e293b] rounded-lg px-3 py-1.5 text-sm text-[#94a3b8] focus:outline-none focus:border-[#FFD700]/30"
+            className="bg-[var(--bg-tertiary)] border border-[var(--border-color)] rounded-lg px-3 py-1.5 text-sm text-[var(--text-secondary)] focus:outline-none focus:border-[var(--gold)]/30"
             value={filterLevel}
             onChange={(e) => setFilterLevel(e.target.value)}
             aria-label={locale === "ja" ? "ログレベルでフィルター" : "Filter by log level"}
@@ -188,7 +188,7 @@ export default function LogsPage() {
 
           {/* Service filter */}
           <select
-            className="bg-[#0d1526] border border-[#1e293b] rounded-lg px-3 py-1.5 text-sm text-[#94a3b8] focus:outline-none focus:border-[#FFD700]/30"
+            className="bg-[var(--bg-tertiary)] border border-[var(--border-color)] rounded-lg px-3 py-1.5 text-sm text-[var(--text-secondary)] focus:outline-none focus:border-[var(--gold)]/30"
             value={filterService}
             onChange={(e) => setFilterService(e.target.value)}
             aria-label={locale === "ja" ? "サービスでフィルター" : "Filter by service"}
@@ -202,7 +202,7 @@ export default function LogsPage() {
             className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm border transition-colors ${
               showAnomaly
                 ? "bg-purple-500/10 border-purple-500/30 text-purple-400"
-                : "border-[#1e293b] text-[#64748b] hover:border-[#475569]"
+                : "border-[var(--border-color)] text-[var(--text-muted)] hover:border-[#475569]"
             }`}
             onClick={() => setShowAnomaly(!showAnomaly)}
           >
@@ -224,14 +224,14 @@ export default function LogsPage() {
       {/* Log Entries */}
       <Card>
         <div className="flex items-center justify-between mb-4">
-          <h3 className="text-sm font-semibold text-[#94a3b8]">
+          <h3 className="text-sm font-semibold text-[var(--text-secondary)]">
             {locale === "ja"
               ? `${filtered.length} / ${DEMO_LOGS.length} 件を表示中`
               : `Showing ${filtered.length} of ${DEMO_LOGS.length} entries`}
           </h3>
           <div className="flex gap-2">
             {ALL_LEVELS.map((level) => (
-              <span key={level} className="flex items-center gap-1 text-xs text-[#64748b]">
+              <span key={level} className="flex items-center gap-1 text-xs text-[var(--text-muted)]">
                 {levelIcon(level)}
                 {DEMO_LOGS.filter((l) => l.level === level).length}
               </span>
@@ -241,7 +241,7 @@ export default function LogsPage() {
 
         <div className="space-y-1.5 font-mono text-xs">
           {filtered.length === 0 && (
-            <p className="text-center text-[#64748b] py-8">
+            <p className="text-center text-[var(--text-muted)] py-8">
               {locale === "ja" ? "現在のフィルターに一致するログがありません。" : "No log entries match the current filters."}
             </p>
           )}
@@ -255,7 +255,7 @@ export default function LogsPage() {
                 {levelIcon(log.level)}
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2 flex-wrap mb-0.5">
-                    <span className="text-[#475569]">{new Date(log.timestamp).toISOString().replace("T", " ").slice(0, 23)}</span>
+                    <span className="text-[var(--text-muted)]">{new Date(log.timestamp).toISOString().replace("T", " ").slice(0, 23)}</span>
                     <Badge variant={levelVariant(log.level)} className="text-[10px] py-0 px-1.5">{log.level}</Badge>
                     <span
                       className="px-1.5 py-0.5 rounded text-[10px] font-medium"
@@ -264,7 +264,7 @@ export default function LogsPage() {
                       {log.service}
                     </span>
                     {log.traceId && (
-                      <span className="text-[#475569]">trace={log.traceId}</span>
+                      <span className="text-[var(--text-muted)]">trace={log.traceId}</span>
                     )}
                   </div>
                   <p className={`leading-relaxed ${log.level === "ERROR" ? "text-red-300" : log.level === "WARN" ? "text-yellow-200" : "text-[#e2e8f0]"}`}>
@@ -284,21 +284,21 @@ export default function LogsPage() {
       </Card>
 
       {/* Time Range hint */}
-      <p className="text-xs text-[#475569] mt-4 text-center">
+      <p className="text-xs text-[var(--text-muted)] mt-4 text-center">
         {locale === "ja"
-          ? <>直近5分を表示中 · 10秒ごとに自動更新 · クエリ構文: <span className="text-[#64748b]">level:ERROR service:db timeout</span></>
-          : <>Showing last 5 minutes · Auto-refresh every 10s · Use query syntax: <span className="text-[#64748b]">level:ERROR service:db timeout</span></>
+          ? <>直近5分を表示中 · 10秒ごとに自動更新 · クエリ構文: <span className="text-[var(--text-muted)]">level:ERROR service:db timeout</span></>
+          : <>Showing last 5 minutes · Auto-refresh every 10s · Use query syntax: <span className="text-[var(--text-muted)]">level:ERROR service:db timeout</span></>
         }
       </p>
 
       {/* FLOW-11: Cross-links to related observability pages */}
-      <div className="flex items-center gap-3 mt-6 pt-4 border-t border-[#1e293b]">
-        <span className="text-xs text-[#475569]">{locale === "ja" ? "関連:" : "Related:"}</span>
-        <Link href="/traces" className="flex items-center gap-1.5 text-xs text-[#64748b] hover:text-[#94a3b8] transition-colors">
+      <div className="flex items-center gap-3 mt-6 pt-4 border-t border-[var(--border-color)]">
+        <span className="text-xs text-[var(--text-muted)]">{locale === "ja" ? "関連:" : "Related:"}</span>
+        <Link href="/traces" className="flex items-center gap-1.5 text-xs text-[var(--text-muted)] hover:text-[var(--text-secondary)] transition-colors">
           <Activity size={12} />
           {locale === "ja" ? "トレース" : "Traces"}
         </Link>
-        <Link href="/reports" className="flex items-center gap-1.5 text-xs text-[#64748b] hover:text-[#94a3b8] transition-colors">
+        <Link href="/reports" className="flex items-center gap-1.5 text-xs text-[var(--text-muted)] hover:text-[var(--text-secondary)] transition-colors">
           <BookOpen size={12} />
           {locale === "ja" ? "レポート" : "Reports"}
         </Link>
