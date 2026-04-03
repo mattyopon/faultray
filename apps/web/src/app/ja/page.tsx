@@ -1004,6 +1004,103 @@ export default async function LangHomePage() {
               </table>
             </div>
           </div>
+
+          {/* ===== PROFESSIONAL SERVICES (SALES-02) ===== */}
+          <div className="mt-20 max-w-[1000px] mx-auto">
+            <div className="text-center mb-10">
+              <p className="text-xs text-[#FFD700] uppercase tracking-widest font-semibold mb-3">プロフェッショナルサービス</p>
+              <h3 className="text-[clamp(1.5rem,3vw,2rem)] font-bold tracking-tight mb-3">
+                対面診断・スポットコンサルティング
+              </h3>
+              <p className="text-[#94a3b8] max-w-[600px] mx-auto">
+                SaaSプランと組み合わせて使えます。専任エンジニアが貴社のインフラを直接診断し、具体的な改善策をご提案します。
+              </p>
+            </div>
+
+            {/* ROI reminder */}
+            <div className="mb-8 p-5 rounded-2xl border border-[#FFD700]/20 bg-[#FFD700]/[0.04] text-center">
+              <p className="text-sm font-semibold text-white mb-1">
+                1時間の障害損失 <span className="text-red-400">50万円</span> × 年3回 = <span className="text-red-400">150万円</span> の損失
+              </p>
+              <p className="text-sm text-emerald-400 font-bold">
+                月<span className="text-[#FFD700]">4.5万円</span>の投資でリスクを削減。診断1回で投資回収も可能。
+              </p>
+            </div>
+
+            <div className="grid md:grid-cols-3 gap-5">
+              {[
+                {
+                  title: "障害シミュレーション診断",
+                  price: "15〜20万円",
+                  unit: "/件",
+                  desc: "貴社のインフラ構成をもとに2,000以上のカオスシナリオを実行。障害の発生確率と影響範囲を数値化します。",
+                  items: [
+                    "現状ヒアリング（2時間）",
+                    "シミュレーション実行・分析",
+                    "障害リスクレポート（PDF）",
+                    "改善提案・優先順位付け",
+                  ],
+                },
+                {
+                  title: "AIガバナンス診断",
+                  price: "10〜20万円",
+                  unit: "/件",
+                  desc: "AIエージェント・LLMを組み込んだシステムの10種類の障害モードをシミュレーション。DORA準拠確認も実施。",
+                  items: [
+                    "AIシステム構成ヒアリング",
+                    "10種の障害モード検証",
+                    "DORAコンプライアンスチェック",
+                    "ガバナンス強化ロードマップ",
+                  ],
+                },
+                {
+                  title: "属人化リスク診断",
+                  price: "10〜15万円",
+                  unit: "/件",
+                  desc: "バスファクター分析でチームの知識集中リスクを可視化。人材流出・休暇時のインフラ脆弱性を特定します。",
+                  items: [
+                    "担当領域マッピング",
+                    "バスファクター算出",
+                    "属人化スコアレポート",
+                    "引き継ぎ計画テンプレート",
+                  ],
+                },
+              ].map((service) => (
+                <div
+                  key={service.title}
+                  className="p-7 rounded-2xl border border-[#1e293b] bg-[#111827] flex flex-col hover:-translate-y-0.5 hover:border-[#64748b] transition-all"
+                >
+                  <h4 className="text-base font-bold mb-3">{service.title}</h4>
+                  <div className="flex items-baseline gap-0.5 mb-3">
+                    <span className="text-2xl font-extrabold tracking-tight text-[#FFD700]">{service.price}</span>
+                    <span className="text-sm text-[#64748b] ml-1">{service.unit}</span>
+                  </div>
+                  <p className="text-xs text-[#94a3b8] leading-relaxed mb-4">{service.desc}</p>
+                  <ul className="space-y-2 mb-6 flex-1">
+                    {service.items.map((item) => (
+                      <li key={item} className="flex items-start gap-2 text-xs text-[#94a3b8]">
+                        <Check size={13} className="text-emerald-400 shrink-0 mt-0.5" />
+                        {item}
+                      </li>
+                    ))}
+                  </ul>
+                  <Link
+                    href="mailto:contact@faultray.com?subject=プロフェッショナルサービス無料相談"
+                    className="w-full text-center py-2.5 rounded-xl font-semibold border border-[#1e293b] text-white hover:border-[#64748b] hover:bg-white/[0.03] transition-all text-sm"
+                  >
+                    まずは無料相談
+                  </Link>
+                </div>
+              ))}
+            </div>
+
+            <p className="text-center text-xs text-[#475569] mt-6">
+              料金は規模・複雑度によって変動します。まずはお気軽にご相談ください。
+              <Link href="mailto:contact@faultray.com" className="text-[#94a3b8] hover:text-white transition-colors ml-1">
+                contact@faultray.com
+              </Link>
+            </p>
+          </div>
         </div>
       </section>
 
