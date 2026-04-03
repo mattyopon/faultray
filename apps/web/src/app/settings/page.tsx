@@ -598,7 +598,7 @@ export default function SettingsPage() {
                 <h3 className="text-lg font-bold">
                   {locale === "ja" ? "本当にキャンセルしますか？" : "Before you go…"}
                 </h3>
-                <button onClick={() => { setShowChurnModal(false); }} className="text-[#475569] hover:text-white">
+                <button onClick={() => { setShowChurnModal(false); }} className="text-[#475569] hover:text-white" aria-label={locale === "ja" ? "閉じる" : "Close"}>
                   <X size={18} />
                 </button>
               </div>

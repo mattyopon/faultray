@@ -129,7 +129,7 @@ function NewProjectModal({
       <div ref={modalRef} tabIndex={-1} role="dialog" aria-modal="true" aria-label={t.newProject} className="relative w-full max-w-md bg-[#111827] border border-[#1e293b] rounded-2xl p-6 shadow-2xl outline-none">
         <div className="flex items-center justify-between mb-6">
           <h2 className="text-lg font-bold">{t.newProject}</h2>
-          <button onClick={onClose} className="text-[#64748b] hover:text-white transition-colors">
+          <button onClick={onClose} className="text-[#64748b] hover:text-white transition-colors" aria-label="Close">
             <X size={20} />
           </button>
         </div>
