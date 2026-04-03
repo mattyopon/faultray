@@ -182,7 +182,7 @@ function HallucinationChart({ data, width = 200, height = 48 }: { data: Hallucin
  * ============================================================ */
 
 export default function AiReliabilityPage() {
-  useLocale();
+  const locale = useLocale();
 
   const [expandedSystem, setExpandedSystem] = useState<string | null>("rec-engine");
 
@@ -238,16 +238,16 @@ export default function AiReliabilityPage() {
           <HallucinationChart data={HALLUCINATION_HISTORY} width={400} height={72} />
           <div className="space-y-2 pb-1">
             <div>
-              <p className="text-xs text-[#64748b]">Current rate</p>
+              <p className="text-xs text-[#64748b]">{locale === "ja" ? "現在のレート" : "Current rate"}</p>
               <p className="text-2xl font-extrabold font-mono" style={{ color: hallucinationColor(2.3) }}>2.3%</p>
             </div>
             <div>
-              <p className="text-xs text-[#64748b]">Peak (10:00)</p>
+              <p className="text-xs text-[#64748b]">{locale === "ja" ? "ピーク (10:00)" : "Peak (10:00)"}</p>
               <p className="text-lg font-bold font-mono text-yellow-400">3.4%</p>
             </div>
             <div className="flex items-center gap-1 text-xs text-emerald-400">
               <TrendingDown size={12} />
-              <span>↓ 0.5% vs yesterday</span>
+              <span>{locale === "ja" ? "↓ 0.5% 昨日比" : "↓ 0.5% vs yesterday"}</span>
             </div>
           </div>
         </div>
