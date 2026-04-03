@@ -209,11 +209,7 @@ function PricingComparisonCell({ value }: { value: string }) {
 /* ================================================================
    MAIN PAGE
    ================================================================ */
-export default async function LangHomePage({
-  
-}: {
-  
-}) {
+export default async function LangHomePage() {
   const lang = "ja" as "en" | "ja" | "de" | "fr";
   
   const dict = await getDictionary(lang);
@@ -852,6 +848,24 @@ export default async function LangHomePage({
                 <p className="text-xs text-[#64748b]">{item.source}</p>
               </div>
             ))}
+          </div>
+        </div>
+      </section>
+
+      {/* ===== BUSINESS IMPACT (LP-04) ===== */}
+      <section className="py-12 bg-[#0a0e1a] border-t border-[#1e293b]">
+        <div className="max-w-[900px] mx-auto px-6">
+          <div className="rounded-2xl border border-[#FFD700]/20 bg-[#FFD700]/[0.04] p-8 text-center">
+            <p className="text-xs text-[#FFD700] uppercase tracking-widest font-semibold mb-4">ビジネスインパクト試算</p>
+            <p className="text-[clamp(1.125rem,2.5vw,1.375rem)] font-bold text-white mb-2 leading-snug">
+              1時間の障害損失 <span className="text-red-400">50万円</span> × 年3回 = <span className="text-red-400">150万円</span> の損失
+            </p>
+            <p className="text-[clamp(1rem,2vw,1.25rem)] font-bold text-emerald-400 mb-4">
+              月<span className="text-[#FFD700]">4.5万円</span>の投資で、年<span className="text-[#FFD700]">150万円</span>のリスクを削減
+            </p>
+            <p className="text-sm text-[#64748b]">
+              ※ 月売上1億円・障害3時間・年3回の中規模システムを想定した試算。下のROI計算機で自社の数値を入力できます。
+            </p>
           </div>
         </div>
       </section>
