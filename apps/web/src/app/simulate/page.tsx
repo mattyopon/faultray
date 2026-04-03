@@ -585,6 +585,7 @@ function NurtureEmailCapture() {
               value={email}
               onChange={(e) => { setEmail(e.target.value); }}
               placeholder="your@company.com"
+              aria-label="Email address"
               className="flex-1 min-w-0 px-3 py-2 rounded-lg bg-[#0d1117] border border-[#1e293b] text-sm text-white placeholder-[#475569] focus:outline-none focus:border-[#FFD700]/50 transition-colors"
             />
             <button
@@ -1337,6 +1338,7 @@ function SimulatePageInner() {
                   type="file"
                   accept=".yaml,.yml,.json,.tfstate"
                   onChange={handleFileUpload}
+                  aria-label={locale === "ja" ? "トポロジーファイルをアップロード" : "Upload topology file"}
                   className="hidden"
                 />
                 <button
