@@ -30,7 +30,7 @@ function ScoreRing({ score, size = 64 }: { score: number; size?: number }) {
 
   return (
     <div className="relative shrink-0" style={{ width: size, height: size }}>
-      <svg viewBox="0 0 100 100" className="transform -rotate-90" style={{ width: size, height: size }}>
+      <svg viewBox="0 0 100 100" className="transform -rotate-90" style={{ width: size, height: size }} aria-hidden="true">
         <circle cx="50" cy="50" r={radius} stroke="#1e293b" strokeWidth="10" fill="none" />
         <circle
           cx="50" cy="50" r={radius}
