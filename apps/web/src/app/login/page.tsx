@@ -12,12 +12,11 @@ function LoginForm() {
   const locale = useLocale();
   const t = appDict.login[locale] ?? appDict.login.en;
   const searchParams = useSearchParams();
-  // Validate redirectTo to prevent open redirect — only allow internal paths
+  // SEC-02: Validate redirectTo to prevent open redirect (mirrors auth/callback logic).
+  // Blocks: absolute URLs, protocol-relative (//), backslash variants (/\).
   const rawRedirectTo = searchParams.get("redirectTo") || "/dashboard";
-  const redirectTo =
-    rawRedirectTo.startsWith("/") && !rawRedirectTo.startsWith("//")
-      ? rawRedirectTo
-      : "/dashboard";
+  const SAFE_REDIRECT_RE = /^\/(?:[a-zA-Z0-9_\-./~!$&'()*+,;=:@%?#]*)$/;
+  const redirectTo = SAFE_REDIRECT_RE.test(rawRedirectTo) ? rawRedirectTo : "/dashboard";
   const isProduction = process.env.NEXT_PUBLIC_SITE_URL === "https://faultray.com";
 
   // AUTH-01: Show error message when OAuth fails

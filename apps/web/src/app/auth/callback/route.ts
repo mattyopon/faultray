@@ -15,12 +15,13 @@ export async function GET(request: Request) {
     return NextResponse.redirect(`${origin}/login?error=${msg}`);
   }
 
-  // Validate redirectTo to prevent open redirect — only allow internal paths
+  // SEC-02: Validate redirectTo to prevent open redirect.
+  // Accept only paths that start with a single "/" followed by a word-char or end-of-string.
+  // This blocks: absolute URLs (https://), protocol-relative (//evil.com),
+  // and backslash variants (/\evil.com) that some browsers treat as authority separators.
   const rawRedirectTo = searchParams.get("redirectTo") || "/dashboard";
-  const redirectTo =
-    rawRedirectTo.startsWith("/") && !rawRedirectTo.startsWith("//")
-      ? rawRedirectTo
-      : "/dashboard";
+  const SAFE_REDIRECT_RE = /^\/(?:[a-zA-Z0-9_\-./~!$&'()*+,;=:@%?#]*)$/;
+  const redirectTo = SAFE_REDIRECT_RE.test(rawRedirectTo) ? rawRedirectTo : "/dashboard";
 
   if (code) {
     try {

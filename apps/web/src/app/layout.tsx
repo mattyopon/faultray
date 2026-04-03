@@ -167,9 +167,16 @@ export default function RootLayout({
         <link rel="preconnect" href="https://js.stripe.com" />
         <link rel="dns-prefetch" href="//js.stripe.com" />
         {/* Structured data — JSON-LD */}
+        {/* SEC-01: Escape </script> injection — replace <, >, & with Unicode escapes so an
+            attacker-controlled value in jsonLd can never terminate the script tag early. */}
         <script
           type="application/ld+json"
-          dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+          dangerouslySetInnerHTML={{
+            __html: JSON.stringify(jsonLd)
+              .replace(/</g, "\\u003c")
+              .replace(/>/g, "\\u003e")
+              .replace(/&/g, "\\u0026"),
+          }}
         />
       </head>
       <body className="min-h-full flex flex-col">
