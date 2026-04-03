@@ -1401,14 +1401,24 @@ class handler(BaseHTTPRequestHandler):
     _MAX_YAML_COMPONENTS = 200         # 200 components per topology
 
     def _validate_topology_yaml(self, topology_yaml: str) -> str | None:
-        """Return an error message if the YAML fails size/component checks, else None."""
+        """Return an error message if the YAML fails size/syntax/component checks, else None."""
         # PYVAL-01: size limit
         if len(topology_yaml.encode("utf-8")) > self._MAX_YAML_BYTES:
             return (
                 f"topology_yaml exceeds maximum size of {self._MAX_YAML_BYTES // 1024} KB. "
                 "Please reduce the number of components or split into multiple topologies."
             )
-        # PYVAL-02: component count limit — parse minimally to count
+        # SIM-01: YAML syntax validation — parse with safe_load before sending to engine
+        try:
+            import yaml as _yaml
+            parsed = _yaml.safe_load(topology_yaml)
+            if parsed is None or not isinstance(parsed, dict):
+                return "topology_yaml must be a valid YAML mapping (object). Got an empty or non-mapping document."
+        except _yaml.YAMLError as exc:
+            # Return first line of error; do not leak parser internals
+            first_line = str(exc).split("\n")[0]
+            return f"topology_yaml contains invalid YAML syntax: {first_line}"
+        # PYVAL-02: component count limit — count after safe parse
         import re
         component_ids = re.findall(r"^\s+-\s+id:", topology_yaml, re.MULTILINE)
         if len(component_ids) > self._MAX_YAML_COMPONENTS:
