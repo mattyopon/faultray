@@ -255,6 +255,7 @@ export default function ContactPage() {
               name="message"
               required
               rows={5}
+              maxLength={2000}
               value={form.message}
               onChange={handleChange}
               placeholder="Describe your infrastructure, current reliability challenges, and what you hope to achieve with FaultRay..."

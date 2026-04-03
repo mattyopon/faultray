@@ -135,7 +135,11 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   const gaId = process.env.NEXT_PUBLIC_GA_ID;
+  // ANALYTICS-04: Hotjar ID — set NEXT_PUBLIC_HOTJAR_ID env var to enable heatmap/session recording
+  const hotjarId = process.env.NEXT_PUBLIC_HOTJAR_ID;
 
+  // I18N-04: Detect locale from cookie/Accept-Language for html lang attribute
+  // Falls back to "en" for root layout; locale-specific layouts override via their own html element
   return (
     <html
       lang="en"
@@ -177,6 +181,23 @@ export default function RootLayout({
               `}
             </Script>
           </>
+        )}
+        {/* ANALYTICS-04: Hotjar — heatmap & session recording (consent-gated) */}
+        {hotjarId && (
+          <Script id="hotjar-init" strategy="afterInteractive">
+            {`(function(){
+              var consent=typeof localStorage!=='undefined'?localStorage.getItem('faultray_cookie_consent'):null;
+              if(consent!=='accepted')return;
+              (function(h,o,t,j,a,r){
+                h.hj=h.hj||function(){(h.hj.q=h.hj.q||[]).push(arguments)};
+                h._hjSettings={hjid:${hotjarId},hjsv:6};
+                a=o.getElementsByTagName('head')[0];
+                r=o.createElement('script');r.async=1;
+                r.src=t+h._hjSettings.hjid+j+h._hjSettings.hjsv;
+                a.appendChild(r);
+              })(window,document,'https://static.hotjar.com/c/hotjar-','.js?sv=');
+            })();`}
+          </Script>
         )}
         {/* Inline script runs before React hydration — prevents layout shift */}
         <script

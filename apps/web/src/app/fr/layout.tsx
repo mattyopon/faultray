@@ -23,5 +23,5 @@ export default function FrLayout({
 }: {
   children: React.ReactNode;
 }) {
-  return <>{children}</>;
+  return <div lang="fr">{children}</div>; // I18N-04
 }

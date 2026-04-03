@@ -24,7 +24,7 @@ import {
   Tag,
 } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import Link from "next/link";
 import { useLocale, useSetLocale } from "@/lib/useLocale";
 import type { Locale } from "@/i18n/config";
@@ -61,11 +61,14 @@ export default function SettingsPage() {
   const [apiKeys, setApiKeys] = useState<Array<{ key: string; created: string }>>([]);
   const [copiedKey, setCopiedKey] = useState<string | null>(null);
 
-  // Notifications — persisted to localStorage (SAAS-04 / RETAIN-02)
+  // Notifications — persisted to localStorage (SAAS-04 / RETAIN-02 / JOURNEY-04)
   const [notifications, setNotifications] = useState({
     simulationCompleted: true,
     scoreDegradation: true,
     weeklySummary: false,
+    // JOURNEY-04: 自動レポート通知
+    monthlyReport: false,
+    criticalAlertImmediate: true,
   });
   const [notificationSaved, setNotificationSaved] = useState(false);
 
@@ -77,6 +80,19 @@ export default function SettingsPage() {
   // RETAIN-01: Churn prevention modal
   const [showChurnModal, setShowChurnModal] = useState(false);
   const [churnReason, setChurnReason] = useState("");
+  const churnModalRef = useRef<HTMLDivElement>(null);
+
+  // MODAL-05: Esc key closes ChurnModal
+  useEffect(() => {
+    if (!showChurnModal) return;
+    const handleKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setShowChurnModal(false);
+    };
+    document.addEventListener("keydown", handleKey);
+    // Focus trap: focus the modal on open
+    churnModalRef.current?.focus();
+    return () => document.removeEventListener("keydown", handleKey);
+  }, [showChurnModal]);
 
   // Trial state
   const [trialEndsAt, setTrialEndsAt] = useState<string | null>(null);
@@ -222,6 +238,9 @@ export default function SettingsPage() {
           simulationCompleted: parsed.simulationCompleted ?? true,
           scoreDegradation: parsed.scoreDegradation ?? true,
           weeklySummary: parsed.weeklySummary ?? false,
+          // JOURNEY-04: 自動レポート
+          monthlyReport: parsed.monthlyReport ?? false,
+          criticalAlertImmediate: parsed.criticalAlertImmediate ?? true,
         });
       }
     } catch {
@@ -248,6 +267,8 @@ export default function SettingsPage() {
             simulationCompleted: parsed.simulationCompleted ?? true,
             scoreDegradation: parsed.scoreDegradation ?? true,
             weeklySummary: parsed.weeklySummary ?? false,
+            monthlyReport: parsed.monthlyReport ?? false,
+            criticalAlertImmediate: parsed.criticalAlertImmediate ?? true,
           });
         } catch { /* ignore */ }
       }
@@ -401,8 +422,10 @@ export default function SettingsPage() {
               <span className={`text-sm font-medium ${trialDaysLeft <= 3 ? "text-red-300" : trialDaysLeft <= 7 ? "text-amber-300" : "text-[#FFD700]"}`}>
                 {t.proTrial} {trialDaysLeft} {t.trialRemaining}
                 {trialDaysLeft <= 3 && (
-                  <span className="ml-2 text-xs">
-                    {locale === "ja" ? "— 今すぐアップグレードしてデータを保持" : "— Upgrade now to keep your data"}
+                  <span className="ml-2 text-xs font-semibold">
+                    {locale === "ja"
+                      ? `— あと${trialDaysLeft}日でアクセス制限。今すぐProへ`
+                      : `— Access restricted in ${trialDaysLeft} day${trialDaysLeft !== 1 ? "s" : ""}. Upgrade now.`}
                   </span>
                 )}
               </span>
@@ -523,8 +546,8 @@ export default function SettingsPage() {
 
         {/* RETAIN-01: Churn Prevention Modal */}
         {showChurnModal && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
-            <div className="bg-[#111827] border border-[#1e293b] rounded-2xl p-6 max-w-md w-full shadow-2xl">
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm" onClick={(e) => { if (e.target === e.currentTarget) setShowChurnModal(false); }}>
+            <div ref={churnModalRef} tabIndex={-1} role="dialog" aria-modal="true" aria-label={locale === "ja" ? "キャンセル確認" : "Cancel subscription"} className="bg-[#111827] border border-[#1e293b] rounded-2xl p-6 max-w-md w-full shadow-2xl outline-none">
               <div className="flex items-start justify-between mb-4">
                 <h3 className="text-lg font-bold">
                   {locale === "ja" ? "本当にキャンセルしますか？" : "Before you go…"}
@@ -758,6 +781,21 @@ export default function SettingsPage() {
             { key: "simulationCompleted" as const, label: t.simCompleted, desc: t.simCompletedDesc },
             { key: "scoreDegradation" as const, label: t.scoreDegradation, desc: t.scoreDegradationDesc },
             { key: "weeklySummary" as const, label: t.weeklySummary, desc: t.weeklySummaryDesc },
+            // JOURNEY-04: 自動レポート通知
+            {
+              key: "monthlyReport" as const,
+              label: locale === "ja" ? "月次レポート自動送信" : "Monthly Report Auto-Send",
+              desc: locale === "ja"
+                ? "毎月1日に月次レジリエンスレポートをメールで受け取ります"
+                : "Receive a monthly resilience summary by email on the 1st of each month",
+            },
+            {
+              key: "criticalAlertImmediate" as const,
+              label: locale === "ja" ? "CRITICALアラート即時通知" : "Immediate Critical Alert",
+              desc: locale === "ja"
+                ? "スコアがCRITICAL(50以下)に低下した場合に即時メール通知"
+                : "Email immediately when resilience score drops below 50 (CRITICAL threshold)",
+            },
           ]).map((n) => (
             <div key={n.key} className="flex items-center justify-between py-2">
               <div>

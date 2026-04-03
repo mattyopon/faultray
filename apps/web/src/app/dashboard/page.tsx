@@ -23,6 +23,7 @@ import {
   CheckCircle2,
   Circle,
   X,
+  Activity,
 } from "lucide-react";
 
 // ---- Sample data shown when no simulation runs exist ----
@@ -261,10 +262,10 @@ export default function DashboardPage() {
               </span>
             )}
             {trialDaysLeft <= 3 && (
-              <span className="text-sm text-[#94a3b8]">
+              <span className="text-sm text-red-300 font-medium">
                 {locale === "ja"
-                  ? "トライアル終了後は無制限アクセスを維持するためにProへのアップグレードをお勧めします。"
-                  : "Upgrade now to keep unlimited access after your trial ends."}
+                  ? `あと${trialDaysLeft}日でトライアル終了 — 期限後はアクセスが制限されます。今すぐProにアップグレードして継続利用を確保してください。`
+                  : `${trialDaysLeft} day${trialDaysLeft !== 1 ? "s" : ""} left — access will be restricted when your trial ends. Upgrade to Pro now to keep unlimited access.`}
               </span>
             )}
           </div>
@@ -421,6 +422,55 @@ export default function DashboardPage() {
           </p>
         </Card>
       </div>
+
+      {/* CHURN-03 / KPI-02: Score Improvement Trend — value visualization */}
+      {runs.length >= 2 && (() => {
+        const recent = runs.slice(0, 5).reverse();
+        const first = recent[0].overall_score;
+        const last = recent[recent.length - 1].overall_score;
+        const delta = last - first;
+        const improved = delta > 0;
+        return (
+          <Card className="mb-10">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-base font-bold flex items-center gap-2">
+                <Activity size={18} className="text-emerald-400" />
+                {locale === "ja" ? "スコア改善トレンド" : "Resilience Score Trend"}
+              </h2>
+              {improved ? (
+                <span className="text-xs font-semibold text-emerald-400 bg-emerald-500/10 px-2 py-1 rounded-full">
+                  +{delta.toFixed(1)} {locale === "ja" ? "pt 改善" : "pts improved"}
+                </span>
+              ) : (
+                <span className="text-xs font-semibold text-[#FFD700] bg-[#FFD700]/10 px-2 py-1 rounded-full">
+                  {locale === "ja" ? "シミュレーションを重ねると改善が見えます" : "Keep simulating to track progress"}
+                </span>
+              )}
+            </div>
+            <div className="flex items-end gap-2 h-16">
+              {recent.map((run, i) => {
+                const h = Math.round((run.overall_score / 100) * 64);
+                const isLast = i === recent.length - 1;
+                return (
+                  <div key={run.id} className="flex-1 flex flex-col items-center gap-1">
+                    <div
+                      className={`w-full rounded-t-md transition-all ${isLast ? "bg-[#FFD700]" : "bg-[#1e293b]"}`}
+                      style={{ height: h }}
+                      title={`${run.overall_score.toFixed(1)}`}
+                    />
+                    <span className="text-[10px] text-[#64748b] font-mono">{run.overall_score.toFixed(0)}</span>
+                  </div>
+                );
+              })}
+            </div>
+            <p className="text-xs text-[#64748b] mt-2">
+              {locale === "ja"
+                ? "過去5回のシミュレーションのスコア推移。毎回実行するほど弱点が明確になります。"
+                : "Score across last 5 simulations. Each run identifies new weaknesses to harden."}
+            </p>
+          </Card>
+        );
+      })()}
 
       {/* 3-Layer Bar Chart */}
       <Card className="mb-10">

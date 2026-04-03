@@ -23,5 +23,5 @@ export default function DeLayout({
 }: {
   children: React.ReactNode;
 }) {
-  return <>{children}</>;
+  return <div lang="de">{children}</div>; // I18N-04
 }

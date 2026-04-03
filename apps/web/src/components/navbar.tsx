@@ -27,7 +27,7 @@ import {
   X,
   LogOut,
   ChevronDown,
-  FileCheck,
+  ClipboardCheck,
   Scale,
   Radio,
   FolderKanban,
@@ -65,140 +65,91 @@ import { appDict } from "@/i18n/app-dict";
 import { useLocale } from "@/lib/useLocale";
 import { CommandPalette, type CommandItem } from "@/components/command-palette";
 
+// NAV-02: Reduced from 13→6 groups to eliminate cognitive overload
 function getNavGroups(t: Record<string, string>, te: Record<string, string>) {
   return [
-    // ── 毎日使う（上） ──
+    // ── CORE (daily use) ──
     {
-      label: t.observe ?? "OBSERVE",
+      label: t.observe ?? "CORE",
       items: [
-        { href: "/dashboard",     label: t.dashboard,                        icon: LayoutDashboard },
-        { href: "/traffic-light", label: t.trafficLight ?? "Status",         icon: CircleDot },
-        { href: "/apm",           label: t.monitor ?? "Monitor",             icon: Radio },
-        { href: "/incidents",     label: t.incidents,                        icon: Activity },
+        { href: "/dashboard",     label: t.dashboard,               icon: LayoutDashboard },
+        { href: "/simulate",      label: t.runSimulation,           icon: Zap },
+        { href: "/incidents",     label: t.incidents,               icon: Activity },
+        { href: "/apm",           label: t.monitor ?? "Monitor",    icon: Radio },
+        { href: "/traffic-light", label: t.trafficLight ?? "Status", icon: CircleDot },
       ],
     },
-    // ── 分析 ──
+    // ── ANALYZE ──
     {
       label: t.analyze ?? "ANALYZE",
       items: [
-        { href: "/simulate",   label: t.runSimulation,              icon: Zap },
-        { href: "/whatif",     label: t.whatIf,                     icon: FlaskConical },
-        { href: "/fmea",       label: t.fmea,                       icon: AlertOctagon },
-        { href: "/benchmark",  label: t.benchmark ?? "Monte Carlo", icon: BarChart3 },
-        { href: "/sla-budget", label: t.slaBudget ?? "SLA Budget",  icon: Gauge },
+        { href: "/whatif",       label: t.whatIf,                     icon: FlaskConical },
+        { href: "/fmea",         label: t.fmea,                       icon: AlertOctagon },
+        { href: "/benchmark",    label: t.benchmark ?? "Monte Carlo", icon: BarChart3 },
+        { href: "/sla-budget",   label: t.slaBudget ?? "SLA Budget",  icon: Gauge },
+        { href: "/topology",     label: t.topology,                   icon: Network },
+        { href: "/heatmap",      label: t.heatmap,                    icon: Flame },
+        { href: "/score-detail", label: t.scoreDetail,                icon: BarChart3 },
+        { href: "/advisor",      label: t.aiAdvisor,                  icon: Bot },
       ],
     },
-    // ── 可視化 ──
-    {
-      label: t.visualize ?? "VISUALIZE",
-      items: [
-        { href: "/topology",      label: t.topology,                          icon: Network },
-        { href: "/dependencies",  label: t.dependencies ?? "Dependencies",   icon: GitBranch },
-        { href: "/heatmap",       label: t.heatmap,                           icon: Flame },
-        { href: "/people-risk",   label: t.peopleRisk ?? "People Risk",       icon: Users },
-        { href: "/score-detail",  label: t.scoreDetail,                       icon: BarChart3 },
-        { href: "/topology-map",  label: t.topologyMap ?? "Interactive Map",  icon: Map },
-      ],
-    },
-    // ── コンプライアンス ──
+    // ── COMPLIANCE ──
     {
       label: t.compliance,
       items: [
-        { href: "/dora",              label: t.dora,                                    icon: ShieldAlert },
-        { href: "/compliance",        label: t.complianceItem,                          icon: ShieldCheck },
-        { href: "/fisc",              label: t.fisc ?? "FISC",                          icon: Landmark },
-        { href: "/sla",               label: t.sla,                                     icon: FileCheck },
-        { href: "/governance",        label: t.governance,                              icon: Scale },
+        { href: "/dora",              label: t.dora,                                   icon: ShieldAlert },
+        { href: "/compliance",        label: t.complianceItem,                         icon: ShieldCheck },
+        { href: "/fisc",              label: t.fisc ?? "FISC",                         icon: Landmark },
+        { href: "/sla",               label: t.sla,                                    icon: ClipboardCheck },
+        { href: "/governance",        label: t.governance,                             icon: Scale },
+        { href: "/evidence",          label: t.evidence,                               icon: FileSearch },
+        { href: "/audit-report",      label: t.auditReport ?? "Audit Report",          icon: FileSpreadsheet },
         { href: "/compliance-report", label: t.complianceReport ?? "Evidence Report",  icon: FileSpreadsheet },
       ],
     },
-    // ── リスク管理 ──
+    // ── RISK & OPS ──
     {
-      label: t.riskManagement ?? "RISK",
+      label: t.riskManagement ?? "RISK & OPS",
       items: [
-        { href: "/shadow-it",       label: t.shadowIt ?? "Shadow IT",        icon: Ghost },
-        { href: "/bus-factor",      label: t.busFactor ?? "Bus Factor",      icon: TrendingDown },
-        { href: "/vuln-priority",   label: t.vulnPriority ?? "Vuln Priority", icon: ShieldAlert },
-        { href: "/external-impact", label: t.externalImpact ?? "SaaS Impact", icon: Cloud },
+        { href: "/shadow-it",       label: t.shadowIt ?? "Shadow IT",          icon: Ghost },
+        { href: "/bus-factor",      label: t.busFactor ?? "Bus Factor",        icon: TrendingDown },
+        { href: "/vuln-priority",   label: t.vulnPriority ?? "Vuln Priority",  icon: ShieldAlert },
+        { href: "/external-impact", label: t.externalImpact ?? "SaaS Impact",  icon: Cloud },
+        { href: "/supply-chain",    label: te.supplyChain,                     icon: PackageSearch },
+        { href: "/runbooks",        label: te.runbooks,                        icon: BookOpen },
+        { href: "/postmortems",     label: te.postmortems,                     icon: FileSearch },
+        { href: "/ai-reliability",  label: t.aiReliability ?? "AI Reliability", icon: Brain },
       ],
     },
-    // ── 監査・証跡 ──
-    {
-      label: te.audit ?? "AUDIT",
-      items: [
-        { href: "/evidence",     label: t.evidence,                      icon: FileSearch },
-        { href: "/audit-report", label: t.auditReport ?? "Audit Report", icon: FileSpreadsheet },
-      ],
-    },
-    // ── 改善アクション ──
+    // ── IMPROVE ──
     {
       label: te.improveActions ?? "IMPROVE",
       items: [
-        { href: "/projects",  label: t.remediationPlan,      icon: FolderKanban },
-        { href: "/iac",       label: t.iac,                  icon: FileCode2 },
-        { href: "/optimize",  label: te.optimize,            icon: Gauge },
-        { href: "/gameday",   label: t.gameday ?? "GameDay", icon: Swords },
+        { href: "/projects",      label: t.remediationPlan,       icon: FolderKanban },
+        { href: "/iac",           label: t.iac,                   icon: FileCode2 },
+        { href: "/reports",       label: t.reports ?? "Reports",  icon: FileText },
+        { href: "/logs",          label: t.logs ?? "Logs",        icon: FileText },
+        { href: "/ipo-readiness", label: t.ipoReadiness,          icon: TrendingUp },
+        { href: "/onboarding",    label: t.onboarding,            icon: Rocket },
+        { href: "/templates",     label: t.templates,             icon: LayoutTemplate },
       ],
     },
-    // ── AI ──
-    {
-      label: t.aiSecurity ?? "AI",
-      items: [
-        { href: "/ai-reliability", label: t.aiReliability ?? "AI Reliability", icon: Brain },
-        { href: "/advisor",        label: t.aiAdvisor,                          icon: Bot },
-      ],
-    },
-    // ── 運用 ──
-    {
-      label: te.operations,
-      items: [
-        { href: "/runbooks",    label: te.runbooks,    icon: BookOpen },
-        { href: "/postmortems", label: te.postmortems, icon: FileSearch },
-        { href: "/calendar",    label: te.calendar,    icon: CalendarDays },
-        { href: "/timeline",    label: te.timeline,    icon: Clock },
-        { href: "/drift",       label: te.drift,       icon: GitBranch },
-      ],
-    },
-    // ── チーム・環境 ──
-    {
-      label: te.teams,
-      items: [
-        { href: "/teams",        label: te.teamMetrics, icon: Users },
-        { href: "/env-compare",  label: te.envCompare,  icon: GitCompare },
-        { href: "/canary",       label: te.canary,      icon: FlaskRound },
-        { href: "/supply-chain", label: te.supplyChain, icon: PackageSearch },
-      ],
-    },
-    // ── レポート・ログ ──
-    {
-      label: t.moreTools ?? "REPORTS",
-      items: [
-        { href: "/traces",  label: t.traces ?? "Traces",   icon: Activity },
-        { href: "/logs",    label: t.logs ?? "Logs",        icon: FileText },
-        { href: "/reports", label: t.reports ?? "Reports",  icon: FileText },
-      ],
-    },
-    // ── 初回/設定 ──
-    {
-      label: t.gettingStarted,
-      items: [
-        { href: "/onboarding",    label: t.onboarding,   icon: Rocket },
-        { href: "/templates",     label: t.templates,    icon: LayoutTemplate },
-        { href: "/ipo-readiness", label: t.ipoReadiness, icon: TrendingUp },
-      ],
-    },
+    // ── ACCOUNT ──
     {
       label: t.account,
       items: [
-        { href: "/settings",   label: t.settings,             icon: Settings },
-        { href: "/help",       label: t.help,                 icon: HelpCircle },
-        { href: "/support",    label: t.support,              icon: LifeBuoy },
-        { href: "/changelog",  label: t.changelog ?? "What's New",  icon: FileText },
-        { href: "/admin",      label: t.adminDash ?? "Admin", icon: BarChart3 },
+        { href: "/settings",  label: t.settings,                   icon: Settings },
+        { href: "/help",      label: t.help,                        icon: HelpCircle },
+        { href: "/support",   label: t.support,                    icon: LifeBuoy },
+        { href: "/changelog", label: t.changelog ?? "What's New",  icon: FileText },
+        { href: "/admin",     label: t.adminDash ?? "Admin",       icon: BarChart3 },
       ],
     },
   ];
 }
+
+// NAV-DETAIL-06: 新機能バッジ — 直近3ヶ月以内に追加されたページ
+const NEW_FEATURE_PAGES = new Set(["/ai-reliability", "/ipo-readiness", "/topology-map", "/supply-chain", "/bus-factor"]);
 
 function SidebarNavItem({
   href,
@@ -233,6 +184,8 @@ function SidebarNavItem({
     );
   }
 
+  const isNew = NEW_FEATURE_PAGES.has(href);
+
   return (
     <Link
       href={href}
@@ -244,7 +197,10 @@ function SidebarNavItem({
       title={label}
     >
       <Icon size={16} className="shrink-0" />
-      {sidebarOpen && <span className="truncate">{label}</span>}
+      {sidebarOpen && <span className="truncate flex-1">{label}</span>}
+      {sidebarOpen && isNew && (
+        <span className="shrink-0 px-1 py-0.5 text-[9px] font-bold rounded bg-[#FFD700]/20 text-[#FFD700] leading-none">NEW</span>
+      )}
     </Link>
   );
 }

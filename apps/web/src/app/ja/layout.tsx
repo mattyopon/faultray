@@ -25,5 +25,6 @@ export default function JaLayout({
 }: {
   children: React.ReactNode;
 }) {
-  return <>{children}</>;
+  // I18N-04: set lang attribute for Japanese locale pages
+  return <div lang="ja">{children}</div>;
 }

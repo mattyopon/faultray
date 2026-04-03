@@ -57,7 +57,10 @@ export function Toast({ message, variant = "success", className }: ToastProps) {
       role={cfg.role}
       aria-live={cfg.role === "alert" ? "assertive" : "polite"}
       className={cn(
-        "fixed top-4 right-4 z-[100] flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-medium shadow-lg border",
+        // NOTIFY-06: モバイルでは bottom-4 left-4 right-4（full-width）でトーストが切れないように
+        // デスクトップでは right-4 top-4 に固定
+        "fixed z-[100] flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-medium shadow-lg border",
+        "bottom-4 left-4 right-4 sm:bottom-auto sm:top-4 sm:left-auto sm:right-4 sm:max-w-sm",
         cfg.bg,
         cfg.border,
         cfg.text,

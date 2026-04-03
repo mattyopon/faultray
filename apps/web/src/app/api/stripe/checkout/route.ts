@@ -80,7 +80,8 @@ export async function POST(request: Request) {
     // Supabase auth is optional for checkout initiation
   }
 
-  const stripe = new Stripe(secretKey);
+  // APIPERF-05: Stripe API呼び出しにタイムアウトを設定（デフォルト80sを30sに短縮）
+  const stripe = new Stripe(secretKey, { timeout: 30000 });
 
   const origin =
     request.headers.get("origin") ??

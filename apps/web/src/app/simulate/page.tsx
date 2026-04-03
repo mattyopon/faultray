@@ -914,7 +914,7 @@ const DEMO_RESULT: SimulationResult = {
 
 export default function SimulatePage() {
   return (
-    <Suspense fallback={<div className="max-w-[1200px] mx-auto px-6 py-10 text-[#64748b]">Loading...</div>}>
+    <Suspense fallback={<div className="max-w-[1200px] mx-auto px-6 py-10 text-[#64748b]">読み込み中...</div>}>
       <SimulatePageInner />
     </Suspense>
   );

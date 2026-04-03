@@ -3,7 +3,8 @@
 import { Logo } from "@/components/logo";
 import { createClient } from "@/lib/supabase/client";
 import { useSearchParams } from "next/navigation";
-import { Suspense } from "react";
+import { Suspense, useState } from "react";
+import { Mail, Loader2, CheckCircle2 } from "lucide-react";
 
 function LoginForm() {
   const searchParams = useSearchParams();
@@ -24,6 +25,13 @@ function LoginForm() {
   };
   const errorMessage = authError ? (errorMessages[authError] ?? "An authentication error occurred. Please try again.") : null;
 
+  // AUTH-02: Email OTP fallback (eliminates Social SPoF)
+  const [emailMode, setEmailMode] = useState(false);
+  const [emailInput, setEmailInput] = useState("");
+  const [otpSending, setOtpSending] = useState(false);
+  const [otpSent, setOtpSent] = useState(false);
+  const [emailError, setEmailError] = useState<string | null>(null);
+
   const supabase = createClient();
 
   const signInWith = async (provider: "github" | "google") => {
@@ -33,6 +41,48 @@ function LoginForm() {
         redirectTo: `${window.location.origin}/auth/callback?redirectTo=${encodeURIComponent(redirectTo)}`,
       },
     });
+  };
+
+  // MISSED-05: ディスポーザブルメールドメインのブロックリスト
+  const DISPOSABLE_DOMAINS = new Set([
+    "mailinator.com", "guerrillamail.com", "10minutemail.com", "tempmail.com",
+    "throwaway.email", "yopmail.com", "sharklasers.com", "guerrillamailblock.com",
+    "grr.la", "guerrillamail.info", "spam4.me", "trashmail.at",
+    "dispostable.com", "spamgourmet.com", "maildrop.cc", "getairmail.com",
+  ]);
+
+  // AUTH-02: Send magic link / OTP via email
+  const sendOtp = async () => {
+    const trimmed = emailInput.trim().toLowerCase();
+    if (!trimmed || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(trimmed)) {
+      setEmailError("Please enter a valid email address.");
+      return;
+    }
+    // MISSED-05: ディスポーザブルメールのブロック
+    const domain = trimmed.split("@")[1] ?? "";
+    if (DISPOSABLE_DOMAINS.has(domain)) {
+      setEmailError("Disposable email addresses are not allowed. Please use a permanent email address.");
+      return;
+    }
+    setEmailError(null);
+    setOtpSending(true);
+    try {
+      const { error } = await supabase.auth.signInWithOtp({
+        email: trimmed,
+        options: {
+          emailRedirectTo: `${window.location.origin}/auth/callback?redirectTo=${encodeURIComponent(redirectTo)}`,
+        },
+      });
+      if (error) {
+        setEmailError(error.message || "Failed to send magic link. Please try again.");
+      } else {
+        setOtpSent(true);
+      }
+    } catch {
+      setEmailError("An unexpected error occurred. Please try again.");
+    } finally {
+      setOtpSending(false);
+    }
   };
 
   return (
@@ -105,30 +155,97 @@ function LoginForm() {
         )}
 
         <div className="p-8 rounded-2xl border border-[#1e293b] bg-[#111827] space-y-4">
-          {isProduction && (
-          <button
-            onClick={() => signInWith("github")}
-            className="w-full flex items-center justify-center gap-3 px-4 py-3 rounded-xl bg-white text-[#0a0e1a] font-semibold hover:bg-gray-100 transition-colors"
-          >
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
-              <path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z" />
-            </svg>
-            Continue with GitHub
-          </button>
-          )}
+          {/* AUTH-02: Email OTP mode */}
+          {emailMode ? (
+            otpSent ? (
+              <div className="text-center py-4">
+                <CheckCircle2 size={40} className="text-emerald-400 mx-auto mb-3" />
+                <p className="font-semibold text-white mb-1">Check your email</p>
+                <p className="text-sm text-[#94a3b8]">
+                  We sent a magic link to <span className="text-white font-medium">{emailInput}</span>.
+                  Click the link to sign in — no password required.
+                </p>
+                <button
+                  onClick={() => { setOtpSent(false); setEmailMode(false); setEmailInput(""); }}
+                  className="mt-4 text-sm text-[#FFD700] hover:underline"
+                >
+                  Back to sign in
+                </button>
+              </div>
+            ) : (
+              <div className="space-y-3">
+                <label className="block text-sm text-[#94a3b8] font-medium">Email address</label>
+                <input
+                  type="email"
+                  value={emailInput}
+                  onChange={(e) => setEmailInput(e.target.value)}
+                  onKeyDown={(e) => { if (e.key === "Enter") sendOtp(); }}
+                  placeholder="you@company.com"
+                  autoFocus
+                  className="w-full px-4 py-3 rounded-xl bg-[#0a0e1a] border border-[#1e293b] text-white placeholder-[#475569] focus:outline-none focus:border-[#FFD700]/50 text-sm"
+                />
+                {emailError && (
+                  <p className="text-red-400 text-xs">{emailError}</p>
+                )}
+                <button
+                  onClick={sendOtp}
+                  disabled={otpSending}
+                  className="w-full flex items-center justify-center gap-2 px-4 py-3 rounded-xl bg-[#FFD700] text-[#0a0e1a] font-semibold hover:bg-yellow-400 disabled:opacity-60 transition-colors"
+                >
+                  {otpSending ? <Loader2 size={16} className="animate-spin" /> : <Mail size={16} />}
+                  {otpSending ? "Sending..." : "Send magic link"}
+                </button>
+                <button
+                  onClick={() => { setEmailMode(false); setEmailError(null); }}
+                  className="w-full text-center text-sm text-[#64748b] hover:text-white transition-colors"
+                >
+                  Back to social sign in
+                </button>
+              </div>
+            )
+          ) : (
+            <>
+              {isProduction && (
+              <button
+                onClick={() => signInWith("github")}
+                className="w-full flex items-center justify-center gap-3 px-4 py-3 rounded-xl bg-white text-[#0a0e1a] font-semibold hover:bg-gray-100 transition-colors min-h-[48px]"
+              >
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+                  <path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z" />
+                </svg>
+                Continue with GitHub
+              </button>
+              )}
 
-          <button
-            onClick={() => signInWith("google")}
-            className="w-full flex items-center justify-center gap-3 px-4 py-3 rounded-xl border border-[#1e293b] text-white font-semibold hover:bg-white/5 transition-colors"
-          >
-            <svg width="20" height="20" viewBox="0 0 24 24">
-              <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 0 1-2.2 3.32v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.1z" fill="#4285F4" />
-              <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853" />
-              <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05" />
-              <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335" />
-            </svg>
-            Continue with Google
-          </button>
+              <button
+                onClick={() => signInWith("google")}
+                className="w-full flex items-center justify-center gap-3 px-4 py-3 rounded-xl border border-[#1e293b] text-white font-semibold hover:bg-white/5 transition-colors min-h-[48px]"
+              >
+                <svg width="20" height="20" viewBox="0 0 24 24">
+                  <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 0 1-2.2 3.32v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.1z" fill="#4285F4" />
+                  <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853" />
+                  <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05" />
+                  <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335" />
+                </svg>
+                Continue with Google
+              </button>
+
+              <div className="relative flex items-center">
+                <div className="flex-1 border-t border-[#1e293b]" />
+                <span className="mx-3 text-xs text-[#475569]">or</span>
+                <div className="flex-1 border-t border-[#1e293b]" />
+              </div>
+
+              {/* AUTH-02: Email magic link as SPoF fallback */}
+              <button
+                onClick={() => setEmailMode(true)}
+                className="w-full flex items-center justify-center gap-3 px-4 py-3 rounded-xl border border-[#1e293b] text-[#94a3b8] font-medium hover:bg-white/5 hover:text-white transition-colors text-sm min-h-[48px]"
+              >
+                <Mail size={16} />
+                Continue with Email
+              </button>
+            </>
+          )}
         </div>
 
         <p className="text-center text-xs text-[#64748b] mt-6">
@@ -144,7 +261,7 @@ export default function LoginPage() {
   return (
     <Suspense fallback={
       <div className="min-h-screen flex items-center justify-center">
-        <div className="animate-pulse text-[#64748b]">Loading...</div>
+        <div className="animate-pulse text-[#64748b]">読み込み中...</div>
       </div>
     }>
       <LoginForm />

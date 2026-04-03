@@ -85,7 +85,8 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Failed to read request body" }, { status: 400 });
   }
 
-  const stripe = new Stripe(secretKey);
+  // APIPERF-05: Stripe APIタイムアウト設定
+  const stripe = new Stripe(secretKey, { timeout: 30000 });
 
   let event: Stripe.Event;
   try {

@@ -259,6 +259,28 @@ body {
   box-shadow: 0 0 24px rgba(255, 215, 0, 0.08);
 }
 
+/* KEYBOARD-04: focus-visible によるキーボードナビゲーション視認性改善 */
+/* マウス操作時はフォーカスリングを非表示、キーボード操作時のみ表示 */
+*:focus {
+  outline: none;
+}
+*:focus-visible {
+  outline: 2px solid #FFD700;
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+/* 暗色背景上での視認性を確保 */
+button:focus-visible,
+a:focus-visible,
+input:focus-visible,
+textarea:focus-visible,
+select:focus-visible,
+[tabindex]:focus-visible {
+  outline: 2px solid #FFD700;
+  outline-offset: 2px;
+  box-shadow: 0 0 0 4px rgba(255, 215, 0, 0.12);
+}
+
 /* CSS-06: @media print — 印刷スタイル */
 @media print {
   /* サイドバー・ナビ・クッキーバナーを非表示 */
@@ -289,11 +311,29 @@ body {
     print-color-adjust: exact;
   }
 
-  /* ページ境界でカードが途切れないように */
+  /* REPORT-GEN-04: ページ境界でコンテンツが途切れないように — 適用範囲を拡大 */
   .card,
-  [class*="rounded"] {
+  [class*="rounded"],
+  tr,
+  thead,
+  h1, h2, h3, h4,
+  figure,
+  .section,
+  [class*="p-4"],
+  [class*="p-5"],
+  [class*="p-6"] {
     page-break-inside: avoid;
     break-inside: avoid;
+  }
+  /* 長いテーブルのヘッダーを各ページで繰り返す */
+  thead {
+    display: table-header-group;
+  }
+  /* 画像がページをまたがない */
+  img, svg {
+    page-break-inside: avoid;
+    break-inside: avoid;
+    max-width: 100%;
   }
 }
 

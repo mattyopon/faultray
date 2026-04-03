@@ -1605,9 +1605,11 @@ class handler(BaseHTTPRequestHandler):
     # -----------------------------------------------------------------------
 
     def _json(self, status: int, data):
-        body = json.dumps(data).encode("utf-8")
+        # APIPERF-06: separators=(',', ':') でホワイトスペースを省略しメモリコピーコストを削減
+        body = json.dumps(data, separators=(",", ":"), ensure_ascii=False).encode("utf-8")
         self.send_response(status)
-        self.send_header("Content-Type", "application/json")
+        self.send_header("Content-Type", "application/json; charset=utf-8")
+        self.send_header("Content-Length", str(len(body)))
         self._cors_headers()
         self.end_headers()
         self.wfile.write(body)

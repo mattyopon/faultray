@@ -858,6 +858,55 @@ export default async function LangHomePage({
         <SocialProof dict={dict.socialProof} stars={githubStars} />
       )}
 
+      {/* ===== PERSONA-03/04: Who is FaultRay for? — persona-specific messaging ===== */}
+      <section className="py-20 bg-[#0a0e1a]">
+        <div className="max-w-[1100px] mx-auto px-6">
+          <div className="text-center mb-12">
+            <h2 className="text-3xl font-bold tracking-tight mb-3">Built for your team, not theirs</h2>
+            <p className="text-[#94a3b8]">Different roles, same outcome: infrastructure you can prove is reliable.</p>
+          </div>
+          <div className="grid md:grid-cols-3 gap-6">
+            {[
+              {
+                role: "SRE / Platform Engineer",
+                icon: "⚙️",
+                pain: "\"We don&apos;t know our blast radius until production explodes.\"",
+                value: "Map every failure path before it happens. Generate SLA evidence your leadership will trust.",
+                cta: "Start Free →",
+                href: "/login",
+                accent: "text-emerald-400 border-emerald-500/20 bg-emerald-500/[0.03]",
+              },
+              {
+                role: "Engineering Manager",
+                icon: "📊",
+                pain: "\"Proving reliability to the board takes weeks of manual work.\"",
+                value: "1-click DORA compliance reports. Board-ready resilience dashboards in minutes, not weeks.",
+                cta: "See a Demo →",
+                href: "/contact",
+                accent: "text-[#FFD700] border-[#FFD700]/20 bg-[#FFD700]/[0.03]",
+              },
+              {
+                role: "CISO / CTO",
+                icon: "🛡",
+                pain: "\"How do I know our vendors won&apos;t take us down?\"",
+                value: "Supply chain risk simulation. Third-party failure impact quantified before contract signing.",
+                cta: "Get a Quote →",
+                href: "/contact?plan=business",
+                accent: "text-blue-400 border-blue-500/20 bg-blue-500/[0.03]",
+              },
+            ].map((p) => (
+              <div key={p.role} className={`p-6 rounded-2xl border ${p.accent}`}>
+                <div className="text-3xl mb-3">{p.icon}</div>
+                <p className="text-xs font-bold uppercase tracking-widest text-[#64748b] mb-1">{p.role}</p>
+                <p className="text-sm text-[#64748b] italic mb-4" dangerouslySetInnerHTML={{ __html: p.pain }} />
+                <p className="text-sm text-white leading-relaxed mb-5">{p.value}</p>
+                <a href={p.href} className={`text-sm font-bold ${p.accent.split(" ")[0]} hover:underline`}>{p.cta}</a>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
       {/* ===== ROI CALCULATOR (LP-04) ===== */}
       {dict.roi && (
         <RoiCalculator dict={dict.roi} lang={lang} />

@@ -22,20 +22,22 @@ interface Plan {
   sla: string | null;
 }
 
+// PSYCH-01: Display order is Business→Pro→Free (decoy/anchoring effect)
+// Users see highest price first, making Pro appear as a bargain
 const plans: Plan[] = [
   {
-    name: "Free",
-    monthlyPrice: 0,
-    annualMonthlyPrice: 0,
-    annualTotal: 0,
-    desc: "Perfect for individual engineers exploring chaos engineering. 5 simulations covers most proof-of-concept evaluations.",
-    features: ["5 simulations / month", "Up to 5 components", "100+ simulation engines", "N-Layer Availability Model", "HTML reports", "Community support"],
-    disabledFeatures: ["DORA report export", "Custom SSO"],
-    cta: "Get Started Free",
-    ctaHref: "/login",
+    name: "Business",
+    monthlyPrice: 999,
+    annualMonthlyPrice: 799,   // 999 * 12 * 0.8 / 12 ≈ 799
+    annualTotal: 9590,         // 999 * 12 * 0.8 rounded
+    desc: "For enterprises needing unlimited access, SSO, and dedicated support.",
+    features: ["Unlimited simulations", "Unlimited components", "Everything in Pro", "DORA report + Insurance API", "Custom SSO / SAML", "Dedicated support (1h)", "Prometheus integration", "On-premise deployment"],
+    disabledFeatures: [],
+    cta: "Get a Quote",
+    ctaHref: "/contact?plan=business",
     popular: false,
     stripePlan: null,
-    sla: null,
+    sla: "99.9% Uptime SLA",
   },
   {
     name: "Pro",
@@ -52,18 +54,18 @@ const plans: Plan[] = [
     sla: "99.9% Uptime SLA",
   },
   {
-    name: "Business",
-    monthlyPrice: 999,
-    annualMonthlyPrice: 799,   // 999 * 12 * 0.8 / 12 ≈ 799
-    annualTotal: 9590,         // 999 * 12 * 0.8 rounded
-    desc: "For enterprises needing unlimited access, SSO, and dedicated support.",
-    features: ["Unlimited simulations", "Unlimited components", "Everything in Pro", "DORA report + Insurance API", "Custom SSO / SAML", "Dedicated support (1h)", "Prometheus integration", "On-premise deployment"],
-    disabledFeatures: [],
-    cta: "Get a Quote",
-    ctaHref: "/contact?plan=business",
+    name: "Free",
+    monthlyPrice: 0,
+    annualMonthlyPrice: 0,
+    annualTotal: 0,
+    desc: "Perfect for individual engineers exploring chaos engineering. 5 simulations covers most proof-of-concept evaluations.",
+    features: ["5 simulations / month", "Up to 5 components", "100+ simulation engines", "N-Layer Availability Model", "HTML reports", "Community support"],
+    disabledFeatures: ["DORA report export", "Custom SSO"],
+    cta: "Get Started Free",
+    ctaHref: "/login",
     popular: false,
     stripePlan: null,
-    sla: "99.9% Uptime SLA",
+    sla: null,
   },
 ];
 
@@ -89,9 +91,11 @@ function CellValue({ value }: { value: string | boolean }) {
 export default function PricingPage() {
   const [loadingPlan, setLoadingPlan] = useState<string | null>(null);
   const [billing, setBilling] = useState<BillingCycle>("monthly");
+  const [checkoutError, setCheckoutError] = useState<{ plan: "pro" | "business"; message: string } | null>(null);
 
   const handleCheckout = async (plan: "pro" | "business") => {
     setLoadingPlan(plan);
+    setCheckoutError(null);
     try {
       const interval = billing === "annual" ? "year" : "month";
       const { url } = await api.createCheckoutSession(plan, interval);
@@ -99,8 +103,8 @@ export default function PricingPage() {
         window.location.href = url;
       }
     } catch {
-      // Stripe not configured yet — fall back to login
-      window.location.href = `/login?plan=${plan}`;
+      // Stripe not configured — show retry UI instead of silent redirect
+      setCheckoutError({ plan, message: "決済処理に失敗しました。再試行するか、サポートにお問い合わせください。" });
     } finally {
       setLoadingPlan(null);
     }
@@ -108,6 +112,31 @@ export default function PricingPage() {
 
   return (
     <div className="max-w-[1200px] mx-auto px-6 py-20">
+      {/* ERRMSG-07: Payment failure retry UI */}
+      {checkoutError && (
+        <div role="alert" className="mb-6 p-4 rounded-lg border border-red-500/40 bg-red-500/10 flex items-start gap-3">
+          <span className="text-red-400 text-lg leading-none mt-0.5">&#9888;</span>
+          <div className="flex-1">
+            <p className="text-red-300 text-sm font-medium">{checkoutError.message}</p>
+            <div className="mt-2 flex gap-2">
+              <button
+                onClick={() => handleCheckout(checkoutError.plan)}
+                disabled={loadingPlan !== null}
+                className="px-3 py-1.5 text-xs font-medium rounded bg-red-500/20 text-red-300 hover:bg-red-500/30 border border-red-500/30 transition-colors disabled:opacity-50"
+              >
+                再試行
+              </button>
+              <a
+                href="mailto:support@faultray.io?subject=決済エラー"
+                className="px-3 py-1.5 text-xs font-medium rounded bg-[#1e293b] text-[#94a3b8] hover:text-white border border-[#334155] transition-colors"
+              >
+                サポートに連絡
+              </a>
+            </div>
+          </div>
+          <button onClick={() => setCheckoutError(null)} aria-label="閉じる" className="text-[#64748b] hover:text-white text-sm leading-none">&times;</button>
+        </div>
+      )}
       <div className="text-center mb-10">
         <h1 className="text-[clamp(1.75rem,4vw,2.5rem)] font-bold tracking-tight mb-3">
           Invest in reliability. Prevent the outage before it costs you.

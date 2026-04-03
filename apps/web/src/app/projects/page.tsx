@@ -4,7 +4,7 @@ import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { api, type Project } from "@/lib/api";
 import { useLocale } from "@/lib/useLocale";
 import { appDict } from "@/i18n/app-dict";
@@ -76,6 +76,18 @@ function NewProjectModal({
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
   const [saving, setSaving] = useState(false);
+  const modalRef = useRef<HTMLDivElement>(null);
+
+  // MODAL-05: Esc key closes NewProjectModal
+  useEffect(() => {
+    if (!open) return;
+    const handleKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") onClose();
+    };
+    document.addEventListener("keydown", handleKey);
+    modalRef.current?.focus();
+    return () => document.removeEventListener("keydown", handleKey);
+  }, [open, onClose]);
 
   if (!open) return null;
 
@@ -114,7 +126,7 @@ function NewProjectModal({
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
       <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={onClose} />
-      <div className="relative w-full max-w-md bg-[#111827] border border-[#1e293b] rounded-2xl p-6 shadow-2xl">
+      <div ref={modalRef} tabIndex={-1} role="dialog" aria-modal="true" aria-label={t.newProject} className="relative w-full max-w-md bg-[#111827] border border-[#1e293b] rounded-2xl p-6 shadow-2xl outline-none">
         <div className="flex items-center justify-between mb-6">
           <h2 className="text-lg font-bold">{t.newProject}</h2>
           <button onClick={onClose} className="text-[#64748b] hover:text-white transition-colors">
@@ -139,6 +151,7 @@ function NewProjectModal({
               onChange={(e) => setDescription(e.target.value)}
               placeholder="Brief description of this project..."
               rows={3}
+              maxLength={500}
               className="w-full px-4 py-2.5 bg-[#0a0e1a] border border-[#1e293b] rounded-lg text-sm text-white placeholder-[#475569] focus:outline-none focus:border-[#FFD700]/50 transition-colors resize-none"
             />
           </div>

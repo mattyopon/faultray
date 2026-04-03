@@ -27,9 +27,9 @@ export function CookieConsent() {
 
   return (
     <div
-      role="dialog"
+      role="region"
       aria-label="Cookie consent"
-      aria-modal="false"
+      aria-live="polite"
       className="fixed bottom-0 left-0 right-0 z-50 bg-[#111827] border-t border-[#1e293b] px-6 py-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4"
     >
       <p className="text-sm text-[#94a3b8] max-w-xl">

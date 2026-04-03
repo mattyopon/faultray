@@ -321,7 +321,8 @@ export default function TemplatesPage() {
         {filtered.length === 0 && (
           <div className="text-center py-16">
             <LayoutTemplate size={40} className="text-[#1e293b] mx-auto mb-3" />
-            <p className="text-[#64748b] text-sm">No templates found</p>
+            <p className="text-[#64748b] text-sm">{(t as Record<string, string>).noTemplatesFound ?? "No templates found"}</p>
+            <p className="text-[#475569] text-xs mt-1">{(t as Record<string, string>).noTemplatesDesc ?? "Try adjusting your search or industry filter."}</p>
           </div>
         )}
 

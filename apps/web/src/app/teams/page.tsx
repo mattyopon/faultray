@@ -627,6 +627,7 @@ export default function TeamsPage() {
               value={newTaskDesc}
               onChange={(e) => setNewTaskDesc(e.target.value)}
               rows={2}
+              maxLength={300}
               className="w-full bg-[#111827] border border-[#1e293b] rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:border-[#FFD700]/40 resize-none"
             />
             <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">

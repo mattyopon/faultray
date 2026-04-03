@@ -45,6 +45,8 @@ services:
       - SUPABASE_URL=${NEXT_PUBLIC_SUPABASE_URL}
       - SUPABASE_SERVICE_ROLE_KEY=${SUPABASE_SERVICE_ROLE_KEY}
       - PYTHON_ENV=production
+      # DOCKER-03: CORS設定 — 本番では faultray.com からのみ許可
+      - ALLOWED_ORIGINS=${NEXT_PUBLIC_SITE_URL:-https://faultray.com}
     ports:
       - "8000:8000"
     healthcheck:

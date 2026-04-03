@@ -7387,6 +7387,8 @@ export const appDict = {
       mediaDesc: "Content delivery with auto-scaling, edge caching, and adaptive bitrate streaming",
       enterpriseName: "Enterprise Hybrid",
       enterpriseDesc: "On-prem + cloud hybrid with VPN connectivity, SSO, and centralized logging",
+      noTemplatesFound: "No templates found",
+      noTemplatesDesc: "Try adjusting your search or industry filter.",
     },
     ja: {
       title: "業界テンプレート",
@@ -7409,6 +7411,8 @@ export const appDict = {
       mediaDesc: "オートスケーリング、エッジキャッシング、アダプティブビットレートストリーミングを備えたコンテンツ配信",
       enterpriseName: "エンタープライズ ハイブリッド",
       enterpriseDesc: "VPN接続、SSO、集中ログ管理を備えたオンプレミス＋クラウドハイブリッド構成",
+      noTemplatesFound: "テンプレートが見つかりません",
+      noTemplatesDesc: "検索条件または業界フィルタを変更してお試しください。",
     },
     de: { title: "Branchenvorlagen", subtitle: "Vorgefertigte Infrastruktur-Blueprints nach Branche", useTemplate: "Vorlage verwenden", components: "Komponenten", compliance: "Compliance", preview: "Vorschau", searchPlaceholder: "Vorlagen suchen...", allIndustries: "Alle Branchen", fintechName: "FinTech-Handelsplattform", fintechDesc: "Hochfrequenzhandel mit DORA-Compliance, Multi-AZ RDS und WAF-Schutz", healthcareName: "Gesundheitswesen EHR-System", healthcareDesc: "HIPAA-konformes EHR mit PHI-Verschlüsselung und Audit-Logging", ecommerceName: "E-Commerce-Checkout", ecommerceDesc: "PCI-DSS-konformer Checkout mit Tokenisierung und Betrugsschutz", saasName: "SaaS-Mandantenplattform", saasDesc: "SOC2-konforme Multi-Mandanten-Architektur mit RBAC", mediaName: "Medien-Streaming-Plattform", mediaDesc: "Content-Delivery mit Auto-Scaling und adaptivem Bitrate-Streaming", enterpriseName: "Enterprise Hybrid", enterpriseDesc: "On-prem + Cloud mit VPN, SSO und zentralem Logging" },
     fr: { title: "Modèles sectoriels", subtitle: "Blueprints d'infrastructure préconfigurés par secteur", useTemplate: "Utiliser le modèle", components: "composants", compliance: "Conformité", preview: "Aperçu", searchPlaceholder: "Rechercher des modèles...", allIndustries: "Tous les secteurs", fintechName: "Plateforme de trading FinTech", fintechDesc: "Trading haute fréquence avec conformité DORA, RDS Multi-AZ et protection WAF", healthcareName: "Système EHR de santé", healthcareDesc: "EHR conforme HIPAA avec chiffrement PHI et journalisation d'audit", ecommerceName: "Paiement e-commerce", ecommerceDesc: "Flux de paiement conforme PCI DSS avec tokenisation et CDN", saasName: "Plateforme SaaS multi-tenant", saasDesc: "Architecture multi-tenant prête pour SOC2 avec isolation et RBAC", mediaName: "Plateforme de streaming média", mediaDesc: "Diffusion de contenu avec mise à l'échelle automatique et CDN", enterpriseName: "Hybride entreprise", enterpriseDesc: "On-prem + cloud avec VPN, SSO et journalisation centralisée" },

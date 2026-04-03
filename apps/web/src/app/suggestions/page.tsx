@@ -172,6 +172,24 @@ export default function SuggestionsPage() {
           );
         })}
       </div>
+
+      {/* CTA-05: 次アクションCTA */}
+      <div className="mt-10 p-5 rounded-xl border border-[#FFD700]/20 bg-[#FFD700]/[0.04] flex flex-col sm:flex-row items-center gap-4 justify-between">
+        <div>
+          <p className="font-semibold text-white mb-1">
+            {locale === "ja" ? "今すぐシミュレーションを実行して現状を確認" : "Run a simulation to see your current resilience score"}
+          </p>
+          <p className="text-sm text-[#64748b]">
+            {locale === "ja" ? "提案事項を実装後、シミュレーションで改善を数値で確認できます" : "After implementing suggestions, verify improvements with a new simulation."}
+          </p>
+        </div>
+        <Link
+          href="/simulate"
+          className="shrink-0 px-5 py-2.5 rounded-lg bg-[#FFD700] text-[#0a0e1a] font-semibold text-sm hover:bg-[#FFC700] transition-colors whitespace-nowrap"
+        >
+          {locale === "ja" ? "シミュレーションを実行" : "Run Simulation"}
+        </Link>
+      </div>
     </div>
   );
 }

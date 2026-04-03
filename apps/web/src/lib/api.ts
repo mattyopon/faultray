@@ -21,6 +21,14 @@ function _cacheKey(path: string, token?: string): string {
 // FETCHPAT-01: Default timeout 30s to prevent indefinite hangs
 const DEFAULT_TIMEOUT_MS = 30_000;
 
+// ERROR-03: Retry logic with exponential backoff for transient errors
+const RETRY_STATUS_CODES = new Set([429, 500, 502, 503, 504]);
+const MAX_RETRIES = 3;
+
+async function sleep(ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
 async function apiFetch<T>(path: string, options: ApiOptions = {}): Promise<T> {
   const { method = "GET", body, token, signal, cacheTtl } = options;
 
@@ -56,38 +64,64 @@ async function apiFetch<T>(path: string, options: ApiOptions = {}): Promise<T> {
     combinedSignal = timeoutController.signal;
   }
 
-  try {
-    // FETCH-01 fix: pass AbortSignal when provided to prevent memory leaks
-    const res = await fetch(`${API_BASE}${path}`, {
-      method,
-      headers,
-      body: body ? JSON.stringify(body) : undefined,
-      signal: combinedSignal,
-    });
+  // ERROR-03: Retry loop with exponential backoff
+  let lastError: Error = new Error("API request failed");
+  for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
+    // Abort if caller signal is already aborted
+    if (combinedSignal.aborted) break;
 
-    if (!res.ok) {
-      const error = await res.json().catch(() => ({ message: res.statusText }));
-      throw new Error(error.error?.message || error.message || "API request failed");
-    }
+    try {
+      // FETCH-01 fix: pass AbortSignal when provided to prevent memory leaks
+      const res = await fetch(`${API_BASE}${path}`, {
+        method,
+        headers,
+        body: body ? JSON.stringify(body) : undefined,
+        signal: combinedSignal,
+      });
 
-    const data = await res.json() as T;
+      if (!res.ok) {
+        // ERROR-03: Retry on transient server errors
+        if (RETRY_STATUS_CODES.has(res.status) && attempt < MAX_RETRIES) {
+          const delay = Math.min(1000 * 2 ** attempt, 8000);
+          await sleep(delay);
+          lastError = new Error(`HTTP ${res.status}: ${res.statusText}`);
+          continue;
+        }
+        const error = await res.json().catch(() => ({ message: res.statusText }));
+        throw new Error(error.error?.message || error.message || "API request failed");
+      }
 
-    // FETCHPAT-05: Store in cache for GET requests with cacheTtl
-    if (method === "GET" && cacheTtl && cacheTtl > 0) {
-      _apiCache.set(_cacheKey(path, token), { data, expiresAt: Date.now() + cacheTtl });
-      // Evict stale entries periodically to avoid unbounded growth
-      if (_apiCache.size > 100) {
-        const now = Date.now();
-        for (const [k, v] of _apiCache) {
-          if (v.expiresAt < now) _apiCache.delete(k);
+      const data = await res.json() as T;
+
+      // FETCHPAT-05: Store in cache for GET requests with cacheTtl
+      if (method === "GET" && cacheTtl && cacheTtl > 0) {
+        _apiCache.set(_cacheKey(path, token), { data, expiresAt: Date.now() + cacheTtl });
+        // Evict stale entries periodically to avoid unbounded growth
+        if (_apiCache.size > 100) {
+          const now = Date.now();
+          for (const [k, v] of _apiCache) {
+            if (v.expiresAt < now) _apiCache.delete(k);
+          }
         }
       }
-    }
 
-    return data;
-  } finally {
-    clearTimeout(timeoutId);
+      clearTimeout(timeoutId);
+      return data;
+    } catch (err) {
+      // Don't retry on abort (user-initiated or timeout)
+      if (err instanceof Error && err.name === "AbortError") {
+        clearTimeout(timeoutId);
+        throw err;
+      }
+      lastError = err instanceof Error ? err : new Error(String(err));
+      if (attempt < MAX_RETRIES) {
+        const delay = Math.min(1000 * 2 ** attempt, 8000);
+        await sleep(delay);
+      }
+    }
   }
+  clearTimeout(timeoutId);
+  throw lastError;
 }
 
 // FETCHPAT-06: 軽量なランタイム型ガード
