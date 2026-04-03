@@ -31,6 +31,23 @@ export async function GET(request: Request) {
             plan: "business",
             trial_ends_at: trialEnd,
           });
+
+          // Send welcome email to new users
+          try {
+            const { sendEmail } = await import("@/lib/email");
+            const { welcomeEmail } = await import("@/lib/email-templates");
+            const userEmail = data.user.email;
+            const userName =
+              data.user.user_metadata?.full_name ??
+              data.user.email?.split("@")[0] ??
+              "there";
+            if (userEmail) {
+              const { subject, html } = welcomeEmail(userName);
+              await sendEmail({ to: userEmail, subject, html });
+            }
+          } catch {
+            // Non-critical — do not block sign-in on email failure
+          }
         }
         // Existing profiles: no changes (trial already handled)
 
