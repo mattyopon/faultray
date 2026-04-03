@@ -238,7 +238,7 @@ export default function GameDayPage() {
                 <div>
                   <label className="text-xs text-[#64748b] mb-1 block">Scenario</label>
                   <select
-                    className="w-full bg-[#0d1526] border border-[#1e293b] rounded-lg px-3 py-2 text-sm text-[#94a3b8] focus:outline-none"
+                    className="w-full bg-[#0d1526] border border-[#1e293b] rounded-lg px-3 py-2 text-sm text-[#94a3b8] focus:outline-none focus:border-[#FFD700]/30"
                     value={selectedScenario}
                     onChange={(e) => setSelectedScenario(e.target.value)}
                     aria-label={locale === "ja" ? "シナリオ選択" : "Select scenario"}
@@ -251,7 +251,7 @@ export default function GameDayPage() {
                   <input
                     type="date"
                     defaultValue="2026-04-24"
-                    className="w-full bg-[#0d1526] border border-[#1e293b] rounded-lg px-3 py-2 text-sm text-[#94a3b8] focus:outline-none"
+                    className="w-full bg-[#0d1526] border border-[#1e293b] rounded-lg px-3 py-2 text-sm text-[#94a3b8] focus:outline-none focus:border-[#FFD700]/30"
                   />
                 </div>
               </div>

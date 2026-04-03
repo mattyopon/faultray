@@ -176,7 +176,7 @@ export default function LogsPage() {
 
           {/* Level filter */}
           <select
-            className="bg-[#0d1526] border border-[#1e293b] rounded-lg px-3 py-1.5 text-sm text-[#94a3b8] focus:outline-none"
+            className="bg-[#0d1526] border border-[#1e293b] rounded-lg px-3 py-1.5 text-sm text-[#94a3b8] focus:outline-none focus:border-[#FFD700]/30"
             value={filterLevel}
             onChange={(e) => setFilterLevel(e.target.value)}
             aria-label={locale === "ja" ? "ログレベルでフィルター" : "Filter by log level"}
@@ -187,7 +187,7 @@ export default function LogsPage() {
 
           {/* Service filter */}
           <select
-            className="bg-[#0d1526] border border-[#1e293b] rounded-lg px-3 py-1.5 text-sm text-[#94a3b8] focus:outline-none"
+            className="bg-[#0d1526] border border-[#1e293b] rounded-lg px-3 py-1.5 text-sm text-[#94a3b8] focus:outline-none focus:border-[#FFD700]/30"
             value={filterService}
             onChange={(e) => setFilterService(e.target.value)}
             aria-label={locale === "ja" ? "サービスでフィルター" : "Filter by service"}

@@ -261,7 +261,7 @@ export default function TracesPage() {
             />
           </div>
           <select
-            className="bg-[#0d1526] border border-[#1e293b] rounded-lg px-3 py-1.5 text-sm text-[#94a3b8] focus:outline-none"
+            className="bg-[#0d1526] border border-[#1e293b] rounded-lg px-3 py-1.5 text-sm text-[#94a3b8] focus:outline-none focus:border-[#FFD700]/30"
             value={filterService}
             onChange={(e) => setFilterService(e.target.value)}
             aria-label={locale === "ja" ? "サービスでフィルター" : "Filter by service"}
@@ -270,7 +270,7 @@ export default function TracesPage() {
             {ALL_SERVICES.map((s) => <option key={s} value={s}>{s}</option>)}
           </select>
           <select
-            className="bg-[#0d1526] border border-[#1e293b] rounded-lg px-3 py-1.5 text-sm text-[#94a3b8] focus:outline-none"
+            className="bg-[#0d1526] border border-[#1e293b] rounded-lg px-3 py-1.5 text-sm text-[#94a3b8] focus:outline-none focus:border-[#FFD700]/30"
             value={filterStatus}
             onChange={(e) => setFilterStatus(e.target.value)}
             aria-label={locale === "ja" ? "ステータスでフィルター" : "Filter by status"}
@@ -281,7 +281,7 @@ export default function TracesPage() {
             <option value="error">{locale === "ja" ? "エラー" : "Error"}</option>
           </select>
           <select
-            className="bg-[#0d1526] border border-[#1e293b] rounded-lg px-3 py-1.5 text-sm text-[#94a3b8] focus:outline-none"
+            className="bg-[#0d1526] border border-[#1e293b] rounded-lg px-3 py-1.5 text-sm text-[#94a3b8] focus:outline-none focus:border-[#FFD700]/30"
             value={filterLatency}
             onChange={(e) => setFilterLatency(Number(e.target.value))}
             aria-label={locale === "ja" ? "レイテンシでフィルター" : "Filter by latency"}
