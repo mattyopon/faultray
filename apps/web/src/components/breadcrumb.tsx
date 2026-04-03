@@ -88,11 +88,11 @@ export function Breadcrumb() {
   return (
     <nav
       aria-label="Breadcrumb"
-      className="flex items-center gap-1.5 px-4 py-2 text-xs text-[#64748b] border-b border-[#1e293b] bg-[#0a0f1a]"
+      className="flex items-center gap-1.5 px-4 py-2 text-xs text-[var(--text-muted)] border-b border-[var(--border-color)] bg-[var(--bg-secondary)]"
     >
       <Link
         href="/dashboard"
-        className="flex items-center gap-1 hover:text-white transition-colors"
+        className="flex items-center gap-1 hover:text-[var(--text-primary)] transition-colors"
         aria-label="Dashboard home"
       >
         <Home size={12} />
@@ -101,13 +101,13 @@ export function Breadcrumb() {
         <span key={crumb.href} className="flex items-center gap-1.5">
           <ChevronRight size={10} className="shrink-0" aria-hidden="true" />
           {i === crumbs.length - 1 ? (
-            <span className="text-[#94a3b8]" aria-current="page">
+            <span className="text-[var(--text-secondary)]" aria-current="page">
               {crumb.label}
             </span>
           ) : (
             <Link
               href={crumb.href}
-              className="hover:text-white transition-colors"
+              className="hover:text-[var(--text-primary)] transition-colors"
             >
               {crumb.label}
             </Link>

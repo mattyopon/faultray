@@ -171,9 +171,9 @@ export default function DemoPage() {
   return (
     <div className="max-w-5xl mx-auto px-6 py-12">
       {/* PAGE-01: 営業デモ向けショートカットバナー */}
-      <div className="mb-8 p-4 rounded-xl border border-[#1e293b] bg-[#0d1117] flex flex-wrap items-center justify-between gap-3">
-        <div className="flex items-center gap-2 text-xs text-[#64748b]">
-          <BarChart3 size={14} className="text-[#FFD700]" />
+      <div className="mb-8 p-4 rounded-xl border border-[var(--border-color)] bg-[var(--bg-secondary)] flex flex-wrap items-center justify-between gap-3">
+        <div className="flex items-center gap-2 text-xs text-[var(--text-muted)]">
+          <BarChart3 size={14} className="text-[var(--gold)]" />
           <span>
             {locale === "ja" ? "営業デモ用 クイックリンク:" : "Sales demo quick links:"}
           </span>
@@ -189,7 +189,7 @@ export default function DemoPage() {
             <Link
               key={link.href}
               href={link.href}
-              className="text-xs font-medium px-3 py-1.5 rounded-lg border border-[#1e293b] text-[#94a3b8] hover:text-white hover:border-[#334155] transition-colors"
+              className="text-xs font-medium px-3 py-1.5 rounded-lg border border-[var(--border-color)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:border-[#334155] transition-colors"
             >
               {link.label}
             </Link>
@@ -199,30 +199,30 @@ export default function DemoPage() {
 
       {/* Hero */}
       <div className="text-center mb-12">
-        <div className="inline-flex items-center gap-2 bg-[#FFD700]/10 border border-[#FFD700]/20 rounded-full px-4 py-1.5 mb-5">
-          <Play size={14} className="text-[#FFD700]" />
-          <span className="text-xs font-semibold text-[#FFD700] uppercase tracking-wide">Live Demo</span>
+        <div className="inline-flex items-center gap-2 bg-[var(--gold)]/10 border border-[var(--gold)]/20 rounded-full px-4 py-1.5 mb-5">
+          <Play size={14} className="text-[var(--gold)]" />
+          <span className="text-xs font-semibold text-[var(--gold)] uppercase tracking-wide">Live Demo</span>
         </div>
         <h1 className="text-4xl font-bold mb-4 leading-tight">{t.headline}</h1>
-        <p className="text-[#94a3b8] text-lg max-w-2xl mx-auto">{t.sub}</p>
+        <p className="text-[var(--text-secondary)] text-lg max-w-2xl mx-auto">{t.sub}</p>
       </div>
 
       {/* Quick scenario cards */}
       <div className="mb-12">
-        <p className="text-sm font-semibold text-[#64748b] uppercase tracking-wide mb-4">
+        <p className="text-sm font-semibold text-[var(--text-muted)] uppercase tracking-wide mb-4">
           {t.demoScenarios}
         </p>
         <div className="grid sm:grid-cols-3 gap-4">
           {t.scenarios.map((s) => (
             <Link key={s.id} href={`/simulate?sample=${s.id}`}>
-              <Card className="hover:border-[#FFD700]/40 transition-colors cursor-pointer h-full">
+              <Card className="hover:border-[var(--gold)]/40 transition-colors cursor-pointer h-full">
                 <div className="flex items-start gap-3">
-                  <div className="p-2 rounded-lg bg-[#FFD700]/10">
-                    <Zap size={16} className="text-[#FFD700]" />
+                  <div className="p-2 rounded-lg bg-[var(--gold)]/10">
+                    <Zap size={16} className="text-[var(--gold)]" />
                   </div>
                   <div>
                     <p className="font-semibold text-sm mb-1">{s.label}</p>
-                    <p className="text-xs text-[#64748b]">{s.desc}</p>
+                    <p className="text-xs text-[var(--text-muted)]">{s.desc}</p>
                   </div>
                 </div>
               </Card>
@@ -234,8 +234,8 @@ export default function DemoPage() {
       {/* DEMO-01: Industry selection + one-click demo */}
       <div className="mb-12">
         <div className="flex items-center gap-2 mb-4">
-          <Building2 size={16} className="text-[#FFD700]" />
-          <p className="text-sm font-semibold text-[#64748b] uppercase tracking-wide">
+          <Building2 size={16} className="text-[var(--gold)]" />
+          <p className="text-sm font-semibold text-[var(--text-muted)] uppercase tracking-wide">
             {t.selectIndustry}
           </p>
         </div>
@@ -246,8 +246,8 @@ export default function DemoPage() {
               onClick={() => setSelectedIndustry(ind.key)}
               className={`px-4 py-3 rounded-xl border text-sm font-medium transition-all ${
                 selectedIndustry === ind.key
-                  ? "border-[#FFD700] bg-[#FFD700]/10 text-[#FFD700]"
-                  : "border-[#1e293b] text-[#94a3b8] hover:border-[#334155] hover:text-white"
+                  ? "border-[var(--gold)] bg-[var(--gold)]/10 text-[var(--gold)]"
+                  : "border-[var(--border-color)] text-[var(--text-secondary)] hover:border-[#334155] hover:text-[var(--text-primary)]"
               }`}
             >
               {ind.label}
@@ -264,7 +264,7 @@ export default function DemoPage() {
                 {t.oneClickCTA}
               </Button>
             </Link>
-            <p className="text-xs text-[#64748b] mt-2">{t.oneClickDesc}</p>
+            <p className="text-xs text-[var(--text-muted)] mt-2">{t.oneClickDesc}</p>
           </div>
         )}
 
@@ -276,34 +276,34 @@ export default function DemoPage() {
               <Badge variant="default" className="bg-blue-500/10 text-blue-400 border-blue-500/20">
                 {locale === "ja" ? "サンプルデータ" : "SAMPLE DATA"}
               </Badge>
-              <span className="text-xs text-[#94a3b8]">{t.previewBanner}</span>
+              <span className="text-xs text-[var(--text-secondary)]">{t.previewBanner}</span>
             </div>
             <p className="text-base font-bold mb-4">{t.previewTitle}</p>
             <div className="flex flex-col sm:flex-row items-center gap-6">
               <PreviewScoreRing score={preview.score} />
               <div className="grid grid-cols-2 gap-4 flex-1">
-                <div className="p-3 rounded-lg bg-white/[0.02] border border-[#1e293b]">
-                  <p className="text-xs text-[#64748b] mb-1">{t.previewScore}</p>
+                <div className="p-3 rounded-lg bg-black/5 border border-[var(--border-color)]">
+                  <p className="text-xs text-[var(--text-muted)] mb-1">{t.previewScore}</p>
                   <p className="text-xl font-bold font-mono" style={{ color: preview.score >= 90 ? "#10B981" : preview.score >= 70 ? "#FFD700" : "#ef4444" }}>
                     {preview.score}
                   </p>
                 </div>
-                <div className="p-3 rounded-lg bg-white/[0.02] border border-[#1e293b]">
-                  <p className="text-xs text-[#64748b] mb-1">{t.previewAvailability}</p>
+                <div className="p-3 rounded-lg bg-black/5 border border-[var(--border-color)]">
+                  <p className="text-xs text-[var(--text-muted)] mb-1">{t.previewAvailability}</p>
                   <p className="text-xl font-bold font-mono text-emerald-400">{preview.nines}</p>
                 </div>
-                <div className="p-3 rounded-lg bg-white/[0.02] border border-[#1e293b]">
-                  <p className="text-xs text-[#64748b] mb-1">{t.previewCritical}</p>
+                <div className="p-3 rounded-lg bg-black/5 border border-[var(--border-color)]">
+                  <p className="text-xs text-[var(--text-muted)] mb-1">{t.previewCritical}</p>
                   <p className="text-xl font-bold font-mono text-red-400">{preview.critical}</p>
                 </div>
-                <div className="p-3 rounded-lg bg-white/[0.02] border border-[#1e293b]">
-                  <p className="text-xs text-[#64748b] mb-1">{t.previewWarning}</p>
+                <div className="p-3 rounded-lg bg-black/5 border border-[var(--border-color)]">
+                  <p className="text-xs text-[var(--text-muted)] mb-1">{t.previewWarning}</p>
                   <p className="text-xl font-bold font-mono text-orange-400">{preview.warning}</p>
                 </div>
               </div>
             </div>
             <div className="mt-4 text-right">
-              <Link href={`/simulate?sample=${preview.scenario}`} className="text-sm font-semibold text-[#FFD700] hover:underline inline-flex items-center gap-1">
+              <Link href={`/simulate?sample=${preview.scenario}`} className="text-sm font-semibold text-[var(--gold)] hover:underline inline-flex items-center gap-1">
                 {t.previewCTA} <ArrowRight size={14} />
               </Link>
             </div>
@@ -319,7 +319,7 @@ export default function DemoPage() {
             <h2 className="text-lg font-bold">{t.freeTitle}</h2>
             <Badge variant="default">{t.freeBadge}</Badge>
           </div>
-          <p className="text-sm text-[#94a3b8] mb-6">{t.freeDesc}</p>
+          <p className="text-sm text-[var(--text-secondary)] mb-6">{t.freeDesc}</p>
           <ul className="space-y-3 mb-8">
             {t.freeFeatures.map((f) => (
               <li key={f} className="flex items-center gap-2 text-sm">
@@ -337,16 +337,16 @@ export default function DemoPage() {
         </Card>
 
         {/* Pro */}
-        <Card className="border-[#FFD700]/30 bg-gradient-to-b from-[#FFD700]/[0.04] to-transparent">
+        <Card className="border-[var(--gold)]/30 bg-gradient-to-b from-[var(--gold)]/[0.04] to-transparent">
           <div className="flex items-center justify-between mb-4">
             <h2 className="text-lg font-bold">{t.proTitle}</h2>
             <Badge variant="gold">{t.proBadge}</Badge>
           </div>
-          <p className="text-sm text-[#94a3b8] mb-6">{t.proDesc}</p>
+          <p className="text-sm text-[var(--text-secondary)] mb-6">{t.proDesc}</p>
           <ul className="space-y-3 mb-8">
             {t.proFeatures.map((f) => (
               <li key={f} className="flex items-center gap-2 text-sm">
-                <CheckCircle2 size={15} className="text-[#FFD700] shrink-0" />
+                <CheckCircle2 size={15} className="text-[var(--gold)] shrink-0" />
                 {f}
               </li>
             ))}
@@ -360,21 +360,21 @@ export default function DemoPage() {
         </Card>
       </div>
 
-      {/* Feature highlights — i18n対応 */}
+      {/* Feature highlights */}
       <div className="grid sm:grid-cols-3 gap-6 mb-10">
-        {([
-          { icon: <Zap size={22} className="text-[#FFD700]" />, label: locale === "ja" ? "30秒でシミュレーション" : "Simulate in 30s", desc: locale === "ja" ? "YAMLを貼るだけでリスクスコアを即算出" : "Paste YAML → instant risk score" },
-          { icon: <Shield size={22} className="text-emerald-400" />, label: locale === "ja" ? "N-nineの可用性予測" : "N-nine availability", desc: locale === "ja" ? "数学的裏付けのあるSLA予測" : "Math-backed SLA prediction" },
-          { icon: <BarChart3 size={22} className="text-blue-400" />, label: locale === "ja" ? "カスケード障害分析" : "Cascade analysis", desc: locale === "ja" ? "障害の影響範囲を可視化" : "See failure blast radius" },
-          { icon: <FileText size={22} className="text-purple-400" />, label: locale === "ja" ? "監査対応レポート" : "Audit-ready reports", desc: locale === "ja" ? "SOC 2 / DORA向けPDF出力" : "PDF export for SOC 2 / DORA" },
-          { icon: <Lock size={22} className="text-red-400" />, label: locale === "ja" ? "データ流出ゼロ" : "No data leaves", desc: locale === "ja" ? "YAMLはメモリ内のみで処理" : "YAML processed in memory only" },
-          { icon: <CheckCircle2 size={22} className="text-[#FFD700]" />, label: locale === "ja" ? "14日間Pro無料体験" : "14-day Pro trial", desc: locale === "ja" ? "クレジットカード不要" : "No credit card required" },
-        ] as Array<{ icon: React.ReactNode; label: string; desc: string }>).map((item) => (
-          <div key={item.label} className="flex gap-3 p-4 rounded-xl bg-white/[0.02] border border-[#1e293b]">
+        {[
+          { icon: <Zap size={22} className="text-[var(--gold)]" />, label: "Simulate in 30s", desc: "Paste YAML → instant risk score" },
+          { icon: <Shield size={22} className="text-emerald-400" />, label: "N-nine availability", desc: "Math-backed SLA prediction" },
+          { icon: <BarChart3 size={22} className="text-blue-400" />, label: "Cascade analysis", desc: "See failure blast radius" },
+          { icon: <FileText size={22} className="text-purple-400" />, label: "Audit-ready reports", desc: "PDF export for SOC 2 / DORA" },
+          { icon: <Lock size={22} className="text-red-400" />, label: "No data leaves", desc: "YAML processed in memory only" },
+          { icon: <CheckCircle2 size={22} className="text-[var(--gold)]" />, label: "14-day Pro trial", desc: "No credit card required" },
+        ].map((item) => (
+          <div key={item.label} className="flex gap-3 p-4 rounded-xl bg-black/5 border border-[var(--border-color)]">
             <div className="shrink-0 mt-0.5">{item.icon}</div>
             <div>
               <p className="text-sm font-semibold mb-0.5">{item.label}</p>
-              <p className="text-xs text-[#64748b]">{item.desc}</p>
+              <p className="text-xs text-[var(--text-muted)]">{item.desc}</p>
             </div>
           </div>
         ))}
@@ -382,7 +382,7 @@ export default function DemoPage() {
 
       {/* Bottom CTA */}
       <div className="text-center">
-        <Link href="/pricing" className="text-sm text-[#64748b] hover:text-white transition-colors inline-flex items-center gap-1">
+        <Link href="/pricing" className="text-sm text-[var(--text-muted)] hover:text-[var(--text-primary)] transition-colors inline-flex items-center gap-1">
           {t.pricingLink} <ArrowRight size={13} />
         </Link>
       </div>

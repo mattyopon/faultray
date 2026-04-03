@@ -102,17 +102,17 @@ export default function StatusPage() {
     <div className="max-w-[860px] mx-auto px-6 py-20">
       {/* Back link */}
       <div className="mb-10">
-        <Link href="/" className="text-sm text-[#64748b] hover:text-white transition-colors">
+        <Link href="/" className="text-sm text-[var(--text-muted)] hover:text-[var(--text-primary)] transition-colors">
           &larr; Back to Home
         </Link>
       </div>
 
       {/* Header */}
       <div className="flex items-center gap-4 mb-4">
-        <Activity size={28} className="text-[#FFD700]" />
+        <Activity size={28} className="text-[var(--gold)]" />
         <h1 className="text-3xl font-bold tracking-tight">System Status</h1>
       </div>
-      <p className="text-sm text-[#64748b] mb-12">
+      <p className="text-sm text-[var(--text-muted)] mb-12">
         Live health of FaultRay infrastructure and services.{" "}
         Updated automatically &mdash; last checked:{" "}
         <time dateTime={new Date().toISOString()} className="font-mono">
@@ -139,7 +139,7 @@ export default function StatusPage() {
               ? "Partial Service Degradation"
               : "Service Disruption Detected"}
           </p>
-          <p className="text-xs text-[#64748b] mt-0.5">
+          <p className="text-xs text-[var(--text-muted)] mt-0.5">
             {SERVICES.filter((s) => s.status === "operational").length}/{SERVICES.length} services operational
           </p>
         </div>
@@ -148,19 +148,19 @@ export default function StatusPage() {
       {/* Service list */}
       <div className="mb-12">
         <h2 className="text-lg font-bold mb-4">Services</h2>
-        <div className="divide-y divide-[#1e293b] rounded-2xl border border-[#1e293b] overflow-hidden">
+        <div className="divide-y divide-[var(--border-color)] rounded-2xl border border-[var(--border-color)] overflow-hidden">
           {SERVICES.map((svc) => (
-            <div key={svc.name} className="flex items-center justify-between px-5 py-4 bg-[#111827] hover:bg-[#111827]/60 transition-colors">
+            <div key={svc.name} className="flex items-center justify-between px-5 py-4 bg-[var(--bg-card)] hover:bg-[var(--bg-card)]/60 transition-colors">
               <div className="flex items-center gap-3">
                 {statusIcon(svc.status)}
                 <div>
-                  <p className="text-sm font-semibold text-[#e2e8f0]">{svc.name}</p>
-                  <p className="text-xs text-[#64748b]">{svc.description}</p>
+                  <p className="text-sm font-semibold text-[var(--text-primary)]">{svc.name}</p>
+                  <p className="text-xs text-[var(--text-muted)]">{svc.description}</p>
                 </div>
               </div>
               <div className="flex items-center gap-4 text-right">
                 {svc.latency && (
-                  <span className="text-xs font-mono text-[#64748b]">{svc.latency}</span>
+                  <span className="text-xs font-mono text-[var(--text-muted)]">{svc.latency}</span>
                 )}
                 <span className={`text-xs font-semibold ${statusColor(svc.status)}`}>
                   {statusLabel(svc.status)}
@@ -177,7 +177,7 @@ export default function StatusPage() {
         <div className="space-y-4">
           {SERVICES.slice(0, 4).map((svc) => (
             <div key={svc.name}>
-              <div className="flex items-center justify-between text-xs text-[#64748b] mb-1">
+              <div className="flex items-center justify-between text-xs text-[var(--text-muted)] mb-1">
                 <span>{svc.name}</span>
                 <span className="text-emerald-400 font-semibold">99.97%</span>
               </div>
@@ -200,15 +200,15 @@ export default function StatusPage() {
       <div className="mb-12">
         <h2 className="text-lg font-bold mb-4">Recent Incidents</h2>
         {RECENT_INCIDENTS.length === 0 ? (
-          <p className="text-sm text-[#64748b]">No incidents in the past 90 days.</p>
+          <p className="text-sm text-[var(--text-muted)]">No incidents in the past 90 days.</p>
         ) : (
           <div className="space-y-4">
             {RECENT_INCIDENTS.map((inc) => (
-              <div key={inc.id} className="rounded-2xl border border-[#1e293b] overflow-hidden">
-                <div className="flex items-center justify-between px-5 py-4 bg-[#111827]">
+              <div key={inc.id} className="rounded-2xl border border-[var(--border-color)] overflow-hidden">
+                <div className="flex items-center justify-between px-5 py-4 bg-[var(--bg-card)]">
                   <div>
-                    <p className="text-sm font-semibold text-[#e2e8f0]">{inc.title}</p>
-                    <p className="text-xs text-[#64748b] mt-0.5">
+                    <p className="text-sm font-semibold text-[var(--text-primary)]">{inc.title}</p>
+                    <p className="text-xs text-[var(--text-muted)] mt-0.5">
                       {inc.id} &mdash; {new Date(inc.timestamp).toLocaleDateString()}
                     </p>
                   </div>
@@ -222,13 +222,13 @@ export default function StatusPage() {
                     {inc.status.toUpperCase()}
                   </span>
                 </div>
-                <div className="px-5 py-4 border-t border-[#1e293b] space-y-3">
+                <div className="px-5 py-4 border-t border-[var(--border-color)] space-y-3">
                   {inc.updates.map((u, i) => (
                     <div key={i} className="flex gap-3">
-                      <span className="text-xs font-mono text-[#64748b] shrink-0 mt-0.5">
+                      <span className="text-xs font-mono text-[var(--text-muted)] shrink-0 mt-0.5">
                         {new Date(u.time).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
                       </span>
-                      <p className="text-xs text-[#94a3b8]">{u.message}</p>
+                      <p className="text-xs text-[var(--text-secondary)]">{u.message}</p>
                     </div>
                   ))}
                 </div>
@@ -239,11 +239,11 @@ export default function StatusPage() {
       </div>
 
       {/* Subscribe note */}
-      <div className="p-5 rounded-2xl border border-[#1e293b] bg-[#111827]">
-        <p className="text-sm text-[#94a3b8]">
-          <strong className="text-[#e2e8f0]">Subscribe to status updates</strong> &mdash; get notified of incidents via email or Slack.{" "}
+      <div className="p-5 rounded-2xl border border-[var(--border-color)] bg-[var(--bg-card)]">
+        <p className="text-sm text-[var(--text-secondary)]">
+          <strong className="text-[var(--text-primary)]">Subscribe to status updates</strong> &mdash; get notified of incidents via email or Slack.{" "}
           Configure notifications in{" "}
-          <Link href="/settings" className="text-[#FFD700] hover:underline">Settings</Link>.
+          <Link href="/settings" className="text-[var(--gold)] hover:underline">Settings</Link>.
         </p>
       </div>
     </div>

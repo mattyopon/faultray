@@ -79,7 +79,7 @@ export default function ContactPage() {
     <div className="max-w-[640px] mx-auto px-6 py-20">
       <Link
         href="/"
-        className="inline-flex items-center gap-1.5 text-sm text-[#64748b] hover:text-white transition-colors mb-8"
+        className="inline-flex items-center gap-1.5 text-sm text-[var(--text-muted)] hover:text-[var(--text-primary)] transition-colors mb-8"
       >
         <ArrowLeft size={14} />
         Back to Home
@@ -89,7 +89,7 @@ export default function ContactPage() {
         <h1 className="text-[clamp(1.75rem,4vw,2.5rem)] font-bold tracking-tight mb-3">
           Contact Us
         </h1>
-        <p className="text-[#94a3b8] leading-relaxed">
+        <p className="text-[var(--text-secondary)] leading-relaxed">
           Tell us about your infrastructure challenges. We&apos;ll follow up
           within one business day.
         </p>
@@ -100,7 +100,7 @@ export default function ContactPage() {
         <span className="text-blue-400 text-lg mt-0.5">🗂</span>
         <div>
           <p className="text-sm font-semibold text-blue-300 mb-1">日本企業向け：稟議書テンプレート提供中</p>
-          <p className="text-xs text-[#94a3b8]">
+          <p className="text-xs text-[var(--text-secondary)]">
             社内承認プロセス（稟議決裁）に必要なコスト・ROI・セキュリティをまとめたテンプレートを無償提供しています。
             導入検討段階でお気軽にご相談ください。
           </p>
@@ -114,38 +114,38 @@ export default function ContactPage() {
       <div className="mb-8 grid grid-cols-1 sm:grid-cols-3 gap-3">
         <a
           href="/simulate"
-          className="flex flex-col gap-2 p-5 rounded-xl border border-[#FFD700]/20 bg-[#FFD700]/[0.04] hover:bg-[#FFD700]/[0.08] transition-all"
+          className="flex flex-col gap-2 p-5 rounded-xl border border-[var(--gold)]/20 bg-[var(--gold)]/[0.04] hover:bg-[var(--gold)]/[0.08] transition-all"
         >
-          <span className="text-[#FFD700] font-bold text-sm">Self-Service Demo</span>
-          <span className="text-xs text-[#94a3b8]">Run a simulation instantly — no account required</span>
-          <span className="text-xs text-[#64748b] mt-1">Available now →</span>
+          <span className="text-[var(--gold)] font-bold text-sm">Self-Service Demo</span>
+          <span className="text-xs text-[var(--text-secondary)]">Run a simulation instantly — no account required</span>
+          <span className="text-xs text-[var(--text-muted)] mt-1">Available now →</span>
         </a>
-        <div className="flex flex-col gap-2 p-5 rounded-xl border border-[#1e293b] bg-[#111827]">
-          <span className="text-white font-bold text-sm">Guided Demo (30 min)</span>
-          <span className="text-xs text-[#94a3b8]">Live walkthrough with a FaultRay engineer via video call</span>
-          <span className="text-xs text-[#64748b] mt-1">Fill the form below →</span>
+        <div className="flex flex-col gap-2 p-5 rounded-xl border border-[var(--border-color)] bg-[var(--bg-card)]">
+          <span className="text-[var(--text-primary)] font-bold text-sm">Guided Demo (30 min)</span>
+          <span className="text-xs text-[var(--text-secondary)]">Live walkthrough with a FaultRay engineer via video call</span>
+          <span className="text-xs text-[var(--text-muted)] mt-1">Fill the form below →</span>
         </div>
         <a
           href="mailto:sales@faultray.com?subject=PoC%20Request"
-          className="flex flex-col gap-2 p-5 rounded-xl border border-[#1e293b] bg-[#111827] hover:border-[#64748b] transition-all"
+          className="flex flex-col gap-2 p-5 rounded-xl border border-[var(--border-color)] bg-[var(--bg-card)] hover:border-[var(--text-muted)] transition-all"
         >
-          <span className="text-white font-bold text-sm">PoC (Proof of Concept)</span>
-          <span className="text-xs text-[#94a3b8]">2-week free trial with your actual infrastructure</span>
-          <span className="text-xs text-[#64748b] mt-1">Email us →</span>
+          <span className="text-[var(--text-primary)] font-bold text-sm">PoC (Proof of Concept)</span>
+          <span className="text-xs text-[var(--text-secondary)]">2-week free trial with your actual infrastructure</span>
+          <span className="text-xs text-[var(--text-muted)] mt-1">Email us →</span>
         </a>
       </div>
 
       {submitted ? (
-        <div className="p-8 rounded-2xl border border-emerald-500/30 bg-gradient-to-br from-[#111827] to-emerald-500/[0.04] text-center">
+        <div className="p-8 rounded-2xl border border-emerald-500/30 bg-gradient-to-br from-[var(--bg-card)] to-emerald-500/[0.04] text-center">
           <CheckCircle size={48} className="text-emerald-400 mx-auto mb-4" />
           <h2 className="text-xl font-bold mb-2">Message sent!</h2>
-          <p className="text-[#94a3b8] mb-6">
+          <p className="text-[var(--text-secondary)] mb-6">
             Thank you for reaching out. We&apos;ll get back to you within one
             business day.
           </p>
           <Link
             href="/"
-            className="inline-flex items-center gap-2 px-6 py-2.5 bg-[#FFD700] text-[#0a0e1a] font-semibold rounded-xl hover:bg-[#ffe44d] transition-colors"
+            className="inline-flex items-center gap-2 px-6 py-2.5 bg-[var(--gold)] text-white font-semibold rounded-xl hover:bg-[#044a99] transition-colors"
           >
             Back to Home
           </Link>
@@ -153,13 +153,13 @@ export default function ContactPage() {
       ) : (
         <form
           onSubmit={handleSubmit}
-          className="p-8 rounded-2xl border border-[#1e293b] bg-[#111827] space-y-5"
+          className="p-8 rounded-2xl border border-[var(--border-color)] bg-[var(--bg-card)] space-y-5"
         >
           {/* Company */}
           <div>
             <label
               htmlFor="company"
-              className="block text-sm font-medium text-[#94a3b8] mb-1.5"
+              className="block text-sm font-medium text-[var(--text-secondary)] mb-1.5"
             >
               Company Name <span className="text-red-400">*</span>
             </label>
@@ -172,7 +172,7 @@ export default function ContactPage() {
               value={form.company}
               onChange={handleChange}
               placeholder="Acme Corp"
-              className="w-full px-4 py-2.5 rounded-xl bg-[#0d1117] border border-[#1e293b] text-white placeholder-[#475569] focus:outline-none focus:border-[#FFD700]/50 transition-colors text-sm"
+              className="w-full px-4 py-2.5 rounded-xl bg-[#0d1117] border border-[var(--border-color)] text-[var(--text-primary)] placeholder-[var(--text-muted)] focus:outline-none focus:border-[var(--gold)]/50 transition-colors text-sm"
             />
           </div>
 
@@ -180,7 +180,7 @@ export default function ContactPage() {
           <div>
             <label
               htmlFor="name"
-              className="block text-sm font-medium text-[#94a3b8] mb-1.5"
+              className="block text-sm font-medium text-[var(--text-secondary)] mb-1.5"
             >
               Your Name <span className="text-red-400">*</span>
             </label>
@@ -193,7 +193,7 @@ export default function ContactPage() {
               value={form.name}
               onChange={handleChange}
               placeholder="Jane Smith"
-              className="w-full px-4 py-2.5 rounded-xl bg-[#0d1117] border border-[#1e293b] text-white placeholder-[#475569] focus:outline-none focus:border-[#FFD700]/50 transition-colors text-sm"
+              className="w-full px-4 py-2.5 rounded-xl bg-[#0d1117] border border-[var(--border-color)] text-[var(--text-primary)] placeholder-[var(--text-muted)] focus:outline-none focus:border-[var(--gold)]/50 transition-colors text-sm"
             />
           </div>
 
@@ -201,7 +201,7 @@ export default function ContactPage() {
           <div>
             <label
               htmlFor="email"
-              className="block text-sm font-medium text-[#94a3b8] mb-1.5"
+              className="block text-sm font-medium text-[var(--text-secondary)] mb-1.5"
             >
               Work Email <span className="text-red-400">*</span>
             </label>
@@ -213,7 +213,7 @@ export default function ContactPage() {
               value={form.email}
               onChange={handleChange}
               placeholder="jane@acmecorp.com"
-              className="w-full px-4 py-2.5 rounded-xl bg-[#0d1117] border border-[#1e293b] text-white placeholder-[#475569] focus:outline-none focus:border-[#FFD700]/50 transition-colors text-sm"
+              className="w-full px-4 py-2.5 rounded-xl bg-[#0d1117] border border-[var(--border-color)] text-[var(--text-primary)] placeholder-[var(--text-muted)] focus:outline-none focus:border-[var(--gold)]/50 transition-colors text-sm"
             />
           </div>
 
@@ -221,7 +221,7 @@ export default function ContactPage() {
           <div>
             <label
               htmlFor="companySize"
-              className="block text-sm font-medium text-[#94a3b8] mb-1.5"
+              className="block text-sm font-medium text-[var(--text-secondary)] mb-1.5"
             >
               Company Size <span className="text-red-400">*</span>
             </label>
@@ -231,7 +231,7 @@ export default function ContactPage() {
               required
               value={form.companySize}
               onChange={handleChange}
-              className="w-full px-4 py-2.5 rounded-xl bg-[#0d1117] border border-[#1e293b] text-white focus:outline-none focus:border-[#FFD700]/50 transition-colors text-sm appearance-none"
+              className="w-full px-4 py-2.5 rounded-xl bg-[#0d1117] border border-[var(--border-color)] text-[var(--text-primary)] focus:outline-none focus:border-[var(--gold)]/50 transition-colors text-sm appearance-none"
             >
               <option value="" disabled>
                 Select company size
@@ -248,7 +248,7 @@ export default function ContactPage() {
           <div>
             <label
               htmlFor="message"
-              className="block text-sm font-medium text-[#94a3b8] mb-1.5"
+              className="block text-sm font-medium text-[var(--text-secondary)] mb-1.5"
             >
               Challenges &amp; Questions <span className="text-red-400">*</span>
             </label>
@@ -261,7 +261,7 @@ export default function ContactPage() {
               value={form.message}
               onChange={handleChange}
               placeholder="Describe your infrastructure, current reliability challenges, and what you hope to achieve with FaultRay..."
-              className="w-full px-4 py-2.5 rounded-xl bg-[#0d1117] border border-[#1e293b] text-white placeholder-[#475569] focus:outline-none focus:border-[#FFD700]/50 transition-colors text-sm resize-none"
+              className="w-full px-4 py-2.5 rounded-xl bg-[#0d1117] border border-[var(--border-color)] text-[var(--text-primary)] placeholder-[var(--text-muted)] focus:outline-none focus:border-[var(--gold)]/50 transition-colors text-sm resize-none"
             />
           </div>
 
@@ -274,7 +274,7 @@ export default function ContactPage() {
           <button
             type="submit"
             disabled={submitting}
-            className="w-full inline-flex items-center justify-center gap-2 px-6 py-3 bg-[#FFD700] text-[#0a0e1a] font-semibold rounded-xl hover:bg-[#ffe44d] disabled:opacity-60 disabled:cursor-not-allowed transition-all shadow-[0_0_20px_rgba(255,215,0,0.2)]"
+            className="w-full inline-flex items-center justify-center gap-2 px-6 py-3 bg-[var(--gold)] text-white font-semibold rounded-xl hover:bg-[#044a99] disabled:opacity-60 disabled:cursor-not-allowed transition-all shadow-md"
           >
             <Send size={16} />
             {submitting ? "Sending..." : "Send Message"}

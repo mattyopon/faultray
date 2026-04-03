@@ -163,7 +163,7 @@ function SidebarNavItem({
     return (
       <Link
         href="/pricing"
-        className="flex items-center gap-3 mx-2 px-3 py-2 rounded-lg text-sm transition-colors text-[#475569] hover:text-[#64748b] hover:bg-white/5"
+        className="flex items-center gap-3 mx-2 px-3 py-2 rounded-lg text-sm transition-colors text-[var(--text-muted)] hover:text-[var(--text-muted)] hover:bg-black/5"
         title={label}
       >
         <Icon size={16} className="shrink-0 opacity-40" />
@@ -182,7 +182,7 @@ function SidebarNavItem({
       href={href}
       className={`flex items-center gap-3 mx-2 px-3 py-2 rounded-lg text-sm transition-colors ${
         active
-          ? "text-[#FFD700] bg-[#FFD700]/10"
+          ? "text-[var(--gold)] bg-[var(--gold)]/10"
           : "text-[#94a3b8] hover:text-white hover:bg-white/5"
       }`}
       title={label}
@@ -190,7 +190,7 @@ function SidebarNavItem({
       <Icon size={16} className="shrink-0" />
       {sidebarOpen && <span className="truncate flex-1">{label}</span>}
       {sidebarOpen && isNew && (
-        <span className="shrink-0 px-1 py-0.5 text-[9px] font-bold rounded bg-[#FFD700]/20 text-[#FFD700] leading-none">NEW</span>
+        <span className="shrink-0 px-1 py-0.5 text-[9px] font-bold rounded bg-[var(--gold)]/20 text-[var(--gold)] leading-none">NEW</span>
       )}
     </Link>
   );
@@ -309,15 +309,15 @@ export function Navbar() {
         aria-label="Main navigation"
         className={`fixed top-0 left-0 right-0 z-50 backdrop-blur-xl transition-colors ${
           scrolled
-            ? "border-b border-[#1e293b] bg-[#0a0e1a]/90"
-            : "bg-[#0a0e1a]/80"
+            ? "border-b border-[var(--border-color)] bg-[var(--bg-primary)]/90"
+            : "bg-[var(--bg-primary)]/80"
         }`}
       >
         <div className={`${isApp ? "pl-4 pr-6" : "max-w-[1200px] mx-auto px-6"} flex items-center justify-between h-16`}>
           <div className="flex items-center gap-2">
             {isApp && !authLoading && user && (
               <button
-                className="p-2 text-[#94a3b8] hover:text-white transition-colors md:hidden"
+                className="p-2 text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors md:hidden"
                 onClick={() => setMobileOpen(!mobileOpen)}
                 aria-label={mobileOpen ? "Close navigation menu" : "Open navigation menu"}
                 aria-expanded={mobileOpen}
@@ -325,7 +325,7 @@ export function Navbar() {
                 {mobileOpen ? <X size={20} /> : <Menu size={20} />}
               </button>
             )}
-            <Link href={isLocalizedLP ? `/${locale}` : "/"} className="flex items-center gap-2.5 font-bold text-white">
+            <Link href={isLocalizedLP ? `/${locale}` : "/"} className="flex items-center gap-2.5 font-bold text-[var(--text-primary)]">
               <Logo size={28} />
               <span>FaultRay</span>
             </Link>
@@ -335,12 +335,12 @@ export function Navbar() {
           <div className={`hidden md:flex items-center gap-1 transition-opacity duration-200 ${authLoading ? "opacity-0 pointer-events-none" : "opacity-100"}`}>
             {isApp && user ? (
               <div className="flex items-center gap-2">
-                <span className="text-xs text-[#64748b] truncate max-w-[120px]">
+                <span className="text-xs text-[var(--text-muted)] truncate max-w-[120px]">
                   {user.email}
                 </span>
                 <button
                   onClick={signOut}
-                  className="p-2 text-[#64748b] hover:text-red-400 transition-colors"
+                  className="p-2 text-[var(--text-muted)] hover:text-red-400 transition-colors"
                   title={t.signOut}
                 >
                   <LogOut size={16} />
@@ -350,39 +350,39 @@ export function Navbar() {
               <>
                 <Link
                   href="#features"
-                  className="px-3 py-2 text-sm text-[#94a3b8] hover:text-white transition-colors"
+                  className="px-3 py-2 text-sm text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors"
                 >
                   Features
                 </Link>
                 <Link
                   href="#comparison"
-                  className="px-3 py-2 text-sm text-[#94a3b8] hover:text-white transition-colors"
+                  className="px-3 py-2 text-sm text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors"
                 >
                   Compare
                 </Link>
                 <Link
                   href="/pricing"
-                  className="px-3 py-2 text-sm text-[#94a3b8] hover:text-white transition-colors"
+                  className="px-3 py-2 text-sm text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors"
                 >
                   Pricing
                 </Link>
                 <Link
                   href="/features"
-                  className="px-3 py-2 text-sm text-[#94a3b8] hover:text-white transition-colors"
+                  className="px-3 py-2 text-sm text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors"
                 >
                   Docs
                 </Link>
                 <Link
                   href="https://github.com/mattyopon/faultray"
                   target="_blank"
-                  className="px-3 py-1.5 text-sm text-[#94a3b8] border border-[#1e293b] rounded-md hover:border-[#64748b] transition-colors"
+                  className="px-3 py-1.5 text-sm text-[var(--text-secondary)] border border-[var(--border-color)] rounded-md hover:border-[var(--text-muted)] transition-colors"
                 >
                   GitHub
                 </Link>
                 {/* COMPDIFF-02: "Get a Demo" always visible in navbar */}
                 <Link
                   href="/contact?demo=1"
-                  className="px-3 py-1.5 text-sm font-semibold text-[#0a0e1a] bg-[#FFD700] rounded-md hover:bg-[#ffe44d] transition-colors"
+                  className="px-3 py-1.5 text-sm font-semibold text-white bg-[var(--gold)] rounded-md hover:bg-[#044a99] transition-colors"
                 >
                   Get a Demo
                 </Link>
@@ -409,7 +409,7 @@ export function Navbar() {
           {/* Mobile toggle for non-app pages */}
           {!authLoading && !(isApp && user) && (
             <button
-              className="md:hidden p-2 text-[#94a3b8]"
+              className="md:hidden p-2 text-[var(--text-secondary)]"
               onClick={() => setMobileOpen(!mobileOpen)}
               aria-label={mobileOpen ? "Close navigation menu" : "Open navigation menu"}
               aria-expanded={mobileOpen}
@@ -421,18 +421,18 @@ export function Navbar() {
 
         {/* Mobile menu for non-app pages (landing, pricing, etc.) */}
         {mobileOpen && !(isApp && user) && (
-          <div className="md:hidden border-t border-[#1e293b] bg-[#0a0e1a]/98 backdrop-blur-xl px-6 py-4 space-y-2">
+          <div className="md:hidden border-t border-[var(--border-color)] bg-[var(--bg-primary)]/98 backdrop-blur-xl px-6 py-4 space-y-2">
             <Link
               href="/pricing"
               onClick={() => setMobileOpen(false)}
-              className="block px-3 py-2.5 text-sm text-[#94a3b8]"
+              className="block px-3 py-2.5 text-sm text-[var(--text-secondary)]"
             >
               Pricing
             </Link>
             <Link
               href="/login"
               onClick={() => setMobileOpen(false)}
-              className="block px-3 py-2.5 text-sm text-[#FFD700]"
+              className="block px-3 py-2.5 text-sm text-[var(--gold)]"
             >
               Sign In
             </Link>

@@ -1,6 +1,26 @@
 @import "tailwindcss";
 
+/* DESIGN-RENEW: Default is light theme (Findy-inspired) */
 :root {
+  color-scheme: light;
+  --bg-primary: #ffffff;
+  --bg-secondary: #f9fafb;
+  --bg-tertiary: #f2f3f5;
+  --bg-card: #ffffff;
+  --bg-card-hover: #f9fafb;
+  --border-color: #e5e7eb;
+  --text-primary: #1d1d1f;
+  --text-secondary: #6e6e73;
+  --text-muted: #aeaeb2;
+  --gold: #055ec1;
+  --green: #059669;
+  --red: #dc2626;
+  --blue: #055ec1;
+}
+
+/* Dark theme for dashboard pages */
+html[data-theme="dark"] {
+  color-scheme: dark;
   --bg-primary: #0a0e1a;
   --bg-secondary: #0f1424;
   --bg-tertiary: #141a2e;
@@ -16,29 +36,6 @@
   --blue: #3b82f6;
 }
 
-/* BRAND-02: Light mode support */
-@media (prefers-color-scheme: light) {
-  :root {
-    color-scheme: light dark;
-  }
-}
-
-html[data-theme="light"] {
-  --bg-primary: #f8fafc;
-  --bg-secondary: #f1f5f9;
-  --bg-tertiary: #e2e8f0;
-  --bg-card: #ffffff;
-  --bg-card-hover: #f8fafc;
-  --border-color: #e2e8f0;
-  --text-primary: #0f172a;
-  --text-secondary: #475569;
-  --text-muted: #94a3b8;
-  --gold: #d97706;
-  --green: #059669;
-  --red: #dc2626;
-  --blue: #2563eb;
-}
-
 html {
   scroll-behavior: smooth;
 }
@@ -46,6 +43,7 @@ html {
 body {
   background: var(--bg-primary);
   color: var(--text-primary);
+  font-family: var(--font-inter), var(--font-noto-sans-jp), system-ui, sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
@@ -163,21 +161,18 @@ body {
 .stagger-children > *:nth-child(9) { animation-delay: 640ms; }
 .stagger-children > *:nth-child(10) { animation-delay: 720ms; }
 
-/* --- Gradient text utility --- */
+/* --- Gradient text utility (simplified for light theme) --- */
 .text-gradient-gold {
-  background: linear-gradient(135deg, #FFD700 0%, #FFA500 100%);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
+  color: var(--gold);
 }
 
-/* --- Glow effects --- */
+/* --- Soft shadow effects (replaces glow) --- */
 .glow-gold {
-  box-shadow: 0 0 40px rgba(255, 215, 0, 0.08), 0 0 80px rgba(255, 215, 0, 0.04);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
 }
 
 .glow-gold-hover:hover {
-  box-shadow: 0 0 40px rgba(255, 215, 0, 0.15), 0 0 80px rgba(255, 215, 0, 0.08);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
 }
 
 /* --- N-Layer stack connector --- */
@@ -185,14 +180,10 @@ body {
   border-top: none !important;
 }
 
-/* --- Taxonomy grid card pulse --- */
-@keyframes subtlePulse {
-  0%, 100% { border-color: rgba(255, 215, 0, 0.1); }
-  50% { border-color: rgba(255, 215, 0, 0.25); }
-}
-
+/* --- Taxonomy grid card hover (simplified) --- */
 .taxonomy-card:hover {
-  animation: subtlePulse 2s ease infinite;
+  border-color: var(--gold);
+  transition: border-color 0.2s ease;
 }
 
 /* --- Score fill animation --- */
@@ -200,7 +191,7 @@ body {
   from { stroke-dashoffset: 283; }
 }
 
-/* --- Scrollbar --- */
+/* --- Scrollbar (light default) --- */
 ::-webkit-scrollbar {
   width: 6px;
   height: 6px;
@@ -211,11 +202,18 @@ body {
 }
 
 ::-webkit-scrollbar-thumb {
-  background: #1e293b;
+  background: #d1d5db;
   border-radius: 3px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
+  background: #9ca3af;
+}
+
+html[data-theme="dark"] ::-webkit-scrollbar-thumb {
+  background: #1e293b;
+}
+html[data-theme="dark"] ::-webkit-scrollbar-thumb:hover {
   background: #334155;
 }
 
@@ -246,17 +244,18 @@ body {
 
 /* UICOMP-08: ホバー効果の統一ユーティリティ */
 .hover-card {
-  transition: border-color 0.2s, background-color 0.2s, transform 0.2s;
+  transition: border-color 0.2s, background-color 0.2s, transform 0.2s, box-shadow 0.2s;
 }
 .hover-card:hover {
-  border-color: rgba(255, 215, 0, 0.2);
+  border-color: var(--gold);
   background-color: var(--bg-card-hover);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
 }
 .hover-lift:hover {
   transform: translateY(-2px);
 }
 .hover-glow:hover {
-  box-shadow: 0 0 24px rgba(255, 215, 0, 0.08);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
 }
 
 /* KEYBOARD-04: focus-visible によるキーボードナビゲーション視認性改善 */
@@ -337,15 +336,24 @@ select:focus-visible,
   }
 }
 
-/* --- Hero background animated gradient --- */
-@keyframes heroGradient {
-  0%, 100% { opacity: 0.3; }
-  50% { opacity: 0.6; }
+/* --- Hero background (subtle for light theme) --- */
+.hero-radial-glow {
+  background: radial-gradient(ellipse 600px 400px at 50% 40%, rgba(5, 94, 193, 0.04) 0%, transparent 70%);
 }
 
-.hero-radial-glow {
+html[data-theme="dark"] .hero-radial-glow {
   background: radial-gradient(ellipse 600px 400px at 50% 40%, rgba(255, 215, 0, 0.06) 0%, transparent 70%);
-  animation: heroGradient 8s ease infinite;
+}
+
+/* --- Findy-style reveal animation (IntersectionObserver driven) --- */
+.reveal {
+  opacity: 0;
+  transform: translateY(24px);
+  transition: opacity 0.7s ease, transform 0.7s ease;
+}
+.reveal.visible {
+  opacity: 1;
+  transform: translateY(0);
 }
 
 /* Sidebar layout — reserve space from first paint to prevent layout shift.

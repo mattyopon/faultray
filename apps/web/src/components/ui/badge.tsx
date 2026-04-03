@@ -11,11 +11,11 @@ export function Badge({ className, variant = "default", ...props }: BadgeProps) 
       className={cn(
         "inline-block px-2.5 py-0.5 text-xs font-semibold rounded-full",
         {
-          "bg-white/10 text-[#94a3b8]": variant === "default",
+          "bg-black/10 text-[var(--text-secondary)]": variant === "default",
           "bg-emerald-500/10 text-emerald-400": variant === "green",
           "bg-red-500/10 text-red-400": variant === "red",
           "bg-yellow-500/10 text-yellow-400": variant === "yellow",
-          "bg-[#FFD700]/10 text-[#FFD700]": variant === "gold",
+          "bg-[var(--gold)]/10 text-[var(--gold)]": variant === "gold",
         },
         className
       )}
