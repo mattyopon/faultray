@@ -125,6 +125,7 @@ function TaskCard({
   onStatusChange: (id: string, status: string) => Promise<void>;
   onDelete: (id: string) => Promise<void>;
 }) {
+  const locale = useLocale();
   const assignee = members.find((m) => m.id === task.assignee_id);
   const priorityCfg = PRIORITY_CONFIG[task.priority] ?? PRIORITY_CONFIG.medium;
   const [deleting, setDeleting] = useState(false);
@@ -143,7 +144,7 @@ function TaskCard({
           onClick={handleDelete}
           disabled={deleting}
           className="text-[#475569] hover:text-red-400 transition-colors shrink-0 disabled:opacity-50"
-          aria-label="Delete task"
+          aria-label={locale === "ja" ? "タスクを削除" : "Delete task"}
         >
           {deleting ? (
             <Loader2 size={14} className="animate-spin" />
@@ -189,7 +190,7 @@ function TaskCard({
         className="w-full bg-[#111827] border border-[#1e293b] text-xs text-[#94a3b8] rounded-lg px-2 py-1.5 focus:outline-none focus:border-[#FFD700]/40"
         value={task.status}
         onChange={(e) => onStatusChange(task.id, e.target.value)}
-        aria-label="Change task status"
+        aria-label={locale === "ja" ? "タスクのステータスを変更" : "Change task status"}
       >
         {STATUS_COLUMNS.map((s) => (
           <option key={s.key} value={s.key}>
@@ -537,7 +538,7 @@ export default function TeamsPage() {
                       }
                     }}
                     className="text-xs bg-[#1e293b] border border-[#334155] text-[#94a3b8] rounded-md px-2 py-1 focus:outline-none focus:border-[#FFD700]/50"
-                    aria-label={`Change role for ${member.email}`}
+                    aria-label={locale === "ja" ? `${member.email} の役割を変更` : `Change role for ${member.email}`}
                   >
                     <option value="admin">Admin</option>
                     <option value="member">Member</option>
