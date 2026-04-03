@@ -1062,11 +1062,17 @@ export default function RemediationPage() {
   const handleDownloadPdf = useCallback(() => {
     if (!data) return;
     const html = generateHtmlReport(data, tAny, locale);
-    const win = window.open("", "_blank");
+    // Use Blob URL instead of document.write to avoid DOM-based XSS
+    const blob = new Blob([html], { type: "text/html;charset=utf-8" });
+    const blobUrl = URL.createObjectURL(blob);
+    const win = window.open(blobUrl, "_blank");
     if (win) {
-      win.document.write(html);
-      win.document.close();
-      setTimeout(() => win.print(), 500);
+      setTimeout(() => {
+        win.print();
+        URL.revokeObjectURL(blobUrl);
+      }, 800);
+    } else {
+      URL.revokeObjectURL(blobUrl);
     }
   }, [data, tAny, locale]);
 
@@ -1192,14 +1198,16 @@ export default function RemediationPage() {
   const handleShareSlack = useCallback(
     async (text: string) => {
       const settings = loadIntegrationSettings();
-      if (!settings.slackWebhook) {
+      // Validate webhook URL to prevent SSRF — must be an official Slack incoming webhook
+      const webhookUrl = settings.slackWebhook;
+      if (!webhookUrl || !webhookUrl.startsWith("https://hooks.slack.com/")) {
         // Fallback to Slack share URL
         const url = `https://slack.com/share?text=${encodeURIComponent(text)}`;
         window.open(url, "_blank");
         return;
       }
       try {
-        await fetch(settings.slackWebhook, {
+        await fetch(webhookUrl, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ text }),

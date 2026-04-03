@@ -5,7 +5,12 @@ export const dynamic = "force-dynamic";
 export async function GET(request: Request) {
   const { searchParams, origin } = new URL(request.url);
   const code = searchParams.get("code");
-  const redirectTo = searchParams.get("redirectTo") || "/dashboard";
+  // Validate redirectTo to prevent open redirect — only allow internal paths
+  const rawRedirectTo = searchParams.get("redirectTo") || "/dashboard";
+  const redirectTo =
+    rawRedirectTo.startsWith("/") && !rawRedirectTo.startsWith("//")
+      ? rawRedirectTo
+      : "/dashboard";
 
   if (code) {
     try {

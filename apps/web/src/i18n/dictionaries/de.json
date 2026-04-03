@@ -28,25 +28,33 @@
   },
   "problem": {
     "title": "Das Problem",
-    "description": "Bestehende Chaos-Tools injizieren <strong>echte Fehler</strong> in Ihre Infrastruktur.",
     "items": [
       "Erfordert Produktions- oder Staging-Umgebung",
       "Risiko echter Ausfälle während des Tests",
       "Hohe Infrastrukturkosten",
       "Komplexes Setup und Abbau",
       "Kein mathematischer Verfügbarkeitsnachweis"
-    ]
+    ],
+    "descriptionParts": {
+      "before": "Bestehende Chaos-Tools injizieren ",
+      "highlight": "echte Fehler",
+      "after": " in Ihre Infrastruktur."
+    }
   },
   "solution": {
     "title": "Die Lösung",
-    "description": "FaultRay verwendet <strong>rein mathematische Simulation</strong>.",
     "items": [
       "Null Risiko — keine echten Fehler injiziert",
       "Null Kosten — läuft auf einem Laptop",
       "Sofortige Ergebnisse in Sekunden",
       "Funktioniert allein mit YAML-Topologie",
       "Mathematisch bewiesene Verfügbarkeitsobergrenze"
-    ]
+    ],
+    "descriptionParts": {
+      "before": "FaultRay verwendet ",
+      "highlight": "rein mathematische Simulation",
+      "after": "."
+    }
   },
   "challenges": {
     "heading": "Herausforderungen, die wir lösen",
@@ -143,7 +151,8 @@
         "desc": "Hallucination, Context Overflow, LLM Rate Limiting, Token Exhaustion, Tool Failure, Agent Loops, Prompt Injection, Confidence Miscalibration, CoT Collapse und Output Amplification."
       }
     ],
-    "taxonomyHeading": "<span>10-Mode</span> AI Agent Failure Taxonomy"
+    "taxonomyHeadingHighlight": "10-Mode",
+    "taxonomyHeadingSuffix": " AI Agent Failure Taxonomy"
   },
   "comparison": {
     "heading": "So schneiden wir ab",

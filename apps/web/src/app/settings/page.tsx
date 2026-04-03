@@ -205,6 +205,14 @@ export default function SettingsPage() {
   }, []);
 
   function handleSaveIntegrations() {
+    // Validate slackWebhook URL before saving (SSRF prevention)
+    if (
+      integrations.slackWebhook &&
+      !integrations.slackWebhook.startsWith("https://hooks.slack.com/")
+    ) {
+      alert("Slack Webhook URL must start with https://hooks.slack.com/");
+      return;
+    }
     localStorage.setItem("faultray_integrations", JSON.stringify(integrations));
     setIntegrationsSaved(true);
     setTimeout(() => setIntegrationsSaved(false), 2500);

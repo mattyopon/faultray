@@ -126,6 +126,7 @@ export async function POST(request: Request) {
   } catch (err) {
     const message = err instanceof Error ? err.message : "Unknown error";
     console.error("[stripe/checkout] Error:", message);
-    return NextResponse.json({ error: message }, { status: 500 });
+    // Do not expose internal error details to clients
+    return NextResponse.json({ error: "Failed to create checkout session. Please try again." }, { status: 500 });
   }
 }

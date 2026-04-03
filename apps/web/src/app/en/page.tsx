@@ -326,7 +326,11 @@ export default async function LangHomePage({
                 <AlertTriangle size={28} className="text-red-400" />
               </div>
               <h2 className="text-2xl font-bold mb-3">{dict.problem.title}</h2>
-              <p className="text-[#94a3b8] mb-6" dangerouslySetInnerHTML={{ __html: dict.problem.description }} />
+              <p className="text-[#94a3b8] mb-6">
+                {dict.problem.descriptionParts.before}
+                <strong>{dict.problem.descriptionParts.highlight}</strong>
+                {dict.problem.descriptionParts.after}
+              </p>
               <ul className="space-y-3.5">
                 {dict.problem.items.map((item: string) => (
                   <li key={item} className="flex items-start gap-3 text-[#94a3b8] text-[0.9375rem]">
@@ -343,7 +347,11 @@ export default async function LangHomePage({
                 <Shield size={28} className="text-emerald-400" />
               </div>
               <h2 className="text-2xl font-bold mb-3">{dict.solution.title}</h2>
-              <p className="text-[#94a3b8] mb-6" dangerouslySetInnerHTML={{ __html: dict.solution.description }} />
+              <p className="text-[#94a3b8] mb-6">
+                {dict.solution.descriptionParts.before}
+                <strong>{dict.solution.descriptionParts.highlight}</strong>
+                {dict.solution.descriptionParts.after}
+              </p>
               <ul className="space-y-3.5">
                 {dict.solution.items.map((item: string) => (
                   <li key={item} className="flex items-start gap-3 text-[#94a3b8] text-[0.9375rem]">
@@ -454,12 +462,10 @@ export default async function LangHomePage({
 
           {/* 10-Mode Failure Taxonomy Table */}
           <div className=" max-w-[900px] mx-auto mb-10">
-            <h3 className="text-xl font-bold text-center mb-6" dangerouslySetInnerHTML={{
-              __html: dict.agentResilience.taxonomyHeading.replace(
-                "<span>",
-                '<span class="text-[#FFD700]">'
-              ),
-            }} />
+            <h3 className="text-xl font-bold text-center mb-6">
+              <span className="text-[#FFD700]">{dict.agentResilience.taxonomyHeadingHighlight}</span>
+              {dict.agentResilience.taxonomyHeadingSuffix}
+            </h3>
             <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
               {failureTaxonomy.map((f, i) => (
                 <div
@@ -1034,6 +1040,11 @@ export default async function LangHomePage({
                 <li>
                   <Link href="/terms" className="text-sm text-[#64748b] hover:text-white transition-colors">
                     Terms of Service
+                  </Link>
+                </li>
+                <li>
+                  <Link href="/dpa" className="text-sm text-[#64748b] hover:text-white transition-colors">
+                    DPA
                   </Link>
                 </li>
               </ul>

@@ -28,25 +28,33 @@
   },
   "problem": {
     "title": "The Problem",
-    "description": "Existing chaos tools inject <strong>real faults</strong> into your infrastructure.",
     "items": [
       "Requires production or staging environment",
       "Risk of real outages during testing",
       "Expensive infrastructure costs",
       "Complex setup and teardown",
       "No mathematical availability proof"
-    ]
+    ],
+    "descriptionParts": {
+      "before": "Existing chaos tools inject ",
+      "highlight": "real faults",
+      "after": " into your infrastructure."
+    }
   },
   "solution": {
     "title": "The Solution",
-    "description": "FaultRay uses <strong>pure mathematical simulation</strong>.",
     "items": [
       "Zero risk — no real faults injected",
       "Zero cost — runs on a laptop",
       "Instant results in seconds",
       "Works from YAML topology alone",
       "Mathematically proven availability ceiling"
-    ]
+    ],
+    "descriptionParts": {
+      "before": "FaultRay uses ",
+      "highlight": "pure mathematical simulation",
+      "after": "."
+    }
   },
   "challenges": {
     "heading": "Challenges We Solve",
@@ -143,7 +151,8 @@
         "desc": "Hallucination, context overflow, LLM rate limiting, token exhaustion, tool failure, agent loops, prompt injection, confidence miscalibration, CoT collapse, and output amplification."
       }
     ],
-    "taxonomyHeading": "<span>10-Mode</span> AI Agent Failure Taxonomy"
+    "taxonomyHeadingHighlight": "10-Mode",
+    "taxonomyHeadingSuffix": " AI Agent Failure Taxonomy"
   },
   "comparison": {
     "heading": "How We Compare",

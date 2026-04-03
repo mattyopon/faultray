@@ -28,25 +28,33 @@
   },
   "problem": {
     "title": "El Problema",
-    "description": "Las herramientas de chaos existentes inyectan <strong>fallos reales</strong> en tu infraestructura.",
     "items": [
       "Requiere entorno de producción o staging",
       "Riesgo de interrupciones reales durante las pruebas",
       "Costes de infraestructura elevados",
       "Configuración y limpieza complejas",
       "Sin prueba matemática de disponibilidad"
-    ]
+    ],
+    "descriptionParts": {
+      "before": "Las herramientas de chaos existentes inyectan ",
+      "highlight": "fallos reales",
+      "after": " en tu infraestructura."
+    }
   },
   "solution": {
     "title": "La Solución",
-    "description": "FaultRay utiliza <strong>simulación puramente matemática</strong>.",
     "items": [
       "Cero riesgo — sin fallos reales inyectados",
       "Cero coste — se ejecuta en un portátil",
       "Resultados instantáneos en segundos",
       "Funciona solo con la topología YAML",
       "Límite de disponibilidad demostrado matemáticamente"
-    ]
+    ],
+    "descriptionParts": {
+      "before": "FaultRay utiliza ",
+      "highlight": "simulación puramente matemática",
+      "after": "."
+    }
   },
   "challenges": {
     "heading": "Desafíos que Resolvemos",
@@ -143,7 +151,8 @@
         "desc": "Alucinación, desbordamiento de contexto, limitación de tasa de LLM, agotamiento de tokens, fallo de herramienta, bucles de agente, inyección de prompts, mala calibración de confianza, colapso de CoT y amplificación de salida."
       }
     ],
-    "taxonomyHeading": "Taxonomía de Fallos de AI Agent de <span>10 Modos</span>"
+    "taxonomyHeadingHighlight": "10 Modos",
+    "taxonomyHeadingSuffix": " Taxonomía de Fallos de AI Agent"
   },
   "comparison": {
     "heading": "Cómo Nos Comparamos",

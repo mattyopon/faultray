@@ -47,6 +47,11 @@ next-env.d.ts
 # CLAUDE
 CLAUDE.md
 AGENTS.md
+
+# Security: never commit actual env values
+.env.production
+.env.staging
+vercel-env-vars.txt
 api/__pycache__/
 __pycache__/
 tests/screenshots/

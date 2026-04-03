@@ -104,7 +104,7 @@ export async function POST(request: Request) {
 
     return NextResponse.json({ ok: true });
   } catch (err) {
-    const message = err instanceof Error ? err.message : "Unknown error";
-    return NextResponse.json({ error: `Failed to reach Slack webhook: ${message}` }, { status: 502 });
+    console.error("[notify/slack] Error reaching webhook:", err instanceof Error ? err.message : err);
+    return NextResponse.json({ error: "Failed to reach Slack webhook" }, { status: 502 });
   }
 }

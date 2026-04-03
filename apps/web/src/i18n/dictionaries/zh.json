@@ -28,25 +28,33 @@
   },
   "problem": {
     "title": "现有问题",
-    "description": "现有混沌工具会向基础设施注入<strong>真实故障</strong>。",
     "items": [
       "需要生产或预发布环境",
       "测试期间存在真实故障风险",
       "高昂的基础设施成本",
       "复杂的环境搭建与清理",
       "无法数学证明可用性"
-    ]
+    ],
+    "descriptionParts": {
+      "before": "现有混沌工具会向基础设施注入",
+      "highlight": "真实故障",
+      "after": "。"
+    }
   },
   "solution": {
     "title": "解决方案",
-    "description": "FaultRay 采用<strong>纯数学模拟</strong>。",
     "items": [
       "零风险——不注入真实故障",
       "零成本——在笔记本上运行",
       "秒级输出结果",
       "仅需 YAML 拓扑文件即可运行",
       "数学证明的可用性上限"
-    ]
+    ],
+    "descriptionParts": {
+      "before": "FaultRay 采用",
+      "highlight": "纯数学模拟",
+      "after": "。"
+    }
   },
   "challenges": {
     "heading": "我们解决的挑战",
@@ -143,7 +151,8 @@
         "desc": "幻觉、上下文溢出、LLM 限流、Token 耗尽、工具失败、Agent 循环、提示注入、置信度错误校准、CoT 崩溃和输出放大。"
       }
     ],
-    "taxonomyHeading": "<span>10 模式</span> AI Agent 故障分类"
+    "taxonomyHeadingHighlight": "10 模式",
+    "taxonomyHeadingSuffix": " AI Agent 故障分类"
   },
   "comparison": {
     "heading": "竞品对比",

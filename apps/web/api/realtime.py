@@ -235,8 +235,11 @@ def _apm_supabase_request(method: str, table: str, params: str = "", body=None):
 
 def _validate_api_key(headers) -> bool:
     expected = os.environ.get("FAULTRAY_APM_API_KEY", "")
+    # RT-01 fix: if the key is not configured, deny all access rather than
+    # allowing it.  An unconfigured key is a misconfiguration, not a signal
+    # to skip authentication.
     if not expected:
-        return True
+        return False
     provided = headers.get("X-API-Key", "")
     return provided == expected
 

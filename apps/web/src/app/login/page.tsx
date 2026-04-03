@@ -7,7 +7,12 @@ import { Suspense } from "react";
 
 function LoginForm() {
   const searchParams = useSearchParams();
-  const redirectTo = searchParams.get("redirectTo") || "/dashboard";
+  // Validate redirectTo to prevent open redirect — only allow internal paths
+  const rawRedirectTo = searchParams.get("redirectTo") || "/dashboard";
+  const redirectTo =
+    rawRedirectTo.startsWith("/") && !rawRedirectTo.startsWith("//")
+      ? rawRedirectTo
+      : "/dashboard";
   const isProduction = process.env.NEXT_PUBLIC_SITE_URL === "https://faultray.com";
 
   const supabase = createClient();
@@ -22,7 +27,49 @@ function LoginForm() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center px-6">
+    <div className="min-h-screen flex items-center justify-center px-6 gap-16">
+      {/* Value proposition — hidden on small screens */}
+      <div className="hidden lg:flex flex-col gap-8 max-w-[380px]">
+        <div>
+          <h2 className="text-2xl font-bold text-white mb-2">
+            Why SRE teams choose FaultRay
+          </h2>
+          <p className="text-[#64748b] text-sm">
+            Chaos engineering that proves resilience — without the risk.
+          </p>
+        </div>
+        <ul className="space-y-5">
+          {[
+            {
+              icon: "⚡",
+              title: "2,000+ failure scenarios",
+              desc: "From single AZ outages to cascading multi-region failures — all simulated, zero production impact.",
+            },
+            {
+              icon: "🛡",
+              title: "Production stays safe",
+              desc: "Pure mathematical simulation. We never touch your infrastructure. Ever.",
+            },
+            {
+              icon: "📊",
+              title: "DORA compliance in 1 click",
+              desc: "Auto-generate audit-ready resilience reports aligned to DORA Article 25 requirements.",
+            },
+          ].map(({ icon, title, desc }) => (
+            <li key={title} className="flex gap-4">
+              <span className="text-2xl mt-0.5" aria-hidden="true">{icon}</span>
+              <div>
+                <p className="font-semibold text-white text-sm">{title}</p>
+                <p className="text-[#64748b] text-sm mt-0.5 leading-relaxed">{desc}</p>
+              </div>
+            </li>
+          ))}
+        </ul>
+        <p className="text-xs text-[#475569]">
+          Trusted by SRE teams at companies of all sizes.
+        </p>
+      </div>
+
       <div className="w-full max-w-[400px]">
         <div className="text-center mb-10">
           <div className="flex justify-center mb-4">
@@ -67,6 +114,7 @@ function LoginForm() {
       </div>
     </div>
   );
+
 }
 
 export default function LoginPage() {

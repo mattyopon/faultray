@@ -173,7 +173,21 @@ export async function proxy(request: NextRequest) {
     }
   }
 
-  const protectedPaths = ["/dashboard", "/simulate", "/results", "/suggestions", "/settings"];
+  const protectedPaths = [
+    "/dashboard", "/simulate", "/results", "/suggestions", "/settings",
+    "/dora", "/topology", "/teams", "/remediation", "/projects",
+    "/heatmap", "/whatif", "/compliance", "/score-detail",
+    "/cost", "/security", "/fmea", "/advisor", "/reports",
+    "/incidents", "/benchmark", "/evidence", "/apm",
+    "/governance", "/sla", "/runbooks", "/postmortems",
+    "/supply-chain", "/drift", "/calendar", "/timeline",
+    "/env-compare", "/canary", "/optimize", "/iac", "/onboarding",
+    "/templates", "/ipo-readiness", "/traces", "/logs",
+    "/dependencies", "/gameday", "/ai-reliability", "/fisc",
+    "/audit-report", "/traffic-light", "/people-risk",
+    "/shadow-it", "/bus-factor", "/vuln-priority", "/external-impact",
+    "/sla-budget", "/compliance-report", "/topology-map",
+  ];
   const isProtected = protectedPaths.some((path) =>
     pathForCheck.startsWith(path)
   );

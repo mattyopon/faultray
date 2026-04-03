@@ -28,25 +28,33 @@
   },
   "problem": {
     "title": "Le Problème",
-    "description": "Les outils de chaos existants injectent de <strong>vraies pannes</strong> dans votre infrastructure.",
     "items": [
       "Nécessite un environnement de production ou de staging",
       "Risque de pannes réelles pendant les tests",
       "Coûts d'infrastructure élevés",
       "Configuration et démontage complexes",
       "Aucune preuve mathématique de disponibilité"
-    ]
+    ],
+    "descriptionParts": {
+      "before": "Les outils de chaos existants injectent de ",
+      "highlight": "vraies pannes",
+      "after": " dans votre infrastructure."
+    }
   },
   "solution": {
     "title": "La Solution",
-    "description": "FaultRay utilise la <strong>simulation mathématique pure</strong>.",
     "items": [
       "Zéro risque — aucune panne réelle injectée",
       "Zéro coût — fonctionne sur un ordinateur portable",
       "Résultats instantanés en quelques secondes",
       "Fonctionne à partir de la topologie YAML seule",
       "Plafond de disponibilité prouvé mathématiquement"
-    ]
+    ],
+    "descriptionParts": {
+      "before": "FaultRay utilise la ",
+      "highlight": "simulation mathématique pure",
+      "after": "."
+    }
   },
   "challenges": {
     "heading": "Les défis que nous résolvons",
@@ -143,7 +151,8 @@
         "desc": "Hallucination, Context Overflow, LLM Rate Limiting, Token Exhaustion, Tool Failure, Agent Loops, Prompt Injection, Confidence Miscalibration, CoT Collapse et Output Amplification."
       }
     ],
-    "taxonomyHeading": "<span>10-Mode</span> AI Agent Failure Taxonomy"
+    "taxonomyHeadingHighlight": "10-Mode",
+    "taxonomyHeadingSuffix": " AI Agent Failure Taxonomy"
   },
   "comparison": {
     "heading": "Comment nous nous comparons",

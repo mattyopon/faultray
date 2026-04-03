@@ -28,25 +28,33 @@
   },
   "problem": {
     "title": "문제점",
-    "description": "기존 카오스 도구는 인프라에 <strong>실제 장애</strong>를 주입합니다.",
     "items": [
       "프로덕션 또는 스테이징 환경 필요",
       "테스트 중 실제 장애 발생 위험",
       "높은 인프라 비용",
       "복잡한 환경 구성 및 정리",
       "가용성의 수학적 증명 불가"
-    ]
+    ],
+    "descriptionParts": {
+      "before": "기존 카오스 도구는 인프라에 ",
+      "highlight": "실제 장애",
+      "after": "를 주입합니다."
+    }
   },
   "solution": {
     "title": "해결책",
-    "description": "FaultRay는 <strong>순수 수학적 시뮬레이션</strong>을 사용합니다.",
     "items": [
       "무위험 — 실제 장애 미주입",
       "무비용 — 노트북에서 실행",
       "초 단위 즉각적인 결과",
       "YAML 토폴로지만으로 작동",
       "수학적으로 증명된 가용성 한계"
-    ]
+    ],
+    "descriptionParts": {
+      "before": "FaultRay는 ",
+      "highlight": "순수 수학적 시뮬레이션",
+      "after": "을 사용합니다."
+    }
   },
   "challenges": {
     "heading": "우리가 해결하는 과제",
@@ -143,7 +151,8 @@
         "desc": "환각, 컨텍스트 오버플로우, LLM 속도 제한, 토큰 소진, 도구 실패, Agent 루프, 프롬프트 인젝션, 신뢰도 오보정, CoT 붕괴, 출력 증폭."
       }
     ],
-    "taxonomyHeading": "<span>10가지 모드</span> AI Agent 장애 분류 체계"
+    "taxonomyHeadingHighlight": "10가지 모드",
+    "taxonomyHeadingSuffix": " AI Agent 장애 분류 체계"
   },
   "comparison": {
     "heading": "비교",

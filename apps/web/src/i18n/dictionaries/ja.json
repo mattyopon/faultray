@@ -28,25 +28,33 @@
   },
   "problem": {
     "title": "課題",
-    "description": "従来のカオステストツールは本番環境に<strong>実際の障害</strong>を起こして検証します。",
     "items": [
       "本番またはステージング環境が必要",
       "テスト中に本当の障害が起きるリスク",
       "高額なインフラコスト",
       "複雑なセットアップと後片付け",
       "稼働率の数学的な証明ができない"
-    ]
+    ],
+    "descriptionParts": {
+      "before": "従来のカオステストツールは本番環境に",
+      "highlight": "実際の障害",
+      "after": "を起こして検証します。"
+    }
   },
   "solution": {
     "title": "解決策",
-    "description": "FaultRay は<strong>純粋な数学的シミュレーション</strong>を使います。",
     "items": [
       "ゼロリスク — 本番環境に一切触れない",
       "低コスト — ノートPCで動作",
       "数秒で結果を確認",
       "YAMLファイル1つで動作",
       "数学的に証明された稼働率の上限値"
-    ]
+    ],
+    "descriptionParts": {
+      "before": "FaultRay は",
+      "highlight": "純粋な数学的シミュレーション",
+      "after": "を使います。"
+    }
   },
   "challenges": {
     "heading": "解決する課題",
@@ -143,7 +151,8 @@
         "desc": "誤回答・コンテキスト超過・レート制限・トークン枯渇・ツール障害・無限ループ・プロンプトインジェクション・確信度ズレ・推論崩壊・エラー増幅の10パターン。"
       }
     ],
-    "taxonomyHeading": "<span>10種類</span> AIエージェント障害モード分類"
+    "taxonomyHeadingHighlight": "10種類",
+    "taxonomyHeadingSuffix": " AIエージェント障害モード分類"
   },
   "comparison": {
     "heading": "競合ツールとの比較",
