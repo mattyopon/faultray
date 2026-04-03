@@ -140,6 +140,7 @@ export default function WhatIfPage() {
                 step={selectedParam.step}
                 value={value}
                 onChange={(e) => setValue(Number(e.target.value))}
+                aria-label={`${selectedParam.name} slider`}
                 className="w-full accent-[#FFD700]"
               />
               <div className="flex justify-between text-xs text-[#64748b] mt-1">

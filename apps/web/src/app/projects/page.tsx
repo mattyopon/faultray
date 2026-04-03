@@ -140,6 +140,7 @@ function NewProjectModal({
               value={name}
               onChange={(e) => setName(e.target.value)}
               placeholder="e.g. Production AWS"
+              aria-label={t.name}
               required
               className="w-full px-4 py-2.5 bg-[#0a0e1a] border border-[#1e293b] rounded-lg text-sm text-white placeholder-[#475569] focus:outline-none focus:border-[#FFD700]/50 transition-colors"
             />
@@ -150,6 +151,7 @@ function NewProjectModal({
               value={description}
               onChange={(e) => setDescription(e.target.value)}
               placeholder="Brief description of this project..."
+              aria-label={t.description}
               rows={3}
               maxLength={500}
               className="w-full px-4 py-2.5 bg-[#0a0e1a] border border-[#1e293b] rounded-lg text-sm text-white placeholder-[#475569] focus:outline-none focus:border-[#FFD700]/50 transition-colors resize-none"
