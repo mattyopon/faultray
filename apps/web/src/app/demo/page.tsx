@@ -101,6 +101,33 @@ export default function DemoPage() {
 
   return (
     <div className="max-w-5xl mx-auto px-6 py-12">
+      {/* PAGE-01: 営業デモ向けショートカットバナー */}
+      <div className="mb-8 p-4 rounded-xl border border-[#1e293b] bg-[#0d1117] flex flex-wrap items-center justify-between gap-3">
+        <div className="flex items-center gap-2 text-xs text-[#64748b]">
+          <BarChart3 size={14} className="text-[#FFD700]" />
+          <span>
+            {locale === "ja" ? "営業デモ用 クイックリンク:" : "Sales demo quick links:"}
+          </span>
+        </div>
+        <div className="flex flex-wrap gap-2">
+          {[
+            { label: locale === "ja" ? "シミュレーション" : "Live Simulation", href: "/simulate" },
+            { label: locale === "ja" ? "レポート例" : "Sample Report", href: "/reports" },
+            { label: locale === "ja" ? "料金プラン" : "Pricing", href: "/pricing" },
+            { label: locale === "ja" ? "導入事例" : "Case Studies", href: "/case-studies" },
+            { label: locale === "ja" ? "稟議書" : "Enterprise Docs", href: "/ringi" },
+          ].map((link) => (
+            <Link
+              key={link.href}
+              href={link.href}
+              className="text-xs font-medium px-3 py-1.5 rounded-lg border border-[#1e293b] text-[#94a3b8] hover:text-white hover:border-[#334155] transition-colors"
+            >
+              {link.label}
+            </Link>
+          ))}
+        </div>
+      </div>
+
       {/* Hero */}
       <div className="text-center mb-12">
         <div className="inline-flex items-center gap-2 bg-[#FFD700]/10 border border-[#FFD700]/20 rounded-full px-4 py-1.5 mb-5">
