@@ -382,6 +382,19 @@ export default function PricingPage() {
         </div>
       </div>
 
+      {/* PAY-01: 請求書払い（銀行振込）対応のお知らせ */}
+      <div className="max-w-[900px] mx-auto mt-8 p-4 rounded-xl border border-[#1e293b] bg-[#111827] flex items-start gap-3">
+        <span className="text-lg shrink-0">🏦</span>
+        <div>
+          <p className="text-sm text-[#94a3b8]">
+            <span className="text-white font-semibold">請求書払い・銀行振込に対応しています。</span>{" "}
+            年間契約をご希望の企業様は <a href="mailto:sales@faultray.com" className="text-[#FFD700] hover:underline">sales@faultray.com</a> までお問い合わせください。
+            インボイス制度対応の適格請求書を発行いたします。
+          </p>
+          <p className="text-xs text-[#64748b] mt-1">Invoice payment (bank transfer) available for annual plans. Contact us for enterprise billing.</p>
+        </div>
+      </div>
+
       {/* Footer links */}
       <div className="max-w-[900px] mx-auto mt-8 pt-8 border-t border-[#1e293b] flex flex-wrap justify-center gap-6 text-sm text-[#64748b]">
         <Link href="/privacy" className="hover:text-white transition-colors">Privacy Policy</Link>

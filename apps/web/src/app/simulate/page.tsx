@@ -1051,6 +1051,16 @@ function SimulatePageInner() {
           scenario: selected || "custom",
           critical_count: res.critical_failures?.length ?? 0,
         });
+        // CONVERT-01: Aha Momentの計測 — 初回シミュレーション完了を特別にトラッキング
+        const ahaKey = "faultray_aha_moment_reached";
+        if (!localStorage.getItem(ahaKey)) {
+          localStorage.setItem(ahaKey, new Date().toISOString());
+          trackEvent("aha_moment", {
+            score: res.overall_score,
+            time_to_aha_ms: Date.now() - performance.timeOrigin,
+            critical_count: res.critical_failures?.length ?? 0,
+          });
+        }
         // Save to localStorage for topology/dashboard to read
         localStorage.setItem("faultray_last_simulation", JSON.stringify({
           ...res,
@@ -1170,6 +1180,7 @@ function SimulatePageInner() {
                     setSelected(null);
                   }
                 }}
+                aria-label={tProjects.title}
                 className="px-3 py-2 bg-[#0d1117] border border-[#1e293b] rounded-lg text-sm text-white focus:outline-none focus:border-[#FFD700]/50 transition-colors max-w-xs"
               >
                 <option value="">— No project —</option>

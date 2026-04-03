@@ -241,6 +241,7 @@ export default function GameDayPage() {
                     className="w-full bg-[#0d1526] border border-[#1e293b] rounded-lg px-3 py-2 text-sm text-[#94a3b8] focus:outline-none"
                     value={selectedScenario}
                     onChange={(e) => setSelectedScenario(e.target.value)}
+                    aria-label={locale === "ja" ? "シナリオ選択" : "Select scenario"}
                   >
                     {SCENARIOS.map((s) => <option key={s} value={s}>{s}</option>)}
                   </select>

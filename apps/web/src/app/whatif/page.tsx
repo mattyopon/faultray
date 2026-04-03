@@ -116,6 +116,7 @@ export default function WhatIfPage() {
                   const p = PARAMETERS.find((p) => p.id === e.target.value)!;
                   setValue(p.default);
                 }}
+                aria-label={t.parameter}
                 className="w-full px-3 py-2.5 bg-[#0d1117] border border-[#1e293b] rounded-lg text-sm text-[#e2e8f0] focus:border-[#FFD700]/50 focus:outline-none"
               >
                 {PARAMETERS.map((p) => (

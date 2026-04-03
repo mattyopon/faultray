@@ -1883,6 +1883,7 @@ export default function RemediationPage() {
                                   status: e.target.value as TaskStatus,
                                 })
                               }
+                              aria-label="Task status"
                               className="w-full bg-white/[0.05] border border-[#1e293b] rounded-lg px-3 py-1.5 text-sm text-white focus:border-[#FFD700] focus:outline-none"
                             >
                               <option value="todo">{t.statusTodo}</option>

@@ -78,12 +78,12 @@ function LoginForm() {
         },
       });
       if (error) {
-        setEmailError(error.message || "Failed to send magic link. Please try again.");
+        setEmailError(error.message || (locale === "ja" ? "マジックリンクの送信に失敗しました。もう一度お試しください。" : "Failed to send magic link. Please try again."));
       } else {
         setOtpSent(true);
       }
     } catch {
-      setEmailError("An unexpected error occurred. Please try again.");
+      setEmailError(locale === "ja" ? "予期しないエラーが発生しました。もう一度お試しください。" : "An unexpected error occurred. Please try again.");
     } finally {
       setOtpSending(false);
     }

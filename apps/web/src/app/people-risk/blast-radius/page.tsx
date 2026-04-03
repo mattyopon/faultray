@@ -105,6 +105,7 @@ function BlastRadiusContent() {
           <select
             value={selectedId}
             onChange={(e) => setSelectedId(e.target.value)}
+            aria-label="メンバーを選択"
             className="w-full appearance-none bg-[#0f1424] border border-[#1e293b] rounded-lg px-4 py-3 text-white text-sm focus:border-[#FFD700]/50 focus:outline-none cursor-pointer"
           >
             <option value="">-- メンバーを選択 --</option>

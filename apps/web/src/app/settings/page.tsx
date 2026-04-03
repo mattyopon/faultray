@@ -211,10 +211,10 @@ export default function SettingsPage() {
         setCouponCode("");
         fetchProfile();
       } else {
-        setCouponFeedback({ type: "error", message: data.error ?? "Failed to apply coupon" });
+        setCouponFeedback({ type: "error", message: data.error ?? (locale === "ja" ? "クーポンの適用に失敗しました" : "Failed to apply coupon") });
       }
     } catch {
-      setCouponFeedback({ type: "error", message: "Failed to apply coupon" });
+      setCouponFeedback({ type: "error", message: locale === "ja" ? "クーポンの適用に失敗しました" : "Failed to apply coupon" });
     }
     setRedeemingCoupon(false);
   }

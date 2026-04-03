@@ -17,6 +17,7 @@ import {
   Trash2,
 } from "lucide-react";
 import { useAuth } from "@/components/auth-provider";
+import { useLocale } from "@/lib/useLocale";
 
 // ── 型定義 ──────────────────────────────────────────────────────────────────
 
@@ -188,6 +189,7 @@ function TaskCard({
         className="w-full bg-[#111827] border border-[#1e293b] text-xs text-[#94a3b8] rounded-lg px-2 py-1.5 focus:outline-none focus:border-[#FFD700]/40"
         value={task.status}
         onChange={(e) => onStatusChange(task.id, e.target.value)}
+        aria-label="Change task status"
       >
         {STATUS_COLUMNS.map((s) => (
           <option key={s.key} value={s.key}>
@@ -203,6 +205,7 @@ function TaskCard({
 
 export default function TeamsPage() {
   const { user } = useAuth();
+  const locale = useLocale();
 
   // 組織・メンバー
   const [org, setOrg] = useState<Organization | null>(null);
@@ -243,14 +246,14 @@ export default function TeamsPage() {
       const res = await fetch("/api/org/members");
       if (!res.ok) {
         const err = (await res.json()) as { error?: string };
-        setOrgError(err.error ?? "Failed to load organization");
+        setOrgError(err.error ?? (locale === "ja" ? "組織の読み込みに失敗しました" : "Failed to load organization"));
         return;
       }
       const data = (await res.json()) as { org: Organization | null; members: OrgMember[] };
       setOrg(data.org);
       setMembers(data.members ?? []);
     } catch {
-      setOrgError("Network error");
+      setOrgError(locale === "ja" ? "ネットワークエラー" : "Network error");
     } finally {
       setOrgLoading(false);
     }
@@ -313,10 +316,10 @@ export default function TeamsPage() {
         setInviteEmail("");
         await fetchOrgAndMembers();
       } else {
-        setInviteMsg({ type: "error", text: data.error ?? "Failed to invite" });
+        setInviteMsg({ type: "error", text: data.error ?? (locale === "ja" ? "招待に失敗しました" : "Failed to invite") });
       }
     } catch {
-      setInviteMsg({ type: "error", text: "Network error" });
+      setInviteMsg({ type: "error", text: locale === "ja" ? "ネットワークエラー" : "Network error" });
     } finally {
       setInviteLoading(false);
     }
@@ -517,6 +520,7 @@ export default function TeamsPage() {
                 {canChangeRole ? (
                   <select
                     value={member.role}
+                    aria-label="Change member role"
                     onChange={async (e) => {
                       const newRole = e.target.value;
                       try {
@@ -566,6 +570,7 @@ export default function TeamsPage() {
             <select
               value={inviteRole}
               onChange={(e) => setInviteRole(e.target.value)}
+              aria-label={locale === "ja" ? "招待する役割" : "Invite role"}
               className="bg-[#0a0e1a] border border-[#1e293b] rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:border-[#FFD700]/40"
             >
               <option value="admin">Admin</option>
@@ -634,6 +639,7 @@ export default function TeamsPage() {
               <select
                 value={newTaskPriority}
                 onChange={(e) => setNewTaskPriority(e.target.value)}
+                aria-label={locale === "ja" ? "優先度" : "Priority"}
                 className="bg-[#111827] border border-[#1e293b] rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:border-[#FFD700]/40"
               >
                 <option value="critical">Critical</option>
@@ -644,6 +650,7 @@ export default function TeamsPage() {
               <select
                 value={newTaskAssignee}
                 onChange={(e) => setNewTaskAssignee(e.target.value)}
+                aria-label={locale === "ja" ? "担当者" : "Assignee"}
                 className="bg-[#111827] border border-[#1e293b] rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:border-[#FFD700]/40"
               >
                 <option value="">Unassigned</option>
