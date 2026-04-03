@@ -53,6 +53,8 @@ function isAllowedIp(request: NextRequest): boolean {
   return allowed.includes(clientIp);
 }
 
+const MAX_BODY_SIZE = 1 * 1024 * 1024; // 1MB
+
 export async function proxy(request: NextRequest) {
   // Staging IP restriction
   if (!isAllowedIp(request)) {
@@ -60,6 +62,17 @@ export async function proxy(request: NextRequest) {
   }
 
   const { pathname } = request.nextUrl;
+
+  // API-03: Reject oversized request bodies on API routes
+  if (pathname.startsWith("/api/")) {
+    const contentLength = request.headers.get("content-length");
+    if (contentLength && parseInt(contentLength, 10) > MAX_BODY_SIZE) {
+      return NextResponse.json(
+        { error: "Request body too large. Maximum size is 1MB." },
+        { status: 413 }
+      );
+    }
+  }
 
   // Check if the pathname already has a locale prefix
   const pathnameHasLocale = locales.some(
