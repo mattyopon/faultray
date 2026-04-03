@@ -334,12 +334,38 @@ export default function SettingsPage() {
           </div>
           <Badge variant="gold">{currentPlan.charAt(0).toUpperCase() + currentPlan.slice(1)} Plan</Badge>
         </div>
+        {/* RETAIN-03: トライアル期限管理 — 残日数に応じて緊急度を視覚化 */}
         {isTrialActive && (
-          <div className="flex items-center gap-2 px-4 py-3 mb-4 rounded-lg bg-[#FFD700]/10 border border-[#FFD700]/20">
-            <Clock size={16} className="text-[#FFD700]" />
-            <span className="text-sm text-[#FFD700] font-medium">
-              {t.proTrial} {trialDaysLeft} {t.trialRemaining}
-            </span>
+          <div className={`flex items-center justify-between gap-2 px-4 py-3 mb-4 rounded-lg border ${
+            trialDaysLeft <= 3
+              ? "bg-red-500/10 border-red-500/20"
+              : trialDaysLeft <= 7
+              ? "bg-amber-500/10 border-amber-500/20"
+              : "bg-[#FFD700]/10 border-[#FFD700]/20"
+          }`}>
+            <div className="flex items-center gap-2">
+              <Clock size={16} className={trialDaysLeft <= 3 ? "text-red-400" : trialDaysLeft <= 7 ? "text-amber-400" : "text-[#FFD700]"} />
+              <span className={`text-sm font-medium ${trialDaysLeft <= 3 ? "text-red-300" : trialDaysLeft <= 7 ? "text-amber-300" : "text-[#FFD700]"}`}>
+                {t.proTrial} {trialDaysLeft} {t.trialRemaining}
+                {trialDaysLeft <= 3 && (
+                  <span className="ml-2 text-xs">
+                    {locale === "ja" ? "— 今すぐアップグレードしてデータを保持" : "— Upgrade now to keep your data"}
+                  </span>
+                )}
+              </span>
+            </div>
+            {trialDaysLeft <= 7 && (
+              <a
+                href="/pricing"
+                className={`text-xs font-bold px-3 py-1.5 rounded-lg border transition-colors whitespace-nowrap ${
+                  trialDaysLeft <= 3
+                    ? "border-red-500/30 text-red-300 hover:bg-red-500/10"
+                    : "border-amber-500/30 text-amber-300 hover:bg-amber-500/10"
+                }`}
+              >
+                {locale === "ja" ? "アップグレード" : "Upgrade Now"}
+              </a>
+            )}
           </div>
         )}
 

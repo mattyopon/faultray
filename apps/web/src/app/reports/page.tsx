@@ -5,7 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { useEffect, useState } from "react";
 import { api, type ExecutiveReport } from "@/lib/api";
-import { FileText, Loader2, Download, AlertTriangle, CheckCircle2, Globe } from "lucide-react";
+import { FileText, Loader2, Download, AlertTriangle, CheckCircle2, XCircle, Globe } from "lucide-react";
 import { useLocale } from "@/lib/useLocale";
 import { appDict } from "@/i18n/app-dict";
 
@@ -89,10 +89,22 @@ function severityBadge(sev: string) {
   }
 }
 
+// FUNC-02: レポートカスタマイズ — セクション表示設定
+type ReportSection = "summary" | "findings" | "availability" | "compliance" | "roadmap";
+const DEFAULT_SECTIONS: Record<ReportSection, boolean> = {
+  summary: true,
+  findings: true,
+  availability: true,
+  compliance: true,
+  roadmap: true,
+};
+
 export default function ReportsPage() {
   const [report, setReport] = useState<ExecutiveReport>(DEMO_REPORT);
   const [loading, setLoading] = useState(true);
   const [reportLang, setReportLang] = useState<"en" | "ja">("en");
+  const [showSections, setShowSections] = useState<Record<ReportSection, boolean>>(DEFAULT_SECTIONS);
+  const [showCustomize, setShowCustomize] = useState(false);
   const locale = useLocale();
   const t = appDict.reports[locale] ?? appDict.reports.en;
 
@@ -197,8 +209,39 @@ export default function ReportsPage() {
             <Download size={14} />
             {locale === "ja" ? "週次通知を有効化" : "Enable Weekly Email"}
           </Button>
+          {/* FUNC-02: レポートカスタマイズトグル */}
+          <Button
+            variant="secondary"
+            size="sm"
+            onClick={() => setShowCustomize((v) => !v)}
+          >
+            {locale === "ja" ? "セクション設定" : "Customize"}
+          </Button>
         </div>
       </div>
+
+      {/* FUNC-02: セクション表示設定パネル */}
+      {showCustomize && (
+        <div className="mb-6 p-4 rounded-xl border border-[#1e293b] bg-[#111827] flex flex-wrap gap-3 items-center">
+          <span className="text-xs font-semibold text-[#64748b] uppercase tracking-wider mr-2">
+            {locale === "ja" ? "表示セクション:" : "Visible sections:"}
+          </span>
+          {(Object.keys(DEFAULT_SECTIONS) as ReportSection[]).map((section) => (
+            <button
+              key={section}
+              onClick={() => setShowSections((prev) => ({ ...prev, [section]: !prev[section] }))}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg border text-xs font-medium transition-colors ${
+                showSections[section]
+                  ? "border-[#FFD700]/40 bg-[#FFD700]/[0.08] text-[#FFD700]"
+                  : "border-[#1e293b] text-[#475569] hover:border-[#334155]"
+              }`}
+            >
+              {showSections[section] ? <CheckCircle2 size={11} /> : <XCircle size={11} />}
+              {section.charAt(0).toUpperCase() + section.slice(1)}
+            </button>
+          ))}
+        </div>
+      )}
 
       {loading ? (
         <Card className="flex items-center justify-center py-20">
@@ -206,8 +249,8 @@ export default function ReportsPage() {
         </Card>
       ) : (
         <div className="space-y-6">
-          {/* Executive Summary */}
-          <div className="grid md:grid-cols-4 gap-6">
+          {/* Executive Summary — FUNC-02: conditionally shown */}
+          {showSections.summary && <div className="grid md:grid-cols-4 gap-6">
             <Card className="text-center">
               <p className="text-xs text-[#64748b] uppercase tracking-wider mb-2">{t.score}</p>
               <p className="text-4xl font-extrabold font-mono text-[#FFD700]">
@@ -232,10 +275,10 @@ export default function ReportsPage() {
                 {report.executive_summary.critical_issues}
               </p>
             </Card>
-          </div>
+          </div>}
 
-          {/* Key Findings */}
-          <Card>
+          {/* Key Findings — FUNC-02: conditionally shown */}
+          {showSections.findings && <Card>
             <h3 className="text-lg font-bold mb-4 flex items-center gap-2">
               <AlertTriangle size={18} className="text-red-400" />
               {t.keyFindings}
@@ -269,10 +312,10 @@ export default function ReportsPage() {
                 );
               })}
             </div>
-          </Card>
+          </Card>}
 
-          {/* Availability Breakdown */}
-          <Card>
+          {/* Availability Breakdown — FUNC-02: conditionally shown */}
+          {showSections.availability && <Card>
             <h3 className="text-lg font-bold mb-4">{t.availabilityBreakdown}</h3>
             <div className="space-y-3">
               {[
@@ -295,10 +338,10 @@ export default function ReportsPage() {
             <p className="text-xs text-[#FFD700] mt-3">
               {t.bottleneck} {rl === "ja" ? "ソフトウェア層" : report.availability_breakdown.bottleneck}
             </p>
-          </Card>
+          </Card>}
 
-          {/* Improvement Roadmap */}
-          <Card>
+          {/* Improvement Roadmap — FUNC-02: conditionally shown */}
+          {showSections.roadmap && <Card>
             <h3 className="text-lg font-bold mb-4">{t.improvementRoadmap}</h3>
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
@@ -331,10 +374,10 @@ export default function ReportsPage() {
                 </tbody>
               </table>
             </div>
-          </Card>
+          </Card>}
 
-          {/* DORA Compliance Status */}
-          <Card>
+          {/* DORA Compliance Status — FUNC-02: conditionally shown */}
+          {showSections.compliance && <Card>
             <h3 className="text-lg font-bold mb-4">{t.complianceStatus}</h3>
             <div className="grid md:grid-cols-3 gap-4">
               {Object.entries(report.compliance_status).map(([fw, status]) => (
@@ -357,7 +400,7 @@ export default function ReportsPage() {
                 </div>
               ))}
             </div>
-          </Card>
+          </Card>}
         </div>
       )}
     </div>
