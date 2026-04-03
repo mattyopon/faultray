@@ -41,6 +41,8 @@ import { appDict } from "@/i18n/app-dict";
 import { Info } from "lucide-react";
 import { useSearchParams, useRouter } from "next/navigation";
 import { Suspense } from "react";
+import { useToast } from "@/lib/useToast";
+import { Toast } from "@/components/ui/toast";
 
 const SAMPLES = [
   { id: "web-saas", name: "Web SaaS Platform", desc: "3-tier architecture with API gateway, auth, database, cache", icon: Globe, components: 8 },
@@ -925,6 +927,7 @@ function SimulatePageInner() {
   const searchParams = useSearchParams();
   const router = useRouter();
   const preselectedProjectId = searchParams?.get("project") ?? null;
+  const { showToast, toasts, dismiss } = useToast();
 
   const [topTab, setTopTab] = useState<TopTab>("quickstart");
   const [selectedCloud, setSelectedCloud] = useState<"aws" | "gcp" | "azure" | null>(null);
@@ -1043,6 +1046,12 @@ function SimulatePageInner() {
       }
       if (res) {
         setResult(res);
+        showToast(
+          locale === "ja"
+            ? `シミュレーション完了 — スコア: ${res.overall_score}/100`
+            : `Simulation complete — Score: ${res.overall_score}/100`,
+          "success"
+        );
         // ANALYTICS-02: Track simulation completion as conversion event
         trackEvent("simulation_run", {
           score: res.overall_score,
@@ -1138,6 +1147,10 @@ function SimulatePageInner() {
             : `${rawMsg}\n\nUpgrade to Pro for 100 simulations/month.`)
         : rawMsg;
       setError(message);
+      showToast(
+        locale === "ja" ? "シミュレーションに失敗しました" : "Simulation failed",
+        "error"
+      );
     } finally {
       timers.forEach(clearTimeout);
       setRunProgress(100);
@@ -1841,6 +1854,14 @@ faultray scan --all`}
           </div>
         </>
       )}
+      {toasts.map((toast) => (
+        <Toast
+          key={toast.id}
+          message={toast.message}
+          variant={toast.variant}
+          onDismiss={() => dismiss(toast.id)}
+        />
+      ))}
     </div>
   );
 }

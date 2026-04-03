@@ -1,7 +1,7 @@
 "use client";
 
 // UICOMP-07: Tooltip補助コンポーネント
-import { useState, useRef, useEffect, type ReactNode } from "react";
+import { useState, useRef, useEffect, useId, type ReactNode } from "react";
 import { cn } from "@/lib/utils";
 
 interface TooltipProps {
@@ -21,7 +21,8 @@ interface TooltipProps {
 export function Tooltip({ content, children, side = "top", className, delay = 300 }: TooltipProps) {
   const [visible, setVisible] = useState(false);
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const id = useRef(`tooltip-${Math.random().toString(36).slice(2)}`);
+  const reactId = useId();
+  const id = `tooltip-${reactId.replace(/:/g, "")}`;
 
   function show() {
     timerRef.current = setTimeout(() => setVisible(true), delay);
@@ -56,13 +57,13 @@ export function Tooltip({ content, children, side = "top", className, delay = 30
       onBlur={hide}
     >
       {/* Wrap children with aria-describedby only when content is a string */}
-      <span aria-describedby={typeof content === "string" ? id.current : undefined}>
+      <span aria-describedby={typeof content === "string" ? id : undefined}>
         {children}
       </span>
 
       {visible && (
         <span
-          id={id.current}
+          id={id}
           role="tooltip"
           className={cn(
             "absolute z-[300] pointer-events-none whitespace-nowrap",

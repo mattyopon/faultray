@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState, useCallback } from "react";
+import { useEffect, useRef, useState, useCallback, startTransition } from "react";
 import { useRouter } from "next/navigation";
 import { Search, X } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
@@ -34,11 +34,14 @@ export function CommandPalette({ open, onClose, items }: CommandPaletteProps) {
         item.group.toLowerCase().includes(query.toLowerCase())
       );
 
-  // Reset state when modal opens/closes
+  // Reset state when modal opens — key prop on the modal would be cleaner,
+  // but we use a direct reset here for simplicity.
   useEffect(() => {
     if (open) {
-      setQuery("");
-      setActiveIndex(0);
+      startTransition(() => {
+        setQuery("");
+        setActiveIndex(0);
+      });
       // Focus input after paint
       requestAnimationFrame(() => {
         inputRef.current?.focus();
@@ -98,9 +101,11 @@ export function CommandPalette({ open, onClose, items }: CommandPaletteProps) {
     [filtered, activeIndex, navigate, onClose]
   );
 
-  // Reset activeIndex when filtered results change
+  // Reset activeIndex when query changes — derived reset for keyboard UX
   useEffect(() => {
-    setActiveIndex(0);
+    startTransition(() => {
+      setActiveIndex(0);
+    });
   }, [query]);
 
   if (!open) return null;

@@ -246,6 +246,7 @@ export default function PeopleRiskDashboard() {
   useEffect(() => {
     // 未ログイン時はデータフェッチをスキップ
     if (!user) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setLoading(false);
       return;
     }

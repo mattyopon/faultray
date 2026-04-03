@@ -32,6 +32,8 @@ import Link from "next/link";
 import { useLocale, useSetLocale } from "@/lib/useLocale";
 import type { Locale } from "@/i18n/config";
 import { appDict } from "@/i18n/app-dict";
+import { useToast } from "@/lib/useToast";
+import { Toast } from "@/components/ui/toast";
 
 const LANGUAGES = [
   { code: "en", label: "English", flag: "\u{1F1FA}\u{1F1F8}" },
@@ -59,6 +61,7 @@ export default function SettingsPage() {
   const locale = useLocale();
   const setLocale = useSetLocale();
   const t = appDict.settings[locale] ?? appDict.settings.en;
+  const { showToast, toasts, dismiss } = useToast();
 
   // BRAND-02: テーマ設定（ライトモード / ダークモード / システム）
   const [theme, setTheme] = useState<"dark" | "light" | "system">(() => {
@@ -302,27 +305,33 @@ export default function SettingsPage() {
       integrations.slackWebhook &&
       !integrations.slackWebhook.startsWith("https://hooks.slack.com/")
     ) {
-      setIntegrationsError(
+      const msg =
         locale === "ja"
           ? "Slack Webhook URL は https://hooks.slack.com/ で始まる必要があります"
-          : "Slack Webhook URL must start with https://hooks.slack.com/"
-      );
+          : "Slack Webhook URL must start with https://hooks.slack.com/";
+      setIntegrationsError(msg);
+      showToast(msg, "error");
       return;
     }
     if (
       integrations.teamsWebhook &&
       !integrations.teamsWebhook.startsWith("https://")
     ) {
-      setIntegrationsError(
+      const msg =
         locale === "ja"
           ? "Teams Webhook URL は https:// で始まる必要があります"
-          : "Teams Webhook URL must start with https://"
-      );
+          : "Teams Webhook URL must start with https://";
+      setIntegrationsError(msg);
+      showToast(msg, "error");
       return;
     }
     localStorage.setItem("faultray_integrations", JSON.stringify(integrations));
     setIntegrationsSaved(true);
     setTimeout(() => setIntegrationsSaved(false), 2500);
+    showToast(
+      locale === "ja" ? "設定を保存しました" : "Settings saved",
+      "success"
+    );
   }
 
   function setLanguage(lang: string) {
@@ -1045,6 +1054,14 @@ export default function SettingsPage() {
           </div>
         )}
       </Card>
+      {toasts.map((toast) => (
+        <Toast
+          key={toast.id}
+          message={toast.message}
+          variant={toast.variant}
+          onDismiss={() => dismiss(toast.id)}
+        />
+      ))}
     </div>
   );
 }

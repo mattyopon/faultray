@@ -16,7 +16,7 @@ let _id = 0;
 export function useToast() {
   const [toasts, setToasts] = useState<ToastState[]>([]);
 
-  const showToast = useCallback((message: string, variant: ToastVariant = "success", durationMs = 3000) => {
+  const showToast = useCallback((message: string, variant: ToastVariant = "success", durationMs = 5000) => {
     const id = ++_id;
     setToasts((prev) => [...prev, { id, message, variant }]);
     setTimeout(() => {

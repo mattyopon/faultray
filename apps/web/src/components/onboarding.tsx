@@ -158,27 +158,20 @@ const TOTAL_STEPS = 5;
 
 export function Onboarding() {
   const router = useRouter();
-  const [visible, setVisible] = useState(false);
+  const [visible, setVisible] = useState(() => {
+    try {
+      return localStorage.getItem(STORAGE_KEY) !== "true";
+    } catch {
+      return true;
+    }
+  });
   const [step, setStep] = useState(0);
-  const [locale, setLocale] = useState<"en" | "ja">("en");
+  const [locale, setLocale] = useState<"en" | "ja">(() => detectLocale());
   const [dontShow, setDontShow] = useState(false);
   const [animating, setAnimating] = useState(false);
   const [direction, setDirection] = useState<"next" | "prev">("next");
 
   const t = texts[locale];
-
-  useEffect(() => {
-    setLocale(detectLocale());
-    try {
-      const onboarded = localStorage.getItem(STORAGE_KEY);
-      if (onboarded !== "true") {
-        setVisible(true);
-      }
-    } catch {
-      // localStorage unavailable — show by default
-      setVisible(true);
-    }
-  }, []);
 
   const close = useCallback(() => {
     setVisible(false);

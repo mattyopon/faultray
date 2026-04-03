@@ -2,7 +2,7 @@
 
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { useEffect, useState, useCallback, useRef, useMemo } from "react";
+import { useEffect, useState, useCallback, useRef, useMemo, startTransition } from "react";
 import { api } from "@/lib/api";
 import {
   Network,
@@ -291,6 +291,8 @@ export default function TopologyPage() {
   const [hoveredEdge, setHoveredEdge] = useState<number | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const [containerWidth, setContainerWidth] = useState(1100);
+  const [simScore, setSimScore] = useState<number | null>(null);
+  const [simTimestamp, setSimTimestamp] = useState<string | null>(null);
   const locale = useLocale();
   const t = appDict.topology[locale] ?? appDict.topology.en;
 
@@ -336,11 +338,10 @@ export default function TopologyPage() {
     setLoading(false);
   }, []);
 
-  const [simScore, setSimScore] = useState<number | null>(null);
-  const [simTimestamp, setSimTimestamp] = useState<string | null>(null);
-
   useEffect(() => {
-    loadData();
+    startTransition(() => {
+      void loadData();
+    });
   }, [loadData]);
 
   // Responsive width

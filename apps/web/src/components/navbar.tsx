@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { NavLanguageSwitcher } from "@/components/language-switcher";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useState, useEffect, useMemo, useCallback, useRef } from "react";
+import { useState, useEffect, useMemo, useCallback, useRef, startTransition } from "react";
 import {
   LayoutDashboard,
   Network,
@@ -33,12 +33,6 @@ import {
   FolderKanban,
   BookOpen,
   FileSearch,
-  CalendarDays,
-  Clock,
-  GitBranch,
-  Users,
-  GitCompare,
-  FlaskRound,
   Gauge,
   PackageSearch,
   FileCode2,
@@ -47,20 +41,17 @@ import {
   TrendingUp,
   TrendingDown,
   Brain,
-  Swords,
   CircleDot,
   Landmark,
   FileSpreadsheet,
   Ghost,
   Cloud,
-  Map,
   Lock,
 } from "lucide-react";
-import type { PlanTier } from "@/components/auth-provider";
 
 /** Pages accessible on Free plan */
 const FREE_PAGES = new Set(["/dashboard", "/simulate", "/topology", "/dora", "/reports", "/help", "/support", "/changelog", "/admin"]);
-import { locales, type Locale } from "@/i18n/config";
+import { locales } from "@/i18n/config";
 import { appDict } from "@/i18n/app-dict";
 import { useLocale } from "@/lib/useLocale";
 import { CommandPalette, type CommandItem } from "@/components/command-palette";
@@ -268,7 +259,9 @@ export function Navbar() {
 
   // NAV-DETAIL-08: ルート変更時にモバイルメニューを自動で閉じる
   useEffect(() => {
-    setMobileOpen(false);
+    startTransition(() => {
+      setMobileOpen(false);
+    });
   }, [pathname]);
 
   // locale is from Context (useLocale) — no need to detect from URL
@@ -284,11 +277,6 @@ export function Navbar() {
   const isAppPath = !isLanding && !pathname.startsWith("/login") && !pathname.startsWith("/pricing");
   // During auth loading on app paths, treat as app (avoid flash of landing nav)
   const isApp = isAppPath && (authLoading || !!user);
-
-  // Mobile: close sidebar on navigate
-  useEffect(() => {
-    setMobileOpen(false);
-  }, [pathname]);
 
   // Set body data-app-page for CSS sidebar offset (prevents layout shift)
   useEffect(() => {

@@ -7,6 +7,8 @@ import { useState } from "react";
 import { FileText, Loader2, Download, ExternalLink, ShieldCheck, CheckCircle2, AlertTriangle, XCircle } from "lucide-react";
 import { useLocale } from "@/lib/useLocale";
 import { appDict } from "@/i18n/app-dict";
+import { useToast } from "@/lib/useToast";
+import { Toast } from "@/components/ui/toast";
 
 type Framework = "SOC2" | "ISO27001" | "DORA" | "FISC";
 
