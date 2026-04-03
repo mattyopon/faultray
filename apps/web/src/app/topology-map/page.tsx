@@ -148,6 +148,8 @@ export default function TopologyMapPage() {
                 viewBox={viewBox}
                 className="w-full h-full"
                 style={{ transform: `scale(${zoom})`, transformOrigin: "center center", transition: "transform 0.2s" }}
+                role="img"
+                aria-label={locale === "ja" ? "インフラトポロジーマップ" : "Infrastructure topology map"}
               >
                 {/* Grid lines */}
                 <defs>

@@ -477,6 +477,8 @@ export default function TopologyPage() {
               viewBox={`0 0 ${totalWidth} ${totalHeight}`}
               className="w-full"
               style={{ minHeight: 500, background: "linear-gradient(180deg, #0a0f1a 0%, #0d1320 100%)" }}
+              role="img"
+              aria-label={locale === "ja" ? "サービストポロジー図" : "Service topology diagram"}
             >
               <defs>
                 {/* Grid pattern */}
