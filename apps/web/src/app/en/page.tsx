@@ -289,26 +289,27 @@ export default async function LangHomePage({
             </div>
           </div>
 
+          {/* COPY-03: Primary CTA → simulation action, secondary → signup */}
           <div className="flex gap-4 justify-center flex-wrap mb-14">
             <Link
-              href="/login"
+              href="/simulate"
               className="inline-flex items-center gap-2 px-7 py-3 bg-[#FFD700] text-[#0a0e1a] font-semibold rounded-xl shadow-[0_0_20px_rgba(255,215,0,0.2)] hover:bg-[#ffe44d] hover:shadow-[0_0_30px_rgba(255,215,0,0.35)] hover:-translate-y-0.5 transition-all"
             >
               <Zap size={16} />
-              {dict.hero.cta}
+              Run Free Simulation
             </Link>
             <Link
               href="/contact"
               className="inline-flex items-center gap-2 px-7 py-3 bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 font-semibold rounded-xl hover:bg-emerald-500/20 hover:border-emerald-500/50 hover:-translate-y-0.5 transition-all"
             >
               <ExternalLink size={16} />
-              {"Book a Free Demo"}
+              {"Book a Guided Demo"}
             </Link>
             <Link
-              href="/simulate"
+              href="/login"
               className="inline-flex items-center gap-2 px-7 py-3 border border-[#1e293b] text-white rounded-xl hover:border-[#64748b] hover:bg-white/[0.03] hover:-translate-y-0.5 transition-all"
             >
-              {dict.hero.demo}
+              {dict.hero.cta}
             </Link>
           </div>
 
@@ -1004,6 +1005,12 @@ export default async function LangHomePage({
                     className="text-sm text-[#64748b] hover:text-white transition-colors"
                   >
                     Documentation
+                  </Link>
+                </li>
+                {/* MATERIAL-01/02: Case studies & enterprise resources */}
+                <li>
+                  <Link href="/case-studies" className="text-sm text-[#64748b] hover:text-white transition-colors">
+                    Case Studies
                   </Link>
                 </li>
               </ul>

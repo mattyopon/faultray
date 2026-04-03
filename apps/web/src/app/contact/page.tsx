@@ -95,6 +95,31 @@ export default function ContactPage() {
         </p>
       </div>
 
+      {/* COMP-04: Multiple demo formats */}
+      <div className="mb-8 grid grid-cols-1 sm:grid-cols-3 gap-3">
+        <a
+          href="/simulate"
+          className="flex flex-col gap-2 p-5 rounded-xl border border-[#FFD700]/20 bg-[#FFD700]/[0.04] hover:bg-[#FFD700]/[0.08] transition-all"
+        >
+          <span className="text-[#FFD700] font-bold text-sm">Self-Service Demo</span>
+          <span className="text-xs text-[#94a3b8]">Run a simulation instantly — no account required</span>
+          <span className="text-xs text-[#64748b] mt-1">Available now →</span>
+        </a>
+        <div className="flex flex-col gap-2 p-5 rounded-xl border border-[#1e293b] bg-[#111827]">
+          <span className="text-white font-bold text-sm">Guided Demo (30 min)</span>
+          <span className="text-xs text-[#94a3b8]">Live walkthrough with a FaultRay engineer via video call</span>
+          <span className="text-xs text-[#64748b] mt-1">Fill the form below →</span>
+        </div>
+        <a
+          href="mailto:sales@faultray.com?subject=PoC%20Request"
+          className="flex flex-col gap-2 p-5 rounded-xl border border-[#1e293b] bg-[#111827] hover:border-[#64748b] transition-all"
+        >
+          <span className="text-white font-bold text-sm">PoC (Proof of Concept)</span>
+          <span className="text-xs text-[#94a3b8]">2-week free trial with your actual infrastructure</span>
+          <span className="text-xs text-[#64748b] mt-1">Email us →</span>
+        </a>
+      </div>
+
       {submitted ? (
         <div className="p-8 rounded-2xl border border-emerald-500/30 bg-gradient-to-br from-[#111827] to-emerald-500/[0.04] text-center">
           <CheckCircle size={48} className="text-emerald-400 mx-auto mb-4" />
