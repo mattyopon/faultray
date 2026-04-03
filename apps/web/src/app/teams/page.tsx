@@ -422,7 +422,7 @@ export default function TeamsPage() {
             <p className="text-sm font-semibold text-[#FFD700] mb-4">New Organization</p>
             <input
               type="text"
-              placeholder="Organization name"
+              placeholder={locale === "ja" ? "組織名" : "Organization name"}
               aria-label={locale === "ja" ? "組織名" : "Organization name"}
               value={orgName}
               onChange={(e) => setOrgName(e.target.value)}
@@ -622,7 +622,7 @@ export default function TeamsPage() {
             <p className="text-sm font-semibold text-[#94a3b8]">Create Task</p>
             <input
               type="text"
-              placeholder="Task title *"
+              placeholder={locale === "ja" ? "タスクタイトル *" : "Task title *"}
               aria-label={locale === "ja" ? "タスクタイトル（必須）" : "Task title (required)"}
               value={newTaskTitle}
               onChange={(e) => setNewTaskTitle(e.target.value)}
@@ -630,7 +630,7 @@ export default function TeamsPage() {
               autoFocus
             />
             <textarea
-              placeholder="Description (optional)"
+              placeholder={locale === "ja" ? "説明（任意）" : "Description (optional)"}
               aria-label={locale === "ja" ? "説明（任意）" : "Description (optional)"}
               value={newTaskDesc}
               onChange={(e) => setNewTaskDesc(e.target.value)}
