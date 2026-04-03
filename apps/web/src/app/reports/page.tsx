@@ -103,17 +103,15 @@ const DEFAULT_SECTIONS: Record<ReportSection, boolean> = {
 export default function ReportsPage() {
   const [report, setReport] = useState<ExecutiveReport>(DEMO_REPORT);
   const [loading, setLoading] = useState(true);
-  const [reportLang, setReportLang] = useState<"en" | "ja">("en");
+  const [reportLangOverride, setReportLang] = useState<"en" | "ja" | null>(null);
   const [showSections, setShowSections] = useState<Record<ReportSection, boolean>>(DEFAULT_SECTIONS);
   const [showCustomize, setShowCustomize] = useState(false);
   const [weeklyNotifEnabled, setWeeklyNotifEnabled] = useState(false);
   const locale = useLocale();
   const t = appDict.reports[locale] ?? appDict.reports.en;
 
-  // Sync reportLang with app locale on first load (reports only support en/ja output)
-  useEffect(() => {
-    setReportLang(locale === "ja" ? "ja" : "en");
-  }, [locale]);
+  // reportLang derived from app locale; user can override via UI selector
+  const reportLang: "en" | "ja" = reportLangOverride ?? (locale === "ja" ? "ja" : "en");
 
   useEffect(() => {
     api

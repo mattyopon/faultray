@@ -272,7 +272,7 @@
     "heading": "Trusted by the Developer Community",
     "githubStars": "GitHub Stars",
     "betaMessage": "Currently in beta. We'd love your feedback.",
-    "betaCta": "Send Feedback",
+    "betaSubtitle": "We are in early access. Your feedback helps us improve.", "betaCta": "Send Feedback",
     "openSource": "Open Source"
   },
   "roi": {

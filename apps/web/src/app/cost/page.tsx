@@ -376,22 +376,19 @@ export default function CostPage() {
   const [cyberInsurancePremium, setCyberInsurancePremium] = useState(50000);
 
   // ── Simulation data from localStorage ──
-  const [simData, setSimData] = useState<SimulationData | null>(null);
-  const [showResults, setShowResults] = useState(false);
-
-  useEffect(() => {
+  const [simData, setSimData] = useState<SimulationData | null>(() => {
     try {
       const raw = localStorage.getItem("faultray_last_simulation");
       if (raw) {
         const parsed = JSON.parse(raw) as SimulationData;
-        if (parsed.overall_score) {
-          setSimData(parsed);
-        }
+        if (parsed.overall_score) return parsed;
       }
     } catch {
       // localStorage not available
     }
-  }, []);
+    return null;
+  });
+  const [showResults, setShowResults] = useState(false);
 
   // ── Derived calculations ──
   const currentScore = simData?.overall_score ?? 68;

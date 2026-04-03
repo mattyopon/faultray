@@ -5,6 +5,7 @@ interface SocialProofDict {
   heading: string;
   githubStars: string;
   betaMessage: string;
+  betaSubtitle?: string;
   betaCta: string;
   openSource: string;
 }
@@ -113,7 +114,7 @@ export function SocialProof({ dict, stars }: SocialProofProps) {
         <div className="max-w-[640px] mx-auto text-center p-8 rounded-2xl border border-[#FFD700]/20 bg-gradient-to-br from-[#FFD700]/[0.04] to-[#111827]">
           <p className="text-lg font-semibold text-white mb-2">{dict.betaMessage}</p>
           <p className="text-[#94a3b8] mb-6 text-sm">
-            現在アーリーアクセス段階です。ご意見・ご要望をお寄せいただけると大変助かります。
+            {dict.betaSubtitle ?? "We are in early access. Your feedback helps us improve."}
           </p>
           <Link
             href="/contact"

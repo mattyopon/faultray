@@ -3,7 +3,7 @@
  * Verifies that components don't use dangerouslySetInnerHTML without sanitization.
  */
 import { describe, it, expect } from "vitest";
-import { readFileSync, readdirSync, statSync } from "fs";
+import { readFileSync, readdirSync } from "fs";
 import path from "path";
 
 const SRC_DIR = path.resolve(__dirname, "../../src");

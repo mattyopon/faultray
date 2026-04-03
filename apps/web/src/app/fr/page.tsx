@@ -209,11 +209,7 @@ function PricingComparisonCell({ value }: { value: string }) {
 /* ================================================================
    MAIN PAGE
    ================================================================ */
-export default async function LangHomePage({
-  
-}: {
-  
-}) {
+export default async function LangHomePage() {
   const lang = "fr" as "en" | "ja" | "de" | "fr";
   
   const dict = await getDictionary(lang);

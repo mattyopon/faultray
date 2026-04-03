@@ -335,6 +335,13 @@ function CascadeSimulationsPanel({ cascades }: { cascades: CascadeSimulation[] }
 }
 
 // ---- Simulation Log Section ----
+function SortIcon({ col, sortBy, sortDir }: { col: string; sortBy: string; sortDir: "asc" | "desc" }) {
+  if (sortBy !== col) return <ChevronDown size={12} className="text-[#64748b] opacity-40" />;
+  return sortDir === "asc"
+    ? <ChevronUp size={12} className="text-[#FFD700]" />
+    : <ChevronDown size={12} className="text-[#FFD700]" />;
+}
+
 function SimulationLogPanel({ log }: { log: SimulationLog }) {
   const [open, setOpen] = useState(false);
   const [sortBy, setSortBy] = useState<"id" | "risk_score" | "result">("id");
@@ -374,13 +381,6 @@ function SimulationLogPanel({ log }: { log: SimulationLog }) {
     a.download = "faultray-simulation-log.json";
     a.click();
     URL.revokeObjectURL(url);
-  };
-
-  const SortIcon = ({ col }: { col: string }) => {
-    if (sortBy !== col) return <ChevronDown size={12} className="text-[#64748b] opacity-40" />;
-    return sortDir === "asc"
-      ? <ChevronUp size={12} className="text-[#FFD700]" />
-      : <ChevronDown size={12} className="text-[#FFD700]" />;
   };
 
   return (
@@ -424,18 +424,18 @@ function SimulationLogPanel({ log }: { log: SimulationLog }) {
               <tr className="bg-[#0d1117]">
                 <th scope="col" className="px-4 py-2.5 text-left text-xs font-semibold text-[#64748b]">
                   <button onClick={() => toggleSort("id")} className="flex items-center gap-1 hover:text-white transition-colors">
-                    # <SortIcon col="id" />
+                    # <SortIcon col="id" sortBy={sortBy} sortDir={sortDir} />
                   </button>
                 </th>
                 <th scope="col" className="px-4 py-2.5 text-left text-xs font-semibold text-[#64748b]">Scenario Name</th>
                 <th scope="col" className="px-4 py-2.5 text-left text-xs font-semibold text-[#64748b]">
                   <button onClick={() => toggleSort("result")} className="flex items-center gap-1 hover:text-white transition-colors">
-                    Result <SortIcon col="result" />
+                    Result <SortIcon col="result" sortBy={sortBy} sortDir={sortDir} />
                   </button>
                 </th>
                 <th scope="col" className="px-4 py-2.5 text-left text-xs font-semibold text-[#64748b]">
                   <button onClick={() => toggleSort("risk_score")} className="flex items-center gap-1 hover:text-white transition-colors">
-                    Risk Score <SortIcon col="risk_score" />
+                    Risk Score <SortIcon col="risk_score" sortBy={sortBy} sortDir={sortDir} />
                   </button>
                 </th>
                 <th scope="col" className="px-4 py-2.5 text-left text-xs font-semibold text-[#64748b]">Affected</th>

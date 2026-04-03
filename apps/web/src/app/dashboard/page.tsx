@@ -66,29 +66,23 @@ function ScoreRing({ score, size = 120 }: { score: number; size?: number }) {
 // ---- Getting Started Checklist Component ----
 function GettingStartedChecklist({ hasRun }: { hasRun: boolean }) {
   const locale = useLocale();
-  const [dismissed, setDismissed] = useState(false);
-  const [checkedItems, setCheckedItems] = useState<Record<number, boolean>>({});
-
-  useEffect(() => {
+  const [dismissed, setDismissed] = useState(() => {
     try {
-      if (localStorage.getItem(CHECKLIST_STORAGE_KEY) === "true") {
-        setDismissed(true);
-      }
+      return localStorage.getItem(CHECKLIST_STORAGE_KEY) === "true";
+    } catch { return false; }
+  });
+  const [checkedItemsBase, setCheckedItemsBase] = useState<Record<number, boolean>>(() => {
+    try {
       const stored = localStorage.getItem("faultray_checklist_checked");
-      if (stored) setCheckedItems(JSON.parse(stored));
-    } catch { /* ignore */ }
-  }, []);
+      return stored ? (JSON.parse(stored) as Record<number, boolean>) : {};
+    } catch { return {}; }
+  });
 
-  // Step 2 is auto-checked when a run exists
-  useEffect(() => {
-    if (hasRun) {
-      setCheckedItems((prev) => {
-        const next = { ...prev, 1: true };
-        try { localStorage.setItem("faultray_checklist_checked", JSON.stringify(next)); } catch { /* ignore */ }
-        return next;
-      });
-    }
-  }, [hasRun]);
+  // Step 2 is auto-checked when a run exists — merged without setState in effect
+  const checkedItems: Record<number, boolean> = hasRun ? { ...checkedItemsBase, 1: true } : checkedItemsBase;
+  const setCheckedItems = (updater: (prev: Record<number, boolean>) => Record<number, boolean>) => {
+    setCheckedItemsBase((prev) => updater(prev));
+  };
 
   const dismiss = () => {
     setDismissed(true);

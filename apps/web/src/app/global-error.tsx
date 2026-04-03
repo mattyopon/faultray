@@ -9,12 +9,11 @@ export default function GlobalError({
   error: Error & { digest?: string };
   unstable_retry: () => void;
 }) {
-  const [isJa, setIsJa] = useState(false);
-
-  useEffect(() => {
+  const [isJa] = useState(() => {
+    if (typeof document === "undefined") return false;
     const match = document.cookie.match(/(?:^|;\s*)NEXT_LOCALE=([^;,\s]+)/);
-    setIsJa(match?.[1] === "ja");
-  }, []);
+    return match?.[1] === "ja";
+  });
 
   useEffect(() => {
     // ERROR-04: エラー監視 — NEXT_PUBLIC_SENTRY_DSNが設定されている場合は自動送信

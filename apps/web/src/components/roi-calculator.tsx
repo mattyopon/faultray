@@ -93,7 +93,7 @@ export function RoiCalculator({ dict, lang }: RoiCalculatorProps) {
             <div>
               <div className="flex justify-between mb-2">
                 <label className="text-sm font-semibold text-white">{dict.incidentCount}</label>
-                <span className="text-sm font-bold text-[#FFD700]">{incidentCount}回</span>
+                <span className="text-sm font-bold text-[#FFD700]">{incidentCount}{isJa ? "回" : "x"}</span>
               </div>
               <input
                 type="range"
@@ -106,8 +106,8 @@ export function RoiCalculator({ dict, lang }: RoiCalculatorProps) {
                 className="w-full h-2 rounded-full appearance-none cursor-pointer accent-[#FFD700] bg-[#1e293b]"
               />
               <div className="flex justify-between text-xs text-[#64748b] mt-1">
-                <span>1回</span>
-                <span>50回</span>
+                <span>{isJa ? "1回" : "1x"}</span>
+                <span>{isJa ? "50回" : "50x"}</span>
               </div>
             </div>
 
@@ -115,7 +115,7 @@ export function RoiCalculator({ dict, lang }: RoiCalculatorProps) {
             <div>
               <div className="flex justify-between mb-2">
                 <label className="text-sm font-semibold text-white">{dict.incidentHours}</label>
-                <span className="text-sm font-bold text-[#FFD700]">{incidentHours}時間</span>
+                <span className="text-sm font-bold text-[#FFD700]">{incidentHours}{isJa ? "時間" : "h"}</span>
               </div>
               <input
                 type="range"
@@ -128,8 +128,8 @@ export function RoiCalculator({ dict, lang }: RoiCalculatorProps) {
                 className="w-full h-2 rounded-full appearance-none cursor-pointer accent-[#FFD700] bg-[#1e293b]"
               />
               <div className="flex justify-between text-xs text-[#64748b] mt-1">
-                <span>0.5時間</span>
-                <span>24時間</span>
+                <span>{isJa ? "0.5時間" : "0.5h"}</span>
+                <span>{isJa ? "24時間" : "24h"}</span>
               </div>
             </div>
           </div>
