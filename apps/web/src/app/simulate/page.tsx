@@ -471,12 +471,49 @@ function SimulationLogPanel({ log }: { log: SimulationLog }) {
   );
 }
 
+// DEMO-04: ビジネス言語でのサマリー生成
+function businessSummary(score: number, availability: string, criticalCount: number): { headline: string; detail: string; action: string } {
+  if (score >= 90) {
+    return {
+      headline: `Your infrastructure can achieve ${availability} availability`,
+      detail: `${criticalCount === 0 ? "No critical vulnerabilities detected." : `${criticalCount} critical issue${criticalCount > 1 ? "s" : ""} found.`} Your system demonstrates excellent resilience across all failure scenarios.`,
+      action: "Export this as a PDF report to share with stakeholders →",
+    };
+  }
+  if (score >= 70) {
+    return {
+      headline: `Your infrastructure availability ceiling is ${availability}`,
+      detail: `${criticalCount} critical vulnerabilit${criticalCount !== 1 ? "ies" : "y"} detected. Addressing these would move you from ${score.toFixed(0)}/100 to 90+ score.`,
+      action: "Review the recommendations below to improve your SLA →",
+    };
+  }
+  return {
+    headline: `Resilience improvement needed — availability ceiling is ${availability}`,
+    detail: `${criticalCount} critical issues are limiting your availability. Without fixes, your system risks extended outages that could cost thousands of dollars per hour.`,
+    action: "Prioritize the CRITICAL findings below for immediate action →",
+  };
+}
+
 function ResultsPanel({ result, scanSummary, simulateT }: { result: SimulationResult; scanSummary?: CloudSimulationResult["scan_summary"]; simulateT: Record<string, string> }) {
   const scoreColor = result.overall_score >= 90 ? "text-emerald-400" : result.overall_score >= 70 ? "text-[#FFD700]" : "text-red-400";
+  const summary = businessSummary(result.overall_score, result.availability_estimate, result.critical_failures.length);
 
   return (
     <div className="space-y-6">
       {scanSummary && <ScanPreview summary={scanSummary} />}
+
+      {/* DEMO-04: ビジネス言語サマリーバナー */}
+      <div className={`p-5 rounded-2xl border ${
+        result.overall_score >= 90
+          ? "border-emerald-500/20 bg-emerald-500/[0.05]"
+          : result.overall_score >= 70
+          ? "border-amber-500/20 bg-amber-500/[0.05]"
+          : "border-red-500/20 bg-red-500/[0.05]"
+      }`}>
+        <p className={`text-lg font-bold mb-1 ${scoreColor}`}>{summary.headline}</p>
+        <p className="text-sm text-[#94a3b8] mb-2">{summary.detail}</p>
+        <p className="text-xs text-[#64748b]">{summary.action}</p>
+      </div>
 
       {/* Core score card */}
       <Card className="border-emerald-500/20">
@@ -786,6 +823,7 @@ function SimulatePageInner() {
   const [yamlText, setYamlText] = useState("");
   const [uploadedFileName, setUploadedFileName] = useState<string | null>(null);
   const [running, setRunning] = useState(false);
+  const [runProgress, setRunProgress] = useState(0); // DEMO-03: progress display
   const [result, setResult] = useState<SimulationResult | null>(null);
   const [scanSummary, setScanSummary] = useState<CloudSimulationResult["scan_summary"] | undefined>(undefined);
   const [error, setError] = useState<string | null>(null);
@@ -864,9 +902,23 @@ function SimulatePageInner() {
   const runSimulation = async () => {
     if (!canRun) return;
     setRunning(true);
+    setRunProgress(0);
     setError(null);
     setResult(null);
     setScanSummary(undefined);
+
+    // DEMO-03: Fake progress bar — gives user visual feedback during simulation
+    const progressSteps = [
+      { pct: 15, delay: 200, label: locale === "ja" ? "トポロジーを解析中..." : "Parsing topology..." },
+      { pct: 35, delay: 600, label: locale === "ja" ? "シナリオを生成中..." : "Generating scenarios..." },
+      { pct: 60, delay: 1200, label: locale === "ja" ? "障害シミュレーション実行中..." : "Running fault simulations..." },
+      { pct: 80, delay: 1800, label: locale === "ja" ? "N-Layer分析中..." : "Analyzing N-Layer model..." },
+      { pct: 95, delay: 2400, label: locale === "ja" ? "レポートを生成中..." : "Generating report..." },
+    ];
+    const timers: ReturnType<typeof setTimeout>[] = [];
+    progressSteps.forEach(({ pct, delay }) => {
+      timers.push(setTimeout(() => setRunProgress(pct), delay));
+    });
 
     try {
       let res;
@@ -940,6 +992,8 @@ function SimulatePageInner() {
           : "Simulation request failed. Please try again.";
       setError(message);
     } finally {
+      timers.forEach(clearTimeout);
+      setRunProgress(100);
       setRunning(false);
     }
   };
@@ -1150,7 +1204,7 @@ function SimulatePageInner() {
                 )}
               </div>
 
-              {/* YAML Editor Expander */}
+              {/* YAML Editor Expander — JOURNEY-03: YAMLの学習曲線を下げる説明を追加 */}
               <div className="mb-8">
                 <button
                   onClick={() => setShowYamlEditor(!showYamlEditor)}
@@ -1158,17 +1212,42 @@ function SimulatePageInner() {
                 >
                   {showYamlEditor ? <ChevronDown size={16} /> : <ChevronRight size={16} />}
                   <FileCode size={14} />
-                  <span>Write YAML manually</span>
+                  <span>
+                    {locale === "ja"
+                      ? "自分のインフラのYAMLを書く（上級者向け）"
+                      : "Write your own YAML topology (advanced)"}
+                  </span>
                 </button>
                 {showYamlEditor && (
                   <div className="mt-4">
+                    {/* JOURNEY-03: Quick-start guide for YAML newcomers */}
+                    <div className="mb-4 p-4 rounded-xl border border-blue-500/15 bg-blue-500/[0.05] text-xs text-[#94a3b8] space-y-1.5">
+                      <p className="font-semibold text-blue-300">
+                        {locale === "ja" ? "YAMLの書き方（3分で覚えられます）" : "YAML quick guide — learn in 3 minutes"}
+                      </p>
+                      <p>
+                        {locale === "ja"
+                          ? "1. コンポーネントを列挙（例: app_server, database, cache）"
+                          : "1. List your components (e.g., app_server, database, cache)"}
+                      </p>
+                      <p>
+                        {locale === "ja"
+                          ? "2. 各コンポーネントに可用性（availability）と依存関係（requires）を指定"
+                          : "2. Set availability (0–1) and dependencies (requires:) for each"}
+                      </p>
+                      <p>
+                        {locale === "ja"
+                          ? "3. まず「Load example」でサンプルを読み込んで修正するのが一番簡単です"
+                          : "3. Easiest: click \"Load example\" below and edit to match your stack"}
+                      </p>
+                    </div>
                     <div className="flex items-center justify-between mb-2">
                       <span className="text-xs font-medium text-[#94a3b8]">Infrastructure Topology (YAML)</span>
                       <button
                         onClick={() => { setYamlText(YAML_PLACEHOLDER); setSelected(null); setUploadedFileName(null); }}
                         className="text-xs text-[#FFD700] hover:text-[#ffe44d] transition-colors"
                       >
-                        Load example
+                        {locale === "ja" ? "サンプルを読み込む" : "Load example"}
                       </button>
                     </div>
                     <textarea
@@ -1179,7 +1258,9 @@ function SimulatePageInner() {
                       spellCheck={false}
                     />
                     <p className="text-xs text-[#64748b] mt-2">
-                      Define your components (app_server, database, cache, load_balancer, queue) and dependencies (requires, optional, async)
+                      {locale === "ja"
+                        ? "コンポーネント種別: app_server, database, cache, load_balancer, queue / 依存関係: requires, optional, async"
+                        : "Component types: app_server, database, cache, load_balancer, queue | Dependencies: requires, optional, async"}
                     </p>
                   </div>
                 )}
@@ -1191,7 +1272,7 @@ function SimulatePageInner() {
                 </div>
               )}
 
-              <div className="flex justify-center">
+              <div className="flex flex-col items-center gap-4">
                 <Button
                   size="lg"
                   disabled={!canRun || running}
@@ -1210,6 +1291,26 @@ function SimulatePageInner() {
                     </>
                   )}
                 </Button>
+                {/* DEMO-03: プログレスバー — 実行中の待ち時間を視覚化 */}
+                {running && (
+                  <div className="w-full max-w-[400px]">
+                    <div className="flex justify-between text-xs text-[#64748b] mb-1.5">
+                      <span>{locale === "ja" ? "進行中..." : "Processing..."}</span>
+                      <span>{runProgress}%</span>
+                    </div>
+                    <div className="h-2 bg-[#1e293b] rounded-full overflow-hidden">
+                      <div
+                        className="h-full bg-[#FFD700] rounded-full transition-all duration-500"
+                        style={{ width: `${runProgress}%` }}
+                      />
+                    </div>
+                    <p className="text-[11px] text-[#475569] text-center mt-2">
+                      {locale === "ja"
+                        ? "本番環境には一切アクセスしません。純粋なシミュレーションです。"
+                        : "No production access. Pure simulation — your infra is untouched."}
+                    </p>
+                  </div>
+                )}
               </div>
             </>
           )}

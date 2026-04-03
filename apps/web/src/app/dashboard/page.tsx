@@ -284,6 +284,49 @@ export default function DashboardPage() {
         </div>
       )}
 
+      {/* UX-02: 初回ユーザー向け — シミュレーション開始への大きな導線 */}
+      {!loading && runs.length === 0 && (
+        <Link href="/simulate" className="block mb-6">
+          <div className="group p-6 rounded-2xl border-2 border-dashed border-[#FFD700]/30 bg-[#FFD700]/[0.03] hover:border-[#FFD700]/60 hover:bg-[#FFD700]/[0.06] transition-all text-center cursor-pointer">
+            <div className="w-14 h-14 rounded-2xl bg-[#FFD700]/10 border border-[#FFD700]/20 flex items-center justify-center mx-auto mb-4 group-hover:bg-[#FFD700]/20 transition-all">
+              <Zap size={24} className="text-[#FFD700]" />
+            </div>
+            <h3 className="text-lg font-bold mb-1">
+              {locale === "ja" ? "最初のシミュレーションを実行する" : "Run Your First Simulation"}
+            </h3>
+            <p className="text-sm text-[#94a3b8] mb-3">
+              {locale === "ja"
+                ? "サンプルトポロジーを選んで、今すぐ2,000+シナリオを実行。本番環境には一切触れません。"
+                : "Pick a sample topology and run 2,000+ chaos scenarios now — no production access required."}
+            </p>
+            <span className="inline-flex items-center gap-2 text-sm font-semibold text-[#FFD700]">
+              {locale === "ja" ? "シミュレーションを開始" : "Start Simulation"}
+              <ArrowRight size={14} />
+            </span>
+          </div>
+        </Link>
+      )}
+
+      {/* UX-03: オンボーディング後の次ステップ — runs完了後に表示 */}
+      {!loading && runs.length === 1 && (
+        <div className="mb-6 p-5 rounded-2xl border border-emerald-500/20 bg-emerald-500/[0.04]">
+          <p className="text-sm font-bold text-emerald-300 mb-2">
+            {locale === "ja" ? "シミュレーション完了！次のステップ" : "Great first simulation! Next steps:"}
+          </p>
+          <div className="flex flex-wrap gap-3">
+            <Link href="/reports" className="text-xs font-semibold text-emerald-400 border border-emerald-500/20 px-3 py-1.5 rounded-lg hover:bg-emerald-500/10 transition-colors">
+              {locale === "ja" ? "レポートを見る →" : "View Full Report →"}
+            </Link>
+            <Link href="/simulate" className="text-xs font-semibold text-emerald-400 border border-emerald-500/20 px-3 py-1.5 rounded-lg hover:bg-emerald-500/10 transition-colors">
+              {locale === "ja" ? "別のトポロジーで試す →" : "Try Another Topology →"}
+            </Link>
+            <Link href="/pricing" className="text-xs font-semibold text-emerald-400 border border-emerald-500/20 px-3 py-1.5 rounded-lg hover:bg-emerald-500/10 transition-colors">
+              {locale === "ja" ? "Proプランで制限解除 →" : "Unlock Pro Plan →"}
+            </Link>
+          </div>
+        </div>
+      )}
+
       {/* Getting Started Checklist */}
       <GettingStartedChecklist hasRun={runs.length > 0} />
 
