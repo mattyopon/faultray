@@ -102,7 +102,7 @@ function levelBg(level: LogLevel): string {
  * ============================================================ */
 
 export default function LogsPage() {
-  useLocale();
+  const locale = useLocale();
 
   const [searchQuery, setSearchQuery]     = useState("");
   const [filterLevel, setFilterLevel]     = useState<string>("all");
@@ -221,7 +221,9 @@ export default function LogsPage() {
       <Card>
         <div className="flex items-center justify-between mb-4">
           <h3 className="text-sm font-semibold text-[#94a3b8]">
-            Showing {filtered.length} of {DEMO_LOGS.length} entries
+            {locale === "ja"
+              ? `${filtered.length} / ${DEMO_LOGS.length} 件を表示中`
+              : `Showing ${filtered.length} of ${DEMO_LOGS.length} entries`}
           </h3>
           <div className="flex gap-2">
             {ALL_LEVELS.map((level) => (
@@ -277,7 +279,10 @@ export default function LogsPage() {
 
       {/* Time Range hint */}
       <p className="text-xs text-[#475569] mt-4 text-center">
-        Showing last 5 minutes · Auto-refresh every 10s · Use query syntax: <span className="text-[#64748b]">level:ERROR service:db timeout</span>
+        {locale === "ja"
+          ? <>直近5分を表示中 · 10秒ごとに自動更新 · クエリ構文: <span className="text-[#64748b]">level:ERROR service:db timeout</span></>
+          : <>Showing last 5 minutes · Auto-refresh every 10s · Use query syntax: <span className="text-[#64748b]">level:ERROR service:db timeout</span></>
+        }
       </p>
 
       {/* FLOW-11: Cross-links to related observability pages */}

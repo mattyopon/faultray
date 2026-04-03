@@ -1472,6 +1472,7 @@ function SimulatePageInner() {
                       // MOBILE-02: inputmode="none" prevents mobile keyboard on YAML editor
                       // On mobile, recommend using the sample topology selector instead
                       className={`w-full h-[350px] px-4 py-3 bg-[#0d1117] border rounded-xl text-sm font-mono text-[#e2e8f0] placeholder-[#3a4558] focus:outline-none resize-y transition-colors ${yamlError ? "border-red-500/50 focus:border-red-500" : "border-[#1e293b] focus:border-[#FFD700]/50"}`}
+                      aria-label={locale === "ja" ? "YAMLトポロジー定義" : "YAML topology definition"}
                       spellCheck={false}
                       maxLength={100000}
                     />

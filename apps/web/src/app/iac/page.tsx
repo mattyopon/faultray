@@ -424,6 +424,7 @@ export default function IaCPage() {
                 <textarea
                   className="w-full h-32 bg-[#060b16] border border-[#1e293b] rounded-lg p-3 text-xs text-[#94a3b8] font-mono resize-none focus:outline-none focus:border-[#334155]"
                   placeholder={t.pastePlaceholder}
+                  aria-label={t.pastePlaceholder}
                   value={pastedYaml}
                   maxLength={50000}
                   onChange={(e) => setPastedYaml(e.target.value)}
