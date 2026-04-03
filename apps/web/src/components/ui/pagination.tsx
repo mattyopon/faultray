@@ -3,6 +3,7 @@
 // TABLE-01: 全ページのページネーション欠如を解消する共通コンポーネント
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useLocale } from "@/lib/useLocale";
 
 interface PaginationProps {
   currentPage: number;
@@ -12,6 +13,7 @@ interface PaginationProps {
 }
 
 export function Pagination({ currentPage, totalPages, onPageChange, className }: PaginationProps) {
+  const locale = useLocale();
   if (totalPages <= 1) return null;
 
   const pages = Array.from({ length: totalPages }, (_, i) => i + 1);
@@ -25,11 +27,11 @@ export function Pagination({ currentPage, totalPages, onPageChange, className }:
         : [1, -1, currentPage - 1, currentPage, currentPage + 1, -2, totalPages];
 
   return (
-    <div className={cn("flex items-center justify-center gap-1 mt-6", className)} role="navigation" aria-label="Pagination">
+    <div className={cn("flex items-center justify-center gap-1 mt-6", className)} role="navigation" aria-label={locale === "ja" ? "ページネーション" : "Pagination"}>
       <button
         onClick={() => onPageChange(currentPage - 1)}
         disabled={currentPage === 1}
-        aria-label="Previous page"
+        aria-label={locale === "ja" ? "前のページ" : "Previous page"}
         className="p-2 rounded-lg text-[#64748b] hover:text-white hover:bg-white/5 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
       >
         <ChevronLeft size={16} />
@@ -42,7 +44,7 @@ export function Pagination({ currentPage, totalPages, onPageChange, className }:
           <button
             key={page}
             onClick={() => onPageChange(page)}
-            aria-label={`Page ${page}`}
+            aria-label={locale === "ja" ? `${page}ページ` : `Page ${page}`}
             aria-current={page === currentPage ? "page" : undefined}
             className={cn(
               "min-w-[36px] h-9 px-2 rounded-lg text-sm transition-colors",
@@ -59,7 +61,7 @@ export function Pagination({ currentPage, totalPages, onPageChange, className }:
       <button
         onClick={() => onPageChange(currentPage + 1)}
         disabled={currentPage === totalPages}
-        aria-label="Next page"
+        aria-label={locale === "ja" ? "次のページ" : "Next page"}
         className="p-2 rounded-lg text-[#64748b] hover:text-white hover:bg-white/5 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
       >
         <ChevronRight size={16} />
