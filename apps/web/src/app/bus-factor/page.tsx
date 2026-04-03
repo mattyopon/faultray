@@ -91,7 +91,7 @@ export default function BusFactorPage() {
   const sorted = [...data.people].sort((a, b) => b.risk_score - a.risk_score);
 
   return (
-    <div className="max-w-6xl mx-auto px-6 py-10">
+    <div className="max-w-[1200px] mx-auto px-6 py-10">
       <div className="mb-10">
         <h1 className="text-2xl font-bold mb-1 flex items-center gap-3">
           <Users size={24} className="text-[#FFD700]" />

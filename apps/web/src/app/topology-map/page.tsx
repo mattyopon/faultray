@@ -106,7 +106,7 @@ export default function TopologyMapPage() {
   const viewBox = `0 0 800 560`;
 
   return (
-    <div className="max-w-6xl mx-auto px-6 py-10">
+    <div className="max-w-[1200px] mx-auto px-6 py-10">
       <div className="mb-8">
         <h1 className="text-2xl font-bold mb-1 flex items-center gap-3">
           <Network size={24} className="text-[#FFD700]" />
