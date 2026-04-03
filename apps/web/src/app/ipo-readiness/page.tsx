@@ -285,7 +285,7 @@ export default function IpoReadinessPage() {
   const progressWidth = `${overall}%`;
 
   return (
-    <main className="min-h-screen bg-[#0a0e1a] text-white pt-20 pb-12">
+    <div className="min-h-screen pt-4 pb-12">
       <div className="w-full px-6 py-10">
         {/* Header */}
         <div className="mb-8">
@@ -477,6 +477,6 @@ export default function IpoReadinessPage() {
           )}
         </Card>
       </div>
-    </main>
+    </div>
   );
 }

@@ -351,7 +351,7 @@ export default function IaCPage() {
   const totalScore = PHASES.reduce((acc, p) => acc + parseFloat(p.scoreGain), 0);
 
   return (
-    <main className="min-h-screen bg-[#0a0e1a] text-white pt-20 pb-12">
+    <div className="min-h-screen pt-4 pb-12">
       <div className="w-full px-4 sm:px-6">
         {/* Header */}
         <div className="mb-8">
@@ -767,6 +767,6 @@ export default function IaCPage() {
           </div>
         </div>
       </div>
-    </main>
+    </div>
   );
 }

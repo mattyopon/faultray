@@ -188,7 +188,7 @@ export default function TemplatesPage() {
   const _previewTemplate = TEMPLATES.find((tmpl) => tmpl.id === previewId);
 
   return (
-    <main className="min-h-screen bg-[#0a0e1a] text-white pt-20 pb-12">
+    <div className="min-h-screen pt-4 pb-12">
       <div className="w-full px-6 py-10">
         {/* Header */}
         <div className="mb-8">
@@ -339,6 +339,6 @@ export default function TemplatesPage() {
           </Link>
         </div>
       </div>
-    </main>
+    </div>
   );
 }
