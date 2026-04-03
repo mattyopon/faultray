@@ -1067,9 +1067,11 @@ export default async function LangHomePage({
                     href="https://github.com/mattyopon/faultray/blob/main/LICENSE"
                     target="_blank"
                     className="text-sm text-[#64748b] hover:text-white transition-colors"
+                    title="BSL 1.1: ソースコードは公開されています。非商用利用は無料。商用利用にはサブスクリプションが必要です。"
                   >
-                    BSL 1.1 (Business Source License)
+                    BSL 1.1 ライセンス
                   </Link>
+                  <span className="block text-xs text-[#475569] mt-0.5">ソース公開型・非商用利用は無料</span>
                 </li>
                 <li>
                   <Link href="/contact" className="text-sm text-[#64748b] hover:text-white transition-colors">

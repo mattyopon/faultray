@@ -1042,9 +1042,11 @@ export default async function LangHomePage({
                     href="https://github.com/mattyopon/faultray/blob/main/LICENSE"
                     target="_blank"
                     className="text-sm text-[#64748b] hover:text-white transition-colors"
+                    title="BSL 1.1: Source is publicly available. Free for non-commercial use; commercial use requires a subscription."
                   >
-                    BSL 1.1 (Business Source License)
+                    BSL 1.1 License
                   </Link>
+                  <span className="block text-xs text-[#475569] mt-0.5">Source-available · Free for non-commercial use</span>
                 </li>
                 <li>
                   <Link href="/contact" className="text-sm text-[#64748b] hover:text-white transition-colors">

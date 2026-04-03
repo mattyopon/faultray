@@ -493,19 +493,21 @@ export const api = {
       token,
     }),
 
+  // FETCHPAT-05: cacheTtl=30000 (30s) で重複呼び出しをページ内でデデュープ
   getRuns: (token?: string, limit = 50) =>
-    apiFetch<{ runs: SimulationRun[] }>(`/api/v1/runs?limit=${limit}`, { token }),
+    apiFetch<{ runs: SimulationRun[] }>(`/api/v1/runs?limit=${limit}`, { token, cacheTtl: 30_000 }),
 
   getRun: (id: number, token?: string) =>
-    apiFetch<SimulationRun & SimulationResult>(`/api/v1/runs/${id}`, { token }),
+    apiFetch<SimulationRun & SimulationResult>(`/api/v1/runs/${id}`, { token, cacheTtl: 30_000 }),
 
+  // APIRESP-08: より具体的な型（GraphDataに近い構造）を返す
   getGraphData: (token?: string) =>
-    apiFetch<Record<string, unknown>>("/api/v1/graph-data", { token }),
+    apiFetch<{ nodes?: unknown[]; edges?: unknown[]; [key: string]: unknown }>("/api/v1/graph-data", { token, cacheTtl: 30_000 }),
 
   getScoreHistory: (token?: string, limit = 30) =>
     apiFetch<{ history: Array<{ date: string; score: number }> }>(
       `/api/v1/score-history?limit=${limit}`,
-      { token }
+      { token, cacheTtl: 30_000 }
     ),
 
   getCompliance: (framework: string, token?: string) =>

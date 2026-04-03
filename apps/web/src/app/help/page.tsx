@@ -121,6 +121,17 @@ export default function HelpPage() {
               <p className="text-sm text-[#94a3b8]">{t.basicStep3}</p>
             </div>
           </div>
+          {/* NAV-DETAIL-09: Pro tips for returning users */}
+          {(t as Record<string, string>).proTips && (
+            <div className="border-t border-[#1e293b] pt-4">
+              <h3 className="text-sm font-semibold text-[#e2e8f0] mb-2">{(t as Record<string, string>).proTips}</h3>
+              <div className="space-y-2">
+                <p className="text-sm text-[#94a3b8]">{(t as Record<string, string>).proTip1}</p>
+                <p className="text-sm text-[#94a3b8]">{(t as Record<string, string>).proTip2}</p>
+                <p className="text-sm text-[#94a3b8]">{(t as Record<string, string>).proTip3}</p>
+              </div>
+            </div>
+          )}
         </div>
       </Section>
 

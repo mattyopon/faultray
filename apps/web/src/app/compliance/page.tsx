@@ -5,7 +5,8 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { useState } from "react";
 import { api } from "@/lib/api";
-import { ShieldCheck, Loader2, CheckCircle2, XCircle, AlertTriangle, ChevronDown, ChevronRight, FileText, ArrowRight } from "lucide-react";
+import { ShieldCheck, Loader2, CheckCircle2, XCircle, AlertTriangle, ChevronDown, ChevronRight, FileText, ArrowRight, BookOpen, Wrench } from "lucide-react";
+import Link from "next/link";
 import { useLocale } from "@/lib/useLocale";
 import type { Locale } from "@/i18n/config";
 import { appDict } from "@/i18n/app-dict";
@@ -322,6 +323,19 @@ export default function CompliancePage() {
           ))}
         </div>
       </Card>
+
+      {/* FLOW-12: 改善提案の統一導線 */}
+      <div className="flex items-center gap-3 mt-6 pt-4 border-t border-[#1e293b]">
+        <span className="text-xs text-[#475569]">{locale === "ja" ? "関連ページ:" : "Related:"}</span>
+        <Link href="/reports" className="flex items-center gap-1.5 text-xs text-[#64748b] hover:text-[#94a3b8] transition-colors">
+          <BookOpen size={12} />
+          {locale === "ja" ? "エグゼクティブレポート" : "Executive Report"}
+        </Link>
+        <Link href="/remediation" className="flex items-center gap-1.5 text-xs text-[#64748b] hover:text-[#94a3b8] transition-colors">
+          <Wrench size={12} />
+          {locale === "ja" ? "改善アクション" : "Remediation"}
+        </Link>
+      </div>
     </div>
   );
 }

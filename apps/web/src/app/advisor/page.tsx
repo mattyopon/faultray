@@ -168,19 +168,31 @@ export default function AdvisorPage() {
         }}
         className="flex gap-3"
       >
-        <input
-          ref={inputRef}
-          type="text"
-          value={input}
-          onChange={(e) => setInput(e.target.value)}
-          placeholder={ta.placeholder}
-          className="flex-1 px-4 py-3 bg-[#0d1117] border border-[#1e293b] rounded-xl text-sm text-[#e2e8f0] placeholder-[#3a4558] focus:border-[#FFD700]/50 focus:outline-none"
-          disabled={loading}
-        />
-        <Button type="submit" disabled={!input.trim() || loading}>
-          <Send size={16} />
+        <div className="flex-1 relative">
+          <input
+            ref={inputRef}
+            type="text"
+            value={input}
+            onChange={(e) => setInput(e.target.value)}
+            placeholder={ta.placeholder}
+            className="w-full px-4 py-3 bg-[#0d1117] border border-[#1e293b] rounded-xl text-sm text-[#e2e8f0] placeholder-[#3a4558] focus:border-[#FFD700]/50 focus:outline-none pr-16"
+            disabled={loading}
+            maxLength={500}
+            aria-label={ta.placeholder}
+          />
+          {input.length > 400 && (
+            <span className={`absolute right-3 top-1/2 -translate-y-1/2 text-xs ${input.length >= 490 ? "text-red-400" : "text-[#64748b]"}`}>
+              {input.length}/500
+            </span>
+          )}
+        </div>
+        <Button type="submit" disabled={!input.trim() || loading} aria-label="Send message">
+          {loading ? <Loader2 size={16} className="animate-spin" /> : <Send size={16} />}
         </Button>
       </form>
+      <p className="text-xs text-[#475569] mt-2 text-right">
+        {locale === "ja" ? "Enter で送信" : "Press Enter to send"}
+      </p>
     </div>
   );
 }
