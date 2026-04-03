@@ -952,38 +952,56 @@ def _build_discovery_result(report, scan_summary: dict) -> dict:
     }
 
 
+_SAFE_ROLE_ARN_RE = None
+
+def _is_safe_role_arn(arn: str) -> bool:
+    """Validate that a role ARN follows the expected format to prevent injection."""
+    import re
+    global _SAFE_ROLE_ARN_RE
+    if _SAFE_ROLE_ARN_RE is None:
+        _SAFE_ROLE_ARN_RE = re.compile(
+            r"^arn:aws(?:-cn|-us-gov)?:iam::\d{12}:role/[\w+=,.@/-]{1,64}$"
+        )
+    return bool(_SAFE_ROLE_ARN_RE.match(arn))
+
+
 def _run_aws_scan(data: dict) -> dict:
-    """Scan AWS infrastructure and run simulation."""
+    """Scan AWS infrastructure and run simulation.
+
+    APIVULN-01 fix: long-lived AWS credentials must NOT be passed in the
+    request body.  Only role_arn is supported for cross-account access.
+    For same-account access the instance/pod IAM role is used automatically.
+
+    If a caller provides access_key_id/secret_access_key we reject the
+    request with a clear error message pointing to the secure alternative.
+    """
     import boto3
     from faultray.discovery.aws_scanner import AWSScanner
     from faultray.simulator.engine import SimulationEngine
 
     region = data.get("region", "us-east-1")
     role_arn = data.get("role_arn")
-    access_key_id = data.get("access_key_id")
-    secret_access_key = data.get("secret_access_key")
+
+    # APIVULN-01: Reject long-lived credentials in request body
+    if data.get("access_key_id") or data.get("secret_access_key"):
+        raise ValueError(
+            "Passing AWS access keys in the request body is not supported for security reasons. "
+            "Use a role_arn for cross-account access, or attach an IAM role to the FaultRay "
+            "deployment for same-account access."
+        )
 
     if role_arn:
-        sts = boto3.client(
-            "sts",
-            region_name=region,
-            **(
-                {"aws_access_key_id": access_key_id, "aws_secret_access_key": secret_access_key}
-                if access_key_id and secret_access_key
-                else {}
-            ),
-        )
+        # Validate ARN format before use
+        if not _is_safe_role_arn(role_arn):
+            raise ValueError(f"Invalid role_arn format: {role_arn!r}")
+
+        sts = boto3.client("sts", region_name=region)
         assumed = sts.assume_role(RoleArn=role_arn, RoleSessionName="faultray-scan", DurationSeconds=900)
         creds = assumed["Credentials"]
         os.environ["AWS_ACCESS_KEY_ID"] = creds["AccessKeyId"]
         os.environ["AWS_SECRET_ACCESS_KEY"] = creds["SecretAccessKey"]
         os.environ["AWS_SESSION_TOKEN"] = creds["SessionToken"]
-    elif access_key_id and secret_access_key:
-        os.environ["AWS_ACCESS_KEY_ID"] = access_key_id
-        os.environ["AWS_SECRET_ACCESS_KEY"] = secret_access_key
-        os.environ.pop("AWS_SESSION_TOKEN", None)
-    else:
-        raise ValueError("Provide either access_key_id + secret_access_key, or role_arn")
+    # else: boto3 will use the ambient IAM role / instance profile / env vars
 
     try:
         scanner = AWSScanner(region=region)
@@ -1331,6 +1349,8 @@ class handler(BaseHTTPRequestHandler):
 
     def do_GET(self):
         """Handle GET requests — only analysis/score-explain is supported via GET."""
+        if not self._authenticate():
+            return
         try:
             parsed = urlparse(self.path)
             path = parsed.path.rstrip("/")
@@ -1348,6 +1368,9 @@ class handler(BaseHTTPRequestHandler):
             self._error(500, f"Engine GET error: {e}")
 
     def do_POST(self):
+        # ENG-02 fix: authenticate before processing any request
+        if not self._authenticate():
+            return
         try:
             content_length = int(self.headers.get("Content-Length", 0))
             raw = self.rfile.read(content_length)
@@ -1373,6 +1396,29 @@ class handler(BaseHTTPRequestHandler):
     # Simulate
     # -----------------------------------------------------------------------
 
+    # PYVAL-01/02: Hard limits to prevent DoS via oversized inputs
+    _MAX_YAML_BYTES = 512 * 1024      # 512 KB
+    _MAX_YAML_COMPONENTS = 200         # 200 components per topology
+
+    def _validate_topology_yaml(self, topology_yaml: str) -> str | None:
+        """Return an error message if the YAML fails size/component checks, else None."""
+        # PYVAL-01: size limit
+        if len(topology_yaml.encode("utf-8")) > self._MAX_YAML_BYTES:
+            return (
+                f"topology_yaml exceeds maximum size of {self._MAX_YAML_BYTES // 1024} KB. "
+                "Please reduce the number of components or split into multiple topologies."
+            )
+        # PYVAL-02: component count limit — parse minimally to count
+        import re
+        component_ids = re.findall(r"^\s+-\s+id:", topology_yaml, re.MULTILINE)
+        if len(component_ids) > self._MAX_YAML_COMPONENTS:
+            return (
+                f"topology_yaml contains {len(component_ids)} components, "
+                f"which exceeds the maximum of {self._MAX_YAML_COMPONENTS}. "
+                "Please split into smaller topologies."
+            )
+        return None
+
     def _handle_simulate(self, data: dict):
         try:
             if data.get("action") == "save-run":
@@ -1392,6 +1438,13 @@ class handler(BaseHTTPRequestHandler):
                     f"Available samples: {list(SAMPLE_TOPOLOGIES.keys())}",
                 )
                 return
+
+            # PYVAL-01/02: validate input size before processing
+            if isinstance(topology_yaml, str):
+                validation_error = self._validate_topology_yaml(topology_yaml)
+                if validation_error:
+                    self._error(413, validation_error)
+                    return
 
             result = _run_simulation(topology_yaml)
 
@@ -1524,4 +1577,61 @@ class handler(BaseHTTPRequestHandler):
         self._json(status, {"error": {"message": message}})
 
     def _cors_headers(self):
-        self.send_header("Access-Control-Allow-Origin", "*")
+        # CORS-DETAIL-01 fix: restrict to the configured app origin instead of wildcard.
+        allowed_origin = os.environ.get("FAULTRAY_ALLOWED_ORIGIN", "")
+        if allowed_origin:
+            self.send_header("Access-Control-Allow-Origin", allowed_origin)
+        else:
+            # Development fallback — only if no explicit origin is configured
+            self.send_header("Access-Control-Allow-Origin", "*")
+
+    def _authenticate(self) -> bool:
+        """ENG-02 fix: require a valid Supabase JWT or API key on all routes.
+
+        Accepts either:
+          Authorization: Bearer <supabase_jwt>
+          X-API-Key: <faultray_api_key>
+
+        Returns True if authenticated, False (and sends 401) otherwise.
+        """
+        # 1. Check X-API-Key header (agent/CI access)
+        api_key_header = self.headers.get("X-API-Key", "")
+        internal_secret = os.environ.get("FAULTRAY_ENGINE_SECRET", "")
+        if internal_secret and api_key_header == internal_secret:
+            return True
+
+        # 2. Check Authorization: Bearer <jwt>
+        auth_header = self.headers.get("Authorization", "")
+        if auth_header.startswith("Bearer "):
+            token = auth_header[len("Bearer "):].strip()
+            if self._verify_supabase_jwt(token):
+                return True
+
+        # 3. If Supabase is not configured, allow (dev/test mode only)
+        supabase_url = os.environ.get("NEXT_PUBLIC_SUPABASE_URL", "")
+        supabase_key = os.environ.get("SUPABASE_SERVICE_ROLE_KEY", "")
+        if not supabase_url or not supabase_key:
+            return True
+
+        self._json(401, {"error": {"message": "Authentication required"}})
+        return False
+
+    def _verify_supabase_jwt(self, token: str) -> bool:
+        """Verify a Supabase JWT by calling the Supabase auth/v1/user endpoint."""
+        supabase_url = os.environ.get("NEXT_PUBLIC_SUPABASE_URL", "")
+        anon_key = os.environ.get("NEXT_PUBLIC_SUPABASE_ANON_KEY", "")
+        if not supabase_url or not anon_key or not token:
+            return False
+        import urllib.request
+        try:
+            req = urllib.request.Request(
+                f"{supabase_url}/auth/v1/user",
+                headers={
+                    "Authorization": f"Bearer {token}",
+                    "apikey": anon_key,
+                },
+            )
+            with urllib.request.urlopen(req, timeout=3) as resp:
+                return resp.status == 200
+        except Exception:
+            return False

@@ -79,11 +79,13 @@ export default function BusFactorPage() {
   const t = appDict.busFactor[locale] ?? appDict.busFactor.en;
 
   useEffect(() => {
-    fetch("/api/proxy?path=/api/v1/bus-factor")
+    const controller = new AbortController();
+    fetch("/api/proxy?path=/api/v1/bus-factor", { signal: controller.signal })
       .then((r) => r.json())
       .then((d) => setData(d))
       .catch(() => setData(DEMO_DATA))
       .finally(() => setLoading(false));
+    return () => controller.abort();
   }, []);
 
   const sorted = [...data.people].sort((a, b) => b.risk_score - a.risk_score);

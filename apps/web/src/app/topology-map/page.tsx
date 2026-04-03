@@ -92,11 +92,13 @@ export default function TopologyMapPage() {
   const t = appDict.topologyMap[locale] ?? appDict.topologyMap.en;
 
   useEffect(() => {
-    fetch("/api/proxy?path=/api/v1/topology-map")
+    const controller = new AbortController();
+    fetch("/api/proxy?path=/api/v1/topology-map", { signal: controller.signal })
       .then((r) => r.json())
       .then((d) => setData(d))
       .catch(() => setData(DEMO_DATA))
       .finally(() => setLoading(false));
+    return () => controller.abort();
   }, []);
 
   const getNodeById = useCallback((id: string) => data.nodes.find((n) => n.id === id), [data.nodes]);

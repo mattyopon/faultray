@@ -1047,6 +1047,11 @@ export default async function LangHomePage({
                     DPA
                   </Link>
                 </li>
+                <li>
+                  <Link href="/status" className="text-sm text-[#64748b] hover:text-white transition-colors">
+                    System Status
+                  </Link>
+                </li>
               </ul>
               <div className="mt-6">
                 <LanguageSwitcher />

@@ -59,12 +59,13 @@ export default function SettingsPage() {
   const [apiKeys, setApiKeys] = useState<Array<{ key: string; created: string }>>([]);
   const [copiedKey, setCopiedKey] = useState<string | null>(null);
 
-  // Notifications
+  // Notifications — persisted to localStorage (SAAS-04 / RETAIN-02)
   const [notifications, setNotifications] = useState({
     simulationCompleted: true,
     scoreDegradation: true,
     weeklySummary: false,
   });
+  const [notificationSaved, setNotificationSaved] = useState(false);
 
   // Admin plan switch
   const [isAdmin, setIsAdmin] = useState(false);
@@ -202,6 +203,20 @@ export default function SettingsPage() {
     } catch {
       // ignore
     }
+    // Restore notification preferences (SAAS-04)
+    try {
+      const notifRaw = localStorage.getItem("faultray_notifications");
+      if (notifRaw) {
+        const parsed = JSON.parse(notifRaw);
+        setNotifications({
+          simulationCompleted: parsed.simulationCompleted ?? true,
+          scoreDegradation: parsed.scoreDegradation ?? true,
+          weeklySummary: parsed.weeklySummary ?? false,
+        });
+      }
+    } catch {
+      // ignore
+    }
   }, []);
 
   function handleSaveIntegrations() {
@@ -241,7 +256,14 @@ export default function SettingsPage() {
   }
 
   function toggleNotification(key: keyof typeof notifications) {
-    setNotifications((prev) => ({ ...prev, [key]: !prev[key] }));
+    setNotifications((prev) => {
+      const next = { ...prev, [key]: !prev[key] };
+      // Persist to localStorage so the setting survives page reloads (SAAS-04)
+      try { localStorage.setItem("faultray_notifications", JSON.stringify(next)); } catch { /* ignore */ }
+      setNotificationSaved(true);
+      setTimeout(() => setNotificationSaved(false), 2000);
+      return next;
+    });
   }
 
   return (
@@ -512,9 +534,16 @@ export default function SettingsPage() {
 
       {/* Notifications */}
       <Card className="mb-6">
-        <div className="flex items-center gap-3 mb-6">
-          <Bell size={20} className="text-[#FFD700]" />
-          <h2 className="text-lg font-bold">{t.notifications}</h2>
+        <div className="flex items-center justify-between mb-6">
+          <div className="flex items-center gap-3">
+            <Bell size={20} className="text-[#FFD700]" />
+            <h2 className="text-lg font-bold">{t.notifications}</h2>
+          </div>
+          {notificationSaved && (
+            <span className="text-xs text-emerald-400 font-medium flex items-center gap-1">
+              <Check size={12} /> {locale === "ja" ? "保存しました" : "Saved"}
+            </span>
+          )}
         </div>
         <div className="space-y-4">
           {([
@@ -615,9 +644,25 @@ export default function SettingsPage() {
             </div>
             <p className="text-xs text-[#94a3b8] mb-4">{t.deleteConfirm}</p>
             <div className="flex gap-3">
-              <Button variant="danger" size="sm" onClick={() => {
-                alert("Account deletion is not yet implemented. Please contact support.");
-                setShowDeleteConfirm(false);
+              <Button variant="danger" size="sm" onClick={async () => {
+                try {
+                  const res = await fetch("/api/account/delete", {
+                    method: "DELETE",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ confirm: true }),
+                  });
+                  if (res.ok) {
+                    // Session is gone — redirect to home
+                    router.push("/");
+                  } else {
+                    const data = await res.json().catch(() => ({})) as { error?: string };
+                    alert(data.error || "Account deletion failed. Please contact support.");
+                    setShowDeleteConfirm(false);
+                  }
+                } catch {
+                  alert("Network error. Please try again or contact support.");
+                  setShowDeleteConfirm(false);
+                }
               }}>
                 {t.yesDelete}
               </Button>

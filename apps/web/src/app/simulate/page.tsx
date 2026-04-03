@@ -817,14 +817,40 @@ function SimulatePageInner() {
     }
   }, [selectedProjectId, projects]);
 
+  // DATA-02: YAML入力サニタイズ — サイズ・危険パターン検証
+  const MAX_YAML_BYTES = 512 * 1024; // 512 KB limit
+
+  function sanitizeYamlInput(raw: string): { ok: boolean; text: string; error?: string } {
+    if (new TextEncoder().encode(raw).length > MAX_YAML_BYTES) {
+      return { ok: false, text: "", error: "File too large (max 512 KB). Please reduce the topology size." };
+    }
+    // Strip null bytes and non-printable control characters (except tab/newline/CR)
+    const cleaned = raw.replace(/[\x00-\x08\x0b\x0c\x0e-\x1f\x7f]/g, "");
+    // Warn on YAML anchors that could cause billion-laughs DoS — strip them
+    if (/&\w+\s*\n/.test(cleaned) && (cleaned.match(/\*\w+/g)?.length ?? 0) > 100) {
+      return { ok: false, text: "", error: "Detected excessive YAML anchor expansion. Please simplify the topology." };
+    }
+    return { ok: true, text: cleaned };
+  }
+
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
+    // DATA-02: reject oversized files early
+    if (file.size > MAX_YAML_BYTES) {
+      setError("File too large (max 512 KB). Please reduce the topology size.");
+      return;
+    }
     setUploadedFileName(file.name);
     const reader = new FileReader();
     reader.onload = (ev) => {
       const text = ev.target?.result as string;
-      setYamlText(text);
+      const { ok, text: cleaned, error: sanitizeError } = sanitizeYamlInput(text);
+      if (!ok) {
+        setError(sanitizeError ?? "Invalid YAML input.");
+        return;
+      }
+      setYamlText(cleaned);
     };
     reader.readAsText(file);
   };
@@ -906,16 +932,13 @@ function SimulatePageInner() {
         }
       }
     } catch (err) {
-      if (err instanceof Error && !err.message.includes("fetch")) {
-        setError(err.message);
-      } else {
-        setResult(DEMO_RESULT);
-        localStorage.setItem("faultray_last_simulation", JSON.stringify({
-          ...DEMO_RESULT,
-          timestamp: new Date().toISOString(),
-          source: "demo",
-        }));
-      }
+      // SIM-02 fix: never silently return demo data on fetch failure.
+      // Always surface the error so the user knows results are not real.
+      const message =
+        err instanceof Error
+          ? err.message
+          : "Simulation request failed. Please try again.";
+      setError(message);
     } finally {
       setRunning(false);
     }
@@ -1020,18 +1043,20 @@ function SimulatePageInner() {
                     try {
                       const simPayload: Record<string, string> = {};
                       if (selectedProjectId) simPayload.project_id = selectedProjectId;
-                      let res;
-                      try {
-                        res = await api.simulate({ sample: "web-saas", ...simPayload });
-                      } catch {
-                        res = DEMO_RESULT;
-                      }
+                      const res = await api.simulate({ sample: "web-saas", ...simPayload });
                       setResult(res);
                       localStorage.setItem("faultray_last_simulation", JSON.stringify({
                         ...res,
                         timestamp: new Date().toISOString(),
                         source: "web-saas",
                       }));
+                    } catch (err) {
+                      // SIM-02 fix: surface error rather than silently returning demo data
+                      const message =
+                        err instanceof Error
+                          ? err.message
+                          : "Demo simulation failed. Please try again.";
+                      setError(message);
                     } finally {
                       setRunning(false);
                     }
@@ -1176,12 +1201,12 @@ function SimulatePageInner() {
                   {running ? (
                     <>
                       <Loader2 size={18} className="animate-spin" />
-                      Running 2,000+ Scenarios...
+                      {locale === "ja" ? "2,000+シナリオ実行中..." : "Running 2,000+ Scenarios..."}
                     </>
                   ) : (
                     <>
                       <Zap size={18} />
-                      Run Simulation
+                      {locale === "ja" ? "シミュレーション実行" : "Run Simulation"}
                     </>
                   )}
                 </Button>

@@ -111,8 +111,15 @@ export default function PricingPage() {
       <div className="text-center mb-10">
         <h1 className="text-[clamp(1.75rem,4vw,2.5rem)] font-bold tracking-tight mb-3">Pricing</h1>
         <p className="text-lg text-[#94a3b8]">Start free. Scale as you grow.</p>
-        <div className="mt-4 inline-flex items-center gap-2 px-4 py-2 rounded-full bg-[#FFD700]/10 border border-[#FFD700]/20">
-          <span className="text-sm font-semibold text-[#FFD700]">14-day free trial on Pro</span>
+        <div className="mt-4 flex flex-wrap items-center justify-center gap-3">
+          <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-[#FFD700]/10 border border-[#FFD700]/20">
+            <span className="text-sm font-semibold text-[#FFD700]">14-day free trial on Pro</span>
+          </div>
+          {/* CVR-03: Explicitly state no credit card required */}
+          <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-emerald-500/10 border border-emerald-500/20">
+            <ShieldCheck size={14} className="text-emerald-400" />
+            <span className="text-sm font-semibold text-emerald-400">No credit card required</span>
+          </div>
         </div>
       </div>
 

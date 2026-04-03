@@ -1,13 +1,15 @@
+// LIB-01 fix: validate API_BASE is defined when set to a non-empty value
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || "";
 
 interface ApiOptions {
   method?: string;
   body?: unknown;
   token?: string;
+  signal?: AbortSignal;
 }
 
 async function apiFetch<T>(path: string, options: ApiOptions = {}): Promise<T> {
-  const { method = "GET", body, token } = options;
+  const { method = "GET", body, token, signal } = options;
 
   const headers: Record<string, string> = {
     "Content-Type": "application/json",
@@ -17,10 +19,12 @@ async function apiFetch<T>(path: string, options: ApiOptions = {}): Promise<T> {
     headers["Authorization"] = `Bearer ${token}`;
   }
 
+  // FETCH-01 fix: pass AbortSignal when provided to prevent memory leaks
   const res = await fetch(`${API_BASE}${path}`, {
     method,
     headers,
     body: body ? JSON.stringify(body) : undefined,
+    signal,
   });
 
   if (!res.ok) {

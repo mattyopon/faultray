@@ -1044,13 +1044,40 @@ export default async function LangHomePage({
                 </li>
                 <li>
                   <Link href="/dpa" className="text-sm text-[#64748b] hover:text-white transition-colors">
-                    DPA
+                    DPA（データ処理契約）
+                  </Link>
+                </li>
+                <li>
+                  <Link href="/status" className="text-sm text-[#64748b] hover:text-white transition-colors">
+                    サービス稼働状況
                   </Link>
                 </li>
               </ul>
               <div className="mt-6">
                 <LanguageSwitcher />
               </div>
+            </div>
+          </div>
+
+          {/* JP-04 / JP-05: Data security & Japanese support guarantees */}
+          <div className="pt-6 mb-4 grid sm:grid-cols-3 gap-4">
+            <div className="p-4 rounded-xl border border-[#1e293b] bg-[#111827]">
+              <p className="text-xs font-bold text-[#FFD700] mb-1">データの安全性（JP-04対応）</p>
+              <p className="text-xs text-[#64748b] leading-relaxed">
+                入力されたインフラ情報はシミュレーション処理にのみ使用します。第三者への提供・海外移転は行いません。詳細は<Link href="/privacy" className="text-[#94a3b8] hover:text-white transition-colors">プライバシーポリシー</Link>をご確認ください。
+              </p>
+            </div>
+            <div className="p-4 rounded-xl border border-[#1e293b] bg-[#111827]">
+              <p className="text-xs font-bold text-[#FFD700] mb-1">日本語サポート（JP-05対応）</p>
+              <p className="text-xs text-[#64748b] leading-relaxed">
+                メール・チャットによる日本語サポートを提供しています。Proプランは24時間以内、Businessプランは1時間以内に対応します。
+              </p>
+            </div>
+            <div className="p-4 rounded-xl border border-[#1e293b] bg-[#111827]">
+              <p className="text-xs font-bold text-[#FFD700] mb-1">稟議・導入支援（JP-03対応）</p>
+              <p className="text-xs text-[#64748b] leading-relaxed">
+                稟議書テンプレート・セキュリティチェックシート・PoC支援を無償提供します。<Link href="mailto:sales@faultray.com" className="text-[#94a3b8] hover:text-white transition-colors">sales@faultray.com</Link>までご相談ください。
+              </p>
             </div>
           </div>
 

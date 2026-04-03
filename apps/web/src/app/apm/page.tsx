@@ -41,14 +41,16 @@ export default function ApmPage() {
   const [alertList, setAlertList] = useState<Alert[]>(DEFAULT_ALERTS);
 
   const load = () => {
-    fetch("/api/apm/agents")
+    const controller = new AbortController();
+    fetch("/api/apm/agents", { signal: controller.signal })
       .then((r) => r.json())
       .then((d) => { if (Array.isArray(d?.agents)) setAgentList(d.agents); })
       .catch(() => {});
-    fetch("/api/apm/alerts")
+    fetch("/api/apm/alerts", { signal: controller.signal })
       .then((r) => r.json())
       .then((d) => { if (Array.isArray(d?.alerts)) setAlertList(d.alerts); })
       .catch(() => {});
+    return () => controller.abort();
   };
 
   useEffect(load, []);

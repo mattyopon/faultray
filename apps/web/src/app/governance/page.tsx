@@ -36,7 +36,8 @@ export default function GovernancePage() {
   const [isoScore, setIsoScore] = useState(64);
 
   useEffect(() => {
-    fetch("/api/governance?action=ai-governance")
+    const controller = new AbortController();
+    fetch("/api/governance?action=ai-governance", { signal: controller.signal })
       .then((r) => r.json())
       .then((d) => {
         if (d?.maturity_level) setMaturity(d.maturity_level);
@@ -44,6 +45,7 @@ export default function GovernancePage() {
         if (d?.iso_42001_score) setIsoScore(d.iso_42001_score);
       })
       .catch(() => {});
+    return () => controller.abort();
   }, []);
 
   return (

@@ -79,11 +79,13 @@ export default function ShadowItPage() {
   const t = appDict.shadowIt[locale] ?? appDict.shadowIt.en;
 
   useEffect(() => {
-    fetch("/api/proxy?path=/api/v1/shadow-it")
+    const controller = new AbortController();
+    fetch("/api/proxy?path=/api/v1/shadow-it", { signal: controller.signal })
       .then((r) => r.json())
       .then((d) => setData(d))
       .catch(() => setData(DEMO_DATA))
       .finally(() => setLoading(false));
+    return () => controller.abort();
   }, []);
 
   const filtered = data.components.filter((c) =>

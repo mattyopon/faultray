@@ -177,6 +177,26 @@ export default function ReportsPage() {
           <Button variant="secondary" size="sm" onClick={downloadHtml}>
             <Download size={14} /> HTML
           </Button>
+          {/* JOURNEY-04: Weekly report subscription shortcut */}
+          <Button
+            variant="secondary"
+            size="sm"
+            onClick={() => {
+              try {
+                const notif = JSON.parse(localStorage.getItem("faultray_notifications") ?? "{}");
+                notif.weeklySummary = true;
+                localStorage.setItem("faultray_notifications", JSON.stringify(notif));
+                alert(locale === "ja"
+                  ? "週次レポートのメール通知を有効にしました。設定 → 通知 で変更できます。"
+                  : "Weekly report emails enabled. Manage in Settings → Notifications.");
+              } catch {
+                // ignore
+              }
+            }}
+          >
+            <Download size={14} />
+            {locale === "ja" ? "週次通知を有効化" : "Enable Weekly Email"}
+          </Button>
         </div>
       </div>
 

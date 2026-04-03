@@ -81,11 +81,13 @@ export default function SlaBudgetPage() {
   const t = appDict.slaBudget[locale] ?? appDict.slaBudget.en;
 
   useEffect(() => {
-    fetch("/api/proxy?path=/api/v1/sla-budget")
+    const controller = new AbortController();
+    fetch("/api/proxy?path=/api/v1/sla-budget", { signal: controller.signal })
       .then((r) => r.json())
       .then((d) => setData(d))
       .catch(() => setData(DEMO_DATA))
       .finally(() => setLoading(false));
+    return () => controller.abort();
   }, []);
 
   const tierOrder: Record<string, number> = { "Tier 0 - Critical": 0, "Tier 1 - High": 1, "Tier 2 - Standard": 2, "Tier 3 - Best Effort": 3 };

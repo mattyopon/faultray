@@ -71,11 +71,13 @@ export default function ExternalImpactPage() {
   const t = appDict.externalImpact[locale] ?? appDict.externalImpact.en;
 
   useEffect(() => {
-    fetch("/api/proxy?path=/api/v1/external-impact")
+    const controller = new AbortController();
+    fetch("/api/proxy?path=/api/v1/external-impact", { signal: controller.signal })
       .then((r) => r.json())
       .then((d) => setData(d))
       .catch(() => setData(DEMO_DATA))
       .finally(() => setLoading(false));
+    return () => controller.abort();
   }, []);
 
   const riskOrder = { critical: 4, high: 3, medium: 2, low: 1 };

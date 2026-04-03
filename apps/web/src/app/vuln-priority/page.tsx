@@ -74,11 +74,13 @@ export default function VulnPriorityPage() {
   const t = appDict.vulnPriority[locale] ?? appDict.vulnPriority.en;
 
   useEffect(() => {
-    fetch("/api/proxy?path=/api/v1/vuln-priority")
+    const controller = new AbortController();
+    fetch("/api/proxy?path=/api/v1/vuln-priority", { signal: controller.signal })
       .then((r) => r.json())
       .then((d) => setData(d))
       .catch(() => setData(DEMO_DATA))
       .finally(() => setLoading(false));
+    return () => controller.abort();
   }, []);
 
   return (

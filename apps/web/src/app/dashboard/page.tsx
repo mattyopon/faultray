@@ -185,6 +185,10 @@ export default function DashboardPage() {
     : 0;
   const isTrialActive = trialEndsAt ? new Date(trialEndsAt).getTime() > Date.now() : false;
 
+  // SALES-03 / CVR-04: Pro→Business アップセル — show after 3+ runs
+  const [currentPlan, setCurrentPlan] = useState<string>("free");
+  const showProUpsell = currentPlan === "pro" && runs.length >= 3;
+
   useEffect(() => {
     Promise.all([
       api.getRuns(undefined, 5).then((data) => setRuns(data.runs || [])).catch(() => setRuns([])),
@@ -198,11 +202,12 @@ export default function DashboardPage() {
       const supabase = createClient();
       supabase
         .from("profiles")
-        .select("trial_ends_at")
+        .select("trial_ends_at, plan")
         .eq("id", user.id)
         .maybeSingle()
         .then(({ data }) => {
           if (data?.trial_ends_at) setTrialEndsAt(data.trial_ends_at as string);
+          if (data?.plan) setCurrentPlan(data.plan as string);
         });
     }).catch(() => {/* Supabase not configured */});
   }, [user]);
@@ -214,6 +219,31 @@ export default function DashboardPage() {
   return (
     <div className="max-w-[1200px] mx-auto px-6 py-10">
       <Onboarding />
+
+      {/* SALES-03 / CVR-04: Pro→Business アップセルバナー */}
+      {showProUpsell && !isTrialActive && (
+        <div className="mb-6 px-5 py-4 rounded-xl border border-purple-500/30 bg-purple-500/[0.06] flex items-center justify-between gap-4 flex-wrap">
+          <div className="flex items-center gap-2.5">
+            <TrendingUp size={16} className="text-purple-400 shrink-0" />
+            <div>
+              <span className="text-sm font-semibold text-purple-300">
+                {locale === "ja" ? "Businessプランへアップグレード" : "Ready for Business?"}
+              </span>
+              <span className="block text-xs text-[#94a3b8] mt-0.5">
+                {locale === "ja"
+                  ? "無制限シミュレーション・SSO・専任サポート・保険APIが利用可能です"
+                  : "Unlock unlimited simulations, SSO, dedicated support, and Insurance API"}
+              </span>
+            </div>
+          </div>
+          <Link
+            href="/pricing"
+            className="text-xs font-semibold text-purple-300 border border-purple-500/30 px-3 py-1.5 rounded-lg hover:bg-purple-500/10 transition-colors whitespace-nowrap"
+          >
+            {locale === "ja" ? "プランを見る" : "View Business Plan"}
+          </Link>
+        </div>
+      )}
 
       {/* Trial banner */}
       {isTrialActive && (

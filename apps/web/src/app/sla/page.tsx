@@ -260,11 +260,13 @@ export default function SlaPage() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    fetch("/api/governance?action=sla")
+    const controller = new AbortController();
+    fetch("/api/governance?action=sla", { signal: controller.signal })
       .then((r) => r.json())
       .then((d) => { if (d && d.sla_overview) setData(d); })
       .catch(() => {})
       .finally(() => setLoading(false));
+    return () => controller.abort();
   }, []);
 
   const ov = data.sla_overview;

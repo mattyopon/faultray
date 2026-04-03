@@ -26,9 +26,45 @@ Path routing uses the request path to determine which handler to call.
 from http.server import BaseHTTPRequestHandler
 import json
 import os
+import re
+import urllib.parse
 import urllib.request
 from urllib.parse import urlparse, parse_qs
 from datetime import datetime, timezone, timedelta
+
+
+# ---------------------------------------------------------------------------
+# APIVULN-02: Input sanitization helpers for Supabase PostgREST query params
+# ---------------------------------------------------------------------------
+
+_SAFE_UUID_RE = re.compile(r"^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$", re.IGNORECASE)
+_SAFE_AGENT_ID_RE = re.compile(r"^[0-9a-zA-Z_\-]{1,64}$")
+_SAFE_SEVERITY_RE = re.compile(r"^(critical|high|medium|low|info)$", re.IGNORECASE)
+_SAFE_METRIC_NAME_RE = re.compile(r"^[0-9a-zA-Z_\-.]{1,64}$")
+_SAFE_POSITIVE_INT_RE = re.compile(r"^\d{1,6}$")
+
+
+def _sanitize_agent_id(value: str) -> str | None:
+    """Return value if safe, else None."""
+    return value if _SAFE_AGENT_ID_RE.match(value) else None
+
+
+def _sanitize_uuid(value: str) -> str | None:
+    return value if _SAFE_UUID_RE.match(value) else None
+
+
+def _sanitize_severity(value: str) -> str | None:
+    return value.lower() if _SAFE_SEVERITY_RE.match(value) else None
+
+
+def _sanitize_metric_name(value: str) -> str | None:
+    return value if _SAFE_METRIC_NAME_RE.match(value) else None
+
+
+def _sanitize_limit(value: str, default: int = 60, maximum: int = 200) -> int:
+    if _SAFE_POSITIVE_INT_RE.match(value):
+        return min(int(value), maximum)
+    return default
 
 
 # ===========================================================================
@@ -257,10 +293,17 @@ def _apm_agent_metrics(agent_id: str, query_params: dict):
     metric_name = query_params.get("metric_name", [None])[0]
     if not _apm_supabase_configured():
         return 200, _get_demo_metrics(agent_id, metric_name)
-    limit = query_params.get("limit", ["60"])[0]
-    params = f"?agent_id=eq.{agent_id}&order=collected_at.desc&limit={limit}"
+    # APIVULN-02 fix: sanitize all user-controlled query params before use in URL
+    safe_agent_id = _sanitize_agent_id(agent_id)
+    if not safe_agent_id:
+        return 400, {"error": "Invalid agent_id format"}
+    raw_limit = query_params.get("limit", ["60"])[0]
+    safe_limit = _sanitize_limit(raw_limit, default=60, maximum=200)
+    params = f"?agent_id=eq.{safe_agent_id}&order=collected_at.desc&limit={safe_limit}"
     if metric_name:
-        params += f"&metric_name=eq.{metric_name}"
+        safe_metric_name = _sanitize_metric_name(metric_name)
+        if safe_metric_name:
+            params += f"&metric_name=eq.{safe_metric_name}"
     metrics = _apm_supabase_request("GET", "apm_metrics", params)
     if metrics is None:
         return 200, _get_demo_metrics(agent_id)
@@ -273,7 +316,10 @@ def _apm_list_alerts(query_params: dict):
         return 200, _get_demo_alerts(severity)
     params = "?order=fired_at.desc&limit=100"
     if severity:
-        params += f"&severity=eq.{severity}"
+        # APIVULN-02 fix: validate severity before embedding in URL
+        safe_severity = _sanitize_severity(severity)
+        if safe_severity:
+            params += f"&severity=eq.{safe_severity}"
     alerts = _apm_supabase_request("GET", "apm_alerts", params)
     if alerts is None:
         return 200, _get_demo_alerts(severity)
@@ -530,20 +576,24 @@ def _proj_list():
 
 
 def _proj_get(project_id: str):
+    # SUPA-01 / APIVULN-02 fix: validate project_id before embedding in URL query
+    safe_project_id = _sanitize_uuid(project_id)
+    if not safe_project_id:
+        return 400, {"error": "Invalid project_id format (must be UUID)"}
     if not _proj_supabase_configured():
         projects = _get_demo_projects()
-        project = next((p for p in projects if p["id"] == project_id), None)
+        project = next((p for p in projects if p["id"] == safe_project_id), None)
         if not project:
             return 404, {"error": "Project not found"}
-        runs = _get_demo_runs(project_id)
+        runs = _get_demo_runs(safe_project_id)
         return 200, {**project, "runs": runs}
-    projects = _proj_supabase_request("GET", "projects", f"?id=eq.{project_id}&limit=1")
+    projects = _proj_supabase_request("GET", "projects", f"?id=eq.{safe_project_id}&limit=1")
     if not projects:
         return 404, {"error": "Project not found"}
     project = projects[0]
     runs = _proj_supabase_request(
         "GET", "simulation_runs",
-        f"?project_id=eq.{project_id}&order=created_at.desc&limit=50",
+        f"?project_id=eq.{safe_project_id}&order=created_at.desc&limit=50",
     ) or []
     if runs:
         project["last_score"] = runs[0].get("overall_score")
@@ -587,13 +637,16 @@ def _proj_create(body: dict):
 
 
 def _proj_update(project_id: str, body: dict):
+    safe_project_id = _sanitize_uuid(project_id)
+    if not safe_project_id:
+        return 400, {"error": "Invalid project_id format (must be UUID)"}
     if not _proj_supabase_configured():
-        return 200, {"ok": True, "id": project_id, "demo": True}
+        return 200, {"ok": True, "id": safe_project_id, "demo": True}
     patch = {"updated_at": _now_iso()}
     for field in ("name", "description", "topology_yaml", "status"):
         if field in body:
             patch[field] = body[field]
-    result = _proj_supabase_request("PATCH", "projects", f"?id=eq.{project_id}", patch)
+    result = _proj_supabase_request("PATCH", "projects", f"?id=eq.{safe_project_id}", patch)
     if result is None:
         return 500, {"error": "Failed to update project"}
     updated = result[0] if isinstance(result, list) and result else patch
@@ -601,10 +654,13 @@ def _proj_update(project_id: str, body: dict):
 
 
 def _proj_delete(project_id: str):
+    safe_project_id = _sanitize_uuid(project_id)
+    if not safe_project_id:
+        return 400, {"error": "Invalid project_id format (must be UUID)"}
     if not _proj_supabase_configured():
-        return 200, {"ok": True, "id": project_id, "demo": True}
-    _proj_supabase_request("DELETE", "projects", f"?id=eq.{project_id}")
-    return 200, {"ok": True, "id": project_id}
+        return 200, {"ok": True, "id": safe_project_id, "demo": True}
+    _proj_supabase_request("DELETE", "projects", f"?id=eq.{safe_project_id}")
+    return 200, {"ok": True, "id": safe_project_id}
 
 
 # ===========================================================================
@@ -689,6 +745,17 @@ def _is_admin(email: str) -> bool:
     return email.strip().lower() in admin_emails
 
 
+_SAFE_EMAIL_RE = re.compile(r"^[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,}$")
+
+
+def _sanitize_email(email: str) -> str | None:
+    """Return URL-encoded email if format is safe, else None."""
+    cleaned = email.strip().lower()
+    if _SAFE_EMAIL_RE.match(cleaned):
+        return urllib.parse.quote(cleaned, safe="")
+    return None
+
+
 def _switch_plan(email: str, plan: str) -> dict:
     supabase_url = os.environ.get("NEXT_PUBLIC_SUPABASE_URL")
     service_key = os.environ.get("SUPABASE_SERVICE_ROLE_KEY")
@@ -696,9 +763,13 @@ def _switch_plan(email: str, plan: str) -> dict:
         return {"error": "Supabase not configured"}
     if plan not in ("free", "pro", "business"):
         return {"error": f"Invalid plan: {plan}"}
+    # SUPA-01 / APIVULN-02 fix: sanitize and URL-encode email before embedding in query
+    safe_email = _sanitize_email(email)
+    if not safe_email:
+        return {"error": "Invalid email format"}
     data = json.dumps({"plan": plan}).encode()
     req = urllib.request.Request(
-        f"{supabase_url}/rest/v1/profiles?email=eq.{email}",
+        f"{supabase_url}/rest/v1/profiles?email=eq.{safe_email}",
         data=data,
         method="PATCH",
         headers={
