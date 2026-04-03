@@ -957,14 +957,14 @@ export default function TopologyPage() {
                         <div className="text-center p-2 rounded-lg bg-[#1e293b]/50">
                           <Zap size={12} className="mx-auto mb-1 text-[#64748b]" />
                           <p className="text-xs font-mono font-bold text-white">{selectedRisk.metrics.throughput}</p>
-                          <p className="text-[9px] text-[#475569]">Throughput</p>
+                          <p className="text-[9px] text-[#475569]">{locale === "ja" ? "スループット" : "Throughput"}</p>
                         </div>
                       )}
                       {selectedRisk.metrics.error_rate && (
                         <div className="text-center p-2 rounded-lg bg-[#1e293b]/50">
                           <Shield size={12} className="mx-auto mb-1 text-[#64748b]" />
                           <p className="text-xs font-mono font-bold text-white">{selectedRisk.metrics.error_rate}</p>
-                          <p className="text-[9px] text-[#475569]">Error</p>
+                          <p className="text-[9px] text-[#475569]">{locale === "ja" ? "エラー率" : "Error"}</p>
                         </div>
                       )}
                     </div>
@@ -980,13 +980,13 @@ export default function TopologyPage() {
                     )}
                     {selected.provider && (
                       <div className="flex justify-between">
-                        <span className="text-[#64748b]">Provider</span>
+                        <span className="text-[#64748b]">{locale === "ja" ? "プロバイダー" : "Provider"}</span>
                         <span className="font-mono text-white uppercase">{selected.provider}</span>
                       </div>
                     )}
                     {selected.region && (
                       <div className="flex justify-between">
-                        <span className="text-[#64748b]">Region</span>
+                        <span className="text-[#64748b]">{locale === "ja" ? "リージョン" : "Region"}</span>
                         <span className="font-mono text-white">{selected.region}</span>
                       </div>
                     )}
