@@ -245,13 +245,13 @@ export default function ComplianceReportPage() {
                 <p className="text-xs text-[#94a3b8]">{ctrl.notes}</p>
               </div>
               {ctrl.status !== "pass" && (
-                <a
-                  href="#"
+                <button
+                  type="button"
                   className="text-[#FFD700] hover:text-[#ffe44d] shrink-0"
-                  onClick={(e) => e.preventDefault()}
+                  aria-label="View details"
                 >
                   <ExternalLink size={14} />
-                </a>
+                </button>
               )}
             </div>
           ))}
