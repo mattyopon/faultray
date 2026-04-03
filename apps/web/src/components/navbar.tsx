@@ -374,6 +374,12 @@ export function Navbar() {
                   Pricing
                 </Link>
                 <Link
+                  href="/features"
+                  className="px-3 py-2 text-sm text-[#94a3b8] hover:text-white transition-colors"
+                >
+                  Docs
+                </Link>
+                <Link
                   href="https://github.com/mattyopon/faultray"
                   target="_blank"
                   className="px-3 py-1.5 text-sm text-[#94a3b8] border border-[#1e293b] rounded-md hover:border-[#64748b] transition-colors"
