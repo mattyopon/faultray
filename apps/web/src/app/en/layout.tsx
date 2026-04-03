@@ -25,5 +25,5 @@ export default function EnLayout({
 }: {
   children: React.ReactNode;
 }) {
-  return <>{children}</>;
+  return <div lang="en">{children}</div>; // I18N-04
 }
