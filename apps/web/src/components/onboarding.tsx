@@ -166,7 +166,7 @@ export function Onboarding() {
     }
   });
   const [step, setStep] = useState(0);
-  const [locale, setLocale] = useState<"en" | "ja">(() => detectLocale());
+  const [locale] = useState<"en" | "ja">(() => detectLocale());
   const [dontShow, setDontShow] = useState(false);
   const [animating, setAnimating] = useState(false);
   const [direction, setDirection] = useState<"next" | "prev">("next");
