@@ -113,15 +113,34 @@ function BlastRadiusContent() {
             className="w-full appearance-none bg-[#0f1424] border border-[#1e293b] rounded-lg px-4 py-3 text-white text-sm focus:border-[#FFD700]/50 focus:outline-none cursor-pointer"
           >
             <option value="">{locale === "ja" ? "-- メンバーを選択 --" : "-- Select a member --"}</option>
-            {members
-              .filter((m) => m.status === "active")
-              .map((m) => (
-                <option key={m.id} value={m.id}>
-                  {locale === "ja"
-                    ? `${m.name}（${m.department} / ${m.role}）- 管理システム ${m.member_systems.length}件`
-                    : `${m.name} (${m.department} / ${m.role}) - ${m.member_systems.length} system${m.member_systems.length !== 1 ? "s" : ""}`}
-                </option>
-              ))}
+            {/* 在籍中メンバー */}
+            {members.filter((m) => m.status === "active").length > 0 && (
+              <optgroup label={locale === "ja" ? "在籍中" : "Active"}>
+                {members
+                  .filter((m) => m.status === "active")
+                  .map((m) => (
+                    <option key={m.id} value={m.id}>
+                      {locale === "ja"
+                        ? `${m.name}（${m.department} / ${m.role}）- 管理システム ${m.member_systems.length}件`
+                        : `${m.name} (${m.department} / ${m.role}) - ${m.member_systems.length} system${m.member_systems.length !== 1 ? "s" : ""}`}
+                    </option>
+                  ))}
+              </optgroup>
+            )}
+            {/* 退職済みメンバー */}
+            {members.filter((m) => m.status === "left").length > 0 && (
+              <optgroup label={locale === "ja" ? "退職済み" : "Former members"}>
+                {members
+                  .filter((m) => m.status === "left")
+                  .map((m) => (
+                    <option key={m.id} value={m.id}>
+                      {locale === "ja"
+                        ? `[退職] ${m.name}（${m.department} / ${m.role}）- 管理システム ${m.member_systems.length}件`
+                        : `[Former] ${m.name} (${m.department} / ${m.role}) - ${m.member_systems.length} system${m.member_systems.length !== 1 ? "s" : ""}`}
+                    </option>
+                  ))}
+              </optgroup>
+            )}
           </select>
           <ChevronDown
             size={16}

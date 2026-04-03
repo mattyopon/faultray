@@ -13,19 +13,9 @@ import {
   ChevronRight,
 } from "lucide-react";
 import { fetchMembers } from "@/lib/people-risk/queries";
+import { riskBadge } from "@/lib/people-risk/risk-badge";
 import { useLocale } from "@/lib/useLocale";
 import type { MemberWithSystems } from "@/lib/people-risk/types";
-
-function riskBadge(level: string | null) {
-  switch (level) {
-    case "critical":
-      return <Badge variant="red">危険</Badge>;
-    case "warning":
-      return <Badge variant="yellow">注意</Badge>;
-    default:
-      return <Badge variant="green">安全</Badge>;
-  }
-}
 
 function memberRiskLevel(member: MemberWithSystems): "critical" | "warning" | "safe" {
   const levels = member.member_systems.map((ms) => ms.risk_level);

@@ -17,6 +17,9 @@ import {
   Zap,
   FileCode2,
   CheckCircle2,
+  Lock,
+  Eye,
+  BarChart2,
 } from "lucide-react";
 import {
   fetchSummary,
@@ -24,6 +27,7 @@ import {
   fetchActions,
 } from "@/lib/people-risk/queries";
 import { useLocale } from "@/lib/useLocale";
+import { useAuth } from "@/components/auth-provider";
 import { appDict } from "@/i18n/app-dict";
 import type {
   PeopleRiskSummary,
@@ -95,9 +99,143 @@ function StatCard({
   );
 }
 
+/* ── Preview page (unauthenticated) ───────────────────────── */
+
+function PeopleRiskPreview({ locale }: { locale: string }) {
+  const isJa = locale === "ja";
+
+  const features = [
+    {
+      icon: Users,
+      title: isJa ? "メンバー × システム マップ" : "Member × System Map",
+      desc: isJa
+        ? "誰がどのシステムを管理しているかを一覧で可視化。属人化のホットスポットを即座に特定。"
+        : "Visualize who manages which systems. Instantly spot personalization hotspots.",
+    },
+    {
+      icon: Zap,
+      title: isJa ? "ブラストレディウス・シミュレーター" : "Blast Radius Simulator",
+      desc: isJa
+        ? "「この人が退職したら何が壊れるか」をワンクリックでシミュレーション。リスクを数値化。"
+        : "Simulate the impact of any member leaving with one click. Quantify your risk.",
+    },
+    {
+      icon: BarChart2,
+      title: isJa ? "週次リスクトレンド" : "Weekly Risk Trend",
+      desc: isJa
+        ? "リスクスコアの推移をグラフで確認。改善アクションの効果を時系列で追跡。"
+        : "Track risk score trends over time. Measure the impact of your improvement actions.",
+    },
+    {
+      icon: Shield,
+      title: isJa ? "改善アクション管理" : "Improvement Action Tracking",
+      desc: isJa
+        ? "優先度付きの改善タスクを一元管理。バックアップ管理者の設定漏れをゼロに。"
+        : "Manage prioritized improvement tasks in one place. Never miss a backup admin assignment.",
+    },
+  ];
+
+  const stats = [
+    { value: isJa ? "平均 2.4件" : "2.4 avg", label: isJa ? "リスク検出 / メンバー" : "risks detected / member" },
+    { value: isJa ? "60%削減" : "60% less", label: isJa ? "属人化リスク (3ヶ月後)" : "personalization risk in 3mo" },
+    { value: isJa ? "5分" : "5 min", label: isJa ? "セットアップ時間" : "setup time" },
+  ];
+
+  return (
+    <div className="min-h-screen bg-[#0a0f1e] text-white">
+      {/* Hero */}
+      <div className="px-6 py-16 md:py-24 max-w-5xl mx-auto text-center">
+        <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-[#FFD700]/10 border border-[#FFD700]/20 text-[#FFD700] text-xs font-semibold mb-6">
+          <Lock size={12} />
+          {isJa ? "ログインが必要です" : "Login required"}
+        </div>
+        <h1 className="text-3xl md:text-4xl font-bold text-white mb-4">
+          <span className="text-[#FFD700]">People Risk</span>{" "}
+          {isJa ? "— 属人化リスクを可視化する" : "— Visualize Personalization Risk"}
+        </h1>
+        <p className="text-[#94a3b8] text-base md:text-lg max-w-2xl mx-auto mb-8">
+          {isJa
+            ? "誰が退職したら何が壊れるか、今すぐ把握しましょう。GAS棚卸しから退職シミュレーションまで、属人化リスクを一元管理。"
+            : "Know exactly what breaks if someone leaves — today. From GAS inventory to departure simulation, manage all personalization risk in one place."}
+        </p>
+        <div className="flex flex-col sm:flex-row gap-3 justify-center">
+          <Link href="/login">
+            <Button size="lg" className="w-full sm:w-auto">
+              {isJa ? "無料で始める" : "Get started free"}
+            </Button>
+          </Link>
+          <Link href="/login">
+            <Button variant="secondary" size="lg" className="w-full sm:w-auto">
+              <Eye size={16} />
+              {isJa ? "デモを見る" : "View demo"}
+            </Button>
+          </Link>
+        </div>
+      </div>
+
+      {/* Stats bar */}
+      <div className="border-y border-[#1e293b] py-8">
+        <div className="max-w-3xl mx-auto grid grid-cols-3 gap-6 px-6 text-center">
+          {stats.map((s) => (
+            <div key={s.label}>
+              <p className="text-2xl font-bold text-[#FFD700]">{s.value}</p>
+              <p className="text-xs text-[#64748b] mt-1">{s.label}</p>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* Feature cards */}
+      <div className="px-6 py-16 max-w-5xl mx-auto">
+        <h2 className="text-xl font-bold text-white text-center mb-10">
+          {isJa ? "主な機能" : "Key Features"}
+        </h2>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          {features.map((f) => {
+            const Icon = f.icon;
+            return (
+              <Card key={f.title} className="p-6">
+                <div className="flex items-start gap-4">
+                  <div className="w-10 h-10 rounded-lg bg-[#FFD700]/10 flex items-center justify-center shrink-0">
+                    <Icon size={20} className="text-[#FFD700]" />
+                  </div>
+                  <div>
+                    <h3 className="text-sm font-semibold text-white mb-1">{f.title}</h3>
+                    <p className="text-xs text-[#64748b] leading-relaxed">{f.desc}</p>
+                  </div>
+                </div>
+              </Card>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* CTA */}
+      <div className="px-6 pb-20 max-w-xl mx-auto text-center">
+        <Card className="p-8 border-[#FFD700]/20">
+          <h3 className="text-lg font-bold text-white mb-2">
+            {isJa ? "今すぐ属人化リスクを把握する" : "Start mapping your people risk now"}
+          </h3>
+          <p className="text-sm text-[#64748b] mb-6">
+            {isJa
+              ? "無料プランで最大5名・5システムまで登録可能。クレジットカード不要。"
+              : "Free plan supports up to 5 members and 5 systems. No credit card required."}
+          </p>
+          <Link href="/login">
+            <Button size="lg" className="w-full">
+              {isJa ? "FaultRayに登録する" : "Sign up for FaultRay"}
+            </Button>
+          </Link>
+        </Card>
+      </div>
+    </div>
+  );
+}
+
 /* ── Page ─────────────────────────────────────────────────── */
 
 export default function PeopleRiskDashboard() {
+  const { user, loading: authLoading } = useAuth();
   const [summary, setSummary] = useState<PeopleRiskSummary | null>(null);
   const [snapshots, setSnapshots] = useState<RiskSnapshot[]>([]);
   const [actions, setActions] = useState<ActionWithSystem[]>([]);
@@ -106,6 +244,11 @@ export default function PeopleRiskDashboard() {
   const t = appDict.peopleRisk[locale] ?? appDict.peopleRisk.en;
 
   useEffect(() => {
+    // 未ログイン時はデータフェッチをスキップ
+    if (!user) {
+      setLoading(false);
+      return;
+    }
     // FETCHPAT-04: Use Promise.allSettled so one failure doesn't block others
     Promise.allSettled([fetchSummary(), fetchSnapshots(), fetchActions()])
       .then(([sRes, snRes, aRes]) => {
@@ -114,7 +257,28 @@ export default function PeopleRiskDashboard() {
         if (aRes.status === "fulfilled") setActions(aRes.value);
       })
       .finally(() => setLoading(false));
-  }, []);
+  }, [user]);
+
+  // 認証状態を待機中
+  if (authLoading) {
+    return (
+      <div className="p-6 md:p-10 max-w-7xl mx-auto">
+        <div className="animate-pulse space-y-6">
+          <div className="h-8 w-64 bg-[#1e293b] rounded" />
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+            {[...Array(4)].map((_, i) => (
+              <div key={i} className="h-28 bg-[#1e293b] rounded-2xl" />
+            ))}
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // 未ログイン → サービス紹介ページを表示
+  if (!user) {
+    return <PeopleRiskPreview locale={locale} />;
+  }
 
   if (loading) {
     return (
