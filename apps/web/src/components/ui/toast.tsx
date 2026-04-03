@@ -2,6 +2,7 @@
 
 import { cn } from "@/lib/utils";
 import { CheckCircle2, AlertTriangle, XCircle, Info } from "lucide-react";
+import { useLocale } from "@/lib/useLocale";
 
 // ERRMSG-05: Toast with proper visual hierarchy — success/warning/error are visually distinct
 
@@ -59,6 +60,7 @@ const variantConfig: Record<ToastVariant, {
 };
 
 export function Toast({ message, variant = "success", className, action, onDismiss }: ToastProps) {
+  const locale = useLocale();
   const cfg = variantConfig[variant];
   return (
     <div
@@ -89,7 +91,7 @@ export function Toast({ message, variant = "success", className, action, onDismi
       {onDismiss && (
         <button
           onClick={onDismiss}
-          aria-label="Dismiss"
+          aria-label={locale === "ja" ? "閉じる" : "Dismiss"}
           className="ml-2 hover:opacity-75 transition-opacity leading-none text-base"
         >
           &times;
