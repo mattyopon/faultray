@@ -188,7 +188,10 @@ export default function DashboardPage() {
 
   // SALES-03 / CVR-04: Pro→Business アップセル — show after 3+ runs
   const [currentPlan, setCurrentPlan] = useState<string>("free");
+  // ERRMSG-07: past_due状態を追跡して支払い失敗バナーを表示
+  const [subscriptionStatus, setSubscriptionStatus] = useState<string>("active");
   const showProUpsell = currentPlan === "pro" && runs.length >= 3;
+  const showPaymentFailed = subscriptionStatus === "past_due";
 
   useEffect(() => {
     Promise.all([
@@ -203,12 +206,13 @@ export default function DashboardPage() {
       const supabase = createClient();
       supabase
         .from("profiles")
-        .select("trial_ends_at, plan")
+        .select("trial_ends_at, plan, subscription_status")
         .eq("id", user.id)
         .maybeSingle()
         .then(({ data }) => {
           if (data?.trial_ends_at) setTrialEndsAt(data.trial_ends_at as string);
           if (data?.plan) setCurrentPlan(data.plan as string);
+          if (data?.subscription_status) setSubscriptionStatus(data.subscription_status as string);
         });
     }).catch(() => {/* Supabase not configured */});
   }, [user]);
@@ -220,6 +224,30 @@ export default function DashboardPage() {
   return (
     <div className="max-w-[1200px] mx-auto px-6 py-10">
       <Onboarding />
+
+      {/* ERRMSG-07: 支払い失敗バナー — past_due状態の場合に表示 */}
+      {showPaymentFailed && (
+        <div className="mb-6 px-5 py-4 rounded-xl border border-red-500/40 bg-red-500/[0.08] flex items-center justify-between gap-4 flex-wrap">
+          <div className="flex items-center gap-2.5">
+            <AlertTriangle size={16} className="text-red-400 shrink-0" />
+            <div>
+              <span className="text-sm font-semibold text-red-300">
+                {locale === "ja" ? "お支払いが失敗しました" : "Payment Failed"}
+              </span>
+              <p className="text-xs text-red-400/80 mt-0.5">
+                {locale === "ja"
+                  ? "お支払い情報を更新してください。更新しないとアクセスが制限される場合があります。"
+                  : "Please update your payment information to avoid losing access."}
+              </p>
+            </div>
+          </div>
+          <Link href="/settings?tab=billing">
+            <Button size="sm" variant="secondary" className="border-red-500/40 text-red-300 hover:bg-red-500/10">
+              {locale === "ja" ? "支払い情報を更新" : "Update Payment"}
+            </Button>
+          </Link>
+        </div>
+      )}
 
       {/* SALES-03 / CVR-04: Pro→Business アップセルバナー */}
       {showProUpsell && !isTrialActive && (

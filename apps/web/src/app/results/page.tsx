@@ -7,6 +7,7 @@ import { useState, useEffect } from "react";
 import { api, type SimulationRun } from "@/lib/api";
 import { FileText, Download, ChevronDown, BookOpen } from "lucide-react";
 import Link from "next/link";
+import { Pagination, usePagination } from "@/components/ui/pagination";
 import { useLocale } from "@/lib/useLocale";
 import { appDict } from "@/i18n/app-dict";
 
@@ -36,6 +37,8 @@ export default function ResultsPage() {
     if (filter === "failed") return run.scenarios_failed > 0;
     return true;
   });
+
+  const { page, setPage, totalPages, paginatedItems: pagedRuns } = usePagination(filteredRuns, 10);
 
   return (
     <div className="max-w-[1200px] mx-auto px-6 py-10">
@@ -83,8 +86,9 @@ export default function ResultsPage() {
           <p className="text-xs text-[#64748b]">{t.noResultsDesc}</p>
         </Card>
       ) : (
+        <>
         <div className="space-y-4">
-          {filteredRuns.map((run) => (
+          {pagedRuns.map((run) => (
             <Card key={run.id} hover className="cursor-pointer">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-6">
@@ -123,6 +127,9 @@ export default function ResultsPage() {
             </Card>
           ))}
         </div>
+        {/* TABLE-01: ページネーション */}
+        <Pagination currentPage={page} totalPages={totalPages} onPageChange={setPage} />
+        </>
       )}
     </div>
   );
