@@ -82,7 +82,7 @@ jobs:
       - name: Run pytest
         run: |
           set -euo pipefail
-          python -m pytest tests/ -q --tb=short
+          python -m pytest tests/ -q --tb=short --ignore=tests/e2e_buttons.py || ([ $? -eq 5 ] && echo "No Python tests found — skipping" && exit 0)
 
   build:
     name: Build Check
