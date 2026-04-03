@@ -1492,8 +1492,8 @@ function SimulatePageInner() {
                     </p>
                     {/* FORM-02: リアルタイムバリデーションエラー表示 */}
                     {yamlError && (
-                      <p className="text-xs text-red-400 mt-1 flex items-center gap-1">
-                        <span>&#9888;</span> {yamlError}
+                      <p role="alert" className="text-xs text-red-400 mt-1 flex items-center gap-1">
+                        <span aria-hidden="true">&#9888;</span> {yamlError}
                       </p>
                     )}
                     <p className="text-xs text-[#64748b] mt-2">
@@ -1511,7 +1511,7 @@ function SimulatePageInner() {
                 </div>
               )}
               {saveWarning && (
-                <div className="mb-4 p-3 rounded-xl bg-amber-500/10 border border-amber-500/20 text-amber-400 text-sm flex items-center gap-2">
+                <div role="alert" className="mb-4 p-3 rounded-xl bg-amber-500/10 border border-amber-500/20 text-amber-400 text-sm flex items-center gap-2">
                   <AlertTriangle size={14} className="shrink-0" />
                   {saveWarning}
                 </div>

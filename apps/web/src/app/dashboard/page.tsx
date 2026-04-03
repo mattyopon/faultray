@@ -104,11 +104,11 @@ function GettingStartedChecklist({ hasRun }: { hasRun: boolean }) {
   };
 
   const steps = [
-    { label: "アカウント作成", href: null, alwaysDone: true },
-    { label: "最初のシミュレーション実行", href: "/simulate", alwaysDone: false },
-    { label: "レポートを確認", href: "/reports", alwaysDone: false },
-    { label: "DORA診断を実行", href: "/dora", alwaysDone: false },
-    { label: "チームメンバーを招待", href: "/teams", alwaysDone: false },
+    { label: locale === "ja" ? "アカウント作成" : "Create account", href: null, alwaysDone: true },
+    { label: locale === "ja" ? "最初のシミュレーション実行" : "Run your first simulation", href: "/simulate", alwaysDone: false },
+    { label: locale === "ja" ? "レポートを確認" : "Review reports", href: "/reports", alwaysDone: false },
+    { label: locale === "ja" ? "DORA診断を実行" : "Run DORA assessment", href: "/dora", alwaysDone: false },
+    { label: locale === "ja" ? "チームメンバーを招待" : "Invite team members", href: "/teams", alwaysDone: false },
   ];
 
   const allDone = steps.every((s, i) => s.alwaysDone || checkedItems[i]);
@@ -120,7 +120,7 @@ function GettingStartedChecklist({ hasRun }: { hasRun: boolean }) {
       <div className="flex items-center justify-between mb-4">
         <h3 className="text-sm font-semibold flex items-center gap-2">
           <Zap size={14} className="text-[#FFD700]" />
-          Getting Started
+          {locale === "ja" ? "はじめよう" : "Getting Started"}
         </h3>
         <button
           onClick={dismiss}
@@ -165,7 +165,7 @@ function GettingStartedChecklist({ hasRun }: { hasRun: boolean }) {
         onClick={dismiss}
         className="mt-4 text-xs text-[#64748b] hover:text-white transition-colors"
       >
-        閉じる
+        {locale === "ja" ? "閉じる" : "Dismiss"}
       </button>
     </div>
   );
@@ -430,7 +430,7 @@ export default function DashboardPage() {
           </p>
           <div className="flex items-center gap-2 mt-1">
             {isSampleMode ? (
-              <span className="text-xs text-[#64748b]">コンポーネント数</span>
+              <span className="text-xs text-[#64748b]">{locale === "ja" ? "コンポーネント数" : "Components"}</span>
             ) : (
               <>
                 <span className="text-xs text-emerald-400">{latestRun?.scenarios_passed ?? 147} {t.passed}</span>
