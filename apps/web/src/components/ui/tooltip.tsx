@@ -1,7 +1,7 @@
 "use client";
 
 // UICOMP-07: Tooltip補助コンポーネント
-import { useState, useRef, useEffect, useId, type ReactNode } from "react";
+import { useState, useRef, useEffect, useId, useMemo, type ReactNode } from "react";
 import { cn } from "@/lib/utils";
 
 interface TooltipProps {
@@ -21,8 +21,8 @@ interface TooltipProps {
 export function Tooltip({ content, children, side = "top", className, delay = 300 }: TooltipProps) {
   const [visible, setVisible] = useState(false);
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const reactId = useId();
-  const id = `tooltip-${reactId.replace(/:/g, "")}`;
+  const rawId = useId();
+  const id = useMemo(() => `tooltip-${rawId.replace(/:/g, "")}`, [rawId]);
 
   function show() {
     timerRef.current = setTimeout(() => setVisible(true), delay);

@@ -22,11 +22,11 @@ const Button = forwardRef<HTMLButtonElement, ButtonProps>(
         className={cn(
           "inline-flex items-center justify-center gap-2 rounded-lg font-semibold transition-all duration-200 whitespace-nowrap disabled:opacity-50 disabled:pointer-events-none",
           {
-            "bg-[#FFD700] text-[#0a0e1a] hover:bg-[#ffe44d] shadow-[0_0_20px_rgba(255,215,0,0.2)] hover:shadow-[0_0_30px_rgba(255,215,0,0.35)] hover:-translate-y-0.5":
+            "bg-[var(--gold)] text-white hover:bg-[#044a99] shadow-sm hover:shadow-md hover:-translate-y-0.5":
               variant === "primary",
-            "bg-transparent text-white border border-[#1e293b] hover:border-[#64748b] hover:bg-white/[0.03] hover:-translate-y-0.5":
+            "bg-transparent text-[var(--text-primary)] border border-[var(--border-color)] hover:border-[var(--text-muted)] hover:bg-black/[0.03] hover:-translate-y-0.5":
               variant === "secondary",
-            "bg-transparent text-[#94a3b8] hover:text-white hover:bg-white/[0.05]":
+            "bg-transparent text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-black/[0.05]":
               variant === "ghost",
             "bg-red-500/10 text-red-400 border border-red-500/20 hover:bg-red-500/20":
               variant === "danger",

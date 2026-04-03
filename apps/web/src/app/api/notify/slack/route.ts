@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { requireAuth } from "@/lib/api-auth";
 import { applyRateLimit } from "@/lib/rate-limit";
 
 export const dynamic = "force-dynamic";
@@ -12,6 +13,10 @@ interface SlackNotifyRequest {
 }
 
 export async function POST(request: Request) {
+  // API-01: 認証チェック
+  const { error } = await requireAuth();
+  if (error) return error;
+
   // API-08: レート制限 — 10 requests / minute per IP
   const limited = applyRateLimit(request, { limit: 10, windowMs: 60_000 });
   if (limited) return limited;

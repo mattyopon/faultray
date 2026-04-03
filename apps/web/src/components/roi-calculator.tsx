@@ -49,27 +49,27 @@ export function RoiCalculator({ dict, lang }: RoiCalculatorProps) {
   const unit = dict.unit;
 
   return (
-    <section id="roi" className="py-24 bg-[#0a0e1a]">
+    <section id="roi" className="py-24 bg-[var(--bg-primary)]">
       <div className="max-w-[1200px] mx-auto px-6">
         <div className="text-center mb-12">
-          <div className="inline-flex items-center gap-2 px-4 py-1.5 text-[0.8125rem] font-medium text-[#FFD700] border border-[#FFD700]/25 rounded-full bg-[#FFD700]/5 mb-4">
+          <div className="inline-flex items-center gap-2 px-4 py-1.5 text-[0.8125rem] font-medium text-[var(--gold)] border border-[var(--gold)]/25 rounded-full bg-[var(--gold)]/5 mb-4">
             <Calculator size={14} />
             ROI
           </div>
           <h2 className="text-[clamp(1.75rem,4vw,2.5rem)] font-bold tracking-tight mb-3">
             {dict.heading}
           </h2>
-          <p className="text-lg text-[#94a3b8] max-w-[540px] mx-auto">{dict.subheading}</p>
+          <p className="text-lg text-[var(--text-secondary)] max-w-[540px] mx-auto">{dict.subheading}</p>
         </div>
 
         <div className="max-w-[900px] mx-auto grid md:grid-cols-2 gap-8 items-start">
           {/* Input panel */}
-          <div className="p-8 rounded-2xl border border-[#1e293b] bg-[#111827] space-y-7">
+          <div className="p-8 rounded-2xl border border-[var(--border-color)] bg-[var(--bg-card)] space-y-7">
             {/* Monthly revenue */}
             <div>
               <div className="flex justify-between mb-2">
-                <label className="text-sm font-semibold text-white">{dict.monthlyRevenue}</label>
-                <span className="text-sm font-bold text-[#FFD700]">
+                <label className="text-sm font-semibold text-[var(--text-primary)]">{dict.monthlyRevenue}</label>
+                <span className="text-sm font-bold text-[var(--gold)]">
                   {formatNumber(monthlyRevenue, lang)} {unit}
                 </span>
               </div>
@@ -80,10 +80,9 @@ export function RoiCalculator({ dict, lang }: RoiCalculatorProps) {
                 step={isJa ? 100 : 50}
                 value={monthlyRevenue}
                 onChange={(e) => setMonthlyRevenue(Number(e.target.value))}
-                aria-label={dict.monthlyRevenue}
-                className="w-full h-2 rounded-full appearance-none cursor-pointer accent-[#FFD700] bg-[#1e293b]"
+                className="w-full h-2 rounded-full appearance-none cursor-pointer accent-[#055ec1] bg-[var(--border-color)]"
               />
-              <div className="flex justify-between text-xs text-[#64748b] mt-1">
+              <div className="flex justify-between text-xs text-[var(--text-muted)] mt-1">
                 <span>{isJa ? "100万円" : "$50K"}</span>
                 <span>{isJa ? "1億円" : "$5M"}</span>
               </div>
@@ -92,8 +91,8 @@ export function RoiCalculator({ dict, lang }: RoiCalculatorProps) {
             {/* Incident count */}
             <div>
               <div className="flex justify-between mb-2">
-                <label className="text-sm font-semibold text-white">{dict.incidentCount}</label>
-                <span className="text-sm font-bold text-[#FFD700]">{incidentCount}{isJa ? "回" : "x"}</span>
+                <label className="text-sm font-semibold text-[var(--text-primary)]">{dict.incidentCount}</label>
+                <span className="text-sm font-bold text-[var(--gold)]">{incidentCount}回</span>
               </div>
               <input
                 type="range"
@@ -102,20 +101,19 @@ export function RoiCalculator({ dict, lang }: RoiCalculatorProps) {
                 step={1}
                 value={incidentCount}
                 onChange={(e) => setIncidentCount(Number(e.target.value))}
-                aria-label={dict.incidentCount}
-                className="w-full h-2 rounded-full appearance-none cursor-pointer accent-[#FFD700] bg-[#1e293b]"
+                className="w-full h-2 rounded-full appearance-none cursor-pointer accent-[#055ec1] bg-[var(--border-color)]"
               />
-              <div className="flex justify-between text-xs text-[#64748b] mt-1">
-                <span>{isJa ? "1回" : "1x"}</span>
-                <span>{isJa ? "50回" : "50x"}</span>
+              <div className="flex justify-between text-xs text-[var(--text-muted)] mt-1">
+                <span>1回</span>
+                <span>50回</span>
               </div>
             </div>
 
             {/* Incident hours */}
             <div>
               <div className="flex justify-between mb-2">
-                <label className="text-sm font-semibold text-white">{dict.incidentHours}</label>
-                <span className="text-sm font-bold text-[#FFD700]">{incidentHours}{isJa ? "時間" : "h"}</span>
+                <label className="text-sm font-semibold text-[var(--text-primary)]">{dict.incidentHours}</label>
+                <span className="text-sm font-bold text-[var(--gold)]">{incidentHours}時間</span>
               </div>
               <input
                 type="range"
@@ -124,12 +122,11 @@ export function RoiCalculator({ dict, lang }: RoiCalculatorProps) {
                 step={0.5}
                 value={incidentHours}
                 onChange={(e) => setIncidentHours(Number(e.target.value))}
-                aria-label={dict.incidentHours}
-                className="w-full h-2 rounded-full appearance-none cursor-pointer accent-[#FFD700] bg-[#1e293b]"
+                className="w-full h-2 rounded-full appearance-none cursor-pointer accent-[#055ec1] bg-[var(--border-color)]"
               />
-              <div className="flex justify-between text-xs text-[#64748b] mt-1">
-                <span>{isJa ? "0.5時間" : "0.5h"}</span>
-                <span>{isJa ? "24時間" : "24h"}</span>
+              <div className="flex justify-between text-xs text-[var(--text-muted)] mt-1">
+                <span>0.5時間</span>
+                <span>24時間</span>
               </div>
             </div>
           </div>
@@ -138,7 +135,7 @@ export function RoiCalculator({ dict, lang }: RoiCalculatorProps) {
           <div className="space-y-4">
             {/* Annual loss */}
             <div className="p-6 rounded-2xl border border-red-500/25 bg-red-500/[0.04]">
-              <div className="text-sm text-[#94a3b8] mb-1">{dict.annualLoss}</div>
+              <div className="text-sm text-[var(--text-secondary)] mb-1">{dict.annualLoss}</div>
               <div className="text-3xl font-extrabold text-red-400">
                 {formatNumber(Math.round(calc.annualLoss * 10) / 10, lang)} {unit}
               </div>
@@ -146,31 +143,31 @@ export function RoiCalculator({ dict, lang }: RoiCalculatorProps) {
 
             {/* Savings */}
             <div className="p-6 rounded-2xl border border-emerald-500/25 bg-emerald-500/[0.04]">
-              <div className="text-sm text-[#94a3b8] mb-1">{dict.estimatedReduction}</div>
+              <div className="text-sm text-[var(--text-secondary)] mb-1">{dict.estimatedReduction}</div>
               <div className="text-3xl font-extrabold text-emerald-400">
                 {formatNumber(Math.round(calc.savings * 10) / 10, lang)} {unit}
               </div>
             </div>
 
             {/* Annual cost */}
-            <div className="p-5 rounded-xl border border-[#1e293b] bg-[#111827]">
+            <div className="p-5 rounded-xl border border-[var(--border-color)] bg-[var(--bg-card)]">
               <div className="flex justify-between items-center">
-                <span className="text-sm text-[#64748b]">{dict.annualCost}</span>
-                <span className="text-base font-semibold text-[#94a3b8]">
+                <span className="text-sm text-[var(--text-muted)]">{dict.annualCost}</span>
+                <span className="text-base font-semibold text-[var(--text-secondary)]">
                   {formatNumber(Math.round(calc.annualCost * 10) / 10, lang)} {unit}
                 </span>
               </div>
             </div>
 
             {/* ROI */}
-            <div className="p-6 rounded-2xl border border-[#FFD700]/30 bg-[#FFD700]/[0.05]">
-              <div className="text-sm text-[#94a3b8] mb-1">{dict.roi}</div>
-              <div className="text-4xl font-extrabold text-[#FFD700]">
+            <div className="p-6 rounded-2xl border border-[var(--gold)]/30 bg-[var(--gold)]/[0.05]">
+              <div className="text-sm text-[var(--text-secondary)] mb-1">{dict.roi}</div>
+              <div className="text-4xl font-extrabold text-[var(--gold)]">
                 {calc.roi > 0 ? "+" : ""}{Math.round(calc.roi).toLocaleString()}%
               </div>
             </div>
 
-            <p className="text-xs text-[#64748b] leading-relaxed">{dict.disclaimer}</p>
+            <p className="text-xs text-[var(--text-muted)] leading-relaxed">{dict.disclaimer}</p>
           </div>
         </div>
       </div>

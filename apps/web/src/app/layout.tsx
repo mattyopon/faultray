@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
+import { Inter, Noto_Sans_JP, Geist_Mono } from "next/font/google";
 import Script from "next/script";
 import { AuthProvider } from "@/components/auth-provider";
 import { Navbar } from "@/components/navbar";
@@ -8,9 +8,17 @@ import { LocaleProvider } from "@/lib/useLocale";
 import { CookieConsent } from "@/components/cookie-consent";
 import "./globals.css";
 
-const geistSans = Geist({
-  variable: "--font-geist-sans",
+const inter = Inter({
+  variable: "--font-inter",
   subsets: ["latin"],
+  display: "swap",
+});
+
+const notoSansJP = Noto_Sans_JP({
+  variable: "--font-noto-sans-jp",
+  subsets: ["latin"],
+  weight: ["400", "500", "600", "700"],
+  display: "swap",
 });
 
 const geistMono = Geist_Mono({
@@ -157,7 +165,7 @@ export default function RootLayout({
   return (
     <html
       lang="en"
-      className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
+      className={`${inter.variable} ${notoSansJP.variable} ${geistMono.variable} h-full antialiased`}
     >
       <head>
         {/* HTTP-03: Resource hints for external domains — improve connection latency */}
@@ -225,9 +233,14 @@ export default function RootLayout({
           dangerouslySetInnerHTML={{
             __html: `(function(){
               var p=window.location.pathname;
-              var skip=['/','/login','/pricing','/en','/ja','/de','/fr','/zh','/ko','/es','/pt'];
-              var isApp=!skip.some(function(s){return p===s||p.startsWith(s+'/');});
-              if(isApp)document.body.setAttribute('data-app-page','true');
+              var pub=['/','/login','/pricing','/en','/ja','/de','/fr','/zh','/ko','/es','/pt',
+                '/terms','/privacy','/dpa','/tokushoho','/contact','/demo','/help','/support',
+                '/status','/features','/case-studies','/ringi','/changelog'];
+              var isApp=!pub.some(function(s){return p===s||p.startsWith(s+'/');});
+              if(isApp){
+                document.body.setAttribute('data-app-page','true');
+                document.documentElement.setAttribute('data-theme','dark');
+              }
             })();`,
           }}
         />

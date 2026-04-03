@@ -3,7 +3,7 @@
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { useState } from "react";
+import { useState, useRef } from "react";
 import {
   FileSpreadsheet,
   Download,
@@ -62,7 +62,7 @@ const REPORT_METADATA: Record<Framework, {
   SOC2:    { name: "SOC 2 Type II", period: "2025-04-01 to 2026-03-31", type: "Attestation Report", score: 87, status: "Opinion Issued" },
   DORA:    { name: "DORA Compliance", period: "FY2026 Q1 Assessment", type: "Gap Assessment", score: 72, status: "Partial Compliance" },
   ISO27001:{ name: "ISO/IEC 27001", period: "Annual Surveillance Audit 2026", type: "Certification Audit", score: 91, status: "Certified" },
-  FISC:    { name: "FISC Security Guidelines", period: "FY2026 Periodic Assessment", type: "Compliance Assessment", score: 65, status: "Partial Compliance" },
+  FISC:    { name: "FISC 安全対策基準", period: "2026年度 定期評価", type: "Compliance Assessment", score: 65, status: "部分準拠" },
 };
 
 const SECTIONS: ReportSection[] = [
@@ -148,18 +148,18 @@ function scoreColor(score: number): string {
  * Main Page
  * ============================================================ */
 
-// Generated once at module load time to avoid impure function call during render
-const REPORT_SIZE_KB = Math.round(Math.random() * 200 + 150);
-
 export default function AuditReportPage() {
-  const locale = useLocale();
+  useLocale();
 
+  // eslint-disable-next-line react-hooks/purity
+  const reportSizeKb = useRef(Math.round(Math.random() * 200 + 150));
   const [selectedFramework, setSelectedFramework] = useState<Framework>("SOC2");
   const [selectedFormat, setSelectedFormat] = useState<Format>("PDF");
   const [isGenerating, setIsGenerating] = useState(false);
   const [generated, setGenerated] = useState(false);
   const [expandedSection, setExpandedSection] = useState<string | null>("exec");
   const [expandedFinding, setExpandedFinding] = useState<string | null>(null);
+
   const meta = REPORT_METADATA[selectedFramework];
 
   function handleGenerate() {
@@ -177,10 +177,10 @@ export default function AuditReportPage() {
       <div className="mb-8">
         <h1 className="text-2xl font-bold mb-1 flex items-center gap-3">
           <FileSpreadsheet size={24} className="text-[#FFD700]" />
-          {locale === "ja" ? "監査レポート生成" : "Audit Report Generator"}
+          Audit Report Generator
         </h1>
         <p className="text-[#94a3b8] text-sm">
-          {locale === "ja" ? "外部監査人・規制当局向けの監査対応レポートを生成します（Layer 4）" : "Generate audit-ready reports for external auditors and regulators (Layer 4)"}
+          Generate audit-ready reports for external auditors and regulators (Layer 4)
         </p>
       </div>
 
@@ -188,11 +188,11 @@ export default function AuditReportPage() {
         {/* Configuration Panel */}
         <div className="lg:col-span-1">
           <Card className="sticky top-24">
-            <h3 className="text-sm font-semibold text-[#94a3b8] uppercase tracking-wider mb-4">{locale === "ja" ? "レポート設定" : "Report Configuration"}</h3>
+            <h3 className="text-sm font-semibold text-[#94a3b8] uppercase tracking-wider mb-4">Report Configuration</h3>
 
             {/* Framework */}
             <div className="mb-4">
-              <label className="text-xs text-[#64748b] mb-2 block font-medium">{locale === "ja" ? "フレームワーク" : "Framework"}</label>
+              <label className="text-xs text-[#64748b] mb-2 block font-medium">Framework</label>
               <div className="grid grid-cols-2 gap-2">
                 {(["SOC2", "DORA", "ISO27001", "FISC"] as Framework[]).map((fw) => (
                   <button
@@ -212,7 +212,7 @@ export default function AuditReportPage() {
 
             {/* Format */}
             <div className="mb-6">
-              <label className="text-xs text-[#64748b] mb-2 block font-medium">{locale === "ja" ? "エクスポート形式" : "Export Format"}</label>
+              <label className="text-xs text-[#64748b] mb-2 block font-medium">Export Format</label>
               <div className="flex gap-2">
                 {(["PDF", "Excel", "HTML"] as Format[]).map((fmt) => (
                   <button
@@ -233,19 +233,19 @@ export default function AuditReportPage() {
             {/* Report Metadata Preview */}
             <div className="space-y-2 mb-6 p-3 rounded-xl bg-white/[0.02] border border-[#1e293b]">
               <div className="flex justify-between text-xs">
-                <span className="text-[#64748b]">{locale === "ja" ? "フレームワーク" : "Framework"}</span>
+                <span className="text-[#64748b]">Framework</span>
                 <span className="text-[#e2e8f0] font-medium">{meta.name}</span>
               </div>
               <div className="flex justify-between text-xs">
-                <span className="text-[#64748b]">{locale === "ja" ? "期間" : "Period"}</span>
+                <span className="text-[#64748b]">Period</span>
                 <span className="text-[#94a3b8]">{meta.period.split(" ")[0]}…</span>
               </div>
               <div className="flex justify-between text-xs">
-                <span className="text-[#64748b]">{locale === "ja" ? "スコア" : "Score"}</span>
+                <span className="text-[#64748b]">Score</span>
                 <span className="font-mono font-bold" style={{ color: scoreColor(meta.score) }}>{meta.score}%</span>
               </div>
               <div className="flex justify-between text-xs">
-                <span className="text-[#64748b]">{locale === "ja" ? "ステータス" : "Status"}</span>
+                <span className="text-[#64748b]">Status</span>
                 <Badge variant={meta.score >= 80 ? "green" : "yellow"} className="text-[10px]">{meta.status}</Badge>
               </div>
             </div>
@@ -258,17 +258,17 @@ export default function AuditReportPage() {
               {isGenerating ? (
                 <>
                   <Clock size={14} className="animate-spin" />
-                  {locale === "ja" ? "生成中…" : "Generating…"}
+                  Generating…
                 </>
               ) : generated ? (
                 <>
                   <Download size={14} />
-                  {locale === "ja" ? `${selectedFormat}をダウンロード` : `Download ${selectedFormat}`}
+                  Download {selectedFormat}
                 </>
               ) : (
                 <>
                   <FileSpreadsheet size={14} />
-                  {locale === "ja" ? "レポートを生成" : "Generate Report"}
+                  Generate Report
                 </>
               )}
             </Button>
@@ -276,7 +276,7 @@ export default function AuditReportPage() {
             {generated && (
               <p className="text-xs text-emerald-400 text-center mt-2 flex items-center justify-center gap-1">
                 <CheckCircle2 size={11} />
-                {locale === "ja" ? "レポート完成" : "Report ready"} · {REPORT_SIZE_KB} KB
+                Report ready · {reportSizeKb.current} KB
               </p>
             )}
           </Card>

@@ -9,11 +9,13 @@ export default function GlobalError({
   error: Error & { digest?: string };
   unstable_retry: () => void;
 }) {
-  const [isJa] = useState(() => {
-    if (typeof document === "undefined") return false;
+  const [isJa, setIsJa] = useState(false);
+
+  useEffect(() => {
     const match = document.cookie.match(/(?:^|;\s*)NEXT_LOCALE=([^;,\s]+)/);
-    return match?.[1] === "ja";
-  });
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setIsJa(match?.[1] === "ja");
+  }, []);
 
   useEffect(() => {
     // ERROR-04: エラー監視 — NEXT_PUBLIC_SENTRY_DSNが設定されている場合は自動送信

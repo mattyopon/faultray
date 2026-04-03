@@ -2,7 +2,7 @@
 
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { useEffect, useState, useCallback, useRef, useMemo, startTransition } from "react";
+import { useEffect, useState, useCallback, useRef, useMemo } from "react";
 import { api } from "@/lib/api";
 import {
   Network,
@@ -291,9 +291,9 @@ export default function TopologyPage() {
   const [hoveredEdge, setHoveredEdge] = useState<number | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const [containerWidth, setContainerWidth] = useState(1100);
+  const locale = useLocale();
   const [simScore, setSimScore] = useState<number | null>(null);
   const [simTimestamp, setSimTimestamp] = useState<string | null>(null);
-  const locale = useLocale();
   const t = appDict.topology[locale] ?? appDict.topology.en;
 
   const loadData = useCallback(async () => {
@@ -339,9 +339,8 @@ export default function TopologyPage() {
   }, []);
 
   useEffect(() => {
-    startTransition(() => {
-      void loadData();
-    });
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    loadData();
   }, [loadData]);
 
   // Responsive width
@@ -478,8 +477,6 @@ export default function TopologyPage() {
               viewBox={`0 0 ${totalWidth} ${totalHeight}`}
               className="w-full"
               style={{ minHeight: 500, background: "linear-gradient(180deg, #0a0f1a 0%, #0d1320 100%)" }}
-              role="img"
-              aria-label={locale === "ja" ? "サービストポロジー図" : "Service topology diagram"}
             >
               <defs>
                 {/* Grid pattern */}

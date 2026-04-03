@@ -8,6 +8,7 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 import { api, type SimulationRun, type Project } from "@/lib/api";
 import { Onboarding } from "@/components/onboarding";
+import { GettingStarted } from "@/components/dashboard/getting-started";
 import { useLocale } from "@/lib/useLocale";
 import { appDict } from "@/i18n/app-dict";
 import {
@@ -20,9 +21,6 @@ import {
   BarChart3,
   FolderKanban,
   Info,
-  CheckCircle2,
-  Circle,
-  X,
   Activity,
 } from "lucide-react";
 
@@ -31,9 +29,6 @@ const SAMPLE_SCORE = 72;
 const SAMPLE_COMPONENTS = 6;
 const SAMPLE_CRITICAL = 2;
 const SAMPLE_WARNING = 5;
-
-// ---- Getting Started checklist (localStorage key) ----
-const CHECKLIST_STORAGE_KEY = "faultray_checklist_dismissed";
 
 function ScoreRing({ score, size = 120 }: { score: number; size?: number }) {
   const radius = 45;
@@ -63,113 +58,12 @@ function ScoreRing({ score, size = 120 }: { score: number; size?: number }) {
   );
 }
 
-// ---- Getting Started Checklist Component ----
-function GettingStartedChecklist({ hasRun }: { hasRun: boolean }) {
-  const locale = useLocale();
-  const [dismissed, setDismissed] = useState(() => {
-    try {
-      return localStorage.getItem(CHECKLIST_STORAGE_KEY) === "true";
-    } catch { return false; }
-  });
-  const [checkedItemsBase, setCheckedItemsBase] = useState<Record<number, boolean>>(() => {
-    try {
-      const stored = localStorage.getItem("faultray_checklist_checked");
-      return stored ? (JSON.parse(stored) as Record<number, boolean>) : {};
-    } catch { return {}; }
-  });
-
-  // Step 2 is auto-checked when a run exists — merged without setState in effect
-  const checkedItems: Record<number, boolean> = hasRun ? { ...checkedItemsBase, 1: true } : checkedItemsBase;
-  const setCheckedItems = (updater: (prev: Record<number, boolean>) => Record<number, boolean>) => {
-    setCheckedItemsBase((prev) => updater(prev));
-  };
-
-  const dismiss = () => {
-    setDismissed(true);
-    try { localStorage.setItem(CHECKLIST_STORAGE_KEY, "true"); } catch { /* ignore */ }
-  };
-
-  const toggle = (idx: number) => {
-    setCheckedItems((prev) => {
-      const next = { ...prev, [idx]: !prev[idx] };
-      try { localStorage.setItem("faultray_checklist_checked", JSON.stringify(next)); } catch { /* ignore */ }
-      return next;
-    });
-  };
-
-  const steps = [
-    { label: locale === "ja" ? "アカウント作成" : "Create account", href: null, alwaysDone: true },
-    { label: locale === "ja" ? "最初のシミュレーション実行" : "Run your first simulation", href: "/simulate", alwaysDone: false },
-    { label: locale === "ja" ? "レポートを確認" : "Review reports", href: "/reports", alwaysDone: false },
-    { label: locale === "ja" ? "DORA診断を実行" : "Run DORA assessment", href: "/dora", alwaysDone: false },
-    { label: locale === "ja" ? "チームメンバーを招待" : "Invite team members", href: "/teams", alwaysDone: false },
-  ];
-
-  const allDone = steps.every((s, i) => s.alwaysDone || checkedItems[i]);
-
-  if (dismissed || allDone) return null;
-
-  return (
-    <div className="mb-8 p-5 rounded-xl border border-[#1e293b] bg-[#0d1117]">
-      <div className="flex items-center justify-between mb-4">
-        <h3 className="text-sm font-semibold flex items-center gap-2">
-          <Zap size={14} className="text-[#FFD700]" />
-          {locale === "ja" ? "はじめよう" : "Getting Started"}
-        </h3>
-        <button
-          onClick={dismiss}
-          className="p-1 text-[#64748b] hover:text-white transition-colors rounded"
-          aria-label={locale === "ja" ? "チェックリストを閉じる" : "Close checklist"}
-        >
-          <X size={14} />
-        </button>
-      </div>
-      <div className="space-y-2">
-        {steps.map((step, i) => {
-          const done = step.alwaysDone || !!checkedItems[i];
-          return (
-            <div key={i} className="flex items-center gap-3">
-              <button
-                onClick={() => !step.alwaysDone && toggle(i)}
-                className="shrink-0 transition-colors"
-                aria-label={done ? "Done" : "Mark done"}
-                disabled={step.alwaysDone}
-              >
-                {done
-                  ? <CheckCircle2 size={16} className="text-emerald-400" />
-                  : <Circle size={16} className="text-[#334155]" />}
-              </button>
-              {step.href ? (
-                <Link
-                  href={step.href}
-                  className={`text-sm transition-colors hover:text-[#FFD700] ${done ? "line-through text-[#475569]" : "text-[#94a3b8]"}`}
-                >
-                  {step.label}
-                </Link>
-              ) : (
-                <span className={`text-sm ${done ? "line-through text-[#475569]" : "text-[#94a3b8]"}`}>
-                  {step.label}
-                </span>
-              )}
-            </div>
-          );
-        })}
-      </div>
-      <button
-        onClick={dismiss}
-        className="mt-4 text-xs text-[#64748b] hover:text-white transition-colors"
-      >
-        {locale === "ja" ? "閉じる" : "Dismiss"}
-      </button>
-    </div>
-  );
-}
-
 export default function DashboardPage() {
   const { user } = useAuth();
   const [runs, setRuns] = useState<SimulationRun[]>([]);
   const [projects, setProjects] = useState<Project[]>([]);
   const [loading, setLoading] = useState(true);
+  const [fetchError, setFetchError] = useState<string | null>(null);
   const locale = useLocale();
   const t = appDict.dashboard[locale] ?? appDict.dashboard.en;
   const tProjects = appDict.projects[locale] ?? appDict.projects.en;
@@ -190,8 +84,16 @@ export default function DashboardPage() {
 
   useEffect(() => {
     Promise.all([
-      api.getRuns(undefined, 5).then((data) => setRuns(data.runs || [])).catch(() => setRuns([])),
-      api.getProjects().then((data) => setProjects(Array.isArray(data) ? data.slice(0, 3) : [])).catch(() => setProjects([])),
+      api.getRuns(undefined, 5).then((data) => setRuns(data.runs || [])).catch((err) => {
+        console.error("[dashboard] Failed to fetch runs:", err);
+        setFetchError("データの取得に失敗しました");
+        setRuns([]);
+      }),
+      api.getProjects().then((data) => setProjects(Array.isArray(data) ? data.slice(0, 3) : [])).catch((err) => {
+        console.error("[dashboard] Failed to fetch projects:", err);
+        setFetchError("データの取得に失敗しました");
+        setProjects([]);
+      }),
     ]).finally(() => setLoading(false));
   }, []);
 
@@ -219,6 +121,12 @@ export default function DashboardPage() {
   return (
     <div className="max-w-[1200px] mx-auto px-6 py-10">
       <Onboarding />
+
+      {fetchError && (
+        <div className="mb-4 p-3 bg-red-500/10 border border-red-500/20 rounded-lg text-red-400 text-sm">
+          {fetchError}
+        </div>
+      )}
 
       {/* ERRMSG-07: 支払い失敗バナー — past_due状態の場合に表示 */}
       {showPaymentFailed && (
@@ -369,8 +277,8 @@ export default function DashboardPage() {
         </div>
       )}
 
-      {/* Getting Started Checklist */}
-      <GettingStartedChecklist hasRun={runs.length > 0} />
+      {/* UX-03: Getting Started Checklist (extracted component) */}
+      <GettingStarted hasRun={runs.length > 0} locale={locale} />
 
       {/* Header */}
       <div className="flex items-center justify-between mb-10">
@@ -424,7 +332,7 @@ export default function DashboardPage() {
           </p>
           <div className="flex items-center gap-2 mt-1">
             {isSampleMode ? (
-              <span className="text-xs text-[#64748b]">{locale === "ja" ? "コンポーネント数" : "Components"}</span>
+              <span className="text-xs text-[#64748b]">コンポーネント数</span>
             ) : (
               <>
                 <span className="text-xs text-emerald-400">{latestRun?.scenarios_passed ?? 147} {t.passed}</span>

@@ -55,6 +55,20 @@ const plans: Plan[] = [
     sla: "99.9% Uptime SLA",
   },
   {
+    name: "Starter",
+    monthlyPrice: 99,
+    annualMonthlyPrice: 79,
+    annualTotal: 949,
+    desc: "For small teams getting started with reliability testing. 30 simulations covers most ongoing monitoring needs.",
+    features: ["30 simulations / month", "Up to 20 components", "Everything in Free", "Email support (48h)", "Basic remediation suggestions"],
+    disabledFeatures: ["DORA report export", "AI-powered analysis", "Custom SSO"],
+    cta: "Start Starter",
+    ctaHref: "/login?plan=starter",
+    popular: false,
+    stripePlan: null,
+    sla: null,
+  },
+  {
     name: "Free",
     monthlyPrice: 0,
     annualMonthlyPrice: 0,
@@ -71,21 +85,21 @@ const plans: Plan[] = [
 ];
 
 const featureComparison = [
-  { name: "Simulations / month", free: "5", pro: "100", business: "Unlimited" },
-  { name: "Components", free: "5", pro: "50", business: "Unlimited" },
-  { name: "Simulation engines", free: "100+", pro: "100+", business: "100+" },
-  { name: "N-Layer Model", free: true, pro: true, business: true },
-  { name: "DORA report export", free: false, pro: "PDF", business: "PDF + API" },
-  { name: "Insurance API", free: false, pro: false, business: true },
-  { name: "AI-powered analysis", free: false, pro: true, business: true },
-  { name: "Custom SSO / SAML", free: false, pro: false, business: true },
-  { name: "99.9% Uptime SLA", free: false, pro: true, business: true },
-  { name: "Support", free: "Community", pro: "Email (24h)", business: "Dedicated (1h)" },
+  { name: "Simulations / month", free: "5", starter: "30", pro: "100", business: "Unlimited" },
+  { name: "Components", free: "5", starter: "20", pro: "50", business: "Unlimited" },
+  { name: "Simulation engines", free: "100+", starter: "100+", pro: "100+", business: "100+" },
+  { name: "N-Layer Model", free: true, starter: true, pro: true, business: true },
+  { name: "DORA report export", free: false, starter: false, pro: "PDF", business: "PDF + API" },
+  { name: "Insurance API", free: false, starter: false, pro: false, business: true },
+  { name: "AI-powered analysis", free: false, starter: false, pro: true, business: true },
+  { name: "Custom SSO / SAML", free: false, starter: false, pro: false, business: true },
+  { name: "99.9% Uptime SLA", free: false, starter: false, pro: true, business: true },
+  { name: "Support", free: "Community", starter: "Email (48h)", pro: "Email (24h)", business: "Dedicated (1h)" },
 ];
 
 function CellValue({ value }: { value: string | boolean }) {
   if (value === true) return <Check size={18} className="text-emerald-400 mx-auto" />;
-  if (value === false) return <Minus size={18} className="text-[#64748b] mx-auto" />;
+  if (value === false) return <Minus size={18} className="text-[var(--text-muted)] mx-auto" />;
   return <span>{value}</span>;
 }
 
@@ -108,7 +122,7 @@ export default function PricingPage() {
       }
     } catch {
       // Stripe not configured — show retry UI instead of silent redirect
-      setCheckoutError({ plan, message: isJa ? "決済処理に失敗しました。再試行するか、サポートにお問い合わせください。" : "Payment failed. Please retry or contact support." });
+      setCheckoutError({ plan, message: "決済処理に失敗しました。再試行するか、サポートにお問い合わせください。" });
     } finally {
       setLoadingPlan(null);
     }
@@ -128,17 +142,17 @@ export default function PricingPage() {
                 disabled={loadingPlan !== null}
                 className="px-3 py-1.5 text-xs font-medium rounded bg-red-500/20 text-red-300 hover:bg-red-500/30 border border-red-500/30 transition-colors disabled:opacity-50"
               >
-                {isJa ? "再試行" : "Retry"}
+                再試行
               </button>
               <a
-                href={`mailto:support@faultray.io?subject=${isJa ? "決済エラー" : "Payment%20Error"}`}
-                className="px-3 py-1.5 text-xs font-medium rounded bg-[#1e293b] text-[#94a3b8] hover:text-white border border-[#334155] transition-colors"
+                href="mailto:support@faultray.io?subject=決済エラー"
+                className="px-3 py-1.5 text-xs font-medium rounded bg-[var(--bg-tertiary)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] border border-[var(--border-color)] transition-colors"
               >
-                {isJa ? "サポートに連絡" : "Contact support"}
+                サポートに連絡
               </a>
             </div>
           </div>
-          <button onClick={() => setCheckoutError(null)} aria-label="閉じる" className="text-[#64748b] hover:text-white text-sm leading-none">&times;</button>
+          <button onClick={() => setCheckoutError(null)} aria-label="閉じる" className="text-[var(--text-muted)] hover:text-[var(--text-primary)] text-sm leading-none">&times;</button>
         </div>
       )}
       <div className="text-center mb-10">
@@ -146,16 +160,16 @@ export default function PricingPage() {
           {isJa ? "信頼性に投資し、障害が発生する前に防ぐ。" : "Invest in reliability. Prevent the outage before it costs you."}
         </h1>
         {/* PSYCH-02: Loss aversion framing — emphasize cost of NOT having FaultRay */}
-        <p className="text-lg text-[#94a3b8]">
+        <p className="text-lg text-[var(--text-secondary)]">
           {isJa ? (
-            <>中規模SaaSでは1時間のダウンタイムで{" "}<span className="text-white font-semibold">1,000万円以上</span>の損失。FaultRayが弱点を先に見つけます。</>
+            <>中規模SaaSでは1時間のダウンタイムで{" "}<span className="text-[var(--text-primary)] font-semibold">1,000万円以上</span>の損失。FaultRayが弱点を先に見つけます。</>
           ) : (
-            <>A single hour of downtime costs{" "}<span className="text-white font-semibold">$100,000+</span> for mid-size SaaS. FaultRay finds the weak points before they find you.</>
+            <>A single hour of downtime costs{" "}<span className="text-[var(--text-primary)] font-semibold">$100,000+</span> for mid-size SaaS. FaultRay finds the weak points before they find you.</>
           )}
         </p>
         <div className="mt-4 flex flex-wrap items-center justify-center gap-3">
-          <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-[#FFD700]/10 border border-[#FFD700]/20">
-            <span className="text-sm font-semibold text-[#FFD700]">14-day free trial on Pro</span>
+          <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-[var(--gold)]/10 border border-[var(--gold)]/20">
+            <span className="text-sm font-semibold text-[var(--gold)]">14-day free trial on Pro</span>
           </div>
           {/* CVR-03: Explicitly state no credit card required */}
           <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-emerald-500/10 border border-emerald-500/20">
@@ -169,24 +183,22 @@ export default function PricingPage() {
           </div>
         </div>
         {/* CVR-05: Social proof micro-stats */}
-        <div className="mt-5 flex flex-wrap items-center justify-center gap-6 text-sm text-[#64748b]">
-          <span><span className="font-bold text-white">2,000+</span> simulations run/month</span>
+        <div className="mt-5 flex flex-wrap items-center justify-center gap-6 text-sm text-[var(--text-muted)]">
+          <span><span className="font-bold text-[var(--text-primary)]">2,000+</span> simulations run/month</span>
           <span className="hidden sm:block">·</span>
-          <span><span className="font-bold text-white">$0</span> to get started</span>
+          <span><span className="font-bold text-[var(--text-primary)]">$0</span> to get started</span>
           <span className="hidden sm:block">·</span>
           <span>Cancel anytime</span>
         </div>
-        {/* JP-05: 日本語サポートの保証を明示 (Japanese locale only) */}
-        {isJa && (
-          <div className="mt-4 inline-flex items-center gap-2 px-4 py-2 rounded-full bg-blue-500/10 border border-blue-500/20">
-            <span className="text-sm font-semibold text-blue-400">日本語サポート対応 — 日本語でのメール・稟議書サポートを提供</span>
-          </div>
-        )}
+        {/* JP-05: 日本語サポートの保証を明示 */}
+        <div className="mt-4 inline-flex items-center gap-2 px-4 py-2 rounded-full bg-blue-500/10 border border-blue-500/20">
+          <span className="text-sm font-semibold text-blue-400">日本語サポート対応 — 日本語でのメール・稟議書サポートを提供</span>
+        </div>
       </div>
 
       {/* Billing toggle */}
       <div className="flex items-center justify-center gap-4 mb-12">
-        <span className={`text-sm font-medium transition-colors ${billing === "monthly" ? "text-white" : "text-[#64748b]"}`}>
+        <span className={`text-sm font-medium transition-colors ${billing === "monthly" ? "text-[var(--text-primary)]" : "text-[var(--text-muted)]"}`}>
           {isJa ? "月額" : "Monthly"}
         </span>
         <button
@@ -194,8 +206,8 @@ export default function PricingPage() {
           aria-checked={billing === "annual"}
           aria-label={isJa ? "年額と月額を切り替え" : "Toggle annual billing"}
           onClick={() => setBilling((b) => (b === "monthly" ? "annual" : "monthly"))}
-          className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-[#FFD700] ${
-            billing === "annual" ? "bg-[#FFD700]" : "bg-[#1e293b]"
+          className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--gold)] ${
+            billing === "annual" ? "bg-[var(--gold)]" : "bg-[var(--border-color)]"
           }`}
         >
           <span
@@ -204,24 +216,27 @@ export default function PricingPage() {
             }`}
           />
         </button>
-        <span className={`text-sm font-medium transition-colors ${billing === "annual" ? "text-white" : "text-[#64748b]"}`}>
+        <span className={`text-sm font-medium transition-colors ${billing === "annual" ? "text-[var(--text-primary)]" : "text-[var(--text-muted)]"}`}>
           {isJa ? "年額" : "Annual"}
         </span>
         {billing === "annual" && (
-          <span className="px-2 py-0.5 text-xs font-bold text-[#0a0e1a] bg-[#FFD700] rounded-full">
+          <span className="px-2 py-0.5 text-xs font-bold text-white bg-[var(--gold)] rounded-full">
             {isJa ? "20%お得" : "SAVE 20%"}
           </span>
         )}
       </div>
 
       {/* Plans */}
-      <div className="grid md:grid-cols-3 gap-6 max-w-[1000px] mx-auto mb-20">
+      <div className="grid md:grid-cols-4 gap-6 max-w-[1300px] mx-auto mb-20">
         {plans.map((plan) => {
           const displayPrice = billing === "annual" ? plan.annualMonthlyPrice : plan.monthlyPrice;
+          // JP-STARTER: Starter plan Japanese price display
+          const jaMonthlyPrice: Record<string, string> = { Starter: "¥15,000" };
+          const jaAnnualMonthlyPrice: Record<string, string> = { Starter: "¥11,900" };
           return (
-            <div key={plan.name} className={`relative p-9 rounded-2xl border flex flex-col transition-all duration-200 hover:-translate-y-1 hover:shadow-[0_8px_32px_rgba(0,0,0,0.5)] ${plan.popular ? "border-[#FFD700] bg-gradient-to-b from-[#FFD700]/[0.04] to-[#111827] shadow-[0_0_40px_rgba(255,215,0,0.1)]" : "border-[#1e293b] bg-[#111827]"}`}>
+            <div key={plan.name} className={`relative p-9 rounded-2xl border flex flex-col transition-all duration-200 hover:-translate-y-1 hover:shadow-lg ${plan.popular ? "border-[var(--gold)] bg-gradient-to-b from-[var(--gold)]/[0.04] to-[var(--bg-card)] shadow-md" : "border-[var(--border-color)] bg-[var(--bg-card)]"}`}>
               {plan.popular && (
-                <div className="absolute -top-3 left-1/2 -translate-x-1/2 px-4 py-1 text-xs font-bold text-[#0a0e1a] bg-[#FFD700] rounded-full uppercase tracking-wide">
+                <div className="absolute -top-3 left-1/2 -translate-x-1/2 px-4 py-1 text-xs font-bold text-white bg-[var(--gold)] rounded-full uppercase tracking-wide">
                   Most Popular
                 </div>
               )}
@@ -235,27 +250,36 @@ export default function PricingPage() {
                 </div>
               )}
 
-              <div className="flex items-baseline gap-0.5 mb-1">
-                <span className="text-xl font-semibold text-[#94a3b8]">$</span>
-                <span className="text-4xl font-extrabold tracking-tight">{displayPrice}</span>
-                <span className="text-sm text-[#64748b] ml-1">/month</span>
-              </div>
+              {isJa && plan.name in jaMonthlyPrice ? (
+                <div className="flex items-baseline gap-0.5 mb-1">
+                  <span className="text-4xl font-extrabold tracking-tight">
+                    {billing === "annual" ? jaAnnualMonthlyPrice[plan.name] : jaMonthlyPrice[plan.name]}
+                  </span>
+                  <span className="text-sm text-[var(--text-muted)] ml-1">/月</span>
+                </div>
+              ) : (
+                <div className="flex items-baseline gap-0.5 mb-1">
+                  <span className="text-xl font-semibold text-[var(--text-secondary)]">$</span>
+                  <span className="text-4xl font-extrabold tracking-tight">{displayPrice}</span>
+                  <span className="text-sm text-[var(--text-muted)] ml-1">/month</span>
+                </div>
+              )}
               {billing === "annual" && plan.annualTotal > 0 && (
-                <p className="text-xs text-[#64748b] mb-4">
+                <p className="text-xs text-[var(--text-muted)] mb-4">
                   Billed annually (${plan.annualTotal.toLocaleString()}/yr)
                 </p>
               )}
               {!(billing === "annual" && plan.annualTotal > 0) && <div className="mb-4" />}
 
-              <p className="text-sm text-[#94a3b8] leading-relaxed mb-6">{plan.desc}</p>
+              <p className="text-sm text-[var(--text-secondary)] leading-relaxed mb-6">{plan.desc}</p>
               <ul className="space-y-3 mb-8 flex-1">
                 {plan.features.map((f) => (
-                  <li key={f} className="flex items-center gap-2.5 text-sm text-[#94a3b8]">
+                  <li key={f} className="flex items-center gap-2.5 text-sm text-[var(--text-secondary)]">
                     <Check size={16} className="text-emerald-400 shrink-0" />{f}
                   </li>
                 ))}
                 {plan.disabledFeatures.map((f) => (
-                  <li key={f} className="flex items-center gap-2.5 text-sm text-[#94a3b8] opacity-40">
+                  <li key={f} className="flex items-center gap-2.5 text-sm text-[var(--text-secondary)] opacity-40">
                     <Minus size={16} className="shrink-0" />{f}
                   </li>
                 ))}
@@ -264,7 +288,7 @@ export default function PricingPage() {
                 <button
                   onClick={() => handleCheckout(plan.stripePlan!)}
                   disabled={loadingPlan === plan.stripePlan}
-                  className={`w-full text-center py-3 rounded-xl font-semibold transition-all flex items-center justify-center gap-2 ${plan.popular ? "bg-[#FFD700] text-[#0a0e1a] hover:bg-[#ffe44d] disabled:opacity-70" : "border border-[#1e293b] text-white hover:border-[#64748b] disabled:opacity-70"}`}
+                  className={`w-full text-center py-3 rounded-xl font-semibold transition-all flex items-center justify-center gap-2 ${plan.popular ? "bg-[var(--gold)] text-white hover:bg-[#044a99] disabled:opacity-70" : "border border-[var(--border-color)] text-[var(--text-primary)] hover:border-[var(--text-muted)] disabled:opacity-70"}`}
                 >
                   {loadingPlan === plan.stripePlan ? (
                     <><Loader2 size={16} className="animate-spin" /> Processing...</>
@@ -275,7 +299,7 @@ export default function PricingPage() {
               ) : (
                 <Link
                   href={plan.ctaHref}
-                  className={`w-full text-center py-3 rounded-xl font-semibold transition-all block ${plan.popular ? "bg-[#FFD700] text-[#0a0e1a] hover:bg-[#ffe44d]" : "border border-[#1e293b] text-white hover:border-[#64748b]"}`}
+                  className={`w-full text-center py-3 rounded-xl font-semibold transition-all block ${plan.popular ? "bg-[var(--gold)] text-white hover:bg-[#044a99]" : "border border-[var(--border-color)] text-[var(--text-primary)] hover:border-[var(--text-muted)]"}`}
                 >
                   {plan.cta}
                 </Link>
@@ -303,17 +327,17 @@ export default function PricingPage() {
         <div className="grid md:grid-cols-3 gap-4 text-center">
           {[
             { label: "Average cost of 1 hour downtime", value: "$100,000+", color: "text-red-400", icon: "⚠️" },
-            { label: "FaultRay Pro — per month", value: "$299", color: "text-[#FFD700]", icon: "✅" },
+            { label: "FaultRay Pro — per month", value: "$299", color: "text-[var(--gold)]", icon: "✅" },
             { label: "ROI if it prevents 1 incident/year", value: "33,000%+", color: "text-emerald-400", icon: "📈" },
           ].map((stat) => (
-            <div key={stat.label} className="p-5 rounded-xl border border-[#1e293b] bg-[#111827]">
+            <div key={stat.label} className="p-5 rounded-xl border border-[var(--border-color)] bg-[var(--bg-card)]">
               <p className="text-2xl mb-1">{stat.icon}</p>
               <p className={`text-2xl font-extrabold font-mono mb-1 ${stat.color}`}>{stat.value}</p>
-              <p className="text-xs text-[#64748b]">{stat.label}</p>
+              <p className="text-xs text-[var(--text-muted)]">{stat.label}</p>
             </div>
           ))}
         </div>
-        <p className="text-center text-xs text-[#475569] mt-3">
+        <p className="text-center text-xs text-[var(--text-muted)] mt-3">
           Industry average: $5,600/minute downtime cost (Gartner, 2024). One incident prevented pays for 27+ years of Pro.
         </p>
       </div>
@@ -321,23 +345,25 @@ export default function PricingPage() {
       {/* Feature Comparison Table */}
       <div className="max-w-[900px] mx-auto">
         <h2 className="text-xl font-bold text-center mb-8">Feature Comparison</h2>
-        <div className="overflow-x-auto rounded-2xl border border-[#1e293b]">
+        <div className="overflow-x-auto rounded-2xl border border-[var(--border-color)]">
           <table className="w-full border-collapse text-sm">
             <thead>
               <tr>
-                <th scope="col" className="px-5 py-4 text-left bg-[#141a2e] text-[#94a3b8] font-semibold">Feature</th>
-                <th scope="col" className="px-5 py-4 text-center bg-[#141a2e] text-[#94a3b8] font-semibold">Free</th>
-                <th scope="col" className="px-5 py-4 text-center bg-[#FFD700]/[0.06] text-[#FFD700] font-semibold">Pro</th>
-                <th scope="col" className="px-5 py-4 text-center bg-[#141a2e] text-[#94a3b8] font-semibold">Business</th>
+                <th scope="col" className="px-5 py-4 text-left bg-[var(--bg-tertiary)] text-[var(--text-secondary)] font-semibold">Feature</th>
+                <th scope="col" className="px-5 py-4 text-center bg-[var(--bg-tertiary)] text-[var(--text-secondary)] font-semibold">Free</th>
+                <th scope="col" className="px-5 py-4 text-center bg-[var(--bg-tertiary)] text-[var(--text-secondary)] font-semibold">Starter</th>
+                <th scope="col" className="px-5 py-4 text-center bg-[var(--gold)]/[0.06] text-[var(--gold)] font-semibold">Pro</th>
+                <th scope="col" className="px-5 py-4 text-center bg-[var(--bg-tertiary)] text-[var(--text-secondary)] font-semibold">Business</th>
               </tr>
             </thead>
             <tbody>
               {featureComparison.map((row, i) => (
-                <tr key={row.name} className={i < featureComparison.length - 1 ? "border-b border-[#1e293b]" : ""}>
-                  <td className="px-5 py-4 font-medium text-white bg-[#111827]">{row.name}</td>
-                  <td className="px-5 py-4 text-center bg-[#111827] text-[#94a3b8]"><CellValue value={row.free} /></td>
-                  <td className="px-5 py-4 text-center bg-[#FFD700]/[0.03] text-white"><CellValue value={row.pro} /></td>
-                  <td className="px-5 py-4 text-center bg-[#111827] text-[#94a3b8]"><CellValue value={row.business} /></td>
+                <tr key={row.name} className={i < featureComparison.length - 1 ? "border-b border-[var(--border-color)]" : ""}>
+                  <td className="px-5 py-4 font-medium text-[var(--text-primary)] bg-[var(--bg-card)]">{row.name}</td>
+                  <td className="px-5 py-4 text-center bg-[var(--bg-card)] text-[var(--text-secondary)]"><CellValue value={row.free} /></td>
+                  <td className="px-5 py-4 text-center bg-[var(--bg-card)] text-[var(--text-secondary)]"><CellValue value={row.starter} /></td>
+                  <td className="px-5 py-4 text-center bg-[var(--gold)]/[0.03] text-[var(--text-primary)]"><CellValue value={row.pro} /></td>
+                  <td className="px-5 py-4 text-center bg-[var(--bg-card)] text-[var(--text-secondary)]"><CellValue value={row.business} /></td>
                 </tr>
               ))}
             </tbody>
@@ -347,18 +373,18 @@ export default function PricingPage() {
 
       {/* SLA note */}
       <div className="max-w-[900px] mx-auto mt-8">
-        <p className="text-xs text-[#64748b] text-center">
+        <p className="text-xs text-[var(--text-muted)] text-center">
           99.9% Uptime SLA applies to Pro and Business plans. Service status:{" "}
           <a
             href="https://status.faultray.com"
             target="_blank"
             rel="noopener noreferrer"
-            className="text-[#94a3b8] hover:text-white transition-colors"
+            className="text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors"
           >
             status.faultray.com
           </a>
           . View our{" "}
-          <Link href="/terms" className="text-[#94a3b8] hover:text-white transition-colors">
+          <Link href="/terms" className="text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors">
             Terms of Service
           </Link>{" "}
           for full SLA details.
@@ -369,8 +395,8 @@ export default function PricingPage() {
       <div className="max-w-[900px] mx-auto mt-16 p-6 rounded-2xl border border-purple-500/20 bg-purple-500/[0.04]">
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
           <div>
-            <h3 className="text-base font-bold text-white mb-1">Already on Pro? Unlock more with Business.</h3>
-            <p className="text-sm text-[#94a3b8]">
+            <h3 className="text-base font-bold text-[var(--text-primary)] mb-1">Already on Pro? Unlock more with Business.</h3>
+            <p className="text-sm text-[var(--text-secondary)]">
               Unlimited simulations, custom SSO, dedicated Slack support, Insurance API, and on-premise deployment.
               Enterprises choose Business for compliance-critical workloads.
             </p>
@@ -385,33 +411,24 @@ export default function PricingPage() {
       </div>
 
       {/* PAY-01: 請求書払い（銀行振込）対応のお知らせ */}
-      <div className="max-w-[900px] mx-auto mt-8 p-4 rounded-xl border border-[#1e293b] bg-[#111827] flex items-start gap-3">
-        <span className="text-lg shrink-0" aria-hidden="true">🏦</span>
+      <div className="max-w-[900px] mx-auto mt-8 p-4 rounded-xl border border-[var(--border-color)] bg-[var(--bg-card)] flex items-start gap-3">
+        <span className="text-lg shrink-0">🏦</span>
         <div>
-          <p className="text-sm text-[#94a3b8]">
-            {isJa ? (
-              <>
-                <span className="text-white font-semibold">請求書払い・銀行振込に対応しています。</span>{" "}
-                年間契約をご希望の企業様は <a href="mailto:sales@faultray.com" className="text-[#FFD700] hover:underline">sales@faultray.com</a> までお問い合わせください。
-                インボイス制度対応の適格請求書を発行いたします。
-              </>
-            ) : (
-              <>
-                <span className="text-white font-semibold">Invoice and bank transfer payment available.</span>{" "}
-                For annual enterprise billing, contact <a href="mailto:sales@faultray.com" className="text-[#FFD700] hover:underline">sales@faultray.com</a>.
-              </>
-            )}
+          <p className="text-sm text-[var(--text-secondary)]">
+            <span className="text-[var(--text-primary)] font-semibold">請求書払い・銀行振込に対応しています。</span>{" "}
+            年間契約をご希望の企業様は <a href="mailto:sales@faultray.com" className="text-[var(--gold)] hover:underline">sales@faultray.com</a> までお問い合わせください。
+            インボイス制度対応の適格請求書を発行いたします。
           </p>
-          {isJa && <p className="text-xs text-[#64748b] mt-1">Invoice payment (bank transfer) available for annual plans. Contact us for enterprise billing.</p>}
+          <p className="text-xs text-[var(--text-muted)] mt-1">Invoice payment (bank transfer) available for annual plans. Contact us for enterprise billing.</p>
         </div>
       </div>
 
       {/* Footer links */}
-      <div className="max-w-[900px] mx-auto mt-8 pt-8 border-t border-[#1e293b] flex flex-wrap justify-center gap-6 text-sm text-[#64748b]">
-        <Link href="/privacy" className="hover:text-white transition-colors">{isJa ? "プライバシーポリシー" : "Privacy Policy"}</Link>
-        <Link href="/terms" className="hover:text-white transition-colors">{isJa ? "利用規約" : "Terms of Service"}</Link>
-        {isJa && <Link href="/tokushoho" className="hover:text-white transition-colors">特定商取引法に基づく表記</Link>}
-        <a href="mailto:sales@faultray.com" className="hover:text-white transition-colors">{isJa ? "セールスに問い合わせ" : "Contact Sales"}</a>
+      <div className="max-w-[900px] mx-auto mt-8 pt-8 border-t border-[var(--border-color)] flex flex-wrap justify-center gap-6 text-sm text-[var(--text-muted)]">
+        <Link href="/privacy" className="hover:text-[var(--text-primary)] transition-colors">Privacy Policy</Link>
+        <Link href="/terms" className="hover:text-[var(--text-primary)] transition-colors">Terms of Service</Link>
+        <Link href="/tokushoho" className="hover:text-[var(--text-primary)] transition-colors">特定商取引法に基づく表記</Link>
+        <a href="mailto:sales@faultray.com" className="hover:text-[var(--text-primary)] transition-colors">Contact Sales</a>
       </div>
     </div>
   );

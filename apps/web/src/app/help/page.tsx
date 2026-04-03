@@ -39,7 +39,7 @@ function Section({
   return (
     <Card className="mb-6">
       <div className="flex items-center gap-3 mb-4">
-        <Icon size={20} className="text-[#FFD700]" />
+        <Icon size={20} className="text-[var(--gold)]" />
         <h2 className="text-lg font-bold">{title}</h2>
       </div>
       {children}
@@ -57,13 +57,13 @@ function FeatureItem({
   description: string;
 }) {
   return (
-    <div className="flex gap-3 p-3 rounded-lg hover:bg-white/5 transition-colors">
+    <div className="flex gap-3 p-3 rounded-lg hover:bg-black/5 transition-colors">
       <div className="mt-0.5">
-        <Icon size={16} className="text-[#FFD700]" />
+        <Icon size={16} className="text-[var(--gold)]" />
       </div>
       <div>
-        <p className="text-sm font-semibold text-[#e2e8f0] mb-1">{title}</p>
-        <p className="text-sm text-[#94a3b8] leading-relaxed">{description}</p>
+        <p className="text-sm font-semibold text-[var(--text-primary)] mb-1">{title}</p>
+        <p className="text-sm text-[var(--text-secondary)] leading-relaxed">{description}</p>
       </div>
     </div>
   );
@@ -72,21 +72,21 @@ function FeatureItem({
 function FaqItem({ question, answer }: { question: string; answer: string }) {
   const [open, setOpen] = useState(false);
   return (
-    <div className="border-b border-[#1e293b] last:border-b-0">
+    <div className="border-b border-[var(--border-color)] last:border-b-0">
       <button
         onClick={() => setOpen(!open)}
         className="w-full flex items-center justify-between py-4 text-left group"
       >
-        <span className="text-sm font-medium text-[#e2e8f0] group-hover:text-white transition-colors pr-4">
+        <span className="text-sm font-medium text-[var(--text-primary)] group-hover:text-[var(--text-primary)] transition-colors pr-4">
           {question}
         </span>
         <ChevronDown
           size={16}
-          className={`text-[#64748b] shrink-0 transition-transform ${open ? "rotate-180" : ""}`}
+          className={`text-[var(--text-muted)] shrink-0 transition-transform ${open ? "rotate-180" : ""}`}
         />
       </button>
       {open && (
-        <p className="text-sm text-[#94a3b8] pb-4 leading-relaxed">{answer}</p>
+        <p className="text-sm text-[var(--text-secondary)] pb-4 leading-relaxed">{answer}</p>
       )}
     </div>
   );
@@ -100,35 +100,35 @@ export default function HelpPage() {
     <div className="max-w-[800px] mx-auto px-6 py-10">
       <div className="mb-10">
         <h1 className="text-2xl font-bold mb-1 flex items-center gap-3">
-          <HelpCircle size={24} className="text-[#FFD700]" />
+          <HelpCircle size={24} className="text-[var(--gold)]" />
           {t.title}
         </h1>
-        <p className="text-[#94a3b8] text-sm">{t.subtitle}</p>
+        <p className="text-[var(--text-secondary)] text-sm">{t.subtitle}</p>
       </div>
 
       {/* Getting Started */}
       <Section icon={Rocket} title={t.gettingStarted}>
         <div className="space-y-4">
           <div>
-            <h3 className="text-sm font-semibold text-[#e2e8f0] mb-2">{t.whatIsFaultray}</h3>
-            <p className="text-sm text-[#94a3b8] leading-relaxed">{t.whatIsFaultrayDesc}</p>
+            <h3 className="text-sm font-semibold text-[var(--text-primary)] mb-2">{t.whatIsFaultray}</h3>
+            <p className="text-sm text-[var(--text-secondary)] leading-relaxed">{t.whatIsFaultrayDesc}</p>
           </div>
-          <div className="border-t border-[#1e293b] pt-4">
-            <h3 className="text-sm font-semibold text-[#e2e8f0] mb-2">{t.basicUsage}</h3>
+          <div className="border-t border-[var(--border-color)] pt-4">
+            <h3 className="text-sm font-semibold text-[var(--text-primary)] mb-2">{t.basicUsage}</h3>
             <div className="space-y-2">
-              <p className="text-sm text-[#94a3b8]">{t.basicStep1}</p>
-              <p className="text-sm text-[#94a3b8]">{t.basicStep2}</p>
-              <p className="text-sm text-[#94a3b8]">{t.basicStep3}</p>
+              <p className="text-sm text-[var(--text-secondary)]">{t.basicStep1}</p>
+              <p className="text-sm text-[var(--text-secondary)]">{t.basicStep2}</p>
+              <p className="text-sm text-[var(--text-secondary)]">{t.basicStep3}</p>
             </div>
           </div>
           {/* NAV-DETAIL-09: Pro tips for returning users */}
           {(t as Record<string, string>).proTips && (
-            <div className="border-t border-[#1e293b] pt-4">
-              <h3 className="text-sm font-semibold text-[#e2e8f0] mb-2">{(t as Record<string, string>).proTips}</h3>
+            <div className="border-t border-[var(--border-color)] pt-4">
+              <h3 className="text-sm font-semibold text-[var(--text-primary)] mb-2">{(t as Record<string, string>).proTips}</h3>
               <div className="space-y-2">
-                <p className="text-sm text-[#94a3b8]">{(t as Record<string, string>).proTip1}</p>
-                <p className="text-sm text-[#94a3b8]">{(t as Record<string, string>).proTip2}</p>
-                <p className="text-sm text-[#94a3b8]">{(t as Record<string, string>).proTip3}</p>
+                <p className="text-sm text-[var(--text-secondary)]">{(t as Record<string, string>).proTip1}</p>
+                <p className="text-sm text-[var(--text-secondary)]">{(t as Record<string, string>).proTip2}</p>
+                <p className="text-sm text-[var(--text-secondary)]">{(t as Record<string, string>).proTip3}</p>
               </div>
             </div>
           )}
@@ -157,16 +157,16 @@ export default function HelpPage() {
 
       {/* Agent Connect */}
       <Section icon={Terminal} title={t.agentConnect}>
-        <p className="text-sm text-[#94a3b8] mb-4">{t.agentConnectDesc}</p>
+        <p className="text-sm text-[var(--text-secondary)] mb-4">{t.agentConnectDesc}</p>
         <div className="space-y-2">
-          <div className="p-3 rounded-lg bg-[#0d1117] border border-[#1e293b]">
-            <code className="text-sm font-mono text-[#e2e8f0]">{t.agentStep1}</code>
+          <div className="p-3 rounded-lg bg-[var(--bg-secondary)] border border-[var(--border-color)]">
+            <code className="text-sm font-mono text-[var(--text-primary)]">{t.agentStep1}</code>
           </div>
-          <div className="p-3 rounded-lg bg-[#0d1117] border border-[#1e293b]">
-            <code className="text-sm font-mono text-[#e2e8f0]">{t.agentStep2}</code>
+          <div className="p-3 rounded-lg bg-[var(--bg-secondary)] border border-[var(--border-color)]">
+            <code className="text-sm font-mono text-[var(--text-primary)]">{t.agentStep2}</code>
           </div>
-          <div className="p-3 rounded-lg bg-[#0d1117] border border-[#1e293b]">
-            <code className="text-sm font-mono text-[#e2e8f0]">{t.agentStep3}</code>
+          <div className="p-3 rounded-lg bg-[var(--bg-secondary)] border border-[var(--border-color)]">
+            <code className="text-sm font-mono text-[var(--text-primary)]">{t.agentStep3}</code>
           </div>
         </div>
       </Section>
@@ -214,10 +214,10 @@ export default function HelpPage() {
               href={item.href}
               target={item.href.startsWith("http") ? "_blank" : undefined}
               rel={item.href.startsWith("http") ? "noopener noreferrer" : undefined}
-              className="flex items-center justify-between p-3 rounded-lg hover:bg-white/5 transition-colors group"
+              className="flex items-center justify-between p-3 rounded-lg hover:bg-black/5 transition-colors group"
             >
-              <span className="text-sm text-[#94a3b8] group-hover:text-white transition-colors">{item.label}</span>
-              <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-[#1e293b] text-[#64748b] group-hover:text-white transition-colors shrink-0 ml-4">
+              <span className="text-sm text-[var(--text-secondary)] group-hover:text-[var(--text-primary)] transition-colors">{item.label}</span>
+              <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-[var(--border-color)] text-[var(--text-muted)] group-hover:text-[var(--text-primary)] transition-colors shrink-0 ml-4">
                 {item.badge}
               </span>
             </a>

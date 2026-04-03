@@ -12,11 +12,12 @@ function LoginForm() {
   const locale = useLocale();
   const t = appDict.login[locale] ?? appDict.login.en;
   const searchParams = useSearchParams();
-  // SEC-02: Validate redirectTo to prevent open redirect (mirrors auth/callback logic).
-  // Blocks: absolute URLs, protocol-relative (//), backslash variants (/\).
+  // Validate redirectTo to prevent open redirect — only allow internal paths
   const rawRedirectTo = searchParams.get("redirectTo") || "/dashboard";
-  const SAFE_REDIRECT_RE = /^\/(?:[a-zA-Z0-9_\-./~!$&'()*+,;=:@%?#]*)$/;
-  const redirectTo = SAFE_REDIRECT_RE.test(rawRedirectTo) ? rawRedirectTo : "/dashboard";
+  const redirectTo =
+    rawRedirectTo.startsWith("/") && !rawRedirectTo.startsWith("//")
+      ? rawRedirectTo
+      : "/dashboard";
   const isProduction = process.env.NEXT_PUBLIC_SITE_URL === "https://faultray.com";
 
   // AUTH-01: Show error message when OAuth fails
@@ -93,10 +94,10 @@ function LoginForm() {
       {/* Value proposition — hidden on small screens */}
       <div className="hidden lg:flex flex-col gap-8 max-w-[380px]">
         <div>
-          <h2 className="text-2xl font-bold text-white mb-2">
+          <h2 className="text-2xl font-bold text-[var(--text-primary)] mb-2">
             {t.whyTitle}
           </h2>
-          <p className="text-[#64748b] text-sm">
+          <p className="text-[var(--text-muted)] text-sm">
             {t.whySubtitle}
           </p>
         </div>
@@ -121,13 +122,26 @@ function LoginForm() {
             <li key={title} className="flex gap-4">
               <span className="text-2xl mt-0.5" aria-hidden="true">{icon}</span>
               <div>
-                <p className="font-semibold text-white text-sm">{title}</p>
-                <p className="text-[#64748b] text-sm mt-0.5 leading-relaxed">{desc}</p>
+                <p className="font-semibold text-[var(--text-primary)] text-sm">{title}</p>
+                <p className="text-[var(--text-muted)] text-sm mt-0.5 leading-relaxed">{desc}</p>
               </div>
             </li>
           ))}
         </ul>
-        <p className="text-xs text-[#475569]">
+        {/* CVR-01: Trust badges */}
+        <div className="flex flex-wrap gap-3 mt-2">
+          {[
+            { icon: "⚡", text: locale === "ja" ? "30秒で始められます" : "Get started in 30 seconds" },
+            { icon: "💳", text: locale === "ja" ? "クレカ不要" : "No credit card required" },
+            { icon: "🔓", text: locale === "ja" ? "14日間フルアクセス" : "14-day full access" },
+          ].map(({ icon, text }) => (
+            <span key={text} className="inline-flex items-center gap-1.5 px-3 py-1 text-xs font-medium text-[var(--text-secondary)] border border-[var(--border-color)] rounded-full bg-[var(--bg-card)]">
+              <span aria-hidden="true">{icon}</span>
+              {text}
+            </span>
+          ))}
+        </div>
+        <p className="text-xs text-[var(--text-muted)] mt-4">
           {t.trustedBy}
         </p>
       </div>
@@ -138,7 +152,7 @@ function LoginForm() {
             <Logo size={48} />
           </div>
           <h1 className="text-2xl font-bold mb-2">{t.title}</h1>
-          <p className="text-[#94a3b8] text-sm">
+          <p className="text-[var(--text-secondary)] text-sm">
             {t.subtitle}
           </p>
         </div>
@@ -157,36 +171,35 @@ function LoginForm() {
           </div>
         )}
 
-        <div className="p-8 rounded-2xl border border-[#1e293b] bg-[#111827] space-y-4">
+        <div className="p-8 rounded-2xl border border-[var(--border-color)] bg-[var(--bg-card)] space-y-4">
           {/* AUTH-02: Email OTP mode */}
           {emailMode ? (
             otpSent ? (
               <div className="text-center py-4">
                 <CheckCircle2 size={40} className="text-emerald-400 mx-auto mb-3" />
-                <p className="font-semibold text-white mb-1">{t.checkEmail}</p>
-                <p className="text-sm text-[#94a3b8]">
-                  {t.magicLinkSent} <span className="text-white font-medium">{emailInput}</span>.{" "}
+                <p className="font-semibold text-[var(--text-primary)] mb-1">{t.checkEmail}</p>
+                <p className="text-sm text-[var(--text-secondary)]">
+                  {t.magicLinkSent} <span className="text-[var(--text-primary)] font-medium">{emailInput}</span>.{" "}
                   {t.magicLinkDesc}
                 </p>
                 <button
                   onClick={() => { setOtpSent(false); setEmailMode(false); setEmailInput(""); }}
-                  className="mt-4 text-sm text-[#FFD700] hover:underline"
+                  className="mt-4 text-sm text-[var(--gold)] hover:underline"
                 >
                   {t.backToSignIn}
                 </button>
               </div>
             ) : (
               <div className="space-y-3">
-                <label htmlFor="login-email" className="block text-sm text-[#94a3b8] font-medium">{t.emailLabel}</label>
+                <label className="block text-sm text-[var(--text-secondary)] font-medium">{t.emailLabel}</label>
                 <input
-                  id="login-email"
                   type="email"
                   value={emailInput}
                   onChange={(e) => setEmailInput(e.target.value)}
                   onKeyDown={(e) => { if (e.key === "Enter") sendOtp(); }}
                   placeholder={t.emailPlaceholder}
                   autoFocus
-                  className="w-full px-4 py-3 rounded-xl bg-[#0a0e1a] border border-[#1e293b] text-white placeholder-[#475569] focus:outline-none focus:border-[#FFD700]/50 text-sm"
+                  className="w-full px-4 py-3 rounded-xl bg-[var(--bg-primary)] border border-[var(--border-color)] text-[var(--text-primary)] placeholder-[var(--text-muted)] focus:outline-none focus:border-[var(--gold)]/50 text-sm"
                 />
                 {emailError && (
                   <p className="text-red-400 text-xs">{emailError}</p>
@@ -194,14 +207,14 @@ function LoginForm() {
                 <button
                   onClick={sendOtp}
                   disabled={otpSending}
-                  className="w-full flex items-center justify-center gap-2 px-4 py-3 rounded-xl bg-[#FFD700] text-[#0a0e1a] font-semibold hover:bg-yellow-400 disabled:opacity-60 transition-colors"
+                  className="w-full flex items-center justify-center gap-2 px-4 py-3 rounded-xl bg-[var(--gold)] text-white font-semibold hover:bg-[#044a99] disabled:opacity-60 transition-colors"
                 >
                   {otpSending ? <Loader2 size={16} className="animate-spin" /> : <Mail size={16} />}
                   {otpSending ? t.sending : t.sendMagicLink}
                 </button>
                 <button
                   onClick={() => { setEmailMode(false); setEmailError(null); }}
-                  className="w-full text-center text-sm text-[#64748b] hover:text-white transition-colors"
+                  className="w-full text-center text-sm text-[var(--text-muted)] hover:text-[var(--text-primary)] transition-colors"
                 >
                   {t.backToSocial}
                 </button>
@@ -223,7 +236,7 @@ function LoginForm() {
 
               <button
                 onClick={() => signInWith("google")}
-                className="w-full flex items-center justify-center gap-3 px-4 py-3 rounded-xl border border-[#1e293b] text-white font-semibold hover:bg-white/5 transition-colors min-h-[48px]"
+                className="w-full flex items-center justify-center gap-3 px-4 py-3 rounded-xl border border-[var(--border-color)] text-[var(--text-primary)] font-semibold hover:bg-black/5 transition-colors min-h-[48px]"
               >
                 <svg width="20" height="20" viewBox="0 0 24 24" aria-hidden="true">
                   <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 0 1-2.2 3.32v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.1z" fill="#4285F4" />
@@ -235,15 +248,15 @@ function LoginForm() {
               </button>
 
               <div className="relative flex items-center">
-                <div className="flex-1 border-t border-[#1e293b]" />
-                <span className="mx-3 text-xs text-[#475569]">{t.or}</span>
-                <div className="flex-1 border-t border-[#1e293b]" />
+                <div className="flex-1 border-t border-[var(--border-color)]" />
+                <span className="mx-3 text-xs text-[var(--text-muted)]">{t.or}</span>
+                <div className="flex-1 border-t border-[var(--border-color)]" />
               </div>
 
               {/* AUTH-02: Email magic link as SPoF fallback */}
               <button
                 onClick={() => setEmailMode(true)}
-                className="w-full flex items-center justify-center gap-3 px-4 py-3 rounded-xl border border-[#1e293b] text-[#94a3b8] font-medium hover:bg-white/5 hover:text-white transition-colors text-sm min-h-[48px]"
+                className="w-full flex items-center justify-center gap-3 px-4 py-3 rounded-xl border border-[var(--border-color)] text-[var(--text-secondary)] font-medium hover:bg-black/5 hover:text-[var(--text-primary)] transition-colors text-sm min-h-[48px]"
               >
                 <Mail size={16} />
                 {t.continueEmail}
@@ -252,7 +265,7 @@ function LoginForm() {
           )}
         </div>
 
-        <p className="text-center text-xs text-[#64748b] mt-6">
+        <p className="text-center text-xs text-[var(--text-muted)] mt-6">
           {t.terms}
         </p>
       </div>
@@ -265,7 +278,7 @@ export default function LoginPage() {
   return (
     <Suspense fallback={
       <div className="min-h-screen flex items-center justify-center">
-        <div className="animate-pulse text-[#64748b]">Loading… / 読み込み中…</div>
+        <div className="animate-pulse text-[var(--text-muted)]">読み込み中...</div>
       </div>
     }>
       <LoginForm />

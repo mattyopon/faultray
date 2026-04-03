@@ -41,8 +41,6 @@ import { appDict } from "@/i18n/app-dict";
 import { Info } from "lucide-react";
 import { useSearchParams, useRouter } from "next/navigation";
 import { Suspense } from "react";
-import { useToast } from "@/lib/useToast";
-import { Toast } from "@/components/ui/toast";
 
 const SAMPLES = [
   { id: "web-saas", name: "Web SaaS Platform", desc: "3-tier architecture with API gateway, auth, database, cache", icon: Globe, components: 8 },
@@ -150,6 +148,8 @@ function CalculationEvidencePanel({ evidence, t }: { evidence: CalculationEviden
     "External SLA": { bar: "bg-orange-400", text: "text-orange-400", border: "border-orange-500/20", bg: "bg-orange-500/5" },
     External: { bar: "bg-orange-400", text: "text-orange-400", border: "border-orange-500/20", bg: "bg-orange-500/5" },
   };
+
+  const _bottleneckLayerName = evidence.bottleneck.split(" ")[0];
 
   // Find the actual bottleneck layer (lowest nines)
   const sortedLayers = [...evidence.layers].sort((a, b) => a.nines - b.nines);
@@ -335,13 +335,6 @@ function CascadeSimulationsPanel({ cascades }: { cascades: CascadeSimulation[] }
 }
 
 // ---- Simulation Log Section ----
-function SortIcon({ col, sortBy, sortDir }: { col: string; sortBy: string; sortDir: "asc" | "desc" }) {
-  if (sortBy !== col) return <ChevronDown size={12} className="text-[#64748b] opacity-40" />;
-  return sortDir === "asc"
-    ? <ChevronUp size={12} className="text-[#FFD700]" />
-    : <ChevronDown size={12} className="text-[#FFD700]" />;
-}
-
 function SimulationLogPanel({ log }: { log: SimulationLog }) {
   const [open, setOpen] = useState(false);
   const [sortBy, setSortBy] = useState<"id" | "risk_score" | "result">("id");
@@ -381,6 +374,13 @@ function SimulationLogPanel({ log }: { log: SimulationLog }) {
     a.download = "faultray-simulation-log.json";
     a.click();
     URL.revokeObjectURL(url);
+  };
+
+  const renderSortIcon = (col: string) => {
+    if (sortBy !== col) return <ChevronDown size={12} className="text-[#64748b] opacity-40" />;
+    return sortDir === "asc"
+      ? <ChevronUp size={12} className="text-[#FFD700]" />
+      : <ChevronDown size={12} className="text-[#FFD700]" />;
   };
 
   return (
@@ -424,18 +424,18 @@ function SimulationLogPanel({ log }: { log: SimulationLog }) {
               <tr className="bg-[#0d1117]">
                 <th scope="col" className="px-4 py-2.5 text-left text-xs font-semibold text-[#64748b]">
                   <button onClick={() => toggleSort("id")} className="flex items-center gap-1 hover:text-white transition-colors">
-                    # <SortIcon col="id" sortBy={sortBy} sortDir={sortDir} />
+                    # {renderSortIcon("id")}
                   </button>
                 </th>
                 <th scope="col" className="px-4 py-2.5 text-left text-xs font-semibold text-[#64748b]">Scenario Name</th>
                 <th scope="col" className="px-4 py-2.5 text-left text-xs font-semibold text-[#64748b]">
                   <button onClick={() => toggleSort("result")} className="flex items-center gap-1 hover:text-white transition-colors">
-                    Result <SortIcon col="result" sortBy={sortBy} sortDir={sortDir} />
+                    Result {renderSortIcon("result")}
                   </button>
                 </th>
                 <th scope="col" className="px-4 py-2.5 text-left text-xs font-semibold text-[#64748b]">
                   <button onClick={() => toggleSort("risk_score")} className="flex items-center gap-1 hover:text-white transition-colors">
-                    Risk Score <SortIcon col="risk_score" sortBy={sortBy} sortDir={sortDir} />
+                    Risk Score {renderSortIcon("risk_score")}
                   </button>
                 </th>
                 <th scope="col" className="px-4 py-2.5 text-left text-xs font-semibold text-[#64748b]">Affected</th>
@@ -504,17 +504,22 @@ function businessSummary(score: number, availability: string, criticalCount: num
  * Stores opted-in state to localStorage to avoid repeated prompts.
  */
 function NurtureEmailCapture() {
-  const locale = useLocale();
   const [email, setEmail] = useState("");
   const [submitted, setSubmitted] = useState(false);
-  const [dismissed, setDismissed] = useState(() => {
+  const [dismissed, setDismissed] = useState(false);
+
+  // Check if user already opted in or dismissed
+  useEffect(() => {
     try {
       const prefs = JSON.parse(localStorage.getItem("faultray_notifications") ?? "{}") as Record<string, unknown>;
-      return prefs.nurtureOptedIn === true || prefs.nurtureDismissed === true;
+      if (prefs.nurtureOptedIn === true || prefs.nurtureDismissed === true) {
+        // eslint-disable-next-line react-hooks/set-state-in-effect
+        setDismissed(true);
+      }
     } catch {
-      return false;
+      // localStorage unavailable — skip
     }
-  });
+  }, []);
 
   if (dismissed) return null;
 
@@ -553,8 +558,8 @@ function NurtureEmailCapture() {
         <div className="flex items-center gap-3">
           <Star size={20} className="text-[#FFD700] shrink-0" />
           <div>
-            <p className="text-sm font-semibold text-[#e2e8f0]">{locale === "ja" ? "登録完了！毎週信頼性のヒントをお届けします。" : "You're in! Weekly reliability tips coming your way."}</p>
-            <p className="text-xs text-[#64748b] mt-0.5">{locale === "ja" ? "受信トレイをご確認ください。いつでも配信停止できます。" : "Check your inbox — unsubscribe anytime."}</p>
+            <p className="text-sm font-semibold text-[#e2e8f0]">You&apos;re in! Weekly reliability tips coming your way.</p>
+            <p className="text-xs text-[#64748b] mt-0.5">Check your inbox — unsubscribe anytime.</p>
           </div>
         </div>
       ) : (
@@ -562,18 +567,18 @@ function NurtureEmailCapture() {
           <div className="flex items-start justify-between mb-3">
             <div className="flex items-center gap-2">
               <Mail size={18} className="text-[#FFD700]" />
-              <p className="text-sm font-semibold">{locale === "ja" ? "毎週の信頼性インサイトを受け取る" : "Get Weekly Reliability Insights"}</p>
+              <p className="text-sm font-semibold">Get Weekly Reliability Insights</p>
             </div>
             <button
               onClick={handleDismiss}
               className="text-[#475569] hover:text-white text-xs transition-colors"
-              aria-label={locale === "ja" ? "閉じる" : "Dismiss"}
+              aria-label="Dismiss"
             >
               ✕
             </button>
           </div>
           <p className="text-xs text-[#94a3b8] mb-4">
-            {locale === "ja" ? "週1回のメール：信頼性ベンチマーク、障害事例、新機能情報。スパムなし。" : "One email/week: reliability benchmarks, failure case studies, and new FaultRay features. No spam."}
+            One email/week: reliability benchmarks, failure case studies, and new FaultRay features. No spam.
           </p>
           <form onSubmit={handleSubmit} className="flex gap-2">
             <input
@@ -582,14 +587,14 @@ function NurtureEmailCapture() {
               value={email}
               onChange={(e) => { setEmail(e.target.value); }}
               placeholder="your@company.com"
-              aria-label={locale === "ja" ? "メールアドレス" : "Email address"}
+              aria-label="Email address"
               className="flex-1 min-w-0 px-3 py-2 rounded-lg bg-[#0d1117] border border-[#1e293b] text-sm text-white placeholder-[#475569] focus:outline-none focus:border-[#FFD700]/50 transition-colors"
             />
             <button
               type="submit"
               className="px-4 py-2 rounded-lg bg-[#FFD700] text-[#0a0e1a] text-sm font-semibold hover:bg-[#ffe44d] transition-colors shrink-0"
             >
-              {locale === "ja" ? "登録する" : "Subscribe"}
+              Subscribe
             </button>
           </form>
         </div>
@@ -760,9 +765,161 @@ function CodeBlock({ code, language = "bash" }: { code: string; language?: strin
   );
 }
 
+const _DEMO_RESULT: SimulationResult = {
+  overall_score: 85.2,
+  availability_estimate: "99.99%",
+  nines: 4.0,
+  scenarios_passed: 147,
+  scenarios_failed: 5,
+  total_scenarios: 152,
+  layers: { software: 4.0, hardware: 5.91, theoretical: 6.65, operational: 5.20, external: 4.85 },
+  critical_failures: [
+    { scenario: "Cascading database failure", impact: "Full service outage for 12 minutes", severity: "CRITICAL" },
+    { scenario: "Cache cluster partition", impact: "Degraded performance, 30% latency increase", severity: "HIGH" },
+    { scenario: "DNS resolution failure", impact: "Intermittent connectivity loss", severity: "HIGH" },
+  ],
+  suggestions: [
+    { title: "Add database read replica", description: "Implement a read replica to handle failover scenarios", impact: "+0.5 nines", effort: "Medium" },
+    { title: "Implement circuit breaker", description: "Add circuit breaker pattern for cascading failure protection", impact: "+0.3 nines", effort: "Low" },
+  ],
+  calculation_evidence: {
+    layers: [
+      {
+        name: "Software",
+        nines: 4.0,
+        max_possible: 4.21,
+        factors: [
+          { name: "Replica redundancy", effect: "+0.30 nines", detail: "2x replicas on app_server" },
+          { name: "No automatic failover", effect: "-0.21 nines", detail: "database has no automatic failover" },
+          { name: "Health check interval", effect: "-0.10 nines", detail: "60s interval is too slow" },
+        ],
+      },
+      {
+        name: "Hardware",
+        nines: 5.91,
+        max_possible: 6.06,
+        factors: [
+          { name: "Multi-zone deployment", effect: "+0.50 nines", detail: "Components spread across AZs" },
+          { name: "Storage redundancy", effect: "+0.20 nines", detail: "Replicated storage detected" },
+          { name: "Single region", effect: "-0.15 nines", detail: "No cross-region failover configured" },
+        ],
+      },
+      {
+        name: "Theoretical",
+        nines: 6.65,
+        max_possible: 6.70,
+        factors: [
+          { name: "Markov chain steady-state", effect: "+0.80 nines", detail: "MTBF/MTTR ratio is favorable" },
+          { name: "Reliability block diagram", effect: "+0.30 nines", detail: "Parallel paths increase ceiling" },
+          { name: "Correlated failure risk", effect: "-0.05 nines", detail: "Shared dependencies reduce independence" },
+        ],
+      },
+      {
+        name: "Operational",
+        nines: 5.20,
+        max_possible: 5.45,
+        factors: [
+          { name: "Change management process", effect: "+0.40 nines", detail: "Formal change windows enforced" },
+          { name: "On-call coverage", effect: "+0.20 nines", detail: "24/7 on-call rotation active" },
+          { name: "Manual deployment steps", effect: "-0.25 nines", detail: "Human error risk in deployment process" },
+        ],
+      },
+      {
+        name: "External SLA",
+        nines: 4.85,
+        max_possible: 5.00,
+        factors: [
+          { name: "Cloud provider SLA", effect: "+0.50 nines", detail: "AWS 99.99% SLA for managed services" },
+          { name: "DNS provider SLA", effect: "+0.20 nines", detail: "Route53 99.99% SLA" },
+          { name: "Third-party API dependency", effect: "-0.15 nines", detail: "Payment gateway SLA capped at 99.95%" },
+        ],
+      },
+    ],
+    bottleneck: "Software layer limits overall availability",
+    formula: "Availability = min(SW, HW, TH, OPS, EXT) = min(4.0, 5.91, 6.65, 5.20, 4.85) = 4.0 nines",
+  },
+  cascade_simulations: [
+    {
+      id: "CS-001",
+      trigger: "Primary database disk I/O saturation",
+      severity: "CRITICAL",
+      affected_components: 5,
+      total_components: 9,
+      blast_radius_percent: 56,
+      estimated_recovery_minutes: 12,
+      timeline: [
+        { time: "T+0:00", event: "DB disk I/O reaches 100%", component: "db_primary", type: "trigger" },
+        { time: "T+0:30", event: "Query latency exceeds 5s", component: "db_primary", type: "degradation" },
+        { time: "T+1:00", event: "Connection pool exhausted (200/200)", component: "db_primary", type: "failure" },
+        { time: "T+1:15", event: "API server health check fails", component: "api", type: "cascade" },
+        { time: "T+1:30", event: "Background workers queue backlog", component: "worker", type: "cascade" },
+        { time: "T+2:00", event: "Load balancer marks API unhealthy", component: "gateway", type: "cascade" },
+        { time: "T+5:00", event: "Full service outage", component: "all", type: "outage" },
+        { time: "T+12:00", event: "DB disk cleared, service restored", component: "all", type: "recovery" },
+      ],
+    },
+    {
+      id: "CS-002",
+      trigger: "Cache cluster memory saturation",
+      severity: "HIGH",
+      affected_components: 3,
+      total_components: 9,
+      blast_radius_percent: 33,
+      estimated_recovery_minutes: 8,
+      timeline: [
+        { time: "T+0:00", event: "Cache memory reaches 95%", component: "cache", type: "trigger" },
+        { time: "T+0:20", event: "Cache eviction rate spikes", component: "cache", type: "degradation" },
+        { time: "T+1:00", event: "API response times increase 3x", component: "api", type: "cascade" },
+        { time: "T+2:30", event: "Increased DB load from cache misses", component: "db_primary", type: "cascade" },
+        { time: "T+8:00", event: "Cache scaled and warmed up", component: "cache", type: "recovery" },
+      ],
+    },
+    {
+      id: "CS-003",
+      trigger: "Network partition between availability zones",
+      severity: "HIGH",
+      affected_components: 4,
+      total_components: 9,
+      blast_radius_percent: 44,
+      estimated_recovery_minutes: 5,
+      timeline: [
+        { time: "T+0:00", event: "AZ-B network unreachable", component: "gateway", type: "trigger" },
+        { time: "T+0:15", event: "Replica nodes lose quorum", component: "db_replica", type: "degradation" },
+        { time: "T+0:45", event: "Read traffic fails for 50% of requests", component: "api", type: "cascade" },
+        { time: "T+1:00", event: "Auth service in AZ-B down", component: "auth", type: "cascade" },
+        { time: "T+5:00", event: "Network restored, replicas re-sync", component: "all", type: "recovery" },
+      ],
+    },
+  ],
+  simulation_log: {
+    total_scenarios: 152,
+    passed: 147,
+    critical: 3,
+    warning: 7,
+    duration_ms: 1230,
+    scenarios: [
+      { id: 1, name: "Single node: db_primary failure", result: "CRITICAL", risk_score: 8.5, affected: ["api", "worker", "gateway"] },
+      { id: 2, name: "Single node: cache failure", result: "WARNING", risk_score: 5.2, affected: ["api"] },
+      { id: 3, name: "Single node: gateway failure", result: "PASSED", risk_score: 1.0, affected: [] },
+      { id: 4, name: "Cascading: db_primary → api → worker", result: "CRITICAL", risk_score: 9.1, affected: ["api", "worker", "gateway", "cdn"] },
+      { id: 5, name: "Partition: AZ-B network loss", result: "WARNING", risk_score: 6.3, affected: ["db_replica", "auth"] },
+      { id: 6, name: "Resource: cache memory exhaustion", result: "WARNING", risk_score: 5.8, affected: ["api", "db_primary"] },
+      { id: 7, name: "Single node: cdn failure", result: "PASSED", risk_score: 0.5, affected: [] },
+      { id: 8, name: "Cascading: auth → gateway", result: "CRITICAL", risk_score: 8.2, affected: ["gateway", "api"] },
+      { id: 9, name: "Single node: worker failure", result: "WARNING", risk_score: 4.1, affected: ["worker"] },
+      { id: 10, name: "Single node: auth failure", result: "WARNING", risk_score: 4.8, affected: ["api"] },
+      { id: 11, name: "Single node: db_replica failure", result: "PASSED", risk_score: 2.0, affected: [] },
+      { id: 12, name: "Resource: cpu saturation on api", result: "WARNING", risk_score: 5.5, affected: ["api", "worker"] },
+      { id: 13, name: "Latency: db_primary response > 10s", result: "WARNING", risk_score: 6.0, affected: ["api", "worker"] },
+      { id: 14, name: "Single node: api failure (1 replica)", result: "PASSED", risk_score: 1.5, affected: [] },
+      { id: 15, name: "Single node: api failure (2 replicas)", result: "PASSED", risk_score: 0.8, affected: [] },
+    ],
+  },
+};
+
 export default function SimulatePage() {
   return (
-    <Suspense fallback={<div className="max-w-[1200px] mx-auto px-6 py-10 text-[#64748b]">Loading… / 読み込み中…</div>}>
+    <Suspense fallback={<div className="max-w-[1200px] mx-auto px-6 py-10 text-[#64748b]">読み込み中...</div>}>
       <SimulatePageInner />
     </Suspense>
   );
@@ -775,16 +932,15 @@ function SimulatePageInner() {
   const searchParams = useSearchParams();
   const router = useRouter();
   const preselectedProjectId = searchParams?.get("project") ?? null;
-  const { showToast, toasts, dismiss } = useToast();
 
   const [topTab, setTopTab] = useState<TopTab>("quickstart");
-  const [selectedCloud, setSelectedCloud] = useState<"aws" | "gcp" | "azure" | null>(null);
   const [selected, setSelected] = useState<string | null>(null);
   const [yamlText, setYamlText] = useState("");
   const [yamlError, setYamlError] = useState<string | null>(null); // FORM-02: リアルタイムバリデーション
   const [uploadedFileName, setUploadedFileName] = useState<string | null>(null);
   const [running, setRunning] = useState(false);
   const [runProgress, setRunProgress] = useState(0); // DEMO-03: progress display
+  const [runProgressLabel, setRunProgressLabel] = useState(""); // DEMO-03: stage label
   const [result, setResult] = useState<SimulationResult | null>(null);
   const [scanSummary, setScanSummary] = useState<CloudSimulationResult["scan_summary"] | undefined>(undefined);
   const [error, setError] = useState<string | null>(null);
@@ -804,7 +960,7 @@ function SimulatePageInner() {
 
   // Load projects for selector
   useEffect(() => {
-    api.getProjects().then((data) => setProjects(Array.isArray(data) ? data : [])).catch(() => {});
+    api.getProjects().then((data) => setProjects(Array.isArray(data) ? data : [])).catch((err) => console.error("[simulate] fetch error:", err));
   }, []);
 
   // If a project is preselected and has topology_yaml, load it
@@ -878,8 +1034,8 @@ function SimulatePageInner() {
       { pct: 95, delay: 2400, label: locale === "ja" ? "レポートを生成中..." : "Generating report..." },
     ];
     const timers: ReturnType<typeof setTimeout>[] = [];
-    progressSteps.forEach(({ pct, delay }) => {
-      timers.push(setTimeout(() => setRunProgress(pct), delay));
+    progressSteps.forEach(({ pct, delay, label }) => {
+      timers.push(setTimeout(() => { setRunProgress(pct); setRunProgressLabel(label); }, delay));
     });
 
     try {
@@ -894,12 +1050,6 @@ function SimulatePageInner() {
       }
       if (res) {
         setResult(res);
-        showToast(
-          locale === "ja"
-            ? `シミュレーション完了 — スコア: ${res.overall_score}/100`
-            : `Simulation complete — Score: ${res.overall_score}/100`,
-          "success"
-        );
         // ANALYTICS-02: Track simulation completion as conversion event
         trackEvent("simulation_run", {
           score: res.overall_score,
@@ -995,10 +1145,6 @@ function SimulatePageInner() {
             : `${rawMsg}\n\nUpgrade to Pro for 100 simulations/month.`)
         : rawMsg;
       setError(message);
-      showToast(
-        locale === "ja" ? "シミュレーションに失敗しました" : "Simulation failed",
-        "error"
-      );
     } finally {
       timers.forEach(clearTimeout);
       setRunProgress(100);
@@ -1099,8 +1245,8 @@ function SimulatePageInner() {
               {/* Try Demo 1-click */}
               <div className="mb-8 p-5 rounded-xl border border-[#FFD700]/20 bg-[#FFD700]/[0.04] flex items-center justify-between gap-4 flex-wrap">
                 <div>
-                  <p className="text-sm font-semibold text-white mb-0.5">{locale === "ja" ? "まずはデモを試してみましょう" : "Try the demo first"}</p>
-                  <p className="text-xs text-[#94a3b8]">{locale === "ja" ? "Web SaaS テンプレートで即座にシミュレーションを体験できます" : "Experience an instant simulation with the Web SaaS template"}</p>
+                  <p className="text-sm font-semibold text-white mb-0.5">まずはデモを試してみましょう</p>
+                  <p className="text-xs text-[#94a3b8]">Web SaaS テンプレートで即座にシミュレーションを体験できます</p>
                 </div>
                 <Button
                   variant="primary"
@@ -1346,8 +1492,8 @@ function SimulatePageInner() {
                     </p>
                     {/* FORM-02: リアルタイムバリデーションエラー表示 */}
                     {yamlError && (
-                      <p role="alert" className="text-xs text-red-400 mt-1 flex items-center gap-1">
-                        <span aria-hidden="true">&#9888;</span> {yamlError}
+                      <p className="text-xs text-red-400 mt-1 flex items-center gap-1">
+                        <span>&#9888;</span> {yamlError}
                       </p>
                     )}
                     <p className="text-xs text-[#64748b] mt-2">
@@ -1365,7 +1511,7 @@ function SimulatePageInner() {
                 </div>
               )}
               {saveWarning && (
-                <div role="alert" className="mb-4 p-3 rounded-xl bg-amber-500/10 border border-amber-500/20 text-amber-400 text-sm flex items-center gap-2">
+                <div className="mb-4 p-3 rounded-xl bg-amber-500/10 border border-amber-500/20 text-amber-400 text-sm flex items-center gap-2">
                   <AlertTriangle size={14} className="shrink-0" />
                   {saveWarning}
                 </div>
@@ -1391,22 +1537,45 @@ function SimulatePageInner() {
                   )}
                 </Button>
                 {/* DEMO-03: プログレスバー — 実行中の待ち時間を視覚化 */}
+                {/* DEMO-03: Enhanced progress bar with stage labels and ETA */}
                 {running && (
                   <div className="w-full max-w-[400px]">
                     <div className="flex justify-between text-xs text-[#64748b] mb-1.5">
-                      <span>{locale === "ja" ? "進行中..." : "Processing..."}</span>
+                      <span className="text-[#94a3b8] font-medium">{runProgressLabel || (locale === "ja" ? "準備中..." : "Initializing...")}</span>
                       <span>{runProgress}%</span>
                     </div>
-                    <div className="h-2 bg-[#1e293b] rounded-full overflow-hidden">
+                    <div className="h-2.5 bg-[#1e293b] rounded-full overflow-hidden">
                       <div
-                        className="h-full bg-[#FFD700] rounded-full transition-all duration-500"
+                        className="h-full bg-gradient-to-r from-[#FFD700] to-[#ffe44d] rounded-full transition-all duration-500"
                         style={{ width: `${runProgress}%` }}
                       />
                     </div>
+                    {/* DEMO-03: Step indicators */}
+                    <div className="flex justify-between mt-2">
+                      {[
+                        { pct: 15, label: locale === "ja" ? "解析" : "Parse" },
+                        { pct: 35, label: locale === "ja" ? "生成" : "Gen" },
+                        { pct: 60, label: locale === "ja" ? "実行" : "Run" },
+                        { pct: 80, label: locale === "ja" ? "分析" : "Analyze" },
+                        { pct: 95, label: locale === "ja" ? "出力" : "Report" },
+                      ].map((step) => (
+                        <div key={step.pct} className="flex flex-col items-center">
+                          <div className={`w-2 h-2 rounded-full mb-1 transition-colors ${runProgress >= step.pct ? "bg-[#FFD700]" : "bg-[#1e293b]"}`} />
+                          <span className={`text-[10px] ${runProgress >= step.pct ? "text-[#FFD700]" : "text-[#475569]"}`}>{step.label}</span>
+                        </div>
+                      ))}
+                    </div>
+                    {/* DEMO-03: Estimated time remaining */}
                     <p className="text-[11px] text-[#475569] text-center mt-2">
+                      {runProgress < 95
+                        ? (locale === "ja"
+                            ? `推定残り ${Math.max(1, Math.round((100 - runProgress) / 100 * 5))} 秒`
+                            : `~${Math.max(1, Math.round((100 - runProgress) / 100 * 5))}s remaining`)
+                        : (locale === "ja" ? "まもなく完了..." : "Almost done...")}
+                      {" · "}
                       {locale === "ja"
-                        ? "本番環境には一切アクセスしません。純粋なシミュレーションです。"
-                        : "No production access. Pure simulation — your infra is untouched."}
+                        ? "本番環境には一切アクセスしません"
+                        : "No production access"}
                     </p>
                   </div>
                 )}
@@ -1453,7 +1622,7 @@ function SimulatePageInner() {
                         <p className="text-[11px] text-[#64748b]">{meta.badge}</p>
                         <div className="mt-auto">
                           <button
-                            onClick={() => { setSelectedCloud(provider); }}
+                            onClick={() => { setTopTab("agent"); }}
                             className={`w-full py-2 rounded-lg text-xs font-semibold border ${meta.border} ${meta.color} hover:opacity-80 transition-opacity`}
                           >
                             {locale === "ja" ? "セットアップ手順を見る" : "View setup steps →"}
@@ -1464,41 +1633,6 @@ function SimulatePageInner() {
                   })}
                 </div>
               </div>
-
-              {/* Cloud Setup Steps */}
-              {selectedCloud && (
-                <div className="p-5 rounded-xl border border-emerald-500/20 bg-emerald-500/[0.04]">
-                  <div className="flex items-center justify-between mb-3">
-                    <p className="text-sm font-semibold text-emerald-300">
-                      {selectedCloud === "aws" ? "AWS" : selectedCloud === "gcp" ? "GCP" : "Azure"} {locale === "ja" ? "セットアップ手順" : "Setup Steps"}
-                    </p>
-                    <button onClick={() => setSelectedCloud(null)} className="text-xs text-[#64748b] hover:text-white">✕</button>
-                  </div>
-                  <ol className="space-y-2 text-xs text-[#94a3b8]">
-                    {selectedCloud === "aws" && (<>
-                      <li>1. {locale === "ja" ? "IAMで読み取り専用ロールを作成" : "Create a read-only IAM role"}: <code className="text-emerald-400">ReadOnlyAccess</code></li>
-                      <li>2. {locale === "ja" ? "アクセスキーを生成" : "Generate access key pair"}</li>
-                      <li>3. {locale === "ja" ? "CLIで実行" : "Run via CLI"}:
-                        <pre className="mt-1 p-2 bg-[#0a0e1a] rounded text-emerald-400">faultray scan --aws --region ap-northeast-1</pre>
-                      </li>
-                    </>)}
-                    {selectedCloud === "gcp" && (<>
-                      <li>1. {locale === "ja" ? "サービスアカウントを作成（Viewer権限）" : "Create service account with Viewer role"}</li>
-                      <li>2. {locale === "ja" ? "JSONキーをダウンロード" : "Download JSON key"}</li>
-                      <li>3. {locale === "ja" ? "CLIで実行" : "Run via CLI"}:
-                        <pre className="mt-1 p-2 bg-[#0a0e1a] rounded text-blue-400">faultray scan --gcp --project YOUR_PROJECT</pre>
-                      </li>
-                    </>)}
-                    {selectedCloud === "azure" && (<>
-                      <li>1. {locale === "ja" ? "サービスプリンシパルを作成（Reader権限）" : "Create service principal with Reader role"}</li>
-                      <li>2. {locale === "ja" ? "クライアントID/シークレットを取得" : "Get client ID and secret"}</li>
-                      <li>3. {locale === "ja" ? "CLIで実行" : "Run via CLI"}:
-                        <pre className="mt-1 p-2 bg-[#0a0e1a] rounded text-sky-400">faultray scan --azure --subscription YOUR_SUB</pre>
-                      </li>
-                    </>)}
-                  </ol>
-                </div>
-              )}
 
               {/* Terraform Import */}
               <div className="p-5 rounded-xl border border-[#1e293b] bg-[#0d1117]">
@@ -1702,14 +1836,6 @@ faultray scan --all`}
           </div>
         </>
       )}
-      {toasts.map((toast) => (
-        <Toast
-          key={toast.id}
-          message={toast.message}
-          variant={toast.variant}
-          onDismiss={() => dismiss(toast.id)}
-        />
-      ))}
     </div>
   );
 }

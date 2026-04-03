@@ -1,10 +1,9 @@
 "use client";
 
-import { useEffect, useRef, useState, useCallback, startTransition } from "react";
+import { useEffect, useRef, useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { Search, X } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
-import { useLocale } from "@/lib/useLocale";
 
 export interface CommandItem {
   href: string;
@@ -21,7 +20,6 @@ interface CommandPaletteProps {
 
 export function CommandPalette({ open, onClose, items }: CommandPaletteProps) {
   const router = useRouter();
-  const locale = useLocale();
   const [query, setQuery] = useState("");
   const [activeIndex, setActiveIndex] = useState(0);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -34,14 +32,12 @@ export function CommandPalette({ open, onClose, items }: CommandPaletteProps) {
         item.group.toLowerCase().includes(query.toLowerCase())
       );
 
-  // Reset state when modal opens — key prop on the modal would be cleaner,
-  // but we use a direct reset here for simplicity.
+  // Reset state when modal opens/closes
   useEffect(() => {
     if (open) {
-      startTransition(() => {
-        setQuery("");
-        setActiveIndex(0);
-      });
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      setQuery("");
+      setActiveIndex(0);
       // Focus input after paint
       requestAnimationFrame(() => {
         inputRef.current?.focus();
@@ -101,11 +97,10 @@ export function CommandPalette({ open, onClose, items }: CommandPaletteProps) {
     [filtered, activeIndex, navigate, onClose]
   );
 
-  // Reset activeIndex when query changes — derived reset for keyboard UX
+  // Reset activeIndex when filtered results change
   useEffect(() => {
-    startTransition(() => {
-      setActiveIndex(0);
-    });
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setActiveIndex(0);
   }, [query]);
 
   if (!open) return null;
@@ -122,7 +117,7 @@ export function CommandPalette({ open, onClose, items }: CommandPaletteProps) {
       }}
       aria-modal="true"
       role="dialog"
-      aria-label={locale === "ja" ? "コマンドパレット" : "Command palette"}
+      aria-label="Command palette"
     >
       {/* Dim overlay */}
       <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={onClose} />
@@ -140,7 +135,7 @@ export function CommandPalette({ open, onClose, items }: CommandPaletteProps) {
             type="text"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
-            placeholder={locale === "ja" ? "ページを検索..." : "Search pages..."}
+            placeholder="Search pages..."
             className="flex-1 bg-transparent text-white placeholder-[#475569] text-sm outline-none"
             autoComplete="off"
             autoCorrect="off"
@@ -168,7 +163,7 @@ export function CommandPalette({ open, onClose, items }: CommandPaletteProps) {
         >
           {filtered.length === 0 ? (
             <p className="px-4 py-8 text-center text-sm text-[#475569]">
-              {locale === "ja" ? `「${query}」の結果がありません` : <>No results for &ldquo;{query}&rdquo;</>}
+              No results for &ldquo;{query}&rdquo;
             </p>
           ) : (
             filtered.map((item, index) => {

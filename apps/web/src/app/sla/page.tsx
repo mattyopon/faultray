@@ -264,7 +264,7 @@ export default function SlaPage() {
     fetch("/api/governance?action=sla", { signal: controller.signal })
       .then((r) => r.json())
       .then((d) => { if (d && d.sla_overview) setData(d); })
-      .catch(() => {})
+      .catch((err) => console.error("[sla] fetch error:", err))
       .finally(() => setLoading(false));
     return () => controller.abort();
   }, []);

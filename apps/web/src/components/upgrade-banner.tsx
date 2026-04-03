@@ -54,11 +54,11 @@ export function UpgradeBanner() {
 
   return (
     <div className="max-w-[1200px] mx-auto px-6 py-20 flex flex-col items-center justify-center text-center">
-      <div className="w-16 h-16 rounded-2xl bg-[#FFD700]/10 border border-[#FFD700]/20 flex items-center justify-center mb-6">
-        <Lock size={28} className="text-[#FFD700]" />
+      <div className="w-16 h-16 rounded-2xl bg-[var(--gold)]/10 border border-[var(--gold)]/20 flex items-center justify-center mb-6">
+        <Lock size={28} className="text-[var(--gold)]" />
       </div>
       <h2 className="text-2xl font-bold mb-2">{t.title}</h2>
-      <p className="text-[#94a3b8] text-sm mb-8 max-w-xs">{t.desc}</p>
+      <p className="text-[var(--text-secondary)] text-sm mb-8 max-w-xs">{t.desc}</p>
       <Link href="/pricing">
         <Button size="sm">
           {t.cta}

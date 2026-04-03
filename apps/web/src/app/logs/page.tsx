@@ -111,6 +111,7 @@ export default function LogsPage() {
   const [, setRefreshKey]       = useState(0);
 
   const filtered = useMemo(() => {
+    void refreshKey; // force re-filter on manual refresh
     return DEMO_LOGS.filter((log) => {
       if (filterLevel !== "all" && log.level !== filterLevel) return false;
       if (filterService !== "all" && log.service !== filterService) return false;

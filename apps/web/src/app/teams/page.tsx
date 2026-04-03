@@ -125,7 +125,6 @@ function TaskCard({
   onStatusChange: (id: string, status: string) => Promise<void>;
   onDelete: (id: string) => Promise<void>;
 }) {
-  const locale = useLocale();
   const assignee = members.find((m) => m.id === task.assignee_id);
   const priorityCfg = PRIORITY_CONFIG[task.priority] ?? PRIORITY_CONFIG.medium;
   const [deleting, setDeleting] = useState(false);
@@ -144,7 +143,7 @@ function TaskCard({
           onClick={handleDelete}
           disabled={deleting}
           className="text-[#475569] hover:text-red-400 transition-colors shrink-0 disabled:opacity-50"
-          aria-label={locale === "ja" ? "タスクを削除" : "Delete task"}
+          aria-label="Delete task"
         >
           {deleting ? (
             <Loader2 size={14} className="animate-spin" />
@@ -190,7 +189,7 @@ function TaskCard({
         className="w-full bg-[#111827] border border-[#1e293b] text-xs text-[#94a3b8] rounded-lg px-2 py-1.5 focus:outline-none focus:border-[#FFD700]/40"
         value={task.status}
         onChange={(e) => onStatusChange(task.id, e.target.value)}
-        aria-label={locale === "ja" ? "タスクのステータスを変更" : "Change task status"}
+        aria-label="Change task status"
       >
         {STATUS_COLUMNS.map((s) => (
           <option key={s.key} value={s.key}>
@@ -258,7 +257,8 @@ export default function TeamsPage() {
     } finally {
       setOrgLoading(false);
     }
-  }, [locale]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const fetchTasks = useCallback(async () => {
     setTasksLoading(true);
@@ -383,8 +383,8 @@ export default function TeamsPage() {
     return (
       <div className="max-w-[1200px] mx-auto px-6 py-20 text-center">
         <Users size={40} className="text-[#FFD700] mx-auto mb-4" />
-        <h1 className="text-2xl font-bold mb-2">{locale === "ja" ? "組織・タスク" : "Organization & Tasks"}</h1>
-        <p className="text-[#64748b]">{locale === "ja" ? "組織とタスクを管理するにはサインインしてください。" : "Sign in to manage your organization and tasks."}</p>
+        <h1 className="text-2xl font-bold mb-2">Organization & Tasks</h1>
+        <p className="text-[#64748b]">Sign in to manage your organization and tasks.</p>
       </div>
     );
   }
@@ -395,7 +395,7 @@ export default function TeamsPage() {
     return (
       <div className="max-w-[1200px] mx-auto px-6 py-20 flex items-center justify-center gap-3 text-[#64748b]">
         <Loader2 size={20} className="animate-spin" />
-        <span>{locale === "ja" ? "組織を読み込み中..." : "Loading organization..."}</span>
+        <span>組織を読み込み中...</span>
       </div>
     );
   }
@@ -412,7 +412,7 @@ export default function TeamsPage() {
         </div>
 
         {orgError && (
-          <div role="alert" className="mb-6 p-4 bg-red-500/10 border border-red-500/20 rounded-xl text-red-400 text-sm flex items-center gap-2">
+          <div className="mb-6 p-4 bg-red-500/10 border border-red-500/20 rounded-xl text-red-400 text-sm flex items-center gap-2">
             <AlertCircle size={16} />
             {orgError}
           </div>
@@ -538,7 +538,7 @@ export default function TeamsPage() {
                       }
                     }}
                     className="text-xs bg-[#1e293b] border border-[#334155] text-[#94a3b8] rounded-md px-2 py-1 focus:outline-none focus:border-[#FFD700]/50"
-                    aria-label={locale === "ja" ? `${member.email} の役割を変更` : `Change role for ${member.email}`}
+                    aria-label={`Change role for ${member.email}`}
                   >
                     <option value="admin">Admin</option>
                     <option value="member">Member</option>
@@ -590,7 +590,6 @@ export default function TeamsPage() {
           </div>
           {inviteMsg && (
             <div
-              role="alert"
               className={`mt-3 p-3 rounded-lg text-sm flex items-center gap-2 ${
                 inviteMsg.type === "success"
                   ? "bg-emerald-500/10 text-emerald-400"
@@ -700,7 +699,7 @@ export default function TeamsPage() {
         {tasksLoading ? (
           <div className="flex items-center justify-center py-12 gap-3 text-[#64748b]">
             <Loader2 size={18} className="animate-spin" />
-            <span>{locale === "ja" ? "タスクを読み込み中..." : "Loading tasks..."}</span>
+            <span>タスクを読み込み中...</span>
           </div>
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">

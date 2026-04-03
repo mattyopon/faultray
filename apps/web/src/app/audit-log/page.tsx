@@ -6,7 +6,7 @@
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import {
   Shield,
   Search,
@@ -192,9 +192,34 @@ export default function AuditLogPage() {
   const [search, setSearch] = useState("");
   const [outcomeFilter, setOutcomeFilter] = useState<"ALL" | "SUCCESS" | "FAILURE">("ALL");
   const [expandedId, setExpandedId] = useState<string | null>(null);
+  const [entries, setEntries] = useState<AuditEntry[]>(DEMO_AUDIT_LOG);
+  const [_loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    fetch("/api/audit-log")
+      .then((res) => res.json())
+      .then((data) => {
+        if (data.entries && data.entries.length > 0) {
+          setEntries(data.entries.map((e: Record<string, unknown>) => ({
+            id: e.id,
+            timestamp: e.created_at,
+            actor: e.actor_email?.toString().split("@")[0] ?? "Unknown",
+            actorEmail: e.actor_email ?? "",
+            action: e.action,
+            resource: e.resource,
+            ipAddress: e.ip_address ?? "",
+            userAgent: e.user_agent ?? "",
+            outcome: e.outcome ?? "SUCCESS",
+            details: e.details,
+          })));
+        }
+      })
+      .catch((err) => console.error("[audit-log] Failed to fetch:", err))
+      .finally(() => setLoading(false));
+  }, []);
 
   const filtered = useMemo(() => {
-    return DEMO_AUDIT_LOG.filter((entry) => {
+    return entries.filter((entry) => {
       const matchesSearch =
         !search ||
         entry.actor.toLowerCase().includes(search.toLowerCase()) ||
@@ -204,7 +229,7 @@ export default function AuditLogPage() {
       const matchesOutcome = outcomeFilter === "ALL" || entry.outcome === outcomeFilter;
       return matchesSearch && matchesOutcome;
     });
-  }, [search, outcomeFilter]);
+  }, [search, outcomeFilter, entries]);
 
   // Export as CSV (client-side)
   const exportCsv = () => {

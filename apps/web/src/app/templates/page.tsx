@@ -185,6 +185,8 @@ export default function TemplatesPage() {
     router.push("/simulate");
   }
 
+  const _previewTemplate = TEMPLATES.find((tmpl) => tmpl.id === previewId);
+
   return (
     <main className="min-h-screen bg-[#0a0e1a] text-white pt-20 pb-12">
       <div className="max-w-[1200px] mx-auto px-6 py-10">

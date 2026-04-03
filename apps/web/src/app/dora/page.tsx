@@ -20,6 +20,12 @@ const T: Record<string, {
   pillars: string;
   pillarOverview: string;
   dataNote: string;
+  sreMaturity: string;
+  sreLevel: string;
+  currentLevel: string;
+  nextActions: string;
+  effort: string;
+  impact: string;
 }> = {
   en: {
     title: "DORA Compliance Dashboard",
@@ -36,6 +42,12 @@ const T: Record<string, {
     pillars: "Pillars",
     pillarOverview: "5 Pillar Overview",
     dataNote: "Scores are derived from your simulation results. Run a simulation to update these values.",
+    sreMaturity: "SRE Maturity",
+    sreLevel: "Level",
+    currentLevel: "Current Level",
+    nextActions: "Actions to reach next level",
+    effort: "Effort",
+    impact: "Impact",
   },
   ja: {
     title: "DORA コンプライアンスダッシュボード",
@@ -52,10 +64,57 @@ const T: Record<string, {
     pillars: "柱の数",
     pillarOverview: "5柱の概要",
     dataNote: "スコアはシミュレーション結果から算出されます。最新の値を取得するにはシミュレーションを実行してください。",
+    sreMaturity: "SRE成熟度",
+    sreLevel: "レベル",
+    currentLevel: "現在のレベル",
+    nextActions: "次のレベルへのアクション",
+    effort: "推定工数",
+    impact: "効果",
   },
 };
 
 interface Pillar { id: string; name: string; score: number; status: string; }
+
+interface SreAction { label: { en: string; ja: string }; effort: { en: string; ja: string }; impact: string; }
+
+const SRE_ACTIONS: Record<number, SreAction[]> = {
+  1: [
+    { label: { en: "Establish incident management process", ja: "インシデント管理プロセスの確立" }, effort: { en: "2 weeks", ja: "2週間" }, impact: "+8pt" },
+    { label: { en: "Set up basic monitoring dashboard", ja: "基本的な監視ダッシュボードの設置" }, effort: { en: "1 week", ja: "1週間" }, impact: "+5pt" },
+    { label: { en: "Start writing runbooks", ja: "ランブック作成の開始" }, effort: { en: "3 weeks", ja: "3週間" }, impact: "+6pt" },
+  ],
+  2: [
+    { label: { en: "Define and measure SLI/SLO", ja: "SLI/SLOの定義と計測開始" }, effort: { en: "2 weeks", ja: "2週間" }, impact: "+7pt" },
+    { label: { en: "Institutionalize Post-Mortems", ja: "障害後振り返り(Post-Mortem)の制度化" }, effort: { en: "1 week", ja: "1週間" }, impact: "+4pt" },
+    { label: { en: "Build on-call rotation", ja: "オンコール体制の整備" }, effort: { en: "2 weeks", ja: "2週間" }, impact: "+5pt" },
+  ],
+  3: [
+    { label: { en: "Introduce chaos engineering", ja: "カオスエンジニアリングの導入" }, effort: { en: "4 weeks", ja: "4週間" }, impact: "+8pt" },
+    { label: { en: "Optimize auto-scaling policies", ja: "自動スケーリングポリシーの最適化" }, effort: { en: "2 weeks", ja: "2週間" }, impact: "+5pt" },
+    { label: { en: "Implement circuit breaker pattern", ja: "サーキットブレーカーパターンの実装" }, effort: { en: "3 weeks", ja: "3週間" }, impact: "+6pt" },
+  ],
+  4: [
+    { label: { en: "Build platform engineering team", ja: "プラットフォームエンジニアリング体制の構築" }, effort: { en: "8 weeks", ja: "8週間" }, impact: "+5pt" },
+    { label: { en: "Adopt AIOps", ja: "AIOpsの導入" }, effort: { en: "6 weeks", ja: "6週間" }, impact: "+4pt" },
+    { label: { en: "Automate global DR", ja: "グローバルDRの自動化" }, effort: { en: "6 weeks", ja: "6週間" }, impact: "+4pt" },
+  ],
+};
+
+const SRE_LEVEL_NAMES: { en: string; ja: string }[] = [
+  { en: "Reactive", ja: "リアクティブ" },
+  { en: "Proactive", ja: "プロアクティブ" },
+  { en: "Defined", ja: "定義済み" },
+  { en: "Managed", ja: "マネージド" },
+  { en: "Optimized", ja: "最適化済み" },
+];
+
+function getSreLevel(score: number): number {
+  if (score < 40) return 1;
+  if (score < 60) return 2;
+  if (score < 75) return 3;
+  if (score < 90) return 4;
+  return 5;
+}
 
 // DORA-01: Default pillars — will be overwritten by API response when available
 const DEFAULT_PILLARS: Pillar[] = [
@@ -168,6 +227,72 @@ export default function DoraPage() {
           </p>
         )}
       </Card>
+
+      {/* SRE Maturity Level */}
+      {(() => {
+        const level = getSreLevel(displayScore);
+        const actions = SRE_ACTIONS[level] ?? [];
+        const levelName = SRE_LEVEL_NAMES[level - 1];
+        return (
+          <Card className="mt-8">
+            <h2 className="text-lg font-bold mb-4">{t.sreMaturity}</h2>
+
+            {/* Level indicator dots */}
+            <div className="flex items-center gap-3 mb-6">
+              <span className="text-xs text-[#64748b] uppercase mr-1">{t.sreLevel}</span>
+              {SRE_LEVEL_NAMES.map((name, i) => {
+                const lv = i + 1;
+                const isActive = lv === level;
+                const isPast = lv < level;
+                return (
+                  <div key={lv} className="flex flex-col items-center gap-1">
+                    <div
+                      className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold border transition-colors ${
+                        isActive
+                          ? "bg-[#FFD700] border-[#FFD700] text-black"
+                          : isPast
+                          ? "bg-emerald-500/20 border-emerald-500/40 text-emerald-400"
+                          : "bg-[#1e293b] border-[#334155] text-[#475569]"
+                      }`}
+                    >
+                      {lv}
+                    </div>
+                    <span className={`text-[9px] leading-tight text-center ${isActive ? "text-[#FFD700]" : isPast ? "text-emerald-400" : "text-[#475569]"}`}>
+                      {locale === "ja" ? name.ja : name.en}
+                    </span>
+                  </div>
+                );
+              })}
+            </div>
+
+            <p className="text-xs text-[#64748b] uppercase mb-1">{t.currentLevel}</p>
+            <p className="text-sm font-semibold text-[#e2e8f0] mb-5">
+              {t.sreLevel} {level} — {locale === "ja" ? levelName.ja : levelName.en}
+            </p>
+
+            {level < 5 && (
+              <>
+                <p className="text-xs text-[#64748b] uppercase mb-3">{t.nextActions}</p>
+                <div className="space-y-2">
+                  {actions.map((action, i) => (
+                    <div key={i} className="p-3 rounded-lg bg-white/[0.02] border border-[#1e293b] flex items-center gap-3">
+                      <span className="flex-1 text-sm text-[#94a3b8]">
+                        {locale === "ja" ? action.label.ja : action.label.en}
+                      </span>
+                      <Badge variant="default">
+                        {t.effort}: {locale === "ja" ? action.effort.ja : action.effort.en}
+                      </Badge>
+                      <Badge variant="green">
+                        {t.impact}: {action.impact}
+                      </Badge>
+                    </div>
+                  ))}
+                </div>
+              </>
+            )}
+          </Card>
+        );
+      })()}
     </div>
   );
 }

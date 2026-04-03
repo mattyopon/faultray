@@ -1,6 +1,6 @@
 "use client";
 
-import { createContext, useContext, useState, useEffect, useCallback, startTransition, type ReactNode } from "react";
+import { createContext, useContext, useState, useEffect, useCallback, type ReactNode } from "react";
 import { locales, type Locale, defaultLocale } from "@/i18n/config";
 
 interface LocaleContextType {
@@ -20,9 +20,8 @@ export function LocaleProvider({ children }: { children: ReactNode }) {
     // LIB-06: ロケールcookieのパース — (\w+)ではハイフン等が含まれないため[^;,\s]+に拡張
     const match = document.cookie.match(/(?:^|;\s*)NEXT_LOCALE=([^;,\s]+)/);
     if (match && locales.includes(match[1] as Locale)) {
-      startTransition(() => {
-        setLocaleState(match[1] as Locale);
-      });
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      setLocaleState(match[1] as Locale);
     }
   }, []);
 

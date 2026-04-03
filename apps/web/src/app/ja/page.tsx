@@ -132,7 +132,7 @@ function ComparisonCellStyled({ value, color }: { value: string; color: string }
 }
 
 const layerStyles = [
-  { nines: "5.91 nines", pct: "99.99988%", colorClass: "text-[#FFD700]", border: "border-[#FFD700]/20", bg: "from-[#FFD700]/[0.06]" },
+  { nines: "5.91 nines", pct: "99.99988%", colorClass: "text-[var(--gold)]", border: "border-[var(--gold)]/20", bg: "from-[var(--gold)]/[0.06]" },
   { nines: "4.00 nines", pct: "99.99%", colorClass: "text-emerald-400", border: "border-emerald-500/25", bg: "from-emerald-500/[0.08]" },
   { nines: "6.65 nines", pct: "99.999978%", colorClass: "text-blue-400", border: "border-blue-500/25", bg: "from-blue-500/[0.08]" },
   { nines: "5.20 nines", pct: "99.99937%", colorClass: "text-purple-400", border: "border-purple-500/25", bg: "from-purple-500/[0.08]" },
@@ -200,7 +200,7 @@ const pricingComparison = [
 
 function PricingComparisonCell({ value }: { value: string }) {
   if (value === "check") return <Check size={18} className="text-emerald-400 mx-auto" />;
-  if (value === "no") return <Minus size={18} className="text-[#64748b] mx-auto" />;
+  if (value === "no") return <Minus size={18} className="text-[var(--text-muted)] mx-auto" />;
   return <span>{value}</span>;
 }
 
@@ -239,47 +239,42 @@ export default async function LangHomePage() {
         <div className="absolute inset-0 hero-radial-glow pointer-events-none" />
 
         <div className="max-w-[1200px] mx-auto px-6 relative z-10 text-center">
-          <div className="inline-block px-4 py-1.5 text-[0.8125rem] font-medium text-[#FFD700] border border-[#FFD700]/25 rounded-full bg-[#FFD700]/5 mb-8 tracking-wide">
+          <div className="inline-block px-4 py-1.5 text-[0.8125rem] font-medium text-[var(--gold)] border border-[var(--gold)]/25 rounded-full bg-[var(--gold)]/5 mb-8 tracking-wide">
             {dict.hero.badge}
           </div>
 
           <h1 className="text-[clamp(3rem,10vw,6rem)] font-extrabold tracking-tighter leading-none mb-5">
-            <span className="text-white">Fault</span>
+            <span className="text-[var(--text-primary)]">Fault</span>
             <span className="text-gradient-gold">Ray</span>
           </h1>
 
           <p className="text-[clamp(1.125rem,3vw,1.5rem)] text-emerald-400 font-semibold mb-3">
             {dict.hero.subtitle}
           </p>
-          <p className="text-[clamp(1rem,2vw,1.25rem)] text-[#94a3b8] max-w-[640px] mx-auto mb-10 leading-relaxed">
+          <p className="text-[clamp(1rem,2vw,1.25rem)] text-[var(--text-secondary)] max-w-[640px] mx-auto mb-10 leading-relaxed">
             {dict.hero.description}
           </p>
 
-          {/* Stats bar */}
+          {/* COPY-02: Business impact — SRE cost comparison */}
           <div className="flex flex-wrap items-center justify-center gap-6 md:gap-10 mb-10 text-sm">
             <div className="text-center">
-              <div className="text-2xl font-extrabold text-[#FFD700]">2,000+</div>
-              <div className="text-[#64748b]">{dict.hero.stats.scenarios}</div>
+              <div className="text-2xl font-extrabold text-red-500">年700-1200万</div>
+              <div className="text-[var(--text-muted)]">SRE正社員の採用コスト</div>
             </div>
-            <div className="w-px h-8 bg-[#1e293b] hidden md:block" />
+            <div className="w-px h-8 bg-[var(--border-color)] hidden md:block" />
             <div className="text-center">
-              <div className="text-2xl font-extrabold text-[#FFD700]">52</div>
-              <div className="text-[#64748b]">{dict.hero.stats.doraControls}</div>
+              <div className="text-2xl font-extrabold text-emerald-500">月4.5万</div>
+              <div className="text-[var(--text-muted)]">FaultRay Pro</div>
             </div>
-            <div className="w-px h-8 bg-[#1e293b] hidden md:block" />
+            <div className="w-px h-8 bg-[var(--border-color)] hidden md:block" />
             <div className="text-center">
-              <div className="text-2xl font-extrabold text-[#FFD700]">35+</div>
-              <div className="text-[#64748b]">{dict.hero.stats.dashboardPages}</div>
+              <div className="text-2xl font-extrabold text-[var(--gold)]">2,000+</div>
+              <div className="text-[var(--text-muted)]">障害シナリオを網羅</div>
             </div>
-            <div className="w-px h-8 bg-[#1e293b] hidden md:block" />
+            <div className="w-px h-8 bg-[var(--border-color)] hidden md:block" />
             <div className="text-center">
-              <div className="text-2xl font-extrabold text-[#FFD700]">32,000+</div>
-              <div className="text-[#64748b]">{dict.hero.stats.tests}</div>
-            </div>
-            <div className="w-px h-8 bg-[#1e293b] hidden md:block" />
-            <div className="text-center">
-              <div className="text-2xl font-extrabold text-[#FFD700]">8</div>
-              <div className="text-[#64748b]">{dict.hero.stats.languages}</div>
+              <div className="text-2xl font-extrabold text-[var(--gold)]">30分</div>
+              <div className="text-[var(--text-muted)]">で改善計画を自動生成</div>
             </div>
           </div>
 
@@ -287,21 +282,21 @@ export default async function LangHomePage() {
           <div className="flex gap-4 justify-center flex-wrap mb-14">
             <Link
               href="/simulate"
-              className="inline-flex items-center gap-2 px-7 py-3 bg-[#FFD700] text-[#0a0e1a] font-semibold rounded-xl shadow-[0_0_20px_rgba(255,215,0,0.2)] hover:bg-[#ffe44d] hover:shadow-[0_0_30px_rgba(255,215,0,0.35)] hover:-translate-y-0.5 transition-all"
+              className="inline-flex items-center gap-2 px-7 py-3 bg-[var(--gold)] text-white font-semibold rounded-xl shadow-md hover:bg-[#044a99] hover:shadow-lg hover:-translate-y-0.5 transition-all"
             >
               <Zap size={16} />
               無料でシミュレーション実行
             </Link>
             <Link
-              href="mailto:contact@faultray.com?subject=FaultRay デモ予約"
+              href="/contact"
               className="inline-flex items-center gap-2 px-7 py-3 bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 font-semibold rounded-xl hover:bg-emerald-500/20 hover:border-emerald-500/50 hover:-translate-y-0.5 transition-all"
             >
               <ExternalLink size={16} />
-              無料デモを予約
+              デモを予約する
             </Link>
             <Link
               href="/login"
-              className="inline-flex items-center gap-2 px-7 py-3 border border-[#1e293b] text-white rounded-xl hover:border-[#64748b] hover:bg-white/[0.03] hover:-translate-y-0.5 transition-all"
+              className="inline-flex items-center gap-2 px-7 py-3 border border-[var(--border-color)] text-[var(--text-primary)] rounded-xl hover:border-[var(--text-muted)] hover:bg-black/[0.03] hover:-translate-y-0.5 transition-all"
             >
               {dict.hero.cta}
             </Link>
@@ -316,19 +311,19 @@ export default async function LangHomePage() {
         <div className="max-w-[1200px] mx-auto px-6">
           <div className="grid md:grid-cols-2 gap-8">
             {/* Problem */}
-            <div className="p-10 rounded-2xl border border-red-500/20 bg-[#111827] transition-all duration-300 hover:border-red-500/30">
+            <div className="p-10 rounded-2xl border border-red-500/20 bg-[var(--bg-card)] transition-all duration-300 hover:border-red-500/30">
               <div className="w-14 h-14 flex items-center justify-center rounded-xl bg-red-500/10 mb-5">
                 <AlertTriangle size={28} className="text-red-400" />
               </div>
               <h2 className="text-2xl font-bold mb-3">{dict.problem.title}</h2>
-              <p className="text-[#94a3b8] mb-6">
+              <p className="text-[var(--text-secondary)] mb-6">
                 {dict.problem.descriptionParts.before}
                 <strong>{dict.problem.descriptionParts.highlight}</strong>
                 {dict.problem.descriptionParts.after}
               </p>
               <ul className="space-y-3.5">
                 {dict.problem.items.map((item: string) => (
-                  <li key={item} className="flex items-start gap-3 text-[#94a3b8] text-[0.9375rem]">
+                  <li key={item} className="flex items-start gap-3 text-[var(--text-secondary)] text-[0.9375rem]">
                     <XIcon size={16} className="text-red-400 mt-0.5 shrink-0" />
                     {item}
                   </li>
@@ -337,19 +332,19 @@ export default async function LangHomePage() {
             </div>
 
             {/* Solution */}
-            <div className="p-10 rounded-2xl border border-emerald-500/20 bg-gradient-to-br from-[#111827] to-emerald-500/[0.03] transition-all duration-300 hover:border-emerald-500/30">
+            <div className="p-10 rounded-2xl border border-emerald-500/20 bg-gradient-to-br from-[var(--bg-card)] to-emerald-500/[0.03] transition-all duration-300 hover:border-emerald-500/30">
               <div className="w-14 h-14 flex items-center justify-center rounded-xl bg-emerald-500/10 mb-5">
                 <Shield size={28} className="text-emerald-400" />
               </div>
               <h2 className="text-2xl font-bold mb-3">{dict.solution.title}</h2>
-              <p className="text-[#94a3b8] mb-6">
+              <p className="text-[var(--text-secondary)] mb-6">
                 {dict.solution.descriptionParts.before}
                 <strong>{dict.solution.descriptionParts.highlight}</strong>
                 {dict.solution.descriptionParts.after}
               </p>
               <ul className="space-y-3.5">
                 {dict.solution.items.map((item: string) => (
-                  <li key={item} className="flex items-start gap-3 text-[#94a3b8] text-[0.9375rem]">
+                  <li key={item} className="flex items-start gap-3 text-[var(--text-secondary)] text-[0.9375rem]">
                     <Check size={16} className="text-emerald-400 mt-0.5 shrink-0" />
                     {item}
                   </li>
@@ -362,22 +357,22 @@ export default async function LangHomePage() {
 
       {/* ===== CHALLENGES ===== */}
       {dict.challenges && (
-        <section className="py-24 bg-[#0a0e1a]">
+        <section className="py-24 bg-[var(--bg-primary)]">
           <div className="max-w-[1200px] mx-auto px-6">
             <div className="text-center mb-14">
               <h2 className="text-[clamp(1.75rem,4vw,2.5rem)] font-bold tracking-tight mb-3">{dict.challenges.heading}</h2>
-              <p className="text-lg text-[#94a3b8] max-w-[540px] mx-auto">{dict.challenges.subheading}</p>
+              <p className="text-lg text-[var(--text-secondary)] max-w-[540px] mx-auto">{dict.challenges.subheading}</p>
             </div>
             <div className="space-y-4 max-w-[800px] mx-auto">
               {(dict.challenges.items as Array<{ problem: string; solution: string }>).map((item, i) => (
-                <div key={i} className="grid md:grid-cols-2 gap-0 rounded-2xl overflow-hidden border border-[#1e293b]">
-                  <div className="flex items-start gap-3 p-5 bg-red-500/[0.03] border-b md:border-b-0 md:border-r border-[#1e293b]">
+                <div key={i} className="grid md:grid-cols-2 gap-0 rounded-2xl overflow-hidden border border-[var(--border-color)]">
+                  <div className="flex items-start gap-3 p-5 bg-red-500/[0.03] border-b md:border-b-0 md:border-r border-[var(--border-color)]">
                     <XIcon size={16} className="text-red-400 mt-0.5 shrink-0" />
-                    <p className="text-sm text-[#94a3b8]">{item.problem}</p>
+                    <p className="text-sm text-[var(--text-secondary)]">{item.problem}</p>
                   </div>
                   <div className="flex items-start gap-3 p-5 bg-emerald-500/[0.03]">
                     <Check size={16} className="text-emerald-400 mt-0.5 shrink-0" />
-                    <p className="text-sm text-[#94a3b8]">{item.solution}</p>
+                    <p className="text-sm text-[var(--text-secondary)]">{item.solution}</p>
                   </div>
                 </div>
               ))}
@@ -387,11 +382,11 @@ export default async function LangHomePage() {
       )}
 
       {/* ===== FEATURES ===== */}
-      <section id="features" className="py-24 bg-[#0f1424]">
+      <section id="features" className="py-24 bg-[var(--bg-secondary)]">
         <div className="max-w-[1200px] mx-auto px-6">
           <div className="text-center mb-16 ">
             <h2 className="text-[clamp(1.75rem,4vw,2.5rem)] font-bold tracking-tight mb-3">{dict.features.heading}</h2>
-            <p className="text-lg text-[#94a3b8] max-w-[540px] mx-auto">{dict.features.subheading}</p>
+            <p className="text-lg text-[var(--text-secondary)] max-w-[540px] mx-auto">{dict.features.subheading}</p>
           </div>
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6 ">
             {dict.features.cards.map((f: { title: string; desc: string }, i: number) => {
@@ -399,13 +394,13 @@ export default async function LangHomePage() {
               return (
                 <div
                   key={f.title}
-                  className=" p-8 rounded-2xl border border-[#1e293b] bg-[#111827] transition-all duration-200 hover:border-[#FFD700]/30 hover:bg-[#1a2035] hover:-translate-y-0.5 hover:shadow-[0_0_40px_rgba(255,215,0,0.1)]"
+                  className=" p-8 rounded-2xl border border-[var(--border-color)] bg-[var(--bg-card)] transition-all duration-200 hover:border-[var(--gold)]/30 hover:-translate-y-0.5 hover:shadow-md"
                 >
-                  <div className="w-14 h-14 flex items-center justify-center rounded-xl bg-[#FFD700]/[0.06] border border-[#FFD700]/10 mb-5">
-                    <Icon size={24} className="text-[#FFD700]" />
+                  <div className="w-14 h-14 flex items-center justify-center rounded-xl bg-[var(--gold)]/[0.06] border border-[var(--gold)]/10 mb-5">
+                    <Icon size={24} className="text-[var(--gold)]" />
                   </div>
                   <h3 className="text-lg font-bold mb-2.5">{f.title}</h3>
-                  <p className="text-[0.9375rem] text-[#94a3b8] leading-relaxed">{f.desc}</p>
+                  <p className="text-[0.9375rem] text-[var(--text-secondary)] leading-relaxed">{f.desc}</p>
                 </div>
               );
             })}
@@ -414,7 +409,7 @@ export default async function LangHomePage() {
           <div className="text-center mt-10">
             <Link
               href="/features"
-              className="inline-flex items-center gap-2 px-6 py-3 border border-[#1e293b] text-[#94a3b8] rounded-xl hover:border-[#64748b] hover:text-white hover:bg-white/[0.03] transition-all text-sm"
+              className="inline-flex items-center gap-2 px-6 py-3 border border-[var(--border-color)] text-[var(--text-secondary)] rounded-xl hover:border-[var(--text-muted)] hover:text-[var(--text-primary)] hover:bg-black/[0.03] transition-all text-sm"
             >
               <ExternalLink size={14} />
               {dict.features?.viewAll ?? "View Full Feature Details"}
@@ -424,14 +419,14 @@ export default async function LangHomePage() {
       </section>
 
       {/* ===== AI AGENT RESILIENCE ===== */}
-      <section id="agent-resilience" className="py-24 bg-[#0f1424] border-t border-[#FFD700]/15">
+      <section id="agent-resilience" className="py-24 bg-[var(--bg-secondary)] border-t border-[var(--gold)]/15">
         <div className="max-w-[1200px] mx-auto px-6">
           <div className="text-center mb-16 ">
-            <span className="inline-block px-4 py-1.5 text-[0.8125rem] font-medium text-[#FFD700] border border-[#FFD700]/25 rounded-full bg-[#FFD700]/5 mb-4">
+            <span className="inline-block px-4 py-1.5 text-[0.8125rem] font-medium text-[var(--gold)] border border-[var(--gold)]/25 rounded-full bg-[var(--gold)]/5 mb-4">
               {dict.agentResilience.badge}
             </span>
             <h2 className="text-[clamp(1.75rem,4vw,2.5rem)] font-bold tracking-tight mb-3">{dict.agentResilience.heading}</h2>
-            <p className="text-lg text-[#94a3b8] max-w-[640px] mx-auto">
+            <p className="text-lg text-[var(--text-secondary)] max-w-[640px] mx-auto">
               {dict.agentResilience.subheading}
             </p>
           </div>
@@ -443,13 +438,13 @@ export default async function LangHomePage() {
               return (
                 <div
                   key={f.title}
-                  className=" p-8 rounded-2xl border border-[#1e293b] bg-[#111827] transition-all duration-200 hover:border-[#FFD700]/30 hover:bg-[#1a2035] hover:-translate-y-0.5"
+                  className=" p-8 rounded-2xl border border-[var(--border-color)] bg-[var(--bg-card)] transition-all duration-200 hover:border-[var(--gold)]/30 hover:-translate-y-0.5"
                 >
-                  <div className="w-14 h-14 flex items-center justify-center rounded-xl bg-[#FFD700]/[0.06] border border-[#FFD700]/10 mb-5">
-                    <Icon size={24} className="text-[#FFD700]" />
+                  <div className="w-14 h-14 flex items-center justify-center rounded-xl bg-[var(--gold)]/[0.06] border border-[var(--gold)]/10 mb-5">
+                    <Icon size={24} className="text-[var(--gold)]" />
                   </div>
                   <h3 className="text-lg font-bold mb-2.5">{f.title}</h3>
-                  <p className="text-[0.9375rem] text-[#94a3b8] leading-relaxed">{f.desc}</p>
+                  <p className="text-[0.9375rem] text-[var(--text-secondary)] leading-relaxed">{f.desc}</p>
                 </div>
               );
             })}
@@ -458,16 +453,16 @@ export default async function LangHomePage() {
           {/* 10-Mode Failure Taxonomy Table */}
           <div className=" max-w-[900px] mx-auto mb-10">
             <h3 className="text-xl font-bold text-center mb-6">
-              <span className="text-[#FFD700]">{dict.agentResilience.taxonomyHeadingHighlight}</span>
+              <span className="text-[var(--gold)]">{dict.agentResilience.taxonomyHeadingHighlight}</span>
               {dict.agentResilience.taxonomyHeadingSuffix}
             </h3>
             <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
               {failureTaxonomy.map((f, i) => (
                 <div
                   key={f.mode}
-                  className="taxonomy-card p-4 rounded-xl border border-[#1e293b] bg-[#111827]/80 text-center transition-all duration-200 hover:bg-[#1a2035]"
+                  className="taxonomy-card p-4 rounded-xl border border-[var(--border-color)] bg-[var(--bg-card)] text-center transition-all duration-200"
                 >
-                  <div className="text-sm font-bold text-white mb-1">{f.mode}</div>
+                  <div className="text-sm font-bold text-[var(--text-primary)] mb-1">{f.mode}</div>
                   <div
                     className={`inline-block px-2 py-0.5 text-[0.6875rem] font-semibold rounded-full mb-2 ${
                       f.health === "Down"
@@ -479,7 +474,7 @@ export default async function LangHomePage() {
                   >
                     {f.health}
                   </div>
-                  <div className="text-xs text-[#64748b] leading-snug">{failureTaxonomyDescs[i]}</div>
+                  <div className="text-xs text-[var(--text-muted)] leading-snug">{failureTaxonomyDescs[i]}</div>
                 </div>
               ))}
             </div>
@@ -515,23 +510,23 @@ export default async function LangHomePage() {
         <div className="max-w-[1200px] mx-auto px-6">
           <div className="text-center mb-16 ">
             <h2 className="text-[clamp(1.75rem,4vw,2.5rem)] font-bold tracking-tight mb-3">{dict.comparison.heading}</h2>
-            <p className="text-lg text-[#94a3b8] max-w-[540px] mx-auto">{dict.comparison.subheading}</p>
+            <p className="text-lg text-[var(--text-secondary)] max-w-[540px] mx-auto">{dict.comparison.subheading}</p>
           </div>
-          <div className=" overflow-x-auto rounded-2xl border border-[#1e293b]">
+          <div className=" overflow-x-auto rounded-2xl border border-[var(--border-color)]">
             <table className="w-full min-w-[700px] border-collapse text-[0.9375rem]">
               <thead>
                 <tr>
-                  <th scope="col" className="px-5 py-4 text-left bg-[#141a2e] text-[#94a3b8] font-semibold text-sm" />
-                  <th scope="col" className="px-5 py-4 text-left bg-[#FFD700]/[0.06] text-[#FFD700] font-semibold text-sm">
-                    <span className="inline-block px-2 py-0.5 text-[0.6875rem] font-bold text-[#0a0e1a] bg-[#FFD700] rounded-full uppercase tracking-wide mb-1">
+                  <th scope="col" className="px-5 py-4 text-left bg-[var(--bg-tertiary)] text-[var(--text-secondary)] font-semibold text-sm" />
+                  <th scope="col" className="px-5 py-4 text-left bg-[var(--gold)]/[0.06] text-[var(--gold)] font-semibold text-sm">
+                    <span className="inline-block px-2 py-0.5 text-[0.6875rem] font-bold text-white bg-[var(--gold)] rounded-full uppercase tracking-wide mb-1">
                       {dict.comparison.recommended}
                     </span>
                     <br />
                     FaultRay
                   </th>
-                  <th scope="col" className="px-5 py-4 text-left bg-[#141a2e] text-[#94a3b8] font-semibold text-sm">Gremlin</th>
-                  <th scope="col" className="px-5 py-4 text-left bg-[#141a2e] text-[#94a3b8] font-semibold text-sm">Steadybit</th>
-                  <th scope="col" className="px-5 py-4 text-left bg-[#141a2e] text-[#94a3b8] font-semibold text-sm">AWS FIS</th>
+                  <th scope="col" className="px-5 py-4 text-left bg-[var(--bg-tertiary)] text-[var(--text-secondary)] font-semibold text-sm">Gremlin</th>
+                  <th scope="col" className="px-5 py-4 text-left bg-[var(--bg-tertiary)] text-[var(--text-secondary)] font-semibold text-sm">Steadybit</th>
+                  <th scope="col" className="px-5 py-4 text-left bg-[var(--bg-tertiary)] text-[var(--text-secondary)] font-semibold text-sm">AWS FIS</th>
                 </tr>
               </thead>
               <tbody>
@@ -543,18 +538,18 @@ export default async function LangHomePage() {
                   const steadybitVal = (dict.comparison.steadybit as Record<string, string>)[key] || "No";
                   const awsVal = (dict.comparison.awsFis as Record<string, string>)[key] || "No";
                   return (
-                    <tr key={key} className={i < comparisonKeys.length - 1 ? "border-b border-[#1e293b]" : ""}>
-                      <td className="px-5 py-4 font-semibold text-white whitespace-nowrap bg-[#111827]">{label}</td>
-                      <td className="px-5 py-4 bg-[#FFD700]/[0.03] text-white font-medium">
+                    <tr key={key} className={i < comparisonKeys.length - 1 ? "border-b border-[var(--border-color)]" : ""}>
+                      <td className="px-5 py-4 font-semibold text-[var(--text-primary)] whitespace-nowrap bg-[var(--bg-card)]">{label}</td>
+                      <td className="px-5 py-4 bg-[var(--gold)]/[0.03] text-[var(--text-primary)] font-medium">
                         <ComparisonCellStyled value={faultrayVal} color={row.faultrayColor} />
                       </td>
-                      <td className="px-5 py-4 bg-[#111827] text-[#94a3b8]">
+                      <td className="px-5 py-4 bg-[var(--bg-card)] text-[var(--text-secondary)]">
                         <ComparisonCellStyled value={gremlinVal} color={row.gremlinColor} />
                       </td>
-                      <td className="px-5 py-4 bg-[#111827] text-[#94a3b8]">
+                      <td className="px-5 py-4 bg-[var(--bg-card)] text-[var(--text-secondary)]">
                         <ComparisonCellStyled value={steadybitVal} color={row.steadybitColor} />
                       </td>
-                      <td className="px-5 py-4 bg-[#111827] text-[#94a3b8]">
+                      <td className="px-5 py-4 bg-[var(--bg-card)] text-[var(--text-secondary)]">
                         <ComparisonCellStyled value={awsVal} color={row.awsColor} />
                       </td>
                     </tr>
@@ -567,13 +562,13 @@ export default async function LangHomePage() {
       </section>
 
       {/* ===== N-LAYER (5-LAYER) AVAILABILITY MODEL ===== */}
-      <section id="model" className="py-24 bg-[#0f1424]">
+      <section id="model" className="py-24 bg-[var(--bg-secondary)]">
         <div className="max-w-[1200px] mx-auto px-6">
           <div className="text-center mb-16 ">
             <h2 className="text-[clamp(1.75rem,4vw,2.5rem)] font-bold tracking-tight mb-3">
               {dict.nlayer.heading}
             </h2>
-            <p className="text-lg text-[#94a3b8] max-w-[640px] mx-auto">
+            <p className="text-lg text-[var(--text-secondary)] max-w-[640px] mx-auto">
               {dict.nlayer.subheading}
             </p>
           </div>
@@ -585,16 +580,16 @@ export default async function LangHomePage() {
                 return (
                   <div
                     key={layer.label}
-                    className={`px-8 py-6 border ${style.border} bg-gradient-to-br ${style.bg} to-[#111827] transition-all duration-200 hover:brightness-110 ${
+                    className={`px-8 py-6 border ${style.border} bg-gradient-to-br ${style.bg} to-[var(--bg-card)] transition-all duration-200 hover:brightness-110 ${
                       i === 0 ? "rounded-t-2xl" : ""
                     } ${i === layerStyles.length - 1 ? "rounded-b-2xl" : ""}`}
                   >
                     <div className={`font-bold text-sm mb-1 ${style.colorClass}`}>{layer.label}</div>
                     <div className="flex items-baseline gap-4 mb-1.5">
                       <span className={`text-[1.5rem] font-extrabold tracking-tight ${style.colorClass}`}>{style.nines}</span>
-                      <span className="text-xs text-[#64748b] font-mono">{style.pct}</span>
+                      <span className="text-xs text-[var(--text-muted)] font-mono">{style.pct}</span>
                     </div>
-                    <p className="text-xs text-[#94a3b8] leading-relaxed">{layer.desc}</p>
+                    <p className="text-xs text-[var(--text-secondary)] leading-relaxed">{layer.desc}</p>
                   </div>
                 );
               })}
@@ -608,26 +603,26 @@ export default async function LangHomePage() {
 
             {/* Insight card */}
             <div className="">
-              <div className="p-8 rounded-2xl border border-[#1e293b] bg-[#111827] mb-6">
-                <h3 className="text-xl font-bold text-[#FFD700] mb-3">{dict.nlayer.whyTitle}</h3>
-                <p className="text-[0.9375rem] text-[#94a3b8] leading-relaxed mb-5">
+              <div className="p-8 rounded-2xl border border-[var(--border-color)] bg-[var(--bg-card)] mb-6">
+                <h3 className="text-xl font-bold text-[var(--gold)] mb-3">{dict.nlayer.whyTitle}</h3>
+                <p className="text-[0.9375rem] text-[var(--text-secondary)] leading-relaxed mb-5">
                   {dict.nlayer.whyP1}
                 </p>
-                <p className="text-[0.9375rem] text-[#94a3b8] leading-relaxed mb-5">
+                <p className="text-[0.9375rem] text-[var(--text-secondary)] leading-relaxed mb-5">
                   {dict.nlayer.whyP2}
                 </p>
-                <code className="block px-4 py-3.5 bg-[#0d1117] rounded-lg font-mono text-[0.8125rem] text-emerald-400 border border-[#1e293b] overflow-x-auto">
+                <code className="block px-4 py-3.5 bg-[#0d1117] rounded-lg font-mono text-[0.8125rem] text-emerald-400 border border-[var(--border-color)] overflow-x-auto">
                   faultray analyze --topology infra.yaml --output n-layer
                 </code>
               </div>
 
               {/* Key insight card */}
-              <div className="p-6 rounded-2xl border border-emerald-500/20 bg-gradient-to-br from-[#111827] to-emerald-500/[0.03]">
+              <div className="p-6 rounded-2xl border border-emerald-500/20 bg-gradient-to-br from-[var(--bg-card)] to-emerald-500/[0.03]">
                 <div className="flex items-start gap-3">
                   <Check size={20} className="text-emerald-400 mt-0.5 shrink-0" />
                   <div>
-                    <div className="font-semibold text-white mb-1">{dict.nlayer.bindingTitle}</div>
-                    <p className="text-sm text-[#94a3b8] leading-relaxed">
+                    <div className="font-semibold text-[var(--text-primary)] mb-1">{dict.nlayer.bindingTitle}</div>
+                    <p className="text-sm text-[var(--text-secondary)] leading-relaxed">
                       {dict.nlayer.bindingDesc}
                     </p>
                   </div>
@@ -643,13 +638,13 @@ export default async function LangHomePage() {
         <div className="max-w-[1200px] mx-auto px-6">
           <div className="text-center mb-16 ">
             <h2 className="text-[clamp(1.75rem,4vw,2.5rem)] font-bold tracking-tight mb-3">{dict.quickstart.heading}</h2>
-            <p className="text-lg text-[#94a3b8]">{dict.quickstart.subheading}</p>
+            <p className="text-lg text-[var(--text-secondary)]">{dict.quickstart.subheading}</p>
           </div>
 
           <div className="grid md:grid-cols-3 gap-8 mb-16">
             {/* Step 1 */}
             <div className="">
-              <div className="flex items-center justify-center w-9 h-9 rounded-full bg-[#FFD700]/10 border border-[#FFD700]/25 text-[#FFD700] font-bold text-sm mb-4">
+              <div className="flex items-center justify-center w-9 h-9 rounded-full bg-[var(--gold)]/10 border border-[var(--gold)]/25 text-[var(--gold)] font-bold text-sm mb-4">
                 1
               </div>
               <h3 className="text-lg font-bold mb-4">{dict.quickstart.step1Title}</h3>
@@ -667,7 +662,7 @@ export default async function LangHomePage() {
 
             {/* Step 2 */}
             <div className="">
-              <div className="flex items-center justify-center w-9 h-9 rounded-full bg-[#FFD700]/10 border border-[#FFD700]/25 text-[#FFD700] font-bold text-sm mb-4">
+              <div className="flex items-center justify-center w-9 h-9 rounded-full bg-[var(--gold)]/10 border border-[var(--gold)]/25 text-[var(--gold)] font-bold text-sm mb-4">
                 2
               </div>
               <h3 className="text-lg font-bold mb-4">{dict.quickstart.step2Title}</h3>
@@ -693,7 +688,7 @@ export default async function LangHomePage() {
 
             {/* Step 3 */}
             <div className="">
-              <div className="flex items-center justify-center w-9 h-9 rounded-full bg-[#FFD700]/10 border border-[#FFD700]/25 text-[#FFD700] font-bold text-sm mb-4">
+              <div className="flex items-center justify-center w-9 h-9 rounded-full bg-[var(--gold)]/10 border border-[var(--gold)]/25 text-[var(--gold)] font-bold text-sm mb-4">
                 3
               </div>
               <h3 className="text-lg font-bold mb-4">{dict.quickstart.step3Title}</h3>
@@ -720,7 +715,7 @@ export default async function LangHomePage() {
 
           {/* Dashboard mockup */}
           <div className=" max-w-[900px] mx-auto">
-            <div className="rounded-2xl overflow-hidden border border-[#1e293b] shadow-[0_8px_32px_rgba(0,0,0,0.5)]">
+            <div className="rounded-2xl overflow-hidden border border-[var(--border-color)] shadow-lg">
               <div className="flex items-center gap-3 px-4 py-3 bg-[#161b22] border-b border-[#1e293b]">
                 <div className="flex gap-2">
                   <span className="w-3 h-3 rounded-full bg-[#ff5f57]" />
@@ -737,8 +732,8 @@ export default async function LangHomePage() {
                       key={item}
                       className={`px-5 py-2 text-[0.8125rem] ${
                         i === 0
-                          ? "text-white bg-white/[0.03] border-l-2 border-[#FFD700]"
-                          : "text-[#64748b]"
+                          ? "text-[var(--text-primary)] bg-black/[0.03] border-l-2 border-[var(--gold)]"
+                          : "text-[var(--text-muted)]"
                       }`}
                     >
                       {item}
@@ -750,18 +745,18 @@ export default async function LangHomePage() {
                   <div className="grid grid-cols-4 gap-4 mb-6 max-md:grid-cols-2">
                     {[
                       { value: "99.99%", label: "Availability", color: "text-emerald-400" },
-                      { value: "2,048", label: "Scenarios", color: "text-white" },
+                      { value: "2,048", label: "Scenarios", color: "text-[var(--text-primary)]" },
                       { value: "2,043", label: "Passed", color: "text-emerald-400" },
                       { value: "5", label: "Failed", color: "text-red-400" },
                     ].map((stat) => (
-                      <div key={stat.label} className="text-center p-4 rounded-lg bg-white/[0.02] border border-[#1e293b]">
+                      <div key={stat.label} className="text-center p-4 rounded-lg bg-black/[0.02] border border-[var(--border-color)]">
                         <div className={`text-xl font-bold font-mono mb-1 ${stat.color}`}>{stat.value}</div>
-                        <div className="text-[0.6875rem] text-[#64748b] uppercase tracking-wider">{stat.label}</div>
+                        <div className="text-[0.6875rem] text-[var(--text-muted)] uppercase tracking-wider">{stat.label}</div>
                       </div>
                     ))}
                   </div>
-                  <div className="p-5 rounded-lg bg-white/[0.02] border border-[#1e293b]">
-                    <div className="text-[0.8125rem] font-semibold text-[#94a3b8] mb-4">Availability by Layer</div>
+                  <div className="p-5 rounded-lg bg-black/[0.02] border border-[var(--border-color)]">
+                    <div className="text-[0.8125rem] font-semibold text-[var(--text-secondary)] mb-4">Availability by Layer</div>
                     {[
                       { label: "Hardware", width: "89%", value: "5.91", color: "bg-[#FFD700]" },
                       { label: "Software", width: "60%", value: "4.00", color: "bg-emerald-400" },
@@ -770,11 +765,11 @@ export default async function LangHomePage() {
                       { label: "External", width: "73%", value: "4.85", color: "bg-orange-400" },
                     ].map((bar) => (
                       <div key={bar.label} className="grid grid-cols-[80px_1fr_48px] items-center gap-3 mb-3 last:mb-0">
-                        <span className="text-xs text-[#64748b]">{bar.label}</span>
-                        <div className="h-2 bg-white/5 rounded-full overflow-hidden">
+                        <span className="text-xs text-[var(--text-muted)]">{bar.label}</span>
+                        <div className="h-2 bg-black/5 rounded-full overflow-hidden">
                           <div className={`h-full rounded-full ${bar.color}`} style={{ width: bar.width }} />
                         </div>
-                        <span className="text-[0.8125rem] font-semibold font-mono text-right text-[#94a3b8]">{bar.value}</span>
+                        <span className="text-[0.8125rem] font-semibold font-mono text-right text-[var(--text-secondary)]">{bar.value}</span>
                       </div>
                     ))}
                   </div>
@@ -786,25 +781,25 @@ export default async function LangHomePage() {
       </section>
 
       {/* ===== MID-PAGE CTA ===== */}
-      <section className="py-16 bg-gradient-to-r from-[#0a0e1a] via-[#111827] to-[#0a0e1a] border-y border-[#1e293b]">
+      <section className="py-16 bg-gradient-to-r from-[var(--bg-primary)] via-[var(--bg-card)] to-[var(--bg-primary)] border-y border-[var(--border-color)]">
         <div className="max-w-[900px] mx-auto px-6 text-center">
           <h2 className="text-[clamp(1.5rem,3vw,2rem)] font-bold tracking-tight mb-3">
             Ready to prove your availability ceiling?
           </h2>
-          <p className="text-[#94a3b8] mb-8 max-w-[540px] mx-auto leading-relaxed">
+          <p className="text-[var(--text-secondary)] mb-8 max-w-[540px] mx-auto leading-relaxed">
             See FaultRay in action with your own infrastructure. Our team will walk you through a live simulation in 30 minutes.
           </p>
           <div className="flex gap-4 justify-center flex-wrap">
             <Link
               href="/contact"
-              className="inline-flex items-center gap-2 px-8 py-3.5 bg-[#FFD700] text-[#0a0e1a] font-semibold rounded-xl shadow-[0_0_20px_rgba(255,215,0,0.2)] hover:bg-[#ffe44d] hover:shadow-[0_0_30px_rgba(255,215,0,0.35)] hover:-translate-y-0.5 transition-all"
+              className="inline-flex items-center gap-2 px-8 py-3.5 bg-[var(--gold)] text-white font-semibold rounded-xl shadow-md hover:bg-[#044a99] hover:shadow-lg hover:-translate-y-0.5 transition-all"
             >
               <ExternalLink size={16} />
               Book a Free Demo
             </Link>
             <Link
               href="/login"
-              className="inline-flex items-center gap-2 px-8 py-3.5 border border-[#1e293b] text-white rounded-xl hover:border-[#64748b] hover:bg-white/[0.03] hover:-translate-y-0.5 transition-all"
+              className="inline-flex items-center gap-2 px-8 py-3.5 border border-[var(--border-color)] text-[var(--text-primary)] rounded-xl hover:border-[var(--text-muted)] hover:bg-black/[0.03] hover:-translate-y-0.5 transition-all"
             >
               <Zap size={16} />
               Start Free
@@ -819,9 +814,9 @@ export default async function LangHomePage() {
       )}
 
       {/* ===== COMPDIFF-05: 業界調査データ引用 ===== */}
-      <section className="py-16 border-t border-[#1e293b]">
+      <section className="py-16 border-t border-[var(--border-color)]">
         <div className="max-w-[900px] mx-auto px-6">
-          <p className="text-center text-xs text-[#64748b] uppercase tracking-widest mb-8">業界調査データ</p>
+          <p className="text-center text-xs text-[var(--text-muted)] uppercase tracking-widest mb-8">業界調査データ</p>
           <div className="grid sm:grid-cols-3 gap-6">
             {[
               {
@@ -840,52 +835,13 @@ export default async function LangHomePage() {
                 source: "Uptime Institute Global Outage Analysis 2023",
               },
             ].map((item) => (
-              <div key={item.stat} className="bg-[#111827] border border-[#1e293b] rounded-xl p-5">
-                <p className="text-2xl font-bold text-[#FFD700] mb-2">{item.stat}</p>
-                <p className="text-sm text-white mb-3">{item.desc}</p>
-                <p className="text-xs text-[#64748b]">{item.source}</p>
+              <div key={item.stat} className="bg-[var(--bg-card)] border border-[var(--border-color)] rounded-xl p-5">
+                <p className="text-2xl font-bold text-[var(--gold)] mb-2">{item.stat}</p>
+                <p className="text-sm text-[var(--text-primary)] mb-3">{item.desc}</p>
+                <p className="text-xs text-[var(--text-muted)]">{item.source}</p>
               </div>
             ))}
           </div>
-        </div>
-      </section>
-
-      {/* ===== BUSINESS IMPACT (LP-04) ===== */}
-      <section className="py-12 bg-[#0a0e1a] border-t border-[#1e293b]">
-        <div className="max-w-[900px] mx-auto px-6">
-          <div className="rounded-2xl border border-[#FFD700]/20 bg-[#FFD700]/[0.04] p-8 text-center">
-            <p className="text-xs text-[#FFD700] uppercase tracking-widest font-semibold mb-4">ビジネスインパクト試算</p>
-            <p className="text-[clamp(1.125rem,2.5vw,1.375rem)] font-bold text-white mb-2 leading-snug">
-              1時間の障害損失 <span className="text-red-400">50万円</span> × 年3回 = <span className="text-red-400">150万円</span> の損失
-            </p>
-            <p className="text-[clamp(1rem,2vw,1.25rem)] font-bold text-emerald-400 mb-4">
-              月<span className="text-[#FFD700]">4.5万円</span>の投資で、年<span className="text-[#FFD700]">150万円</span>のリスクを削減
-            </p>
-            <p className="text-sm text-[#64748b]">
-              ※ 月売上1億円・障害3時間・年3回の中規模システムを想定した試算。下のROI計算機で自社の数値を入力できます。
-            </p>
-          </div>
-        </div>
-      </section>
-
-      {/* ===== DEMO CTA (LP-03) ===== */}
-      <section className="py-16 bg-[#0a0e1a] border-t border-[#1e293b]">
-        <div className="max-w-[900px] mx-auto px-6 text-center">
-          <p className="text-xs text-emerald-400 uppercase tracking-widest font-semibold mb-4">無料デモ</p>
-          <h2 className="text-[clamp(1.5rem,3vw,2rem)] font-bold tracking-tight mb-4">
-            30分でFaultRayの効果を体験する
-          </h2>
-          <p className="text-[#94a3b8] mb-8 max-w-[560px] mx-auto">
-            担当エンジニアが貴社のインフラシナリオを用いたライブシミュレーションをご案内します。事前準備は不要です。
-          </p>
-          <Link
-            href="mailto:contact@faultray.com?subject=FaultRay デモ予約"
-            className="inline-flex items-center gap-2 px-8 py-3.5 bg-[#FFD700] text-[#0a0e1a] font-bold rounded-xl shadow-[0_0_20px_rgba(255,215,0,0.25)] hover:bg-[#ffe44d] hover:shadow-[0_0_30px_rgba(255,215,0,0.4)] hover:-translate-y-0.5 transition-all text-[1.0625rem]"
-          >
-            <ExternalLink size={18} />
-            無料デモを予約する
-          </Link>
-          <p className="text-xs text-[#475569] mt-4">クレジットカード不要 · 1営業日以内に返信します</p>
         </div>
       </section>
 
@@ -894,12 +850,84 @@ export default async function LangHomePage() {
         <RoiCalculator dict={dict.roi} lang={lang} />
       )}
 
+      {/* ===== COPY-02: WHY FAULTRAY — SRE Cost Comparison ===== */}
+      <section className="py-20 bg-[var(--bg-primary)]">
+        <div className="max-w-[800px] mx-auto px-6">
+          <h2 className="text-[clamp(1.75rem,4vw,2.5rem)] font-bold tracking-tight mb-3 text-center">なぜFaultRayか？</h2>
+          <p className="text-lg text-[var(--text-secondary)] text-center mb-12">SRE人材に頼らず、インフラの弱点を即座に可視化</p>
+          <div className="overflow-x-auto rounded-2xl border border-[var(--border-color)]">
+            <table className="w-full min-w-[500px] border-collapse text-sm">
+              <thead>
+                <tr>
+                  <th scope="col" className="px-5 py-4 text-left bg-[var(--bg-tertiary)] text-[var(--text-secondary)] font-semibold">選択肢</th>
+                  <th scope="col" className="px-5 py-4 text-center bg-[var(--bg-tertiary)] text-[var(--text-secondary)] font-semibold">月額コスト</th>
+                  <th scope="col" className="px-5 py-4 text-center bg-[var(--bg-tertiary)] text-[var(--text-secondary)] font-semibold">開始まで</th>
+                </tr>
+              </thead>
+              <tbody>
+                {[
+                  { option: "SRE正社員", cost: "58〜100万/月", time: "採用3〜6ヶ月", highlight: false },
+                  { option: "技術顧問", cost: "10〜90万/月", time: "契約1〜2週間", highlight: false },
+                  { option: "副業SRE", cost: "約24万/月", time: "マッチング1ヶ月", highlight: false },
+                  { option: "FaultRay Pro", cost: "4.5万/月", time: "即日開始", highlight: true },
+                ].map((row, i) => (
+                  <tr key={row.option} className={`${i < 3 ? "border-b border-[var(--border-color)]" : ""} ${row.highlight ? "bg-[var(--gold)]/[0.04]" : "bg-[var(--bg-card)]"}`}>
+                    <td className={`px-5 py-4 font-semibold ${row.highlight ? "text-[var(--gold)]" : "text-[var(--text-primary)]"}`}>{row.option}</td>
+                    <td className={`px-5 py-4 text-center ${row.highlight ? "text-[var(--gold)] font-bold" : "text-[var(--text-secondary)]"}`}>{row.cost}</td>
+                    <td className={`px-5 py-4 text-center ${row.highlight ? "text-emerald-600 font-bold" : "text-[var(--text-muted)]"}`}>{row.time}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      {/* ===== PAIN POINTS — 9つの課題 ===== */}
+      <section className="py-20 bg-[var(--bg-secondary)]">
+        <div className="max-w-[800px] mx-auto px-6">
+          <h2 className="text-[clamp(1.5rem,3vw,2rem)] font-bold tracking-tight mb-3 text-center">こんな課題、ありませんか？</h2>
+          <p className="text-[var(--text-secondary)] text-center mb-10">チェックが1つでも当てはまるなら、FaultRayが解決します</p>
+          <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-10">
+            {[
+              { text: "ECS/K8sを導入したいが、何から始めればいいかわからない", href: "/iac" },
+              { text: "インフラをTerraform化したいが、工数が読めない", href: "/iac" },
+              { text: "SREを採用したいが、年収1,000万は出せない", href: "/pricing" },
+              { text: "運用・監視体制を整えたいが、何を監視すべきかわからない", href: "/apm" },
+              { text: "マルチクラウド構成に挑戦したい", href: "/topology" },
+              { text: "Datadogを導入したが、使いこなせていない", href: "/apm" },
+              { text: "インフラコストを月30%削減したい", href: "/cost" },
+              { text: "0→1でプロダクトを立ち上げるが、アーキテクチャに自信がない", href: "/simulate" },
+              { text: "CI/CD基盤がレガシーで、デプロイに時間がかかる", href: "/dora" },
+            ].map((item) => (
+              <Link
+                key={item.text}
+                href={item.href}
+                className="flex items-start gap-3 p-4 rounded-xl border border-[var(--border-color)] bg-[var(--bg-card)] hover:border-[var(--gold)] hover:shadow-md transition-all"
+              >
+                <span className="text-[var(--gold)] mt-0.5 shrink-0">☐</span>
+                <span className="text-sm text-[var(--text-secondary)] leading-relaxed">{item.text}</span>
+              </Link>
+            ))}
+          </div>
+          <div className="text-center">
+            <Link
+              href="/simulate"
+              className="inline-flex items-center gap-2 px-7 py-3 bg-[var(--gold)] text-white font-semibold rounded-xl shadow-md hover:bg-[#044a99] hover:shadow-lg transition-all"
+            >
+              <Zap size={16} />
+              FaultRayで無料診断する
+            </Link>
+          </div>
+        </div>
+      </section>
+
       {/* ===== PRICING ===== */}
-      <section id="pricing" className="py-24 bg-[#0f1424]">
+      <section id="pricing" className="py-24 bg-[var(--bg-secondary)]">
         <div className="max-w-[1200px] mx-auto px-6">
           <div className="text-center mb-16 ">
             <h2 className="text-[clamp(1.75rem,4vw,2.5rem)] font-bold tracking-tight mb-3">{dict.pricing.heading}</h2>
-            <p className="text-lg text-[#94a3b8]">{dict.pricing.subheading}</p>
+            <p className="text-lg text-[var(--text-secondary)]">{dict.pricing.subheading}</p>
           </div>
 
           {/* Plan cards */}
@@ -909,14 +937,14 @@ export default async function LangHomePage() {
               return (
                 <div
                   key={plan.name}
-                  className={` relative p-9 rounded-2xl border flex flex-col transition-all duration-200 hover:-translate-y-1 hover:shadow-[0_8px_32px_rgba(0,0,0,0.5)] ${
+                  className={` relative p-9 rounded-2xl border flex flex-col transition-all duration-200 hover:-translate-y-1 hover:shadow-lg ${
                     data.popular
-                      ? "border-[#FFD700] bg-gradient-to-b from-[#FFD700]/[0.04] to-[#111827] shadow-[0_0_40px_rgba(255,215,0,0.1)]"
-                      : "border-[#1e293b] bg-[#111827]"
+                      ? "border-[var(--gold)] bg-gradient-to-b from-[var(--gold)]/[0.04] to-[var(--bg-card)] shadow-md"
+                      : "border-[var(--border-color)] bg-[var(--bg-card)]"
                   }`}
                 >
                   {data.popular && (
-                    <div className="absolute -top-3 left-1/2 -translate-x-1/2 px-4 py-1 text-xs font-bold text-[#0a0e1a] bg-[#FFD700] rounded-full uppercase tracking-wide">
+                    <div className="absolute -top-3 left-1/2 -translate-x-1/2 px-4 py-1 text-xs font-bold text-white bg-[var(--gold)] rounded-full uppercase tracking-wide">
                       {dict.pricing.mostPopular}
                     </div>
                   )}
@@ -926,32 +954,32 @@ export default async function LangHomePage() {
                       <span className="text-4xl font-extrabold tracking-tight">Free</span>
                     ) : (
                       <>
-                        <span className="text-xl font-semibold text-[#94a3b8]">{dict.pricing.currency}</span>
+                        <span className="text-xl font-semibold text-[var(--text-secondary)]">{dict.pricing.currency}</span>
                         <span className="text-4xl font-extrabold tracking-tight">{dict.pricing.prices[i].toLocaleString()}</span>
-                        <span className="text-sm text-[#64748b] ml-1">{dict.pricing.perMonth}</span>
+                        <span className="text-sm text-[var(--text-muted)] ml-1">{dict.pricing.perMonth}</span>
                         {dict.pricing.taxNote && (
-                          <span className="text-xs text-[#64748b] ml-1">{dict.pricing.taxNote}</span>
+                          <span className="text-xs text-[var(--text-muted)] ml-1">{dict.pricing.taxNote}</span>
                         )}
                       </>
                     )}
                   </div>
-                  <p className="text-sm text-[#94a3b8] leading-relaxed mb-4">{plan.desc}</p>
+                  <p className="text-sm text-[var(--text-secondary)] leading-relaxed mb-4">{plan.desc}</p>
                   {/* LP-07: Japanese support badge on paid plans */}
                   {i > 0 && dict.pricing.japaneseSupportBadge && (
-                    <div className="inline-flex items-center gap-1.5 px-3 py-1 mb-5 text-xs font-semibold rounded-full bg-[#1e293b] text-[#94a3b8] border border-[#1e293b] w-fit">
+                    <div className="inline-flex items-center gap-1.5 px-3 py-1 mb-5 text-xs font-semibold rounded-full bg-[var(--border-color)] text-[var(--text-secondary)] border border-[var(--border-color)] w-fit">
                       <span>🇯🇵</span>
                       {dict.pricing.japaneseSupportBadge}
                     </div>
                   )}
                   <ul className="space-y-3 mb-8 flex-1">
                     {data.features.map((f) => (
-                      <li key={f} className="flex items-center gap-2.5 text-sm text-[#94a3b8]">
+                      <li key={f} className="flex items-center gap-2.5 text-sm text-[var(--text-secondary)]">
                         <Check size={16} className="text-emerald-400 shrink-0" />
                         {f}
                       </li>
                     ))}
                     {data.disabledFeatures.map((f) => (
-                      <li key={f} className="flex items-center gap-2.5 text-sm text-[#94a3b8] opacity-40">
+                      <li key={f} className="flex items-center gap-2.5 text-sm text-[var(--text-secondary)] opacity-40">
                         <Minus size={16} className="shrink-0" />
                         {f}
                       </li>
@@ -961,8 +989,8 @@ export default async function LangHomePage() {
                     href={data.ctaHref}
                     className={`w-full text-center py-3 rounded-xl font-semibold transition-all ${
                       data.popular
-                        ? "bg-[#FFD700] text-[#0a0e1a] hover:bg-[#ffe44d] shadow-[0_0_20px_rgba(255,215,0,0.2)]"
-                        : "border border-[#1e293b] text-white hover:border-[#64748b] hover:bg-white/[0.03]"
+                        ? "bg-[var(--gold)] text-white hover:bg-[#044a99] shadow-md"
+                        : "border border-[var(--border-color)] text-[var(--text-primary)] hover:border-[var(--text-muted)] hover:bg-black/[0.03]"
                     }`}
                   >
                     {plan.cta}
@@ -975,27 +1003,27 @@ export default async function LangHomePage() {
           {/* Feature comparison table */}
           <div className=" max-w-[900px] mx-auto">
             <h3 className="text-xl font-bold text-center mb-8">{dict.pricing.featureComparison}</h3>
-            <div className="overflow-x-auto rounded-2xl border border-[#1e293b]">
+            <div className="overflow-x-auto rounded-2xl border border-[var(--border-color)]">
               <table className="w-full min-w-[600px] border-collapse text-[0.9375rem]">
                 <thead>
                   <tr>
-                    <th scope="col" className="px-5 py-4 text-left bg-[#141a2e] text-[#94a3b8] font-semibold text-sm">Feature</th>
-                    <th scope="col" className="px-5 py-4 text-center bg-[#141a2e] text-[#94a3b8] font-semibold text-sm">Free</th>
-                    <th scope="col" className="px-5 py-4 text-center bg-[#FFD700]/[0.06] text-[#FFD700] font-semibold text-sm">Pro</th>
-                    <th scope="col" className="px-5 py-4 text-center bg-[#141a2e] text-[#94a3b8] font-semibold text-sm">Business</th>
+                    <th scope="col" className="px-5 py-4 text-left bg-[var(--bg-tertiary)] text-[var(--text-secondary)] font-semibold text-sm">Feature</th>
+                    <th scope="col" className="px-5 py-4 text-center bg-[var(--bg-tertiary)] text-[var(--text-secondary)] font-semibold text-sm">Free</th>
+                    <th scope="col" className="px-5 py-4 text-center bg-[var(--gold)]/[0.06] text-[var(--gold)] font-semibold text-sm">Pro</th>
+                    <th scope="col" className="px-5 py-4 text-center bg-[var(--bg-tertiary)] text-[var(--text-secondary)] font-semibold text-sm">Business</th>
                   </tr>
                 </thead>
                 <tbody>
                   {pricingComparison.map((row, i) => (
-                    <tr key={row.feature} className={i < pricingComparison.length - 1 ? "border-b border-[#1e293b]" : ""}>
-                      <td className="px-5 py-3.5 font-semibold text-white bg-[#111827]">{row.feature}</td>
-                      <td className="px-5 py-3.5 text-center bg-[#111827] text-[#94a3b8]">
+                    <tr key={row.feature} className={i < pricingComparison.length - 1 ? "border-b border-[var(--border-color)]" : ""}>
+                      <td className="px-5 py-3.5 font-semibold text-[var(--text-primary)] bg-[var(--bg-card)]">{row.feature}</td>
+                      <td className="px-5 py-3.5 text-center bg-[var(--bg-card)] text-[var(--text-secondary)]">
                         <PricingComparisonCell value={row.free} />
                       </td>
-                      <td className="px-5 py-3.5 text-center bg-[#FFD700]/[0.03] text-white">
+                      <td className="px-5 py-3.5 text-center bg-[var(--gold)]/[0.03] text-[var(--text-primary)]">
                         <PricingComparisonCell value={row.pro} />
                       </td>
-                      <td className="px-5 py-3.5 text-center bg-[#111827] text-[#94a3b8]">
+                      <td className="px-5 py-3.5 text-center bg-[var(--bg-card)] text-[var(--text-secondary)]">
                         <PricingComparisonCell value={row.business} />
                       </td>
                     </tr>
@@ -1004,108 +1032,11 @@ export default async function LangHomePage() {
               </table>
             </div>
           </div>
-
-          {/* ===== PROFESSIONAL SERVICES (SALES-02) ===== */}
-          <div className="mt-20 max-w-[1000px] mx-auto">
-            <div className="text-center mb-10">
-              <p className="text-xs text-[#FFD700] uppercase tracking-widest font-semibold mb-3">プロフェッショナルサービス</p>
-              <h3 className="text-[clamp(1.5rem,3vw,2rem)] font-bold tracking-tight mb-3">
-                対面診断・スポットコンサルティング
-              </h3>
-              <p className="text-[#94a3b8] max-w-[600px] mx-auto">
-                SaaSプランと組み合わせて使えます。専任エンジニアが貴社のインフラを直接診断し、具体的な改善策をご提案します。
-              </p>
-            </div>
-
-            {/* ROI reminder */}
-            <div className="mb-8 p-5 rounded-2xl border border-[#FFD700]/20 bg-[#FFD700]/[0.04] text-center">
-              <p className="text-sm font-semibold text-white mb-1">
-                1時間の障害損失 <span className="text-red-400">50万円</span> × 年3回 = <span className="text-red-400">150万円</span> の損失
-              </p>
-              <p className="text-sm text-emerald-400 font-bold">
-                月<span className="text-[#FFD700]">4.5万円</span>の投資でリスクを削減。診断1回で投資回収も可能。
-              </p>
-            </div>
-
-            <div className="grid md:grid-cols-3 gap-5">
-              {[
-                {
-                  title: "障害シミュレーション診断",
-                  price: "15〜20万円",
-                  unit: "/件",
-                  desc: "貴社のインフラ構成をもとに2,000以上のカオスシナリオを実行。障害の発生確率と影響範囲を数値化します。",
-                  items: [
-                    "現状ヒアリング（2時間）",
-                    "シミュレーション実行・分析",
-                    "障害リスクレポート（PDF）",
-                    "改善提案・優先順位付け",
-                  ],
-                },
-                {
-                  title: "AIガバナンス診断",
-                  price: "10〜20万円",
-                  unit: "/件",
-                  desc: "AIエージェント・LLMを組み込んだシステムの10種類の障害モードをシミュレーション。DORA準拠確認も実施。",
-                  items: [
-                    "AIシステム構成ヒアリング",
-                    "10種の障害モード検証",
-                    "DORAコンプライアンスチェック",
-                    "ガバナンス強化ロードマップ",
-                  ],
-                },
-                {
-                  title: "属人化リスク診断",
-                  price: "10〜15万円",
-                  unit: "/件",
-                  desc: "バスファクター分析でチームの知識集中リスクを可視化。人材流出・休暇時のインフラ脆弱性を特定します。",
-                  items: [
-                    "担当領域マッピング",
-                    "バスファクター算出",
-                    "属人化スコアレポート",
-                    "引き継ぎ計画テンプレート",
-                  ],
-                },
-              ].map((service) => (
-                <div
-                  key={service.title}
-                  className="p-7 rounded-2xl border border-[#1e293b] bg-[#111827] flex flex-col hover:-translate-y-0.5 hover:border-[#64748b] transition-all"
-                >
-                  <h4 className="text-base font-bold mb-3">{service.title}</h4>
-                  <div className="flex items-baseline gap-0.5 mb-3">
-                    <span className="text-2xl font-extrabold tracking-tight text-[#FFD700]">{service.price}</span>
-                    <span className="text-sm text-[#64748b] ml-1">{service.unit}</span>
-                  </div>
-                  <p className="text-xs text-[#94a3b8] leading-relaxed mb-4">{service.desc}</p>
-                  <ul className="space-y-2 mb-6 flex-1">
-                    {service.items.map((item) => (
-                      <li key={item} className="flex items-start gap-2 text-xs text-[#94a3b8]">
-                        <Check size={13} className="text-emerald-400 shrink-0 mt-0.5" />
-                        {item}
-                      </li>
-                    ))}
-                  </ul>
-                  <Link
-                    href="mailto:contact@faultray.com?subject=プロフェッショナルサービス無料相談"
-                    className="w-full text-center py-2.5 rounded-xl font-semibold border border-[#1e293b] text-white hover:border-[#64748b] hover:bg-white/[0.03] transition-all text-sm"
-                  >
-                    まずは無料相談
-                  </Link>
-                </div>
-              ))}
-            </div>
-
-            <p className="text-center text-xs text-[#475569] mt-6">
-              料金は規模・複雑度によって変動します。まずはお気軽にご相談ください。
-              <Link href="mailto:contact@faultray.com" className="text-[#94a3b8] hover:text-white transition-colors ml-1">
-                contact@faultray.com
-              </Link>
-            </p>
-          </div>
         </div>
       </section>
 
       {/* ===== FOOTER ===== */}
-      <footer className="py-16 border-t border-[#1e293b]">
+      <footer className="py-16 border-t border-[var(--border-color)]">
         <div className="max-w-[1200px] mx-auto px-6">
           <div className="grid md:grid-cols-4 gap-12 mb-12">
             {/* Brand */}
@@ -1114,17 +1045,17 @@ export default async function LangHomePage() {
                 <Logo size={24} />
                 FaultRay
               </div>
-              <p className="text-sm text-[#64748b] leading-relaxed mb-4 max-w-[300px]">
+              <p className="text-sm text-[var(--text-muted)] leading-relaxed mb-4 max-w-[300px]">
                 {dict.footer.tagline}
               </p>
-              <span className="inline-flex items-center gap-1.5 text-[0.8125rem] text-[#64748b] px-3 py-1 border border-[#1e293b] rounded-full">
+              <span className="inline-flex items-center gap-1.5 text-[0.8125rem] text-[var(--text-muted)] px-3 py-1 border border-[var(--border-color)] rounded-full">
                 {dict.footer.madeIn}
               </span>
             </div>
 
             {/* Product */}
             <div>
-              <h4 className="text-xs font-bold text-[#94a3b8] uppercase tracking-wider mb-4">{dict.footer.product}</h4>
+              <h4 className="text-xs font-bold text-[var(--text-secondary)] uppercase tracking-wider mb-4">{dict.footer.product}</h4>
               <ul className="space-y-2.5">
                 {[
                   [dict.nav.features, "#features"],
@@ -1133,7 +1064,7 @@ export default async function LangHomePage() {
                   [dict.quickstart.heading, "#quickstart"],
                 ].map(([label, href]) => (
                   <li key={label}>
-                    <Link href={href} className="text-sm text-[#64748b] hover:text-white transition-colors">
+                    <Link href={href} className="text-sm text-[var(--text-muted)] hover:text-[var(--text-primary)] transition-colors">
                       {label}
                     </Link>
                   </li>
@@ -1143,20 +1074,20 @@ export default async function LangHomePage() {
 
             {/* Resources */}
             <div>
-              <h4 className="text-xs font-bold text-[#94a3b8] uppercase tracking-wider mb-4">{dict.footer.resources}</h4>
+              <h4 className="text-xs font-bold text-[var(--text-secondary)] uppercase tracking-wider mb-4">{dict.footer.resources}</h4>
               <ul className="space-y-2.5">
                 <li>
-                  <Link href="https://github.com/mattyopon/faultray" target="_blank" className="text-sm text-[#64748b] hover:text-white transition-colors">
+                  <Link href="https://github.com/mattyopon/faultray" target="_blank" className="text-sm text-[var(--text-muted)] hover:text-[var(--text-primary)] transition-colors">
                     GitHub
                   </Link>
                 </li>
                 <li>
-                  <Link href="https://pypi.org/project/faultray/" target="_blank" className="text-sm text-[#64748b] hover:text-white transition-colors">
+                  <Link href="https://pypi.org/project/faultray/" target="_blank" className="text-sm text-[var(--text-muted)] hover:text-[var(--text-primary)] transition-colors">
                     PyPI
                   </Link>
                 </li>
                 <li>
-                  <Link href="/simulate" className="text-sm text-[#64748b] hover:text-white transition-colors">
+                  <Link href="/simulate" className="text-sm text-[var(--text-muted)] hover:text-[var(--text-primary)] transition-colors">
                     {dict.hero.demo}
                   </Link>
                 </li>
@@ -1164,24 +1095,24 @@ export default async function LangHomePage() {
                   <Link
                     href="https://github.com/mattyopon/faultray/blob/main/docs/"
                     target="_blank"
-                    className="text-sm text-[#64748b] hover:text-white transition-colors"
+                    className="text-sm text-[var(--text-muted)] hover:text-[var(--text-primary)] transition-colors"
                   >
                     ドキュメント
                   </Link>
                 </li>
                 {/* MATERIAL-01/02: ケーススタディ・稟議書テンプレート */}
                 <li>
-                  <Link href="/case-studies" className="text-sm text-[#64748b] hover:text-white transition-colors">
+                  <Link href="/case-studies" className="text-sm text-[var(--text-muted)] hover:text-[var(--text-primary)] transition-colors">
                     導入事例
                   </Link>
                 </li>
                 <li>
-                  <Link href="/ringi" className="text-sm text-[#64748b] hover:text-white transition-colors">
+                  <Link href="/ringi" className="text-sm text-[var(--text-muted)] hover:text-[var(--text-primary)] transition-colors">
                     稟議書テンプレート
                   </Link>
                 </li>
                 <li>
-                  <Link href="/changelog" className="text-sm text-[#64748b] hover:text-white transition-colors">
+                  <Link href="/changelog" className="text-sm text-[var(--text-muted)] hover:text-[var(--text-primary)] transition-colors">
                     更新履歴
                   </Link>
                 </li>
@@ -1190,56 +1121,56 @@ export default async function LangHomePage() {
 
             {/* Legal + Language */}
             <div>
-              <h4 className="text-xs font-bold text-[#94a3b8] uppercase tracking-wider mb-4">{dict.footer.legal}</h4>
+              <h4 className="text-xs font-bold text-[var(--text-secondary)] uppercase tracking-wider mb-4">{dict.footer.legal}</h4>
               <ul className="space-y-2.5">
                 <li>
                   <Link
                     href="https://github.com/mattyopon/faultray/blob/main/LICENSE"
                     target="_blank"
-                    className="text-sm text-[#64748b] hover:text-white transition-colors"
+                    className="text-sm text-[var(--text-muted)] hover:text-[var(--text-primary)] transition-colors"
                     title="BSL 1.1: ソースコードは公開されています。非商用利用は無料。商用利用にはサブスクリプションが必要です。"
                   >
                     BSL 1.1 ライセンス
                   </Link>
-                  <span className="block text-xs text-[#475569] mt-0.5">ソース公開型・非商用利用は無料</span>
+                  <span className="block text-xs text-[var(--text-muted)] mt-0.5">ソース公開型・非商用利用は無料</span>
                 </li>
                 <li>
-                  <Link href="/contact" className="text-sm text-[#64748b] hover:text-white transition-colors">
+                  <Link href="/contact" className="text-sm text-[var(--text-muted)] hover:text-[var(--text-primary)] transition-colors">
                     Book a Demo
                   </Link>
                 </li>
                 <li>
-                  <Link href="mailto:hello@faultray.com" className="text-sm text-[#64748b] hover:text-white transition-colors">
+                  <Link href="mailto:hello@faultray.com" className="text-sm text-[var(--text-muted)] hover:text-[var(--text-primary)] transition-colors">
                     Contact
                   </Link>
                 </li>
                 <li>
-                  <Link href="/privacy" className="text-sm text-[#64748b] hover:text-white transition-colors">
+                  <Link href="/privacy" className="text-sm text-[var(--text-muted)] hover:text-[var(--text-primary)] transition-colors">
                     Privacy Policy
                   </Link>
                 </li>
                 <li>
-                  <Link href="/terms" className="text-sm text-[#64748b] hover:text-white transition-colors">
+                  <Link href="/terms" className="text-sm text-[var(--text-muted)] hover:text-[var(--text-primary)] transition-colors">
                     Terms of Service
                   </Link>
                 </li>
                 <li>
-                  <Link href="/dpa" className="text-sm text-[#64748b] hover:text-white transition-colors">
-                    DPA（データ処理契約）
-                  </Link>
-                </li>
-                <li>
-                  <Link href="/tokushoho" className="text-sm text-[#64748b] hover:text-white transition-colors">
+                  <Link href="/tokushoho" className="text-sm text-[var(--text-muted)] hover:text-[var(--text-primary)] transition-colors">
                     特定商取引法に基づく表記
                   </Link>
                 </li>
                 <li>
-                  <Link href="/status" className="text-sm text-[#64748b] hover:text-white transition-colors">
+                  <Link href="/dpa" className="text-sm text-[var(--text-muted)] hover:text-[var(--text-primary)] transition-colors">
+                    DPA（データ処理契約）
+                  </Link>
+                </li>
+                <li>
+                  <Link href="/status" className="text-sm text-[var(--text-muted)] hover:text-[var(--text-primary)] transition-colors">
                     サービス稼働状況
                   </Link>
                 </li>
                 <li>
-                  <Link href="/support" className="text-sm text-[#64748b] hover:text-white transition-colors">
+                  <Link href="/support" className="text-sm text-[var(--text-muted)] hover:text-[var(--text-primary)] transition-colors">
                     サポートセンター
                   </Link>
                 </li>
@@ -1252,35 +1183,35 @@ export default async function LangHomePage() {
 
           {/* JP-04 / JP-05: Data security & Japanese support guarantees */}
           <div className="pt-6 mb-4 grid sm:grid-cols-3 gap-4">
-            <div className="p-4 rounded-xl border border-[#1e293b] bg-[#111827]">
-              <p className="text-xs font-bold text-[#FFD700] mb-1">データの安全性（JP-04対応）</p>
-              <p className="text-xs text-[#64748b] leading-relaxed">
-                入力されたインフラ情報はシミュレーション処理にのみ使用します。第三者への提供・海外移転は行いません。詳細は<Link href="/privacy" className="text-[#94a3b8] hover:text-white transition-colors">プライバシーポリシー</Link>をご確認ください。
+            <div className="p-4 rounded-xl border border-[var(--border-color)] bg-[var(--bg-card)]">
+              <p className="text-xs font-bold text-[var(--gold)] mb-1">データの安全性（JP-04対応）</p>
+              <p className="text-xs text-[var(--text-muted)] leading-relaxed">
+                入力されたインフラ情報はシミュレーション処理にのみ使用します。第三者への提供・海外移転は行いません。詳細は<Link href="/privacy" className="text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors">プライバシーポリシー</Link>をご確認ください。
               </p>
             </div>
-            <div className="p-4 rounded-xl border border-[#1e293b] bg-[#111827]">
-              <p className="text-xs font-bold text-[#FFD700] mb-1">日本語サポート（JP-05対応）</p>
-              <p className="text-xs text-[#64748b] leading-relaxed">
+            <div className="p-4 rounded-xl border border-[var(--border-color)] bg-[var(--bg-card)]">
+              <p className="text-xs font-bold text-[var(--gold)] mb-1">日本語サポート（JP-05対応）</p>
+              <p className="text-xs text-[var(--text-muted)] leading-relaxed">
                 メール・チャットによる日本語サポートを提供しています。Proプランは24時間以内、Businessプランは1時間以内に対応します。
               </p>
             </div>
-            <div className="p-4 rounded-xl border border-[#1e293b] bg-[#111827]">
-              <p className="text-xs font-bold text-[#FFD700] mb-1">稟議・導入支援（JP-03対応）</p>
-              <p className="text-xs text-[#64748b] leading-relaxed">
-                稟議書テンプレート・セキュリティチェックシート・PoC支援を無償提供します。<Link href="mailto:sales@faultray.com" className="text-[#94a3b8] hover:text-white transition-colors">sales@faultray.com</Link>までご相談ください。
+            <div className="p-4 rounded-xl border border-[var(--border-color)] bg-[var(--bg-card)]">
+              <p className="text-xs font-bold text-[var(--gold)] mb-1">稟議・導入支援（JP-03対応）</p>
+              <p className="text-xs text-[var(--text-muted)] leading-relaxed">
+                稟議書テンプレート・セキュリティチェックシート・PoC支援を無償提供します。<Link href="mailto:sales@faultray.com" className="text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors">sales@faultray.com</Link>までご相談ください。
               </p>
             </div>
           </div>
 
-          <div className="pt-6 border-t border-[#1e293b] text-center space-y-2">
+          <div className="pt-6 border-t border-[var(--border-color)] text-center space-y-2">
             {/* LP-07: Japanese support notice */}
             {dict.footer.japaneseSupport && (
-              <p className="text-[0.8125rem] text-[#64748b]">
+              <p className="text-[0.8125rem] text-[var(--text-muted)]">
                 <span className="mr-1.5">🇯🇵</span>
                 {dict.footer.japaneseSupport}
               </p>
             )}
-            <p className="text-[0.8125rem] text-[#64748b]">
+            <p className="text-[0.8125rem] text-[var(--text-muted)]">
               {dict.footer.copyright}
             </p>
           </div>

@@ -28,6 +28,12 @@
       "maxDuration": 30
     }
   },
+  "crons": [
+    {
+      "path": "/api/cron/trial-reminders",
+      "schedule": "0 9 * * *"
+    }
+  ],
   "rewrites": [
     { "source": "/api/simulate", "destination": "/api/engine" },
     { "source": "/api/analysis", "destination": "/api/engine" },

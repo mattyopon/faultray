@@ -45,11 +45,11 @@ export default function ApmPage() {
     fetch("/api/apm/agents", { signal: controller.signal })
       .then((r) => r.json())
       .then((d) => { if (Array.isArray(d?.agents)) setAgentList(d.agents); })
-      .catch(() => {});
+      .catch((err) => console.error("[apm] fetch error:", err));
     fetch("/api/apm/alerts", { signal: controller.signal })
       .then((r) => r.json())
       .then((d) => { if (Array.isArray(d?.alerts)) setAlertList(d.alerts); })
-      .catch(() => {});
+      .catch((err) => console.error("[apm] fetch error:", err));
     return () => controller.abort();
   };
 

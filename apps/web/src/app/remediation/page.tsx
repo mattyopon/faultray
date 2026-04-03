@@ -444,8 +444,10 @@ const _LOCALE_CURRENCY: Record<string, { symbol: string; rate: number }> = {
   pt: { symbol: "R$", rate: 5.4 },
 };
 
-function formatEur(amount: number, locale: string = "en"): string {
-  const cfg = _LOCALE_CURRENCY[locale] ?? _LOCALE_CURRENCY.en;
+let _activeLocale = "en";
+
+function formatEur(amount: number): string {
+  const cfg = _LOCALE_CURRENCY[_activeLocale] ?? _LOCALE_CURRENCY.en;
   const converted = Math.round(amount * cfg.rate);
   if (converted >= 1000000) return `${cfg.symbol}${(converted / 1000000).toFixed(1)}M`;
   if (converted >= 1000) return `${cfg.symbol}${Math.round(converted / 1000)}K`;
@@ -478,7 +480,7 @@ function generateHtmlReport(data: RemediationData, t: Record<string, string>, lo
           <td>${a.title[locale] ?? a.title.en}</td>
           <td>${t[a.priority] ?? a.priority}</td>
           <td>${a.effortWeeks} ${a.effortWeeks > 1 ? t.weeks : t.week}</td>
-          <td>${formatEur(a.costEur, locale)}</td>
+          <td>${formatEur(a.costEur)}</td>
           <td>+${a.scoreImpact}</td>
         </tr>`
     )
@@ -514,7 +516,7 @@ function generateHtmlReport(data: RemediationData, t: Record<string, string>, lo
 <div class="summary-grid">
   <div class="summary-card"><div class="label">${t.currentScore}</div><div class="value">${data.score} / 100</div></div>
   <div class="summary-card"><div class="label">${t.doraCompliance}</div><div class="value">${data.doraCompliance}%</div></div>
-  <div class="summary-card"><div class="label">${t.estimatedAnnualDowntimeCost}</div><div class="value">${formatEur(annualCost, locale)}</div></div>
+  <div class="summary-card"><div class="label">${t.estimatedAnnualDowntimeCost}</div><div class="value">${formatEur(annualCost)}</div></div>
   <div class="summary-card"><div class="label">${t.projectedScore}</div><div class="value" style="color:#10b981">${projected} / 100</div></div>
   <div class="summary-card"><div class="label">${t.roiPayback}</div><div class="value">${roi} ${t.months}</div></div>
 </div>
@@ -532,7 +534,7 @@ function generateHtmlReport(data: RemediationData, t: Record<string, string>, lo
     ${t.score}: ${data.score}<br/>
     ${t.availability}: ${data.availability}<br/>
     ${t.doraComplianceShort}: ${data.doraCompliance}%<br/>
-    ${t.annualCost}: ${formatEur(annualCost, locale)}
+    ${t.annualCost}: ${formatEur(annualCost)}
   </div>
   <div class="ba-arrow">\u2192</div>
   <div class="ba-col">
@@ -540,7 +542,7 @@ function generateHtmlReport(data: RemediationData, t: Record<string, string>, lo
     ${t.score}: ${projected}<br/>
     ${t.availability}: ${calcProjectedAvailability(data)}<br/>
     ${t.doraComplianceShort}: ${projectedDora}%<br/>
-    ${t.annualCost}: ${formatEur(projectedCost, locale)}
+    ${t.annualCost}: ${formatEur(projectedCost)}
   </div>
 </div>
 
@@ -758,7 +760,7 @@ function buildGoogleCalendarUrl(
 ): string {
   const { start, end } = calcActionDates(action);
   const title = `${t.calendarEventPrefix} ${action.title[locale] ?? action.title.en}`;
-  const details = `${t.calendarPriority}: ${t[action.priority] ?? action.priority}\\n${t.calendarCost}: ${formatEur(action.costEur, locale)}\\n${t.calendarExpectedEffect}: +${action.scoreImpact}`;
+  const details = `${t.calendarPriority}: ${t[action.priority] ?? action.priority}\\n${t.calendarCost}: ${formatEur(action.costEur)}\\n${t.calendarExpectedEffect}: +${action.scoreImpact}`;
   const params = new URLSearchParams({
     action: "TEMPLATE",
     text: title,
@@ -777,7 +779,7 @@ function generateIcsFile(
     .map((action) => {
       const { start, end } = calcActionDates(action);
       const title = `${t.calendarEventPrefix} ${action.title[locale] ?? action.title.en}`;
-      const description = `${t.calendarPriority}: ${t[action.priority] ?? action.priority}\\n${t.calendarCost}: ${formatEur(action.costEur, locale)}\\n${t.calendarExpectedEffect}: +${action.scoreImpact}`;
+      const description = `${t.calendarPriority}: ${t[action.priority] ?? action.priority}\\n${t.calendarCost}: ${formatEur(action.costEur)}\\n${t.calendarExpectedEffect}: +${action.scoreImpact}`;
       return `BEGIN:VEVENT
 DTSTART:${formatDateForIcs(start)}
 DTEND:${formatDateForIcs(end)}
@@ -845,7 +847,7 @@ function buildActionDescription(
   const lines = [
     `${t.priority}: ${t[action.priority] ?? action.priority}`,
     `${t.effort}: ${action.effortWeeks} ${action.effortWeeks > 1 ? t.weeks : t.week}`,
-    `${t.cost}: ${formatEur(action.costEur, locale)}`,
+    `${t.cost}: ${formatEur(action.costEur)}`,
     `${t.expectedEffect}: +${action.scoreImpact}`,
   ];
   if (taskState?.assignee) lines.push(`${t.assignee}: ${taskState.assignee}`);
@@ -867,7 +869,7 @@ function buildActionMarkdown(
     "",
     `- **${t.priority}**: ${t[action.priority] ?? action.priority}`,
     `- **${t.effort}**: ${action.effortWeeks} ${action.effortWeeks > 1 ? t.weeks : t.week}`,
-    `- **${t.cost}**: ${formatEur(action.costEur, locale)}`,
+    `- **${t.cost}**: ${formatEur(action.costEur)}`,
     `- **${t.expectedEffect}**: +${action.scoreImpact}`,
   ];
   if (taskState?.assignee) lines.push(`- **${t.assignee}**: ${taskState.assignee}`);
@@ -886,7 +888,7 @@ function buildAllActionsMarkdown(
   const sep = "|---|---|---|---|---|---|";
   const rows = actions.map((a) => {
     const title = a.title[locale] ?? a.title.en;
-    return `| ${a.id} | ${title} | ${t[a.priority] ?? a.priority} | ${a.effortWeeks} ${a.effortWeeks > 1 ? t.weeks : t.week} | ${formatEur(a.costEur, locale)} | +${a.scoreImpact} |`;
+    return `| ${a.id} | ${title} | ${t[a.priority] ?? a.priority} | ${a.effortWeeks} ${a.effortWeeks > 1 ? t.weeks : t.week} | ${formatEur(a.costEur)} | +${a.scoreImpact} |`;
   });
   return [header, sep, ...rows].join("\n");
 }
@@ -933,7 +935,7 @@ function buildShareText(
   t: Record<string, string>,
 ): string {
   const title = action.title[locale] ?? action.title.en;
-  return `[FaultRay] ${title}\n${t.priority}: ${t[action.priority] ?? action.priority} | ${t.cost}: ${formatEur(action.costEur, locale)} | ${t.expectedEffect}: +${action.scoreImpact}`;
+  return `[FaultRay] ${title}\n${t.priority}: ${t[action.priority] ?? action.priority} | ${t.cost}: ${formatEur(action.costEur)} | ${t.expectedEffect}: +${action.scoreImpact}`;
 }
 
 function buildPlanShareText(
@@ -1025,24 +1027,15 @@ function DropdownMenu({
 
 export default function RemediationPage() {
   const locale = useLocale();
-  // locale is passed directly to formatEur
+  // eslint-disable-next-line react-hooks/globals
+  _activeLocale = locale;  // Set for formatEur currency conversion
   const t = appDict.remediation[locale] ?? appDict.remediation.en;
   const tAny = t as unknown as Record<string, string>;
-  const [data, setData] = useState<RemediationData | null>(() => {
-    try {
-      const raw = localStorage.getItem("faultray_last_simulation");
-      if (raw) {
-        const sim: SimulationResult = JSON.parse(raw);
-        return buildRemediationData(sim);
-      }
-    } catch {
-      // ignore parse errors
-    }
-    return null;
-  });
+  const [data, setData] = useState<RemediationData | null>(null);
   const [expandedAction, setExpandedAction] = useState<number | null>(null);
   const [isDemo, setIsDemo] = useState(false);
-  const [taskStates, setTaskStates] = useState<TaskStatesMap>(() => loadTaskStates());
+  const loadedRef = useRef(false);
+  const [taskStates, setTaskStates] = useState<TaskStatesMap>({});
   const [taskFilter, setTaskFilter] = useState<TaskFilter>("all");
   const [editingTaskId, setEditingTaskId] = useState<number | null>(null);
   const [editForm, setEditForm] = useState<TaskState>({ assignee: "", status: "todo", comment: "", deadline: "" });
@@ -1051,6 +1044,21 @@ export default function RemediationPage() {
   const showToast = useCallback((msg: string) => {
     setToast(msg);
     setTimeout(() => setToast(null), 2500);
+  }, []);
+
+  useEffect(() => {
+    if (loadedRef.current) return;
+    loadedRef.current = true;
+    try {
+      const raw = localStorage.getItem("faultray_last_simulation");
+      if (raw) {
+        const sim: SimulationResult = JSON.parse(raw);
+        setData(buildRemediationData(sim));
+      }
+    } catch {
+      // ignore parse errors
+    }
+    setTaskStates(loadTaskStates());
   }, []);
 
   const loadDemo = useCallback(() => {
@@ -1385,7 +1393,7 @@ export default function RemediationPage() {
         </Card>
         <Card>
           <p className="text-[10px] text-[#64748b] uppercase tracking-wider mb-1">{t.estimatedAnnualDowntimeCost}</p>
-          <p className="text-2xl font-bold font-mono text-red-400">{formatEur(annualCost, locale)}</p>
+          <p className="text-2xl font-bold font-mono text-red-400">{formatEur(annualCost)}</p>
         </Card>
         <Card>
           <p className="text-[10px] text-[#64748b] uppercase tracking-wider mb-1">{t.projectedScore}</p>
@@ -1421,7 +1429,7 @@ export default function RemediationPage() {
           </div>
           <p className="font-bold text-sm mb-1">{t.downtimeCost}</p>
           <p className="text-xs text-[#94a3b8]">
-            {formatEur(calcDowntimePerHour(data.score), locale)} {t.perHour}
+            {formatEur(calcDowntimePerHour(data.score))} {t.perHour}
           </p>
         </Card>
         <Card>
@@ -1470,14 +1478,14 @@ export default function RemediationPage() {
                 <td className="py-3 px-4 text-[#94a3b8]">
                   {a.effortWeeks} {a.effortWeeks > 1 ? t.weeks : t.week}
                 </td>
-                <td className="py-3 px-4 font-mono text-[#94a3b8]">{formatEur(a.costEur, locale)}</td>
+                <td className="py-3 px-4 font-mono text-[#94a3b8]">{formatEur(a.costEur)}</td>
                 <td className="py-3 px-4 font-mono text-emerald-400">+{a.scoreImpact}</td>
               </tr>
             ))}
             <tr className="bg-white/[0.02]">
               <td className="py-3 px-4" colSpan={3} />
               <td className="py-3 px-4 font-bold text-xs text-[#64748b] uppercase">Total</td>
-              <td className="py-3 px-4 font-mono font-bold">{formatEur(totalActionCost, locale)}</td>
+              <td className="py-3 px-4 font-mono font-bold">{formatEur(totalActionCost)}</td>
               <td className="py-3 px-4 font-mono font-bold text-emerald-400">
                 +{Math.round(data.actions.reduce((s, a) => s + a.scoreImpact, 0) * 10) / 10}
               </td>
@@ -1551,7 +1559,7 @@ export default function RemediationPage() {
             </div>
             <div className="flex justify-between">
               <span className="text-sm text-[#94a3b8]">{t.annualCost}</span>
-              <span className="font-mono font-bold text-red-400">{formatEur(annualCost, locale)}</span>
+              <span className="font-mono font-bold text-red-400">{formatEur(annualCost)}</span>
             </div>
           </div>
         </Card>
@@ -1577,7 +1585,7 @@ export default function RemediationPage() {
             </div>
             <div className="flex justify-between">
               <span className="text-sm text-[#94a3b8]">{t.annualCost}</span>
-              <span className="font-mono font-bold text-emerald-400">{formatEur(projectedCost, locale)} <span className="text-xs text-emerald-500">(-{formatEur(annualCost - projectedCost)})</span></span>
+              <span className="font-mono font-bold text-emerald-400">{formatEur(projectedCost)} <span className="text-xs text-emerald-500">(-{formatEur(annualCost - projectedCost)})</span></span>
             </div>
           </div>
         </Card>
@@ -1746,7 +1754,7 @@ export default function RemediationPage() {
                       <span>
                         {t.effort}: {a.effortWeeks} {a.effortWeeks > 1 ? t.weeks : t.week}
                       </span>
-                      <span className="font-mono">{formatEur(a.costEur, locale)}</span>
+                      <span className="font-mono">{formatEur(a.costEur)}</span>
                       <span className="font-mono text-emerald-400">+{a.scoreImpact}</span>
                     </div>
 
@@ -1787,7 +1795,7 @@ export default function RemediationPage() {
                             </div>
                             <div className="bg-[#0d1117] rounded p-2">
                               <p className="text-[10px] text-[#475569]">{t.cost}</p>
-                              <p className="text-[#e2e8f0] font-mono font-bold">{formatEur(a.costEur, locale)}</p>
+                              <p className="text-[#e2e8f0] font-mono font-bold">{formatEur(a.costEur)}</p>
                             </div>
                             <div className="bg-[#0d1117] rounded p-2">
                               <p className="text-[10px] text-[#475569]">{t.effort}</p>
@@ -1867,7 +1875,7 @@ export default function RemediationPage() {
                           </div>
                           <div>
                             <label className="block text-[10px] text-[#64748b] uppercase tracking-wider mb-1">
-                              {t.status}
+                              Status
                             </label>
                             <select
                               value={editForm.status}
@@ -1877,7 +1885,7 @@ export default function RemediationPage() {
                                   status: e.target.value as TaskStatus,
                                 })
                               }
-                              aria-label={locale === "ja" ? "タスクのステータス" : "Task status"}
+                              aria-label="Task status"
                               className="w-full bg-white/[0.05] border border-[#1e293b] rounded-lg px-3 py-1.5 text-sm text-white focus:border-[#FFD700] focus:outline-none"
                             >
                               <option value="todo">{t.statusTodo}</option>

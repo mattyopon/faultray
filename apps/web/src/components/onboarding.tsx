@@ -158,20 +158,28 @@ const TOTAL_STEPS = 5;
 
 export function Onboarding() {
   const router = useRouter();
-  const [visible, setVisible] = useState(() => {
-    try {
-      return localStorage.getItem(STORAGE_KEY) !== "true";
-    } catch {
-      return true;
-    }
-  });
+  const [visible, setVisible] = useState(false);
   const [step, setStep] = useState(0);
-  const [locale] = useState<"en" | "ja">(() => detectLocale());
+  const [locale, setLocale] = useState<"en" | "ja">("en");
   const [dontShow, setDontShow] = useState(false);
   const [animating, setAnimating] = useState(false);
   const [direction, setDirection] = useState<"next" | "prev">("next");
 
   const t = texts[locale];
+
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setLocale(detectLocale());
+    try {
+      const onboarded = localStorage.getItem(STORAGE_KEY);
+      if (onboarded !== "true") {
+        setVisible(true);
+      }
+    } catch {
+      // localStorage unavailable — show by default
+      setVisible(true);
+    }
+  }, []);
 
   const close = useCallback(() => {
     setVisible(false);
@@ -257,7 +265,7 @@ export function Onboarding() {
         <button
           onClick={handleSkip}
           className="absolute top-4 right-4 p-1.5 text-[#64748b] hover:text-white transition-colors rounded-lg hover:bg-white/5"
-          aria-label={locale === "ja" ? "閉じる" : "Close"}
+          aria-label="Close"
         >
           <X size={18} />
         </button>

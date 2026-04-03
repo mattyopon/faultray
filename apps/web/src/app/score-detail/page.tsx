@@ -4,7 +4,7 @@ import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { useEffect, useState } from "react";
 import { api, type ScoreExplainData, type ScoreLayer } from "@/lib/api";
-import { BarChart3, Loader2, TrendingDown } from "lucide-react";
+import { BarChart3, Loader2, TrendingDown, Briefcase, TrendingUp, AlertTriangle, Target } from "lucide-react";
 import { useLocale } from "@/lib/useLocale";
 import { appDict } from "@/i18n/app-dict";
 
@@ -119,7 +119,7 @@ export default function ScoreDetailPage() {
     api
       .getScoreExplain()
       .then((result) => setData(result))
-      .catch(() => setData(DEMO_DATA))
+      .catch((err) => { console.error("[score-detail] API error, using demo data:", err); setData(DEMO_DATA); })
       .finally(() => setLoading(false));
   }, []);
 
@@ -147,6 +147,129 @@ export default function ScoreDetailPage() {
             </p>
             <p className="text-sm text-[#94a3b8] mt-2">{t.sumOfWeighted}</p>
           </Card>
+
+          {/* DEMO-04: 経営者向けサマリー */}
+          {(() => {
+            const incidentCount = Math.round((100 - data.overall_score) / 10 * 3);
+            const lossAmount = locale === "ja"
+              ? `${(incidentCount * 150).toLocaleString()}万円`
+              : `$${(incidentCount * 15000).toLocaleString()}`;
+            const industryAvg = 75.0;
+            const top3 = data.top_detractors.slice(0, 3);
+
+            const factorLabel = (factor: string): string => {
+              if (locale !== "ja") return factor;
+              const map: Record<string, string> = {
+                // Hardware
+                "Server redundancy": "サーバー冗長構成",
+                "Disk RAID configuration": "ディスクRAID構成",
+                "Power supply redundancy": "電源の冗長化",
+                "Network interface bonding": "ネットワークインターフェースの冗長化",
+                // Software
+                "Application replicas": "アプリケーションレプリカ数",
+                "Health check coverage": "ヘルスチェックのカバー率不足",
+                "Circuit breaker patterns": "サーキットブレーカーの未実装",
+                "Graceful degradation": "グレースフルデグラデーション",
+                "Auto-scaling policies": "オートスケーリングポリシー",
+                // Theoretical
+                "Markov chain steady state": "マルコフ連鎖定常状態",
+                "MTBF/MTTR ratio": "MTBF/MTTR比率",
+                "Reliability block diagram": "信頼性ブロック図",
+                // Operational
+                "Runbook coverage": "運用ランブックの整備不足",
+                "On-call response time": "オンコール応答時間",
+                "Deployment rollback capability": "デプロイロールバック能力",
+                "Monitoring & alerting": "監視・アラート体制",
+                "Incident post-mortem process": "インシデント振り返りプロセス",
+                // External SLA
+                "Cloud provider SLA": "クラウドプロバイダーSLA",
+                "Third-party API reliability": "外部APIの信頼性不足",
+                "DNS provider SLA": "DNSプロバイダーSLA",
+                "CDN availability": "CDN可用性",
+              };
+              return map[factor] ?? factor;
+            };
+
+            return (
+              <Card className="mb-6 p-6 border-[#FFD700]/20 bg-gradient-to-br from-[#FFD700]/[0.03] to-transparent">
+                <h2 className="text-lg font-bold mb-5 flex items-center gap-2">
+                  <Briefcase size={20} className="text-[#FFD700]" />
+                  {locale === "ja" ? "経営者サマリー" : "Executive Summary"}
+                </h2>
+
+                <div className="grid grid-cols-2 gap-4 mb-6">
+                  <div className="p-4 rounded-xl bg-red-500/5 border border-red-500/10">
+                    <div className="flex items-center gap-2 mb-1">
+                      <AlertTriangle size={14} className="text-red-400" />
+                      <p className="text-xs text-[#64748b]">
+                        {locale === "ja" ? "年間推定障害リスク回数" : "Est. Annual Incidents"}
+                      </p>
+                    </div>
+                    <p className="text-2xl font-extrabold font-mono text-red-400">
+                      {incidentCount}
+                      <span className="text-sm font-normal text-[#94a3b8] ml-1">
+                        {locale === "ja" ? "回" : "times"}
+                      </span>
+                    </p>
+                  </div>
+
+                  <div className="p-4 rounded-xl bg-orange-500/5 border border-orange-500/10">
+                    <div className="flex items-center gap-2 mb-1">
+                      <TrendingDown size={14} className="text-orange-400" />
+                      <p className="text-xs text-[#64748b]">
+                        {locale === "ja" ? "推定年間損失額" : "Est. Annual Loss"}
+                      </p>
+                    </div>
+                    <p className="text-2xl font-extrabold font-mono text-orange-400">{lossAmount}</p>
+                  </div>
+
+                  <div className="p-4 rounded-xl bg-white/[0.02] border border-white/5">
+                    <div className="flex items-center gap-2 mb-1">
+                      <Target size={14} className="text-[#64748b]" />
+                      <p className="text-xs text-[#64748b]">
+                        {locale === "ja" ? "同業他社平均スコア" : "Industry Avg Score"}
+                      </p>
+                    </div>
+                    <p className="text-2xl font-extrabold font-mono text-[#94a3b8]">{industryAvg.toFixed(1)}</p>
+                  </div>
+
+                  <div className="p-4 rounded-xl bg-white/[0.02] border border-white/5">
+                    <div className="flex items-center gap-2 mb-1">
+                      <TrendingUp size={14} className="text-[#FFD700]" />
+                      <p className="text-xs text-[#64748b]">
+                        {locale === "ja" ? "あなたのスコア" : "Your Score"}
+                      </p>
+                    </div>
+                    <p
+                      className="text-2xl font-extrabold font-mono"
+                      style={{ color: scoreColor(data.overall_score) }}
+                    >
+                      {data.overall_score.toFixed(1)}
+                    </p>
+                  </div>
+                </div>
+
+                <div>
+                  <h3 className="text-sm font-semibold text-[#94a3b8] mb-3">
+                    {locale === "ja" ? "推奨アクション TOP3" : "Recommended Actions TOP3"}
+                  </h3>
+                  <div className="space-y-2">
+                    {top3.map((d, i) => (
+                      <div key={d.factor} className="flex items-center justify-between p-3 rounded-lg bg-white/[0.02] border border-white/5">
+                        <div className="flex items-center gap-3">
+                          <span className="w-5 h-5 rounded-full bg-[#FFD700]/10 text-[#FFD700] text-xs font-bold flex items-center justify-center">
+                            {i + 1}
+                          </span>
+                          <span className="text-sm text-[#e2e8f0]">{factorLabel(d.factor)}</span>
+                        </div>
+                        <Badge variant="green">+{d.potential_gain.toFixed(1)} pt</Badge>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </Card>
+            );
+          })()}
 
           <div className="grid lg:grid-cols-[1fr_350px] gap-6">
             <div className="space-y-4">

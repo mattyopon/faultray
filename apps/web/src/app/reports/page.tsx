@@ -73,6 +73,14 @@ const JA_ROADMAP: Record<string, { action: string; effort: string }> = {
   "Health check optimization": { action: "ヘルスチェックの最適化", effort: "低" },
 };
 
+const _JA_DORA_PILLARS: Record<string, string> = {
+  "Pillar I": "Pillar I: ICTリスク管理フレームワーク",
+  "Pillar II": "Pillar II: ICTインシデント管理・報告",
+  "Pillar III": "Pillar III: デジタルオペレーショナルレジリエンステスト",
+  "Pillar IV": "Pillar IV: ICTサードパーティリスク管理",
+  "Pillar V": "Pillar V: 情報共有",
+};
+
 function severityBadge(sev: string) {
   switch (sev) {
     case "CRITICAL": return "red" as const;
@@ -95,21 +103,24 @@ const DEFAULT_SECTIONS: Record<ReportSection, boolean> = {
 export default function ReportsPage() {
   const [report, setReport] = useState<ExecutiveReport>(DEMO_REPORT);
   const [loading, setLoading] = useState(true);
-  const [reportLangOverride, setReportLang] = useState<"en" | "ja" | null>(null);
+  const [reportLang, setReportLang] = useState<"en" | "ja">("en");
   const [showSections, setShowSections] = useState<Record<ReportSection, boolean>>(DEFAULT_SECTIONS);
   const [showCustomize, setShowCustomize] = useState(false);
   const [weeklyNotifEnabled, setWeeklyNotifEnabled] = useState(false);
   const locale = useLocale();
   const t = appDict.reports[locale] ?? appDict.reports.en;
 
-  // reportLang derived from app locale; user can override via UI selector
-  const reportLang: "en" | "ja" = reportLangOverride ?? (locale === "ja" ? "ja" : "en");
+  // Sync reportLang with app locale on first load (reports only support en/ja output)
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setReportLang(locale === "ja" ? "ja" : "en");
+  }, [locale]);
 
   useEffect(() => {
     api
       .getExecutiveReport("json")
       .then((result) => setReport(result))
-      .catch(() => setReport(DEMO_REPORT))
+      .catch((err) => { console.error("[reports] API error, using demo data:", err); setReport(DEMO_REPORT); })
       .finally(() => setLoading(false));
   }, []);
 
@@ -175,7 +186,7 @@ export default function ReportsPage() {
               value={reportLang}
               onChange={(e) => setReportLang(e.target.value as "en" | "ja")}
               aria-label={locale === "ja" ? "レポート言語" : "Report language"}
-              className="bg-transparent text-sm text-[#94a3b8] focus:outline-none focus:ring-1 focus:ring-[#FFD700]/50 rounded cursor-pointer"
+              className="bg-transparent text-sm text-[#94a3b8] focus:outline-none cursor-pointer"
             >
               <option value="en">{t.english}</option>
               <option value="ja">{t.japanese}</option>
