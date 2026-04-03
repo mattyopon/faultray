@@ -941,7 +941,7 @@ export default async function LangHomePage({
               <div key={p.role} className={`p-6 rounded-2xl border ${p.accent}`}>
                 <div className="text-3xl mb-3">{p.icon}</div>
                 <p className="text-xs font-bold uppercase tracking-widest text-[#64748b] mb-1">{p.role}</p>
-                <p className="text-sm text-[#64748b] italic mb-4" dangerouslySetInnerHTML={{ __html: p.pain }} />
+                <p className="text-sm text-[#64748b] italic mb-4">{p.pain.replace(/&apos;/g, "'").replace(/&amp;/g, "&")}</p>
                 <p className="text-sm text-white leading-relaxed mb-5">{p.value}</p>
                 <a href={p.href} className={`text-sm font-bold ${p.accent.split(" ")[0]} hover:underline`}>{p.cta}</a>
               </div>

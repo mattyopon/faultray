@@ -1,10 +1,10 @@
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
-  title: "Run Simulation",
+  title: "Run Simulation — FaultRay",
   description:
     "Run chaos engineering simulations against your infrastructure topology — zero production risk, 2,000+ failure scenarios.",
-  alternates: { canonical: "https://faultray.com/simulate" },
+  robots: { index: false, follow: false },
 };
 
 export default function SimulateLayout({

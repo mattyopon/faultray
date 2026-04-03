@@ -104,6 +104,7 @@ export default function MembersPage() {
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             placeholder="名前・部署・役職で検索..."
+            aria-label="名前・部署・役職で検索"
             className="w-full pl-10 pr-4 py-2 bg-[#111827] border border-[#1e293b] rounded-lg text-sm text-white placeholder-[#64748b] focus:border-[#FFD700]/50 focus:outline-none"
           />
         </div>

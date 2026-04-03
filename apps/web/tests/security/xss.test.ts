@@ -36,6 +36,8 @@ describe("L8: XSS Prevention", () => {
     const ALLOWED_DANGEROUS_HTML = new Set([
       "app/layout.tsx",
       "app/[lang]/page.tsx",
+      // app/en/page.tsx: static HTML entities in hardcoded persona pain points (no user input)
+      "app/en/page.tsx",
     ]);
 
     const violations: string[] = [];

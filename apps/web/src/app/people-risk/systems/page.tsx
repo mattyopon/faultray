@@ -129,6 +129,7 @@ export default function SystemsPage() {
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             placeholder="システム名で検索..."
+            aria-label="システム名で検索"
             className="w-full pl-10 pr-4 py-2 bg-[#111827] border border-[#1e293b] rounded-lg text-sm text-white placeholder-[#64748b] focus:border-[#FFD700]/50 focus:outline-none"
           />
         </div>

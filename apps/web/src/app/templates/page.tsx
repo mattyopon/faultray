@@ -207,6 +207,7 @@ export default function TemplatesPage() {
             <input
               type="text"
               placeholder={t.searchPlaceholder}
+              aria-label={t.searchPlaceholder}
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               className="w-full bg-[#0f1629] border border-[#1e293b] rounded-lg pl-9 pr-4 py-2.5 text-sm text-white placeholder-[#475569] focus:outline-none focus:border-[#334155]"

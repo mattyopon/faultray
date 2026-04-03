@@ -250,6 +250,7 @@ export default function AuditLogPage() {
             <input
               type="text"
               placeholder={locale === "ja" ? "ユーザー・操作を検索..." : "Search user or action..."}
+              aria-label={locale === "ja" ? "ユーザー・操作を検索" : "Search user or action"}
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               className="bg-transparent text-sm text-white placeholder-[#475569] focus:outline-none flex-1"

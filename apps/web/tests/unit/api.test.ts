@@ -10,6 +10,7 @@ import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 let api: typeof import("@/lib/api").api;
 
 beforeEach(async () => {
+  vi.useFakeTimers();
   vi.stubGlobal("fetch", vi.fn());
   // Re-import to pick up the mocked fetch
   const mod = await import("@/lib/api");
@@ -17,6 +18,7 @@ beforeEach(async () => {
 });
 
 afterEach(() => {
+  vi.useRealTimers();
   vi.unstubAllGlobals();
   vi.resetModules();
 });
@@ -40,7 +42,7 @@ function mockFetchError(status: number, body: unknown) {
 describe("api module", () => {
   describe("simulate()", () => {
     it("sends POST /api/simulate with correct body", async () => {
-      const fakeResult = { overall_score: 85, critical_failures: [], suggestions: [] };
+      const fakeResult = { overall_score: 85, availability_estimate: "99.9%", critical_failures: [], suggestions: [] };
       mockFetchOk(fakeResult);
 
       const result = await api.simulate({ sample: "web-app" }, "tok123");
@@ -84,7 +86,10 @@ describe("api module", () => {
         json: () => Promise.reject(new Error("not json")),
       });
 
-      await expect(api.getProjects()).rejects.toThrow("Internal Server Error");
+      // status 500 triggers retry logic with sleep() delays — advance fake timers to skip waits
+      const promise = api.getProjects();
+      await vi.runAllTimersAsync();
+      await expect(promise).rejects.toThrow("Internal Server Error");
     });
   });
 

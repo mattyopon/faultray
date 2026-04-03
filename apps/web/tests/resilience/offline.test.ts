@@ -7,12 +7,14 @@ import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 let api: typeof import("@/lib/api").api;
 
 beforeEach(async () => {
+  vi.useFakeTimers();
   vi.stubGlobal("fetch", vi.fn());
   const mod = await import("@/lib/api");
   api = mod.api;
 });
 
 afterEach(() => {
+  vi.useRealTimers();
   vi.unstubAllGlobals();
   vi.resetModules();
 });
@@ -23,7 +25,10 @@ describe("L9: Offline / Network Failure Handling", () => {
       new TypeError("Failed to fetch")
     );
 
-    await expect(api.getProjects("tok")).rejects.toThrow("Failed to fetch");
+    // Network errors trigger retry logic with sleep() delays — advance fake timers to skip waits
+    const promise = api.getProjects("tok");
+    await vi.runAllTimersAsync();
+    await expect(promise).rejects.toThrow("Failed to fetch");
   });
 
   it("throws on timeout (AbortError)", async () => {
@@ -31,6 +36,7 @@ describe("L9: Offline / Network Failure Handling", () => {
       new DOMException("The operation was aborted.", "AbortError")
     );
 
+    // AbortError is NOT retried — resolves immediately without timer advancement needed
     await expect(api.getProjects("tok")).rejects.toThrow("aborted");
   });
 
@@ -42,7 +48,10 @@ describe("L9: Offline / Network Failure Handling", () => {
       json: () => Promise.resolve({ message: "Server overloaded" }),
     });
 
-    await expect(api.simulate({ sample: "test" })).rejects.toThrow("Server overloaded");
+    // 503 triggers retry logic with sleep() delays — advance fake timers to skip waits
+    const promise = api.simulate({ sample: "test" });
+    await vi.runAllTimersAsync();
+    await expect(promise).rejects.toThrow("Server overloaded");
   });
 
   it("handles empty response body on error", async () => {
@@ -53,6 +62,9 @@ describe("L9: Offline / Network Failure Handling", () => {
       json: () => Promise.reject(new Error("empty body")),
     });
 
-    await expect(api.simulate({ sample: "test" })).rejects.toThrow("Bad Gateway");
+    // 502 triggers retry logic with sleep() delays — advance fake timers to skip waits
+    const promise = api.simulate({ sample: "test" });
+    await vi.runAllTimersAsync();
+    await expect(promise).rejects.toThrow("Bad Gateway");
   });
 });

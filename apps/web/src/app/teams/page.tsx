@@ -423,6 +423,7 @@ export default function TeamsPage() {
             <input
               type="text"
               placeholder="Organization name"
+              aria-label={locale === "ja" ? "組織名" : "Organization name"}
               value={orgName}
               onChange={(e) => setOrgName(e.target.value)}
               onKeyDown={(e) => e.key === "Enter" && void handleCreateOrg()}
@@ -562,6 +563,7 @@ export default function TeamsPage() {
             <input
               type="email"
               placeholder="email@example.com"
+              aria-label={locale === "ja" ? "招待するメールアドレス" : "Invite email address"}
               value={inviteEmail}
               onChange={(e) => setInviteEmail(e.target.value)}
               className="flex-1 bg-[#0a0e1a] border border-[#1e293b] rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:border-[#FFD700]/40"
@@ -621,6 +623,7 @@ export default function TeamsPage() {
             <input
               type="text"
               placeholder="Task title *"
+              aria-label={locale === "ja" ? "タスクタイトル（必須）" : "Task title (required)"}
               value={newTaskTitle}
               onChange={(e) => setNewTaskTitle(e.target.value)}
               className="w-full bg-[#111827] border border-[#1e293b] rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:border-[#FFD700]/40"
@@ -628,6 +631,7 @@ export default function TeamsPage() {
             />
             <textarea
               placeholder="Description (optional)"
+              aria-label={locale === "ja" ? "説明（任意）" : "Description (optional)"}
               value={newTaskDesc}
               onChange={(e) => setNewTaskDesc(e.target.value)}
               rows={2}
