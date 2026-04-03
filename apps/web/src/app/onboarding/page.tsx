@@ -180,7 +180,7 @@ export default function OnboardingPage() {
 
   return (
     <main className="min-h-screen bg-[#0a0e1a] text-white pt-20 pb-12">
-      <div className="max-w-[1200px] mx-auto px-4 sm:px-6">
+      <div className="max-w-[1200px] mx-auto px-6 py-10">
         {/* Header */}
         <div className="text-center mb-8">
           <div className="inline-flex items-center justify-center w-14 h-14 rounded-xl bg-[#FFD700]/10 border border-[#FFD700]/20 mb-4">

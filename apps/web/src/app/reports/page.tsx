@@ -494,7 +494,7 @@ function generateHtmlReport(report: ExecutiveReport, lang: "en" | "ja") {
   return `<!DOCTYPE html>
 <html lang="${lang}">
 <head><meta charset="UTF-8"><title>${title}</title>
-<style>body{font-family:system-ui,sans-serif;max-width:900px;margin:0 auto;padding:40px;background:#0a0e1a;color:#e2e8f0}
+<style>body{font-family:system-ui,sans-serif;max-width:1200px;margin:0 auto;padding:40px;background:#0a0e1a;color:#e2e8f0}
 h1{color:#FFD700}h2{color:#94a3b8;border-bottom:1px solid #1e293b;padding-bottom:8px}
 table{width:100%;border-collapse:collapse;margin:16px 0}td,th{text-align:left;padding:8px 12px;border-bottom:1px solid #1e293b}
 th{color:#64748b;font-size:12px;text-transform:uppercase}.score{font-size:48px;font-weight:800;color:#FFD700;font-family:monospace}

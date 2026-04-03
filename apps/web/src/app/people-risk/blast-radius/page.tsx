@@ -17,6 +17,7 @@ import {
 } from "lucide-react";
 import { fetchMembers } from "@/lib/people-risk/queries";
 import type { MemberWithSystems } from "@/lib/people-risk/types";
+import { useLocale } from "@/lib/useLocale";
 
 function impactLevel(ms: MemberWithSystems["member_systems"][0]) {
   if (ms.is_sole_owner) return "high";
@@ -25,15 +26,16 @@ function impactLevel(ms: MemberWithSystems["member_systems"][0]) {
   return "low";
 }
 
-const impactLabels: Record<string, { label: string; color: string }> = {
-  high: { label: "高", color: "text-red-400 bg-red-500/10" },
-  medium: { label: "中", color: "text-yellow-400 bg-yellow-500/10" },
-  low: { label: "低", color: "text-emerald-400 bg-emerald-500/10" },
-};
-
 function BlastRadiusContent() {
+  const locale = useLocale();
   const searchParams = useSearchParams();
   const preselectedMember = searchParams.get("member");
+
+  const impactLabels: Record<string, { label: string; color: string }> = {
+    high: { label: locale === "ja" ? "高" : "High", color: "text-red-400 bg-red-500/10" },
+    medium: { label: locale === "ja" ? "中" : "Medium", color: "text-yellow-400 bg-yellow-500/10" },
+    low: { label: locale === "ja" ? "低" : "Low", color: "text-emerald-400 bg-emerald-500/10" },
+  };
 
   const [members, setMembers] = useState<MemberWithSystems[]>([]);
   const [loading, setLoading] = useState(true);
@@ -89,32 +91,35 @@ function BlastRadiusContent() {
       <div>
         <h1 className="text-2xl font-bold text-white flex items-center gap-2">
           <Zap size={24} className="text-[#FFD700]" />
-          ブラストレディウス・シミュレーター
+          {locale === "ja" ? "ブラストレディウス・シミュレーター" : "Blast Radius Simulator"}
         </h1>
         <p className="text-sm text-[#94a3b8] mt-1">
-          「この人が退職したら何が壊れるか」をシミュレーションします
+          {locale === "ja"
+            ? "「この人が退職したら何が壊れるか」をシミュレーションします"
+            : "Simulate the impact of a member leaving the team"}
         </p>
       </div>
 
       {/* Member Selector */}
       <Card className="p-6">
         <label className="block text-xs text-[#64748b] uppercase tracking-wider mb-2">
-          退職をシミュレーションするメンバーを選択
+          {locale === "ja" ? "退職をシミュレーションするメンバーを選択" : "Select a member to simulate their departure"}
         </label>
         <div className="relative">
           <select
             value={selectedId}
             onChange={(e) => setSelectedId(e.target.value)}
-            aria-label="メンバーを選択"
+            aria-label={locale === "ja" ? "メンバーを選択" : "Select member"}
             className="w-full appearance-none bg-[#0f1424] border border-[#1e293b] rounded-lg px-4 py-3 text-white text-sm focus:border-[#FFD700]/50 focus:outline-none cursor-pointer"
           >
-            <option value="">-- メンバーを選択 --</option>
+            <option value="">{locale === "ja" ? "-- メンバーを選択 --" : "-- Select a member --"}</option>
             {members
               .filter((m) => m.status === "active")
               .map((m) => (
                 <option key={m.id} value={m.id}>
-                  {m.name}（{m.department} / {m.role}）- 管理システム{" "}
-                  {m.member_systems.length}件
+                  {locale === "ja"
+                    ? `${m.name}（${m.department} / ${m.role}）- 管理システム ${m.member_systems.length}件`
+                    : `${m.name} (${m.department} / ${m.role}) - ${m.member_systems.length} system${m.member_systems.length !== 1 ? "s" : ""}`}
                 </option>
               ))}
           </select>
@@ -149,30 +154,33 @@ function BlastRadiusContent() {
               )}
               <div>
                 <p className="text-white font-semibold">
-                  {selectedMember.name}が退職した場合の影響
+                  {locale === "ja"
+                    ? `${selectedMember.name}が退職した場合の影響`
+                    : `Impact if ${selectedMember.name} leaves`}
                 </p>
                 <div className="flex flex-wrap gap-4 mt-2 text-xs">
                   <span className="text-[#94a3b8]">
-                    影響システム:{" "}
+                    {locale === "ja" ? "影響システム" : "Affected systems"}:{" "}
                     <span className="text-white font-semibold">
-                      {affectedSystems.length}件
+                      {affectedSystems.length}{locale === "ja" ? "件" : ""}
                     </span>
                   </span>
                   {highCount > 0 && (
                     <span className="text-red-400 font-semibold">
-                      影響度・高: {highCount}件
+                      {locale === "ja" ? `影響度・高: ${highCount}件` : `High impact: ${highCount}`}
                     </span>
                   )}
                   {mediumCount > 0 && (
                     <span className="text-yellow-400 font-semibold">
-                      影響度・中: {mediumCount}件
+                      {locale === "ja" ? `影響度・中: ${mediumCount}件` : `Medium impact: ${mediumCount}`}
                     </span>
                   )}
                 </div>
                 {highCount > 0 && (
                   <p className="text-xs text-[#94a3b8] mt-2">
-                    この人物は{highCount}
-                    件のシステムで唯一の管理者です。退職により管理不能になる可能性があります。
+                    {locale === "ja"
+                      ? `この人物は${highCount}件のシステムで唯一の管理者です。退職により管理不能になる可能性があります。`
+                      : `This person is the sole administrator of ${highCount} system${highCount !== 1 ? "s" : ""}. Their departure may leave those systems unmanaged.`}
                   </p>
                 )}
               </div>
@@ -183,7 +191,7 @@ function BlastRadiusContent() {
           <Card className="p-6">
             <h2 className="text-sm font-semibold text-white mb-4 flex items-center gap-2">
               <AlertTriangle size={16} className="text-[#FFD700]" />
-              影響を受けるシステム
+              {locale === "ja" ? "影響を受けるシステム" : "Affected Systems"}
             </h2>
             <div className="space-y-3">
               {affectedSystems.map((ms) => {
@@ -215,8 +223,8 @@ function BlastRadiusContent() {
                         </Badge>
                       </div>
                       <p className="text-xs text-[#64748b] mt-0.5">
-                        権限: {ms.access_level}
-                        {ms.is_sole_owner && " (唯一の管理者)"}
+                        {locale === "ja" ? "権限" : "Access"}: {ms.access_level}
+                        {ms.is_sole_owner && (locale === "ja" ? " (唯一の管理者)" : " (sole admin)")}
                         {ms.notes && ` - ${ms.notes}`}
                       </p>
                     </div>
@@ -224,7 +232,7 @@ function BlastRadiusContent() {
                       <span
                         className={`inline-block px-2 py-1 rounded text-xs font-semibold ${impact.color}`}
                       >
-                        影響度: {impact.label}
+                        {locale === "ja" ? "影響度" : "Impact"}: {impact.label}
                       </span>
                     </div>
                   </div>
@@ -238,7 +246,7 @@ function BlastRadiusContent() {
             <Card className="p-6">
               <h2 className="text-sm font-semibold text-white mb-4 flex items-center gap-2">
                 <Shield size={16} className="text-emerald-400" />
-                推奨アクション
+                {locale === "ja" ? "推奨アクション" : "Recommended Actions"}
               </h2>
               <div className="space-y-2">
                 {affectedSystems
@@ -253,17 +261,28 @@ function BlastRadiusContent() {
                         className="text-[#FFD700] shrink-0"
                       />
                       <p className="text-xs text-[#94a3b8]">
-                        <span className="text-white font-medium">
-                          {ms.systems.name}
-                        </span>
-                        のバックアップ管理者を設定してください
+                        {locale === "ja" ? (
+                          <>
+                            <span className="text-white font-medium">
+                              {ms.systems.name}
+                            </span>
+                            のバックアップ管理者を設定してください
+                          </>
+                        ) : (
+                          <>
+                            Assign a backup administrator for{" "}
+                            <span className="text-white font-medium">
+                              {ms.systems.name}
+                            </span>
+                          </>
+                        )}
                       </p>
                       <Link href="/people-risk/actions">
                         <Badge
                           variant="gold"
                           className="cursor-pointer shrink-0"
                         >
-                          アクション作成
+                          {locale === "ja" ? "アクション作成" : "Create Action"}
                         </Badge>
                       </Link>
                     </div>
@@ -279,9 +298,19 @@ function BlastRadiusContent() {
         <Card className="p-12 text-center">
           <Users size={32} className="mx-auto text-[#475569] mb-3" />
           <p className="text-[#64748b]">
-            上のドロップダウンからメンバーを選択して、
-            <br />
-            退職時の影響をシミュレーションしてください
+            {locale === "ja" ? (
+              <>
+                上のドロップダウンからメンバーを選択して、
+                <br />
+                退職時の影響をシミュレーションしてください
+              </>
+            ) : (
+              <>
+                Select a member from the dropdown above
+                <br />
+                to simulate the impact of their departure.
+              </>
+            )}
           </p>
         </Card>
       )}

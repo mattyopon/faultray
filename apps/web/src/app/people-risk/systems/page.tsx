@@ -17,6 +17,7 @@ import {
 } from "lucide-react";
 import { fetchSystems } from "@/lib/people-risk/queries";
 import type { SystemWithMembers } from "@/lib/people-risk/types";
+import { useLocale } from "@/lib/useLocale";
 
 const typeConfig: Record<
   string,
@@ -34,14 +35,14 @@ const typeConfig: Record<
   process: { label: "Process", icon: Workflow, color: "text-pink-400" },
 };
 
-function statusBadge(status: string | null) {
+function StatusBadge({ status, locale }: { status: string | null; locale: string }) {
   switch (status) {
     case "orphaned":
-      return <Badge variant="red">孤立</Badge>;
+      return <Badge variant="red">{locale === "ja" ? "孤立" : "Orphaned"}</Badge>;
     case "dormant":
-      return <Badge variant="yellow">休眠</Badge>;
+      return <Badge variant="yellow">{locale === "ja" ? "休眠" : "Dormant"}</Badge>;
     default:
-      return <Badge variant="green">稼働中</Badge>;
+      return <Badge variant="green">{locale === "ja" ? "稼働中" : "Active"}</Badge>;
   }
 }
 
@@ -53,6 +54,7 @@ function busFactor(system: SystemWithMembers): number {
 }
 
 export default function SystemsPage() {
+  const locale = useLocale();
   const [systems, setSystems] = useState<SystemWithMembers[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
@@ -109,11 +111,12 @@ export default function SystemsPage() {
       <div>
         <h1 className="text-2xl font-bold text-white flex items-center gap-2">
           <Server size={24} className="text-[#FFD700]" />
-          システム一覧
+          {locale === "ja" ? "システム一覧" : "Systems"}
         </h1>
         <p className="text-sm text-[#94a3b8] mt-1">
-          {systems.length}件のシステム（GAS: {gasCount}件、孤立: {orphanedCount}
-          件）
+          {locale === "ja"
+            ? `${systems.length}件のシステム（GAS: ${gasCount}件、孤立: ${orphanedCount}件）`
+            : `${systems.length} systems (GAS: ${gasCount}, Orphaned: ${orphanedCount})`}
         </p>
       </div>
 
@@ -128,8 +131,8 @@ export default function SystemsPage() {
             type="text"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            placeholder="システム名で検索..."
-            aria-label="システム名で検索"
+            placeholder={locale === "ja" ? "システム名で検索..." : "Search by system name..."}
+            aria-label={locale === "ja" ? "システム名で検索" : "Search by system name"}
             className="w-full pl-10 pr-4 py-2 bg-[#111827] border border-[#1e293b] rounded-lg text-sm text-white placeholder-[#64748b] focus:border-[#FFD700]/50 focus:outline-none"
           />
         </div>
@@ -144,7 +147,7 @@ export default function SystemsPage() {
                   : "border-[#1e293b] text-[#94a3b8] hover:border-[#475569]"
               }`}
             >
-              {t === "all" ? "全て" : typeConfig[t]?.label ?? t}
+              {t === "all" ? (locale === "ja" ? "全て" : "All") : typeConfig[t]?.label ?? t}
             </button>
           ))}
         </div>
@@ -160,12 +163,12 @@ export default function SystemsPage() {
               }`}
             >
               {s === "all"
-                ? "全状態"
+                ? (locale === "ja" ? "全状態" : "All")
                 : s === "active"
-                  ? "稼働中"
+                  ? (locale === "ja" ? "稼働中" : "Active")
                   : s === "orphaned"
-                    ? "孤立"
-                    : "休眠"}
+                    ? (locale === "ja" ? "孤立" : "Orphaned")
+                    : (locale === "ja" ? "休眠" : "Dormant")}
             </button>
           ))}
         </div>
@@ -177,19 +180,19 @@ export default function SystemsPage() {
           <table className="w-full text-sm">
             <thead>
               <tr className="text-[#64748b] border-b border-[#1e293b] text-xs bg-[#0f1424]">
-                <th scope="col" className="text-left py-3 px-4 font-medium">システム名</th>
-                <th scope="col" className="text-left py-3 px-4 font-medium">種別</th>
-                <th scope="col" className="text-left py-3 px-4 font-medium">ステータス</th>
+                <th scope="col" className="text-left py-3 px-4 font-medium">{locale === "ja" ? "システム名" : "System"}</th>
+                <th scope="col" className="text-left py-3 px-4 font-medium">{locale === "ja" ? "種別" : "Type"}</th>
+                <th scope="col" className="text-left py-3 px-4 font-medium">{locale === "ja" ? "ステータス" : "Status"}</th>
                 <th scope="col" className="text-center py-3 px-4 font-medium">
-                  担当者数
+                  {locale === "ja" ? "担当者数" : "Members"}
                 </th>
                 <th scope="col" className="text-center py-3 px-4 font-medium">
                   Bus Factor
                 </th>
                 <th scope="col" className="text-left py-3 px-4 font-medium">
-                  オーナー
+                  {locale === "ja" ? "オーナー" : "Owners"}
                 </th>
-                <th scope="col" className="text-left py-3 px-4 font-medium">最終更新</th>
+                <th scope="col" className="text-left py-3 px-4 font-medium">{locale === "ja" ? "最終更新" : "Last Updated"}</th>
               </tr>
             </thead>
             <tbody>
@@ -238,7 +241,7 @@ export default function SystemsPage() {
                       </span>
                     </td>
                     <td className="py-3 px-4">
-                      {statusBadge(system.status)}
+                      <StatusBadge status={system.status} locale={locale} />
                     </td>
                     <td className="py-3 px-4 text-center">
                       <span className="text-white">
@@ -271,25 +274,25 @@ export default function SystemsPage() {
                             <span>{m.name}</span>
                             {m.status === "left" && (
                               <Badge variant="red" className="text-[10px] px-1.5 py-0">
-                                退職
+                                {locale === "ja" ? "退職" : "Left"}
                               </Badge>
                             )}
                           </Link>
                         ))}
                         {owners.length > 2 && (
                           <span className="text-xs text-[#64748b]">
-                            +{owners.length - 2}名
+                            +{owners.length - 2}{locale === "ja" ? "名" : " more"}
                           </span>
                         )}
                         {owners.length === 0 && (
-                          <span className="text-xs text-red-400">なし</span>
+                          <span className="text-xs text-red-400">{locale === "ja" ? "なし" : "None"}</span>
                         )}
                       </div>
                     </td>
                     <td className="py-3 px-4 text-xs text-[#64748b]">
                       {system.last_updated
                         ? new Date(system.last_updated).toLocaleDateString(
-                            "ja-JP"
+                            locale === "ja" ? "ja-JP" : "en-US"
                           )
                         : "-"}
                     </td>
@@ -301,7 +304,7 @@ export default function SystemsPage() {
         </div>
         {sorted.length === 0 && (
           <div className="p-8 text-center text-[#64748b]">
-            該当するシステムがありません
+            {locale === "ja" ? "該当するシステムがありません" : "No systems found."}
           </div>
         )}
       </Card>

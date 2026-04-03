@@ -380,7 +380,7 @@ export default function TeamsPage() {
 
   if (!user) {
     return (
-      <div className="max-w-[900px] mx-auto px-6 py-20 text-center">
+      <div className="max-w-[1200px] mx-auto px-6 py-20 text-center">
         <Users size={40} className="text-[#FFD700] mx-auto mb-4" />
         <h1 className="text-2xl font-bold mb-2">Organization & Tasks</h1>
         <p className="text-[#64748b]">Sign in to manage your organization and tasks.</p>
@@ -392,7 +392,7 @@ export default function TeamsPage() {
 
   if (orgLoading) {
     return (
-      <div className="max-w-[900px] mx-auto px-6 py-20 flex items-center justify-center gap-3 text-[#64748b]">
+      <div className="max-w-[1200px] mx-auto px-6 py-20 flex items-center justify-center gap-3 text-[#64748b]">
         <Loader2 size={20} className="animate-spin" />
         <span>組織を読み込み中...</span>
       </div>
@@ -403,7 +403,7 @@ export default function TeamsPage() {
 
   if (!org) {
     return (
-      <div className="max-w-[900px] mx-auto px-6 py-20">
+      <div className="max-w-[1200px] mx-auto px-6 py-20">
         <div className="text-center mb-10">
           <Building2 size={40} className="text-[#FFD700] mx-auto mb-4" />
           <h1 className="text-2xl font-bold mb-2">Create Your Organization</h1>

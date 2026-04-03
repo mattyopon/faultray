@@ -15,47 +15,53 @@ import {
 } from "lucide-react";
 import { fetchActions, updateActionStatus } from "@/lib/people-risk/queries";
 import type { ActionWithSystem } from "@/lib/people-risk/types";
+import { useLocale } from "@/lib/useLocale";
 
 const priorityConfig: Record<
   string,
   {
-    label: string;
+    labelJa: string;
+    labelEn: string;
     icon: React.ComponentType<{ size?: number; className?: string }>;
     badgeVariant: "red" | "yellow" | "default";
     bgClass: string;
   }
 > = {
   critical: {
-    label: "緊急",
+    labelJa: "緊急",
+    labelEn: "Critical",
     icon: AlertTriangle,
     badgeVariant: "red",
     bgClass: "border-red-500/20 bg-red-500/[0.03]",
   },
   warning: {
-    label: "注意",
+    labelJa: "注意",
+    labelEn: "Warning",
     icon: Clock,
     badgeVariant: "yellow",
     bgClass: "border-yellow-500/20 bg-yellow-500/[0.03]",
   },
   info: {
-    label: "情報",
+    labelJa: "情報",
+    labelEn: "Info",
     icon: Info,
     badgeVariant: "default",
     bgClass: "border-[#1e293b]",
   },
 };
 
-const statusLabels: Record<string, string> = {
-  pending: "未対応",
-  in_progress: "対応中",
-  done: "完了",
-};
-
 export default function ActionsPage() {
+  const locale = useLocale();
   const [actions, setActions] = useState<ActionWithSystem[]>([]);
   const [loading, setLoading] = useState(true);
   const [updating, setUpdating] = useState<string | null>(null);
   const [filterStatus, setFilterStatus] = useState<string>("all");
+
+  const statusLabels: Record<string, string> = {
+    pending: locale === "ja" ? "未対応" : "Pending",
+    in_progress: locale === "ja" ? "対応中" : "In Progress",
+    done: locale === "ja" ? "完了" : "Done",
+  };
 
   useEffect(() => {
     fetchActions()
@@ -113,10 +119,12 @@ export default function ActionsPage() {
       <div>
         <h1 className="text-2xl font-bold text-white flex items-center gap-2">
           <CheckCircle2 size={24} className="text-[#FFD700]" />
-          改善アクション
+          {locale === "ja" ? "改善アクション" : "Improvement Actions"}
         </h1>
         <p className="text-sm text-[#94a3b8] mt-1">
-          属人化リスクを低減するための対応アクション一覧
+          {locale === "ja"
+            ? "属人化リスクを低減するための対応アクション一覧"
+            : "Actions to reduce knowledge concentration risks"}
         </p>
       </div>
 
@@ -124,21 +132,21 @@ export default function ActionsPage() {
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
         <Card className="p-4 text-center">
           <p className="text-2xl font-bold text-red-400">{pendingCount}</p>
-          <p className="text-xs text-[#64748b]">未対応</p>
+          <p className="text-xs text-[#64748b]">{locale === "ja" ? "未対応" : "Pending"}</p>
         </Card>
         <Card className="p-4 text-center">
           <p className="text-2xl font-bold text-yellow-400">{inProgressCount}</p>
-          <p className="text-xs text-[#64748b]">対応中</p>
+          <p className="text-xs text-[#64748b]">{locale === "ja" ? "対応中" : "In Progress"}</p>
         </Card>
         <Card className="p-4 text-center">
           <p className="text-2xl font-bold text-emerald-400">{doneCount}</p>
-          <p className="text-xs text-[#64748b]">完了</p>
+          <p className="text-xs text-[#64748b]">{locale === "ja" ? "完了" : "Done"}</p>
         </Card>
         <Card className="p-4 text-center">
           <p className="text-2xl font-bold text-[#FFD700]">
             -{totalReduction}%
           </p>
-          <p className="text-xs text-[#64748b]">リスク低減</p>
+          <p className="text-xs text-[#64748b]">{locale === "ja" ? "リスク低減" : "Risk Reduced"}</p>
         </Card>
       </div>
 
@@ -154,7 +162,9 @@ export default function ActionsPage() {
                 : "border-[#1e293b] text-[#94a3b8] hover:border-[#475569]"
             }`}
           >
-            {s === "all" ? `全て (${actions.length})` : `${statusLabels[s]} (${actions.filter((a) => a.status === s).length})`}
+            {s === "all"
+              ? `${locale === "ja" ? "全て" : "All"} (${actions.length})`
+              : `${statusLabels[s]} (${actions.filter((a) => a.status === s).length})`}
           </button>
         ))}
       </div>
@@ -165,6 +175,7 @@ export default function ActionsPage() {
           const pc = priorityConfig[action.priority ?? "info"] ?? priorityConfig.info;
           const PriorityIcon = pc.icon;
           const isUpdating = updating === action.id;
+          const priorityLabel = locale === "ja" ? pc.labelJa : pc.labelEn;
 
           return (
             <Card
@@ -187,7 +198,7 @@ export default function ActionsPage() {
                     >
                       {action.title}
                     </h3>
-                    <Badge variant={pc.badgeVariant}>{pc.label}</Badge>
+                    <Badge variant={pc.badgeVariant}>{priorityLabel}</Badge>
                   </div>
                   {action.description && (
                     <p className="text-xs text-[#94a3b8] mt-1.5">
@@ -197,13 +208,14 @@ export default function ActionsPage() {
                   <div className="flex flex-wrap gap-3 mt-2 text-xs">
                     {action.systems && (
                       <span className="text-[#64748b]">
-                        対象: <span className="text-[#94a3b8]">{action.systems.name}</span>
+                        {locale === "ja" ? "対象" : "Target"}:{" "}
+                        <span className="text-[#94a3b8]">{action.systems.name}</span>
                       </span>
                     )}
                     {action.risk_reduction != null && (
                       <span className="text-[#64748b] flex items-center gap-1">
                         <TrendingDown size={12} className="text-emerald-400" />
-                        リスク低減:{" "}
+                        {locale === "ja" ? "リスク低減" : "Risk Reduction"}:{" "}
                         <span className="text-emerald-400 font-semibold">
                           {action.risk_reduction}%
                         </span>
@@ -228,7 +240,7 @@ export default function ActionsPage() {
                       ) : (
                         <ArrowRight size={14} />
                       )}
-                      対応する
+                      {locale === "ja" ? "対応する" : "Start"}
                     </Button>
                   )}
                   {action.status === "in_progress" && (
@@ -242,13 +254,13 @@ export default function ActionsPage() {
                       ) : (
                         <CheckCircle2 size={14} />
                       )}
-                      完了
+                      {locale === "ja" ? "完了" : "Done"}
                     </Button>
                   )}
                   {action.status === "done" && (
                     <Badge variant="green">
                       <CheckCircle2 size={12} />
-                      完了済み
+                      {locale === "ja" ? "完了済み" : "Completed"}
                     </Badge>
                   )}
                 </div>
@@ -259,7 +271,9 @@ export default function ActionsPage() {
 
         {filtered.length === 0 && (
           <Card className="p-8 text-center">
-            <p className="text-[#64748b]">該当するアクションがありません</p>
+            <p className="text-[#64748b]">
+              {locale === "ja" ? "該当するアクションがありません" : "No actions found."}
+            </p>
           </Card>
         )}
       </div>
