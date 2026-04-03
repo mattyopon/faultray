@@ -167,7 +167,7 @@ export default function LogsPage() {
             <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-[#64748b]" />
             <input
               className="w-full bg-white/5 border border-[#1e293b] rounded-lg pl-8 pr-3 py-1.5 text-sm text-[#e2e8f0] placeholder-[#475569] focus:outline-none focus:border-[#FFD700]/40 font-mono"
-              placeholder='message contains "timeout" OR service:db'
+              placeholder={locale === "ja" ? 'メッセージに "timeout" を含む、または service:db' : 'message contains "timeout" OR service:db'}
               aria-label={locale === "ja" ? "ログメッセージを検索" : "Search log messages"}
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}

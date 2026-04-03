@@ -178,7 +178,7 @@ function computeBlastRadius(serviceId: string, services: Service[]): Service[] {
  * ============================================================ */
 
 export default function DependenciesPage() {
-  useLocale();
+  const locale = useLocale();
 
   const [selectedService, setSelectedService] = useState<string | null>(null);
 
@@ -308,7 +308,7 @@ export default function DependenciesPage() {
             {!selected ? (
               <div className="text-center py-8">
                 <GitBranch size={32} className="text-[#1e293b] mx-auto mb-3" />
-                <p className="text-sm text-[#64748b]">Select a service to see<br />what breaks if it stops.</p>
+                <p className="text-sm text-[#64748b]">{locale === "ja" ? "サービスを選択して、停止時の影響を確認してください。" : "Select a service to see what breaks if it stops."}</p>
               </div>
             ) : (
               <div>
@@ -331,7 +331,7 @@ export default function DependenciesPage() {
                 {blastRadius.length === 0 ? (
                   <div className="flex items-center gap-2 p-3 rounded-lg bg-emerald-500/5 border border-emerald-500/15">
                     <CheckCircle2 size={14} className="text-emerald-400 shrink-0" />
-                    <p className="text-xs text-[#94a3b8]">No downstream dependents. Safe to take offline.</p>
+                    <p className="text-xs text-[#94a3b8]">{locale === "ja" ? "下流の依存がありません。安全にオフラインにできます。" : "No downstream dependents. Safe to take offline."}</p>
                   </div>
                 ) : (
                   <div className="space-y-2">
@@ -390,12 +390,12 @@ export default function DependenciesPage() {
 
           {/* Legend */}
           <Card className="mt-4">
-            <h4 className="text-xs font-semibold text-[#64748b] uppercase tracking-wider mb-3">Legend</h4>
+            <h4 className="text-xs font-semibold text-[#64748b] uppercase tracking-wider mb-3">{locale === "ja" ? "凡例" : "Legend"}</h4>
             <div className="space-y-2">
               {(["green", "yellow", "red"] as ServiceStatus[]).map((status) => (
                 <div key={status} className="flex items-center gap-3 text-xs text-[#94a3b8]">
                   <TrafficLight status={status} />
-                  <span>{statusLabel(status)} — {status === "green" ? "operating normally" : status === "yellow" ? "degraded performance" : "service is down"}</span>
+                  <span>{statusLabel(status)} — {locale === "ja" ? (status === "green" ? "正常稼働中" : status === "yellow" ? "パフォーマンス低下" : "サービス停止") : (status === "green" ? "operating normally" : status === "yellow" ? "degraded performance" : "service is down")}</span>
                 </div>
               ))}
               <div className="flex items-center gap-3 text-xs text-[#94a3b8]">
