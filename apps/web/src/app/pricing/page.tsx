@@ -109,8 +109,10 @@ export default function PricingPage() {
   return (
     <div className="max-w-[1200px] mx-auto px-6 py-20">
       <div className="text-center mb-10">
-        <h1 className="text-[clamp(1.75rem,4vw,2.5rem)] font-bold tracking-tight mb-3">Pricing</h1>
-        <p className="text-lg text-[#94a3b8]">Start free. Scale as you grow.</p>
+        <h1 className="text-[clamp(1.75rem,4vw,2.5rem)] font-bold tracking-tight mb-3">
+          Invest in reliability. Prevent the outage before it costs you.
+        </h1>
+        <p className="text-lg text-[#94a3b8]">Start free — upgrade when your team needs DORA compliance, AI analysis, or unlimited scale.</p>
         <div className="mt-4 flex flex-wrap items-center justify-center gap-3">
           <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-[#FFD700]/10 border border-[#FFD700]/20">
             <span className="text-sm font-semibold text-[#FFD700]">14-day free trial on Pro</span>
@@ -120,6 +122,14 @@ export default function PricingPage() {
             <ShieldCheck size={14} className="text-emerald-400" />
             <span className="text-sm font-semibold text-emerald-400">No credit card required</span>
           </div>
+        </div>
+        {/* CVR-05: Social proof micro-stats */}
+        <div className="mt-5 flex flex-wrap items-center justify-center gap-6 text-sm text-[#64748b]">
+          <span><span className="font-bold text-white">2,000+</span> simulations run/month</span>
+          <span className="hidden sm:block">·</span>
+          <span><span className="font-bold text-white">$0</span> to get started</span>
+          <span className="hidden sm:block">·</span>
+          <span>Cancel anytime</span>
         </div>
       </div>
 

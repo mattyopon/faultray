@@ -710,7 +710,7 @@ function ResultsPanel({ result, scanSummary, simulateT }: { result: SimulationRe
   );
 }
 
-type TopTab = "quickstart" | "agent";
+type TopTab = "quickstart" | "cloud" | "agent";
 
 // Mock connected agents data (would come from API in production)
 interface ConnectedAgent {
@@ -1156,7 +1156,7 @@ function SimulatePageInner() {
           )}
 
           {/* Top-level Tabs */}
-          <div className="flex gap-1 mb-8 p-1 rounded-xl bg-[#0d1117] border border-[#1e293b] w-fit">
+          <div className="flex gap-1 mb-8 p-1 rounded-xl bg-[#0d1117] border border-[#1e293b] w-fit flex-wrap">
             <button
               onClick={() => setTopTab("quickstart")}
               className={`flex items-center gap-2 px-5 py-2.5 rounded-lg text-sm font-medium transition-all ${
@@ -1167,6 +1167,17 @@ function SimulatePageInner() {
             >
               <Zap size={16} />
               Quick Start
+            </button>
+            <button
+              onClick={() => setTopTab("cloud")}
+              className={`flex items-center gap-2 px-5 py-2.5 rounded-lg text-sm font-medium transition-all ${
+                topTab === "cloud"
+                  ? "bg-[#FFD700]/10 text-[#FFD700] shadow-sm"
+                  : "text-[#94a3b8] hover:text-white"
+              }`}
+            >
+              <Cloud size={16} />
+              {locale === "ja" ? "クラウドインポート" : "Cloud Import"}
             </button>
             <button
               onClick={() => setTopTab("agent")}
@@ -1279,7 +1290,7 @@ function SimulatePageInner() {
               </div>
 
               {/* File Upload Area */}
-              <div className="mb-6">
+              <div id="simulate-file-upload" className="mb-6">
                 <input
                   ref={fileInputRef}
                   type="file"
@@ -1421,6 +1432,129 @@ function SimulatePageInner() {
                 )}
               </div>
             </>
+          )}
+
+          {/* ===== CLOUD IMPORT TAB ===== FUNC-03 */}
+          {topTab === "cloud" && (
+            <div className="space-y-8">
+              {/* Header */}
+              <div className="flex items-start gap-4 p-5 rounded-2xl border border-blue-500/20 bg-blue-500/[0.04]">
+                <Cloud size={20} className="text-blue-400 shrink-0 mt-0.5" />
+                <div>
+                  <p className="text-sm font-semibold text-blue-300 mb-1">
+                    {locale === "ja" ? "クラウド構成を自動取り込み" : "Auto-discover your cloud topology"}
+                  </p>
+                  <p className="text-xs text-[#94a3b8]">
+                    {locale === "ja"
+                      ? "読み取り専用の権限で AWS・GCP・Azure のリソースを自動検出し、シミュレーション可能なトポロジーに変換します。"
+                      : "Connect with read-only credentials to auto-discover AWS, GCP, or Azure resources and convert them to a simulatable topology."}
+                  </p>
+                </div>
+              </div>
+
+              {/* Provider selection */}
+              <div>
+                <p className="text-xs font-semibold text-[#64748b] uppercase tracking-wide mb-4">
+                  {locale === "ja" ? "クラウドプロバイダーを選択" : "Select cloud provider"}
+                </p>
+                <div className="grid sm:grid-cols-3 gap-4">
+                  {(["aws", "gcp", "azure"] as const).map((provider) => {
+                    const meta = {
+                      aws:   { label: "Amazon Web Services", color: "text-amber-400",  bg: "bg-amber-400/10", border: "border-amber-400/20",  badge: "EC2, RDS, ELB, Lambda, S3" },
+                      gcp:   { label: "Google Cloud",        color: "text-blue-400",   bg: "bg-blue-400/10",  border: "border-blue-400/20",   badge: "Compute, GKE, Cloud SQL, BigQuery" },
+                      azure: { label: "Microsoft Azure",     color: "text-sky-400",    bg: "bg-sky-400/10",   border: "border-sky-400/20",    badge: "VMs, AKS, SQL, CosmosDB" },
+                    }[provider];
+                    return (
+                      <div key={provider} className={`p-4 rounded-xl border ${meta.border} ${meta.bg} flex flex-col gap-3`}>
+                        <div className="flex items-center gap-2">
+                          <Server size={16} className={meta.color} />
+                          <span className={`text-sm font-bold ${meta.color}`}>{meta.label}</span>
+                        </div>
+                        <p className="text-[11px] text-[#64748b]">{meta.badge}</p>
+                        <div className="mt-auto">
+                          <button
+                            onClick={() => { setTopTab("agent"); }}
+                            className={`w-full py-2 rounded-lg text-xs font-semibold border ${meta.border} ${meta.color} hover:opacity-80 transition-opacity`}
+                          >
+                            {locale === "ja" ? "セットアップ手順を見る" : "View setup steps →"}
+                          </button>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* Terraform Import */}
+              <div className="p-5 rounded-xl border border-[#1e293b] bg-[#0d1117]">
+                <div className="flex items-center gap-2 mb-3">
+                  <Database size={16} className="text-purple-400" />
+                  <p className="text-sm font-semibold">{locale === "ja" ? "Terraform State インポート" : "Terraform State Import"}</p>
+                  <Badge variant="default" className="text-[10px]">tfstate</Badge>
+                </div>
+                <p className="text-xs text-[#94a3b8] mb-4">
+                  {locale === "ja"
+                    ? "terraform.tfstate ファイルを貼り付けるか、アップロードするとトポロジーを自動生成します。"
+                    : "Paste or upload your terraform.tfstate file to auto-generate a topology for simulation."}
+                </p>
+                <button
+                  onClick={() => {
+                    setTopTab("quickstart");
+                    // Scroll to file upload area
+                    setTimeout(() => {
+                      const el = document.getElementById("simulate-file-upload");
+                      if (el) el.scrollIntoView({ behavior: "smooth" });
+                    }, 100);
+                  }}
+                  className="text-xs font-medium text-[#FFD700] hover:underline"
+                >
+                  {locale === "ja" ? "ファイルアップロードへ →" : "Go to file upload →"}
+                </button>
+              </div>
+
+              {/* IAM policy snippet */}
+              <div>
+                <p className="text-xs font-semibold text-[#64748b] uppercase tracking-wide mb-3">
+                  {locale === "ja" ? "最小権限 IAM ポリシー（AWS 例）" : "Minimum IAM policy (AWS example)"}
+                </p>
+                <CodeBlock language="json" code={`{
+  "Version": "2012-10-17",
+  "Statement": [{
+    "Effect": "Allow",
+    "Action": [
+      "ec2:Describe*",
+      "rds:Describe*",
+      "elasticloadbalancing:Describe*",
+      "lambda:List*", "lambda:Get*",
+      "s3:ListAllMyBuckets", "s3:GetBucketLocation",
+      "cloudwatch:GetMetricStatistics",
+      "ecs:List*", "ecs:Describe*",
+      "eks:ListClusters", "eks:DescribeCluster"
+    ],
+    "Resource": "*"
+  }]
+}`} />
+                <p className="text-xs text-[#64748b] mt-2">
+                  <Shield size={11} className="inline mr-1 text-emerald-400" />
+                  {locale === "ja"
+                    ? "読み取り専用アクション（Describe*/List*/Get*）のみ。書き込み権限は不要です。"
+                    : "Read-only actions only (Describe*/List*/Get*). No write permissions required."}
+                </p>
+              </div>
+
+              {/* Terraform: export tfstate guide */}
+              <div>
+                <p className="text-xs font-semibold text-[#64748b] uppercase tracking-wide mb-3">
+                  {locale === "ja" ? "tfstate のエクスポート方法" : "How to export tfstate"}
+                </p>
+                <CodeBlock language="bash" code={`# Export local state
+terraform state pull > topology.tfstate
+
+# Or export from Terraform Cloud
+terraform login
+terraform state pull > topology.tfstate`} />
+              </div>
+            </div>
           )}
 
           {/* ===== AGENT CONNECT TAB ===== */}

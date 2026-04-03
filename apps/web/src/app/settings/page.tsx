@@ -20,6 +20,8 @@ import {
   Minus,
   Link2,
   Gift,
+  X,
+  Tag,
 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useState, useEffect, useCallback } from "react";
@@ -71,6 +73,10 @@ export default function SettingsPage() {
   const [isAdmin, setIsAdmin] = useState(false);
   const [currentPlan, setCurrentPlan] = useState<string>("free");
   const [switchingPlan, setSwitchingPlan] = useState(false);
+
+  // RETAIN-01: Churn prevention modal
+  const [showChurnModal, setShowChurnModal] = useState(false);
+  const [churnReason, setChurnReason] = useState("");
 
   // Trial state
   const [trialEndsAt, setTrialEndsAt] = useState<string | null>(null);
@@ -445,14 +451,137 @@ export default function SettingsPage() {
           );
         })()}
 
-        <Link href="/pricing">
-          <Button size="sm">
-            <CreditCard size={14} /> {t.upgradePro}
-          </Button>
-        </Link>
+        <div className="flex items-center gap-3 flex-wrap">
+          <Link href="/pricing">
+            <Button size="sm">
+              <CreditCard size={14} /> {t.upgradePro}
+            </Button>
+          </Link>
+          {/* RETAIN-01: Cancel flow entry point for paid plans */}
+          {(currentPlan === "pro" || currentPlan === "business") && (
+            <button
+              onClick={() => { setShowChurnModal(true); }}
+              className="text-xs text-[#475569] hover:text-[#94a3b8] underline transition-colors"
+            >
+              {locale === "ja" ? "キャンセルまたはダウングレード" : "Cancel or downgrade"}
+            </button>
+          )}
+        </div>
+
+        {/* RETAIN-01: Churn Prevention Modal */}
+        {showChurnModal && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+            <div className="bg-[#111827] border border-[#1e293b] rounded-2xl p-6 max-w-md w-full shadow-2xl">
+              <div className="flex items-start justify-between mb-4">
+                <h3 className="text-lg font-bold">
+                  {locale === "ja" ? "本当にキャンセルしますか？" : "Before you go…"}
+                </h3>
+                <button onClick={() => { setShowChurnModal(false); }} className="text-[#475569] hover:text-white">
+                  <X size={18} />
+                </button>
+              </div>
+
+              {/* Value reminder */}
+              <div className="mb-5 p-4 rounded-xl bg-[#FFD700]/[0.04] border border-[#FFD700]/20">
+                <p className="text-sm text-[#e2e8f0] mb-2 font-medium">
+                  {locale === "ja" ? "解約すると以下を失います:" : "You&apos;ll lose access to:"}
+                </p>
+                <ul className="space-y-1.5 text-sm text-[#94a3b8]">
+                  {(currentPlan === "pro"
+                    ? [
+                        locale === "ja" ? "DORA コンプライアンスレポート (PDF)" : "DORA compliance reports (PDF)",
+                        locale === "ja" ? "AI 信頼性アドバイザー" : "AI reliability advisor",
+                        locale === "ja" ? "月 100 回のシミュレーション" : "100 simulations / month",
+                        locale === "ja" ? "24h メールサポート" : "24h email support",
+                      ]
+                    : [
+                        locale === "ja" ? "無制限シミュレーション" : "Unlimited simulations",
+                        locale === "ja" ? "専用 Slack サポート (4h)" : "Dedicated Slack support (4h)",
+                        locale === "ja" ? "カスタム SSO / SAML" : "Custom SSO / SAML",
+                        locale === "ja" ? "Prometheus 連携" : "Prometheus integration",
+                      ]
+                  ).map((item) => (
+                    <li key={item} className="flex items-center gap-2">
+                      <Check size={12} className="text-[#FFD700] shrink-0" />
+                      {item}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+
+              {/* Pause offer */}
+              <div className="mb-5 p-4 rounded-xl bg-emerald-500/[0.04] border border-emerald-500/20">
+                <div className="flex items-center gap-2 mb-2">
+                  <Tag size={14} className="text-emerald-400" />
+                  <p className="text-sm font-semibold text-emerald-300">
+                    {locale === "ja" ? "特別オファー: 30%割引クーポン" : "Special offer: 30% off coupon"}
+                  </p>
+                </div>
+                <p className="text-xs text-[#94a3b8] mb-3">
+                  {locale === "ja"
+                    ? "キャンセルする前に、次の3ヶ月を30%オフでお試しください。"
+                    : "Try 3 more months at 30% off before canceling."}
+                </p>
+                <button
+                  onClick={() => {
+                    setShowChurnModal(false);
+                    // Scroll to coupon section
+                    const el = document.getElementById("coupon-section");
+                    if (el) el.scrollIntoView({ behavior: "smooth" });
+                  }}
+                  className="text-xs font-bold text-emerald-400 hover:underline"
+                >
+                  {locale === "ja" ? "クーポンを受け取る →" : "Get discount coupon →"}
+                </button>
+              </div>
+
+              {/* Cancellation reason */}
+              <div className="mb-5">
+                <p className="text-xs text-[#64748b] mb-2">
+                  {locale === "ja" ? "解約理由を教えてください（任意）:" : "What's your reason for canceling? (optional)"}
+                </p>
+                <div className="grid grid-cols-2 gap-2">
+                  {(locale === "ja"
+                    ? ["高すぎる", "機能が足りない", "使わなくなった", "別のツールに移行", "予算削減", "その他"]
+                    : ["Too expensive", "Missing features", "No longer needed", "Switching tools", "Budget cuts", "Other"]
+                  ).map((reason) => (
+                    <button
+                      key={reason}
+                      onClick={() => { setChurnReason(reason); }}
+                      className={`text-xs px-3 py-2 rounded-lg border transition-colors ${
+                        churnReason === reason
+                          ? "border-[#FFD700]/40 text-[#FFD700] bg-[#FFD700]/10"
+                          : "border-[#1e293b] text-[#94a3b8] hover:border-[#334155]"
+                      }`}
+                    >
+                      {reason}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Actions */}
+              <div className="flex gap-3">
+                <button
+                  onClick={() => { setShowChurnModal(false); }}
+                  className="flex-1 py-2.5 rounded-xl bg-[#FFD700] text-[#0a0e1a] text-sm font-bold hover:bg-[#ffe44d] transition-colors"
+                >
+                  {locale === "ja" ? "プランを維持する" : "Keep my plan"}
+                </button>
+                <a
+                  href="mailto:support@faultray.com?subject=Cancel%20subscription"
+                  onClick={() => { setShowChurnModal(false); }}
+                  className="flex-1 py-2.5 rounded-xl border border-[#1e293b] text-[#64748b] text-sm text-center hover:text-white hover:border-[#334155] transition-colors"
+                >
+                  {locale === "ja" ? "解約を続ける" : "Proceed to cancel"}
+                </a>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* Coupon Code */}
-        <div className="mt-6 pt-6 border-t border-[#1e293b]">
+        <div id="coupon-section" className="mt-6 pt-6 border-t border-[#1e293b]">
           <h3 className="text-sm font-semibold mb-3 flex items-center gap-2">
             <Gift size={16} className="text-[#FFD700]" />
             {locale === "ja" ? "クーポンコード" : "Coupon Code"}
