@@ -933,6 +933,7 @@ function SimulatePageInner() {
   const preselectedProjectId = searchParams?.get("project") ?? null;
 
   const [topTab, setTopTab] = useState<TopTab>("quickstart");
+  const [selectedCloud, setSelectedCloud] = useState<"aws" | "gcp" | "azure" | null>(null);
   const [selected, setSelected] = useState<string | null>(null);
   const [yamlText, setYamlText] = useState("");
   const [yamlError, setYamlError] = useState<string | null>(null); // FORM-02: リアルタイムバリデーション
@@ -1597,7 +1598,7 @@ function SimulatePageInner() {
                         <p className="text-[11px] text-[#64748b]">{meta.badge}</p>
                         <div className="mt-auto">
                           <button
-                            onClick={() => { setTopTab("agent"); }}
+                            onClick={() => { setSelectedCloud(provider); }}
                             className={`w-full py-2 rounded-lg text-xs font-semibold border ${meta.border} ${meta.color} hover:opacity-80 transition-opacity`}
                           >
                             {locale === "ja" ? "セットアップ手順を見る" : "View setup steps →"}
@@ -1608,6 +1609,41 @@ function SimulatePageInner() {
                   })}
                 </div>
               </div>
+
+              {/* Cloud Setup Steps */}
+              {selectedCloud && (
+                <div className="p-5 rounded-xl border border-emerald-500/20 bg-emerald-500/[0.04]">
+                  <div className="flex items-center justify-between mb-3">
+                    <p className="text-sm font-semibold text-emerald-300">
+                      {selectedCloud === "aws" ? "AWS" : selectedCloud === "gcp" ? "GCP" : "Azure"} {locale === "ja" ? "セットアップ手順" : "Setup Steps"}
+                    </p>
+                    <button onClick={() => setSelectedCloud(null)} className="text-xs text-[#64748b] hover:text-white">✕</button>
+                  </div>
+                  <ol className="space-y-2 text-xs text-[#94a3b8]">
+                    {selectedCloud === "aws" && (<>
+                      <li>1. {locale === "ja" ? "IAMで読み取り専用ロールを作成" : "Create a read-only IAM role"}: <code className="text-emerald-400">ReadOnlyAccess</code></li>
+                      <li>2. {locale === "ja" ? "アクセスキーを生成" : "Generate access key pair"}</li>
+                      <li>3. {locale === "ja" ? "CLIで実行" : "Run via CLI"}:
+                        <pre className="mt-1 p-2 bg-[#0a0e1a] rounded text-emerald-400">faultray scan --aws --region ap-northeast-1</pre>
+                      </li>
+                    </>)}
+                    {selectedCloud === "gcp" && (<>
+                      <li>1. {locale === "ja" ? "サービスアカウントを作成（Viewer権限）" : "Create service account with Viewer role"}</li>
+                      <li>2. {locale === "ja" ? "JSONキーをダウンロード" : "Download JSON key"}</li>
+                      <li>3. {locale === "ja" ? "CLIで実行" : "Run via CLI"}:
+                        <pre className="mt-1 p-2 bg-[#0a0e1a] rounded text-blue-400">faultray scan --gcp --project YOUR_PROJECT</pre>
+                      </li>
+                    </>)}
+                    {selectedCloud === "azure" && (<>
+                      <li>1. {locale === "ja" ? "サービスプリンシパルを作成（Reader権限）" : "Create service principal with Reader role"}</li>
+                      <li>2. {locale === "ja" ? "クライアントID/シークレットを取得" : "Get client ID and secret"}</li>
+                      <li>3. {locale === "ja" ? "CLIで実行" : "Run via CLI"}:
+                        <pre className="mt-1 p-2 bg-[#0a0e1a] rounded text-sky-400">faultray scan --azure --subscription YOUR_SUB</pre>
+                      </li>
+                    </>)}
+                  </ol>
+                </div>
+              )}
 
               {/* Terraform Import */}
               <div className="p-5 rounded-xl border border-[#1e293b] bg-[#0d1117]">
