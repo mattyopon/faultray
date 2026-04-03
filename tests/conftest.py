@@ -37,12 +37,15 @@ TEST_API_KEY_HASH = hash_api_key(TEST_API_KEY)
 
 
 def _run_async(coro):
-    """Run an async coroutine from sync code (no running event loop)."""
+    """Run an async coroutine from sync code (no running event loop).
+
+    NOTE: We intentionally do NOT close the loop here. Closing it causes
+    aiosqlite worker threads to fail with 'Event loop is closed' when they
+    try to post results back, which cascades into 500 errors in API tests.
+    """
     loop = asyncio.new_event_loop()
-    try:
-        return loop.run_until_complete(coro)
-    finally:
-        loop.close()
+    asyncio.set_event_loop(loop)
+    return loop.run_until_complete(coro)
 
 
 async def _setup_test_user_async():
@@ -127,7 +130,10 @@ def _install_e2e_httpx_redirect():
     from fastapi.testclient import TestClient
     from faultray.api.server import app
 
-    _setup_test_user()
+    try:
+        _setup_test_user()
+    except Exception:
+        pass  # DB may be unavailable; redirect still works for non-auth endpoints
 
     _local_client = TestClient(app, raise_server_exceptions=False)
     _local_client.headers["Authorization"] = f"Bearer {TEST_API_KEY}"
@@ -161,9 +167,4 @@ def _install_e2e_httpx_redirect():
     httpx.post = _redirected_post  # type: ignore[assignment]
 
 
-try:
-    _install_e2e_httpx_redirect()
-except Exception:
-    # CI environments without a database will fail here — that's OK,
-    # the redirect is only needed for E2E tests that hit the local API.
-    pass
+_install_e2e_httpx_redirect()
