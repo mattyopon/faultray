@@ -15,17 +15,13 @@ export default function sitemap(): MetadataRoute.Sitemap {
     priority: 1.0,
   }));
 
-  // Core product pages
+  // Core product pages (public only — auth-required pages excluded per robots.ts)
   const productPages = [
-    { path: "/simulate",      priority: 0.9, changeFrequency: "weekly" as const },
-    { path: "/dashboard",     priority: 0.9, changeFrequency: "weekly" as const },
     { path: "/pricing",       priority: 0.9, changeFrequency: "monthly" as const },
     { path: "/features",      priority: 0.8, changeFrequency: "monthly" as const },
     { path: "/demo",          priority: 0.8, changeFrequency: "weekly" as const },
     { path: "/case-studies",  priority: 0.8, changeFrequency: "monthly" as const },
-    { path: "/dora",          priority: 0.7, changeFrequency: "monthly" as const },
-    { path: "/reports",       priority: 0.7, changeFrequency: "monthly" as const },
-    { path: "/onboarding",    priority: 0.7, changeFrequency: "monthly" as const },
+    { path: "/changelog",     priority: 0.6, changeFrequency: "weekly" as const },
   ].map(({ path, priority, changeFrequency }) => ({
     url: `${BASE}${path}`,
     lastModified: now,

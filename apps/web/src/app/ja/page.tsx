@@ -261,26 +261,26 @@ export default async function LangHomePage({
             {dict.hero.description}
           </p>
 
-          {/* Stats bar */}
+          {/* COPY-02: Business impact stats */}
           <div className="flex flex-wrap items-center justify-center gap-6 md:gap-10 mb-10 text-sm">
+            <div className="text-center">
+              <div className="text-2xl font-extrabold text-red-400">推定50万円</div>
+              <div className="text-[#64748b]">1時間の障害損失</div>
+            </div>
+            <div className="w-px h-8 bg-[#1e293b] hidden md:block" />
             <div className="text-center">
               <div className="text-2xl font-extrabold text-[#FFD700]">2,000+</div>
               <div className="text-[#64748b]">{dict.hero.stats.scenarios}</div>
             </div>
             <div className="w-px h-8 bg-[#1e293b] hidden md:block" />
             <div className="text-center">
+              <div className="text-2xl font-extrabold text-emerald-400">30分</div>
+              <div className="text-[#64748b]">で改善計画生成</div>
+            </div>
+            <div className="w-px h-8 bg-[#1e293b] hidden md:block" />
+            <div className="text-center">
               <div className="text-2xl font-extrabold text-[#FFD700]">52</div>
               <div className="text-[#64748b]">{dict.hero.stats.doraControls}</div>
-            </div>
-            <div className="w-px h-8 bg-[#1e293b] hidden md:block" />
-            <div className="text-center">
-              <div className="text-2xl font-extrabold text-[#FFD700]">35+</div>
-              <div className="text-[#64748b]">{dict.hero.stats.dashboardPages}</div>
-            </div>
-            <div className="w-px h-8 bg-[#1e293b] hidden md:block" />
-            <div className="text-center">
-              <div className="text-2xl font-extrabold text-[#FFD700]">32,000+</div>
-              <div className="text-[#64748b]">{dict.hero.stats.tests}</div>
             </div>
             <div className="w-px h-8 bg-[#1e293b] hidden md:block" />
             <div className="text-center">
@@ -1091,6 +1091,11 @@ export default async function LangHomePage({
                 <li>
                   <Link href="/terms" className="text-sm text-[#64748b] hover:text-white transition-colors">
                     Terms of Service
+                  </Link>
+                </li>
+                <li>
+                  <Link href="/tokushoho" className="text-sm text-[#64748b] hover:text-white transition-colors">
+                    特定商取引法に基づく表記
                   </Link>
                 </li>
                 <li>

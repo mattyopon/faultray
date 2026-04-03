@@ -128,7 +128,20 @@ function LoginForm() {
             </li>
           ))}
         </ul>
-        <p className="text-xs text-[#475569]">
+        {/* CVR-01: Trust badges */}
+        <div className="flex flex-wrap gap-3 mt-2">
+          {[
+            { icon: "⚡", text: locale === "ja" ? "30秒で始められます" : "Get started in 30 seconds" },
+            { icon: "💳", text: locale === "ja" ? "クレカ不要" : "No credit card required" },
+            { icon: "🔓", text: locale === "ja" ? "14日間フルアクセス" : "14-day full access" },
+          ].map(({ icon, text }) => (
+            <span key={text} className="inline-flex items-center gap-1.5 px-3 py-1 text-xs font-medium text-[#94a3b8] border border-[#1e293b] rounded-full bg-[#111827]">
+              <span aria-hidden="true">{icon}</span>
+              {text}
+            </span>
+          ))}
+        </div>
+        <p className="text-xs text-[#475569] mt-4">
           {t.trustedBy}
         </p>
       </div>

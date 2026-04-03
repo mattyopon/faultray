@@ -12,6 +12,7 @@ import {
   Gauge,
   AlertTriangle,
   ClipboardCheck,
+  Lock,
 } from "lucide-react";
 import Link from "next/link";
 import { useLocale } from "@/lib/useLocale";
@@ -139,36 +140,50 @@ export default function SuggestionsPage() {
         </Card>
       </Link>
 
-      {/* Suggestions List */}
+      {/* Suggestions List — DEMO-02: top 2 visible, rest blurred for free users */}
       <div className="space-y-4">
         {suggestions.map((s, i) => {
           const Icon = s.icon;
+          const isLocked = i >= 2;
           return (
-            <Card key={i} hover className="cursor-pointer">
-              <div className="flex items-start gap-5">
-                <div className="w-12 h-12 rounded-xl bg-[#FFD700]/[0.06] border border-[#FFD700]/10 flex items-center justify-center shrink-0">
-                  <Icon size={22} className="text-[#FFD700]" />
-                </div>
-                <div className="flex-1">
-                  <div className="flex items-center gap-2 mb-1">
-                    <h3 className="font-bold">{(s.title as Record<string,string>)[locale] ?? s.title.en}</h3>
-                    <Badge variant={s.priority === "high" ? "red" : s.priority === "medium" ? "yellow" : "default"}>
-                      {priorityLabel(s.priority)}
-                    </Badge>
-                    <Badge variant="default">{(s.category as Record<string,string>)[locale] ?? s.category.en}</Badge>
+            <div key={i} className="relative">
+              <Card hover={!isLocked} className={isLocked ? "cursor-default" : "cursor-pointer"}>
+                <div className={`flex items-start gap-5 ${isLocked ? "blur-[6px] select-none pointer-events-none" : ""}`}>
+                  <div className="w-12 h-12 rounded-xl bg-[#FFD700]/[0.06] border border-[#FFD700]/10 flex items-center justify-center shrink-0">
+                    <Icon size={22} className="text-[#FFD700]" />
                   </div>
-                  <p className="text-sm text-[#94a3b8] leading-relaxed mb-3">{(s.description as Record<string,string>)[locale] ?? s.description.en}</p>
-                  <div className="flex items-center gap-4">
-                    <div className="flex items-center gap-1.5 text-emerald-400 text-sm font-semibold">
-                      <ArrowUpRight size={14} />
-                      {s.impact}
+                  <div className="flex-1">
+                    <div className="flex items-center gap-2 mb-1">
+                      <h3 className="font-bold">{(s.title as Record<string,string>)[locale] ?? s.title.en}</h3>
+                      <Badge variant={s.priority === "high" ? "red" : s.priority === "medium" ? "yellow" : "default"}>
+                        {priorityLabel(s.priority)}
+                      </Badge>
+                      <Badge variant="default">{(s.category as Record<string,string>)[locale] ?? s.category.en}</Badge>
                     </div>
-                    <span className="text-[#1e293b]">|</span>
-                    <span className="text-xs text-[#64748b]">{t.effort}: {(s.effort as Record<string,string>)[locale] ?? s.effort.en}</span>
+                    <p className="text-sm text-[#94a3b8] leading-relaxed mb-3">{(s.description as Record<string,string>)[locale] ?? s.description.en}</p>
+                    <div className="flex items-center gap-4">
+                      <div className="flex items-center gap-1.5 text-emerald-400 text-sm font-semibold">
+                        <ArrowUpRight size={14} />
+                        {s.impact}
+                      </div>
+                      <span className="text-[#1e293b]">|</span>
+                      <span className="text-xs text-[#64748b]">{t.effort}: {(s.effort as Record<string,string>)[locale] ?? s.effort.en}</span>
+                    </div>
                   </div>
                 </div>
-              </div>
-            </Card>
+              </Card>
+              {isLocked && (
+                <div className="absolute inset-0 flex items-center justify-center rounded-2xl bg-[#0a0e1a]/60 backdrop-blur-sm">
+                  <Link
+                    href="/pricing"
+                    className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-[#FFD700] text-[#0a0e1a] font-semibold text-sm hover:bg-[#FFC700] transition-colors"
+                  >
+                    <Lock size={14} />
+                    {locale === "ja" ? "Proプランで詳細を表示" : "Upgrade to Pro for details"}
+                  </Link>
+                </div>
+              )}
+            </div>
           );
         })}
       </div>
