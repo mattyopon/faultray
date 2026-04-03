@@ -391,7 +391,7 @@ export default function TeamsPage() {
     return (
       <div className="max-w-[900px] mx-auto px-6 py-20 flex items-center justify-center gap-3 text-[#64748b]">
         <Loader2 size={20} className="animate-spin" />
-        <span>Loading organization...</span>
+        <span>組織を読み込み中...</span>
       </div>
     );
   }
@@ -687,7 +687,7 @@ export default function TeamsPage() {
         {tasksLoading ? (
           <div className="flex items-center justify-center py-12 gap-3 text-[#64748b]">
             <Loader2 size={18} className="animate-spin" />
-            <span>Loading tasks...</span>
+            <span>タスクを読み込み中...</span>
           </div>
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">

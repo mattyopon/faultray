@@ -814,7 +814,11 @@ function loadTaskStates(): TaskStatesMap {
 }
 
 function saveTaskStates(states: TaskStatesMap): void {
-  localStorage.setItem(TASK_STORAGE_KEY, JSON.stringify(states));
+  try {
+    localStorage.setItem(TASK_STORAGE_KEY, JSON.stringify(states));
+  } catch {
+    // QuotaExceededError: storage full — silently ignore to avoid breaking UX
+  }
 }
 
 function getTaskState(states: TaskStatesMap, actionId: number): TaskState {

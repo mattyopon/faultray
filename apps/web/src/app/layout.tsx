@@ -48,6 +48,18 @@ export const metadata: Metadata = {
     "DORA compliance",
   ],
   metadataBase: new URL("https://faultray.com"),
+  // HTTP-05: robots metaタグを明示的に設定
+  robots: {
+    index: true,
+    follow: true,
+    googleBot: {
+      index: true,
+      follow: true,
+      "max-video-preview": -1,
+      "max-image-preview": "large",
+      "max-snippet": -1,
+    },
+  },
   alternates: {
     canonical: BASE,
     languages: LOCALE_MAP,
@@ -136,7 +148,9 @@ export default function RootLayout({
 }>) {
   const gaId = process.env.NEXT_PUBLIC_GA_ID;
   // ANALYTICS-04: Hotjar ID — set NEXT_PUBLIC_HOTJAR_ID env var to enable heatmap/session recording
-  const hotjarId = process.env.NEXT_PUBLIC_HOTJAR_ID;
+  // Validate as numeric-only to prevent XSS via env var injection
+  const rawHotjarId = process.env.NEXT_PUBLIC_HOTJAR_ID;
+  const hotjarId = rawHotjarId && /^\d+$/.test(rawHotjarId) ? rawHotjarId : undefined;
 
   // I18N-04: Detect locale from cookie/Accept-Language for html lang attribute
   // Falls back to "en" for root layout; locale-specific layouts override via their own html element

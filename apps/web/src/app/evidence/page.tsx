@@ -389,7 +389,14 @@ const INCIDENT_REPORTS: IncidentReport[] = [
 // ─── Helper: Download JSON ────────────────────────────────────
 
 function downloadJson(data: unknown, filename: string) {
-  const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
+  let json: string;
+  try {
+    json = JSON.stringify(data, null, 2);
+  } catch {
+    // Circular reference or non-serializable value — fall back to safe string
+    json = JSON.stringify({ error: "Data could not be serialized", timestamp: new Date().toISOString() }, null, 2);
+  }
+  const blob = new Blob([json], { type: "application/json" });
   const url = URL.createObjectURL(blob);
   const a = document.createElement("a");
   a.href = url;

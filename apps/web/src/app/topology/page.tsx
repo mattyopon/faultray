@@ -298,9 +298,9 @@ export default function TopologyPage() {
     setLoading(true);
     try {
       const result = await api.getGraphData();
-      const graphData = result as unknown as GraphData;
-      if (graphData.nodes && graphData.edges) {
-        setData(graphData);
+      // Validate shape before casting to GraphData
+      if (result && Array.isArray(result.nodes) && Array.isArray(result.edges)) {
+        setData(result as unknown as GraphData);
       }
     } catch {
       // Use demo data

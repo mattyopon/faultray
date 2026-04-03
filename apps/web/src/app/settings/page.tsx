@@ -664,7 +664,9 @@ export default function SettingsPage() {
           </h3>
           <div className="flex gap-2">
             <input
+              id="settings-coupon-code"
               type="text"
+              aria-label={locale === "ja" ? "クーポンコード" : "Coupon code"}
               placeholder="FRAY-XXXX-XXXX-XXXX"
               value={couponCode}
               onChange={(e) => setCouponCode(e.target.value.toUpperCase())}
@@ -828,8 +830,9 @@ export default function SettingsPage() {
         <p className="text-sm text-[#94a3b8] mb-6">{t.integrationsDesc}</p>
         <div className="space-y-4">
           <div>
-            <label className="block text-sm text-[#64748b] mb-1">{t.jiraDomain}</label>
+            <label htmlFor="settings-jira-domain" className="block text-sm text-[#64748b] mb-1">{t.jiraDomain}</label>
             <input
+              id="settings-jira-domain"
               type="text"
               value={integrations.jiraDomain}
               onChange={(e) => setIntegrations({ ...integrations, jiraDomain: e.target.value })}
@@ -838,8 +841,9 @@ export default function SettingsPage() {
             />
           </div>
           <div>
-            <label className="block text-sm text-[#64748b] mb-1">{t.backlogSpace}</label>
+            <label htmlFor="settings-backlog-space" className="block text-sm text-[#64748b] mb-1">{t.backlogSpace}</label>
             <input
+              id="settings-backlog-space"
               type="text"
               value={integrations.backlogSpace}
               onChange={(e) => setIntegrations({ ...integrations, backlogSpace: e.target.value })}
@@ -848,25 +852,25 @@ export default function SettingsPage() {
             />
           </div>
           <div>
-            <label className="block text-sm text-[#64748b] mb-1">{t.slackWebhook}</label>
+            <label htmlFor="settings-slack-webhook" className="block text-sm text-[#64748b] mb-1">{t.slackWebhook}</label>
             <input
+              id="settings-slack-webhook"
               type="text"
               value={integrations.slackWebhook}
               onChange={(e) => setIntegrations({ ...integrations, slackWebhook: e.target.value })}
               className="w-full bg-white/[0.05] border border-[#1e293b] rounded-lg px-3 py-2 text-sm text-white focus:border-[#FFD700] focus:outline-none"
               placeholder={t.slackWebhookPlaceholder}
-              aria-label="Slack Webhook URL"
             />
           </div>
           <div>
-            <label className="block text-sm text-[#64748b] mb-1">{t.teamsWebhook ?? "Microsoft Teams Webhook URL"}</label>
+            <label htmlFor="settings-teams-webhook" className="block text-sm text-[#64748b] mb-1">{t.teamsWebhook ?? "Microsoft Teams Webhook URL"}</label>
             <input
+              id="settings-teams-webhook"
               type="text"
               value={integrations.teamsWebhook}
               onChange={(e) => setIntegrations({ ...integrations, teamsWebhook: e.target.value })}
               className="w-full bg-white/[0.05] border border-[#1e293b] rounded-lg px-3 py-2 text-sm text-white focus:border-[#FFD700] focus:outline-none"
               placeholder={t.teamsWebhookPlaceholder ?? "https://outlook.office.com/webhook/..."}
-              aria-label="Microsoft Teams Webhook URL"
             />
           </div>
           {integrationsError && (
