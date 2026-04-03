@@ -38,7 +38,7 @@ jobs:
           python -m mypy src/faultray/model/ --ignore-missing-imports
 
       - name: Run property-based tests
-        run: pytest tests/test_property_based.py -v --tb=short
+        run: pytest tests/test_property_based.py -v --tb=short --noconftest
 
       - name: Run tests
         run: |

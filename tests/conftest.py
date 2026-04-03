@@ -113,11 +113,11 @@ def auth_client():
 # ---------------------------------------------------------------------------
 
 def _install_e2e_httpx_redirect():
-    """Monkey-patch httpx.post to redirect specific faultray.com endpoints.
+    """Monkey-patch httpx.get/post to redirect faultray.com /api/* to local app.
 
-    Only redirects endpoints that require a running server with state
-    (simulate, APM) to the local FastAPI app.  Other endpoints continue
-    to hit the live deployment so existing passing tests are unaffected.
+    All /api/* requests are served locally to eliminate network dependency,
+    rate-limiting issues, and auth mismatches in CI.  Non-API paths (HTML
+    pages like /onboarding) still go to production if reachable.
     """
     try:
         import httpx
@@ -132,21 +132,38 @@ def _install_e2e_httpx_redirect():
     _local_client = TestClient(app, raise_server_exceptions=False)
     _local_client.headers["Authorization"] = f"Bearer {TEST_API_KEY}"
 
-    # Endpoints to redirect locally (those failing against production)
-    _LOCAL_POST_PATHS = ("/api/simulate", "/api/apm/")
-
+    _orig_get = httpx.get
     _orig_post = httpx.post
 
-    def _redirected_post(url, **kwargs):
-        url_str = str(url)
+    def _should_redirect(url_str: str) -> str | None:
+        """Return local path if the URL should be redirected, else None."""
         if "faultray.com" in url_str:
             path = url_str.split("faultray.com", 1)[1]
-            if any(path.startswith(p) for p in _LOCAL_POST_PATHS):
-                kwargs.pop("timeout", None)
-                return _local_client.post(path, **kwargs)
+            if path.startswith("/api/"):
+                return path
+        return None
+
+    def _redirected_get(url, **kwargs):
+        path = _should_redirect(str(url))
+        if path is not None:
+            kwargs.pop("timeout", None)
+            return _local_client.get(path, **kwargs)
+        return _orig_get(url, **kwargs)
+
+    def _redirected_post(url, **kwargs):
+        path = _should_redirect(str(url))
+        if path is not None:
+            kwargs.pop("timeout", None)
+            return _local_client.post(path, **kwargs)
         return _orig_post(url, **kwargs)
 
+    httpx.get = _redirected_get  # type: ignore[assignment]
     httpx.post = _redirected_post  # type: ignore[assignment]
 
 
-_install_e2e_httpx_redirect()
+try:
+    _install_e2e_httpx_redirect()
+except Exception:
+    # CI environments without a database will fail here — that's OK,
+    # the redirect is only needed for E2E tests that hit the local API.
+    pass
