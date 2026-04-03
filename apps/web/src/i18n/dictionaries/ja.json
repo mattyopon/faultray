@@ -181,14 +181,14 @@
       "productionRisk": "高",
       "setupTime": "数日",
       "scenarios": "手動設定",
-      "startingCost": "$10,000+/年"
+      "startingCost": "¥1,500,000+/年"
     },
     "steadybit": {
       "approach": "Real Fault Injection",
       "productionRisk": "中",
       "setupTime": "数時間",
       "scenarios": "テンプレートベース",
-      "startingCost": "$5,000+/年"
+      "startingCost": "¥750,000+/年"
     },
     "awsFis": {
       "approach": "Real Fault Injection",
