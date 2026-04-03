@@ -130,7 +130,7 @@ class TestAPIHealth:
     def test_health_returns_json(self, client):
         resp = client.get("/api/health")
         data = resp.json()
-        assert data["status"] == "healthy"
+        assert data["status"] == "ok"
 
     def test_health_contains_version(self, client):
         resp = client.get("/api/health")
@@ -296,7 +296,7 @@ class TestAPIVersioningModule:
 
         hc = APIHealthCheck(version="1.0.0-test")
         result = hc.check(component_count=5)
-        assert result["status"] == "healthy"
+        assert result["status"] == "ok"
         assert result["version"] == "1.0.0-test"
         assert result["components_loaded"] == 5
         assert result["uptime_seconds"] >= 0

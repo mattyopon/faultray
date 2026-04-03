@@ -226,10 +226,10 @@ async def list_projects(user=Depends(_require_permission("view_results"))):
                     "team_id": row.team_id,
                     "created_at": row.created_at.isoformat() if row.created_at else None,
                 })
-            return JSONResponse(projects)
+            return JSONResponse({"projects": projects, "count": len(projects)})
     except Exception as exc:
         logger.debug("Could not list projects: %s", exc)
-        return JSONResponse([])
+        return JSONResponse({"projects": [], "count": 0, "note": "Database not available"})
 
 
 # ---------------------------------------------------------------------------

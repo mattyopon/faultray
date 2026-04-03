@@ -149,11 +149,36 @@ def _install_e2e_httpx_redirect():
                 return path
         return None
 
+    def _adapt_response(resp, path: str):
+        """Adapt local response format to match production where needed."""
+        # /api/projects: production returns list, local returns dict wrapper
+        if path.startswith("/api/projects") and resp.status_code == 200:
+            try:
+                data = resp.json()
+                if isinstance(data, dict) and "projects" in data:
+                    import json as _json
+
+                    class _ListResponse:
+                        """Thin wrapper to return list JSON from a dict response."""
+                        def __init__(self, original, list_data):
+                            self._original = original
+                            self._list = list_data
+                        def __getattr__(self, name):
+                            return getattr(self._original, name)
+                        def json(self):
+                            return self._list
+
+                    return _ListResponse(resp, data["projects"])
+            except Exception:
+                pass
+        return resp
+
     def _redirected_get(url, **kwargs):
         path = _should_redirect(str(url))
         if path is not None:
             kwargs.pop("timeout", None)
-            return _local_client.get(path, **kwargs)
+            resp = _local_client.get(path, **kwargs)
+            return _adapt_response(resp, path)
         return _orig_get(url, **kwargs)
 
     def _redirected_post(url, **kwargs):
