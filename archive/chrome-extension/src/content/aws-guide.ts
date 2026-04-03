@@ -15,35 +15,89 @@ interface AwsStep {
 }
 
 const AWS_STEPS: AwsStep[] = [
+  // ── AWSアカウント作成（持っていない人向け） ──
   {
     step: 1,
-    title: "IAMダッシュボードに移動",
-    url: "https://console.aws.amazon.com/iam/",
-    instruction: "左メニューの「ユーザー」をクリックしてください",
-    highlight: "a[href*='users']",
+    title: "AWSアカウントを作成する",
+    url: "https://portal.aws.amazon.com/billing/signup",
+    instruction:
+      "AWSアカウントをまだお持ちでない方はこちらから作成します。\n\n" +
+      "① メールアドレスとパスワードを入力\n" +
+      "② アカウント名は会社名でOK（例: MyCompany）\n" +
+      "③ 連絡先情報とクレジットカードを登録\n" +
+      "④ 電話認証を完了\n\n" +
+      "💡 既にAWSアカウントをお持ちの方は「次へ」で飛ばしてください",
   },
+  // ── AWSコンソールにログイン ──
   {
     step: 2,
-    title: "ユーザーを作成",
-    url: "https://console.aws.amazon.com/iam/home#/users/create",
-    instruction: "「ユーザーの作成」ボタンをクリックし、ユーザー名に「faultray-readonly」と入力してください",
+    title: "AWSコンソールにログイン",
+    url: "https://console.aws.amazon.com/",
+    instruction:
+      "AWSコンソール（管理画面）にログインします。\n\n" +
+      "① 上のURLをクリックするとAWSの画面が開きます\n" +
+      "② メールアドレスとパスワードを入力してログイン\n\n" +
+      "💡 「ルートユーザー」でログインしてください",
   },
+  // ── IAMに移動 ──
   {
     step: 3,
-    title: "ReadOnlyAccessポリシーを付与",
-    instruction: "「ポリシーを直接アタッチする」を選択し、「ReadOnlyAccess」を検索してチェックを入れてください",
+    title: "IAM（アクセス管理）画面に移動",
+    url: "https://console.aws.amazon.com/iam/",
+    instruction:
+      "IAMとは、AWSの「誰が何をできるか」を管理する画面です。\n" +
+      "ここでFaultRay専用の読み取り専用ユーザーを作ります。\n\n" +
+      "① 画面上部の検索バーに「IAM」と入力\n" +
+      "② 「IAM」をクリック\n" +
+      "③ 左のメニューから「ユーザー」をクリック",
+    highlight: "a[href*='users']",
   },
+  // ── ユーザー作成 ──
   {
     step: 4,
-    title: "アクセスキーを作成",
+    title: "FaultRay専用ユーザーを作成",
+    url: "https://console.aws.amazon.com/iam/home#/users/create",
     instruction:
-      "ユーザー詳細画面の「セキュリティ認証情報」タブを開き、「アクセスキーを作成」をクリックしてください",
+      "FaultRayがAWSの構成情報を読み取るための専用ユーザーを作ります。\n\n" +
+      "① 右上の「ユーザーの作成」ボタンをクリック\n" +
+      "② ユーザー名に faultray-readonly と入力\n" +
+      "③ 「次へ」をクリック",
   },
+  // ── 権限設定 ──
   {
     step: 5,
-    title: "キーをFaultRayに送信",
+    title: "読み取り専用の権限を設定",
     instruction:
-      "アクセスキーIDとシークレットアクセスキーが表示されています。下のフォームに入力して「FaultRayに送信」を押してください",
+      "FaultRayには「読み取り専用」の権限だけを与えます。\n" +
+      "データを変更・削除する権限は一切付けません。安全です。\n\n" +
+      "① 「ポリシーを直接アタッチする」を選択\n" +
+      "② 検索バーに ReadOnlyAccess と入力\n" +
+      "③ 「ReadOnlyAccess」にチェックを入れる ✅\n" +
+      "④ 「次へ」→「ユーザーの作成」をクリック\n\n" +
+      "⚠️ 他の権限は付けないでください。ReadOnlyAccessだけで十分です",
+  },
+  // ── アクセスキー作成 ──
+  {
+    step: 6,
+    title: "アクセスキーを作成",
+    instruction:
+      "FaultRayがAWSに接続するための「鍵」を作成します。\n\n" +
+      "① 作成したユーザー「faultray-readonly」をクリック\n" +
+      "② 「セキュリティ認証情報」タブをクリック\n" +
+      "③ 「アクセスキーを作成」をクリック\n" +
+      "④ ユースケースで「サードパーティーサービス」を選択\n" +
+      "⑤ 確認チェックを入れて「次へ」→「アクセスキーを作成」",
+  },
+  // ── キー送信 ──
+  {
+    step: 7,
+    title: "キーをFaultRayに登録",
+    instruction:
+      "画面に「アクセスキーID」と「シークレットアクセスキー」が表示されています。\n\n" +
+      "① 下のフォームにそれぞれコピー＆ペースト\n" +
+      "② 「FaultRayに送信」ボタンを押す\n\n" +
+      "🔒 キーは暗号化されてFaultRayに安全に送信されます。\n" +
+      "送信後、このブラウザからキーは自動的に削除されます。",
     action: "capture_keys",
   },
 ];

@@ -282,11 +282,13 @@ function ConnectedScreen({ session, credentials, onSetup, onLogout }: ConnectedS
 // ── Screen: AWS Setup in progress ────────────────────────────────────────────
 
 const AWS_STEP_TITLES = [
-  "IAMダッシュボードに移動",
-  "ユーザーを作成",
-  "ReadOnlyAccessポリシーを付与",
+  "AWSアカウントを作成する",
+  "AWSコンソールにログイン",
+  "IAM（アクセス管理）画面に移動",
+  "FaultRay専用ユーザーを作成",
+  "読み取り専用の権限を設定",
   "アクセスキーを作成",
-  "キーをFaultRayに送信",
+  "キーをFaultRayに登録",
 ];
 const TOTAL_STEPS = AWS_STEP_TITLES.length;
 
@@ -297,8 +299,10 @@ interface SetupScreenProps {
 }
 
 const AWS_STEP_URLS: Record<number, string> = {
-  1: "https://console.aws.amazon.com/iam/",
-  2: "https://console.aws.amazon.com/iam/home#/users/create",
+  1: "https://portal.aws.amazon.com/billing/signup",
+  2: "https://console.aws.amazon.com/",
+  3: "https://console.aws.amazon.com/iam/",
+  4: "https://console.aws.amazon.com/iam/home#/users/create",
 };
 
 function SetupScreen({ setupState, onOpenConsole, onCancel }: SetupScreenProps) {
