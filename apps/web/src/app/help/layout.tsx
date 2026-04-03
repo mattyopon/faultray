@@ -4,6 +4,13 @@ export const metadata: Metadata = {
   title: "Help & User Guide",
   description:
     "FaultRay user guide — getting started, dashboard, simulation, DORA compliance, settings, and FAQ.",
+  alternates: {
+    canonical: "https://faultray.com/help",
+  },
+  robots: {
+    index: true,
+    follow: true,
+  },
 };
 
 export default function HelpLayout({

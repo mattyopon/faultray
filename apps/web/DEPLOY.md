@@ -1,5 +1,8 @@
 # FaultRay SaaS Deployment Guide
 
+> **Before deploying**: Run through [DEPLOY_CHECKLIST.md](./DEPLOY_CHECKLIST.md) to verify all environment variables, auth providers, and Supabase configuration.
+> This guide covers architecture and step-by-step setup.
+
 ## Architecture
 
 ```

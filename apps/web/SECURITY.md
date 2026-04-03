@@ -60,5 +60,14 @@ Dependencies are monitored via:
 
 ## Bug Bounty
 
-There is currently no formal bug bounty program. Responsible disclosure is
-appreciated and credited in release notes.
+There is currently no formal monetary bug bounty program.
+However, responsible disclosure is actively encouraged and recognized:
+
+- **Hall of Fame**: Reporters who disclose valid vulnerabilities are credited in our `CHANGELOG.md` and on our website (unless anonymity is requested)
+- **Priority support**: Access to a dedicated support channel for researchers during the disclosure period
+- **Future program**: A formal monetary bug bounty program is planned for 2026. Researchers who disclose before launch will be grandfathered in
+
+**In scope**: Authentication bypasses, RLS policy violations, SSRF, injection attacks, data exposure via API
+**Out of scope**: Denial of service, rate limit bypass (already mitigated), brute force on non-production systems
+
+Report to: security@faultray.com
