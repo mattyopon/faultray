@@ -126,7 +126,7 @@ export default function LogsPage() {
   const anomalyCount = DEMO_LOGS.filter((l) => l.anomaly).length;
 
   return (
-    <div className="max-w-[1200px] mx-auto px-6 py-10">
+    <div className="w-full px-6 py-10">
       {/* Header */}
       <div className="mb-8">
         <h1 className="text-2xl font-bold mb-1 flex items-center gap-3">

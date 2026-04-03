@@ -77,7 +77,7 @@ const typeBadge: Record<Release["type"], { label: string; className: string }> =
 
 export default function ChangelogPage() {
   return (
-    <div className="max-w-[800px] mx-auto px-6 py-20">
+    <div className="w-full px-6 py-10">
       <div className="mb-12">
         <h1 className="text-3xl font-bold tracking-tight mb-3">Changelog</h1>
         <p className="text-[#94a3b8]">

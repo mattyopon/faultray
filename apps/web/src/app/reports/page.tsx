@@ -169,7 +169,7 @@ export default function ReportsPage() {
   const rl = reportLang;
 
   return (
-    <div className="max-w-[1200px] mx-auto px-6 py-10">
+    <div className="w-full px-6 py-10">
       <div className="flex items-center justify-between mb-10">
         <div>
           <h1 className="text-2xl font-bold mb-1 flex items-center gap-3">
