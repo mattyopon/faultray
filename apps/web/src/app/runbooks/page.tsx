@@ -190,6 +190,7 @@ const DEMO_RUNBOOKS = [
 ];
 
 function RunbookCard({ rb, t }: { rb: typeof DEMO_RUNBOOKS[0]; t: Record<string, string> }) {
+  const locale = useLocale();
   const [expanded, setExpanded] = useState(false);
   const [activeTab, setActiveTab] = useState<"steps" | "templates">("steps");
   const [copied, setCopied] = useState("");
@@ -230,13 +231,13 @@ function RunbookCard({ rb, t }: { rb: typeof DEMO_RUNBOOKS[0]; t: Record<string,
               onClick={() => setActiveTab("steps")}
               className={`px-3 py-1.5 text-sm rounded-md transition-colors ${activeTab === "steps" ? "bg-[#FFD700]/10 text-[#FFD700]" : "text-[#64748b] hover:text-white"}`}
             >
-              Response Steps
+              {locale === "ja" ? "対応手順" : "Response Steps"}
             </button>
             <button
               onClick={() => setActiveTab("templates")}
               className={`px-3 py-1.5 text-sm rounded-md transition-colors ${activeTab === "templates" ? "bg-[#FFD700]/10 text-[#FFD700]" : "text-[#64748b] hover:text-white"}`}
             >
-              Comm Templates
+              {locale === "ja" ? "通知テンプレート" : "Comm Templates"}
             </button>
           </div>
 
@@ -278,7 +279,7 @@ function RunbookCard({ rb, t }: { rb: typeof DEMO_RUNBOOKS[0]; t: Record<string,
                       className="flex items-center gap-1 text-xs text-[#64748b] hover:text-[#FFD700] transition-colors"
                     >
                       <Copy size={12} />
-                      {copied === key ? "Copied!" : t.copyTemplate}
+                      {copied === key ? (locale === "ja" ? "コピー済み!" : "Copied!") : t.copyTemplate}
                     </button>
                   </div>
                   <pre className="text-xs text-[#94a3b8] whitespace-pre-wrap font-mono">{content}</pre>
