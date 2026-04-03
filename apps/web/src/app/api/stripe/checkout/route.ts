@@ -65,20 +65,16 @@ export async function POST(request: Request) {
     );
   }
 
-  // Authenticate user via Supabase
-  let userId: string | undefined;
-  try {
-    const { createClient } = await import("@/lib/supabase/server");
-    const supabase = await createClient();
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
-    if (user) {
-      userId = user.id;
-    }
-  } catch {
-    // Supabase auth is optional for checkout initiation
+  // API-01: 認証必須 — ログインユーザーのみチェックアウト可能
+  const { createClient } = await import("@/lib/supabase/server");
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
+  const userId = user.id;
 
   // APIPERF-05: Stripe API呼び出しにタイムアウトを設定（デフォルト80sを30sに短縮）
   const stripe = new Stripe(secretKey, { timeout: 30000 });

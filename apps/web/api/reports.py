@@ -749,4 +749,5 @@ class handler(BaseHTTPRequestHandler):
         self._json(status, {"error": {"message": message}})
 
     def _cors_headers(self):
-        self.send_header("Access-Control-Allow-Origin", "*")
+        allowed_origin = os.environ.get("FAULTRAY_ALLOWED_ORIGIN", "https://faultray.com")
+        self.send_header("Access-Control-Allow-Origin", allowed_origin)
