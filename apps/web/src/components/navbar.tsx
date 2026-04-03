@@ -313,7 +313,7 @@ export function Navbar() {
       {/* Top Navbar */}
       <nav
         role="navigation"
-        aria-label="Main navigation"
+        aria-label={locale === "ja" ? "メインナビゲーション" : "Main navigation"}
         className={`fixed top-0 left-0 right-0 z-50 backdrop-blur-xl transition-colors ${
           scrolled
             ? "border-b border-[#1e293b] bg-[#0a0e1a]/90"
@@ -326,7 +326,7 @@ export function Navbar() {
               <button
                 className="p-2 text-[#94a3b8] hover:text-white transition-colors md:hidden"
                 onClick={() => setMobileOpen(!mobileOpen)}
-                aria-label={mobileOpen ? "Close navigation menu" : "Open navigation menu"}
+                aria-label={mobileOpen ? (locale === "ja" ? "ナビゲーションメニューを閉じる" : "Close navigation menu") : (locale === "ja" ? "ナビゲーションメニューを開く" : "Open navigation menu")}
                 aria-expanded={mobileOpen}
               >
                 {mobileOpen ? <X size={20} /> : <Menu size={20} />}
@@ -418,7 +418,7 @@ export function Navbar() {
             <button
               className="md:hidden p-2 text-[#94a3b8]"
               onClick={() => setMobileOpen(!mobileOpen)}
-              aria-label={mobileOpen ? "Close navigation menu" : "Open navigation menu"}
+              aria-label={mobileOpen ? (locale === "ja" ? "ナビゲーションメニューを閉じる" : "Close navigation menu") : (locale === "ja" ? "ナビゲーションメニューを開く" : "Open navigation menu")}
               aria-expanded={mobileOpen}
             >
               {mobileOpen ? <X size={22} /> : <Menu size={22} />}
