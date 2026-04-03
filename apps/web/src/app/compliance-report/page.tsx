@@ -129,6 +129,7 @@ export default function ComplianceReportPage() {
   const [generating, setGenerating] = useState(false);
   const locale = useLocale();
   const t = appDict.complianceReport[locale] ?? appDict.complianceReport.en;
+  const { showToast, toasts, dismiss } = useToast();
 
   const fw = FRAMEWORK_DATA[selected];
 
@@ -139,6 +140,12 @@ export default function ComplianceReportPage() {
       setGenerating(false);
       const params = new URLSearchParams({ framework: selected, locale });
       window.open(`/api/reports?action=report&format=html&${params.toString()}`, "_blank");
+      showToast(
+        locale === "ja"
+          ? `${selected} レポートを生成しました`
+          : `${selected} report generated`,
+        "success"
+      );
     }, 1500);
   };
 
@@ -259,6 +266,14 @@ export default function ComplianceReportPage() {
           ))}
         </div>
       </Card>
+      {toasts.map((toast) => (
+        <Toast
+          key={toast.id}
+          message={toast.message}
+          variant={toast.variant}
+          onDismiss={() => dismiss(toast.id)}
+        />
+      ))}
     </div>
   );
 }
