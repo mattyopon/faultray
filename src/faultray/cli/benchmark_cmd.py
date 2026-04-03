@@ -57,6 +57,13 @@ def benchmark(
     # Load graph for benchmarking
     graph = _load_graph_for_analysis(model, yaml_file)
 
+    # Normalize aliases: "banking" is an alias for "fintech"
+    _INDUSTRY_ALIASES: dict[str, str] = {
+        "banking": "fintech",
+    }
+    if industry:
+        industry = _INDUSTRY_ALIASES.get(industry, industry)
+
     if all_industries:
         _compare_all_industries(engine, graph, json_output)
     elif industry:

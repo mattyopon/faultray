@@ -89,14 +89,18 @@ def anomaly(
             a for a in filtered_anomalies if a.severity == severity
         ]
 
+    total_components = len(graph.components)
+    anomaly_rate = (report.total_count / total_components * 100) if total_components > 0 else 0.0
+
     if json_output:
         data = {
-            "total_components_analyzed": report.total_components_analyzed,
-            "anomaly_rate": report.anomaly_rate,
+            "total_components_analyzed": total_components,
+            "anomaly_rate": round(anomaly_rate, 1),
             "critical_count": report.critical_count,
-            "warning_count": report.warning_count,
-            "healthiest_components": report.healthiest_components,
-            "most_anomalous_components": report.most_anomalous_components,
+            "high_count": report.high_count,
+            "health_score": report.health_score,
+            "risk_areas": report.risk_areas,
+            "top_recommendations": report.top_recommendations,
             "anomalies": [
                 {
                     "type": a.anomaly_type.value,
@@ -116,7 +120,7 @@ def anomaly(
         console.print_json(json_mod.dumps(data, indent=2, default=str))
         return
 
-    _print_anomaly_report(report, filtered_anomalies, console)
+    _print_anomaly_report(report, filtered_anomalies, console, total_components, anomaly_rate)
 
 
 # ---------------------------------------------------------------------------
@@ -133,26 +137,33 @@ def _severity_color(severity: str) -> str:
     return "dim"
 
 
-def _print_anomaly_report(report, anomalies: list, con: Console) -> None:
+def _print_anomaly_report(
+    report, anomalies: list, con: Console,
+    total_components: int = 0, anomaly_rate: float = 0.0,
+) -> None:
     """Print the full anomaly report with Rich formatting."""
     # Summary
-    total = report.total_components_analyzed
-    rate_color = "green" if report.anomaly_rate < 20 else "yellow"
-    if report.anomaly_rate > 50:
+    total = total_components
+    rate_color = "green" if anomaly_rate < 20 else "yellow"
+    if anomaly_rate > 50:
         rate_color = "red"
+
+    high_count = report.high_count
+    other_count = len(anomalies) - report.critical_count - high_count
 
     summary = (
         f"[bold]Components Analyzed:[/] {total}\n"
-        f"[bold]Anomaly Rate:[/] [{rate_color}]{report.anomaly_rate:.1f}%[/]\n"
+        f"[bold]Anomaly Rate:[/] [{rate_color}]{anomaly_rate:.1f}%[/]\n"
+        f"[bold]Health Score:[/] {report.health_score:.1f}/100\n"
         f"[bold]Critical:[/] [red]{report.critical_count}[/]  |  "
-        f"[bold]Warning:[/] [yellow]{report.warning_count}[/]  |  "
-        f"[bold]Info:[/] {len(anomalies) - report.critical_count - report.warning_count}"
+        f"[bold]High:[/] [yellow]{high_count}[/]  |  "
+        f"[bold]Other:[/] {other_count}"
     )
 
-    if report.healthiest_components:
-        summary += f"\n[bold]Healthiest:[/] {', '.join(report.healthiest_components[:3])}"
-    if report.most_anomalous_components:
-        summary += f"\n[bold]Most Issues:[/] {', '.join(report.most_anomalous_components[:3])}"
+    if report.risk_areas:
+        summary += f"\n[bold]Risk Areas:[/] {', '.join(report.risk_areas[:3])}"
+    if report.top_recommendations:
+        summary += f"\n[bold]Top Rec:[/] {report.top_recommendations[0][:80]}"
 
     con.print()
     con.print(Panel(summary, title="[bold]Anomaly Detection Summary[/]", border_style="cyan"))
@@ -172,32 +183,32 @@ def _print_anomaly_report(report, anomalies: list, con: Console) -> None:
     table.add_column("Type", width=22)
     table.add_column("Component", width=18, style="cyan")
     table.add_column("Description", width=50)
-    table.add_column("Z-Score", width=8, justify="right")
+    table.add_column("Confidence", width=10, justify="right")
 
     for i, a in enumerate(anomalies, 1):
-        sev_color = _severity_color(a.severity)
-        z_str = f"{a.z_score:.2f}" if a.z_score is not None else "-"
+        sev_color = _severity_color(a.severity.value)
+        conf_str = f"{a.confidence:.0%}"
 
         table.add_row(
             str(i),
-            f"[{sev_color}]{a.severity.upper()}[/]",
+            f"[{sev_color}]{a.severity.value.upper()}[/]",
             a.anomaly_type.value,
             a.component_name,
             a.description[:80] + ("..." if len(a.description) > 80 else ""),
-            z_str,
+            conf_str,
         )
 
     con.print()
     con.print(table)
 
     # Detailed findings for critical anomalies
-    critical = [a for a in anomalies if a.severity == "critical"]
+    critical = [a for a in anomalies if a.severity.value == "critical"]
     if critical:
         con.print()
         con.print("[bold red]Critical Findings:[/]")
         for a in critical:
             con.print(f"\n  [bold red]{a.component_name}[/] ({a.anomaly_type.value})")
             con.print(f"  {a.description}")
-            con.print(f"  [dim]Expected: {a.expected_value} | Actual: {a.actual_value}[/]")
+            con.print(f"  [dim]Expected: {a.expected_range} | Actual: {a.metric_value}[/]")
             if a.recommendation:
                 con.print(f"  [green]Recommendation: {a.recommendation}[/]")

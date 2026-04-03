@@ -20,48 +20,9 @@
 
 ---
 
-FaultRay simulates **2,000+ failure scenarios** entirely in memory — mathematically proving your availability ceiling before anything breaks. Built for financial institutions that need to prove DORA compliance without risking production systems.
+FaultRay simulates **hundreds to thousands of failure scenarios** entirely in memory — mathematically proving your availability ceiling before anything breaks. Built for financial institutions that need to prove DORA compliance without risking production systems.
 
 ## Demo
-
-```
-$ pip install faultray
-$ faultray demo
-
- Initializing FaultRay simulation engine...
- Loading 2,000+ failure scenarios...
-
-╭────────────────────────────────────────────────────────────────╮
-│                FaultRay Chaos Simulation Report                │
-│                                                                │
-│  Infrastructure: 3-tier web application (12 components)        │
-│  Simulation depth: 2,048 failure scenarios                     │
-╰────────────────────────────────────────────────────────────────╯
-
-  Simulating failures ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 100%  2.1s
-
-┌─────────────────────────────────────────────────────────────┐
-│  Resilience Score:   72/100  ████████████████░░░░  GOOD     │
-│  Critical findings:  3                                      │
-│  Warnings:           14                                     │
-│  Passed scenarios:   1,987                                  │
-│  DORA compliance:    48/52 controls assessed                │
-└─────────────────────────────────────────────────────────────┘
-
-  CRITICAL  [DB-01]  database (single replica) — SPOF detected
-             P(failure): 2.3%/year → $1.2M revenue at risk
-             Fix: Add replica + automated failover
-
-  CRITICAL  [LB-02]  load balancer missing health checks
-             Cascading failure probability: 67%
-             Fix: Configure /health endpoint with 2s timeout
-
-  WARNING   [CACHE-01]  Redis not replicated across AZs
-             Impact: 4.2h downtime/year estimated
-
-  Generate HTML report: faultray simulate model.json --html report.html
-  Generate DORA evidence: faultray dora evidence model.json
-```
 
 ```bash
 pip install faultray
@@ -69,12 +30,24 @@ faultray demo
 ```
 
 ```
+Building demo infrastructure...
+╭────────────────────────────────────────────────────╮
+│ Metric           │ Value                           │
+│ Components       │ 9                               │
+│ Dependencies     │ 12                              │
+│ Resilience Score │ 50.0/100                        │
+╰────────────────────────────────────────────────────╯
+
+Running chaos simulation...
+
 ╭────────── FaultRay Chaos Simulation Report ──────────╮
-│ Resilience Score: 36/100                             │
-│ Scenarios tested: 2,000+                             │
-│ Critical: 7  Warning: 66  Passed: 77                 │
-│ DORA Compliance: 48/52 controls assessed             │
+│ Resilience Score: 50/100                             │
+│ Scenarios tested: 255                                │
+│ Critical: 21  Warning: 84  Passed: 150               │
 ╰──────────────────────────────────────────────────────╯
+
+  Generate HTML report: faultray simulate --html report.html
+  Generate DORA evidence: faultray dora evidence infra.yaml
 ```
 
 ## Why Financial Institutions Choose FaultRay
@@ -108,7 +81,7 @@ faultray dora gap-analysis model.json        # Control gaps + remediation
 faultray dora incident-assess model.json     # Incident readiness evaluation
 
 # Pillar 3: Resilience Testing (Articles 24-27)
-faultray simulate model.json --json          # 2,000+ scenario simulation
+faultray simulate --model model.json --json  # chaos scenario simulation
 faultray dora test-plan model.json           # Generate resilience test plan
 faultray dora tlpt-readiness model.json      # TLPT preparation assessment
 

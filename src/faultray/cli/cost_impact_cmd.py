@@ -83,21 +83,21 @@ def cost_report_cmd(
 
     # Run static simulation to get failure scenarios
     sim_engine = SimulationEngine(graph)
-    sim_results = sim_engine.run_all()
+    sim_report = sim_engine.run_all_defaults()
 
     # Calculate cost for each scenario
     breakdowns = []
-    for result in sim_results:
-        scenario_name = getattr(result, "scenario_name", None) or getattr(result, "name", "unknown")
-        affected = getattr(result, "affected_components", None) or []
-        if isinstance(affected, set):
-            affected = list(affected)
+    for result in sim_report.results:
+        scenario_name = result.scenario.name
 
-        # Estimate downtime based on severity
-        severity = getattr(result, "severity", 5.0)
-        downtime = severity * 6  # rough mapping: severity 10 = 60 min
+        # affected_components: component IDs from cascade effects
+        affected = [e.component_id for e in result.cascade.effects]
 
-        cascade = getattr(result, "cascade_depth", 1) or 1
+        # Estimate downtime based on risk_score (0-10 scale → 0-60 min)
+        severity = result.risk_score
+        downtime = severity * 6  # rough mapping: risk_score 10 = 60 min
+
+        cascade = len(result.cascade.effects) or 1
 
         bd = cost_engine.calculate_scenario_cost(
             scenario_name=scenario_name,
