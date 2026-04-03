@@ -185,7 +185,7 @@ export default function ReportsPage() {
               value={reportLang}
               onChange={(e) => setReportLang(e.target.value as "en" | "ja")}
               aria-label={locale === "ja" ? "レポート言語" : "Report language"}
-              className="bg-transparent text-sm text-[#94a3b8] focus:outline-none cursor-pointer"
+              className="bg-transparent text-sm text-[#94a3b8] focus:outline-none focus:ring-1 focus:ring-[#FFD700]/50 rounded cursor-pointer"
             >
               <option value="en">{t.english}</option>
               <option value="ja">{t.japanese}</option>
