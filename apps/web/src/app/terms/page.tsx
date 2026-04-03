@@ -314,9 +314,58 @@ export default function TermsPage() {
           </p>
         </section>
 
-        {/* 11. Changes */}
+        {/* 11. Anti-Social Forces Exclusion */}
         <section>
-          <h2 className="text-xl font-semibold text-white mb-4">11. Changes to These Terms</h2>
+          <h2 className="text-xl font-semibold text-white mb-4">
+            11. Exclusion of Anti-Social Forces
+          </h2>
+          <p className="mb-3">
+            You represent and warrant that you are not, and none of your officers, directors,
+            employees, agents, or affiliates are, any of the following (collectively,
+            &quot;Anti-Social Forces&quot;):
+          </p>
+          <ul className="space-y-2 ml-4 mb-4">
+            {[
+              "An organized crime group (boryokudan) or a member thereof.",
+              "A quasi-member of an organized crime group.",
+              "A company or organization affiliated with, controlled by, or substantially influenced by an organized crime group.",
+              "A corporate extortionist (sokaiya), a group engaging in criminal activities under the pretext of social movements, or a crime group specialized in intellectual crimes.",
+              "Any other person equivalent to the above.",
+            ].map((item) => (
+              <li key={item} className="flex items-start gap-2">
+                <span className="text-red-400 shrink-0 mt-1">✕</span>
+                <span>{item}</span>
+              </li>
+            ))}
+          </ul>
+          <p className="mb-3">
+            You further represent and warrant that you will not, directly or indirectly:
+          </p>
+          <ul className="space-y-2 ml-4 mb-4">
+            {[
+              "Make violent demands or demands with threats.",
+              "Make unreasonable demands beyond legal liability.",
+              "Use threatening behavior or violence in connection with the Service.",
+              "Damage FaultRay's reputation or interfere with its business by spreading rumors or using fraudulent means.",
+              "Cause others to engage in any of the foregoing acts.",
+            ].map((item) => (
+              <li key={item} className="flex items-start gap-2">
+                <span className="text-red-400 shrink-0 mt-1">✕</span>
+                <span>{item}</span>
+              </li>
+            ))}
+          </ul>
+          <p>
+            If FaultRay determines that you or any associated party constitutes Anti-Social
+            Forces or engages in the prohibited conduct above, FaultRay may immediately
+            terminate your account without notice and without liability for any resulting
+            damages.
+          </p>
+        </section>
+
+        {/* 12. Changes */}
+        <section>
+          <h2 className="text-xl font-semibold text-white mb-4">12. Changes to These Terms</h2>
           <p>
             We may update these Terms from time to time. We will provide at least 30 days&apos;
             notice of material changes via email or a prominent notice in the Service. Continued
@@ -325,9 +374,9 @@ export default function TermsPage() {
           </p>
         </section>
 
-        {/* 12. Contact */}
+        {/* 13. Contact */}
         <section>
-          <h2 className="text-xl font-semibold text-white mb-4">12. Contact</h2>
+          <h2 className="text-xl font-semibold text-white mb-4">13. Contact</h2>
           <p className="mb-4">
             For questions about these Terms, contact us at:
           </p>
@@ -348,6 +397,9 @@ export default function TermsPage() {
       <div className="mt-16 pt-8 border-t border-[#1e293b] flex flex-wrap gap-6 text-sm text-[#64748b]">
         <Link href="/privacy" className="hover:text-white transition-colors">
           Privacy Policy
+        </Link>
+        <Link href="/dpa" className="hover:text-white transition-colors">
+          DPA
         </Link>
         <Link href="/contact" className="hover:text-white transition-colors">
           Contact

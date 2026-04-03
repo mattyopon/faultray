@@ -332,6 +332,8 @@ export function Navbar() {
 
       {/* Top Navbar */}
       <nav
+        role="navigation"
+        aria-label="Main navigation"
         className={`fixed top-0 left-0 right-0 z-50 backdrop-blur-xl transition-colors ${
           scrolled
             ? "border-b border-[#1e293b] bg-[#0a0e1a]/90"
