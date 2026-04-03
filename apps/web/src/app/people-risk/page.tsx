@@ -23,6 +23,8 @@ import {
   fetchSnapshots,
   fetchActions,
 } from "@/lib/people-risk/queries";
+import { useLocale } from "@/lib/useLocale";
+import { appDict } from "@/i18n/app-dict";
 import type {
   PeopleRiskSummary,
   RiskSnapshot,
@@ -100,6 +102,8 @@ export default function PeopleRiskDashboard() {
   const [snapshots, setSnapshots] = useState<RiskSnapshot[]>([]);
   const [actions, setActions] = useState<ActionWithSystem[]>([]);
   const [loading, setLoading] = useState(true);
+  const locale = useLocale();
+  const t = appDict.peopleRisk[locale] ?? appDict.peopleRisk.en;
 
   useEffect(() => {
     // FETCHPAT-04: Use Promise.allSettled so one failure doesn't block others
@@ -141,23 +145,23 @@ export default function PeopleRiskDashboard() {
         <div>
           <h1 className="text-2xl font-bold text-white flex items-center gap-2">
             <UserX size={24} className="text-[#FFD700]" />
-            属人化リスクダッシュボード
+            {t.title}
           </h1>
           <p className="text-sm text-[#94a3b8] mt-1">
-            誰に依存しているか、誰が退職したら何が壊れるかを可視化します
+            {t.subtitle}
           </p>
         </div>
         <div className="flex gap-2">
           <Link href="/people-risk/blast-radius">
             <Button variant="secondary" size="sm">
               <Zap size={14} />
-              退職シミュレーション
+              {t.blastRadiusTitle}
             </Button>
           </Link>
           <Link href="/people-risk/members">
             <Button size="sm">
               <Users size={14} />
-              メンバー一覧
+              {locale === "ja" ? "メンバー一覧" : "Members"}
             </Button>
           </Link>
         </div>
@@ -166,30 +170,30 @@ export default function PeopleRiskDashboard() {
       {/* Stats Grid */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         <StatCard
-          label="管理システム数"
+          label={locale === "ja" ? "管理システム数" : t.totalPeople}
           value={summary.totalSystems}
-          sub={`${summary.activeMembers}名が管理中`}
+          sub={locale === "ja" ? `${summary.activeMembers}名が管理中` : `${summary.activeMembers} active`}
           icon={Server}
           color="bg-blue-500/10 text-blue-400"
         />
         <StatCard
-          label="単一担当者依存"
+          label={t.singleDep}
           value={summary.singleOwnerSystems}
-          sub="Bus Factor = 1"
+          sub={t.busFactor}
           icon={AlertTriangle}
           color="bg-red-500/10 text-red-400"
         />
         <StatCard
-          label="平均リスクスコア"
+          label={t.avgRisk}
           value={summary.avgRiskScore}
-          sub="10が最大リスク"
+          sub={locale === "ja" ? "10が最大リスク" : "max risk = 10"}
           icon={Activity}
           color="bg-yellow-500/10 text-yellow-400"
         />
         <StatCard
-          label="退職済みメンバー"
+          label={locale === "ja" ? "退職済みメンバー" : "Left Members"}
           value={summary.leftMembers}
-          sub={`全${summary.totalMembers}名中`}
+          sub={locale === "ja" ? `全${summary.totalMembers}名中` : `of ${summary.totalMembers} total`}
           icon={UserX}
           color="bg-purple-500/10 text-purple-400"
         />
@@ -201,26 +205,26 @@ export default function PeopleRiskDashboard() {
         <Card className="p-6">
           <h2 className="text-sm font-semibold text-white mb-4 flex items-center gap-2">
             <Shield size={16} className="text-[#FFD700]" />
-            リスクレベル分布
+            {locale === "ja" ? "リスクレベル分布" : "Risk Level Distribution"}
           </h2>
           <div className="space-y-3">
             {[
               {
-                label: "危険（Critical）",
+                label: locale === "ja" ? "危険（Critical）" : "Critical",
                 count: summary.criticalCount,
                 total: summary.criticalCount + summary.warningCount + summary.safeCount,
                 color: "bg-red-500",
                 textColor: "text-red-400",
               },
               {
-                label: "注意（Warning）",
+                label: locale === "ja" ? "注意（Warning）" : "Warning",
                 count: summary.warningCount,
                 total: summary.criticalCount + summary.warningCount + summary.safeCount,
                 color: "bg-yellow-500",
                 textColor: "text-yellow-400",
               },
               {
-                label: "安全（Safe）",
+                label: locale === "ja" ? "安全（Safe）" : "Safe",
                 count: summary.safeCount,
                 total: summary.criticalCount + summary.warningCount + summary.safeCount,
                 color: "bg-emerald-500",
@@ -255,7 +259,7 @@ export default function PeopleRiskDashboard() {
         <Card className="p-6">
           <h2 className="text-sm font-semibold text-white mb-4 flex items-center gap-2">
             <TrendingDown size={16} className="text-emerald-400" />
-            週次リスクトレンド
+            {t.trendTitle}
           </h2>
           {snapshots.length > 0 ? (
             <div className="space-y-4">
@@ -329,7 +333,7 @@ export default function PeopleRiskDashboard() {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Quick Navigation */}
         <Card className="p-6">
-          <h2 className="text-sm font-semibold text-white mb-4">クイックアクセス</h2>
+          <h2 className="text-sm font-semibold text-white mb-4">{locale === "ja" ? "クイックアクセス" : "Quick Access"}</h2>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             {[
               {
