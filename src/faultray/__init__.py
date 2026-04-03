@@ -6,7 +6,7 @@
 __version__ = "11.1.0"
 
 
-def __getattr__(name: str):
+def __getattr__(name: str) -> object:
     """Lazy imports for the public API surface.
 
     This ensures ``import faultray`` never fails even when optional

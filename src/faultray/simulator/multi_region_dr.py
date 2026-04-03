@@ -115,7 +115,7 @@ class MultiRegionDREngine:
 
         # RPO calculation
         if self.config.replication_mode == ReplicationMode.SYNCHRONOUS:
-            rpo = 0
+            rpo: float = 0.0
         elif self.config.replication_mode == ReplicationMode.SEMI_SYNCHRONOUS:
             rpo = self.config.replication_lag_seconds
         else:

@@ -572,10 +572,10 @@ class DORALearningEngine:
 
         # --- 2. Action follow-through score ---
         all_actions: list[ImprovementAction] = []
-        for r in self._incident_reviews:
-            all_actions.extend(r.improvement_actions)
-        for r in self._test_records:
-            all_actions.extend(r.improvement_actions)
+        for incident_r in self._incident_reviews:
+            all_actions.extend(incident_r.improvement_actions)
+        for test_r in self._test_records:
+            all_actions.extend(test_r.improvement_actions)
 
         if not all_actions:
             action_score = 0.0

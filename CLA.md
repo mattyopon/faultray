@@ -15,7 +15,7 @@ By signing this Agreement, you accept and agree to the following terms and condi
 
 Subject to the terms and conditions of this Agreement, You hereby grant to the Project Owner a perpetual, worldwide, non-exclusive, no-charge, royalty-free, irrevocable copyright license to reproduce, prepare derivative works of, publicly display, publicly perform, sublicense, and distribute Your Contributions and such derivative works.
 
-The Project Owner may relicense Your Contributions under any license, including but not limited to the Business Source License 1.1 (BSL-1.1) or any other open source or proprietary license.
+The Project Owner may relicense Your Contributions solely under OSI-approved open source licenses or the Business Source License 1.1 (BSL-1.1). The Project Owner will not relicense Your Contributions under any proprietary, closed-source, or non-OSI-approved license without Your written consent.
 
 ## 3. Grant of Patent License
 

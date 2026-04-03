@@ -14,9 +14,54 @@
   <a href="https://github.com/mattyopon/faultray"><img src="https://img.shields.io/badge/resilience-72%2F100-green" alt="Resilience Score"></a>
 </p>
 
+<p align="center">
+  <strong>☁️ <a href="https://faultray.com">Try FaultRay Cloud</a> — No setup required &nbsp;|&nbsp; <a href="https://faultray.com/demo">Live Demo</a></strong>
+</p>
+
 ---
 
 FaultRay simulates **2,000+ failure scenarios** entirely in memory — mathematically proving your availability ceiling before anything breaks. Built for financial institutions that need to prove DORA compliance without risking production systems.
+
+## Demo
+
+```
+$ pip install faultray
+$ faultray demo
+
+ Initializing FaultRay simulation engine...
+ Loading 2,000+ failure scenarios...
+
+╭────────────────────────────────────────────────────────────────╮
+│                FaultRay Chaos Simulation Report                │
+│                                                                │
+│  Infrastructure: 3-tier web application (12 components)        │
+│  Simulation depth: 2,048 failure scenarios                     │
+╰────────────────────────────────────────────────────────────────╯
+
+  Simulating failures ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 100%  2.1s
+
+┌─────────────────────────────────────────────────────────────┐
+│  Resilience Score:   72/100  ████████████████░░░░  GOOD     │
+│  Critical findings:  3                                      │
+│  Warnings:           14                                     │
+│  Passed scenarios:   1,987                                  │
+│  DORA compliance:    48/52 controls assessed                │
+└─────────────────────────────────────────────────────────────┘
+
+  CRITICAL  [DB-01]  database (single replica) — SPOF detected
+             P(failure): 2.3%/year → $1.2M revenue at risk
+             Fix: Add replica + automated failover
+
+  CRITICAL  [LB-02]  load balancer missing health checks
+             Cascading failure probability: 67%
+             Fix: Configure /health endpoint with 2s timeout
+
+  WARNING   [CACHE-01]  Redis not replicated across AZs
+             Impact: 4.2h downtime/year estimated
+
+  Generate HTML report: faultray simulate model.json --html report.html
+  Generate DORA evidence: faultray dora evidence model.json
+```
 
 ```bash
 pip install faultray

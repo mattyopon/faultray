@@ -13,6 +13,7 @@ import json
 import logging
 from datetime import datetime, timezone
 from pathlib import Path
+from typing import Any
 
 from faultray.simulator.scenarios import Fault, FaultType, Scenario
 
@@ -114,12 +115,13 @@ def load_feed_scenarios(store_path: Path = DEFAULT_STORE_FILE) -> list[Scenario]
     return scenarios
 
 
-def load_store_raw(store_path: Path = DEFAULT_STORE_FILE) -> dict:
+def load_store_raw(store_path: Path = DEFAULT_STORE_FILE) -> dict[str, Any]:
     """Load raw store data."""
     if not store_path.exists():
         return {"scenarios": [], "articles": [], "last_updated": None}
     try:
-        return json.loads(store_path.read_text())
+        data: dict[str, Any] = json.loads(store_path.read_text())
+        return data
     except (json.JSONDecodeError, OSError) as exc:
         logger.warning("Could not read feed store at %s: %s", store_path, exc)
         return {"scenarios": [], "articles": [], "last_updated": None}

@@ -131,11 +131,11 @@ class AnomalyEngine:
         for rule in self.rules:
             if not rule.enabled:
                 continue
-            value = metrics_map.get(rule.metric_name)
-            if value is None:
+            metric_value: float | None = metrics_map.get(rule.metric_name)
+            if metric_value is None:
                 continue
 
-            breached = self._check_condition(value, rule.condition, rule.threshold)
+            breached = self._check_condition(metric_value, rule.condition, rule.threshold)
             key = (agent_id, rule.name)
 
             if breached:
@@ -265,7 +265,7 @@ class AnomalyEngine:
         fn = ops.get(condition)
         if fn is None:
             return False
-        return fn(value, threshold)
+        return bool(fn(value, threshold))
 
     @staticmethod
     def _detect_trend(values: list[float]) -> str:

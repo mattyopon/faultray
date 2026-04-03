@@ -153,6 +153,9 @@ class ResilienceForecastEngine:
     ) -> None:
         self._snapshots = sorted(snapshots, key=lambda s: s.timestamp)
         self._slo = slo_threshold
+        self._days: list[float]
+        self._scores: list[float]
+        self._smoothed: list[float]
         if self._snapshots:
             self._origin = self._snapshots[0].timestamp
             self._days = [
@@ -163,9 +166,9 @@ class ResilienceForecastEngine:
             self._smoothed = _moving_average(self._scores)
         else:
             self._origin = datetime.now(timezone.utc)
-            self._days: list[float] = []
-            self._scores: list[float] = []
-            self._smoothed: list[float] = []
+            self._days = []
+            self._scores = []
+            self._smoothed = []
 
     # ── Public API ───────────────────────────────────────────
 

@@ -335,7 +335,7 @@ class PluginManager:
                 from importlib.metadata import entry_points
 
                 all_eps = entry_points()
-                eps = all_eps.get("faultzero.plugins", [])
+                eps = all_eps.get("faultzero.plugins", [])  # type: ignore[assignment,var-annotated]
 
             for ep in eps:
                 try:
@@ -486,7 +486,7 @@ class PluginManager:
             )
 
         plugin = cls_or_factory() if callable(cls_or_factory) else cls_or_factory
-        return plugin  # type: ignore[return-value]
+        return plugin  # type: ignore[return-value,no-any-return]
 
     def _is_allowed_plugin_path(self, py_file: Path) -> bool:
         """Check that *py_file* resides inside one of the configured plugin directories."""
@@ -549,7 +549,7 @@ class PluginManager:
                 and attr_name != "PluginInterface"
             ):
                 instance = obj()
-                return instance  # type: ignore[return-value]
+                return instance  # type: ignore[return-value,no-any-return]
 
         raise RuntimeError(
             f"No plugin class found in {py_file}. "

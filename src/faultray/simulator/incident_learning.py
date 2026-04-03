@@ -209,7 +209,7 @@ class IncidentLearningEngine:
         """Create a chaos scenario template from a single incident."""
         sid = hashlib.sha256(incident.incident_id.encode()).hexdigest()[:12]
 
-        steps = []
+        steps: list[dict[str, str | int | float]] = []
         for step_template in _CATEGORY_FAILURE_STEPS.get(incident.category, []):
             step = {
                 k: (v.replace("{component}", incident.root_cause_component) if isinstance(v, str) else v)
@@ -228,8 +228,8 @@ class IncidentLearningEngine:
             f"Detection within {detection:.1f} minutes",
             f"Recovery within {recovery:.1f} minutes",
         ]
-        for step in incident.mitigation_steps:
-            criteria.append(f"Mitigation applied: {step}")
+        for mitigation_step in incident.mitigation_steps:
+            criteria.append(f"Mitigation applied: {mitigation_step}")
 
         scenario = ChaosScenarioTemplate(
             scenario_id=f"chaos-{sid}",
