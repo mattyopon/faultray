@@ -1,0 +1,24 @@
+{
+  "name": "faultray-chrome-extension",
+  "version": "1.0.0",
+  "description": "Guided setup for connecting AWS/GCP/Azure to FaultRay",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "node build.mjs",
+    "build:prod": "NODE_ENV=production node build.mjs",
+    "build:icons": "node scripts/generate-icons.mjs",
+    "typecheck": "tsc --noEmit",
+    "lint": "eslint src --ext .ts,.tsx",
+    "quality": "npm run typecheck"
+  },
+  "devDependencies": {
+    "@types/chrome": "^0.0.287",
+    "@types/react": "^18.3.12",
+    "@types/react-dom": "^18.3.1",
+    "esbuild": "^0.25.0",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "typescript": "^5.7.2"
+  }
+}
