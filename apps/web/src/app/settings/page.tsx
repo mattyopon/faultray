@@ -765,6 +765,39 @@ export default function SettingsPage() {
         )}
       </Card>
 
+      {/* JOURNEY-05: 紹介プログラム */}
+      <Card className="mb-6">
+        <div className="flex items-center gap-3 mb-4">
+          <Gift size={20} className="text-[#FFD700]" />
+          <h2 className="text-lg font-bold">{locale === "ja" ? "紹介プログラム" : "Refer a Friend"}</h2>
+        </div>
+        <p className="text-sm text-[#94a3b8] mb-4">
+          {locale === "ja"
+            ? "FaultRayをチームに紹介してください。紹介した方がProプランに登録すると、両者に1ヶ月分のクレジットを付与します。"
+            : "Share FaultRay with your team. When they subscribe to Pro, you both get 1 month free."}
+        </p>
+        <div className="p-4 rounded-xl bg-[#0d1117] border border-[#1e293b] flex items-center gap-3">
+          <code className="flex-1 text-sm font-mono text-[#FFD700]">
+            https://faultray.com/?ref={user?.email?.split("@")[0] ?? "yourname"}
+          </code>
+          <button
+            onClick={() => {
+              const url = `https://faultray.com/?ref=${user?.email?.split("@")[0] ?? "yourname"}`;
+              navigator.clipboard.writeText(url);
+            }}
+            className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-lg bg-[#1e293b] text-[#94a3b8] hover:text-white hover:bg-[#2d3748] transition-colors shrink-0"
+          >
+            <Copy size={12} />
+            {locale === "ja" ? "コピー" : "Copy"}
+          </button>
+        </div>
+        <p className="text-xs text-[#475569] mt-3">
+          {locale === "ja"
+            ? "※ クレジットは紹介先の有料登録確認後に付与されます。紹介プログラムは近日公開予定です。"
+            : "Credits are applied after the referred user's paid subscription is confirmed. Program coming soon."}
+        </p>
+      </Card>
+
       {/* Notifications */}
       <Card className="mb-6">
         <div className="flex items-center justify-between mb-6">

@@ -168,6 +168,8 @@ function PillarCard({ pillar, expanded, onToggle, locale }: { pillar: DoraPillar
 
 export default function CompliancePage() {
   const [expandedPillar, setExpandedPillar] = useState<string | null>("pillar1");
+  // DORA-03: サマリーモードとデータモードの切替でUIの圧倒感を軽減
+  const [detailMode, setDetailMode] = useState(false);
   const locale = useLocale();
   const t = appDict.compliance[locale] ?? appDict.compliance.en;
   const dp = appDict.doraPillars[locale] ?? appDict.doraPillars.en;
@@ -244,6 +246,24 @@ export default function CompliancePage() {
         </Card>
       </div>
 
+      {/* DORA-03: サマリー/詳細切替ボタン */}
+      <div className="flex justify-end mb-4">
+        <div className="flex rounded-lg overflow-hidden border border-[#1e293b]">
+          <button
+            onClick={() => setDetailMode(false)}
+            className={`px-4 py-2 text-xs font-semibold transition-colors ${!detailMode ? "bg-[#FFD700] text-[#0a0e1a]" : "text-[#94a3b8] hover:text-white hover:bg-white/5"}`}
+          >
+            {locale === "ja" ? "サマリー" : "Summary"}
+          </button>
+          <button
+            onClick={() => setDetailMode(true)}
+            className={`px-4 py-2 text-xs font-semibold transition-colors ${detailMode ? "bg-[#FFD700] text-[#0a0e1a]" : "text-[#94a3b8] hover:text-white hover:bg-white/5"}`}
+          >
+            {locale === "ja" ? "詳細" : "Details"}
+          </button>
+        </div>
+      </div>
+
       {/* 5 Pillar Progress Overview */}
       <Card className="mb-8">
         <h3 className="text-lg font-bold mb-4 flex items-center gap-2">
@@ -277,18 +297,20 @@ export default function CompliancePage() {
         </div>
       </Card>
 
-      {/* Pillar Details */}
-      <div className="space-y-4 mb-8">
-        {DORA_PILLARS.map((pillar) => (
-          <PillarCard
-            key={pillar.id}
-            pillar={pillar}
-            expanded={expandedPillar === pillar.id}
-            onToggle={() => setExpandedPillar(expandedPillar === pillar.id ? null : pillar.id)}
-            locale={locale}
-          />
-        ))}
-      </div>
+      {/* Pillar Details — DORA-03: 詳細モードのみ表示 */}
+      {detailMode && (
+        <div className="space-y-4 mb-8">
+          {DORA_PILLARS.map((pillar) => (
+            <PillarCard
+              key={pillar.id}
+              pillar={pillar}
+              expanded={expandedPillar === pillar.id}
+              onToggle={() => setExpandedPillar(expandedPillar === pillar.id ? null : pillar.id)}
+              locale={locale}
+            />
+          ))}
+        </div>
+      )}
 
       {/* Priority Action List */}
       <Card>

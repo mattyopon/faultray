@@ -306,20 +306,27 @@ export default function DashboardPage() {
         </div>
       )}
 
-      {/* Sample data banner */}
+      {/* DEMO-05: デモデータと本番データの明確な区別バナー */}
       {isSampleMode && (
         <div className="mb-6 px-5 py-3.5 rounded-xl border border-blue-500/30 bg-blue-500/[0.06] flex items-center justify-between gap-4 flex-wrap">
           <div className="flex items-center gap-2.5">
             <Info size={16} className="text-blue-400 shrink-0" />
-            <span className="text-sm text-[#94a3b8]">
-              これはサンプルデータです。自分のインフラで試してみましょう
-            </span>
+            <div>
+              <span className="text-xs font-bold text-blue-400 uppercase tracking-wider mr-2">
+                {locale === "ja" ? "サンプルデータ" : "SAMPLE DATA"}
+              </span>
+              <span className="text-sm text-[#94a3b8]">
+                {locale === "ja"
+                  ? "実際のデータではありません。自分のインフラで試してみましょう。"
+                  : "This is not real data. Run your first simulation to see real results."}
+              </span>
+            </div>
           </div>
           <Link
             href="/simulate"
             className="flex items-center gap-1.5 text-xs font-semibold text-blue-400 border border-blue-500/30 px-3 py-1.5 rounded-lg hover:bg-blue-500/10 transition-colors whitespace-nowrap"
           >
-            シミュレーションを実行 <ArrowRight size={12} />
+            {locale === "ja" ? "シミュレーションを実行 →" : "Run Simulation →"}
           </Link>
         </div>
       )}
