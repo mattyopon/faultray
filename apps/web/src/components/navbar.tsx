@@ -22,6 +22,7 @@ import {
   Bot,
   Settings,
   HelpCircle,
+  LifeBuoy,
   Menu,
   X,
   LogOut,
@@ -58,7 +59,7 @@ import {
 import type { PlanTier } from "@/components/auth-provider";
 
 /** Pages accessible on Free plan */
-const FREE_PAGES = new Set(["/dashboard", "/simulate", "/topology", "/dora", "/reports"]);
+const FREE_PAGES = new Set(["/dashboard", "/simulate", "/topology", "/dora", "/reports", "/help", "/support"]);
 import { locales, type Locale } from "@/i18n/config";
 import { appDict } from "@/i18n/app-dict";
 import { useLocale } from "@/lib/useLocale";
@@ -191,6 +192,7 @@ function getNavGroups(t: Record<string, string>, te: Record<string, string>) {
       items: [
         { href: "/settings", label: t.settings, icon: Settings },
         { href: "/help",     label: t.help,     icon: HelpCircle },
+        { href: "/support",  label: t.support,  icon: LifeBuoy },
       ],
     },
   ];

@@ -31,6 +31,8 @@ import {
   Layers,
   Activity,
   ChevronUp,
+  Mail,
+  Star,
 } from "lucide-react";
 import Link from "next/link";
 import { useLocale } from "@/lib/useLocale";
@@ -494,6 +496,109 @@ function businessSummary(score: number, availability: string, criticalCount: num
   };
 }
 
+/**
+ * SALES-04: リードナーチャリング
+ * After running a simulation, capture email for weekly reliability tips.
+ * Stores opted-in state to localStorage to avoid repeated prompts.
+ */
+function NurtureEmailCapture() {
+  const [email, setEmail] = useState("");
+  const [submitted, setSubmitted] = useState(false);
+  const [dismissed, setDismissed] = useState(false);
+
+  // Check if user already opted in or dismissed
+  useEffect(() => {
+    try {
+      const prefs = JSON.parse(localStorage.getItem("faultray_notifications") ?? "{}") as Record<string, unknown>;
+      if (prefs.nurtureOptedIn === true || prefs.nurtureDismissed === true) {
+        setDismissed(true);
+      }
+    } catch {
+      // localStorage unavailable — skip
+    }
+  }, []);
+
+  if (dismissed) return null;
+
+  function handleSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    if (!email) return;
+    // Store opt-in in localStorage (backend integration point for drip sequence)
+    try {
+      const raw = localStorage.getItem("faultray_notifications");
+      const prefs = raw ? (JSON.parse(raw) as Record<string, unknown>) : {};
+      prefs.nurtureOptedIn = true;
+      prefs.nurtureEmail = email;
+      prefs.nurtureTimestamp = new Date().toISOString();
+      localStorage.setItem("faultray_notifications", JSON.stringify(prefs));
+    } catch {
+      // localStorage unavailable
+    }
+    setSubmitted(true);
+  }
+
+  function handleDismiss() {
+    try {
+      const raw = localStorage.getItem("faultray_notifications");
+      const prefs = raw ? (JSON.parse(raw) as Record<string, unknown>) : {};
+      prefs.nurtureDismissed = true;
+      localStorage.setItem("faultray_notifications", JSON.stringify(prefs));
+    } catch {
+      // localStorage unavailable
+    }
+    setDismissed(true);
+  }
+
+  return (
+    <div className="p-5 rounded-2xl border border-[#FFD700]/20 bg-gradient-to-br from-[#FFD700]/[0.04] to-transparent">
+      {submitted ? (
+        <div className="flex items-center gap-3">
+          <Star size={20} className="text-[#FFD700] shrink-0" />
+          <div>
+            <p className="text-sm font-semibold text-[#e2e8f0]">You&apos;re in! Weekly reliability tips coming your way.</p>
+            <p className="text-xs text-[#64748b] mt-0.5">Check your inbox — unsubscribe anytime.</p>
+          </div>
+        </div>
+      ) : (
+        <div>
+          <div className="flex items-start justify-between mb-3">
+            <div className="flex items-center gap-2">
+              <Mail size={18} className="text-[#FFD700]" />
+              <p className="text-sm font-semibold">Get Weekly Reliability Insights</p>
+            </div>
+            <button
+              onClick={handleDismiss}
+              className="text-[#475569] hover:text-white text-xs transition-colors"
+              aria-label="Dismiss"
+            >
+              ✕
+            </button>
+          </div>
+          <p className="text-xs text-[#94a3b8] mb-4">
+            One email/week: reliability benchmarks, failure case studies, and new FaultRay features. No spam.
+          </p>
+          <form onSubmit={handleSubmit} className="flex gap-2">
+            <input
+              type="email"
+              required
+              value={email}
+              onChange={(e) => { setEmail(e.target.value); }}
+              placeholder="your@company.com"
+              className="flex-1 min-w-0 px-3 py-2 rounded-lg bg-[#0d1117] border border-[#1e293b] text-sm text-white placeholder-[#475569] focus:outline-none focus:border-[#FFD700]/50 transition-colors"
+            />
+            <button
+              type="submit"
+              className="px-4 py-2 rounded-lg bg-[#FFD700] text-[#0a0e1a] text-sm font-semibold hover:bg-[#ffe44d] transition-colors shrink-0"
+            >
+              Subscribe
+            </button>
+          </form>
+        </div>
+      )}
+    </div>
+  );
+}
+
 function ResultsPanel({ result, scanSummary, simulateT }: { result: SimulationResult; scanSummary?: CloudSimulationResult["scan_summary"]; simulateT: Record<string, string> }) {
   const scoreColor = result.overall_score >= 90 ? "text-emerald-400" : result.overall_score >= 70 ? "text-[#FFD700]" : "text-red-400";
   const summary = businessSummary(result.overall_score, result.availability_estimate, result.critical_failures.length);
@@ -598,6 +703,9 @@ function ResultsPanel({ result, scanSummary, simulateT }: { result: SimulationRe
       {result.simulation_log && (
         <SimulationLogPanel log={result.simulation_log} />
       )}
+
+      {/* SALES-04: リードナーチャリング — Weekly Insights capture */}
+      <NurtureEmailCapture />
     </div>
   );
 }

@@ -85,14 +85,12 @@ const NAV_HREFS: string[] = [
 // Pages that are referenced in the navbar but do not yet have page.tsx.
 // When a page is created, remove it from this set — the test will then
 // enforce its existence automatically.
-const KNOWN_MISSING = new Set([
-  "/sla-budget",
-  "/topology-map",
-  "/compliance-report",
-  "/shadow-it",
-  "/bus-factor",
-  "/vuln-priority",
-  "/external-impact",
+//
+// NOTE: /sla-budget, /topology-map, /compliance-report, /shadow-it,
+// /bus-factor, /vuln-priority, and /external-impact all have page.tsx now —
+// removed from KNOWN_MISSING.
+const KNOWN_MISSING = new Set<string>([
+  // (empty — all navbar pages now exist)
 ]);
 
 const APP_DIR = path.resolve(__dirname, "../../src/app");

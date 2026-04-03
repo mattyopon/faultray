@@ -1059,6 +1059,11 @@ export default async function LangHomePage({
                     System Status
                   </Link>
                 </li>
+                <li>
+                  <Link href="/support" className="text-sm text-[#64748b] hover:text-white transition-colors">
+                    Support Center
+                  </Link>
+                </li>
               </ul>
               <div className="mt-6">
                 <LanguageSwitcher />

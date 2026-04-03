@@ -29,8 +29,12 @@ describe("L8: XSS Prevention", () => {
   });
 
   it("no unexpected dangerouslySetInnerHTML usage in source files", () => {
-    // Known legitimate uses: i18n pages that render translated HTML
+    // Known legitimate uses:
+    // - app/layout.tsx: JSON-LD structured data (static constant, no user input)
+    //                   and inline theme-detection script (static string literal)
+    // - app/[lang]/page.tsx: i18n pages that render translated HTML
     const ALLOWED_DANGEROUS_HTML = new Set([
+      "app/layout.tsx",
       "app/[lang]/page.tsx",
     ]);
 
