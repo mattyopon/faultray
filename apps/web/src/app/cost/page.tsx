@@ -610,6 +610,7 @@ export default function CostPage() {
                 type="number"
                 value={revenuePerHour}
                 onChange={(e) => setRevenuePerHour(Number(e.target.value))}
+                aria-label={`${t.revenuePerHour} (${currencySymbol})`}
                 className="w-full px-3 py-2.5 bg-[#0d1117] border border-[#1e293b] rounded-lg text-sm font-mono text-[#e2e8f0] focus:border-[#FFD700]/50 focus:outline-none"
               />
               <input
@@ -619,6 +620,7 @@ export default function CostPage() {
                 step={1000}
                 value={revenuePerHour}
                 onChange={(e) => setRevenuePerHour(Number(e.target.value))}
+                aria-label={`${t.revenuePerHour} slider`}
                 className="w-full mt-1 accent-[#FFD700]"
               />
               <div className="flex justify-between text-xs text-[#64748b]">
@@ -635,6 +637,7 @@ export default function CostPage() {
                 type="number"
                 value={annualRevenue}
                 onChange={(e) => setAnnualRevenue(Number(e.target.value))}
+                aria-label={`${t.annualRevenue} (${currencySymbol})`}
                 className="w-full px-3 py-2.5 bg-[#0d1117] border border-[#1e293b] rounded-lg text-sm font-mono text-[#e2e8f0] focus:border-[#FFD700]/50 focus:outline-none"
               />
             </div>
@@ -665,6 +668,7 @@ export default function CostPage() {
                 max={100}
                 value={slaPenaltyRate}
                 onChange={(e) => setSlaPenaltyRate(Number(e.target.value))}
+                aria-label={`${t.slaPenaltyRate} (%)`}
                 className="w-full px-3 py-2.5 bg-[#0d1117] border border-[#1e293b] rounded-lg text-sm font-mono text-[#e2e8f0] focus:border-[#FFD700]/50 focus:outline-none"
               />
             </div>
@@ -680,6 +684,7 @@ export default function CostPage() {
                 max={100}
                 value={incidentTeamSize}
                 onChange={(e) => setIncidentTeamSize(Number(e.target.value))}
+                aria-label={t.incidentTeamSize}
                 className="w-full px-3 py-2.5 bg-[#0d1117] border border-[#1e293b] rounded-lg text-sm font-mono text-[#e2e8f0] focus:border-[#FFD700]/50 focus:outline-none"
               />
             </div>
@@ -694,6 +699,7 @@ export default function CostPage() {
                 max={500}
                 value={avgHourlyRate}
                 onChange={(e) => setAvgHourlyRate(Number(e.target.value))}
+                aria-label={`${t.avgHourlyRate} (${currencySymbol})`}
                 className="w-full px-3 py-2.5 bg-[#0d1117] border border-[#1e293b] rounded-lg text-sm font-mono text-[#e2e8f0] focus:border-[#FFD700]/50 focus:outline-none"
               />
             </div>
@@ -707,6 +713,7 @@ export default function CostPage() {
                 min={0}
                 value={cyberInsurancePremium}
                 onChange={(e) => setCyberInsurancePremium(Number(e.target.value))}
+                aria-label={`${t.cyberInsurance} (${currencySymbol}/${t.perYearLabel})`}
                 className="w-full px-3 py-2.5 bg-[#0d1117] border border-[#1e293b] rounded-lg text-sm font-mono text-[#e2e8f0] focus:border-[#FFD700]/50 focus:outline-none"
               />
             </div>
