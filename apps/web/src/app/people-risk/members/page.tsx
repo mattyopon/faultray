@@ -13,6 +13,7 @@ import {
   ChevronRight,
 } from "lucide-react";
 import { fetchMembers } from "@/lib/people-risk/queries";
+import { useLocale } from "@/lib/useLocale";
 import type { MemberWithSystems } from "@/lib/people-risk/types";
 
 function riskBadge(level: string | null) {
@@ -34,6 +35,7 @@ function memberRiskLevel(member: MemberWithSystems): "critical" | "warning" | "s
 }
 
 export default function MembersPage() {
+  const locale = useLocale();
   const [members, setMembers] = useState<MemberWithSystems[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
@@ -84,10 +86,10 @@ export default function MembersPage() {
         <div>
           <h1 className="text-2xl font-bold text-white flex items-center gap-2">
             <Users size={24} className="text-[#FFD700]" />
-            メンバー一覧
+            {locale === "ja" ? "メンバー一覧" : "Members"}
           </h1>
           <p className="text-sm text-[#94a3b8] mt-1">
-            {members.length}名のメンバーとシステム管理状況
+            {locale === "ja" ? `${members.length}名のメンバーとシステム管理状況` : `${members.length} members and their system ownership`}
           </p>
         </div>
       </div>
@@ -103,8 +105,8 @@ export default function MembersPage() {
             type="text"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            placeholder="名前・部署・役職で検索..."
-            aria-label="名前・部署・役職で検索"
+            placeholder={locale === "ja" ? "名前・部署・役職で検索..." : "Search by name, department, role..."}
+            aria-label={locale === "ja" ? "名前・部署・役職で検索" : "Search by name, department, role"}
             className="w-full pl-10 pr-4 py-2 bg-[#111827] border border-[#1e293b] rounded-lg text-sm text-white placeholder-[#64748b] focus:border-[#FFD700]/50 focus:outline-none"
           />
         </div>
@@ -174,7 +176,7 @@ export default function MembersPage() {
                   {/* Stats */}
                   <div className="hidden sm:flex items-center gap-4 text-xs">
                     <div className="text-center">
-                      <p className="text-[#64748b]">管理システム</p>
+                      <p className="text-[#64748b]">{locale === "ja" ? "管理システム" : "Systems"}</p>
                       <p className="text-white font-semibold">{systemCount}</p>
                     </div>
                     {criticalCount > 0 && (
@@ -203,7 +205,7 @@ export default function MembersPage() {
 
         {sorted.length === 0 && (
           <Card className="p-8 text-center">
-            <p className="text-[#64748b]">該当するメンバーがいません</p>
+            <p className="text-[#64748b]">{locale === "ja" ? "該当するメンバーがいません" : "No members found."}</p>
           </Card>
         )}
       </div>
