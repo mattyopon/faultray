@@ -213,10 +213,12 @@ export default function TracesPage() {
       <div className="mb-8">
         <h1 className="text-2xl font-bold mb-1 flex items-center gap-3">
           <Activity size={24} className="text-[#FFD700]" />
-          Distributed Tracing
+          {locale === "ja" ? "分散トレーシング" : "Distributed Tracing"}
         </h1>
         <p className="text-[#94a3b8] text-sm">
-          End-to-end request traces across services — identify bottlenecks and failures (Layer 0)
+          {locale === "ja"
+            ? "サービス間のエンドツーエンドリクエストトレース — ボトルネックと障害を特定 (Layer 0)"
+            : "End-to-end request traces across services — identify bottlenecks and failures (Layer 0)"}
         </p>
       </div>
 
@@ -229,10 +231,10 @@ export default function TracesPage() {
       {/* Summary Stats */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
         {[
-          { label: "Total Traces", value: DEMO_TRACES.length, color: "#e2e8f0" },
-          { label: "Errors", value: DEMO_TRACES.filter(t => t.status === "error").length, color: "#ef4444" },
-          { label: "Slow (>1s)", value: DEMO_TRACES.filter(t => t.durationMs > 1000).length, color: "#f59e0b" },
-          { label: "Avg Latency", value: `${Math.round(DEMO_TRACES.reduce((s, t) => s + t.durationMs, 0) / DEMO_TRACES.length)}ms`, color: "#10b981" },
+          { label: locale === "ja" ? "総トレース数" : "Total Traces",  value: DEMO_TRACES.length, color: "#e2e8f0" },
+          { label: locale === "ja" ? "エラー" : "Errors",              value: DEMO_TRACES.filter(t => t.status === "error").length, color: "#ef4444" },
+          { label: locale === "ja" ? "低速 (>1s)" : "Slow (>1s)",     value: DEMO_TRACES.filter(t => t.durationMs > 1000).length, color: "#f59e0b" },
+          { label: locale === "ja" ? "平均レイテンシ" : "Avg Latency", value: `${Math.round(DEMO_TRACES.reduce((s, t) => s + t.durationMs, 0) / DEMO_TRACES.length)}ms`, color: "#10b981" },
         ].map((stat) => (
           <Card key={stat.label} className="text-center">
             <p className="text-xs text-[#64748b] uppercase tracking-wider mb-1">{stat.label}</p>
@@ -246,7 +248,7 @@ export default function TracesPage() {
         <div className="flex flex-wrap items-center gap-3">
           <div className="flex items-center gap-2 text-[#64748b]">
             <Filter size={14} />
-            <span className="text-xs font-medium uppercase tracking-wider">Filters</span>
+            <span className="text-xs font-medium uppercase tracking-wider">{locale === "ja" ? "フィルター" : "Filters"}</span>
           </div>
           <div className="relative flex-1 min-w-[200px]">
             <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-[#64748b]" />
@@ -262,29 +264,29 @@ export default function TracesPage() {
             className="bg-[#0d1526] border border-[#1e293b] rounded-lg px-3 py-1.5 text-sm text-[#94a3b8] focus:outline-none"
             value={filterService}
             onChange={(e) => setFilterService(e.target.value)}
-            aria-label="Filter by service"
+            aria-label={locale === "ja" ? "サービスでフィルター" : "Filter by service"}
           >
-            <option value="all">All Services</option>
+            <option value="all">{locale === "ja" ? "全サービス" : "All Services"}</option>
             {ALL_SERVICES.map((s) => <option key={s} value={s}>{s}</option>)}
           </select>
           <select
             className="bg-[#0d1526] border border-[#1e293b] rounded-lg px-3 py-1.5 text-sm text-[#94a3b8] focus:outline-none"
             value={filterStatus}
             onChange={(e) => setFilterStatus(e.target.value)}
-            aria-label="Filter by status"
+            aria-label={locale === "ja" ? "ステータスでフィルター" : "Filter by status"}
           >
-            <option value="all">All Status</option>
+            <option value="all">{locale === "ja" ? "全ステータス" : "All Status"}</option>
             <option value="ok">OK</option>
-            <option value="slow">Slow</option>
-            <option value="error">Error</option>
+            <option value="slow">{locale === "ja" ? "低速" : "Slow"}</option>
+            <option value="error">{locale === "ja" ? "エラー" : "Error"}</option>
           </select>
           <select
             className="bg-[#0d1526] border border-[#1e293b] rounded-lg px-3 py-1.5 text-sm text-[#94a3b8] focus:outline-none"
             value={filterLatency}
             onChange={(e) => setFilterLatency(Number(e.target.value))}
-            aria-label="Filter by latency"
+            aria-label={locale === "ja" ? "レイテンシでフィルター" : "Filter by latency"}
           >
-            <option value={0}>Any Latency</option>
+            <option value={0}>{locale === "ja" ? "全レイテンシ" : "Any Latency"}</option>
             <option value={100}>{">"} 100ms</option>
             <option value={500}>{">"} 500ms</option>
             <option value={1000}>{">"} 1s</option>
