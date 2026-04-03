@@ -4,24 +4,28 @@ import { useState } from "react";
 import { FileText, Download, CheckCircle2, ArrowRight } from "lucide-react";
 import Link from "next/link";
 
-type Plan = "pro" | "business";
+type Plan = "starter" | "pro" | "business";
 
 const PLAN_MONTHLY: Record<Plan, string> = {
+  starter: "¥15,000",
   pro: "¥45,000",
   business: "¥150,000",
 };
 
 const PLAN_ANNUAL: Record<Plan, string> = {
+  starter: "¥143,000",
   pro: "¥430,000",
   business: "¥1,440,000",
 };
 
 const PLAN_USD_MONTHLY: Record<Plan, string> = {
+  starter: "$99",
   pro: "$299",
   business: "$999",
 };
 
 const PLAN_USD_ANNUAL: Record<Plan, string> = {
+  starter: "$949",
   pro: "$2,869",
   business: "$9,590",
 };
@@ -84,6 +88,7 @@ export function RingiForm() {
             onChange={(e) => setPlan(e.target.value as Plan)}
             className="px-3 py-2 rounded-lg bg-[#111827] border border-[#1e293b] text-white text-sm focus:outline-none focus:border-[#FFD700]/50"
           >
+            <option value="starter">Starter（¥15,000/月）</option>
             <option value="pro">Pro（¥45,000/月）</option>
             <option value="business">Business（¥150,000/月）</option>
           </select>
@@ -249,7 +254,11 @@ export function RingiForm() {
           <div className="space-y-2 text-sm">
             <p>
               <strong className="ringi-white text-white">申請金額:</strong>{" "}
-              {plan === "pro" ? `Proプラン年払い $2,869/年（約${PLAN_ANNUAL.pro}/年）` : `Businessプラン年払い $9,590/年（約${PLAN_ANNUAL.business}/年）`}
+              {plan === "starter"
+                ? `Starterプラン年払い ${PLAN_USD_ANNUAL.starter}/年（約${PLAN_ANNUAL.starter}/年）`
+                : plan === "pro"
+                ? `Proプラン年払い ${PLAN_USD_ANNUAL.pro}/年（約${PLAN_ANNUAL.pro}/年）`
+                : `Businessプラン年払い ${PLAN_USD_ANNUAL.business}/年（約${PLAN_ANNUAL.business}/年）`}
             </p>
             <p><strong className="ringi-white text-white">申請期間:</strong> 202X年X月〜202X年X月（1年間）</p>
             <p><strong className="ringi-white text-white">導入会社:</strong> {displayCompany}</p>

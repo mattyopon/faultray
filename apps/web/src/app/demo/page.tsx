@@ -360,16 +360,16 @@ export default function DemoPage() {
         </Card>
       </div>
 
-      {/* Feature highlights */}
+      {/* Feature highlights — i18n対応 */}
       <div className="grid sm:grid-cols-3 gap-6 mb-10">
-        {[
-          { icon: <Zap size={22} className="text-[#FFD700]" />, label: "Simulate in 30s", desc: "Paste YAML → instant risk score" },
-          { icon: <Shield size={22} className="text-emerald-400" />, label: "N-nine availability", desc: "Math-backed SLA prediction" },
-          { icon: <BarChart3 size={22} className="text-blue-400" />, label: "Cascade analysis", desc: "See failure blast radius" },
-          { icon: <FileText size={22} className="text-purple-400" />, label: "Audit-ready reports", desc: "PDF export for SOC 2 / DORA" },
-          { icon: <Lock size={22} className="text-red-400" />, label: "No data leaves", desc: "YAML processed in memory only" },
-          { icon: <CheckCircle2 size={22} className="text-[#FFD700]" />, label: "14-day Pro trial", desc: "No credit card required" },
-        ].map((item) => (
+        {([
+          { icon: <Zap size={22} className="text-[#FFD700]" />, label: locale === "ja" ? "30秒でシミュレーション" : "Simulate in 30s", desc: locale === "ja" ? "YAMLを貼るだけでリスクスコアを即算出" : "Paste YAML → instant risk score" },
+          { icon: <Shield size={22} className="text-emerald-400" />, label: locale === "ja" ? "N-nineの可用性予測" : "N-nine availability", desc: locale === "ja" ? "数学的裏付けのあるSLA予測" : "Math-backed SLA prediction" },
+          { icon: <BarChart3 size={22} className="text-blue-400" />, label: locale === "ja" ? "カスケード障害分析" : "Cascade analysis", desc: locale === "ja" ? "障害の影響範囲を可視化" : "See failure blast radius" },
+          { icon: <FileText size={22} className="text-purple-400" />, label: locale === "ja" ? "監査対応レポート" : "Audit-ready reports", desc: locale === "ja" ? "SOC 2 / DORA向けPDF出力" : "PDF export for SOC 2 / DORA" },
+          { icon: <Lock size={22} className="text-red-400" />, label: locale === "ja" ? "データ流出ゼロ" : "No data leaves", desc: locale === "ja" ? "YAMLはメモリ内のみで処理" : "YAML processed in memory only" },
+          { icon: <CheckCircle2 size={22} className="text-[#FFD700]" />, label: locale === "ja" ? "14日間Pro無料体験" : "14-day Pro trial", desc: locale === "ja" ? "クレジットカード不要" : "No credit card required" },
+        ] as Array<{ icon: React.ReactNode; label: string; desc: string }>).map((item) => (
           <div key={item.label} className="flex gap-3 p-4 rounded-xl bg-white/[0.02] border border-[#1e293b]">
             <div className="shrink-0 mt-0.5">{item.icon}</div>
             <div>

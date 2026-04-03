@@ -160,10 +160,32 @@ export default function ScoreDetailPage() {
             const factorLabel = (factor: string): string => {
               if (locale !== "ja") return factor;
               const map: Record<string, string> = {
+                // Hardware
+                "Server redundancy": "サーバー冗長構成",
+                "Disk RAID configuration": "ディスクRAID構成",
+                "Power supply redundancy": "電源の冗長化",
+                "Network interface bonding": "ネットワークインターフェースの冗長化",
+                // Software
+                "Application replicas": "アプリケーションレプリカ数",
+                "Health check coverage": "ヘルスチェックのカバー率不足",
                 "Circuit breaker patterns": "サーキットブレーカーの未実装",
+                "Graceful degradation": "グレースフルデグラデーション",
+                "Auto-scaling policies": "オートスケーリングポリシー",
+                // Theoretical
+                "Markov chain steady state": "マルコフ連鎖定常状態",
+                "MTBF/MTTR ratio": "MTBF/MTTR比率",
+                "Reliability block diagram": "信頼性ブロック図",
+                // Operational
                 "Runbook coverage": "運用ランブックの整備不足",
+                "On-call response time": "オンコール応答時間",
+                "Deployment rollback capability": "デプロイロールバック能力",
+                "Monitoring & alerting": "監視・アラート体制",
+                "Incident post-mortem process": "インシデント振り返りプロセス",
+                // External SLA
+                "Cloud provider SLA": "クラウドプロバイダーSLA",
                 "Third-party API reliability": "外部APIの信頼性不足",
-                "Health check coverage": "ヘルスチェックの不十分",
+                "DNS provider SLA": "DNSプロバイダーSLA",
+                "CDN availability": "CDN可用性",
               };
               return map[factor] ?? factor;
             };
