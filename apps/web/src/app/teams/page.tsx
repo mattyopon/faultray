@@ -520,7 +520,6 @@ export default function TeamsPage() {
                 {canChangeRole ? (
                   <select
                     value={member.role}
-                    aria-label="Change member role"
                     onChange={async (e) => {
                       const newRole = e.target.value;
                       try {
