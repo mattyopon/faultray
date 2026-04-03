@@ -67,6 +67,7 @@ export default function ResultsPage() {
             <select
               value={filter}
               onChange={(e) => setFilter(e.target.value as "all" | "passed" | "failed")}
+              aria-label={locale === "ja" ? "結果をフィルター" : "Filter results"}
               className="appearance-none bg-[#111827] border border-[#1e293b] rounded-lg px-4 py-2 pr-8 text-sm text-[#94a3b8] focus:outline-none focus:border-[#FFD700]/50"
             >
               <option value="all">{t.allResults}</option>

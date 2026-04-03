@@ -261,6 +261,7 @@ export default function TracesPage() {
             className="bg-[#0d1526] border border-[#1e293b] rounded-lg px-3 py-1.5 text-sm text-[#94a3b8] focus:outline-none"
             value={filterService}
             onChange={(e) => setFilterService(e.target.value)}
+            aria-label="Filter by service"
           >
             <option value="all">All Services</option>
             {ALL_SERVICES.map((s) => <option key={s} value={s}>{s}</option>)}
@@ -269,6 +270,7 @@ export default function TracesPage() {
             className="bg-[#0d1526] border border-[#1e293b] rounded-lg px-3 py-1.5 text-sm text-[#94a3b8] focus:outline-none"
             value={filterStatus}
             onChange={(e) => setFilterStatus(e.target.value)}
+            aria-label="Filter by status"
           >
             <option value="all">All Status</option>
             <option value="ok">OK</option>
@@ -279,6 +281,7 @@ export default function TracesPage() {
             className="bg-[#0d1526] border border-[#1e293b] rounded-lg px-3 py-1.5 text-sm text-[#94a3b8] focus:outline-none"
             value={filterLatency}
             onChange={(e) => setFilterLatency(Number(e.target.value))}
+            aria-label="Filter by latency"
           >
             <option value={0}>Any Latency</option>
             <option value={100}>{">"} 100ms</option>

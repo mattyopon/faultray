@@ -176,6 +176,7 @@ export default function LogsPage() {
             className="bg-[#0d1526] border border-[#1e293b] rounded-lg px-3 py-1.5 text-sm text-[#94a3b8] focus:outline-none"
             value={filterLevel}
             onChange={(e) => setFilterLevel(e.target.value)}
+            aria-label="Filter by log level"
           >
             <option value="all">All Levels</option>
             {ALL_LEVELS.map((l) => <option key={l} value={l}>{l}</option>)}
@@ -186,6 +187,7 @@ export default function LogsPage() {
             className="bg-[#0d1526] border border-[#1e293b] rounded-lg px-3 py-1.5 text-sm text-[#94a3b8] focus:outline-none"
             value={filterService}
             onChange={(e) => setFilterService(e.target.value)}
+            aria-label="Filter by service"
           >
             <option value="all">All Services</option>
             {ALL_SERVICES.map((s) => <option key={s} value={s}>{s}</option>)}
