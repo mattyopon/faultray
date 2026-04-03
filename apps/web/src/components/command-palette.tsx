@@ -4,6 +4,7 @@ import { useEffect, useRef, useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { Search, X } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
+import { useLocale } from "@/lib/useLocale";
 
 export interface CommandItem {
   href: string;
@@ -20,6 +21,7 @@ interface CommandPaletteProps {
 
 export function CommandPalette({ open, onClose, items }: CommandPaletteProps) {
   const router = useRouter();
+  const locale = useLocale();
   const [query, setQuery] = useState("");
   const [activeIndex, setActiveIndex] = useState(0);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -115,7 +117,7 @@ export function CommandPalette({ open, onClose, items }: CommandPaletteProps) {
       }}
       aria-modal="true"
       role="dialog"
-      aria-label="Command palette"
+      aria-label={locale === "ja" ? "コマンドパレット" : "Command palette"}
     >
       {/* Dim overlay */}
       <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={onClose} />
@@ -133,7 +135,7 @@ export function CommandPalette({ open, onClose, items }: CommandPaletteProps) {
             type="text"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
-            placeholder="Search pages..."
+            placeholder={locale === "ja" ? "ページを検索..." : "Search pages..."}
             className="flex-1 bg-transparent text-white placeholder-[#475569] text-sm outline-none"
             autoComplete="off"
             autoCorrect="off"
@@ -161,7 +163,7 @@ export function CommandPalette({ open, onClose, items }: CommandPaletteProps) {
         >
           {filtered.length === 0 ? (
             <p className="px-4 py-8 text-center text-sm text-[#475569]">
-              No results for &ldquo;{query}&rdquo;
+              {locale === "ja" ? `「${query}」の結果がありません` : <>No results for &ldquo;{query}&rdquo;</>}
             </p>
           ) : (
             filtered.map((item, index) => {
