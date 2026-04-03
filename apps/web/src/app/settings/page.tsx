@@ -352,6 +352,12 @@ export default function SettingsPage() {
       const next = { ...prev, [key]: !prev[key] };
       // Persist to localStorage so the setting survives page reloads (SAAS-04)
       try { localStorage.setItem("faultray_notifications", JSON.stringify(next)); } catch { /* ignore */ }
+      // RETAIN-02: Also persist to Supabase via API
+      fetch("/api/notification-preferences", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ [key]: next[key] }),
+      }).catch((err) => console.error("[settings] Failed to save notification preference:", err));
       setNotificationSaved(true);
       setTimeout(() => setNotificationSaved(false), 2000);
       return next;
