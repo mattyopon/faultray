@@ -67,7 +67,7 @@ export default function SecurityPage() {
     api
       .getAttackSurface()
       .then((result) => setData(result))
-      .catch(() => setData(DEMO_DATA))
+      .catch((err) => { console.error("[security] API error, using demo data:", err); setData(DEMO_DATA); })
       .finally(() => setLoading(false));
   }, []);
 

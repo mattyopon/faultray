@@ -83,7 +83,7 @@ export default function BusFactorPage() {
     fetch("/api/proxy?path=/api/v1/bus-factor", { signal: controller.signal })
       .then((r) => r.json())
       .then((d) => setData(d))
-      .catch(() => setData(DEMO_DATA))
+      .catch((err) => { console.error("[bus-factor] API error, using demo data:", err); setData(DEMO_DATA); })
       .finally(() => setLoading(false));
     return () => controller.abort();
   }, []);

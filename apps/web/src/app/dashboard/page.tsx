@@ -63,6 +63,7 @@ export default function DashboardPage() {
   const [runs, setRuns] = useState<SimulationRun[]>([]);
   const [projects, setProjects] = useState<Project[]>([]);
   const [loading, setLoading] = useState(true);
+  const [fetchError, setFetchError] = useState<string | null>(null);
   const locale = useLocale();
   const t = appDict.dashboard[locale] ?? appDict.dashboard.en;
   const tProjects = appDict.projects[locale] ?? appDict.projects.en;
@@ -83,8 +84,16 @@ export default function DashboardPage() {
 
   useEffect(() => {
     Promise.all([
-      api.getRuns(undefined, 5).then((data) => setRuns(data.runs || [])).catch(() => setRuns([])),
-      api.getProjects().then((data) => setProjects(Array.isArray(data) ? data.slice(0, 3) : [])).catch(() => setProjects([])),
+      api.getRuns(undefined, 5).then((data) => setRuns(data.runs || [])).catch((err) => {
+        console.error("[dashboard] Failed to fetch runs:", err);
+        setFetchError("データの取得に失敗しました");
+        setRuns([]);
+      }),
+      api.getProjects().then((data) => setProjects(Array.isArray(data) ? data.slice(0, 3) : [])).catch((err) => {
+        console.error("[dashboard] Failed to fetch projects:", err);
+        setFetchError("データの取得に失敗しました");
+        setProjects([]);
+      }),
     ]).finally(() => setLoading(false));
   }, []);
 
@@ -112,6 +121,12 @@ export default function DashboardPage() {
   return (
     <div className="max-w-[1200px] mx-auto px-6 py-10">
       <Onboarding />
+
+      {fetchError && (
+        <div className="mb-4 p-3 bg-red-500/10 border border-red-500/20 rounded-lg text-red-400 text-sm">
+          {fetchError}
+        </div>
+      )}
 
       {/* ERRMSG-07: 支払い失敗バナー — past_due状態の場合に表示 */}
       {showPaymentFailed && (

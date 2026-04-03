@@ -119,7 +119,7 @@ export default function ScoreDetailPage() {
     api
       .getScoreExplain()
       .then((result) => setData(result))
-      .catch(() => setData(DEMO_DATA))
+      .catch((err) => { console.error("[score-detail] API error, using demo data:", err); setData(DEMO_DATA); })
       .finally(() => setLoading(false));
   }, []);
 

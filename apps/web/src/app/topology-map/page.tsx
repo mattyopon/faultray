@@ -96,7 +96,7 @@ export default function TopologyMapPage() {
     fetch("/api/proxy?path=/api/v1/topology-map", { signal: controller.signal })
       .then((r) => r.json())
       .then((d) => setData(d))
-      .catch(() => setData(DEMO_DATA))
+      .catch((err) => { console.error("[topology-map] API error, using demo data:", err); setData(DEMO_DATA); })
       .finally(() => setLoading(false));
     return () => controller.abort();
   }, []);

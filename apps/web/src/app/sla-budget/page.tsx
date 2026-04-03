@@ -85,7 +85,7 @@ export default function SlaBudgetPage() {
     fetch("/api/proxy?path=/api/v1/sla-budget", { signal: controller.signal })
       .then((r) => r.json())
       .then((d) => setData(d))
-      .catch(() => setData(DEMO_DATA))
+      .catch((err) => { console.error("[sla-budget] API error, using demo data:", err); setData(DEMO_DATA); })
       .finally(() => setLoading(false));
     return () => controller.abort();
   }, []);

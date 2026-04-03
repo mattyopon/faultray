@@ -163,7 +163,7 @@ export default function IncidentsPage() {
     api
       .getIncidents()
       .then((result) => setData(result))
-      .catch(() => setData(DEMO_DATA))
+      .catch((err) => { console.error("[incidents] API error, using demo data:", err); setData(DEMO_DATA); })
       .finally(() => setLoading(false));
   }, []);
 

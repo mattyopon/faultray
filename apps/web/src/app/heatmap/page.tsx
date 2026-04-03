@@ -61,7 +61,7 @@ export default function HeatmapPage() {
     api
       .getHeatmap()
       .then((result) => setData(result))
-      .catch(() => setData(DEMO_DATA))
+      .catch((err) => { console.error("[heatmap] API error, using demo data:", err); setData(DEMO_DATA); })
       .finally(() => setLoading(false));
   }, []);
 

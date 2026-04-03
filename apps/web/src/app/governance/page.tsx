@@ -44,7 +44,7 @@ export default function GovernancePage() {
         if (d?.meti_score) setMetiScore(d.meti_score);
         if (d?.iso_42001_score) setIsoScore(d.iso_42001_score);
       })
-      .catch(() => {});
+      .catch((err) => console.error("[governance] fetch error:", err));
     return () => controller.abort();
   }, []);
 

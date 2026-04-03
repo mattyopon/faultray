@@ -960,7 +960,7 @@ function SimulatePageInner() {
 
   // Load projects for selector
   useEffect(() => {
-    api.getProjects().then((data) => setProjects(Array.isArray(data) ? data : [])).catch(() => {});
+    api.getProjects().then((data) => setProjects(Array.isArray(data) ? data : [])).catch((err) => console.error("[simulate] fetch error:", err));
   }, []);
 
   // If a project is preselected and has topology_yaml, load it

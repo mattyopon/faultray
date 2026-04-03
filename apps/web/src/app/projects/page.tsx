@@ -101,8 +101,9 @@ function NewProjectModal({
       setName("");
       setDescription("");
       onClose();
-    } catch {
-      // ignore — still add a local placeholder
+    } catch (err) {
+      console.error("[projects] Failed to create project:", err);
+      // Local placeholder for offline resilience
       const fallback: Project = {
         id: `local-${Date.now()}`,
         name: name.trim(),
@@ -175,6 +176,7 @@ export default function ProjectsPage() {
   const [projects, setProjects] = useState<Project[]>([]);
   const [loading, setLoading] = useState(true);
   const [modalOpen, setModalOpen] = useState(false);
+  const [fetchError, setFetchError] = useState<string | null>(null);
   const locale = useLocale();
   const t = appDict.projects[locale] ?? appDict.projects.en;
   const router = useRouter();
@@ -183,12 +185,22 @@ export default function ProjectsPage() {
     api
       .getProjects()
       .then((data) => setProjects(Array.isArray(data) ? data : []))
-      .catch(() => setProjects([]))
+      .catch((err) => {
+        console.error("[projects] Failed to fetch projects:", err);
+        setFetchError("プロジェクトの取得に失敗しました");
+        setProjects([]);
+      })
       .finally(() => setLoading(false));
   }, []);
 
   return (
     <div className="max-w-[1200px] mx-auto px-6 py-10">
+      {fetchError && (
+        <div className="mb-4 p-3 bg-red-500/10 border border-red-500/20 rounded-lg text-red-400 text-sm">
+          {fetchError}
+        </div>
+      )}
+
       {/* Header */}
       <div className="flex items-center justify-between mb-10">
         <div>

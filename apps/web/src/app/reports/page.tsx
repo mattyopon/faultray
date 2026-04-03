@@ -120,7 +120,7 @@ export default function ReportsPage() {
     api
       .getExecutiveReport("json")
       .then((result) => setReport(result))
-      .catch(() => setReport(DEMO_REPORT))
+      .catch((err) => { console.error("[reports] API error, using demo data:", err); setReport(DEMO_REPORT); })
       .finally(() => setLoading(false));
   }, []);
 
