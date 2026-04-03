@@ -66,21 +66,50 @@ export const metadata: Metadata = {
   },
 };
 
-const jsonLd = {
-  "@context": "https://schema.org",
-  "@type": "SoftwareApplication",
-  name: "FaultRay",
-  applicationCategory: "DeveloperApplication",
-  operatingSystem: "Web",
-  url: "https://faultray.com",
-  description:
-    "Pure simulation chaos engineering platform. Prove your system's availability ceiling mathematically without touching production.",
-  offers: {
-    "@type": "Offer",
-    price: "0",
-    priceCurrency: "USD",
+// SEO-01: Enhanced structured data — WebSite + Organization + SoftwareApplication
+const jsonLd = [
+  {
+    "@context": "https://schema.org",
+    "@type": "SoftwareApplication",
+    name: "FaultRay",
+    applicationCategory: "DeveloperApplication",
+    operatingSystem: "Web",
+    url: "https://faultray.com",
+    description:
+      "Pure simulation chaos engineering platform. Prove your system's availability ceiling mathematically without touching production.",
+    offers: [
+      { "@type": "Offer", name: "Free", price: "0", priceCurrency: "USD" },
+      { "@type": "Offer", name: "Pro",  price: "299", priceCurrency: "USD", eligibleQuantity: { "@type": "QuantitativeValue", unitText: "month" } },
+    ],
+    featureList: [
+      "100+ simulation engines",
+      "DORA compliance reports",
+      "AI reliability advisor",
+      "N-Layer availability model",
+      "AWS/GCP/Azure cloud discovery",
+    ],
   },
-};
+  {
+    "@context": "https://schema.org",
+    "@type": "Organization",
+    name: "FaultRay",
+    url: "https://faultray.com",
+    logo: "https://faultray.com/og-image.png",
+    contactPoint: { "@type": "ContactPoint", contactType: "customer support", email: "support@faultray.com" },
+    sameAs: ["https://github.com/mattyopon/faultray"],
+  },
+  {
+    "@context": "https://schema.org",
+    "@type": "WebSite",
+    name: "FaultRay",
+    url: "https://faultray.com",
+    potentialAction: {
+      "@type": "SearchAction",
+      target: { "@type": "EntryPoint", urlTemplate: "https://faultray.com/simulate?sample={search_term_string}" },
+      "query-input": "required name=search_term_string",
+    },
+  },
+];
 
 export default function RootLayout({
   children,
