@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
-  title: "Features",
+  title: "Features — FaultRay Chaos Engineering Platform",
   description:
     "FaultRay features — 100+ simulation engines, N-Layer availability model, DORA compliance reports, AI root cause analysis, and more.",
   alternates: {

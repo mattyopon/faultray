@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
-  title: "Pricing",
+  title: "Pricing — FaultRay",
   description:
     "FaultRay pricing plans — Free, Pro ($299/mo), and Business ($999/mo). Start for free, upgrade when you need more.",
   alternates: {

@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
-  title: "Help & User Guide",
+  title: "Help & User Guide — FaultRay",
   description:
     "FaultRay user guide — getting started, dashboard, simulation, DORA compliance, settings, and FAQ.",
   alternates: {

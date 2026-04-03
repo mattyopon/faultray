@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
-  title: "Privacy Policy",
+  title: "Privacy Policy — FaultRay",
   description:
     "FaultRay Privacy Policy — how we collect, use, and protect your personal data in compliance with GDPR and applicable law.",
   alternates: {
