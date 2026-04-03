@@ -25,6 +25,7 @@ import {
 import { useParams, useRouter } from "next/navigation";
 
 function ScoreRing({ score, size = 120 }: { score: number; size?: number }) {
+  const locale = useLocale();
   const radius = 45;
   const circumference = 2 * Math.PI * radius;
   const offset = circumference - (score / 100) * circumference;
@@ -45,7 +46,7 @@ function ScoreRing({ score, size = 120 }: { score: number; size?: number }) {
       </svg>
       <div className="absolute inset-0 flex flex-col items-center justify-center">
         <span className="text-2xl font-extrabold" style={{ color }}>{score.toFixed(1)}</span>
-        <span className="text-[10px] text-[#64748b] uppercase tracking-wider">Score</span>
+        <span className="text-[10px] text-[#64748b] uppercase tracking-wider">{locale === "ja" ? "スコア" : "Score"}</span>
       </div>
     </div>
   );
@@ -55,6 +56,7 @@ type Run = ProjectWithRuns["runs"][number];
 
 function RunRow({ run, t }: { run: Run; t: Record<string, string> }) {
   const [expanded, setExpanded] = useState(false);
+  const locale = useLocale();
   const hasCritical = (run.critical_failures?.length ?? 0) > 0;
   const hasSuggestions = (run.suggestions?.length ?? 0) > 0;
   const scoreColor =
@@ -103,7 +105,7 @@ function RunRow({ run, t }: { run: Run; t: Record<string, string> }) {
                 <div className="p-4 rounded-xl bg-red-500/5 border border-red-500/20">
                   <div className="flex items-center gap-2 mb-3">
                     <AlertTriangle size={14} className="text-red-400" />
-                    <span className="text-xs font-semibold text-red-400 uppercase tracking-wider">Critical Failures</span>
+                    <span className="text-xs font-semibold text-red-400 uppercase tracking-wider">{locale === "ja" ? "重大な障害" : "Critical Failures"}</span>
                   </div>
                   <ul className="space-y-2">
                     {run.critical_failures!.map((f, i) => (
@@ -123,7 +125,7 @@ function RunRow({ run, t }: { run: Run; t: Record<string, string> }) {
                 <div className="p-4 rounded-xl bg-[#FFD700]/5 border border-[#FFD700]/20">
                   <div className="flex items-center gap-2 mb-3">
                     <Lightbulb size={14} className="text-[#FFD700]" />
-                    <span className="text-xs font-semibold text-[#FFD700] uppercase tracking-wider">Suggestions</span>
+                    <span className="text-xs font-semibold text-[#FFD700] uppercase tracking-wider">{locale === "ja" ? "改善提案" : "Suggestions"}</span>
                   </div>
                   <ul className="space-y-2">
                     {run.suggestions!.map((s, i) => (
@@ -185,10 +187,10 @@ export default function ProjectDetailPage() {
     return (
       <div className="max-w-[1200px] mx-auto px-6 py-10 text-center">
         <FolderKanban size={48} className="text-[#1e293b] mx-auto mb-4" />
-        <p className="text-[#64748b] mb-4">Project not found</p>
+        <p className="text-[#64748b] mb-4">{locale === "ja" ? "プロジェクトが見つかりません" : "Project not found"}</p>
         <Link href="/projects">
           <Button variant="ghost">
-            <ArrowLeft size={16} /> Back to Projects
+            <ArrowLeft size={16} /> {locale === "ja" ? "プロジェクト一覧に戻る" : "Back to Projects"}
           </Button>
         </Link>
       </div>
@@ -255,7 +257,7 @@ export default function ProjectDetailPage() {
           <div className="flex items-center gap-8">
             <ScoreRing score={latestScore} size={120} />
             <div className="flex-1">
-              <p className="text-xs text-[#64748b] uppercase tracking-wider mb-2">Latest Simulation</p>
+              <p className="text-xs text-[#64748b] uppercase tracking-wider mb-2">{locale === "ja" ? "最新シミュレーション" : "Latest Simulation"}</p>
               {latestRun && (
                 <div className="grid grid-cols-3 gap-6">
                   <div>
