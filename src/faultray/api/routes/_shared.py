@@ -125,15 +125,52 @@ def _report_to_dict(report) -> dict:
             },
         }
 
+    score = round(report.resilience_score, 1)
+    results = [_result_dict(r) for r in report.results]
+    criticals = [_result_dict(r) for r in report.critical_findings]
+    warnings_list = [_result_dict(r) for r in report.warnings]
+    passed_list = [_result_dict(r) for r in report.passed]
+
+    # Build recommendations from critical and warning findings
+    recommendations: list[str] = []
+    for r in report.critical_findings:
+        recommendations.append(
+            f"[CRITICAL] {r.scenario.name}: {r.scenario.description}"
+        )
+    for r in report.warnings:
+        recommendations.append(
+            f"[WARNING] {r.scenario.name}: {r.scenario.description}"
+        )
+
+    # Component-level scores from cascade effects
+    component_scores: dict[str, dict] = {}
+    for r in report.results:
+        for e in r.cascade.effects:
+            cid = e.component_id
+            if cid not in component_scores:
+                component_scores[cid] = {
+                    "component_id": cid,
+                    "component_name": e.component_name,
+                    "affected_count": 0,
+                    "health_states": [],
+                }
+            component_scores[cid]["affected_count"] += 1
+            component_scores[cid]["health_states"].append(e.health.value)
+
     return {
-        "resilience_score": round(report.resilience_score, 1),
+        "resilience_score": score,
+        "overall_score": score,
         "total_scenarios": len(report.results),
         "critical_count": len(report.critical_findings),
         "warning_count": len(report.warnings),
         "passed_count": len(report.passed),
-        "critical": [_result_dict(r) for r in report.critical_findings],
-        "warnings": [_result_dict(r) for r in report.warnings],
-        "passed": [_result_dict(r) for r in report.passed],
+        "critical": criticals,
+        "warnings": warnings_list,
+        "passed": passed_list,
+        "scenarios": results,
+        "cascade_simulations": results,
+        "recommendations": recommendations,
+        "component_scores": component_scores,
     }
 
 

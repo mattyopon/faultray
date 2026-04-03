@@ -146,7 +146,7 @@ class AgentRegistration(BaseModel):
 class AgentHeartbeat(BaseModel):
     """Periodic heartbeat from an agent."""
 
-    agent_id: str
+    agent_id: str = ""
     status: AgentStatus = AgentStatus.RUNNING
     uptime_seconds: float = 0.0
     timestamp: _dt.datetime = Field(

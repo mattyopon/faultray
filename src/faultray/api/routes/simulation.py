@@ -13,6 +13,7 @@ from fastapi.responses import HTMLResponse, JSONResponse
 from faultray.api.routes._shared import (
     _report_to_dict,
     _save_run,
+    build_demo_graph,
     get_graph,
     get_last_report,
     set_last_report,
@@ -66,9 +67,22 @@ async def simulation_run_get():
 @router.post("/api/simulate", response_class=JSONResponse)
 async def api_simulate(request: Request, user=Depends(_require_permission("run_simulation"))):
     """Run simulation and return JSON results (POST endpoint)."""
+    # Parse optional sample parameter from request body
+    try:
+        body = await request.json()
+    except Exception:
+        body = {}
+
     graph = get_graph()
     if not graph.components:
-        return JSONResponse({"error": "No infrastructure loaded. Visit /demo first."}, status_code=400)
+        sample = body.get("sample") if isinstance(body, dict) else None
+        if sample:
+            # Auto-load demo graph for sample-based simulation
+            graph = build_demo_graph()
+            from faultray.api.routes._shared import set_graph
+            set_graph(graph)
+        else:
+            return JSONResponse({"error": "No infrastructure loaded. Visit /demo first."}, status_code=400)
 
     engine = SimulationEngine(graph)
     report = engine.run_all_defaults()

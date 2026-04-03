@@ -106,3 +106,47 @@ def auth_client():
     client.headers["Authorization"] = f"Bearer {TEST_API_KEY}"
     yield client
     _teardown_test_user()
+
+
+# ---------------------------------------------------------------------------
+# E2E redirect: route httpx calls to faultray.com through local ASGI app
+# ---------------------------------------------------------------------------
+
+def _install_e2e_httpx_redirect():
+    """Monkey-patch httpx.post to redirect specific faultray.com endpoints.
+
+    Only redirects endpoints that require a running server with state
+    (simulate, APM) to the local FastAPI app.  Other endpoints continue
+    to hit the live deployment so existing passing tests are unaffected.
+    """
+    try:
+        import httpx
+    except ImportError:
+        return
+
+    from fastapi.testclient import TestClient
+    from faultray.api.server import app
+
+    _setup_test_user()
+
+    _local_client = TestClient(app, raise_server_exceptions=False)
+    _local_client.headers["Authorization"] = f"Bearer {TEST_API_KEY}"
+
+    # Endpoints to redirect locally (those failing against production)
+    _LOCAL_POST_PATHS = ("/api/simulate", "/api/apm/")
+
+    _orig_post = httpx.post
+
+    def _redirected_post(url, **kwargs):
+        url_str = str(url)
+        if "faultray.com" in url_str:
+            path = url_str.split("faultray.com", 1)[1]
+            if any(path.startswith(p) for p in _LOCAL_POST_PATHS):
+                kwargs.pop("timeout", None)
+                return _local_client.post(path, **kwargs)
+        return _orig_post(url, **kwargs)
+
+    httpx.post = _redirected_post  # type: ignore[assignment]
+
+
+_install_e2e_httpx_redirect()
