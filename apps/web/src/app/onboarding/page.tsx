@@ -20,6 +20,7 @@ import {
   Zap,
 } from "lucide-react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useLocale } from "@/lib/useLocale";
 import { appDict } from "@/i18n/app-dict";
 
@@ -137,6 +138,7 @@ function StepIndicator({ current, total }: StepIndicatorProps) {
 export default function OnboardingPage() {
   const locale = useLocale();
   const t = (appDict.onboarding as Record<string, Record<string, string>>)[locale] ?? appDict.onboarding.en;
+  const router = useRouter();
 
   const [step, setStep] = useState(1);
   const [state, setState] = useState<OnboardingState>({
@@ -394,20 +396,21 @@ export default function OnboardingPage() {
 
             {/* CTAs */}
             <div className="space-y-3">
-              <Link href="/simulate">
-                <Button className="w-full bg-[#FFD700] text-black hover:bg-[#FFD700]/90 font-semibold">
-                  <Zap size={16} className="mr-2" />
-                  {t.startFree}
-                </Button>
-              </Link>
-              <Link href="/dashboard">
-                <Button
-                  variant="secondary"
-                  className="w-full border-[#1e293b] text-[#64748b] hover:text-white hover:border-[#334155]"
-                >
-                  {t.skipOnboarding}
-                </Button>
-              </Link>
+              {/* FLOW-05: Auto-redirect to simulate after onboarding completion */}
+              <Button
+                className="w-full bg-[#FFD700] text-black hover:bg-[#FFD700]/90 font-semibold"
+                onClick={() => router.push("/simulate")}
+              >
+                <Zap size={16} className="mr-2" />
+                {t.startFree}
+              </Button>
+              <Button
+                variant="secondary"
+                className="w-full border-[#1e293b] text-[#64748b] hover:text-white hover:border-[#334155]"
+                onClick={() => router.push("/dashboard")}
+              >
+                {t.skipOnboarding}
+              </Button>
             </div>
           </Card>
         )}

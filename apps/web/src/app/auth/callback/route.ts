@@ -5,6 +5,16 @@ export const dynamic = "force-dynamic";
 export async function GET(request: Request) {
   const { searchParams, origin } = new URL(request.url);
   const code = searchParams.get("code");
+
+  // AUTHCB-02: Log error parameter from provider for debugging
+  const providerError = searchParams.get("error");
+  const providerErrorDesc = searchParams.get("error_description");
+  if (providerError) {
+    console.error("[auth/callback] OAuth provider error:", providerError, providerErrorDesc);
+    const msg = providerError === "access_denied" ? "access_denied" : "auth_failed";
+    return NextResponse.redirect(`${origin}/login?error=${msg}`);
+  }
+
   // Validate redirectTo to prevent open redirect — only allow internal paths
   const rawRedirectTo = searchParams.get("redirectTo") || "/dashboard";
   const redirectTo =

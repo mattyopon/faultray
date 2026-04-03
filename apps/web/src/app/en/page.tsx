@@ -402,11 +402,22 @@ export default async function LangHomePage({
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6 ">
             {dict.features.cards.map((f: { title: string; desc: string }, i: number) => {
               const Icon = featureIcons[i];
+              // LP-DETAIL-03: First 3 features are highlighted as "Core" capabilities
+              const isCore = i < 3;
               return (
                 <div
                   key={f.title}
-                  className=" p-8 rounded-2xl border border-[#1e293b] bg-[#111827] transition-all duration-200 hover:border-[#FFD700]/30 hover:bg-[#1a2035] hover:-translate-y-0.5 hover:shadow-[0_0_40px_rgba(255,215,0,0.1)]"
+                  className={`p-8 rounded-2xl border transition-all duration-200 hover:-translate-y-0.5 hover:shadow-[0_0_40px_rgba(255,215,0,0.1)] ${
+                    isCore
+                      ? "border-[#FFD700]/20 bg-gradient-to-b from-[#FFD700]/[0.03] to-[#111827] hover:border-[#FFD700]/40 hover:bg-[#1a2035]"
+                      : "border-[#1e293b] bg-[#111827] hover:border-[#FFD700]/30 hover:bg-[#1a2035]"
+                  }`}
                 >
+                  {isCore && (
+                    <span className="inline-block text-xs font-bold text-[#FFD700] uppercase tracking-wider mb-3">
+                      Core
+                    </span>
+                  )}
                   <div className="w-14 h-14 flex items-center justify-center rounded-xl bg-[#FFD700]/[0.06] border border-[#FFD700]/10 mb-5">
                     <Icon size={24} className="text-[#FFD700]" />
                   </div>
@@ -1011,6 +1022,12 @@ export default async function LangHomePage({
                 <li>
                   <Link href="/case-studies" className="text-sm text-[#64748b] hover:text-white transition-colors">
                     Case Studies
+                  </Link>
+                </li>
+                {/* LP-DETAIL-08: Changelog link in footer */}
+                <li>
+                  <Link href="/changelog" className="text-sm text-[#64748b] hover:text-white transition-colors">
+                    Changelog
                   </Link>
                 </li>
               </ul>

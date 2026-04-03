@@ -102,11 +102,12 @@ export default function PeopleRiskDashboard() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    Promise.all([fetchSummary(), fetchSnapshots(), fetchActions()])
-      .then(([s, sn, a]) => {
-        setSummary(s);
-        setSnapshots(sn);
-        setActions(a);
+    // FETCHPAT-04: Use Promise.allSettled so one failure doesn't block others
+    Promise.allSettled([fetchSummary(), fetchSnapshots(), fetchActions()])
+      .then(([sRes, snRes, aRes]) => {
+        if (sRes.status === "fulfilled") setSummary(sRes.value);
+        if (snRes.status === "fulfilled") setSnapshots(snRes.value);
+        if (aRes.status === "fulfilled") setActions(aRes.value);
       })
       .finally(() => setLoading(false));
   }, []);

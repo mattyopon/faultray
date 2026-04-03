@@ -1,36 +1,64 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# FaultRay SaaS — Next.js Frontend
 
-## Getting Started
+The web application for [faultray.com](https://faultray.com) — chaos engineering SaaS that mathematically proves your system's availability ceiling without touching production.
 
-First, run the development server:
+> **Try it now**: [faultray.com](https://faultray.com) — Free tier, no credit card required.
+
+## Tech Stack
+
+- **Framework**: Next.js 15 (App Router)
+- **Auth**: Supabase (GitHub OAuth + Google OAuth)
+- **Payments**: Stripe (Pro / Business plans)
+- **Styling**: Tailwind CSS
+- **Simulation engine**: Python (faultray v11) via API routes
+
+## Development Setup
 
 ```bash
+git clone https://github.com/mattyopon/faultray-app.git
+cd faultray-app
+npm install
+cp .env.example .env.local  # fill in keys
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Open [http://localhost:3000](http://localhost:3000).
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+### Required environment variables
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+| Variable | Description |
+|----------|-------------|
+| `NEXT_PUBLIC_SUPABASE_URL` | Supabase project URL |
+| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Supabase anon key |
+| `SUPABASE_SERVICE_ROLE_KEY` | Server-side admin key |
+| `NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY` | Stripe publishable key |
+| `STRIPE_SECRET_KEY` | Stripe secret key |
+| `STRIPE_WEBHOOK_SECRET` | Stripe webhook signing secret |
+| `NEXT_PUBLIC_API_URL` | Python engine URL (leave empty to use local mock) |
 
-## Learn More
+## Commands
 
-To learn more about Next.js, take a look at the following resources:
+```bash
+npm run dev        # Start dev server
+npm run build      # Production build
+npm run typecheck  # tsc --noEmit
+npm run lint       # ESLint
+npm test           # Vitest unit tests
+npx playwright test # E2E tests
+```
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## Contributing
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+See [CONTRIBUTING.md](CONTRIBUTING.md).
 
-## Deploy on Vercel
+## Security
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+See [SECURITY.md](SECURITY.md) for how to report vulnerabilities.
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+## Links
+
+- **SaaS**: [faultray.com](https://faultray.com)
+- **Core engine (Python)**: [github.com/mattyopon/faultray](https://github.com/mattyopon/faultray)
+- **PyPI**: [pypi.org/project/faultray](https://pypi.org/project/faultray/)
+- **Pricing**: [faultray.com/pricing](https://faultray.com/pricing)
+- **Changelog**: [faultray.com/changelog](https://faultray.com/changelog)

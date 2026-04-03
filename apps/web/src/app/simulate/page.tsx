@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useState, useRef, useEffect } from "react";
 import { api, type SimulationResult, type CloudSimulationResult, type Project, type CalculationEvidence, type CascadeSimulation, type SimulationLog } from "@/lib/api";
+import { trackEvent } from "@/lib/analytics";
 import {
   Zap,
   Server,
@@ -1043,6 +1044,13 @@ function SimulatePageInner() {
       }
       if (res) {
         setResult(res);
+        // ANALYTICS-02: Track simulation completion as conversion event
+        trackEvent("simulation_run", {
+          score: res.overall_score,
+          nines: res.nines,
+          scenario: selected || "custom",
+          critical_count: res.critical_failures?.length ?? 0,
+        });
         // Save to localStorage for topology/dashboard to read
         localStorage.setItem("faultray_last_simulation", JSON.stringify({
           ...res,
@@ -1417,7 +1425,7 @@ function SimulatePageInner() {
                         setYamlText(val);
                         setSelected(null);
                         setUploadedFileName(null);
-                        // FORM-02: リアルタイムバリデーション（基本チェック）
+                        // FORM-02 / ERRMSG-04: リアルタイムバリデーション（行番号付きエラー）
                         if (val.trim()) {
                           const lines = val.split("\n");
                           let err: string | null = null;
@@ -1427,15 +1435,22 @@ function SimulatePageInner() {
                             if (/^\t/.test(line)) {
                               err = locale === "ja"
                                 ? `${i + 1}行目: タブ文字は使用できません。スペースを使用してください。`
-                                : `Line ${i + 1}: Tab characters are not allowed in YAML. Use spaces.`;
+                                : `Line ${i + 1}: Tab character found — use spaces instead.`;
+                              break;
+                            }
+                            // ERRMSG-04: Detect duplicate colons that indicate malformed keys
+                            if (/^(\s*\w[\w\s-]*):\s*:\s*/.test(line)) {
+                              err = locale === "ja"
+                                ? `${i + 1}行目: 不正な構文 — コロンが重複しています。`
+                                : `Line ${i + 1}: Syntax error — duplicate colon detected.`;
                               break;
                             }
                           }
                           // componentsキーが存在するか簡易チェック
                           if (!err && !val.includes("components:")) {
                             err = locale === "ja"
-                              ? "`components:` キーが見つかりません。"
-                              : "Missing `components:` key.";
+                              ? "`components:` キーが見つかりません。少なくとも1つのコンポーネントを定義してください。"
+                              : "Missing `components:` key — define at least one component.";
                           }
                           setYamlError(err);
                         } else {

@@ -28,7 +28,7 @@ const plans: Plan[] = [
     monthlyPrice: 0,
     annualMonthlyPrice: 0,
     annualTotal: 0,
-    desc: "Perfect for individual engineers exploring chaos engineering.",
+    desc: "Perfect for individual engineers exploring chaos engineering. 5 simulations covers most proof-of-concept evaluations.",
     features: ["5 simulations / month", "Up to 5 components", "100+ simulation engines", "N-Layer Availability Model", "HTML reports", "Community support"],
     disabledFeatures: ["DORA report export", "Custom SSO"],
     cta: "Get Started Free",
@@ -112,7 +112,12 @@ export default function PricingPage() {
         <h1 className="text-[clamp(1.75rem,4vw,2.5rem)] font-bold tracking-tight mb-3">
           Invest in reliability. Prevent the outage before it costs you.
         </h1>
-        <p className="text-lg text-[#94a3b8]">Start free — upgrade when your team needs DORA compliance, AI analysis, or unlimited scale.</p>
+        {/* PSYCH-02: Loss aversion framing — emphasize cost of NOT having FaultRay */}
+        <p className="text-lg text-[#94a3b8]">
+          A single hour of downtime costs{" "}
+          <span className="text-white font-semibold">$100,000+</span> for mid-size SaaS.
+          FaultRay finds the weak points before they find you.
+        </p>
         <div className="mt-4 flex flex-wrap items-center justify-center gap-3">
           <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-[#FFD700]/10 border border-[#FFD700]/20">
             <span className="text-sm font-semibold text-[#FFD700]">14-day free trial on Pro</span>
@@ -121,6 +126,11 @@ export default function PricingPage() {
           <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-emerald-500/10 border border-emerald-500/20">
             <ShieldCheck size={14} className="text-emerald-400" />
             <span className="text-sm font-semibold text-emerald-400">No credit card required</span>
+          </div>
+          {/* COMPDIFF-03: Security posture badge */}
+          <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-blue-500/10 border border-blue-500/20">
+            <ShieldCheck size={14} className="text-blue-400" />
+            <span className="text-sm font-semibold text-blue-400">OWASP-hardened · Data encrypted at rest</span>
           </div>
         </div>
         {/* CVR-05: Social proof micro-stats */}

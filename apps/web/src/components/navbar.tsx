@@ -59,7 +59,7 @@ import {
 import type { PlanTier } from "@/components/auth-provider";
 
 /** Pages accessible on Free plan */
-const FREE_PAGES = new Set(["/dashboard", "/simulate", "/topology", "/dora", "/reports", "/help", "/support"]);
+const FREE_PAGES = new Set(["/dashboard", "/simulate", "/topology", "/dora", "/reports", "/help", "/support", "/changelog", "/admin"]);
 import { locales, type Locale } from "@/i18n/config";
 import { appDict } from "@/i18n/app-dict";
 import { useLocale } from "@/lib/useLocale";
@@ -190,9 +190,11 @@ function getNavGroups(t: Record<string, string>, te: Record<string, string>) {
     {
       label: t.account,
       items: [
-        { href: "/settings", label: t.settings, icon: Settings },
-        { href: "/help",     label: t.help,     icon: HelpCircle },
-        { href: "/support",  label: t.support,  icon: LifeBuoy },
+        { href: "/settings",   label: t.settings,             icon: Settings },
+        { href: "/help",       label: t.help,                 icon: HelpCircle },
+        { href: "/support",    label: t.support,              icon: LifeBuoy },
+        { href: "/changelog",  label: t.changelog ?? "What's New",  icon: FileText },
+        { href: "/admin",      label: t.adminDash ?? "Admin", icon: BarChart3 },
       ],
     },
   ];
@@ -401,6 +403,13 @@ export function Navbar() {
                   className="px-3 py-1.5 text-sm text-[#94a3b8] border border-[#1e293b] rounded-md hover:border-[#64748b] transition-colors"
                 >
                   GitHub
+                </Link>
+                {/* COMPDIFF-02: "Get a Demo" always visible in navbar */}
+                <Link
+                  href="/contact?demo=1"
+                  className="px-3 py-1.5 text-sm font-semibold text-[#0a0e1a] bg-[#FFD700] rounded-md hover:bg-[#ffe44d] transition-colors"
+                >
+                  Get a Demo
                 </Link>
                 <div className="ml-2">
                   <NavLanguageSwitcher />

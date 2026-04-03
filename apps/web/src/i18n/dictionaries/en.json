@@ -130,9 +130,9 @@
     "viewAll": "View Full Feature Details"
   },
   "agentResilience": {
-    "badge": "New in v11.0",
+    "badge": "New in v11.0 — industry-first",
     "heading": "AI Agent Resilience Simulation",
-    "subheading": "Simulate how infrastructure failures cascade into agent hallucinations — before they happen in production.",
+    "subheading": "The only chaos engineering tool that models AI agents (LLM endpoints, tool services, orchestrators) as first-class failure nodes. Simulate how infrastructure outages cascade into hallucinations before they hit production.",
     "cards": [
       {
         "title": "Cross-Layer Analysis",

@@ -6,10 +6,32 @@ interface ApiOptions {
   body?: unknown;
   token?: string;
   signal?: AbortSignal;
+  /** FETCHPAT-05: TTL in ms for GET request caching. 0 = no cache (default) */
+  cacheTtl?: number;
 }
 
+// FETCHPAT-05: In-memory GET cache (page-level deduplication)
+interface CacheEntry { data: unknown; expiresAt: number; }
+const _apiCache = new Map<string, CacheEntry>();
+
+function _cacheKey(path: string, token?: string): string {
+  return `${token ?? "anon"}:${path}`;
+}
+
+// FETCHPAT-01: Default timeout 30s to prevent indefinite hangs
+const DEFAULT_TIMEOUT_MS = 30_000;
+
 async function apiFetch<T>(path: string, options: ApiOptions = {}): Promise<T> {
-  const { method = "GET", body, token, signal } = options;
+  const { method = "GET", body, token, signal, cacheTtl } = options;
+
+  // FETCHPAT-05: Serve from cache for GET requests with cacheTtl set
+  if (method === "GET" && cacheTtl && cacheTtl > 0) {
+    const key = _cacheKey(path, token);
+    const entry = _apiCache.get(key);
+    if (entry && entry.expiresAt > Date.now()) {
+      return entry.data as T;
+    }
+  }
 
   const headers: Record<string, string> = {
     "Content-Type": "application/json",
@@ -19,20 +41,53 @@ async function apiFetch<T>(path: string, options: ApiOptions = {}): Promise<T> {
     headers["Authorization"] = `Bearer ${token}`;
   }
 
-  // FETCH-01 fix: pass AbortSignal when provided to prevent memory leaks
-  const res = await fetch(`${API_BASE}${path}`, {
-    method,
-    headers,
-    body: body ? JSON.stringify(body) : undefined,
-    signal,
-  });
-
-  if (!res.ok) {
-    const error = await res.json().catch(() => ({ message: res.statusText }));
-    throw new Error(error.error?.message || error.message || "API request failed");
+  // FETCHPAT-01: Combine caller signal with internal timeout signal
+  const timeoutController = new AbortController();
+  const timeoutId = setTimeout(() => timeoutController.abort(), DEFAULT_TIMEOUT_MS);
+  let combinedSignal: AbortSignal;
+  if (signal) {
+    // Merge: abort if either fires
+    const mergeController = new AbortController();
+    const abort = () => mergeController.abort();
+    signal.addEventListener("abort", abort, { once: true });
+    timeoutController.signal.addEventListener("abort", abort, { once: true });
+    combinedSignal = mergeController.signal;
+  } else {
+    combinedSignal = timeoutController.signal;
   }
 
-  return res.json();
+  try {
+    // FETCH-01 fix: pass AbortSignal when provided to prevent memory leaks
+    const res = await fetch(`${API_BASE}${path}`, {
+      method,
+      headers,
+      body: body ? JSON.stringify(body) : undefined,
+      signal: combinedSignal,
+    });
+
+    if (!res.ok) {
+      const error = await res.json().catch(() => ({ message: res.statusText }));
+      throw new Error(error.error?.message || error.message || "API request failed");
+    }
+
+    const data = await res.json() as T;
+
+    // FETCHPAT-05: Store in cache for GET requests with cacheTtl
+    if (method === "GET" && cacheTtl && cacheTtl > 0) {
+      _apiCache.set(_cacheKey(path, token), { data, expiresAt: Date.now() + cacheTtl });
+      // Evict stale entries periodically to avoid unbounded growth
+      if (_apiCache.size > 100) {
+        const now = Date.now();
+        for (const [k, v] of _apiCache) {
+          if (v.expiresAt < now) _apiCache.delete(k);
+        }
+      }
+    }
+
+    return data;
+  } finally {
+    clearTimeout(timeoutId);
+  }
 }
 
 export interface CalcFactor {

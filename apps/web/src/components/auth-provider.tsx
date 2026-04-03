@@ -91,7 +91,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const supabase = createClient();
       const {
         data: { subscription },
-      } = supabase.auth.onAuthStateChange((_event, session) => {
+      } = supabase.auth.onAuthStateChange((event, session) => {
         const nextUser = session?.user ?? null;
         setUser(nextUser);
         setLoading(false);
@@ -99,6 +99,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           fetchPlan(nextUser.id);
         } else {
           setPlan("free");
+          // ERRMSG-03: Redirect to login with session_expired flag when session is lost
+          // while user was on an app page (not the landing / login pages)
+          if (event === "SIGNED_OUT" || event === "TOKEN_REFRESHED") {
+            if (typeof window !== "undefined") {
+              const isAppPage = !["", "/", "/login", "/pricing", "/features",
+                "/en", "/ja", "/de", "/fr", "/zh", "/ko", "/es", "/pt",
+                "/case-studies", "/changelog", "/contact", "/demo",
+                "/privacy", "/terms", "/tokushoho", "/dpa", "/help", "/support",
+              ].some((p) => window.location.pathname === p || window.location.pathname.startsWith(p + "/"));
+              if (isAppPage && event === "SIGNED_OUT") {
+                window.location.href = "/login?error=session_expired";
+              }
+            }
+          }
         }
       });
 

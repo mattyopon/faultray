@@ -1050,6 +1050,11 @@ export default async function LangHomePage({
                     稟議書テンプレート
                   </Link>
                 </li>
+                <li>
+                  <Link href="/changelog" className="text-sm text-[#64748b] hover:text-white transition-colors">
+                    更新履歴
+                  </Link>
+                </li>
               </ul>
             </div>
 

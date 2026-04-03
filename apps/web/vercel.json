@@ -1,8 +1,13 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
+  "regions": ["hnd1"],
   "functions": {
     "api/**/*.py": {
-      "maxDuration": 60
+      "maxDuration": 300,
+      "memory": 1024
+    },
+    "app/**/*.ts": {
+      "maxDuration": 30
     }
   },
   "rewrites": [

@@ -492,7 +492,11 @@ export default function TeamsPage() {
           {members.length === 0 && (
             <p className="text-sm text-[#475569] text-center py-4">No members yet.</p>
           )}
-          {members.map((member) => (
+          {members.map((member) => {
+            // FLOW-08: Determine if current user can change this member's role
+            const currentMember = members.find((m) => m.user_id === user?.id);
+            const canChangeRole = currentMember?.role === "owner" && member.user_id !== user?.id;
+            return (
             <div
               key={member.id}
               className="flex items-center gap-4 bg-[#0a0e1a] rounded-xl px-4 py-3"
@@ -509,11 +513,40 @@ export default function TeamsPage() {
                 </p>
               </div>
               <div className="flex items-center gap-2 shrink-0">
-                <RoleBadge role={member.role} />
+                {/* FLOW-08: Owner can change roles inline */}
+                {canChangeRole ? (
+                  <select
+                    value={member.role}
+                    onChange={async (e) => {
+                      const newRole = e.target.value;
+                      try {
+                        await fetch(`/api/org/members/${member.id}`, {
+                          method: "PATCH",
+                          headers: { "Content-Type": "application/json" },
+                          body: JSON.stringify({ role: newRole }),
+                        });
+                        setMembers((prev) =>
+                          prev.map((m) => m.id === member.id ? { ...m, role: newRole } : m)
+                        );
+                      } catch {
+                        // Non-critical — role badge stays as-is
+                      }
+                    }}
+                    className="text-xs bg-[#1e293b] border border-[#334155] text-[#94a3b8] rounded-md px-2 py-1 focus:outline-none focus:border-[#FFD700]/50"
+                    aria-label={`Change role for ${member.email}`}
+                  >
+                    <option value="admin">Admin</option>
+                    <option value="member">Member</option>
+                    <option value="viewer">Viewer</option>
+                  </select>
+                ) : (
+                  <RoleBadge role={member.role} />
+                )}
                 <StatusBadge status={member.status} />
               </div>
             </div>
-          ))}
+            );
+          })}
         </div>
 
         {/* 招待フォーム */}

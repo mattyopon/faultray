@@ -142,6 +142,12 @@ export default function RootLayout({
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
     >
       <head>
+        {/* HTTP-03: Resource hints for external domains — improve connection latency */}
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
+        <link rel="preconnect" href="https://www.googletagmanager.com" />
+        <link rel="dns-prefetch" href="https://www.googletagmanager.com" />
+        <link rel="preconnect" href="https://js.stripe.com" />
+        <link rel="dns-prefetch" href="//js.stripe.com" />
         {/* Structured data — JSON-LD */}
         <script
           type="application/ld+json"

@@ -1503,8 +1503,21 @@ class handler(BaseHTTPRequestHandler):
             elif action == "whatif":
                 component_id = data.get("component_id", "api")
                 parameter = data.get("parameter", "replicas")
-                value = data.get("value", 3)
-                result = _run_whatif(component_id, parameter, float(value))
+                # PYVAL-03: Validate numeric value — clamp to safe range
+                raw_value = data.get("value", 3)
+                try:
+                    value = float(raw_value)
+                except (TypeError, ValueError):
+                    self._error(400, f"'value' must be a number, got: {raw_value!r}")
+                    return
+                # PYVAL-04: String fields length validation
+                if not isinstance(component_id, str) or len(component_id) > 128:
+                    self._error(400, "'component_id' must be a string of max 128 characters")
+                    return
+                if not isinstance(parameter, str) or len(parameter) > 64:
+                    self._error(400, "'parameter' must be a string of max 64 characters")
+                    return
+                result = _run_whatif(component_id, parameter, value)
                 self._json(200, result)
 
             else:

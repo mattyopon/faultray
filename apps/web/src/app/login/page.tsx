@@ -15,6 +15,15 @@ function LoginForm() {
       : "/dashboard";
   const isProduction = process.env.NEXT_PUBLIC_SITE_URL === "https://faultray.com";
 
+  // AUTH-01: Show error message when OAuth fails
+  const authError = searchParams.get("error");
+  const errorMessages: Record<string, string> = {
+    auth_failed: "Sign-in failed. Please try again or use a different provider.",
+    access_denied: "Access was denied. Please allow the requested permissions and try again.",
+    session_expired: "Your session has expired. Please sign in again.",
+  };
+  const errorMessage = authError ? (errorMessages[authError] ?? "An authentication error occurred. Please try again.") : null;
+
   const supabase = createClient();
 
   const signInWith = async (provider: "github" | "google") => {
@@ -80,6 +89,20 @@ function LoginForm() {
             Sign in to access your chaos engineering dashboard
           </p>
         </div>
+
+        {/* AUTH-01: OAuth error display */}
+        {errorMessage && (
+          <div role="alert" className="mb-4 p-4 rounded-xl bg-red-500/10 border border-red-500/30 text-red-400 text-sm">
+            <p className="font-semibold mb-1">Sign-in failed</p>
+            <p>{errorMessage}</p>
+            <p className="mt-2 text-xs text-red-300">
+              Need help?{" "}
+              <a href="mailto:support@faultray.com" className="underline hover:text-red-200">
+                Contact support
+              </a>
+            </p>
+          </div>
+        )}
 
         <div className="p-8 rounded-2xl border border-[#1e293b] bg-[#111827] space-y-4">
           {isProduction && (

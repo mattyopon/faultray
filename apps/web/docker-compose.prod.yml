@@ -1,0 +1,60 @@
+# DOCKER-01: Production docker-compose — separated from any development overrides
+# Usage: docker compose -f docker-compose.prod.yml up -d
+version: "3.9"
+
+services:
+  web:
+    # DOCKER-02: Pin to exact digest in production for reproducibility
+    # Update digest when upgrading: docker pull node:20-alpine && docker inspect --format='{{index .RepoDigests 0}}' node:20-alpine
+    image: node:20-alpine
+    build:
+      context: .
+      dockerfile: Dockerfile.prod
+    restart: unless-stopped
+    environment:
+      - NODE_ENV=production
+      - NEXT_PUBLIC_SUPABASE_URL=${NEXT_PUBLIC_SUPABASE_URL}
+      - NEXT_PUBLIC_SUPABASE_ANON_KEY=${NEXT_PUBLIC_SUPABASE_ANON_KEY}
+      - SUPABASE_SERVICE_ROLE_KEY=${SUPABASE_SERVICE_ROLE_KEY}
+      - NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY=${NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY}
+      - STRIPE_SECRET_KEY=${STRIPE_SECRET_KEY}
+      - STRIPE_WEBHOOK_SECRET=${STRIPE_WEBHOOK_SECRET}
+      - NEXT_PUBLIC_SITE_URL=${NEXT_PUBLIC_SITE_URL:-https://faultray.com}
+      - NEXT_PUBLIC_API_URL=${NEXT_PUBLIC_API_URL:-}
+    ports:
+      - "3000:3000"
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:3000/api/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  engine:
+    image: python:3.11-slim
+    build:
+      context: .
+      dockerfile: Dockerfile.engine.prod
+    restart: unless-stopped
+    environment:
+      - SUPABASE_URL=${NEXT_PUBLIC_SUPABASE_URL}
+      - SUPABASE_SERVICE_ROLE_KEY=${SUPABASE_SERVICE_ROLE_KEY}
+      - PYTHON_ENV=production
+    ports:
+      - "8000:8000"
+    healthcheck:
+      test: ["CMD", "python3", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/api/health')"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 20s
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"

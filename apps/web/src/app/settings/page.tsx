@@ -227,6 +227,33 @@ export default function SettingsPage() {
     } catch {
       // ignore
     }
+
+    // LSTORAGE-06: 複数タブ間同期 — storage イベントをリッスン
+    function handleStorageChange(e: StorageEvent) {
+      if (e.key === "faultray_integrations" && e.newValue) {
+        try {
+          const parsed = JSON.parse(e.newValue);
+          setIntegrations({
+            jiraDomain: parsed.jiraDomain || "",
+            backlogSpace: parsed.backlogSpace || "",
+            slackWebhook: parsed.slackWebhook || "",
+            teamsWebhook: parsed.teamsWebhook || "",
+          });
+        } catch { /* ignore */ }
+      }
+      if (e.key === "faultray_notifications" && e.newValue) {
+        try {
+          const parsed = JSON.parse(e.newValue);
+          setNotifications({
+            simulationCompleted: parsed.simulationCompleted ?? true,
+            scoreDegradation: parsed.scoreDegradation ?? true,
+            weeklySummary: parsed.weeklySummary ?? false,
+          });
+        } catch { /* ignore */ }
+      }
+    }
+    window.addEventListener("storage", handleStorageChange);
+    return () => window.removeEventListener("storage", handleStorageChange);
   }, []);
 
   function handleSaveIntegrations() {
