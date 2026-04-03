@@ -95,6 +95,21 @@ export default function ContactPage() {
         </p>
       </div>
 
+      {/* JP-03: 稟議決裁サポートバナー */}
+      <div className="mb-6 p-4 rounded-xl border border-blue-500/20 bg-blue-500/[0.04] flex items-start gap-3">
+        <span className="text-blue-400 text-lg mt-0.5">🗂</span>
+        <div>
+          <p className="text-sm font-semibold text-blue-300 mb-1">日本企業向け：稟議書テンプレート提供中</p>
+          <p className="text-xs text-[#94a3b8]">
+            社内承認プロセス（稟議決裁）に必要なコスト・ROI・セキュリティをまとめたテンプレートを無償提供しています。
+            導入検討段階でお気軽にご相談ください。
+          </p>
+          <Link href="/ringi" className="text-xs text-blue-400 hover:text-blue-300 transition-colors mt-1 inline-block">
+            稟議書テンプレートを見る →
+          </Link>
+        </div>
+      </div>
+
       {/* COMP-04: Multiple demo formats */}
       <div className="mb-8 grid grid-cols-1 sm:grid-cols-3 gap-3">
         <a

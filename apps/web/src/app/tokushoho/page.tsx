@@ -4,6 +4,7 @@ import Link from "next/link";
 export const metadata: Metadata = {
   title: "特定商取引法に基づく表記",
   description: "FaultRayの特定商取引法に基づく表記ページです。",
+  alternates: { canonical: "https://faultray.com/tokushoho" },
 };
 
 interface Row {

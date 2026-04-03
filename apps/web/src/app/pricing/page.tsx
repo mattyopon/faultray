@@ -59,8 +59,8 @@ const plans: Plan[] = [
     desc: "For enterprises needing unlimited access, SSO, and dedicated support.",
     features: ["Unlimited simulations", "Unlimited components", "Everything in Pro", "DORA report + Insurance API", "Custom SSO / SAML", "Dedicated support (1h)", "Prometheus integration", "On-premise deployment"],
     disabledFeatures: [],
-    cta: "Contact Us",
-    ctaHref: "mailto:sales@faultray.com",
+    cta: "Get a Quote",
+    ctaHref: "/contact?plan=business",
     popular: false,
     stripePlan: null,
     sla: "99.9% Uptime SLA",
@@ -130,6 +130,10 @@ export default function PricingPage() {
           <span><span className="font-bold text-white">$0</span> to get started</span>
           <span className="hidden sm:block">·</span>
           <span>Cancel anytime</span>
+        </div>
+        {/* JP-05: 日本語サポートの保証を明示 */}
+        <div className="mt-4 inline-flex items-center gap-2 px-4 py-2 rounded-full bg-blue-500/10 border border-blue-500/20">
+          <span className="text-sm font-semibold text-blue-400">日本語サポート対応 — 日本語でのメール・稟議書サポートを提供</span>
         </div>
       </div>
 
@@ -293,8 +297,27 @@ export default function PricingPage() {
         </p>
       </div>
 
+      {/* SALES-03: Pro→Business アップセル — 比較CTA */}
+      <div className="max-w-[900px] mx-auto mt-16 p-6 rounded-2xl border border-purple-500/20 bg-purple-500/[0.04]">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+          <div>
+            <h3 className="text-base font-bold text-white mb-1">Already on Pro? Unlock more with Business.</h3>
+            <p className="text-sm text-[#94a3b8]">
+              Unlimited simulations, custom SSO, dedicated Slack support, Insurance API, and on-premise deployment.
+              Enterprises choose Business for compliance-critical workloads.
+            </p>
+          </div>
+          <Link
+            href="/contact?plan=business"
+            className="shrink-0 inline-flex items-center gap-2 px-5 py-2.5 rounded-xl border border-purple-500/30 text-purple-300 text-sm font-semibold hover:bg-purple-500/10 transition-colors"
+          >
+            Talk to Sales
+          </Link>
+        </div>
+      </div>
+
       {/* Footer links */}
-      <div className="max-w-[900px] mx-auto mt-16 pt-8 border-t border-[#1e293b] flex flex-wrap justify-center gap-6 text-sm text-[#64748b]">
+      <div className="max-w-[900px] mx-auto mt-8 pt-8 border-t border-[#1e293b] flex flex-wrap justify-center gap-6 text-sm text-[#64748b]">
         <Link href="/privacy" className="hover:text-white transition-colors">Privacy Policy</Link>
         <Link href="/terms" className="hover:text-white transition-colors">Terms of Service</Link>
         <Link href="/tokushoho" className="hover:text-white transition-colors">特定商取引法に基づく表記</Link>

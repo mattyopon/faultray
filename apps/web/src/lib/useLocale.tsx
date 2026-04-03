@@ -23,6 +23,11 @@ export function LocaleProvider({ children }: { children: ReactNode }) {
     }
   }, []);
 
+  // I18N-04: html lang属性をlocaleに合わせて動的に更新
+  useEffect(() => {
+    document.documentElement.lang = locale;
+  }, [locale]);
+
   const setLocale = useCallback((newLocale: Locale) => {
     document.cookie = `NEXT_LOCALE=${newLocale};path=/;max-age=31536000`;
     setLocaleState(newLocale);

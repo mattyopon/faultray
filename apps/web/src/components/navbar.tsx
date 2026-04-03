@@ -45,12 +45,12 @@ import {
   Rocket,
   LayoutTemplate,
   TrendingUp,
+  TrendingDown,
   Brain,
   Swords,
   CircleDot,
   Landmark,
   FileSpreadsheet,
-  UserX,
   Ghost,
   Cloud,
   Map,
@@ -95,7 +95,7 @@ function getNavGroups(t: Record<string, string>, te: Record<string, string>) {
         { href: "/topology",      label: t.topology,                          icon: Network },
         { href: "/dependencies",  label: t.dependencies ?? "Dependencies",   icon: GitBranch },
         { href: "/heatmap",       label: t.heatmap,                           icon: Flame },
-        { href: "/people-risk",   label: t.peopleRisk ?? "People Risk",       icon: UserX },
+        { href: "/people-risk",   label: t.peopleRisk ?? "People Risk",       icon: Users },
         { href: "/score-detail",  label: t.scoreDetail,                       icon: BarChart3 },
         { href: "/topology-map",  label: t.topologyMap ?? "Interactive Map",  icon: Map },
       ],
@@ -117,7 +117,7 @@ function getNavGroups(t: Record<string, string>, te: Record<string, string>) {
       label: t.riskManagement ?? "RISK",
       items: [
         { href: "/shadow-it",       label: t.shadowIt ?? "Shadow IT",        icon: Ghost },
-        { href: "/bus-factor",      label: t.busFactor ?? "Bus Factor",      icon: UserX },
+        { href: "/bus-factor",      label: t.busFactor ?? "Bus Factor",      icon: TrendingDown },
         { href: "/vuln-priority",   label: t.vulnPriority ?? "Vuln Priority", icon: ShieldAlert },
         { href: "/external-impact", label: t.externalImpact ?? "SaaS Impact", icon: Cloud },
       ],
@@ -126,7 +126,7 @@ function getNavGroups(t: Record<string, string>, te: Record<string, string>) {
     {
       label: te.audit ?? "AUDIT",
       items: [
-        { href: "/evidence",     label: t.evidence,                      icon: FileCheck },
+        { href: "/evidence",     label: t.evidence,                      icon: FileSearch },
         { href: "/audit-report", label: t.auditReport ?? "Audit Report", icon: FileSpreadsheet },
       ],
     },
@@ -348,6 +348,8 @@ export function Navbar() {
               <button
                 className="p-2 text-[#94a3b8] hover:text-white transition-colors md:hidden"
                 onClick={() => setMobileOpen(!mobileOpen)}
+                aria-label={mobileOpen ? "Close navigation menu" : "Open navigation menu"}
+                aria-expanded={mobileOpen}
               >
                 {mobileOpen ? <X size={20} /> : <Menu size={20} />}
               </button>
@@ -425,6 +427,8 @@ export function Navbar() {
             <button
               className="md:hidden p-2 text-[#94a3b8]"
               onClick={() => setMobileOpen(!mobileOpen)}
+              aria-label={mobileOpen ? "Close navigation menu" : "Open navigation menu"}
+              aria-expanded={mobileOpen}
             >
               {mobileOpen ? <X size={22} /> : <Menu size={22} />}
             </button>

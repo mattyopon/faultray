@@ -5,6 +5,7 @@ import { CheckCircle2, AlertTriangle, XCircle, Clock, Activity } from "lucide-re
 export const metadata: Metadata = {
   title: "System Status",
   description: "Real-time status of FaultRay services — API, simulation engine, dashboard, and integrations.",
+  alternates: { canonical: "https://faultray.com/status" },
 };
 
 /* ============================================================

@@ -929,6 +929,7 @@ function SimulatePageInner() {
   const [topTab, setTopTab] = useState<TopTab>("quickstart");
   const [selected, setSelected] = useState<string | null>(null);
   const [yamlText, setYamlText] = useState("");
+  const [yamlError, setYamlError] = useState<string | null>(null); // FORM-02: リアルタイムバリデーション
   const [uploadedFileName, setUploadedFileName] = useState<string | null>(null);
   const [running, setRunning] = useState(false);
   const [runProgress, setRunProgress] = useState(0); // DEMO-03: progress display
@@ -1094,10 +1095,18 @@ function SimulatePageInner() {
     } catch (err) {
       // SIM-02 fix: never silently return demo data on fetch failure.
       // Always surface the error so the user knows results are not real.
-      const message =
-        err instanceof Error
-          ? err.message
-          : "Simulation request failed. Please try again.";
+      const rawMsg = err instanceof Error ? err.message : "Simulation request failed. Please try again.";
+      // CVR-04: Free→Pro アップグレードトリガー — クォータ超過時に明示的なCTA表示
+      const isQuotaError =
+        rawMsg.toLowerCase().includes("quota") ||
+        rawMsg.toLowerCase().includes("limit") ||
+        rawMsg.toLowerCase().includes("5 simulations") ||
+        rawMsg.toLowerCase().includes("upgrade");
+      const message = isQuotaError
+        ? (locale === "ja"
+            ? `${rawMsg}\n\nProプランにアップグレードすると月100回のシミュレーションが利用できます。`
+            : `${rawMsg}\n\nUpgrade to Pro for 100 simulations/month.`)
+        : rawMsg;
       setError(message);
     } finally {
       timers.forEach(clearTimeout);
@@ -1362,20 +1371,74 @@ function SimulatePageInner() {
                     </div>
                     <div className="flex items-center justify-between mb-2">
                       <span className="text-xs font-medium text-[#94a3b8]">Infrastructure Topology (YAML)</span>
-                      <button
-                        onClick={() => { setYamlText(YAML_PLACEHOLDER); setSelected(null); setUploadedFileName(null); }}
-                        className="text-xs text-[#FFD700] hover:text-[#ffe44d] transition-colors"
-                      >
-                        {locale === "ja" ? "サンプルを読み込む" : "Load example"}
-                      </button>
+                      <div className="flex items-center gap-3">
+                        {/* EXPORT-02: YAML構成データの再ダウンロード */}
+                        {yamlText.trim() && (
+                          <button
+                            onClick={() => {
+                              const blob = new Blob([yamlText], { type: "text/yaml" });
+                              const url = URL.createObjectURL(blob);
+                              const a = document.createElement("a");
+                              a.href = url;
+                              a.download = "faultray-topology.yaml";
+                              a.click();
+                              URL.revokeObjectURL(url);
+                            }}
+                            className="text-xs text-[#64748b] hover:text-white transition-colors"
+                          >
+                            {locale === "ja" ? "YAMLをダウンロード" : "Download YAML"}
+                          </button>
+                        )}
+                        <button
+                          onClick={() => { setYamlText(YAML_PLACEHOLDER); setSelected(null); setUploadedFileName(null); }}
+                          className="text-xs text-[#FFD700] hover:text-[#ffe44d] transition-colors"
+                        >
+                          {locale === "ja" ? "サンプルを読み込む" : "Load example"}
+                        </button>
+                      </div>
                     </div>
                     <textarea
                       value={yamlText}
-                      onChange={(e) => { setYamlText(e.target.value); setSelected(null); setUploadedFileName(null); }}
+                      onChange={(e) => {
+                        const val = e.target.value;
+                        setYamlText(val);
+                        setSelected(null);
+                        setUploadedFileName(null);
+                        // FORM-02: リアルタイムバリデーション（基本チェック）
+                        if (val.trim()) {
+                          const lines = val.split("\n");
+                          let err: string | null = null;
+                          for (let i = 0; i < lines.length; i++) {
+                            const line = lines[i];
+                            // タブ文字はYAML非推奨
+                            if (/^\t/.test(line)) {
+                              err = locale === "ja"
+                                ? `${i + 1}行目: タブ文字は使用できません。スペースを使用してください。`
+                                : `Line ${i + 1}: Tab characters are not allowed in YAML. Use spaces.`;
+                              break;
+                            }
+                          }
+                          // componentsキーが存在するか簡易チェック
+                          if (!err && !val.includes("components:")) {
+                            err = locale === "ja"
+                              ? "`components:` キーが見つかりません。"
+                              : "Missing `components:` key.";
+                          }
+                          setYamlError(err);
+                        } else {
+                          setYamlError(null);
+                        }
+                      }}
                       placeholder={YAML_PLACEHOLDER}
-                      className="w-full h-[350px] px-4 py-3 bg-[#0d1117] border border-[#1e293b] rounded-xl text-sm font-mono text-[#e2e8f0] placeholder-[#3a4558] focus:border-[#FFD700]/50 focus:outline-none resize-y"
+                      className={`w-full h-[350px] px-4 py-3 bg-[#0d1117] border rounded-xl text-sm font-mono text-[#e2e8f0] placeholder-[#3a4558] focus:outline-none resize-y transition-colors ${yamlError ? "border-red-500/50 focus:border-red-500" : "border-[#1e293b] focus:border-[#FFD700]/50"}`}
                       spellCheck={false}
                     />
+                    {/* FORM-02: リアルタイムバリデーションエラー表示 */}
+                    {yamlError && (
+                      <p className="text-xs text-red-400 mt-1 flex items-center gap-1">
+                        <span>&#9888;</span> {yamlError}
+                      </p>
+                    )}
                     <p className="text-xs text-[#64748b] mt-2">
                       {locale === "ja"
                         ? "コンポーネント種別: app_server, database, cache, load_balancer, queue / 依存関係: requires, optional, async"

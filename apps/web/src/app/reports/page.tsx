@@ -5,7 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { useEffect, useState } from "react";
 import { api, type ExecutiveReport } from "@/lib/api";
-import { FileText, Loader2, Download, AlertTriangle, CheckCircle2, XCircle, Globe } from "lucide-react";
+import { FileText, Loader2, Download, AlertTriangle, CheckCircle2, XCircle, Globe, Printer } from "lucide-react";
 import { useLocale } from "@/lib/useLocale";
 import { appDict } from "@/i18n/app-dict";
 
@@ -133,6 +133,11 @@ export default function ReportsPage() {
     URL.revokeObjectURL(url);
   };
 
+  // REPORT-01: PDF ワンクリック出力（ブラウザのprint-to-PDFを活用）
+  const downloadPdf = () => {
+    window.print();
+  };
+
   const downloadHtml = async () => {
     try {
       const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || ""}/api/report-executive?format=html&lang=${reportLang}`);
@@ -183,6 +188,10 @@ export default function ReportsPage() {
               <option value="ja">{t.japanese}</option>
             </select>
           </div>
+          {/* REPORT-01: PDF ワンクリック出力 */}
+          <Button variant="secondary" size="sm" onClick={downloadPdf} title={locale === "ja" ? "PDFとして保存（印刷ダイアログ）" : "Save as PDF (print dialog)"}>
+            <Printer size={14} /> PDF
+          </Button>
           <Button variant="secondary" size="sm" onClick={downloadJson}>
             <Download size={14} /> JSON
           </Button>

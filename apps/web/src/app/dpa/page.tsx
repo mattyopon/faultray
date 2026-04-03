@@ -5,6 +5,7 @@ export const metadata: Metadata = {
   title: "Data Processing Agreement",
   description:
     "FaultRay Data Processing Agreement (DPA) — GDPR Article 28 compliant template for enterprise customers.",
+  alternates: { canonical: "https://faultray.com/dpa" },
 };
 
 export default function DpaPage() {

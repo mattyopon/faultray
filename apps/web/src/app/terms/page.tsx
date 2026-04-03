@@ -4,6 +4,7 @@ import type { Metadata } from "next";
 export const metadata: Metadata = {
   title: "Terms of Service",
   description: "FaultRay Terms of Service — rules and conditions for using the platform.",
+  alternates: { canonical: "https://faultray.com/terms" },
 };
 
 export default function TermsPage() {
@@ -317,8 +318,11 @@ export default function TermsPage() {
         {/* 11. Anti-Social Forces Exclusion */}
         <section>
           <h2 className="text-xl font-semibold text-white mb-4">
-            11. Exclusion of Anti-Social Forces
+            11. Exclusion of Anti-Social Forces（反社会的勢力の排除）
           </h2>
+          <p className="mb-2 text-sm text-[#64748b]">
+            ※ 日本語要約: 暴力団、暴力団員、暴力団準構成員、暴力団関係企業その他の反社会的勢力に該当する方はサービスをご利用いただけません。
+          </p>
           <p className="mb-3">
             You represent and warrant that you are not, and none of your officers, directors,
             employees, agents, or affiliates are, any of the following (collectively,

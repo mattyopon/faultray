@@ -3,6 +3,7 @@ import { Geist, Geist_Mono } from "next/font/google";
 import Script from "next/script";
 import { AuthProvider } from "@/components/auth-provider";
 import { Navbar } from "@/components/navbar";
+import { Breadcrumb } from "@/components/breadcrumb";
 import { LocaleProvider } from "@/lib/useLocale";
 import { CookieConsent } from "@/components/cookie-consent";
 import "./globals.css";
@@ -16,6 +17,19 @@ const geistMono = Geist_Mono({
   variable: "--font-geist-mono",
   subsets: ["latin"],
 });
+
+// I18N-03: hreflang alternates for root layout
+const BASE = "https://faultray.com";
+const LOCALE_MAP: Record<string, string> = {
+  en: `${BASE}/en`,
+  ja: `${BASE}/ja`,
+  de: `${BASE}/de`,
+  fr: `${BASE}/fr`,
+  zh: `${BASE}/zh`,
+  ko: `${BASE}/ko`,
+  es: `${BASE}/es`,
+  pt: `${BASE}/pt`,
+};
 
 export const metadata: Metadata = {
   title: {
@@ -34,6 +48,10 @@ export const metadata: Metadata = {
     "DORA compliance",
   ],
   metadataBase: new URL("https://faultray.com"),
+  alternates: {
+    canonical: BASE,
+    languages: LOCALE_MAP,
+  },
   icons: {
     icon: [
       { url: "/favicon.ico", sizes: "32x32", type: "image/x-icon" },
@@ -168,6 +186,7 @@ export default function RootLayout({
         <AuthProvider>
           <LocaleProvider>
             <Navbar />
+            <Breadcrumb />
             <main role="main" className="flex-1 pt-16">{children}</main>
             <CookieConsent />
           </LocaleProvider>

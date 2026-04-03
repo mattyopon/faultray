@@ -183,7 +183,7 @@ const planData = [
       "On-premise deployment",
     ],
     disabledFeatures: [],
-    ctaHref: "mailto:sales@faultray.com",
+    ctaHref: "/contact?plan=business",
     popular: false,
   },
 ];
@@ -823,6 +823,38 @@ export default async function LangHomePage({
       {dict.socialProof && (
         <SocialProof dict={dict.socialProof} stars={githubStars} />
       )}
+
+      {/* ===== COMPDIFF-05: 業界調査データ引用 ===== */}
+      <section className="py-16 border-t border-[#1e293b]">
+        <div className="max-w-[900px] mx-auto px-6">
+          <p className="text-center text-xs text-[#64748b] uppercase tracking-widest mb-8">業界調査データ</p>
+          <div className="grid sm:grid-cols-3 gap-6">
+            {[
+              {
+                stat: "59分",
+                desc: "ITシステム障害1回あたりの平均コスト",
+                source: "ITIC 2023 Reliability Report — 1時間の障害で中規模企業は数百万円の損失",
+              },
+              {
+                stat: "97%",
+                desc: "エリートパフォーマー企業がCI/CDとカオスエンジニアリングを組み合わせ",
+                source: "Google Cloud「State of DevOps 2023」",
+              },
+              {
+                stat: "3.5倍",
+                desc: "高い可用性を持つシステムは障害回復コストが低い",
+                source: "Uptime Institute Global Outage Analysis 2023",
+              },
+            ].map((item) => (
+              <div key={item.stat} className="bg-[#111827] border border-[#1e293b] rounded-xl p-5">
+                <p className="text-2xl font-bold text-[#FFD700] mb-2">{item.stat}</p>
+                <p className="text-sm text-white mb-3">{item.desc}</p>
+                <p className="text-xs text-[#64748b]">{item.source}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
 
       {/* ===== ROI CALCULATOR (LP-04) ===== */}
       {dict.roi && (

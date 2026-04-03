@@ -6,6 +6,7 @@ export const metadata: Metadata = {
   title: "Customer Success Stories",
   description:
     "Real results from teams using FaultRay to prove infrastructure resilience without touching production.",
+  alternates: { canonical: "https://faultray.com/case-studies" },
 };
 
 /* ============================================================

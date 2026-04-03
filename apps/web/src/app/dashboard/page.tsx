@@ -245,23 +245,34 @@ export default function DashboardPage() {
         </div>
       )}
 
-      {/* Trial banner */}
+      {/* RETAIN-03: Trial banner — 期限切れ3日前は赤色の警告表示 */}
       {isTrialActive && (
-        <div className="mb-6 px-5 py-3.5 rounded-xl border border-[#FFD700]/30 bg-[#FFD700]/[0.06] flex items-center justify-between gap-4 flex-wrap">
+        <div className={`mb-6 px-5 py-3.5 rounded-xl border flex items-center justify-between gap-4 flex-wrap ${trialDaysLeft <= 3 ? "border-red-500/40 bg-red-500/[0.07]" : "border-[#FFD700]/30 bg-[#FFD700]/[0.06]"}`}>
           <div className="flex items-center gap-2.5">
-            <Clock size={16} className="text-[#FFD700] shrink-0" />
-            <span className="text-sm font-semibold text-[#FFD700]">
-              Business Trial —
+            <Clock size={16} className={trialDaysLeft <= 3 ? "text-red-400 shrink-0" : "text-[#FFD700] shrink-0"} />
+            <span className={`text-sm font-semibold ${trialDaysLeft <= 3 ? "text-red-400" : "text-[#FFD700]"}`}>
+              {trialDaysLeft <= 3
+                ? (locale === "ja" ? `トライアル終了まで残り${trialDaysLeft}日` : `Trial ends in ${trialDaysLeft} day${trialDaysLeft !== 1 ? "s" : ""}!`)
+                : "Business Trial —"}
             </span>
-            <span className="text-sm text-[#94a3b8]">
-              {trialDaysLeft} day{trialDaysLeft !== 1 ? "s" : ""} remaining. Full access to all features.
-            </span>
+            {trialDaysLeft > 3 && (
+              <span className="text-sm text-[#94a3b8]">
+                {trialDaysLeft} day{trialDaysLeft !== 1 ? "s" : ""} remaining. Full access to all features.
+              </span>
+            )}
+            {trialDaysLeft <= 3 && (
+              <span className="text-sm text-[#94a3b8]">
+                {locale === "ja"
+                  ? "トライアル終了後は無制限アクセスを維持するためにProへのアップグレードをお勧めします。"
+                  : "Upgrade now to keep unlimited access after your trial ends."}
+              </span>
+            )}
           </div>
           <Link
             href="/pricing"
-            className="text-xs font-semibold text-[#FFD700] border border-[#FFD700]/30 px-3 py-1.5 rounded-lg hover:bg-[#FFD700]/10 transition-colors whitespace-nowrap"
+            className={`text-xs font-semibold border px-3 py-1.5 rounded-lg transition-colors whitespace-nowrap ${trialDaysLeft <= 3 ? "text-red-400 border-red-500/40 hover:bg-red-500/10" : "text-[#FFD700] border-[#FFD700]/30 hover:bg-[#FFD700]/10"}`}
           >
-            Upgrade Plan
+            {locale === "ja" ? "今すぐアップグレード" : "Upgrade Now"}
           </Link>
         </div>
       )}

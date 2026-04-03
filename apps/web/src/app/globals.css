@@ -16,6 +16,29 @@
   --blue: #3b82f6;
 }
 
+/* BRAND-02: Light mode support */
+@media (prefers-color-scheme: light) {
+  :root {
+    color-scheme: light dark;
+  }
+}
+
+html[data-theme="light"] {
+  --bg-primary: #f8fafc;
+  --bg-secondary: #f1f5f9;
+  --bg-tertiary: #e2e8f0;
+  --bg-card: #ffffff;
+  --bg-card-hover: #f8fafc;
+  --border-color: #e2e8f0;
+  --text-primary: #0f172a;
+  --text-secondary: #475569;
+  --text-muted: #94a3b8;
+  --gold: #d97706;
+  --green: #059669;
+  --red: #dc2626;
+  --blue: #2563eb;
+}
+
 html {
   scroll-behavior: smooth;
 }

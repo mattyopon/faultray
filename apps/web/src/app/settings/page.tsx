@@ -192,6 +192,7 @@ export default function SettingsPage() {
     jiraDomain: "",
     backlogSpace: "",
     slackWebhook: "",
+    teamsWebhook: "",
   });
   const [integrationsSaved, setIntegrationsSaved] = useState(false);
 
@@ -204,6 +205,7 @@ export default function SettingsPage() {
           jiraDomain: parsed.jiraDomain || "",
           backlogSpace: parsed.backlogSpace || "",
           slackWebhook: parsed.slackWebhook || "",
+          teamsWebhook: parsed.teamsWebhook || "",
         });
       }
     } catch {
@@ -232,6 +234,13 @@ export default function SettingsPage() {
       !integrations.slackWebhook.startsWith("https://hooks.slack.com/")
     ) {
       alert("Slack Webhook URL must start with https://hooks.slack.com/");
+      return;
+    }
+    if (
+      integrations.teamsWebhook &&
+      !integrations.teamsWebhook.startsWith("https://")
+    ) {
+      alert("Teams Webhook URL must start with https://");
       return;
     }
     localStorage.setItem("faultray_integrations", JSON.stringify(integrations));
@@ -764,6 +773,18 @@ export default function SettingsPage() {
               onChange={(e) => setIntegrations({ ...integrations, slackWebhook: e.target.value })}
               className="w-full bg-white/[0.05] border border-[#1e293b] rounded-lg px-3 py-2 text-sm text-white focus:border-[#FFD700] focus:outline-none"
               placeholder={t.slackWebhookPlaceholder}
+              aria-label="Slack Webhook URL"
+            />
+          </div>
+          <div>
+            <label className="block text-sm text-[#64748b] mb-1">{t.teamsWebhook ?? "Microsoft Teams Webhook URL"}</label>
+            <input
+              type="text"
+              value={integrations.teamsWebhook}
+              onChange={(e) => setIntegrations({ ...integrations, teamsWebhook: e.target.value })}
+              className="w-full bg-white/[0.05] border border-[#1e293b] rounded-lg px-3 py-2 text-sm text-white focus:border-[#FFD700] focus:outline-none"
+              placeholder={t.teamsWebhookPlaceholder ?? "https://outlook.office.com/webhook/..."}
+              aria-label="Microsoft Teams Webhook URL"
             />
           </div>
           <div className="flex items-center gap-3">
