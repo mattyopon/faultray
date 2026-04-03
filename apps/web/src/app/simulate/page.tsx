@@ -38,7 +38,7 @@ import Link from "next/link";
 import { useLocale } from "@/lib/useLocale";
 import { appDict } from "@/i18n/app-dict";
 import { Info } from "lucide-react";
-import { useSearchParams } from "next/navigation";
+import { useSearchParams, useRouter } from "next/navigation";
 import { Suspense } from "react";
 
 const SAMPLES = [
@@ -924,6 +924,7 @@ function SimulatePageInner() {
   const t = appDict.simulate[locale] ?? appDict.simulate.en;
   const tProjects = appDict.projects[locale] ?? appDict.projects.en;
   const searchParams = useSearchParams();
+  const router = useRouter();
   const preselectedProjectId = searchParams?.get("project") ?? null;
 
   const [topTab, setTopTab] = useState<TopTab>("quickstart");
@@ -936,6 +937,7 @@ function SimulatePageInner() {
   const [result, setResult] = useState<SimulationResult | null>(null);
   const [scanSummary, setScanSummary] = useState<CloudSimulationResult["scan_summary"] | undefined>(undefined);
   const [error, setError] = useState<string | null>(null);
+  const [saveWarning, setSaveWarning] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Project selector
@@ -1061,7 +1063,13 @@ function SimulatePageInner() {
             result_data: res as unknown as Record<string, unknown>,
           });
         } catch {
-          // Non-critical: localStorage backup already saved
+          // Non-critical: localStorage backup already saved — show soft warning
+          setSaveWarning(
+            locale === "ja"
+              ? "クラウド保存に失敗しました。結果はローカルに保存されています。"
+              : "Cloud save failed. Results are saved locally."
+          );
+          setTimeout(() => setSaveWarning(null), 5000);
         }
 
         // Send Slack notification if webhook URL is configured (best-effort)
@@ -1091,6 +1099,11 @@ function SimulatePageInner() {
         } catch {
           // Non-critical: notification failure does not affect simulation
         }
+
+        // FLOW-06: Auto-redirect to results page after successful simulation
+        setTimeout(() => {
+          router.push("/results");
+        }, 1500);
       }
     } catch (err) {
       // SIM-02 fix: never silently return demo data on fetch failure.
@@ -1451,6 +1464,12 @@ function SimulatePageInner() {
               {error && (
                 <div className="mb-6 p-4 rounded-xl bg-red-500/10 border border-red-500/20 text-red-400 text-sm">
                   {error}
+                </div>
+              )}
+              {saveWarning && (
+                <div className="mb-4 p-3 rounded-xl bg-amber-500/10 border border-amber-500/20 text-amber-400 text-sm flex items-center gap-2">
+                  <AlertTriangle size={14} className="shrink-0" />
+                  {saveWarning}
                 </div>
               )}
 

@@ -219,6 +219,69 @@ body {
   background: #334155;
 }
 
+/* CSS-04: GPU加速 / will-change hints for animation performance */
+.terminal-line,
+.cursor-blink,
+.animate-on-scroll,
+.animate-on-scroll-scale,
+.animate-slide-left,
+.animate-slide-right {
+  will-change: opacity, transform;
+}
+
+.hero-radial-glow {
+  will-change: opacity;
+}
+
+/* CSS-05: z-index スケール（衝突管理） */
+:root {
+  --z-base:       0;
+  --z-dropdown:  10;
+  --z-sticky:    20;
+  --z-overlay:   30;
+  --z-modal:    100;
+  --z-toast:    200;
+  --z-tooltip:  300;
+}
+
+/* CSS-06: @media print — 印刷スタイル */
+@media print {
+  /* サイドバー・ナビ・クッキーバナーを非表示 */
+  [data-sidebar],
+  nav,
+  .cookie-consent,
+  .upgrade-banner {
+    display: none !important;
+  }
+
+  body {
+    background: #ffffff !important;
+    color: #000000 !important;
+  }
+
+  main {
+    margin-left: 0 !important;
+  }
+
+  a {
+    text-decoration: underline;
+    color: #000000;
+  }
+
+  /* スコア・バッジ等の背景色を維持 */
+  * {
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+
+  /* ページ境界でカードが途切れないように */
+  .card,
+  [class*="rounded"] {
+    page-break-inside: avoid;
+    break-inside: avoid;
+  }
+}
+
 /* --- Hero background animated gradient --- */
 @keyframes heroGradient {
   0%, 100% { opacity: 0.3; }

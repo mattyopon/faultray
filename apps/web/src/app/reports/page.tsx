@@ -5,7 +5,8 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { useEffect, useState } from "react";
 import { api, type ExecutiveReport } from "@/lib/api";
-import { FileText, Loader2, Download, AlertTriangle, CheckCircle2, XCircle, Globe, Printer } from "lucide-react";
+import { FileText, Loader2, Download, AlertTriangle, CheckCircle2, XCircle, Globe, Printer, Activity } from "lucide-react";
+import Link from "next/link";
 import { useLocale } from "@/lib/useLocale";
 import { appDict } from "@/i18n/app-dict";
 
@@ -105,6 +106,7 @@ export default function ReportsPage() {
   const [reportLang, setReportLang] = useState<"en" | "ja">("en");
   const [showSections, setShowSections] = useState<Record<ReportSection, boolean>>(DEFAULT_SECTIONS);
   const [showCustomize, setShowCustomize] = useState(false);
+  const [weeklyNotifEnabled, setWeeklyNotifEnabled] = useState(false);
   const locale = useLocale();
   const t = appDict.reports[locale] ?? appDict.reports.en;
 
@@ -207,9 +209,8 @@ export default function ReportsPage() {
                 const notif = JSON.parse(localStorage.getItem("faultray_notifications") ?? "{}");
                 notif.weeklySummary = true;
                 localStorage.setItem("faultray_notifications", JSON.stringify(notif));
-                alert(locale === "ja"
-                  ? "週次レポートのメール通知を有効にしました。設定 → 通知 で変更できます。"
-                  : "Weekly report emails enabled. Manage in Settings → Notifications.");
+                setWeeklyNotifEnabled(true);
+                setTimeout(() => setWeeklyNotifEnabled(false), 3000);
               } catch {
                 // ignore
               }
@@ -218,6 +219,13 @@ export default function ReportsPage() {
             <Download size={14} />
             {locale === "ja" ? "週次通知を有効化" : "Enable Weekly Email"}
           </Button>
+          {weeklyNotifEnabled && (
+            <span className="text-xs text-emerald-400 font-medium">
+              {locale === "ja"
+                ? "週次レポート通知を有効にしました。設定 → 通知 で変更できます。"
+                : "Weekly report emails enabled. Manage in Settings → Notifications."}
+            </span>
+          )}
           {/* FUNC-02: レポートカスタマイズトグル */}
           <Button
             variant="secondary"
@@ -412,6 +420,23 @@ export default function ReportsPage() {
           </Card>}
         </div>
       )}
+
+      {/* FLOW-11: Cross-links to related observability pages */}
+      <div className="flex items-center gap-3 mt-6 pt-4 border-t border-[#1e293b]">
+        <span className="text-xs text-[#475569]">{locale === "ja" ? "関連ページ:" : "Related:"}</span>
+        <Link href="/traces" className="flex items-center gap-1.5 text-xs text-[#64748b] hover:text-[#94a3b8] transition-colors">
+          <Activity size={12} />
+          {locale === "ja" ? "トレース" : "Traces"}
+        </Link>
+        <Link href="/logs" className="flex items-center gap-1.5 text-xs text-[#64748b] hover:text-[#94a3b8] transition-colors">
+          <FileText size={12} />
+          {locale === "ja" ? "ログ" : "Logs"}
+        </Link>
+        <Link href="/compliance" className="flex items-center gap-1.5 text-xs text-[#64748b] hover:text-[#94a3b8] transition-colors">
+          <CheckCircle2 size={12} />
+          {locale === "ja" ? "コンプライアンス" : "Compliance"}
+        </Link>
+      </div>
     </div>
   );
 }

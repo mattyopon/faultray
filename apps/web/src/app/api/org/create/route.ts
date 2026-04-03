@@ -63,5 +63,5 @@ export async function POST(request: Request) {
     console.error("Failed to add owner as member:", memberError);
   }
 
-  return NextResponse.json({ success: true, org });
+  return NextResponse.json({ success: true, org }, { status: 201 });
 }

@@ -14,7 +14,10 @@ import {
   CheckCircle2,
   Filter,
   Search,
+  FileText,
+  BookOpen,
 } from "lucide-react";
+import Link from "next/link";
 import { useLocale } from "@/lib/useLocale";
 import { appDict } from "@/i18n/app-dict";
 
@@ -410,6 +413,19 @@ export default function TracesPage() {
         <span className="ml-4 flex items-center gap-1 text-xs text-emerald-400"><CheckCircle2 size={12} /> OK</span>
         <span className="flex items-center gap-1 text-xs text-yellow-400"><Clock size={12} /> Slow ({">"}1s)</span>
         <span className="flex items-center gap-1 text-xs text-red-400"><AlertTriangle size={12} /> Error</span>
+      </div>
+
+      {/* FLOW-11: Cross-links to related observability pages */}
+      <div className="flex items-center gap-3 mt-6 pt-4 border-t border-[#1e293b]">
+        <span className="text-xs text-[#475569]">{locale === "ja" ? "関連ページ:" : "Related:"}</span>
+        <Link href="/logs" className="flex items-center gap-1.5 text-xs text-[#64748b] hover:text-[#94a3b8] transition-colors">
+          <FileText size={12} />
+          {locale === "ja" ? "ログ" : "Logs"}
+        </Link>
+        <Link href="/reports" className="flex items-center gap-1.5 text-xs text-[#64748b] hover:text-[#94a3b8] transition-colors">
+          <BookOpen size={12} />
+          {locale === "ja" ? "レポート" : "Reports"}
+        </Link>
       </div>
     </div>
   );

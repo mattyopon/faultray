@@ -47,7 +47,7 @@ const featureCards = [
   {
     Icon: Layers,
     title: "5層稼働率モデル（N-Layer Model）",
-    desc: "稼働率の上限を5つの独立した制約層に分解する唯一のツール。どの層がボトルネックになっているかを特定し、投資すべき場所を明示します。",
+    desc: "N-Layer Model（エヌレイヤーモデル）は、稼働率の上限を5つの独立した制約層に分解して可視化する分析フレームワークです。どの層がボトルネックになっているかを特定し、投資すべき場所を明示します。",
     details: [
       "層1: ハードウェア（ディスク・ネットワーク・電源）",
       "層2: ソフトウェア（デプロイ・設定ミス・人的ミス）",
@@ -59,7 +59,7 @@ const featureCards = [
   {
     Icon: Brain,
     title: "AI分析（Claude powered）",
-    desc: "Claudeによる根本原因分析と、影響度・コスト順に並んだ改善提案を自動生成。エンジニアが気づきにくいボトルネックを自然言語で説明します。",
+    desc: "Anthropic社の大規模言語モデル「Claude」を活用し、シミュレーション結果から根本原因を自動特定。影響度・修正コスト順に並んだ改善提案をエンジニアにも経営者にも分かる言葉で生成します。",
     details: [
       "根本原因の自動特定と説明",
       "影響度・修正コスト順の改善提案",
@@ -73,7 +73,7 @@ const featureCards = [
     title: "DORAコンプライアンスレポート",
     desc: "Digital Operational Resilience Act（EU金融規制）への対応を証跡付きで自動証明。監査官が求める形式のレポートをワンクリックで生成します。",
     details: [
-      "DORA 52項目への自動適合チェック",
+      "DORA RTS（規制技術基準）への自動適合チェック",
       "監査証跡（エビデンストレイル）の自動生成",
       "リスク評価マトリクスの自動作成",
       "PDF・API形式でのエクスポート",
@@ -224,7 +224,7 @@ export default function FeaturesPage() {
       <section className="py-16">
         <div className="max-w-[1200px] mx-auto px-6">
           <h2 className="text-2xl font-bold mb-2 text-center">コア機能</h2>
-          <p className="text-[#94a3b8] text-center mb-12">ゼロリスク診断の10の柱</p>
+          <p className="text-[#94a3b8] text-center mb-12">リスクゼロ診断を支える10のコア機能</p>
           <div className="grid md:grid-cols-2 gap-8">
             {featureCards.map((f) => {
               const Icon = f.Icon;

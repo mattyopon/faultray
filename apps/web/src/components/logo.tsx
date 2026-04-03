@@ -1,17 +1,34 @@
+import { forwardRef } from "react";
+
 let _logoCounter = 0;
 
-export function Logo({ size = 28 }: { size?: number }) {
+interface LogoProps {
+  size?: number;
+  "aria-hidden"?: boolean | "true" | "false";
+  className?: string;
+}
+
+export const Logo = forwardRef<SVGSVGElement, LogoProps>(function Logo(
+  { size = 28, "aria-hidden": ariaHidden, className },
+  ref
+) {
   const id = `logo-${++_logoCounter}`;
+  const hidden = ariaHidden === true || ariaHidden === "true";
 
   // Small size (< 64px): simplified design — fault line + background only
   if (size < 64) {
     return (
       <svg
+        ref={ref}
         width={size}
         height={size}
         viewBox="0 0 100 100"
         fill="none"
         xmlns="http://www.w3.org/2000/svg"
+        className={className}
+        aria-hidden={hidden ? "true" : undefined}
+        role={hidden ? undefined : "img"}
+        aria-label={hidden ? undefined : "FaultRay logo"}
       >
         <rect width="100" height="100" rx="20" fill="#0a0e1a" />
         {/* Grid lines — thicker for small size */}
@@ -36,11 +53,16 @@ export function Logo({ size = 28 }: { size?: number }) {
   // Full detail for larger sizes
   return (
     <svg
+      ref={ref}
       width={size}
       height={size}
       viewBox="0 0 512 512"
       fill="none"
       xmlns="http://www.w3.org/2000/svg"
+      className={className}
+      aria-hidden={hidden ? "true" : undefined}
+      role={hidden ? undefined : "img"}
+      aria-label={hidden ? undefined : "FaultRay logo"}
     >
       <defs>
         <clipPath id={`upper-${id}`}>
@@ -95,4 +117,6 @@ export function Logo({ size = 28 }: { size?: number }) {
       <line x1="153" y1="153" x2="90" y2="420" stroke="#FFD700" strokeWidth="2.5" opacity="0.35" strokeLinecap="round" />
     </svg>
   );
-}
+});
+
+Logo.displayName = "Logo";

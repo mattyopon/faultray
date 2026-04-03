@@ -14,7 +14,10 @@ import {
   Filter,
   RefreshCw,
   Zap,
+  Activity,
+  BookOpen,
 } from "lucide-react";
+import Link from "next/link";
 import { useLocale } from "@/lib/useLocale";
 
 /* ============================================================
@@ -274,6 +277,19 @@ export default function LogsPage() {
       <p className="text-xs text-[#475569] mt-4 text-center">
         Showing last 5 minutes · Auto-refresh every 10s · Use query syntax: <span className="text-[#64748b]">level:ERROR service:db timeout</span>
       </p>
+
+      {/* FLOW-11: Cross-links to related observability pages */}
+      <div className="flex items-center gap-3 mt-6 pt-4 border-t border-[#1e293b]">
+        <span className="text-xs text-[#475569]">Related:</span>
+        <Link href="/traces" className="flex items-center gap-1.5 text-xs text-[#64748b] hover:text-[#94a3b8] transition-colors">
+          <Activity size={12} />
+          Traces
+        </Link>
+        <Link href="/reports" className="flex items-center gap-1.5 text-xs text-[#64748b] hover:text-[#94a3b8] transition-colors">
+          <BookOpen size={12} />
+          Reports
+        </Link>
+      </div>
     </div>
   );
 }

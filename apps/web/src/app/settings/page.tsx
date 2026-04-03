@@ -195,6 +195,8 @@ export default function SettingsPage() {
     teamsWebhook: "",
   });
   const [integrationsSaved, setIntegrationsSaved] = useState(false);
+  const [integrationsError, setIntegrationsError] = useState<string | null>(null);
+  const [deleteError, setDeleteError] = useState<string | null>(null);
 
   useEffect(() => {
     try {
@@ -228,19 +230,28 @@ export default function SettingsPage() {
   }, []);
 
   function handleSaveIntegrations() {
+    setIntegrationsError(null);
     // Validate slackWebhook URL before saving (SSRF prevention)
     if (
       integrations.slackWebhook &&
       !integrations.slackWebhook.startsWith("https://hooks.slack.com/")
     ) {
-      alert("Slack Webhook URL must start with https://hooks.slack.com/");
+      setIntegrationsError(
+        locale === "ja"
+          ? "Slack Webhook URL は https://hooks.slack.com/ で始まる必要があります"
+          : "Slack Webhook URL must start with https://hooks.slack.com/"
+      );
       return;
     }
     if (
       integrations.teamsWebhook &&
       !integrations.teamsWebhook.startsWith("https://")
     ) {
-      alert("Teams Webhook URL must start with https://");
+      setIntegrationsError(
+        locale === "ja"
+          ? "Teams Webhook URL は https:// で始まる必要があります"
+          : "Teams Webhook URL must start with https://"
+      );
       return;
     }
     localStorage.setItem("faultray_integrations", JSON.stringify(integrations));
@@ -464,6 +475,12 @@ export default function SettingsPage() {
           <Link href="/pricing">
             <Button size="sm">
               <CreditCard size={14} /> {t.upgradePro}
+            </Button>
+          </Link>
+          {/* FLOW-07: Link to team management from settings */}
+          <Link href="/teams">
+            <Button size="sm" variant="secondary">
+              {locale === "ja" ? "チーム管理" : "Manage Team"}
             </Button>
           </Link>
           {/* RETAIN-01: Cancel flow entry point for paid plans */}
@@ -787,6 +804,12 @@ export default function SettingsPage() {
               aria-label="Microsoft Teams Webhook URL"
             />
           </div>
+          {integrationsError && (
+            <p className="text-xs text-red-400 mb-2 flex items-center gap-1">
+              <AlertTriangle size={12} />
+              {integrationsError}
+            </p>
+          )}
           <div className="flex items-center gap-3">
             <Button size="sm" onClick={handleSaveIntegrations}>
               <Check size={14} />
@@ -819,8 +842,15 @@ export default function SettingsPage() {
               <p className="text-sm font-medium text-red-400">{t.areYouSure}</p>
             </div>
             <p className="text-xs text-[#94a3b8] mb-4">{t.deleteConfirm}</p>
+            {deleteError && (
+              <p className="text-xs text-red-400 mb-3 flex items-center gap-1">
+                <AlertTriangle size={12} />
+                {deleteError}
+              </p>
+            )}
             <div className="flex gap-3">
               <Button variant="danger" size="sm" onClick={async () => {
+                setDeleteError(null);
                 try {
                   const res = await fetch("/api/account/delete", {
                     method: "DELETE",
@@ -832,12 +862,19 @@ export default function SettingsPage() {
                     router.push("/");
                   } else {
                     const data = await res.json().catch(() => ({})) as { error?: string };
-                    alert(data.error || "Account deletion failed. Please contact support.");
-                    setShowDeleteConfirm(false);
+                    setDeleteError(
+                      data.error ||
+                        (locale === "ja"
+                          ? "アカウント削除に失敗しました。サポートにお問い合わせください。"
+                          : "Account deletion failed. Please contact support.")
+                    );
                   }
                 } catch {
-                  alert("Network error. Please try again or contact support.");
-                  setShowDeleteConfirm(false);
+                  setDeleteError(
+                    locale === "ja"
+                      ? "ネットワークエラーが発生しました。再試行するかサポートにお問い合わせください。"
+                      : "Network error. Please try again or contact support."
+                  );
                 }
               }}>
                 {t.yesDelete}

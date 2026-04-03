@@ -103,5 +103,5 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Failed to create invitation" }, { status: 500 });
   }
 
-  return NextResponse.json({ success: true, member });
+  return NextResponse.json({ success: true, member }, { status: 201 });
 }
