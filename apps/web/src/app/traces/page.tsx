@@ -300,16 +300,16 @@ export default function TracesPage() {
           {/* Header row */}
           <div className="flex items-center gap-3 px-3 py-2 text-[10px] text-[#475569] uppercase tracking-wider border-b border-[#1e293b] mb-2">
             <span className="w-5" />
-            <span className="flex-1">Trace / Operation</span>
-            <span className="w-32 hidden md:block">Services</span>
-            <span className="w-20 text-right">Spans</span>
-            <span className="w-28 text-right">Duration</span>
-            <span className="w-24 text-right">Status</span>
-            <span className="w-32 hidden lg:block text-right">Time</span>
+            <span className="flex-1">{locale === "ja" ? "トレース / オペレーション" : "Trace / Operation"}</span>
+            <span className="w-32 hidden md:block">{locale === "ja" ? "サービス" : "Services"}</span>
+            <span className="w-20 text-right">{locale === "ja" ? "スパン数" : "Spans"}</span>
+            <span className="w-28 text-right">{locale === "ja" ? "所要時間" : "Duration"}</span>
+            <span className="w-24 text-right">{locale === "ja" ? "ステータス" : "Status"}</span>
+            <span className="w-32 hidden lg:block text-right">{locale === "ja" ? "日時" : "Time"}</span>
           </div>
 
           {filtered.length === 0 && (
-            <p className="text-center text-[#64748b] py-8 text-sm">No traces match the current filters.</p>
+            <p className="text-center text-[#64748b] py-8 text-sm">{locale === "ja" ? "フィルター条件に一致するトレースがありません。" : "No traces match the current filters."}</p>
           )}
 
           {filtered.map((trace) => {

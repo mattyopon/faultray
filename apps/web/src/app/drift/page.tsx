@@ -109,17 +109,17 @@ export default function DriftPage() {
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
         <Card className="text-center">
           <p className="text-3xl font-extrabold font-mono text-[#f59e0b]">{activeDrifts.length}</p>
-          <p className="text-xs text-[#64748b] uppercase tracking-wider mt-1">Active Drift</p>
+          <p className="text-xs text-[#64748b] uppercase tracking-wider mt-1">{locale === "ja" ? "アクティブドリフト" : "Active Drift"}</p>
         </Card>
         <Card className="text-center">
           <p className="text-3xl font-extrabold font-mono text-[#10b981]">
             {DRIFT_EVENTS.filter((d) => d.status === "resolved").length}
           </p>
-          <p className="text-xs text-[#64748b] uppercase tracking-wider mt-1">Resolved</p>
+          <p className="text-xs text-[#64748b] uppercase tracking-wider mt-1">{locale === "ja" ? "解決済み" : "Resolved"}</p>
         </Card>
         <Card className="text-center">
           <p className="text-3xl font-extrabold font-mono">{DRIFT_EVENTS.length}</p>
-          <p className="text-xs text-[#64748b] uppercase tracking-wider mt-1">Total This Week</p>
+          <p className="text-xs text-[#64748b] uppercase tracking-wider mt-1">{locale === "ja" ? "今週の合計" : "Total This Week"}</p>
         </Card>
         <Card className="text-center">
           <p className="text-3xl font-extrabold font-mono text-[#3b82f6]">

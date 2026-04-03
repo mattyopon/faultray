@@ -336,19 +336,19 @@ export default function RunbooksPage() {
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
         <Card className="text-center">
           <p className="text-3xl font-extrabold font-mono">{DEMO_RUNBOOKS.length}</p>
-          <p className="text-xs text-[#64748b] uppercase tracking-wider mt-1">Total Runbooks</p>
+          <p className="text-xs text-[#64748b] uppercase tracking-wider mt-1">{locale === "ja" ? "ランブック総数" : "Total Runbooks"}</p>
         </Card>
         <Card className="text-center">
           <p className="text-3xl font-extrabold font-mono text-red-400">
             {DEMO_RUNBOOKS.filter((r) => r.severity === "critical").length}
           </p>
-          <p className="text-xs text-[#64748b] uppercase tracking-wider mt-1">Critical</p>
+          <p className="text-xs text-[#64748b] uppercase tracking-wider mt-1">{locale === "ja" ? "クリティカル" : "Critical"}</p>
         </Card>
         <Card className="text-center">
           <p className="text-3xl font-extrabold font-mono text-[#f59e0b]">
             {DEMO_RUNBOOKS.filter((r) => r.severity === "high").length}
           </p>
-          <p className="text-xs text-[#64748b] uppercase tracking-wider mt-1">High</p>
+          <p className="text-xs text-[#64748b] uppercase tracking-wider mt-1">{locale === "ja" ? "高" : "High"}</p>
         </Card>
         <Card className="text-center">
           <p className="text-3xl font-extrabold font-mono text-[#10b981]">11 min</p>
@@ -363,7 +363,7 @@ export default function RunbooksPage() {
         ))}
         {filtered.length === 0 && (
           <Card className="text-center py-12">
-            <p className="text-[#64748b]">No runbooks match your search.</p>
+            <p className="text-[#64748b]">{locale === "ja" ? "検索に一致するランブックがありません。" : "No runbooks match your search."}</p>
           </Card>
         )}
       </div>

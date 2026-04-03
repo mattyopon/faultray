@@ -245,23 +245,23 @@ export default function PostmortemsPage() {
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
         <Card className="text-center">
           <p className="text-3xl font-extrabold font-mono">{DEMO_POSTMORTEMS.length}</p>
-          <p className="text-xs text-[#64748b] uppercase tracking-wider mt-1">Post-Mortems</p>
+          <p className="text-xs text-[#64748b] uppercase tracking-wider mt-1">{locale === "ja" ? "ポストモーテム" : "Post-Mortems"}</p>
         </Card>
         <Card className="text-center">
           <p className="text-3xl font-extrabold font-mono text-red-400">
             {DEMO_POSTMORTEMS.filter((p) => p.severity === "critical").length}
           </p>
-          <p className="text-xs text-[#64748b] uppercase tracking-wider mt-1">Critical</p>
+          <p className="text-xs text-[#64748b] uppercase tracking-wider mt-1">{locale === "ja" ? "クリティカル" : "Critical"}</p>
         </Card>
         <Card className="text-center">
           <p className="text-3xl font-extrabold font-mono text-[#10b981]">{completedActions}</p>
-          <p className="text-xs text-[#64748b] uppercase tracking-wider mt-1">Actions Done</p>
+          <p className="text-xs text-[#64748b] uppercase tracking-wider mt-1">{locale === "ja" ? "完了アクション" : "Actions Done"}</p>
         </Card>
         <Card className="text-center">
           <p className="text-3xl font-extrabold font-mono text-[#FFD700]">
             {totalActions.length - completedActions}
           </p>
-          <p className="text-xs text-[#64748b] uppercase tracking-wider mt-1">Remaining</p>
+          <p className="text-xs text-[#64748b] uppercase tracking-wider mt-1">{locale === "ja" ? "未完了" : "Remaining"}</p>
         </Card>
       </div>
 
