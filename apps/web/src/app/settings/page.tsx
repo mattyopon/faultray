@@ -860,7 +860,16 @@ export default function SettingsPage() {
           <Link2 size={20} className="text-[#FFD700]" />
           <h2 className="text-lg font-bold">{t.integrations}</h2>
         </div>
-        <p className="text-sm text-[#94a3b8] mb-6">{t.integrationsDesc}</p>
+        <p className="text-sm text-[#94a3b8] mb-4">{t.integrationsDesc}</p>
+        {/* LSTORAGE-01: Webhook URLのlocalStorage保存に関するセキュリティ注記 */}
+        <div className="flex items-start gap-2 p-3 mb-4 rounded-lg bg-amber-500/[0.06] border border-amber-500/20">
+          <AlertTriangle size={14} className="text-amber-400 shrink-0 mt-0.5" />
+          <p className="text-xs text-amber-400/80">
+            {locale === "ja"
+              ? "Webhook URLはブラウザのローカルストレージに保存されます。共有デバイスでの使用はお控えください。"
+              : "Webhook URLs are stored in browser local storage. Do not use on shared devices."}
+          </p>
+        </div>
         <div className="space-y-4">
           <div>
             <label htmlFor="settings-jira-domain" className="block text-sm text-[#64748b] mb-1">{t.jiraDomain}</label>
