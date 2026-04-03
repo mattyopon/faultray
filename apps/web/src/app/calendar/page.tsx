@@ -140,11 +140,11 @@ export default function CalendarPage() {
         <Card className="md:col-span-2">
           {/* Header */}
           <div className="flex items-center justify-between mb-4">
-            <button onClick={prevMonth} className="p-1.5 text-[#64748b] hover:text-white transition-colors">
+            <button onClick={prevMonth} className="p-1.5 text-[#64748b] hover:text-white transition-colors" aria-label={locale === "ja" ? "前月" : "Previous month"}>
               <ChevronLeft size={18} />
             </button>
             <p className="font-bold">{monthLabel}</p>
-            <button onClick={nextMonth} className="p-1.5 text-[#64748b] hover:text-white transition-colors">
+            <button onClick={nextMonth} className="p-1.5 text-[#64748b] hover:text-white transition-colors" aria-label={locale === "ja" ? "翌月" : "Next month"}>
               <ChevronRight size={18} />
             </button>
           </div>

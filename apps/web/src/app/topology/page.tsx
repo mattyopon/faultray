@@ -894,7 +894,7 @@ export default function TopologyPage() {
                   <h3 className="text-xs font-semibold text-[#64748b] uppercase tracking-wider">
                     {t.componentDetails}
                   </h3>
-                  <button onClick={() => setSelectedNode(null)} className="text-[#64748b] hover:text-white transition-colors">
+                  <button onClick={() => setSelectedNode(null)} className="text-[#64748b] hover:text-white transition-colors" aria-label={locale === "ja" ? "詳細を閉じる" : "Close details"}>
                     <X size={14} />
                   </button>
                 </div>
