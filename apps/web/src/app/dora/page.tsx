@@ -127,7 +127,7 @@ export default function DoraPage() {
           <p className="text-xs text-[#64748b] uppercase mb-2">{t.overallScore}</p>
           <p className="text-3xl font-bold text-[#FFD700]">{displayScore}%</p>
           {!isFromApi && (
-            <p className="text-[10px] text-[#475569] mt-1">Sample data</p>
+            <p className="text-[10px] text-[#475569] mt-1">{locale === "ja" ? "サンプルデータ" : "Sample data"}</p>
           )}
         </Card>
         <Card>

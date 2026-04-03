@@ -100,7 +100,7 @@ export default function SupplyChainPage() {
           <p className="text-3xl font-extrabold font-mono text-[#10b981]">
             {DEMO_DEPS.filter((d) => !d.cve).length}
           </p>
-          <p className="text-xs text-[#64748b] uppercase tracking-wider mt-1">Clean</p>
+          <p className="text-xs text-[#64748b] uppercase tracking-wider mt-1">{locale === "ja" ? "クリーン" : "Clean"}</p>
         </Card>
       </div>
 
@@ -118,7 +118,7 @@ export default function SupplyChainPage() {
                   <Badge variant="default">{adv.package}</Badge>
                 </div>
                 <p className="text-sm mt-1">{adv.title}</p>
-                <p className="text-xs text-[#64748b] mt-0.5">Published: {adv.publishedAt} · Fix: v{adv.patchVersion}</p>
+                <p className="text-xs text-[#64748b] mt-0.5">{locale === "ja" ? "公開日:" : "Published:"} {adv.publishedAt} · Fix: v{adv.patchVersion}</p>
               </div>
             </div>
           ))}
@@ -127,7 +127,7 @@ export default function SupplyChainPage() {
 
       {/* Dependency table */}
       <Card>
-        <p className="text-sm font-semibold text-[#FFD700] mb-4">Dependency Inventory</p>
+        <p className="text-sm font-semibold text-[#FFD700] mb-4">{locale === "ja" ? "依存関係インベントリ" : "Dependency Inventory"}</p>
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
