@@ -268,9 +268,11 @@ export default function DemoPage() {
           </div>
         )}
 
-        {/* DEMO-01 + DEMO-05: Sample result preview */}
-        {selectedIndustry && preview && (
-          <Card className="border-blue-500/20 bg-blue-500/[0.02]">
+        {/* DEMO-01 + DEMO-05: Sample result preview (always visible with default) */}
+        {(() => {
+          const displayPreview = preview ?? INDUSTRY_TEMPLATES.saas;
+          return (
+          <Card id="sample-result" className="border-blue-500/20 bg-blue-500/[0.02]">
             <div className="flex items-center gap-2 mb-4">
               <Info size={14} className="text-blue-400" />
               <Badge variant="default" className="bg-blue-500/10 text-blue-400 border-blue-500/20">
@@ -280,35 +282,36 @@ export default function DemoPage() {
             </div>
             <p className="text-base font-bold mb-4">{t.previewTitle}</p>
             <div className="flex flex-col sm:flex-row items-center gap-6">
-              <PreviewScoreRing score={preview.score} />
+              <PreviewScoreRing score={displayPreview.score} />
               <div className="grid grid-cols-2 gap-4 flex-1">
                 <div className="p-3 rounded-lg bg-black/5 border border-[var(--border-color)]">
                   <p className="text-xs text-[var(--text-muted)] mb-1">{t.previewScore}</p>
-                  <p className="text-xl font-bold font-mono" style={{ color: preview.score >= 90 ? "#10B981" : preview.score >= 70 ? "#FFD700" : "#ef4444" }}>
-                    {preview.score}
+                  <p className="text-xl font-bold font-mono" style={{ color: displayPreview.score >= 90 ? "#10B981" : displayPreview.score >= 70 ? "#FFD700" : "#ef4444" }}>
+                    {displayPreview.score}
                   </p>
                 </div>
                 <div className="p-3 rounded-lg bg-black/5 border border-[var(--border-color)]">
                   <p className="text-xs text-[var(--text-muted)] mb-1">{t.previewAvailability}</p>
-                  <p className="text-xl font-bold font-mono text-emerald-400">{preview.nines}</p>
+                  <p className="text-xl font-bold font-mono text-emerald-400">{displayPreview.nines}</p>
                 </div>
                 <div className="p-3 rounded-lg bg-black/5 border border-[var(--border-color)]">
                   <p className="text-xs text-[var(--text-muted)] mb-1">{t.previewCritical}</p>
-                  <p className="text-xl font-bold font-mono text-red-400">{preview.critical}</p>
+                  <p className="text-xl font-bold font-mono text-red-400">{displayPreview.critical}</p>
                 </div>
                 <div className="p-3 rounded-lg bg-black/5 border border-[var(--border-color)]">
                   <p className="text-xs text-[var(--text-muted)] mb-1">{t.previewWarning}</p>
-                  <p className="text-xl font-bold font-mono text-orange-400">{preview.warning}</p>
+                  <p className="text-xl font-bold font-mono text-orange-400">{displayPreview.warning}</p>
                 </div>
               </div>
             </div>
             <div className="mt-4 text-right">
-              <Link href={`/simulate?sample=${preview.scenario}`} className="text-sm font-semibold text-[var(--gold)] hover:underline inline-flex items-center gap-1">
+              <Link href={`/simulate?sample=${displayPreview.scenario}`} className="text-sm font-semibold text-[var(--gold)] hover:underline inline-flex items-center gap-1">
                 {t.previewCTA} <ArrowRight size={14} />
               </Link>
             </div>
           </Card>
-        )}
+          );
+        })()}
       </div>
 
       {/* COMP-04: Self-guided tour — step by step */}
@@ -342,8 +345,8 @@ export default function DemoPage() {
               desc: locale === "ja"
                 ? "2,000以上の障害シナリオを30秒で実行。本番環境には一切触れません"
                 : "2,000+ failure scenarios in 30 seconds. Zero production impact",
-              cta: locale === "ja" ? "サンプルで試す" : "Try with sample",
-              href: "/simulate?sample=web-saas",
+              cta: locale === "ja" ? "下のプレビューで確認 ↓" : "See preview below ↓",
+              href: "#sample-result",
             },
             {
               step: 3,

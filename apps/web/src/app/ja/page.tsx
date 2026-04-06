@@ -1032,6 +1032,20 @@ export default async function LangHomePage() {
               </table>
             </div>
           </div>
+
+          {/* SALES-02: Professional service callout on LP */}
+          <div className="max-w-[900px] mx-auto mt-10 p-5 rounded-2xl border border-[var(--gold)]/20 bg-gradient-to-r from-[var(--gold)]/[0.03] to-transparent flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+            <div>
+              <p className="text-sm font-semibold text-[var(--text-primary)]">対面診断もあります</p>
+              <p className="text-xs text-[var(--text-muted)] mt-1">SaaSに加え、専門エンジニアによるインフラ診断（¥150,000〜/回）も承ります。</p>
+            </div>
+            <Link
+              href="/pricing#professional"
+              className="shrink-0 text-xs font-semibold text-[var(--gold)] border border-[var(--gold)]/30 px-4 py-2 rounded-lg hover:bg-[var(--gold)]/10 transition-colors"
+            >
+              詳しく見る →
+            </Link>
+          </div>
         </div>
       </section>
 

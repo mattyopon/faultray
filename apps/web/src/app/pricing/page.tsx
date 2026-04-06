@@ -42,7 +42,7 @@ const plans: Plan[] = [
     name: "Pro",
     monthlyPrice: 299,
     annualMonthlyPrice: 239,   // 299 * 12 * 0.8 / 12 ≈ 239
-    annualTotal: 2869,         // 299 * 12 * 0.8 rounded
+    annualTotal: 2868,         // 239 * 12 = 2868
     desc: "For teams that need DORA compliance reports and higher limits.",
     features: ["14-day free trial", "100 simulations / month", "Up to 50 components", "Everything in Free", "DORA report export (PDF)", "AI-powered analysis", "Email support (24h)"],
     disabledFeatures: ["Insurance API", "Custom SSO"],
@@ -56,7 +56,7 @@ const plans: Plan[] = [
     name: "Starter",
     monthlyPrice: 99,
     annualMonthlyPrice: 79,
-    annualTotal: 949,
+    annualTotal: 948,          // 79 * 12 = 948
     desc: "For small teams getting started with reliability testing. 30 simulations covers most ongoing monitoring needs.",
     features: ["30 simulations / month", "Up to 20 components", "Everything in Free", "Email support (48h)", "Basic remediation suggestions"],
     disabledFeatures: ["DORA report export", "AI-powered analysis", "Custom SSO"],
@@ -94,6 +94,24 @@ const featureComparison = [
   { name: "99.9% Uptime SLA", free: false, starter: false, pro: true, business: true },
   { name: "Support", free: "Community", starter: "Email (48h)", pro: "Email (24h)", business: "Dedicated (1h)" },
 ];
+
+// Task 1+9: JP price display constants (outside component to avoid per-render allocation)
+const jaMonthlyPrice: Record<string, string> = { Starter: "¥9,900", Pro: "¥29,800", Business: "¥99,800" };
+const jaAnnualMonthlyPrice: Record<string, string> = { Starter: "¥7,900", Pro: "¥23,800", Business: "¥79,800" };
+const jaAnnualTotal: Record<string, string> = { Starter: "¥94,800", Pro: "¥285,600", Business: "¥957,600" };
+const jaUsdEquiv: Record<string, string> = { Starter: "$99", Pro: "$299", Business: "$999" };
+const jaDesc: Record<string, string> = {
+  Business: "無制限アクセス、SSO、専任サポートが必要なエンタープライズ向け。",
+  Pro: "DORAコンプライアンスレポートと上限拡張が必要なチーム向け。",
+  Starter: "信頼性テストを始める小規模チーム向け。月30回で日常的な監視をカバー。",
+  Free: "障害リスク診断を試したい個人エンジニアに最適。月5回で概念実証を評価。",
+};
+const jaCta: Record<string, string> = {
+  Business: "お問い合わせ",
+  Pro: "無料トライアル開始",
+  Starter: "無料トライアル開始",
+  Free: "無料で始める",
+};
 
 function CellValue({ value }: { value: string | boolean }) {
   if (value === true) return <Check size={18} className="text-emerald-400 mx-auto" />;
@@ -167,7 +185,7 @@ export default function PricingPage() {
         </p>
         <div className="mt-4 flex flex-wrap items-center justify-center gap-3">
           <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-[var(--gold)]/10 border border-[var(--gold)]/20">
-            <span className="text-sm font-semibold text-[var(--gold)]">14-day free trial on Pro</span>
+            <span className="text-sm font-semibold text-[var(--gold)]">{isJa ? "Starter・Proプラン 14日間無料トライアル" : "14-day free trial on Starter & Pro"}</span>
           </div>
           {/* CVR-03: Explicitly state no credit card required */}
           <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-emerald-500/10 border border-emerald-500/20">
@@ -228,10 +246,7 @@ export default function PricingPage() {
       <div className="grid md:grid-cols-4 gap-6 max-w-[1300px] mx-auto mb-20">
         {plans.map((plan) => {
           const displayPrice = billing === "annual" ? plan.annualMonthlyPrice : plan.monthlyPrice;
-          // JP-02: Japanese price display for all plans
-          const jaMonthlyPrice: Record<string, string> = { Starter: "¥9,900", Pro: "¥29,800", Business: "¥99,800" };
-          const jaAnnualMonthlyPrice: Record<string, string> = { Starter: "¥7,900", Pro: "¥23,800", Business: "¥79,800" };
-          const jaAnnualTotal: Record<string, string> = { Starter: "¥94,800", Pro: "¥285,600", Business: "¥957,600" };
+          // JP price maps moved to component-level scope (Task 9)
           return (
             <div key={plan.name} className={`relative p-9 rounded-2xl border flex flex-col transition-all duration-200 hover:-translate-y-1 hover:shadow-lg ${plan.popular ? "border-[var(--gold)] bg-gradient-to-b from-[var(--gold)]/[0.04] to-[var(--bg-card)] shadow-md" : "border-[var(--border-color)] bg-[var(--bg-card)]"}`}>
               {plan.popular && (
@@ -250,12 +265,17 @@ export default function PricingPage() {
               )}
 
               {isJa && plan.name in jaMonthlyPrice ? (
-                <div className="flex items-baseline gap-0.5 mb-1">
-                  <span className="text-4xl font-extrabold tracking-tight">
-                    {billing === "annual" ? jaAnnualMonthlyPrice[plan.name] : jaMonthlyPrice[plan.name]}
-                  </span>
-                  <span className="text-sm text-[var(--text-muted)] ml-1">/月</span>
-                </div>
+                <>
+                  <div className="flex items-baseline gap-0.5 mb-0.5">
+                    <span className="text-4xl font-extrabold tracking-tight">
+                      {billing === "annual" ? jaAnnualMonthlyPrice[plan.name] : jaMonthlyPrice[plan.name]}
+                    </span>
+                    <span className="text-sm text-[var(--text-muted)] ml-1">/月</span>
+                  </div>
+                  {plan.monthlyPrice > 0 && (
+                    <p className="text-xs text-[var(--text-muted)] mb-1">（{jaUsdEquiv[plan.name]} USD）</p>
+                  )}
+                </>
               ) : (
                 <div className="flex items-baseline gap-0.5 mb-1">
                   <span className="text-xl font-semibold text-[var(--text-secondary)]">$</span>
@@ -272,7 +292,7 @@ export default function PricingPage() {
               )}
               {!(billing === "annual" && plan.annualTotal > 0) && <div className="mb-4" />}
 
-              <p className="text-sm text-[var(--text-secondary)] leading-relaxed mb-6">{plan.desc}</p>
+              <p className="text-sm text-[var(--text-secondary)] leading-relaxed mb-6">{isJa && plan.name in jaDesc ? jaDesc[plan.name] : plan.desc}</p>
               <ul className="space-y-3 mb-8 flex-1">
                 {plan.features.map((f) => (
                   <li key={f} className="flex items-center gap-2.5 text-sm text-[var(--text-secondary)]">
@@ -294,7 +314,7 @@ export default function PricingPage() {
                   {loadingPlan === plan.stripePlan ? (
                     <><Loader2 size={16} className="animate-spin" /> Processing...</>
                   ) : (
-                    plan.cta
+                    isJa && plan.name in jaCta ? jaCta[plan.name] : plan.cta
                   )}
                 </button>
               ) : (
@@ -302,7 +322,7 @@ export default function PricingPage() {
                   href={plan.ctaHref}
                   className={`w-full text-center py-3 rounded-xl font-semibold transition-all block ${plan.popular ? "bg-[var(--gold)] text-white hover:bg-[#044a99]" : "border border-[var(--border-color)] text-[var(--text-primary)] hover:border-[var(--text-muted)]"}`}
                 >
-                  {plan.cta}
+                  {isJa && plan.name in jaCta ? jaCta[plan.name] : plan.cta}
                 </Link>
               )}
             </div>
@@ -317,9 +337,9 @@ export default function PricingPage() {
             <ShieldCheck size={20} className="text-emerald-400 shrink-0" />
             <p className="text-sm text-emerald-300">
               {isJa ? (
-                <><strong>年間払いで20%お得。</strong> Starter: 年間¥23,800節約。Pro: 年間¥72,000節約。Business: 年間¥240,000節約。Pro以上のプランには99.9% Uptime SLA保証付き。</>
+                <><strong>年間払いで20%お得。</strong> Starter: 年間¥24,000節約。Pro: 年間¥72,000節約。Business: 年間¥240,000節約。Pro以上のプランには99.9% Uptime SLA保証付き。</>
               ) : (
-                <><strong>Annual billing saves you 20%.</strong> Starter: save $238/yr. Pro: save $719/yr. Business: save $2,398/yr.
+                <><strong>Annual billing saves you 20%.</strong> Starter: save $240/yr. Pro: save $720/yr. Business: save $2,400/yr.
                 All annual plans on Pro and above include 99.9% Uptime SLA guarantee.</>
               )}
             </p>
@@ -333,11 +353,12 @@ export default function PricingPage() {
           {(isJa ? [
             { label: "1時間のダウンタイム平均コスト", value: "1,000万円+", color: "text-red-400", icon: "⚠️" },
             { label: "FaultRay Starter — 月額", value: "¥9,900", color: "text-[var(--gold)]", icon: "✅" },
-            { label: "年1回の障害を防いだ場合のROI", value: "84,000%+", color: "text-emerald-400", icon: "📈" },
+            { label: "年1回の障害を防いだ場合のROI", value: "8,400%+", color: "text-emerald-400", icon: "📈" },
           ] : [
             { label: "Average cost of 1 hour downtime", value: "$100,000+", color: "text-red-400", icon: "⚠️" },
             { label: "FaultRay Starter — per month", value: "$99", color: "text-[var(--gold)]", icon: "✅" },
-            { label: "ROI if it prevents 1 incident/year", value: "84,000%+", color: "text-emerald-400", icon: "📈" },
+            // ROI = $100,000 saved / ($99×12 annual cost) ≈ 8,417%
+            { label: "ROI if it prevents 1 incident/year", value: "8,400%+", color: "text-emerald-400", icon: "📈" },
           ]).map((stat) => (
             <div key={stat.label} className="p-5 rounded-xl border border-[var(--border-color)] bg-[var(--bg-card)]">
               <p className="text-2xl mb-1">{stat.icon}</p>
@@ -348,8 +369,8 @@ export default function PricingPage() {
         </div>
         <p className="text-center text-xs text-[var(--text-muted)] mt-3">
           {isJa
-            ? "業界平均: ダウンタイム1分あたり約84万円 (Gartner, 2024)。1回の障害防止でStarter約70年分の元が取れます。"
-            : "Industry average: $5,600/minute downtime cost (Gartner, 2024). One incident prevented pays for 84+ years of Starter."}
+            ? "業界平均: ダウンタイム1分あたり約84万円 (Gartner, 2024)。ROI = 障害回避額 ÷ 年間コスト。"
+            : "Industry average: $5,600/minute downtime cost (Gartner, 2024). ROI = incident cost avoided ÷ annual subscription."}
         </p>
       </div>
 
@@ -381,6 +402,15 @@ export default function PricingPage() {
           </table>
         </div>
       </div>
+
+      {/* Task 1: USD settlement disclaimer for JP users */}
+      {isJa && (
+        <div className="max-w-[900px] mx-auto mt-8">
+          <p className="text-xs text-[var(--text-muted)] text-center">
+            ※ 表示価格は目安です。実際の決済はUSD建てで行われ、ご利用のクレジットカード会社の為替レートが適用されます。
+          </p>
+        </div>
+      )}
 
       {/* SLA note */}
       <div className="max-w-[900px] mx-auto mt-8">
@@ -454,8 +484,8 @@ export default function PricingPage() {
             </div>
             <p className="text-sm text-[var(--text-secondary)] mb-4">
               {isJa
-                ? "テレビ朝日グループ6年の経験を持つエンジニアが、御社インフラを直接診断しレポートを作成します。"
-                : "Our engineers with 6+ years of media infrastructure experience assess your systems and deliver a custom report."}
+                ? "経験豊富なインフラエンジニアが、御社インフラを直接診断しレポートを作成します。"
+                : "Our experienced infrastructure engineers assess your systems and deliver a custom report."}
             </p>
             <ul className="space-y-2 text-sm text-[var(--text-secondary)]">
               {[
@@ -483,17 +513,20 @@ export default function PricingPage() {
       <div className="max-w-[900px] mx-auto mt-16 p-6 rounded-2xl border border-purple-500/20 bg-purple-500/[0.04]">
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
           <div>
-            <h3 className="text-base font-bold text-[var(--text-primary)] mb-1">Already on Pro? Unlock more with Business.</h3>
+            <h3 className="text-base font-bold text-[var(--text-primary)] mb-1">
+              {isJa ? "Proプランをお使いですか？Businessでさらに強力に。" : "Already on Pro? Unlock more with Business."}
+            </h3>
             <p className="text-sm text-[var(--text-secondary)]">
-              Unlimited simulations, custom SSO, dedicated Slack support, Insurance API, and on-premise deployment.
-              Enterprises choose Business for compliance-critical workloads.
+              {isJa
+                ? "無制限シミュレーション、カスタムSSO、専任Slackサポート、Insurance API、オンプレミス対応。コンプライアンス重視の企業に。"
+                : "Unlimited simulations, custom SSO, dedicated Slack support, Insurance API, and on-premise deployment. Enterprises choose Business for compliance-critical workloads."}
             </p>
           </div>
           <Link
             href="/contact?plan=business"
             className="shrink-0 inline-flex items-center gap-2 px-5 py-2.5 rounded-xl border border-purple-500/30 text-purple-300 text-sm font-semibold hover:bg-purple-500/10 transition-colors"
           >
-            Talk to Sales
+            {isJa ? "お問い合わせ" : "Talk to Sales"}
           </Link>
         </div>
       </div>
