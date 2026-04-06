@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Star, GitFork, ExternalLink } from "lucide-react";
+import { Star, GitFork, ExternalLink, Download } from "lucide-react";
 
 interface SocialProofDict {
   heading: string;
@@ -12,9 +12,10 @@ interface SocialProofDict {
 interface SocialProofProps {
   dict: SocialProofDict;
   stars: number;
+  pypiDownloads?: number;
 }
 
-export function SocialProof({ dict, stars }: SocialProofProps) {
+export function SocialProof({ dict, stars, pypiDownloads }: SocialProofProps) {
   return (
     <section className="py-24 bg-[var(--bg-secondary)] border-t border-[var(--border-color)]">
       <div className="max-w-[1200px] mx-auto px-6">
@@ -54,11 +55,21 @@ export function SocialProof({ dict, stars }: SocialProofProps) {
             <span className="text-sm text-[var(--text-muted)]">{dict.openSource}</span>
           </a>
 
-          {/* Simulations stat */}
-          <div className="flex flex-col items-center gap-2 p-8 rounded-2xl border border-[var(--border-color)] bg-[var(--bg-card)] min-w-[180px]">
-            <span className="text-4xl font-extrabold text-purple-400">2,000+</span>
-            <span className="text-sm text-[var(--text-muted)]">simulations / month</span>
-          </div>
+          {/* PyPI Downloads */}
+          {pypiDownloads != null && pypiDownloads > 0 && (
+            <a
+              href="https://pypi.org/project/faultray/"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex flex-col items-center gap-2 p-8 rounded-2xl border border-[var(--border-color)] bg-[var(--bg-card)] min-w-[180px] hover:border-[var(--gold)]/30 hover:bg-[var(--bg-card-hover)] transition-all duration-200"
+            >
+              <div className="flex items-center gap-2 text-purple-400">
+                <Download size={24} />
+                <span className="text-4xl font-extrabold">{pypiDownloads.toLocaleString()}</span>
+              </div>
+              <span className="text-sm text-[var(--text-muted)]">PyPI Downloads</span>
+            </a>
+          )}
         </div>
 
         {/* Beta feedback CTA */}

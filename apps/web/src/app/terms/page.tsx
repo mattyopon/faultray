@@ -232,12 +232,10 @@ export default function TermsPage() {
           <p>
             Service status is published at{" "}
             <a
-              href="https://status.faultray.com"
-              target="_blank"
-              rel="noopener noreferrer"
+              href="/status"
               className="text-[var(--gold)] hover:underline"
             >
-              https://status.faultray.com
+              faultray.com/status
             </a>
             . SLA credits (up to 30% of monthly fee) may be requested if uptime falls below
             99.9% in a given month.

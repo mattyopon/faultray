@@ -96,14 +96,17 @@ export default function CaseStudiesPage() {
       <p className="text-[var(--text-secondary)] mb-4 text-lg">
         Real results from teams using FaultRay to prove infrastructure resilience — without touching production.
       </p>
-      <p className="text-sm text-[var(--text-muted)] mb-14">
-        These are anonymized composite examples from our beta program. Formal signed case studies are in progress.
-        If you&apos;d like to be featured,{" "}
-        <Link href="/contact" className="text-[var(--gold)] hover:underline">
-          contact us
-        </Link>
-        .
-      </p>
+      <div className="mb-14 p-4 rounded-xl border border-yellow-500/20 bg-yellow-500/[0.04]">
+        <p className="text-sm text-yellow-300 font-semibold mb-1">⚠ 想定事例（Illustrative Examples）</p>
+        <p className="text-xs text-[var(--text-muted)]">
+          以下はベータプログラムの匿名化された想定事例です。実在の企業名・個人名は含まれていません。
+          正式な導入事例は準備中です。事例掲載にご協力いただける方は{" "}
+          <Link href="mailto:sales@faultray.com" className="text-[var(--gold)] hover:underline">
+            sales@faultray.com
+          </Link>{" "}
+          までご連絡ください。
+        </p>
+      </div>
 
       {/* Case study cards */}
       <div className="space-y-12">
