@@ -216,21 +216,21 @@ export default function PricingPage() {
           {/* CVR-03: Explicitly state no credit card required */}
           <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-emerald-500/10 border border-emerald-500/20">
             <ShieldCheck size={14} className="text-emerald-400" />
-            <span className="text-sm font-semibold text-emerald-400">No credit card required</span>
+            <span className="text-sm font-semibold text-emerald-400">{isJa ? "クレジットカード不要" : "No credit card required"}</span>
           </div>
           {/* COMPDIFF-03: Security posture badge */}
           <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-blue-500/10 border border-blue-500/20">
             <ShieldCheck size={14} className="text-blue-400" />
-            <span className="text-sm font-semibold text-blue-400">OWASP-hardened · Data encrypted at rest</span>
+            <span className="text-sm font-semibold text-blue-400">{isJa ? "OWASPセキュリティ準拠 · データ暗号化" : "OWASP-hardened · Data encrypted at rest"}</span>
           </div>
         </div>
         {/* CVR-05: Social proof micro-stats */}
         <div className="mt-5 flex flex-wrap items-center justify-center gap-6 text-sm text-[var(--text-muted)]">
-          <span><span className="font-bold text-[var(--text-primary)]">2,000+</span> simulations run/month</span>
+          <span><span className="font-bold text-[var(--text-primary)]">2,000+</span> {isJa ? "回/月のシミュレーション実績" : "simulations run/month"}</span>
           <span className="hidden sm:block">·</span>
-          <span><span className="font-bold text-[var(--text-primary)]">$0</span> to get started</span>
+          <span><span className="font-bold text-[var(--text-primary)]">{isJa ? "¥0" : "$0"}</span> {isJa ? "で開始" : "to get started"}</span>
           <span className="hidden sm:block">·</span>
-          <span>Cancel anytime</span>
+          <span>{isJa ? "いつでも解約可能" : "Cancel anytime"}</span>
         </div>
         {/* JP-05: 日本語サポートの保証を明示 */}
         <div className="mt-4 inline-flex items-center gap-2 px-4 py-2 rounded-full bg-blue-500/10 border border-blue-500/20">
@@ -277,7 +277,7 @@ export default function PricingPage() {
             <div key={plan.name} className={`relative p-9 rounded-2xl border flex flex-col transition-all duration-200 hover:-translate-y-1 hover:shadow-lg ${plan.popular ? "border-[var(--gold)] bg-gradient-to-b from-[var(--gold)]/[0.04] to-[var(--bg-card)] shadow-md" : "border-[var(--border-color)] bg-[var(--bg-card)]"}`}>
               {plan.popular && (
                 <div className="absolute -top-3 left-1/2 -translate-x-1/2 px-4 py-1 text-xs font-bold text-white bg-[var(--gold)] rounded-full uppercase tracking-wide">
-                  Most Popular
+                  {isJa ? "一番人気" : "Most Popular"}
                 </div>
               )}
               <div className="text-lg font-bold mb-2">{plan.name}</div>
@@ -341,7 +341,7 @@ export default function PricingPage() {
                   className={`w-full text-center py-3 rounded-xl font-semibold transition-all flex items-center justify-center gap-2 ${plan.popular ? "bg-[var(--gold)] text-white hover:bg-[#044a99] disabled:opacity-70" : "border border-[var(--border-color)] text-[var(--text-primary)] hover:border-[var(--text-muted)] disabled:opacity-70"}`}
                 >
                   {loadingPlan === plan.stripePlan ? (
-                    <><Loader2 size={16} className="animate-spin" /> Processing...</>
+                    <><Loader2 size={16} className="animate-spin" /> {isJa ? "処理中..." : "Processing..."}</>
                   ) : (
                     isJa && plan.name in jaCta ? jaCta[plan.name] : plan.cta
                   )}
@@ -366,7 +366,7 @@ export default function PricingPage() {
             <ShieldCheck size={20} className="text-emerald-400 shrink-0" />
             <p className="text-sm text-emerald-300">
               {isJa ? (
-                <><strong>年間払いで20%お得。</strong> Starter: 年間¥23,800節約。Pro: 年間¥71,900節約。Business: 年間¥239,800節約。Pro以上のプランには99.9% Uptime SLA保証付き。</>
+                <><strong>年間払いで20%お得。</strong> Starter: 年間¥24,000節約。Pro: 年間¥72,000節約。Business: 年間¥240,000節約。Pro以上のプランには99.9% Uptime SLA保証付き。</>
               ) : (
                 <><strong>Annual billing saves you 20%.</strong> Starter: save $238/yr. Pro: save $719/yr. Business: save $2,398/yr.
                 All annual plans on Pro and above include 99.9% Uptime SLA guarantee.</>
@@ -418,8 +418,8 @@ export default function PricingPage() {
               </tr>
             </thead>
             <tbody>
-              {(isJa ? jaFeatureComparison : featureComparison).map((row, i) => (
-                <tr key={row.name} className={i < featureComparison.length - 1 ? "border-b border-[var(--border-color)]" : ""}>
+              {(isJa ? jaFeatureComparison : featureComparison).map((row, i, arr) => (
+                <tr key={row.name} className={i < arr.length - 1 ? "border-b border-[var(--border-color)]" : ""}>
                   <td className="px-5 py-4 font-medium text-[var(--text-primary)] bg-[var(--bg-card)]">{row.name}</td>
                   <td className="px-5 py-4 text-center bg-[var(--bg-card)] text-[var(--text-secondary)]"><CellValue value={row.free} /></td>
                   <td className="px-5 py-4 text-center bg-[var(--bg-card)] text-[var(--text-secondary)]"><CellValue value={row.starter} /></td>
@@ -437,20 +437,11 @@ export default function PricingPage() {
       {/* SLA note */}
       <div className="max-w-[900px] mx-auto mt-8">
         <p className="text-xs text-[var(--text-muted)] text-center">
-          99.9% Uptime SLA applies to Pro and Business plans. Service status:{" "}
-          <a
-            href="https://status.faultray.com"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors"
-          >
-            status.faultray.com
-          </a>
-          . View our{" "}
-          <Link href="/terms" className="text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors">
-            Terms of Service
-          </Link>{" "}
-          for full SLA details.
+          {isJa ? (
+            <>99.9% Uptime SLAはProおよびBusinessプランに適用されます。サービス稼働状況: <a href="https://status.faultray.com" target="_blank" rel="noopener noreferrer" className="text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors">status.faultray.com</a>。<Link href="/terms" className="text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors">利用規約</Link>でSLAの詳細をご確認ください。</>
+          ) : (
+            <>99.9% Uptime SLA applies to Pro and Business plans. Service status:{" "}<a href="https://status.faultray.com" target="_blank" rel="noopener noreferrer" className="text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors">status.faultray.com</a>. View our{" "}<Link href="/terms" className="text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors">Terms of Service</Link>{" "}for full SLA details.</>
+          )}
         </p>
       </div>
 
