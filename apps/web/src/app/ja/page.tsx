@@ -826,7 +826,7 @@ export default async function LangHomePage() {
               },
               {
                 stat: "97%",
-                desc: "エリートパフォーマー企業がCI/CDとカオスエンジニアリングを組み合わせ",
+                desc: "エリートパフォーマー企業がCI/CDと障害リスク診断を組み合わせ",
                 source: "Google Cloud「State of DevOps 2023」",
               },
               {
