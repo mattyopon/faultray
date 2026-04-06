@@ -56,3 +56,4 @@ api/__pycache__/
 __pycache__/
 tests/screenshots/
 tests/e2e_buttons.py
+playwright-report/
