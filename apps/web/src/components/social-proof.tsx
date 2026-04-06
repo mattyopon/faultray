@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Star, GitFork, ExternalLink, Quote } from "lucide-react";
+import { Star, GitFork, ExternalLink } from "lucide-react";
 
 interface SocialProofDict {
   heading: string;
@@ -13,30 +13,6 @@ interface SocialProofProps {
   dict: SocialProofDict;
   stars: number;
 }
-
-const TESTIMONIALS = [
-  {
-    quote: "We ran FaultRay against our payment pipeline topology before a Black Friday push. It found a single-point-of-failure in our auth service that our team had missed for 18 months.",
-    author: "Staff SRE",
-    company: "Series B FinTech",
-    metric: "SPOF discovered in < 30s",
-    metricColor: "text-[var(--gold)]",
-  },
-  {
-    quote: "The DORA compliance report saved us 3 weeks of manual documentation work. We submitted the FaultRay report directly to our auditor and it was accepted first-try.",
-    author: "VP Engineering",
-    company: "EU-regulated financial platform",
-    metric: "3 weeks saved on DORA audit",
-    metricColor: "text-emerald-400",
-  },
-  {
-    quote: "We use FaultRay's N-nine model in every architecture review. It gives us a shared language between engineers and the CTO for discussing reliability trade-offs.",
-    author: "Engineering Manager",
-    company: "B2B SaaS (50-200 employees)",
-    metric: "Reliability now in every arch review",
-    metricColor: "text-blue-400",
-  },
-];
 
 export function SocialProof({ dict, stars }: SocialProofProps) {
   return (
@@ -83,28 +59,6 @@ export function SocialProof({ dict, stars }: SocialProofProps) {
             <span className="text-4xl font-extrabold text-purple-400">2,000+</span>
             <span className="text-sm text-[var(--text-muted)]">simulations / month</span>
           </div>
-        </div>
-
-        {/* Testimonials */}
-        <div className="grid md:grid-cols-3 gap-6 mb-16">
-          {TESTIMONIALS.map((t) => (
-            <div
-              key={t.author}
-              className="flex flex-col p-6 rounded-2xl border border-[var(--border-color)] bg-[var(--bg-card)]"
-            >
-              <Quote size={20} className="text-[var(--gold)]/40 mb-4 shrink-0" />
-              <p className="text-sm text-[var(--text-primary)] leading-relaxed mb-5 flex-1">
-                &ldquo;{t.quote}&rdquo;
-              </p>
-              <div className="mt-auto">
-                <div className={`text-xs font-bold ${t.metricColor} mb-3 px-2 py-1 rounded-md bg-white/[0.03] border border-white/[0.05] inline-block`}>
-                  {t.metric}
-                </div>
-                <p className="text-sm font-semibold text-[var(--text-primary)]">{t.author}</p>
-                <p className="text-xs text-[var(--text-muted)]">{t.company}</p>
-              </div>
-            </div>
-          ))}
         </div>
 
         {/* Beta feedback CTA */}
