@@ -75,15 +75,28 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Failed to update profile" }, { status: 500 });
   }
 
-  // 5. couponsテーブルのcurrent_usesをインクリメント
-  const { error: incrementError } = await supabase
+  // 5. couponsテーブルのcurrent_usesをインクリメント（楽観的ロック）
+  // WHERE current_uses = coupon.current_uses を付与することで、
+  // 読み取りと更新の間に別リクエストが同じクーポンを使用していた場合は
+  // 更新件数が0になり競合を検出できる。
+  const { data: updatedCoupons, error: incrementError } = await supabase
     .from("coupons")
     .update({ current_uses: coupon.current_uses + 1 })
-    .eq("id", coupon.id);
+    .eq("id", coupon.id)
+    .eq("current_uses", coupon.current_uses)
+    .select("id");
 
   if (incrementError) {
-    // ロールバックは困難なのでログに留めて続行
     console.error("Failed to increment coupon uses:", incrementError);
+    return NextResponse.json({ error: "Failed to record coupon usage" }, { status: 500 });
+  }
+
+  if (!updatedCoupons || updatedCoupons.length === 0) {
+    // 楽観的ロック競合: 別リクエストが先にクーポンを使用した
+    return NextResponse.json(
+      { error: "Coupon usage conflict. Please try again." },
+      { status: 409 }
+    );
   }
 
   return NextResponse.json({

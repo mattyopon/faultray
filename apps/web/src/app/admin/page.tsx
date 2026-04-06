@@ -1,10 +1,6 @@
-"use client";
-
-import { useAuth } from "@/components/auth-provider";
+import { redirect } from "next/navigation";
+import { createClient } from "@/lib/supabase/server";
 import { Card } from "@/components/ui/card";
-import { useEffect } from "react";
-import { useRouter } from "next/navigation";
-import { useMemo } from "react";
 import {
   Users,
   Activity,
@@ -16,6 +12,7 @@ import {
 
 // KPI-01: Admin KPI dashboard — shows high-level product metrics
 // Access restricted to admin users (plan === "admin" or email in allowlist)
+// Server Component: auth + admin check run on the server; ADMIN_EMAILS is never exposed to the client.
 
 interface KpiMetric {
   label: string;
@@ -25,34 +22,32 @@ interface KpiMetric {
   color: string;
 }
 
-const ADMIN_EMAILS = (process.env.NEXT_PUBLIC_ADMIN_EMAILS ?? "").split(",").map((e) => e.trim());
+const metrics: KpiMetric[] = [
+  { label: "Total Users",       value: "—", change: "Connect Supabase to view",       icon: Users,         color: "text-blue-400" },
+  { label: "Activation Rate",   value: "—", change: "% users who ran 1+ simulation",  icon: Zap,           color: "text-[var(--gold)]" },
+  { label: "Simulations / Day", value: "—", change: "30-day average",                 icon: Activity,      color: "text-emerald-400" },
+  { label: "MRR",               value: "—", change: "Monthly Recurring Revenue",       icon: DollarSign,    color: "text-emerald-400" },
+  { label: "Churn Rate",        value: "—", change: "Last 30 days",                   icon: TrendingUp,    color: "text-amber-400" },
+  { label: "Error Rate",        value: "—", change: "API errors / total requests",    icon: AlertTriangle, color: "text-red-400" },
+];
 
-export default function AdminPage() {
-  const { user } = useAuth();
-  const router = useRouter();
-  const isAdmin =
-    (user?.email && ADMIN_EMAILS.includes(user.email)) ?? false;
+export default async function AdminPage() {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
 
-  // Redirect non-admins
-  useEffect(() => {
-    if (user && !isAdmin) {
-      router.replace("/dashboard");
-    }
-  }, [user, isAdmin, router]);
+  if (!user) {
+    redirect("/");
+  }
 
-  // Static placeholder metrics — in production fetch from /api/admin/metrics
-  const metrics = useMemo<KpiMetric[]>(() => [
-    { label: "Total Users",       value: "—", change: "Connect Supabase to view",       icon: Users,         color: "text-blue-400" },
-    { label: "Activation Rate",   value: "—", change: "% users who ran 1+ simulation",  icon: Zap,           color: "text-[var(--gold)]" },
-    { label: "Simulations / Day", value: "—", change: "30-day average",                 icon: Activity,      color: "text-emerald-400" },
-    { label: "MRR",               value: "—", change: "Monthly Recurring Revenue",       icon: DollarSign,    color: "text-emerald-400" },
-    { label: "Churn Rate",        value: "—", change: "Last 30 days",                   icon: TrendingUp,    color: "text-amber-400" },
-    { label: "Error Rate",        value: "—", change: "API errors / total requests",    icon: AlertTriangle, color: "text-red-400" },
-  ], []);
+  // ADMIN_EMAILS is a server-side only env var (no NEXT_PUBLIC_ prefix)
+  const adminEmails = (process.env.ADMIN_EMAILS ?? "").split(",").map((e) => e.trim()).filter(Boolean);
+  const isAdmin = user.email != null && adminEmails.includes(user.email);
 
-  const loading = !user;
-
-  if (!user || !isAdmin) return null;
+  if (!isAdmin) {
+    redirect("/");
+  }
 
   return (
     <div className="w-full px-6 py-12">
@@ -63,28 +58,20 @@ export default function AdminPage() {
         </p>
       </div>
 
-      {loading ? (
-        <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-          {[...Array(6)].map((_, i) => (
-            <div key={i} className="h-28 rounded-2xl bg-[var(--bg-card)] border border-[var(--border-color)] animate-pulse" />
-          ))}
-        </div>
-      ) : (
-        <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-          {metrics.map((m) => (
-            <Card key={m.label} className="p-6">
-              <div className="flex items-center gap-3 mb-3">
-                <m.icon size={18} className={m.color} />
-                <span className="text-sm text-[var(--text-muted)]">{m.label}</span>
-              </div>
-              <p className="text-3xl font-bold text-white mb-1">{m.value}</p>
-              {m.change && (
-                <p className="text-xs text-[var(--text-muted)]">{m.change}</p>
-              )}
-            </Card>
-          ))}
-        </div>
-      )}
+      <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+        {metrics.map((m) => (
+          <Card key={m.label} className="p-6">
+            <div className="flex items-center gap-3 mb-3">
+              <m.icon size={18} className={m.color} />
+              <span className="text-sm text-[var(--text-muted)]">{m.label}</span>
+            </div>
+            <p className="text-3xl font-bold text-white mb-1">{m.value}</p>
+            {m.change && (
+              <p className="text-xs text-[var(--text-muted)]">{m.change}</p>
+            )}
+          </Card>
+        ))}
+      </div>
 
       <div className="mt-12 p-5 rounded-xl border border-[var(--border-color)] bg-[var(--bg-card)]">
         <h2 className="text-sm font-semibold text-[var(--text-secondary)] mb-3">

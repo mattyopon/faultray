@@ -171,7 +171,28 @@ export async function POST(request: Request) {
         // customer.subscription.deleted; here we mark past_due early so the
         // UI can surface a payment-update banner without immediately revoking access.
         if (attemptCount >= 2) {
-          await updateUserByCustomerId(customerId, "pro", "past_due");
+          // planをpriceIdから解決する。subscriptionが取得できない場合は
+          // 既存のplanを維持するためupdateUserByCustomerIdのplan引数は使わず、
+          // subscription取得後に実際のpriceIdからplanを決定する。
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          const invoiceAny = invoice as any;
+          const subscriptionId: string | null =
+            invoiceAny.parent?.subscription_details?.subscription ??
+            invoiceAny.subscription ??
+            null;
+
+          let resolvedPlan: PlanTier = "pro"; // fallback
+          if (subscriptionId) {
+            try {
+              const subscription = await stripe.subscriptions.retrieve(subscriptionId);
+              const priceId = subscription.items.data[0]?.price?.id;
+              resolvedPlan = (priceId ? planTierFromPriceId(priceId) : null) ?? "pro";
+            } catch (err) {
+              console.error("[stripe/webhook] Failed to retrieve subscription for payment_failed:", err);
+            }
+          }
+
+          await updateUserByCustomerId(customerId, resolvedPlan, "past_due");
           // TODO: trigger email notification via RETAIN-01 email system when implemented
         }
         break;

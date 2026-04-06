@@ -14,7 +14,7 @@ interface SlackNotifyRequest {
 
 export async function POST(request: Request) {
   // API-01: 認証チェック
-  const { error } = await requireAuth();
+  const { error } = await requireAuth(request);
   if (error) return error;
 
   // API-08: レート制限 — 10 requests / minute per IP
@@ -40,7 +40,14 @@ export async function POST(request: Request) {
   const criticalCount = typeof critical === "number" ? critical : 0;
 
   // Validate webhook URL format (must be a Slack incoming webhook)
-  if (!webhookUrl.startsWith("https://hooks.slack.com/")) {
+  // Use URL parser to prevent SSRF via https://hooks.slack.com.evil.com style bypasses
+  let parsedWebhookUrl: URL;
+  try {
+    parsedWebhookUrl = new URL(webhookUrl);
+  } catch {
+    return NextResponse.json({ error: "webhookUrl must be a Slack incoming webhook URL" }, { status: 400 });
+  }
+  if (parsedWebhookUrl.hostname !== "hooks.slack.com") {
     return NextResponse.json({ error: "webhookUrl must be a Slack incoming webhook URL" }, { status: 400 });
   }
 

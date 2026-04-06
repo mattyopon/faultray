@@ -1,6 +1,9 @@
 // Web Crypto API — compatible with Node.js 20+ and Vercel Edge Runtime
 
-const ENCRYPTION_KEY = process.env.ENCRYPTION_KEY ?? "faultray-dev-key-change-me";
+const ENCRYPTION_KEY = process.env.ENCRYPTION_KEY;
+if (!ENCRYPTION_KEY) {
+  throw new Error("ENCRYPTION_KEY environment variable is not set");
+}
 
 const ENC_PREFIX = "ENC:";
 

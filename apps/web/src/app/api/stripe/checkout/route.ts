@@ -91,37 +91,46 @@ export async function POST(request: Request) {
   const unitAmount = PRICES[plan][interval];
   const trialDays = TRIAL_DAYS[plan];
 
+  // #15: 冪等性キーで同一ユーザー+プラン+インターバルの二重サブスクリプションを防止
+  const idempotencyKey = `checkout-${userId}-${plan}-${interval}`;
+
   try {
-    const session = await stripe.checkout.sessions.create({
-      mode: "subscription",
-      line_items: [
-        {
-          price_data: {
-            currency: "usd",
-            product_data: {
-              name: PLAN_NAMES[plan],
-              description: `FaultRay ${plan === "pro" ? "Pro" : "Business"} Plan — billed ${interval === "month" ? "monthly" : "annually"}`,
+    const session = await stripe.checkout.sessions.create(
+      {
+        mode: "subscription",
+        // #21: Checkout URL共有リスク軽減 — セッションを30分で失効させる
+        // Stripeのデフォルトは24時間。URLが共有・漏洩した場合のリスクを最小化する。
+        expires_at: Math.floor(Date.now() / 1000) + 1800,
+        line_items: [
+          {
+            price_data: {
+              currency: "usd",
+              product_data: {
+                name: PLAN_NAMES[plan],
+                description: `FaultRay ${plan === "pro" ? "Pro" : "Business"} Plan — billed ${interval === "month" ? "monthly" : "annually"}`,
+              },
+              recurring: {
+                interval: interval === "month" ? "month" : "year",
+              },
+              unit_amount: unitAmount,
             },
-            recurring: {
-              interval: interval === "month" ? "month" : "year",
-            },
-            unit_amount: unitAmount,
+            quantity: 1,
           },
-          quantity: 1,
+        ],
+        subscription_data:
+          trialDays !== undefined
+            ? { trial_period_days: trialDays, metadata: { plan, user_id: userId ?? "" } }
+            : { metadata: { plan, user_id: userId ?? "" } },
+        success_url: `${origin}/settings?payment=success`,
+        cancel_url: `${origin}/pricing`,
+        metadata: {
+          plan,
+          interval,
+          user_id: userId ?? "",
         },
-      ],
-      subscription_data:
-        trialDays !== undefined
-          ? { trial_period_days: trialDays, metadata: { plan, user_id: userId ?? "" } }
-          : { metadata: { plan, user_id: userId ?? "" } },
-      success_url: `${origin}/settings?payment=success`,
-      cancel_url: `${origin}/pricing`,
-      metadata: {
-        plan,
-        interval,
-        user_id: userId ?? "",
       },
-    });
+      { idempotencyKey }
+    );
 
     return NextResponse.json({ url: session.url });
   } catch (err) {

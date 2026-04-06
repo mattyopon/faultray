@@ -5,6 +5,11 @@
  * This works per-process. For multi-instance deployments, use
  * Redis (e.g. @upstash/ratelimit) instead.
  *
+ * WARNING: Vercel serverless環境ではリクエストごとに別プロセスが起動するため、
+ * このMapはプロセス間で共有されない。本番環境では Upstash Redis
+ * (@upstash/ratelimit) 等の外部ストアに移行すること。
+ * 現状の実装は開発環境・単一プロセス環境でのみ有効。
+ *
  * API-08: レート制限実装
  */
 
@@ -25,6 +30,28 @@ interface RateLimitResult {
 
 // Global store — persists across requests within a single process
 const store = new Map<string, number[]>();
+
+// メモリリーク対策: 期限切れエントリを定期削除（5分ごと）
+// setIntervalの参照を保持することで GC による早期解放を防ぐ
+const CLEANUP_INTERVAL_MS = 5 * 60 * 1000;
+const _cleanupTimer = setInterval(() => {
+  const now = Date.now();
+  for (const [key, timestamps] of store.entries()) {
+    // windowMsが不明なので保守的に最大ウィンドウ（1時間）を使用
+    const maxWindowMs = 60 * 60 * 1000;
+    const valid = timestamps.filter((t) => t > now - maxWindowMs);
+    if (valid.length === 0) {
+      store.delete(key);
+    } else {
+      store.set(key, valid);
+    }
+  }
+}, CLEANUP_INTERVAL_MS);
+
+// Node.js プロセス終了時にタイマーをクリーンアップ（テスト環境でのリーク防止）
+if (typeof _cleanupTimer === "object" && _cleanupTimer !== null && "unref" in _cleanupTimer) {
+  (_cleanupTimer as NodeJS.Timeout).unref();
+}
 
 /**
  * Check and record a request for the given identifier.
