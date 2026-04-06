@@ -226,6 +226,20 @@ export default async function LangHomePage() {
     // silently fallback to 0
   }
 
+  // COMP-02: PyPI download count
+  let pypiDownloads = 0;
+  try {
+    const pypiRes = await fetch("https://api.pepy.tech/api/v2/projects/faultray", {
+      next: { revalidate: 86400 },
+    });
+    if (pypiRes.ok) {
+      const pypiData = await pypiRes.json() as { total_downloads?: number };
+      pypiDownloads = pypiData.total_downloads ?? 0;
+    }
+  } catch {
+    // silently fallback to 0
+  }
+
   const comparisonLabels = dict.comparison.labels;
   const comparisonKeys = ["approach", "productionRisk", "setupTime", "scenarios", "availabilityProof", "aiAgentModeling", "startingCost"] as const;
 
@@ -892,7 +906,7 @@ export default async function LangHomePage() {
 
       {/* ===== SOCIAL PROOF (LP-02) ===== */}
       {dict.socialProof && (
-        <SocialProof dict={dict.socialProof} stars={githubStars} />
+        <SocialProof dict={dict.socialProof} stars={githubStars} pypiDownloads={pypiDownloads} />
       )}
 
       {/* ===== PERSONA-03/04: Who is FaultRay for? — persona-specific messaging ===== */}

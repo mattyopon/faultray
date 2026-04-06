@@ -438,9 +438,9 @@ export default function PricingPage() {
       <div className="max-w-[900px] mx-auto mt-8">
         <p className="text-xs text-[var(--text-muted)] text-center">
           {isJa ? (
-            <>99.9% Uptime SLAはProおよびBusinessプランに適用されます。サービス稼働状況: <a href="https://status.faultray.com" target="_blank" rel="noopener noreferrer" className="text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors">status.faultray.com</a>。<Link href="/terms" className="text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors">利用規約</Link>でSLAの詳細をご確認ください。</>
+            <>99.9% Uptime SLAはProおよびBusinessプランに適用されます。サービス稼働状況: <a href="/status" target="_blank" rel="noopener noreferrer" className="text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors">ステータスページ</a>。<Link href="/terms" className="text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors">利用規約</Link>でSLAの詳細をご確認ください。</>
           ) : (
-            <>99.9% Uptime SLA applies to Pro and Business plans. Service status:{" "}<a href="https://status.faultray.com" target="_blank" rel="noopener noreferrer" className="text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors">status.faultray.com</a>. View our{" "}<Link href="/terms" className="text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors">Terms of Service</Link>{" "}for full SLA details.</>
+            <>99.9% Uptime SLA applies to Pro and Business plans. Service status:{" "}<a href="/status" className="text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors">Status Page</a>. View our{" "}<Link href="/terms" className="text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors">Terms of Service</Link>{" "}for full SLA details.</>
           )}
         </p>
       </div>
