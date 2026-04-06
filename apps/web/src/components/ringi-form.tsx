@@ -212,9 +212,43 @@ export function RingiForm() {
           </p>
         </section>
 
-        {/* 5. セキュリティ・データ管理 */}
+        {/* 4.5 競合比較 */}
         <section className="ringi-section p-6 rounded-2xl border border-[#1e293b] bg-[#111827]">
-          <h2 className="ringi-white text-lg font-bold text-white mb-4">5. セキュリティ・データ管理</h2>
+          <h2 className="ringi-white text-lg font-bold text-white mb-4">5. 競合ツールとの比較</h2>
+          <div className="overflow-x-auto rounded-xl border border-[#1e293b]">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="ringi-table-header border-b border-[#1e293b] bg-[#0d1117]">
+                  <th scope="col" className="px-4 py-3 text-left text-[#64748b] font-semibold">項目</th>
+                  <th scope="col" className="px-4 py-3 text-center text-[#FFD700] font-semibold">FaultRay</th>
+                  <th scope="col" className="px-4 py-3 text-center text-[#64748b] font-semibold">Gremlin</th>
+                  <th scope="col" className="px-4 py-3 text-center text-[#64748b] font-semibold">Datadog</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-[#1e293b]">
+                {[
+                  { item: "方式", fr: "純シミュレーション", gr: "実障害注入", dd: "監視+テスト" },
+                  { item: "本番リスク", fr: "なし（安全）", gr: "あり（実注入）", dd: "低〜中" },
+                  { item: "初期費用", fr: "¥0（無料プランあり）", gr: "要見積（年¥150万〜）", dd: "要見積（年¥100万〜）" },
+                  { item: "導入期間", fr: "即日（YAML貼付のみ）", gr: "数日〜数週間", dd: "数日〜数週間" },
+                  { item: "日本語サポート", fr: "あり", gr: "英語のみ", dd: "一部あり" },
+                  { item: "稟議書支援", fr: "テンプレート提供", gr: "なし", dd: "なし" },
+                ].map((row) => (
+                  <tr key={row.item}>
+                    <td className="ringi-muted px-4 py-3 text-[#94a3b8]">{row.item}</td>
+                    <td className="px-4 py-3 text-center text-[#FFD700] font-semibold ringi-gold">{row.fr}</td>
+                    <td className="px-4 py-3 text-center text-[#94a3b8]">{row.gr}</td>
+                    <td className="px-4 py-3 text-center text-[#94a3b8]">{row.dd}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </section>
+
+        {/* 6. セキュリティ・データ管理 */}
+        <section className="ringi-section p-6 rounded-2xl border border-[#1e293b] bg-[#111827]">
+          <h2 className="ringi-white text-lg font-bold text-white mb-4">6. セキュリティ・データ管理</h2>
           <div className="space-y-2 text-sm">
             {[
               "入力するインフラ情報は「トポロジー構造（コンポーネント名と接続関係）」のみです。実際のIPアドレス・認証情報・ソースコードは不要です。",
@@ -232,7 +266,7 @@ export function RingiForm() {
 
         {/* 6. スケジュール */}
         <section className="ringi-section p-6 rounded-2xl border border-[#1e293b] bg-[#111827]">
-          <h2 className="ringi-white text-lg font-bold text-white mb-4">6. 導入スケジュール（案）</h2>
+          <h2 className="ringi-white text-lg font-bold text-white mb-4">7. 導入スケジュール（案）</h2>
           <div className="space-y-3 text-sm">
             {[
               { phase: "Week 1", action: "14日間無料トライアル開始、既存インフラのYAMLトポロジーを作成" },
@@ -250,7 +284,7 @@ export function RingiForm() {
 
         {/* 7. 決裁依頼 */}
         <section className="ringi-section p-6 rounded-2xl border border-[#FFD700]/20 bg-[#FFD700]/[0.04]">
-          <h2 className="ringi-white text-lg font-bold text-white mb-4">7. 決裁依頼内容</h2>
+          <h2 className="ringi-white text-lg font-bold text-white mb-4">8. 決裁依頼内容</h2>
           <div className="space-y-2 text-sm">
             <p>
               <strong className="ringi-white text-white">申請金額:</strong>{" "}

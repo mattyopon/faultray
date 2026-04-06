@@ -87,7 +87,7 @@ export async function proxy(request: NextRequest) {
       // Static/SEO files
       "/robots.txt", "/sitemap.xml", "/manifest.webmanifest",
       // Legal / public pages (no locale prefix)
-      "/tokushoho", "/dpa", "/privacy", "/terms",
+      "/tokushoho", "/dpa", "/privacy", "/terms", "/service-level-agreement",
       "/contact", "/features", "/pricing", "/demo",
       "/status", "/support", "/help", "/changelog", "/ringi", "/case-studies",
       // Auth / API
@@ -122,7 +122,7 @@ export async function proxy(request: NextRequest) {
   if (pathnameHasLocale) {
     const appPaths = [
       // Legal / public pages
-      "/tokushoho", "/dpa", "/privacy", "/terms",
+      "/tokushoho", "/dpa", "/privacy", "/terms", "/service-level-agreement",
       "/contact", "/features", "/pricing", "/demo",
       "/status", "/support", "/help", "/changelog", "/ringi", "/case-studies",
       // Auth

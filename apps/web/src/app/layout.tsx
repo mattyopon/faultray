@@ -139,6 +139,9 @@ export default function RootLayout({
   // Validate as numeric-only to prevent XSS via env var injection
   const rawHotjarId = process.env.NEXT_PUBLIC_HOTJAR_ID;
   const hotjarId = rawHotjarId && /^\d+$/.test(rawHotjarId) ? rawHotjarId : undefined;
+  // DOC-02: Crisp chat — set NEXT_PUBLIC_CRISP_ID env var to enable
+  const rawCrispId = process.env.NEXT_PUBLIC_CRISP_ID;
+  const crispId = rawCrispId && /^[a-f0-9-]+$/i.test(rawCrispId) ? rawCrispId : undefined;
 
   // I18N-04: Detect locale from cookie/Accept-Language for html lang attribute
   // Falls back to "en" for root layout; locale-specific layouts override via their own html element
@@ -230,6 +233,16 @@ export default function RootLayout({
             <Breadcrumb />
             <main role="main" className="flex-1 pt-16">{children}</main>
             <CookieConsent />
+            {/* DOC-02: Crisp live chat — only loaded when NEXT_PUBLIC_CRISP_ID is set */}
+            {crispId && (
+              <Script
+                id="crisp-chat"
+                strategy="lazyOnload"
+                dangerouslySetInnerHTML={{
+                  __html: `window.$crisp=[];window.CRISP_WEBSITE_ID="${crispId}";(function(){var d=document;var s=d.createElement("script");s.src="https://client.crisp.chat/l.js";s.async=1;d.getElementsByTagName("head")[0].appendChild(s);})();`,
+                }}
+              />
+            )}
           </LocaleProvider>
         </AuthProvider>
       </body>
