@@ -104,29 +104,9 @@ export const metadata: Metadata = {
   },
 };
 
-// SEO-01: Enhanced structured data — WebSite + Organization + SoftwareApplication
+// SEO-01: Structured data — Organization + WebSite (global)
+// SoftwareApplication with locale-specific pricing is in /en/layout.tsx and /ja/layout.tsx
 const jsonLd = [
-  {
-    "@context": "https://schema.org",
-    "@type": "SoftwareApplication",
-    name: "FaultRay",
-    applicationCategory: "DeveloperApplication",
-    operatingSystem: "Web",
-    url: "https://faultray.com",
-    description:
-      "Pure simulation chaos engineering platform. Prove your system's availability ceiling mathematically without touching production.",
-    offers: [
-      { "@type": "Offer", name: "Free", price: "0", priceCurrency: "USD" },
-      { "@type": "Offer", name: "Pro",  price: "299", priceCurrency: "USD", eligibleQuantity: { "@type": "QuantitativeValue", unitText: "month" } },
-    ],
-    featureList: [
-      "100+ simulation engines",
-      "DORA compliance reports",
-      "AI reliability advisor",
-      "N-Layer availability model",
-      "AWS/GCP/Azure cloud discovery",
-    ],
-  },
   {
     "@context": "https://schema.org",
     "@type": "Organization",

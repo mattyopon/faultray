@@ -20,10 +20,49 @@ export async function generateMetadata(): Promise<Metadata> {
   };
 }
 
+// JSON-LD for /en — USD pricing
+const enJsonLd = [
+  {
+    "@context": "https://schema.org",
+    "@type": "SoftwareApplication",
+    name: "FaultRay",
+    applicationCategory: "DeveloperApplication",
+    operatingSystem: "Web",
+    url: "https://faultray.com/en",
+    inLanguage: "en",
+    description:
+      "Pure simulation chaos engineering platform. Prove your system's availability ceiling mathematically without touching production.",
+    offers: [
+      { "@type": "Offer", name: "Free", price: "0", priceCurrency: "USD" },
+      { "@type": "Offer", name: "Pro", price: "299", priceCurrency: "USD", eligibleQuantity: { "@type": "QuantitativeValue", unitText: "month" } },
+    ],
+    featureList: [
+      "100+ simulation engines",
+      "DORA compliance reports",
+      "AI reliability advisor",
+      "N-Layer availability model",
+      "AWS/GCP/Azure cloud discovery",
+    ],
+  },
+];
+
 export default function EnLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
-  return <div lang="en">{children}</div>; // I18N-04
+  return (
+    <div lang="en">
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{
+          __html: JSON.stringify(enJsonLd)
+            .replace(/</g, "\\u003c")
+            .replace(/>/g, "\\u003e")
+            .replace(/&/g, "\\u0026"),
+        }}
+      />
+      {children}
+    </div>
+  );
 }
