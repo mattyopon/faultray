@@ -11,9 +11,9 @@
     "dashboard": "ダッシュボード"
   },
   "hero": {
-    "badge": "オープンソース · BSL 1.1 · 日本語サポート対応",
-    "subtitle": "本番環境を壊さずに、システムの弱点を自動で見つける",
-    "description": "SRE採用に年1,000万円かける前に。月4.5万円でインフラリスクを可視化。日本語サポート・稟議書作成支援も提供。",
+    "badge": "テレビ朝日グループ6年の現場経験 · 初回30万円で診断",
+    "subtitle": "システム障害で、年間いくら失っていますか？本番を止めずに弱点を見つけます",
+    "description": "月5万円の投資で年間1,000万円超のリスクを削減。ITレジリエンス診断（初回30万円）で、今すぐ弱点を可視化。稟議書作成・日本語サポート込み。",
     "stats": {
       "scenarios": "シナリオ",
       "engines": "エンジン",
@@ -23,8 +23,8 @@
       "dashboardPages": "ダッシュボード画面",
       "languages": "対応言語"
     },
-    "cta": "無料で始める",
-    "demo": "ライブデモ"
+    "cta": "無料診断を申し込む",
+    "demo": "事例を見る"
   },
   "problem": {
     "title": "よくある課題",
@@ -238,7 +238,7 @@
   },
   "pricing": {
     "heading": "料金プラン",
-    "subheading": "月4.5万円から。無料で開始、成長に合わせてスケール。",
+    "subheading": "ITレジリエンス診断 初回30万円・継続月5万円〜。障害1件分のコストで年間リスクを可視化。",
     "perMonth": "/月",
     "mostPopular": "最も人気",
     "featureComparison": "機能比較",
@@ -249,21 +249,21 @@
       150000
     ],
     "taxNote": "税別",
-    "japaneseSupportBadge": "日本語サポート込み",
+    "japaneseSupportBadge": "日本語サポート・稟議書作成込み",
     "plans": [
       {
-        "name": "Free",
-        "desc": "システム診断を試したい個人エンジニアに最適。",
-        "cta": "無料で始める"
+        "name": "ITレジリエンス診断",
+        "desc": "初回30万円（通常50万円）。現状のシステム弱点を可視化し、改善提案レポートを提出。稟議書作成支援込み。",
+        "cta": "無料診断を申し込む"
       },
       {
         "name": "Pro",
-        "desc": "DORAコンプライアンスレポートと上限拡張が必要なチーム向け。",
+        "desc": "月5万円で継続監視。障害リスクを常時把握し、経営層向けダッシュボードを提供。",
         "cta": "Proを始める"
       },
       {
         "name": "Business",
-        "desc": "無制限利用・SSO・専任サポートが必要なエンタープライズ向け。",
+        "desc": "大規模システム・グループ会社展開・DORA/SOC2準拠対応。専任担当者がサポート。",
         "cta": "お問い合わせ"
       }
     ]
@@ -278,23 +278,23 @@
     "japaneseSupport": "日本語でのサポートに対応しています"
   },
   "socialProof": {
-    "heading": "開発者コミュニティからの支持",
+    "heading": "テレビ朝日グループ6年の現場経験が裏付ける信頼",
     "githubStars": "GitHub Stars",
-    "betaMessage": "現在ベータテスト中。フィードバックをお寄せください",
-    "betaCta": "フィードバックを送る",
+    "betaMessage": "放送・メディア基幹システムを支えた経験から生まれたツールです。現在ベータテスト中。",
+    "betaCta": "無料診断を申し込む",
     "openSource": "オープンソース"
   },
   "roi": {
-    "heading": "ROI計算機",
-    "subheading": "FaultRay導入による年間削減額をシミュレーション",
+    "heading": "障害リスク、いくら抱えていますか？",
+    "subheading": "自社の数字を入れると、FaultRay導入で削減できる年間損失額が分かります",
     "monthlyRevenue": "月間売上（万円）",
     "incidentCount": "過去1年の障害回数",
     "incidentHours": "1回あたりの平均障害時間（時間）",
     "annualLoss": "推定年間損失額",
-    "estimatedReduction": "FaultRay導入後の削減見込み",
-    "roi": "ROI",
-    "annualCost": "年間コスト（Proプラン）",
-    "disclaimer": "※計算式: 年間損失 = 月売上 × (障害時間/720) × 障害回数 × 12。FaultRay効果 = 年間損失の70%削減と試算。",
+    "estimatedReduction": "FaultRay導入後の削減見込み（70%削減）",
+    "roi": "ROI（投資対効果）",
+    "annualCost": "年間コスト（Proプラン・月5万円）",
+    "disclaimer": "※計算式: 年間損失 = 月売上 × (障害時間/720) × 障害回数 × 12。FaultRay効果 = 年間損失の70%削減と試算。月5万円の投資で年間1,000万円以上の削減事例あり。",
     "unit": "万円"
   },
   "languageSwitcher": {
