@@ -38,6 +38,9 @@ describe("L8: XSS Prevention", () => {
       "app/[lang]/page.tsx",
       // app/en/page.tsx: static HTML entities in hardcoded persona pain points (no user input)
       "app/en/page.tsx",
+      // app/en/layout.tsx, app/ja/layout.tsx: JSON-LD structured data (static constant, no user input)
+      "app/en/layout.tsx",
+      "app/ja/layout.tsx",
     ]);
 
     const violations: string[] = [];

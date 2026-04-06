@@ -19,7 +19,7 @@ interface Plan {
   cta: string;
   ctaHref: string;
   popular: boolean;
-  stripePlan: "pro" | "business" | null;
+  stripePlan: "starter" | "pro" | "business" | null;
   sla: string | null;
 }
 
@@ -60,10 +60,10 @@ const plans: Plan[] = [
     desc: "For small teams getting started with reliability testing. 30 simulations covers most ongoing monitoring needs.",
     features: ["30 simulations / month", "Up to 20 components", "Everything in Free", "Email support (48h)", "Basic remediation suggestions"],
     disabledFeatures: ["DORA report export", "AI-powered analysis", "Custom SSO"],
-    cta: "Start Starter",
+    cta: "Start Free Trial",
     ctaHref: "/login?plan=starter",
     popular: false,
-    stripePlan: null,
+    stripePlan: "starter",
     sla: null,
   },
   {
@@ -104,12 +104,12 @@ function CellValue({ value }: { value: string | boolean }) {
 export default function PricingPage() {
   const [loadingPlan, setLoadingPlan] = useState<string | null>(null);
   const [billing, setBilling] = useState<BillingCycle>("monthly");
-  const [checkoutError, setCheckoutError] = useState<{ plan: "pro" | "business"; message: string } | null>(null);
+  const [checkoutError, setCheckoutError] = useState<{ plan: "starter" | "pro" | "business"; message: string } | null>(null);
   // COPY-NEW-06: ロケール検出して日本語UIに対応
   const locale = useLocale();
   const isJa = locale === "ja";
 
-  const handleCheckout = async (plan: "pro" | "business") => {
+  const handleCheckout = async (plan: "starter" | "pro" | "business") => {
     setLoadingPlan(plan);
     setCheckoutError(null);
     try {
@@ -228,9 +228,10 @@ export default function PricingPage() {
       <div className="grid md:grid-cols-4 gap-6 max-w-[1300px] mx-auto mb-20">
         {plans.map((plan) => {
           const displayPrice = billing === "annual" ? plan.annualMonthlyPrice : plan.monthlyPrice;
-          // JP-STARTER: Starter plan Japanese price display
-          const jaMonthlyPrice: Record<string, string> = { Starter: "¥15,000" };
-          const jaAnnualMonthlyPrice: Record<string, string> = { Starter: "¥11,900" };
+          // JP-02: Japanese price display for all plans
+          const jaMonthlyPrice: Record<string, string> = { Starter: "¥9,900", Pro: "¥29,800", Business: "¥99,800" };
+          const jaAnnualMonthlyPrice: Record<string, string> = { Starter: "¥7,900", Pro: "¥23,800", Business: "¥79,800" };
+          const jaAnnualTotal: Record<string, string> = { Starter: "¥94,800", Pro: "¥285,600", Business: "¥957,600" };
           return (
             <div key={plan.name} className={`relative p-9 rounded-2xl border flex flex-col transition-all duration-200 hover:-translate-y-1 hover:shadow-lg ${plan.popular ? "border-[var(--gold)] bg-gradient-to-b from-[var(--gold)]/[0.04] to-[var(--bg-card)] shadow-md" : "border-[var(--border-color)] bg-[var(--bg-card)]"}`}>
               {plan.popular && (
@@ -264,7 +265,9 @@ export default function PricingPage() {
               )}
               {billing === "annual" && plan.annualTotal > 0 && (
                 <p className="text-xs text-[var(--text-muted)] mb-4">
-                  Billed annually (${plan.annualTotal.toLocaleString()}/yr)
+                  {isJa && plan.name in jaAnnualTotal
+                    ? `年間一括（${jaAnnualTotal[plan.name]}/年）`
+                    : `Billed annually ($${plan.annualTotal.toLocaleString()}/yr)`}
                 </p>
               )}
               {!(billing === "annual" && plan.annualTotal > 0) && <div className="mb-4" />}
@@ -313,8 +316,12 @@ export default function PricingPage() {
           <div className="p-5 rounded-xl border border-emerald-500/20 bg-emerald-500/[0.04] flex items-center gap-3">
             <ShieldCheck size={20} className="text-emerald-400 shrink-0" />
             <p className="text-sm text-emerald-300">
-              <strong>Annual billing saves you 20%.</strong> Pro plan: save $719/yr. Business plan: save $2,398/yr.
-              All annual plans include 99.9% Uptime SLA guarantee.
+              {isJa ? (
+                <><strong>年間払いで20%お得。</strong> Starter: 年間¥23,800節約。Pro: 年間¥72,000節約。Business: 年間¥240,000節約。Pro以上のプランには99.9% Uptime SLA保証付き。</>
+              ) : (
+                <><strong>Annual billing saves you 20%.</strong> Starter: save $238/yr. Pro: save $719/yr. Business: save $2,398/yr.
+                All annual plans on Pro and above include 99.9% Uptime SLA guarantee.</>
+              )}
             </p>
           </div>
         </div>
@@ -323,11 +330,15 @@ export default function PricingPage() {
       {/* PRICE-02: Value anchoring — cost of $299/mo vs. cost of 1 downtime incident */}
       <div className="max-w-[900px] mx-auto mb-12">
         <div className="grid md:grid-cols-3 gap-4 text-center">
-          {[
+          {(isJa ? [
+            { label: "1時間のダウンタイム平均コスト", value: "1,000万円+", color: "text-red-400", icon: "⚠️" },
+            { label: "FaultRay Starter — 月額", value: "¥9,900", color: "text-[var(--gold)]", icon: "✅" },
+            { label: "年1回の障害を防いだ場合のROI", value: "84,000%+", color: "text-emerald-400", icon: "📈" },
+          ] : [
             { label: "Average cost of 1 hour downtime", value: "$100,000+", color: "text-red-400", icon: "⚠️" },
-            { label: "FaultRay Pro — per month", value: "$299", color: "text-[var(--gold)]", icon: "✅" },
-            { label: "ROI if it prevents 1 incident/year", value: "33,000%+", color: "text-emerald-400", icon: "📈" },
-          ].map((stat) => (
+            { label: "FaultRay Starter — per month", value: "$99", color: "text-[var(--gold)]", icon: "✅" },
+            { label: "ROI if it prevents 1 incident/year", value: "84,000%+", color: "text-emerald-400", icon: "📈" },
+          ]).map((stat) => (
             <div key={stat.label} className="p-5 rounded-xl border border-[var(--border-color)] bg-[var(--bg-card)]">
               <p className="text-2xl mb-1">{stat.icon}</p>
               <p className={`text-2xl font-extrabold font-mono mb-1 ${stat.color}`}>{stat.value}</p>
@@ -336,7 +347,9 @@ export default function PricingPage() {
           ))}
         </div>
         <p className="text-center text-xs text-[var(--text-muted)] mt-3">
-          Industry average: $5,600/minute downtime cost (Gartner, 2024). One incident prevented pays for 27+ years of Pro.
+          {isJa
+            ? "業界平均: ダウンタイム1分あたり約84万円 (Gartner, 2024)。1回の障害防止でStarter約70年分の元が取れます。"
+            : "Industry average: $5,600/minute downtime cost (Gartner, 2024). One incident prevented pays for 84+ years of Starter."}
         </p>
       </div>
 

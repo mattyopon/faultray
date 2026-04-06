@@ -595,7 +595,7 @@ export default function SettingsPage() {
             </Button>
           </Link>
           {/* RETAIN-01: Cancel flow entry point for paid plans */}
-          {(currentPlan === "pro" || currentPlan === "business") && (
+          {(currentPlan === "starter" || currentPlan === "pro" || currentPlan === "business") && (
             <button
               onClick={() => { setShowChurnModal(true); }}
               className="text-xs text-[var(--text-muted)] hover:text-[var(--text-secondary)] underline transition-colors"
