@@ -2,24 +2,32 @@
 # ステージング環境の自動セットアップ
 # 使い方: ./scripts/setup-staging.sh
 #
-# 必要な環境変数:
-#   SUPABASE_TOKEN          - Supabase Management API Token
-#   STAGING_REF             - Supabase staging project ref
-#   VERCEL_TOKEN            - Vercel API Token
-#   VERCEL_PROJECT_ID       - Vercel Project ID
-#   GITHUB_OAUTH_CLIENT_ID  - GitHub OAuth App Client ID
-#   GITHUB_OAUTH_SECRET     - GitHub OAuth App Client Secret
-#   GOOGLE_OAUTH_CLIENT_ID  - Google OAuth Client ID
-#   GOOGLE_OAUTH_SECRET     - Google OAuth Client Secret
+# シークレットは .env.staging.local から自動読み込み（gitignore済み）
+# 初回は .env.staging.local.example をコピーして値を埋める
 
 set -e
 
-# Validate required env vars
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+SECRETS_FILE="${SCRIPT_DIR}/../.env.staging.local"
+
+if [ ! -f "$SECRETS_FILE" ]; then
+  echo "ERROR: $SECRETS_FILE が見つかりません" >&2
+  echo "  cp .env.staging.local.example .env.staging.local" >&2
+  echo "  して値を埋めてください" >&2
+  exit 1
+fi
+
+# .env.staging.local を読み込み（export付き）
+set -a
+source "$SECRETS_FILE"
+set +a
+
+# 必須変数チェック
 for var in SUPABASE_TOKEN STAGING_REF VERCEL_TOKEN VERCEL_PROJECT_ID \
            GITHUB_OAUTH_CLIENT_ID GITHUB_OAUTH_SECRET \
            GOOGLE_OAUTH_CLIENT_ID GOOGLE_OAUTH_SECRET; do
   if [ -z "${!var}" ]; then
-    echo "ERROR: $var is not set" >&2
+    echo "ERROR: $var が .env.staging.local に未設定です" >&2
     exit 1
   fi
 done
