@@ -76,7 +76,7 @@ export default function DashboardPage() {
   const isTrialActive = trialEndsAt ? new Date(trialEndsAt).getTime() > Date.now() : false;
 
   // SALES-03 / CVR-04: Pro→Business アップセル — show after 3+ runs
-  const [currentPlan, setCurrentPlan] = useState<string>("free");
+  const [currentPlan, setCurrentPlan] = useState<string>("");
   // ERRMSG-07: past_due状態を追跡して支払い失敗バナーを表示
   const [subscriptionStatus, setSubscriptionStatus] = useState<string>("active");
   const showProUpsell = currentPlan === "pro" && runs.length >= 3;

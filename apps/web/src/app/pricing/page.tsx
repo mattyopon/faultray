@@ -42,7 +42,7 @@ const plans: Plan[] = [
     name: "Pro",
     monthlyPrice: 299,
     annualMonthlyPrice: 239,   // 299 * 12 * 0.8 / 12 ≈ 239
-    annualTotal: 2868,         // 239 * 12 = 2868
+    annualTotal: 2869,         // Stripe: 286900 cents = $2,869
     desc: "For teams that need DORA compliance reports and higher limits.",
     features: ["14-day free trial", "100 simulations / month", "Up to 50 components", "Everything in Free", "DORA report export (PDF)", "AI-powered analysis", "Email support (24h)"],
     disabledFeatures: ["Insurance API", "Custom SSO"],
@@ -56,7 +56,7 @@ const plans: Plan[] = [
     name: "Starter",
     monthlyPrice: 99,
     annualMonthlyPrice: 79,
-    annualTotal: 948,          // 79 * 12 = 948
+    annualTotal: 950,          // Stripe: 95000 cents = $950
     desc: "For small teams getting started with reliability testing. 30 simulations covers most ongoing monitoring needs.",
     features: ["30 simulations / month", "Up to 20 components", "Everything in Free", "Email support (48h)", "Basic remediation suggestions"],
     disabledFeatures: ["DORA report export", "AI-powered analysis", "Custom SSO"],
@@ -95,16 +95,42 @@ const featureComparison = [
   { name: "Support", free: "Community", starter: "Email (48h)", pro: "Email (24h)", business: "Dedicated (1h)" },
 ];
 
+const jaFeatureComparison = [
+  { name: "シミュレーション/月", free: "5", starter: "30", pro: "100", business: "無制限" },
+  { name: "コンポーネント数", free: "5", starter: "20", pro: "50", business: "無制限" },
+  { name: "シミュレーションエンジン", free: "100+", starter: "100+", pro: "100+", business: "100+" },
+  { name: "N-Layerモデル", free: true, starter: true, pro: true, business: true },
+  { name: "DORAレポート出力", free: false, starter: false, pro: "PDF", business: "PDF + API" },
+  { name: "Insurance API", free: false, starter: false, pro: false, business: true },
+  { name: "AI分析", free: false, starter: false, pro: true, business: true },
+  { name: "カスタムSSO / SAML", free: false, starter: false, pro: false, business: true },
+  { name: "99.9% Uptime SLA", free: false, starter: false, pro: true, business: true },
+  { name: "サポート", free: "コミュニティ", starter: "メール（48h）", pro: "メール（24h）", business: "専任（1h）" },
+];
+
 // Task 1+9: JP price display constants (outside component to avoid per-render allocation)
 const jaMonthlyPrice: Record<string, string> = { Starter: "¥9,900", Pro: "¥29,800", Business: "¥99,800" };
 const jaAnnualMonthlyPrice: Record<string, string> = { Starter: "¥7,900", Pro: "¥23,800", Business: "¥79,800" };
 const jaAnnualTotal: Record<string, string> = { Starter: "¥94,800", Pro: "¥285,600", Business: "¥957,600" };
 const jaUsdEquiv: Record<string, string> = { Starter: "$99", Pro: "$299", Business: "$999" };
+const jaUsdAnnual: Record<string, string> = { Starter: "$950", Pro: "$2,869", Business: "$9,590" };
 const jaDesc: Record<string, string> = {
   Business: "無制限アクセス、SSO、専任サポートが必要なエンタープライズ向け。",
   Pro: "DORAコンプライアンスレポートと上限拡張が必要なチーム向け。",
   Starter: "信頼性テストを始める小規模チーム向け。月30回で日常的な監視をカバー。",
   Free: "障害リスク診断を試したい個人エンジニアに最適。月5回で概念実証を評価。",
+};
+const jaFeatures: Record<string, string[]> = {
+  Business: ["無制限シミュレーション", "無制限コンポーネント", "Proの全機能含む", "DORAレポート + Insurance API", "カスタムSSO / SAML", "専任サポート（1時間応答）", "Prometheus連携", "オンプレミスデプロイ"],
+  Pro: ["14日間無料トライアル", "月100回シミュレーション", "最大50コンポーネント", "Freeの全機能含む", "DORAレポート（PDF）", "AI分析", "メールサポート（24時間応答）"],
+  Starter: ["月30回シミュレーション", "最大20コンポーネント", "Freeの全機能含む", "メールサポート（48時間応答）", "基本的な改善提案"],
+  Free: ["月5回シミュレーション", "最大5コンポーネント", "100以上のエンジン", "N-Layer可用性モデル", "HTMLレポート", "コミュニティサポート"],
+};
+const jaDisabledFeatures: Record<string, string[]> = {
+  Business: [],
+  Pro: ["Insurance API", "カスタムSSO"],
+  Starter: ["DORAレポート", "AI分析", "カスタムSSO"],
+  Free: ["DORAレポート", "カスタムSSO"],
 };
 const jaCta: Record<string, string> = {
   Business: "お問い合わせ",
@@ -273,7 +299,10 @@ export default function PricingPage() {
                     <span className="text-sm text-[var(--text-muted)] ml-1">/月</span>
                   </div>
                   {plan.monthlyPrice > 0 && (
-                    <p className="text-xs text-[var(--text-muted)] mb-1">（{jaUsdEquiv[plan.name]} USD）</p>
+                    <>
+                      <p className="text-xs text-[var(--text-muted)] mb-0.5">（{billing === "annual" ? `${jaUsdAnnual[plan.name]}/年` : `${jaUsdEquiv[plan.name]}/月`} USD）</p>
+                      <p className="text-[0.625rem] text-[var(--text-muted)] mb-1">※ 決済はUSD建て。為替レートはカード会社適用</p>
+                    </>
                   )}
                 </>
               ) : (
@@ -286,7 +315,7 @@ export default function PricingPage() {
               {billing === "annual" && plan.annualTotal > 0 && (
                 <p className="text-xs text-[var(--text-muted)] mb-4">
                   {isJa && plan.name in jaAnnualTotal
-                    ? `年間一括（${jaAnnualTotal[plan.name]}/年）`
+                    ? `年間一括（${jaAnnualTotal[plan.name]}/年 · ${jaUsdAnnual[plan.name]} USD）`
                     : `Billed annually ($${plan.annualTotal.toLocaleString()}/yr)`}
                 </p>
               )}
@@ -294,12 +323,12 @@ export default function PricingPage() {
 
               <p className="text-sm text-[var(--text-secondary)] leading-relaxed mb-6">{isJa && plan.name in jaDesc ? jaDesc[plan.name] : plan.desc}</p>
               <ul className="space-y-3 mb-8 flex-1">
-                {plan.features.map((f) => (
+                {(isJa && plan.name in jaFeatures ? jaFeatures[plan.name] : plan.features).map((f) => (
                   <li key={f} className="flex items-center gap-2.5 text-sm text-[var(--text-secondary)]">
                     <Check size={16} className="text-emerald-400 shrink-0" />{f}
                   </li>
                 ))}
-                {plan.disabledFeatures.map((f) => (
+                {(isJa && plan.name in jaDisabledFeatures ? jaDisabledFeatures[plan.name] : plan.disabledFeatures).map((f) => (
                   <li key={f} className="flex items-center gap-2.5 text-sm text-[var(--text-secondary)] opacity-40">
                     <Minus size={16} className="shrink-0" />{f}
                   </li>
@@ -337,9 +366,9 @@ export default function PricingPage() {
             <ShieldCheck size={20} className="text-emerald-400 shrink-0" />
             <p className="text-sm text-emerald-300">
               {isJa ? (
-                <><strong>年間払いで20%お得。</strong> Starter: 年間¥24,000節約。Pro: 年間¥72,000節約。Business: 年間¥240,000節約。Pro以上のプランには99.9% Uptime SLA保証付き。</>
+                <><strong>年間払いで20%お得。</strong> Starter: 年間¥23,800節約。Pro: 年間¥71,900節約。Business: 年間¥239,800節約。Pro以上のプランには99.9% Uptime SLA保証付き。</>
               ) : (
-                <><strong>Annual billing saves you 20%.</strong> Starter: save $240/yr. Pro: save $720/yr. Business: save $2,400/yr.
+                <><strong>Annual billing saves you 20%.</strong> Starter: save $238/yr. Pro: save $719/yr. Business: save $2,398/yr.
                 All annual plans on Pro and above include 99.9% Uptime SLA guarantee.</>
               )}
             </p>
@@ -376,12 +405,12 @@ export default function PricingPage() {
 
       {/* Feature Comparison Table */}
       <div className="max-w-[900px] mx-auto">
-        <h2 className="text-xl font-bold text-center mb-8">Feature Comparison</h2>
+        <h2 className="text-xl font-bold text-center mb-8">{isJa ? "機能比較" : "Feature Comparison"}</h2>
         <div className="overflow-x-auto rounded-2xl border border-[var(--border-color)]">
           <table className="w-full border-collapse text-sm">
             <thead>
               <tr>
-                <th scope="col" className="px-5 py-4 text-left bg-[var(--bg-tertiary)] text-[var(--text-secondary)] font-semibold">Feature</th>
+                <th scope="col" className="px-5 py-4 text-left bg-[var(--bg-tertiary)] text-[var(--text-secondary)] font-semibold">{isJa ? "機能" : "Feature"}</th>
                 <th scope="col" className="px-5 py-4 text-center bg-[var(--bg-tertiary)] text-[var(--text-secondary)] font-semibold">Free</th>
                 <th scope="col" className="px-5 py-4 text-center bg-[var(--bg-tertiary)] text-[var(--text-secondary)] font-semibold">Starter</th>
                 <th scope="col" className="px-5 py-4 text-center bg-[var(--gold)]/[0.06] text-[var(--gold)] font-semibold">Pro</th>
@@ -389,7 +418,7 @@ export default function PricingPage() {
               </tr>
             </thead>
             <tbody>
-              {featureComparison.map((row, i) => (
+              {(isJa ? jaFeatureComparison : featureComparison).map((row, i) => (
                 <tr key={row.name} className={i < featureComparison.length - 1 ? "border-b border-[var(--border-color)]" : ""}>
                   <td className="px-5 py-4 font-medium text-[var(--text-primary)] bg-[var(--bg-card)]">{row.name}</td>
                   <td className="px-5 py-4 text-center bg-[var(--bg-card)] text-[var(--text-secondary)]"><CellValue value={row.free} /></td>
@@ -403,14 +432,7 @@ export default function PricingPage() {
         </div>
       </div>
 
-      {/* Task 1: USD settlement disclaimer for JP users */}
-      {isJa && (
-        <div className="max-w-[900px] mx-auto mt-8">
-          <p className="text-xs text-[var(--text-muted)] text-center">
-            ※ 表示価格は目安です。実際の決済はUSD建てで行われ、ご利用のクレジットカード会社の為替レートが適用されます。
-          </p>
-        </div>
-      )}
+
 
       {/* SLA note */}
       <div className="max-w-[900px] mx-auto mt-8">
