@@ -20,11 +20,49 @@ export async function generateMetadata(): Promise<Metadata> {
   };
 }
 
+// JSON-LD for /ja — JPY pricing (overrides root layout's USD version for Google)
+const jaJsonLd = [
+  {
+    "@context": "https://schema.org",
+    "@type": "SoftwareApplication",
+    name: "FaultRay",
+    applicationCategory: "DeveloperApplication",
+    operatingSystem: "Web",
+    url: "https://faultray.com/ja",
+    inLanguage: "ja",
+    description:
+      "本番環境を触らずにシステムの弱点を自動発見。2,000以上のシナリオでシステムの稼働率上限を数学的に証明するSaaS。",
+    offers: [
+      { "@type": "Offer", name: "Free", price: "0", priceCurrency: "JPY" },
+      { "@type": "Offer", name: "Pro", price: "45000", priceCurrency: "JPY", eligibleQuantity: { "@type": "QuantitativeValue", unitText: "month" } },
+    ],
+    featureList: [
+      "100以上のシミュレーションエンジン",
+      "DORAコンプライアンスレポート",
+      "AI信頼性アドバイザー",
+      "N-Layer可用性モデル",
+      "AWS/GCP/Azureクラウドディスカバリー",
+    ],
+  },
+];
+
 export default function JaLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
-  // I18N-04: set lang attribute for Japanese locale pages
-  return <div lang="ja">{children}</div>;
+  return (
+    <div lang="ja">
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{
+          __html: JSON.stringify(jaJsonLd)
+            .replace(/</g, "\\u003c")
+            .replace(/>/g, "\\u003e")
+            .replace(/&/g, "\\u0026"),
+        }}
+      />
+      {children}
+    </div>
+  );
 }
