@@ -311,6 +311,85 @@ export default function DemoPage() {
         )}
       </div>
 
+      {/* COMP-04: Self-guided tour — step by step */}
+      <div className="mb-12">
+        <div className="text-center mb-8">
+          <h2 className="text-xl font-bold mb-2">
+            {locale === "ja" ? "セルフガイドツアー" : "Self-Guided Tour"}
+          </h2>
+          <p className="text-sm text-[var(--text-secondary)]">
+            {locale === "ja"
+              ? "4ステップでFaultRayの全体像を体験できます。ログイン不要。"
+              : "Experience FaultRay in 4 steps. No login required."}
+          </p>
+        </div>
+        <div className="grid md:grid-cols-4 gap-4">
+          {[
+            {
+              step: 1,
+              icon: <Zap size={20} className="text-[var(--gold)]" />,
+              title: locale === "ja" ? "インフラ構成を選択" : "Choose Topology",
+              desc: locale === "ja"
+                ? "SaaS・マイクロサービス・MLパイプラインから選択、またはYAMLを貼り付け"
+                : "Pick SaaS, microservices, or ML pipeline — or paste your own YAML",
+              cta: locale === "ja" ? "上のシナリオから選択 ↑" : "Pick a scenario above ↑",
+              href: null,
+            },
+            {
+              step: 2,
+              icon: <Play size={20} className="text-emerald-400" />,
+              title: locale === "ja" ? "シミュレーション実行" : "Run Simulation",
+              desc: locale === "ja"
+                ? "2,000以上の障害シナリオを30秒で実行。本番環境には一切触れません"
+                : "2,000+ failure scenarios in 30 seconds. Zero production impact",
+              cta: locale === "ja" ? "サンプルで試す" : "Try with sample",
+              href: "/simulate?sample=web-saas",
+            },
+            {
+              step: 3,
+              icon: <BarChart3 size={20} className="text-blue-400" />,
+              title: locale === "ja" ? "リスクスコア確認" : "Review Risk Score",
+              desc: locale === "ja"
+                ? "N-Layer可用性モデルで稼働率の上限を数学的に算出。重大な弱点をハイライト"
+                : "N-Layer model calculates availability ceiling. Critical weaknesses highlighted",
+              cta: locale === "ja" ? "業種を選んでプレビュー ↑" : "Select industry above ↑",
+              href: null,
+            },
+            {
+              step: 4,
+              icon: <ArrowRight size={20} className="text-purple-400" />,
+              title: locale === "ja" ? "無料で始める" : "Get Started Free",
+              desc: locale === "ja"
+                ? "アカウント作成で月5回まで無料。クレカ不要、14日間Proトライアル付き"
+                : "Free account: 5 simulations/month. No credit card. 14-day Pro trial included",
+              cta: locale === "ja" ? "無料で始める" : "Sign up free",
+              href: "/login",
+            },
+          ].map((item) => (
+            <div key={item.step} className="relative p-5 rounded-2xl border border-[var(--border-color)] bg-[var(--bg-card)]">
+              <div className="flex items-center gap-2 mb-3">
+                <span className="w-6 h-6 flex items-center justify-center rounded-full bg-[var(--gold)]/10 text-[var(--gold)] text-xs font-bold">
+                  {item.step}
+                </span>
+                {item.icon}
+              </div>
+              <h3 className="font-semibold text-sm mb-1">{item.title}</h3>
+              <p className="text-xs text-[var(--text-muted)] mb-3 leading-relaxed">{item.desc}</p>
+              {item.href ? (
+                <Link
+                  href={item.href}
+                  className="text-xs font-semibold text-[var(--gold)] hover:underline inline-flex items-center gap-1"
+                >
+                  {item.cta} <ArrowRight size={12} />
+                </Link>
+              ) : (
+                <span className="text-xs font-medium text-[var(--text-muted)]">{item.cta}</span>
+              )}
+            </div>
+          ))}
+        </div>
+      </div>
+
       {/* DEMO-02: Free vs Pro feature grid */}
       <div className="grid md:grid-cols-2 gap-6 mb-12">
         {/* Free */}
