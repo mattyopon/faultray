@@ -61,24 +61,9 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "This coupon has reached its usage limit" }, { status: 400 });
   }
 
-  // 4. profilesテーブルを更新
-  const expiresAt = new Date(
-    Date.now() + coupon.days * 24 * 60 * 60 * 1000
-  ).toISOString();
-
-  const { error: profileError } = await supabase
-    .from("profiles")
-    .update({ plan: coupon.tier, trial_ends_at: expiresAt })
-    .eq("id", user.id);
-
-  if (profileError) {
-    return NextResponse.json({ error: "Failed to update profile" }, { status: 500 });
-  }
-
-  // 5. couponsテーブルのcurrent_usesをインクリメント（楽観的ロック）
-  // WHERE current_uses = coupon.current_uses を付与することで、
-  // 読み取りと更新の間に別リクエストが同じクーポンを使用していた場合は
-  // 更新件数が0になり競合を検出できる。
+  // 4. クーポンのcurrent_usesを楽観的ロックでインクリメント（プロファイル更新の前に）
+  // WHERE current_uses = coupon.current_uses で競合を検出。
+  // プロファイル更新より先に行うことで、競合時にプランが無料アップグレードされるのを防ぐ。
   const { data: updatedCoupons, error: incrementError } = await supabase
     .from("coupons")
     .update({ current_uses: coupon.current_uses + 1 })
@@ -92,11 +77,24 @@ export async function POST(request: Request) {
   }
 
   if (!updatedCoupons || updatedCoupons.length === 0) {
-    // 楽観的ロック競合: 別リクエストが先にクーポンを使用した
     return NextResponse.json(
       { error: "Coupon usage conflict. Please try again." },
       { status: 409 }
     );
+  }
+
+  // 5. profilesテーブルを更新（クーポン消費が確定した後）
+  const expiresAt = new Date(
+    Date.now() + coupon.days * 24 * 60 * 60 * 1000
+  ).toISOString();
+
+  const { error: profileError } = await supabase
+    .from("profiles")
+    .update({ plan: coupon.tier, trial_ends_at: expiresAt })
+    .eq("id", user.id);
+
+  if (profileError) {
+    return NextResponse.json({ error: "Failed to update profile" }, { status: 500 });
   }
 
   return NextResponse.json({

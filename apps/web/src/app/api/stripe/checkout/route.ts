@@ -91,8 +91,10 @@ export async function POST(request: Request) {
   const unitAmount = PRICES[plan][interval];
   const trialDays = TRIAL_DAYS[plan];
 
-  // #15: 冪等性キーで同一ユーザー+プラン+インターバルの二重サブスクリプションを防止
-  const idempotencyKey = `checkout-${userId}-${plan}-${interval}`;
+  // #15: 冪等性キーで二重サブスクリプション防止
+  // 時間バケット付きでexpire後の再チェックアウト時のStripe 400エラーを回避
+  const hourBucket = Math.floor(Date.now() / 3600000);
+  const idempotencyKey = `checkout-${userId}-${plan}-${interval}-${hourBucket}`;
 
   try {
     const session = await stripe.checkout.sessions.create(
