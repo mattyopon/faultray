@@ -1140,11 +1140,24 @@ function SimulatePageInner() {
         rawMsg.toLowerCase().includes("5 simulations") ||
         rawMsg.toLowerCase().includes("30 simulations") ||
         rawMsg.toLowerCase().includes("upgrade");
-      const message = isQuotaError
-        ? (locale === "ja"
-            ? `${rawMsg}\n\nより多くのシミュレーションが必要ですか？上位プランをご検討ください。`
-            : `${rawMsg}\n\nNeed more simulations? Consider upgrading your plan.`)
-        : rawMsg;
+      let upgradeHint = "";
+      if (isQuotaError) {
+        const lower = rawMsg.toLowerCase();
+        if (lower.includes("5 simulations") || lower.includes("free")) {
+          upgradeHint = locale === "ja"
+            ? "\n\nStarterプラン（月30回）またはProプラン（月100回）へのアップグレードをご検討ください。"
+            : "\n\nConsider Starter (30/month) or Pro (100/month).";
+        } else if (lower.includes("30 simulations") || lower.includes("starter")) {
+          upgradeHint = locale === "ja"
+            ? "\n\nProプラン（月100回シミュレーション）へのアップグレードをご検討ください。"
+            : "\n\nConsider upgrading to Pro (100 simulations/month).";
+        } else {
+          upgradeHint = locale === "ja"
+            ? "\n\n上位プランをご検討ください。"
+            : "\n\nConsider upgrading your plan.";
+        }
+      }
+      const message = isQuotaError ? `${rawMsg}${upgradeHint}` : rawMsg;
       setError(message);
     } finally {
       timers.forEach(clearTimeout);
