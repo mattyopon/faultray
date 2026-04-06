@@ -11,11 +11,41 @@ export async function generateMetadata(): Promise<Metadata> {
   return {
     title: dict.metadata.title,
     description: dict.metadata.description,
+    keywords: [
+      "障害リスク診断",
+      "インフラ診断",
+      "可用性テスト",
+      "SRE",
+      "DevOps",
+      "シミュレーション",
+      "DORA コンプライアンス",
+    ],
     alternates: {
       canonical: `${BASE}/ja`,
       languages: Object.fromEntries(
         LOCALES.map((locale) => [locale, `${BASE}/${locale}`])
       ) as Record<string, string>,
+    },
+    openGraph: {
+      title: "FaultRay — 本番環境を壊さずシステムの弱点を自動診断",
+      description:
+        "本番を止めずにシステムの弱点を発見し、稼働率の上限を数学的に証明するSaaS。",
+      url: `${BASE}/ja`,
+      images: [
+        {
+          url: "/og-image.png",
+          width: 1200,
+          height: 630,
+          alt: "FaultRay — 本番環境を壊さずシステムの弱点を自動診断",
+        },
+      ],
+    },
+    twitter: {
+      card: "summary_large_image",
+      title: "FaultRay — 本番環境を壊さずシステムの弱点を自動診断",
+      description:
+        "本番を止めずにシステムの弱点を発見し、稼働率の上限を数学的に証明するSaaS。",
+      images: ["/og-image.png"],
     },
   };
 }
