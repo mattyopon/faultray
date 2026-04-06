@@ -33,7 +33,7 @@ export type {
 } from "@/lib/api";
 
 /** Plan tiers for the SaaS billing system */
-export type PlanTier = "free" | "pro" | "business";
+export type PlanTier = "free" | "starter" | "pro" | "business";
 
 /** Locale codes supported by FaultRay */
 export type Locale = "en" | "ja" | "de" | "fr" | "zh" | "ko" | "es" | "pt";

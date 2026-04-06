@@ -4,7 +4,7 @@ import { applyRateLimit } from "@/lib/rate-limit";
 
 export const dynamic = "force-dynamic";
 
-type Plan = "pro" | "business";
+type Plan = "starter" | "pro" | "business";
 type Interval = "month" | "year";
 
 interface CheckoutBody {
@@ -14,6 +14,10 @@ interface CheckoutBody {
 
 // Price in cents (USD)
 const PRICES: Record<Plan, Record<Interval, number>> = {
+  starter: {
+    month: 9900,   // $99
+    year: 95000,   // $99 * 12 * 0.8 ≈ $950
+  },
   pro: {
     month: 29900,  // $299
     year: 286900,  // $2,869
@@ -25,11 +29,13 @@ const PRICES: Record<Plan, Record<Interval, number>> = {
 };
 
 const PLAN_NAMES: Record<Plan, string> = {
+  starter: "FaultRay Starter",
   pro: "FaultRay Pro",
   business: "FaultRay Business",
 };
 
 const TRIAL_DAYS: Record<Plan, number | undefined> = {
+  starter: 14,
   pro: 14,
   business: undefined,
 };
@@ -55,9 +61,9 @@ export async function POST(request: Request) {
 
   const { plan, interval = "month" } = body;
 
-  if (!plan || !["pro", "business"].includes(plan)) {
+  if (!plan || !["starter", "pro", "business"].includes(plan)) {
     return NextResponse.json(
-      { error: "Invalid plan. Must be 'pro' or 'business'." },
+      { error: "Invalid plan. Must be 'starter', 'pro', or 'business'." },
       { status: 400 }
     );
   }
@@ -100,7 +106,7 @@ export async function POST(request: Request) {
             currency: "usd",
             product_data: {
               name: PLAN_NAMES[plan],
-              description: `FaultRay ${plan === "pro" ? "Pro" : "Business"} Plan — billed ${interval === "month" ? "monthly" : "annually"}`,
+              description: `FaultRay ${plan.charAt(0).toUpperCase() + plan.slice(1)} Plan — billed ${interval === "month" ? "monthly" : "annually"}`,
             },
             recurring: {
               interval: interval === "month" ? "month" : "year",

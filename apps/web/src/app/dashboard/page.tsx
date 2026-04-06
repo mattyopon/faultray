@@ -80,6 +80,8 @@ export default function DashboardPage() {
   // ERRMSG-07: past_due状態を追跡して支払い失敗バナーを表示
   const [subscriptionStatus, setSubscriptionStatus] = useState<string>("active");
   const showProUpsell = currentPlan === "pro" && runs.length >= 3;
+  const showStarterUpsell = currentPlan === "starter" && runs.length >= 2;
+  const showFreeUpsell = currentPlan === "free" && runs.length >= 1;
   const showPaymentFailed = subscriptionStatus === "past_due";
 
   useEffect(() => {
@@ -173,6 +175,56 @@ export default function DashboardPage() {
             className="text-xs font-semibold text-purple-300 border border-purple-500/30 px-3 py-1.5 rounded-lg hover:bg-purple-500/10 transition-colors whitespace-nowrap"
           >
             {locale === "ja" ? "プランを見る" : "View Business Plan"}
+          </Link>
+        </div>
+      )}
+
+      {/* Starter→Pro upsell */}
+      {showStarterUpsell && !isTrialActive && (
+        <div className="mb-6 px-5 py-4 rounded-xl border border-[var(--gold)]/30 bg-[var(--gold)]/[0.06] flex items-center justify-between gap-4 flex-wrap">
+          <div className="flex items-center gap-2.5">
+            <TrendingUp size={16} className="text-[var(--gold)] shrink-0" />
+            <div>
+              <span className="text-sm font-semibold text-[var(--gold)]">
+                {locale === "ja" ? "Proプランでもっと活用" : "Upgrade to Pro"}
+              </span>
+              <span className="block text-xs text-[var(--text-secondary)] mt-0.5">
+                {locale === "ja"
+                  ? "月100回のシミュレーション・DORAレポート・AI分析が利用可能です"
+                  : "100 simulations/month, DORA reports, and AI-powered analysis"}
+              </span>
+            </div>
+          </div>
+          <Link
+            href="/pricing"
+            className="text-xs font-semibold text-[var(--gold)] border border-[var(--gold)]/30 px-3 py-1.5 rounded-lg hover:bg-[var(--gold)]/10 transition-colors whitespace-nowrap"
+          >
+            {locale === "ja" ? "プランを見る" : "View Pro Plan"}
+          </Link>
+        </div>
+      )}
+
+      {/* Free→upgrade upsell */}
+      {showFreeUpsell && !isTrialActive && (
+        <div className="mb-6 px-5 py-4 rounded-xl border border-emerald-500/30 bg-emerald-500/[0.06] flex items-center justify-between gap-4 flex-wrap">
+          <div className="flex items-center gap-2.5">
+            <TrendingUp size={16} className="text-emerald-400 shrink-0" />
+            <div>
+              <span className="text-sm font-semibold text-emerald-400">
+                {locale === "ja" ? "有料プランで診断を強化" : "Upgrade for more simulations"}
+              </span>
+              <span className="block text-xs text-[var(--text-secondary)] mt-0.5">
+                {locale === "ja"
+                  ? "月5回の上限を超えて診断を実行。Starterは月30回、Proは月100回"
+                  : "Go beyond 5/month. Starter: 30/month, Pro: 100/month"}
+              </span>
+            </div>
+          </div>
+          <Link
+            href="/pricing"
+            className="text-xs font-semibold text-emerald-400 border border-emerald-500/30 px-3 py-1.5 rounded-lg hover:bg-emerald-500/10 transition-colors whitespace-nowrap"
+          >
+            {locale === "ja" ? "プランを見る" : "View Plans"}
           </Link>
         </div>
       )}

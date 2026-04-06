@@ -5,11 +5,13 @@ import { applyRateLimit } from "@/lib/rate-limit";
 // Stripe webhook handler must read the raw body
 export const dynamic = "force-dynamic";
 
-type PlanTier = "free" | "pro" | "business";
+type PlanTier = "free" | "starter" | "pro" | "business";
 
 function planTierFromPriceId(priceId: string): PlanTier | null {
+  const starterPriceIds = (process.env.STRIPE_STARTER_PRICE_IDS || "").split(",").filter(Boolean);
   const proPriceIds = (process.env.STRIPE_PRO_PRICE_IDS || "").split(",").filter(Boolean);
   const businessPriceIds = (process.env.STRIPE_BUSINESS_PRICE_IDS || "").split(",").filter(Boolean);
+  if (starterPriceIds.includes(priceId)) return "starter";
   if (proPriceIds.includes(priceId)) return "pro";
   if (businessPriceIds.includes(priceId)) return "business";
   return null;
@@ -111,7 +113,7 @@ export async function POST(request: Request) {
         const userId = session.metadata?.user_id;
         const plan = session.metadata?.plan as PlanTier | undefined;
 
-        if (userId && plan && (plan === "pro" || plan === "business")) {
+        if (userId && plan && (plan === "starter" || plan === "pro" || plan === "business")) {
           await updateUserPlan(userId, plan, "active");
           console.log(`[stripe/webhook] checkout.session.completed: user=${userId} plan=${plan}`);
         }

@@ -38,7 +38,7 @@ describe("L8: XSS Prevention", () => {
       "app/[lang]/page.tsx",
       // app/en/page.tsx: static HTML entities in hardcoded persona pain points (no user input)
       "app/en/page.tsx",
-      // locale layouts: JSON-LD structured data with XSS-safe escaping (\\u003c, \\u003e, \\u0026)
+      // app/en/layout.tsx, app/ja/layout.tsx: JSON-LD structured data (static constant, no user input)
       "app/en/layout.tsx",
       "app/ja/layout.tsx",
     ]);

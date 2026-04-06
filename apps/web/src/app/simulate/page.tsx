@@ -1138,11 +1138,12 @@ function SimulatePageInner() {
         rawMsg.toLowerCase().includes("quota") ||
         rawMsg.toLowerCase().includes("limit") ||
         rawMsg.toLowerCase().includes("5 simulations") ||
+        rawMsg.toLowerCase().includes("30 simulations") ||
         rawMsg.toLowerCase().includes("upgrade");
       const message = isQuotaError
         ? (locale === "ja"
-            ? `${rawMsg}\n\nProプランにアップグレードすると月100回のシミュレーションが利用できます。`
-            : `${rawMsg}\n\nUpgrade to Pro for 100 simulations/month.`)
+            ? `${rawMsg}\n\nより多くのシミュレーションが必要ですか？上位プランをご検討ください。`
+            : `${rawMsg}\n\nNeed more simulations? Consider upgrading your plan.`)
         : rawMsg;
       setError(message);
     } finally {
