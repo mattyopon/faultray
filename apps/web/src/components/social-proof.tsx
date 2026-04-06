@@ -14,8 +14,6 @@ interface SocialProofProps {
   stars: number;
 }
 
-// TRUST-03: Anonymized composite testimonials from beta users
-// (sourced from beta feedback; composites of real responses)
 const TESTIMONIALS = [
   {
     quote: "We ran FaultRay against our payment pipeline topology before a Black Friday push. It found a single-point-of-failure in our auth service that our team had missed for 18 months.",
@@ -87,7 +85,7 @@ export function SocialProof({ dict, stars }: SocialProofProps) {
           </div>
         </div>
 
-        {/* TRUST-03: Testimonials */}
+        {/* Testimonials */}
         <div className="grid md:grid-cols-3 gap-6 mb-16">
           {TESTIMONIALS.map((t) => (
             <div

@@ -31,11 +31,11 @@ Supabase
 3. Configure Auth providers:
    - Go to Authentication > Providers
    - Enable GitHub OAuth:
-     - Client ID: `REDACTED_GITHUB_CLIENT_ID`
-     - Client Secret: (from .env)
+     - Client ID: (from .env `GITHUB_OAUTH_CLIENT_ID`)
+     - Client Secret: (from .env `GITHUB_OAUTH_SECRET`)
    - Enable Google OAuth:
-     - Client ID: `352070354644-...`
-     - Client Secret: (from .env)
+     - Client ID: (from .env `GOOGLE_OAUTH_CLIENT_ID`)
+     - Client Secret: (from .env `GOOGLE_OAUTH_SECRET`)
    - Set Site URL to `https://faultray.com`
    - Add Redirect URLs:
      - `https://faultray.com/auth/callback`

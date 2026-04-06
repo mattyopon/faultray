@@ -23,8 +23,6 @@ interface Plan {
   sla: string | null;
 }
 
-// PSYCH-01: Display order is Business→Pro→Free (decoy/anchoring effect)
-// Users see highest price first, making Pro appear as a bargain
 const plans: Plan[] = [
   {
     name: "Business",

@@ -1622,9 +1622,6 @@ class handler(BaseHTTPRequestHandler):
         allowed_origin = os.environ.get("FAULTRAY_ALLOWED_ORIGIN", "")
         if allowed_origin:
             self.send_header("Access-Control-Allow-Origin", allowed_origin)
-        else:
-            # Development fallback — only if no explicit origin is configured
-            self.send_header("Access-Control-Allow-Origin", "*")
 
     def _authenticate(self) -> bool:
         """ENG-02 fix: require a valid Supabase JWT or API key on all routes.
