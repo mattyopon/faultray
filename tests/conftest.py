@@ -39,12 +39,16 @@ TEST_API_KEY_HASH = hash_api_key(TEST_API_KEY)
 def _run_async(coro):
     """Run an async coroutine from sync code (no running event loop).
 
-    NOTE: We intentionally do NOT close the loop here. Closing it causes
-    aiosqlite worker threads to fail with 'Event loop is closed' when they
-    try to post results back, which cascades into 500 errors in API tests.
+    Re-uses a single event loop per process to prevent 'Event loop is closed'
+    errors from aiosqlite worker threads that outlive individual loops.
     """
-    loop = asyncio.new_event_loop()
-    asyncio.set_event_loop(loop)
+    try:
+        loop = asyncio.get_running_loop()
+    except RuntimeError:
+        loop = None
+    if loop is None or loop.is_closed():
+        loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(loop)
     return loop.run_until_complete(coro)
 
 

@@ -58,10 +58,10 @@ FaultRay takes a fundamentally different approach: **mathematical simulation**. 
 
 | | Gremlin | Steadybit | AWS FIS | **FaultRay** |
 |---|---|---|---|---|
-| Approach | Breaks production | Breaks production | Breaks production | **Math simulation** |
-| Production risk | Medium-High | Medium | Medium | **Zero** |
+| Approach | Fault injection | Fault injection (with safety) | Fault injection | **Math simulation** |
+| Production risk | Medium-High | Low-Medium (blast radius controls) | Medium | **Zero** |
 | Setup | Agent per host | Agent per host | AWS only | **`pip install`** |
-| DORA evidence | No | No | No | **Yes — audit-ready** |
+| DORA evidence | Reporting available | Reporting available | CloudWatch logs | **Audit-ready reports** |
 | AI agent testing | No | No | No | **Yes** |
 | Cost | $$$$ | $$$ | $$ | **Free tier / Enterprise** |
 
