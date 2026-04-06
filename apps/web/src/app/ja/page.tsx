@@ -1200,7 +1200,7 @@ export default async function LangHomePage() {
             <div className="p-4 rounded-xl border border-[var(--border-color)] bg-[var(--bg-card)]">
               <p className="text-xs font-bold text-[var(--gold)] mb-1">データの安全性（JP-04対応）</p>
               <p className="text-xs text-[var(--text-muted)] leading-relaxed">
-                入力されたインフラ情報はシミュレーション処理にのみ使用します。第三者への提供・海外移転は行いません。詳細は<Link href="/privacy" className="text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors">プライバシーポリシー</Link>をご確認ください。
+                入力されたインフラ情報はシミュレーション処理にのみ使用します。データは東京リージョン（Vercel hnd1）でホストされ、第三者への提供・海外移転は行いません。詳細は<Link href="/privacy" className="text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors">プライバシーポリシー</Link>をご確認ください。
               </p>
             </div>
             <div className="p-4 rounded-xl border border-[var(--border-color)] bg-[var(--bg-card)]">

@@ -107,6 +107,8 @@ export default function PrivacyPage() {
               <span className="text-[var(--gold)] shrink-0 mt-1">•</span>
               <span>
                 <strong className="text-[var(--text-primary)]">Vercel</strong> — Hosting and edge network.
+                The primary deployment region is{" "}
+                <strong className="text-[var(--text-primary)]">Tokyo (hnd1)</strong>.
                 Your requests may be processed at edge nodes globally, but persistent data is not
                 stored on Vercel infrastructure.
               </span>
