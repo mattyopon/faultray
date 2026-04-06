@@ -84,11 +84,19 @@ export async function proxy(request: NextRequest) {
   if (!pathnameHasLocale) {
     // Skip locale redirect for app routes (dashboard, login, etc.), API, auth
     const skipPaths = [
+      // Static/SEO files
+      "/robots.txt", "/sitemap.xml", "/manifest.webmanifest",
+      // Legal / public pages (no locale prefix)
+      "/tokushoho", "/dpa", "/privacy", "/terms",
+      "/contact", "/features", "/pricing", "/demo",
+      "/status", "/support", "/help", "/changelog", "/ringi", "/case-studies",
+      // Auth / API
+      "/login", "/auth", "/api",
+      // App routes (authenticated)
       "/dashboard", "/simulate", "/results", "/suggestions", "/settings",
-      "/login", "/auth", "/api", "/pricing", "/demo",
       "/topology", "/heatmap", "/whatif", "/compliance", "/score-detail",
       "/cost", "/security", "/fmea", "/advisor", "/reports",
-      "/incidents", "/benchmark", "/help", "/remediation",
+      "/incidents", "/benchmark", "/remediation",
       "/evidence", "/apm", "/projects",
       "/dora", "/governance", "/sla",
       "/runbooks", "/postmortems", "/supply-chain", "/drift", "/calendar",
@@ -99,7 +107,6 @@ export async function proxy(request: NextRequest) {
       "/people-risk",
       "/shadow-it", "/bus-factor", "/vuln-priority", "/external-impact",
       "/sla-budget", "/compliance-report", "/topology-map",
-      "/contact", "/features", "/privacy", "/terms",
     ];
     const shouldSkip = skipPaths.some((path) => pathname.startsWith(path));
 
@@ -114,11 +121,17 @@ export async function proxy(request: NextRequest) {
   // If locale-prefixed app route (e.g. /en/login, /ja/pricing), redirect to non-prefixed version
   if (pathnameHasLocale) {
     const appPaths = [
-      "/login", "/dashboard", "/simulate", "/results", "/suggestions",
-      "/settings", "/pricing", "/demo",
+      // Legal / public pages
+      "/tokushoho", "/dpa", "/privacy", "/terms",
+      "/contact", "/features", "/pricing", "/demo",
+      "/status", "/support", "/help", "/changelog", "/ringi", "/case-studies",
+      // Auth
+      "/login",
+      // App routes
+      "/dashboard", "/simulate", "/results", "/suggestions", "/settings",
       "/topology", "/heatmap", "/whatif", "/compliance", "/score-detail",
       "/cost", "/security", "/fmea", "/advisor", "/reports",
-      "/incidents", "/benchmark", "/help", "/remediation",
+      "/incidents", "/benchmark", "/remediation",
       "/evidence", "/apm", "/projects",
       "/dora", "/governance", "/sla",
       "/runbooks", "/postmortems", "/supply-chain", "/drift", "/calendar",
@@ -129,7 +142,6 @@ export async function proxy(request: NextRequest) {
       "/people-risk",
       "/shadow-it", "/bus-factor", "/vuln-priority", "/external-impact",
       "/sla-budget", "/compliance-report", "/topology-map",
-      "/contact", "/features", "/privacy", "/terms",
     ];
     let strippedPath = pathname;
     for (const locale of locales) {
