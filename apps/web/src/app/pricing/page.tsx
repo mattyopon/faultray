@@ -389,6 +389,83 @@ export default function PricingPage() {
         </p>
       </div>
 
+      {/* SALES-02: プロフェッショナルサービス（対面診断） */}
+      <div className="max-w-[900px] mx-auto mt-16 mb-8">
+        <div className="text-center mb-8">
+          <span className="inline-block px-3 py-1 text-xs font-semibold text-[var(--gold)] border border-[var(--gold)]/20 rounded-full bg-[var(--gold)]/5 mb-3">
+            {isJa ? "NEW" : "NEW"}
+          </span>
+          <h2 className="text-xl font-bold tracking-tight mb-2">
+            {isJa ? "プロフェッショナルサービス" : "Professional Services"}
+          </h2>
+          <p className="text-sm text-[var(--text-secondary)] max-w-[540px] mx-auto">
+            {isJa
+              ? "SaaSのセルフサービスに加え、専門エンジニアによる対面診断・レポート作成を承ります。"
+              : "In addition to our self-service SaaS, our engineers provide hands-on assessment and reporting."}
+          </p>
+        </div>
+        <div className="grid md:grid-cols-2 gap-6">
+          {/* セルフサービス */}
+          <div className="p-6 rounded-2xl border border-[var(--border-color)] bg-[var(--bg-card)]">
+            <div className="flex items-center gap-2 mb-3">
+              <span className="w-8 h-8 flex items-center justify-center rounded-lg bg-[var(--gold)]/10 text-[var(--gold)] text-sm font-bold">S</span>
+              <h3 className="font-bold text-[var(--text-primary)]">{isJa ? "セルフサービス（SaaS）" : "Self-Service (SaaS)"}</h3>
+            </div>
+            <p className="text-sm text-[var(--text-secondary)] mb-4">
+              {isJa
+                ? "今すぐサインアップして、ご自身でシミュレーションを実行。レポートも自動生成。"
+                : "Sign up now, run simulations yourself. Reports auto-generated."}
+            </p>
+            <ul className="space-y-2 text-sm text-[var(--text-secondary)]">
+              {[
+                isJa ? "無料〜¥150,000/月" : "Free – $999/mo",
+                isJa ? "即日開始・クレカ不要" : "Start today, no credit card",
+                isJa ? "自動レポート生成" : "Automated report generation",
+                isJa ? "24時間利用可能" : "Available 24/7",
+              ].map((f) => (
+                <li key={f} className="flex items-center gap-2">
+                  <Check size={14} className="text-emerald-400 shrink-0" />{f}
+                </li>
+              ))}
+            </ul>
+          </div>
+          {/* プロフェッショナル */}
+          <div className="p-6 rounded-2xl border border-[var(--gold)]/20 bg-gradient-to-br from-[var(--gold)]/[0.03] to-[var(--bg-card)]">
+            <div className="flex items-center gap-2 mb-3">
+              <span className="w-8 h-8 flex items-center justify-center rounded-lg bg-[var(--gold)]/10 text-[var(--gold)] text-sm font-bold">P</span>
+              <h3 className="font-bold text-[var(--text-primary)]">{isJa ? "プロフェッショナル診断" : "Professional Assessment"}</h3>
+            </div>
+            <div className="mb-4">
+              <span className="text-2xl font-extrabold text-[var(--text-primary)]">{isJa ? "¥150,000〜" : "$1,000+"}</span>
+              <span className="text-sm text-[var(--text-muted)] ml-1">{isJa ? "/回" : "/engagement"}</span>
+            </div>
+            <p className="text-sm text-[var(--text-secondary)] mb-4">
+              {isJa
+                ? "テレビ朝日グループ6年の経験を持つエンジニアが、御社インフラを直接診断しレポートを作成します。"
+                : "Our engineers with 6+ years of media infrastructure experience assess your systems and deliver a custom report."}
+            </p>
+            <ul className="space-y-2 text-sm text-[var(--text-secondary)]">
+              {[
+                isJa ? "専門エンジニアによる対面診断" : "Hands-on assessment by expert engineers",
+                isJa ? "カスタムレポート・改善提案" : "Custom report with remediation plan",
+                isJa ? "経営層向け報告資料作成" : "Executive summary included",
+                isJa ? "稟議書テンプレート提供" : "Procurement documentation support",
+              ].map((f) => (
+                <li key={f} className="flex items-center gap-2">
+                  <Check size={14} className="text-[var(--gold)] shrink-0" />{f}
+                </li>
+              ))}
+            </ul>
+            <Link
+              href="/contact?service=professional"
+              className="mt-5 w-full text-center py-2.5 rounded-xl font-semibold border border-[var(--gold)]/30 text-[var(--gold)] hover:bg-[var(--gold)]/10 transition-all block text-sm"
+            >
+              {isJa ? "お問い合わせ" : "Contact Us"}
+            </Link>
+          </div>
+        </div>
+      </div>
+
       {/* SALES-03: Pro→Business アップセル — 比較CTA */}
       <div className="max-w-[900px] mx-auto mt-16 p-6 rounded-2xl border border-purple-500/20 bg-purple-500/[0.04]">
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
