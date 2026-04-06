@@ -1,8 +1,11 @@
 // Web Crypto API — compatible with Node.js 20+ and Vercel Edge Runtime
 
-const ENCRYPTION_KEY = process.env.ENCRYPTION_KEY;
-if (!ENCRYPTION_KEY) {
-  throw new Error("ENCRYPTION_KEY environment variable is not set");
+function getEncryptionKey(): string {
+  const key = process.env.ENCRYPTION_KEY;
+  if (!key) {
+    throw new Error("ENCRYPTION_KEY environment variable is not set");
+  }
+  return key;
 }
 
 const ENC_PREFIX = "ENC:";
@@ -10,7 +13,7 @@ const ENC_PREFIX = "ENC:";
 async function getKey(): Promise<CryptoKey> {
   // Pad/truncate to exactly 32 bytes for AES-256
   const keyBytes = new TextEncoder().encode(
-    ENCRYPTION_KEY.padEnd(32, "0").slice(0, 32)
+    getEncryptionKey().padEnd(32, "0").slice(0, 32)
   );
   return crypto.subtle.importKey("raw", keyBytes, "AES-GCM", false, [
     "encrypt",
