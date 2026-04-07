@@ -4614,7 +4614,7 @@ export const appDict = {
       subtitle: "Learn how to use FaultRay effectively",
       gettingStarted: "Getting Started",
       whatIsFaultray: "What is FaultRay?",
-      whatIsFaultrayDesc: "FaultRay is a tool that mathematically simulates the fault tolerance of your infrastructure. Without touching production, you can discover availability ceilings, single points of failure, and cascading failure risks.",
+      whatIsFaultrayDesc: "FaultRay is a research-prototype tool that simulates the fault tolerance of your infrastructure. Without touching production, you can explore availability ceilings, single points of failure, and cascading failure risks.",
       basicUsage: "Quick Start",
       basicStep1: "1. Select a sample topology or upload your own YAML",
       basicStep2: "2. Run a simulation — results appear in seconds",

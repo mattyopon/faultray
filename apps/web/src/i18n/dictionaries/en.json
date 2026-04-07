@@ -1,7 +1,7 @@
 {
   "metadata": {
     "title": "FaultRay — Zero-Risk Infrastructure Chaos Engineering",
-    "description": "Prove your system's availability ceiling mathematically — without touching production. Pure simulation chaos engineering with 2,000+ scenarios."
+    "description": "Explore your system's availability ceiling through in-memory simulation — without touching production. Research-prototype chaos engineering with 2,000+ scenarios."
   },
   "nav": {
     "features": "Features",
@@ -13,7 +13,7 @@
   "hero": {
     "badge": "Open Source · Apache License 2.0",
     "subtitle": "Prove Infrastructure Resilience — Without Production Risk",
-    "description": "Prove your system's availability ceiling mathematically — without touching production.",
+    "description": "Explore your system's availability ceiling — research prototype, without touching production.",
     "stats": {
       "scenarios": "Scenarios",
       "engines": "Engines",
@@ -290,7 +290,7 @@
     "unit": "K"
   },
   "footer": {
-    "tagline": "Zero-risk infrastructure chaos engineering. Prove your availability ceiling mathematically.",
+    "tagline": "Zero-risk infrastructure chaos engineering. Explore your availability ceiling through simulation.",
     "madeIn": "Made in Tokyo",
     "product": "Product",
     "resources": "Resources",

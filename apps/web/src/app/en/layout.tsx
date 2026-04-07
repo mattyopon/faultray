@@ -31,7 +31,7 @@ const enJsonLd = [
     url: "https://faultray.com/en",
     inLanguage: "en",
     description:
-      "Pure simulation chaos engineering platform. Prove your system's availability ceiling mathematically without touching production.",
+      "Research-prototype chaos engineering platform. Explore your system's availability ceiling through in-memory simulation.",
     offers: [
       { "@type": "Offer", name: "Free", price: "0", priceCurrency: "USD" },
       { "@type": "Offer", name: "Pro", price: "299", priceCurrency: "USD", eligibleQuantity: { "@type": "QuantitativeValue", unitText: "month" } },
