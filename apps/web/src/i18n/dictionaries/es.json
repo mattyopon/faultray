@@ -19,7 +19,7 @@
       "engines": "Motores",
       "layers": "Capas",
       "tests": "Pruebas",
-      "doraControls": "Controles DORA",
+      "doraControls": "Mapeos DORA (investigación)",
       "dashboardPages": "Páginas del panel",
       "languages": "Idiomas"
     },

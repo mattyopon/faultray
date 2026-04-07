@@ -19,7 +19,7 @@
       "engines": "엔진",
       "layers": "레이어",
       "tests": "테스트",
-      "doraControls": "DORA 컨트롤",
+      "doraControls": "DORA 매핑 (연구)",
       "dashboardPages": "대시보드 페이지",
       "languages": "지원 언어"
     },

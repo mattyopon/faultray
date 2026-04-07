@@ -46,7 +46,7 @@ export const metadata: Metadata = {
     template: "%s | FaultRay",
   },
   description:
-    "Prove your system's availability ceiling mathematically — without touching production. Pure simulation chaos engineering with 2,000+ scenarios.",
+    "Explore your system's availability ceiling through in-memory simulation — without touching production. Research-prototype chaos engineering with 2,000+ scenarios.",
   keywords: [
     "chaos engineering",
     "infrastructure testing",
@@ -84,7 +84,7 @@ export const metadata: Metadata = {
   openGraph: {
     title: "FaultRay — Zero-Risk Infrastructure Chaos Engineering",
     description:
-      "Prove your system's availability ceiling mathematically — without touching production.",
+      "Explore your system's availability ceiling — research prototype, without touching production.",
     type: "website",
     url: "https://faultray.com",
     images: [
@@ -100,7 +100,7 @@ export const metadata: Metadata = {
     card: "summary_large_image",
     title: "FaultRay — Zero-Risk Infrastructure Chaos Engineering",
     description:
-      "Prove your system's availability ceiling mathematically — without touching production.",
+      "Explore your system's availability ceiling — research prototype, without touching production.",
     images: ["/og-image.png"],
   },
 };
@@ -115,7 +115,7 @@ const jsonLd = [
     operatingSystem: "Web",
     url: "https://faultray.com",
     description:
-      "Pure simulation chaos engineering platform. Prove your system's availability ceiling mathematically without touching production.",
+      "Research-prototype chaos engineering platform. Explore your system's availability ceiling through in-memory simulation.",
     offers: [
       { "@type": "Offer", name: "Free", price: "0", priceCurrency: "USD" },
       { "@type": "Offer", name: "Pro",  price: "299", priceCurrency: "USD", eligibleQuantity: { "@type": "QuantitativeValue", unitText: "month" } },

@@ -6,7 +6,7 @@ export default function manifest(): MetadataRoute.Manifest {
     name: "FaultRay — Chaos Engineering",
     short_name: "FaultRay",
     description:
-      "Prove your system's availability ceiling mathematically — without touching production.",
+      "Explore your system's availability ceiling — research prototype, without touching production.",
     start_url: "/dashboard",
     display: "standalone",
     background_color: "#0a0e1a",

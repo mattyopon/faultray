@@ -56,13 +56,16 @@ interface AuditTrailEntry {
  * Demo Data
  * ============================================================ */
 
+// Research-prototype mapping coverage (NOT certified audit reports).
+// Scores reflect how many framework articles the prototype has mapped,
+// not actual compliance. All values are sample/demo data for illustration.
 const REPORT_METADATA: Record<Framework, {
   name: string; period: string; type: string; score: number; status: string;
 }> = {
-  SOC2:    { name: "SOC 2 Type II", period: "2025-04-01 to 2026-03-31", type: "Attestation Report", score: 87, status: "Opinion Issued" },
-  DORA:    { name: "DORA-aligned Research", period: "FY2026 Q1 Assessment", type: "Gap Assessment", score: 72, status: "Partial Compliance" },
-  ISO27001:{ name: "ISO/IEC 27001", period: "Annual Surveillance Audit 2026", type: "Certification Audit", score: 91, status: "Certified" },
-  FISC:    { name: "FISC 安全対策基準", period: "2026年度 定期評価", type: "Compliance Assessment", score: 65, status: "部分準拠" },
+  SOC2:    { name: "SOC 2 Type II (Research Mapping)", period: "2025-04-01 to 2026-03-31", type: "Research-Prototype Mapping (not an attestation report)", score: 87, status: "Research Draft — Not Audited" },
+  DORA:    { name: "DORA-aligned Research", period: "FY2026 Q1 Assessment", type: "Research-Prototype Mapping", score: 72, status: "Research Draft — Not Audited" },
+  ISO27001:{ name: "ISO/IEC 27001 (Research Mapping)", period: "Annual 2026 Self-Assessment", type: "Research-Prototype Mapping (not a certification audit)", score: 91, status: "Research Draft — Not Certified" },
+  FISC:    { name: "FISC 安全対策基準 (リサーチマッピング)", period: "2026年度 研究プロトタイプ評価", type: "Research-Prototype Mapping (監査ではありません)", score: 65, status: "Research Draft — 未監査" },
 };
 
 const SECTIONS: ReportSection[] = [
@@ -174,14 +177,34 @@ export default function AuditReportPage() {
   return (
     <div className="w-full px-6 py-10">
       {/* Header */}
-      <div className="mb-8">
+      <div className="mb-6">
         <h1 className="text-2xl font-bold mb-1 flex items-center gap-3">
           <FileSpreadsheet size={24} className="text-[var(--gold)]" />
-          Audit Report Generator
+          Research Evidence Draft Generator (Prototype)
         </h1>
         <p className="text-[var(--text-secondary)] text-sm">
-          Generate research-draft reports for external auditors and regulators (Layer 4)
+          Generate research-prototype evidence drafts mapped to SOC 2 / ISO 27001 / DORA / FISC frameworks — NOT certified audit reports.
         </p>
+      </div>
+
+      {/* LIABILITY-CAP: Prominent research prototype warning */}
+      <div
+        role="alert"
+        className="mb-6 p-4 rounded-xl border-2 border-amber-500 bg-amber-500/[0.08] flex gap-3"
+      >
+        <FileSpreadsheet size={18} className="text-amber-400 shrink-0 mt-0.5" />
+        <div>
+          <p className="text-sm font-bold text-amber-300 mb-1">
+            Research Prototype — NOT a Certified Audit Report
+          </p>
+          <p className="text-sm text-[var(--text-secondary)] leading-relaxed">
+            The outputs of this page are <strong>research-prototype mappings</strong> of your simulation
+            to the article structure of SOC 2 / ISO 27001 / DORA / FISC frameworks. They are
+            <strong> NOT</strong> attestation reports, certification audits, or legally binding compliance
+            evidence. Do not submit these outputs to auditors or regulators as-is. Engage qualified
+            auditors and independent legal review for actual compliance work. See <a href="/terms" className="text-amber-400 underline hover:text-amber-300">/terms</a>.
+          </p>
+        </div>
       </div>
 
       <div className="grid lg:grid-cols-3 gap-6">

@@ -196,23 +196,45 @@ export default function CompliancePage() {
 
   return (
     <div className="w-full px-6 py-10">
-      <div className="mb-10">
+      <div className="mb-6">
         <h1 className="text-2xl font-bold mb-1 flex items-center gap-3">
           <ShieldCheck size={24} className="text-[var(--gold)]" />
-          DORA {t.title}
+          DORA {locale === "ja" ? "リサーチマッピング" : "Research Mapping (Prototype)"}
         </h1>
         <p className="text-[var(--text-secondary)] text-sm">
           {locale === "ja"
-            ? "DORA 5 Pillarごとの準拠状況と推奨アクション"
-            : "DORA 5 Pillar compliance status and recommended actions"}
+            ? "DORA 5 Pillarへの研究プロトタイプマッピングと推奨アクション（監査認証ではありません）"
+            : "Research-prototype mapping to DORA 5 Pillars with recommended actions (NOT a certified audit)"}
         </p>
+      </div>
+
+      {/* LIABILITY-CAP: Research prototype warning */}
+      <div
+        role="alert"
+        className="mb-6 p-4 rounded-xl border-2 border-amber-500 bg-amber-500/[0.08] flex gap-3"
+      >
+        <ShieldCheck size={18} className="text-amber-400 shrink-0 mt-0.5" />
+        <div>
+          <p className="text-sm font-bold text-amber-300 mb-1">
+            {locale === "ja"
+              ? "研究プロトタイプ — 準拠認証ツールではありません"
+              : "Research Prototype — NOT a Compliance Certification Tool"}
+          </p>
+          <p className="text-sm text-[var(--text-secondary)] leading-relaxed">
+            {locale === "ja" ? (
+              <>下記のスコアと「準拠/非準拠」表示は<strong>研究プロトタイプのマッピング結果</strong>であり、実際のDORA準拠監査の代替にはなりません。実際のDORA監査には、資格のある監査人と独立した法務レビューが必要です。<a href="/terms" className="text-amber-400 underline hover:text-amber-300">/terms</a> を参照してください。</>
+            ) : (
+              <>The scores and &quot;compliant/non-compliant&quot; labels below are <strong>research-prototype mapping output</strong>, NOT substitutes for actual DORA compliance audit. Engage qualified auditors and independent legal review for actual DORA compliance work. See <a href="/terms" className="text-amber-400 underline hover:text-amber-300">/terms</a>.</>
+            )}
+          </p>
+        </div>
       </div>
 
       {/* Overall Score */}
       <div className="grid md:grid-cols-4 gap-6 mb-8">
         <Card className="text-center">
           <p className="text-xs text-[var(--text-muted)] uppercase tracking-wider mb-2">
-            {locale === "ja" ? "DORA 総合準拠率" : "DORA Overall Compliance"}
+            {locale === "ja" ? "DORA 研究カバレッジ率" : "DORA Research Coverage"}
           </p>
           <p
             className="text-5xl font-extrabold font-mono"
@@ -226,6 +248,7 @@ export default function CompliancePage() {
           >
             {overallScore >= 80 ? t.compliant : overallScore >= 60 ? t.partial : t.nonCompliant}
           </Badge>
+          <p className="text-[10px] text-amber-400/80 mt-2">Research prototype, not audit</p>
         </Card>
         <Card className="text-center">
           <p className="text-xs text-[var(--text-muted)] uppercase tracking-wider mb-2">{t.controlsPassed}</p>

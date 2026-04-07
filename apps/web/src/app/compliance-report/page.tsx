@@ -151,12 +151,31 @@ export default function ComplianceReportPage() {
 
   return (
     <div className="w-full px-6 py-10">
-      <div className="mb-10">
+      <div className="mb-6">
         <h1 className="text-2xl font-bold mb-1 flex items-center gap-3">
           <FileText size={24} className="text-[var(--gold)]" />
           {t.title}
         </h1>
         <p className="text-[var(--text-secondary)] text-sm">{t.subtitle}</p>
+      </div>
+
+      {/* LIABILITY-CAP: Research prototype warning */}
+      <div
+        role="alert"
+        className="mb-6 p-4 rounded-xl border-2 border-amber-500 bg-amber-500/[0.08] flex gap-3"
+      >
+        <AlertTriangle size={18} className="text-amber-400 shrink-0 mt-0.5" />
+        <div>
+          <p className="text-sm font-bold text-amber-300 mb-1">
+            Research Prototype — NOT Certified Compliance Evidence
+          </p>
+          <p className="text-sm text-[var(--text-secondary)] leading-relaxed">
+            Control pass/fail indicators below are <strong>research-prototype self-assessment output</strong>,
+            NOT certified audit results. Do not use this page to demonstrate SOC 2 / ISO 27001 / DORA /
+            FISC compliance to auditors or regulators. Engage qualified auditors and independent
+            legal review for actual compliance work. See <a href="/terms" className="text-amber-400 underline hover:text-amber-300">/terms</a>.
+          </p>
+        </div>
       </div>
 
       {/* Framework Selector */}

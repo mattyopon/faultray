@@ -19,7 +19,7 @@
       "engines": "Engines",
       "layers": "Schichten",
       "tests": "Tests",
-      "doraControls": "DORA-Kontrollen",
+      "doraControls": "DORA-Zuordnungen (Forschung)",
       "dashboardPages": "Dashboard-Seiten",
       "languages": "Sprachen"
     },

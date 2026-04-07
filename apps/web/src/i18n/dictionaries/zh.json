@@ -19,7 +19,7 @@
       "engines": "引擎数",
       "layers": "层级数",
       "tests": "测试数",
-      "doraControls": "DORA 控制项",
+      "doraControls": "DORA 映射（研究）",
       "dashboardPages": "仪表盘页面",
       "languages": "支持语言"
     },

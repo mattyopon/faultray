@@ -19,7 +19,7 @@
       "engines": "Motores",
       "layers": "Camadas",
       "tests": "Testes",
-      "doraControls": "Controles DORA",
+      "doraControls": "Mapeamentos DORA (pesquisa)",
       "dashboardPages": "Páginas do painel",
       "languages": "Idiomas"
     },
