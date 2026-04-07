@@ -60,7 +60,7 @@ const CASE_STUDIES = [
     color: "border-emerald-500/20 bg-emerald-500/[0.04]",
     accentClass: "text-emerald-400",
     challenge:
-      "A 30-person SaaS startup needed to demonstrate DORA compliance to enterprise prospects but had no dedicated SRE team or formal testing process.",
+      "A 30-person SaaS startup needed to demonstrate DORA-aligned research to enterprise prospects but had no dedicated SRE team or formal testing process.",
     solution:
       "Used FaultRay's DORA report export (Pro plan) to generate a PDF compliance snapshot from their simulated topology — no infrastructure changes required.",
     results: [

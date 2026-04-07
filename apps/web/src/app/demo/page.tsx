@@ -448,7 +448,7 @@ export default function DemoPage() {
           { icon: <Zap size={22} className="text-[var(--gold)]" />, label: "Simulate in 30s", desc: "Paste YAML → instant risk score" },
           { icon: <Shield size={22} className="text-emerald-400" />, label: "N-nine availability", desc: "Math-backed SLA prediction" },
           { icon: <BarChart3 size={22} className="text-blue-400" />, label: "Cascade analysis", desc: "See failure blast radius" },
-          { icon: <FileText size={22} className="text-purple-400" />, label: "Audit-ready reports", desc: "PDF export for SOC 2 / DORA" },
+          { icon: <FileText size={22} className="text-purple-400" />, label: "Research-draft reports", desc: "PDF export for SOC 2 / DORA" },
           { icon: <Lock size={22} className="text-red-400" />, label: "No data leaves", desc: "YAML processed in memory only" },
           { icon: <CheckCircle2 size={22} className="text-[var(--gold)]" />, label: "14-day Pro trial", desc: "No credit card required" },
         ].map((item) => (

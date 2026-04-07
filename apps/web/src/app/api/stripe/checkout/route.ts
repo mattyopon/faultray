@@ -4,7 +4,7 @@ import { applyRateLimit } from "@/lib/rate-limit";
 
 export const dynamic = "force-dynamic";
 
-type Plan = "starter" | "pro" | "business";
+type Plan = "pro" | "business";
 type Interval = "month" | "year";
 
 interface CheckoutBody {
@@ -14,10 +14,6 @@ interface CheckoutBody {
 
 // Price in cents (USD)
 const PRICES: Record<Plan, Record<Interval, number>> = {
-  starter: {
-    month: 9900,   // $99
-    year: 95000,   // $99 * 12 * 0.8 ≈ $950
-  },
   pro: {
     month: 29900,  // $299
     year: 286900,  // $2,869
@@ -29,13 +25,11 @@ const PRICES: Record<Plan, Record<Interval, number>> = {
 };
 
 const PLAN_NAMES: Record<Plan, string> = {
-  starter: "FaultRay Starter",
   pro: "FaultRay Pro",
   business: "FaultRay Business",
 };
 
 const TRIAL_DAYS: Record<Plan, number | undefined> = {
-  starter: 14,
   pro: 14,
   business: undefined,
 };
@@ -61,9 +55,9 @@ export async function POST(request: Request) {
 
   const { plan, interval = "month" } = body;
 
-  if (!plan || !["starter", "pro", "business"].includes(plan)) {
+  if (!plan || !["pro", "business"].includes(plan)) {
     return NextResponse.json(
-      { error: "Invalid plan. Must be 'starter', 'pro', or 'business'." },
+      { error: "Invalid plan. Must be 'pro' or 'business'." },
       { status: 400 }
     );
   }
@@ -97,37 +91,48 @@ export async function POST(request: Request) {
   const unitAmount = PRICES[plan][interval];
   const trialDays = TRIAL_DAYS[plan];
 
+  // #15: 冪等性キーで二重サブスクリプション防止
+  // 時間バケット付きでexpire後の再チェックアウト時のStripe 400エラーを回避
+  const hourBucket = Math.floor(Date.now() / 3600000);
+  const idempotencyKey = `checkout-${userId}-${plan}-${interval}-${hourBucket}`;
+
   try {
-    const session = await stripe.checkout.sessions.create({
-      mode: "subscription",
-      line_items: [
-        {
-          price_data: {
-            currency: "usd",
-            product_data: {
-              name: PLAN_NAMES[plan],
-              description: `FaultRay ${plan.charAt(0).toUpperCase() + plan.slice(1)} Plan — billed ${interval === "month" ? "monthly" : "annually"}`,
+    const session = await stripe.checkout.sessions.create(
+      {
+        mode: "subscription",
+        // #21: Checkout URL共有リスク軽減 — セッションを30分で失効させる
+        // Stripeのデフォルトは24時間。URLが共有・漏洩した場合のリスクを最小化する。
+        expires_at: Math.floor(Date.now() / 1000) + 1800,
+        line_items: [
+          {
+            price_data: {
+              currency: "usd",
+              product_data: {
+                name: PLAN_NAMES[plan],
+                description: `FaultRay ${plan === "pro" ? "Pro" : "Business"} Plan — billed ${interval === "month" ? "monthly" : "annually"}`,
+              },
+              recurring: {
+                interval: interval === "month" ? "month" : "year",
+              },
+              unit_amount: unitAmount,
             },
-            recurring: {
-              interval: interval === "month" ? "month" : "year",
-            },
-            unit_amount: unitAmount,
+            quantity: 1,
           },
-          quantity: 1,
+        ],
+        subscription_data:
+          trialDays !== undefined
+            ? { trial_period_days: trialDays, metadata: { plan, user_id: userId ?? "" } }
+            : { metadata: { plan, user_id: userId ?? "" } },
+        success_url: `${origin}/settings?payment=success`,
+        cancel_url: `${origin}/pricing`,
+        metadata: {
+          plan,
+          interval,
+          user_id: userId ?? "",
         },
-      ],
-      subscription_data:
-        trialDays !== undefined
-          ? { trial_period_days: trialDays, metadata: { plan, user_id: userId ?? "" } }
-          : { metadata: { plan, user_id: userId ?? "" } },
-      success_url: `${origin}/settings?payment=success`,
-      cancel_url: `${origin}/pricing`,
-      metadata: {
-        plan,
-        interval,
-        user_id: userId ?? "",
       },
-    });
+      { idempotencyKey }
+    );
 
     return NextResponse.json({ url: session.url });
   } catch (err) {

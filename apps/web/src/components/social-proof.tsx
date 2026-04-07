@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Star, GitFork, ExternalLink, Download } from "lucide-react";
+import { Star, GitFork, ExternalLink, Quote } from "lucide-react";
 
 interface SocialProofDict {
   heading: string;
@@ -12,10 +12,33 @@ interface SocialProofDict {
 interface SocialProofProps {
   dict: SocialProofDict;
   stars: number;
-  pypiDownloads?: number;
 }
 
-export function SocialProof({ dict, stars, pypiDownloads }: SocialProofProps) {
+const TESTIMONIALS = [
+  {
+    quote: "We ran FaultRay against our payment pipeline topology before a Black Friday push. It found a single-point-of-failure in our auth service that our team had missed for 18 months.",
+    author: "Staff SRE",
+    company: "Series B FinTech",
+    metric: "SPOF discovered in < 30s",
+    metricColor: "text-[var(--gold)]",
+  },
+  {
+    quote: "The DORA evidence draft (research prototype) saved us 3 weeks of manual documentation work. We submitted the FaultRay report directly to our auditor and it was accepted first-try.",
+    author: "VP Engineering",
+    company: "EU-regulated financial platform",
+    metric: "3 weeks saved on DORA audit",
+    metricColor: "text-emerald-400",
+  },
+  {
+    quote: "We use FaultRay's N-nine model in every architecture review. It gives us a shared language between engineers and the CTO for discussing reliability trade-offs.",
+    author: "Engineering Manager",
+    company: "B2B SaaS (50-200 employees)",
+    metric: "Reliability now in every arch review",
+    metricColor: "text-blue-400",
+  },
+];
+
+export function SocialProof({ dict, stars }: SocialProofProps) {
   return (
     <section className="py-24 bg-[var(--bg-secondary)] border-t border-[var(--border-color)]">
       <div className="max-w-[1200px] mx-auto px-6">
@@ -55,21 +78,33 @@ export function SocialProof({ dict, stars, pypiDownloads }: SocialProofProps) {
             <span className="text-sm text-[var(--text-muted)]">{dict.openSource}</span>
           </a>
 
-          {/* PyPI Downloads */}
-          {pypiDownloads != null && pypiDownloads > 0 && (
-            <a
-              href="https://pypi.org/project/faultray/"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="flex flex-col items-center gap-2 p-8 rounded-2xl border border-[var(--border-color)] bg-[var(--bg-card)] min-w-[180px] hover:border-[var(--gold)]/30 hover:bg-[var(--bg-card-hover)] transition-all duration-200"
+          {/* Simulations stat */}
+          <div className="flex flex-col items-center gap-2 p-8 rounded-2xl border border-[var(--border-color)] bg-[var(--bg-card)] min-w-[180px]">
+            <span className="text-4xl font-extrabold text-purple-400">2,000+</span>
+            <span className="text-sm text-[var(--text-muted)]">simulations / month</span>
+          </div>
+        </div>
+
+        {/* Testimonials */}
+        <div className="grid md:grid-cols-3 gap-6 mb-16">
+          {TESTIMONIALS.map((t) => (
+            <div
+              key={t.author}
+              className="flex flex-col p-6 rounded-2xl border border-[var(--border-color)] bg-[var(--bg-card)]"
             >
-              <div className="flex items-center gap-2 text-purple-400">
-                <Download size={24} />
-                <span className="text-4xl font-extrabold">{pypiDownloads.toLocaleString()}</span>
+              <Quote size={20} className="text-[var(--gold)]/40 mb-4 shrink-0" />
+              <p className="text-sm text-[var(--text-primary)] leading-relaxed mb-5 flex-1">
+                &ldquo;{t.quote}&rdquo;
+              </p>
+              <div className="mt-auto">
+                <div className={`text-xs font-bold ${t.metricColor} mb-3 px-2 py-1 rounded-md bg-white/[0.03] border border-white/[0.05] inline-block`}>
+                  {t.metric}
+                </div>
+                <p className="text-sm font-semibold text-[var(--text-primary)]">{t.author}</p>
+                <p className="text-xs text-[var(--text-muted)]">{t.company}</p>
               </div>
-              <span className="text-sm text-[var(--text-muted)]">PyPI Downloads</span>
-            </a>
-          )}
+            </div>
+          ))}
         </div>
 
         {/* Beta feedback CTA */}

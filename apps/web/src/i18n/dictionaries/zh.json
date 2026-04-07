@@ -70,7 +70,7 @@
       },
       {
         "problem": "IPO 后的可用性与审计要求",
-        "solution": "通过机器生成的证据链自动证明 DORA / SOC 2 合规性。"
+        "solution": "作为研究原型探索 DORA / SOC 2 对齐，生成证据草稿。未获审计认证 — 需要独立法律审查。"
       },
       {
         "problem": "无运行手册的临时事故响应",
@@ -78,7 +78,7 @@
       },
       {
         "problem": "AI 治理准备尚未启动",
-        "solution": "自动化 METI / ISO 42001 合规检查，提供审计就绪报告。"
+        "solution": "METI / ISO 42001 要求的研究原型映射（未获审计认证）。"
       }
     ]
   },
@@ -103,8 +103,8 @@
         "desc": "Claude 驱动的根因分析，以及按影响和成本排序的可操作改进建议。"
       },
       {
-        "title": "DORA 合规报告",
-        "desc": "生成具备证据链和风险评估的审计就绪型数字运营韧性法案报告。"
+        "title": "DORA 证据草稿（研究原型）",
+        "desc": "作为研究原型生成包含证据链和风险评估的数字运营韧性法案证据草稿。未针对监管审计验证 — 需要独立的法律和技术审查。"
       },
       {
         "title": "安全情报集成",
@@ -116,7 +116,7 @@
       },
       {
         "title": "AI 治理（METI / ISO 42001）",
-        "desc": "针对日本 METI AI 指南和 ISO 42001 要求的自动合规检查，提供审计就绪的证明文件。"
+        "desc": "日本 METI AI 指南和 ISO 42001 要求的研究原型映射。未获审计认证 — 任何合规声明都需要独立法律审查。"
       },
       {
         "title": "自主修复",
@@ -124,7 +124,7 @@
       },
       {
         "title": "35+ 仪表盘页面",
-        "desc": "完整的 Web 仪表盘，包含拓扑编辑器、场景浏览器、N-Layer 钻取、热力图、DORA 报告和高管摘要。"
+        "desc": "完整的 Web 仪表盘，包含拓扑编辑器、场景浏览器、N-Layer 钻取、热力图、DORA 研究草稿和高管摘要。"
       }
     ],
     "viewAll": "View Full Feature Details"
@@ -258,7 +258,7 @@
       },
       {
         "name": "Pro 版",
-        "desc": "适合需要 DORA 合规报告和更高配额的团队。",
+        "desc": "适合需要 DORA 证据草稿（研究原型）和更高配额的团队。",
         "cta": "开始 Pro"
       },
       {
@@ -272,7 +272,8 @@
     "heading": "Trusted by the Developer Community",
     "githubStars": "GitHub Stars",
     "betaMessage": "Currently in beta. We'd love your feedback.",
-    "betaSubtitle": "We are in early access. Your feedback helps us improve.", "betaCta": "Send Feedback",
+    "betaSubtitle": "We are in early access. Your feedback helps us improve.",
+    "betaCta": "Send Feedback",
     "openSource": "Open Source"
   },
   "roi": {
@@ -299,5 +300,8 @@
   },
   "languageSwitcher": {
     "label": "语言"
+  },
+  "disclaimer": {
+    "researchPrototype": "⚠ 研究原型 — 输出未针对 DORA、FISC 或任何监管审计进行验证。在没有独立法律和技术审查的情况下，请勿依赖 FaultRay 证据进行合规决策。"
   }
 }

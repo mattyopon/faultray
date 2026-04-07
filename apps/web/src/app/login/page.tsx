@@ -115,8 +115,8 @@ function LoginForm() {
             },
             {
               icon: "📊",
-              title: "DORA compliance in 1 click",
-              desc: "Auto-generate audit-ready resilience reports aligned to DORA Article 25 requirements.",
+              title: "DORA-aligned research in 1 click",
+              desc: "Auto-generate research-draft resilience reports aligned to DORA Article 25 requirements.",
             },
           ].map(({ icon, title, desc }) => (
             <li key={title} className="flex gap-4">

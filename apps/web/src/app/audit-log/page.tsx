@@ -77,7 +77,7 @@ const DEMO_AUDIT_LOG: AuditEntry[] = [
     actor: "Yutaro Maeda",
     actorEmail: "yutaro@company.com",
     action: "REPORT_EXPORT",
-    resource: "DORA Compliance Report (PDF)",
+    resource: "DORA Evidence Draft (Research Prototype) (PDF)",
     ipAddress: "203.0.113.42",
     userAgent: "Chrome 123 / macOS",
     outcome: "SUCCESS",

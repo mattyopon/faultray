@@ -4,6 +4,17 @@ import { applyRateLimit } from "@/lib/rate-limit";
 
 export const dynamic = "force-dynamic";
 
+/** Allowed action values for audit log writes (whitelist). */
+const ALLOWED_ACTIONS = new Set([
+  "simulation.run",
+  "report.view",
+  "settings.update",
+  "team.invite",
+  "task.create",
+  "task.update",
+  "task.delete",
+]);
+
 /**
  * GET /api/audit-log — List audit log entries for the user's team.
  * Query params: ?action=LOGIN&outcome=FAILURE&limit=50&offset=0
@@ -12,17 +23,18 @@ export async function GET(request: Request) {
   const limited = applyRateLimit(request, { limit: 30, windowMs: 60_000 });
   if (limited) return limited;
 
-  const { user, error } = await requireAuth();
+  const { user, error } = await requireAuth(request);
   if (error) return error;
 
   const { createClient } = await import("@/lib/supabase/server");
   const supabase = await createClient();
 
-  // Resolve user's team
+  // Resolve user's team — only active memberships can view audit logs
   const { data: membership } = await supabase
     .from("team_members")
     .select("team_id")
     .eq("user_id", user.id)
+    .eq("status", "active")
     .limit(1)
     .maybeSingle();
 
@@ -64,7 +76,7 @@ export async function POST(request: Request) {
   const limited = applyRateLimit(request, { limit: 10, windowMs: 60_000 });
   if (limited) return limited;
 
-  const { user, error } = await requireAuth();
+  const { user, error } = await requireAuth(request);
   if (error) return error;
 
   let body: Record<string, unknown>;
@@ -80,14 +92,25 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "action is required" }, { status: 400 });
   }
 
+  // #17: Whitelist validation — reject unknown action values
+  if (!ALLOWED_ACTIONS.has(action)) {
+    return NextResponse.json(
+      {
+        error: `Invalid action '${action}'. Allowed values: ${[...ALLOWED_ACTIONS].join(", ")}`,
+      },
+      { status: 400 }
+    );
+  }
+
   const { createClient } = await import("@/lib/supabase/server");
   const supabase = await createClient();
 
-  // Resolve team
+  // Resolve team — only active memberships can write audit logs
   const { data: membership } = await supabase
     .from("team_members")
     .select("team_id")
     .eq("user_id", user.id)
+    .eq("status", "active")
     .limit(1)
     .maybeSingle();
 

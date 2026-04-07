@@ -19,7 +19,7 @@ export async function GET(request: Request) {
   const limited = applyRateLimit(request, { limit: 30, windowMs: 60_000 });
   if (limited) return limited;
 
-  const { user, error } = await requireAuth();
+  const { user, error } = await requireAuth(request);
   if (error) return error;
 
   const { createClient } = await import("@/lib/supabase/server");
@@ -53,7 +53,7 @@ export async function PATCH(request: Request) {
   const limited = applyRateLimit(request, { limit: 10, windowMs: 60_000 });
   if (limited) return limited;
 
-  const { user, error } = await requireAuth();
+  const { user, error } = await requireAuth(request);
   if (error) return error;
 
   let body: Record<string, unknown>;

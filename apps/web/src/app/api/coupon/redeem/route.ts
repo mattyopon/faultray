@@ -61,7 +61,29 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "This coupon has reached its usage limit" }, { status: 400 });
   }
 
-  // 4. profilesテーブルを更新
+  // 4. クーポンのcurrent_usesを楽観的ロックでインクリメント（プロファイル更新の前に）
+  // WHERE current_uses = coupon.current_uses で競合を検出。
+  // プロファイル更新より先に行うことで、競合時にプランが無料アップグレードされるのを防ぐ。
+  const { data: updatedCoupons, error: incrementError } = await supabase
+    .from("coupons")
+    .update({ current_uses: coupon.current_uses + 1 })
+    .eq("id", coupon.id)
+    .eq("current_uses", coupon.current_uses)
+    .select("id");
+
+  if (incrementError) {
+    console.error("Failed to increment coupon uses:", incrementError);
+    return NextResponse.json({ error: "Failed to record coupon usage" }, { status: 500 });
+  }
+
+  if (!updatedCoupons || updatedCoupons.length === 0) {
+    return NextResponse.json(
+      { error: "Coupon usage conflict. Please try again." },
+      { status: 409 }
+    );
+  }
+
+  // 5. profilesテーブルを更新（クーポン消費が確定した後）
   const expiresAt = new Date(
     Date.now() + coupon.days * 24 * 60 * 60 * 1000
   ).toISOString();
@@ -73,17 +95,6 @@ export async function POST(request: Request) {
 
   if (profileError) {
     return NextResponse.json({ error: "Failed to update profile" }, { status: 500 });
-  }
-
-  // 5. couponsテーブルのcurrent_usesをインクリメント
-  const { error: incrementError } = await supabase
-    .from("coupons")
-    .update({ current_uses: coupon.current_uses + 1 })
-    .eq("id", coupon.id);
-
-  if (incrementError) {
-    // ロールバックは困難なのでログに留めて続行
-    console.error("Failed to increment coupon uses:", incrementError);
   }
 
   return NextResponse.json({

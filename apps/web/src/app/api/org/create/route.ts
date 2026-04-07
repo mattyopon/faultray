@@ -63,8 +63,10 @@ export async function POST(request: Request) {
     });
 
   if (memberError) {
-    // 組織は作成できたがメンバー追加に失敗した場合はログに留める
-    console.error("Failed to add owner as member:", memberError);
+    // メンバー追加失敗 — ownerなしの不整合な組織が残らないようにロールバック
+    console.error("Failed to add owner as member, rolling back org creation:", memberError);
+    await supabase.from("organizations").delete().eq("id", org.id);
+    return NextResponse.json({ error: "Failed to initialize organization membership" }, { status: 500 });
   }
 
   return NextResponse.json({ success: true, org }, { status: 201 });

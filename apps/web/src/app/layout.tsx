@@ -6,6 +6,7 @@ import { Navbar } from "@/components/navbar";
 import { Breadcrumb } from "@/components/breadcrumb";
 import { LocaleProvider } from "@/lib/useLocale";
 import { CookieConsent } from "@/components/cookie-consent";
+import { ResearchPrototypeBanner } from "@/components/research-prototype-banner";
 import "./globals.css";
 
 const inter = Inter({
@@ -53,7 +54,7 @@ export const metadata: Metadata = {
     "SRE",
     "DevOps",
     "simulation",
-    "DORA compliance",
+    "DORA research prototype",
   ],
   metadataBase: new URL("https://faultray.com"),
   // HTTP-05: robots metaタグを明示的に設定
@@ -104,9 +105,29 @@ export const metadata: Metadata = {
   },
 };
 
-// SEO-01: Structured data — Organization + WebSite (global)
-// SoftwareApplication with locale-specific pricing is in /en/layout.tsx and /ja/layout.tsx
+// SEO-01: Enhanced structured data — WebSite + Organization + SoftwareApplication
 const jsonLd = [
+  {
+    "@context": "https://schema.org",
+    "@type": "SoftwareApplication",
+    name: "FaultRay",
+    applicationCategory: "DeveloperApplication",
+    operatingSystem: "Web",
+    url: "https://faultray.com",
+    description:
+      "Pure simulation chaos engineering platform. Prove your system's availability ceiling mathematically without touching production.",
+    offers: [
+      { "@type": "Offer", name: "Free", price: "0", priceCurrency: "USD" },
+      { "@type": "Offer", name: "Pro",  price: "299", priceCurrency: "USD", eligibleQuantity: { "@type": "QuantitativeValue", unitText: "month" } },
+    ],
+    featureList: [
+      "100+ simulation engines (research prototype)",
+      "DORA-aligned evidence export (research, not for regulatory use)",
+      "AI reliability advisor (experimental)",
+      "N-Layer availability model",
+      "AWS/GCP/Azure cloud discovery",
+    ],
+  },
   {
     "@context": "https://schema.org",
     "@type": "Organization",
@@ -139,9 +160,6 @@ export default function RootLayout({
   // Validate as numeric-only to prevent XSS via env var injection
   const rawHotjarId = process.env.NEXT_PUBLIC_HOTJAR_ID;
   const hotjarId = rawHotjarId && /^\d+$/.test(rawHotjarId) ? rawHotjarId : undefined;
-  // DOC-02: Crisp chat — set NEXT_PUBLIC_CRISP_ID env var to enable
-  const rawCrispId = process.env.NEXT_PUBLIC_CRISP_ID;
-  const crispId = rawCrispId && /^[a-f0-9-]+$/i.test(rawCrispId) ? rawCrispId : undefined;
 
   // I18N-04: Detect locale from cookie/Accept-Language for html lang attribute
   // Falls back to "en" for root layout; locale-specific layouts override via their own html element
@@ -230,19 +248,10 @@ export default function RootLayout({
         <AuthProvider>
           <LocaleProvider>
             <Navbar />
+            <ResearchPrototypeBanner />
             <Breadcrumb />
-            <main role="main" className="flex-1 pt-16">{children}</main>
+            <main role="main" className="flex-1 pt-24 sm:pt-24">{children}</main>
             <CookieConsent />
-            {/* DOC-02: Crisp live chat — only loaded when NEXT_PUBLIC_CRISP_ID is set */}
-            {crispId && (
-              <Script
-                id="crisp-chat"
-                strategy="lazyOnload"
-                dangerouslySetInnerHTML={{
-                  __html: `window.$crisp=[];window.CRISP_WEBSITE_ID="${crispId}";(function(){var d=document;var s=d.createElement("script");s.src="https://client.crisp.chat/l.js";s.async=1;d.getElementsByTagName("head")[0].appendChild(s);})();`,
-                }}
-              />
-            )}
           </LocaleProvider>
         </AuthProvider>
       </body>

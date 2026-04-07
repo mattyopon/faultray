@@ -22,7 +22,7 @@ const releases: Release[] = [
     type: "minor",
     highlights: [
       "Multi-language support: Japanese, German, French, Chinese, Korean, Spanish, Portuguese",
-      "DORA compliance dashboard with 5-pillar visualization",
+      "DORA research dashboard (prototype) with 5-pillar visualization",
       "Slack & Microsoft Teams webhook notifications",
       "14-day Business trial auto-provisioned on first sign-in",
       "Onboarding wizard with personalized resilience score",
@@ -37,7 +37,7 @@ const releases: Release[] = [
       "AI Agent Resilience simulation framework",
       "N-Layer Availability Model (5-layer decomposition)",
       "Monte Carlo + Markov chain simulation engines",
-      "DORA Article 25 compliance report export (PDF)",
+      "DORA Article 25 research-prototype evidence draft export (PDF, not audit-certified)",
       "Supabase-backed projects & simulation history",
       "APM real-time dashboard (35+ views)",
     ],

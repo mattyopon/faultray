@@ -199,6 +199,7 @@ export async function proxy(request: NextRequest) {
   }
 
   const protectedPaths = [
+    "/admin",
     "/dashboard", "/simulate", "/results", "/suggestions", "/settings",
     "/dora", "/topology", "/teams", "/remediation", "/projects",
     "/heatmap", "/whatif", "/compliance", "/score-detail",

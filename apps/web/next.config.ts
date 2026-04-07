@@ -22,8 +22,11 @@ function buildCsp(): string {
 
   const directives: string[] = [
     "default-src 'self'",
-    // 'unsafe-inline' is required for Next.js inline script chunks; nonce-based CSP would be
-    // the ideal long-term solution but requires custom server instrumentation.
+    // TODO: nonce-based CSPに移行すべき。nonce-basedにすれば 'unsafe-inline' を除去できる。
+    // ただし Next.js の静的エクスポートおよびインラインスクリプト注入との互換性のために
+    // 現状は 'unsafe-inline' を維持している。移行にはカスタムサーバー or middleware での
+    // nonce生成と、すべてのインライン <script> / <style> への nonce属性付与が必要。
+    // 参照: https://nextjs.org/docs/app/building-your-application/configuring/content-security-policy
     "script-src 'self' 'unsafe-inline' https://www.googletagmanager.com https://static.hotjar.com https://script.hotjar.com https://js.stripe.com",
     "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
     "img-src 'self' data: blob: https://faultray.com https://www.google-analytics.com https://www.googletagmanager.com https://*.hotjar.com",

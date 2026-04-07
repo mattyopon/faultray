@@ -70,7 +70,7 @@ const T = {
         a: "YAML topologies are processed in-memory and not persisted by default. Saved simulations are encrypted at rest in your account storage.",
       },
       {
-        q: "How do I qualify for DORA compliance reporting?",
+        q: "How do I qualify for DORA evidence draft (research prototype)ing?",
         a: "DORA applies to EU-regulated financial entities. Go to the DORA page and follow the entity classification guide. The report is generated automatically once your topology is complete.",
       },
     ],
@@ -128,8 +128,8 @@ const T = {
         a: "YAML トポロジーはデフォルトではメモリ内で処理され、永続化されません。保存済みシミュレーションはアカウントストレージに暗号化して保管されます。",
       },
       {
-        q: "DORA コンプライアンスレポートの利用要件は？",
-        a: "DORA は EU 規制対象の金融機関に適用されます。DORA ページのエンティティ分類ガイドに従ってください。トポロジーが完成すると自動的にレポートが生成されます。",
+        q: "DORA リサーチドラフト（研究プロトタイプ）の利用要件は？",
+        a: "DORA は EU 規制対象の金融機関に適用されます。DORA ページのエンティティ分類ガイドをご参照ください。トポロジーが完成すると研究プロトタイプとしてエビデンスドラフトが生成されますが、実際の規制監査には独立した法務・技術レビューが必要です。",
       },
     ],
     slaRows: [

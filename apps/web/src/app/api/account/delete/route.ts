@@ -3,11 +3,13 @@
  *
  * Deletes or anonymizes all user data from Supabase then removes the
  * auth.users record so the user can no longer log in.
+ * Also cancels any active Stripe subscriptions to prevent continued billing.
  *
  * Requires: authenticated session (via Supabase SSR cookie).
  */
 import { NextResponse } from "next/server";
 import { applyRateLimit } from "@/lib/rate-limit";
+import Stripe from "stripe";
 
 export const dynamic = "force-dynamic";
 
@@ -60,39 +62,72 @@ export async function DELETE(request: Request) {
   const admin = createAdminClient(supabaseUrl, serviceRoleKey);
 
   try {
-    // 1. Delete simulation runs owned by this user's teams
-    //    (cascade via team deletion below, but be explicit for audit trail)
-    const { data: userTeams } = await admin
-      .from("team_members")
-      .select("team_id")
-      .eq("user_id", userId);
+    // 1. Delete data for teams owned by this user only.
+    //    Teams where the user is merely a member must NOT be deleted.
+    const { data: ownedTeams } = await admin
+      .from("teams")
+      .select("id")
+      .eq("owner_id", userId);
 
-    if (userTeams && userTeams.length > 0) {
-      const teamIds = userTeams.map((t: { team_id: string }) => t.team_id);
+    if (ownedTeams && ownedTeams.length > 0) {
+      const ownedTeamIds = ownedTeams.map((t: { id: string }) => t.id);
 
       // Delete simulation runs
-      await admin.from("simulation_runs").delete().in("team_id", teamIds);
+      await admin.from("simulation_runs").delete().in("team_id", ownedTeamIds);
 
       // Delete usage records
-      await admin.from("usage").delete().in("team_id", teamIds);
+      await admin.from("usage").delete().in("team_id", ownedTeamIds);
 
       // Delete billing events
-      await admin.from("billing_events").delete().in("team_id", teamIds);
+      await admin.from("billing_events").delete().in("team_id", ownedTeamIds);
 
       // Delete projects
-      await admin.from("projects").delete().in("team_id", teamIds);
+      await admin.from("projects").delete().in("team_id", ownedTeamIds);
 
-      // Remove user from all teams
-      await admin.from("team_members").delete().eq("user_id", userId);
+      // Remove all members from owned teams before deleting the teams
+      await admin.from("team_members").delete().in("team_id", ownedTeamIds);
 
       // Delete teams owned by this user
       await admin.from("teams").delete().eq("owner_id", userId);
     }
 
-    // 2. Delete / anonymize the user profile
+    // Remove this user's membership from teams they joined but do not own
+    await admin.from("team_members").delete().eq("user_id", userId);
+
+    // 2. Cancel Stripe subscriptions to prevent continued billing after account deletion
+    const stripeSecretKey = process.env.STRIPE_SECRET_KEY;
+    if (stripeSecretKey && stripeSecretKey !== "sk_test_placeholder") {
+      try {
+        const stripe = new Stripe(stripeSecretKey, { timeout: 30000 });
+
+        // Fetch stripe_customer_id from profiles before deletion
+        const { data: profile } = await admin
+          .from("profiles")
+          .select("stripe_customer_id")
+          .eq("id", userId)
+          .maybeSingle();
+
+        const customerId = profile?.stripe_customer_id as string | null | undefined;
+        if (customerId) {
+          const subscriptions = await stripe.subscriptions.list({ customer: customerId });
+          await Promise.all(
+            subscriptions.data.map((sub) => stripe.subscriptions.cancel(sub.id))
+          );
+          console.log(
+            `[account/delete] Cancelled ${subscriptions.data.length} Stripe subscription(s) for customer ${customerId}`
+          );
+        }
+      } catch (stripeErr) {
+        // Log but do not block account deletion — data cleanup takes priority
+        const msg = stripeErr instanceof Error ? stripeErr.message : "Unknown error";
+        console.error("[account/delete] Stripe cancellation error (non-fatal):", msg);
+      }
+    }
+
+    // 3. Delete / anonymize the user profile
     await admin.from("profiles").delete().eq("id", userId);
 
-    // 3. Delete the auth user (point-of-no-return)
+    // 4. Delete the auth user (point-of-no-return)
     const { error: deleteAuthError } = await admin.auth.admin.deleteUser(userId);
     if (deleteAuthError) {
       // Log but do not expose internal error details

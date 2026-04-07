@@ -1,9 +1,9 @@
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
-  title: "DORA Compliance",
+  title: "DORA Research Dashboard (Prototype)",
   description:
-    "Track and prove DORA compliance with FaultRay — automated reports aligned to Digital Operational Resilience Act requirements.",
+    "Research prototype mapping FaultRay simulations to Digital Operational Resilience Act articles. NOT validated for regulatory audit — independent legal and technical review required before any compliance use.",
   alternates: { canonical: "https://faultray.com/dora" },
   robots: { index: false, follow: false },
 };
