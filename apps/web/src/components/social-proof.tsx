@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Star, GitFork, ExternalLink, Quote } from "lucide-react";
+import { Star, GitFork, ExternalLink, Quote, Download } from "lucide-react";
 
 interface SocialProofDict {
   heading: string;
@@ -12,33 +12,38 @@ interface SocialProofDict {
 interface SocialProofProps {
   dict: SocialProofDict;
   stars: number;
+  pypiDownloads?: number;
 }
 
+// Note: testimonials are aspirational research scenarios, NOT real customer
+// quotes. FaultRay is a research prototype with no validated production
+// customers. Quotes describe the kind of internal exploration FaultRay
+// supports, not certified outcomes.
 const TESTIMONIALS = [
   {
-    quote: "We ran FaultRay against our payment pipeline topology before a Black Friday push. It found a single-point-of-failure in our auth service that our team had missed for 18 months.",
-    author: "Staff SRE",
-    company: "Series B FinTech",
-    metric: "SPOF discovered in < 30s",
+    quote: "We ran FaultRay against our payment pipeline topology before a Black Friday push. It surfaced a single-point-of-failure in our auth service that our team had missed for 18 months.",
+    author: "Aspirational scenario",
+    company: "Series B FinTech (illustrative)",
+    metric: "SPOF surfaced in < 30s",
     metricColor: "text-[var(--gold)]",
   },
   {
-    quote: "The DORA evidence draft (research prototype) saved us 3 weeks of manual documentation work. We submitted the FaultRay report directly to our auditor and it was accepted first-try.",
-    author: "VP Engineering",
-    company: "EU-regulated financial platform",
-    metric: "3 weeks saved on DORA audit",
+    quote: "FaultRay's research-prototype evidence drafts gave our team a starting point for internal resilience design review. We still engaged qualified auditors and independent legal review for actual compliance work.",
+    author: "Aspirational scenario",
+    company: "EU-based engineering team (illustrative)",
+    metric: "Research prototype, not audit tool",
     metricColor: "text-emerald-400",
   },
   {
-    quote: "We use FaultRay's N-nine model in every architecture review. It gives us a shared language between engineers and the CTO for discussing reliability trade-offs.",
-    author: "Engineering Manager",
-    company: "B2B SaaS (50-200 employees)",
-    metric: "Reliability now in every arch review",
+    quote: "We use FaultRay's N-Layer model in architecture reviews. It gives us a shared language between engineers and the CTO for discussing reliability trade-offs.",
+    author: "Aspirational scenario",
+    company: "B2B SaaS team (illustrative)",
+    metric: "Shared reliability language",
     metricColor: "text-blue-400",
   },
 ];
 
-export function SocialProof({ dict, stars }: SocialProofProps) {
+export function SocialProof({ dict, stars, pypiDownloads }: SocialProofProps) {
   return (
     <section className="py-24 bg-[var(--bg-secondary)] border-t border-[var(--border-color)]">
       <div className="max-w-[1200px] mx-auto px-6">
@@ -73,16 +78,26 @@ export function SocialProof({ dict, stars }: SocialProofProps) {
           >
             <div className="flex items-center gap-2 text-emerald-400">
               <GitFork size={24} />
-              <span className="text-4xl font-extrabold">BSL 1.1</span>
+              <span className="text-4xl font-extrabold">Apache 2.0</span>
             </div>
             <span className="text-sm text-[var(--text-muted)]">{dict.openSource}</span>
           </a>
 
-          {/* Simulations stat */}
-          <div className="flex flex-col items-center gap-2 p-8 rounded-2xl border border-[var(--border-color)] bg-[var(--bg-card)] min-w-[180px]">
-            <span className="text-4xl font-extrabold text-purple-400">2,000+</span>
-            <span className="text-sm text-[var(--text-muted)]">simulations / month</span>
-          </div>
+          {/* PyPI downloads stat (if provided) */}
+          {pypiDownloads !== undefined && pypiDownloads > 0 && (
+            <a
+              href="https://pypi.org/project/faultray/"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex flex-col items-center gap-2 p-8 rounded-2xl border border-[var(--border-color)] bg-[var(--bg-card)] min-w-[180px] hover:border-[var(--gold)]/30 hover:bg-[var(--bg-card-hover)] transition-all duration-200"
+            >
+              <div className="flex items-center gap-2 text-purple-400">
+                <Download size={24} />
+                <span className="text-4xl font-extrabold">{pypiDownloads.toLocaleString()}</span>
+              </div>
+              <span className="text-sm text-[var(--text-muted)]">PyPI downloads / month</span>
+            </a>
+          )}
         </div>
 
         {/* Testimonials */}
