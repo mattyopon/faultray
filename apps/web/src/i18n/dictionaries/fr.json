@@ -11,7 +11,7 @@
     "dashboard": "Tableau de bord"
   },
   "hero": {
-    "badge": "Open Source · BSL 1.1 License",
+    "badge": "Open Source · Apache License 2.0",
     "subtitle": "Chaos Engineering d'Infrastructure Sans Risque",
     "description": "Prouvez mathématiquement le plafond de disponibilité de votre système — sans toucher la production.",
     "stats": {
@@ -295,7 +295,7 @@
     "product": "Produit",
     "resources": "Ressources",
     "legal": "Mentions légales",
-    "copyright": "© 2026 FaultRay. Open source sous la BSL 1.1 (Business Source License).",
+    "copyright": "© 2026 FaultRay. Open source sous la Apache License 2.0.",
     "japaneseSupport": "Japanese support available"
   },
   "languageSwitcher": {

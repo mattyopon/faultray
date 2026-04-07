@@ -37,9 +37,9 @@ const enJsonLd = [
       { "@type": "Offer", name: "Pro", price: "299", priceCurrency: "USD", eligibleQuantity: { "@type": "QuantitativeValue", unitText: "month" } },
     ],
     featureList: [
-      "100+ simulation engines",
-      "DORA compliance reports",
-      "AI reliability advisor",
+      "100+ simulation engines (research prototype)",
+      "DORA-aligned evidence drafts (research prototype, not audit-certified)",
+      "AI reliability advisor (experimental)",
       "N-Layer availability model",
       "AWS/GCP/Azure cloud discovery",
     ],

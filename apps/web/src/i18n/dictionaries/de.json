@@ -11,7 +11,7 @@
     "dashboard": "Dashboard"
   },
   "hero": {
-    "badge": "Open Source · BSL 1.1 License",
+    "badge": "Open Source · Apache License 2.0",
     "subtitle": "Risikofreies Infrastruktur-Chaos-Engineering",
     "description": "Beweisen Sie die Verfügbarkeitsobergrenze Ihres Systems mathematisch — ohne die Produktionsumgebung zu berühren.",
     "stats": {
@@ -295,7 +295,7 @@
     "product": "Produkt",
     "resources": "Ressourcen",
     "legal": "Rechtliches",
-    "copyright": "© 2026 FaultRay. Open Source unter der BSL 1.1 (Business Source License).",
+    "copyright": "© 2026 FaultRay. Open Source unter der Apache License 2.0.",
     "japaneseSupport": "Japanese support available"
   },
   "languageSwitcher": {

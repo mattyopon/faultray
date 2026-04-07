@@ -11,7 +11,7 @@
     "dashboard": "대시보드"
   },
   "hero": {
-    "badge": "오픈소스 · BSL 1.1 라이선스",
+    "badge": "오픈소스 · Apache 2.0 라이선스",
     "subtitle": "무위험 인프라 Chaos Engineering",
     "description": "프로덕션을 건드리지 않고 시스템 가용성 한계를 수학적으로 증명하세요.",
     "stats": {
@@ -295,7 +295,7 @@
     "product": "제품",
     "resources": "리소스",
     "legal": "법적 고지",
-    "copyright": "© 2026 FaultRay. BSL 1.1(비즈니스 소스 라이선스) 하에 오픈소스.",
+    "copyright": "© 2026 FaultRay. Apache 2.0Apache 2.0 라이선스 하에 오픈소스.",
     "japaneseSupport": "Japanese support available"
   },
   "languageSwitcher": {

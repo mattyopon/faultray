@@ -1155,9 +1155,9 @@ export default async function LangHomePage() {
                     href="https://github.com/mattyopon/faultray/blob/main/LICENSE"
                     target="_blank"
                     className="text-sm text-[var(--text-muted)] hover:text-[var(--text-primary)] transition-colors"
-                    title="BSL 1.1: ソースコードは公開されています。非商用利用は無料。商用利用にはサブスクリプションが必要です。"
+                    title="Apache License 2.0: パーミッシブなオープンソースライセンス。商用含めあらゆる用途で無料。"
                   >
-                    BSL 1.1 ライセンス
+                    Apache License 2.0
                   </Link>
                   <span className="block text-xs text-[var(--text-muted)] mt-0.5">ソース公開型・非商用利用は無料</span>
                 </li>

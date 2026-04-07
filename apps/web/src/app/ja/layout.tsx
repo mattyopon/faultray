@@ -18,7 +18,7 @@ export async function generateMetadata(): Promise<Metadata> {
       "SRE",
       "DevOps",
       "シミュレーション",
-      "DORA コンプライアンス",
+      "DORA 研究プロトタイプ",
     ],
     alternates: {
       canonical: `${BASE}/ja`,
@@ -67,9 +67,9 @@ const jaJsonLd = [
       { "@type": "Offer", name: "Pro", price: "45000", priceCurrency: "JPY", eligibleQuantity: { "@type": "QuantitativeValue", unitText: "month" } },
     ],
     featureList: [
-      "100以上のシミュレーションエンジン",
-      "DORAコンプライアンスレポート",
-      "AI信頼性アドバイザー",
+      "100以上のシミュレーションエンジン（研究プロトタイプ）",
+      "DORAリサーチドラフト（研究プロトタイプ、監査認証ではありません）",
+      "AI信頼性アドバイザー（実験的）",
       "N-Layer可用性モデル",
       "AWS/GCP/Azureクラウドディスカバリー",
     ],

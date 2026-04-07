@@ -1012,7 +1012,7 @@ export default async function LangHomePage() {
                     target="_blank"
                     className="text-sm text-[var(--text-muted)] hover:text-[var(--text-primary)] transition-colors"
                   >
-                    BSL 1.1 (Business Source License)
+                    Apache License 2.0
                   </Link>
                 </li>
                 <li>

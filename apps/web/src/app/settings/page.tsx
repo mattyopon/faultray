@@ -512,7 +512,7 @@ export default function SettingsPage() {
             { id: "free", name: "Free", price: "$0", features: [
               { label: locale === "ja" ? "シミュレーション" : "Simulations", value: locale === "ja" ? "月5回" : "5 / month" },
               { label: locale === "ja" ? "コンポーネント" : "Components", value: locale === "ja" ? "最大5個" : "Up to 5" },
-              { label: locale === "ja" ? "DORAレポート" : "DORA Report", value: false },
+              { label: locale === "ja" ? "リサーチエビデンス（研究プロトタイプ）" : "Research evidence (prototype)", value: false },
               { label: locale === "ja" ? "AI分析" : "AI Analysis", value: false },
               { label: locale === "ja" ? "カスタムSSO" : "Custom SSO", value: false },
               { label: locale === "ja" ? "保険API" : "Insurance API", value: false },
@@ -521,7 +521,7 @@ export default function SettingsPage() {
             { id: "pro", name: "Pro", price: "$299/mo", features: [
               { label: locale === "ja" ? "シミュレーション" : "Simulations", value: locale === "ja" ? "月100回" : "100 / month" },
               { label: locale === "ja" ? "コンポーネント" : "Components", value: locale === "ja" ? "最大50個" : "Up to 50" },
-              { label: locale === "ja" ? "DORAレポート" : "DORA Report", value: "PDF" },
+              { label: locale === "ja" ? "リサーチエビデンス（研究プロトタイプ）" : "Research evidence (prototype)", value: "PDF" },
               { label: locale === "ja" ? "AI分析" : "AI Analysis", value: true },
               { label: locale === "ja" ? "カスタムSSO" : "Custom SSO", value: false },
               { label: locale === "ja" ? "保険API" : "Insurance API", value: false },
@@ -530,7 +530,7 @@ export default function SettingsPage() {
             { id: "business", name: "Business", price: "$999/mo", features: [
               { label: locale === "ja" ? "シミュレーション" : "Simulations", value: locale === "ja" ? "無制限" : "Unlimited" },
               { label: locale === "ja" ? "コンポーネント" : "Components", value: locale === "ja" ? "無制限" : "Unlimited" },
-              { label: locale === "ja" ? "DORAレポート" : "DORA Report", value: "PDF + API" },
+              { label: locale === "ja" ? "リサーチエビデンス（研究プロトタイプ）" : "Research evidence (prototype)", value: "PDF + API" },
               { label: locale === "ja" ? "AI分析" : "AI Analysis", value: true },
               { label: locale === "ja" ? "カスタムSSO" : "Custom SSO", value: true },
               { label: locale === "ja" ? "保険API" : "Insurance API", value: true },
@@ -626,7 +626,7 @@ export default function SettingsPage() {
                 <ul className="space-y-1.5 text-sm text-[var(--text-secondary)]">
                   {(currentPlan === "pro"
                     ? [
-                        locale === "ja" ? "DORA コンプライアンスレポート (PDF)" : "DORA compliance reports (PDF)",
+                        locale === "ja" ? "DORA リサーチドラフト（研究プロトタイプ, PDF）" : "DORA evidence drafts (research prototype, PDF)",
                         locale === "ja" ? "AI 信頼性アドバイザー" : "AI reliability advisor",
                         locale === "ja" ? "月 100 回のシミュレーション" : "100 simulations / month",
                         locale === "ja" ? "24h メールサポート" : "24h email support",

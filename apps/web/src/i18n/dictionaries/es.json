@@ -11,7 +11,7 @@
     "dashboard": "Panel"
   },
   "hero": {
-    "badge": "Código abierto · Licencia BSL 1.1",
+    "badge": "Código abierto · Licencia Apache 2.0",
     "subtitle": "Chaos Engineering de Infraestructura sin Riesgos",
     "description": "Demuestra matemáticamente el límite de disponibilidad de tu sistema, sin tocar producción.",
     "stats": {
@@ -295,7 +295,7 @@
     "product": "Producto",
     "resources": "Recursos",
     "legal": "Legal",
-    "copyright": "© 2026 FaultRay. Código abierto bajo BSL 1.1 (Business Source License).",
+    "copyright": "© 2026 FaultRay. Código abierto bajo Apache License 2.0.",
     "japaneseSupport": "Japanese support available"
   },
   "languageSwitcher": {

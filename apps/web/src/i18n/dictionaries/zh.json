@@ -11,7 +11,7 @@
     "dashboard": "控制台"
   },
   "hero": {
-    "badge": "开源 · BSL 1.1 许可证",
+    "badge": "开源 · Apache 2.0 许可证",
     "subtitle": "零风险基础设施 Chaos Engineering",
     "description": "用数学方法证明系统可用性上限——无需触碰生产环境。",
     "stats": {
@@ -295,7 +295,7 @@
     "product": "产品",
     "resources": "资源",
     "legal": "法律",
-    "copyright": "© 2026 FaultRay. 基于 BSL 1.1（商业源代码许可证）开源。",
+    "copyright": "© 2026 FaultRay. 基于 Apache 2.0（商业源代码许可证）开源。",
     "japaneseSupport": "Japanese support available"
   },
   "languageSwitcher": {
