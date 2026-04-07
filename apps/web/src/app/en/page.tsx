@@ -832,7 +832,7 @@ export default async function LangHomePage() {
                 headline: "Top performers deploy 4× faster and have 10× lower change failure rates than low performers",
                 relevance: "FaultRay helps you measure and close that gap — before auditors ask.",
                 color: "border-[var(--gold)]/20",
-                badge: "DORA Compliance",
+                badge: "DORA-aligned Research",
               },
               {
                 source: "IBM Cost of a Data Breach 2024",
@@ -917,7 +917,7 @@ export default async function LangHomePage() {
                 role: "Engineering Manager",
                 icon: "📊",
                 pain: "\"Proving reliability to the board takes weeks of manual work.\"",
-                value: "1-click DORA compliance reports. Board-ready resilience dashboards in minutes, not weeks.",
+                value: "DORA evidence drafts from simulations (research prototype — not for audit). Resilience dashboards generated for internal review in minutes.",
                 cta: "See a Demo →",
                 href: "/contact",
                 accent: "text-[var(--gold)] border-[var(--gold)]/20 bg-[var(--gold)]/[0.03]",

@@ -70,7 +70,7 @@
       },
       {
         "problem": "Exigences de disponibilité et d'audit post-IPO",
-        "solution": "Prouvez automatiquement la conformité DORA / SOC 2 avec des pistes de preuves générées par machine."
+        "solution": "Explorez l'alignement DORA / SOC 2 avec des brouillons d'évidence en tant que prototype de recherche. Non certifié pour l'audit — examen juridique indépendant requis."
       },
       {
         "problem": "Réponse aux incidents ad hoc sans runbooks",
@@ -78,7 +78,7 @@
       },
       {
         "problem": "Préparation à la gouvernance de l'IA non commencée",
-        "solution": "Vérifications de conformité automatisées METI / ISO 42001 avec des rapports prêts pour l'audit."
+        "solution": "Mappages de prototype de recherche aux exigences METI / ISO 42001. Non certifié pour l'audit."
       }
     ]
   },
@@ -103,8 +103,8 @@
         "desc": "Analyse des causes racines pilotée par Claude et recommandations d'amélioration concrètes classées par impact et coût."
       },
       {
-        "title": "Rapports de conformité DORA",
-        "desc": "Générez des rapports Digital Operational Resilience Act prêts pour l'audit avec des pistes de preuves et des évaluations des risques — conformes aux exigences EU DORA."
+        "title": "Brouillons d'évidence DORA (prototype de recherche)",
+        "desc": "Générez des brouillons d'évidence Digital Operational Resilience Act en tant que prototype de recherche avec pistes de preuves et évaluations des risques. NON validé pour l'audit réglementaire — examen juridique et technique indépendant requis."
       },
       {
         "title": "Intégration des flux de sécurité",
@@ -116,7 +116,7 @@
       },
       {
         "title": "Gouvernance IA (METI / ISO 42001)",
-        "desc": "Vérifications automatiques de conformité aux directives IA du METI japonais et aux exigences ISO 42001. Prouvez un déploiement IA responsable avec des preuves prêtes pour l'audit."
+        "desc": "Mappages de prototype de recherche aux directives IA du METI japonais et aux exigences ISO 42001. NON certifié pour l'audit — examen juridique indépendant requis."
       },
       {
         "title": "Remédiation autonome",
@@ -124,7 +124,7 @@
       },
       {
         "title": "35+ pages de tableau de bord",
-        "desc": "Tableau de bord web complet avec éditeur de topologie, explorateur de scénarios, drill-down N-Layer, heatmap, rapports DORA et résumés exécutifs."
+        "desc": "Tableau de bord web complet avec éditeur de topologie, explorateur de scénarios, drill-down N-Layer, heatmap, brouillons de recherche DORA et résumés exécutifs."
       }
     ],
     "viewAll": "View Full Feature Details"
@@ -258,7 +258,7 @@
       },
       {
         "name": "Pro",
-        "desc": "Pour les équipes qui ont besoin de rapports de conformité DORA et de limites plus élevées.",
+        "desc": "Pour les équipes qui ont besoin de brouillons d'évidence DORA (prototype de recherche) et de limites plus élevées.",
         "cta": "Commencer Pro"
       },
       {
@@ -272,7 +272,8 @@
     "heading": "Trusted by the Developer Community",
     "githubStars": "GitHub Stars",
     "betaMessage": "Currently in beta. We'd love your feedback.",
-    "betaSubtitle": "We are in early access. Your feedback helps us improve.", "betaCta": "Send Feedback",
+    "betaSubtitle": "We are in early access. Your feedback helps us improve.",
+    "betaCta": "Send Feedback",
     "openSource": "Open Source"
   },
   "roi": {
@@ -299,5 +300,8 @@
   },
   "languageSwitcher": {
     "label": "Langue"
+  },
+  "disclaimer": {
+    "researchPrototype": "⚠ Prototype de recherche — les sorties ne sont PAS validées pour DORA, FISC ou tout audit réglementaire. Ne vous fiez pas aux preuves FaultRay pour des décisions de conformité sans examen juridique et technique indépendant."
   }
 }

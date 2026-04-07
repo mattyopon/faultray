@@ -70,7 +70,7 @@
       },
       {
         "problem": "Post-IPO Verfügbarkeits- und Auditanforderungen",
-        "solution": "DORA / SOC 2-Konformität automatisch mit maschinengenerierten Nachweisketten beweisen."
+        "solution": "DORA / SOC 2-Ausrichtung als Forschungsprototyp mit Evidenzentwürfen erkunden. Nicht auditzertifiziert — unabhängige juristische Prüfung erforderlich."
       },
       {
         "problem": "Ad-hoc-Störungsreaktion ohne Runbooks",
@@ -78,7 +78,7 @@
       },
       {
         "problem": "KI-Governance-Bereitschaft noch nicht begonnen",
-        "solution": "Automatisierte METI / ISO 42001-Konformitätsprüfungen mit prüfungsfertigen Berichten."
+        "solution": "Forschungsprototyp-Zuordnungen zu METI / ISO 42001-Anforderungen. Nicht auditzertifiziert."
       }
     ]
   },
@@ -103,8 +103,8 @@
         "desc": "Claude-gesteuerte Ursachenanalyse und umsetzbare Verbesserungsempfehlungen, nach Auswirkung und Kosten priorisiert."
       },
       {
-        "title": "DORA-Compliance-Berichte",
-        "desc": "Erstellen Sie prüfungsbereite Digital Operational Resilience Act Berichte mit Nachweisketten und Risikobewertungen — konform mit EU-DORA-Anforderungen."
+        "title": "DORA-Evidenzentwürfe (Forschungsprototyp)",
+        "desc": "Erstellen Sie Forschungsprototyp-Evidenzentwürfe zum Digital Operational Resilience Act mit Nachweisketten und Risikobewertungen. NICHT auditzertifiziert — unabhängige juristische und technische Prüfung erforderlich."
       },
       {
         "title": "Security-Feed-Integration",
@@ -116,7 +116,7 @@
       },
       {
         "title": "KI-Governance (METI / ISO 42001)",
-        "desc": "Automatische Compliance-Prüfungen gegen Japans METI-KI-Richtlinien und ISO 42001-Anforderungen. Verantwortungsvoller KI-Einsatz mit prüfungsfertigen Nachweisen belegen."
+        "desc": "Forschungsprototyp-Zuordnungen zu Japans METI-KI-Richtlinien und ISO 42001-Anforderungen. NICHT auditzertifiziert — unabhängige juristische Prüfung erforderlich."
       },
       {
         "title": "Autonome Behebung",
@@ -124,7 +124,7 @@
       },
       {
         "title": "35+ Dashboard-Seiten",
-        "desc": "Vollständiges Web-Dashboard mit Topologie-Editor, Szenario-Explorer, N-Layer-Drill-Down, Heatmap, DORA-Berichten und Management-Zusammenfassungen."
+        "desc": "Vollständiges Web-Dashboard mit Topologie-Editor, Szenario-Explorer, N-Layer-Drill-Down, Heatmap, DORA-Forschungsentwürfen und Management-Zusammenfassungen."
       }
     ],
     "viewAll": "View Full Feature Details"
@@ -258,7 +258,7 @@
       },
       {
         "name": "Pro",
-        "desc": "Für Teams, die DORA-Compliance-Berichte und höhere Limits benötigen.",
+        "desc": "Für Teams, die DORA-Evidenzentwürfe (Forschungsprototyp) und höhere Limits benötigen.",
         "cta": "Pro starten"
       },
       {
@@ -272,7 +272,8 @@
     "heading": "Trusted by the Developer Community",
     "githubStars": "GitHub Stars",
     "betaMessage": "Currently in beta. We'd love your feedback.",
-    "betaSubtitle": "We are in early access. Your feedback helps us improve.", "betaCta": "Send Feedback",
+    "betaSubtitle": "We are in early access. Your feedback helps us improve.",
+    "betaCta": "Send Feedback",
     "openSource": "Open Source"
   },
   "roi": {
@@ -299,5 +300,8 @@
   },
   "languageSwitcher": {
     "label": "Sprache"
+  },
+  "disclaimer": {
+    "researchPrototype": "⚠ Forschungsprototyp — Ausgaben sind NICHT für DORA, FISC oder andere regulatorische Audits validiert. Verwenden Sie FaultRay-Evidenz nicht für Compliance-Entscheidungen ohne unabhängige juristische und technische Prüfung."
   }
 }

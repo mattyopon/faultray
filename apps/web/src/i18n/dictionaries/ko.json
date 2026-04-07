@@ -70,7 +70,7 @@
       },
       {
         "problem": "IPO 이후 가용성 및 감사 요건",
-        "solution": "DORA / SOC 2 준수를 기계 생성 증거로 자동 증명합니다."
+        "solution": "DORA / SOC 2 정렬을 연구 프로토타입 증거 초안으로 탐색합니다. 감사 인증되지 않음 — 독립적인 법률 검토 필요."
       },
       {
         "problem": "런북 없는 임시 인시던트 대응",
@@ -103,7 +103,7 @@
         "desc": "Claude 기반의 근본 원인 분석과 영향도 및 비용 순으로 정렬된 실행 가능한 개선 권고안."
       },
       {
-        "title": "DORA 준거 보고서",
+        "title": "DORA 증거 초안 (연구 프로토타입)",
         "desc": "증거 추적 및 위험 평가가 포함된 감사 준비 완료 디지털 운영 회복력법 보고서 생성."
       },
       {
@@ -116,7 +116,7 @@
       },
       {
         "title": "AI 거버넌스 (METI / ISO 42001)",
-        "desc": "일본 METI AI 가이드라인 및 ISO 42001 요건에 대한 자동 준수 검사. 감사 준비 증거로 책임 있는 AI 배포를 증명합니다."
+        "desc": "일본 METI AI 가이드라인 및 ISO 42001 요건에 대한 연구 프로토타입 매핑. 감사 인증되지 않음 — 규정 준수 주장에는 독립적인 법률 검토 필요."
       },
       {
         "title": "자율 수정",
@@ -124,7 +124,7 @@
       },
       {
         "title": "35+ 대시보드 페이지",
-        "desc": "토폴로지 에디터, 시나리오 탐색기, N-Layer 드릴다운, 히트맵, DORA 보고서, 경영 요약을 갖춘 완전한 웹 대시보드."
+        "desc": "토폴로지 에디터, 시나리오 탐색기, N-Layer 드릴다운, 히트맵, DORA 연구 초안, 경영 요약을 갖춘 완전한 웹 대시보드."
       }
     ],
     "viewAll": "View Full Feature Details"
@@ -258,7 +258,7 @@
       },
       {
         "name": "Pro",
-        "desc": "DORA 준거 보고서와 더 높은 한도가 필요한 팀을 위한 플랜.",
+        "desc": "DORA 증거 초안 (연구 프로토타입)와 더 높은 한도가 필요한 팀을 위한 플랜.",
         "cta": "Pro 시작하기"
       },
       {
@@ -272,7 +272,8 @@
     "heading": "Trusted by the Developer Community",
     "githubStars": "GitHub Stars",
     "betaMessage": "Currently in beta. We'd love your feedback.",
-    "betaSubtitle": "We are in early access. Your feedback helps us improve.", "betaCta": "Send Feedback",
+    "betaSubtitle": "We are in early access. Your feedback helps us improve.",
+    "betaCta": "Send Feedback",
     "openSource": "Open Source"
   },
   "roi": {
@@ -299,5 +300,8 @@
   },
   "languageSwitcher": {
     "label": "언어"
+  },
+  "disclaimer": {
+    "researchPrototype": "⚠ 연구 프로토타입 — 출력은 DORA, FISC 또는 기타 규제 감사에 대해 검증되지 않았습니다. 독립적인 법률 및 기술 검토 없이 FaultRay 증거를 규정 준수 결정에 사용하지 마십시오."
   }
 }

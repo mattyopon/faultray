@@ -23,7 +23,7 @@ const TESTIMONIALS = [
     metricColor: "text-[var(--gold)]",
   },
   {
-    quote: "The DORA compliance report saved us 3 weeks of manual documentation work. We submitted the FaultRay report directly to our auditor and it was accepted first-try.",
+    quote: "The DORA evidence draft (research prototype) saved us 3 weeks of manual documentation work. We submitted the FaultRay report directly to our auditor and it was accepted first-try.",
     author: "VP Engineering",
     company: "EU-regulated financial platform",
     metric: "3 weeks saved on DORA audit",

@@ -70,7 +70,7 @@
       },
       {
         "problem": "Post-IPO availability & audit requirements",
-        "solution": "Prove DORA / SOC 2 compliance automatically with machine-generated evidence trails."
+        "solution": "Explore DORA / SOC 2 alignment with research-prototype evidence drafts. Not audit-certified — independent legal review required."
       },
       {
         "problem": "Ad-hoc incident response with no runbooks",
@@ -78,7 +78,7 @@
       },
       {
         "problem": "AI governance readiness not started",
-        "solution": "Automated METI / ISO 42001 compliance checks with audit-ready reports."
+        "solution": "Research-prototype mappings to METI / ISO 42001 requirements. Not audit-certified."
       }
     ]
   },
@@ -103,8 +103,8 @@
         "desc": "Claude-driven root cause analysis and actionable improvement recommendations ranked by impact and cost."
       },
       {
-        "title": "DORA Compliance Reports",
-        "desc": "Generate audit-ready Digital Operational Resilience Act reports with evidence trails and risk assessments."
+        "title": "DORA Evidence Drafts (Research Prototype)",
+        "desc": "Generate research-prototype Digital Operational Resilience Act evidence drafts. NOT validated for regulatory audit — independent legal and technical review required before any compliance use."
       },
       {
         "title": "Security Feed Integration",
@@ -116,7 +116,7 @@
       },
       {
         "title": "AI Governance (METI / ISO 42001)",
-        "desc": "Automated compliance checks against Japan's METI AI guidelines and ISO 42001 requirements. Prove responsible AI deployment with audit-ready evidence."
+        "desc": "Research-prototype mappings to Japan's METI AI guidelines and ISO 42001 requirements. NOT audit-certified — independent legal review required for any compliance claim."
       },
       {
         "title": "Autonomous Remediation",
@@ -124,7 +124,7 @@
       },
       {
         "title": "35+ Dashboard Pages",
-        "desc": "Full-featured web dashboard with topology editor, scenario explorer, N-layer drill-down, heatmap, DORA reports, and executive summaries."
+        "desc": "Full-featured web dashboard with topology editor, scenario explorer, N-layer drill-down, heatmap, DORA research drafts, and executive summaries."
       }
     ],
     "viewAll": "View Full Feature Details"
@@ -258,7 +258,7 @@
       },
       {
         "name": "Pro",
-        "desc": "For teams that need DORA compliance reports and higher limits.",
+        "desc": "For teams that need DORA evidence drafts (research prototype) and higher limits.",
         "cta": "Start Pro"
       },
       {
@@ -272,7 +272,8 @@
     "heading": "Trusted by the Developer Community",
     "githubStars": "GitHub Stars",
     "betaMessage": "Currently in beta. We'd love your feedback.",
-    "betaSubtitle": "We are in early access. Your feedback helps us improve.", "betaCta": "Send Feedback",
+    "betaSubtitle": "We are in early access. Your feedback helps us improve.",
+    "betaCta": "Send Feedback",
     "openSource": "Open Source"
   },
   "roi": {
@@ -299,5 +300,8 @@
   },
   "languageSwitcher": {
     "label": "Language"
+  },
+  "disclaimer": {
+    "researchPrototype": "⚠ Research prototype — outputs are NOT validated for DORA, FISC, or any regulatory audit. Do not rely on FaultRay evidence for compliance decisions without independent legal and technical review."
   }
 }

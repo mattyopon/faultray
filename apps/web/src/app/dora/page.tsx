@@ -28,7 +28,7 @@ const T: Record<string, {
   impact: string;
 }> = {
   en: {
-    title: "DORA Compliance Dashboard",
+    title: "DORA Research Dashboard (Prototype)",
     subtitle: "Digital Operational Resilience Act (EU Regulation 2022/2554) — Effective January 17, 2025",
     compliant: "Compliant",
     partial: "Partial",
@@ -50,7 +50,7 @@ const T: Record<string, {
     impact: "Impact",
   },
   ja: {
-    title: "DORA コンプライアンスダッシュボード",
+    title: "DORA リサーチダッシュボード（研究プロトタイプ）",
     subtitle: "EU デジタル運用回復力法（規則2022/2554）— 2025年1月17日施行",
     compliant: "準拠",
     partial: "一部準拠",
@@ -162,6 +162,32 @@ export default function DoraPage() {
         {t.title}
       </h1>
       <p className="text-[var(--text-secondary)] text-sm mb-6">{t.subtitle}</p>
+
+      {/* LIABILITY-CAP: Research prototype notice at top of DORA page.
+          This page is the single highest-risk surface for DORA overclaim.
+          The banner below MUST remain visible before any score/pillar card. */}
+      <div
+        role="alert"
+        className="mb-6 p-4 rounded-xl border-2 border-amber-500 bg-amber-500/[0.08] flex gap-3"
+      >
+        <ShieldAlert size={18} className="text-amber-400 shrink-0 mt-0.5" />
+        <div>
+          <p className="text-sm font-bold text-amber-300 mb-1">
+            Research Prototype — NOT a Compliance Tool
+          </p>
+          <p className="text-sm text-[var(--text-secondary)] leading-relaxed">
+            FaultRay is a single-developer research prototype that maps simulation outputs to
+            DORA (EU 2022/2554) articles for exploratory analysis. <strong>Scores, pillar
+            coverage, and evidence exports on this page are NOT validated for actual DORA
+            audits</strong> and must not be relied upon to demonstrate regulatory compliance.
+            Use only with independent legal and technical review. See{" "}
+            <a href="/terms" className="text-amber-400 underline hover:text-amber-300">
+              /terms
+            </a>{" "}
+            for the full disclaimer.
+          </p>
+        </div>
+      </div>
 
       {/* DORA-02: Context banner — clarify applicability for Japanese SMEs */}
       <div className="mb-8 p-4 rounded-xl border border-blue-500/20 bg-blue-500/[0.05] flex gap-3">

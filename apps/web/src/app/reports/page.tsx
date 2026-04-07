@@ -395,7 +395,7 @@ export default function ReportsPage() {
             </div>
           </Card>}
 
-          {/* DORA Compliance Status — FUNC-02: conditionally shown */}
+          {/* DORA-aligned Research Status — FUNC-02: conditionally shown */}
           {showSections.compliance && <Card>
             <h3 className="text-lg font-bold mb-4">{t.complianceStatus}</h3>
             <div className="grid md:grid-cols-3 gap-4">

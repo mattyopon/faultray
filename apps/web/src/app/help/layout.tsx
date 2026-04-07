@@ -3,7 +3,7 @@ import type { Metadata } from "next";
 export const metadata: Metadata = {
   title: "Help & User Guide — FaultRay",
   description:
-    "FaultRay user guide — getting started, dashboard, simulation, DORA compliance, settings, and FAQ.",
+    "FaultRay user guide — getting started, dashboard, simulation, DORA-aligned research, settings, and FAQ.",
   alternates: {
     canonical: "https://faultray.com/help",
   },

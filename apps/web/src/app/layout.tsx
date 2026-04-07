@@ -6,6 +6,7 @@ import { Navbar } from "@/components/navbar";
 import { Breadcrumb } from "@/components/breadcrumb";
 import { LocaleProvider } from "@/lib/useLocale";
 import { CookieConsent } from "@/components/cookie-consent";
+import { ResearchPrototypeBanner } from "@/components/research-prototype-banner";
 import "./globals.css";
 
 const inter = Inter({
@@ -53,7 +54,7 @@ export const metadata: Metadata = {
     "SRE",
     "DevOps",
     "simulation",
-    "DORA compliance",
+    "DORA research prototype",
   ],
   metadataBase: new URL("https://faultray.com"),
   // HTTP-05: robots metaタグを明示的に設定
@@ -120,9 +121,9 @@ const jsonLd = [
       { "@type": "Offer", name: "Pro",  price: "299", priceCurrency: "USD", eligibleQuantity: { "@type": "QuantitativeValue", unitText: "month" } },
     ],
     featureList: [
-      "100+ simulation engines",
-      "DORA compliance reports",
-      "AI reliability advisor",
+      "100+ simulation engines (research prototype)",
+      "DORA-aligned evidence export (research, not for regulatory use)",
+      "AI reliability advisor (experimental)",
       "N-Layer availability model",
       "AWS/GCP/Azure cloud discovery",
     ],
@@ -247,8 +248,9 @@ export default function RootLayout({
         <AuthProvider>
           <LocaleProvider>
             <Navbar />
+            <ResearchPrototypeBanner />
             <Breadcrumb />
-            <main role="main" className="flex-1 pt-16">{children}</main>
+            <main role="main" className="flex-1 pt-24 sm:pt-24">{children}</main>
             <CookieConsent />
           </LocaleProvider>
         </AuthProvider>

@@ -60,7 +60,7 @@ const REPORT_METADATA: Record<Framework, {
   name: string; period: string; type: string; score: number; status: string;
 }> = {
   SOC2:    { name: "SOC 2 Type II", period: "2025-04-01 to 2026-03-31", type: "Attestation Report", score: 87, status: "Opinion Issued" },
-  DORA:    { name: "DORA Compliance", period: "FY2026 Q1 Assessment", type: "Gap Assessment", score: 72, status: "Partial Compliance" },
+  DORA:    { name: "DORA-aligned Research", period: "FY2026 Q1 Assessment", type: "Gap Assessment", score: 72, status: "Partial Compliance" },
   ISO27001:{ name: "ISO/IEC 27001", period: "Annual Surveillance Audit 2026", type: "Certification Audit", score: 91, status: "Certified" },
   FISC:    { name: "FISC 安全対策基準", period: "2026年度 定期評価", type: "Compliance Assessment", score: 65, status: "部分準拠" },
 };
@@ -180,7 +180,7 @@ export default function AuditReportPage() {
           Audit Report Generator
         </h1>
         <p className="text-[var(--text-secondary)] text-sm">
-          Generate audit-ready reports for external auditors and regulators (Layer 4)
+          Generate research-draft reports for external auditors and regulators (Layer 4)
         </p>
       </div>
 

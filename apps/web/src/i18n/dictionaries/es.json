@@ -70,7 +70,7 @@
       },
       {
         "problem": "Requisitos de disponibilidad y auditoría post-IPO",
-        "solution": "Demuestra automáticamente la conformidad DORA / SOC 2 con cadenas de evidencia generadas por máquina."
+        "solution": "Explora la alineación DORA / SOC 2 con borradores de evidencia como prototipo de investigación. No certificado para auditoría — se requiere revisión legal independiente."
       },
       {
         "problem": "Respuesta a incidentes ad hoc sin runbooks",
@@ -78,7 +78,7 @@
       },
       {
         "problem": "Preparación para la gobernanza de IA no iniciada",
-        "solution": "Comprobaciones de conformidad automatizadas METI / ISO 42001 con informes listos para auditoría."
+        "solution": "Mapeos de prototipo de investigación a los requisitos METI / ISO 42001. No certificado para auditoría."
       }
     ]
   },
@@ -103,8 +103,8 @@
         "desc": "Análisis de causa raíz impulsado por Claude y recomendaciones de mejora accionables ordenadas por impacto y coste."
       },
       {
-        "title": "Informes de Conformidad DORA",
-        "desc": "Genera informes listos para auditoría de la Ley de Resiliencia Operativa Digital con cadenas de evidencia y evaluaciones de riesgo."
+        "title": "Borradores de Evidencia DORA (Prototipo de Investigación)",
+        "desc": "Genera borradores de evidencia de la Ley de Resiliencia Operativa Digital como prototipo de investigación con cadenas de evidencia y evaluaciones de riesgo. NO validado para auditoría regulatoria — se requiere revisión legal y técnica independiente."
       },
       {
         "title": "Integración de Feed de Seguridad",
@@ -124,7 +124,7 @@
       },
       {
         "title": "35+ Páginas de Panel",
-        "desc": "Panel web completo con editor de topología, explorador de escenarios, drill-down N-Layer, mapa de calor, informes DORA y resúmenes ejecutivos."
+        "desc": "Panel web completo con editor de topología, explorador de escenarios, drill-down N-Layer, mapa de calor, borradores de investigación DORA y resúmenes ejecutivos."
       }
     ],
     "viewAll": "View Full Feature Details"
@@ -258,7 +258,7 @@
       },
       {
         "name": "Pro",
-        "desc": "Para equipos que necesitan informes de conformidad DORA y límites más altos.",
+        "desc": "Para equipos que necesitan borradores de evidencia DORA (prototipo de investigación) y límites más altos.",
         "cta": "Empezar Pro"
       },
       {
@@ -272,7 +272,8 @@
     "heading": "Trusted by the Developer Community",
     "githubStars": "GitHub Stars",
     "betaMessage": "Currently in beta. We'd love your feedback.",
-    "betaSubtitle": "We are in early access. Your feedback helps us improve.", "betaCta": "Send Feedback",
+    "betaSubtitle": "We are in early access. Your feedback helps us improve.",
+    "betaCta": "Send Feedback",
     "openSource": "Open Source"
   },
   "roi": {
@@ -299,5 +300,8 @@
   },
   "languageSwitcher": {
     "label": "Idioma"
+  },
+  "disclaimer": {
+    "researchPrototype": "⚠ Prototipo de investigación — las salidas NO están validadas para DORA, FISC ni ninguna auditoría regulatoria. No confíe en la evidencia de FaultRay para decisiones de cumplimiento sin una revisión legal y técnica independiente."
   }
 }
