@@ -171,7 +171,7 @@ def quickstart(
             import uvicorn
             uvicorn.run(
                 "faultray.api.server:app",
-                host="0.0.0.0",
+                host="0.0.0.0",  # nosec B104
                 port=8000,
                 log_level="info",
             )
