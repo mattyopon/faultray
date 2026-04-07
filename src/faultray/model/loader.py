@@ -7,6 +7,7 @@ from __future__ import annotations
 
 import logging
 from pathlib import Path
+from typing import Any
 
 import yaml
 
@@ -40,7 +41,7 @@ from faultray.model.graph import InfraGraph
 logger = logging.getLogger(__name__)
 
 
-def _check_schema_version(raw: dict) -> None:
+def _check_schema_version(raw: dict[str, Any]) -> None:
     """Check schema_version in the YAML data and log a warning if outdated."""
     version = raw.get("schema_version")
     if version is None:
@@ -290,7 +291,7 @@ def load_yaml(path: Path | str) -> InfraGraph:
     return graph
 
 
-def load_yaml_with_ops(path: Path | str) -> tuple[InfraGraph, dict]:
+def load_yaml_with_ops(path: Path | str) -> tuple[InfraGraph, dict[str, Any]]:
     """Load infrastructure definition and operational simulation config from YAML.
 
     In addition to building the :class:`InfraGraph` via :func:`load_yaml`, this
@@ -313,7 +314,7 @@ def load_yaml_with_ops(path: Path | str) -> tuple[InfraGraph, dict]:
 
     # Parse additional ops sections from the raw YAML
     raw = yaml.safe_load(path.read_text(encoding="utf-8"))
-    ops_config: dict = {
+    ops_config: dict[str, Any] = {
         "slos": [SLOTarget(**s) for s in raw.get("slos", [])],
         "operational_simulation": raw.get("operational_simulation", {}),
     }

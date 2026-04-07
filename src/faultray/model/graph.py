@@ -21,7 +21,7 @@ class InfraGraph:
     """Directed graph of infrastructure components and their dependencies."""
 
     def __init__(self) -> None:
-        self._graph = nx.DiGraph()
+        self._graph: nx.DiGraph[str] = nx.DiGraph()
         self._components: dict[str, Component] = {}
 
     @property

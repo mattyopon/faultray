@@ -37,6 +37,11 @@ jobs:
           pip install mypy types-PyYAML
           python -m mypy src/faultray/model/ --ignore-missing-imports
 
+      - name: Type check core engine with mypy --strict
+        run: |
+          pip install mypy types-PyYAML types-networkx
+          python -m mypy --strict src/faultray/model/ src/faultray/scoring.py src/faultray/differ.py
+
       - name: Run property-based tests
         run: pytest tests/test_property_based.py -v --tb=short --noconftest
 

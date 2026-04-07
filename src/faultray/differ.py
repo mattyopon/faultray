@@ -9,8 +9,13 @@ import json
 import logging
 from dataclasses import dataclass, field
 from pathlib import Path
+from typing import Any
 
 logger = logging.getLogger(__name__)
+
+
+ScenarioInfo = dict[str, Any]
+ResultDict = dict[str, Any]
 
 # Thresholds for severity classification (matches engine.py)
 CRITICAL_THRESHOLD = 7.0
@@ -35,7 +40,7 @@ class DiffResult:
 class SimulationDiffer:
     """Compares two simulation result sets and produces a DiffResult."""
 
-    def diff(self, before: dict, after: dict) -> DiffResult:
+    def diff(self, before: ResultDict, after: ResultDict) -> DiffResult:
         """Compare two simulation result dicts.
 
         Both *before* and *after* are expected to follow the JSON export
@@ -110,16 +115,16 @@ class SimulationDiffer:
     # ------------------------------------------------------------------
 
     @staticmethod
-    def _scenario_map(data: dict) -> dict[str, dict]:
+    def _scenario_map(data: ResultDict) -> dict[str, ScenarioInfo]:
         """Build a mapping of scenario_name -> scenario info dict."""
-        scenarios: dict[str, dict] = {}
+        scenarios: dict[str, ScenarioInfo] = {}
         for r in data.get("results", []):
             name = r.get("scenario_name", r.get("name", "unknown"))
             scenarios[name] = r
         return scenarios
 
     @staticmethod
-    def _detect_component_changes(before: dict, after: dict) -> list[str]:
+    def _detect_component_changes(before: ResultDict, after: ResultDict) -> list[str]:
         """Detect added/removed components between two runs."""
         changes: list[str] = []
 
