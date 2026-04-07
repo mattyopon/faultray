@@ -37,7 +37,7 @@ class FaultRayConfig:
     })
     ui: dict = field(default_factory=lambda: {
         "default_port": 8080,
-        "default_host": "0.0.0.0",
+        "default_host": "0.0.0.0",  # nosec B104
         "language": "en",
     })
     telemetry: dict = field(default_factory=lambda: {

@@ -27,7 +27,7 @@ from faultray.simulator.engine import SimulationEngine
 @app.command()
 def demo(
     web: bool = typer.Option(False, "--web", "-w", help="Launch web dashboard after building demo"),
-    host: str = typer.Option("0.0.0.0", "--host", help="Web dashboard bind host"),
+    host: str = typer.Option("0.0.0.0", "--host", help="Web dashboard bind host"),  # nosec B104
     port: int = typer.Option(8080, "--port", "-p", help="Web dashboard bind port"),
 ) -> None:
     """Run simulation with a demo infrastructure (no scanning required).
@@ -83,7 +83,7 @@ def demo(
 @app.command()
 def serve(
     model: Path = typer.Option(DEFAULT_MODEL_PATH, "--model", "-m", help="Model file path"),
-    host: str = typer.Option("0.0.0.0", "--host", help="Bind host"),
+    host: str = typer.Option("0.0.0.0", "--host", help="Bind host"),  # nosec B104
     port: int = typer.Option(8080, "--port", "-p", help="Bind port"),
     prometheus_url: str | None = typer.Option(None, "--prometheus-url", help="Prometheus URL for continuous monitoring"),
     prometheus_interval: int = typer.Option(60, "--prometheus-interval", help="Prometheus polling interval in seconds"),
