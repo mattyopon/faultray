@@ -412,7 +412,9 @@ def test_resilience_score_missing_edge_metadata_fallback() -> None:
     g = InfraGraph()
     g.add_component(_comp("a"))
     g.add_component(_comp("b"))
-    # Add raw edge without dependency metadata to hit the `else` branch (line 151)
+    # Intentional private access: add a raw edge without dependency metadata
+    # to exercise the fallback branch in resilience_score() where
+    # get_dependency_edge() returns None.
     g._graph.add_edge("a", "b")
     score = g.resilience_score()
     assert 0.0 <= score <= 100.0
