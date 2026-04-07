@@ -526,7 +526,7 @@ class AlibabaScanner:
             resp = requests.get("https://oss-cn-hangzhou.aliyuncs.com/", headers=headers, timeout=30)
 
             if resp.status_code == 200:
-                import xml.etree.ElementTree as ET
+                import defusedxml.ElementTree as ET
                 root = ET.fromstring(resp.text)
                 ns = {"oss": "http://doc.oss-cn-hangzhou.aliyuncs.com"}
 

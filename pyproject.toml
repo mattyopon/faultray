@@ -45,6 +45,7 @@ dependencies = [
     "pyyaml>=6.0",
     "sqlalchemy>=2.0",
     "aiosqlite>=0.20",
+    "defusedxml>=0.7.1",
 ]
 
 [project.optional-dependencies]
