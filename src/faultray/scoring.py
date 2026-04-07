@@ -15,14 +15,53 @@ from __future__ import annotations
 import logging
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Callable
+from typing import Any, Callable, TypedDict
 
 import yaml
 
-from faultray.model.components import ComponentType
+from faultray.model.components import Component, ComponentType
 from faultray.model.graph import InfraGraph
 
 logger = logging.getLogger(__name__)
+
+
+def _filter_components_by_type(
+    graph: InfraGraph, comp_type_str: str
+) -> list[Component]:
+    """Filter components by type string (case-insensitive).
+
+    Returns all components if comp_type_str is empty, an empty list if the
+    string is not a known ComponentType, otherwise the matching subset.
+    """
+    if not comp_type_str:
+        return list(graph.components.values())
+
+    try:
+        comp_type = ComponentType(comp_type_str.lower())
+    except ValueError:
+        logger.warning(
+            "Unknown component type '%s', returning empty list", comp_type_str
+        )
+        return []
+
+    return [c for c in graph.components.values() if c.type == comp_type]
+
+
+# Built-in check functions accept user-supplied params loaded from YAML.
+# The structure varies per check_fn (e.g. min_replicas vs max_utilization),
+# so dict[str, Any] reflects the genuinely dynamic nature of the input.
+CheckParams = dict[str, Any]
+
+
+class RuleResultRow(TypedDict, total=False):
+    """One row in CustomScoringResult.rules — output of evaluating one ScoringRule."""
+
+    name: str
+    score: float
+    weight: float
+    description: str
+    passed: bool
+    error: str  # only present when the check failed
 
 
 @dataclass
@@ -33,7 +72,7 @@ class ScoringRule:
     description: str
     weight: float = 1.0
     check_fn: str = ""  # function name to call (key in BUILT_IN_CHECKS)
-    params: dict = field(default_factory=dict)
+    params: CheckParams = field(default_factory=dict)
 
 
 @dataclass
@@ -42,7 +81,7 @@ class CustomScoringResult:
 
     model_name: str
     total_score: float  # 0-100
-    rules: list[dict]  # [{name, score, weight, description, passed}]
+    rules: list[RuleResultRow]  # [{name, score, weight, description, passed}]
     weighted_score: float
 
 
@@ -50,7 +89,7 @@ class CustomScoringResult:
 # Built-in check functions
 # ---------------------------------------------------------------------------
 
-def _check_min_replicas(graph: InfraGraph, params: dict) -> float:
+def _check_min_replicas(graph: InfraGraph, params: CheckParams) -> float:
     """Check that components of a given type have >= N replicas.
 
     Params:
@@ -70,7 +109,7 @@ def _check_min_replicas(graph: InfraGraph, params: dict) -> float:
     return (passing / len(target_comps)) * 100.0
 
 
-def _check_max_utilization(graph: InfraGraph, params: dict) -> float:
+def _check_max_utilization(graph: InfraGraph, params: CheckParams) -> float:
     """Check that no component exceeds N% utilization.
 
     Params:
@@ -90,7 +129,7 @@ def _check_max_utilization(graph: InfraGraph, params: dict) -> float:
     return (passing / len(graph.components)) * 100.0
 
 
-def _check_encryption_coverage(graph: InfraGraph, params: dict) -> float:
+def _check_encryption_coverage(graph: InfraGraph, params: CheckParams) -> float:
     """Check percentage of components with encryption enabled.
 
     Params:
@@ -114,7 +153,7 @@ def _check_encryption_coverage(graph: InfraGraph, params: dict) -> float:
     return min(100.0, (coverage / min_percent) * 100.0)
 
 
-def _check_failover_coverage(graph: InfraGraph, params: dict) -> float:
+def _check_failover_coverage(graph: InfraGraph, params: CheckParams) -> float:
     """Check percentage of components with failover enabled.
 
     Params:
@@ -138,7 +177,7 @@ def _check_failover_coverage(graph: InfraGraph, params: dict) -> float:
     return min(100.0, (coverage / min_percent) * 100.0)
 
 
-def _check_cb_coverage(graph: InfraGraph, params: dict) -> float:
+def _check_cb_coverage(graph: InfraGraph, params: CheckParams) -> float:
     """Check percentage of dependency edges with circuit breakers.
 
     Params:
@@ -160,7 +199,7 @@ def _check_cb_coverage(graph: InfraGraph, params: dict) -> float:
     return min(100.0, (coverage / min_percent) * 100.0)
 
 
-def _check_backup_coverage(graph: InfraGraph, params: dict) -> float:
+def _check_backup_coverage(graph: InfraGraph, params: CheckParams) -> float:
     """Check percentage of components with backups enabled.
 
     Params:
@@ -191,7 +230,7 @@ def _check_backup_coverage(graph: InfraGraph, params: dict) -> float:
     return min(100.0, (coverage / min_percent) * 100.0)
 
 
-def _check_max_chain_depth(graph: InfraGraph, params: dict) -> float:
+def _check_max_chain_depth(graph: InfraGraph, params: CheckParams) -> float:
     """Check that the maximum dependency chain depth is under N.
 
     Params:
@@ -215,7 +254,7 @@ def _check_max_chain_depth(graph: InfraGraph, params: dict) -> float:
     return max(0.0, 100.0 - over * 20.0)
 
 
-def _check_no_public_database(graph: InfraGraph, params: dict) -> float:
+def _check_no_public_database(graph: InfraGraph, params: CheckParams) -> float:
     """Check that no database is on a commonly public port.
 
     Params:
@@ -248,29 +287,6 @@ def _check_no_public_database(graph: InfraGraph, params: dict) -> float:
 
 
 # ---------------------------------------------------------------------------
-# Helpers
-# ---------------------------------------------------------------------------
-
-def _filter_components_by_type(
-    graph: InfraGraph, comp_type_str: str
-) -> list:
-    """Filter components by type string (case-insensitive)."""
-    if not comp_type_str:
-        return list(graph.components.values())
-
-    try:
-        comp_type = ComponentType(comp_type_str.lower())
-    except ValueError:
-        logger.warning("Unknown component type '%s', returning empty list", comp_type_str)
-        return []
-
-    return [
-        c for c in graph.components.values()
-        if c.type == comp_type
-    ]
-
-
-# ---------------------------------------------------------------------------
 # Custom Scoring Engine
 # ---------------------------------------------------------------------------
 
@@ -281,7 +297,7 @@ class CustomScoringEngine:
     check functions or user-provided callables.
     """
 
-    BUILT_IN_CHECKS: dict[str, Callable[[InfraGraph, dict], float]] = {
+    BUILT_IN_CHECKS: dict[str, Callable[[InfraGraph, CheckParams], float]] = {
         "min_replicas": _check_min_replicas,
         "max_utilization": _check_max_utilization,
         "encryption_coverage": _check_encryption_coverage,
@@ -304,7 +320,7 @@ class CustomScoringEngine:
 
     def evaluate(self) -> CustomScoringResult:
         """Evaluate all rules against the graph and compute scores."""
-        rule_results: list[dict] = []
+        rule_results: list[RuleResultRow] = []
         total_weight = 0.0
         weighted_sum = 0.0
 
