@@ -30,6 +30,16 @@ def _reload_server(env: dict[str, str]):
         return server
 
 
+def _get_session_middleware_kwargs(server):
+    """Extract SessionMiddleware kwargs from the app middleware stack."""
+    from starlette.middleware.sessions import SessionMiddleware
+
+    for mw in server.app.user_middleware:
+        if mw.cls is SessionMiddleware:
+            return mw.kwargs
+    raise AssertionError("SessionMiddleware not found in app.user_middleware")
+
+
 # ---------------------------------------------------------------------------
 # CORS tests
 # ---------------------------------------------------------------------------
@@ -100,14 +110,18 @@ def test_session_development_fallback(caplog):
 
 
 def test_session_https_only_development():
-    """Development -> https_only=False."""
+    """Development -> https_only=False on actual SessionMiddleware."""
     server = _reload_server({"FAULTRAY_ENV": "development"})
     assert server._is_production is False
+    mw_kwargs = _get_session_middleware_kwargs(server)
+    assert mw_kwargs["https_only"] is False
 
 
 def test_session_https_only_production():
-    """Production with secret -> https_only=True (via _is_production)."""
+    """Production with secret -> https_only=True on actual SessionMiddleware."""
     server = _reload_server(
         {"FAULTRAY_ENV": "production", "FAULTRAY_SESSION_SECRET": "xxx"}
     )
     assert server._is_production is True
+    mw_kwargs = _get_session_middleware_kwargs(server)
+    assert mw_kwargs["https_only"] is True
