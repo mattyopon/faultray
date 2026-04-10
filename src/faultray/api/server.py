@@ -242,9 +242,12 @@ _cors_methods: list[str] = ["GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH", 
 _cors_headers: list[str] = ["Authorization", "Content-Type", "X-Requested-With", "Accept"]
 
 if _allow_credentials:
-    assert "*" not in _cors_origins, "allow_origins must not contain '*' when credentials are enabled"
-    assert "*" not in _cors_methods, "allow_methods must not contain '*' when credentials are enabled"
-    assert "*" not in _cors_headers, "allow_headers must not contain '*' when credentials are enabled"
+    if "*" in _cors_origins:
+        raise ValueError("allow_origins must not contain '*' when credentials are enabled")
+    if "*" in _cors_methods:
+        raise ValueError("allow_methods must not contain '*' when credentials are enabled")
+    if "*" in _cors_headers:
+        raise ValueError("allow_headers must not contain '*' when credentials are enabled")
 
 app.add_middleware(
     CORSMiddleware,
