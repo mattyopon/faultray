@@ -1,0 +1,62 @@
+# Pre-commit hooks for faultray-app
+#
+# Purpose: prevent accidental commits of secrets, lint issues, and large files.
+# Created: 2026-04-09 (problems.md Rev 4 C2/C3 Deferred 残タスク)
+#
+# Setup:
+#   pip install pre-commit detect-secrets
+#   pre-commit install
+#   detect-secrets scan > .secrets.baseline
+#   git add .pre-commit-config.yaml .secrets.baseline
+#
+# Manual run:
+#   pre-commit run --all-files
+#
+# Why detect-secrets:
+#   - Catches accidentally-committed credentials before they reach the repo
+#   - Required by problems.md Rev 4 C2/C3 (the only remaining task after
+#     user-approved skip of secret rotation, 2026-04-09)
+#   - Backed by Yelp engineering, well-maintained, low false positive rate
+
+repos:
+  - repo: https://github.com/Yelp/detect-secrets
+    rev: v1.5.0
+    hooks:
+      - id: detect-secrets
+        args:
+          - "--baseline"
+          - ".secrets.baseline"
+        # Exclude paths that are expected to contain placeholder values
+        exclude: |
+          (?x)^(
+              \.env\..*\.example|
+              \.env\.example|
+              package-lock\.json|
+              .*\.lock|
+              .*\.test\.tsx?|
+              .*\.spec\.tsx?
+          )$
+
+  # Generic safety checks
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v6.0.0
+    hooks:
+      - id: check-added-large-files
+        args: ["--maxkb=500"]
+      - id: check-merge-conflict
+      - id: check-yaml
+      - id: check-json
+      - id: end-of-file-fixer
+      - id: trailing-whitespace
+      - id: detect-private-key
+      - id: check-case-conflict
+      - id: mixed-line-ending
+        args: ["--fix=lf"]
+      # NOTE: no-commit-to-branch is intentionally NOT enabled.
+      # Reason: faultray-app currently uses main-direct commit workflow
+      # (confirmed by `git log --oneline main` 2026-04-09: majority of recent
+      # commits go directly to main). Enabling --branch main would physically
+      # block the intended workflow and require --no-verify bypass which is
+      # prohibited by CLAUDE.md.
+      # If the workflow changes to feature-branch + PR in the future, enable
+      # this hook with the appropriate branch protection.
