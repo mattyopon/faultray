@@ -20,6 +20,7 @@ from __future__ import annotations
 
 import logging
 import math
+from collections.abc import Callable
 from dataclasses import dataclass, field
 from enum import Enum
 
@@ -399,124 +400,123 @@ class ArchitectureAdvisor:
 
     def detect_anti_patterns(self, graph: InfraGraph) -> list[tuple[str, str]]:
         """Detect common infrastructure anti-patterns in the graph."""
-        anti_patterns: list[tuple[str, str]] = []
+        results: list[tuple[str, str]] = []
+        for detector in [
+            self._detect_god_component,
+            self._detect_chain_of_death,
+            self._detect_shared_everything,
+            self._detect_no_bulkhead,
+            self._detect_missing_circuit_breaker,
+            self._detect_single_region,
+            self._detect_overloaded_gateway,
+            self._detect_synchronous_everything,
+        ]:
+            results.extend(detector(graph))
+        return results
 
-        # God Component: single component with >5 dependents
+    def _detect_god_component(self, graph: InfraGraph) -> list[tuple[str, str]]:
+        results: list[tuple[str, str]] = []
         for comp in graph.components.values():
             dependents = graph.get_dependents(comp.id)
             if len(dependents) > 5:
-                anti_patterns.append((
+                results.append((
                     "God Component",
                     f"Component '{comp.id}' has {len(dependents)} dependents. "
                     "A single failure would cascade to most of the system. "
                     "Consider decomposing into smaller services.",
                 ))
+        return results
 
-        # Chain of Death: dependency chain depth > 4
-        critical_paths = graph.get_critical_paths()
-        for path in critical_paths:
+    def _detect_chain_of_death(self, graph: InfraGraph) -> list[tuple[str, str]]:
+        for path in graph.get_critical_paths():
             if len(path) > 4:
-                chain_str = " -> ".join(path)
-                anti_patterns.append((
+                return [(
                     "Chain of Death",
-                    f"Deep dependency chain ({len(path)} hops): {chain_str}. "
+                    f"Deep dependency chain ({len(path)} hops): {' -> '.join(path)}. "
                     "Long chains amplify failure probability. "
                     "Consider flattening or adding circuit breakers.",
-                ))
-                break  # Only report the worst one
+                )]
+        return []
 
-        # Shared Everything: all components depend on same single DB
-        db_dependents: dict[str, int] = {}
+    def _detect_shared_everything(self, graph: InfraGraph) -> list[tuple[str, str]]:
+        results: list[tuple[str, str]] = []
+        total_non_db = sum(
+            1 for c in graph.components.values() if c.type != ComponentType.DATABASE
+        )
         for comp in graph.components.values():
             if comp.type == ComponentType.DATABASE:
-                deps = graph.get_dependents(comp.id)
-                db_dependents[comp.id] = len(deps)
+                dep_count = len(graph.get_dependents(comp.id))
+                if dep_count > 0 and total_non_db > 0 and dep_count >= total_non_db * 0.8:
+                    results.append((
+                        "Shared Everything",
+                        f"Database '{comp.id}' is a dependency for {dep_count} of "
+                        f"{total_non_db} non-database components. A single DB failure "
+                        "affects the entire system. Consider read replicas, CQRS, "
+                        "or service-level databases.",
+                    ))
+        return results
 
-        total_non_db = sum(
-            1
-            for c in graph.components.values()
-            if c.type != ComponentType.DATABASE
-        )
-        for db_id, dep_count in db_dependents.items():
-            if dep_count > 0 and total_non_db > 0 and dep_count >= total_non_db * 0.8:
-                anti_patterns.append((
-                    "Shared Everything",
-                    f"Database '{db_id}' is a dependency for {dep_count} of {total_non_db} "
-                    "non-database components. A single DB failure affects the entire system. "
-                    "Consider read replicas, CQRS, or service-level databases.",
-                ))
-
-        # No Bulkhead: no isolation between failure domains
-        regions = set()
-        azs = set()
-        for comp in graph.components.values():
-            if comp.region.region:
-                regions.add(comp.region.region)
-            if comp.region.availability_zone:
-                azs.add(comp.region.availability_zone)
-
+    def _detect_no_bulkhead(self, graph: InfraGraph) -> list[tuple[str, str]]:
+        regions = {c.region.region for c in graph.components.values() if c.region.region}
+        azs = {c.region.availability_zone for c in graph.components.values() if c.region.availability_zone}
         if len(graph.components) > 2 and len(regions) <= 1 and len(azs) <= 1:
-            anti_patterns.append((
+            return [(
                 "No Bulkhead",
                 "All components appear to be in the same failure domain "
                 "(no region or availability zone diversity). "
                 "Consider distributing across availability zones or regions.",
-            ))
+            )]
+        return []
 
-        # Missing Circuit Breaker: external API calls without circuit breaker
+    def _detect_missing_circuit_breaker(self, graph: InfraGraph) -> list[tuple[str, str]]:
+        results: list[tuple[str, str]] = []
         for edge in graph.all_dependency_edges():
             target = graph.get_component(edge.target_id)
-            if target and target.type == ComponentType.EXTERNAL_API:
-                if not edge.circuit_breaker.enabled:
-                    anti_patterns.append((
-                        "Missing Circuit Breaker",
-                        f"External API dependency {edge.source_id} -> {edge.target_id} "
-                        "lacks a circuit breaker. External services can fail unpredictably "
-                        "and cause cascading failures.",
-                    ))
+            if target and target.type == ComponentType.EXTERNAL_API and not edge.circuit_breaker.enabled:
+                results.append((
+                    "Missing Circuit Breaker",
+                    f"External API dependency {edge.source_id} -> {edge.target_id} "
+                    "lacks a circuit breaker. External services can fail unpredictably "
+                    "and cause cascading failures.",
+                ))
+        return results
 
-        # Single Region: all components in one availability zone
+    def _detect_single_region(self, graph: InfraGraph) -> list[tuple[str, str]]:
+        regions = {c.region.region for c in graph.components.values() if c.region.region}
         if len(graph.components) > 3 and len(regions) == 1:
-            anti_patterns.append((
+            return [(
                 "Single Region",
                 f"All {len(graph.components)} components are in region "
                 f"'{next(iter(regions))}'. A regional outage would cause "
                 "complete service failure. Consider multi-region deployment.",
-            ))
+            )]
+        return []
 
-        # Overloaded Gateway: single load balancer with many dependents
+    def _detect_overloaded_gateway(self, graph: InfraGraph) -> list[tuple[str, str]]:
+        results: list[tuple[str, str]] = []
         for comp in graph.components.values():
             if comp.type == ComponentType.LOAD_BALANCER:
                 deps = graph.get_dependents(comp.id)
                 if comp.replicas <= 1 and len(deps) > 0:
-                    anti_patterns.append((
+                    results.append((
                         "Overloaded Gateway",
                         f"Load balancer '{comp.id}' is a single entry point "
                         f"with {comp.replicas} replica(s). Consider adding "
                         "redundancy or splitting traffic across multiple LBs.",
                     ))
+        return results
 
-        # Synchronous Everything: all dependencies are synchronous (no queues)
-        has_queue = any(
-            c.type == ComponentType.QUEUE for c in graph.components.values()
-        )
-        has_async = any(
-            e.dependency_type == "async" for e in graph.all_dependency_edges()
-        )
-        if (
-            len(graph.components) > 3
-            and not has_queue
-            and not has_async
-            and graph.all_dependency_edges()
-        ):
-            anti_patterns.append((
+    def _detect_synchronous_everything(self, graph: InfraGraph) -> list[tuple[str, str]]:
+        has_queue = any(c.type == ComponentType.QUEUE for c in graph.components.values())
+        has_async = any(e.dependency_type == "async" for e in graph.all_dependency_edges())
+        if len(graph.components) > 3 and not has_queue and not has_async and graph.all_dependency_edges():
+            return [(
                 "Synchronous Everything",
                 "No message queues or async dependencies detected. "
                 "All communication appears synchronous, creating tight coupling. "
                 "Consider adding message queues for non-critical paths.",
-            ))
-
-        return anti_patterns
+            )]
+        return []
 
     # ------------------------------------------------------------------
     # Pattern recommendations
@@ -534,128 +534,118 @@ class ArchitectureAdvisor:
                 seen_patterns.add(pattern)
                 recommendations.append((pattern, reason))
 
-        # SPOF detected -> ACTIVE_ACTIVE or ACTIVE_PASSIVE
+        self._recommend_for_spof(graph, _add)
+        self._recommend_for_deep_chains(graph, _add)
+        self._recommend_for_db_load(graph, _add)
+        self._recommend_for_no_async(graph, _add)
+        self._recommend_for_external_api(graph, _add)
+        self._recommend_for_monolith(graph, _add)
+        self._recommend_for_single_region(graph, _add)
+        self._recommend_for_rate_limiting(graph, _add)
+        return recommendations
+
+    def _recommend_for_spof(
+        self, graph: InfraGraph, _add: Callable[[ArchitecturePattern, str], None]
+    ) -> None:
         for comp in graph.components.values():
             dependents = graph.get_dependents(comp.id)
             if comp.replicas <= 1 and len(dependents) > 0:
                 if len(dependents) >= 3:
-                    _add(
-                        ArchitecturePattern.ACTIVE_ACTIVE,
-                        f"Component '{comp.id}' is a critical SPOF with {len(dependents)} dependents. "
-                        "Active-active provides zero-downtime failover.",
-                    )
+                    _add(ArchitecturePattern.ACTIVE_ACTIVE,
+                         f"Component '{comp.id}' is a critical SPOF with {len(dependents)} dependents. "
+                         "Active-active provides zero-downtime failover.")
                 else:
-                    _add(
-                        ArchitecturePattern.ACTIVE_PASSIVE,
-                        f"Component '{comp.id}' is a SPOF. Active-passive adds "
-                        "standby capacity for automatic failover.",
-                    )
-                break  # Only recommend once
+                    _add(ArchitecturePattern.ACTIVE_PASSIVE,
+                         f"Component '{comp.id}' is a SPOF. Active-passive adds "
+                         "standby capacity for automatic failover.")
+                return
 
-        # Deep dependency chains -> CIRCUIT_BREAKER + BULKHEAD
+    def _recommend_for_deep_chains(
+        self, graph: InfraGraph, _add: Callable[[ArchitecturePattern, str], None]
+    ) -> None:
         critical_paths = graph.get_critical_paths()
         if critical_paths and len(critical_paths[0]) > 4:
-            _add(
-                ArchitecturePattern.CIRCUIT_BREAKER,
-                f"Dependency chain depth of {len(critical_paths[0])} detected. "
-                "Circuit breakers prevent cascade failures through deep chains.",
-            )
-            _add(
-                ArchitecturePattern.BULKHEAD,
-                "Bulkhead isolation prevents failures in one chain from "
-                "affecting independent service paths.",
-            )
+            _add(ArchitecturePattern.CIRCUIT_BREAKER,
+                 f"Dependency chain depth of {len(critical_paths[0])} detected. "
+                 "Circuit breakers prevent cascade failures through deep chains.")
+            _add(ArchitecturePattern.BULKHEAD,
+                 "Bulkhead isolation prevents failures in one chain from "
+                 "affecting independent service paths.")
 
-        # High DB load -> READ_REPLICA + CACHE_ASIDE + CQRS
-        db_comps = [
-            c for c in graph.components.values() if c.type == ComponentType.DATABASE
-        ]
-        for db in db_comps:
-            deps = graph.get_dependents(db.id)
+    def _recommend_for_db_load(
+        self, graph: InfraGraph, _add: Callable[[ArchitecturePattern, str], None]
+    ) -> None:
+        for comp in graph.components.values():
+            if comp.type != ComponentType.DATABASE:
+                continue
+            deps = graph.get_dependents(comp.id)
             if len(deps) >= 2:
-                _add(
-                    ArchitecturePattern.READ_REPLICA,
-                    f"Database '{db.id}' serves {len(deps)} consumers. "
-                    "Read replicas distribute read load.",
-                )
-                _add(
-                    ArchitecturePattern.CACHE_ASIDE,
-                    "Cache-aside pattern reduces direct database reads "
-                    "and provides faster response times.",
-                )
+                _add(ArchitecturePattern.READ_REPLICA,
+                     f"Database '{comp.id}' serves {len(deps)} consumers. "
+                     "Read replicas distribute read load.")
+                _add(ArchitecturePattern.CACHE_ASIDE,
+                     "Cache-aside pattern reduces direct database reads "
+                     "and provides faster response times.")
                 if len(deps) >= 4:
-                    _add(
-                        ArchitecturePattern.CQRS,
-                        "CQRS separates read and write models, allowing "
-                        "independent scaling of read-heavy workloads.",
-                    )
-                break
+                    _add(ArchitecturePattern.CQRS,
+                         "CQRS separates read and write models, allowing "
+                         "independent scaling of read-heavy workloads.")
+                return
 
-        # No async processing -> EVENT_SOURCING
-        has_queue = any(
-            c.type == ComponentType.QUEUE for c in graph.components.values()
-        )
+    def _recommend_for_no_async(
+        self, graph: InfraGraph, _add: Callable[[ArchitecturePattern, str], None]
+    ) -> None:
+        has_queue = any(c.type == ComponentType.QUEUE for c in graph.components.values())
         if not has_queue and len(graph.components) > 3:
-            _add(
-                ArchitecturePattern.EVENT_SOURCING,
-                "No message queues detected. Event sourcing decouples "
-                "producers from consumers and enables async processing.",
-            )
+            _add(ArchitecturePattern.EVENT_SOURCING,
+                 "No message queues detected. Event sourcing decouples "
+                 "producers from consumers and enables async processing.")
 
-        # External API dependency -> CIRCUIT_BREAKER + RETRY_WITH_BACKOFF
+    def _recommend_for_external_api(
+        self, graph: InfraGraph, _add: Callable[[ArchitecturePattern, str], None]
+    ) -> None:
         for edge in graph.all_dependency_edges():
             target = graph.get_component(edge.target_id)
             if target and target.type == ComponentType.EXTERNAL_API:
-                _add(
-                    ArchitecturePattern.CIRCUIT_BREAKER,
-                    f"External API dependency '{target.id}' requires circuit "
-                    "breaker protection against third-party outages.",
-                )
-                _add(
-                    ArchitecturePattern.RETRY_WITH_BACKOFF,
-                    f"Retry with exponential backoff for transient failures "
-                    f"on external API '{target.id}'.",
-                )
-                break
+                _add(ArchitecturePattern.CIRCUIT_BREAKER,
+                     f"External API dependency '{target.id}' requires circuit "
+                     "breaker protection against third-party outages.")
+                _add(ArchitecturePattern.RETRY_WITH_BACKOFF,
+                     f"Retry with exponential backoff for transient failures "
+                     f"on external API '{target.id}'.")
+                return
 
-        # Monolithic structure (many components, all interconnected)
+    def _recommend_for_monolith(
+        self, graph: InfraGraph, _add: Callable[[ArchitecturePattern, str], None]
+    ) -> None:
         n = len(graph.components)
         e = len(graph.all_dependency_edges())
         if n >= 5 and e >= n * 1.5:
-            _add(
-                ArchitecturePattern.STRANGLER_FIG,
-                "Dense dependency graph suggests tightly coupled architecture. "
-                "Strangler fig pattern enables gradual migration to microservices.",
-            )
-            _add(
-                ArchitecturePattern.CELL_BASED,
-                "Cell-based architecture isolates failures to individual cells, "
-                "limiting blast radius of any single failure.",
-            )
+            _add(ArchitecturePattern.STRANGLER_FIG,
+                 "Dense dependency graph suggests tightly coupled architecture. "
+                 "Strangler fig pattern enables gradual migration to microservices.")
+            _add(ArchitecturePattern.CELL_BASED,
+                 "Cell-based architecture isolates failures to individual cells, "
+                 "limiting blast radius of any single failure.")
 
-        # Multi-region if single region detected
-        regions = {
-            c.region.region for c in graph.components.values() if c.region.region
-        }
+    def _recommend_for_single_region(
+        self, graph: InfraGraph, _add: Callable[[ArchitecturePattern, str], None]
+    ) -> None:
+        regions = {c.region.region for c in graph.components.values() if c.region.region}
         if len(regions) <= 1 and len(graph.components) > 3:
-            _add(
-                ArchitecturePattern.MULTI_REGION,
-                "Single-region deployment detected. Multi-region architecture "
-                "provides resilience against regional outages.",
-            )
+            _add(ArchitecturePattern.MULTI_REGION,
+                 "Single-region deployment detected. Multi-region architecture "
+                 "provides resilience against regional outages.")
 
-        # Rate limiting if load balancer present without rate limiting
+    def _recommend_for_rate_limiting(
+        self, graph: InfraGraph, _add: Callable[[ArchitecturePattern, str], None]
+    ) -> None:
         for comp in graph.components.values():
-            if comp.type == ComponentType.LOAD_BALANCER:
-                if not comp.security.rate_limiting:
-                    _add(
-                        ArchitecturePattern.RATE_LIMITING,
-                        f"Load balancer '{comp.id}' lacks rate limiting. "
-                        "Rate limiting protects against traffic spikes and DDoS.",
-                    )
-                    break
-
-        return recommendations
+            if comp.type == ComponentType.LOAD_BALANCER and not comp.security.rate_limiting:
+                _add(ArchitecturePattern.RATE_LIMITING,
+                     f"Load balancer '{comp.id}' lacks rate limiting. "
+                     "Rate limiting protects against traffic spikes and DDoS.")
+                return
 
     # ------------------------------------------------------------------
     # Mermaid diagram generation
@@ -666,14 +656,22 @@ class ArchitectureAdvisor:
     ) -> str:
         """Generate a Mermaid.js diagram showing proposed architecture.
 
-        Color-coded nodes:
-        - green = existing unchanged
-        - blue = modified
-        - orange = new
+        Color-coded nodes: green=existing, blue=modified, orange=new.
         """
         lines: list[str] = ["graph TB"]
+        modified_ids, new_ids = self._classify_changed_ids(graph, changes)
+        self._render_mermaid_subgraphs(graph, modified_ids, new_ids, lines)
+        self._render_mermaid_new_components(graph, changes, lines)
+        self._render_mermaid_edges(graph, lines)
+        self._render_mermaid_new_edges(changes, lines)
+        lines.append("    classDef existing fill:#28a745,color:#fff")
+        lines.append("    classDef modified fill:#007bff,color:#fff")
+        lines.append("    classDef new fill:#fd7e14,color:#fff")
+        return "\n".join(lines)
 
-        # Track which components are modified or new
+    def _classify_changed_ids(
+        self, graph: InfraGraph, changes: list[ArchitectureChange]
+    ) -> tuple[set[str], set[str]]:
         modified_ids: set[str] = set()
         new_ids: set[str] = set()
         for change in changes:
@@ -682,80 +680,70 @@ class ArchitectureAdvisor:
             elif change.change_type == "modify_component" and change.component_id:
                 modified_ids.add(change.component_id)
             elif change.change_type == "modify_dependency" and change.component_id:
-                # component_id is "source->target"
-                parts = change.component_id.split("->")
-                for p in parts:
+                for p in change.component_id.split("->"):
                     if p in graph.components:
                         modified_ids.add(p)
+        return modified_ids, new_ids
 
-        # Group components by availability zone / region
+    def _render_mermaid_subgraphs(
+        self, graph: InfraGraph, modified_ids: set[str], new_ids: set[str],
+        lines: list[str],
+    ) -> None:
         az_groups: dict[str, list[Component]] = {}
         for comp in graph.components.values():
             az = comp.region.availability_zone or comp.region.region or "default"
             az_groups.setdefault(az, []).append(comp)
 
-        # Render subgraphs
         for az_name, comps in az_groups.items():
             if az_name != "default":
                 safe_name = az_name.replace("-", "_").replace(" ", "_")
                 lines.append(f'    subgraph {safe_name}["{az_name}"]')
             for comp in comps:
                 node_label = self._mermaid_node_label(comp)
-                css_class = "existing"
-                if comp.id in modified_ids:
-                    css_class = "modified"
-                elif comp.id in new_ids:
-                    css_class = "new"
+                css_class = ("modified" if comp.id in modified_ids
+                             else "new" if comp.id in new_ids else "existing")
                 indent = "        " if az_name != "default" else "    "
                 lines.append(f"{indent}{comp.id}{node_label}:::{css_class}")
             if az_name != "default":
                 lines.append("    end")
 
-        # Add new components from changes
+    def _render_mermaid_new_components(
+        self, graph: InfraGraph, changes: list[ArchitectureChange], lines: list[str]
+    ) -> None:
         for change in changes:
             if change.change_type == "add_component" and change.component_id:
                 if change.component_id not in graph.components:
                     comp_type = change.after_state.get("type", "custom")
                     replicas = change.after_state.get("replicas", 1)
-                    label = f"{change.component_id}"
-                    if replicas > 1:
-                        label += f" x{replicas}"
+                    label = change.component_id + (f" x{replicas}" if replicas > 1 else "")
                     shape = self._mermaid_shape_for_type(comp_type)
-                    lines.append(
-                        f"    {change.component_id}{shape[0]}{label}{shape[1]}:::new"
-                    )
+                    lines.append(f"    {change.component_id}{shape[0]}{label}{shape[1]}:::new")
 
-        # Render edges
+    def _render_mermaid_edges(self, graph: InfraGraph, lines: list[str]) -> None:
         for edge in graph.all_dependency_edges():
-            arrow = "-->"
-            if edge.dependency_type == "optional":
-                arrow = "-.->|optional|"
-            elif edge.dependency_type == "async":
-                arrow = "-.->|async|"
-            elif edge.circuit_breaker.enabled:
-                arrow = "-->|CB|"
-
-            # Check if this edge is for a replication relationship
-            if edge.dependency_type == "requires" and not edge.circuit_breaker.enabled:
-                arrow = " --> "
-
+            arrow = self._mermaid_arrow_for_edge(edge)
             lines.append(f"    {edge.source_id}{arrow}{edge.target_id}")
 
-        # Add new dependency edges from changes
+    @staticmethod
+    def _mermaid_arrow_for_edge(edge: Dependency) -> str:
+        if edge.dependency_type == "optional":
+            return "-.->|optional|"
+        if edge.dependency_type == "async":
+            return "-.->|async|"
+        if edge.circuit_breaker.enabled:
+            return "-->|CB|"
+        if edge.dependency_type == "requires":
+            return " --> "
+        return "-->"
+
+    def _render_mermaid_new_edges(
+        self, changes: list[ArchitectureChange], lines: list[str]
+    ) -> None:
         for change in changes:
             if change.change_type == "add_dependency" and change.component_id:
                 parts = change.component_id.split("->")
                 if len(parts) == 2:
-                    lines.append(
-                        f"    {parts[0]} -.->|new| {parts[1]}"
-                    )
-
-        # Class definitions
-        lines.append("    classDef existing fill:#28a745,color:#fff")
-        lines.append("    classDef modified fill:#007bff,color:#fff")
-        lines.append("    classDef new fill:#fd7e14,color:#fff")
-
-        return "\n".join(lines)
+                    lines.append(f"    {parts[0]} -.->|new| {parts[1]}")
 
     # ------------------------------------------------------------------
     # Apply proposal
@@ -1119,74 +1107,85 @@ class ArchitectureAdvisor:
 
     def _apply_change(self, graph: InfraGraph, change: ArchitectureChange) -> None:
         """Apply a single architecture change to a graph (in-place)."""
-        if change.change_type == "modify_component" and change.component_id:
-            comp = graph.get_component(change.component_id)
-            if comp is None:
-                return
-            after = change.after_state
-            if "replicas" in after:
-                comp.replicas = after["replicas"]
-            if "failover_enabled" in after and after["failover_enabled"]:
-                comp.failover = FailoverConfig(
-                    enabled=True,
-                    promotion_time_seconds=after.get(
-                        "promotion_time_seconds", 30.0
-                    ),
-                    health_check_interval_seconds=after.get(
-                        "health_check_interval_seconds",
-                        comp.failover.health_check_interval_seconds,
-                    ),
-                    failover_threshold=after.get(
-                        "failover_threshold", comp.failover.failover_threshold
-                    ),
-                )
-            if "autoscaling_enabled" in after and after["autoscaling_enabled"]:
-                comp.autoscaling = AutoScalingConfig(
-                    enabled=True,
-                    min_replicas=after.get("min_replicas", comp.replicas),
-                    max_replicas=after.get("max_replicas", comp.replicas * 3),
-                    scale_up_threshold=after.get(
-                        "scale_up_threshold",
-                        comp.autoscaling.scale_up_threshold,
-                    ),
-                )
+        handler = {
+            "modify_component": self._apply_modify_component,
+            "modify_dependency": self._apply_modify_dependency,
+            "add_component": self._apply_add_component,
+            "add_dependency": self._apply_add_dependency,
+        }.get(change.change_type)
+        if handler and change.component_id:
+            handler(graph, change)
 
-        elif change.change_type == "modify_dependency" and change.component_id:
-            parts = change.component_id.split("->")
-            if len(parts) != 2:
-                return
-            source_id, target_id = parts[0].strip(), parts[1].strip()
-            edge = graph.get_dependency_edge(source_id, target_id)
-            if edge is None:
-                return
-            after = change.after_state
-            if "circuit_breaker_enabled" in after and after["circuit_breaker_enabled"]:
-                edge.circuit_breaker = CircuitBreakerConfig(
-                    enabled=True,
-                    failure_threshold=after.get("failure_threshold", 5),
-                    recovery_timeout_seconds=after.get(
-                        "recovery_timeout_seconds", 60.0
-                    ),
-                )
-
-        elif change.change_type == "add_component" and change.component_id:
-            if change.component_id in graph.components:
-                return
-            after = change.after_state
-            comp_type_str = after.get("type", "custom")
-            try:
-                comp_type = ComponentType(comp_type_str)
-            except ValueError:
-                comp_type = ComponentType.CUSTOM
-            new_comp = Component(
-                id=change.component_id,
-                name=after.get("name", change.component_id),
-                type=comp_type,
-                replicas=after.get("replicas", 1),
+    def _apply_modify_component(
+        self, graph: InfraGraph, change: ArchitectureChange
+    ) -> None:
+        comp = graph.get_component(change.component_id)
+        if comp is None:
+            return
+        after = change.after_state
+        if "replicas" in after:
+            comp.replicas = after["replicas"]
+        if after.get("failover_enabled"):
+            comp.failover = FailoverConfig(
+                enabled=True,
+                promotion_time_seconds=after.get("promotion_time_seconds", 30.0),
+                health_check_interval_seconds=after.get(
+                    "health_check_interval_seconds",
+                    comp.failover.health_check_interval_seconds,
+                ),
+                failover_threshold=after.get(
+                    "failover_threshold", comp.failover.failover_threshold
+                ),
             )
-            graph.add_component(new_comp)
+        if after.get("autoscaling_enabled"):
+            comp.autoscaling = AutoScalingConfig(
+                enabled=True,
+                min_replicas=after.get("min_replicas", comp.replicas),
+                max_replicas=after.get("max_replicas", comp.replicas * 3),
+                scale_up_threshold=after.get(
+                    "scale_up_threshold",
+                    comp.autoscaling.scale_up_threshold,
+                ),
+            )
 
-        elif change.change_type == "add_dependency" and change.component_id:
+    def _apply_modify_dependency(
+        self, graph: InfraGraph, change: ArchitectureChange
+    ) -> None:
+        parts = change.component_id.split("->")
+        if len(parts) != 2:
+            return
+        source_id, target_id = parts[0].strip(), parts[1].strip()
+        edge = graph.get_dependency_edge(source_id, target_id)
+        if edge is None:
+            return
+        after = change.after_state
+        if after.get("circuit_breaker_enabled"):
+            edge.circuit_breaker = CircuitBreakerConfig(
+                enabled=True,
+                failure_threshold=after.get("failure_threshold", 5),
+                recovery_timeout_seconds=after.get("recovery_timeout_seconds", 60.0),
+            )
+
+    def _apply_add_component(
+        self, graph: InfraGraph, change: ArchitectureChange
+    ) -> None:
+        if change.component_id in graph.components:
+            return
+        after = change.after_state
+        try:
+            comp_type = ComponentType(after.get("type", "custom"))
+        except ValueError:
+            comp_type = ComponentType.CUSTOM
+        graph.add_component(Component(
+            id=change.component_id,
+            name=after.get("name", change.component_id),
+            type=comp_type,
+            replicas=after.get("replicas", 1),
+        ))
+
+    def _apply_add_dependency(
+        self, graph: InfraGraph, change: ArchitectureChange
+    ) -> None:
             parts = change.component_id.split("->")
             if len(parts) != 2:
                 return
