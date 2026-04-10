@@ -1,0 +1,39 @@
+incident:
+  id: fastly-global-2021-06
+  provider: fastly
+  date: 2021-06-08
+  postmortem_url: https://www.fastly.com/blog/summary-of-june-8-outage
+  root_cause: "Software bug triggered by valid customer config causing 85 percent of CDN network to return errors"
+  affected_services: [cdn, pop-network, api, streaming]
+  severity: critical
+  duration_hours: 1
+
+topology:
+  components:
+    - id: config-system
+      type: app_server
+      replicas: 2
+    - id: cdn
+      type: app_server
+      replicas: 3
+    - id: pop-network
+      type: load_balancer
+      replicas: 3
+    - id: streaming
+      type: app_server
+      replicas: 2
+  dependencies:
+    - source: cdn
+      target: config-system
+      type: requires
+    - source: pop-network
+      target: config-system
+      type: requires
+    - source: streaming
+      target: cdn
+      type: requires
+
+expected:
+  cascade_path: [config-system, cdn, pop-network, streaming]
+  blast_radius: 4
+  severity_level: critical

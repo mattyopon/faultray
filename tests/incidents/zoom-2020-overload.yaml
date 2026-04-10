@@ -1,0 +1,39 @@
+incident:
+  id: zoom-overload-2020-03
+  provider: zoom
+  date: 2020-03-17
+  postmortem_url: https://blog.zoom.us/a-message-to-our-users/
+  root_cause: "Massive traffic surge from COVID-19 remote work transition overwhelming infrastructure"
+  affected_services: [media-server, signaling, api, web-portal]
+  severity: high
+  duration_hours: 12
+
+topology:
+  components:
+    - id: media-server
+      type: app_server
+      replicas: 3
+    - id: signaling
+      type: app_server
+      replicas: 2
+    - id: api
+      type: app_server
+      replicas: 3
+    - id: web-portal
+      type: app_server
+      replicas: 2
+  dependencies:
+    - source: media-server
+      target: signaling
+      type: requires
+    - source: api
+      target: signaling
+      type: requires
+    - source: web-portal
+      target: api
+      type: requires
+
+expected:
+  cascade_path: [signaling, media-server, api, web-portal]
+  blast_radius: 4
+  severity_level: high

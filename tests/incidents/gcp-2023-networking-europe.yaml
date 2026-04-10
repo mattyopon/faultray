@@ -1,0 +1,39 @@
+incident:
+  id: gcp-networking-europe-2023-04
+  provider: gcp
+  date: 2023-04-18
+  postmortem_url: https://cloud.google.com/blog/topics/inside-google-cloud/an-update-on-the-google-cloud-april-2023-incident
+  root_cause: "Network configuration change causing packet loss in europe-west regions"
+  affected_services: [vpc, gke, cloud-sql, memorystore]
+  severity: critical
+  duration_hours: 6
+
+topology:
+  components:
+    - id: vpc
+      type: load_balancer
+      replicas: 2
+    - id: gke
+      type: app_server
+      replicas: 3
+    - id: cloud-sql
+      type: database
+      replicas: 2
+    - id: memorystore
+      type: cache
+      replicas: 2
+  dependencies:
+    - source: gke
+      target: vpc
+      type: requires
+    - source: gke
+      target: cloud-sql
+      type: requires
+    - source: gke
+      target: memorystore
+      type: optional
+
+expected:
+  cascade_path: [vpc, gke]
+  blast_radius: 4
+  severity_level: critical

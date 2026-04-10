@@ -1,0 +1,45 @@
+incident:
+  id: aws-kinesis-2020-11-cascade
+  provider: aws
+  date: 2020-11-25
+  postmortem_url: https://aws.amazon.com/message/11201/
+  root_cause: "Kinesis front-end fleet capacity causing cascading failures to Cognito, CloudWatch, Lambda"
+  affected_services: [kinesis, cognito, cloudwatch, lambda, autoscaling]
+  severity: critical
+  duration_hours: 10
+
+topology:
+  components:
+    - id: kinesis
+      type: app_server
+      replicas: 2
+    - id: cognito
+      type: app_server
+      replicas: 2
+    - id: cloudwatch
+      type: app_server
+      replicas: 2
+    - id: lambda
+      type: app_server
+      replicas: 1
+    - id: autoscaling
+      type: app_server
+      replicas: 2
+  dependencies:
+    - source: cognito
+      target: kinesis
+      type: requires
+    - source: cloudwatch
+      target: kinesis
+      type: requires
+    - source: lambda
+      target: cloudwatch
+      type: requires
+    - source: autoscaling
+      target: cloudwatch
+      type: requires
+
+expected:
+  cascade_path: [kinesis, cognito, cloudwatch, lambda, autoscaling]
+  blast_radius: 5
+  severity_level: critical

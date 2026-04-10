@@ -1,0 +1,33 @@
+incident:
+  id: azure-cosmos-2023-09
+  provider: azure
+  date: 2023-09-22
+  postmortem_url: https://azure.status.microsoft/en-us/status/history/
+  root_cause: "Cosmos DB partition management issue causing elevated latency and errors"
+  affected_services: [cosmos-db, app-service, functions]
+  severity: high
+  duration_hours: 5
+
+topology:
+  components:
+    - id: cosmos-db
+      type: database
+      replicas: 3
+    - id: app-service
+      type: app_server
+      replicas: 3
+    - id: functions
+      type: app_server
+      replicas: 2
+  dependencies:
+    - source: app-service
+      target: cosmos-db
+      type: requires
+    - source: functions
+      target: cosmos-db
+      type: requires
+
+expected:
+  cascade_path: [cosmos-db, app-service, functions]
+  blast_radius: 3
+  severity_level: high

@@ -1,0 +1,33 @@
+incident:
+  id: aws-power-2019-08
+  provider: aws
+  date: 2019-08-31
+  postmortem_url: https://aws.amazon.com/message/56489/
+  root_cause: "Power and cooling failure in US-EAST-1 single AZ"
+  affected_services: [ec2, ebs, rds]
+  severity: high
+  duration_hours: 6
+
+topology:
+  components:
+    - id: ec2
+      type: app_server
+      replicas: 3
+    - id: ebs
+      type: database
+      replicas: 2
+    - id: rds
+      type: database
+      replicas: 2
+  dependencies:
+    - source: ec2
+      target: ebs
+      type: requires
+    - source: ec2
+      target: rds
+      type: requires
+
+expected:
+  cascade_path: [ebs, ec2]
+  blast_radius: 3
+  severity_level: high

@@ -1,0 +1,39 @@
+incident:
+  id: heroku-oauth-2022-04
+  provider: heroku
+  date: 2022-04-15
+  postmortem_url: https://blog.heroku.com/april-2022-incident-review
+  root_cause: "OAuth token compromise requiring mass revocation of GitHub integrations"
+  affected_services: [oauth, github-integration, ci-cd, dashboard]
+  severity: critical
+  duration_hours: 720
+
+topology:
+  components:
+    - id: oauth
+      type: app_server
+      replicas: 2
+    - id: github-integration
+      type: app_server
+      replicas: 2
+    - id: ci-cd
+      type: app_server
+      replicas: 2
+    - id: dashboard
+      type: app_server
+      replicas: 2
+  dependencies:
+    - source: github-integration
+      target: oauth
+      type: requires
+    - source: ci-cd
+      target: github-integration
+      type: requires
+    - source: dashboard
+      target: oauth
+      type: requires
+
+expected:
+  cascade_path: [oauth, github-integration, ci-cd]
+  blast_radius: 4
+  severity_level: critical

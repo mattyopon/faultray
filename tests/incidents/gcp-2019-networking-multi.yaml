@@ -1,0 +1,39 @@
+incident:
+  id: gcp-networking-multi-2019-06
+  provider: gcp
+  date: 2019-06-02
+  postmortem_url: https://cloud.google.com/blog/topics/inside-google-cloud/an-update-on-sundays-service-disruption
+  root_cause: "Network congestion in multiple US regions cascading to Compute Engine and Cloud SQL"
+  affected_services: [networking, compute-engine, cloud-sql, gke]
+  severity: critical
+  duration_hours: 4
+
+topology:
+  components:
+    - id: networking
+      type: load_balancer
+      replicas: 3
+    - id: compute-engine
+      type: app_server
+      replicas: 3
+    - id: cloud-sql
+      type: database
+      replicas: 2
+    - id: gke
+      type: app_server
+      replicas: 3
+  dependencies:
+    - source: compute-engine
+      target: networking
+      type: requires
+    - source: cloud-sql
+      target: networking
+      type: requires
+    - source: gke
+      target: networking
+      type: requires
+
+expected:
+  cascade_path: [networking, compute-engine, cloud-sql, gke]
+  blast_radius: 4
+  severity_level: critical

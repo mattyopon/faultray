@@ -1,0 +1,39 @@
+incident:
+  id: gcp-gcs-metadata-2022-07
+  provider: gcp
+  date: 2022-07-19
+  postmortem_url: https://status.cloud.google.com/incidents/fmEL9i2fArADKawkZAa2
+  root_cause: "GCS metadata service degradation cascading to dependent services"
+  affected_services: [gcs, cloud-functions, app-engine, cloud-run]
+  severity: high
+  duration_hours: 5
+
+topology:
+  components:
+    - id: gcs
+      type: database
+      replicas: 3
+    - id: cloud-functions
+      type: app_server
+      replicas: 2
+    - id: app-engine
+      type: app_server
+      replicas: 2
+    - id: cloud-run
+      type: app_server
+      replicas: 2
+  dependencies:
+    - source: cloud-functions
+      target: gcs
+      type: requires
+    - source: app-engine
+      target: gcs
+      type: requires
+    - source: cloud-run
+      target: gcs
+      type: optional
+
+expected:
+  cascade_path: [gcs, cloud-functions, app-engine]
+  blast_radius: 4
+  severity_level: high

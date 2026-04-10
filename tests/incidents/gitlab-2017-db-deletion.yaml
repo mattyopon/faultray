@@ -1,0 +1,39 @@
+incident:
+  id: gitlab-db-2017-01
+  provider: gitlab
+  date: 2017-01-31
+  postmortem_url: https://about.gitlab.com/blog/2017/02/10/postmortem-of-database-outage-of-january-31/
+  root_cause: "Accidental deletion of production database directory during maintenance"
+  affected_services: [database, git-operations, ci-cd, web-ui]
+  severity: critical
+  duration_hours: 18
+
+topology:
+  components:
+    - id: database
+      type: database
+      replicas: 1
+    - id: git-operations
+      type: app_server
+      replicas: 2
+    - id: ci-cd
+      type: app_server
+      replicas: 2
+    - id: web-ui
+      type: app_server
+      replicas: 2
+  dependencies:
+    - source: git-operations
+      target: database
+      type: requires
+    - source: ci-cd
+      target: database
+      type: requires
+    - source: web-ui
+      target: database
+      type: requires
+
+expected:
+  cascade_path: [database, git-operations, ci-cd, web-ui]
+  blast_radius: 4
+  severity_level: critical

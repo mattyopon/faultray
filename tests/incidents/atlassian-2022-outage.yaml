@@ -1,0 +1,39 @@
+incident:
+  id: atlassian-outage-2022-04
+  provider: atlassian
+  date: 2022-04-05
+  postmortem_url: https://www.atlassian.com/engineering/april-2022-outage-update
+  root_cause: "Maintenance script accidentally deleted customer sites affecting 400+ customers for 2 weeks"
+  affected_services: [jira, confluence, trello, opsgenie]
+  severity: critical
+  duration_hours: 336
+
+topology:
+  components:
+    - id: provisioning
+      type: app_server
+      replicas: 1
+    - id: jira
+      type: app_server
+      replicas: 3
+    - id: confluence
+      type: app_server
+      replicas: 3
+    - id: trello
+      type: app_server
+      replicas: 2
+  dependencies:
+    - source: jira
+      target: provisioning
+      type: requires
+    - source: confluence
+      target: provisioning
+      type: requires
+    - source: trello
+      target: provisioning
+      type: optional
+
+expected:
+  cascade_path: [provisioning, jira, confluence]
+  blast_radius: 4
+  severity_level: critical

@@ -1,0 +1,39 @@
+incident:
+  id: aws-us-east-1-2022-12
+  provider: aws
+  date: 2022-12-07
+  postmortem_url: https://aws.amazon.com/message/67457/
+  root_cause: "Power event in us-east-1 affecting multiple availability zones"
+  affected_services: [ec2, rds, elasticache, lambda]
+  severity: critical
+  duration_hours: 8
+
+topology:
+  components:
+    - id: ec2
+      type: app_server
+      replicas: 3
+    - id: rds
+      type: database
+      replicas: 2
+    - id: elasticache
+      type: cache
+      replicas: 2
+    - id: lambda
+      type: app_server
+      replicas: 1
+  dependencies:
+    - source: ec2
+      target: rds
+      type: requires
+    - source: ec2
+      target: elasticache
+      type: optional
+    - source: lambda
+      target: rds
+      type: requires
+
+expected:
+  cascade_path: [rds, ec2, lambda]
+  blast_radius: 4
+  severity_level: critical

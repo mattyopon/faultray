@@ -1,0 +1,33 @@
+incident:
+  id: aws-lambda-2023-06
+  provider: aws
+  date: 2023-06-13
+  postmortem_url: https://aws.amazon.com/message/061323/
+  root_cause: "Lambda cold start spike cascading to ECS task failures"
+  affected_services: [lambda, ecs, api-gateway]
+  severity: critical
+  duration_hours: 4
+
+topology:
+  components:
+    - id: lambda
+      type: app_server
+      replicas: 1
+    - id: ecs
+      type: app_server
+      replicas: 2
+    - id: api-gateway
+      type: load_balancer
+      replicas: 2
+  dependencies:
+    - source: api-gateway
+      target: lambda
+      type: requires
+    - source: api-gateway
+      target: ecs
+      type: requires
+
+expected:
+  cascade_path: [lambda, ecs, api-gateway]
+  blast_radius: 3
+  severity_level: critical

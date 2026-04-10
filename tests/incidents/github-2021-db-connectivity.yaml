@@ -1,0 +1,39 @@
+incident:
+  id: github-db-2021-11
+  provider: github
+  date: 2021-11-27
+  postmortem_url: https://www.githubstatus.com/incidents/tyc8jxl746ry
+  root_cause: "Database connectivity issues causing degraded performance across services"
+  affected_services: [database, api, actions, packages]
+  severity: high
+  duration_hours: 5
+
+topology:
+  components:
+    - id: database
+      type: database
+      replicas: 3
+    - id: api
+      type: app_server
+      replicas: 3
+    - id: actions
+      type: app_server
+      replicas: 3
+    - id: packages
+      type: app_server
+      replicas: 2
+  dependencies:
+    - source: api
+      target: database
+      type: requires
+    - source: actions
+      target: database
+      type: requires
+    - source: packages
+      target: database
+      type: requires
+
+expected:
+  cascade_path: [database, api, actions, packages]
+  blast_radius: 4
+  severity_level: high

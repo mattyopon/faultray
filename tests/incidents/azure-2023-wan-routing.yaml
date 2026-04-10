@@ -1,0 +1,39 @@
+incident:
+  id: azure-wan-2023-01
+  provider: azure
+  date: 2023-01-25
+  postmortem_url: https://azure.status.microsoft/en-us/status/history/
+  root_cause: "WAN routing misconfiguration causing global connectivity issues"
+  affected_services: [wan, app-gateway, aks, sql-database]
+  severity: critical
+  duration_hours: 12
+
+topology:
+  components:
+    - id: wan
+      type: load_balancer
+      replicas: 2
+    - id: app-gateway
+      type: load_balancer
+      replicas: 2
+    - id: aks
+      type: app_server
+      replicas: 3
+    - id: sql-database
+      type: database
+      replicas: 2
+  dependencies:
+    - source: app-gateway
+      target: wan
+      type: requires
+    - source: aks
+      target: app-gateway
+      type: requires
+    - source: aks
+      target: sql-database
+      type: requires
+
+expected:
+  cascade_path: [wan, app-gateway, aks]
+  blast_radius: 4
+  severity_level: critical

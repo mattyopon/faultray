@@ -1,0 +1,39 @@
+incident:
+  id: cloudflare-bgp-2020-07
+  provider: cloudflare
+  date: 2020-07-17
+  postmortem_url: https://blog.cloudflare.com/cloudflare-outage-on-july-17-2020
+  root_cause: "BGP route leak from configuration error in Atlanta PoP"
+  affected_services: [bgp, cdn, dns, waf]
+  severity: critical
+  duration_hours: 0.5
+
+topology:
+  components:
+    - id: bgp
+      type: load_balancer
+      replicas: 2
+    - id: cdn
+      type: app_server
+      replicas: 3
+    - id: dns
+      type: load_balancer
+      replicas: 3
+    - id: waf
+      type: app_server
+      replicas: 2
+  dependencies:
+    - source: cdn
+      target: bgp
+      type: requires
+    - source: dns
+      target: bgp
+      type: requires
+    - source: waf
+      target: bgp
+      type: requires
+
+expected:
+  cascade_path: [bgp, cdn, dns, waf]
+  blast_radius: 4
+  severity_level: critical

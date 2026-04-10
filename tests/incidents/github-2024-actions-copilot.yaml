@@ -1,0 +1,39 @@
+incident:
+  id: github-actions-copilot-2024-06
+  provider: github
+  date: 2024-06-10
+  postmortem_url: https://www.githubstatus.com/incidents/jr5pmc7gw7x5
+  root_cause: "Database connection pool exhaustion affecting Actions and Copilot services"
+  affected_services: [actions, copilot, api, pages]
+  severity: critical
+  duration_hours: 3
+
+topology:
+  components:
+    - id: actions
+      type: app_server
+      replicas: 3
+    - id: copilot
+      type: app_server
+      replicas: 2
+    - id: api
+      type: app_server
+      replicas: 3
+    - id: pages
+      type: app_server
+      replicas: 2
+  dependencies:
+    - source: actions
+      target: api
+      type: requires
+    - source: copilot
+      target: api
+      type: requires
+    - source: pages
+      target: api
+      type: optional
+
+expected:
+  cascade_path: [api, actions, copilot]
+  blast_radius: 4
+  severity_level: critical

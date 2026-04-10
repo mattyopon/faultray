@@ -1,0 +1,39 @@
+incident:
+  id: github-ssl-2022-03
+  provider: github
+  date: 2022-03-23
+  postmortem_url: https://www.githubstatus.com/incidents/yhlp5slkfhqr
+  root_cause: "SSL certificate issue causing connection failures to GitHub services"
+  affected_services: [ssl-termination, api, web-ui, git-ssh]
+  severity: high
+  duration_hours: 2
+
+topology:
+  components:
+    - id: ssl-termination
+      type: load_balancer
+      replicas: 2
+    - id: api
+      type: app_server
+      replicas: 3
+    - id: web-ui
+      type: app_server
+      replicas: 3
+    - id: git-ssh
+      type: app_server
+      replicas: 2
+  dependencies:
+    - source: api
+      target: ssl-termination
+      type: requires
+    - source: web-ui
+      target: ssl-termination
+      type: requires
+    - source: git-ssh
+      target: ssl-termination
+      type: optional
+
+expected:
+  cascade_path: [ssl-termination, api, web-ui]
+  blast_radius: 4
+  severity_level: high

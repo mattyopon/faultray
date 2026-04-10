@@ -1,0 +1,39 @@
+incident:
+  id: cloudflare-control-plane-2023-11
+  provider: cloudflare
+  date: 2023-11-02
+  postmortem_url: https://blog.cloudflare.com/post-mortem-on-cloudflare-control-plane-and-analytics-outage
+  root_cause: "Control plane and analytics pipeline failure affecting dashboard and API"
+  affected_services: [control-plane, dashboard, analytics, api]
+  severity: high
+  duration_hours: 4
+
+topology:
+  components:
+    - id: control-plane
+      type: app_server
+      replicas: 2
+    - id: dashboard
+      type: app_server
+      replicas: 2
+    - id: analytics
+      type: database
+      replicas: 2
+    - id: api
+      type: app_server
+      replicas: 3
+  dependencies:
+    - source: dashboard
+      target: control-plane
+      type: requires
+    - source: dashboard
+      target: analytics
+      type: requires
+    - source: api
+      target: control-plane
+      type: requires
+
+expected:
+  cascade_path: [control-plane, dashboard, api]
+  blast_radius: 4
+  severity_level: high

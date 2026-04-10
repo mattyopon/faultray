@@ -1,0 +1,39 @@
+incident:
+  id: cloudflare-thanksgiving-2023-11
+  provider: cloudflare
+  date: 2023-11-23
+  postmortem_url: https://blog.cloudflare.com/thanksgiving-2023-security-incident
+  root_cause: "Nation-state actor exploiting Okta breach to access internal systems"
+  affected_services: [internal-wiki, source-control, jira, dashboard]
+  severity: high
+  duration_hours: 72
+
+topology:
+  components:
+    - id: okta-integration
+      type: app_server
+      replicas: 2
+    - id: internal-wiki
+      type: app_server
+      replicas: 1
+    - id: source-control
+      type: app_server
+      replicas: 2
+    - id: jira
+      type: app_server
+      replicas: 1
+  dependencies:
+    - source: internal-wiki
+      target: okta-integration
+      type: requires
+    - source: source-control
+      target: okta-integration
+      type: requires
+    - source: jira
+      target: okta-integration
+      type: requires
+
+expected:
+  cascade_path: [okta-integration, internal-wiki, source-control, jira]
+  blast_radius: 4
+  severity_level: high

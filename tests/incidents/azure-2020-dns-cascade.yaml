@@ -1,0 +1,39 @@
+incident:
+  id: azure-dns-2020-09
+  provider: azure
+  date: 2020-09-28
+  postmortem_url: https://azure.status.microsoft/en-us/status/history/
+  root_cause: "Azure DNS resolution failures cascading to dependent services globally"
+  affected_services: [dns, app-service, functions, front-door]
+  severity: critical
+  duration_hours: 3
+
+topology:
+  components:
+    - id: dns
+      type: load_balancer
+      replicas: 3
+    - id: app-service
+      type: app_server
+      replicas: 3
+    - id: functions
+      type: app_server
+      replicas: 2
+    - id: front-door
+      type: load_balancer
+      replicas: 2
+  dependencies:
+    - source: front-door
+      target: dns
+      type: requires
+    - source: app-service
+      target: dns
+      type: requires
+    - source: functions
+      target: dns
+      type: requires
+
+expected:
+  cascade_path: [dns, front-door, app-service, functions]
+  blast_radius: 4
+  severity_level: critical

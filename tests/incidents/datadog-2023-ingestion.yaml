@@ -1,0 +1,39 @@
+incident:
+  id: datadog-ingestion-2023-03
+  provider: datadog
+  date: 2023-03-08
+  postmortem_url: https://status.datadoghq.com/
+  root_cause: "Infrastructure connectivity issue affecting metric ingestion pipeline"
+  affected_services: [ingestion, metrics, dashboards, alerting]
+  severity: critical
+  duration_hours: 6
+
+topology:
+  components:
+    - id: ingestion
+      type: app_server
+      replicas: 3
+    - id: metrics
+      type: database
+      replicas: 3
+    - id: dashboards
+      type: app_server
+      replicas: 2
+    - id: alerting
+      type: app_server
+      replicas: 2
+  dependencies:
+    - source: metrics
+      target: ingestion
+      type: requires
+    - source: dashboards
+      target: metrics
+      type: requires
+    - source: alerting
+      target: metrics
+      type: requires
+
+expected:
+  cascade_path: [ingestion, metrics, dashboards, alerting]
+  blast_radius: 4
+  severity_level: critical

@@ -1,0 +1,39 @@
+incident:
+  id: gcp-networking-2022-11
+  provider: gcp
+  date: 2022-11-16
+  postmortem_url: https://cloud.google.com/blog/topics/developers-practitioners/lessons-learned-recent-google-cloud-networking-incident
+  root_cause: "Network configuration change causing packet loss across multiple GCP zones"
+  affected_services: [networking, cloud-run, gke, cloud-sql]
+  severity: critical
+  duration_hours: 3
+
+topology:
+  components:
+    - id: networking
+      type: load_balancer
+      replicas: 3
+    - id: cloud-run
+      type: app_server
+      replicas: 2
+    - id: gke
+      type: app_server
+      replicas: 3
+    - id: cloud-sql
+      type: database
+      replicas: 2
+  dependencies:
+    - source: cloud-run
+      target: networking
+      type: requires
+    - source: gke
+      target: networking
+      type: requires
+    - source: cloud-sql
+      target: networking
+      type: requires
+
+expected:
+  cascade_path: [networking, cloud-run, gke, cloud-sql]
+  blast_radius: 4
+  severity_level: critical

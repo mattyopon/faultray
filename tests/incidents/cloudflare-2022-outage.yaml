@@ -1,0 +1,39 @@
+incident:
+  id: cloudflare-outage-2022-06
+  provider: cloudflare
+  date: 2022-06-21
+  postmortem_url: https://blog.cloudflare.com/cloudflare-outage-on-june-21-2022
+  root_cause: "BGP configuration change in 19 data centers causing widespread outage"
+  affected_services: [bgp, proxy, dns, workers]
+  severity: critical
+  duration_hours: 1.5
+
+topology:
+  components:
+    - id: bgp
+      type: load_balancer
+      replicas: 2
+    - id: proxy
+      type: app_server
+      replicas: 3
+    - id: dns
+      type: load_balancer
+      replicas: 3
+    - id: workers
+      type: app_server
+      replicas: 2
+  dependencies:
+    - source: proxy
+      target: bgp
+      type: requires
+    - source: dns
+      target: bgp
+      type: requires
+    - source: workers
+      target: proxy
+      type: requires
+
+expected:
+  cascade_path: [bgp, proxy, dns, workers]
+  blast_radius: 4
+  severity_level: critical

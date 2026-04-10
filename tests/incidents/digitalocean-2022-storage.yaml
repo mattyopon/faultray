@@ -1,0 +1,39 @@
+incident:
+  id: digitalocean-storage-2022-10
+  provider: digitalocean
+  date: 2022-10-26
+  postmortem_url: https://status.digitalocean.com/
+  root_cause: "Block storage infrastructure failure affecting droplets and managed databases"
+  affected_services: [block-storage, droplets, managed-databases, load-balancers]
+  severity: critical
+  duration_hours: 8
+
+topology:
+  components:
+    - id: block-storage
+      type: database
+      replicas: 2
+    - id: droplets
+      type: app_server
+      replicas: 3
+    - id: managed-databases
+      type: database
+      replicas: 2
+    - id: load-balancers
+      type: load_balancer
+      replicas: 2
+  dependencies:
+    - source: droplets
+      target: block-storage
+      type: requires
+    - source: managed-databases
+      target: block-storage
+      type: requires
+    - source: load-balancers
+      target: droplets
+      type: requires
+
+expected:
+  cascade_path: [block-storage, droplets, managed-databases, load-balancers]
+  blast_radius: 4
+  severity_level: critical

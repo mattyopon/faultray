@@ -1,0 +1,39 @@
+incident:
+  id: azure-west-europe-2022-10
+  provider: azure
+  date: 2022-10-25
+  postmortem_url: https://azure.status.microsoft/en-us/status/history/
+  root_cause: "West Europe region networking issue affecting multiple services"
+  affected_services: [virtual-network, app-service, storage, sql-database]
+  severity: critical
+  duration_hours: 6
+
+topology:
+  components:
+    - id: virtual-network
+      type: load_balancer
+      replicas: 2
+    - id: app-service
+      type: app_server
+      replicas: 3
+    - id: storage
+      type: database
+      replicas: 3
+    - id: sql-database
+      type: database
+      replicas: 2
+  dependencies:
+    - source: app-service
+      target: virtual-network
+      type: requires
+    - source: app-service
+      target: storage
+      type: requires
+    - source: app-service
+      target: sql-database
+      type: requires
+
+expected:
+  cascade_path: [virtual-network, app-service]
+  blast_radius: 4
+  severity_level: critical

@@ -1,0 +1,39 @@
+incident:
+  id: aws-route53-2021-12
+  provider: aws
+  date: 2021-12-07
+  postmortem_url: https://aws.amazon.com/message/12721/
+  root_cause: "Route 53 DNS resolution errors causing cascading API failures"
+  affected_services: [route53, alb, ecs, cloudfront]
+  severity: critical
+  duration_hours: 2
+
+topology:
+  components:
+    - id: route53
+      type: load_balancer
+      replicas: 3
+    - id: alb
+      type: load_balancer
+      replicas: 2
+    - id: ecs
+      type: app_server
+      replicas: 3
+    - id: cloudfront
+      type: load_balancer
+      replicas: 2
+  dependencies:
+    - source: cloudfront
+      target: route53
+      type: requires
+    - source: alb
+      target: route53
+      type: requires
+    - source: ecs
+      target: alb
+      type: requires
+
+expected:
+  cascade_path: [route53, alb, cloudfront, ecs]
+  blast_radius: 4
+  severity_level: critical

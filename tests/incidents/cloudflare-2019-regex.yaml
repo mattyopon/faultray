@@ -1,0 +1,39 @@
+incident:
+  id: cloudflare-regex-2019-07
+  provider: cloudflare
+  date: 2019-07-02
+  postmortem_url: https://blog.cloudflare.com/details-of-the-cloudflare-outage-on-july-2-2019
+  root_cause: "WAF regex rule causing CPU exhaustion across global edge network"
+  affected_services: [waf, proxy, cdn, workers]
+  severity: critical
+  duration_hours: 0.5
+
+topology:
+  components:
+    - id: waf
+      type: app_server
+      replicas: 3
+    - id: proxy
+      type: app_server
+      replicas: 3
+    - id: cdn
+      type: app_server
+      replicas: 3
+    - id: workers
+      type: app_server
+      replicas: 2
+  dependencies:
+    - source: proxy
+      target: waf
+      type: requires
+    - source: cdn
+      target: proxy
+      type: requires
+    - source: workers
+      target: proxy
+      type: requires
+
+expected:
+  cascade_path: [waf, proxy, cdn, workers]
+  blast_radius: 4
+  severity_level: critical

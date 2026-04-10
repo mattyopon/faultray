@@ -1,0 +1,45 @@
+incident:
+  id: gcp-auth-2020-12
+  provider: gcp
+  date: 2020-12-14
+  postmortem_url: https://cloud.google.com/blog/topics/inside-google-cloud/an-update-on-the-recent-google-cloud-storage-outage
+  root_cause: "Authentication service quota exhaustion cascading to all authenticated GCP services"
+  affected_services: [iam, gcs, bigquery, cloud-sql, gke]
+  severity: critical
+  duration_hours: 1
+
+topology:
+  components:
+    - id: iam
+      type: app_server
+      replicas: 3
+    - id: gcs
+      type: database
+      replicas: 3
+    - id: bigquery
+      type: database
+      replicas: 2
+    - id: cloud-sql
+      type: database
+      replicas: 2
+    - id: gke
+      type: app_server
+      replicas: 3
+  dependencies:
+    - source: gcs
+      target: iam
+      type: requires
+    - source: bigquery
+      target: iam
+      type: requires
+    - source: cloud-sql
+      target: iam
+      type: requires
+    - source: gke
+      target: iam
+      type: requires
+
+expected:
+  cascade_path: [iam, gcs, bigquery, cloud-sql, gke]
+  blast_radius: 5
+  severity_level: critical

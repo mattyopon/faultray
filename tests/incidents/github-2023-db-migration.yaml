@@ -1,0 +1,39 @@
+incident:
+  id: github-db-migration-2023-06
+  provider: github
+  date: 2023-05-16
+  postmortem_url: https://github.blog/2023-05-16-addressing-githubs-recent-availability-issues/
+  root_cause: "Database migration causing elevated error rates across GitHub services"
+  affected_services: [database, git-operations, pull-requests, actions]
+  severity: high
+  duration_hours: 8
+
+topology:
+  components:
+    - id: database
+      type: database
+      replicas: 3
+    - id: git-operations
+      type: app_server
+      replicas: 3
+    - id: pull-requests
+      type: app_server
+      replicas: 2
+    - id: actions
+      type: app_server
+      replicas: 3
+  dependencies:
+    - source: git-operations
+      target: database
+      type: requires
+    - source: pull-requests
+      target: database
+      type: requires
+    - source: actions
+      target: database
+      type: requires
+
+expected:
+  cascade_path: [database, git-operations, pull-requests, actions]
+  blast_radius: 4
+  severity_level: high

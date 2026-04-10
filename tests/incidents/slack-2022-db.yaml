@@ -1,0 +1,39 @@
+incident:
+  id: slack-db-2022-02
+  provider: slack
+  date: 2022-02-22
+  postmortem_url: https://slack.engineering/slacks-incident-on-2-22-22/
+  root_cause: "Database infrastructure change causing cascading failures in messaging"
+  affected_services: [database, messaging, channels, search]
+  severity: critical
+  duration_hours: 5
+
+topology:
+  components:
+    - id: database
+      type: database
+      replicas: 3
+    - id: messaging
+      type: app_server
+      replicas: 3
+    - id: channels
+      type: app_server
+      replicas: 2
+    - id: search
+      type: app_server
+      replicas: 2
+  dependencies:
+    - source: messaging
+      target: database
+      type: requires
+    - source: channels
+      target: database
+      type: requires
+    - source: search
+      target: database
+      type: requires
+
+expected:
+  cascade_path: [database, messaging, channels, search]
+  blast_radius: 4
+  severity_level: critical

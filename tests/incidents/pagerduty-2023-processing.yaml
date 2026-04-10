@@ -1,0 +1,39 @@
+incident:
+  id: pagerduty-2023-07
+  provider: pagerduty
+  date: 2023-07-18
+  postmortem_url: https://status.pagerduty.com/
+  root_cause: "Event processing pipeline degradation affecting alert delivery"
+  affected_services: [event-pipeline, alerting, escalation, web-app]
+  severity: critical
+  duration_hours: 4
+
+topology:
+  components:
+    - id: event-pipeline
+      type: app_server
+      replicas: 3
+    - id: alerting
+      type: app_server
+      replicas: 2
+    - id: escalation
+      type: app_server
+      replicas: 2
+    - id: web-app
+      type: app_server
+      replicas: 2
+  dependencies:
+    - source: alerting
+      target: event-pipeline
+      type: requires
+    - source: escalation
+      target: alerting
+      type: requires
+    - source: web-app
+      target: event-pipeline
+      type: requires
+
+expected:
+  cascade_path: [event-pipeline, alerting, escalation]
+  blast_radius: 4
+  severity_level: critical

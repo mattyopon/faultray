@@ -1,0 +1,39 @@
+incident:
+  id: discord-api-2023-03
+  provider: discord
+  date: 2023-03-06
+  postmortem_url: https://discord.com/blog/discord-outage-march-2023
+  root_cause: "API gateway overload causing message delivery and voice connection failures"
+  affected_services: [api-gateway, messaging, voice, presence]
+  severity: critical
+  duration_hours: 3
+
+topology:
+  components:
+    - id: api-gateway
+      type: load_balancer
+      replicas: 3
+    - id: messaging
+      type: app_server
+      replicas: 3
+    - id: voice
+      type: app_server
+      replicas: 2
+    - id: presence
+      type: app_server
+      replicas: 2
+  dependencies:
+    - source: messaging
+      target: api-gateway
+      type: requires
+    - source: voice
+      target: api-gateway
+      type: requires
+    - source: presence
+      target: api-gateway
+      type: requires
+
+expected:
+  cascade_path: [api-gateway, messaging, voice, presence]
+  blast_radius: 4
+  severity_level: critical

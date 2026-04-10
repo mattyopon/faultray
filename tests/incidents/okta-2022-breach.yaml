@@ -1,0 +1,39 @@
+incident:
+  id: okta-lapsus-2022-03
+  provider: okta
+  date: 2022-03-22
+  postmortem_url: https://www.okta.com/blog/2022/03/updated-okta-statement-on-lapsus/
+  root_cause: "Third-party support engineer account compromise affecting customer tenant access"
+  affected_services: [auth, admin-console, api, mfa]
+  severity: critical
+  duration_hours: 48
+
+topology:
+  components:
+    - id: auth
+      type: app_server
+      replicas: 3
+    - id: admin-console
+      type: app_server
+      replicas: 2
+    - id: api
+      type: app_server
+      replicas: 3
+    - id: mfa
+      type: app_server
+      replicas: 2
+  dependencies:
+    - source: admin-console
+      target: auth
+      type: requires
+    - source: api
+      target: auth
+      type: requires
+    - source: mfa
+      target: auth
+      type: requires
+
+expected:
+  cascade_path: [auth, admin-console, api, mfa]
+  blast_radius: 4
+  severity_level: critical

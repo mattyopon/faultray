@@ -1,0 +1,33 @@
+incident:
+  id: aws-s3-control-2018-11
+  provider: aws
+  date: 2018-11-20
+  postmortem_url: https://aws.amazon.com/message/41926/
+  root_cause: "S3 control plane issue in us-east-1 affecting bucket operations"
+  affected_services: [s3, cloudfront, lambda]
+  severity: high
+  duration_hours: 3
+
+topology:
+  components:
+    - id: s3
+      type: database
+      replicas: 3
+    - id: cloudfront
+      type: load_balancer
+      replicas: 2
+    - id: lambda
+      type: app_server
+      replicas: 1
+  dependencies:
+    - source: cloudfront
+      target: s3
+      type: requires
+    - source: lambda
+      target: s3
+      type: requires
+
+expected:
+  cascade_path: [s3, cloudfront, lambda]
+  blast_radius: 3
+  severity_level: high

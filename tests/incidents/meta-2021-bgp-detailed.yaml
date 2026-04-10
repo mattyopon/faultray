@@ -1,0 +1,45 @@
+incident:
+  id: meta-bgp-2021-10-cascade
+  provider: meta
+  date: 2021-10-04
+  postmortem_url: https://engineering.fb.com/2021/10/05/networking-traffic/outage-details/
+  root_cause: "BGP route withdrawal causing complete loss of DNS and all Facebook services for 6 hours"
+  affected_services: [bgp, dns, api, cdn, messaging]
+  severity: critical
+  duration_hours: 6
+
+topology:
+  components:
+    - id: bgp
+      type: load_balancer
+      replicas: 2
+    - id: dns
+      type: load_balancer
+      replicas: 3
+    - id: api
+      type: app_server
+      replicas: 3
+    - id: cdn
+      type: app_server
+      replicas: 3
+    - id: messaging
+      type: app_server
+      replicas: 3
+  dependencies:
+    - source: dns
+      target: bgp
+      type: requires
+    - source: api
+      target: dns
+      type: requires
+    - source: cdn
+      target: dns
+      type: requires
+    - source: messaging
+      target: api
+      type: requires
+
+expected:
+  cascade_path: [bgp, dns, api, cdn, messaging]
+  blast_radius: 5
+  severity_level: critical

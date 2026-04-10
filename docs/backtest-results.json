@@ -1,13 +1,13 @@
 {
-  "total_incidents": 18,
+  "total_incidents": 54,
   "avg_precision": 1.0,
   "avg_recall": 1.0,
   "avg_f1": 1.0,
-  "avg_severity_accuracy": 0.819,
-  "avg_downtime_mae_minutes": 3159.53,
-  "avg_confidence": 0.756,
+  "avg_severity_accuracy": 0.825,
+  "avg_downtime_mae_minutes": 2543.4,
+  "avg_confidence": 0.766,
   "calibration": {
-    "downtime_bias_correction": 3159.53
+    "downtime_bias_correction": 2543.4
   },
   "per_incident": [
     {
@@ -189,6 +189,366 @@
       "severity_accuracy": 0.9,
       "downtime_mae": 43199.5,
       "confidence": 0.77
+    },
+    {
+      "incident_id": "atlassian-outage-2022-04",
+      "component": "app_server",
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1": 1.0,
+      "severity_accuracy": 0.89,
+      "downtime_mae": 20159.5,
+      "confidence": 0.73
+    },
+    {
+      "incident_id": "aws-s3-control-2018-11",
+      "component": "database",
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1": 1.0,
+      "severity_accuracy": 0.84,
+      "downtime_mae": 179.5,
+      "confidence": 0.84
+    },
+    {
+      "incident_id": "aws-power-2019-08",
+      "component": "app_server",
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1": 1.0,
+      "severity_accuracy": 0.89,
+      "downtime_mae": 359.5,
+      "confidence": 0.79
+    },
+    {
+      "incident_id": "aws-kinesis-2020-11-cascade",
+      "component": "app_server",
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1": 1.0,
+      "severity_accuracy": 0.84,
+      "downtime_mae": 599.5,
+      "confidence": 0.74
+    },
+    {
+      "incident_id": "aws-route53-2021-12",
+      "component": "shared_network",
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1": 1.0,
+      "severity_accuracy": 0.78,
+      "downtime_mae": 119.5,
+      "confidence": 0.8
+    },
+    {
+      "incident_id": "aws-us-east-1-2022-12",
+      "component": "app_server",
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1": 1.0,
+      "severity_accuracy": 0.84,
+      "downtime_mae": 479.5,
+      "confidence": 0.74
+    },
+    {
+      "incident_id": "aws-lambda-2023-06",
+      "component": "app_server",
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1": 1.0,
+      "severity_accuracy": 0.85,
+      "downtime_mae": 239.5,
+      "confidence": 0.77
+    },
+    {
+      "incident_id": "azure-dns-2020-09",
+      "component": "shared_network",
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1": 1.0,
+      "severity_accuracy": 0.79,
+      "downtime_mae": 179.5,
+      "confidence": 0.73
+    },
+    {
+      "incident_id": "azure-west-europe-2022-10",
+      "component": "shared_network",
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1": 1.0,
+      "severity_accuracy": 0.84,
+      "downtime_mae": 359.5,
+      "confidence": 0.76
+    },
+    {
+      "incident_id": "azure-cosmos-2023-09",
+      "component": "database",
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1": 1.0,
+      "severity_accuracy": 0.7,
+      "downtime_mae": 299.5,
+      "confidence": 0.75
+    },
+    {
+      "incident_id": "azure-wan-2023-01",
+      "component": "shared_network",
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1": 1.0,
+      "severity_accuracy": 0.84,
+      "downtime_mae": 719.5,
+      "confidence": 0.8
+    },
+    {
+      "incident_id": "cloudflare-regex-2019-07",
+      "component": "app_server",
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1": 1.0,
+      "severity_accuracy": 0.82,
+      "downtime_mae": 29.5,
+      "confidence": 0.78
+    },
+    {
+      "incident_id": "cloudflare-bgp-2020-07",
+      "component": "shared_network",
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1": 1.0,
+      "severity_accuracy": 0.81,
+      "downtime_mae": 29.5,
+      "confidence": 0.71
+    },
+    {
+      "incident_id": "cloudflare-outage-2022-06",
+      "component": "shared_network",
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1": 1.0,
+      "severity_accuracy": 0.77,
+      "downtime_mae": 89.5,
+      "confidence": 0.71
+    },
+    {
+      "incident_id": "cloudflare-control-plane-2023-11",
+      "component": "app_server",
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1": 1.0,
+      "severity_accuracy": 0.78,
+      "downtime_mae": 239.5,
+      "confidence": 0.78
+    },
+    {
+      "incident_id": "cloudflare-thanksgiving-2023-11",
+      "component": "app_server",
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1": 1.0,
+      "severity_accuracy": 0.75,
+      "downtime_mae": 4319.5,
+      "confidence": 0.7
+    },
+    {
+      "incident_id": "datadog-ingestion-2023-03",
+      "component": "app_server",
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1": 1.0,
+      "severity_accuracy": 0.82,
+      "downtime_mae": 359.5,
+      "confidence": 0.72
+    },
+    {
+      "incident_id": "digitalocean-storage-2022-10",
+      "component": "database",
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1": 1.0,
+      "severity_accuracy": 0.8,
+      "downtime_mae": 479.5,
+      "confidence": 0.8
+    },
+    {
+      "incident_id": "discord-api-2023-03",
+      "component": "shared_network",
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1": 1.0,
+      "severity_accuracy": 0.79,
+      "downtime_mae": 179.5,
+      "confidence": 0.79
+    },
+    {
+      "incident_id": "fastly-global-2021-06",
+      "component": "app_server",
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1": 1.0,
+      "severity_accuracy": 0.78,
+      "downtime_mae": 59.5,
+      "confidence": 0.74
+    },
+    {
+      "incident_id": "gcp-networking-multi-2019-06",
+      "component": "shared_network",
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1": 1.0,
+      "severity_accuracy": 0.87,
+      "downtime_mae": 239.5,
+      "confidence": 0.75
+    },
+    {
+      "incident_id": "gcp-auth-2020-12",
+      "component": "app_server",
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1": 1.0,
+      "severity_accuracy": 0.87,
+      "downtime_mae": 59.5,
+      "confidence": 0.79
+    },
+    {
+      "incident_id": "gcp-gcs-metadata-2022-07",
+      "component": "database",
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1": 1.0,
+      "severity_accuracy": 0.84,
+      "downtime_mae": 299.5,
+      "confidence": 0.84
+    },
+    {
+      "incident_id": "gcp-networking-2022-11",
+      "component": "shared_network",
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1": 1.0,
+      "severity_accuracy": 0.89,
+      "downtime_mae": 179.5,
+      "confidence": 0.77
+    },
+    {
+      "incident_id": "gcp-networking-europe-2023-04",
+      "component": "shared_network",
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1": 1.0,
+      "severity_accuracy": 0.84,
+      "downtime_mae": 359.5,
+      "confidence": 0.78
+    },
+    {
+      "incident_id": "github-db-2021-11",
+      "component": "database",
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1": 1.0,
+      "severity_accuracy": 0.82,
+      "downtime_mae": 299.5,
+      "confidence": 0.82
+    },
+    {
+      "incident_id": "github-ssl-2022-03",
+      "component": "shared_network",
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1": 1.0,
+      "severity_accuracy": 0.87,
+      "downtime_mae": 119.5,
+      "confidence": 0.82
+    },
+    {
+      "incident_id": "github-db-migration-2023-06",
+      "component": "database",
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1": 1.0,
+      "severity_accuracy": 0.82,
+      "downtime_mae": 479.5,
+      "confidence": 0.82
+    },
+    {
+      "incident_id": "github-actions-copilot-2024-06",
+      "component": "app_server",
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1": 1.0,
+      "severity_accuracy": 0.8,
+      "downtime_mae": 179.5,
+      "confidence": 0.76
+    },
+    {
+      "incident_id": "gitlab-db-2017-01",
+      "component": "database",
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1": 1.0,
+      "severity_accuracy": 0.87,
+      "downtime_mae": 1079.5,
+      "confidence": 0.75
+    },
+    {
+      "incident_id": "heroku-oauth-2022-04",
+      "component": "app_server",
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1": 1.0,
+      "severity_accuracy": 0.86,
+      "downtime_mae": 43199.5,
+      "confidence": 0.78
+    },
+    {
+      "incident_id": "meta-bgp-2021-10-cascade",
+      "component": "shared_network",
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1": 1.0,
+      "severity_accuracy": 0.89,
+      "downtime_mae": 359.5,
+      "confidence": 0.73
+    },
+    {
+      "incident_id": "okta-lapsus-2022-03",
+      "component": "app_server",
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1": 1.0,
+      "severity_accuracy": 0.79,
+      "downtime_mae": 2879.5,
+      "confidence": 0.79
+    },
+    {
+      "incident_id": "pagerduty-2023-07",
+      "component": "app_server",
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1": 1.0,
+      "severity_accuracy": 0.84,
+      "downtime_mae": 239.5,
+      "confidence": 0.74
+    },
+    {
+      "incident_id": "slack-db-2022-02",
+      "component": "database",
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1": 1.0,
+      "severity_accuracy": 0.84,
+      "downtime_mae": 299.5,
+      "confidence": 0.8
+    },
+    {
+      "incident_id": "zoom-overload-2020-03",
+      "component": "app_server",
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1": 1.0,
+      "severity_accuracy": 0.89,
+      "downtime_mae": 719.5,
+      "confidence": 0.84
     }
   ]
 }
