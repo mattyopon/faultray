@@ -274,43 +274,75 @@ class CascadeEngine:
         ))
 
         # BFS propagation through dependents.
-        # V (visited) grows monotonically (Lemma 1); |bfs_queue| <= |C| (Lemma 2).
-        visited: set[str] = {slow_component_id}
-        bfs_queue: deque[tuple[str, float]] = deque()  # (component_id, its_latency_ms)
+        #
+        # Instead of a boolean ``visited`` set (which would lock a node
+        # to whichever path arrived first and silently drop slower,
+        # timeout-exceeding paths), we track the WORST accumulated
+        # latency reached per node.  A node is only re-enqueued when a
+        # new path carries a strictly higher latency; this matches
+        # Dijkstra-on-worst-path and ensures the simulator reports the
+        # timeout-triggering path even when a shorter latency path is
+        # discovered first.  Termination: latency grows strictly on
+        # every re-enqueue, but to handle cyclic graphs we also bound
+        # by the depth cap already used in ``_propagate``.
+        MAX_LATENCY_DEPTH = 20
+        worst_latency: dict[str, float] = {slow_component_id: 0.0}
+        # component_id -> index of its effect in chain.effects, for in-place
+        # replacement when a worse latency path arrives.
+        effect_index: dict[str, int] = {slow_component_id: 0}
+        bfs_queue: deque[tuple[str, float, int]] = deque()
 
-        # Seed the queue with components that depend on the slow component
+        def _register_effect(comp_id: str, effect: CascadeEffect) -> None:
+            """Append or replace the effect for ``comp_id`` so that each
+            component has exactly one entry carrying its worst observed
+            latency/health."""
+            if comp_id in effect_index:
+                chain.effects[effect_index[comp_id]] = effect
+            else:
+                effect_index[comp_id] = len(chain.effects)
+                chain.effects.append(effect)
+
+        # Seed the queue with components that depend on the slow component.
         for dep_comp in self.graph.get_dependents(slow_component_id):
-            if dep_comp.id not in visited:
-                edge = self.graph.get_dependency_edge(dep_comp.id, slow_component_id)
-                edge_latency = edge.latency_ms if edge else 0.0
-                accumulated = slow_latency + edge_latency
+            edge = self.graph.get_dependency_edge(dep_comp.id, slow_component_id)
+            edge_latency = edge.latency_ms if edge else 0.0
+            accumulated = slow_latency + edge_latency
 
-                # CPS Rule 6: Circuit breaker trip — cascade stopped at this edge
-                # (formal spec Property 3: CB Correctness)
-                if edge and edge.circuit_breaker.enabled:
-                    cb_timeout = dep_comp.capacity.timeout_seconds * 1000
-                    if cb_timeout > 0 and accumulated > cb_timeout:
-                        chain.effects.append(CascadeEffect(
-                            component_id=dep_comp.id,
-                            component_name=dep_comp.name,
-                            health=HealthStatus.DEGRADED,
-                            reason=(
-                                f"Circuit breaker TRIPPED on edge to {slow_component_id}: "
-                                f"latency {accumulated:.0f}ms > timeout {cb_timeout:.0f}ms, "
-                                f"cascade stopped"
-                            ),
-                            latency_ms=accumulated,
-                            metrics_impact={"latency_ms": accumulated},
-                        ))
-                        visited.add(dep_comp.id)
-                        continue
+            if accumulated <= worst_latency.get(dep_comp.id, -1.0):
+                continue
 
-                bfs_queue.append((dep_comp.id, accumulated))
-                visited.add(dep_comp.id)
+            # CPS Rule 6: Circuit breaker trip — cascade stopped at this edge
+            # (formal spec Property 3: CB Correctness)
+            if edge and edge.circuit_breaker.enabled:
+                cb_timeout = dep_comp.capacity.timeout_seconds * 1000
+                if cb_timeout > 0 and accumulated > cb_timeout:
+                    _register_effect(dep_comp.id, CascadeEffect(
+                        component_id=dep_comp.id,
+                        component_name=dep_comp.name,
+                        health=HealthStatus.DEGRADED,
+                        reason=(
+                            f"Circuit breaker TRIPPED on edge to {slow_component_id}: "
+                            f"latency {accumulated:.0f}ms > timeout {cb_timeout:.0f}ms, "
+                            f"cascade stopped"
+                        ),
+                        latency_ms=accumulated,
+                        metrics_impact={"latency_ms": accumulated},
+                    ))
+                    worst_latency[dep_comp.id] = accumulated
+                    continue
+
+            bfs_queue.append((dep_comp.id, accumulated, 1))
+            worst_latency[dep_comp.id] = accumulated
 
         # CPS Rule 7: Timeout propagation via BFS (formal spec Section 1.5)
         while bfs_queue:
-            comp_id, accumulated_latency = bfs_queue.popleft()
+            comp_id, accumulated_latency, depth = bfs_queue.popleft()
+            if depth > MAX_LATENCY_DEPTH:
+                continue
+            # If we have since seen a strictly worse path for this node,
+            # skip this stale queue entry.
+            if accumulated_latency < worst_latency.get(comp_id, 0.0):
+                continue
             comp = self.graph.get_component(comp_id)
             if not comp:
                 continue
@@ -374,7 +406,7 @@ class CascadeEngine:
                 # Latency is within tolerance — skip this component
                 continue
 
-            chain.effects.append(CascadeEffect(
+            _register_effect(comp.id, CascadeEffect(
                 component_id=comp.id,
                 component_name=comp.name,
                 health=health,
@@ -386,32 +418,36 @@ class CascadeEngine:
             # Continue propagation if degraded or worse
             if health in (HealthStatus.DOWN, HealthStatus.OVERLOADED, HealthStatus.DEGRADED):
                 for next_dep in self.graph.get_dependents(comp_id):
-                    if next_dep.id not in visited:
-                        edge = self.graph.get_dependency_edge(next_dep.id, comp_id)
-                        edge_latency = edge.latency_ms if edge else 0.0
-                        next_latency = accumulated_latency + edge_latency
+                    edge = self.graph.get_dependency_edge(next_dep.id, comp_id)
+                    edge_latency = edge.latency_ms if edge else 0.0
+                    next_latency = accumulated_latency + edge_latency
 
-                        # Circuit breaker check on the dependency edge
-                        if edge and edge.circuit_breaker.enabled:
-                            cb_timeout = next_dep.capacity.timeout_seconds * 1000
-                            if cb_timeout > 0 and next_latency > cb_timeout:
-                                chain.effects.append(CascadeEffect(
-                                    component_id=next_dep.id,
-                                    component_name=next_dep.name,
-                                    health=HealthStatus.DEGRADED,
-                                    reason=(
-                                        f"Circuit breaker TRIPPED on edge to {comp_id}: "
-                                        f"latency {next_latency:.0f}ms > timeout {cb_timeout:.0f}ms, "
-                                        f"cascade stopped"
-                                    ),
-                                    latency_ms=next_latency,
-                                    metrics_impact={"latency_ms": next_latency},
-                                ))
-                                visited.add(next_dep.id)
-                                continue
+                    if next_latency <= worst_latency.get(next_dep.id, -1.0):
+                        # Already reached this node with an equal-or-worse
+                        # latency — no new information.
+                        continue
 
-                        bfs_queue.append((next_dep.id, next_latency))
-                        visited.add(next_dep.id)
+                    # Circuit breaker check on the dependency edge
+                    if edge and edge.circuit_breaker.enabled:
+                        cb_timeout = next_dep.capacity.timeout_seconds * 1000
+                        if cb_timeout > 0 and next_latency > cb_timeout:
+                            _register_effect(next_dep.id, CascadeEffect(
+                                component_id=next_dep.id,
+                                component_name=next_dep.name,
+                                health=HealthStatus.DEGRADED,
+                                reason=(
+                                    f"Circuit breaker TRIPPED on edge to {comp_id}: "
+                                    f"latency {next_latency:.0f}ms > timeout {cb_timeout:.0f}ms, "
+                                    f"cascade stopped"
+                                ),
+                                latency_ms=next_latency,
+                                metrics_impact={"latency_ms": next_latency},
+                            ))
+                            worst_latency[next_dep.id] = next_latency
+                            continue
+
+                    bfs_queue.append((next_dep.id, next_latency, depth + 1))
+                    worst_latency[next_dep.id] = next_latency
 
         return chain
 

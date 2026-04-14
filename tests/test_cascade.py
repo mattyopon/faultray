@@ -1730,3 +1730,72 @@ def test_cascade_required_dep_singleton_ignores_dependent_replicas():
     assert web_effects[0].health == HealthStatus.DOWN, (
         "50 web replicas cannot substitute for a dead singleton DB"
     )
+
+
+def test_latency_cascade_reports_worst_path_not_first_seen():
+    """Regression for Codex HIGH (simulate_latency_cascade BFS):
+    when a node is reachable via a short-latency path AND a long-latency
+    path that would breach its timeout, the simulator must report the
+    long path (timeout + retry storm).  The previous implementation
+    locked the node to whichever path enqueued first, silently hiding
+    timeout-triggering paths downstream of a shorter alternative."""
+    graph = InfraGraph()
+    # slow --edge(10ms)-->  fast_mid  --edge(10ms)--> victim  (short path ~30ms-ish)
+    # slow --edge(10ms)-->  slow_mid  --edge(10ms)--> victim  (long path much higher)
+    # We inflate slow_mid's own accumulated latency by having it sit on a
+    # longer direct edge from slow (via different intermediate hops is
+    # architecturally unnecessary — direct edges with larger latency_ms
+    # differ immediately).
+    graph.add_component(Component(
+        id="slow", name="Slow", type=ComponentType.DATABASE, replicas=1,
+        capacity=Capacity(timeout_seconds=10),
+    ))
+    graph.add_component(Component(
+        id="fast_mid", name="FastMid", type=ComponentType.APP_SERVER, replicas=1,
+        capacity=Capacity(timeout_seconds=10),
+    ))
+    graph.add_component(Component(
+        id="slow_mid", name="SlowMid", type=ComponentType.APP_SERVER, replicas=1,
+        capacity=Capacity(timeout_seconds=10),
+    ))
+    graph.add_component(Component(
+        id="victim", name="Victim", type=ComponentType.APP_SERVER, replicas=1,
+        capacity=Capacity(timeout_seconds=1),  # 1000ms timeout — tight
+    ))
+    # Short path: slow → fast_mid → victim, minimal edge latency.
+    graph.add_dependency(Dependency(
+        source_id="fast_mid", target_id="slow",
+        dependency_type="requires", latency_ms=1.0,
+    ))
+    graph.add_dependency(Dependency(
+        source_id="victim", target_id="fast_mid",
+        dependency_type="requires", latency_ms=1.0,
+    ))
+    # Long path: slow → slow_mid → victim, large edge latency so that
+    # accumulated latency breaches victim's 1000ms timeout.
+    graph.add_dependency(Dependency(
+        source_id="slow_mid", target_id="slow",
+        dependency_type="requires", latency_ms=5000.0,
+    ))
+    graph.add_dependency(Dependency(
+        source_id="victim", target_id="slow_mid",
+        dependency_type="requires", latency_ms=5000.0,
+    ))
+
+    engine = CascadeEngine(graph)
+    # 10x slowdown on slow => base_latency = 10 * 1000 * 0.1 * 10 = 10_000 ms
+    chain = engine.simulate_latency_cascade("slow", latency_multiplier=10.0)
+
+    victim_effects = [e for e in chain.effects if e.component_id == "victim"]
+    assert len(victim_effects) == 1, (
+        f"victim must appear exactly once, got "
+        f"{[(e.health, e.latency_ms) for e in victim_effects]}"
+    )
+    # Victim's timeout is 1000ms; even the SHORT path's accumulated
+    # latency (10000 + 1 + 1 = 10002ms) breaches it, so both paths DOWN
+    # the victim.  What matters is that the REPORTED latency is the
+    # worst reachable one (long path), not the first-seen one.
+    assert victim_effects[0].health == HealthStatus.DOWN
+    assert victim_effects[0].latency_ms >= 10000.0 + 5000.0 + 5000.0 - 1.0, (
+        f"must report worst path latency, got {victim_effects[0].latency_ms}"
+    )
