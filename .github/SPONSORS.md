@@ -1,6 +1,6 @@
 # Sponsor FaultRay
 
-FaultRay is a zero-risk chaos engineering tool for infrastructure and AI agents. Your sponsorship directly funds development and keeps the project maintained.
+FaultRay is a research-prototype pre-deployment resilience simulation tool for infrastructure and AI agents. Your sponsorship directly funds development and keeps the project maintained.
 
 ## Sponsor Tiers
 

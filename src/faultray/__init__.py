@@ -1,7 +1,7 @@
 # Copyright (c) 2025-2026 Yutaro Maeda. All rights reserved.
-# Licensed under the Business Source License 1.1. See LICENSE file for details.
+# Licensed under the Apache License 2.0 (v11.2.0+). See LICENSE file for details.
 
-"""FaultRay — Zero-risk infrastructure chaos simulation."""
+"""FaultRay — pre-deployment infrastructure resilience simulation (research prototype)."""
 
 __version__ = "11.1.0"
 

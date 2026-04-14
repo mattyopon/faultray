@@ -539,7 +539,7 @@ def start() -> None:
     """
     console.print(Panel.fit(
         "[bold cyan]Welcome to FaultRay[/]\n"
-        "[dim]Zero-risk chaos engineering simulator / ゼロリスクカオスエンジニアリング[/]",
+        "[dim]Pre-deployment resilience simulator (research prototype) / デプロイ前レジリエンス事前評価（研究プロトタイプ）[/]",
         border_style="cyan",
     ))
 

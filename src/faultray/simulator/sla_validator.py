@@ -1,14 +1,18 @@
 # Copyright (c) 2025-2026 Yutaro Maeda. All rights reserved.
 # Licensed under the Business Source License 1.1. See LICENSE file for details.
 
-"""SLA Validator - Mathematically prove SLA achievability.
+"""SLA Validator - Model-based estimate of SLA achievability.
 
 Given an infrastructure topology and SLA target (e.g., 99.99% uptime),
-this engine mathematically proves whether the SLA is achievable or not,
-using availability theory, reliability engineering math, and Monte Carlo validation.
+this engine provides a model-based estimate of whether the SLA looks
+structurally achievable, using availability theory, reliability engineering
+math, and Monte Carlo validation. Accuracy depends on how completely
+the topology is declared; outputs are design-review signals, not
+regulatory or contractual guarantees.
 
-Key insight: Many organizations commit to SLAs without mathematical basis.
-This engine provides proof that an SLA is or isn't achievable.
+Key insight: Many organizations commit to SLAs without a model-based
+feasibility check. This engine surfaces structural gaps so teams can
+either adjust the topology or renegotiate the target.
 """
 
 from __future__ import annotations
@@ -244,7 +248,7 @@ def _component_effective_availability(comp) -> float:
 # ---------------------------------------------------------------------------
 
 class SLAValidatorEngine:
-    """Engine for mathematically validating SLA achievability."""
+    """Engine for model-based estimation of SLA achievability (research-prototype signal; not a guarantee)."""
 
     def validate(
         self,
