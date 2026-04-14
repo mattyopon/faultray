@@ -64,7 +64,7 @@ Happy to answer questions about the approach.
 
 ## 2. r/sre
 
-**Title:** Tool that mathematically proves your availability ceiling -- validated against 18 real cloud incidents (AWS, GCP, Azure, Meta, Cloudflare)
+**Title:** Research-prototype tool that estimates your availability ceiling from declared topology -- cascade engine retrospectively validated against 18 real cloud incidents (AWS, GCP, Azure, Meta, Cloudflare)
 
 **Body:**
 

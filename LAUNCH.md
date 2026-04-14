@@ -3,26 +3,26 @@
 ## ProductHunt
 
 ### Tagline (60 chars max)
-Zero-risk chaos engineering — prove your infra's availability ceiling
+Pre-deployment resilience simulation (research prototype)
 
 ### Description
-FaultRay simulates infrastructure failures without touching production. Unlike Gremlin or Chaos Monkey that inject real faults, FaultRay runs 2,000+ chaos scenarios entirely in memory — proving your system's theoretical availability ceiling mathematically.
+FaultRay simulates infrastructure failures without touching production. Unlike Gremlin or Chaos Monkey, which inject real faults at runtime, FaultRay runs thousands of chaos scenarios entirely in memory — giving you a model-based estimate of your system's structural availability ceiling, with a traceable dependency on your declared topology. Research prototype; complements runtime chaos engineering, it does not replace it.
 
 **Key features:**
 - 5 simulation engines (Cascade, Dynamic, Ops, What-If, Capacity)
-- 3-Layer Availability Limit Model (proves your ceiling: 4.00 → 5.91 → 6.65 nines)
-- AI-powered analysis with remediation recommendations (v11.0: AI agent resilience via MCP)
-- DORA compliance report generation
-- Terraform Safety Net — pre-deploy blast radius prediction before `terraform apply`
-- Terraform/Prometheus integration
+- 3-Layer Availability Limit Model — estimates Software/Hardware/Theoretical ceilings from declared topology
+- AI-assisted analysis with remediation suggestions (v11.0: AI agent resilience via MCP)
+- DORA-aligned evidence drafts (research prototype; not a substitute for audit-certified evidence)
+- Terraform Safety Net — pre-deploy blast radius analysis before `terraform apply`
+- Terraform / Prometheus integration
 - Plugin system for custom scenarios
-- Slack/PagerDuty notifications
+- Slack / PagerDuty notifications
 
 **Who is it for?**
-- SRE teams evaluating system resilience
-- DevOps engineers planning capacity
-- Platform teams validating architecture changes
-- Compliance teams needing DORA evidence
+- SRE teams evaluating structural resilience
+- DevOps engineers planning capacity and dependency changes
+- Platform teams validating architecture changes before deploy
+- Compliance teams preparing internal DORA-review material (not formal audit output)
 
 **Try it now:**
 ```
@@ -35,13 +35,13 @@ Hi everyone! I'm Yutaro, an infrastructure engineer from Tokyo.
 
 I built FaultRay because I was frustrated with chaos engineering tools that require production access. My team needed to evaluate "what happens if our DB goes down?" without actually breaking things.
 
-FaultRay takes a fundamentally different approach: pure mathematical simulation. You describe your infrastructure in YAML (or import from Terraform), and FaultRay runs 2,000+ failure scenarios to find your weakest points.
+FaultRay takes a different approach: model-based simulation. You describe your infrastructure in YAML (or import from Terraform), and FaultRay runs thousands of failure scenarios to surface likely weak points. It's a **research prototype** — result quality depends on how completely your topology is defined, and outputs should be reviewed by your engineering team.
 
-The most unique feature is the 3-Layer Availability Limit Model — it mathematically proves that your architecture's theoretical maximum is, say, 6.65 nines (7 seconds of downtime per year), and that going higher would violate the laws of physics (speed of light limits failover time).
+The feature I find most useful is the 3-Layer Availability Limit Model — it **estimates**, from your declared topology, an upper bound such as "your architecture can't cleanly exceed 6.65 nines without changing these dependencies." That's a model-based signal for design review, not a prediction of actual uptime.
 
-v11.0 adds AI agent resilience via MCP: plug FaultRay directly into your AI agents and CI pipelines. Also introducing Terraform Safety Net — predict blast radius before `terraform apply` ever runs.
+v11.0 adds AI agent resilience via MCP: plug FaultRay directly into your AI agents and CI pipelines. Also introducing Terraform Safety Net — pre-deploy blast-radius analysis before `terraform apply` ever runs.
 
-It's completely free and open source (BSL 1.1). I'd love your feedback!
+FaultRay (v11.2.0+) is Apache 2.0. I'd love your feedback!
 
 - Live demo: https://faultray.com/demo
 - PyPI: pip install faultray
@@ -52,29 +52,30 @@ It's completely free and open source (BSL 1.1). I'd love your feedback!
 ## Hacker News (Show HN)
 
 ### Title
-Show HN: FaultRay – Zero-risk chaos engineering that proves your availability ceiling
+Show HN: FaultRay – pre-deployment resilience simulation (research prototype)
 
 ### Text
 I built FaultRay because existing chaos engineering tools (Gremlin, Chaos Monkey, AWS FIS) all inject real faults into real infrastructure. That's scary, expensive, and requires production access.
 
-FaultRay takes a different approach: it models your infrastructure as a dependency graph and simulates 2,000+ failure scenarios entirely in memory. No agents, no sidecars, no risk.
+FaultRay takes a different approach: it models your infrastructure as a dependency graph and simulates thousands of failure scenarios entirely in memory. No fault injection, no production agents, no live blast radius. It is a **research prototype**, meant to complement runtime chaos engineering, not replace it.
 
-What makes it unique:
+What makes it distinct:
 
-1. **3-Layer Availability Limit Model** — mathematically proves your system's theoretical ceiling:
-   - Software limit: 4.00 nines (Ethernet + GC pauses)
-   - Hardware limit: 5.91 nines (InfiniBand + GC-free runtimes)
-   - Theoretical limit: 6.65 nines (physics: speed of light limits failover)
+1. **3-Layer Availability Limit Model** — estimates, from your declared topology, an upper bound for:
+   - Software limit (example: ~4.00 nines given Ethernet + GC pauses)
+   - Hardware limit (example: ~5.91 nines given InfiniBand + GC-free runtimes)
+   - Theoretical limit (example: ~6.65 nines bounded by speed-of-light failover time)
+   These are illustrative numbers; your actual ceiling depends on how your topology is declared.
 
-2. **5 simulation engines** — Cascade (2,000+ scenarios), Dynamic (time-stepped with traffic), Ops (30-day operational sim), What-If (parameter sweeps), Capacity (growth forecasting)
+2. **5 simulation engines** — Cascade (thousands of scenarios), Dynamic (time-stepped with traffic), Ops (30-day operational sim), What-If (parameter sweeps), Capacity (growth forecasting).
 
-3. **AI analysis** — identifies SPOFs, cascade amplifiers, and generates upgrade recommendations with estimated nines improvement; v11.0 exposes 12-tool MCP server for AI agent integration
+3. **AI-assisted analysis** — identifies SPOFs, cascade amplifiers, and suggests upgrade candidates ranked by estimated nines improvement; v11.0 exposes a 12-tool MCP server for AI-agent / CI integration.
 
-4. **DORA compliance** — auto-generates EU regulatory compliance reports
+4. **DORA-aligned evidence drafts** — generates research-prototype evidence packages for internal EU DORA review. Not a substitute for audit-certified compliance evidence.
 
-5. **Terraform Safety Net** — pre-deploy blast radius prediction; integrates with Overmind and AWS Resilience Hub
+5. **Terraform Safety Net** — pre-deploy blast radius analysis; integrates with Overmind and AWS Resilience Hub.
 
-Tech stack: Python 3.11+, NetworkX, FastAPI, Typer, Pydantic
+Tech stack: Python 3.11+, NetworkX, FastAPI, Typer, Pydantic.
 
 Try it:
 ```
@@ -90,22 +91,22 @@ GitHub: https://github.com/mattyopon/faultray
 ## Reddit r/devops & r/sre
 
 ### Title
-[Tool] FaultRay: Simulate infrastructure failures without touching production — proves your availability ceiling mathematically
+[Tool] FaultRay: simulate infrastructure failures without touching production — pre-deploy resilience estimation, research prototype
 
 ### Body
 Hey r/devops,
 
 I've been working on an open-source tool that takes a different approach to chaos engineering. Instead of injecting faults into real infrastructure, FaultRay simulates everything in memory.
 
-You describe your infra in YAML or import from Terraform, and it runs 2,000+ failure scenarios (single failures, pairwise combinations, traffic spikes, DB-specific issues, cache stampedes, etc.) and tells you exactly what would break and how badly.
+You describe your infra in YAML or import from Terraform, and it runs thousands of failure scenarios (single failures, pairwise combinations, traffic spikes, DB-specific issues, cache stampedes, etc.) and estimates what would likely break and how badly — as a model-based signal, not a guarantee.
 
-**The coolest feature**: It can prove your system's theoretical availability ceiling. For example, "your current architecture maxes out at 4.2 nines no matter what you do — to reach 5 nines, you need to add replicas here and circuit breakers there."
+**The feature I find most useful**: it gives a model-based estimate of your system's structural availability ceiling. For example, "your current architecture appears to cap out around 4.2 nines given this declared topology — to reach 5 nines you'd likely need to add replicas here and circuit breakers there." It's a design-review signal, not a prediction of measured uptime.
 
-**v11.0 highlights**: AI agent resilience via MCP (12-tool server for AI agent/CI integration), and Terraform Safety Net — blast radius prediction before `terraform apply`.
+**v11.0 highlights**: AI agent resilience via MCP (12-tool server for AI-agent / CI integration), and Terraform Safety Net — pre-deploy blast radius analysis before `terraform apply`.
 
-- Free & open source (BSL 1.1, converts to Apache 2.0 in 2030)
+- Apache 2.0 (current releases v11.2.0+; earlier BSL-1.1 releases are yanked)
 - `pip install faultray`
 - Live demo: https://faultray.com/demo
 - GitHub: https://github.com/mattyopon/faultray
 
-Would love feedback from fellow SREs!
+Would love feedback from fellow SREs! Caveat: research prototype — results depend on how completely your topology is declared, and are intended for engineering review, not as formal compliance evidence.
