@@ -7,11 +7,11 @@ Status: DRAFT (not submitted)
 
 ## 1. Product Title
 
-**FaultRay — Zero-Risk Infrastructure & AI Agent Chaos Simulation**
+**FaultRay — Pre-Deployment Infrastructure & AI Agent Resilience Simulation (Research Prototype)**
 
 ### Short Description (max 200 characters)
 
-Simulate 2,000+ infrastructure failure scenarios without touching production. Prove your system's availability ceiling mathematically. Zero risk. No agents. No sidecars.
+Simulate thousands of infrastructure failure scenarios from declared topology without touching production. Estimate your availability ceiling via a model-based approach. No production fault injection. No sidecars. Research prototype.
 
 ---
 
@@ -19,7 +19,7 @@ Simulate 2,000+ infrastructure failure scenarios without touching production. Pr
 
 ### Overview
 
-FaultRay is a zero-risk chaos engineering platform that mathematically simulates infrastructure failures without injecting faults into production systems. Unlike traditional chaos tools (Gremlin, Steadybit, AWS FIS) that inject real faults, FaultRay models your entire dependency graph in memory, runs 2,000+ failure scenarios across 5 simulation engines, and proves your system's theoretical availability ceiling using a patented 3-Layer Availability Limit Model.
+FaultRay is a research-prototype pre-deployment resilience simulation platform that models infrastructure failures from your declared topology — without injecting faults into production systems. Unlike runtime chaos tools (Gremlin, Steadybit, AWS FIS) that inject real faults into live systems, FaultRay models your declared dependency graph in memory, runs thousands of failure scenarios across 5 simulation engines, and estimates your system's structural availability ceiling using a patented 3-Layer Availability Limit Model. Result accuracy depends on how completely your topology is declared; FaultRay complements runtime chaos engineering rather than replacing it.
 
 ### How It Works
 
@@ -37,7 +37,7 @@ FaultRay extends chaos simulation to AI agent systems. It models agents, LLM end
 
 ### Compliance & Governance
 
-Built-in compliance mapping for SOC 2 Type II, ISO 27001, PCI DSS, DORA, HIPAA, and GDPR. Generates audit-ready evidence from simulation results with gap analysis and remediation recommendations.
+Built-in research-prototype mapping for SOC 2 Type II, ISO 27001, PCI DSS, DORA, HIPAA, and GDPR. Generates evidence drafts from simulation results with gap analysis and remediation recommendations. Outputs are intended for internal pre-audit review and design-time analysis — **not** a substitute for audit-certified compliance evidence; independent legal and technical review is required before any formal compliance use.
 
 ### Deployment
 
@@ -47,14 +47,14 @@ Available as a Python CLI tool (`pip install faultray`), Docker container, or Fa
 
 ## 3. Highlights (Bullet Points)
 
-- **Zero production risk** — Pure mathematical simulation with no agents, sidecars, or fault injection. Runs entirely in memory.
-- **2,000+ auto-generated scenarios** — 30 categories of failure scenarios generated from your actual topology, including compound and triple failures.
-- **3-Layer Availability Limit Model** — The only tool that mathematically proves your system's maximum achievable availability ceiling.
-- **5 integrated simulation engines** — Cascade, Dynamic, Ops, What-If, and Capacity engines for comprehensive resilience analysis.
-- **AI Agent Resilience** — Simulate agent hallucinations, LLM rate limits, prompt injection, and cross-layer cascades for AI/ML workloads.
+- **No production fault injection** — Model-based simulation with no runtime agents, sidecars, or fault injection. Runs entirely in memory from declared topology.
+- **Thousands of auto-generated scenarios** — 30 categories of failure scenarios generated from your declared topology, including compound and triple failures.
+- **3-Layer Availability Limit Model** — Model-based estimation of your system's structural availability ceiling; accuracy depends on topology fidelity.
+- **5 integrated simulation engines** — Cascade, Dynamic, Ops, What-If, and Capacity engines for structural resilience analysis.
+- **AI Agent Resilience** — Model agent hallucinations, LLM rate limits, prompt injection, and cross-layer cascades for AI/ML workloads.
 - **AWS native integration** — Auto-scan EC2, RDS, ElastiCache, ELB, S3, Route 53, CloudFront, ECS/EKS, Lambda, SQS/SNS.
 - **Terraform & Prometheus** — Import from tfstate, analyze tf plan impact, auto-discover from Prometheus targets.
-- **Compliance ready** — SOC 2, ISO 27001, PCI DSS, DORA, HIPAA, GDPR mapping with audit evidence generation.
+- **Research-prototype compliance mapping** — SOC 2, ISO 27001, PCI DSS, DORA, HIPAA, GDPR research mapping with evidence-draft generation (not audit-certified).
 
 ---
 
