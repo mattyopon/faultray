@@ -404,3 +404,72 @@ class TestEdgeNoneContinue:
         # the edge has no dependency metadata and is skipped.
         baseline = engine.query({})
         assert posteriors["app"] == baseline["app"]
+
+
+# ---------------------------------------------------------------------------
+# Regression tests — Codex 2026-04-14 CRITICAL finding (noisy-OR aggregation)
+# ---------------------------------------------------------------------------
+
+
+def test_query_posterior_compounds_multiple_failing_deps_via_noisy_or() -> None:
+    """Regression for Codex CRITICAL (bayesian_model.py:138 max aggregation):
+    when multiple required dependencies are DOWN simultaneously, the posterior
+    must exceed the single-dependency case and approach 1.0. The previous
+    ``max`` collapse capped it around the largest single impact factor (~0.9)."""
+    graph = InfraGraph()
+    graph.add_component(Component(
+        id="api", name="API", type=ComponentType.APP_SERVER,
+        operational_profile=OperationalProfile(mtbf_hours=2160, mttr_minutes=10),
+    ))
+    for dep_id in ("db_a", "db_b", "db_c"):
+        graph.add_component(Component(
+            id=dep_id, name=dep_id, type=ComponentType.DATABASE,
+            operational_profile=OperationalProfile(mtbf_hours=4320, mttr_minutes=30),
+        ))
+        graph.add_dependency(Dependency(
+            source_id="api", target_id=dep_id, dependency_type="requires",
+        ))
+
+    engine = BayesianEngine(graph)
+
+    one_down = engine.query({"db_a": "down"})["api"]
+    all_down = engine.query({"db_a": "down", "db_b": "down", "db_c": "down"})["api"]
+
+    # More failing dependencies must drive posterior strictly higher.
+    assert all_down > one_down, (
+        f"noisy-OR must compound; got one_down={one_down}, all_down={all_down}"
+    )
+    # Three DOWN required deps (factor 0.9 each) → combined effect ≈ 0.999,
+    # so posterior should round above 0.99.
+    assert all_down > 0.99, (
+        f"three DOWN required deps should push posterior above 0.99; "
+        f"got {all_down}"
+    )
+
+
+def test_analyze_posterior_compounds_when_multiple_deps_down() -> None:
+    """Regression for the same noisy-OR bug in ``analyze()``: setting every
+    required dependency's health to DOWN must lift the posterior above the
+    0.9 cap that the previous ``max`` aggregation produced."""
+    graph = InfraGraph()
+    graph.add_component(Component(
+        id="api", name="API", type=ComponentType.APP_SERVER,
+        operational_profile=OperationalProfile(mtbf_hours=2160, mttr_minutes=10),
+    ))
+    for dep_id in ("db_a", "db_b", "db_c"):
+        graph.add_component(Component(
+            id=dep_id, name=dep_id, type=ComponentType.DATABASE,
+            operational_profile=OperationalProfile(mtbf_hours=4320, mttr_minutes=30),
+            health=HealthStatus.DOWN,
+        ))
+        graph.add_dependency(Dependency(
+            source_id="api", target_id=dep_id, dependency_type="requires",
+        ))
+
+    engine = BayesianEngine(graph)
+    results = engine.analyze()
+    api_result = next(r for r in results if r.component_id == "api")
+    assert api_result.posterior_given_deps > 0.99, (
+        f"posterior with three DOWN required deps should exceed 0.99, got "
+        f"{api_result.posterior_given_deps}"
+    )

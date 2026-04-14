@@ -997,8 +997,62 @@ def test_async_dependency_cascade():
     assert "queue building" in app_effects[0].reason.lower()
 
 
-def test_required_dependency_multi_replica_degraded():
-    """Required dependency on a component with replicas > 1 should be DEGRADED, not DOWN."""
+def test_required_dependency_soft_edge_attenuates_to_degraded():
+    """A required edge with weight <= 0.1 models a best-effort / fallback-
+    ready call (circuit-broken, cached, retry-budgeted), so even a fully
+    DOWN upstream only degrades the dependent — this is the single
+    intentional escape from the hard-cascade rule."""
+    graph = InfraGraph()
+    graph.add_component(Component(
+        id="app", name="App", type=ComponentType.APP_SERVER, replicas=1,
+    ))
+    graph.add_component(Component(
+        id="cache", name="Cache", type=ComponentType.CACHE, replicas=1,
+    ))
+    graph.add_dependency(Dependency(
+        source_id="app", target_id="cache", dependency_type="requires",
+        weight=0.05,
+    ))
+
+    engine = CascadeEngine(graph)
+    fault = Fault(target_component_id="cache", fault_type=FaultType.COMPONENT_DOWN)
+    chain = engine.simulate_fault(fault)
+
+    app_effects = [e for e in chain.effects if e.component_id == "app"]
+    assert len(app_effects) == 1
+    assert app_effects[0].health == HealthStatus.DEGRADED
+    assert "soft" in app_effects[0].reason.lower()
+
+
+def test_required_dependency_upstream_down_always_cascades_down():
+    """A required upstream going DOWN must cascade the dependent to DOWN
+    regardless of the upstream's replica count — ``failed_health=DOWN``
+    already represents a total outage of the logical component; its own
+    replicas cannot simultaneously be absorbing the load."""
+    graph = InfraGraph()
+    graph.add_component(Component(
+        id="app", name="App", type=ComponentType.APP_SERVER, replicas=1,
+    ))
+    graph.add_component(Component(
+        id="db", name="DB", type=ComponentType.DATABASE, replicas=3,
+    ))
+    graph.add_dependency(Dependency(
+        source_id="app", target_id="db", dependency_type="requires",
+    ))
+
+    engine = CascadeEngine(graph)
+    fault = Fault(target_component_id="db", fault_type=FaultType.COMPONENT_DOWN)
+    chain = engine.simulate_fault(fault)
+
+    app_effects = [e for e in chain.effects if e.component_id == "app"]
+    assert len(app_effects) == 1
+    assert app_effects[0].health == HealthStatus.DOWN
+
+
+def test_required_dependency_failed_singleton_dependent_goes_down():
+    """When the FAILED upstream is a singleton with no failover, the dependent
+    goes DOWN regardless of the dependent's own replica count. Dependent-side
+    replicas cannot substitute for a dead singleton upstream."""
     graph = InfraGraph()
     graph.add_component(Component(
         id="app", name="App", type=ComponentType.APP_SERVER, replicas=3,
@@ -1016,7 +1070,7 @@ def test_required_dependency_multi_replica_degraded():
 
     app_effects = [e for e in chain.effects if e.component_id == "app"]
     assert len(app_effects) == 1
-    assert app_effects[0].health == HealthStatus.DEGRADED
+    assert app_effects[0].health == HealthStatus.DOWN
 
 
 def test_overloaded_cascade_with_high_utilization():
@@ -1446,7 +1500,7 @@ def test_propagate_failed_comp_not_found():
     # First, remove "db" from the components dict
     del graph._components["db"]
 
-    engine._propagate("db", HealthStatus.DOWN, chain, visited=set(), depth=0, elapsed_seconds=0)
+    engine._propagate("db", HealthStatus.DOWN, chain, worst_health={}, depth=0, elapsed_seconds=0)
     # No effects should be added since get_component returns None
     assert len(chain.effects) == 0
 
@@ -1514,7 +1568,7 @@ def test_propagate_edge_not_found():
     engine = CascadeEngine(graph)
     chain = CascadeChain(trigger="test", total_components=2)
 
-    engine._propagate("db", HealthStatus.DOWN, chain, visited=set(), depth=0, elapsed_seconds=0)
+    engine._propagate("db", HealthStatus.DOWN, chain, worst_health={}, depth=0, elapsed_seconds=0)
     # "app" should be skipped because get_dependency_edge returns None
     app_effects = [e for e in chain.effects if e.component_id == "app"]
     assert len(app_effects) == 0
@@ -1553,3 +1607,126 @@ def test_calculate_cascade_effect_healthy_passthrough():
     assert health == HealthStatus.HEALTHY
     assert reason == ""
     assert time_delta == 0
+
+
+# ---------------------------------------------------------------------------
+# Regression tests — Codex 2026-04-14 CRITICAL findings
+# ---------------------------------------------------------------------------
+
+
+def test_cascade_compounds_across_multiple_failing_dependencies():
+    """Regression for Codex CRITICAL (cascade.py visited set):
+    when a node is reachable via multiple failing upstream paths with
+    different severities, the WORST path must win — the old shared
+    visited set locked in whichever path ran first and silently dropped
+    compounding failures."""
+    graph = InfraGraph()
+    # Diamond: A (optional) → X, A (required) → Y → X
+    # X is reached by an optional edge to A (→ DEGRADED) AND by a required
+    # edge to Y (→ DOWN after Y cascades). The DEGRADED path is added
+    # FIRST on purpose: it appends to chain.effects but does not recurse,
+    # so the worst_health map must still record DEGRADED for X — otherwise
+    # the subsequent DOWN path sees prior=HEALTHY and double-appends.
+    graph.add_component(Component(
+        id="a", name="A", type=ComponentType.DATABASE, replicas=1,
+    ))
+    graph.add_component(Component(
+        id="x", name="X", type=ComponentType.APP_SERVER, replicas=1,
+    ))
+    graph.add_component(Component(
+        id="y", name="Y", type=ComponentType.APP_SERVER, replicas=1,
+    ))
+    # Insertion order matters: x→a (optional) is iterated before y→a so
+    # X hits the DEGRADED branch FIRST.
+    graph.add_dependency(Dependency(
+        source_id="x", target_id="a", dependency_type="optional",
+    ))
+    graph.add_dependency(Dependency(
+        source_id="y", target_id="a", dependency_type="requires",
+    ))
+    graph.add_dependency(Dependency(
+        source_id="x", target_id="y", dependency_type="requires",
+    ))
+
+    engine = CascadeEngine(graph)
+    fault = Fault(target_component_id="a", fault_type=FaultType.COMPONENT_DOWN)
+    chain = engine.simulate_fault(fault)
+
+    x_effects = [e for e in chain.effects if e.component_id == "x"]
+    assert len(x_effects) == 1, (
+        f"x must appear exactly once, got {len(x_effects)}: "
+        f"{[(e.health, e.reason) for e in x_effects]}"
+    )
+    # The required path via Y must win over the direct optional path.
+    assert x_effects[0].health == HealthStatus.DOWN, (
+        f"worst severity must prevail; got {x_effects[0].health}"
+    )
+
+
+def test_cascade_degraded_then_worse_path_replaces_not_duplicates():
+    """Explicit regression for Codex gpt-5-codex P1: if a DEGRADED effect
+    is committed first (e.g. via an optional edge) the worst_health map
+    must be updated before a subsequent worse path is evaluated.  Before
+    the fix, the second path saw prior=HEALTHY and appended a second
+    CascadeEffect for the same component, producing internally
+    inconsistent output."""
+    graph = InfraGraph()
+    graph.add_component(Component(
+        id="a", name="A", type=ComponentType.DATABASE, replicas=1,
+    ))
+    graph.add_component(Component(
+        id="x", name="X", type=ComponentType.APP_SERVER, replicas=1,
+    ))
+    graph.add_component(Component(
+        id="y", name="Y", type=ComponentType.APP_SERVER, replicas=1,
+    ))
+    # Deliberately add the optional edge first so the DEGRADED branch
+    # commits BEFORE the required path via Y resolves to DOWN.
+    graph.add_dependency(Dependency(
+        source_id="x", target_id="a", dependency_type="optional",
+    ))
+    graph.add_dependency(Dependency(
+        source_id="y", target_id="a", dependency_type="requires",
+    ))
+    graph.add_dependency(Dependency(
+        source_id="x", target_id="y", dependency_type="requires",
+    ))
+
+    engine = CascadeEngine(graph)
+    chain = engine.simulate_fault(
+        Fault(target_component_id="a", fault_type=FaultType.COMPONENT_DOWN)
+    )
+
+    x_entries = [e for e in chain.effects if e.component_id == "x"]
+    # The cascade must contain EXACTLY ONE entry for x, at the worst state.
+    assert len(x_entries) == 1, (
+        f"duplicate effects detected for x: "
+        f"{[(e.health, e.reason) for e in x_entries]}"
+    )
+    assert x_entries[0].health == HealthStatus.DOWN
+
+
+def test_cascade_required_dep_singleton_ignores_dependent_replicas():
+    """Regression for Codex CRITICAL (cascade.py:756 replicas check):
+    a singleton upstream going DOWN must propagate DOWN to every required
+    dependent, regardless of the dependent's own replica count."""
+    graph = InfraGraph()
+    graph.add_component(Component(
+        id="web", name="Web", type=ComponentType.WEB_SERVER, replicas=50,
+    ))
+    graph.add_component(Component(
+        id="db", name="DB", type=ComponentType.DATABASE, replicas=1,
+    ))
+    graph.add_dependency(Dependency(
+        source_id="web", target_id="db", dependency_type="requires",
+    ))
+
+    engine = CascadeEngine(graph)
+    fault = Fault(target_component_id="db", fault_type=FaultType.COMPONENT_DOWN)
+    chain = engine.simulate_fault(fault)
+
+    web_effects = [e for e in chain.effects if e.component_id == "web"]
+    assert len(web_effects) == 1
+    assert web_effects[0].health == HealthStatus.DOWN, (
+        "50 web replicas cannot substitute for a dead singleton DB"
+    )

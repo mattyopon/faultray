@@ -136,7 +136,13 @@ class BayesianEngine:
             p_fail = self._priors[comp.id]
 
             conditional_impacts: dict[str, float] = {}
-            combined_dep_effect = 0.0
+            # Noisy-OR aggregation: independent dependency effects compose as
+            # 1 - ∏(1 - f_i), so N simultaneously-failing dependencies drive
+            # the posterior towards 1.0 instead of plateauing at the largest
+            # single factor (the previous ``max`` collapse was a known bug
+            # that caped posteriors around 0.9 even when every upstream was
+            # down).
+            non_failure_product = 1.0
 
             for dep_comp in deps:
                 edge = self._graph.get_dependency_edge(comp.id, dep_comp.id)
@@ -148,23 +154,25 @@ class BayesianEngine:
                 p_dep_fail = self._priors.get(dep_comp.id, 0.0)
 
                 # P(this fails | dep fails) = P(this fails) + factor * (1 - P(this fails))
-                # This models how a dependency failure increases the chance of this failing.
                 p_this_given_dep_fail = min(1.0, p_fail + factor * (1.0 - p_fail))
                 conditional_impacts[dep_comp.id] = round(p_this_given_dep_fail, 6)
 
-                # Contribution to posterior:
-                # P(this fails | dep status) using total probability
-                # The dependency currently being healthy doesn't increase failure risk,
-                # but it being failed does.
+                # Marginal contribution of this dependency to the combined
+                # failure effect.  For a DOWN dep the contribution is the
+                # full impact factor; otherwise it is attenuated by the
+                # dep's own prior failure probability.
                 dep_health = self._graph.get_component(dep_comp.id)
                 if dep_health and dep_health.health.value == "down":
-                    combined_dep_effect = max(combined_dep_effect, factor)
+                    contribution = factor
                 else:
-                    # Even healthy deps have a baseline failure risk
-                    combined_dep_effect = max(
-                        combined_dep_effect,
-                        factor * p_dep_fail,
-                    )
+                    contribution = factor * p_dep_fail
+
+                # Clamp to [0,1] before the noisy-OR product to stay numerically
+                # safe when impact tables are customised.
+                contribution = max(0.0, min(1.0, contribution))
+                non_failure_product *= (1.0 - contribution)
+
+            combined_dep_effect = 1.0 - non_failure_product
 
             # Posterior: P(fail | deps) = P(fail) + combined_effect * (1 - P(fail))
             posterior = min(1.0, p_fail + combined_dep_effect * (1.0 - p_fail))
@@ -221,10 +229,12 @@ class BayesianEngine:
                     posteriors[comp.id] = self._priors[comp.id] * 0.1
                 continue
 
-            # Compute posterior based on dependency evidence
+            # Compute posterior based on dependency evidence using the same
+            # noisy-OR aggregation as analyze() so multiple failing
+            # dependencies compound correctly.
             p_fail = self._priors[comp.id]
             deps = self._graph.get_dependencies(comp.id)
-            combined_effect = 0.0
+            non_failure_product = 1.0
 
             for dep_comp in deps:
                 edge = self._graph.get_dependency_edge(comp.id, dep_comp.id)
@@ -236,14 +246,19 @@ class BayesianEngine:
                 if dep_comp.id in evidence:
                     dep_status = evidence[dep_comp.id]
                     if dep_status == "down":
-                        combined_effect = max(combined_effect, factor)
+                        contribution = factor
                     elif dep_status == "degraded":
-                        combined_effect = max(combined_effect, factor * 0.5)
-                    # healthy: no additional effect
+                        contribution = factor * 0.5
+                    else:
+                        contribution = 0.0
                 else:
-                    # Use prior for unknown dependencies
                     p_dep = self._priors.get(dep_comp.id, 0.0)
-                    combined_effect = max(combined_effect, factor * p_dep)
+                    contribution = factor * p_dep
+
+                contribution = max(0.0, min(1.0, contribution))
+                non_failure_product *= (1.0 - contribution)
+
+            combined_effect = 1.0 - non_failure_product
 
             posteriors[comp.id] = round(
                 min(1.0, p_fail + combined_effect * (1.0 - p_fail)),
