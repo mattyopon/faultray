@@ -203,7 +203,7 @@ faultray ops-sim my-infra.yaml --days 7 --step 5min
 - [Your First Simulation](first-simulation.md) -- Deep dive into simulation results and how to interpret them
 - [Installation](installation.md) -- Alternative installation methods (Docker, cloud provider support)
 - [CLI Reference](../cli/commands.md) -- Full command documentation
-- [3-Layer Availability Model](../concepts/five-layer-model.md) -- Understand FaultRay's unique mathematical proof of availability ceilings
+- [3-Layer Availability Model](../concepts/five-layer-model.md) -- Understand FaultRay's model-based availability-ceiling estimation (from declared topology)
 - [Templates](https://github.com/mattyopon/faultray/tree/main/src/faultray/templates) -- Browse all built-in infrastructure templates
 
 ---

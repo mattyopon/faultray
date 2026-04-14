@@ -39,15 +39,16 @@ OPENAPI_TAGS = [
 OPENAPI_CONFIG = {
     "title": "FaultRay API",
     "description": (
-        "FaultRay — Zero-risk infrastructure chaos engineering API.\n\n"
-        "Simulate infrastructure failures, evaluate resilience, and prove "
-        "your system's availability ceiling mathematically.\n\n"
+        "FaultRay — Pre-deployment resilience simulation API (research prototype).\n\n"
+        "Simulate infrastructure failures from declared topology, evaluate "
+        "structural resilience, and estimate your system's model-based "
+        "availability ceiling — complements runtime chaos engineering.\n\n"
         "## Features\n"
-        "- Run 2,000+ chaos scenarios against your infrastructure model\n"
+        "- Run thousands of chaos scenarios against your declared infrastructure model\n"
         "- 5 simulation engines (Cascade, Dynamic, Ops, What-If, Capacity)\n"
-        "- 3-Layer Availability Limit Model\n"
-        "- Cost impact analysis with ROI calculations\n"
-        "- Multi-framework compliance assessment (SOC 2, ISO 27001, PCI DSS, DORA)\n"
+        "- 3-Layer Availability Limit Model (model-based estimate)\n"
+        "- Cost impact analysis with illustrative ROI calculations\n"
+        "- Research-prototype mappings to SOC 2 / ISO 27001 / PCI DSS / DORA frameworks (not audit-certified)\n"
         "- Security resilience scoring\n"
         "- Multi-region DR evaluation\n\n"
         "## Authentication\n"

@@ -1438,7 +1438,7 @@ def show_welcome() -> None:
     st.markdown("""
     <div class="welcome-card">
         <h1>\u26a1 FaultRay</h1>
-        <p>Simulates infrastructure failures mathematically — without touching production.</p>
+        <p>Simulates infrastructure failures from declared topology (model-based) — without touching production. Research prototype.</p>
         <p style="font-size:0.95em;color:#64748b;margin-top:8px">
             Discover single points of failure, cascade risks, and DORA compliance gaps before they hit production.
         </p>

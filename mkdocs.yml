@@ -1,5 +1,5 @@
 site_name: FaultRay Documentation
-site_description: Zero-risk infrastructure chaos simulation
+site_description: Pre-deployment resilience simulation (research prototype) — estimate your availability ceiling from declared topology, without touching production.
 theme:
   name: material
   palette:

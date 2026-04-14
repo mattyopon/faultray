@@ -240,14 +240,19 @@ class FaultRay:
         return engine.run_all_defaults(**kwargs)
 
     def validate_sla(self, target_nines: float = 4.0) -> "SLAValidationResult":
-        """Mathematically validate whether an SLA target is achievable.
+        """Model-based check of whether an SLA target looks structurally achievable.
+
+        This is a research-prototype estimate derived from the declared
+        topology; accuracy depends on how completely dependencies are
+        defined. The returned verdict is a design-review signal, not a
+        regulatory or contractual guarantee.
 
         Args:
             target_nines: Target availability expressed as nines
                 (e.g. ``4.0`` for 99.99%).
 
         Returns:
-            An ``SLAValidationResult`` with achievability verdict,
+            An ``SLAValidationResult`` with an achievability verdict,
             gap analysis, and improvement suggestions.
         """
         from faultray.simulator.sla_validator import (

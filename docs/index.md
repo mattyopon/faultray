@@ -1,6 +1,6 @@
 # FaultRay
 
-> Zero-risk infrastructure chaos simulation. Prove your availability ceiling mathematically.
+> Pre-deployment resilience simulation (research prototype). Estimate your availability ceiling from declared topology, without touching production.
 
 ## What is FaultRay?
 
