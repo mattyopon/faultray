@@ -575,3 +575,73 @@ $ grep -n "NEXT_PUBLIC_API_URL" src/lib/api.ts
 - `docs/phase0-screenshots/whatif.png`, `topology-map.png`, `cost.png`, `simulate.png` — **all 120,889 bytes, all showing the login page.** Kept intentionally as evidence that the login redirect is deterministic across every protected route.
 - `docs/phase0-screenshots/capture-report.json` — raw capture report (HTTP status, title, body text snippet, console errors, network calls) for each page.
 - This report section.
+
+---
+
+## Summary (all CLI commands + UI pages)
+
+| コマンド / ページ | Analysis | CI/CD Exit Code | Overall |
+|---|---|---|---|
+| `faultray simulate` | ✓ (66 scenarios, cascade correct) | — | ✓ |
+| `faultray financial` | ✓ (component-level loss, --cost-per-hour works) | — | ✓ |
+| `faultray scan --k8s` | △ (3 components detected; east/west edges missing) | — | △ |
+| `faultray tf-check` | △ (risk table correct; score_delta stuck at 0.0) | ✗ (`--fail-on-regression` exits 0 despite HIGH RISK) | ✗ |
+| `faultray gate check` | ✓ (before/after comparison, findings enumerated) | ✗ (exits 0 when `passed: false`) | ✗ |
+| `faultray gate terraform-plan` | ✓ (score 88→0 detected) | ✗ (exits 0 when BLOCKED) | ✗ |
+| faultray-app `/whatif` | ✗ (auth-gated; post-login API 404 → hardcoded fallback) | — | ✗ |
+| faultray-app `/topology-map` | ✗ (auth-gated; `/api/v1/graph-data` 404) | — | ✗ |
+| faultray-app `/cost` | ✗ (auth-gated; `/api/finance` 404) | — | ✗ |
+| faultray-app `/simulate` | ✗ (auth-gated; `/api/simulate` 404) | — | ✗ |
+
+Legend: ✓ works as advertised · △ works with caveats · ✗ broken or absent
+
+---
+
+## Phase 1 Scope Decision
+
+Based on the above, the next phase should prioritize **making claimed features actually work** before adding new ones. Proposed Phase 1 work items (ranked by user impact):
+
+### Tier 1 — Blockers for any CI/CD user (must fix before any customer)
+
+1. **Fix `gate check` exit code** — `sys.exit(0 if result['passed'] else 1)` one-liner. Regression test: use the `/tmp/before-model.json` + `/tmp/after-model.json` reproducer from Task 4.
+2. **Fix `gate terraform-plan` exit code** — same pattern.
+3. **Fix `tf-check --fail-on-regression`** — currently fires only on `score_delta < 0`, but destructive-only plans never change the score. Should also fire on `recommendation == "high risk"` OR max per-resource risk ≥ threshold. Regression test: `tests/fixtures/sample-tf-plan.json` (added in Task 3).
+
+### Tier 2 — Blockers for faultray-app dashboard users
+
+4. **Fix env-var name mismatch** — `.env.local` sets `NEXT_PUBLIC_FAULTRAY_API_URL`, `src/lib/api.ts` reads `NEXT_PUBLIC_API_URL`. Rename one side. Trivial.
+5. **Wire business-logic API routes** — Either (a) proxy `/api/analysis`, `/api/finance`, `/api/v1/graph-data`, `/api/simulate` from Next.js to the Python FastAPI in `api/engine.py` etc., or (b) build them natively in Next.js. Currently the dashboard is a Potemkin village behind auth.
+6. **Remove silent mock fallback in `/whatif`** — the hardcoded `85.2` score on API failure hides (5) from users.
+
+### Tier 3 — Meaningful quality improvements
+
+7. **K8s scanner east/west edge inference** — use Service.spec.selector + Endpoints API to draw HTTP-tier deps, not just the DB heuristic. Today, `nginx + app + redis` only gets `app → redis` + `nginx → redis` but misses the obvious `nginx → app`.
+8. **Port/protocol in inferred deps** — Currently `port: 0`, `latency_ms: 0.0` on all scanner-inferred deps. Pull from Service spec.
+9. **Render 1-decimal ROI in text output of `faultray financial`** — text shows `0x ROI`, JSON shows `"roi": 0.4`. Skimmers miss the value.
+
+### Tier 4 — Polish / DX
+
+10. **Clip column widths in `financial` rich table** (minor).
+11. **Route stderr messages out of stdout** for `gate terraform-plan --json` (minor).
+12. **Document Playwright MCP sudo-less setup** via `--executable-path` pointing at Chrome for Testing.
+
+### Out-of-scope for Phase 1
+
+- Adding new CLI commands
+- Adding new UI pages
+- Adding new integrations (Sakura, Alibaba, Oracle — already stubbed)
+- SaaS / billing / auth flows (PR #40 just pruned these; keep pruned)
+
+### Recommended Phase 1 success criterion
+
+All Tier 1 + Tier 2 fixes landed on main, with regression tests added, such that:
+- `gate check`, `gate terraform-plan`, `tf-check --fail-on-regression` correctly exit 1 for all 3 scenarios documented in this report.
+- faultray-app dev server can render `/whatif`, `/cost`, `/simulate`, `/topology-map` with real data after login, or emits a "backend unreachable" banner (no silent mocks).
+
+---
+
+## Phase 0 process notes (for future baseline validations)
+
+- **Verbatim evidence**: All judgments above cite either real command output (`/tmp/*.log`), real JSON (`/tmp/k8s-topology.json`), or real screenshots (`docs/phase0-screenshots/*.png`). No paraphrase.
+- **Environment readiness**: First hour was lost to Docker Desktop WSL integration, sudo-less pip (`--break-system-packages`), `unzip` absence (Python `zipfile` workaround), and Playwright MCP's chrome-path assumption. Future Phase 0 should ship a `scripts/phase0-env-check.sh` that fails fast.
+- **Pragmatic subagent use**: Task 2 (K8s, the only task with nontrivial integration-test code) used a dispatched implementer subagent. Tasks 3–5 were simple CLI-and-judge patterns where PM-direct execution was faster than subagent dispatch. Task 6 required MCP access (main session only). Pattern: subagent where the deliverable is persistent code artifact > 50 lines; PM direct where the deliverable is verbatim evidence.
