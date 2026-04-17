@@ -33,6 +33,7 @@ export default function WhatIfPage() {
   const [value, setValue] = useState(2);
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<WhatIfResult | null>(null);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   const locale = useLocale();
   const t = appDict.whatif[locale] ?? appDict.whatif.en;
@@ -40,27 +41,21 @@ export default function WhatIfPage() {
 
   const runAnalysis = async () => {
     setLoading(true);
+    setErrorMessage(null);
     try {
       const res = await api.whatIf(component, parameter, value);
       setResult(res);
-    } catch {
-      // Generate a local estimate
-      setResult({
-        baseline: { overall_score: 85.2, availability_estimate: "99.99%", nines: 4.0 },
-        modified: {
-          overall_score: Math.min(100, Math.max(0, 85.2 + (value - selectedParam.default) * 1.5)),
-          nines: 4.0 + (value - selectedParam.default) * 0.1,
-        },
-        delta: {
-          score: Math.round((value - selectedParam.default) * 1.5 * 10) / 10,
-          direction: value > selectedParam.default ? "improvement" : value < selectedParam.default ? "degradation" : "neutral",
-        },
-        component_id: component,
-        parameter,
-        original_value: selectedParam.default,
-        new_value: value,
-        available_parameters: PARAMETERS.map((p) => p.id),
-      });
+    } catch (err) {
+      // Surface the real failure rather than silently fabricating a score.
+      // Previously we returned a hardcoded `baseline: { overall_score: 85.2 }`
+      // here, which hid a misconfigured NEXT_PUBLIC_FAULTRAY_API_URL / missing
+      // backend from users (Phase 0 validation report, Task 6, 2026-04-17).
+      setResult(null);
+      setErrorMessage(
+        err instanceof Error && err.message
+          ? err.message
+          : "Analysis backend is unreachable. Check NEXT_PUBLIC_FAULTRAY_API_URL and the API service."
+      );
     } finally {
       setLoading(false);
     }
@@ -168,6 +163,23 @@ export default function WhatIfPage() {
 
         {/* Results */}
         <div className="space-y-6">
+          {errorMessage && !result ? (
+            <Card>
+              <div className="p-4 rounded-lg bg-red-500/10 border border-red-500/40">
+                <h3 className="text-sm font-semibold text-red-400 uppercase tracking-wider mb-2">
+                  Backend unreachable
+                </h3>
+                <p className="text-sm text-[var(--text-secondary)] whitespace-pre-wrap">
+                  {errorMessage}
+                </p>
+                <p className="text-xs text-[var(--text-muted)] mt-3">
+                  Configure <code>NEXT_PUBLIC_FAULTRAY_API_URL</code> in
+                  <code>.env.local</code> (or deploy env) and ensure the
+                  FaultRay API service is running.
+                </p>
+              </div>
+            </Card>
+          ) : null}
           {result ? (
             <>
               <Card>

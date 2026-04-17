@@ -143,7 +143,11 @@ export default function ReportsPage() {
 
   const downloadHtml = async () => {
     try {
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || ""}/api/report-executive?format=html&lang=${reportLang}`);
+      const apiBase =
+        process.env.NEXT_PUBLIC_FAULTRAY_API_URL ||
+        process.env.NEXT_PUBLIC_API_URL ||
+        "";
+      const res = await fetch(`${apiBase}/api/report-executive?format=html&lang=${reportLang}`);
       const html = await res.text();
       const blob = new Blob([html], { type: "text/html" });
       const url = URL.createObjectURL(blob);

@@ -1,5 +1,13 @@
-// LIB-01 fix: validate API_BASE is defined when set to a non-empty value
-const API_BASE = process.env.NEXT_PUBLIC_API_URL || "";
+// LIB-01 fix: validate API_BASE is defined when set to a non-empty value.
+//
+// Env var name aligns with .env.local (`NEXT_PUBLIC_FAULTRAY_API_URL`).
+// A legacy `NEXT_PUBLIC_API_URL` is still honored as a fallback so existing
+// deploys and CI envs keep working through the rename rollout; new code
+// should set only NEXT_PUBLIC_FAULTRAY_API_URL.
+const API_BASE =
+  process.env.NEXT_PUBLIC_FAULTRAY_API_URL ||
+  process.env.NEXT_PUBLIC_API_URL ||
+  "";
 
 interface ApiOptions {
   method?: string;
