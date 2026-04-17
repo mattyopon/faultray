@@ -77,6 +77,11 @@ class K8sScanner:
         self._warnings: list[str] = []
         # Service selector tracking: service_comp_id -> selector labels
         self._service_selectors: dict[str, dict[str, str]] = {}
+        # Service port tracking: service_comp_id -> exposed port (first entry of spec.ports)
+        # Used by _infer_dependencies to attach accurate port/protocol to edges
+        # and to distinguish front-end (80/443) vs back-end ports for
+        # east/west HTTP-tier dependency inference.
+        self._service_ports: dict[str, int] = {}
         # Deployment/StatefulSet label tracking: comp_id -> labels
         self._workload_labels: dict[str, dict[str, str]] = {}
         # HPA targets: comp_id -> AutoScalingConfig
@@ -281,9 +286,12 @@ class K8sScanner:
                 svc_comp_id = f"svc-{ns}-{name}"
                 self._service_selectors[svc_comp_id] = selector
 
-                # Determine port
+                # Capture the first exposed port so _infer_dependencies can
+                # (1) attach it to the generated edge and
+                # (2) decide whether the service is a front-end (80/443) or
+                #     back-end (8080/8443/3000/...) for east/west inference.
                 if svc.spec.ports:
-                    svc.spec.ports[0].port or 0
+                    self._service_ports[svc_comp_id] = svc.spec.ports[0].port or 0
         except Exception as exc:
             self._warnings.append(f"Service scan error: {exc}")
 
@@ -487,8 +495,38 @@ class K8sScanner:
 
     # ── Dependency Inference ─────────────────────────────────────────────────
 
+    # Common back-end HTTP service ports. A workload whose exposing Service
+    # listens on one of these is assumed to be a callable HTTP back-end; other
+    # same-namespace workloads that aren't already classified as its source
+    # (ingress/front-end) become candidate callers. This lets us infer
+    # nginx -> app style east/west edges that the old DB/CACHE-only filter
+    # missed (see Phase 0 validation report, 2026-04-17 §K8s Discovery).
+    #
+    # Intentionally excludes 80/443 so we don't flip the direction — a service
+    # on :80 is a front-end and should not be a *target* of another app_server.
+    _BACKEND_HTTP_PORTS: frozenset[int] = frozenset({
+        3000,   # Node/Express/Next.js
+        5000,   # Flask/Python default
+        8000,   # Django/Python default
+        8080,   # Tomcat/generic alt-http
+        8443,   # Generic alt-https
+        9000,   # PHP-FPM, Sonarqube
+        9090,   # Prometheus
+    })
+
     def _infer_dependencies(self, graph: InfraGraph) -> None:
-        """Infer dependencies from service selectors and network policies."""
+        """Infer dependencies from service selectors and network policies.
+
+        Edge-inference rules (applied per Service):
+        1. **Ingress → backing workload** (HTTP on :80, or :443 if TLS).
+        2. **Same-ns workload → backing workload** when the backing workload
+           is a DATABASE or CACHE (the original DB-heuristic rule).
+        3. **Same-ns workload → backing workload** when the backing Service
+           exposes a back-end HTTP port (see ``_BACKEND_HTTP_PORTS``). This
+           is the east/west HTTP-tier rule; it infers nginx→app without
+           emitting the reverse app→nginx (nginx's Service is on :80 so
+           it fails rule 3 when we'd try to use it as a target).
+        """
         existing_edges: set[tuple[str, str]] = set()
 
         # Match services to workloads via label selectors, then create edges
@@ -510,8 +548,9 @@ class K8sScanner:
             if len(parts) < 3:
                 continue
             svc_ns = parts[1]
+            svc_port = self._service_ports.get(svc_comp_id, 0)
 
-            # Create edges from ingress to matching workloads
+            # Rule 1 — Ingress → matching workloads
             for comp_id in graph.components:
                 if not comp_id.startswith("ingress-"):
                     continue
@@ -530,12 +569,11 @@ class K8sScanner:
                         target_id=workload_id,
                         dependency_type="requires",
                         protocol="http",
-                        port=80,
+                        port=svc_port if svc_port else 80,
                     )
                     graph.add_dependency(dep)
 
-            # Create inter-workload edges: if workload A is in same namespace and
-            # references a service whose selector matches workload B
+            # Rules 2 & 3 — inter-workload edges in the same namespace.
             for other_comp_id in graph.components:
                 if other_comp_id.startswith("ingress-"):
                     continue
@@ -553,15 +591,37 @@ class K8sScanner:
                     edge_key = (other_comp_id, workload_id)
                     if edge_key in existing_edges:
                         continue
-                    # Only create if the target is a database or cache (likely dependency)
                     target_comp = graph.get_component(workload_id)
-                    if target_comp and target_comp.type in (ComponentType.DATABASE, ComponentType.CACHE):
+                    if target_comp is None:
+                        continue
+
+                    # Rule 2 — database/cache targets (original behaviour)
+                    if target_comp.type in (ComponentType.DATABASE, ComponentType.CACHE):
                         existing_edges.add(edge_key)
                         dep = Dependency(
                             source_id=other_comp_id,
                             target_id=workload_id,
                             dependency_type="requires",
                             protocol="tcp",
-                            port=target_comp.port if target_comp.port else 0,
+                            port=svc_port if svc_port else (
+                                target_comp.port if target_comp.port else 0
+                            ),
+                        )
+                        graph.add_dependency(dep)
+                        continue
+
+                    # Rule 3 — east/west HTTP tier: app_server → app_server
+                    # iff the backing Service exposes a back-end port.
+                    if (
+                        target_comp.type == ComponentType.APP_SERVER
+                        and svc_port in self._BACKEND_HTTP_PORTS
+                    ):
+                        existing_edges.add(edge_key)
+                        dep = Dependency(
+                            source_id=other_comp_id,
+                            target_id=workload_id,
+                            dependency_type="requires",
+                            protocol="http",
+                            port=svc_port,
                         )
                         graph.add_dependency(dep)

@@ -702,6 +702,168 @@ class TestDependencyInference:
         )
         assert found
 
+    # ------------------------------------------------------------------
+    # Phase 1 Tier 3: east/west HTTP-tier inference (nginx -> app edge).
+    # ------------------------------------------------------------------
+
+    def test_eastwest_edge_created_when_target_service_uses_backend_port(self):
+        """app_server -> app_server edge created when target Service is on 8080.
+
+        Mirrors the Phase 0 kind-cluster topology (nginx :80, app :8080,
+        redis :6379). Before Phase 1 Tier 3 the scanner only emitted
+        nginx->redis and app->redis. It now also emits nginx->app because
+        app's Service exposes 8080 (a back-end port in BACKEND_HTTP_PORTS).
+        """
+        scanner = _make_scanner()
+        graph = InfraGraph()
+
+        from faultray.model.components import Component
+
+        nginx = Component(
+            id="deploy-demo-nginx", name="demo/nginx",
+            type=ComponentType.APP_SERVER, tags=["deployment", "namespace:demo"]
+        )
+        app = Component(
+            id="deploy-demo-app", name="demo/app",
+            type=ComponentType.APP_SERVER, tags=["deployment", "namespace:demo"]
+        )
+        graph.add_component(nginx)
+        graph.add_component(app)
+
+        scanner._service_selectors = {
+            "svc-demo-nginx": {"app": "nginx"},
+            "svc-demo-app":   {"app": "app"},
+        }
+        scanner._service_ports = {
+            "svc-demo-nginx": 80,    # front-end: NOT a valid east/west target
+            "svc-demo-app":   8080,  # back-end:  IS a valid east/west target
+        }
+        scanner._workload_labels = {
+            "deploy-demo-nginx": {"app": "nginx"},
+            "deploy-demo-app":   {"app": "app"},
+        }
+
+        scanner._infer_dependencies(graph)
+
+        edges = graph.all_dependency_edges()
+
+        # Forward edge (nginx -> app) must be created.
+        nginx_to_app = [
+            e for e in edges
+            if e.source_id == "deploy-demo-nginx"
+            and e.target_id == "deploy-demo-app"
+        ]
+        assert len(nginx_to_app) == 1, (
+            f"expected 1 nginx->app edge, got {len(nginx_to_app)} "
+            f"(all edges: {[(e.source_id, e.target_id) for e in edges]})"
+        )
+        # Port must now be plumbed through, not 0 as in Phase 0.
+        assert nginx_to_app[0].port == 8080
+        assert nginx_to_app[0].protocol == "http"
+
+        # Reverse edge (app -> nginx) must NOT be created — nginx's Service
+        # is on :80 (front-end port), so it fails the back-end-port filter.
+        app_to_nginx = [
+            e for e in edges
+            if e.source_id == "deploy-demo-app"
+            and e.target_id == "deploy-demo-nginx"
+        ]
+        assert app_to_nginx == [], (
+            f"expected no app->nginx edge (nginx is on :80, a front-end port), "
+            f"got {len(app_to_nginx)}: {[(e.source_id, e.target_id) for e in app_to_nginx]}"
+        )
+
+    def test_no_eastwest_edge_when_both_services_on_frontend_ports(self):
+        """Two app_servers both on :80 must NOT generate any east/west edge."""
+        scanner = _make_scanner()
+        graph = InfraGraph()
+
+        from faultray.model.components import Component
+
+        a = Component(
+            id="deploy-demo-a", name="demo/a",
+            type=ComponentType.APP_SERVER, tags=["deployment", "namespace:demo"]
+        )
+        b = Component(
+            id="deploy-demo-b", name="demo/b",
+            type=ComponentType.APP_SERVER, tags=["deployment", "namespace:demo"]
+        )
+        graph.add_component(a)
+        graph.add_component(b)
+
+        scanner._service_selectors = {
+            "svc-demo-a": {"app": "a"},
+            "svc-demo-b": {"app": "b"},
+        }
+        scanner._service_ports = {
+            "svc-demo-a": 80,
+            "svc-demo-b": 443,
+        }
+        scanner._workload_labels = {
+            "deploy-demo-a": {"app": "a"},
+            "deploy-demo-b": {"app": "b"},
+        }
+
+        scanner._infer_dependencies(graph)
+
+        edges = graph.all_dependency_edges()
+        eastwest = [
+            e for e in edges
+            if (e.source_id, e.target_id) in
+               {("deploy-demo-a", "deploy-demo-b"), ("deploy-demo-b", "deploy-demo-a")}
+        ]
+        assert eastwest == [], (
+            f"expected 0 east/west edges (both :80/:443 are front-end), got {eastwest!r}"
+        )
+
+    def test_database_edge_carries_service_port_not_zero(self):
+        """Regression for Phase 0 finding: inferred deps had port=0.
+
+        After this fix, dependency edges into databases use the Service's
+        exposed port (e.g. 6379 for redis) instead of the unpopulated
+        Component.port.
+        """
+        scanner = _make_scanner()
+        graph = InfraGraph()
+
+        from faultray.model.components import Component
+
+        app = Component(
+            id="deploy-demo-app", name="demo/app",
+            type=ComponentType.APP_SERVER, tags=["deployment", "namespace:demo"]
+        )
+        redis = Component(
+            # NOTE: Component.port is intentionally left 0 so we verify
+            # the Service port is what gets wired onto the edge.
+            id="deploy-demo-redis", name="demo/redis",
+            type=ComponentType.DATABASE, tags=["deployment", "namespace:demo"]
+        )
+        graph.add_component(app)
+        graph.add_component(redis)
+
+        scanner._service_selectors = {
+            "svc-demo-redis": {"app": "redis"},
+        }
+        scanner._service_ports = {
+            "svc-demo-redis": 6379,
+        }
+        scanner._workload_labels = {
+            "deploy-demo-app":   {"app": "app"},
+            "deploy-demo-redis": {"app": "redis"},
+        }
+
+        scanner._infer_dependencies(graph)
+
+        edges = [
+            e for e in graph.all_dependency_edges()
+            if e.source_id == "deploy-demo-app"
+            and e.target_id == "deploy-demo-redis"
+        ]
+        assert len(edges) == 1
+        assert edges[0].port == 6379, (
+            f"expected port=6379 from Service spec, got {edges[0].port}"
+        )
+
 
 # ---------------------------------------------------------------------------
 # Tests: Full scan integration
