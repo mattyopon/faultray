@@ -1,4 +1,4 @@
 # Copyright (c) 2025-2026 Yutaro Maeda. All rights reserved.
-# Licensed under the Business Source License 1.1. See LICENSE file for details.
+# Licensed under the Apache License 2.0. See LICENSE file for details.
 
 """CI/CD resilience gate integration for FaultRay."""
