@@ -23,7 +23,7 @@ jobs:
           path-to-signatures: "signatures/cla.json"
           path-to-document: "https://github.com/${{ github.repository }}/blob/main/CLA.md"
           branch: "main"
-          allowlist: dependabot[bot],github-actions[bot]
+          allowlist: dependabot[bot],github-actions[bot],devin-ai-integration[bot]
           custom-notsigned-prcomment: >
             Thank you for your contribution to FaultRay! Before we can merge this PR,
             we need you to sign the Contributor License Agreement (CLA).
