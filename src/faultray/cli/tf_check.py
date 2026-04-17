@@ -142,6 +142,22 @@ def tf_check(
             )
         exit_code = 1
 
+    # Check for high-risk changes flagged by the recommendation engine.
+    # Destructive-only plans (e.g. a single DB delete) often keep
+    # score_before == score_after == 100 because the simulation has no
+    # prior-state model to compare against, so ``score_delta`` never drops
+    # below zero. The ``recommendation`` layer DOES detect the hazard via
+    # per-resource risk_level (aws_db_instance delete → risk 10 →
+    # "high risk"), so gate on it explicitly under --fail-on-regression.
+    if fail_on_regression and analysis.recommendation == "high risk":
+        if not json_output:
+            console.print(
+                f"\n[red]HIGH RISK CHANGE DETECTED: recommendation="
+                f"{analysis.recommendation!r} "
+                f"(resources_destroyed={analysis.resources_destroyed})[/]"
+            )
+        exit_code = 1
+
     # Check minimum score
     if analysis.score_after < min_score:
         if not json_output:

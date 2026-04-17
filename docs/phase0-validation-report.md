@@ -11,6 +11,42 @@ Judgement legend:
 - △ — partially verified, or verified with caveats worth documenting.
 - ✗ — failed / not verified.
 
+---
+
+## Correction (2026-04-17, post-Phase-0 re-verification)
+
+⚠️ Two of the three "broken CI/CD exit gate" findings in this report
+(Task 4 and part of the Summary) were **false positives caused by a shell
+pipeline error** during initial verification:
+
+```bash
+# WRONG — echo $? returns tail's exit (always 0), not the CLI's
+python3 -m faultray gate check --before ... --after ... 2>&1 | tail -3
+echo "exit: $?"
+```
+
+Re-verified without the pipe:
+
+| Command | Original claim | Re-verified |
+|---|---|---|
+| `tf-check --fail-on-regression` | ✗ exit 0 on HIGH RISK | ✗ **confirmed bug** (exit 0 — fixed by this PR) |
+| `gate check` | ✗ exit 0 on `passed: false` | ✅ **actually exit 1** (correctly gates) |
+| `gate terraform-plan` | ✗ exit 0 on BLOCKED | ✅ **actually exit 1** (correctly gates) |
+
+Only **`tf-check --fail-on-regression`** is actually broken. The root cause
+is that destructive-only plans (single DB delete) keep `score_delta == 0.0`
+because the simulation has no prior-state model — the ``recommendation``
+engine correctly flags "high risk" via per-resource `risk_level`, but the
+CLI exit logic only checks `score_delta < 0`.
+
+Task 4 judgements below (rows 3–4) remain in the original form for audit
+trail purposes; the correction above supersedes them. Phase 1 Tier 1 scope
+is revised from 3 bugs to 1 bug.
+
+Process lesson: always run `cmd; echo "EXIT=$?"` without a pipe, or use
+`set -o pipefail`. Filed into the memory system as
+`feedback_pipe_exit_code_trap`.
+
 Environment:
 
 - Date: 2026-04-17
