@@ -115,10 +115,11 @@ independent-product composition.
 54~real-world cloud incidents (2017--2024: AWS, GCP, Azure, Meta,
 Cloudflare, GitHub, and 16 others). For each, a topology graph was
 constructed from the public post-mortem and the documented root
-cause was injected. The cascade engine achieved $F_1 = 0.87$ (precision $= 1.00$,
-recall $= 0.81$, severity accuracy $= 0.58$). We stress this is
-\emph{illustrative}, not predictive: topologies were constructed
-with knowledge of the outcome.
+cause was injected. The cascade engine achieved macro-averaged
+$F_1 = 0.87$ (precision $= 1.00$, recall $= 0.81$, severity accuracy
+$= 0.58$); all imperfections are under-propagation (missed components),
+not over-propagation. We stress this is \emph{illustrative}, not
+predictive: topologies were constructed with knowledge of the outcome.
 
 \textbf{Scale.} The engine processes a 50-component topology
 in ${<}10$\,ms on commodity hardware (Apple M1). The implementation

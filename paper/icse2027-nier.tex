@@ -44,9 +44,11 @@ $O(|V|{+}|E|)$ complexity, monotonicity, and bounded blast radius;
 and (2)~an $N$-layer availability limit model composing categorical
 ceilings via $\min$ rather than the classical series-product.
 A post-hoc backtest on 54~real-world cloud incidents (2017--2024,
-21~providers) achieves $F_1 = 0.87$, precision $= 1.00$, recall $= 0.81$
-(severity accuracy $= 0.58$). We do not claim prospective predictive
-accuracy; the backtest is illustrative. The prototype is released
+21~providers) achieves macro-averaged $F_1 = 0.87$, precision $= 1.00$,
+recall $= 0.81$ (severity accuracy $= 0.58$); all imperfections are
+under-propagation (missed components), not over-propagation. We do
+not claim prospective predictive accuracy; the backtest is
+illustrative. The prototype is released
 under Apache~2.0 on PyPI.
 \end{abstract}
 
@@ -272,9 +274,10 @@ built with knowledge of the outcome. We \textbf{do not} claim
 prospective prediction capability.
 
 \textbf{Results.} Across 54~incidents: cascade path
-$F_1 = 0.866$ (precision $= 1.000$, recall $= 0.810$);
-severity accuracy $= 0.577$. Table~\ref{tab:provider} shows the
-per-provider breakdown.
+macro-averaged $F_1 = 0.866$ (precision $= 1.000$, recall $= 0.810$);
+severity accuracy $= 0.577$. The $F_1$ is the arithmetic mean of
+per-incident $F_1$ scores, not $2PR/(P{+}R)$.
+Table~\ref{tab:provider} shows the per-provider breakdown.
 The engine processes a 50-component topology in ${<}10$\,ms on
 commodity hardware.
 
@@ -404,7 +407,7 @@ that we plan to adapt.
 The cascade engine operates on a static topology and does not
 capture runtime dynamics (auto-healing, load balancer failover,
 Kubernetes rescheduling). Dependency types are simplified to three
-categories. The $F_1 = 0.866$ result is post-hoc and must not be
+categories. The macro-averaged $F_1 = 0.866$ result is post-hoc and must not be
 interpreted as predictive accuracy on unseen topologies. The $\min$-composition is a
 modeling choice, not a universal law. The cyclic graph termination
 relies on a depth limit ($D_{\max} = 20$), which is an engineering

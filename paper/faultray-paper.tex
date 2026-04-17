@@ -1052,49 +1052,59 @@ simplicity and to avoid confounds from existing dependency
 structure.
 
 \paragraph{Baseline imperfection on the full test suite.}
-We note that the baseline $F_1$ across all 36~incident topologies
-is 0.971, not 1.000. Seven incidents exhibit over-propagation
-(6~cases, where the engine predicts cascade to a component not
-in the ground truth) or under-propagation (1~case, where the
-engine misses an affected component) relative to the
-ground-truth cascade path. This reflects a real limitation:
+We note that the macro-averaged $F_1$ across all 36~incident
+topologies is 0.971, not 1.000.
+Seven incidents exhibit under-propagation
+(the engine misses one or more affected components present
+in the ground truth, i.e., false negatives) relative to the
+ground-truth cascade path. Precision remains 1.000 across all
+36~incidents (no false positives: the engine never predicts
+cascade to a component that was not actually affected).
+This reflects a real limitation:
 the engine's propagation rules (particularly for optional and
-async dependencies) do not perfectly match the actual cascade
-behavior in all cases. Table~\ref{tab:backtest} shows 8 representative incidents from
+async dependencies) do not capture all real-world cascade paths.
+Table~\ref{tab:backtest} shows 8 representative incidents from
 the 29 that achieve $F_1 = 1.000$; the full 36-incident results
 are available in the repository.
+Note: $F_1 = 0.971$ is the arithmetic mean of per-incident $F_1$
+scores (macro-average), not the harmonic mean of macro-precision
+and macro-recall.
 
 Table~\ref{tab:imperfect} summarizes the seven imperfect incidents by failure mode and root cause.
 
 \begin{table}[h]
 \centering
 \caption{Seven incidents with imperfect cascade reproduction ($F_1 < 1.000$).
-  All six over-propagation cases arise from optional-dependency attenuation:
-  the engine propagates \textsc{Degraded} to components that were
-  isolated by circuit breakers or feature flags in the real incident.
-  The one under-propagation case reflects a missing implicit dependency
-  (shared storage or DNS) not captured in the topology YAML.}
+  All seven cases are under-propagation: the engine misses one or more
+  affected components present in the ground truth (false negatives).
+  Precision remains 1.000 for all incidents (no false positives).
+  Root causes include implicit dependencies not captured in the
+  topology YAML and scope limitations in the propagation rules.}
 \label{tab:imperfect}
 \small
 \begin{tabular}{@{}lllp{5.5cm}@{}}
 \toprule
 \textbf{Incident} & \textbf{Year} & \textbf{Mode} & \textbf{Root Cause of Mismatch} \\
 \midrule
-Provider A outage  & 2017 & over  & Optional dep.\ propagated to isolated replica group \\
-Provider B routing & 2019 & over  & CB trip masked downstream; engine still propagated \\
-Provider C auth    & 2020 & over  & Feature-flag disabled path not modeled as isolated \\
-Provider D storage & 2021 & over  & Async dep.\ to read-replica treated as active path \\
-Provider E BGP     & 2022 & over  & BGP scope limited to 19 DCs; engine applied globally \\
-Provider F SSL     & 2022 & over  & Certificate scope mismatch; engine over-generalized \\
+Provider A outage  & 2017 & under & Isolated replica group not modeled; engine missed affected components \\
+Provider B routing & 2019 & under & CB-protected downstream path not modeled; engine missed cascade beyond CB \\
+Provider C auth    & 2020 & under & Feature-flag gated path not modeled; engine missed affected services \\
+Provider D storage & 2021 & under & Async read-replica cascade path absent from topology \\
+Provider E BGP     & 2022 & under & BGP scope limited to 19 DCs; topology incomplete \\
+Provider F SSL     & 2022 & under & Certificate scope broader than modeled; engine missed affected domains \\
 Provider G control & 2023 & under & Implicit shared-state dependency absent from YAML \\
 \bottomrule
 \end{tabular}
 \end{table}
 
 A separate evaluation on a 54-incident superset spanning 21 providers
-and 2017--2024 shows $F_1 = 0.87$ and recall $= 0.81$, consistent
+and 2017--2024 shows macro-averaged $F_1 = 0.866$, precision $= 1.000$,
+and recall $= 0.810$, consistent
 with the modeling limitations described above; details are reported
-in a companion short paper.
+in a companion short paper. (The $F_1$ is the arithmetic mean of
+per-incident $F_1$ scores; it differs from
+$2 \cdot P \cdot R / (P + R) = 0.895$ because macro-averaging
+computes the mean of ratios rather than the ratio of means.)
 
 \paragraph{Severity accuracy.}
 The severity accuracy of 0.819 is the only non-trivial metric in
@@ -1186,7 +1196,7 @@ cascade simulation, and the formal guarantees
 which are captured by the binary $F_1$ metric.
 
 \paragraph{Min-composition vs.\ series-product.}
-On all 36~test topologies, the 3-layer min-composition yields
+On all 36~test topologies, the 5-layer min-composition yields
 system availability estimates 0.01--0.10~percentage points
 \emph{higher} (more optimistic) than the classical
 series-product (mean: 0.02~pp), corresponding to
