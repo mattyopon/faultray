@@ -353,7 +353,7 @@ export default function DemoPage() {
               icon: <BarChart3 size={20} className="text-blue-400" />,
               title: locale === "ja" ? "リスクスコア確認" : "Review Risk Score",
               desc: locale === "ja"
-                ? "N-Layer可用性モデルで稼働率の上限を数学的に算出。重大な弱点をハイライト"
+                ? "N-Layer可用性モデルで稼働率の上限をモデルベースで推定。構造的な弱点をハイライト（結果は宣言されたトポロジーに依存）"
                 : "N-Layer model calculates availability ceiling. Critical weaknesses highlighted",
               cta: locale === "ja" ? "業種を選んでプレビュー ↑" : "Select industry above ↑",
               href: null,

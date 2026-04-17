@@ -1,7 +1,7 @@
 {
   "metadata": {
-    "title": "FaultRay — Risikofreies Infrastruktur-Chaos-Engineering",
-    "description": "Beweisen Sie die Verfügbarkeitsobergrenze Ihres Systems mathematisch — ohne die Produktionsumgebung zu berühren. Reine Simulations-Chaos-Engineering mit über 2.000 Szenarien."
+    "title": "FaultRay — Resilienzsimulation vor Deployment (Forschungsprototyp)",
+    "description": "Schätzen Sie die strukturelle Verfügbarkeitsobergrenze Ihres Systems durch In-Memory-Simulation aus deklarierter Topologie — ohne die Produktionsumgebung zu berühren. Forschungsprototyp; ergänzt Runtime-Chaos-Engineering."
   },
   "nav": {
     "features": "Funktionen",
@@ -12,8 +12,8 @@
   },
   "hero": {
     "badge": "Open Source · Apache License 2.0",
-    "subtitle": "Risikofreies Infrastruktur-Chaos-Engineering",
-    "description": "Beweisen Sie die Verfügbarkeitsobergrenze Ihres Systems mathematisch — ohne die Produktionsumgebung zu berühren.",
+    "subtitle": "Resilienzsimulation vor Deployment (Forschungsprototyp)",
+    "description": "Schätzen Sie die strukturelle Verfügbarkeitsobergrenze Ihres Systems durch In-Memory-Simulation — Forschungsprototyp, ohne die Produktionsumgebung zu berühren.",
     "stats": {
       "scenarios": "Szenarien",
       "engines": "Engines",
@@ -33,7 +33,7 @@
       "Risiko echter Ausfälle während des Tests",
       "Hohe Infrastrukturkosten",
       "Komplexes Setup und Abbau",
-      "Kein mathematischer Verfügbarkeitsnachweis"
+      "Keine modellbasierte Verfügbarkeitsschätzung"
     ],
     "descriptionParts": {
       "before": "Bestehende Chaos-Tools injizieren ",
@@ -52,7 +52,7 @@
     ],
     "descriptionParts": {
       "before": "FaultRay verwendet ",
-      "highlight": "rein mathematische Simulation",
+      "highlight": "modellbasierte Simulation",
       "after": "."
     }
   },
@@ -87,20 +87,20 @@
     "subheading": "Zehn Säulen des risikofreien Chaos-Engineering",
     "cards": [
       {
-        "title": "100+ Simulation Engines",
+        "title": "Mehrere Simulations-Engines",
         "desc": "Netzwerk, Prozess, Ressourcen, Abhängigkeiten, Latenz, Blast Radius, SLA-Vertragsvalidierung und Dutzende mehr — angetrieben durch Monte Carlo, Markov-Ketten und Warteschlangentheorie."
       },
       {
-        "title": "2.000+ automatisch generierte Szenarien",
+        "title": "Tausende automatisch generierte Szenarien",
         "desc": "Von Einzelknoten-Ausfällen bis zu kaskadierenden Multi-Region-Ausfällen. Jedes Szenario wird aus Ihrer Topologie-YAML generiert — über 2.000 einzigartige Szenarien für eine typische 10-Komponenten-Topologie."
       },
       {
         "title": "N-Layer (5-Layer) Availability Model",
-        "desc": "Das einzige Tool, das Ihre Verfügbarkeitsobergrenze in fünf unabhängige Schichten zerlegt: Hardware, Software, Theoretical, Operational und External SLA."
+        "desc": "Zerlegt Ihre Verfügbarkeitsobergrenzen-Schätzung in fünf unabhängige Schichten: Hardware, Software, Theoretical, Operational und External SLA. Modellbasiert; die Genauigkeit hängt von der Topologietreue ab."
       },
       {
         "title": "KI-gestützte Analyse",
-        "desc": "Claude-gesteuerte Ursachenanalyse und umsetzbare Verbesserungsempfehlungen, nach Auswirkung und Kosten priorisiert."
+        "desc": "Claude-unterstützte Ursachenanalyse und Verbesserungsvorschläge, nach geschätzter Auswirkung und Kosten priorisiert. Die Ausgaben sind Vorschläge für die technische Überprüfung, keine abschließenden Vorgaben."
       },
       {
         "title": "DORA-Evidenzentwürfe (Forschungsprototyp)",
@@ -172,7 +172,7 @@
       "productionRisk": "Null",
       "setupTime": "5 Minuten",
       "scenarios": "2.000+ automatisch generiert",
-      "availabilityProof": "N-Layer mathematisch",
+      "availabilityProof": "N-Layer modellbasierte Schätzung",
       "aiAgentModeling": "10-mode taxonomy",
       "startingCost": "Kostenlos / OSS"
     },
@@ -200,7 +200,7 @@
   },
   "nlayer": {
     "heading": "N-Layer (5-Layer) Availability Limit Model",
-    "subheading": "Das einzige Tool, das Ihre Verfügbarkeitsobergrenze in fünf unabhängige Beschränkungsschichten zerlegt",
+    "subheading": "Zerlegt Ihre Verfügbarkeitsobergrenzen-Schätzung in fünf unabhängige Beschränkungsschichten (modellbasiert; die Genauigkeit hängt von der Topologietreue ab)",
     "layers": [
       {
         "label": "Layer 1: Hardware Limit",
@@ -290,7 +290,7 @@
     "unit": "K"
   },
   "footer": {
-    "tagline": "Risikofreies Infrastruktur-Chaos-Engineering. Beweisen Sie Ihre Verfügbarkeitsobergrenze mathematisch.",
+    "tagline": "Resilienzsimulation vor Deployment. Schätzen Sie Ihre Verfügbarkeitsobergrenze aus deklarierter Topologie. Forschungsprototyp — ergänzt Runtime-Chaos-Engineering.",
     "madeIn": "Made in Tokyo",
     "product": "Produkt",
     "resources": "Ressourcen",

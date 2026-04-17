@@ -1,6 +1,6 @@
 # Day 1: Welcome to FaultRay
 
-**Subject:** Welcome to FaultRay — let's prove your infrastructure is bulletproof
+**Subject:** Welcome to FaultRay — let's estimate your infrastructure's resilience
 
 **From:** hello@faultray.com
 **To:** {{ user.email }}
@@ -10,7 +10,7 @@
 
 Hi {{ user.name || "there" }},
 
-Welcome to **FaultRay** — the chaos engineering platform that lets you prove your system's availability mathematically, without touching production.
+Welcome to **FaultRay** — the pre-deployment resilience simulation platform (research prototype) that lets you estimate your system's structural availability ceiling from declared topology, without touching production.
 
 You're now on the **{{ plan.name }}** plan. Here's what you can do right now:
 

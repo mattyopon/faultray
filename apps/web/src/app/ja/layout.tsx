@@ -27,24 +27,24 @@ export async function generateMetadata(): Promise<Metadata> {
       ) as Record<string, string>,
     },
     openGraph: {
-      title: "FaultRay — 本番環境を壊さずシステムの弱点を自動診断",
+      title: "FaultRay — 本番を止めずに構造的障害リスクを事前評価（研究プロトタイプ）",
       description:
-        "本番を止めずにシステムの弱点を発見し、稼働率の上限を数学的に証明するSaaS。",
+        "本番を止めずに構造的な障害リスクを事前評価する研究プロトタイプSaaS。宣言されたインフラ定義から稼働率上限を推定。",
       url: `${BASE}/ja`,
       images: [
         {
           url: "/og-image.png",
           width: 1200,
           height: 630,
-          alt: "FaultRay — 本番環境を壊さずシステムの弱点を自動診断",
+          alt: "FaultRay — 本番を止めずに構造的障害リスクを事前評価（研究プロトタイプ）",
         },
       ],
     },
     twitter: {
       card: "summary_large_image",
-      title: "FaultRay — 本番環境を壊さずシステムの弱点を自動診断",
+      title: "FaultRay — 本番を止めずに構造的障害リスクを事前評価（研究プロトタイプ）",
       description:
-        "本番を止めずにシステムの弱点を発見し、稼働率の上限を数学的に証明するSaaS。",
+        "本番を止めずに構造的な障害リスクを事前評価する研究プロトタイプSaaS。宣言されたインフラ定義から稼働率上限を推定。",
       images: ["/og-image.png"],
     },
   };
@@ -61,7 +61,7 @@ const jaJsonLd = [
     url: "https://faultray.com/ja",
     inLanguage: "ja",
     description:
-      "本番環境を触らずにシステムの弱点を自動発見。2,000以上のシナリオでシステムの稼働率上限を数学的に証明するSaaS。",
+      "本番環境を触らずに構造的な弱点を事前評価する研究プロトタイプSaaS。宣言された拓ロジからおおよそ2,000のシナリオを自動生成し、稼働率上限を推定します（結果精度はトポロジー定義の完全性に依存）。",
     offers: [
       { "@type": "Offer", name: "Free", price: "0", priceCurrency: "JPY" },
       { "@type": "Offer", name: "Pro", price: "45000", priceCurrency: "JPY", eligibleQuantity: { "@type": "QuantitativeValue", unitText: "month" } },

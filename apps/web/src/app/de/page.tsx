@@ -51,7 +51,7 @@ function HeroTerminal() {
             <span className="text-white">faultray demo</span>
           </div>
           <div className="terminal-line terminal-line-4">
-            <span className="text-[var(--gold)] pl-5 block">Running 2,048 chaos scenarios across 100+ engines...</span>
+            <span className="text-[var(--gold)] pl-5 block">Running 2,048 scenarios across multiple engines... (illustrative)</span>
           </div>
           <div className="terminal-line terminal-line-5">
             <span className="text-emerald-400 pl-5 block">Availability Ceiling: 99.9991% (4.05 nines)</span>
@@ -145,12 +145,12 @@ const planData = [
     features: [
       "5 simulations / month",
       "Up to 5 components",
-      "100+ simulation engines",
+      "Multiple simulation engines",
       "N-Layer Availability Model",
       "HTML reports",
       "Community support",
     ],
-    disabledFeatures: ["AI-powered analysis", "Custom SSO", "Priority support"],
+    disabledFeatures: ["AI-assisted analysis", "Custom SSO", "Priority support"],
     ctaHref: "/login",
     popular: false,
   },
@@ -161,7 +161,7 @@ const planData = [
       "Up to 50 components",
       "Everything in Free",
       "PDF & Markdown report export",
-      "AI-powered analysis",
+      "AI-assisted analysis",
       "Email support (24h response)",
     ],
     disabledFeatures: ["Insurance API", "Custom SSO"],
@@ -192,7 +192,7 @@ const pricingComparison = [
   { feature: "Simulation engines", free: "100+", pro: "100+", business: "100+" },
   { feature: "N-Layer Model", free: "check", pro: "check", business: "check" },
   { feature: "Report export", free: "Markdown", pro: "PDF + MD", business: "PDF + MD + JSON" },
-  { feature: "AI-powered analysis", free: "no", pro: "check", business: "check" },
+  { feature: "AI-assisted analysis", free: "no", pro: "check", business: "check" },
   { feature: "Custom SSO / SAML", free: "no", pro: "no", business: "check" },
   { feature: "Support", free: "Community", pro: "Email (24h)", business: "Dedicated (1h)" },
 ];
@@ -702,7 +702,7 @@ export default async function LangHomePage() {
                 <pre className="p-4 font-mono text-[0.8125rem] leading-[1.7] overflow-x-auto">
                   <code>
                     <span className="text-emerald-400">$</span> faultray run --topology infra.yaml{"\n"}
-                    <span className="text-[var(--text-muted)]">Running 2,048 scenarios across 100+ engines...</span>{"\n"}
+                    <span className="text-[var(--text-muted)]">Running 2,048 scenarios across multiple engines... (illustrative)</span>{"\n"}
                     <span className="text-emerald-400">Completed in 8.3s | Pass: 2,043 | Fail: 5</span>{"\n"}
                     {"\n"}
                     <span className="text-emerald-400">$</span> faultray report --format html{"\n"}
@@ -787,7 +787,7 @@ export default async function LangHomePage() {
       <section className="py-16 bg-gradient-to-r from-[var(--bg-primary)] via-[var(--bg-card)] to-[var(--bg-primary)] border-y border-[var(--border-color)]">
         <div className="max-w-[900px] mx-auto px-6 text-center">
           <h2 className="text-[clamp(1.5rem,3vw,2rem)] font-bold tracking-tight mb-3">
-            Ready to prove your availability ceiling?
+            Ready to estimate your availability ceiling?
           </h2>
           <p className="text-[var(--text-secondary)] mb-8 max-w-[540px] mx-auto leading-relaxed">
             See FaultRay in action with your own infrastructure. Our team will walk you through a live simulation in 30 minutes.

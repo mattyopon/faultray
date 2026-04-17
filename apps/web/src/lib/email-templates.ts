@@ -47,7 +47,7 @@ function ctaButton(href: string, label: string): string {
 }
 
 export function welcomeEmail(name: string): { subject: string; html: string } {
-  const subject = "Welcome to FaultRay — Let's prove your system's resilience";
+  const subject = "Welcome to FaultRay — Let's estimate your system's resilience";
   const html = baseLayout(`
     <h1 style="margin:0 0 16px;font-size:24px;font-weight:700;color:#f1f5f9;">Welcome, ${name}!</h1>
     <p style="margin:0 0 16px;font-size:15px;line-height:1.7;color:#94a3b8;">

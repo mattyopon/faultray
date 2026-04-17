@@ -1,7 +1,7 @@
 {
   "metadata": {
-    "title": "FaultRay — Chaos Engineering d'Infrastructure Sans Risque",
-    "description": "Prouvez mathématiquement le plafond de disponibilité de votre système — sans toucher la production. Chaos Engineering par simulation pure avec plus de 2 000 scénarios."
+    "title": "FaultRay — Simulation de Résilience Avant Déploiement (Prototype de Recherche)",
+    "description": "Estimez le plafond structurel de disponibilité de votre système par simulation en mémoire à partir de la topologie déclarée — sans toucher la production. Prototype de recherche; complète le chaos engineering à l'exécution."
   },
   "nav": {
     "features": "Fonctionnalités",
@@ -12,8 +12,8 @@
   },
   "hero": {
     "badge": "Open Source · Apache License 2.0",
-    "subtitle": "Chaos Engineering d'Infrastructure Sans Risque",
-    "description": "Prouvez mathématiquement le plafond de disponibilité de votre système — sans toucher la production.",
+    "subtitle": "Simulation de Résilience Avant Déploiement (Prototype de Recherche)",
+    "description": "Estimez le plafond structurel de disponibilité de votre système par simulation en mémoire — prototype de recherche, sans toucher la production.",
     "stats": {
       "scenarios": "Scénarios",
       "engines": "Moteurs",
@@ -44,11 +44,11 @@
   "solution": {
     "title": "La Solution",
     "items": [
-      "Zéro risque — aucune panne réelle injectée",
+      "Aucune injection de pannes en production — simulation en mémoire",
       "Zéro coût — fonctionne sur un ordinateur portable",
       "Résultats instantanés en quelques secondes",
       "Fonctionne à partir de la topologie YAML seule",
-      "Plafond de disponibilité prouvé mathématiquement"
+      "Estimation du plafond de disponibilité basée sur modèle (dépend de la fidélité de la topologie)"
     ],
     "descriptionParts": {
       "before": "FaultRay utilise la ",
@@ -84,23 +84,23 @@
   },
   "features": {
     "heading": "Tout ce dont vous avez besoin",
-    "subheading": "Dix piliers du Chaos Engineering sans risque",
+    "subheading": "Dix piliers de la simulation de résilience avant déploiement (prototype de recherche)",
     "cards": [
       {
-        "title": "100+ Simulation Engines",
+        "title": "Plusieurs Moteurs de Simulation",
         "desc": "Réseau, processus, ressources, dépendances, latence, rayon d'impact, validation de contrats SLA et des dizaines d'autres — alimentés par Monte Carlo, chaînes de Markov et théorie des files d'attente."
       },
       {
-        "title": "2 000+ scénarios auto-générés",
-        "desc": "Des pannes de nœud unique aux pannes en cascade multi-régions. Chaque scénario est généré à partir de votre topologie YAML — plus de 2 000 scénarios uniques pour une topologie typique de 10 composants."
+        "title": "Milliers de scénarios auto-générés",
+        "desc": "Des pannes de nœud unique aux pannes en cascade multi-régions. Les scénarios sont générés à partir de votre topologie YAML déclarée ; une topologie typique de 10 composants produit environ 2 000 scénarios uniques (valeur indicative)."
       },
       {
         "title": "N-Layer (5-Layer) Availability Model",
-        "desc": "Le seul outil qui décompose votre plafond de disponibilité en cinq couches indépendantes : Hardware, Software, Theoretical, Operational et External SLA."
+        "desc": "Décompose votre estimation du plafond de disponibilité en cinq couches indépendantes : Hardware, Software, Theoretical, Operational et External SLA. Basé sur modèle ; la précision dépend de la fidélité de la topologie."
       },
       {
-        "title": "Analyse alimentée par l'IA",
-        "desc": "Analyse des causes racines pilotée par Claude et recommandations d'amélioration concrètes classées par impact et coût."
+        "title": "Analyse assistée par IA",
+        "desc": "Analyse des causes racines assistée par Claude et suggestions d'amélioration classées par impact et coût estimés. Les sorties sont des suggestions pour la revue d'ingénierie, pas des prescriptions finales."
       },
       {
         "title": "Brouillons d'évidence DORA (prototype de recherche)",
@@ -200,7 +200,7 @@
   },
   "nlayer": {
     "heading": "N-Layer (5-Layer) Availability Limit Model",
-    "subheading": "Le seul outil qui décompose votre plafond de disponibilité en cinq couches de contraintes indépendantes",
+    "subheading": "Décompose votre estimation du plafond de disponibilité en cinq couches de contraintes indépendantes (basé sur modèle ; la précision dépend de la fidélité de la topologie)",
     "layers": [
       {
         "label": "Layer 1: Hardware Limit",
@@ -290,7 +290,7 @@
     "unit": "K"
   },
   "footer": {
-    "tagline": "Chaos Engineering d'infrastructure sans risque. Prouvez mathématiquement votre plafond de disponibilité.",
+    "tagline": "Simulation de résilience avant déploiement. Estimez votre plafond de disponibilité à partir de la topologie déclarée. Prototype de recherche — complète le chaos engineering à l'exécution.",
     "madeIn": "Made in Tokyo",
     "product": "Produit",
     "resources": "Ressources",

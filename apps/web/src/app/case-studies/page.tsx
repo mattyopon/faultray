@@ -189,9 +189,9 @@ export default function CaseStudiesPage() {
 
       {/* CTA */}
       <div className="mt-10 p-8 rounded-2xl border border-[var(--gold)]/20 bg-gradient-to-br from-[#FFD700]/[0.04] to-[#111827] text-center">
-        <h2 className="text-xl font-bold mb-2">Ready to prove your own resilience?</h2>
+        <h2 className="text-xl font-bold mb-2">Ready to estimate your own resilience posture?</h2>
         <p className="text-[var(--text-secondary)] mb-6 text-sm">
-          Join teams who use FaultRay to get math-backed availability proofs in under an hour.
+          Join teams who use FaultRay to get model-based availability estimates in under an hour (research prototype — results depend on how completely your topology is declared).
         </p>
         <div className="flex flex-wrap items-center justify-center gap-4">
           <Link

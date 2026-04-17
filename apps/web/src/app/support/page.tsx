@@ -43,7 +43,7 @@ const T = {
     emailBadge: "Pro+",
     emailLink: "Email support@faultray.com",
     slackTitle: "Dedicated Slack Channel",
-    slackDesc: "Real-time support with guaranteed 4-hour response. Shared channel with FaultRay engineers.",
+    slackDesc: "Shared channel with FaultRay engineers. Target first-response time: 4 hours during business hours (best-effort; see support terms for details).",
     slackBadge: "Business",
     slackLink: "Request Slack Access",
     helpTitle: "In-App Help",

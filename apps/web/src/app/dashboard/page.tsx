@@ -191,7 +191,7 @@ export default function DashboardPage() {
               <span className="block text-xs text-[var(--text-secondary)] mt-0.5">
                 {locale === "ja"
                   ? "月100回のシミュレーション・DORAレポート・AI分析が利用可能です"
-                  : "100 simulations/month, DORA reports, and AI-powered analysis"}
+                  : "100 simulations/month, DORA reports, and AI-assisted analysis"}
               </span>
             </div>
           </div>

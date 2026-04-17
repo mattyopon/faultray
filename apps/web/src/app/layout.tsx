@@ -42,11 +42,11 @@ const LOCALE_MAP: Record<string, string> = {
 
 export const metadata: Metadata = {
   title: {
-    default: "FaultRay — Zero-Risk Infrastructure Chaos Engineering",
+    default: "FaultRay — Pre-Deployment Resilience Simulation (Research Prototype)",
     template: "%s | FaultRay",
   },
   description:
-    "Explore your system's availability ceiling through in-memory simulation — without touching production. Research-prototype chaos engineering with 2,000+ scenarios.",
+    "Estimate your system's structural availability ceiling through in-memory simulation from declared topology — without touching production. Research prototype; complements runtime chaos engineering.",
   keywords: [
     "chaos engineering",
     "infrastructure testing",
@@ -82,9 +82,9 @@ export const metadata: Metadata = {
     apple: [{ url: "/apple-touch-icon.png", sizes: "180x180", type: "image/png" }],
   },
   openGraph: {
-    title: "FaultRay — Zero-Risk Infrastructure Chaos Engineering",
+    title: "FaultRay — Pre-Deployment Resilience Simulation (Research Prototype)",
     description:
-      "Explore your system's availability ceiling — research prototype, without touching production.",
+      "Estimate your system's structural availability ceiling through in-memory simulation — research prototype, without touching production.",
     type: "website",
     url: "https://faultray.com",
     images: [
@@ -92,15 +92,15 @@ export const metadata: Metadata = {
         url: "/og-image.png",
         width: 1200,
         height: 630,
-        alt: "FaultRay — Zero-Risk Infrastructure Chaos Engineering",
+        alt: "FaultRay — Pre-Deployment Resilience Simulation (Research Prototype)",
       },
     ],
   },
   twitter: {
     card: "summary_large_image",
-    title: "FaultRay — Zero-Risk Infrastructure Chaos Engineering",
+    title: "FaultRay — Pre-Deployment Resilience Simulation (Research Prototype)",
     description:
-      "Explore your system's availability ceiling — research prototype, without touching production.",
+      "Estimate your system's structural availability ceiling through in-memory simulation — research prototype, without touching production.",
     images: ["/og-image.png"],
   },
 };
@@ -115,13 +115,13 @@ const jsonLd = [
     operatingSystem: "Web",
     url: "https://faultray.com",
     description:
-      "Research-prototype chaos engineering platform. Explore your system's availability ceiling through in-memory simulation.",
+      "Research-prototype pre-deployment resilience simulation platform. Estimates structural availability limits from declared infrastructure topology; complements runtime chaos engineering.",
     offers: [
       { "@type": "Offer", name: "Free", price: "0", priceCurrency: "USD" },
       { "@type": "Offer", name: "Pro",  price: "299", priceCurrency: "USD", eligibleQuantity: { "@type": "QuantitativeValue", unitText: "month" } },
     ],
     featureList: [
-      "100+ simulation engines (research prototype)",
+      "Multiple simulation engines (Cascade, Dynamic, Ops, What-If, Capacity — research prototype)",
       "DORA-aligned evidence export (research, not for regulatory use)",
       "AI reliability advisor (experimental)",
       "N-Layer availability model",

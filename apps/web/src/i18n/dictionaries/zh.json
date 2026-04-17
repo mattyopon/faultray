@@ -1,7 +1,7 @@
 {
   "metadata": {
-    "title": "FaultRay — 零风险基础设施 Chaos Engineering",
-    "description": "用数学方法证明系统可用性上限——无需触碰生产环境。纯模拟 Chaos Engineering，涵盖 2,000+ 场景。"
+    "title": "FaultRay — 部署前韧性仿真（研究原型）",
+    "description": "通过内存仿真，基于声明的拓扑结构估算系统的结构性可用性上限——无需触碰生产环境。研究原型；与运行时 Chaos Engineering 互补。"
   },
   "nav": {
     "features": "功能",
@@ -12,8 +12,8 @@
   },
   "hero": {
     "badge": "开源 · Apache 2.0 许可证",
-    "subtitle": "零风险基础设施 Chaos Engineering",
-    "description": "用数学方法证明系统可用性上限——无需触碰生产环境。",
+    "subtitle": "部署前韧性仿真（研究原型）",
+    "description": "通过内存仿真估算系统可用性上限——研究原型，无需触碰生产环境。",
     "stats": {
       "scenarios": "场景数",
       "engines": "引擎数",
@@ -44,7 +44,7 @@
   "solution": {
     "title": "解决方案",
     "items": [
-      "零风险——不注入真实故障",
+      "不向生产注入故障——内存中仿真",
       "零成本——在笔记本上运行",
       "秒级输出结果",
       "仅需 YAML 拓扑文件即可运行",
@@ -84,14 +84,14 @@
   },
   "features": {
     "heading": "一切所需",
-    "subheading": "零风险 Chaos Engineering 的十大支柱",
+    "subheading": "部署前韧性仿真的十大支柱（研究原型）",
     "cards": [
       {
-        "title": "100+ 仿真引擎",
+        "title": "多种仿真引擎",
         "desc": "网络、进程、资源、依赖、延迟、爆炸半径、SLA 合同验证等数十种引擎——由 Monte Carlo、Markov chains 和排队理论驱动。"
       },
       {
-        "title": "2,000+ 自动生成场景",
+        "title": "数千自动生成场景",
         "desc": "从单节点故障到级联多区域中断，涵盖一切。每个场景均从拓扑 YAML 自动生成——典型的 10 组件拓扑可生成超过 2,000 个唯一场景。"
       },
       {
@@ -100,7 +100,7 @@
       },
       {
         "title": "AI 智能分析",
-        "desc": "Claude 驱动的根因分析，以及按影响和成本排序的可操作改进建议。"
+        "desc": "Claude 辅助的根因分析以及按估计影响和成本排序的改进建议。输出是工程审查的参考建议，而非最终规范。"
       },
       {
         "title": "DORA 证据草稿（研究原型）",
@@ -290,7 +290,7 @@
     "unit": "K"
   },
   "footer": {
-    "tagline": "零风险基础设施 Chaos Engineering。用数学方法证明可用性上限。",
+    "tagline": "部署前韧性仿真。基于声明的拓扑估算可用性上限。研究原型——与运行时 Chaos Engineering 互补。",
     "madeIn": "日本东京制造",
     "product": "产品",
     "resources": "资源",

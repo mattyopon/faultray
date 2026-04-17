@@ -703,9 +703,11 @@ def _generate_chat_response(message: str) -> dict:
         )
     elif "what" in message_lower and "faultray" in message_lower:
         response = (
-            "FaultRay is a zero-risk chaos engineering platform that tests your infrastructure's "
-            "resilience through pure simulation. It runs 2,000+ failure scenarios against your "
-            "infrastructure topology without touching production. Key features include:\n\n"
+            "FaultRay is a research-prototype pre-deployment resilience simulation platform "
+            "that analyses your infrastructure's structural resilience through model-based "
+            "simulation. It runs thousands of failure scenarios against your declared "
+            "infrastructure topology without touching production. Result accuracy depends on "
+            "how completely your topology is declared. Key features include:\n\n"
             "- 3-Layer Availability Model (Hardware/Software/Theoretical)\n"
             "- FMEA (Failure Mode and Effects Analysis)\n"
             "- Compliance assessment (DORA, SOC2, ISO27001, etc.)\n"

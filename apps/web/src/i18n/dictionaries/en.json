@@ -1,7 +1,7 @@
 {
   "metadata": {
-    "title": "FaultRay — Zero-Risk Infrastructure Chaos Engineering",
-    "description": "Explore your system's availability ceiling through in-memory simulation — without touching production. Research-prototype chaos engineering with 2,000+ scenarios."
+    "title": "FaultRay — Pre-Deployment Resilience Simulation (Research Prototype)",
+    "description": "Estimate your system's structural availability ceiling through in-memory simulation from declared topology — without touching production. Research prototype; complements runtime chaos engineering."
   },
   "nav": {
     "features": "Features",
@@ -12,7 +12,7 @@
   },
   "hero": {
     "badge": "Open Source · Apache License 2.0",
-    "subtitle": "Prove Infrastructure Resilience — Without Production Risk",
+    "subtitle": "Estimate Infrastructure Resilience — Without Production Fault Injection",
     "description": "Explore your system's availability ceiling — research prototype, without touching production.",
     "stats": {
       "scenarios": "Scenarios",
@@ -44,15 +44,15 @@
   "solution": {
     "title": "The Solution",
     "items": [
-      "Zero risk — no real faults injected",
-      "Zero cost — runs on a laptop",
-      "Instant results in seconds",
-      "Works from YAML topology alone",
-      "Mathematically proven availability ceiling"
+      "No production fault injection — simulation in memory",
+      "Low cost — runs on a laptop",
+      "Results in seconds",
+      "Works from declared YAML topology alone",
+      "Model-based availability ceiling estimate (depends on topology fidelity)"
     ],
     "descriptionParts": {
       "before": "FaultRay uses ",
-      "highlight": "pure mathematical simulation",
+      "highlight": "model-based simulation",
       "after": "."
     }
   },
@@ -83,24 +83,24 @@
     ]
   },
   "features": {
-    "heading": "Prove Resilience, Not Just Test It",
+    "heading": "Estimate Resilience Early — Without Production Impact",
     "subheading": "Every feature maps to a concrete business outcome — not a checklist.",
     "cards": [
       {
-        "title": "100+ Simulation Engines",
-        "desc": "Network, process, resource, dependency, latency, blast radius, SLA contract validation, and dozens more — powered by Monte Carlo, Markov chains, and queuing theory."
+        "title": "Multiple Simulation Engines",
+        "desc": "Five core engines (Cascade, Dynamic, Ops, What-If, Capacity) cover network, process, resource, dependency, latency, blast radius, and SLA contract scenarios — powered by Monte Carlo, Markov chains, and queuing theory."
       },
       {
-        "title": "2,000+ Auto-Generated Scenarios",
-        "desc": "From single-node failures to cascading multi-region outages. Every scenario is generated from your topology YAML — over 2,000 unique scenarios for a typical 10-component topology."
+        "title": "Thousands of Auto-Generated Scenarios",
+        "desc": "From single-node failures to cascading multi-region outages. Scenarios are generated from your declared topology YAML; a typical 10-component topology yields roughly 2,000 unique scenarios (illustrative)."
       },
       {
         "title": "N-Layer (5-Layer) Availability Model",
-        "desc": "The only tool that decomposes your availability ceiling into five independent layers: Hardware, Software, Theoretical, Operational, and External SLA."
+        "desc": "Decomposes your availability ceiling estimate into five independent layers: Hardware, Software, Theoretical, Operational, and External SLA. Model-based; accuracy depends on topology fidelity."
       },
       {
-        "title": "AI-Powered Analysis",
-        "desc": "Claude-driven root cause analysis and actionable improvement recommendations ranked by impact and cost."
+        "title": "AI-Assisted Analysis",
+        "desc": "Claude-assisted root cause analysis and improvement suggestions ranked by estimated impact and cost. Outputs are suggestions for engineering review, not final prescriptions."
       },
       {
         "title": "DORA Evidence Drafts (Research Prototype)",
@@ -200,7 +200,7 @@
   },
   "nlayer": {
     "heading": "N-Layer (5-Layer) Availability Limit Model",
-    "subheading": "The only tool that decomposes your availability ceiling into five independent constraint layers",
+    "subheading": "Decomposes your availability ceiling estimate into five independent constraint layers (model-based; accuracy depends on topology fidelity)",
     "layers": [
       {
         "label": "Layer 1: Hardware Limit",
@@ -286,11 +286,11 @@
     "estimatedReduction": "Estimated Savings with FaultRay",
     "roi": "ROI",
     "annualCost": "Annual Cost (Pro plan)",
-    "disclaimer": "Formula: Annual loss = Monthly revenue × (incident hours/720) × incidents × 12. FaultRay effect = 70% reduction.",
+    "disclaimer": "Illustrative formula: Annual loss = Monthly revenue × (incident hours/720) × incidents × 12. The 70% FaultRay-effect reduction is an assumption for ROI modeling — actual impact depends on your deployment and is not guaranteed.",
     "unit": "K"
   },
   "footer": {
-    "tagline": "Zero-risk infrastructure chaos engineering. Explore your availability ceiling through simulation.",
+    "tagline": "Pre-deployment resilience simulation. Estimate your availability ceiling from declared topology. Research prototype — complements runtime chaos engineering.",
     "madeIn": "Made in Tokyo",
     "product": "Product",
     "resources": "Resources",

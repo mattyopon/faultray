@@ -1,7 +1,7 @@
 {
   "metadata": {
-    "title": "FaultRay — Chaos Engineering de Infraestrutura sem Riscos",
-    "description": "Prove matematicamente o limite de disponibilidade do seu sistema — sem tocar na produção. Chaos Engineering de simulação pura com mais de 2.000 cenários."
+    "title": "FaultRay — Simulação de Resiliência Pré-Implantação (Protótipo de Pesquisa)",
+    "description": "Estime o limite estrutural de disponibilidade do seu sistema por simulação em memória a partir da topologia declarada — sem tocar na produção. Protótipo de pesquisa; complementa o chaos engineering em tempo de execução."
   },
   "nav": {
     "features": "Funcionalidades",
@@ -12,8 +12,8 @@
   },
   "hero": {
     "badge": "Código aberto · Licença Apache 2.0",
-    "subtitle": "Chaos Engineering de Infraestrutura sem Riscos",
-    "description": "Prove matematicamente o limite de disponibilidade do seu sistema — sem tocar na produção.",
+    "subtitle": "Simulação de Resiliência Pré-Implantação (Protótipo de Pesquisa)",
+    "description": "Estime o limite estrutural de disponibilidade do seu sistema por simulação em memória — protótipo de pesquisa, sem tocar na produção.",
     "stats": {
       "scenarios": "Cenários",
       "engines": "Motores",
@@ -48,7 +48,7 @@
       "Zero custo — roda em um notebook",
       "Resultados instantâneos em segundos",
       "Funciona apenas com a topologia YAML",
-      "Limite de disponibilidade comprovado matematicamente"
+      "Estimativa do limite de disponibilidade baseada em modelo (depende da fidelidade da topologia)"
     ],
     "descriptionParts": {
       "before": "FaultRay usa ",
@@ -84,19 +84,19 @@
   },
   "features": {
     "heading": "Tudo que Você Precisa",
-    "subheading": "Dez pilares do chaos engineering sem riscos",
+    "subheading": "Dez pilares da simulação de resiliência pré-implantação (protótipo de pesquisa)",
     "cards": [
       {
-        "title": "100+ Motores de Simulação",
+        "title": "Múltiplos Motores de Simulação",
         "desc": "Rede, processo, recurso, dependência, latência, raio de explosão, validação de contrato SLA e dezenas mais — impulsionados por Monte Carlo, cadeias de Markov e teoria de filas."
       },
       {
-        "title": "2.000+ Cenários Auto-gerados",
+        "title": "Milhares de Cenários Auto-gerados",
         "desc": "De falhas de nó único a interrupções em cascata multi-região. Cada cenário é gerado a partir do seu YAML de topologia — mais de 2.000 cenários únicos para uma topologia típica de 10 componentes."
       },
       {
         "title": "Modelo de Disponibilidade N-Layer (5 camadas)",
-        "desc": "A única ferramenta que decompõe seu limite de disponibilidade em cinco camadas independentes: Hardware, Software, Teórico, Operacional e SLA Externo."
+        "desc": "Decompõe sua estimativa de limite de disponibilidade em cinco camadas independentes: Hardware, Software, Teórico, Operacional e SLA Externo. Baseado em modelo; a precisão depende da fidelidade da topologia."
       },
       {
         "title": "Análise Potencializada por IA",
@@ -200,7 +200,7 @@
   },
   "nlayer": {
     "heading": "Modelo de Limite de Disponibilidade N-Layer (5 camadas)",
-    "subheading": "A única ferramenta que decompõe seu limite de disponibilidade em cinco camadas de restrição independentes",
+    "subheading": "Decompõe sua estimativa de limite de disponibilidade em cinco camadas de restrição independentes (baseado em modelo; a precisão depende da fidelidade da topologia)",
     "layers": [
       {
         "label": "Camada 1: Limite de Hardware",
@@ -290,7 +290,7 @@
     "unit": "K"
   },
   "footer": {
-    "tagline": "Chaos engineering de infraestrutura sem riscos. Prove seu limite de disponibilidade matematicamente.",
+    "tagline": "Simulação de resiliência pré-implantação. Estime seu limite de disponibilidade a partir da topologia declarada. Protótipo de pesquisa — complementa o chaos engineering em tempo de execução.",
     "madeIn": "Feito em Tóquio",
     "product": "Produto",
     "resources": "Recursos",

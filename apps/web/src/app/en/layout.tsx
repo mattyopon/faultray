@@ -31,13 +31,13 @@ const enJsonLd = [
     url: "https://faultray.com/en",
     inLanguage: "en",
     description:
-      "Research-prototype chaos engineering platform. Explore your system's availability ceiling through in-memory simulation.",
+      "Research-prototype pre-deployment resilience simulation platform. Estimates structural availability limits from declared infrastructure topology; complements runtime chaos engineering.",
     offers: [
       { "@type": "Offer", name: "Free", price: "0", priceCurrency: "USD" },
       { "@type": "Offer", name: "Pro", price: "299", priceCurrency: "USD", eligibleQuantity: { "@type": "QuantitativeValue", unitText: "month" } },
     ],
     featureList: [
-      "100+ simulation engines (research prototype)",
+      "Multiple simulation engines (Cascade, Dynamic, Ops, What-If, Capacity — research prototype)",
       "DORA-aligned evidence drafts (research prototype, not audit-certified)",
       "AI reliability advisor (experimental)",
       "N-Layer availability model",

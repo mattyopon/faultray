@@ -1,9 +1,9 @@
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
-  title: "Features — FaultRay Chaos Engineering Platform",
+  title: "Features — FaultRay Pre-Deployment Resilience Simulation",
   description:
-    "FaultRay features — 100+ simulation engines, N-Layer availability model, DORA evidence drafts (research prototype), AI root cause analysis, and more.",
+    "FaultRay features — multiple simulation engines (Cascade, Dynamic, Ops, What-If, Capacity), N-Layer availability model, DORA evidence drafts (research prototype, not audit-certified), AI-assisted analysis, and more.",
   alternates: {
     canonical: "https://faultray.com/features",
   },

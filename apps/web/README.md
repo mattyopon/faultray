@@ -1,6 +1,6 @@
 # FaultRay SaaS — Next.js Frontend
 
-The web application for [faultray.com](https://faultray.com) — chaos engineering SaaS that mathematically proves your system's availability ceiling without touching production.
+The web application for [faultray.com](https://faultray.com) — pre-deployment resilience simulation SaaS (research prototype) that estimates your system's structural availability ceiling from declared topology, without touching production.
 
 > **Try it now**: [faultray.com](https://faultray.com) — Free tier, no credit card required.
 
