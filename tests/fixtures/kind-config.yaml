@@ -1,0 +1,10 @@
+# kind cluster config for FaultRay K8s Discovery integration tests.
+# One control-plane + one worker node, for exercising faultray scan --k8s.
+# Usage:
+#   kind create cluster --name faultray-test --config tests/fixtures/kind-config.yaml
+kind: Cluster
+apiVersion: kind.x-k8s.io/v1alpha4
+name: faultray-test
+nodes:
+  - role: control-plane
+  - role: worker
