@@ -115,7 +115,7 @@ export async function POST(request: Request) {
 
         if (userId && plan && (plan === "starter" || plan === "pro" || plan === "business")) {
           await updateUserPlan(userId, plan, "active");
-          console.log(`[stripe/webhook] checkout.session.completed: user=${userId} plan=${plan}`);
+          console.info(`[stripe/webhook] checkout.session.completed: user=${userId} plan=${plan}`);
         }
         break;
       }
@@ -140,7 +140,7 @@ export async function POST(request: Request) {
         } else {
           await updateUserByCustomerId(customerId, resolvedPlan, status);
         }
-        console.log(`[stripe/webhook] customer.subscription.updated: customer=${customerId} status=${status} plan=${resolvedPlan}`);
+        console.info(`[stripe/webhook] customer.subscription.updated: customer=${customerId} status=${status} plan=${resolvedPlan}`);
         break;
       }
 
@@ -155,7 +155,7 @@ export async function POST(request: Request) {
         } else {
           await updateUserByCustomerId(customerId, "free", "canceled");
         }
-        console.log(`[stripe/webhook] customer.subscription.deleted: customer=${customerId} user=${userId}`);
+        console.info(`[stripe/webhook] customer.subscription.deleted: customer=${customerId} user=${userId}`);
         break;
       }
 
@@ -226,7 +226,7 @@ export async function POST(request: Request) {
           } else {
             await updateUserByCustomerId(customerId, resolvedPlan, "active");
           }
-          console.log(`[stripe/webhook] invoice.payment_succeeded: customer=${customerId} plan=${resolvedPlan}`);
+          console.info(`[stripe/webhook] invoice.payment_succeeded: customer=${customerId} plan=${resolvedPlan}`);
         }
         break;
       }

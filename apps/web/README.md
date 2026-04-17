@@ -18,7 +18,7 @@ The web application for [faultray.com](https://faultray.com) — pre-deployment 
 git clone https://github.com/mattyopon/faultray-app.git
 cd faultray-app
 npm install
-cp .env.example .env.local  # fill in keys
+cp .env.local.example .env.local  # fill in keys
 npm run dev
 ```
 

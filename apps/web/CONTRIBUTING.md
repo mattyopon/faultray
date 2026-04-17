@@ -8,7 +8,7 @@ Thank you for considering a contribution to FaultRay.
 git clone https://github.com/mattyopon/faultray-app.git
 cd faultray-app
 npm install
-cp .env.example .env.local  # fill in Supabase + Stripe keys
+cp .env.local.example .env.local  # fill in Supabase + Stripe keys
 npm run dev
 ```
 

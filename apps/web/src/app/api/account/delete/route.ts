@@ -113,7 +113,7 @@ export async function DELETE(request: Request) {
           await Promise.all(
             subscriptions.data.map((sub) => stripe.subscriptions.cancel(sub.id))
           );
-          console.log(
+          console.info(
             `[account/delete] Cancelled ${subscriptions.data.length} Stripe subscription(s) for customer ${customerId}`
           );
         }
@@ -138,7 +138,7 @@ export async function DELETE(request: Request) {
       );
     }
 
-    console.log(`[account/delete] Account deleted for user ${userId}`);
+    console.info(`[account/delete] Account deleted for user ${userId}`);
     return NextResponse.json({ deleted: true });
   } catch (err) {
     const message = err instanceof Error ? err.message : "Unknown error";

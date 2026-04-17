@@ -72,7 +72,7 @@ export async function POST(request: Request) {
     }
   }
 
-  console.log(`[cron/trial-reminders] Sent ${sent}/${users.length} emails`);
+  console.info(`[cron/trial-reminders] Sent ${sent}/${users.length} emails`);
 
   return NextResponse.json({ sent, total: users.length, errors: errors.length > 0 ? errors : undefined });
 }
