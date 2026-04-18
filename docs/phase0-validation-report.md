@@ -188,7 +188,7 @@ goes down, matching the inferred dependency graph).
 |---|---|---|---|
 | 1 | scan output is YAML/JSON parseable | ✓ | `json.load('/tmp/k8s-topology.json')` succeeds; top-level keys `schema_version`, `components`, `dependencies`. |
 | 2 | 3 components (nginx, redis, app) detected | ✓ | Table shows `Components: 3`; JSON lists all three names (`faultray-demo/nginx`, `faultray-demo/redis`, `faultray-demo/app`). |
-| 3 | dependencies are inferred | △ | 2 deps inferred (`app→redis`, `nginx→redis`) via DB-heuristic only. No edge inferred between `nginx` and `app`, even though both are in the same namespace and a typical nginx+app pair has one. Phase 1 candidate: use Service selector + Endpoints API to discover east/west HTTP edges. |
+| 3 | dependencies are inferred | ✓ (resolved in #70) | **At Phase 0 scan time:** 2 deps inferred (`app→redis`, `nginx→redis`) via DB-heuristic only — missed `nginx→app`. **Resolved in PR #70** by adding a back-end-port heuristic (`_BACKEND_HTTP_PORTS` frozenset: 3000, 5000, 8000, 8080, 8443, 9000, 9090). Re-scanning the same topology now also emits `nginx→app` on port 8080, and existing DB edges now carry the correct Service port (6379) instead of `port=0`. |
 | 4 | completes without errors | ✓ | Exit code 0, no stderr, 0.1 s wall-clock. |
 | 5 | simulate consumes scan output | ✓ | `faultray simulate --model /tmp/k8s-topology.json` finishes with exit 0, runs 66 scenarios, produces a sensible cascade (redis failure propagates to app+nginx after 30 s). `--json` mode also parses. |
 
@@ -201,21 +201,23 @@ No kind clusters found.
 
 ### Notes & Phase 1 candidates
 
-1. **East/west dependency inference is thin.** The scanner only draws edges
-   into components it has labelled as `database` (heuristic on image/name).
-   There is no edge `nginx → app` or `app → nginx`, even though they share a
-   namespace and have exposing Services. Consider using the Endpoints API
-   and/or Service.spec.selector overlap to infer HTTP-tier edges in a future
-   release.
+1. ✅ **East/west dependency inference — RESOLVED in PR #70.** The scanner
+   now emits `app_server → app_server` edges when the target Service is on
+   a back-end port (3000/5000/8000/8080/8443/9000/9090). `nginx → app` is
+   now inferred; `app → nginx` is correctly suppressed because nginx sits
+   on `:80` (front-end). Regression tests:
+   `tests/test_k8s_scanner.py::TestDependencyInference::test_eastwest_edge_created_when_target_service_uses_backend_port`
+   and `::test_no_eastwest_edge_when_both_services_on_frontend_ports`.
 2. **Component identity is a little inconsistent.** In the rendered table
    components are listed as `faultray-demo/<name>` but dependency IDs use
-   `deploy-faultray-demo-<name>`. The JSON dependency records don't carry the
-   resolved component names — consumers have to re-key. Low-severity Phase 1
-   polish candidate.
-3. **Port `0` in inferred dependencies.** Both inferred deps have `port: 0`
-   and `latency_ms: 0.0`. The scanner isn't pulling port/protocol info from
-   the Service spec. That's OK for topology, but simulation accuracy would
-   improve if the actual service port (`6379` for redis) were attached.
+   `deploy-faultray-demo-<name>`. The JSON dependency records don't carry
+   the resolved component names — consumers have to re-key. Low-severity
+   polish candidate, **still open**.
+3. ✅ **Port `0` in inferred dependencies — RESOLVED in PR #70.** The
+   scanner was reading `Service.spec.ports[0].port` then discarding the
+   value (expression not assigned). Now stored in `_service_ports` and
+   attached to the generated `Dependency` edges. Regression test:
+   `::test_database_edge_carries_service_port_not_zero`.
 
 ### Files produced by this task
 
@@ -616,20 +618,20 @@ $ grep -n "NEXT_PUBLIC_API_URL" src/lib/api.ts
 
 ## Summary (all CLI commands + UI pages)
 
-| コマンド / ページ | Analysis | CI/CD Exit Code | Overall |
+| コマンド / ページ | Phase 0 Analysis | Phase 0 CI/CD Exit | Status after Phase 1 |
 |---|---|---|---|
 | `faultray simulate` | ✓ (66 scenarios, cascade correct) | — | ✓ |
 | `faultray financial` | ✓ (component-level loss, --cost-per-hour works) | — | ✓ |
-| `faultray scan --k8s` | △ (3 components detected; east/west edges missing) | — | △ |
-| `faultray tf-check` | △ (risk table correct; score_delta stuck at 0.0) | ✗ (`--fail-on-regression` exits 0 despite HIGH RISK) | ✗ |
-| `faultray gate check` | ✓ (before/after comparison, findings enumerated) | ✗ (exits 0 when `passed: false`) | ✗ |
-| `faultray gate terraform-plan` | ✓ (score 88→0 detected) | ✗ (exits 0 when BLOCKED) | ✗ |
-| faultray-app `/whatif` | ✗ (auth-gated; post-login API 404 → hardcoded fallback) | — | ✗ |
-| faultray-app `/topology-map` | ✗ (auth-gated; `/api/v1/graph-data` 404) | — | ✗ |
-| faultray-app `/cost` | ✗ (auth-gated; `/api/finance` 404) | — | ✗ |
-| faultray-app `/simulate` | ✗ (auth-gated; `/api/simulate` 404) | — | ✗ |
+| `faultray scan --k8s` | △ (3 components detected; east/west edges missing) | — | ✅ (#70: east/west + port plumbing) |
+| `faultray tf-check` | △ (risk table correct; score_delta stuck at 0.0) | ✗ (`--fail-on-regression` exits 0 despite HIGH RISK) | ✅ (#68: recommendation-based gate) |
+| `faultray gate check` | ✓ (before/after comparison, findings enumerated) | ~~✗~~ → **✓ re-verified after the `\| tail` pipe trap was identified** | ✓ (never broken) |
+| `faultray gate terraform-plan` | ✓ (score 88→0 detected) | ~~✗~~ → **✓ re-verified** | ✓ (never broken) |
+| faultray-app `/whatif` | ✗ (auth-gated; post-login API 404 → hardcoded fallback) | — | △ (#18: silent fallback removed + env var fixed; API routes still 404 — Tier 2 follow-up) |
+| faultray-app `/topology-map` | ✗ (auth-gated; `/api/v1/graph-data` 404) | — | △ (#18: env var fixed; route wiring remains) |
+| faultray-app `/cost` | ✗ (auth-gated; `/api/finance` 404) | — | △ (#18: env var fixed; route wiring remains) |
+| faultray-app `/simulate` | ✗ (auth-gated; `/api/simulate` 404) | — | △ (#18: env var fixed; route wiring remains) |
 
-Legend: ✓ works as advertised · △ works with caveats · ✗ broken or absent
+Legend: ✓ works as advertised · △ works with caveats · ✗ broken or absent · ✅ Phase 0 issue resolved.
 
 ---
 
@@ -639,27 +641,31 @@ Based on the above, the next phase should prioritize **making claimed features a
 
 ### Tier 1 — Blockers for any CI/CD user (must fix before any customer)
 
-1. **Fix `gate check` exit code** — `sys.exit(0 if result['passed'] else 1)` one-liner. Regression test: use the `/tmp/before-model.json` + `/tmp/after-model.json` reproducer from Task 4.
-2. **Fix `gate terraform-plan` exit code** — same pattern.
-3. **Fix `tf-check --fail-on-regression`** — currently fires only on `score_delta < 0`, but destructive-only plans never change the score. Should also fire on `recommendation == "high risk"` OR max per-resource risk ≥ threshold. Regression test: `tests/fixtures/sample-tf-plan.json` (added in Task 3).
+1. ~~**Fix `gate check` exit code**~~ — **False positive** (the Phase 0 claim was a `| tail` pipe-exit-code trap; the gate actually exits 1 correctly). See the Correction banner at the top of this document.
+2. ~~**Fix `gate terraform-plan` exit code**~~ — **False positive**, same root cause.
+3. ✅ **Fix `tf-check --fail-on-regression`** — **Resolved in PR #68.** Added `recommendation == "high risk"` gate clause; regression tests in `tests/test_cli_tf_check.py` (4 tests, all pass).
 
 ### Tier 2 — Blockers for faultray-app dashboard users
 
-4. **Fix env-var name mismatch** — `.env.local` sets `NEXT_PUBLIC_FAULTRAY_API_URL`, `src/lib/api.ts` reads `NEXT_PUBLIC_API_URL`. Rename one side. Trivial.
-5. **Wire business-logic API routes** — Either (a) proxy `/api/analysis`, `/api/finance`, `/api/v1/graph-data`, `/api/simulate` from Next.js to the Python FastAPI in `api/engine.py` etc., or (b) build them natively in Next.js. Currently the dashboard is a Potemkin village behind auth.
-6. **Remove silent mock fallback in `/whatif`** — the hardcoded `85.2` score on API failure hides (5) from users.
+4. ✅ **Env-var name mismatch** — **Resolved in PR #18.** `src/lib/api.ts` + `src/app/reports/page.tsx` now read `NEXT_PUBLIC_FAULTRAY_API_URL` with `NEXT_PUBLIC_API_URL` as a backwards-compat fallback.
+5. **Wire business-logic API routes** — Still open. Proxy `/api/analysis`, `/api/finance`, `/api/v1/graph-data`, `/api/simulate` from Next.js to the Python FastAPI, or build them natively. Deferred to a follow-up PR (architecture decision required).
+6. ✅ **Silent mock fallback in `/whatif`** — **Resolved in PR #18.** The hardcoded `overall_score: 85.2` fallback removed; replaced with a visible "Backend unreachable" error Card that surfaces the real failure.
 
 ### Tier 3 — Meaningful quality improvements
 
-7. **K8s scanner east/west edge inference** — use Service.spec.selector + Endpoints API to draw HTTP-tier deps, not just the DB heuristic. Today, `nginx + app + redis` only gets `app → redis` + `nginx → redis` but misses the obvious `nginx → app`.
-8. **Port/protocol in inferred deps** — Currently `port: 0`, `latency_ms: 0.0` on all scanner-inferred deps. Pull from Service spec.
-9. **Render 1-decimal ROI in text output of `faultray financial`** — text shows `0x ROI`, JSON shows `"roi": 0.4`. Skimmers miss the value.
+7. ✅ **K8s scanner east/west edge inference** — **Resolved in PR #70.** Added `_BACKEND_HTTP_PORTS = {3000, 5000, 8000, 8080, 8443, 9000, 9090}` frozen-set so `app_server → app_server` edges are emitted when the target Service is on a back-end port. The Phase 0 fixture now correctly gets `nginx → app` without the reverse edge.
+8. ✅ **Port/protocol in inferred deps** — **Resolved in PR #70.** `_service_ports` dict captures `Service.spec.ports[0].port` (was previously discarded) and attaches it to all generated `Dependency` edges.
+9. **Render 1-decimal ROI in text output of `faultray financial`** — Still open.
 
 ### Tier 4 — Polish / DX
 
-10. **Clip column widths in `financial` rich table** (minor).
-11. **Route stderr messages out of stdout** for `gate terraform-plan --json` (minor).
-12. **Document Playwright MCP sudo-less setup** via `--executable-path` pointing at Chrome for Testing.
+10. **Clip column widths in `financial` rich table** — Still open.
+11. **Route stderr messages out of stdout** for `gate terraform-plan --json` — Still open.
+12. **Document Playwright MCP sudo-less setup** via `--executable-path` pointing at Chrome for Testing — Still open.
+
+### Phase 1 rollup
+
+Session 2026-04-17 closed **6 of 12 items** (Tier 1 #3, Tier 2 #4 + #6, Tier 3 #7 + #8) plus retired 2 items (Tier 1 #1, #2) as false positives. Remaining 4 items (#5 Tier 2 API route wiring, #9/#10/#11 polish, #12 docs) carry over to Phase 2 or follow-up PRs.
 
 ### Out-of-scope for Phase 1
 
