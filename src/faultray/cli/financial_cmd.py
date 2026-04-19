@@ -83,19 +83,28 @@ def _print_financial_report(report: object) -> None:
         border_style=border,
     ))
 
-    # Detailed component table
+    # Detailed component table.
+    #
+    # Earlier versions pinned widths to values summing to >80 cols, so Rich
+    # auto-shrank every cell to 4-5 chars (headers → "$/…", data → "$10,1…").
+    # We now:
+    #   1. let numeric columns size to their content (no_wrap),
+    #   2. allow the long free-form Component id and Risk description to
+    #      wrap (overflow="fold") so they don't eat the whole row,
+    #   3. accept that extremely wide terminals may yield a wider table —
+    #      that is cheap compared to unreadable data.
     if report.component_impacts:
         table = Table(
             title="Component Financial Impact (all components)",
             show_header=True,
         )
-        table.add_column("Component", style="cyan", width=20)
-        table.add_column("Type", width=16)
-        table.add_column("Avail %", justify="right", width=10)
-        table.add_column("Downtime/yr", justify="right", width=12)
-        table.add_column("$/Hour", justify="right", width=10)
-        table.add_column("Loss/yr", justify="right", width=14)
-        table.add_column("Risk", width=30)
+        table.add_column("Component", style="cyan", overflow="fold")
+        table.add_column("Type", no_wrap=True)
+        table.add_column("Avail %", justify="right", no_wrap=True)
+        table.add_column("Downtime/yr", justify="right", no_wrap=True)
+        table.add_column("$/Hour", justify="right", no_wrap=True)
+        table.add_column("Loss/yr", justify="right", no_wrap=True)
+        table.add_column("Risk", overflow="fold")
 
         for impact in report.component_impacts:
             avail_pct = impact.availability * 100
@@ -112,6 +121,9 @@ def _print_financial_report(report: object) -> None:
                 else "dim"
             )
 
+            # Risk description is no longer truncated to 30 chars here —
+            # the column declaration uses overflow="fold" so Rich wraps it
+            # within the cell instead of cutting mid-sentence.
             table.add_row(
                 impact.component_id,
                 impact.component_type,
@@ -119,9 +131,7 @@ def _print_financial_report(report: object) -> None:
                 f"{impact.annual_downtime_hours:.2f}h",
                 f"${impact.cost_per_hour:,.0f}",
                 f"[{loss_color}]${impact.annual_loss:,.0f}[/]",
-                (impact.risk_description[:30]
-                 if len(impact.risk_description) > 30
-                 else impact.risk_description),
+                impact.risk_description,
             )
 
         console.print()
