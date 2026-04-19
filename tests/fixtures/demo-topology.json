@@ -1,0 +1,480 @@
+{
+  "schema_version": "4.0",
+  "components": [
+    {
+      "id": "deploy-faultray-demo-app",
+      "name": "faultray-demo/app",
+      "type": "app_server",
+      "host": "",
+      "port": 0,
+      "replicas": 3,
+      "metrics": {
+        "cpu_percent": 0.0,
+        "memory_percent": 0.0,
+        "memory_used_mb": 0.0,
+        "memory_total_mb": 0.0,
+        "disk_percent": 0.0,
+        "disk_used_gb": 0.0,
+        "disk_total_gb": 0.0,
+        "network_connections": 0,
+        "open_files": 0
+      },
+      "capacity": {
+        "max_connections": 1000,
+        "max_rps": 5000,
+        "connection_pool_size": 100,
+        "max_memory_mb": 8192,
+        "max_disk_gb": 100,
+        "timeout_seconds": 30.0,
+        "retry_multiplier": 3.0
+      },
+      "health": "healthy",
+      "autoscaling": {
+        "enabled": false,
+        "min_replicas": 1,
+        "max_replicas": 1,
+        "scale_up_threshold": 70.0,
+        "scale_down_threshold": 30.0,
+        "scale_up_delay_seconds": 15,
+        "scale_down_delay_seconds": 300,
+        "scale_up_step": 2
+      },
+      "failover": {
+        "enabled": false,
+        "promotion_time_seconds": 30.0,
+        "health_check_interval_seconds": 10.0,
+        "failover_threshold": 3
+      },
+      "cache_warming": {
+        "enabled": false,
+        "initial_hit_ratio": 0.0,
+        "warm_duration_seconds": 300,
+        "warming_curve": "linear"
+      },
+      "singleflight": {
+        "enabled": false,
+        "coalesce_ratio": 0.8
+      },
+      "slo_targets": [],
+      "external_sla": null,
+      "cost_profile": {
+        "hourly_infra_cost": 0.0,
+        "revenue_per_minute": 0.0,
+        "sla_credit_percent": 0.0,
+        "recovery_engineer_cost": 100.0,
+        "monthly_contract_value": 0.0,
+        "customer_ltv": 0.0,
+        "churn_rate_per_hour_outage": 0.001,
+        "recovery_team_size": 0,
+        "data_loss_cost_per_gb": 0.0
+      },
+      "operational_profile": {
+        "mtbf_hours": 0.0,
+        "mttr_minutes": 30.0,
+        "deploy_downtime_seconds": 30.0,
+        "maintenance_downtime_minutes": 60.0,
+        "degradation": {
+          "memory_leak_mb_per_hour": 0.0,
+          "disk_fill_gb_per_hour": 0.0,
+          "connection_leak_per_hour": 0.0
+        }
+      },
+      "region": {
+        "region": "faultray-demo",
+        "availability_zone": "",
+        "is_primary": true,
+        "dr_target_region": "",
+        "rpo_seconds": 0,
+        "rto_seconds": 0
+      },
+      "network": {
+        "rtt_ms": 1.0,
+        "packet_loss_rate": 0.0001,
+        "jitter_ms": 0.5,
+        "dns_resolution_ms": 5.0,
+        "tls_handshake_ms": 10.0
+      },
+      "runtime_jitter": {
+        "gc_pause_ms": 0.0,
+        "gc_pause_frequency": 0.0,
+        "scheduling_jitter_ms": 0.1
+      },
+      "security": {
+        "encryption_at_rest": false,
+        "encryption_in_transit": false,
+        "waf_protected": false,
+        "rate_limiting": false,
+        "auth_required": false,
+        "network_segmented": false,
+        "backup_enabled": false,
+        "backup_frequency_hours": 24.0,
+        "patch_sla_hours": 72.0,
+        "log_enabled": false,
+        "ids_monitored": false
+      },
+      "compliance_tags": {
+        "data_classification": "internal",
+        "pci_scope": false,
+        "contains_pii": false,
+        "contains_phi": false,
+        "audit_logging": false,
+        "change_management": false
+      },
+      "team": {
+        "team_size": 3,
+        "oncall_coverage_hours": 24.0,
+        "timezone_coverage": 1,
+        "mean_acknowledge_time_minutes": 5.0,
+        "mean_diagnosis_time_minutes": 15.0,
+        "runbook_coverage_percent": 50.0,
+        "automation_percent": 20.0
+      },
+      "parameters": {},
+      "tags": [
+        "deployment",
+        "namespace:faultray-demo"
+      ],
+      "owner": "",
+      "created_by": "",
+      "last_modified": "",
+      "last_executed": "",
+      "documentation_url": "",
+      "source_url": "",
+      "lifecycle_status": "active"
+    },
+    {
+      "id": "deploy-faultray-demo-nginx",
+      "name": "faultray-demo/nginx",
+      "type": "app_server",
+      "host": "",
+      "port": 0,
+      "replicas": 2,
+      "metrics": {
+        "cpu_percent": 0.0,
+        "memory_percent": 0.0,
+        "memory_used_mb": 0.0,
+        "memory_total_mb": 0.0,
+        "disk_percent": 0.0,
+        "disk_used_gb": 0.0,
+        "disk_total_gb": 0.0,
+        "network_connections": 0,
+        "open_files": 0
+      },
+      "capacity": {
+        "max_connections": 1000,
+        "max_rps": 5000,
+        "connection_pool_size": 100,
+        "max_memory_mb": 8192,
+        "max_disk_gb": 100,
+        "timeout_seconds": 30.0,
+        "retry_multiplier": 3.0
+      },
+      "health": "healthy",
+      "autoscaling": {
+        "enabled": false,
+        "min_replicas": 1,
+        "max_replicas": 1,
+        "scale_up_threshold": 70.0,
+        "scale_down_threshold": 30.0,
+        "scale_up_delay_seconds": 15,
+        "scale_down_delay_seconds": 300,
+        "scale_up_step": 2
+      },
+      "failover": {
+        "enabled": false,
+        "promotion_time_seconds": 30.0,
+        "health_check_interval_seconds": 10.0,
+        "failover_threshold": 3
+      },
+      "cache_warming": {
+        "enabled": false,
+        "initial_hit_ratio": 0.0,
+        "warm_duration_seconds": 300,
+        "warming_curve": "linear"
+      },
+      "singleflight": {
+        "enabled": false,
+        "coalesce_ratio": 0.8
+      },
+      "slo_targets": [],
+      "external_sla": null,
+      "cost_profile": {
+        "hourly_infra_cost": 0.0,
+        "revenue_per_minute": 0.0,
+        "sla_credit_percent": 0.0,
+        "recovery_engineer_cost": 100.0,
+        "monthly_contract_value": 0.0,
+        "customer_ltv": 0.0,
+        "churn_rate_per_hour_outage": 0.001,
+        "recovery_team_size": 0,
+        "data_loss_cost_per_gb": 0.0
+      },
+      "operational_profile": {
+        "mtbf_hours": 0.0,
+        "mttr_minutes": 30.0,
+        "deploy_downtime_seconds": 30.0,
+        "maintenance_downtime_minutes": 60.0,
+        "degradation": {
+          "memory_leak_mb_per_hour": 0.0,
+          "disk_fill_gb_per_hour": 0.0,
+          "connection_leak_per_hour": 0.0
+        }
+      },
+      "region": {
+        "region": "faultray-demo",
+        "availability_zone": "",
+        "is_primary": true,
+        "dr_target_region": "",
+        "rpo_seconds": 0,
+        "rto_seconds": 0
+      },
+      "network": {
+        "rtt_ms": 1.0,
+        "packet_loss_rate": 0.0001,
+        "jitter_ms": 0.5,
+        "dns_resolution_ms": 5.0,
+        "tls_handshake_ms": 10.0
+      },
+      "runtime_jitter": {
+        "gc_pause_ms": 0.0,
+        "gc_pause_frequency": 0.0,
+        "scheduling_jitter_ms": 0.1
+      },
+      "security": {
+        "encryption_at_rest": false,
+        "encryption_in_transit": false,
+        "waf_protected": false,
+        "rate_limiting": false,
+        "auth_required": false,
+        "network_segmented": false,
+        "backup_enabled": false,
+        "backup_frequency_hours": 24.0,
+        "patch_sla_hours": 72.0,
+        "log_enabled": false,
+        "ids_monitored": false
+      },
+      "compliance_tags": {
+        "data_classification": "internal",
+        "pci_scope": false,
+        "contains_pii": false,
+        "contains_phi": false,
+        "audit_logging": false,
+        "change_management": false
+      },
+      "team": {
+        "team_size": 3,
+        "oncall_coverage_hours": 24.0,
+        "timezone_coverage": 1,
+        "mean_acknowledge_time_minutes": 5.0,
+        "mean_diagnosis_time_minutes": 15.0,
+        "runbook_coverage_percent": 50.0,
+        "automation_percent": 20.0
+      },
+      "parameters": {},
+      "tags": [
+        "deployment",
+        "namespace:faultray-demo"
+      ],
+      "owner": "",
+      "created_by": "",
+      "last_modified": "",
+      "last_executed": "",
+      "documentation_url": "",
+      "source_url": "",
+      "lifecycle_status": "active"
+    },
+    {
+      "id": "deploy-faultray-demo-redis",
+      "name": "faultray-demo/redis",
+      "type": "database",
+      "host": "",
+      "port": 0,
+      "replicas": 1,
+      "metrics": {
+        "cpu_percent": 0.0,
+        "memory_percent": 0.0,
+        "memory_used_mb": 0.0,
+        "memory_total_mb": 0.0,
+        "disk_percent": 0.0,
+        "disk_used_gb": 0.0,
+        "disk_total_gb": 0.0,
+        "network_connections": 0,
+        "open_files": 0
+      },
+      "capacity": {
+        "max_connections": 1000,
+        "max_rps": 5000,
+        "connection_pool_size": 100,
+        "max_memory_mb": 8192,
+        "max_disk_gb": 100,
+        "timeout_seconds": 30.0,
+        "retry_multiplier": 3.0
+      },
+      "health": "healthy",
+      "autoscaling": {
+        "enabled": false,
+        "min_replicas": 1,
+        "max_replicas": 1,
+        "scale_up_threshold": 70.0,
+        "scale_down_threshold": 30.0,
+        "scale_up_delay_seconds": 15,
+        "scale_down_delay_seconds": 300,
+        "scale_up_step": 2
+      },
+      "failover": {
+        "enabled": false,
+        "promotion_time_seconds": 30.0,
+        "health_check_interval_seconds": 10.0,
+        "failover_threshold": 3
+      },
+      "cache_warming": {
+        "enabled": false,
+        "initial_hit_ratio": 0.0,
+        "warm_duration_seconds": 300,
+        "warming_curve": "linear"
+      },
+      "singleflight": {
+        "enabled": false,
+        "coalesce_ratio": 0.8
+      },
+      "slo_targets": [],
+      "external_sla": null,
+      "cost_profile": {
+        "hourly_infra_cost": 0.0,
+        "revenue_per_minute": 0.0,
+        "sla_credit_percent": 0.0,
+        "recovery_engineer_cost": 100.0,
+        "monthly_contract_value": 0.0,
+        "customer_ltv": 0.0,
+        "churn_rate_per_hour_outage": 0.001,
+        "recovery_team_size": 0,
+        "data_loss_cost_per_gb": 0.0
+      },
+      "operational_profile": {
+        "mtbf_hours": 0.0,
+        "mttr_minutes": 30.0,
+        "deploy_downtime_seconds": 30.0,
+        "maintenance_downtime_minutes": 60.0,
+        "degradation": {
+          "memory_leak_mb_per_hour": 0.0,
+          "disk_fill_gb_per_hour": 0.0,
+          "connection_leak_per_hour": 0.0
+        }
+      },
+      "region": {
+        "region": "faultray-demo",
+        "availability_zone": "",
+        "is_primary": true,
+        "dr_target_region": "",
+        "rpo_seconds": 0,
+        "rto_seconds": 0
+      },
+      "network": {
+        "rtt_ms": 1.0,
+        "packet_loss_rate": 0.0001,
+        "jitter_ms": 0.5,
+        "dns_resolution_ms": 5.0,
+        "tls_handshake_ms": 10.0
+      },
+      "runtime_jitter": {
+        "gc_pause_ms": 0.0,
+        "gc_pause_frequency": 0.0,
+        "scheduling_jitter_ms": 0.1
+      },
+      "security": {
+        "encryption_at_rest": false,
+        "encryption_in_transit": false,
+        "waf_protected": false,
+        "rate_limiting": false,
+        "auth_required": false,
+        "network_segmented": false,
+        "backup_enabled": false,
+        "backup_frequency_hours": 24.0,
+        "patch_sla_hours": 72.0,
+        "log_enabled": false,
+        "ids_monitored": false
+      },
+      "compliance_tags": {
+        "data_classification": "internal",
+        "pci_scope": false,
+        "contains_pii": false,
+        "contains_phi": false,
+        "audit_logging": false,
+        "change_management": false
+      },
+      "team": {
+        "team_size": 3,
+        "oncall_coverage_hours": 24.0,
+        "timezone_coverage": 1,
+        "mean_acknowledge_time_minutes": 5.0,
+        "mean_diagnosis_time_minutes": 15.0,
+        "runbook_coverage_percent": 50.0,
+        "automation_percent": 20.0
+      },
+      "parameters": {},
+      "tags": [
+        "deployment",
+        "namespace:faultray-demo"
+      ],
+      "owner": "",
+      "created_by": "",
+      "last_modified": "",
+      "last_executed": "",
+      "documentation_url": "",
+      "source_url": "",
+      "lifecycle_status": "active"
+    }
+  ],
+  "dependencies": [
+    {
+      "source_id": "deploy-faultray-demo-app",
+      "target_id": "deploy-faultray-demo-redis",
+      "dependency_type": "requires",
+      "protocol": "tcp",
+      "port": 0,
+      "latency_ms": 0.0,
+      "weight": 1.0,
+      "circuit_breaker": {
+        "enabled": false,
+        "failure_threshold": 5,
+        "recovery_timeout_seconds": 60.0,
+        "half_open_max_requests": 3,
+        "success_threshold": 2
+      },
+      "retry_strategy": {
+        "enabled": false,
+        "max_retries": 3,
+        "initial_delay_ms": 100.0,
+        "max_delay_ms": 30000.0,
+        "multiplier": 2.0,
+        "jitter": true,
+        "retry_budget_per_second": 0.0
+      }
+    },
+    {
+      "source_id": "deploy-faultray-demo-nginx",
+      "target_id": "deploy-faultray-demo-redis",
+      "dependency_type": "requires",
+      "protocol": "tcp",
+      "port": 0,
+      "latency_ms": 0.0,
+      "weight": 1.0,
+      "circuit_breaker": {
+        "enabled": false,
+        "failure_threshold": 5,
+        "recovery_timeout_seconds": 60.0,
+        "half_open_max_requests": 3,
+        "success_threshold": 2
+      },
+      "retry_strategy": {
+        "enabled": false,
+        "max_retries": 3,
+        "initial_delay_ms": 100.0,
+        "max_delay_ms": 30000.0,
+        "multiplier": 2.0,
+        "jitter": true,
+        "retry_budget_per_second": 0.0
+      }
+    }
+  ]
+}

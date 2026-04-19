@@ -66,7 +66,7 @@ def _print_financial_report(report: object) -> None:
                 f"  {i}. {fix.description} "
                 f"-> {_format_dollars(fix.annual_cost)}/yr "
                 f"-> saves {_format_dollars(fix.annual_savings)} "
-                f"({fix.roi:.0f}x ROI)"
+                f"({fix.roi:.1f}x ROI)"
             )
 
     # Totals
@@ -74,7 +74,7 @@ def _print_financial_report(report: object) -> None:
         lines.append("")
         lines.append(f"[bold]Total Fix Cost:[/]  {_format_dollars(report.total_fix_cost)}/year")
         lines.append(f"[bold]Total Savings:[/]   {_format_dollars(report.total_savings)}/year")
-        lines.append(f"[bold]Overall ROI:[/]     {report.roi:.0f}x")
+        lines.append(f"[bold]Overall ROI:[/]     {report.roi:.1f}x")
 
     console.print()
     console.print(Panel(
@@ -262,7 +262,7 @@ def _render_html(data: dict) -> str:
             f"<td>{f['description']}</td>"
             f"<td>${f['annual_cost']:,.0f}</td>"
             f"<td>${f['annual_savings']:,.0f}</td>"
-            f"<td>{f['roi']:.0f}x</td></tr>\n"
+            f"<td>{f['roi']:.1f}x</td></tr>\n"
         )
 
     return f"""<!DOCTYPE html>
@@ -284,7 +284,7 @@ h1 {{ color: #333; }}
 <p><strong>Estimated Annual Loss:</strong> ${data['total_annual_loss']:,.0f}</p>
 <p><strong>Total Fix Cost:</strong> ${data['total_fix_cost']:,.0f}/year</p>
 <p><strong>Total Savings:</strong> ${data['total_savings']:,.0f}/year</p>
-<p><strong>Overall ROI:</strong> {data['roi']:.0f}x</p>
+<p><strong>Overall ROI:</strong> {data['roi']:.1f}x</p>
 </div>
 <h2>Top Risks</h2>
 <table>
