@@ -20,13 +20,13 @@ import uuid
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
 
-logger = logging.getLogger(__name__)
-
 from faultray.governance.assessor import AssessmentResult
 from faultray.governance.frameworks import (
     all_meti_requirements,
     get_frameworks_for_meti_requirement,
 )
+
+logger = logging.getLogger(__name__)
 
 
 # ---------------------------------------------------------------------------
