@@ -183,10 +183,41 @@ class TestGraphQLApi:
 # ===================================================================
 
 class TestSlackCommands:
+    """POST /api/slack/commands — signature-verified webhook (#100).
+
+    Slack endpoint no longer uses Bearer auth; it verifies X-Slack-Signature
+    HMAC with SLACK_SIGNING_SECRET. Tests sign each request explicitly.
+    """
+
+    @staticmethod
+    async def _signed_post(client, body: str):
+        import hashlib
+        import hmac
+        import os
+        import time as _time
+
+        secret = "test-slack-signing-secret"  # pragma: allowlist secret
+        os.environ["SLACK_SIGNING_SECRET"] = secret
+        ts = str(int(_time.time()))
+        sig = "v0=" + hmac.new(
+            secret.encode(), f"v0:{ts}:{body}".encode(), hashlib.sha256
+        ).hexdigest()
+        try:
+            return await client.post(
+                "/api/slack/commands",
+                content=body,
+                headers={
+                    "x-slack-request-timestamp": ts,
+                    "x-slack-signature": sig,
+                    "content-type": "application/x-www-form-urlencoded",
+                },
+            )
+        finally:
+            os.environ.pop("SLACK_SIGNING_SECRET", None)
+
     async def test_slack_help_command(self, client):
-        resp = await client.post(
-            "/api/slack/commands",
-            json={"text": "help", "user_id": "U123", "channel_id": "C456"},
+        resp = await self._signed_post(
+            client, "text=help&user_id=U123&channel_id=C456"
         )
         assert resp.status_code in (200, 500)
         if resp.status_code == 200:
@@ -194,23 +225,20 @@ class TestSlackCommands:
             assert "text" in data or "blocks" in data
 
     async def test_slack_score_command(self, client):
-        resp = await client.post(
-            "/api/slack/commands",
-            json={"text": "score", "user_id": "U123", "channel_id": "C456"},
+        resp = await self._signed_post(
+            client, "text=score&user_id=U123&channel_id=C456"
         )
         assert resp.status_code in (200, 500)
 
     async def test_slack_simulate_command(self, client):
-        resp = await client.post(
-            "/api/slack/commands",
-            json={"text": "simulate", "user_id": "U123", "channel_id": "C456"},
+        resp = await self._signed_post(
+            client, "text=simulate&user_id=U123&channel_id=C456"
         )
         assert resp.status_code in (200, 500)
 
     async def test_slack_empty_text(self, client):
-        resp = await client.post(
-            "/api/slack/commands",
-            json={"text": "", "user_id": "U123", "channel_id": "C456"},
+        resp = await self._signed_post(
+            client, "text=&user_id=U123&channel_id=C456"
         )
         assert resp.status_code in (200, 500)
 
