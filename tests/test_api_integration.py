@@ -1249,18 +1249,42 @@ class TestEdgeCases:
 
 
 class TestSlackEndpoint:
-    """POST /api/slack/commands."""
+    """POST /api/slack/commands — signature-verified webhook (#100)."""
+
+    def _sign_and_post(self, client, body: str):
+        import hashlib
+        import hmac
+        import os
+        import time as _time
+
+        secret = "test-slack-signing-secret"  # pragma: allowlist secret
+        os.environ["SLACK_SIGNING_SECRET"] = secret
+        ts = str(int(_time.time()))
+        sig = "v0=" + hmac.new(
+            secret.encode(), f"v0:{ts}:{body}".encode(), hashlib.sha256
+        ).hexdigest()
+        try:
+            return client.post(
+                "/api/slack/commands",
+                content=body,
+                headers={
+                    "x-slack-request-timestamp": ts,
+                    "x-slack-signature": sig,
+                    "content-type": "application/x-www-form-urlencoded",
+                },
+            )
+        finally:
+            os.environ.pop("SLACK_SIGNING_SECRET", None)
 
     def test_slack_help_command(self, client):
-        resp = client.post(
-            "/api/slack/commands",
-            json={"text": "help", "user_id": "U123", "channel_id": "C456"},
+        resp = self._sign_and_post(
+            client, "text=help&user_id=U123&channel_id=C456"
         )
-        # May succeed or fail depending on _model_path; should not crash
+        # Signature accepted; downstream may succeed or fail on _model_path
         assert resp.status_code in (200, 500)
 
     def test_slack_empty_command(self, client):
-        resp = client.post("/api/slack/commands", json={})
+        resp = self._sign_and_post(client, "")
         assert resp.status_code in (200, 500)
 
 

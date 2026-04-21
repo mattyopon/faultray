@@ -25,6 +25,19 @@ router = APIRouter()
 
 
 # ---------------------------------------------------------------------------
+# ADMIN-AUTH (#100) — shared auth dependencies
+#
+# view_dashboard : viewer+ (HTML pages + read-only JSON listings)
+# run_simulation : editor+ (POST/DELETE that install, schedule, chat, etc.)
+#
+# Routes left intentionally public (see auth.py PUBLIC_PATHS / _is_public):
+#   /api/health, /api/versions, /api-docs, /setup, /auth/*
+# ---------------------------------------------------------------------------
+_READ_ACCESS = Depends(_require_permission("view_dashboard"))
+_WRITE_ACCESS = Depends(_require_permission("run_simulation"))
+
+
+# ---------------------------------------------------------------------------
 # Health, Versioning & API docs
 # ---------------------------------------------------------------------------
 
@@ -53,7 +66,7 @@ async def api_docs_page(request: Request):
 
 
 @router.get("/settings", response_class=HTMLResponse)
-async def settings_page(request: Request):
+async def settings_page(request: Request, _user=_READ_ACCESS):
     return templates.TemplateResponse(request, "settings.html", {
         "has_data": True,
     })
@@ -285,7 +298,7 @@ async def oauth_callback(request: Request, code: str = "", state: str = "", prov
 # ---------------------------------------------------------------------------
 
 @router.get("/marketplace", response_class=HTMLResponse)
-async def marketplace_page(request: Request):
+async def marketplace_page(request: Request, _user=_READ_ACCESS):
     """Marketplace HTML page."""
     graph = get_graph()
     has_data = bool(graph and graph.components)
@@ -299,6 +312,7 @@ async def marketplace_page(request: Request):
 async def list_marketplace_packages(
     category: str | None = None,
     provider: str | None = None,
+    _user=_READ_ACCESS,
 ):
     """List all marketplace packages."""
     from faultray.marketplace import ScenarioMarketplace
@@ -309,7 +323,7 @@ async def list_marketplace_packages(
 
 
 @router.get("/api/marketplace/packages/{package_id}", response_class=JSONResponse)
-async def get_marketplace_package(package_id: str):
+async def get_marketplace_package(package_id: str, _user=_READ_ACCESS):
     """Get a specific marketplace package by ID."""
     from faultray.marketplace import ScenarioMarketplace
 
@@ -322,7 +336,7 @@ async def get_marketplace_package(package_id: str):
 
 
 @router.post("/api/marketplace/install/{package_id}", response_class=JSONResponse)
-async def install_marketplace_package(package_id: str):
+async def install_marketplace_package(package_id: str, _user=_WRITE_ACCESS):
     """Install a marketplace package."""
     from faultray.marketplace import ScenarioMarketplace
 
@@ -347,7 +361,7 @@ async def install_marketplace_package(package_id: str):
 
 
 @router.get("/api/marketplace/featured", response_class=JSONResponse)
-async def get_featured_packages():
+async def get_featured_packages(_user=_READ_ACCESS):
     """Get featured marketplace packages."""
     from faultray.marketplace import ScenarioMarketplace
 
@@ -357,7 +371,7 @@ async def get_featured_packages():
 
 
 @router.get("/api/marketplace/categories", response_class=JSONResponse)
-async def get_marketplace_categories():
+async def get_marketplace_categories(_user=_READ_ACCESS):
     """Get all marketplace categories."""
     from faultray.marketplace import ScenarioMarketplace
 
@@ -367,7 +381,7 @@ async def get_marketplace_categories():
 
 
 @router.get("/api/marketplace/popular", response_class=JSONResponse)
-async def get_popular_packages():
+async def get_popular_packages(_user=_READ_ACCESS):
     """Get most popular marketplace packages."""
     from faultray.marketplace import ScenarioMarketplace
 
@@ -377,7 +391,7 @@ async def get_popular_packages():
 
 
 @router.get("/api/marketplace/search", response_class=JSONResponse)
-async def search_marketplace_packages(q: str = ""):
+async def search_marketplace_packages(q: str = "", _user=_READ_ACCESS):
     """Search marketplace packages by query."""
     from faultray.marketplace import ScenarioMarketplace
 
@@ -391,7 +405,7 @@ async def search_marketplace_packages(q: str = ""):
 # ---------------------------------------------------------------------------
 
 @router.get("/calendar", response_class=HTMLResponse)
-async def calendar_page(request: Request):
+async def calendar_page(request: Request, _user=_READ_ACCESS):
     """Chaos Calendar page."""
     graph = get_graph()
     return templates.TemplateResponse(request, "calendar.html", {
@@ -401,7 +415,7 @@ async def calendar_page(request: Request):
 
 
 @router.get("/api/calendar", response_class=JSONResponse)
-async def api_calendar_view():
+async def api_calendar_view(_user=_READ_ACCESS):
     """Return calendar view JSON."""
     from faultray.scheduler.chaos_calendar import ChaosCalendar
 
@@ -421,7 +435,7 @@ async def api_calendar_view():
 
 
 @router.post("/api/calendar/schedule", response_class=JSONResponse)
-async def api_calendar_schedule(request: Request):
+async def api_calendar_schedule(request: Request, _user=_WRITE_ACCESS):
     """Schedule a new chaos experiment."""
     from faultray.scheduler.chaos_calendar import ChaosCalendar, ChaosExperiment
 
@@ -453,7 +467,7 @@ async def api_calendar_schedule(request: Request):
 
 
 @router.delete("/api/calendar/{experiment_id}", response_class=JSONResponse)
-async def api_calendar_cancel(experiment_id: str):
+async def api_calendar_cancel(experiment_id: str, _user=_WRITE_ACCESS):
     """Cancel a scheduled experiment."""
     from faultray.scheduler.chaos_calendar import ChaosCalendar
 
@@ -465,7 +479,7 @@ async def api_calendar_cancel(experiment_id: str):
 
 
 @router.post("/api/calendar/auto-schedule", response_class=JSONResponse)
-async def api_calendar_auto_schedule():
+async def api_calendar_auto_schedule(_user=_WRITE_ACCESS):
     """Auto-schedule experiments for critical components."""
     from faultray.scheduler.chaos_calendar import ChaosCalendar
 
@@ -482,7 +496,7 @@ async def api_calendar_auto_schedule():
 
 
 @router.get("/api/calendar/ical")
-async def api_calendar_ical():
+async def api_calendar_ical(_user=_READ_ACCESS):
     """Download iCalendar (.ics) file."""
     from faultray.scheduler.chaos_calendar import ChaosCalendar
 
@@ -500,7 +514,7 @@ async def api_calendar_ical():
 # ---------------------------------------------------------------------------
 
 @router.get("/chat", response_class=HTMLResponse)
-async def chat_page(request: Request):
+async def chat_page(request: Request, _user=_READ_ACCESS):
     """Chat interface page."""
     from faultray.api.chat_engine import ChatEngine
 
@@ -517,7 +531,7 @@ async def chat_page(request: Request):
 
 
 @router.post("/api/chat", response_class=JSONResponse)
-async def chat_api(request: Request):
+async def chat_api(request: Request, _user=_WRITE_ACCESS):
     """Process a chat message about infrastructure."""
     from faultray.api.chat_engine import ChatEngine
 
@@ -547,23 +561,75 @@ async def chat_api(request: Request):
 # Slack Bot
 # ---------------------------------------------------------------------------
 
+def _verify_slack_signature(request: Request, body: bytes) -> bool:
+    """Verify Slack request signature per https://api.slack.com/authentication/verifying-requests-from-slack.
+
+    Returns True if:
+    - SLACK_SIGNING_SECRET env var is set AND signature is valid AND timestamp is within 5 minutes
+    - SLACK_SIGNING_SECRET is NOT set (backward-compatible mode for self-hosted dev without Slack)
+      and FAULTRAY_ALLOW_UNSIGNED_SLACK=1 is explicitly set (escape hatch for local dev only)
+
+    Returns False otherwise (rejecting the request).
+    """
+    import hashlib
+    import hmac
+    import time as _time
+
+    signing_secret = os.environ.get("SLACK_SIGNING_SECRET", "")
+    if not signing_secret:
+        # Safety: without secret configured, only allow if operator explicitly
+        # opts into unsigned (dev-only). Default posture is "reject".
+        return os.environ.get("FAULTRAY_ALLOW_UNSIGNED_SLACK", "").lower() in ("1", "true", "yes")
+
+    ts = request.headers.get("x-slack-request-timestamp", "")
+    sig = request.headers.get("x-slack-signature", "")
+    if not ts or not sig:
+        return False
+
+    # Reject replay attacks (>5 min old)
+    try:
+        if abs(int(_time.time()) - int(ts)) > 60 * 5:
+            return False
+    except ValueError:
+        return False
+
+    basestring = b"v0:" + ts.encode() + b":" + body
+    expected = "v0=" + hmac.new(
+        signing_secret.encode(), basestring, hashlib.sha256
+    ).hexdigest()
+    return hmac.compare_digest(expected, sig)
+
+
 @router.post("/api/slack/commands", response_class=JSONResponse)
 async def slack_command_handler(request: Request):
-    """Handle Slack slash commands."""
+    """Handle Slack slash commands.
+
+    Public endpoint (Slack has no Bearer token) but authenticated via
+    Slack signing-secret HMAC verification (ADMIN-AUTH #100).
+    """
+    raw_body = await request.body()
+    if not _verify_slack_signature(request, raw_body):
+        logger.warning("Slack command rejected: invalid or missing signature")
+        return JSONResponse(
+            {"error": "Invalid Slack signature"}, status_code=401
+        )
     try:
+        # Parse form from raw body bytes (body already read for signature verify).
+        from urllib.parse import parse_qs
         try:
-            form = await request.form()
-            text = form.get("text", "help")
-            user_id = form.get("user_id", "")
-            channel_id = form.get("channel_id", "")
+            parsed = parse_qs(raw_body.decode(errors="replace"))
+            text = (parsed.get("text", ["help"]) or ["help"])[0]
+            user_id = (parsed.get("user_id", [""]) or [""])[0]
+            channel_id = (parsed.get("channel_id", [""]) or [""])[0]
         except Exception:
+            import json as _json
             try:
-                body = await request.json()
+                jbody = _json.loads(raw_body.decode(errors="replace") or "{}")
             except Exception:
-                body = {}
-            text = body.get("text", "help")
-            user_id = body.get("user_id", "")
-            channel_id = body.get("channel_id", "")
+                jbody = {}
+            text = jbody.get("text", "help")
+            user_id = jbody.get("user_id", "")
+            channel_id = jbody.get("channel_id", "")
 
         from faultray.integrations.slack_bot import FaultRaySlackBot, parse_slack_command
 
@@ -587,7 +653,7 @@ async def slack_command_handler(request: Request):
 # ---------------------------------------------------------------------------
 
 @router.get("/templates", response_class=HTMLResponse)
-async def templates_page(request: Request, category: str | None = None):
+async def templates_page(request: Request, category: str | None = None, _user=_READ_ACCESS):
     """Render the Template Gallery page."""
     from dataclasses import asdict
 
@@ -610,7 +676,7 @@ async def templates_page(request: Request, category: str | None = None):
 
 
 @router.get("/api/templates", response_class=JSONResponse)
-async def api_list_templates(category: str | None = None):
+async def api_list_templates(category: str | None = None, _user=_READ_ACCESS):
     """List all gallery templates as JSON."""
     from dataclasses import asdict
 
@@ -622,7 +688,7 @@ async def api_list_templates(category: str | None = None):
 
 
 @router.get("/api/templates/{template_id}", response_class=JSONResponse)
-async def api_get_template(template_id: str):
+async def api_get_template(template_id: str, _user=_READ_ACCESS):
     """Get a specific template by ID."""
     from dataclasses import asdict
 
@@ -641,7 +707,7 @@ async def api_get_template(template_id: str):
 # ---------------------------------------------------------------------------
 
 @router.get("/agents", response_class=HTMLResponse)
-async def agents_page(request: Request):
+async def agents_page(request: Request, _user=_READ_ACCESS):
     """AI Agent assessment page."""
     graph = get_graph()
     has_data = len(graph.components) > 0
@@ -735,7 +801,7 @@ async def agent_scenarios(request: Request, user=Depends(_require_permission("vi
 # ---------------------------------------------------------------------------
 
 @router.get("/supply-chain", response_class=HTMLResponse)
-async def supply_chain_page(request: Request):
+async def supply_chain_page(request: Request, _user=_READ_ACCESS):
     """Supply chain attack analysis page."""
     graph = get_graph()
     has_data = len(graph.components) > 0
