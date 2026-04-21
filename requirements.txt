@@ -1,4 +1,23 @@
-# Streamlit Cloud用
+# ============================================================
+# Streamlit Cloud deployment manifest ONLY.
+#
+# ⚠️  DO NOT USE FOR DEVELOPMENT.
+#     The canonical dependency source of truth is `pyproject.toml`.
+#     For local development run: `pip install -e ".[dev]"` (or `uv sync`).
+#
+# Streamlit Cloud resolves top-level `requirements.txt` by convention
+# (https://docs.streamlit.io/deploy/streamlit-community-cloud/deploy-your-app/app-dependencies).
+# This file lists the **minimum** runtime deps for the Streamlit UI
+# (`ui/streamlit_app.py`) to boot on Streamlit Cloud. It intentionally
+# omits server-side deps (fastapi, sqlalchemy, aiosqlite, defusedxml,
+# authlib, ...) pinned in pyproject.toml — those are not needed for the
+# read-only Streamlit front-end.
+#
+# To add a runtime dep here:
+#   1. Confirm the Streamlit UI imports it at runtime (skip if not).
+#   2. Add it to pyproject.toml first; only mirror here if (1) holds.
+# Rationale: #85 (avoid drift between manifest and pyproject).
+# ============================================================
 streamlit>=1.35.0
 pyyaml>=6.0
 networkx>=3.0

@@ -105,6 +105,12 @@ pdf = [
 mcp = [
     "mcp>=1.0,<1.28",
 ]
+# Streamlit UI (ui/streamlit_app.py). Mirrors the minimum set of runtime
+# deps that the Streamlit Cloud manifest (requirements.txt) also lists,
+# so `pip install -e ".[streamlit]"` reproduces that environment locally.
+streamlit = [
+    "streamlit>=1.35.0",
+]
 dev = [
     "pytest>=8.0",
     "pytest-asyncio>=0.24",
