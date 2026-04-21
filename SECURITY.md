@@ -36,6 +36,17 @@ When using FaultRay in production:
 - Keep FaultRay updated to the latest version
 - Review the [DORA compliance docs](docs/enterprise/compliance.md)
 
+## Supply-chain integrity (#95)
+
+Every published release ships three cryptographic signals:
+
+1. **CycloneDX SBOM** — `.cdx.json` for Python dist + Docker image
+2. **SLSA v1 build provenance** — attested via `actions/attest-build-provenance`
+3. **Sigstore cosign signature** — keyless OIDC signing for Docker images
+
+See [`docs/release-verification.md`](docs/release-verification.md) for
+step-by-step verification commands (`gh attestation verify`, `cosign verify`).
+
 ---
 
 # セキュリティポリシー（日本語）
