@@ -46,8 +46,14 @@ jobs:
         run: pytest tests/test_property_based.py -v --tb=short --noconftest
 
       - name: Run tests
+        # TEST-MARKER (#84): exclude opt-in markers by default. Monkey
+        # tests need a running Streamlit server; integration needs kind
+        # / docker; both are unsuitable for the default CI leg. Run
+        # explicitly with `pytest -m monkey` / `pytest -m integration`.
         run: |
-          pytest -v --tb=short --junitxml=test-results.xml 2>&1 | tee test-output.txt
+          pytest -v --tb=short --junitxml=test-results.xml \
+            -m "not monkey and not integration" \
+            2>&1 | tee test-output.txt
           EXIT_CODE=${PIPESTATUS[0]}
 
           echo ""

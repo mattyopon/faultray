@@ -148,6 +148,7 @@ asyncio_mode = "auto"
 markers = [
     "e2e: end-to-end tests",
     "integration: integration tests requiring external services (kind/docker/kubectl etc.)",
+    "monkey: random-action UI monkey tests (require Streamlit server running at localhost:8501; opt-in via `pytest -m monkey`)",
 ]
 
 [tool.mypy]
