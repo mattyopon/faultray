@@ -281,9 +281,13 @@ class TestOpenAPIDocs:
         assert data["info"]["title"] == "FaultRay API"
 
     def test_openapi_version(self, client):
+        # VERSION-SYNC (#101): OpenAPI version must reflect the current
+        # faultray package version (kept in sync via pyproject.toml).
+        from faultray import __version__ as _fv
+
         resp = client.get("/openapi.json")
         data = resp.json()
-        assert data["info"]["version"] == "10.3.0"
+        assert data["info"]["version"] == _fv
 
     def test_openapi_contact_info(self, client):
         resp = client.get("/openapi.json")

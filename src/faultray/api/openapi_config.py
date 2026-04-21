@@ -4,6 +4,8 @@
 """OpenAPI configuration for FaultRay API."""
 from __future__ import annotations
 
+from faultray import __version__
+
 
 OPENAPI_TAGS = [
     {
@@ -56,7 +58,9 @@ OPENAPI_CONFIG = {
         "## Rate Limiting\n"
         "60 requests per minute per API key."
     ),
-    "version": "10.3.0",
+    # VERSION-SYNC (#101): source of truth is faultray.__version__ (kept in
+    # sync with pyproject.toml). Avoids drift between OpenAPI spec and release.
+    "version": __version__,
     "contact": {
         "name": "FaultRay Support",
         "url": "https://faultray.com",

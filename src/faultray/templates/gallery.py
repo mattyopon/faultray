@@ -39,6 +39,7 @@ from faultray.model.components import (
     FailoverConfig,
     ResourceMetrics,
     RetryStrategy,
+    SCHEMA_VERSION,
     SecurityProfile,
 )
 from faultray.model.graph import InfraGraph
@@ -2046,8 +2047,10 @@ def _template_to_yaml_dict(template: InfraTemplate) -> dict:
                 dep[key] = edge[key]
         dependencies.append(dep)
 
+    # SCHEMA-SYNC (#82): use SCHEMA_VERSION constant so template exports
+    # stay in step with model parser expectations across releases.
     return {
-        "schema_version": "3.0",
+        "schema_version": SCHEMA_VERSION,
         "components": components,
         "dependencies": dependencies,
     }

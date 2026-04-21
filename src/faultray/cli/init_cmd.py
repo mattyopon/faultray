@@ -15,6 +15,7 @@ from rich.prompt import Confirm, IntPrompt, Prompt
 from rich.table import Table
 
 from faultray.cli.main import app, console
+from faultray.model.components import SCHEMA_VERSION
 
 # ---------------------------------------------------------------------------
 # Component presets for the wizard
@@ -376,8 +377,10 @@ def init(
 
     dependencies = _build_dependencies(all_components)
 
+    # SCHEMA-SYNC (#82): reference SCHEMA_VERSION from model.components
+    # to prevent drift between generated YAML and loader expectations.
     yaml_data: dict = {
-        "schema_version": "3.0",
+        "schema_version": SCHEMA_VERSION,
         "components": all_components,
         "dependencies": dependencies,
     }
