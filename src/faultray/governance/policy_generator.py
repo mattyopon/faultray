@@ -14,10 +14,13 @@ Ported from JPGovAI's policy_generator service, adapted to FaultRay:
 
 from __future__ import annotations
 
+import logging
 import os
 import uuid
 from dataclasses import dataclass
 from datetime import datetime, timezone
+
+logger = logging.getLogger(__name__)
 
 
 # ---------------------------------------------------------------------------
@@ -467,4 +470,8 @@ def _try_ai_customization(policy_type: str, org_name: str) -> str:
         )
         return message.content[0].text  # type: ignore[union-attr]
     except Exception:
+        # GOVERNANCE-LOGGER (#80): record the root cause so AI-API
+        # outages / auth failures / schema breaks don't disappear into
+        # the fallback path silently.
+        logger.exception("policy_generator: LLM call failed, returning empty string")
         return ""
