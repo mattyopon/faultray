@@ -38,12 +38,14 @@ class RateLimiter:
     """Simple in-memory rate limiter using a sliding window."""
 
     MAX_KEYS = 10_000  # prevent unbounded memory growth
+    CLEANUP_INTERVAL_SECONDS = 30  # #103: run expired-sweep at least this often
 
     def __init__(self, max_requests: int = 60, window_seconds: int = 60):
         self.max_requests = max_requests
         self.window = window_seconds
         self.requests: dict[str, list[float]] = defaultdict(list)
         self._lock = threading.Lock()
+        self._last_cleanup: float = 0.0
 
     def _cleanup(self) -> None:
         """Remove expired entries; evict LRU entries when MAX_KEYS is exceeded."""
@@ -60,6 +62,7 @@ class RateLimiter:
             )
             for k in sorted_keys[: len(self.requests) - self.MAX_KEYS]:
                 del self.requests[k]
+        self._last_cleanup = now
 
     def is_allowed(self, client_id: str) -> bool:
         now = time.time()
@@ -70,8 +73,15 @@ class RateLimiter:
             if len(self.requests[client_id]) >= self.max_requests:
                 return False
             self.requests[client_id].append(now)
-            # Periodic cleanup to prevent unbounded memory growth
-            if len(self.requests) > self.MAX_KEYS:
+            # #103: two-track cleanup to bound memory even when key count
+            # stays well below MAX_KEYS.
+            #  (a) Hard cap: when over MAX_KEYS we must evict now.
+            #  (b) Soft cap: at least every CLEANUP_INTERVAL_SECONDS run a
+            #      lightweight expired-sweep so stale keys don't accrete.
+            if (
+                len(self.requests) > self.MAX_KEYS
+                or now - self._last_cleanup >= self.CLEANUP_INTERVAL_SECONDS
+            ):
                 self._cleanup()
             return True
 
