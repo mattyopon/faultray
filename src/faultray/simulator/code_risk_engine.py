@@ -19,6 +19,38 @@ import subprocess
 from dataclasses import dataclass, field
 from pathlib import Path
 
+
+# ----------------------------------------------------------------------
+# Git ref validator (#102)
+#
+# `subprocess.run(["git", ...])` uses list form (no shell), so shell
+# injection is impossible. However git itself treats some argument
+# patterns as *options* when they look like flags (e.g. `--upload-pack=X`
+# on the client side). If a ref ever originated from untrusted input
+# (today: CLI only, future: web API), a value like `--upload-pack=rm` or
+# `--output=/tmp/x` would be re-interpreted by git as a flag rather than
+# a ref, enabling argument injection.
+#
+# Valid git ref characters per `git check-ref-format`:
+#   letters, digits, and the punctuation `._-/` plus optional prefix
+#   markers. `^`, `:`, `~`, `..`, whitespace, backslash are reserved.
+# We use a strict allow-list to reject anything that could be confused
+# with a git CLI flag (leading `-`) or other odd characters.
+# ----------------------------------------------------------------------
+
+_VALID_GIT_REF_RE = re.compile(r"^[A-Za-z0-9_][A-Za-z0-9_./\-]*$")
+
+
+def _assert_safe_git_ref(value: str, *, name: str = "ref") -> None:
+    """Raise ValueError if *value* is not a safe git ref for CLI use."""
+    if not value or len(value) > 256:
+        raise ValueError(f"invalid git {name}: empty or too long")
+    if value.startswith("-"):
+        # `git diff -X...` would be parsed as an option — block.
+        raise ValueError(f"invalid git {name}: must not start with '-' ({value!r})")
+    if not _VALID_GIT_REF_RE.match(value):
+        raise ValueError(f"invalid git {name}: illegal characters ({value!r})")
+
 from ..model.code_components import (
     AuthorType,
     CodeComponent,
@@ -279,10 +311,17 @@ class CodeRiskEngine:
     # ------------------------------------------------------------------
 
     def _get_git_diff(self, base_ref: str, head_ref: str) -> str:
-        """Get git diff between two refs."""
+        """Get git diff between two refs.
+
+        Uses `git -- <refspec>` argument separator defensively so git never
+        reinterprets the supplied refs as options, even if
+        `_assert_safe_git_ref` is bypassed by a future refactor (#102).
+        """
+        _assert_safe_git_ref(base_ref, name="base_ref")
+        _assert_safe_git_ref(head_ref, name="head_ref")
         try:
             result = subprocess.run(
-                ["git", "diff", f"{base_ref}...{head_ref}", "--unified=3"],
+                ["git", "diff", "--unified=3", f"{base_ref}...{head_ref}", "--"],
                 capture_output=True,
                 text=True,
                 cwd=self.repo_path,
@@ -294,8 +333,12 @@ class CodeRiskEngine:
 
     def _get_base_file_contents(self, base_ref: str, file_paths: list[str]) -> dict[str, str]:
         """Get file contents at the base ref for cost_before calculation."""
+        _assert_safe_git_ref(base_ref, name="base_ref")
         contents: dict[str, str] = {}
         for fp in file_paths:
+            # Reject file paths that could be confused with git options.
+            if not fp or fp.startswith("-") or "\0" in fp:
+                continue
             try:
                 result = subprocess.run(
                     ["git", "show", f"{base_ref}:{fp}"],
@@ -315,11 +358,15 @@ class CodeRiskEngine:
 
         Returns dict mapping file paths to list of commit messages that touched them.
         """
+        _assert_safe_git_ref(base_ref, name="base_ref")
+        _assert_safe_git_ref(head_ref, name="head_ref")
         try:
             result = subprocess.run(
                 [
-                    "git", "log", f"{base_ref}...{head_ref}",
+                    "git", "log",
                     "--name-only", "--format=%B---COMMIT_SEP---",
+                    f"{base_ref}...{head_ref}",
+                    "--",
                 ],
                 capture_output=True,
                 text=True,
