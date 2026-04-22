@@ -19,6 +19,16 @@ import subprocess
 from dataclasses import dataclass, field
 from pathlib import Path
 
+from ..model.code_components import (
+    AuthorType,
+    CodeComponent,
+    CodeLanguage,
+    ComplexityClass,
+    DiffImpact,
+    HallucinationRiskProfile,
+    RuntimeCostProfile,
+)
+
 
 # ----------------------------------------------------------------------
 # Git ref validator (#102)
@@ -50,16 +60,6 @@ def _assert_safe_git_ref(value: str, *, name: str = "ref") -> None:
         raise ValueError(f"invalid git {name}: must not start with '-' ({value!r})")
     if not _VALID_GIT_REF_RE.match(value):
         raise ValueError(f"invalid git {name}: illegal characters ({value!r})")
-
-from ..model.code_components import (
-    AuthorType,
-    CodeComponent,
-    CodeLanguage,
-    ComplexityClass,
-    DiffImpact,
-    HallucinationRiskProfile,
-    RuntimeCostProfile,
-)
 
 
 # ---------------------------------------------------------------------------
