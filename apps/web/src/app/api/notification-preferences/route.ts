@@ -16,7 +16,7 @@ const VALID_KEYS = [
  * GET /api/notification-preferences — Read notification settings for the current user.
  */
 export async function GET(request: Request) {
-  const limited = applyRateLimit(request, { limit: 30, windowMs: 60_000 });
+  const limited = await applyRateLimit(request, { limit: 30, windowMs: 60_000 });
   if (limited) return limited;
 
   const { user, error } = await requireAuth(request);
@@ -50,7 +50,7 @@ export async function GET(request: Request) {
  * Body: { "simulationCompleted": false, "weeklySummary": true }
  */
 export async function PATCH(request: Request) {
-  const limited = applyRateLimit(request, { limit: 10, windowMs: 60_000 });
+  const limited = await applyRateLimit(request, { limit: 10, windowMs: 60_000 });
   if (limited) return limited;
 
   const { user, error } = await requireAuth(request);

@@ -8,7 +8,7 @@ interface CreateOrgBody {
 }
 
 export async function POST(request: Request) {
-  const limited = applyRateLimit(request, { limit: 10, windowMs: 60_000 });
+  const limited = await applyRateLimit(request, { limit: 10, windowMs: 60_000 });
   if (limited) return limited;
 
   let body: Partial<CreateOrgBody>;

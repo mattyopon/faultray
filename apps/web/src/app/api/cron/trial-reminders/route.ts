@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { sendEmail } from "@/lib/email";
 import { trialReminderEmail } from "@/lib/email-templates";
 import { applyRateLimit } from "@/lib/rate-limit";
+import { verifyCronAuth } from "@/lib/cron-auth";
 
 export const dynamic = "force-dynamic";
 
@@ -9,18 +10,14 @@ export const dynamic = "force-dynamic";
  * POST /api/cron/trial-reminders
  * Called by Vercel Cron or external scheduler (daily).
  * Finds users whose trial ends in exactly 3 days and sends reminder emails.
- * Protected by CRON_SECRET to prevent unauthorized invocation.
+ * Protected by CRON_SECRET + optional CRON_ALLOWED_IPS (#27).
  */
 export async function POST(request: Request) {
-  const limited = applyRateLimit(request, { limit: 5, windowMs: 60_000 });
+  const limited = await applyRateLimit(request, { limit: 5, windowMs: 60_000 });
   if (limited) return limited;
 
-  const cronSecret = process.env.CRON_SECRET;
-  const authHeader = request.headers.get("authorization");
-
-  if (!cronSecret || authHeader !== `Bearer ${cronSecret}`) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
+  const unauthorized = verifyCronAuth(request);
+  if (unauthorized) return unauthorized;
 
   const { createClient } = await import("@supabase/supabase-js");
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;

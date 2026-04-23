@@ -20,7 +20,7 @@ const ALLOWED_ACTIONS = new Set([
  * Query params: ?action=LOGIN&outcome=FAILURE&limit=50&offset=0
  */
 export async function GET(request: Request) {
-  const limited = applyRateLimit(request, { limit: 30, windowMs: 60_000 });
+  const limited = await applyRateLimit(request, { limit: 30, windowMs: 60_000 });
   if (limited) return limited;
 
   const { user, error } = await requireAuth(request);
@@ -73,7 +73,7 @@ export async function GET(request: Request) {
  * Called internally by other API routes when actions occur.
  */
 export async function POST(request: Request) {
-  const limited = applyRateLimit(request, { limit: 10, windowMs: 60_000 });
+  const limited = await applyRateLimit(request, { limit: 10, windowMs: 60_000 });
   if (limited) return limited;
 
   const { user, error } = await requireAuth(request);

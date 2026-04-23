@@ -1,92 +1,139 @@
 /**
- * In-memory rate limiter for Next.js API routes.
+ * Rate limiter for Next.js API routes (#25).
  *
- * Uses a sliding window algorithm with a Map<string, number[]>.
- * This works per-process. For multi-instance deployments, use
- * Redis (e.g. @upstash/ratelimit) instead.
+ * Strategy:
+ *   1. If UPSTASH_REDIS_REST_URL + UPSTASH_REDIS_REST_TOKEN are set
+ *      AND @upstash/ratelimit is installed → use the distributed
+ *      token-bucket backend that works across Vercel serverless
+ *      invocations.
+ *   2. Else → fall back to the in-memory sliding window. This path
+ *      is only effective on single-process deployments (local dev,
+ *      self-hosted). Vercel serverless per-instance processes will
+ *      **not** share counters — documented limitation.
  *
- * WARNING: Vercel serverless環境ではリクエストごとに別プロセスが起動するため、
- * このMapはプロセス間で共有されない。本番環境では Upstash Redis
- * (@upstash/ratelimit) 等の外部ストアに移行すること。
- * 現状の実装は開発環境・単一プロセス環境でのみ有効。
- *
- * API-08: レート制限実装
+ * The public API (applyRateLimit, rateLimit, getClientIp) is stable
+ * across both backends.
  */
 
 interface RateLimitOptions {
-  /** Maximum requests allowed per window */
   limit: number;
-  /** Window size in milliseconds */
   windowMs: number;
 }
 
 interface RateLimitResult {
   success: boolean;
-  /** Remaining requests in current window */
   remaining: number;
-  /** Epoch ms when the window resets */
   resetAt: number;
 }
 
-// Global store — persists across requests within a single process
-const store = new Map<string, number[]>();
+// ─────────────────────────────────────────────────────────────
+// Backend selection (performed lazily on first call)
+// ─────────────────────────────────────────────────────────────
+let _upstashClient: unknown | null = null;
+let _upstashUnavailable = false;
 
-// メモリリーク対策: 期限切れエントリを定期削除（5分ごと）
-// setIntervalの参照を保持することで GC による早期解放を防ぐ
+async function _getUpstashClient(): Promise<unknown | null> {
+  if (_upstashUnavailable) return null;
+  if (_upstashClient) return _upstashClient;
+
+  const url = process.env.UPSTASH_REDIS_REST_URL;
+  const token = process.env.UPSTASH_REDIS_REST_TOKEN;
+  if (!url || !token) {
+    _upstashUnavailable = true;
+    return null;
+  }
+
+  try {
+    // Dynamic import so the dependency stays optional. Expect-error on
+    // both lines because these packages are not in package.json — the
+    // operator installs them only when opting into Upstash backend.
+    // @ts-expect-error optional-peer-dep
+    const { Ratelimit } = await import("@upstash/ratelimit");
+    // @ts-expect-error optional-peer-dep
+    const { Redis } = await import("@upstash/redis");
+    const redis = new Redis({ url, token });
+    _upstashClient = { Ratelimit, redis };
+    return _upstashClient;
+  } catch {
+    _upstashUnavailable = true;
+    return null;
+  }
+}
+
+// ─────────────────────────────────────────────────────────────
+// In-memory fallback (kept from the original implementation)
+// ─────────────────────────────────────────────────────────────
+const store = new Map<string, number[]>();
 const CLEANUP_INTERVAL_MS = 5 * 60 * 1000;
 const _cleanupTimer = setInterval(() => {
   const now = Date.now();
   for (const [key, timestamps] of store.entries()) {
-    // windowMsが不明なので保守的に最大ウィンドウ（1時間）を使用
     const maxWindowMs = 60 * 60 * 1000;
     const valid = timestamps.filter((t) => t > now - maxWindowMs);
-    if (valid.length === 0) {
-      store.delete(key);
-    } else {
-      store.set(key, valid);
-    }
+    if (valid.length === 0) store.delete(key);
+    else store.set(key, valid);
   }
 }, CLEANUP_INTERVAL_MS);
-
-// Node.js プロセス終了時にタイマーをクリーンアップ（テスト環境でのリーク防止）
 if (typeof _cleanupTimer === "object" && _cleanupTimer !== null && "unref" in _cleanupTimer) {
   (_cleanupTimer as NodeJS.Timeout).unref();
 }
 
-/**
- * Check and record a request for the given identifier.
- *
- * @param identifier - Unique key, typically IP or user ID
- * @param options    - Limit configuration
- */
-export function rateLimit(
+function _rateLimitInMemory(
   identifier: string,
-  options: RateLimitOptions = { limit: 60, windowMs: 60_000 }
+  options: RateLimitOptions
 ): RateLimitResult {
   const now = Date.now();
   const windowStart = now - options.windowMs;
-
-  // Retrieve and prune expired timestamps
   const timestamps = (store.get(identifier) ?? []).filter((t) => t > windowStart);
-
   const remaining = Math.max(0, options.limit - timestamps.length - 1);
   const resetAt = timestamps[0] ? timestamps[0] + options.windowMs : now + options.windowMs;
 
   if (timestamps.length >= options.limit) {
     return { success: false, remaining: 0, resetAt };
   }
-
   timestamps.push(now);
   store.set(identifier, timestamps);
-
   return { success: true, remaining, resetAt };
 }
 
+async function _rateLimitUpstash(
+  client: unknown,
+  identifier: string,
+  options: RateLimitOptions
+): Promise<RateLimitResult> {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { Ratelimit, redis } = client as any;
+  // Rebuild on each call to honour per-call limit/windowMs. Acceptable
+  // because Ratelimit itself is cheap to construct; heavy work is the
+  // Redis round-trip which is identical either way.
+  const limiter = new Ratelimit({
+    redis,
+    limiter: Ratelimit.slidingWindow(options.limit, `${options.windowMs} ms`),
+    analytics: false,
+  });
+  const res = await limiter.limit(identifier);
+  return {
+    success: res.success,
+    remaining: res.remaining,
+    resetAt: res.reset,
+  };
+}
+
 /**
- * Extract a best-effort IP from a Next.js Request object.
- *
- * Header priority: cf-connecting-ip → x-real-ip → x-forwarded-for → "anonymous"
+ * Check and record a request for the given identifier.
+ * Async because Upstash is network-backed.
  */
+export async function rateLimit(
+  identifier: string,
+  options: RateLimitOptions = { limit: 60, windowMs: 60_000 }
+): Promise<RateLimitResult> {
+  const client = await _getUpstashClient();
+  if (client) {
+    return _rateLimitUpstash(client, identifier, options);
+  }
+  return _rateLimitInMemory(identifier, options);
+}
+
 export function getClientIp(request: Request): string {
   const h = request.headers;
   const cfIp = h.get("cf-connecting-ip");
@@ -99,18 +146,18 @@ export function getClientIp(request: Request): string {
 }
 
 /**
- * Convenience: check rate limit and return a 429 Response if exceeded.
+ * Convenience: return a 429 Response if rate limited, else null.
  *
- * Usage in a route handler:
- *   const limited = applyRateLimit(request, { limit: 10, windowMs: 60_000 });
+ * Now async because Upstash backend requires awaiting. Callers must:
+ *   const limited = await applyRateLimit(req, { ... });
  *   if (limited) return limited;
  */
-export function applyRateLimit(
+export async function applyRateLimit(
   request: Request,
   options?: RateLimitOptions
-): Response | null {
+): Promise<Response | null> {
   const ip = getClientIp(request);
-  const result = rateLimit(ip, options);
+  const result = await rateLimit(ip, options);
 
   if (!result.success) {
     return new Response(
@@ -127,6 +174,5 @@ export function applyRateLimit(
       }
     );
   }
-
   return null;
 }

@@ -87,7 +87,7 @@ async function updateUserByCustomerId(
 
 export async function POST(request: Request) {
   // Defense-in-depth: generous limit to allow Stripe retries
-  const limited = applyRateLimit(request, { limit: 60, windowMs: 60_000 });
+  const limited = await applyRateLimit(request, { limit: 60, windowMs: 60_000 });
   if (limited) return limited;
 
   const secretKey = process.env.STRIPE_SECRET_KEY;

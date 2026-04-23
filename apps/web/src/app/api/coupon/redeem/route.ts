@@ -9,7 +9,7 @@ interface RedeemBody {
 
 export async function POST(request: Request) {
   // API-08: レート制限 — 5 attempts / minute per IP (brute-force protection)
-  const limited = applyRateLimit(request, { limit: 5, windowMs: 60_000 });
+  const limited = await applyRateLimit(request, { limit: 5, windowMs: 60_000 });
   if (limited) return limited;
 
   let body: Partial<RedeemBody>;

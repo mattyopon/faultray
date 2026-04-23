@@ -44,7 +44,7 @@ async function getOrgId(
 }
 
 export async function GET(request: Request) {
-  const limited = applyRateLimit(request, { limit: 30, windowMs: 60_000 });
+  const limited = await applyRateLimit(request, { limit: 30, windowMs: 60_000 });
   if (limited) return limited;
 
   let supabase: Awaited<ReturnType<typeof import("@/lib/supabase/server").createClient>>;
@@ -84,7 +84,7 @@ export async function GET(request: Request) {
 }
 
 export async function POST(request: Request) {
-  const limited = applyRateLimit(request, { limit: 10, windowMs: 60_000 });
+  const limited = await applyRateLimit(request, { limit: 10, windowMs: 60_000 });
   if (limited) return limited;
 
   let body: Partial<CreateTaskBody>;

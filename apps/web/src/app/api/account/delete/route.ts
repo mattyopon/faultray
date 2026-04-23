@@ -14,7 +14,7 @@ import Stripe from "stripe";
 export const dynamic = "force-dynamic";
 
 export async function DELETE(request: Request) {
-  const limited = applyRateLimit(request, { limit: 5, windowMs: 60_000 });
+  const limited = await applyRateLimit(request, { limit: 5, windowMs: 60_000 });
   if (limited) return limited;
 
   // Parse optional confirmation body

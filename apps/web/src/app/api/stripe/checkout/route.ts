@@ -35,7 +35,7 @@ const TRIAL_DAYS: Record<Plan, number | undefined> = {
 };
 
 export async function POST(request: Request) {
-  const limited = applyRateLimit(request, { limit: 10, windowMs: 60_000 });
+  const limited = await applyRateLimit(request, { limit: 10, windowMs: 60_000 });
   if (limited) return limited;
 
   const secretKey = process.env.STRIPE_SECRET_KEY;

@@ -18,7 +18,7 @@ export async function POST(request: Request) {
   if (error) return error;
 
   // API-08: レート制限 — 10 requests / minute per IP
-  const limited = applyRateLimit(request, { limit: 10, windowMs: 60_000 });
+  const limited = await applyRateLimit(request, { limit: 10, windowMs: 60_000 });
   if (limited) return limited;
 
   let body: Partial<SlackNotifyRequest>;
