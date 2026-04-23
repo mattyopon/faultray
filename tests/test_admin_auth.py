@@ -281,6 +281,7 @@ class TestSlackSignature:
 
     def test_unsigned_allowed_with_explicit_opt_in(self, anon_client):
         os.environ.pop("SLACK_SIGNING_SECRET", None)
+        os.environ.pop("FAULTRAY_ENV", None)
         os.environ["FAULTRAY_ALLOW_UNSIGNED_SLACK"] = "1"
         try:
             resp = anon_client.post("/api/slack/commands", data="text=help")
@@ -288,3 +289,17 @@ class TestSlackSignature:
             assert resp.status_code != 401
         finally:
             os.environ.pop("FAULTRAY_ALLOW_UNSIGNED_SLACK", None)
+
+    def test_escape_hatch_disabled_in_production(self, anon_client):
+        """FAULTRAY_ALLOW_UNSIGNED_SLACK must not bypass signature in prod."""
+        os.environ.pop("SLACK_SIGNING_SECRET", None)
+        os.environ["FAULTRAY_ALLOW_UNSIGNED_SLACK"] = "1"
+        os.environ["FAULTRAY_ENV"] = "production"
+        try:
+            resp = anon_client.post("/api/slack/commands", data="text=help")
+            assert resp.status_code == 401, (
+                "escape hatch must NOT work when FAULTRAY_ENV=production"
+            )
+        finally:
+            os.environ.pop("FAULTRAY_ALLOW_UNSIGNED_SLACK", None)
+            os.environ.pop("FAULTRAY_ENV", None)

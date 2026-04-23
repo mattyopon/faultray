@@ -566,8 +566,8 @@ def _verify_slack_signature(request: Request, body: bytes) -> bool:
 
     Returns True if:
     - SLACK_SIGNING_SECRET env var is set AND signature is valid AND timestamp is within 5 minutes
-    - SLACK_SIGNING_SECRET is NOT set (backward-compatible mode for self-hosted dev without Slack)
-      and FAULTRAY_ALLOW_UNSIGNED_SLACK=1 is explicitly set (escape hatch for local dev only)
+    - SLACK_SIGNING_SECRET is NOT set AND FAULTRAY_ALLOW_UNSIGNED_SLACK=1
+      AND FAULTRAY_ENV != production (dev-only escape hatch)
 
     Returns False otherwise (rejecting the request).
     """
@@ -577,9 +577,19 @@ def _verify_slack_signature(request: Request, body: bytes) -> bool:
 
     signing_secret = os.environ.get("SLACK_SIGNING_SECRET", "")
     if not signing_secret:
-        # Safety: without secret configured, only allow if operator explicitly
-        # opts into unsigned (dev-only). Default posture is "reject".
-        return os.environ.get("FAULTRAY_ALLOW_UNSIGNED_SLACK", "").lower() in ("1", "true", "yes")
+        # Dev escape hatch — explicitly disabled when FAULTRAY_ENV indicates
+        # production. This closes the self-review finding that a stray
+        # FAULTRAY_ALLOW_UNSIGNED_SLACK=1 in prod would silently open the
+        # endpoint to unauthenticated callers (#100 post-review).
+        env = os.environ.get("FAULTRAY_ENV", "").lower()
+        if env in ("production", "prod", "live"):
+            logger.warning(
+                "Slack: SLACK_SIGNING_SECRET missing in production — rejecting"
+            )
+            return False
+        return os.environ.get("FAULTRAY_ALLOW_UNSIGNED_SLACK", "").lower() in (
+            "1", "true", "yes"
+        )
 
     ts = request.headers.get("x-slack-request-timestamp", "")
     sig = request.headers.get("x-slack-signature", "")
