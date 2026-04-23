@@ -1,0 +1,135 @@
+name: License Audit
+
+# SPDX license audit (#97) — fail if any transitive Python dep ships under
+# a license outside the SPDX allowlist (Apache/MIT/BSD/ISC family).
+# This guards against strongly-viral licenses (GPL-3.0, AGPL-3.0) that
+# would force FaultRay to relicense under their terms.
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    paths:
+      - "pyproject.toml"
+      - ".github/workflows/license-audit.yml"
+  schedule:
+    # Weekly rescan to catch upstream license changes in dependencies.
+    - cron: "0 3 * * 1"
+
+permissions:
+  contents: read
+
+jobs:
+  python-licenses:
+    name: Python SPDX audit
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+          cache: pip
+
+      - name: Install project + licensing tool
+        run: |
+          set -euo pipefail
+          python -m pip install --upgrade pip
+          pip install -e "."
+          pip install pip-licenses
+
+      - name: Generate SPDX license report
+        run: |
+          set -euo pipefail
+          pip-licenses \
+            --format=json \
+            --with-system --with-authors --with-urls \
+            --output-file=python-licenses.json
+          echo "--- report summary ---"
+          pip-licenses --format=markdown --order=license | head -60
+
+      - name: Enforce SPDX allowlist
+        # Allowed = Apache-2.0, MIT, BSD (any), ISC, PSF-2.0, MPL-2.0,
+        #           Unlicense, CC0, LGPL (weak copyleft OK),
+        #           Python Software Foundation License.
+        # Blocked = GPL-2.0, GPL-3.0, AGPL-3.0, SSPL, proprietary, unknown.
+        run: |
+          python3 - <<'PY'
+          import json, sys
+
+          ALLOW_SUBSTR = (
+              "MIT",
+              "Apache",
+              "BSD",
+              "ISC",
+              "Python Software Foundation",
+              "PSF",
+              "Mozilla Public License",
+              "MPL-2.0",
+              "Unlicense",
+              "CC0",
+              "Public Domain",
+              # LGPL is weak copyleft (dynamic-link OK); allow.
+              "LGPL",
+              # "HPND" / "BSD-like" permissive edge cases:
+              "HPND",
+              "Zlib",
+              "Zope Public License",
+          )
+          BLOCK_SUBSTR = (
+              "AGPL",
+              "SSPL",
+              # We want to block GPL-2.0/3.0 (strong copyleft) but NOT LGPL.
+              # Match standalone "GPL" token to avoid LGPL hit.
+          )
+
+          def is_gpl_nonlesser(lic: str) -> bool:
+              up = lic.upper()
+              if "LGPL" in up:
+                  return False
+              # catch "GPL", "GPLv2", "GPL-3.0", "GPL-2.0-only" etc.
+              return "GPL" in up
+
+          with open("python-licenses.json") as f:
+              pkgs = json.load(f)
+
+          violations = []
+          unknowns = []
+          for p in pkgs:
+              name = p.get("Name", "?")
+              lic = (p.get("License") or "").strip() or "UNKNOWN"
+              if any(b in lic.upper() for b in BLOCK_SUBSTR):
+                  violations.append((name, lic, "blocked substr"))
+                  continue
+              if is_gpl_nonlesser(lic):
+                  violations.append((name, lic, "GPL family (non-LGPL)"))
+                  continue
+              if lic == "UNKNOWN":
+                  unknowns.append((name, lic))
+                  continue
+              if not any(a.upper() in lic.upper() for a in ALLOW_SUBSTR):
+                  violations.append((name, lic, "not in allowlist"))
+
+          if violations:
+              print("::error::SPDX allowlist violations detected:")
+              for n, l, why in violations:
+                  print(f"  - {n}: {l}  [{why}]")
+              sys.exit(1)
+
+          if unknowns:
+              # Non-fatal: surface as GitHub notices so the operator can
+              # investigate, but don't block CI (pip-licenses sometimes
+              # fails to read metadata for legitimately licensed deps).
+              for n, l in unknowns:
+                  print(f"::warning::License metadata missing for {n} ({l})")
+
+          print(f"✅ {len(pkgs) - len(unknowns)} package(s) passed SPDX audit; {len(unknowns)} with unknown license (warnings only)")
+          PY
+
+      - name: Upload SPDX report
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: python-licenses-${{ github.sha }}
+          path: python-licenses.json
+          retention-days: 90
