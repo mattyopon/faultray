@@ -62,72 +62,64 @@ export async function DELETE(request: Request) {
   const admin = createAdminClient(supabaseUrl, serviceRoleKey);
 
   try {
-    // 1. Delete data for teams owned by this user only.
-    //    Teams where the user is merely a member must NOT be deleted.
-    const { data: ownedTeams } = await admin
-      .from("teams")
-      .select("id")
-      .eq("owner_id", userId);
+    // 1. Pre-read stripe_customer_id BEFORE the atomic delete (#29).
+    //    The RPC in step 2 will wipe the profile row, so we must capture
+    //    external-system identifiers ahead of time.
+    const { data: profile } = await admin
+      .from("profiles")
+      .select("stripe_customer_id")
+      .eq("id", userId)
+      .maybeSingle();
+    const stripeCustomerId =
+      (profile?.stripe_customer_id as string | null | undefined) ?? null;
 
-    if (ownedTeams && ownedTeams.length > 0) {
-      const ownedTeamIds = ownedTeams.map((t: { id: string }) => t.id);
-
-      // Delete simulation runs
-      await admin.from("simulation_runs").delete().in("team_id", ownedTeamIds);
-
-      // Delete usage records
-      await admin.from("usage").delete().in("team_id", ownedTeamIds);
-
-      // Delete billing events
-      await admin.from("billing_events").delete().in("team_id", ownedTeamIds);
-
-      // Delete projects
-      await admin.from("projects").delete().in("team_id", ownedTeamIds);
-
-      // Remove all members from owned teams before deleting the teams
-      await admin.from("team_members").delete().in("team_id", ownedTeamIds);
-
-      // Delete teams owned by this user
-      await admin.from("teams").delete().eq("owner_id", userId);
+    // 2. Atomic DB deletion via SECURITY DEFINER RPC (#29).
+    //    Replaces a 7-step non-transactional sequence that could leave
+    //    orphan rows on failure. The RPC wraps the whole cascade in a
+    //    single PL/pgSQL transaction and returns per-table counts.
+    const { error: rpcError } = await admin.rpc("delete_user_account", {
+      uid: userId,
+    });
+    if (rpcError) {
+      console.error(
+        "[account/delete] delete_user_account RPC failed:",
+        rpcError.message
+      );
+      return NextResponse.json(
+        { error: "Account deletion failed. Please contact support." },
+        { status: 500 }
+      );
     }
 
-    // Remove this user's membership from teams they joined but do not own
-    await admin.from("team_members").delete().eq("user_id", userId);
-
-    // 2. Cancel Stripe subscriptions to prevent continued billing after account deletion
+    // 3. Cancel Stripe subscriptions using the pre-read customer id.
+    //    External call — deliberately outside the DB tx. Failure is
+    //    logged but non-fatal (data cleanup has already succeeded;
+    //    Stripe customer.subscription.deleted webhook will eventually
+    //    reconcile).
     const stripeSecretKey = process.env.STRIPE_SECRET_KEY;
-    if (stripeSecretKey && stripeSecretKey !== "sk_test_placeholder") {
+    if (
+      stripeCustomerId &&
+      stripeSecretKey &&
+      stripeSecretKey !== "sk_test_placeholder"
+    ) {
       try {
         const stripe = new Stripe(stripeSecretKey, { timeout: 30000 });
-
-        // Fetch stripe_customer_id from profiles before deletion
-        const { data: profile } = await admin
-          .from("profiles")
-          .select("stripe_customer_id")
-          .eq("id", userId)
-          .maybeSingle();
-
-        const customerId = profile?.stripe_customer_id as string | null | undefined;
-        if (customerId) {
-          const subscriptions = await stripe.subscriptions.list({ customer: customerId });
-          await Promise.all(
-            subscriptions.data.map((sub) => stripe.subscriptions.cancel(sub.id))
-          );
-          console.info(
-            `[account/delete] Cancelled ${subscriptions.data.length} Stripe subscription(s) for customer ${customerId}`
-          );
-        }
+        const subscriptions = await stripe.subscriptions.list({
+          customer: stripeCustomerId,
+        });
+        await Promise.all(
+          subscriptions.data.map((sub) => stripe.subscriptions.cancel(sub.id))
+        );
+        console.info(
+          `[account/delete] Cancelled ${subscriptions.data.length} Stripe subscription(s) for customer ${stripeCustomerId}`
+        );
       } catch (stripeErr) {
-        // Log but do not block account deletion — data cleanup takes priority
         const msg = stripeErr instanceof Error ? stripeErr.message : "Unknown error";
         console.error("[account/delete] Stripe cancellation error (non-fatal):", msg);
       }
     }
 
-    // 3. Delete / anonymize the user profile
-    await admin.from("profiles").delete().eq("id", userId);
-
-    // 4. Delete the auth user (point-of-no-return)
+    // 4. Delete the auth user (point-of-no-return, external to DB tx)
     const { error: deleteAuthError } = await admin.auth.admin.deleteUser(userId);
     if (deleteAuthError) {
       // Log but do not expose internal error details
