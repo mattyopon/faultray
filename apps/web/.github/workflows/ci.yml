@@ -84,6 +84,111 @@ jobs:
           set -euo pipefail
           python -m pytest tests/ -q --tb=short --ignore=tests/e2e_buttons.py || ([ $? -eq 5 ] && echo "No Python tests found — skipping" && exit 0)
 
+  test-rls:
+    name: RLS pgTAP Tests
+    runs-on: ubuntu-latest
+    env:
+      PGHOST: localhost
+      PGPORT: 5432
+      PGUSER: postgres
+      PGPASSWORD: postgres  # pragma: allowlist secret
+      PGDATABASE: postgres
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install PostgreSQL 16 + pgTAP on runner
+        # pgTAP 拡張は service container の postgres:16 イメージに同梱されていない。
+        # ubuntu-latest にプリインストールされた古い postgres を停止し、
+        # 16 + pgtap を PGDG repo から入れて 5432 で起動する。
+        run: |
+          set -euo pipefail
+          # 1. Stop any pre-existing postgres (ubuntu-latest は pg14/16 のどちらかがあるが、
+          #    既に 16 ならそのまま利用、無ければ PGDG から入れる)
+          sudo systemctl stop postgresql || true
+          for v in 14 15; do
+            sudo pg_dropcluster --stop "$v" main 2>/dev/null || true
+          done
+
+          # 2. PGDG repo 追加
+          sudo sh -c 'echo "deb http://apt.postgresql.org/pub/repos/apt $(lsb_release -cs)-pgdg main" > /etc/apt/sources.list.d/pgdg.list'
+          wget --quiet -O - https://www.postgresql.org/media/keys/ACCC4CF8.asc | sudo apt-key add -
+          sudo apt-get update
+
+          # 3. pg16 + pgtap インストール
+          sudo apt-get install -y postgresql-16 postgresql-16-pgtap postgresql-client-16
+
+          # 4. 5432 で起動 (再作成で衝突回避)
+          sudo pg_dropcluster --stop 16 main 2>/dev/null || true
+          sudo pg_createcluster --start --port 5432 16 main
+
+          # 5. postgres role のパスワード設定 (CI 内部のみ使用、外部公開なし)
+          sudo -u postgres psql -c "ALTER USER postgres WITH PASSWORD 'postgres';"  # pragma: allowlist secret
+          sudo -u postgres psql -c "SELECT version();"
+
+      - name: Bootstrap auth schema (stub for test)
+        # Supabase の auth.users を本番に依存させず、test-only の最小スタブを定義
+        run: |
+          set -euo pipefail
+          psql -v ON_ERROR_STOP=1 <<'SQL'
+          create schema if not exists auth;
+          create table if not exists auth.users (
+            id uuid primary key,
+            email text,
+            raw_user_meta_data jsonb,
+            aud text,
+            role text
+          );
+          -- RLS policies expect auth.uid() helper
+          create or replace function auth.uid() returns uuid as $$
+            select nullif(current_setting('request.jwt.claims', true)::jsonb->>'sub','')::uuid
+          $$ language sql stable;
+          -- test role placeholders (Supabase の実運用と同じ attribute)
+          do $$ begin
+            if not exists (select 1 from pg_roles where rolname = 'anon') then
+              create role anon;
+            end if;
+            if not exists (select 1 from pg_roles where rolname = 'authenticated') then
+              create role authenticated;
+            end if;
+            if not exists (select 1 from pg_roles where rolname = 'service_role') then
+              create role service_role bypassrls;
+            else
+              alter role service_role bypassrls;
+            end if;
+          end $$;
+          grant usage on schema public to anon, authenticated, service_role;
+          -- authenticated: full CRUD (filtered by RLS)
+          grant select, insert, update, delete on all tables in schema public to authenticated, service_role;
+          alter default privileges in schema public
+            grant select, insert, update, delete on tables to authenticated, service_role;
+          -- anon: SELECT のみ許可 (Supabase 本番と同じ)。RLS で実際の row visibility を制御
+          grant select on all tables in schema public to anon;
+          alter default privileges in schema public grant select on tables to anon;
+          SQL
+
+      - name: Apply migrations
+        run: |
+          set -euo pipefail
+          for f in supabase/migrations/*.sql; do
+            echo "== applying $f =="
+            psql -v ON_ERROR_STOP=1 -f "$f"
+          done
+          # grant on newly created tables
+          psql -v ON_ERROR_STOP=1 -c "grant select, insert, update, delete on all tables in schema public to authenticated, service_role;"
+
+      - name: Run pgTAP RLS tests
+        run: |
+          set -euo pipefail
+          # pgTAP は「not ok」行を出すだけで psql exit は 0 のままなので、
+          # TAP 出力を tee に通し、grep で "not ok" / "Looks like you failed" を
+          # 検出して job を fail させる。
+          LOG=$(mktemp)
+          psql -v ON_ERROR_STOP=1 -f supabase/tests/rls/multitenant.test.sql | tee "$LOG"
+          if grep -qE '^ *not ok |Looks like you (failed|planned)' "$LOG"; then
+            echo "::error::pgTAP reported failures (see log above)"
+            exit 1
+          fi
+
   build:
     name: Build Check
     runs-on: ubuntu-latest
