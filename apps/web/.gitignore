@@ -57,3 +57,4 @@ __pycache__/
 tests/screenshots/
 tests/e2e_buttons.py
 playwright-report/
+supabase/.temp/

@@ -22,7 +22,7 @@ export const dynamic = "force-dynamic";
  * Protected by CRON_SECRET (Bearer) to prevent unauthorized invocation.
  */
 export async function POST(request: Request) {
-  const limited = applyRateLimit(request, { limit: 5, windowMs: 60_000 });
+  const limited = await applyRateLimit(request, { limit: 5, windowMs: 60_000 });
   if (limited) return limited;
 
   const cronSecret = process.env.CRON_SECRET;
