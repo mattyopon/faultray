@@ -32,6 +32,10 @@
     {
       "path": "/api/cron/trial-reminders",
       "schedule": "0 9 * * *"
+    },
+    {
+      "path": "/api/cron/trial-expiry",
+      "schedule": "15 0 * * *"
     }
   ],
   "rewrites": [
