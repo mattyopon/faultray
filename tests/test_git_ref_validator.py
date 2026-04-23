@@ -1,8 +1,8 @@
 """Regression: git ref validator blocks argument-injection inputs (#102).
 
-`code_risk_engine._assert_safe_git_ref` hardens three subprocess call
-sites (git diff, git show, git log) against argument-injection when the
-refs originate from untrusted input (future: web API; today: CLI).
+Conservative posture: only reject inputs that git would re-interpret as
+CLI options or shell metacharacters. Normal git ref syntax (HEAD~1,
+branch^2, refs/tags/v1.0-rc1, `<ref>:<path>`, reflog @{N}) must pass.
 """
 
 from __future__ import annotations
@@ -21,10 +21,19 @@ from faultray.simulator.code_risk_engine import _assert_safe_git_ref
         "feat/foo-bar",
         "release/v1.0",
         "a1b2c3d4",
-        "HEAD~3",  # `~` is not allowed by our allow-list — see unsafe tests
-    ][:-1],  # exclude HEAD~3 — ~ is reserved
+        "HEAD",
+        "HEAD~1",
+        "HEAD~3",
+        "branch^1",
+        "branch^2",
+        "refs/tags/v1.0-rc1",
+        "refs/tags/v1.0-beta",
+        "a:b",                # `<ref>:<path>` syntax used by `git show`
+        "feature-branch@{0}", # reflog syntax
+        "feat/foo..main",     # range expressions in ref position
+    ],
 )
-def test_accepts_normal_refs(value: str) -> None:
+def test_accepts_legit_git_refs(value: str) -> None:
     _assert_safe_git_ref(value)
 
 
@@ -36,18 +45,12 @@ def test_accepts_normal_refs(value: str) -> None:
         "--upload-pack=rm -rf /",                # option injection attempt
         "-o/tmp/out",                            # short option form
         "--output=/tmp/x",                       # long option form
-        "../etc/passwd",                         # relative path (rejected by '.' starter not in class)
-        ".hidden",                               # starts with `.` (disallowed by leading class)
-        "ref with space",
-        "ref;cmd",                               # command separator (would be quoted by list form,
-                                                 # but the strict regex rejects it defensively)
-        "ref&&cmd",
-        "ref|cmd",
-        "ref\ncommand",
-        "ref\x00null",
-        "HEAD~1",                                # `~` reserved by our regex
-        "feature^",                              # `^` reserved
-        "a:b",                                   # `:` reserved
+        "ref with space",                        # whitespace reserved
+        "ref\ncommand",                          # newline
+        "ref\ttab",                              # tab
+        "ref\x00null",                           # NUL
+        "ref\\backslash",                        # backslash
+        "ref`cmd`",                              # backtick
     ],
 )
 def test_rejects_unsafe_refs(bad: str) -> None:

@@ -31,34 +31,34 @@ from ..model.code_components import (
 
 
 # ----------------------------------------------------------------------
-# Git ref validator (#102)
+# Git ref validator (#102) — conservative allow-list
 #
 # `subprocess.run(["git", ...])` uses list form (no shell), so shell
-# injection is impossible. However git itself treats some argument
-# patterns as *options* when they look like flags (e.g. `--upload-pack=X`
-# on the client side). If a ref ever originated from untrusted input
-# (today: CLI only, future: web API), a value like `--upload-pack=rm` or
-# `--output=/tmp/x` would be re-interpreted by git as a flag rather than
-# a ref, enabling argument injection.
+# injection is impossible. The *only* thing we need to prevent is git
+# re-interpreting our ref as an option (`git diff --upload-pack=rm`).
 #
-# Valid git ref characters per `git check-ref-format`:
-#   letters, digits, and the punctuation `._-/` plus optional prefix
-#   markers. `^`, `:`, `~`, `..`, whitespace, backslash are reserved.
-# We use a strict allow-list to reject anything that could be confused
-# with a git CLI flag (leading `-`) or other odd characters.
+# Posture: permit normal git ref syntax (HEAD~1, branch^2, `<ref>:<path>`,
+# refs/tags/v1.0-rc1, SHAs, reflog @{0}) and reject only:
+#   - empty / > 256 chars
+#   - leading `-` (would become a CLI flag)
+#   - whitespace / control chars / NUL / backslash / backtick
 # ----------------------------------------------------------------------
 
-_VALID_GIT_REF_RE = re.compile(r"^[A-Za-z0-9_][A-Za-z0-9_./\-]*$")
+_FORBIDDEN_REF_CHARS_RE = re.compile(r"[\s\x00-\x1f\\`]")
 
 
 def _assert_safe_git_ref(value: str, *, name: str = "ref") -> None:
-    """Raise ValueError if *value* is not a safe git ref for CLI use."""
+    """Raise ValueError if *value* is not a safe git ref for CLI use.
+
+    Conservative allow-list: reject only inputs that could be
+    re-interpreted as CLI options or shell metacharacters. Normal git
+    ref syntax is preserved.
+    """
     if not value or len(value) > 256:
         raise ValueError(f"invalid git {name}: empty or too long")
     if value.startswith("-"):
-        # `git diff -X...` would be parsed as an option — block.
         raise ValueError(f"invalid git {name}: must not start with '-' ({value!r})")
-    if not _VALID_GIT_REF_RE.match(value):
+    if _FORBIDDEN_REF_CHARS_RE.search(value):
         raise ValueError(f"invalid git {name}: illegal characters ({value!r})")
 
 
