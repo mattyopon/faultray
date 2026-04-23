@@ -1,5 +1,12 @@
 # FaultRay SaaS — Next.js Frontend
 
+> ⚠️ **Research Prototype — not a certified compliance tool.**
+> FaultRay is under active research. Outputs (resilience score, compliance
+> mappings to SOC 2 / ISO 27001 / PCI DSS / DORA) are **theoretical
+> estimates** from the topology you declare, not substitutes for formal
+> regulatory audit or runtime chaos engineering. See the [core repo README](https://github.com/mattyopon/faultray#research-prototype)
+> for validation-maturity details.
+
 The web application for [faultray.com](https://faultray.com) — pre-deployment resilience simulation SaaS (research prototype) that estimates your system's structural availability ceiling from declared topology, without touching production.
 
 > **Try it now**: [faultray.com](https://faultray.com) — Free tier, no credit card required.

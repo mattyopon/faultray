@@ -1,0 +1,32 @@
+version: 2
+# Dependabot config for faultray-app (#42)
+# core repo (faultray) tracks pip/github-actions/docker; here we track
+# npm (Next.js app) + github-actions. No Python, no Docker.
+updates:
+  - package-ecosystem: "npm"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+    open-pull-requests-limit: 5
+    # Group dev dependencies into a single PR so security noise stays low.
+    # Runtime deps (Next.js / React / Supabase / Stripe) ship individual PRs
+    # for visibility.
+    groups:
+      dev-dependencies:
+        dependency-type: "development"
+    # Require Dependabot to use conventional commit prefix
+    commit-message:
+      prefix: "chore(deps)"
+      prefix-development: "chore(deps-dev)"
+      include: "scope"
+
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+    open-pull-requests-limit: 5
+    commit-message:
+      prefix: "chore(ci)"
+      include: "scope"
