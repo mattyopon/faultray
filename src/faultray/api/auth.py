@@ -106,6 +106,10 @@ PUBLIC_PATHS = frozenset({
     "/simulation",
     "/graph",
     "/simulation/run",
+    # ADMIN-AUTH (#100): health / versioning / docs endpoints stay public
+    "/api/health",
+    "/api/versions",
+    "/api-docs",
 })
 
 # Paths allowed when no users are configured (setup mode)
