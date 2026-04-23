@@ -21,6 +21,31 @@
 --   それ以外 (null / canceled / incomplete / unpaid) は downgrade 対象
 -- ============================================================
 
+-- CI-SAFE: Legacy columns trial_ends_at / subscription_status were added
+-- post-001 via supabase/add_*.sql (not a numbered migration). Fresh CI
+-- databases run 001-008 in order, so those columns must exist here before
+-- the RPC references them. IF NOT EXISTS is idempotent for production.
+alter table public.profiles
+  add column if not exists trial_ends_at timestamptz;
+
+alter table public.profiles
+  add column if not exists subscription_status text default 'active';
+
+-- The CHECK constraint from add_subscription_status.sql, only applied if
+-- we added the column above (same IF NOT EXISTS semantics via DO block).
+do $$
+begin
+  if not exists (
+    select 1 from pg_constraint
+    where conrelid = 'public.profiles'::regclass
+      and conname  = 'profiles_subscription_status_check'
+  ) then
+    alter table public.profiles
+      add constraint profiles_subscription_status_check
+      check (subscription_status in ('active', 'past_due', 'canceled', 'trialing'));
+  end if;
+end $$;
+
 create or replace function public.downgrade_expired_trials()
 returns table (id uuid, email text)
 language sql
