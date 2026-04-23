@@ -1,0 +1,73 @@
+# Multi-agent orchestrator topology — 1 supervisor, 3 workers.
+# Demonstrates orchestrator_config (majority-vote) + per-worker
+# llm_config / tool_config. See docs/guides/agent-topology.md (#83).
+schema_version: "4.0"
+
+components:
+  - id: supervisor
+    name: Incident Supervisor
+    type: ai_agent
+    host: agent-supervisor.internal
+    port: 443
+    replicas: 1
+    region: { region: us-east-1 }
+
+    agent_config:
+      role: supervisor
+      max_loop_iterations: 3
+      timeout_seconds: 120
+
+    orchestrator_config:
+      strategy: majority_vote
+      workers: [triage_bot, remediation_bot, audit_bot]
+      voting_threshold: 0.67
+      timeout_seconds: 60
+
+  - id: triage_bot
+    name: Triage Agent
+    type: ai_agent
+    host: agent-triage.internal
+    port: 443
+    agent_config:
+      role: worker
+      specialty: log_analysis
+    llm_config:
+      provider: anthropic
+      model: claude-haiku-4-5
+      rate_limit_rpm: 120
+
+  - id: remediation_bot
+    name: Remediation Agent
+    type: ai_agent
+    host: agent-remediation.internal
+    port: 443
+    agent_config:
+      role: worker
+      specialty: infra_action
+    llm_config:
+      provider: anthropic
+      model: claude-sonnet-4-6
+      rate_limit_rpm: 30
+    tool_config:
+      allowed_tools:
+        - kubectl.patch
+        - pagerduty.resolve
+      permission_mode: require_approval
+
+  - id: audit_bot
+    name: Audit Agent
+    type: ai_agent
+    host: agent-audit.internal
+    port: 443
+    agent_config:
+      role: worker
+      specialty: compliance_check
+    llm_config:
+      provider: openai
+      model: gpt-4.1
+      rate_limit_rpm: 60
+
+dependencies:
+  - { source: supervisor, target: triage_bot, type: requires }
+  - { source: supervisor, target: remediation_bot, type: requires }
+  - { source: supervisor, target: audit_bot, type: requires }

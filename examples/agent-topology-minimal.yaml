@@ -1,0 +1,44 @@
+# Minimal AI agent topology — 1 agent + 1 dependency.
+# See docs/guides/agent-topology.md (#83) for all 4 config groups.
+schema_version: "4.0"
+
+components:
+  - id: sre_bot
+    name: SRE Copilot
+    type: ai_agent
+    host: agent-sre.internal
+    port: 443
+    replicas: 1
+    region: { region: us-east-1 }
+
+    agent_config:
+      max_loop_iterations: 5
+      memory_backend: redis
+      timeout_seconds: 30
+
+    llm_config:
+      provider: anthropic
+      model: claude-sonnet-4
+      max_tokens: 4000
+      rate_limit_rpm: 60
+      fallback_provider: openai
+      fallback_model: gpt-4.1
+
+    tool_config:
+      allowed_tools:
+        - kubectl.read
+        - prometheus.query
+      permission_mode: least_privilege
+
+  - id: kubernetes
+    name: Kubernetes API
+    type: external_api
+    host: kubeapi.internal
+    port: 6443
+    replicas: 3
+    region: { region: us-east-1 }
+
+dependencies:
+  - source: sre_bot
+    target: kubernetes
+    type: requires
