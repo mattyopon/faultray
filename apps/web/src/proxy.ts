@@ -61,6 +61,14 @@ export async function proxy(request: NextRequest) {
     return new NextResponse("Forbidden", { status: 403 });
   }
 
+  // #32 CSP nonce scaffold — generate per-request nonce and expose via
+  // the `x-faultray-nonce` request header so the root layout / <Script>
+  // tags can consume it. Docs: docs/csp-nonce-plan.md
+  const _nonceBytes = new Uint8Array(16);
+  crypto.getRandomValues(_nonceBytes);
+  const nonce = Buffer.from(_nonceBytes).toString("base64");
+  request.headers.set("x-faultray-nonce", nonce);
+
   const { pathname } = request.nextUrl;
 
   // API-03: Reject oversized request bodies on API routes
