@@ -15,13 +15,41 @@ export async function GET(request: Request) {
     return NextResponse.redirect(`${origin}/login?error=${msg}`);
   }
 
-  // SEC-02: Validate redirectTo to prevent open redirect.
-  // Accept only paths that start with a single "/" followed by a word-char or end-of-string.
-  // This blocks: absolute URLs (https://), protocol-relative (//evil.com),
-  // and backslash variants (/\evil.com) that some browsers treat as authority separators.
+  // SEC-02 / #26: Validate redirectTo via explicit allow-list of internal
+  // app routes. Previous regex `^\/(?:[...]*)$` accepted `//evil.com` and
+  // similar path-normalization traps. While NextResponse.redirect(origin+path)
+  // prevents true cross-origin open redirect, the user-visible URL could
+  // still render as `https://faultray.com//evil.com` which is confusing.
+  // An allow-list of top-level segments removes the attack surface entirely.
+  const SAFE_REDIRECT_PREFIXES: ReadonlyArray<string> = [
+    "/dashboard",
+    "/settings",
+    "/simulate",
+    "/projects",
+    "/reports",
+    "/compliance",
+    "/dora",
+    "/pricing",
+    "/billing",
+    "/whatif",
+  ];
   const rawRedirectTo = searchParams.get("redirectTo") || "/dashboard";
-  const SAFE_REDIRECT_RE = /^\/(?:[a-zA-Z0-9_\-./~!$&'()*+,;=:@%?#]*)$/;
-  const redirectTo = SAFE_REDIRECT_RE.test(rawRedirectTo) ? rawRedirectTo : "/dashboard";
+  const isSafeRedirect = (value: string): boolean => {
+    // Must be a proper internal path (single leading slash, no protocol / authority marker)
+    if (!value.startsWith("/") || value.startsWith("//") || value.startsWith("/\\")) {
+      return false;
+    }
+    // Reject path-traversal segments that could normalize out of the
+    // allow-listed prefix (e.g. `/dashboard/../admin` → `/admin`).
+    if (value.includes("..") || value.includes("\\")) {
+      return false;
+    }
+    // Must begin with one of our known top-level segments
+    return SAFE_REDIRECT_PREFIXES.some(
+      (p) => value === p || value.startsWith(`${p}/`) || value.startsWith(`${p}?`) || value.startsWith(`${p}#`)
+    );
+  };
+  const redirectTo = isSafeRedirect(rawRedirectTo) ? rawRedirectTo : "/dashboard";
 
   if (code) {
     try {
