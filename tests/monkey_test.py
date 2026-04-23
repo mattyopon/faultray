@@ -345,6 +345,20 @@ def run_monkey_test():
     return total_issues
 
 
+# ============================================================
+# Pytest wrapper (#84): expose the monkey runner as an opt-in test.
+# Default CI excludes this via `-m "not monkey"`; run explicitly with
+#   pytest -m monkey tests/monkey_test.py
+# Requires a Streamlit server at BASE_URL.
+# ============================================================
+
+@pytest.mark.monkey
+def test_monkey_no_errors_found() -> None:
+    """Run the UI monkey runner and fail if any crash / error was recorded."""
+    issues = run_monkey_test()
+    assert issues == 0, f"monkey runner detected {issues} issue(s); see console output"
+
+
 if __name__ == "__main__":
     issues = run_monkey_test()
     exit(1 if issues > 0 else 0)
