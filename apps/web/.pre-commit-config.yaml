@@ -52,11 +52,10 @@ repos:
       - id: check-case-conflict
       - id: mixed-line-ending
         args: ["--fix=lf"]
-      # NOTE: no-commit-to-branch is intentionally NOT enabled.
-      # Reason: faultray-app currently uses main-direct commit workflow
-      # (confirmed by `git log --oneline main` 2026-04-09: majority of recent
-      # commits go directly to main). Enabling --branch main would physically
-      # block the intended workflow and require --no-verify bypass which is
-      # prohibited by CLAUDE.md.
-      # If the workflow changes to feature-branch + PR in the future, enable
-      # this hook with the appropriate branch protection.
+      # #43: feature-branch + PR workflow is now the norm (every P1/P2
+      # task lands via PR since 2026-04-19). Enforce that by blocking
+      # direct commits to main / develop. Emergency hotfixes can still
+      # bypass via `git commit --no-verify`, but that is audit-visible
+      # and requires explicit justification.
+      - id: no-commit-to-branch
+        args: ["--branch", "main", "--branch", "develop"]
