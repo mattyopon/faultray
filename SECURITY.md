@@ -42,13 +42,14 @@ secret). The rotation posture is:
 | Release signing (sigstore)     | Keyless OIDC per-build (see #95)                  | n/a |
 
 Additional rules:
-- **No secret is committed to git.** \`gitleaks.yml\` pre-commit + CI
+- **No secret is committed to git.** `gitleaks.yml` pre-commit + CI
   workflow enforces this.
 - **Every revocation is logged** as a GitHub Security Advisory whenever
   credentials were *possibly* exposed.
-- **Quarterly reminder**: a calendar item titled "FaultRay secrets
-  rotation review" sits on the maintainer calendar — a missed quarter
-  counts as overdue and should trigger a proactive rotation.
+- **Rotation cadence enforcement is currently manual**. An automated
+  reminder (GitHub Issue auto-opened quarterly via a scheduled workflow)
+  is tracked as a follow-up. Until then, maintainer self-audit at each
+  release review is the fallback.
 
 ## Incident Response Runbook (#98)
 
