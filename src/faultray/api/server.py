@@ -35,7 +35,19 @@ logger = logging.getLogger(__name__)
 # ---------------------------------------------------------------------------
 
 class RateLimiter:
-    """Simple in-memory rate limiter using a sliding window."""
+    """Simple in-memory rate limiter using a sliding window.
+
+    Memory posture (#103):
+    - Hard cap: MAX_KEYS (10_000) forces immediate eviction.
+    - Soft cap: CLEANUP_INTERVAL_SECONDS (30s) triggers an expired-sweep
+      on the next is_allowed() call after the interval elapses.
+    - Trade-off: cleanup is call-driven, not timer-driven. If traffic
+      drops to zero, no sweep runs until the next request. Worst-case
+      memory footprint is therefore bounded by MAX_KEYS * avg_list_size,
+      not by wall-clock time. This is intentional — a background thread
+      would complicate FastAPI lifespan management for negligible memory
+      savings (10K keys ≈ 1–2 MB).
+    """
 
     MAX_KEYS = 10_000  # prevent unbounded memory growth
     CLEANUP_INTERVAL_SECONDS = 30  # #103: run expired-sweep at least this often

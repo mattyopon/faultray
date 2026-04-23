@@ -87,3 +87,19 @@ def test_hard_cap_still_enforced_when_over_max_keys(monkeypatch):
     assert len(rl.requests) <= rl.MAX_KEYS, (
         f"hard cap failed: len={len(rl.requests)} but MAX_KEYS={rl.MAX_KEYS}"
     )
+
+
+def test_default_interval_is_30_seconds():
+    """Self-review follow-up: verify the real default (not an override)."""
+    assert RateLimiter.CLEANUP_INTERVAL_SECONDS == 30
+
+
+def test_no_sweep_under_interval_documents_limitation():
+    """Honest limitation test: with the 30s default, expired entries
+    added within the window stay in the dict until the next call that
+    crosses the interval. Documented trade-off, not a bug."""
+    rl = RateLimiter(max_requests=10, window_seconds=1)
+    rl.is_allowed("seed")                        # sets _last_cleanup = now
+    rl.requests["stale"].append(time.time() - 9999)  # inject expired entry
+    rl.is_allowed("fresh")                       # <1s later → no sweep
+    assert "stale" in rl.requests
