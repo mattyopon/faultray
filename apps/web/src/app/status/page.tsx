@@ -2,6 +2,11 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { CheckCircle2, AlertTriangle, XCircle, Clock, Activity } from "lucide-react";
 
+import { probeAll, type ServiceProbe } from "@/lib/health-probes";
+
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
+
 export const metadata: Metadata = {
   title: "System Status",
   description: "Real-time status of FaultRay services — API, simulation engine, dashboard, and integrations.",
@@ -11,7 +16,7 @@ export const metadata: Metadata = {
 /* ============================================================
  * Types
  * ============================================================ */
-type ServiceStatus = "operational" | "degraded" | "outage" | "maintenance";
+type ServiceStatus = "operational" | "degraded" | "outage" | "maintenance" | "unknown";
 
 interface Service {
   name: string;
@@ -29,19 +34,14 @@ interface Incident {
   updates: { time: string; message: string }[];
 }
 
-/* ============================================================
- * Static data — in production this would be fetched from
- * a monitoring service (e.g. Betterstack, Statuspage.io)
- * ============================================================ */
-const SERVICES: Service[] = [
-  { name: "API", status: "operational", latency: "142ms", description: "REST API endpoints" },
-  { name: "Simulation Engine", status: "operational", latency: "2.1s", description: "Chaos simulation processing" },
-  { name: "Dashboard", status: "operational", latency: "89ms", description: "Web application interface" },
-  { name: "Authentication", status: "operational", latency: "201ms", description: "Login & session management" },
-  { name: "Report Generation", status: "operational", latency: "3.4s", description: "PDF/HTML report export" },
-  { name: "Webhook / Slack", status: "operational", latency: "310ms", description: "Outbound notifications" },
-  { name: "Data Ingestion", status: "operational", latency: "98ms", description: "YAML/JSON topology import" },
-];
+function _probeToService(p: ServiceProbe): Service {
+  return {
+    name: p.name,
+    status: p.status as ServiceStatus,
+    latency: p.latency_ms != null ? `${p.latency_ms}ms` : undefined,
+    description: p.note ?? "",
+  };
+}
 
 const RECENT_INCIDENTS: Incident[] = [
   {
@@ -74,6 +74,7 @@ function statusLabel(s: ServiceStatus) {
     degraded: "Degraded",
     outage: "Outage",
     maintenance: "Maintenance",
+    unknown: "Unknown",
   };
   return labels[s];
 }
@@ -93,9 +94,11 @@ function overallStatus(services: Service[]): ServiceStatus {
 }
 
 /* ============================================================
- * Page
+ * Page — Server Component; probes Supabase/Stripe/Resend on render (#37).
  * ============================================================ */
-export default function StatusPage() {
+export default async function StatusPage() {
+  const live = await probeAll();
+  const SERVICES: Service[] = live.services.map(_probeToService);
   const overall = overallStatus(SERVICES);
 
   return (

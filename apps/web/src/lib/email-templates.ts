@@ -46,7 +46,38 @@ function ctaButton(href: string, label: string): string {
   return `<a href="${href}" style="display:inline-block;padding:12px 28px;background:#FFD700;color:#0a0e1a;font-weight:700;font-size:14px;border-radius:8px;text-decoration:none;margin-top:24px;">${label}</a>`;
 }
 
-export function welcomeEmail(name: string): { subject: string; html: string } {
+// ───────────────────────────────────────────────────────────
+// Locale-aware templates (#36). Callers pass `locale` to switch
+// subject + body between supported languages. Default is "en" so
+// existing callers (no locale) keep working.
+// ───────────────────────────────────────────────────────────
+
+export type EmailLocale = "en" | "ja";
+
+export function welcomeEmail(
+  name: string,
+  locale: EmailLocale = "en"
+): { subject: string; html: string } {
+  if (locale === "ja") {
+    const subject = "FaultRay へようこそ — システムのレジリエンスを推定しましょう";
+    const html = baseLayout(`
+      <h1 style="margin:0 0 16px;font-size:24px;font-weight:700;color:#f1f5f9;">${name} 様、はじめまして</h1>
+      <p style="margin:0 0 16px;font-size:15px;line-height:1.7;color:#94a3b8;">
+        7 日間の Business トライアルを開始しました。FaultRay は本番環境に触れず
+        2,000+ の障害シナリオをシミュレートできます。
+      </p>
+      <h2 style="margin:24px 0 12px;font-size:16px;font-weight:600;color:#e2e8f0;">クイックスタート</h2>
+      <ol style="margin:0 0 16px;padding-left:20px;font-size:14px;line-height:1.9;color:#94a3b8;">
+        <li><strong style="color:#e2e8f0;">ダッシュボード</strong>から最初のプロジェクトを作成</li>
+        <li>インフラトポロジー (ノード・依存関係) を登録</li>
+        <li>2,000+ の fault シナリオから選んでシミュレーション実行</li>
+        <li>レジリエンススコアと critical な障害パスを確認</li>
+        <li>監査対応レポート (SOC2 / ISO 27001) を生成</li>
+      </ol>
+      ${ctaButton("https://faultray.com/dashboard", "ダッシュボードへ")}
+    `);
+    return { subject, html };
+  }
   const subject = "Welcome to FaultRay — Let's estimate your system's resilience";
   const html = baseLayout(`
     <h1 style="margin:0 0 16px;font-size:24px;font-weight:700;color:#f1f5f9;">Welcome, ${name}!</h1>
@@ -69,8 +100,26 @@ export function welcomeEmail(name: string): { subject: string; html: string } {
 
 export function trialReminderEmail(
   name: string,
-  daysLeft: number
+  daysLeft: number,
+  locale: EmailLocale = "en"
 ): { subject: string; html: string } {
+  if (locale === "ja") {
+    const subject = `FaultRay トライアル残り ${daysLeft} 日`;
+    const urgencyColor = daysLeft <= 2 ? "#ef4444" : "#FFD700";
+    const html = baseLayout(`
+      <h1 style="margin:0 0 16px;font-size:24px;font-weight:700;color:#f1f5f9;">${name} 様</h1>
+      <p style="margin:0 0 16px;font-size:15px;line-height:1.7;color:#94a3b8;">
+        FaultRay Business トライアルの残り期間は
+        <strong style="color:${urgencyColor};">${daysLeft} 日</strong>です。
+        シミュレーション結果とレポートを失わないよう、今のうちにアップグレードをご検討ください。
+      </p>
+      ${ctaButton("https://faultray.com/pricing", "今すぐアップグレード")}
+      <p style="margin:24px 0 0;font-size:13px;color:#64748b;">
+        ご不明な点はこのメールに返信ください。最適なプラン選びをお手伝いします。
+      </p>
+    `);
+    return { subject, html };
+  }
   const subject = `Your FaultRay trial ends in ${daysLeft} day${daysLeft === 1 ? "" : "s"}`;
   const urgencyColor = daysLeft <= 2 ? "#ef4444" : "#FFD700";
   const html = baseLayout(`

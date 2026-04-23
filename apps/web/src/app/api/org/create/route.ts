@@ -1,27 +1,25 @@
 import { NextResponse } from "next/server";
 import { applyRateLimit } from "@/lib/rate-limit";
+import { orgCreateSchema, formatZodError } from "@/lib/schemas";
 
 export const dynamic = "force-dynamic";
-
-interface CreateOrgBody {
-  name: string;
-}
 
 export async function POST(request: Request) {
   const limited = await applyRateLimit(request, { limit: 10, windowMs: 60_000 });
   if (limited) return limited;
 
-  let body: Partial<CreateOrgBody>;
+  let raw: unknown;
   try {
-    body = (await request.json()) as Partial<CreateOrgBody>;
+    raw = await request.json();
   } catch {
     return NextResponse.json({ error: "Invalid JSON body" }, { status: 400 });
   }
 
-  const { name } = body;
-  if (!name || typeof name !== "string" || name.trim() === "") {
-    return NextResponse.json({ error: "name is required" }, { status: 400 });
+  const parsed = orgCreateSchema.safeParse(raw);
+  if (!parsed.success) {
+    return NextResponse.json(formatZodError(parsed.error), { status: 400 });
   }
+  const { name } = parsed.data;
 
   let supabase: Awaited<ReturnType<typeof import("@/lib/supabase/server").createClient>>;
   try {
@@ -42,7 +40,7 @@ export async function POST(request: Request) {
   // 組織を作成
   const { data: org, error: orgError } = await supabase
     .from("organizations")
-    .insert({ name: name.trim(), owner_id: user.id })
+    .insert({ name: name, owner_id: user.id })
     .select("id, name, owner_id, plan, created_at")
     .single();
 
