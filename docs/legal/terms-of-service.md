@@ -1,7 +1,8 @@
 # FaultRay Terms of Service
 
-**Effective Date:** [To be determined]
-**Last Updated:** 2026-03-16
+**Effective Date:** 2026-04-22
+**Last Updated:** 2026-04-22
+**Version:** 1.0
 
 ---
 
