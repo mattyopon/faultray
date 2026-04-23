@@ -14,6 +14,7 @@ Ported from JPGovAI's gap_analysis service, adapted to FaultRay patterns.
 
 from __future__ import annotations
 
+import logging
 import os
 import uuid
 from dataclasses import dataclass, field
@@ -24,6 +25,8 @@ from faultray.governance.frameworks import (
     all_meti_requirements,
     get_frameworks_for_meti_requirement,
 )
+
+logger = logging.getLogger(__name__)
 
 
 # ---------------------------------------------------------------------------
@@ -474,6 +477,12 @@ def generate_ai_recommendations(gap_report: GapReport) -> str:
         )
         return message.content[0].text  # type: ignore[union-attr]
     except Exception:
+        # GOVERNANCE-LOGGER (#80): surface the root cause so AI API
+        # outages / auth failures / schema breaks don't silently degrade
+        # to template fallback without any diagnostic trace.
+        logger.exception(
+            "gap_analyzer: LLM call failed, falling back to template recommendations"
+        )
         return _fallback_recommendations(gap_report)
 
 
