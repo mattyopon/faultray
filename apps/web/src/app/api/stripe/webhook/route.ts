@@ -7,6 +7,31 @@ export const dynamic = "force-dynamic";
 
 type PlanTier = "free" | "starter" | "pro" | "business";
 
+/**
+ * Stripe Invoice extension (#31):
+ * - `parent.subscription_details.subscription` exists on Stripe API v2+
+ *   invoice objects where the invoice parents a subscription. The
+ *   official Stripe TS type does not yet expose this nested field.
+ * - `subscription` is the legacy top-level field (Stripe API v1 /
+ *   historical invoices) still occasionally present on retrieved objects.
+ *
+ * We extract a `subscriptionId` via a single narrow helper instead of
+ * scattering `as any` casts across the file.
+ */
+type InvoiceWithSubscription = Stripe.Invoice & {
+  parent?: {
+    subscription_details?: {
+      subscription?: string | null;
+    } | null;
+  } | null;
+  subscription?: string | null;
+};
+
+function extractSubscriptionId(invoice: Stripe.Invoice): string | null {
+  const inv = invoice as InvoiceWithSubscription;
+  return inv.parent?.subscription_details?.subscription ?? inv.subscription ?? null;
+}
+
 function planTierFromPriceId(priceId: string): PlanTier | null {
   const starterPriceIds = (process.env.STRIPE_STARTER_PRICE_IDS || "").split(",").filter(Boolean);
   const proPriceIds = (process.env.STRIPE_PRO_PRICE_IDS || "").split(",").filter(Boolean);
@@ -176,12 +201,8 @@ export async function POST(request: Request) {
           // planをpriceIdから解決する。subscriptionが取得できない場合は
           // 既存のplanを維持するためupdateUserByCustomerIdのplan引数は使わず、
           // subscription取得後に実際のpriceIdからplanを決定する。
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          const invoiceAny = invoice as any;
-          const subscriptionId: string | null =
-            invoiceAny.parent?.subscription_details?.subscription ??
-            invoiceAny.subscription ??
-            null;
+          // NOTE (#31): replaced `as any` cast with InvoiceWithSubscription.
+          const subscriptionId: string | null = extractSubscriptionId(invoice);
 
           let resolvedPlan: PlanTier = "pro"; // fallback
           if (subscriptionId) {
@@ -204,13 +225,9 @@ export async function POST(request: Request) {
       case "invoice.payment_succeeded": {
         const invoice = event.data.object as Stripe.Invoice;
         const customerId = invoice.customer as string;
-        // Extract subscription id from parent (Stripe API v2+) or legacy field
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const invoiceAny = invoice as any;
-        const subscriptionId: string | null =
-          invoiceAny.parent?.subscription_details?.subscription ??
-          invoiceAny.subscription ??
-          null;
+        // Extract subscription id from parent (Stripe API v2+) or legacy field.
+        // NOTE (#31): replaced `as any` cast with InvoiceWithSubscription.
+        const subscriptionId: string | null = extractSubscriptionId(invoice);
         // Only act on subscription invoices (not one-time charges)
         if (subscriptionId) {
           // Retrieve subscription to determine plan
