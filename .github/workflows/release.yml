@@ -76,7 +76,7 @@ jobs:
           output-file: dist/faultray-${{ needs.extract-version.outputs.version }}-python.cdx.json
 
       - name: Attest build provenance (SLSA v1)
-        uses: actions/attest-build-provenance@v2
+        uses: actions/attest-build-provenance@v4
         with:
           subject-path: "dist/*.whl,dist/*.tar.gz"
 
@@ -162,7 +162,7 @@ jobs:
           VERSION: ${{ needs.extract-version.outputs.version }}
 
       - name: Attest Docker build provenance (SLSA v1)
-        uses: actions/attest-build-provenance@v2
+        uses: actions/attest-build-provenance@v4
         with:
           subject-name: ${{ env.IMAGE }}
           subject-digest: ${{ steps.build.outputs.digest }}
