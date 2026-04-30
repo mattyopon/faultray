@@ -87,7 +87,7 @@ jobs:
         # Only runs when a Release event fires (not for raw tag push), so
         # the softprops action receives the existing release to upload to.
         if: github.event_name == 'release'
-        uses: softprops/action-gh-release@v2
+        uses: softprops/action-gh-release@v3
         with:
           files: |
             dist/*.whl
@@ -170,7 +170,7 @@ jobs:
 
       - name: Attach Docker SBOM to GitHub Release
         if: github.event_name == 'release'
-        uses: softprops/action-gh-release@v2
+        uses: softprops/action-gh-release@v3
         with:
           files: |
             faultray-${{ needs.extract-version.outputs.version }}-docker.cdx.json
