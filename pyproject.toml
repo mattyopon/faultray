@@ -73,13 +73,13 @@ k8s = [
     "kubernetes>=28.0",
 ]
 sakura = [
-    "requests>=2.28",
+    "requests>=2.33.1",
 ]
 alibaba = [
     "alibabacloud-ecs20140526>=3.0",
     "alibabacloud-rds20140815>=3.0",
     "alibabacloud-slb20140515>=3.0",
-    "requests>=2.28",
+    "requests>=2.33.1",
 ]
 oci = [
     "oci>=2.0",
@@ -92,7 +92,7 @@ all-clouds = [
     "google-cloud-compute>=1.0",
     "azure-identity>=1.15",
     "kubernetes>=28.0",
-    "requests>=2.28",
+    "requests>=2.33.1",
     "alibabacloud-ecs20140526>=3.0",
     "alibabacloud-rds20140815>=3.0",
     "alibabacloud-slb20140515>=3.0",
