@@ -4,7 +4,7 @@ import { Logo } from "@/components/logo";
 import { createClient } from "@/lib/supabase/client";
 import { useSearchParams } from "next/navigation";
 import { Suspense, useState } from "react";
-import { Mail, Loader2, CheckCircle2 } from "lucide-react";
+import { Mail, Loader2, CheckCircle2, Lock } from "lucide-react";
 import { useLocale } from "@/lib/useLocale";
 import { appDict } from "@/i18n/app-dict";
 
@@ -29,12 +29,15 @@ function LoginForm() {
   };
   const errorMessage = authError ? (errorMessages[authError] ?? "An authentication error occurred. Please try again.") : null;
 
-  // AUTH-02: Email OTP fallback (eliminates Social SPoF)
-  const [emailMode, setEmailMode] = useState(false);
+  // AUTH-02: Email auth mode: "password" | "magic-link" | null (social buttons)
+  const [emailMode, setEmailMode] = useState<"password" | "magic-link" | null>(null);
   const [emailInput, setEmailInput] = useState("");
+  const [passwordInput, setPasswordInput] = useState("");
   const [otpSending, setOtpSending] = useState(false);
   const [otpSent, setOtpSent] = useState(false);
   const [emailError, setEmailError] = useState<string | null>(null);
+  const [signingIn, setSigningIn] = useState(false);
+  const [isSignUp, setIsSignUp] = useState(false);
 
   const supabase = createClient();
 
@@ -54,6 +57,59 @@ function LoginForm() {
     "grr.la", "guerrillamail.info", "spam4.me", "trashmail.at",
     "dispostable.com", "spamgourmet.com", "maildrop.cc", "getairmail.com",
   ]);
+
+  // ISSUE-08: Email/password sign-in via signInWithPassword
+  const signInWithEmail = async () => {
+    const trimmed = emailInput.trim().toLowerCase();
+    if (!trimmed || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(trimmed)) {
+      setEmailError("Please enter a valid email address.");
+      return;
+    }
+    if (!passwordInput) {
+      setEmailError("Please enter your password.");
+      return;
+    }
+    // MISSED-05: ディスポーザブルメールのブロック
+    const domain = trimmed.split("@")[1] ?? "";
+    if (DISPOSABLE_DOMAINS.has(domain)) {
+      setEmailError("Disposable email addresses are not allowed. Please use a permanent email address.");
+      return;
+    }
+    setEmailError(null);
+    setSigningIn(true);
+    try {
+      if (isSignUp) {
+        const { error } = await supabase.auth.signUp({
+          email: trimmed,
+          password: passwordInput,
+          options: {
+            emailRedirectTo: `${window.location.origin}/auth/callback?redirectTo=${encodeURIComponent(redirectTo)}`,
+          },
+        });
+        if (error) {
+          setEmailError(error.message);
+        } else {
+          // Sign-up sends confirmation email
+          setOtpSent(true);
+        }
+      } else {
+        const { error } = await supabase.auth.signInWithPassword({
+          email: trimmed,
+          password: passwordInput,
+        });
+        if (error) {
+          setEmailError(error.message);
+        } else {
+          // Successful sign-in — redirect
+          window.location.href = redirectTo;
+        }
+      }
+    } catch {
+      setEmailError("An unexpected error occurred. Please try again.");
+    } finally {
+      setSigningIn(false);
+    }
+  };
 
   // AUTH-02: Send magic link / OTP via email
   const sendOtp = async () => {
@@ -172,54 +228,117 @@ function LoginForm() {
         )}
 
         <div className="p-8 rounded-2xl border border-[var(--border-color)] bg-[var(--bg-card)] space-y-4">
-          {/* AUTH-02: Email OTP mode */}
-          {emailMode ? (
-            otpSent ? (
-              <div className="text-center py-4">
-                <CheckCircle2 size={40} className="text-emerald-400 mx-auto mb-3" />
-                <p className="font-semibold text-[var(--text-primary)] mb-1">{t.checkEmail}</p>
-                <p className="text-sm text-[var(--text-secondary)]">
-                  {t.magicLinkSent} <span className="text-[var(--text-primary)] font-medium">{emailInput}</span>.{" "}
-                  {t.magicLinkDesc}
-                </p>
-                <button
-                  onClick={() => { setOtpSent(false); setEmailMode(false); setEmailInput(""); }}
-                  className="mt-4 text-sm text-[var(--gold)] hover:underline"
-                >
-                  {t.backToSignIn}
-                </button>
+          {/* ISSUE-08: Email/password sign-in + magic link fallback */}
+          {otpSent ? (
+            <div className="text-center py-4">
+              <CheckCircle2 size={40} className="text-emerald-400 mx-auto mb-3" />
+              <p className="font-semibold text-[var(--text-primary)] mb-1">{isSignUp ? t.checkEmail : t.checkEmail}</p>
+              <p className="text-sm text-[var(--text-secondary)]">
+                {isSignUp ? t.confirmEmailSent : t.magicLinkSent} <span className="text-[var(--text-primary)] font-medium">{emailInput}</span>.{" "}
+                {isSignUp ? t.confirmEmailDesc : t.magicLinkDesc}
+              </p>
+              <button
+                onClick={() => { setOtpSent(false); setEmailMode(null); setEmailInput(""); setPasswordInput(""); setIsSignUp(false); }}
+                className="mt-4 text-sm text-[var(--gold)] hover:underline"
+              >
+                {t.backToSignIn}
+              </button>
+            </div>
+          ) : emailMode === "password" ? (
+            <form onSubmit={(e) => { e.preventDefault(); signInWithEmail(); }} className="space-y-3">
+              <label className="block text-sm text-[var(--text-secondary)] font-medium">{t.emailLabel}</label>
+              <input
+                type="email"
+                value={emailInput}
+                onChange={(e) => setEmailInput(e.target.value)}
+                placeholder={t.emailPlaceholder}
+                autoFocus
+                autoComplete="email"
+                className="w-full px-4 py-3 rounded-xl bg-[var(--bg-primary)] border border-[var(--border-color)] text-[var(--text-primary)] placeholder-[var(--text-muted)] focus:outline-none focus:border-[var(--gold)]/50 text-sm"
+              />
+              <label className="block text-sm text-[var(--text-secondary)] font-medium">{t.passwordLabel}</label>
+              <input
+                type="password"
+                value={passwordInput}
+                onChange={(e) => setPasswordInput(e.target.value)}
+                placeholder={t.passwordPlaceholder}
+                autoComplete={isSignUp ? "new-password" : "current-password"}
+                className="w-full px-4 py-3 rounded-xl bg-[var(--bg-primary)] border border-[var(--border-color)] text-[var(--text-primary)] placeholder-[var(--text-muted)] focus:outline-none focus:border-[var(--gold)]/50 text-sm"
+              />
+              {emailError && (
+                <p className="text-red-400 text-xs">{emailError}</p>
+              )}
+              <button
+                type="submit"
+                disabled={signingIn}
+                className="w-full flex items-center justify-center gap-2 px-4 py-3 rounded-xl bg-[var(--gold)] text-white font-semibold hover:bg-[#044a99] disabled:opacity-60 transition-colors"
+              >
+                {signingIn ? <Loader2 size={16} className="animate-spin" /> : <Lock size={16} />}
+                {signingIn ? t.signingIn : (isSignUp ? t.signUp : t.signIn)}
+              </button>
+              <button
+                type="button"
+                onClick={() => { setIsSignUp(!isSignUp); setEmailError(null); }}
+                className="w-full text-center text-sm text-[var(--text-muted)] hover:text-[var(--text-primary)] transition-colors"
+              >
+                {isSignUp ? t.haveAccount : t.noAccount}
+              </button>
+              <div className="relative flex items-center">
+                <div className="flex-1 border-t border-[var(--border-color)]" />
+                <span className="mx-3 text-xs text-[var(--text-muted)]">{t.or}</span>
+                <div className="flex-1 border-t border-[var(--border-color)]" />
               </div>
-            ) : (
-              <div className="space-y-3">
-                <label className="block text-sm text-[var(--text-secondary)] font-medium">{t.emailLabel}</label>
-                <input
-                  type="email"
-                  value={emailInput}
-                  onChange={(e) => setEmailInput(e.target.value)}
-                  onKeyDown={(e) => { if (e.key === "Enter") sendOtp(); }}
-                  placeholder={t.emailPlaceholder}
-                  autoFocus
-                  className="w-full px-4 py-3 rounded-xl bg-[var(--bg-primary)] border border-[var(--border-color)] text-[var(--text-primary)] placeholder-[var(--text-muted)] focus:outline-none focus:border-[var(--gold)]/50 text-sm"
-                />
-                {emailError && (
-                  <p className="text-red-400 text-xs">{emailError}</p>
-                )}
-                <button
-                  onClick={sendOtp}
-                  disabled={otpSending}
-                  className="w-full flex items-center justify-center gap-2 px-4 py-3 rounded-xl bg-[var(--gold)] text-white font-semibold hover:bg-[#044a99] disabled:opacity-60 transition-colors"
-                >
-                  {otpSending ? <Loader2 size={16} className="animate-spin" /> : <Mail size={16} />}
-                  {otpSending ? t.sending : t.sendMagicLink}
-                </button>
-                <button
-                  onClick={() => { setEmailMode(false); setEmailError(null); }}
-                  className="w-full text-center text-sm text-[var(--text-muted)] hover:text-[var(--text-primary)] transition-colors"
-                >
-                  {t.backToSocial}
-                </button>
-              </div>
-            )
+              <button
+                type="button"
+                onClick={() => { setEmailMode("magic-link"); setEmailError(null); }}
+                className="w-full text-center text-sm text-[var(--text-muted)] hover:text-[var(--text-primary)] transition-colors"
+              >
+                {t.useMagicLink}
+              </button>
+              <button
+                type="button"
+                onClick={() => { setEmailMode(null); setEmailError(null); setPasswordInput(""); }}
+                className="w-full text-center text-sm text-[var(--text-muted)] hover:text-[var(--text-primary)] transition-colors"
+              >
+                {t.backToSocial}
+              </button>
+            </form>
+          ) : emailMode === "magic-link" ? (
+            <div className="space-y-3">
+              <label className="block text-sm text-[var(--text-secondary)] font-medium">{t.emailLabel}</label>
+              <input
+                type="email"
+                value={emailInput}
+                onChange={(e) => setEmailInput(e.target.value)}
+                onKeyDown={(e) => { if (e.key === "Enter") sendOtp(); }}
+                placeholder={t.emailPlaceholder}
+                autoFocus
+                className="w-full px-4 py-3 rounded-xl bg-[var(--bg-primary)] border border-[var(--border-color)] text-[var(--text-primary)] placeholder-[var(--text-muted)] focus:outline-none focus:border-[var(--gold)]/50 text-sm"
+              />
+              {emailError && (
+                <p className="text-red-400 text-xs">{emailError}</p>
+              )}
+              <button
+                onClick={sendOtp}
+                disabled={otpSending}
+                className="w-full flex items-center justify-center gap-2 px-4 py-3 rounded-xl bg-[var(--gold)] text-white font-semibold hover:bg-[#044a99] disabled:opacity-60 transition-colors"
+              >
+                {otpSending ? <Loader2 size={16} className="animate-spin" /> : <Mail size={16} />}
+                {otpSending ? t.sending : t.sendMagicLink}
+              </button>
+              <button
+                onClick={() => { setEmailMode("password"); setEmailError(null); }}
+                className="w-full text-center text-sm text-[var(--text-muted)] hover:text-[var(--text-primary)] transition-colors"
+              >
+                {t.usePassword}
+              </button>
+              <button
+                onClick={() => { setEmailMode(null); setEmailError(null); }}
+                className="w-full text-center text-sm text-[var(--text-muted)] hover:text-[var(--text-primary)] transition-colors"
+              >
+                {t.backToSocial}
+              </button>
+            </div>
           ) : (
             <>
               {isProduction && (
@@ -253,9 +372,9 @@ function LoginForm() {
                 <div className="flex-1 border-t border-[var(--border-color)]" />
               </div>
 
-              {/* AUTH-02: Email magic link as SPoF fallback */}
+              {/* ISSUE-08: Email/password sign-in button */}
               <button
-                onClick={() => setEmailMode(true)}
+                onClick={() => setEmailMode("password")}
                 className="w-full flex items-center justify-center gap-3 px-4 py-3 rounded-xl border border-[var(--border-color)] text-[var(--text-secondary)] font-medium hover:bg-black/5 hover:text-[var(--text-primary)] transition-colors text-sm min-h-[48px]"
               >
                 <Mail size={16} />
