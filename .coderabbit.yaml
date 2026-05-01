@@ -1,0 +1,13 @@
+# yaml-language-server: $schema=https://coderabbit.ai/integrations/schema.v2.json
+# CodeRabbit によるレビューは無効。コードレビューは Codex に一本化する。
+# 復活させる場合はこのファイルを削除する。
+reviews:
+  auto_review:
+    enabled: false
+    drafts: false
+  review_status: false
+  request_changes_workflow: false
+  high_level_summary: false
+  poem: false
+chat:
+  auto_reply: false
