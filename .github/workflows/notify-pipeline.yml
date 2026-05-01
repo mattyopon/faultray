@@ -1,0 +1,349 @@
+name: Notify pipeline events to Slack
+
+# 目的:
+#   PR review pipeline (CI / Vercel / CodeRabbit / Codex / Devin Review) と
+#   PR lifecycle (open/close/merge) を Slack channel に **スレッド** で通知する。
+#   PR opened を親メッセージにし、それ以降の event (synchronize / review /
+#   check_suite / merge / close) を全て同 PR の thread 返信として post する。
+#
+# 必要な GitHub repo 設定:
+#   - Variables → Actions: ENABLE_SLACK_NOTIFICATIONS = "true"
+#   - Secrets   → Actions: SLACK_BOT_TOKEN          (Slack app の Bot User OAuth Token, xoxb-...)
+#   - Secrets   → Actions: SLACK_CHANNEL_ID         (通知先 channel の ID, C0XXXXXXXX)
+#
+# Slack 側設定:
+#   1. https://api.slack.com/apps から既存 / 新 app を開く
+#   2. OAuth & Permissions → Bot Token Scopes に追加:
+#        - chat:write
+#        - chat:write.public  (招待されていない public channel にも投稿)
+#   3. Install to Workspace で再インストール、Bot User OAuth Token をコピー
+#   4. 通知先 channel 名を右クリック → channel ID コピー
+#   5. SLACK_BOT_TOKEN / SLACK_CHANNEL_ID を GitHub secrets に登録
+#
+# Threading 仕組み:
+#   - PR opened/reopened/ready_for_review:
+#       chat.postMessage で post → 返り値の ts を取得
+#       → PR body 末尾に <!-- slack-thread-ts: NNN.MMM --> として書き込み
+#   - その他のイベント:
+#       PR body から marker を読み出して thread_ts として指定
+#       → スレッド返信として post
+#       (marker が無い fallback では flat に post)
+
+on:
+  pull_request:
+    types: [opened, reopened, closed, synchronize, ready_for_review]
+  pull_request_review:
+    types: [submitted]
+  issue_comment:
+    types: [created]
+  check_suite:
+    types: [completed]
+  workflow_run:
+    workflows: ["CI"]
+    types: [completed]
+
+permissions:
+  contents: read
+  pull-requests: write  # PR body に thread_ts marker を書き込むため
+
+jobs:
+  notify:
+    runs-on: ubuntu-latest
+    if: ${{ vars.ENABLE_SLACK_NOTIFICATIONS == 'true' }}
+    env:
+      GH_TOKEN: ${{ github.token }}
+      SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
+      SLACK_CHANNEL_ID: ${{ secrets.SLACK_CHANNEL_ID }}
+    steps:
+      # ── secret 未登録 repo を保護 ────────────────────────────────────────
+      - name: Verify secrets
+        id: secrets_check
+        run: |
+          if [ -z "$SLACK_BOT_TOKEN" ] || [ -z "$SLACK_CHANNEL_ID" ]; then
+            echo "::warning::SLACK_BOT_TOKEN or SLACK_CHANNEL_ID not set; skipping notify"
+            echo "skip=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "skip=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      # ── 人間 issue_comment は通知しない (bot review のみ) ──────────────
+      - name: Filter bot-only issue_comments
+        id: filter
+        if: ${{ steps.secrets_check.outputs.skip != 'true' }}
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          COMMENT_USER: ${{ github.event.comment.user.login }}
+          IS_PR_COMMENT: ${{ github.event.issue.pull_request != null }}
+        run: |
+          if [ "$EVENT_NAME" = "issue_comment" ]; then
+            if [ "$IS_PR_COMMENT" != "true" ]; then
+              echo "skip=true" >> "$GITHUB_OUTPUT"
+              exit 0
+            fi
+            case "$COMMENT_USER" in
+              coderabbitai|coderabbitai\[bot\]|chatgpt-codex-connector|chatgpt-codex-connector\[bot\]|devin-ai-integration|devin-ai-integration\[bot\])
+                echo "skip=false" >> "$GITHUB_OUTPUT"
+                ;;
+              *)
+                echo "skip=true" >> "$GITHUB_OUTPUT"
+                ;;
+            esac
+          else
+            echo "skip=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      # ── PR 番号を event 別に解決 ────────────────────────────────────────
+      - name: Resolve PR number
+        id: pr
+        if: ${{ steps.secrets_check.outputs.skip != 'true' && steps.filter.outputs.skip != 'true' }}
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          PR_NUMBER_DIRECT: ${{ github.event.pull_request.number || github.event.issue.number }}
+          CHECK_SUITE_PR: ${{ toJson(github.event.check_suite.pull_requests) }}
+          WORKFLOW_RUN_PR: ${{ toJson(github.event.workflow_run.pull_requests) }}
+          HEAD_SHA: ${{ github.event.check_suite.head_sha || github.event.workflow_run.head_sha }}
+          REPO: ${{ github.repository }}
+        run: |
+          set -e
+          PR=""
+          if [ -n "$PR_NUMBER_DIRECT" ] && [ "$PR_NUMBER_DIRECT" != "null" ]; then
+            PR="$PR_NUMBER_DIRECT"
+          elif [ "$EVENT_NAME" = "check_suite" ] && [ -n "$CHECK_SUITE_PR" ]; then
+            PR=$(echo "$CHECK_SUITE_PR" | jq -r '.[0].number // empty')
+          elif [ "$EVENT_NAME" = "workflow_run" ] && [ -n "$WORKFLOW_RUN_PR" ]; then
+            PR=$(echo "$WORKFLOW_RUN_PR" | jq -r '.[0].number // empty')
+          fi
+
+          # フォールバック: head_sha から PR を逆引き
+          if [ -z "$PR" ] && [ -n "$HEAD_SHA" ] && [ "$HEAD_SHA" != "null" ]; then
+            PR=$(gh pr list --repo "$REPO" --state open --head-sha "$HEAD_SHA" --json number --jq '.[0].number // empty' 2>/dev/null || true)
+          fi
+
+          if [ -z "$PR" ]; then
+            echo "::warning::Could not resolve PR number for event $EVENT_NAME; will post flat"
+          fi
+          echo "number=$PR" >> "$GITHUB_OUTPUT"
+
+      # ── PR body から既存の thread_ts marker を読み出す ─────────────────
+      - name: Read thread_ts from PR body
+        id: ts
+        if: ${{ steps.secrets_check.outputs.skip != 'true' && steps.filter.outputs.skip != 'true' }}
+        env:
+          PR_NUMBER: ${{ steps.pr.outputs.number }}
+          REPO: ${{ github.repository }}
+        run: |
+          set -e
+          TS=""
+          if [ -n "$PR_NUMBER" ]; then
+            BODY=$(gh pr view "$PR_NUMBER" --repo "$REPO" --json body --jq '.body' 2>/dev/null || echo "")
+            TS=$(printf '%s' "$BODY" | grep -oE 'slack-thread-ts: [0-9]+\.[0-9]+' | head -1 | awk '{print $2}' || true)
+          fi
+          echo "value=$TS" >> "$GITHUB_OUTPUT"
+
+      # ── Slack payload を build ─────────────────────────────────────────
+      - name: Build payload
+        id: payload
+        if: ${{ steps.secrets_check.outputs.skip != 'true' && steps.filter.outputs.skip != 'true' }}
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          ACTION: ${{ github.event.action }}
+          PR_NUMBER: ${{ steps.pr.outputs.number }}
+          PR_TITLE: ${{ github.event.pull_request.title || github.event.issue.title }}
+          PR_URL: ${{ github.event.pull_request.html_url || github.event.issue.html_url }}
+          PR_MERGED: ${{ github.event.pull_request.merged }}
+          REVIEW_USER: ${{ github.event.review.user.login || github.event.comment.user.login }}
+          REVIEW_STATE: ${{ github.event.review.state }}
+          REVIEW_BODY: ${{ github.event.review.body || github.event.comment.body }}
+          REVIEW_URL: ${{ github.event.review.html_url || github.event.comment.html_url }}
+          CHECK_APP: ${{ github.event.check_suite.app.name }}
+          CHECK_CONCLUSION: ${{ github.event.check_suite.conclusion || github.event.workflow_run.conclusion }}
+          WORKFLOW_NAME: ${{ github.event.workflow_run.name }}
+          WORKFLOW_URL: ${{ github.event.workflow_run.html_url }}
+          REPO: ${{ github.repository }}
+        run: |
+          set -e
+          ICON=":mailbox:"; TITLE="event"; IS_PARENT="false"
+          case "$EVENT_NAME" in
+            pull_request)
+              case "$ACTION" in
+                opened)            ICON=":sparkles:";              TITLE="PR opened";       IS_PARENT="true"  ;;
+                reopened)          ICON=":arrows_counterclockwise:"; TITLE="PR reopened";   IS_PARENT="true"  ;;
+                ready_for_review)  ICON=":eyes:";                  TITLE="PR ready for review"; IS_PARENT="true" ;;
+                synchronize)       ICON=":arrow_up:";              TITLE="PR updated"        ;;
+                closed)
+                  if [ "$PR_MERGED" = "true" ]; then
+                    ICON=":tada:"; TITLE="PR merged"
+                  else
+                    ICON=":wastebasket:"; TITLE="PR closed without merge"
+                  fi
+                  ;;
+                *)                 TITLE="PR $ACTION"             ;;
+              esac
+              ;;
+            pull_request_review)
+              case "$REVIEW_USER" in
+                coderabbitai*)             ICON=":rabbit:";      TITLE="CodeRabbit review" ;;
+                chatgpt-codex-connector*)  ICON=":robot_face:";  TITLE="Codex review"      ;;
+                devin-ai-integration*)     ICON=":brain:";       TITLE="Devin Review"      ;;
+                *)
+                  case "$REVIEW_STATE" in
+                    approved)          ICON=":white_check_mark:"; TITLE="Approved by ${REVIEW_USER}" ;;
+                    changes_requested) ICON=":no_entry:";         TITLE="Changes requested by ${REVIEW_USER}" ;;
+                    *)                 ICON=":speech_balloon:";   TITLE="Review by ${REVIEW_USER}" ;;
+                  esac
+                  ;;
+              esac
+              ;;
+            issue_comment)
+              case "$REVIEW_USER" in
+                coderabbitai*)             ICON=":rabbit:";      TITLE="CodeRabbit comment" ;;
+                chatgpt-codex-connector*)  ICON=":robot_face:";  TITLE="Codex comment"      ;;
+                devin-ai-integration*)     ICON=":brain:";       TITLE="Devin comment"      ;;
+              esac
+              ;;
+            check_suite)
+              case "$CHECK_CONCLUSION" in
+                success)         ICON=":white_check_mark:";   TITLE="Checks passed (${CHECK_APP})" ;;
+                failure)         ICON=":rotating_light:";     TITLE="Checks FAILED (${CHECK_APP})" ;;
+                cancelled)       ICON=":no_entry:";           TITLE="Checks cancelled (${CHECK_APP})" ;;
+                neutral|skipped) ICON=":zzz:";                TITLE="Checks skipped (${CHECK_APP})" ;;
+                *)               ICON=":hourglass_flowing_sand:"; TITLE="Checks ${CHECK_CONCLUSION} (${CHECK_APP})" ;;
+              esac
+              ;;
+            workflow_run)
+              case "$CHECK_CONCLUSION" in
+                success)   ICON=":white_check_mark:";   TITLE="CI passed (${WORKFLOW_NAME})" ;;
+                failure)   ICON=":rotating_light:";     TITLE="CI FAILED (${WORKFLOW_NAME})" ;;
+                cancelled) ICON=":no_entry:";           TITLE="CI cancelled (${WORKFLOW_NAME})" ;;
+                *)         ICON=":zap:";                TITLE="CI ${CHECK_CONCLUSION} (${WORKFLOW_NAME})" ;;
+              esac
+              ;;
+          esac
+
+          PR_LINE=""
+          if [ -n "$PR_NUMBER" ] && [ "$PR_NUMBER" != "null" ]; then
+            PR_LINE="<${PR_URL}|#${PR_NUMBER} ${PR_TITLE}>"
+          elif [ -n "$WORKFLOW_URL" ]; then
+            PR_LINE="<${WORKFLOW_URL}|workflow run>"
+          fi
+
+          BODY_PREVIEW=""
+          if [ -n "$REVIEW_BODY" ] && [ "$REVIEW_BODY" != "null" ]; then
+            BODY_PREVIEW=$(printf '%s' "$REVIEW_BODY" | head -c 400)
+          fi
+
+          # build base text + blocks (jq で injection 安全)
+          PAYLOAD=$(jq -nc \
+            --arg icon "$ICON" \
+            --arg title "$TITLE" \
+            --arg pr_line "$PR_LINE" \
+            --arg body "$BODY_PREVIEW" \
+            --arg url "$REVIEW_URL" \
+            --arg repo "$REPO" \
+            --arg channel "$SLACK_CHANNEL_ID" \
+            '{
+              channel: $channel,
+              text: ($icon + " " + $title + (if $pr_line != "" then " · " + $pr_line else "" end)),
+              blocks: (
+                [
+                  {
+                    type: "section",
+                    text: {
+                      type: "mrkdwn",
+                      text: ($icon + " *" + $title + "*"
+                        + (if $pr_line != "" then "\n" + $pr_line else "" end)
+                        + "\n`" + $repo + "`")
+                    }
+                  }
+                ]
+                + (if $body != "" then [
+                  {
+                    type: "section",
+                    text: { type: "mrkdwn", text: ("> " + ($body | gsub("\n"; "\n> "))) }
+                  }
+                ] else [] end)
+                + (if $url != "" and $url != "null" then [
+                  {
+                    type: "context",
+                    elements: [{ type: "mrkdwn", text: ("<" + $url + "|view on GitHub>") }]
+                  }
+                ] else [] end)
+              )
+            }')
+
+          delim="EOF_$(date +%s%N)"
+          {
+            echo "payload<<${delim}"
+            printf '%s\n' "$PAYLOAD"
+            echo "${delim}"
+          } >> "$GITHUB_OUTPUT"
+          echo "is_parent=${IS_PARENT}" >> "$GITHUB_OUTPUT"
+
+      # ── 親メッセージ post (PR opened/reopened/ready_for_review) ────────
+      # 既存 thread_ts marker が PR body に無い場合のみ実行。
+      - name: Post parent message and persist thread_ts
+        id: post_parent
+        if: |
+          steps.secrets_check.outputs.skip != 'true' &&
+          steps.filter.outputs.skip != 'true' &&
+          steps.payload.outputs.is_parent == 'true' &&
+          steps.ts.outputs.value == ''
+        env:
+          PR_NUMBER: ${{ steps.pr.outputs.number }}
+          REPO: ${{ github.repository }}
+          PAYLOAD: ${{ steps.payload.outputs.payload }}
+        run: |
+          set -e
+          RESP=$(curl -sS -X POST -H "Authorization: Bearer ${SLACK_BOT_TOKEN}" \
+            -H "Content-Type: application/json; charset=utf-8" \
+            --data "${PAYLOAD}" \
+            https://slack.com/api/chat.postMessage)
+          OK=$(echo "$RESP" | jq -r '.ok')
+          if [ "$OK" != "true" ]; then
+            echo "::error::Slack chat.postMessage failed: $(echo "$RESP" | jq -r '.error // empty')"
+            echo "$RESP"
+            exit 1
+          fi
+          TS=$(echo "$RESP" | jq -r '.ts')
+          echo "Posted parent ts=$TS"
+
+          # PR body の末尾に marker を追記 (既存があれば update)
+          if [ -n "$PR_NUMBER" ]; then
+            BODY=$(gh pr view "$PR_NUMBER" --repo "$REPO" --json body --jq '.body' 2>/dev/null || echo "")
+            if printf '%s' "$BODY" | grep -qE 'slack-thread-ts: [0-9]+\.[0-9]+'; then
+              printf '%s' "$BODY" | sed -E "s/slack-thread-ts: [0-9]+\.[0-9]+/slack-thread-ts: ${TS}/" > /tmp/pr-body.md
+            else
+              printf '%s\n\n<!-- slack-thread-ts: %s -->\n' "$BODY" "$TS" > /tmp/pr-body.md
+            fi
+            gh pr edit "$PR_NUMBER" --repo "$REPO" --body-file /tmp/pr-body.md
+          fi
+
+      # ── 親が既に存在: スレッド返信 / 親イベントだが marker なし: 親として post ──
+      - name: Post thread reply (or fallback)
+        if: |
+          steps.secrets_check.outputs.skip != 'true' &&
+          steps.filter.outputs.skip != 'true' &&
+          (
+            steps.payload.outputs.is_parent != 'true' ||
+            (steps.payload.outputs.is_parent == 'true' && steps.ts.outputs.value != '')
+          )
+        env:
+          PAYLOAD: ${{ steps.payload.outputs.payload }}
+          THREAD_TS: ${{ steps.ts.outputs.value }}
+        run: |
+          set -e
+          if [ -n "$THREAD_TS" ]; then
+            FINAL=$(printf '%s' "$PAYLOAD" | jq --arg ts "$THREAD_TS" '. + {thread_ts: $ts}')
+          else
+            FINAL="$PAYLOAD"
+          fi
+          RESP=$(curl -sS -X POST -H "Authorization: Bearer ${SLACK_BOT_TOKEN}" \
+            -H "Content-Type: application/json; charset=utf-8" \
+            --data "${FINAL}" \
+            https://slack.com/api/chat.postMessage)
+          OK=$(echo "$RESP" | jq -r '.ok')
+          if [ "$OK" != "true" ]; then
+            echo "::error::Slack chat.postMessage failed: $(echo "$RESP" | jq -r '.error // empty')"
+            echo "$RESP"
+            exit 1
+          fi
