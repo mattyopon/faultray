@@ -9,6 +9,7 @@
  */
 import { NextResponse } from "next/server";
 import { applyRateLimit } from "@/lib/rate-limit";
+import { requireAuth } from "@/lib/api-auth";
 import Stripe from "stripe";
 
 export const dynamic = "force-dynamic";
@@ -17,12 +18,18 @@ export async function DELETE(request: Request) {
   const limited = await applyRateLimit(request, { limit: 5, windowMs: 60_000 });
   if (limited) return limited;
 
+  // Auth + CSRF gate. CSRF protection is critical here: account deletion is
+  // irreversible, so a CSRF-induced DELETE from another origin would be
+  // catastrophic. requireAuth runs checkCsrf() before reading session.
+  const { user, error: authError } = await requireAuth(request);
+  if (authError) return authError;
+
   // Parse optional confirmation body
   let body: { confirm?: boolean } = {};
   try {
     body = (await request.json()) as { confirm?: boolean };
   } catch {
-    // No body is fine; we rely on the auth check below
+    // No body is fine; we already authenticated above
   }
 
   if (!body.confirm) {
@@ -30,19 +37,6 @@ export async function DELETE(request: Request) {
       { error: "Confirmation required. Send { \"confirm\": true } in the request body." },
       { status: 400 }
     );
-  }
-
-  // Authenticate via SSR Supabase client (reads session from cookies)
-  const { createClient } = await import("@/lib/supabase/server");
-  const supabase = await createClient();
-
-  const {
-    data: { user },
-    error: userError,
-  } = await supabase.auth.getUser();
-
-  if (userError || !user) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
   const userId = user.id;

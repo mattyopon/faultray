@@ -1,48 +1,86 @@
 import { createClient } from "@/lib/supabase/server";
 import { NextResponse } from "next/server";
-import type { User } from "@supabase/supabase-js";
+import type { SupabaseClient, User } from "@supabase/supabase-js";
 
-type AuthSuccess = { user: User; error: null };
-type AuthFailure = { user: null; error: NextResponse };
+type SsrSupabase = Awaited<ReturnType<typeof createClient>>;
+
+type AuthSuccess = { user: User; supabase: SsrSupabase; error: null };
+type AuthFailure = { user: null; supabase: null; error: NextResponse };
 
 /** Plan hierarchy: free < pro < business */
 export type Plan = "free" | "pro" | "business";
 
-type PlanSuccess = { user: User; plan: Plan; error: null };
-type PlanFailure = { user: null; plan: null; error: NextResponse };
+type PlanSuccess = { user: User; supabase: SsrSupabase; plan: Plan; error: null };
+type PlanFailure = { user: null; supabase: null; plan: null; error: NextResponse };
+
+// Re-export for downstream typing convenience.
+export type { SupabaseClient };
 
 const PLAN_ORDER: Record<Plan, number> = { free: 0, pro: 1, business: 2 };
 
 /**
- * CSRF保護: リクエストのOriginヘッダーをNEXT_PUBLIC_SITE_URLと比較する。
+ * CSRF保護: リクエストの Origin ヘッダーを allowlist と比較する。
  *
- * Stripe webhookおよびcronルート（/api/stripe/webhook, /api/cron/）は
- * OriginヘッダーがないためCSRFチェックをスキップする。
+ * Allowlist:
+ *   - 必須: `NEXT_PUBLIC_SITE_URL` (production / 全環境)
+ *   - 非本番のみ: `VERCEL_URL` (preview/staging deployment の ephemeral
+ *     `*.vercel.app` ドメイン。server-only env で改竄不可)
+ *
+ * production (`VERCEL_ENV='production'`) では `NEXT_PUBLIC_SITE_URL` のみ
+ * 厳格一致。VERCEL_ENV 未設定 (self-host) では NODE_ENV='production' で
+ * fallback 判定 (checkout/route.ts と整合)。
+ *
+ * Stripe webhook および cron ルート (/api/stripe/webhook, /api/cron/) は
+ * Origin ヘッダーがないため CSRF チェックをスキップする。
  *
  * @returns 403 Response if Origin is invalid, null if OK
  */
 function checkCsrf(request: Request): NextResponse | null {
   const url = new URL(request.url);
-  // stripe webhook と cron はサーバー間リクエストのためOriginなし — スキップ
+  // stripe webhook と cron はサーバー間リクエストのため Origin なし — スキップ
   const skipPaths = ["/api/stripe/webhook", "/api/cron/"];
   if (skipPaths.some((p) => url.pathname.startsWith(p))) {
     return null;
   }
 
   const origin = request.headers.get("origin");
-  // Originヘッダーなし（サーバー間・curlなど）は通過させる
+  // Origin ヘッダーなし (サーバー間・curl など) は通過させる
   if (!origin) return null;
 
+  const allowed = new Set<string>();
+
+  // Primary allowlist: NEXT_PUBLIC_SITE_URL (production canonical domain).
   const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "https://faultray.com";
-  let expectedOrigin: string;
   try {
-    expectedOrigin = new URL(siteUrl).origin;
+    allowed.add(new URL(siteUrl).origin);
   } catch {
-    // NEXT_PUBLIC_SITE_URL が不正な場合はスキップ（設定ミス時に全リクエストを弾かないよう）
+    // malformed env — fall through; if VERCEL_URL も無ければ後続で fail-open
+  }
+
+  // Non-production-only: VERCEL_URL (preview/staging deployment domain).
+  // Production を VERCEL_ENV で判定するのは checkout/route.ts と同じ理由
+  // (preview build も NODE_ENV='production' になるため NODE_ENV だけでは
+  // 区別不能)。VERCEL_ENV 未設定 (Vercel 外 self-host) は NODE_ENV fallback。
+  const vercelEnv = process.env.VERCEL_ENV;
+  const isProduction = vercelEnv
+    ? vercelEnv === "production"
+    : process.env.NODE_ENV === "production";
+  if (!isProduction && process.env.VERCEL_URL) {
+    try {
+      allowed.add(new URL(`https://${process.env.VERCEL_URL}`).origin);
+    } catch {
+      // ignore
+    }
+  }
+
+  if (allowed.size === 0) {
+    // 設定 mis でいかなる allowlist も組み立てられない → fail-open
+    // (production で NEXT_PUBLIC_SITE_URL が malformed だと全 request 403 に
+    //  なるのを避ける従来挙動を維持)
     return null;
   }
 
-  if (origin !== expectedOrigin) {
+  if (!allowed.has(origin)) {
     return NextResponse.json(
       { error: "Forbidden: Origin mismatch" },
       { status: 403 }
@@ -65,15 +103,16 @@ export async function requireAuth(request: Request): Promise<AuthSuccess | AuthF
   // CSRF チェック
   const csrfError = checkCsrf(request);
   if (csrfError) {
-    return { user: null, error: csrfError };
+    return { user: null, supabase: null, error: csrfError };
   }
 
-  let supabase: Awaited<ReturnType<typeof createClient>>;
+  let supabase: SsrSupabase;
   try {
     supabase = await createClient();
   } catch {
     return {
       user: null,
+      supabase: null,
       error: NextResponse.json({ error: "Supabase not configured" }, { status: 503 }),
     };
   }
@@ -86,11 +125,12 @@ export async function requireAuth(request: Request): Promise<AuthSuccess | AuthF
   if (authError || !user) {
     return {
       user: null,
+      supabase: null,
       error: NextResponse.json({ error: "Unauthorized" }, { status: 401 }),
     };
   }
 
-  return { user, error: null };
+  return { user, supabase, error: null };
 }
 
 /**
@@ -109,20 +149,9 @@ export async function requirePlan(
 ): Promise<PlanSuccess | PlanFailure> {
   const authResult = await requireAuth(request);
   if (authResult.error) {
-    return { user: null, plan: null, error: authResult.error };
+    return { user: null, supabase: null, plan: null, error: authResult.error };
   }
-  const { user } = authResult;
-
-  let supabase: Awaited<ReturnType<typeof createClient>>;
-  try {
-    supabase = await createClient();
-  } catch {
-    return {
-      user: null,
-      plan: null,
-      error: NextResponse.json({ error: "Supabase not configured" }, { status: 503 }),
-    };
-  }
+  const { user, supabase } = authResult;
 
   const { data: profile, error: profileError } = await supabase
     .from("profiles")
@@ -134,6 +163,7 @@ export async function requirePlan(
     console.error("[requirePlan] Profile fetch error:", profileError.message);
     return {
       user: null,
+      supabase: null,
       plan: null,
       error: NextResponse.json({ error: "Failed to verify plan" }, { status: 500 }),
     };
@@ -144,6 +174,7 @@ export async function requirePlan(
   if (PLAN_ORDER[userPlan] < PLAN_ORDER[requiredPlan]) {
     return {
       user: null,
+      supabase: null,
       plan: null,
       error: NextResponse.json(
         { error: `Plan upgrade required. This endpoint requires '${requiredPlan}' or higher.` },
@@ -152,5 +183,5 @@ export async function requirePlan(
     };
   }
 
-  return { user, plan: userPlan, error: null };
+  return { user, supabase, plan: userPlan, error: null };
 }

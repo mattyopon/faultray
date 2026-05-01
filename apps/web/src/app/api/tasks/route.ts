@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { applyRateLimit } from "@/lib/rate-limit";
+import { requireAuth } from "@/lib/api-auth";
 
 export const dynamic = "force-dynamic";
 
@@ -47,21 +48,10 @@ export async function GET(request: Request) {
   const limited = await applyRateLimit(request, { limit: 30, windowMs: 60_000 });
   if (limited) return limited;
 
-  let supabase: Awaited<ReturnType<typeof import("@/lib/supabase/server").createClient>>;
-  try {
-    const { createClient } = await import("@/lib/supabase/server");
-    supabase = await createClient();
-  } catch {
-    return NextResponse.json({ error: "Supabase not configured" }, { status: 503 });
-  }
-
-  const {
-    data: { user },
-    error: authError,
-  } = await supabase.auth.getUser();
-  if (authError || !user) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
+  // Auth + CSRF gate (P1-2). GET is in checkCsrf scope too — Origin is
+  // typically present on cross-origin fetches even without credentials.
+  const { user, supabase, error: authError } = await requireAuth(request);
+  if (authError) return authError;
 
   const orgId = await getOrgId(supabase, user.id);
   if (!orgId) {
@@ -87,6 +77,10 @@ export async function POST(request: Request) {
   const limited = await applyRateLimit(request, { limit: 10, windowMs: 60_000 });
   if (limited) return limited;
 
+  // Auth + CSRF gate (P1-2).
+  const { user, supabase, error: authError } = await requireAuth(request);
+  if (authError) return authError;
+
   let body: Partial<CreateTaskBody>;
   try {
     body = (await request.json()) as Partial<CreateTaskBody>;
@@ -105,22 +99,6 @@ export async function POST(request: Request) {
       { error: `priority must be one of: ${VALID_PRIORITIES.join(", ")}` },
       { status: 400 }
     );
-  }
-
-  let supabase: Awaited<ReturnType<typeof import("@/lib/supabase/server").createClient>>;
-  try {
-    const { createClient } = await import("@/lib/supabase/server");
-    supabase = await createClient();
-  } catch {
-    return NextResponse.json({ error: "Supabase not configured" }, { status: 503 });
-  }
-
-  const {
-    data: { user },
-    error: authError,
-  } = await supabase.auth.getUser();
-  if (authError || !user) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
   const orgId = await getOrgId(supabase, user.id);

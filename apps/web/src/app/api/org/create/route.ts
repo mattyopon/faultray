@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { applyRateLimit } from "@/lib/rate-limit";
+import { requireAuth } from "@/lib/api-auth";
 import { orgCreateSchema, formatZodError } from "@/lib/schemas";
 
 export const dynamic = "force-dynamic";
@@ -7,6 +8,10 @@ export const dynamic = "force-dynamic";
 export async function POST(request: Request) {
   const limited = await applyRateLimit(request, { limit: 10, windowMs: 60_000 });
   if (limited) return limited;
+
+  // Auth + CSRF gate (P1-2). Cross-origin org-creation requests are rejected.
+  const { user, supabase, error: authError } = await requireAuth(request);
+  if (authError) return authError;
 
   let raw: unknown;
   try {
@@ -20,22 +25,6 @@ export async function POST(request: Request) {
     return NextResponse.json(formatZodError(parsed.error), { status: 400 });
   }
   const { name } = parsed.data;
-
-  let supabase: Awaited<ReturnType<typeof import("@/lib/supabase/server").createClient>>;
-  try {
-    const { createClient } = await import("@/lib/supabase/server");
-    supabase = await createClient();
-  } catch {
-    return NextResponse.json({ error: "Supabase not configured" }, { status: 503 });
-  }
-
-  const {
-    data: { user },
-    error: authError,
-  } = await supabase.auth.getUser();
-  if (authError || !user) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
 
   // 組織を作成
   const { data: org, error: orgError } = await supabase

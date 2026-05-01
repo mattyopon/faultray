@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { applyRateLimit } from "@/lib/rate-limit";
+import { requireAuth } from "@/lib/api-auth";
 
 export const dynamic = "force-dynamic";
 
@@ -21,6 +22,10 @@ export async function PATCH(
 ) {
   const limited = await applyRateLimit(request, { limit: 10, windowMs: 60_000 });
   if (limited) return limited;
+
+  // Auth + CSRF gate (P1-2).
+  const { user, supabase, error: authError } = await requireAuth(request);
+  if (authError) return authError;
 
   const { id } = await params;
 
@@ -46,22 +51,6 @@ export async function PATCH(
         { status: 400 }
       );
     }
-  }
-
-  let supabase: Awaited<ReturnType<typeof import("@/lib/supabase/server").createClient>>;
-  try {
-    const { createClient } = await import("@/lib/supabase/server");
-    supabase = await createClient();
-  } catch {
-    return NextResponse.json({ error: "Supabase not configured" }, { status: 503 });
-  }
-
-  const {
-    data: { user },
-    error: authError,
-  } = await supabase.auth.getUser();
-  if (authError || !user) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
   // タスクが自分の組織のものか確認
@@ -128,23 +117,12 @@ export async function DELETE(
   const limited = await applyRateLimit(request, { limit: 5, windowMs: 60_000 });
   if (limited) return limited;
 
+  // Auth + CSRF gate (P1-2). Critical for DELETE — CSRF would let a malicious
+  // origin trigger task deletion in a logged-in user's tab.
+  const { user, supabase, error: authError } = await requireAuth(request);
+  if (authError) return authError;
+
   const { id } = await params;
-
-  let supabase: Awaited<ReturnType<typeof import("@/lib/supabase/server").createClient>>;
-  try {
-    const { createClient } = await import("@/lib/supabase/server");
-    supabase = await createClient();
-  } catch {
-    return NextResponse.json({ error: "Supabase not configured" }, { status: 503 });
-  }
-
-  const {
-    data: { user },
-    error: authError,
-  } = await supabase.auth.getUser();
-  if (authError || !user) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
 
   // タスクが自分の組織のものか確認
   const { data: existing } = await supabase
