@@ -114,9 +114,9 @@ jobs:
             PR=$(echo "$WORKFLOW_RUN_PR" | jq -r '.[0].number // empty')
           fi
 
-          # フォールバック: head_sha から PR を逆引き
+          # フォールバック: head_sha から PR を逆引き (公式 API: list PRs associated with a commit)
           if [ -z "$PR" ] && [ -n "$HEAD_SHA" ] && [ "$HEAD_SHA" != "null" ]; then
-            PR=$(gh pr list --repo "$REPO" --state open --head-sha "$HEAD_SHA" --json number --jq '.[0].number // empty' 2>/dev/null || true)
+            PR=$(gh api "repos/$REPO/commits/$HEAD_SHA/pulls" --jq '[.[] | select(.state == "open")] | .[0].number // empty' 2>/dev/null || true)
           fi
 
           if [ -z "$PR" ]; then
