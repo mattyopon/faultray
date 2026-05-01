@@ -23,11 +23,13 @@ name: Notify pipeline events to Slack
 # Threading 仕組み:
 #   - PR opened/reopened/ready_for_review:
 #       chat.postMessage で post → 返り値の ts を取得
-#       → PR body 末尾に <!-- slack-thread-ts: NNN.MMM --> として書き込み
+#       → 専用 PR comment "<!-- slack-thread-ts: NNN.MMM -->" を upsert
+#         (PR body 直接編集は user の concurrent edit を clobber するため避ける)
 #   - その他のイベント:
-#       PR body から marker を読み出して thread_ts として指定
+#       PR comments から marker 付き comment を読み出して thread_ts として指定
 #       → スレッド返信として post
-#       (marker が無い fallback では flat に post)
+#   - PR を resolve できない event (push 経由 workflow_run / 非 PR check_suite)
+#     は skip し、flat な spam を Slack に出さない。
 
 on:
   pull_request:
@@ -44,7 +46,8 @@ on:
 
 permissions:
   contents: read
-  pull-requests: write  # PR body に thread_ts marker を書き込むため
+  pull-requests: write  # marker 用 PR comment を作成・更新するため
+  issues: write         # PR comment は issues comments エンドポイント経由
 
 jobs:
   notify:
@@ -92,7 +95,7 @@ jobs:
             echo "skip=false" >> "$GITHUB_OUTPUT"
           fi
 
-      # ── PR 番号を event 別に解決 ────────────────────────────────────────
+      # ── PR 番号を event 別に解決。解決できなければ skip ─────────────────
       - name: Resolve PR number
         id: pr
         if: ${{ steps.secrets_check.outputs.skip != 'true' && steps.filter.outputs.skip != 'true' }}
@@ -120,37 +123,83 @@ jobs:
           fi
 
           if [ -z "$PR" ]; then
-            echo "::warning::Could not resolve PR number for event $EVENT_NAME; will post flat"
+            echo "::notice::No PR associated with $EVENT_NAME (e.g. push-triggered run); skipping notify"
+            echo "skip=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "skip=false" >> "$GITHUB_OUTPUT"
+            echo "number=$PR" >> "$GITHUB_OUTPUT"
           fi
-          echo "number=$PR" >> "$GITHUB_OUTPUT"
 
-      # ── PR body から既存の thread_ts marker を読み出す ─────────────────
-      - name: Read thread_ts from PR body
+      # ── PR メタ (URL / title / merged) を取得 ───────────────────────────
+      # check_suite / workflow_run event では github.event.pull_request が無く
+      # PR_URL / PR_TITLE が空になるため、解決済み PR_NUMBER から API で補完。
+      - name: Fetch PR metadata
+        id: prmeta
+        if: |
+          steps.secrets_check.outputs.skip != 'true' &&
+          steps.filter.outputs.skip != 'true' &&
+          steps.pr.outputs.skip != 'true'
+        env:
+          PR_NUMBER: ${{ steps.pr.outputs.number }}
+          REPO: ${{ github.repository }}
+          EVENT_URL: ${{ github.event.pull_request.html_url || github.event.issue.html_url }}
+          EVENT_TITLE: ${{ github.event.pull_request.title || github.event.issue.title }}
+          EVENT_MERGED: ${{ github.event.pull_request.merged }}
+        run: |
+          set -e
+          META=$(gh api "repos/$REPO/pulls/$PR_NUMBER" --jq '{html_url, title, merged}' 2>/dev/null || echo '{}')
+          URL=$(echo "$META" | jq -r '.html_url // empty')
+          TITLE=$(echo "$META" | jq -r '.title // empty')
+          MERGED=$(echo "$META" | jq -r '.merged // empty')
+          # API > event payload の優先順位 (event payload は PR の最新状態を反映している場合がある)
+          {
+            echo "url=${URL:-$EVENT_URL}"
+            echo "title=${TITLE:-$EVENT_TITLE}"
+            echo "merged=${MERGED:-$EVENT_MERGED}"
+          } >> "$GITHUB_OUTPUT"
+
+      # ── 既存 thread_ts marker を専用 comment から読み出す ───────────────
+      # PR body を read-modify-write すると user の concurrent edit を上書きして
+      # しまうため、専用 PR comment (本 workflow が author=github-actions[bot])
+      # に marker を保存する。
+      - name: Read thread_ts marker comment
         id: ts
-        if: ${{ steps.secrets_check.outputs.skip != 'true' && steps.filter.outputs.skip != 'true' }}
+        if: |
+          steps.secrets_check.outputs.skip != 'true' &&
+          steps.filter.outputs.skip != 'true' &&
+          steps.pr.outputs.skip != 'true'
         env:
           PR_NUMBER: ${{ steps.pr.outputs.number }}
           REPO: ${{ github.repository }}
         run: |
           set -e
           TS=""
-          if [ -n "$PR_NUMBER" ]; then
-            BODY=$(gh pr view "$PR_NUMBER" --repo "$REPO" --json body --jq '.body' 2>/dev/null || echo "")
+          COMMENT_ID=""
+          # 直近 100 件から marker 付きコメントを find (anchor は parent post 直後に作るので最初期に存在)
+          MARKER=$(gh api "repos/$REPO/issues/$PR_NUMBER/comments?per_page=100" \
+            --jq 'map(select(.body | test("<!-- slack-thread-ts:"))) | .[0] // empty' 2>/dev/null || echo "")
+          if [ -n "$MARKER" ] && [ "$MARKER" != "null" ]; then
+            COMMENT_ID=$(echo "$MARKER" | jq -r '.id // empty')
+            BODY=$(echo "$MARKER" | jq -r '.body // empty')
             TS=$(printf '%s' "$BODY" | grep -oE 'slack-thread-ts: [0-9]+\.[0-9]+' | head -1 | awk '{print $2}' || true)
           fi
           echo "value=$TS" >> "$GITHUB_OUTPUT"
+          echo "comment_id=$COMMENT_ID" >> "$GITHUB_OUTPUT"
 
       # ── Slack payload を build ─────────────────────────────────────────
       - name: Build payload
         id: payload
-        if: ${{ steps.secrets_check.outputs.skip != 'true' && steps.filter.outputs.skip != 'true' }}
+        if: |
+          steps.secrets_check.outputs.skip != 'true' &&
+          steps.filter.outputs.skip != 'true' &&
+          steps.pr.outputs.skip != 'true'
         env:
           EVENT_NAME: ${{ github.event_name }}
           ACTION: ${{ github.event.action }}
           PR_NUMBER: ${{ steps.pr.outputs.number }}
-          PR_TITLE: ${{ github.event.pull_request.title || github.event.issue.title }}
-          PR_URL: ${{ github.event.pull_request.html_url || github.event.issue.html_url }}
-          PR_MERGED: ${{ github.event.pull_request.merged }}
+          PR_TITLE: ${{ steps.prmeta.outputs.title }}
+          PR_URL: ${{ steps.prmeta.outputs.url }}
+          PR_MERGED: ${{ steps.prmeta.outputs.merged }}
           REVIEW_USER: ${{ github.event.review.user.login || github.event.comment.user.login }}
           REVIEW_STATE: ${{ github.event.review.state }}
           REVIEW_BODY: ${{ github.event.review.body || github.event.comment.body }}
@@ -158,7 +207,6 @@ jobs:
           CHECK_APP: ${{ github.event.check_suite.app.name }}
           CHECK_CONCLUSION: ${{ github.event.check_suite.conclusion || github.event.workflow_run.conclusion }}
           WORKFLOW_NAME: ${{ github.event.workflow_run.name }}
-          WORKFLOW_URL: ${{ github.event.workflow_run.html_url }}
           REPO: ${{ github.repository }}
         run: |
           set -e
@@ -220,11 +268,12 @@ jobs:
               ;;
           esac
 
+          # PR_NUMBER は必ず解決済み (skip 経由で空にならない)
           PR_LINE=""
-          if [ -n "$PR_NUMBER" ] && [ "$PR_NUMBER" != "null" ]; then
+          if [ -n "$PR_URL" ]; then
             PR_LINE="<${PR_URL}|#${PR_NUMBER} ${PR_TITLE}>"
-          elif [ -n "$WORKFLOW_URL" ]; then
-            PR_LINE="<${WORKFLOW_URL}|workflow run>"
+          else
+            PR_LINE="#${PR_NUMBER} ${PR_TITLE}"
           fi
 
           BODY_PREVIEW=""
@@ -280,18 +329,21 @@ jobs:
           echo "is_parent=${IS_PARENT}" >> "$GITHUB_OUTPUT"
 
       # ── 親メッセージ post (PR opened/reopened/ready_for_review) ────────
-      # 既存 thread_ts marker が PR body に無い場合のみ実行。
-      - name: Post parent message and persist thread_ts
+      # 既存 marker comment が無い場合のみ実行。
+      # 取得した ts は **専用 PR comment** に upsert (PR body は触らない)。
+      - name: Post parent message and persist thread_ts marker comment
         id: post_parent
         if: |
           steps.secrets_check.outputs.skip != 'true' &&
           steps.filter.outputs.skip != 'true' &&
+          steps.pr.outputs.skip != 'true' &&
           steps.payload.outputs.is_parent == 'true' &&
           steps.ts.outputs.value == ''
         env:
           PR_NUMBER: ${{ steps.pr.outputs.number }}
           REPO: ${{ github.repository }}
           PAYLOAD: ${{ steps.payload.outputs.payload }}
+          EXISTING_COMMENT_ID: ${{ steps.ts.outputs.comment_id }}
         run: |
           set -e
           RESP=$(curl -sS -X POST -H "Authorization: Bearer ${SLACK_BOT_TOKEN}" \
@@ -307,22 +359,22 @@ jobs:
           TS=$(echo "$RESP" | jq -r '.ts')
           echo "Posted parent ts=$TS"
 
-          # PR body の末尾に marker を追記 (既存があれば update)
-          if [ -n "$PR_NUMBER" ]; then
-            BODY=$(gh pr view "$PR_NUMBER" --repo "$REPO" --json body --jq '.body' 2>/dev/null || echo "")
-            if printf '%s' "$BODY" | grep -qE 'slack-thread-ts: [0-9]+\.[0-9]+'; then
-              printf '%s' "$BODY" | sed -E "s/slack-thread-ts: [0-9]+\.[0-9]+/slack-thread-ts: ${TS}/" > /tmp/pr-body.md
-            else
-              printf '%s\n\n<!-- slack-thread-ts: %s -->\n' "$BODY" "$TS" > /tmp/pr-body.md
-            fi
-            gh pr edit "$PR_NUMBER" --repo "$REPO" --body-file /tmp/pr-body.md
+          MARKER_BODY=$(printf '<!-- slack-thread-ts: %s -->\n\n_Slack thread anchor (auto-managed by `notify-pipeline.yml`). Do not edit._' "$TS")
+          if [ -n "$EXISTING_COMMENT_ID" ]; then
+            gh api -X PATCH "repos/$REPO/issues/comments/$EXISTING_COMMENT_ID" -f body="$MARKER_BODY" >/dev/null
+          else
+            gh api -X POST "repos/$REPO/issues/$PR_NUMBER/comments" -f body="$MARKER_BODY" >/dev/null
           fi
 
       # ── 親が既に存在: スレッド返信 / 親イベントだが marker なし: 親として post ──
+      # PR は必ず resolve 済 (skip=true は前段で除外)。marker comment が無い
+      # 親イベント以外 (= 親が未 post の状態で review/check が来た) は flat
+      # post で fallback (post_parent は IS_PARENT==true でしか走らないため)。
       - name: Post thread reply (or fallback)
         if: |
           steps.secrets_check.outputs.skip != 'true' &&
           steps.filter.outputs.skip != 'true' &&
+          steps.pr.outputs.skip != 'true' &&
           (
             steps.payload.outputs.is_parent != 'true' ||
             (steps.payload.outputs.is_parent == 'true' && steps.ts.outputs.value != '')
