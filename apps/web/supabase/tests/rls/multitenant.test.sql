@@ -1,15 +1,29 @@
 -- ============================================================
--- RLS multi-tenant isolation tests (#28)
+-- RLS multi-tenant isolation tests (#28, #73)
 --
--- 対象: profiles / teams / team_members / projects / simulation_runs /
---       usage / billing_events の RLS policies
+-- 対象 (legacy): profiles / teams / team_members / projects / simulation_runs /
+--                 usage / billing_events の RLS policies
+-- 対象 (#73 追加): organizations / org_members / tasks (migration 009/013)
 --
--- 検証シナリオ:
+-- 検証シナリオ (legacy):
 --   User A (team X owner), User B (team X member), User C (team Y owner)
 --   - 自分の team のデータは見える
 --   - 他人の team のデータは見えない
 --   - member は admin 権限が必要な操作 (team update, insert member 等) ができない
 --   - anon (未ログイン) は一切見えない
+--
+-- 検証シナリオ (org/tasks, #73):
+--   User A は org_p の admin (active), User B は org_p の member (active),
+--   User C は org_q の owner (active, organizations.owner_id でもある)
+--   - SELECT cross-org isolation
+--   - org_members INSERT: admin は member/admin/viewer の pending invite のみ許可
+--                         (#70 P1-7 → migration 013 で fix 済を assert)
+--   - org_members INSERT: org owner self-bootstrap (role='owner', status='active', user_id=self)
+--                         は許可される (migration 013 line 110-122)
+--   - tasks: 自org は CRUD 可能、cross-org は block。created_by は auth.uid() に固定
+--           (#70 finding 2 → migration 015 で fix 済を assert)
+--   - 関連 fix: migration 015 で org_members の self-referential RLS recursion を
+--               SECURITY DEFINER 関数経由に書き換えて解消 (#70 finding 1)
 --
 -- 実行方法 (ローカル Supabase):
 --   supabase db reset  # migrations 全適用
@@ -17,7 +31,7 @@
 --        -f supabase/tests/rls/multitenant.test.sql
 -- (ローカル開発用 postgres のデフォルトパスワードは Supabase CLI が管理)
 --
--- CI: .github/workflows/ci.yml の rls-tests job で自動実行される
+-- CI: .github/workflows/ci.yml の test-rls job で自動実行される
 -- ============================================================
 
 begin;
@@ -26,8 +40,13 @@ begin;
 create extension if not exists pgtap;
 
 -- ---------- テストプラン ----------
--- RLS 対象 7 テーブル × 各シナリオ (正例 + 反例) = 40 assertion
-select plan(40);
+-- legacy 7 テーブル: 40 assertion (#28)
+-- org/tasks 拡張    : 33 assertion (#73)
+--   organizations  :  8  (SELECT × 6 + INSERT lives/throws × 2)
+--   org_members    : 12  (SELECT × 6 + INSERT lives × 2 + INSERT throws × 4)
+--   tasks          :  9  (SELECT × 6 + INSERT lives × 2 + TODO forgery × 1)
+--   anon           :  4  (SELECT × 3 + INSERT throw × 1)
+select plan(73);
 
 -- ============================================================
 -- Setup: auth.users を直接 INSERT して 3 ユーザー + 2 team を作成
@@ -40,6 +59,11 @@ select plan(40);
 \set user_c_id '33333333-3333-3333-3333-333333333333'
 \set team_x_id '44444444-4444-4444-4444-444444444444'
 \set team_y_id '55555555-5555-5555-5555-555555555555'
+-- #73 organizations / tasks 用 ID 固定
+\set org_p_id   'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa'
+\set org_q_id   'bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb'
+\set task_p_id  'cccccccc-cccc-cccc-cccc-cccccccccccc'
+\set task_q_id  'dddddddd-dddd-dddd-dddd-dddddddddddd'
 
 -- auth.users (最小フィールド)
 insert into auth.users (id, email, raw_user_meta_data, aud, role)
@@ -55,6 +79,15 @@ on conflict (id) do nothing;
 
 -- trigger-created default teams を削除 (test 向けに deterministic state)
 set local session_replication_role = replica;  -- triggers OFF
+
+-- #73: org/tasks も deterministic にするため事前 cleanup
+-- (FK 順: tasks → org_members → organizations。assignee_id は org_members を参照)
+delete from public.tasks
+  where created_by in (:'user_a_id'::uuid, :'user_b_id'::uuid, :'user_c_id'::uuid);
+delete from public.org_members
+  where user_id in (:'user_a_id'::uuid, :'user_b_id'::uuid, :'user_c_id'::uuid);
+delete from public.organizations
+  where owner_id in (:'user_a_id'::uuid, :'user_b_id'::uuid, :'user_c_id'::uuid);
 
 delete from public.team_members
   where user_id in (:'user_a_id'::uuid, :'user_b_id'::uuid, :'user_c_id'::uuid);
@@ -101,6 +134,25 @@ insert into public.usage (team_id, month, simulation_count) values
 insert into public.billing_events (team_id, event_type, data) values
   (:'team_x_id'::uuid, 'test_event', '{"n":1}'::jsonb),
   (:'team_y_id'::uuid, 'test_event', '{"n":2}'::jsonb);
+
+-- ============================================================
+-- #73 SEED: organizations / org_members / tasks
+-- ============================================================
+-- org_p: owner=A, A は admin (active), B は member (active)
+-- org_q: owner=C, C は owner (active)
+insert into public.organizations (id, name, owner_id) values
+  (:'org_p_id'::uuid, 'Org P', :'user_a_id'::uuid),
+  (:'org_q_id'::uuid, 'Org Q', :'user_c_id'::uuid);
+
+insert into public.org_members (org_id, user_id, email, role, status) values
+  (:'org_p_id'::uuid, :'user_a_id'::uuid, 'a@test.local', 'admin',  'active'),
+  (:'org_p_id'::uuid, :'user_b_id'::uuid, 'b@test.local', 'member', 'active'),
+  (:'org_q_id'::uuid, :'user_c_id'::uuid, 'c@test.local', 'owner',  'active');
+
+-- tasks: 1 per org (assignee_id は省略 → null)
+insert into public.tasks (id, org_id, title, created_by) values
+  (:'task_p_id'::uuid, :'org_p_id'::uuid, 'Task P1', :'user_a_id'::uuid),
+  (:'task_q_id'::uuid, :'org_q_id'::uuid, 'Task Q1', :'user_c_id'::uuid);
 
 set local session_replication_role = origin;  -- triggers ON
 
@@ -473,6 +525,306 @@ select throws_ok(
      values ('44444444-4444-4444-4444-444444444444'::uuid, '2026-05', 999) $$,
   NULL::text, NULL::text,
   'usage: authenticated user cannot INSERT (reserved for service-role)'
+);
+
+-- ============================================================
+-- #73: organizations / org_members / tasks RLS coverage
+-- (migration 009 + 013 + 015 を対象。011 audit_logs / 010 apm は別 issue)
+-- ============================================================
+
+-- ────────────────────────────────────────────────────────────
+-- organizations: SELECT cross-tenant isolation
+--   Policy: SELECT は org_members(active) または owner_id=auth.uid()
+--           INSERT は owner_id = auth.uid() (with check)
+-- ────────────────────────────────────────────────────────────
+select test_as_user(:'user_a_id'::uuid);
+
+select is(
+  (select count(*)::int from public.organizations where id = :'org_p_id'::uuid),
+  1,
+  'organizations: User A (admin/owner of org_p) sees own org P'
+);
+
+select is(
+  (select count(*)::int from public.organizations where id = :'org_q_id'::uuid),
+  0,
+  'organizations: User A CANNOT see org Q (other tenant)'
+);
+
+select test_as_user(:'user_b_id'::uuid);
+
+select is(
+  (select count(*)::int from public.organizations where id = :'org_p_id'::uuid),
+  1,
+  'organizations: User B (member, active) sees org P'
+);
+
+select is(
+  (select count(*)::int from public.organizations where id = :'org_q_id'::uuid),
+  0,
+  'organizations: User B CANNOT see org Q (other tenant)'
+);
+
+select test_as_user(:'user_c_id'::uuid);
+
+select is(
+  (select count(*)::int from public.organizations where id = :'org_p_id'::uuid),
+  0,
+  'organizations: User C CANNOT see org P (other tenant)'
+);
+
+select is(
+  (select count(*)::int from public.organizations where id = :'org_q_id'::uuid),
+  1,
+  'organizations: User C (owner) sees own org Q'
+);
+
+-- INSERT: A は自分を owner として org を作れる (with check 通過)
+select test_as_user(:'user_a_id'::uuid);
+
+select lives_ok(
+  $$ insert into public.organizations (name, owner_id)
+     values ('A self org', '11111111-1111-1111-1111-111111111111'::uuid) $$,
+  'organizations: User A can create org with owner_id = self'
+);
+
+-- INSERT: A は他人 (B) を owner として org を作ることはできない (with check 違反)
+select throws_ok(
+  $$ insert into public.organizations (name, owner_id)
+     values ('Hijack', '22222222-2222-2222-2222-222222222222'::uuid) $$,
+  NULL::text, NULL::text,
+  'organizations: User A cannot create org with another user as owner'
+);
+
+-- ────────────────────────────────────────────────────────────
+-- org_members: SELECT cross-tenant isolation
+--   Policy (009): SELECT は org_id IN (subquery same table where user_id=auth.uid() and status='active')
+--   Policy (013): INSERT は status='pending' AND role IN ('member','admin','viewer')
+--                 + admin/owner of the org OR organizations.owner_id=auth.uid()
+--   Policy (013 additional): "Org owners can self-bootstrap as active"
+--                            user_id=auth.uid() AND role='owner' AND status='active'
+--                            AND organizations.owner_id=auth.uid()
+-- ────────────────────────────────────────────────────────────
+select test_as_user(:'user_a_id'::uuid);
+
+select is(
+  (select count(*)::int from public.org_members where org_id = :'org_p_id'::uuid),
+  2,
+  'org_members: User A sees both members of org P (admin A + member B)'
+);
+
+select is(
+  (select count(*)::int from public.org_members where org_id = :'org_q_id'::uuid),
+  0,
+  'org_members: User A CANNOT see org Q membership'
+);
+
+select test_as_user(:'user_b_id'::uuid);
+
+select is(
+  (select count(*)::int from public.org_members where org_id = :'org_p_id'::uuid),
+  2,
+  'org_members: User B (member, active) sees both members of org P'
+);
+
+select is(
+  (select count(*)::int from public.org_members where org_id = :'org_q_id'::uuid),
+  0,
+  'org_members: User B CANNOT see org Q membership'
+);
+
+select test_as_user(:'user_c_id'::uuid);
+
+select is(
+  (select count(*)::int from public.org_members where org_id = :'org_q_id'::uuid),
+  1,
+  'org_members: User C sees own membership in org Q'
+);
+
+select is(
+  (select count(*)::int from public.org_members where org_id = :'org_p_id'::uuid),
+  0,
+  'org_members: User C CANNOT see org P membership'
+);
+
+-- INSERT: A (admin of org_p) は member/admin/viewer を pending で招待できる (013 fix済)
+select test_as_user(:'user_a_id'::uuid);
+
+select lives_ok(
+  $$ insert into public.org_members (org_id, email, role, status)
+     values ('aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa'::uuid,
+             'invited@test.local', 'member', 'pending') $$,
+  'org_members: admin A can INSERT pending invite (role=member)'
+);
+
+-- INSERT: A (admin) が role='owner' を直接 INSERT しようとすると block (013 P1-7 fix)
+select throws_ok(
+  $$ insert into public.org_members (org_id, user_id, email, role, status)
+     values ('aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa'::uuid,
+             '33333333-3333-3333-3333-333333333333'::uuid,
+             'evil-owner@test.local', 'owner', 'pending') $$,
+  NULL::text, NULL::text,
+  'org_members: admin A cannot escalate to role=owner via direct INSERT (#70 P1-7 fixed in 013)'
+);
+
+-- INSERT: A (admin) が status='active' を直接 INSERT しようとすると block
+-- (self-bootstrap policy は user_id=self+role=owner を要求するので、role=member+status=active は block)
+select throws_ok(
+  $$ insert into public.org_members (org_id, user_id, email, role, status)
+     values ('aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa'::uuid,
+             '33333333-3333-3333-3333-333333333333'::uuid,
+             'evil-active@test.local', 'member', 'active') $$,
+  NULL::text, NULL::text,
+  'org_members: admin A cannot bypass invite acceptance (status must be pending for non-self-bootstrap)'
+);
+
+-- INSERT: B (member, not admin) は招待 INSERT を block される
+select test_as_user(:'user_b_id'::uuid);
+
+select throws_ok(
+  $$ insert into public.org_members (org_id, email, role, status)
+     values ('aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa'::uuid,
+             'b-invite@test.local', 'member', 'pending') $$,
+  NULL::text, NULL::text,
+  'org_members: member B (not admin) cannot INSERT invite'
+);
+
+-- INSERT: C (owner of org_q) は org_p に招待を作れない (org_p の admin/owner ではない)
+select test_as_user(:'user_c_id'::uuid);
+
+select throws_ok(
+  $$ insert into public.org_members (org_id, email, role, status)
+     values ('aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa'::uuid,
+             'c-cross@test.local', 'member', 'pending') $$,
+  NULL::text, NULL::text,
+  'org_members: User C cannot INSERT into org_p (not admin/owner of org_p)'
+);
+
+-- INSERT: org owner self-bootstrap policy (013) — A が新 org 作成後に
+-- 自分自身を role=owner, status=active で INSERT できる
+select test_as_user(:'user_a_id'::uuid);
+
+-- まず service_role で新規 org を作る (RLS 経由ではなく seed 同等)
+select test_as_service_role();
+insert into public.organizations (id, name, owner_id) values
+  ('eeeeeeee-eeee-eeee-eeee-eeeeeeeeeeee'::uuid, 'Org Bootstrap', :'user_a_id'::uuid);
+
+select test_as_user(:'user_a_id'::uuid);
+select lives_ok(
+  $$ insert into public.org_members (org_id, user_id, email, role, status)
+     values ('eeeeeeee-eeee-eeee-eeee-eeeeeeeeeeee'::uuid,
+             '11111111-1111-1111-1111-111111111111'::uuid,
+             'a@test.local', 'owner', 'active') $$,
+  'org_members: org owner can self-bootstrap (role=owner, status=active, user_id=self) (013)'
+);
+
+-- ────────────────────────────────────────────────────────────
+-- tasks: SELECT cross-tenant isolation + CRUD
+--   Policy (009): FOR ALL using (org_id IN active membership)
+--                 WITH CHECK は USING を流用 → created_by 偽装が現状可能 (#70 finding 2)
+-- ────────────────────────────────────────────────────────────
+select test_as_user(:'user_a_id'::uuid);
+
+select is(
+  (select count(*)::int from public.tasks where org_id = :'org_p_id'::uuid),
+  1,
+  'tasks: User A sees org_p tasks'
+);
+
+select is(
+  (select count(*)::int from public.tasks where org_id = :'org_q_id'::uuid),
+  0,
+  'tasks: User A CANNOT see org_q tasks'
+);
+
+select test_as_user(:'user_b_id'::uuid);
+
+select is(
+  (select count(*)::int from public.tasks where org_id = :'org_p_id'::uuid),
+  1,
+  'tasks: User B (member) sees org_p tasks'
+);
+
+select is(
+  (select count(*)::int from public.tasks where org_id = :'org_q_id'::uuid),
+  0,
+  'tasks: User B CANNOT see org_q tasks'
+);
+
+select test_as_user(:'user_c_id'::uuid);
+
+select is(
+  (select count(*)::int from public.tasks where org_id = :'org_q_id'::uuid),
+  1,
+  'tasks: User C sees own org_q tasks'
+);
+
+select is(
+  (select count(*)::int from public.tasks where org_id = :'org_p_id'::uuid),
+  0,
+  'tasks: User C CANNOT see org_p tasks'
+);
+
+-- INSERT: A は org_p に task を作れる
+select test_as_user(:'user_a_id'::uuid);
+
+select lives_ok(
+  $$ insert into public.tasks (org_id, title, created_by)
+     values ('aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa'::uuid,
+             'A new task in org_p', '11111111-1111-1111-1111-111111111111'::uuid) $$,
+  'tasks: User A (member of org_p) can INSERT task in org_p'
+);
+
+-- INSERT: A は cross-org に task を作れない (org_q の active member ではない)
+select throws_ok(
+  $$ insert into public.tasks (org_id, title, created_by)
+     values ('bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb'::uuid,
+             'A cross-tenant', '11111111-1111-1111-1111-111111111111'::uuid) $$,
+  NULL::text, NULL::text,
+  'tasks: User A cannot INSERT into org_q (cross-tenant blocked by RLS)'
+);
+
+-- tasks INSERT は migration 015 で WITH CHECK (created_by = auth.uid()) が
+-- 追加されたので、member B が created_by を A に偽装する INSERT は block される。
+-- (#70 finding 2 を 015 で fix 済 → 恒常 regression-lock)
+select test_as_user(:'user_b_id'::uuid);
+
+select throws_ok(
+  $$ insert into public.tasks (org_id, title, created_by)
+     values ('aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa'::uuid,
+             'forged authorship', '11111111-1111-1111-1111-111111111111'::uuid) $$,
+  NULL::text, NULL::text,
+  'tasks: member B cannot forge created_by to another user (#70 finding 2 fixed in 015)'
+);
+
+-- ────────────────────────────────────────────────────────────
+-- anon: org tables も全て不可視 + INSERT block
+-- ────────────────────────────────────────────────────────────
+select test_as_anon();
+
+select is(
+  (select count(*)::int from public.organizations),
+  0,
+  'anon: organizations rows = 0 (all hidden)'
+);
+
+select is(
+  (select count(*)::int from public.org_members),
+  0,
+  'anon: org_members rows = 0'
+);
+
+select is(
+  (select count(*)::int from public.tasks),
+  0,
+  'anon: tasks rows = 0'
+);
+
+select throws_ok(
+  $$ insert into public.organizations (name, owner_id)
+     values ('Anon org', '11111111-1111-1111-1111-111111111111'::uuid) $$,
+  NULL::text, NULL::text,
+  'anon: INSERT into organizations blocked'
 );
 
 -- ============================================================
