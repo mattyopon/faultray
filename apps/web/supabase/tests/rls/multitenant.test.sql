@@ -49,7 +49,9 @@ create extension if not exists pgtap;
 -- contact_requests/coupons :  8 assertion (#72)
 --   contact_requests       :  4  (anon INSERT lives + SELECT 0row, auth INSERT lives + SELECT 0row)
 --   coupons                :  4  (auth SELECT 1row, anon SELECT 0row, auth INSERT throws, auth UPDATE 0 affected)
-select plan(81);
+-- delete_user_account RPC  :  6 assertion (#70 finding 3-5, migration 017)
+--   pre/post check         :  6  (org_p delete via owner CASCADE + cascade chain, org_q untouched)
+select plan(87);
 
 -- ============================================================
 -- Setup: auth.users を直接 INSERT して 3 ユーザー + 2 team を作成
@@ -914,6 +916,63 @@ select is(
   (select current_uses from public.coupons where code = 'TESTCODE72'),
   0,
   'coupons: authenticated UPDATE silently denied (current_uses unchanged after attempted increment)'
+);
+
+-- ============================================================
+-- #70 finding 3-5: delete_user_account RPC が 009 テーブル対応 (migration 017)
+-- ============================================================
+-- user_a (org_p の owner かつ admin member) を delete_user_account で削除し、
+-- 以下の semantics を regression-lock する:
+--   - organizations CASCADE: org_p (owner=A) が消える
+--   - org_members CASCADE: org_p の members (A + B) が連鎖削除
+--   - tasks CASCADE: org_p 配下の task_p1 が連鎖削除
+--   - 他人 (C) の org_q / org_q membership / org_q tasks は影響なし
+
+-- pre-condition: setup で作成された org_p / org_q 両方が見える
+select test_as_service_role();
+select is(
+  (select count(*)::int from public.organizations
+   where id in (:'org_p_id'::uuid, :'org_q_id'::uuid)),
+  2,
+  '#70: pre — both org_p and org_q exist before user_a delete'
+);
+
+-- RPC 実行: user_a を削除
+select count(*) from public.delete_user_account(:'user_a_id'::uuid);
+
+-- post: org_p (owner=A) は消失
+select is(
+  (select count(*)::int from public.organizations where id = :'org_p_id'::uuid),
+  0,
+  '#70: organizations CASCADE — org_p (owner=A) removed by RPC'
+);
+
+-- post: org_q (owner=C) は残る
+select is(
+  (select count(*)::int from public.organizations where id = :'org_q_id'::uuid),
+  1,
+  '#70: unrelated org_q (owner=C) preserved across user_a delete'
+);
+
+-- post: org_p の members (A admin + B member) は連鎖削除されている
+select is(
+  (select count(*)::int from public.org_members where org_id = :'org_p_id'::uuid),
+  0,
+  '#70: org_members CASCADE on organizations delete — all org_p members removed'
+);
+
+-- post: org_p の tasks (task_p1) は連鎖削除されている
+select is(
+  (select count(*)::int from public.tasks where id = :'task_p_id'::uuid),
+  0,
+  '#70: tasks CASCADE on organizations delete — task_p1 removed'
+);
+
+-- post: org_q の C 自身の membership は残る
+select is(
+  (select count(*)::int from public.org_members where user_id = :'user_c_id'::uuid),
+  1,
+  '#70: unrelated user_c org_membership preserved'
 );
 
 -- ============================================================
