@@ -142,6 +142,14 @@ jobs:
           create or replace function auth.uid() returns uuid as $$
             select nullif(current_setting('request.jwt.claims', true)::jsonb->>'sub','')::uuid
           $$ language sql stable;
+          -- RLS policies on coupons (migration 016) も auth.role() を参照する。
+          -- Supabase 本番と同様、request.jwt.claims->>'role' を返す stub を提供。
+          create or replace function auth.role() returns text as $$
+            select coalesce(
+              nullif(current_setting('request.jwt.claims', true)::jsonb->>'role', ''),
+              'anon'
+            );
+          $$ language sql stable;
           -- test role placeholders (Supabase の実運用と同じ attribute)
           do $$ begin
             if not exists (select 1 from pg_roles where rolname = 'anon') then

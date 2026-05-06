@@ -68,7 +68,11 @@ export async function POST(request: Request) {
 
   // 4. クーポンのcurrent_usesを楽観的ロックでインクリメント。
   // WHERE current_uses = coupon.current_uses で競合を検出。
-  const { data: updatedCoupons, error: incrementError } = await supabase
+  // admin client で実行: coupons の RLS は SELECT (authenticated) のみ許可、
+  // INSERT/UPDATE/DELETE policy 不在 → user client では RLS deny。migration 016
+  // で production faithful な policy 設計を再現したのに合わせ、increment は
+  // service_role bypass で行う (#72 / Codex review PR #100)。
+  const { data: updatedCoupons, error: incrementError } = await admin
     .from("coupons")
     .update({ current_uses: coupon.current_uses + 1 })
     .eq("id", coupon.id)
@@ -107,7 +111,10 @@ export async function POST(request: Request) {
     // (review-loop 2 P1): rollback の affected row 数も見る。0 行なら別 worker
     // がこの間に increment しているため burn-without-credit 確定。
     console.error("[coupon/redeem] profile update failed:", profileError.message);
-    const { data: rolledBack, error: rollbackError } = await supabase
+    // rollback も admin client (service_role) で実行。migration 016 で coupons の
+    // UPDATE policy は不在 (RLS deny) のため user client では rollback も無効
+    // → 常に burn-without-credit に陥る (#72 PR #100 Codex review-loop 2 指摘)。
+    const { data: rolledBack, error: rollbackError } = await admin
       .from("coupons")
       .update({ current_uses: coupon.current_uses })
       .eq("id", coupon.id)
