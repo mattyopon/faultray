@@ -150,10 +150,56 @@ export async function POST(request: Request) {
   const hourBucket = Math.floor(Date.now() / 3600000);
   const idempotencyKey = `checkout-${userId}-${plan}-${interval}-${hourBucket}`;
 
+  // #79 PR #102 Codex P1-A: 既存 stripe_customer_id を再利用する。これを渡さないと
+  // Stripe は repeat checkout のたびに新規 customer を作成 → webhook の bootstrap で
+  // profiles.stripe_customer_id ≠ 新 customer になり customer_mismatch で plan 更新が
+  // skip される (legitimate な resubscribe / upgrade flow が silent に壊れる)。
+  //
+  // (Codex review-loop 2 P1-B2): lookup 失敗を silent fall-through させると、課金は
+  // 通って plan 更新だけ落ちる "burn-without-credit" を再現してしまう。lookup が
+  // できない = customer reuse 判定ができない = checkout を進めるべきでない。503 で
+  // retry させ、ユーザーに明示的に再試行を促す。
+  const supaUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const supaServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+  if (!supaUrl || !supaServiceKey) {
+    console.error("[stripe/checkout] Supabase admin not configured — refusing checkout to avoid customer_mismatch drop");
+    return NextResponse.json(
+      { error: "Server configuration error. Please contact support." },
+      { status: 503 }
+    );
+  }
+  let existingCustomerId: string | null = null;
+  try {
+    const { createClient: createAdminClient } = await import("@supabase/supabase-js");
+    const adminSb = createAdminClient(supaUrl, supaServiceKey);
+    const { data: profile, error: lookupError } = await adminSb
+      .from("profiles")
+      .select("stripe_customer_id")
+      .eq("id", userId)
+      .maybeSingle();
+    if (lookupError) {
+      throw new Error(lookupError.message);
+    }
+    existingCustomerId = (profile?.stripe_customer_id as string | null) ?? null;
+  } catch (lookupErr) {
+    // 503 で retry させる: silent fall-through (= 新規 customer 作成 → webhook
+    // bootstrap で customer_mismatch → 200 ack drop) を排除する。
+    console.error(
+      "[stripe/checkout] profile lookup failed — refusing checkout:",
+      lookupErr instanceof Error ? lookupErr.message : "unknown error"
+    );
+    return NextResponse.json(
+      { error: "Service temporarily unavailable. Please try again in a moment." },
+      { status: 503 }
+    );
+  }
+
   try {
     const session = await stripe.checkout.sessions.create(
       {
         mode: "subscription",
+        // #79: 既存 customer を再利用 (repeat checkout で customer_mismatch を防ぐ)
+        ...(existingCustomerId ? { customer: existingCustomerId } : {}),
         // #21: Checkout URL共有リスク軽減 — セッションを30分で失効させる
         // Stripeのデフォルトは24時間。URLが共有・漏洩した場合のリスクを最小化する。
         expires_at: Math.floor(Date.now() / 1000) + 1800,

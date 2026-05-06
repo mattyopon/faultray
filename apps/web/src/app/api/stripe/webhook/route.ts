@@ -67,22 +67,89 @@ async function updateUserPlan(userId: string, plan: PlanTier, subscriptionStatus
   }
 }
 
+// #79 P1: customer_id source-of-truth resolution.
+// metadata.user_id は forge 可能 (Stripe Checkout 作成時に攻撃者が任意設定可能)
+// なため、subscription / invoice 系の event では customerId → profiles の lookup
+// を唯一の真実源とする。bootstrap (checkout.session.completed) のみ metadata を
+// 使うが、cross-check で同じ userId に異なる customer が紐づくのを reject する。
+async function resolveUserByCustomerId(
+  customerId: string
+): Promise<string | null> {
+  const supabase = await getSupabaseAdmin();
+  const { data, error } = await supabase
+    .from("profiles")
+    .select("id")
+    .eq("stripe_customer_id", customerId)
+    .maybeSingle();
+  if (error) {
+    throw new Error(`Customer lookup failed: ${error.message}`);
+  }
+  return (data?.id as string | undefined) ?? null;
+}
+
 async function updateUserByCustomerId(
   customerId: string,
   plan: PlanTier,
   subscriptionStatus?: string
 ): Promise<void> {
-  const supabase = await getSupabaseAdmin();
-  const { data: profile, error: lookupError } = await supabase
-    .from("profiles")
-    .select("id")
-    .eq("stripe_customer_id", customerId)
-    .maybeSingle();
-  if (lookupError || !profile) {
-    console.warn(`[stripe/webhook] No profile found for customer ${customerId}`);
-    return;
+  const userId = await resolveUserByCustomerId(customerId);
+  if (!userId) {
+    // #81 (P2-3): silent warn + return は Stripe retry を停止させ event を永久消失
+    // させるため throw に変更。`profiles.stripe_customer_id` が未 bootstrap の
+    // ケースでは Stripe が retry → checkout.session.completed が先に処理されれば
+    // 次回 retry で resolve できる。永久 unmapped なら最終的に Stripe の retry
+    // 期限 (3日) で諦めるが、その間に operator が DB を確認して fix できる。
+    throw new Error(
+      `Customer not mapped to a profile (customer=${customerId}). ` +
+        `bootstrap (checkout.session.completed) で stripe_customer_id が未 persist。`
+    );
   }
-  await updateUserPlan(profile.id as string, plan, subscriptionStatus);
+  await updateUserPlan(userId, plan, subscriptionStatus);
+}
+
+// #79 P1: bootstrap path専用。`checkout.session.completed` で初めて customerId が
+// profile に紐づく時に呼ぶ。
+//   - profile が存在しない → profile_not_found (500 retry)
+//   - profile.stripe_customer_id が既存で event の customerId と異なる → customer_mismatch
+//     (attack indicator: 攻撃者が他人の userId を metadata.user_id に詰めた可能性)
+//   - profile.stripe_customer_id が NULL → 新規 persist
+//   - 一致 → no-op
+type BootstrapResult =
+  | { ok: true }
+  | { ok: false; reason: "profile_not_found" | "customer_mismatch" };
+
+async function bootstrapUserCustomer(
+  userId: string,
+  customerId: string
+): Promise<BootstrapResult> {
+  const supabase = await getSupabaseAdmin();
+  const { data: profile, error } = await supabase
+    .from("profiles")
+    .select("id, stripe_customer_id")
+    .eq("id", userId)
+    .maybeSingle();
+  if (error) {
+    throw new Error(`Bootstrap profile lookup failed: ${error.message}`);
+  }
+  if (!profile) {
+    return { ok: false, reason: "profile_not_found" };
+  }
+  const existingCustomer = (profile.stripe_customer_id as string | null) ?? null;
+  if (existingCustomer && existingCustomer !== customerId) {
+    return { ok: false, reason: "customer_mismatch" };
+  }
+  if (existingCustomer === null) {
+    const { error: updateError } = await supabase
+      .from("profiles")
+      .update({ stripe_customer_id: customerId })
+      .eq("id", userId);
+    if (updateError) {
+      throw new Error(
+        `Failed to persist stripe_customer_id: ${updateError.message}`
+      );
+    }
+  }
+  return { ok: true };
 }
 
 export async function POST(request: Request) {
@@ -316,54 +383,98 @@ export async function POST(request: Request) {
   try {
     switch (event.type) {
       // ── Checkout completed: new subscription starts ──────────────────────
+      // #79 P1: 唯一 metadata.user_id を信用する bootstrap path。bootstrapUserCustomer
+      // で cross-check し、attack signature (customer_mismatch) は plan 変更を skip。
       case "checkout.session.completed": {
         const session = event.data.object as Stripe.Checkout.Session;
         const userId = session.metadata?.user_id;
         const plan = session.metadata?.plan as PlanTier | undefined;
+        const customerId =
+          typeof session.customer === "string" ? session.customer : null;
 
-        if (userId && plan && (plan === "starter" || plan === "pro" || plan === "business")) {
-          await updateUserPlan(userId, plan, "active");
-          console.info(`[stripe/webhook] checkout.session.completed: user=${userId} plan=${plan}`);
+        if (!userId || !plan || !customerId) {
+          console.warn(
+            `[stripe/webhook] checkout.session.completed: missing fields ` +
+              `(user_id=${userId ?? "null"} plan=${plan ?? "null"} customer=${customerId ?? "null"})`
+          );
+          break;
         }
+        if (plan !== "starter" && plan !== "pro" && plan !== "business") {
+          console.warn(
+            `[stripe/webhook] checkout.session.completed: invalid plan=${plan} (user=${userId})`
+          );
+          break;
+        }
+        const bootstrap = await bootstrapUserCustomer(userId, customerId);
+        if (!bootstrap.ok) {
+          if (bootstrap.reason === "customer_mismatch") {
+            // #79 attack signature: 既存 profile.stripe_customer_id と event の
+            // customerId が違う = 攻撃者が他人の user_id を metadata に詰めた可能性。
+            // 200 ack だけ返し、Stripe retry で同じ攻撃を増幅させない。
+            console.error(
+              `[stripe/webhook] checkout.session.completed: customer_mismatch ` +
+                `(user_id=${userId} got_customer=${customerId}). Possible metadata forgery — refusing to mutate plan.`
+            );
+            break;
+          }
+          // profile_not_found: race (auth.users → profiles trigger 未走) か
+          // metadata.user_id 偽装。500 で Stripe retry させる。
+          throw new Error(
+            `Bootstrap failed: ${bootstrap.reason} (user_id=${userId} customer=${customerId})`
+          );
+        }
+        await updateUserPlan(userId, plan, "active");
+        console.info(
+          `[stripe/webhook] checkout.session.completed: user=${userId} customer=${customerId} plan=${plan}`
+        );
         break;
       }
 
       // ── Subscription updated: plan change or renewal ─────────────────────
+      // #79 P1: customer_id source-of-truth で resolve。metadata.user_id は信用しない。
       case "customer.subscription.updated": {
         const subscription = event.data.object as Stripe.Subscription;
         const customerId = subscription.customer as string;
-        const userId = subscription.metadata?.user_id;
         const status = subscription.status; // active | past_due | canceled | ...
 
         // Determine plan from first price item
         const priceId = subscription.items.data[0]?.price?.id;
         const plan = priceId ? planTierFromPriceId(priceId) : null;
 
-        const resolvedPlan: PlanTier = (status === "active" || status === "trialing") && plan
-          ? plan
-          : "free";
+        const resolvedPlan: PlanTier =
+          (status === "active" || status === "trialing") && plan ? plan : "free";
 
-        if (userId) {
-          await updateUserPlan(userId, resolvedPlan, status);
-        } else {
-          await updateUserByCustomerId(customerId, resolvedPlan, status);
-        }
-        console.info(`[stripe/webhook] customer.subscription.updated: customer=${customerId} status=${status} plan=${resolvedPlan}`);
+        await updateUserByCustomerId(customerId, resolvedPlan, status);
+        console.info(
+          `[stripe/webhook] customer.subscription.updated: customer=${customerId} status=${status} plan=${resolvedPlan}`
+        );
         break;
       }
 
       // ── Subscription deleted: cancel or non-renewal ───────────────────────
+      // #79 P1: customer_id source-of-truth で resolve。metadata.user_id は信用しない。
+      // (Codex review-loop 3 P2): /api/account/delete は profile を先に消してから
+      // Stripe subscriptions を cancel する設計のため、その flow の deleted event は
+      // profile が存在しない状態で到達する (= 通常 flow)。500 retry を 3 日間続ける
+      // のは ops noise なので、**deleted event のみ** profile not mapped を 200 ack
+      // で受容する。攻撃者目線では既に削除済 customer の deleted event を発火させても
+      // 何も起こせないため、リスクなし。
       case "customer.subscription.deleted": {
         const subscription = event.data.object as Stripe.Subscription;
         const customerId = subscription.customer as string;
-        const userId = subscription.metadata?.user_id;
 
-        if (userId) {
-          await updateUserPlan(userId, "free", "canceled");
-        } else {
-          await updateUserByCustomerId(customerId, "free", "canceled");
+        const userId = await resolveUserByCustomerId(customerId);
+        if (!userId) {
+          console.info(
+            `[stripe/webhook] customer.subscription.deleted: customer=${customerId} ` +
+              `not mapped — likely account/delete flow, ack-ing without mutation.`
+          );
+          break;
         }
-        console.info(`[stripe/webhook] customer.subscription.deleted: customer=${customerId} user=${userId}`);
+        await updateUserPlan(userId, "free", "canceled");
+        console.info(
+          `[stripe/webhook] customer.subscription.deleted: customer=${customerId} user=${userId}`
+        );
         break;
       }
 
@@ -405,6 +516,7 @@ export async function POST(request: Request) {
       }
 
       // ── Payment succeeded: ensure status is active ───────────────────────
+      // #79 P1: customer_id source-of-truth で resolve。metadata.user_id は信用しない。
       case "invoice.payment_succeeded": {
         const invoice = event.data.object as Stripe.Invoice;
         const customerId = invoice.customer as string;
@@ -420,13 +532,10 @@ export async function POST(request: Request) {
           const priceId = subscription.items.data[0]?.price?.id;
           const plan = priceId ? planTierFromPriceId(priceId) : null;
           const resolvedPlan: PlanTier = plan ?? "pro";
-          const userId = subscription.metadata?.user_id;
-          if (userId) {
-            await updateUserPlan(userId, resolvedPlan, "active");
-          } else {
-            await updateUserByCustomerId(customerId, resolvedPlan, "active");
-          }
-          console.info(`[stripe/webhook] invoice.payment_succeeded: customer=${customerId} plan=${resolvedPlan}`);
+          await updateUserByCustomerId(customerId, resolvedPlan, "active");
+          console.info(
+            `[stripe/webhook] invoice.payment_succeeded: customer=${customerId} plan=${resolvedPlan}`
+          );
         }
         break;
       }
