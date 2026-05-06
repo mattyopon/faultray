@@ -82,6 +82,25 @@ export async function PATCH(
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 
+  // #80: assignee_id が cross-tenant でないことを app side で reject (DB 側の RLS
+  // WITH CHECK は migration 018 で hardening 済の double-defense)。NULL 化は許可、
+  // それ以外は task の existing.org_id に属する active member のみ。
+  if (body.assignee_id !== undefined && body.assignee_id !== null) {
+    const { data: assigneeMember, error: assigneeErr } = await supabase
+      .from("org_members")
+      .select("id")
+      .eq("id", body.assignee_id)
+      .eq("org_id", existing.org_id)
+      .eq("status", "active")
+      .maybeSingle();
+    if (assigneeErr || !assigneeMember) {
+      return NextResponse.json(
+        { error: "assignee_id must be an active member of the same organization" },
+        { status: 400 }
+      );
+    }
+  }
+
   // 更新フィールドを構築
   const updatePayload: Record<string, unknown> = {
     updated_at: new Date().toISOString(),

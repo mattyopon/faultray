@@ -109,6 +109,24 @@ export async function POST(request: Request) {
     );
   }
 
+  // #80: assignee_id が cross-tenant でないことを app side で reject (DB 側の RLS
+  // WITH CHECK は migration 018 で hardening 済の double-defense)。
+  if (assignee_id) {
+    const { data: assigneeMember, error: assigneeErr } = await supabase
+      .from("org_members")
+      .select("id")
+      .eq("id", assignee_id)
+      .eq("org_id", orgId)
+      .eq("status", "active")
+      .maybeSingle();
+    if (assigneeErr || !assigneeMember) {
+      return NextResponse.json(
+        { error: "assignee_id must be an active member of the same organization" },
+        { status: 400 }
+      );
+    }
+  }
+
   const insertPayload: Record<string, unknown> = {
     org_id: orgId,
     title: title.trim(),

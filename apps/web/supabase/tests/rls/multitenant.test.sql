@@ -49,9 +49,12 @@ create extension if not exists pgtap;
 -- contact_requests/coupons :  8 assertion (#72)
 --   contact_requests       :  4  (anon INSERT lives + SELECT 0row, auth INSERT lives + SELECT 0row)
 --   coupons                :  4  (auth SELECT 1row, anon SELECT 0row, auth INSERT throws, auth UPDATE 0 affected)
+-- tasks.assignee_id guard  :  4 assertion (#80, migration 018)
+--   INSERT same-org lives + cross-org throws + NULL lives + UPDATE cross-org throws
+-- member_systems WITH CHECK:  2 assertion (#83, migration 018, structural existence)
 -- delete_user_account RPC  :  6 assertion (#70 finding 3-5, migration 017)
 --   pre/post check         :  6  (org_p delete via owner CASCADE + cascade chain, org_q untouched)
-select plan(87);
+select plan(93);
 
 -- ============================================================
 -- Setup: auth.users を直接 INSERT して 3 ユーザー + 2 team を作成
@@ -69,6 +72,10 @@ select plan(87);
 \set org_q_id   'bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb'
 \set task_p_id  'cccccccc-cccc-cccc-cccc-cccccccccccc'
 \set task_q_id  'dddddddd-dddd-dddd-dddd-dddddddddddd'
+-- #80 org_members.id を固定 (assignee_id same-org guard test 用)
+\set om_a_p_id  'eeeeeeee-eeee-eeee-eeee-eeeeeeeeeeee'
+\set om_b_p_id  'ffffffff-ffff-ffff-ffff-ffffffffffff'
+\set om_c_q_id  '00000000-1111-2222-3333-444444444444'
 
 -- auth.users (最小フィールド)
 insert into auth.users (id, email, raw_user_meta_data, aud, role)
@@ -149,10 +156,10 @@ insert into public.organizations (id, name, owner_id) values
   (:'org_p_id'::uuid, 'Org P', :'user_a_id'::uuid),
   (:'org_q_id'::uuid, 'Org Q', :'user_c_id'::uuid);
 
-insert into public.org_members (org_id, user_id, email, role, status) values
-  (:'org_p_id'::uuid, :'user_a_id'::uuid, 'a@test.local', 'admin',  'active'),
-  (:'org_p_id'::uuid, :'user_b_id'::uuid, 'b@test.local', 'member', 'active'),
-  (:'org_q_id'::uuid, :'user_c_id'::uuid, 'c@test.local', 'owner',  'active');
+insert into public.org_members (id, org_id, user_id, email, role, status) values
+  (:'om_a_p_id'::uuid, :'org_p_id'::uuid, :'user_a_id'::uuid, 'a@test.local', 'admin',  'active'),
+  (:'om_b_p_id'::uuid, :'org_p_id'::uuid, :'user_b_id'::uuid, 'b@test.local', 'member', 'active'),
+  (:'om_c_q_id'::uuid, :'org_q_id'::uuid, :'user_c_id'::uuid, 'c@test.local', 'owner',  'active');
 
 -- tasks: 1 per org (assignee_id は省略 → null)
 insert into public.tasks (id, org_id, title, created_by) values
@@ -916,6 +923,81 @@ select is(
   (select current_uses from public.coupons where code = 'TESTCODE72'),
   0,
   'coupons: authenticated UPDATE silently denied (current_uses unchanged after attempted increment)'
+);
+
+-- ============================================================
+-- #80: tasks.assignee_id same-org WITH CHECK guard (migration 018)
+-- ============================================================
+-- user_a (admin of org_p) として 4 ケース:
+--   (a) same-org assignee (om_b_p_id) → allowed
+--   (b) cross-org assignee (om_c_q_id) → blocked by WITH CHECK
+--   (c) NULL assignee → allowed
+--   (d) UPDATE existing task assignee to cross-org → blocked by WITH CHECK
+
+select test_as_user(:'user_a_id'::uuid);
+
+select lives_ok(
+  format(
+    $sql$ insert into public.tasks (org_id, title, created_by, assignee_id)
+          values (%L::uuid, '%s', %L::uuid, %L::uuid) $sql$,
+    :'org_p_id', 'task with same-org assignee', :'user_a_id', :'om_b_p_id'
+  ),
+  '#80: INSERT task with same-org assignee_id (B in org_p) — allowed'
+);
+
+select throws_ok(
+  format(
+    $sql$ insert into public.tasks (org_id, title, created_by, assignee_id)
+          values (%L::uuid, '%s', %L::uuid, %L::uuid) $sql$,
+    :'org_p_id', 'task with cross-org assignee', :'user_a_id', :'om_c_q_id'
+  ),
+  NULL::text, NULL::text,
+  '#80: INSERT task with cross-org assignee_id (C in org_q) — blocked'
+);
+
+select lives_ok(
+  format(
+    $sql$ insert into public.tasks (org_id, title, created_by, assignee_id)
+          values (%L::uuid, '%s', %L::uuid, NULL) $sql$,
+    :'org_p_id', 'task with NULL assignee', :'user_a_id'
+  ),
+  '#80: INSERT task with NULL assignee_id — allowed'
+);
+
+select throws_ok(
+  format(
+    $sql$ update public.tasks set assignee_id = %L::uuid where id = %L::uuid $sql$,
+    :'om_c_q_id', :'task_p_id'
+  ),
+  NULL::text, NULL::text,
+  '#80: UPDATE task assignee_id to cross-org member — blocked'
+);
+
+-- ============================================================
+-- #83: member_systems WITH CHECK 構造的存在 (migration 018)
+-- ============================================================
+-- member_systems / members / companies / systems の完全 SEED は scope 拡大に
+-- なるため、本 PR では migration 018 が「INSERT/UPDATE policy を WITH CHECK
+-- 付きで作成した」ことを構造的に確認する (DB drift 検出として十分)。
+
+select test_as_service_role();
+
+select isnt(
+  (select with_check from pg_policies
+    where schemaname = 'public'
+      and tablename = 'member_systems'
+      and policyname = 'Company owner can insert member_systems'),
+  NULL,
+  '#83: member_systems INSERT policy exists with WITH CHECK (cross-company guard)'
+);
+
+select isnt(
+  (select with_check from pg_policies
+    where schemaname = 'public'
+      and tablename = 'member_systems'
+      and policyname = 'Company owner can update member_systems'),
+  NULL,
+  '#83: member_systems UPDATE policy exists with WITH CHECK (cross-company guard)'
 );
 
 -- ============================================================
