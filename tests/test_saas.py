@@ -128,12 +128,6 @@ class TestOAuthCallback:
 class TestJWT:
     """Tests for JWT creation and decoding."""
 
-    @pytest.fixture(autouse=True)
-    def _set_jwt_secret(self, monkeypatch):
-        """#137: create_jwt / decode_jwt now refuse to run without a real signing
-        secret. These tests exercise the happy path, so seed a strong test value."""
-        monkeypatch.setenv("FAULTRAY_JWT_SECRET", "x" * 64)
-
     def test_create_and_decode_jwt(self):
         from faultray.api.oauth import create_jwt, decode_jwt
 
