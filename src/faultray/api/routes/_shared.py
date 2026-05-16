@@ -81,7 +81,15 @@ async def _optional_user(request: Request):
 
 
 def _require_permission(permission: str):
-    """Lazy wrapper around auth.require_permission (opt-in RBAC)."""
+    """Lazy wrapper around auth.require_permission (opt-in RBAC).
+
+    #139: previously this swallowed any non-HTTP exception from the auth
+    layer (DB outage, bad role config, import failure, ...) and returned
+    ``None``. Several route handlers use the dependency only for side
+    effects and ignore the returned principal, so a swallowed exception
+    silently became an *authorization bypass*. We now re-raise as 503
+    so the request is denied and operators see the failure.
+    """
     async def _dep(request: Request):
         try:
             from faultray.api.auth import require_permission
@@ -89,8 +97,15 @@ def _require_permission(permission: str):
             return await checker(request)
         except HTTPException:
             raise
-        except Exception:
-            return None
+        except Exception as exc:
+            logger.exception(
+                "auth layer raised unexpected exception in _require_permission(%r)",
+                permission,
+            )
+            raise HTTPException(
+                status_code=503,
+                detail="Authorization service is temporarily unavailable.",
+            ) from exc
     return _dep
 
 

@@ -23,54 +23,90 @@ logger = logging.getLogger(__name__)
 # JWT helpers
 # ---------------------------------------------------------------------------
 
-_JWT_SECRET = (
-    os.environ.get("FAULTRAY_JWT_SECRET")
-    or os.environ.get("JWT_SECRET_KEY")
-    or "faultray-dev-secret-change-me"
-)
-if _JWT_SECRET == "faultray-dev-secret-change-me":
-    logger.warning(
-        "Using default JWT secret — set FAULTRAY_JWT_SECRET or JWT_SECRET_KEY for production"
-    )
 _JWT_ALGORITHM = "HS256"
 _JWT_EXPIRY_SECONDS = 86400  # 24 hours
 
+# Sentinel values that must never act as a real signing secret.
+_INSECURE_SECRETS: frozenset[str] = frozenset({
+    "faultray-dev-secret-change-me",
+    "change-me",
+    "REPLACE_ME",
+    "secret",
+    "",
+})
+
+
+def _require_jwt_secret() -> str:
+    """Return the configured JWT signing secret or raise.
+
+    #137: the previous module-level fallback to "faultray-dev-secret-change-me"
+    let any caller forge tokens with a publicly-known key, and the
+    ``except ImportError`` branches emitted/accepted unsigned base64 JSON
+    when python-jose was missing — turning a missing dependency into full
+    auth bypass. We now fail closed at first use: missing env, a sentinel
+    value, or a too-short secret all abort token issuance/verification
+    with a clear error.
+    """
+    secret = (
+        os.environ.get("FAULTRAY_JWT_SECRET")
+        or os.environ.get("JWT_SECRET_KEY")
+        or ""
+    )
+    if not secret or secret in _INSECURE_SECRETS:
+        raise RuntimeError(
+            "JWT signing secret is not configured. Set FAULTRAY_JWT_SECRET "
+            "(>= 32 random bytes) before issuing or verifying tokens."
+        )
+    if len(secret) < 32:
+        raise RuntimeError(
+            "JWT signing secret is too short (need >= 32 characters of "
+            "entropy). Set FAULTRAY_JWT_SECRET to a strong random value."
+        )
+    return secret
+
 
 def create_jwt(payload: dict[str, Any]) -> str:
-    """Create a signed JWT token."""
+    """Create a signed JWT token.
+
+    Raises ``RuntimeError`` if python-jose is unavailable or the signing
+    secret is missing/insecure. Both are bypass conditions — we refuse to
+    fall back to base64-only "tokens" or a known default key.
+    """
     try:
         from jose import jwt as jose_jwt
+    except ImportError as exc:  # pragma: no cover - declared in pyproject runtime deps
+        raise RuntimeError(
+            "python-jose is required for JWT auth. Install python-jose[cryptography]."
+        ) from exc
 
-        payload = {**payload, "exp": int(time.time()) + _JWT_EXPIRY_SECONDS,
-                   "iat": int(time.time())}
-        return jose_jwt.encode(payload, _JWT_SECRET, algorithm=_JWT_ALGORITHM)
-    except ImportError:
-        import base64
-        import json
-
-        payload = {**payload, "exp": int(time.time()) + _JWT_EXPIRY_SECONDS,
-                   "iat": int(time.time())}
-        return base64.urlsafe_b64encode(json.dumps(payload).encode()).decode()
+    secret = _require_jwt_secret()
+    payload = {
+        **payload,
+        "exp": int(time.time()) + _JWT_EXPIRY_SECONDS,
+        "iat": int(time.time()),
+    }
+    return jose_jwt.encode(payload, secret, algorithm=_JWT_ALGORITHM)
 
 
 def decode_jwt(token: str) -> dict[str, Any] | None:
-    """Decode and verify a JWT token. Returns None if invalid/expired."""
+    """Decode and verify a JWT token. Returns ``None`` if invalid/expired.
+
+    Raises ``RuntimeError`` if python-jose is unavailable or the signing
+    secret is missing/insecure. A missing dependency must not silently
+    "validate" a forged base64 payload.
+    """
     try:
         from jose import jwt as jose_jwt
+        from jose.exceptions import JWTError
+    except ImportError as exc:  # pragma: no cover - declared in pyproject runtime deps
+        raise RuntimeError(
+            "python-jose is required for JWT auth. Install python-jose[cryptography]."
+        ) from exc
 
-        return jose_jwt.decode(token, _JWT_SECRET, algorithms=[_JWT_ALGORITHM])
-    except ImportError:
-        import base64
-        import json
-
-        try:
-            data = json.loads(base64.urlsafe_b64decode(token))
-            if data.get("exp", 0) < time.time():
-                return None
-            return data
-        except Exception:
-            return None
-    except Exception:
+    secret = _require_jwt_secret()
+    try:
+        return jose_jwt.decode(token, secret, algorithms=[_JWT_ALGORITHM])
+    except JWTError:
         return None
 
 # ---------------------------------------------------------------------------
