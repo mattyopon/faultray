@@ -701,7 +701,7 @@ class TestPluginLoadingException:
         bad_plugin.write_text("raise RuntimeError('intentional error')\n")
 
         # Should not raise; should log a warning
-        PluginRegistry.load_plugins_from_dir(tmp_path)
+        PluginRegistry.load_plugins_from_dir(tmp_path, trusted=True)
 
         # No plugins should have been registered
         assert len(PluginRegistry.get_scenario_plugins()) == 0
@@ -717,7 +717,7 @@ class TestPluginLoadingException:
         bad_plugin = tmp_path / "syntax_error.py"
         bad_plugin.write_text("def broken(\n")
 
-        PluginRegistry.load_plugins_from_dir(tmp_path)
+        PluginRegistry.load_plugins_from_dir(tmp_path, trusted=True)
 
         assert len(PluginRegistry.get_scenario_plugins()) == 0
 

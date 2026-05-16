@@ -22,6 +22,16 @@ def _clean_registry():
     PluginRegistry.clear()
 
 
+@pytest.fixture(autouse=True)
+def _trust_tmp_plugin_dirs(tmp_path, monkeypatch):
+    """#150: tests routinely load plugins from tmp_path; whitelist it.
+
+    Tests must still pass ``trusted=True`` explicitly to opt in — this fixture
+    only handles the env half of the trust gate.
+    """
+    monkeypatch.setenv("FAULTRAY_PLUGIN_TRUSTED_DIRS", str(tmp_path))
+
+
 class _DummyScenarioPlugin:
     """A minimal scenario plugin for testing."""
 
@@ -100,19 +110,19 @@ class TestPluginRegistry:
             """)
         )
 
-        PluginRegistry.load_plugins_from_dir(tmp_path)
+        PluginRegistry.load_plugins_from_dir(tmp_path, trusted=True)
         assert len(PluginRegistry.get_scenario_plugins()) == 1
         assert PluginRegistry.get_scenario_plugins()[0].name == "my-plugin"
 
     def test_load_plugins_skips_underscore_files(self, tmp_path: Path):
         """Files starting with _ should be skipped."""
         (tmp_path / "_internal.py").write_text("raise RuntimeError('should not load')")
-        PluginRegistry.load_plugins_from_dir(tmp_path)
+        PluginRegistry.load_plugins_from_dir(tmp_path, trusted=True)
         assert PluginRegistry.get_scenario_plugins() == []
 
     def test_load_plugins_nonexistent_dir(self, tmp_path: Path):
         """Loading from a non-existent directory should be a no-op."""
-        PluginRegistry.load_plugins_from_dir(tmp_path / "nonexistent")
+        PluginRegistry.load_plugins_from_dir(tmp_path / "nonexistent", trusted=True)
         assert PluginRegistry.get_scenario_plugins() == []
 
 
@@ -296,7 +306,7 @@ class TestLoadPluginsFromDirExtended:
         """Plugin files with syntax errors should be skipped gracefully."""
         bad_file = tmp_path / "bad_plugin.py"
         bad_file.write_text("def register(registry):\n    raise RuntimeError('boom')\n")
-        PluginRegistry.load_plugins_from_dir(tmp_path)
+        PluginRegistry.load_plugins_from_dir(tmp_path, trusted=True)
         # Should not crash, and no plugins should be registered
         assert len(PluginRegistry.get_scenario_plugins()) == 0
 
@@ -304,7 +314,7 @@ class TestLoadPluginsFromDirExtended:
         """Plugin files without register() should be loaded but not register anything."""
         plugin_file = tmp_path / "no_register.py"
         plugin_file.write_text("x = 42\n")
-        PluginRegistry.load_plugins_from_dir(tmp_path)
+        PluginRegistry.load_plugins_from_dir(tmp_path, trusted=True)
         assert len(PluginRegistry.get_scenario_plugins()) == 0
 
     def test_load_multiple_plugins(self, tmp_path: Path):
@@ -321,5 +331,130 @@ class TestLoadPluginsFromDirExtended:
                 def register(registry):
                     registry.register_scenario(Plugin{i}())
             """))
-        PluginRegistry.load_plugins_from_dir(tmp_path)
+        PluginRegistry.load_plugins_from_dir(tmp_path, trusted=True)
         assert len(PluginRegistry.get_scenario_plugins()) == 3
+
+
+class TestLoadPluginsTrustGate:
+    """#150: load_plugins_from_dir must refuse untrusted directories."""
+
+    def test_refuses_without_opt_in_even_with_env(self, tmp_path: Path, caplog):
+        """Caller forgot ``trusted=True`` → refused even if env allows."""
+        canary = tmp_path / "boom.py"
+        canary.write_text(textwrap.dedent("""\
+            def register(registry):
+                raise RuntimeError('attacker code reached')
+        """))
+        with caplog.at_level("WARNING", logger="faultray.plugins.registry"):
+            PluginRegistry.load_plugins_from_dir(tmp_path)  # opt-in missing
+        assert any("Refusing to load" in r.message for r in caplog.records)
+        assert PluginRegistry.get_scenario_plugins() == []
+
+    def test_refuses_without_env_even_with_opt_in(self, tmp_path: Path, monkeypatch, caplog):
+        """Env empty → refused even with caller ``trusted=True``."""
+        monkeypatch.delenv("FAULTRAY_PLUGIN_TRUSTED_DIRS", raising=False)
+        canary = tmp_path / "boom.py"
+        canary.write_text(textwrap.dedent("""\
+            def register(registry):
+                raise RuntimeError('attacker code reached')
+        """))
+        with caplog.at_level("WARNING", logger="faultray.plugins.registry"):
+            PluginRegistry.load_plugins_from_dir(tmp_path, trusted=True)
+        assert any("Refusing to load" in r.message for r in caplog.records)
+        assert PluginRegistry.get_scenario_plugins() == []
+
+    def test_env_with_unrelated_path_still_refuses(self, tmp_path: Path, monkeypatch, caplog):
+        unrelated = tmp_path.parent / "definitely-not-this-path"
+        monkeypatch.setenv("FAULTRAY_PLUGIN_TRUSTED_DIRS", str(unrelated))
+        (tmp_path / "boom.py").write_text("def register(r):\n    raise RuntimeError('x')\n")
+        with caplog.at_level("WARNING", logger="faultray.plugins.registry"):
+            PluginRegistry.load_plugins_from_dir(tmp_path, trusted=True)
+        assert PluginRegistry.get_scenario_plugins() == []
+
+    def test_parent_dir_in_env_grants_trust(self, tmp_path: Path, monkeypatch):
+        """Parent listed in env → child dir treated as trusted."""
+        child = tmp_path / "child"
+        child.mkdir()
+        monkeypatch.setenv("FAULTRAY_PLUGIN_TRUSTED_DIRS", str(tmp_path))
+        (child / "p.py").write_text(textwrap.dedent("""\
+            class P:
+                name = "p"
+                description = ""
+                def generate_scenarios(self, *args, **kwargs): return []
+            def register(r):
+                r.register_scenario(P())
+        """))
+        PluginRegistry.load_plugins_from_dir(child, trusted=True)
+        assert len(PluginRegistry.get_scenario_plugins()) == 1
+
+
+class TestPluginMetadataAstReader:
+    """#149: PluginManager._read_metadata_from_file must not execute the file."""
+
+    def test_module_side_effects_are_not_triggered(self, tmp_path: Path):
+        """A plugin file with side-effects at import time must NOT execute."""
+        from faultray.plugins.plugin_manager import PluginManager
+
+        canary = tmp_path / "canary.txt"
+        plugin = tmp_path / "evil_plugin.py"
+        plugin.write_text(textwrap.dedent(f"""\
+            from pathlib import Path
+            Path({str(canary)!r}).write_text('PWNED')
+
+            PLUGIN_METADATA = {{
+                "name": "evil",
+                "version": "1.0",
+                "type": "scenario_generator",
+            }}
+        """))
+
+        meta = PluginManager._read_metadata_from_file(plugin)
+        assert meta is not None
+        assert meta.name == "evil"
+        assert not canary.exists(), "Plugin code executed during discovery (RCE)"
+
+    def test_non_literal_metadata_is_rejected(self, tmp_path: Path):
+        """``PLUGIN_METADATA`` built with non-literal expression is refused."""
+        from faultray.plugins.plugin_manager import PluginManager
+
+        plugin = tmp_path / "dynamic.py"
+        plugin.write_text(textwrap.dedent("""\
+            import os
+            PLUGIN_METADATA = {"name": os.environ.get("X", "y")}
+        """))
+
+        meta = PluginManager._read_metadata_from_file(plugin)
+        assert meta is None
+
+    def test_literal_metadata_is_parsed(self, tmp_path: Path):
+        from faultray.plugins.plugin_manager import PluginManager
+
+        plugin = tmp_path / "good.py"
+        plugin.write_text(textwrap.dedent("""\
+            PLUGIN_METADATA = {
+                "name": "good",
+                "version": "2.1.0",
+                "author": "me",
+                "type": "scenario_generator",
+                "dependencies": ["a", "b"],
+            }
+        """))
+        meta = PluginManager._read_metadata_from_file(plugin)
+        assert meta is not None
+        assert meta.name == "good"
+        assert meta.version == "2.1.0"
+        assert meta.dependencies == ["a", "b"]
+
+    def test_missing_metadata_returns_none(self, tmp_path: Path):
+        from faultray.plugins.plugin_manager import PluginManager
+
+        plugin = tmp_path / "empty.py"
+        plugin.write_text("# nothing here\n")
+        assert PluginManager._read_metadata_from_file(plugin) is None
+
+    def test_syntax_error_returns_none(self, tmp_path: Path):
+        from faultray.plugins.plugin_manager import PluginManager
+
+        plugin = tmp_path / "broken.py"
+        plugin.write_text("def broken(\n")
+        assert PluginManager._read_metadata_from_file(plugin) is None

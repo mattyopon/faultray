@@ -191,6 +191,15 @@ def simulate(
     dynamic: bool = typer.Option(False, "--dynamic", "-d", help="Run dynamic time-stepped simulation"),
     analyze_flag: bool = typer.Option(False, "--analyze", "-a", help="Run AI analysis after simulation"),
     plugins_dir: Path | None = typer.Option(None, "--plugins-dir", help="Directory of plugin .py files to load"),
+    trust_plugins_dir: bool = typer.Option(
+        False,
+        "--trust-plugins-dir",
+        help=(
+            "Explicitly opt in to executing plugin code from --plugins-dir. The directory "
+            "must also be listed in FAULTRAY_PLUGIN_TRUSTED_DIRS (os.pathsep separated). "
+            "Without both gates, plugin loading is refused (see #150)."
+        ),
+    ),
     slack_webhook: str | None = typer.Option(None, "--slack-webhook", help="Slack webhook URL for notifications"),
     pagerduty_key: str | None = typer.Option(None, "--pagerduty-key", help="PagerDuty routing key for critical alerts"),
     max_scenarios: int = typer.Option(0, "--max-scenarios", help="Max scenarios to test (0 = engine default)"),
@@ -243,12 +252,20 @@ def simulate(
         console.print("Run [cyan]faultray scan[/] first to create a model.")
         raise typer.Exit(1)
 
-    # Load plugins if a directory is specified
+    # Load plugins if a directory is specified.
+    # Security (#150): require explicit --trust-plugins-dir AND
+    # FAULTRAY_PLUGIN_TRUSTED_DIRS membership; otherwise the registry refuses.
     if plugins_dir is not None:
         from faultray.plugins.registry import PluginRegistry
 
-        console.print(f"[cyan]Loading plugins from {plugins_dir}...[/]")
-        PluginRegistry.load_plugins_from_dir(plugins_dir)
+        if not trust_plugins_dir:
+            console.print(
+                f"[yellow]Skipping plugins in {plugins_dir}: pass --trust-plugins-dir "
+                f"and add the directory to FAULTRAY_PLUGIN_TRUSTED_DIRS to load.[/]"
+            )
+        else:
+            console.print(f"[cyan]Loading plugins from {plugins_dir}...[/]")
+            PluginRegistry.load_plugins_from_dir(plugins_dir, trusted=True)
 
     if json_output:
         # Suppress logging to stdout so JSON output is parseable
