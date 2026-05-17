@@ -25,8 +25,13 @@ jobs:
         with:
           python-version: '3.11'
 
-      - name: Install FaultRay
-        run: pip install faultray  # or pip install -e . if in same repo
+      - name: Install FaultRay (from the PR's checked-out source)
+        # #144: previously this ran ``pip install faultray`` (the PyPI
+        # release), which silently shadowed the working tree — every
+        # analyzer / CLI / workflow change in the PR was ignored by the
+        # gate. Install the local source in editable mode so the check
+        # actually exercises the PR being reviewed.
+        run: pip install -e .
 
       - name: Find infrastructure YAML files
         id: find-yaml
