@@ -6,6 +6,7 @@ supply chain, OAuth, billing, and miscellaneous endpoints."""
 
 from __future__ import annotations
 
+import hmac
 import logging
 import os
 
@@ -76,9 +77,59 @@ async def settings_page(request: Request, _user=_READ_ACCESS):
 # Initial Setup — create the first admin user (C1 fix)
 # ---------------------------------------------------------------------------
 
+_LOOPBACK_HOSTS: frozenset[str] = frozenset({"127.0.0.1", "::1", "localhost"})
+
+
+def _check_setup_allowed(request: Request) -> None:
+    """#140: gate ``/setup`` against the race-to-takeover threat.
+
+    Fresh deployments used to expose ``/setup`` to the public internet
+    until a first admin happened to be created — whoever reached the
+    endpoint first won permanent admin. This helper accepts a request
+    only when one of two conditions holds:
+
+    1. ``FAULTRAY_BOOTSTRAP_TOKEN`` is set and the request supplies the
+       same value via the ``X-Setup-Token`` header or ``?token=``
+       query parameter (compared with ``hmac.compare_digest`` to avoid
+       timing leaks).
+    2. The env is unset *and* the request originates from a loopback
+       address. This keeps local-dev convenience but forbids public
+       reach on any deployment that doesn't explicitly configure a
+       token.
+
+    On rejection we return 403, not 401 — the endpoint should look
+    unavailable, not "send a token to access".
+    """
+    expected = os.environ.get("FAULTRAY_BOOTSTRAP_TOKEN", "").strip()
+    if expected:
+        provided = (
+            request.headers.get("X-Setup-Token")
+            or request.query_params.get("token")
+            or ""
+        )
+        if not hmac.compare_digest(provided, expected):
+            logger.warning(
+                "rejected /setup attempt: bootstrap token mismatch (client=%s)",
+                request.client.host if request.client else "?",
+            )
+            raise HTTPException(status_code=403, detail="Setup is not available.")
+        return
+
+    client_host = request.client.host if request.client else ""
+    if client_host not in _LOOPBACK_HOSTS:
+        logger.warning(
+            "rejected /setup attempt from non-loopback client without "
+            "FAULTRAY_BOOTSTRAP_TOKEN (client=%s)",
+            client_host or "?",
+        )
+        raise HTTPException(status_code=403, detail="Setup is not available.")
+
+
 @router.get("/setup", response_class=HTMLResponse)
 async def setup_page(request: Request):
     """Show initial setup form when no users exist; redirect to / otherwise."""
+    _check_setup_allowed(request)
+
     from faultray.api.database import UserRow, get_session_factory
     from sqlalchemy import select
 
@@ -99,6 +150,8 @@ async def setup_page(request: Request):
 @router.post("/setup", response_class=HTMLResponse)
 async def setup_create_admin(request: Request):
     """Create the first admin user; redirect to setup GET with error on failure."""
+    _check_setup_allowed(request)
+
     from faultray.api.auth import generate_api_key, hash_api_key
     from faultray.api.database import UserRow, get_session_factory
     from sqlalchemy import select
