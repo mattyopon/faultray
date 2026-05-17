@@ -505,9 +505,13 @@ async def score_infrastructure(request: ScoreRequest) -> JSONResponse:
             "compliance_summary": score.compliance_summary,
         })
     except Exception as exc:
+        # #151: keep the raw exception in logs only — returning ``str(exc)``
+        # to the caller leaked parser internals / file paths / validation
+        # specifics and let attackers enumerate the input surface by
+        # spraying malformed payloads.
         logger.warning("Insurance scoring failed: %s", exc, exc_info=True)
         return JSONResponse(
-            {"error": f"Failed to compute insurance score: {exc}"},
+            {"error": "Failed to compute insurance score for the given payload."},
             status_code=400,
         )
 
