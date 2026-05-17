@@ -19,7 +19,7 @@
 # Rationale: #85 (avoid drift between manifest and pyproject).
 # ============================================================
 streamlit>=1.35.0
-pyyaml>=6.0
+pyyaml>=6.0.3
 networkx>=3.0
 pydantic>=2.0
 typer>=0.15
