@@ -1,4 +1,15 @@
 name: CLA Assistant
+
+# #152: this workflow runs with write privileges via pull_request_target
+# (so the action can update statuses / comments on PRs from forks).
+# Hardenings applied:
+#   - issue_comment trigger is narrowed in the job ``if`` to the two
+#     phrases the action actually consumes (``recheck`` /
+#     ``I have read the CLA ...``); all other comments early-exit before
+#     any code runs.
+#   - the third-party action is pinned to the exact commit SHA matching
+#     tag v2.6.1, so a re-tag of v2.6.1 by an upstream attacker can't
+#     drive write-capable code on this repo.
 on:
   issue_comment:
     types: [created]
@@ -15,8 +26,19 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: CLA Assistant
-        if: (github.event.comment.body == 'recheck' || github.event.comment.body == 'I have read the CLA Document and I hereby sign the CLA') || github.event_name == 'pull_request_target'
-        uses: contributor-assistant/github-action@v2.6.1
+        # #152: explicit allowlist for the comment-driven path.
+        if: |
+          github.event_name == 'pull_request_target'
+          || (
+            github.event_name == 'issue_comment'
+            && github.event.issue.pull_request != null
+            && (
+              github.event.comment.body == 'recheck'
+              || github.event.comment.body == 'I have read the CLA Document and I hereby sign the CLA'
+            )
+          )
+        # #152: pinned to the commit SHA of contributor-assistant/github-action@v2.6.1
+        uses: contributor-assistant/github-action@ca4a40a7d1004f18d9960b404b97e5f30a505a08  # v2.6.1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
