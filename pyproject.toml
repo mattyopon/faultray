@@ -67,7 +67,7 @@ azure = [
     "azure-identity>=1.25.3",
     "azure-mgmt-compute>=30.0",
     "azure-mgmt-sql>=3.0",
-    "azure-mgmt-redis>=14.0",
+    "azure-mgmt-redis>=14.5.0",
 ]
 k8s = [
     "kubernetes>=28.0",
