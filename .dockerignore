@@ -15,7 +15,11 @@ deliverables/
 *.log
 HANDOFF_*.md
 LAUNCH.md
+# #136: never bake env files into the image. The original line was '.env'
+# only; cover every variant (.env.local, .env.staging, .env.production, ...).
 .env
+.env.*
+!.env.example
 tests/
 docs/
 .venv/

@@ -11,3 +11,15 @@ repos:
       - id: mypy
         additional_dependencies: []
         args: [--ignore-missing-imports]
+  # #136: refuse to commit .env / .env.* files outright. .env.example is
+  # tracked as a template and stays allowed. (Content-level scanning is
+  # out of scope; this hook only catches the filename, which covers the
+  # specific regression #136 was filed against.)
+  - repo: local
+    hooks:
+      - id: forbid-env-files
+        name: forbid committing .env files
+        entry: bash -c 'echo ".env / .env.* files must not be committed (#136). Move secrets to a vault and commit only .env.example."; exit 1'
+        language: system
+        files: '^\.env(\.(?!example$)[^/]+)?$'
+        pass_filenames: false
