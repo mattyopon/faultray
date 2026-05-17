@@ -1,10 +1,32 @@
 #!/bin/bash
-# FaultRay v11.0.0 Release Script
-# Run this AFTER patent filing is complete
+# FaultRay Release Script
+# Run this AFTER patent filing is complete.
+#
+# #145: VERSION used to be hardcoded ("11.0.0") and drifted from
+# pyproject.toml. The script now reads the version straight from
+# pyproject.toml so the tag, dist filenames, and GitHub release match
+# the package metadata. Override via FAULTRAY_RELEASE_VERSION when
+# needed for hotfix work.
 
-set -e
+set -euo pipefail
 
-VERSION="11.0.0"
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+PYPROJECT="${SCRIPT_DIR}/../pyproject.toml"
+
+if [[ -n "${FAULTRAY_RELEASE_VERSION:-}" ]]; then
+  VERSION="${FAULTRAY_RELEASE_VERSION}"
+else
+  VERSION="$(python3 -c '
+import sys, tomllib, pathlib
+data = tomllib.loads(pathlib.Path(sys.argv[1]).read_text())
+print(data["project"]["version"])
+' "${PYPROJECT}")"
+fi
+
+if [[ -z "${VERSION}" ]]; then
+  echo "error: could not determine release version" >&2
+  exit 1
+fi
 
 echo "=== FaultRay v${VERSION} Release ==="
 
