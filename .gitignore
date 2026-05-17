@@ -20,13 +20,17 @@ faultray-model.json
 .claude/worktrees/
 .coverage
 *.db
-.env
 htmlcov/
 .mypy_cache/
 .faultray/
 site/
 .hypothesis/
+
+# #136: env files. .env.example stays tracked as a template.
 .env
+.env.*
+!.env.example
+
 executive-report.html
 docs/proposal/executive-report.html
 
