@@ -30,6 +30,12 @@ site/
 executive-report.html
 docs/proposal/executive-report.html
 
+# #147: provisional-filing / patent strategy material must never be
+# committed (legal-strategy artifacts, not source code). Keep them
+# physically out of the working tree once possible; the ignore here
+# is defence-in-depth for files that still sit alongside the repo.
+docs/patent/
+
 # TeX artifacts
 *.aux
 *.bbl

@@ -1,34 +1,44 @@
-# Commercial Licensing for FaultRay
+# Commercial Support & Sponsorship for FaultRay
 
-FaultRay is available under the **Business Source License 1.1 (BSL-1.1)** for non-production use. If you would like to use FaultRay in a production environment or embed it in a commercial product, a commercial license is required.
+**License:** FaultRay's source is released under the [Apache License 2.0](LICENSE) —
+the same terms declared in `pyproject.toml`. There is no usage restriction
+in the license itself: development, testing, evaluation, academic research,
+and production deployment are all permitted at no cost under Apache-2.0.
 
-## What Requires a Commercial License?
+This document covers **optional** paid support, sponsored development, and
+custom integration work, **not** licensing of the source code. (#142)
 
-A commercial license is required for any of the following:
+## Why a commercial relationship makes sense
 
-- **Production use** -- deploying FaultRay in any production system or environment
-- **Commercial product embedding** -- integrating FaultRay into a product or service offered to customers
-- **Managed service offerings** -- providing FaultRay functionality as part of a hosted or managed service
+Apache-2.0 lets you ship FaultRay anywhere, but it does not entitle you to
+prioritised bug fixes, custom integrations, SLA-backed support, or feature
+work on your timeline. The offers below cover that gap.
 
-Non-production use such as development, testing, evaluation, and academic research is permitted under the BSL-1.1 at no cost.
+- **Production support** — incident response, prioritised triage,
+  on-call coverage, advisory hours.
+- **Custom integrations** — sponsored development of connectors,
+  reporting formats, or compliance frameworks specific to your stack.
+- **Managed offerings** — hosted FaultRay with SOC 2 / ISO 27001
+  alignment, on request.
+- **Training & onboarding** — workshops for SRE / DevOps teams.
 
 ## Contact
 
-For commercial licensing inquiries, please reach out to:
+For commercial inquiries, please reach out to:
 
 **Yutaro Maeda**
 Email: [contact@faultray.com](mailto:contact@faultray.com)
 
 ## FAQ
 
-**Can I use FaultRay for development and testing?**
-Yes. Development, testing, and evaluation use is free under the BSL-1.1 license.
+**Can I use FaultRay in production without paying anything?**
+Yes. The Apache-2.0 license imposes no production-use restriction. Paid
+engagements above are an additional service tier, not a license unlock.
 
-**Can I use FaultRay in production?**
-Production use requires a commercial license. Please contact us at the email above to discuss terms.
+**Why does the README / older docs mention BSL?**
+Earlier drafts of FaultRay considered a Business Source License before
+shipping. The repository has shipped Apache-2.0 from launch; the older
+BSL wording was a documentation lag and has been removed here (#142).
 
-**What about academic or research use?**
-Academic and research use is free under the BSL-1.1 license.
-
-**When does FaultRay become open source?**
-FaultRay will transition to the Apache License 2.0 on **2030-03-17**, at which point it will be fully open source with no usage restrictions.
+**Is contribution covered by the same license?**
+Yes — contributions are accepted under Apache-2.0 via the project's CLA.
