@@ -32,7 +32,7 @@ classifiers = [
 ]
 keywords = ["chaos-engineering", "sre", "devops", "infrastructure", "simulation", "reliability", "slo", "fault-injection", "resilience-testing", "availability", "disaster-recovery", "incident-response", "terraform", "prometheus", "dora-compliance", "ai-agent", "agentic-ai"]
 dependencies = [
-    "typer>=0.15",
+    "typer>=0.25.1",
     "rich>=13.0",
     "pydantic>=2.0",
     "networkx>=3.0",
