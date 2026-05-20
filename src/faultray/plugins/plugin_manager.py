@@ -20,6 +20,7 @@ Plugin discovery:
 
 from __future__ import annotations
 
+import ast
 import importlib
 import importlib.util
 import logging
@@ -484,38 +485,63 @@ class PluginManager:
 
     @staticmethod
     def _read_metadata_from_file(py_file: Path) -> PluginMetadata | None:
-        """Extract ``PLUGIN_METADATA`` dict from a Python source file."""
+        """Extract ``PLUGIN_METADATA`` dict statically via AST (no module execution).
+
+        Security (#149): discovery で ``exec_module`` を呼ぶと plugin dir に置か
+        れた任意の Python が import 時に走り、書き込み権限を取った攻撃者から
+        RCE できる。ここでは module 化せず ``ast.literal_eval`` で literal の
+        ``PLUGIN_METADATA = {...}`` だけを取り出す。実際の import は ``load()``
+        の trust 経路でのみ行う。
+        """
         try:
-            spec = importlib.util.spec_from_file_location(py_file.stem, py_file)
-            if spec is None or spec.loader is None:
-                return None
-            module = importlib.util.module_from_spec(spec)
-            spec.loader.exec_module(module)  # type: ignore[union-attr]
-
-            raw = getattr(module, "PLUGIN_METADATA", None)
-            if not isinstance(raw, dict):
-                return None
-
-            try:
-                ptype = PluginType(raw.get("type", "scenario_generator"))
-            except ValueError:
-                ptype = PluginType.SCENARIO_GENERATOR
-
-            return PluginMetadata(
-                name=raw.get("name", py_file.stem),
-                version=raw.get("version", "0.0.0"),
-                author=raw.get("author", "unknown"),
-                description=raw.get("description", ""),
-                plugin_type=ptype,
-                entry_point=str(py_file),
-                dependencies=raw.get("dependencies", []),
-                config_schema=raw.get("config_schema"),
-                enabled=raw.get("enabled", True),
-                source="local",
-            )
-        except Exception:
-            logger.debug("Failed to read metadata from %s", py_file, exc_info=True)
+            source = py_file.read_text(encoding="utf-8")
+            tree = ast.parse(source, filename=str(py_file))
+        except (OSError, UnicodeDecodeError, SyntaxError):
+            logger.debug("Failed to read/parse %s", py_file, exc_info=True)
             return None
+
+        raw: dict[str, Any] | None = None
+        for node in tree.body:
+            targets: list[ast.expr]
+            if isinstance(node, ast.Assign):
+                targets = list(node.targets)
+                value = node.value
+            elif isinstance(node, ast.AnnAssign) and node.value is not None:
+                targets = [node.target]
+                value = node.value
+            else:
+                continue
+            if not any(isinstance(t, ast.Name) and t.id == "PLUGIN_METADATA" for t in targets):
+                continue
+            try:
+                evaluated = ast.literal_eval(value)
+            except (ValueError, SyntaxError):
+                logger.debug("PLUGIN_METADATA in %s is not a literal", py_file)
+                return None
+            if isinstance(evaluated, dict):
+                raw = evaluated
+            break
+
+        if raw is None:
+            return None
+
+        try:
+            ptype = PluginType(raw.get("type", "scenario_generator"))
+        except ValueError:
+            ptype = PluginType.SCENARIO_GENERATOR
+
+        return PluginMetadata(
+            name=raw.get("name", py_file.stem),
+            version=raw.get("version", "0.0.0"),
+            author=raw.get("author", "unknown"),
+            description=raw.get("description", ""),
+            plugin_type=ptype,
+            entry_point=str(py_file),
+            dependencies=raw.get("dependencies", []),
+            config_schema=raw.get("config_schema"),
+            enabled=raw.get("enabled", True),
+            source="local",
+        )
 
     # ---- Loading -----------------------------------------------------------
 
