@@ -203,7 +203,7 @@ jobs:
         run: pytest --cov=faultray --cov-report=xml --cov-report=term-missing -q --tb=short
 
       - name: Upload coverage
-        uses: codecov/codecov-action@v6
+        uses: codecov/codecov-action@v7
         with:
           file: ./coverage.xml
         continue-on-error: true
