@@ -72,20 +72,32 @@ class InfraGraph:
                 edges.append(data["dependency"])
         return edges
 
-    def get_cascade_path(self, failed_component_id: str) -> list[list[str]]:
+    def get_cascade_path(
+        self, failed_component_id: str, max_paths: int = 10_000
+    ) -> list[list[str]]:
         """Find all downstream paths showing how a failure cascades from the component.
 
-        Returns paths from the failed component to all transitively affected components.
+        Returns simple paths from the failed component to all transitively
+        affected components (its direct and indirect dependents). Enumeration
+        stops after *max_paths* paths so dense graphs cannot blow up
+        exponentially.
         """
-        paths = []
-        reverse = self._graph.reverse()
-        for node in reverse.nodes:
-            if node == failed_component_id:
-                continue
-            for path in nx.all_simple_paths(
-                reverse, failed_component_id, node
-            ):
-                paths.append(path)
+        if failed_component_id not in self._graph:
+            return []
+        # Walk reverse dependency edges (dependents) with a single DFS instead
+        # of one all_simple_paths() call per node on a reversed graph copy.
+        paths: list[list[str]] = []
+        stack: list[list[str]] = [[failed_component_id]]
+        while stack:
+            path = stack.pop()
+            for pred in self._graph.predecessors(path[-1]):
+                if pred in path:  # keep paths simple under cyclic graphs
+                    continue
+                new_path = path + [pred]
+                paths.append(new_path)
+                if len(paths) >= max_paths:
+                    return paths
+                stack.append(new_path)
         return paths
 
     def get_all_affected(self, component_id: str) -> set[str]:
@@ -102,16 +114,16 @@ class InfraGraph:
 
     def get_critical_paths(self, max_paths: int = 100) -> list[list[str]]:
         """Find the longest dependency chains (most vulnerable to cascade)."""
-        paths = []
-        for node in self._graph.nodes:
-            if self._graph.in_degree(node) == 0:  # entry points
-                for target in self._graph.nodes:
-                    if self._graph.out_degree(target) == 0:  # leaf nodes
-                        for path in nx.all_simple_paths(self._graph, node, target):
-                            paths.append(path)
-                            if len(paths) >= max_paths:
-                                paths.sort(key=len, reverse=True)
-                                return paths
+        entries = [n for n in self._graph.nodes if self._graph.in_degree(n) == 0]
+        leaves = [n for n in self._graph.nodes if self._graph.out_degree(n) == 0]
+        paths: list[list[str]] = []
+        for node in entries:
+            for target in leaves:
+                for path in nx.all_simple_paths(self._graph, node, target):
+                    paths.append(path)
+                    if len(paths) >= max_paths:
+                        paths.sort(key=len, reverse=True)
+                        return paths
         paths.sort(key=len, reverse=True)
         return paths
 
