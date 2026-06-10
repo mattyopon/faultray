@@ -10,12 +10,14 @@ from rich.panel import Panel
 from rich.table import Table
 from rich.tree import Tree
 
+from faultray.i18n import t
 from faultray.model.components import HealthStatus
 from faultray.model.graph import InfraGraph
 from faultray.reporter.style import (
     HEALTH_LABELS,
     iter_effects_with_delta,
     risk_bucket,
+    score_bucket,
 )
 from faultray.simulator.engine import SimulationReport, ScenarioResult
 
@@ -42,6 +44,8 @@ _RISK_MARKUP = {
     "low": "[green]{score:.1f}/10 LOW[/]",
 }
 
+_SCORE_RICH_COLORS = {"good": "green", "fair": "yellow", "poor": "red"}
+
 
 def _risk_label(score: float) -> str:
     return _RISK_MARKUP[risk_bucket(score)].format(score=score)
@@ -52,23 +56,18 @@ def print_infrastructure_summary(graph: InfraGraph, console: Console | None = No
     console = console or Console()
     summary = graph.summary()
 
-    table = Table(title="Infrastructure Overview", show_header=True)
-    table.add_column("Metric", style="cyan")
-    table.add_column("Value", style="white")
+    table = Table(title=t("infrastructure_overview"), show_header=True)
+    table.add_column(t("metric"), style="cyan")
+    table.add_column(t("value"), style="white")
 
-    table.add_row("Components", str(summary["total_components"]))
-    table.add_row("Dependencies", str(summary["total_dependencies"]))
+    table.add_row(t("components"), str(summary["total_components"]))
+    table.add_row(t("dependencies"), str(summary["total_dependencies"]))
     for comp_type, count in summary["component_types"].items():
         table.add_row(f"  {comp_type}", str(count))
 
     score = summary["resilience_score"]
-    if score >= 80:
-        score_str = f"[green]{score}/100[/]"
-    elif score >= 60:
-        score_str = f"[yellow]{score}/100[/]"
-    else:
-        score_str = f"[red]{score}/100[/]"
-    table.add_row("Resilience Score", score_str)
+    color = _SCORE_RICH_COLORS[score_bucket(score)]
+    table.add_row(t("resilience_score"), f"[{color}]{score}/100[/]")
 
     console.print(table)
 
@@ -83,28 +82,23 @@ def print_simulation_report(
 
     # Header
     score = report.resilience_score
-    if score >= 80:
-        color = "green"
-    elif score >= 60:
-        color = "yellow"
-    else:
-        color = "red"
+    color = _SCORE_RICH_COLORS[score_bucket(score)]
 
     console.print()
     console.print(Panel(
-        f"[bold]Resilience Score: [{color}]{score:.0f}/100[/][/]\n\n"
-        f"Scenarios tested: {len(report.results)}\n"
-        f"[bold red]Critical: {len(report.critical_findings)}[/]  "
-        f"[yellow]Warning: {len(report.warnings)}[/]  "
-        f"[green]Passed: {len(report.passed)}[/]",
-        title="[bold]FaultRay Chaos Simulation Report[/]",
+        f"[bold]{t('resilience_score')}: [{color}]{score:.0f}/100[/][/]\n\n"
+        f"{t('scenarios_tested')}: {len(report.results)}\n"
+        f"[bold red]{t('critical')}: {len(report.critical_findings)}[/]  "
+        f"[yellow]{t('warning')}: {len(report.warnings)}[/]  "
+        f"[green]{t('passed')}: {len(report.passed)}[/]",
+        title=f"[bold]{t('report_title')}[/]",
         border_style=color,
     ))
 
     # Critical findings
     if report.critical_findings:
         console.print()
-        console.print("[bold red]CRITICAL FINDINGS[/]")
+        console.print(f"[bold red]{t('critical_findings').upper()}[/]")
         console.print()
         for result in report.critical_findings:
             _print_scenario_result(result, console)
@@ -112,7 +106,7 @@ def print_simulation_report(
     # Warnings
     if report.warnings:
         console.print()
-        console.print("[yellow]WARNINGS[/]")
+        console.print(f"[yellow]{t('warning_findings').upper()}[/]")
         console.print()
         for result in report.warnings:
             _print_scenario_result(result, console)
@@ -120,7 +114,7 @@ def print_simulation_report(
     # Passed (summary only)
     if report.passed:
         console.print()
-        console.print(f"[green]{len(report.passed)} scenarios passed with low risk[/]")
+        console.print(f"[green]{t('passed_with_low_risk', count=len(report.passed))}[/]")
 
     # Agent resilience section
     if graph is not None:
@@ -209,7 +203,7 @@ def _print_scenario_result(result: ScenarioResult, console: Console) -> None:
     console.print(f"    {result.scenario.description}")
 
     if result.cascade.effects:
-        tree = Tree("  [dim]Cascade path:[/]")
+        tree = Tree(f"  [dim]{t('cascade_path')}[/]")
         for effect, delta in iter_effects_with_delta(result.cascade.effects):
             time_str = f" [dim](+{delta}s)[/]" if delta is not None else ""
             icon = _health_icon(effect.health)
