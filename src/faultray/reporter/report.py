@@ -12,6 +12,11 @@ from rich.tree import Tree
 
 from faultray.model.components import HealthStatus
 from faultray.model.graph import InfraGraph
+from faultray.reporter.style import (
+    HEALTH_LABELS,
+    iter_effects_with_delta,
+    risk_bucket,
+)
 from faultray.simulator.engine import SimulationReport, ScenarioResult
 
 
@@ -25,20 +30,21 @@ def _health_color(health: HealthStatus) -> str:
 
 
 def _health_icon(health: HealthStatus) -> str:
-    return {
-        HealthStatus.HEALTHY: "[green]OK[/]",
-        HealthStatus.DEGRADED: "[yellow]WARN[/]",
-        HealthStatus.OVERLOADED: "[red]OVERLOAD[/]",
-        HealthStatus.DOWN: "[bold red]DOWN[/]",
-    }.get(health, "?")
+    label = HEALTH_LABELS.get(health)
+    if label is None:
+        return "?"
+    return f"[{_health_color(health)}]{label}[/]"
+
+
+_RISK_MARKUP = {
+    "critical": "[bold red]{score:.1f}/10 CRITICAL[/]",
+    "warning": "[yellow]{score:.1f}/10 WARNING[/]",
+    "low": "[green]{score:.1f}/10 LOW[/]",
+}
 
 
 def _risk_label(score: float) -> str:
-    if score >= 7.0:
-        return f"[bold red]{score:.1f}/10 CRITICAL[/]"
-    if score >= 4.0:
-        return f"[yellow]{score:.1f}/10 WARNING[/]"
-    return f"[green]{score:.1f}/10 LOW[/]"
+    return _RISK_MARKUP[risk_bucket(score)].format(score=score)
 
 
 def print_infrastructure_summary(graph: InfraGraph, console: Console | None = None) -> None:
@@ -204,14 +210,8 @@ def _print_scenario_result(result: ScenarioResult, console: Console) -> None:
 
     if result.cascade.effects:
         tree = Tree("  [dim]Cascade path:[/]")
-        prev_time = 0
-        for effect in result.cascade.effects:
-            time_str = ""
-            if effect.estimated_time_seconds > 0:
-                delta = effect.estimated_time_seconds - prev_time
-                time_str = f" [dim](+{delta}s)[/]"
-                prev_time = effect.estimated_time_seconds
-
+        for effect, delta in iter_effects_with_delta(result.cascade.effects):
+            time_str = f" [dim](+{delta}s)[/]" if delta is not None else ""
             icon = _health_icon(effect.health)
             tree.add(f"{icon} {effect.component_name}{time_str}\n"
                      f"      [dim]{effect.reason}[/]")

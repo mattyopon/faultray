@@ -11,6 +11,7 @@ from pathlib import Path
 from faultray.model.components import HealthStatus
 from faultray.model.graph import InfraGraph
 from faultray.reporter.html_report import generate_html_report
+from faultray.reporter.style import health_label, iter_effects_with_delta, risk_bucket
 from faultray.simulator.engine import SimulationReport
 
 
@@ -67,20 +68,40 @@ def save_pdf_ready_html(
 # ---------------------------------------------------------------------------
 
 def _health_label(health: HealthStatus) -> str:
-    return {
-        HealthStatus.HEALTHY: "OK",
-        HealthStatus.DEGRADED: "WARN",
-        HealthStatus.OVERLOADED: "OVERLOAD",
-        HealthStatus.DOWN: "DOWN",
-    }.get(health, "?")
+    return health_label(health)
 
 
 def _risk_label(score: float) -> str:
-    if score >= 7.0:
-        return "CRITICAL"
-    if score >= 4.0:
-        return "WARNING"
-    return "LOW"
+    return risk_bucket(score).upper()
+
+
+def _append_finding_section(lines: list[str], title: str, results) -> None:
+    """Append one markdown section of scenario findings with cascade tables."""
+    lines.append(f"## {title}")
+    lines.append("")
+    for result in results:
+        lines.append(f"### {result.scenario.name}")
+        lines.append("")
+        lines.append(
+            f"**Risk Score:** {result.risk_score:.1f}/10 ({_risk_label(result.risk_score)})"
+        )
+        lines.append("")
+        lines.append(f"> {result.scenario.description}")
+        lines.append("")
+        if result.cascade.effects:
+            lines.append("**Cascade Path:**")
+            lines.append("")
+            lines.append("| Component | Status | Reason | Time |")
+            lines.append("|-----------|--------|--------|------|")
+            for eff, delta in iter_effects_with_delta(result.cascade.effects):
+                time_str = f"+{delta}s" if delta is not None else ""
+                lines.append(
+                    f"| {eff.component_name} "
+                    f"| {_health_label(eff.health)} "
+                    f"| {eff.reason} "
+                    f"| {time_str} |"
+                )
+            lines.append("")
 
 
 def export_markdown(
@@ -118,65 +139,11 @@ def export_markdown(
 
     # -- Critical findings -------------------------------------------------
     if report.critical_findings:
-        lines.append("## Critical Findings")
-        lines.append("")
-        for result in report.critical_findings:
-            lines.append(f"### {result.scenario.name}")
-            lines.append("")
-            lines.append(f"**Risk Score:** {result.risk_score:.1f}/10 ({_risk_label(result.risk_score)})")
-            lines.append("")
-            lines.append(f"> {result.scenario.description}")
-            lines.append("")
-            if result.cascade.effects:
-                lines.append("**Cascade Path:**")
-                lines.append("")
-                lines.append("| Component | Status | Reason | Time |")
-                lines.append("|-----------|--------|--------|------|")
-                prev_time = 0
-                for eff in result.cascade.effects:
-                    time_str = ""
-                    if eff.estimated_time_seconds > 0:
-                        delta = eff.estimated_time_seconds - prev_time
-                        time_str = f"+{delta}s"
-                        prev_time = eff.estimated_time_seconds
-                    lines.append(
-                        f"| {eff.component_name} "
-                        f"| {_health_label(eff.health)} "
-                        f"| {eff.reason} "
-                        f"| {time_str} |"
-                    )
-                lines.append("")
+        _append_finding_section(lines, "Critical Findings", report.critical_findings)
 
     # -- Warnings ----------------------------------------------------------
     if report.warnings:
-        lines.append("## Warnings")
-        lines.append("")
-        for result in report.warnings:
-            lines.append(f"### {result.scenario.name}")
-            lines.append("")
-            lines.append(f"**Risk Score:** {result.risk_score:.1f}/10 ({_risk_label(result.risk_score)})")
-            lines.append("")
-            lines.append(f"> {result.scenario.description}")
-            lines.append("")
-            if result.cascade.effects:
-                lines.append("**Cascade Path:**")
-                lines.append("")
-                lines.append("| Component | Status | Reason | Time |")
-                lines.append("|-----------|--------|--------|------|")
-                prev_time = 0
-                for eff in result.cascade.effects:
-                    time_str = ""
-                    if eff.estimated_time_seconds > 0:
-                        delta = eff.estimated_time_seconds - prev_time
-                        time_str = f"+{delta}s"
-                        prev_time = eff.estimated_time_seconds
-                    lines.append(
-                        f"| {eff.component_name} "
-                        f"| {_health_label(eff.health)} "
-                        f"| {eff.reason} "
-                        f"| {time_str} |"
-                    )
-                lines.append("")
+        _append_finding_section(lines, "Warnings", report.warnings)
 
     # -- Passed summary ----------------------------------------------------
     if report.passed:
