@@ -8,17 +8,17 @@ export function activate(context: vscode.ExtensionContext) {
     statusBarItem = vscode.window.createStatusBarItem(
         vscode.StatusBarAlignment.Right, 100
     );
-    statusBarItem.command = 'faultzero.showScore';
-    statusBarItem.text = '$(shield) FaultZero: --';
+    statusBarItem.command = 'faultray.showScore';
+    statusBarItem.text = '$(shield) FaultRay: --';
     statusBarItem.tooltip = 'Click to show resilience details';
     statusBarItem.show();
     context.subscriptions.push(statusBarItem);
 
     // Register commands
     context.subscriptions.push(
-        vscode.commands.registerCommand('faultzero.scan', runScan),
-        vscode.commands.registerCommand('faultzero.simulate', runSimulation),
-        vscode.commands.registerCommand('faultzero.showScore', showScore),
+        vscode.commands.registerCommand('faultray.scan', runScan),
+        vscode.commands.registerCommand('faultray.simulate', runSimulation),
+        vscode.commands.registerCommand('faultray.showScore', showScore),
     );
 
     // Initial scan
@@ -26,56 +26,64 @@ export function activate(context: vscode.ExtensionContext) {
 }
 
 async function runScan() {
-    const terminal = vscode.window.createTerminal('FaultZero');
-    terminal.sendText('chaosproof scan --output faultray-model.json');
+    const terminal = vscode.window.createTerminal('FaultRay');
+    terminal.sendText('faultray scan --output faultray-model.json');
     terminal.show();
 }
 
 async function runSimulation() {
-    const terminal = vscode.window.createTerminal('FaultZero');
-    terminal.sendText('chaosproof simulate --json > .chaosproof-results.json');
+    const terminal = vscode.window.createTerminal('FaultRay');
+    terminal.sendText('faultray simulate --json > .faultray-results.json');
     terminal.show();
 }
 
 async function showScore() {
-    // Run chaosproof and show results in webview
+    // Run faultray and show results in webview
     const panel = vscode.window.createWebviewPanel(
-        'faultzeroScore', 'FaultZero Score', vscode.ViewColumn.One, {}
+        'faultrayScore', 'FaultRay Score', vscode.ViewColumn.One, {}
     );
-    panel.webview.html = '<h1>FaultZero Score</h1><p>Loading...</p>';
+    panel.webview.html = '<h1>FaultRay Score</h1><p>Loading...</p>';
 
-    exec('chaosproof evaluate --json', (err, stdout) => {
+    exec('faultray evaluate --json', (err, stdout) => {
         if (err) {
-            panel.webview.html = `<h1>Error</h1><pre>${err.message}</pre>`;
+            panel.webview.html = `<h1>Error</h1><pre>${escapeHtml(err.message)}</pre>`;
             return;
         }
         try {
             const data = JSON.parse(stdout);
             panel.webview.html = generateScoreHtml(data);
         } catch (e) {
-            panel.webview.html = `<pre>${stdout}</pre>`;
+            panel.webview.html = `<pre>${escapeHtml(stdout)}</pre>`;
         }
     });
 }
 
 function updateScore() {
-    exec('chaosproof simulate --json 2>/dev/null', (err, stdout) => {
+    exec('faultray simulate --json 2>/dev/null', (err, stdout) => {
         if (err) {
-            statusBarItem.text = '$(shield) FaultZero: N/A';
+            statusBarItem.text = '$(shield) FaultRay: N/A';
             return;
         }
         try {
             const data = JSON.parse(stdout);
             const score = data.resilience_score || 0;
             const icon = score >= 80 ? '$(pass)' : score >= 50 ? '$(warning)' : '$(error)';
-            statusBarItem.text = `${icon} FaultZero: ${score}/100`;
+            statusBarItem.text = `${icon} FaultRay: ${score}/100`;
         } catch (e) {
-            statusBarItem.text = '$(shield) FaultZero: --';
+            statusBarItem.text = '$(shield) FaultRay: --';
         }
     });
 }
 
+function escapeHtml(text: string): string {
+    return text
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;');
+}
+
 function generateScoreHtml(data: any): string {
+    const score = Number(data.resilience_score) || 0;
     return `<!DOCTYPE html>
     <html>
     <head><style>
@@ -86,12 +94,12 @@ function generateScoreHtml(data: any): string {
         .red { color: #f85149; }
     </style></head>
     <body>
-        <h1>FaultZero Infrastructure Report</h1>
-        <div class="score ${data.resilience_score >= 80 ? 'green' : data.resilience_score >= 50 ? 'yellow' : 'red'}">
-            ${data.resilience_score}/100
+        <h1>FaultRay Infrastructure Report</h1>
+        <div class="score ${score >= 80 ? 'green' : score >= 50 ? 'yellow' : 'red'}">
+            ${score}/100
         </div>
-        <p>Scenarios: ${data.total_scenarios || 'N/A'}</p>
-        <p>Critical: ${data.critical || 0} | Warning: ${data.warning || 0}</p>
+        <p>Scenarios: ${Number(data.total_scenarios) || 'N/A'}</p>
+        <p>Critical: ${Number(data.critical) || 0} | Warning: ${Number(data.warning) || 0}</p>
     </body></html>`;
 }
 

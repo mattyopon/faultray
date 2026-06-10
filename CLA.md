@@ -49,4 +49,4 @@ You confirm your agreement to these terms by signing below via the CLA Assistant
 
 **Project:** FaultRay
 **Copyright Holder:** Yutaro Maeda
-**License Compatibility:** Business Source License 1.1 (BSL-1.1)
+**License Compatibility:** Apache License 2.0 (relicensed from BSL 1.1 on 2026-04-11)

@@ -13,7 +13,8 @@ authors = [
     {name = "Yutaro Maeda", email = "mattyopon@gmail.com"},
 ]
 classifiers = [
-    "Development Status :: 5 - Production/Stable",
+    # Matches the "research prototype" positioning in the description above
+    "Development Status :: 4 - Beta",
     "Intended Audience :: Developers",
     "Intended Audience :: System Administrators",
     "License :: OSI Approved :: Apache Software License",
