@@ -22,6 +22,7 @@ import logging
 import time
 from dataclasses import dataclass, field
 
+from faultray.discovery.base import CloudScannerBase
 from faultray.model.components import (
     AutoScalingConfig,
     Capacity,
@@ -120,7 +121,7 @@ class AlibabaDiscoveryResult:
     scan_duration_seconds: float = 0.0
 
 
-class AlibabaScanner:
+class AlibabaScanner(CloudScannerBase):
     """Discover Alibaba Cloud infrastructure and generate InfraGraph automatically.
 
     Authenticates using AccessKey ID and Secret.
@@ -140,11 +141,11 @@ class AlibabaScanner:
         region: str = "cn-hangzhou",
         vpc_id: str | None = None,
     ) -> None:
+        super().__init__()
         self.access_key_id = access_key_id
         self.access_key_secret = access_key_secret
         self.region = region
         self.vpc_id = vpc_id
-        self._warnings: list[str] = []
         # VPC ID -> list of component IDs in that VPC
         self._vpc_members: dict[str, list[str]] = {}
         # SLB backend server -> SLB component ID mapping
@@ -169,22 +170,12 @@ class AlibabaScanner:
             ("VPC", self._scan_vpc),
         ]
 
-        for name, scanner_fn in scanners:
-            try:
-                scanner_fn(graph)
-            except RuntimeError:
-                raise  # Re-raise library import errors
-            except Exception as exc:
-                msg = f"Failed to scan Alibaba {name}: {exc}"
-                logger.warning(msg)
-                self._warnings.append(msg)
-
-        try:
-            self._infer_dependencies(graph)
-        except Exception as exc:
-            msg = f"Failed to infer Alibaba dependencies: {exc}"
-            logger.warning(msg)
-            self._warnings.append(msg)
+        self._run_scanners(
+            graph,
+            scanners,
+            post_processors=[("infer Alibaba dependencies", self._infer_dependencies)],
+            scan_error_fmt="Failed to scan Alibaba {name}: {exc}",
+        )
 
         duration = time.monotonic() - start
         dep_count = len(graph.all_dependency_edges())

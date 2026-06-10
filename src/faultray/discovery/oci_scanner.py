@@ -18,6 +18,7 @@ import logging
 import time
 from dataclasses import dataclass, field
 
+from faultray.discovery.base import CloudScannerBase
 from faultray.model.components import (
     Capacity,
     Component,
@@ -93,7 +94,7 @@ class OCIDiscoveryResult:
     scan_duration_seconds: float = 0.0
 
 
-class OCIScanner:
+class OCIScanner(CloudScannerBase):
     """Discover Oracle Cloud Infrastructure and generate InfraGraph automatically.
 
     Uses the OCI Python SDK with config from ~/.oci/config or instance principal.
@@ -112,11 +113,11 @@ class OCIScanner:
         profile: str = "DEFAULT",
         region: str | None = None,
     ) -> None:
+        super().__init__()
         self.compartment_id = compartment_id
         self.config_file = config_file
         self.profile = profile
         self.region = region
-        self._warnings: list[str] = []
         # VCN ID -> list of component IDs in that VCN
         self._vcn_members: dict[str, list[str]] = {}
         # Load balancer OCID -> list of backend instance OCIDs
@@ -147,22 +148,12 @@ class OCIScanner:
             ("ObjectStorage", lambda g: self._scan_object_storage(g, config)),
         ]
 
-        for name, scanner_fn in scanners:
-            try:
-                scanner_fn(graph)
-            except RuntimeError:
-                raise  # Re-raise library import errors
-            except Exception as exc:
-                msg = f"Failed to scan OCI {name}: {exc}"
-                logger.warning(msg)
-                self._warnings.append(msg)
-
-        try:
-            self._infer_dependencies(graph)
-        except Exception as exc:
-            msg = f"Failed to infer OCI dependencies: {exc}"
-            logger.warning(msg)
-            self._warnings.append(msg)
+        self._run_scanners(
+            graph,
+            scanners,
+            post_processors=[("infer OCI dependencies", self._infer_dependencies)],
+            scan_error_fmt="Failed to scan OCI {name}: {exc}",
+        )
 
         duration = time.monotonic() - start
         dep_count = len(graph.all_dependency_edges())

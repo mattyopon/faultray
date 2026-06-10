@@ -17,6 +17,7 @@ from pathlib import Path
 
 import yaml
 
+from faultray.discovery.base import CloudScannerBase
 from faultray.errors import ExternalServiceError
 from faultray.model.components import (
     AutoScalingConfig,
@@ -86,13 +87,15 @@ class AWSDiscoveryResult:
     scan_duration_seconds: float = 0.0
 
 
-class AWSScanner:
+class AWSScanner(CloudScannerBase):
     """Discover AWS infrastructure and generate InfraGraph automatically."""
 
+    reraise_exceptions = (ExternalServiceError,)
+
     def __init__(self, region: str = "ap-northeast-1", profile: str | None = None):
+        super().__init__()
         self.region = region
         self.profile = profile
-        self._warnings: list[str] = []
         # Maps security-group-id -> list of component ids using that SG
         self._sg_to_components: dict[str, list[str]] = {}
         # Maps component id -> list of security group ids
@@ -131,37 +134,15 @@ class AWSScanner:
             ("Lambda", self._scan_lambda),
         ]
 
-        for name, scanner_fn in scanners:
-            try:
-                scanner_fn(graph)
-            except ExternalServiceError:
-                raise  # Re-raise boto3 import errors
-            except Exception as exc:
-                msg = f"Failed to scan {name}: {exc}"
-                logger.warning(msg)
-                self._warnings.append(msg)
-
-        # Post-processing
-        try:
-            self._infer_dependencies(graph)
-        except Exception as exc:
-            msg = f"Failed to infer dependencies: {exc}"
-            logger.warning(msg)
-            self._warnings.append(msg)
-
-        try:
-            self._enrich_metrics(graph)
-        except Exception as exc:
-            msg = f"Failed to enrich metrics: {exc}"
-            logger.warning(msg)
-            self._warnings.append(msg)
-
-        try:
-            self._detect_security(graph)
-        except Exception as exc:
-            msg = f"Failed to detect security profiles: {exc}"
-            logger.warning(msg)
-            self._warnings.append(msg)
+        self._run_scanners(
+            graph,
+            scanners,
+            post_processors=[
+                ("infer dependencies", self._infer_dependencies),
+                ("enrich metrics", self._enrich_metrics),
+                ("detect security profiles", self._detect_security),
+            ],
+        )
 
         duration = time.monotonic() - start
         dep_count = len(graph.all_dependency_edges())
