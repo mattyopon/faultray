@@ -16,14 +16,15 @@ logger = logging.getLogger(__name__)
 
 
 def _require_permission(permission: str):
-    """Re-implementation to avoid circular import with server module.
+    """FastAPI dependency that enforces RBAC via auth.require_permission.
 
-    Mirrors the server's _require_permission but without importing it.
-    Returns a FastAPI dependency that checks user permissions.
+    The auth module is imported lazily to avoid a circular import with the
+    server module.
     """
     async def _checker(request: Request):
-        # Minimal permission check — in production, delegate to auth module
-        return {"user_id": "anonymous", "permission": permission}
+        from faultray.api.auth import require_permission
+
+        return await require_permission(permission)(request)
     return _checker
 
 saas_router = APIRouter(prefix="/api/v1", tags=["saas"])

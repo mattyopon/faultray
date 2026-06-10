@@ -36,6 +36,9 @@ logger = logging.getLogger(__name__)
 
 graphql_router = APIRouter(tags=["graphql"])
 
+# Reject oversized queries before parsing (DoS guard).
+_MAX_QUERY_LENGTH = 10_000
+
 
 # ---------------------------------------------------------------------------
 # Lightweight GraphQL query parser
@@ -560,6 +563,11 @@ async def graphql_endpoint(request: Request):
             {"errors": [{"message": "Missing 'query' field"}]},
             status_code=400,
         )
+    if not isinstance(query_str, str) or len(query_str) > _MAX_QUERY_LENGTH:
+        return JSONResponse(
+            {"errors": [{"message": f"Query must be a string of at most {_MAX_QUERY_LENGTH} characters"}]},
+            status_code=400,
+        )
 
     try:
         operation, selection = _parse_query(query_str)
@@ -568,6 +576,6 @@ async def graphql_endpoint(request: Request):
     except Exception as exc:
         logger.error("GraphQL execution error: %s", exc, exc_info=True)
         return JSONResponse(
-            {"errors": [{"message": str(exc)}]},
+            {"errors": [{"message": "Query execution failed"}]},
             status_code=500,
         )
