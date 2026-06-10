@@ -33,7 +33,7 @@ if not _JWT_SECRET:
         raise RuntimeError(
             "FAULTRAY_JWT_SECRET (or JWT_SECRET_KEY) must be set in production"
         )
-    _JWT_SECRET = "faultray-dev-secret-change-me"
+    _JWT_SECRET = "faultray-dev-secret-change-me"  # development-only default
     logger.warning(
         "Using default JWT secret — set FAULTRAY_JWT_SECRET or JWT_SECRET_KEY for production"
     )
