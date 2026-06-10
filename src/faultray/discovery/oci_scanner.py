@@ -214,8 +214,8 @@ class OCIScanner:
                         subnet_id = vnic.subnet_id or ""
                         if subnet_id in self._subnet_vcn:
                             vcn_id = self._subnet_vcn[subnet_id]
-                except Exception:
-                    pass
+                except Exception as exc:
+                    logger.debug("Skipping VNIC lookup for %s: %s", inst_id, exc)
 
                 if vcn_id:
                     self._vcn_members.setdefault(vcn_id, []).append(comp_id)
@@ -402,8 +402,8 @@ class OCIScanner:
                             target_ip = backend.ip_address or ""
                             if target_ip:
                                 self._lb_backends.setdefault(comp_id, []).append(target_ip)
-                except Exception:
-                    pass
+                except Exception as exc:
+                    logger.debug("Skipping backend sets for %s: %s", comp_id, exc)
         except Exception as exc:
             self._warnings.append(f"OCI Load Balancer scan error: {exc}")
 

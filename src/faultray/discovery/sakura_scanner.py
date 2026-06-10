@@ -413,8 +413,6 @@ class SakuraScanner:
                        graph.components[m].type == ComponentType.APP_SERVER]
             dbs = [m for m in members if m in graph.components and
                    graph.components[m].type == ComponentType.DATABASE]
-            storages = [m for m in members if m in graph.components and
-                        graph.components[m].type == ComponentType.STORAGE]
 
             # LB -> servers
             for lb in lbs:
@@ -441,9 +439,5 @@ class SakuraScanner:
                     )
                     graph.add_dependency(dep)
 
-            # Servers -> Storage (disks already linked directly; skip)
-            # Any component -> storage via switch (only if no direct disk link exists)
-            for srv in servers:
-                for st in storages:
-                    # Avoid duplicate: disk scanning already creates server->disk dep
-                    pass
+            # Servers -> Storage: intentionally no extra deps here — disk
+            # scanning already creates the direct server->disk dependencies.

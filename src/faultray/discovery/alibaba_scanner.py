@@ -402,8 +402,8 @@ class AlibabaScanner:
                                 self._slb_backends.setdefault(
                                     f"alibaba-ecs-{srv_id}", []
                                 ).append(comp_id)
-                    except Exception:
-                        pass
+                    except Exception as exc:
+                        logger.debug("Skipping SLB backends for %s: %s", comp_id, exc)
 
                 total = resp.body.total_count if resp.body else 0
                 if page_number * page_size >= (total or 0):

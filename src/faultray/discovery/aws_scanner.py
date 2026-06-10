@@ -517,10 +517,10 @@ class AWSScanner:
                                         if lb_name in cid:
                                             self._alb_targets.setdefault(cid, []).append(comp_id)
                                             break
-                    except Exception:
-                        pass
-            except Exception:
-                pass
+                    except Exception as exc:
+                        logger.debug("Skipping target health for %s: %s", tg_arn, exc)
+            except Exception as exc:
+                logger.debug("Skipping target groups for %s: %s", lb_arn, exc)
 
     def _scan_ecs(self, graph: InfraGraph) -> None:
         """Discover ECS clusters, services, and task definitions."""
@@ -542,7 +542,10 @@ class AWSScanner:
                     svc_paginator = ecs.get_paginator("list_services")
                     for svc_page in svc_paginator.paginate(cluster=cluster_arn):
                         svc_arns.extend(svc_page.get("serviceArns", []))
-                except Exception:
+                except Exception as exc:
+                    self._warnings.append(
+                        f"ECS list_services error in {cluster_name}: {exc}"
+                    )
                     continue
 
                 if not svc_arns:
@@ -607,8 +610,8 @@ class AWSScanner:
                         ]
                     ):
                         self._ecs_endpoints.setdefault(comp_id, []).append(val)
-        except Exception:
-            pass
+        except Exception as exc:
+            logger.debug("Skipping task definition %s: %s", td_arn, exc)
 
     def _scan_s3(self, graph: InfraGraph) -> None:
         """Discover S3 buckets."""
@@ -640,16 +643,16 @@ class AWSScanner:
                         "Rules", []
                     )
                     encrypted = len(rules) > 0
-                except Exception:
-                    pass
+                except Exception as exc:
+                    logger.debug("No encryption info for bucket %s: %s", bucket_name, exc)
 
                 # Check versioning
                 versioning = False
                 try:
                     ver_resp = s3.get_bucket_versioning(Bucket=bucket_name)
                     versioning = ver_resp.get("Status") == "Enabled"
-                except Exception:
-                    pass
+                except Exception as exc:
+                    logger.debug("No versioning info for bucket %s: %s", bucket_name, exc)
 
                 component = Component(
                     id=comp_id,
@@ -771,8 +774,8 @@ class AWSScanner:
                         dns_name = alias.get("DNSName", "")
                         if dns_name:
                             self._route53_aliases[comp_id] = dns_name
-                except Exception:
-                    pass
+                except Exception as exc:
+                    logger.debug("Skipping record sets for zone %s: %s", zone_id, exc)
         except Exception as exc:
             self._warnings.append(f"Route53 scan error: {exc}")
 
@@ -926,8 +929,8 @@ class AWSScanner:
                 elif comp_id.startswith("rds-"):
                     db_id = comp_id.replace("rds-", "", 1)
                     self._fetch_rds_metrics(cw, db_id, comp)
-            except Exception:
-                pass
+            except Exception as exc:
+                logger.debug("Skipping CloudWatch metrics for %s: %s", comp_id, exc)
 
     def _fetch_ec2_metrics(self, cw, instance_id: str, comp: Component) -> None:
         """Fetch CPU utilization from CloudWatch for an EC2 instance."""
@@ -991,8 +994,8 @@ class AWSScanner:
                             waf_protected_arns.update(
                                 res_resp.get("ResourceArns", [])
                             )
-                        except Exception:
-                            pass
+                        except Exception as exc:
+                            logger.debug("Skipping WAF resources for %s: %s", acl_arn, exc)
                         # Check for rate-based rules
                         try:
                             detail = waf.get_web_acl(
@@ -1007,10 +1010,10 @@ class AWSScanner:
                                         for comp in graph.components.values():
                                             if comp.host and comp.host in arn:
                                                 comp.security.rate_limiting = True
-                        except Exception:
-                            pass
-                except Exception:
-                    pass
+                        except Exception as exc:
+                            logger.debug("Skipping WAF rule detail for %s: %s", acl_arn, exc)
+                except Exception as exc:
+                    logger.debug("Skipping WAF scope %s: %s", scope, exc)
         except Exception as exc:
             self._warnings.append(f"WAF scan error: {exc}")
 
@@ -1042,8 +1045,8 @@ class AWSScanner:
             if has_flow_logs:
                 for comp in graph.components.values():
                     comp.security.log_enabled = True
-        except Exception:
-            pass
+        except Exception as exc:
+            logger.debug("Skipping VPC flow log check: %s", exc)
 
 
 def export_yaml(graph: InfraGraph, path: Path) -> None:
