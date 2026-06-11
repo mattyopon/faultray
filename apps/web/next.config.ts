@@ -70,8 +70,22 @@ const nextConfig: NextConfig = {
     ],
   },
   async headers() {
+    // #88 (P3-4): CORS allowlist を server-only env で管理する。
+    //   ALLOWED_ORIGIN : single origin。next.config.ts の static header は
+    //                    request 単位で値を変えられないため、CORS 仕様 (single
+    //                    origin or "*" のみ; comma-separated は browser reject)
+    //                    に合わせ単一値だけを受ける。fallback で NEXT_PUBLIC_SITE_URL
+    //                    (public bundle 露出だが既存挙動維持)、最終 fallback で
+    //                    canonical "https://faultray.com"。
+    //   多重 origin を扱いたい場合は middleware で request.headers.origin を echo
+    //   する設計に移行する (本 PR の scope 外、followup)。
+    //   (review-loop, Codex P2): `||` で繋ぐ — hosted env で `ALLOWED_ORIGIN=`
+    //   (空文字) は珍しくない誤設定で、`??` だと "" がそのまま header 値になり
+    //   全 browser の CORS check が落ちる。空文字は unset と同義に扱う。
     const allowedOrigin =
-      process.env.NEXT_PUBLIC_SITE_URL || "https://faultray.com";
+      process.env.ALLOWED_ORIGIN ||
+      process.env.NEXT_PUBLIC_SITE_URL ||
+      "https://faultray.com";
 
     return [
       {
@@ -113,6 +127,15 @@ const nextConfig: NextConfig = {
           {
             key: "Access-Control-Allow-Headers",
             value: "Content-Type, Authorization",
+          },
+          // (#105 review-loop 2, P2-B): cookie-authenticated routes (/api/status
+          // ?detailed=true, /api/account/*, etc.) が cross-origin から呼ばれる
+          // ケースに備え credentials を許可。Access-Control-Allow-Origin は
+          // ALLOWED_ORIGIN single value を返しているため `*` との衝突なし
+          // (`*` + credentials は CORS spec 違反)。
+          {
+            key: "Access-Control-Allow-Credentials",
+            value: "true",
           },
         ],
       },

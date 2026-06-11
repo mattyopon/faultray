@@ -1,9 +1,26 @@
 // Web Crypto API — compatible with Node.js 20+ and Vercel Edge Runtime
 
+// #84 (P2): dev sentinel value を明示的に reject。.env.example の placeholder を
+// そのまま production に渡すと AES-GCM が known key で全暗号化データ復号可能。
+// 現在 crypto.ts は import 元なし (P0 ではない) だが、将来配線時に死なないよう
+// 起動時 fail-fast する。
+const DEV_SENTINEL_KEYS: ReadonlySet<string> = new Set([
+  "faultray-dev-key-change-me",
+  "change-me",
+  "REPLACE_ME",
+]);
+
 function getEncryptionKey(): string {
   const key = process.env.ENCRYPTION_KEY;
   if (!key) {
     throw new Error("ENCRYPTION_KEY environment variable is not set");
+  }
+  if (DEV_SENTINEL_KEYS.has(key)) {
+    throw new Error(
+      "ENCRYPTION_KEY is set to a placeholder/dev value. " +
+        "Generate a unique 32-byte secret (e.g. `openssl rand -hex 32`) before " +
+        "encrypting any data."
+    );
   }
   return key;
 }
