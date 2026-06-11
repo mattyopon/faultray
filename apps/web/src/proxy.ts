@@ -4,6 +4,38 @@ import { NextResponse, type NextRequest } from "next/server";
 const locales = ["en", "ja", "de", "fr", "zh", "ko", "es", "pt"];
 const defaultLocale = "en";
 
+// Single source of truth for route classification. Every app route MUST be
+// listed here: a route missing from this list gets locale-prefixed by the
+// landing redirect below (e.g. /admin → /en/admin) and 404s, because only
+// the marketing landing pages exist under /{locale}.
+// Matching is prefix-based (startsWith), so "/security" also covers
+// "/security-checklist".
+const PUBLIC_PAGES = [
+  // Legal / public pages (no locale prefix)
+  "/tokushoho", "/dpa", "/privacy", "/terms", "/service-level-agreement",
+  "/contact", "/features", "/pricing", "/demo",
+  "/status", "/support", "/help", "/changelog", "/ringi", "/case-studies",
+];
+
+// Authenticated app routes — also the auth-protection list.
+const APP_ROUTES = [
+  "/admin", "/audit-log",
+  "/dashboard", "/simulate", "/results", "/suggestions", "/settings",
+  "/topology", "/heatmap", "/whatif", "/compliance", "/score-detail",
+  "/cost", "/security", "/fmea", "/advisor", "/reports",
+  "/incidents", "/benchmark", "/remediation",
+  "/evidence", "/apm", "/projects",
+  "/dora", "/governance", "/sla",
+  "/runbooks", "/postmortems", "/supply-chain", "/drift", "/calendar",
+  "/timeline", "/teams", "/env-compare", "/canary", "/optimize",
+  "/iac", "/onboarding", "/templates", "/ipo-readiness",
+  "/traces", "/logs", "/dependencies", "/gameday",
+  "/ai-reliability", "/fisc", "/audit-report", "/traffic-light",
+  "/people-risk",
+  "/shadow-it", "/bus-factor", "/vuln-priority", "/external-impact",
+  "/sla-budget", "/compliance-report", "/topology-map",
+];
+
 function getPreferredLocale(request: NextRequest): string {
   // Check cookie first
   const cookieLocale = request.cookies.get("NEXT_LOCALE")?.value;
@@ -94,27 +126,10 @@ export async function proxy(request: NextRequest) {
     const skipPaths = [
       // Static/SEO files
       "/robots.txt", "/sitemap.xml", "/manifest.webmanifest",
-      // Legal / public pages (no locale prefix)
-      "/tokushoho", "/dpa", "/privacy", "/terms", "/service-level-agreement",
-      "/contact", "/features", "/pricing", "/demo",
-      "/status", "/support", "/help", "/changelog", "/ringi", "/case-studies",
+      ...PUBLIC_PAGES,
       // Auth / API
       "/login", "/auth", "/api",
-      // App routes (authenticated)
-      "/dashboard", "/simulate", "/results", "/suggestions", "/settings",
-      "/topology", "/heatmap", "/whatif", "/compliance", "/score-detail",
-      "/cost", "/security", "/fmea", "/advisor", "/reports",
-      "/incidents", "/benchmark", "/remediation",
-      "/evidence", "/apm", "/projects",
-      "/dora", "/governance", "/sla",
-      "/runbooks", "/postmortems", "/supply-chain", "/drift", "/calendar",
-      "/timeline", "/teams", "/env-compare", "/canary", "/optimize",
-      "/iac", "/onboarding", "/templates", "/ipo-readiness",
-      "/traces", "/logs", "/dependencies", "/gameday",
-      "/ai-reliability", "/fisc", "/audit-report", "/traffic-light",
-      "/people-risk",
-      "/shadow-it", "/bus-factor", "/vuln-priority", "/external-impact",
-      "/sla-budget", "/compliance-report", "/topology-map",
+      ...APP_ROUTES,
     ];
     const shouldSkip = skipPaths.some((path) => pathname.startsWith(path));
 
@@ -128,29 +143,7 @@ export async function proxy(request: NextRequest) {
 
   // If locale-prefixed app route (e.g. /en/login, /ja/pricing), redirect to non-prefixed version
   if (pathnameHasLocale) {
-    const appPaths = [
-      // Legal / public pages
-      "/tokushoho", "/dpa", "/privacy", "/terms", "/service-level-agreement",
-      "/contact", "/features", "/pricing", "/demo",
-      "/status", "/support", "/help", "/changelog", "/ringi", "/case-studies",
-      // Auth
-      "/login",
-      // App routes
-      "/dashboard", "/simulate", "/results", "/suggestions", "/settings",
-      "/topology", "/heatmap", "/whatif", "/compliance", "/score-detail",
-      "/cost", "/security", "/fmea", "/advisor", "/reports",
-      "/incidents", "/benchmark", "/remediation",
-      "/evidence", "/apm", "/projects",
-      "/dora", "/governance", "/sla",
-      "/runbooks", "/postmortems", "/supply-chain", "/drift", "/calendar",
-      "/timeline", "/teams", "/env-compare", "/canary", "/optimize",
-      "/iac", "/onboarding", "/templates", "/ipo-readiness",
-      "/traces", "/logs", "/dependencies", "/gameday",
-      "/ai-reliability", "/fisc", "/audit-report", "/traffic-light",
-      "/people-risk",
-      "/shadow-it", "/bus-factor", "/vuln-priority", "/external-impact",
-      "/sla-budget", "/compliance-report", "/topology-map",
-    ];
+    const appPaths = [...PUBLIC_PAGES, "/login", ...APP_ROUTES];
     let strippedPath = pathname;
     for (const locale of locales) {
       if (pathname.startsWith(`/${locale}/`)) {
@@ -206,23 +199,7 @@ export async function proxy(request: NextRequest) {
     }
   }
 
-  const protectedPaths = [
-    "/admin",
-    "/dashboard", "/simulate", "/results", "/suggestions", "/settings",
-    "/dora", "/topology", "/teams", "/remediation", "/projects",
-    "/heatmap", "/whatif", "/compliance", "/score-detail",
-    "/cost", "/security", "/fmea", "/advisor", "/reports",
-    "/incidents", "/benchmark", "/evidence", "/apm",
-    "/governance", "/sla", "/runbooks", "/postmortems",
-    "/supply-chain", "/drift", "/calendar", "/timeline",
-    "/env-compare", "/canary", "/optimize", "/iac", "/onboarding",
-    "/templates", "/ipo-readiness", "/traces", "/logs",
-    "/dependencies", "/gameday", "/ai-reliability", "/fisc",
-    "/audit-report", "/traffic-light", "/people-risk",
-    "/shadow-it", "/bus-factor", "/vuln-priority", "/external-impact",
-    "/sla-budget", "/compliance-report", "/topology-map",
-  ];
-  const isProtected = protectedPaths.some((path) =>
+  const isProtected = APP_ROUTES.some((path) =>
     pathForCheck.startsWith(path)
   );
 

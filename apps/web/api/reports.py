@@ -19,8 +19,10 @@ Path routing uses the request path to determine which handler to call.
 """
 
 from http.server import BaseHTTPRequestHandler
+import html
 import json
 import os
+import urllib.parse
 from urllib.parse import urlparse, parse_qs
 
 
@@ -564,10 +566,14 @@ def _billing_update_supabase(email, data):
     service_key = os.environ.get("SUPABASE_SERVICE_ROLE_KEY")
     if not supabase_url or not service_key:
         return
+    # SEC: URL-encode before embedding in the PostgREST filter — a crafted
+    # email (Stripe customer_details is end-user controlled) must not be able
+    # to inject additional query operators. Same pattern as realtime.py.
+    safe_email = urllib.parse.quote(str(email), safe="")
     try:
         import urllib.request
         req = urllib.request.Request(
-            f"{supabase_url}/rest/v1/profiles?email=eq.{email}",
+            f"{supabase_url}/rest/v1/profiles?email=eq.{safe_email}",
             data=json.dumps(data).encode(),
             method="PATCH",
             headers={
@@ -577,7 +583,7 @@ def _billing_update_supabase(email, data):
                 "Prefer": "return=minimal",
             },
         )
-        urllib.request.urlopen(req)
+        urllib.request.urlopen(req, timeout=10)
     except Exception:
         pass
 
@@ -589,10 +595,11 @@ def _billing_update_supabase_by_customer(customer_id, data):
     service_key = os.environ.get("SUPABASE_SERVICE_ROLE_KEY")
     if not supabase_url or not service_key:
         return
+    safe_customer_id = urllib.parse.quote(str(customer_id), safe="")
     try:
         import urllib.request
         req = urllib.request.Request(
-            f"{supabase_url}/rest/v1/profiles?stripe_customer_id=eq.{customer_id}",
+            f"{supabase_url}/rest/v1/profiles?stripe_customer_id=eq.{safe_customer_id}",
             data=json.dumps(data).encode(),
             method="PATCH",
             headers={
@@ -602,7 +609,7 @@ def _billing_update_supabase_by_customer(customer_id, data):
                 "Prefer": "return=minimal",
             },
         )
-        urllib.request.urlopen(req)
+        urllib.request.urlopen(req, timeout=10)
     except Exception:
         pass
 

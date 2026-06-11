@@ -14,6 +14,9 @@ import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 
 vi.mock("@/lib/rate-limit", () => ({
   applyRateLimit: () => undefined,
+  // verifyCronAuth (now used by the route) reads the client IP for the
+  // optional CRON_ALLOWED_IPS check.
+  getClientIp: () => "127.0.0.1",
 }));
 
 // RPC mock state

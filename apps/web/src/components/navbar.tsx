@@ -277,12 +277,6 @@ export function Navbar() {
   // During auth loading on app paths, treat as app (avoid flash of landing nav)
   const isApp = isAppPath && (authLoading || !!user);
 
-  // Mobile: close sidebar on navigate
-  useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect
-    setMobileOpen(false);
-  }, [pathname]);
-
   // Set body data-app-page for CSS sidebar offset (prevents layout shift)
   useEffect(() => {
     if (isApp) {

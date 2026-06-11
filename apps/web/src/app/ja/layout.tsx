@@ -1,16 +1,11 @@
-import { getDictionary } from "@/i18n/get-dictionary";
+import { landingMetadata } from "@/i18n/landing-metadata";
 import type { Metadata } from "next";
 
 const BASE = "https://faultray.com";
 
-// I18N-03: hreflang alternates for all supported locales
-const LOCALES = ["en", "ja", "de", "fr", "zh", "ko", "es", "pt"] as const;
-
 export async function generateMetadata(): Promise<Metadata> {
-  const dict = await getDictionary("ja");
   return {
-    title: dict.metadata.title,
-    description: dict.metadata.description,
+    ...(await landingMetadata("ja")),
     keywords: [
       "障害リスク診断",
       "インフラ診断",
@@ -20,12 +15,6 @@ export async function generateMetadata(): Promise<Metadata> {
       "シミュレーション",
       "DORA 研究プロトタイプ",
     ],
-    alternates: {
-      canonical: `${BASE}/ja`,
-      languages: Object.fromEntries(
-        LOCALES.map((locale) => [locale, `${BASE}/${locale}`])
-      ) as Record<string, string>,
-    },
     openGraph: {
       title: "FaultRay — 本番を止めずに構造的障害リスクを事前評価（研究プロトタイプ）",
       description:

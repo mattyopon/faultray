@@ -37,7 +37,7 @@ jobs:
       - name: Run TypeScript type check
         run: |
           set -euo pipefail
-          npx tsc --noEmit
+          npm run typecheck
 
   test-frontend:
     name: Frontend Tests (Vitest)

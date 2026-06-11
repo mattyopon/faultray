@@ -1,11 +1,26 @@
 import { NextResponse } from "next/server";
 import Stripe from "stripe";
 import { applyRateLimit } from "@/lib/rate-limit";
+import type { PlanTier } from "@/lib/types";
 
 // Stripe webhook handler must read the raw body
 export const dynamic = "force-dynamic";
 
-type PlanTier = "free" | "starter" | "pro" | "business";
+/**
+ * Extract the customer id from an event object whose `customer` field may be
+ * a string id, an expanded object, or null (one-off invoices). Returning
+ * null lets handlers ack-without-action instead of looking up
+ * `stripe_customer_id = "[object Object]"` / throwing and forcing Stripe to
+ * retry an event that can never succeed.
+ */
+function customerIdFrom(obj: {
+  customer?: string | { id: string } | null;
+}): string | null {
+  const c = obj.customer;
+  if (typeof c === "string") return c;
+  if (c && typeof c === "object" && typeof c.id === "string") return c.id;
+  return null;
+}
 
 /**
  * Stripe Invoice extension (#31):
@@ -434,7 +449,13 @@ export async function POST(request: Request) {
       // #79 P1: customer_id source-of-truth で resolve。metadata.user_id は信用しない。
       case "customer.subscription.updated": {
         const subscription = event.data.object as Stripe.Subscription;
-        const customerId = subscription.customer as string;
+        const customerId = customerIdFrom(subscription);
+        if (!customerId) {
+          console.warn(
+            "[stripe/webhook] customer.subscription.updated: no customer id on event — ack without action"
+          );
+          break;
+        }
         const status = subscription.status; // active | past_due | canceled | ...
 
         // Determine plan from first price item
@@ -461,7 +482,13 @@ export async function POST(request: Request) {
       // 何も起こせないため、リスクなし。
       case "customer.subscription.deleted": {
         const subscription = event.data.object as Stripe.Subscription;
-        const customerId = subscription.customer as string;
+        const customerId = customerIdFrom(subscription);
+        if (!customerId) {
+          console.warn(
+            "[stripe/webhook] customer.subscription.deleted: no customer id on event — ack without action"
+          );
+          break;
+        }
 
         const userId = await resolveUserByCustomerId(customerId);
         if (!userId) {
@@ -481,7 +508,13 @@ export async function POST(request: Request) {
       // ── Payment failed: notify and mark past_due ──────────────────────────
       case "invoice.payment_failed": {
         const invoice = event.data.object as Stripe.Invoice;
-        const customerId = invoice.customer as string;
+        const customerId = customerIdFrom(invoice);
+        if (!customerId) {
+          console.warn(
+            "[stripe/webhook] invoice.payment_failed: no customer id on event — ack without action"
+          );
+          break;
+        }
         const attemptCount = invoice.attempt_count ?? 1;
 
         console.warn(
@@ -519,7 +552,13 @@ export async function POST(request: Request) {
       // #79 P1: customer_id source-of-truth で resolve。metadata.user_id は信用しない。
       case "invoice.payment_succeeded": {
         const invoice = event.data.object as Stripe.Invoice;
-        const customerId = invoice.customer as string;
+        const customerId = customerIdFrom(invoice);
+        if (!customerId) {
+          console.warn(
+            "[stripe/webhook] invoice.payment_succeeded: no customer id on event — ack without action"
+          );
+          break;
+        }
         // Extract subscription id from parent (Stripe API v2+) or legacy field.
         // NOTE (#31): replaced `as any` cast with InvoiceWithSubscription.
         const subscriptionId: string | null = extractSubscriptionId(invoice);

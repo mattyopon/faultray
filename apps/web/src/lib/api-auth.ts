@@ -1,14 +1,22 @@
 import { createClient } from "@/lib/supabase/server";
 import { NextResponse } from "next/server";
 import type { SupabaseClient, User } from "@supabase/supabase-js";
+import type { PlanTier } from "@/lib/types";
 
 type SsrSupabase = Awaited<ReturnType<typeof createClient>>;
 
 type AuthSuccess = { user: User; supabase: SsrSupabase; error: null };
 type AuthFailure = { user: null; supabase: null; error: NextResponse };
 
-/** Plan hierarchy: free < pro < business */
-export type Plan = "free" | "pro" | "business";
+/**
+ * Plan hierarchy: free < starter < pro < business.
+ *
+ * Must stay in sync with the DB CHECK constraint (migration 005 allows
+ * 'starter') and the Stripe webhook's PlanTier. Omitting a tier here is a
+ * security bug: `PLAN_ORDER[unknownPlan]` is undefined and
+ * `undefined < n` is false, which would let that tier through every gate.
+ */
+export type Plan = PlanTier;
 
 type PlanSuccess = { user: User; supabase: SsrSupabase; plan: Plan; error: null };
 type PlanFailure = { user: null; supabase: null; plan: null; error: NextResponse };
@@ -16,7 +24,7 @@ type PlanFailure = { user: null; supabase: null; plan: null; error: NextResponse
 // Re-export for downstream typing convenience.
 export type { SupabaseClient };
 
-const PLAN_ORDER: Record<Plan, number> = { free: 0, pro: 1, business: 2 };
+const PLAN_ORDER: Record<Plan, number> = { free: 0, starter: 1, pro: 2, business: 3 };
 
 /**
  * CSRF保護: リクエストの Origin ヘッダーを allowlist と比較する。
@@ -169,7 +177,10 @@ export async function requirePlan(
     };
   }
 
-  const userPlan: Plan = (profile?.plan as Plan | null) ?? "free";
+  // Treat unknown/legacy plan strings as "free" instead of letting them
+  // bypass the comparison below (undefined < n === false).
+  const rawPlan = (profile?.plan as string | null) ?? "free";
+  const userPlan: Plan = rawPlan in PLAN_ORDER ? (rawPlan as Plan) : "free";
 
   if (PLAN_ORDER[userPlan] < PLAN_ORDER[requiredPlan]) {
     return {

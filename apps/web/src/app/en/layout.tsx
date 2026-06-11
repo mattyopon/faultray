@@ -1,23 +1,7 @@
-import { getDictionary } from "@/i18n/get-dictionary";
-import type { Metadata } from "next";
+import { landingMetadata } from "@/i18n/landing-metadata";
 
-const BASE = "https://faultray.com";
-
-// I18N-03: hreflang alternates for all supported locales
-const LOCALES = ["en", "ja", "de", "fr", "zh", "ko", "es", "pt"] as const;
-
-export async function generateMetadata(): Promise<Metadata> {
-  const dict = await getDictionary("en");
-  return {
-    title: dict.metadata.title,
-    description: dict.metadata.description,
-    alternates: {
-      canonical: `${BASE}/en`,
-      languages: Object.fromEntries(
-        LOCALES.map((locale) => [locale, `${BASE}/${locale}`])
-      ) as Record<string, string>,
-    },
-  };
+export function generateMetadata() {
+  return landingMetadata("en");
 }
 
 // JSON-LD for /en — USD pricing

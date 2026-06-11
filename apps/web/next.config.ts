@@ -55,6 +55,20 @@ function buildCsp(): string {
 }
 
 const nextConfig: NextConfig = {
+  // Optional Upstash backend for src/lib/rate-limit.ts: these packages are
+  // intentionally NOT in package.json (operator installs them to opt in).
+  // Keep them out of the server bundle so the dynamic import becomes a
+  // runtime require (guarded by try/catch), and suppress the expected
+  // module-not-found build warning when they are absent.
+  serverExternalPackages: ["@upstash/ratelimit", "@upstash/redis"],
+  turbopack: {
+    ignoreIssue: [
+      {
+        path: "**/src/lib/rate-limit.ts",
+        title: /Module not found/,
+      },
+    ],
+  },
   async headers() {
     const allowedOrigin =
       process.env.NEXT_PUBLIC_SITE_URL || "https://faultray.com";

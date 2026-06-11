@@ -45,7 +45,8 @@ All three must pass. PRs that fail CI will not be reviewed.
 
 - New features must include at least one unit test
 - Bug fixes must include a regression test
-- Target: 80%+ line coverage on new code
+- Enforced minimum: 60% lines/functions/statements (see `vitest.config.ts`);
+  aim for 80%+ on new code
 - Run: `npm run test -- --coverage`
 
 ## Code Style

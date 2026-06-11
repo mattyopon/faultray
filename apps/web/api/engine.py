@@ -15,6 +15,7 @@ import json
 import logging
 import os
 import tempfile
+import time
 from urllib.parse import urlparse, parse_qs
 
 # API-07: 構造化ロギング設定

@@ -37,6 +37,21 @@ async function sleep(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
+/**
+ * Resolve the current Supabase access token for authenticating tenant-scoped
+ * API calls. No-op (undefined) on the server or when Supabase is unconfigured;
+ * the backend then treats the request as demo/unauthenticated.
+ */
+async function _authToken(): Promise<string | undefined> {
+  if (typeof window === "undefined") return undefined;
+  try {
+    const { getAccessToken } = await import("@/lib/supabase/client");
+    return await getAccessToken();
+  } catch {
+    return undefined;
+  }
+}
+
 async function apiFetch<T>(path: string, options: ApiOptions = {}): Promise<T> {
   const { method = "GET", body, token, signal, cacheTtl } = options;
 
@@ -668,26 +683,30 @@ export const api = {
   getApmStats: (token?: string) =>
     apiFetch<ApmStats>("/api/apm/stats", { token }),
 
-  getProjects: (token?: string) =>
-    apiFetch<Project[]>("/api/projects", { token }),
+  // Projects are tenant-scoped: the Python /api/projects endpoint authenticates
+  // the caller via their Supabase access token and filters by team. When a
+  // token is not passed explicitly we resolve it from the browser session, so
+  // every client call is authenticated without each call site wiring it up.
+  getProjects: async (token?: string) =>
+    apiFetch<Project[]>("/api/projects", { token: token ?? (await _authToken()) }),
 
-  getProject: (id: string, token?: string) =>
-    apiFetch<ProjectWithRuns>(`/api/projects?id=${id}`, { token }),
+  getProject: async (id: string, token?: string) =>
+    apiFetch<ProjectWithRuns>(`/api/projects?id=${id}`, { token: token ?? (await _authToken()) }),
 
-  createProject: (
+  createProject: async (
     data: { name: string; description: string; topology_yaml?: string; topology_type?: string },
     token?: string,
   ) =>
-    apiFetch<Project>("/api/projects", { method: "POST", body: data, token }),
+    apiFetch<Project>("/api/projects", { method: "POST", body: data, token: token ?? (await _authToken()) }),
 
-  updateProject: (id: string, data: Partial<Project>, token?: string) =>
-    apiFetch<Project>(`/api/projects?id=${id}`, { method: "PATCH", body: data, token }),
+  updateProject: async (id: string, data: Partial<Project>, token?: string) =>
+    apiFetch<Project>(`/api/projects?id=${id}`, { method: "PATCH", body: data, token: token ?? (await _authToken()) }),
 
-  deleteProject: (id: string, token?: string) =>
-    apiFetch<{ ok: boolean; id: string }>(`/api/projects?id=${id}`, { method: "DELETE", token }),
+  deleteProject: async (id: string, token?: string) =>
+    apiFetch<{ ok: boolean; id: string }>(`/api/projects?id=${id}`, { method: "DELETE", token: token ?? (await _authToken()) }),
 
-  getProjectRuns: (projectId: string, token?: string) =>
-    apiFetch<ProjectWithRuns>(`/api/projects?id=${projectId}`, { token }),
+  getProjectRuns: async (projectId: string, token?: string) =>
+    apiFetch<ProjectWithRuns>(`/api/projects?id=${projectId}`, { token: token ?? (await _authToken()) }),
 
   saveRun: (
     data: {

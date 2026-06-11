@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { ChevronRight, Home } from "lucide-react";
+import { locales } from "@/i18n/config";
 
 /** Map of path segments to human-readable labels */
 const SEGMENT_LABELS: Record<string, string> = {
@@ -63,7 +64,6 @@ export function Breadcrumb() {
   const pathname = usePathname();
 
   // Strip locale prefix if present (e.g. /ja/dashboard → /dashboard)
-  const locales = ["en", "ja", "de", "fr", "zh", "ko", "es", "pt"];
   let cleanPath = pathname;
   for (const locale of locales) {
     if (cleanPath.startsWith(`/${locale}/`) || cleanPath === `/${locale}`) {

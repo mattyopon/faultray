@@ -127,11 +127,11 @@
         "desc": "Vollständiges Web-Dashboard mit Topologie-Editor, Szenario-Explorer, N-Layer-Drill-Down, Heatmap, DORA-Forschungsentwürfen und Management-Zusammenfassungen."
       }
     ],
-    "viewAll": "View Full Feature Details"
+    "viewAll": "Alle Funktionen im Detail ansehen"
   },
   "agentResilience": {
     "badge": "Neu in v11.0",
-    "heading": "AI Agent Resilience Simulation",
+    "heading": "Resilienz-Simulation für KI-Agenten",
     "subheading": "Simulieren Sie, wie Infrastrukturausfälle zu Agent-Halluzinationen kaskadieren — bevor sie in der Produktion auftreten.",
     "cards": [
       {
@@ -152,7 +152,7 @@
       }
     ],
     "taxonomyHeadingHighlight": "10-Mode",
-    "taxonomyHeadingSuffix": " AI Agent Failure Taxonomy"
+    "taxonomyHeadingSuffix": " Fehlertaxonomie für KI-Agenten"
   },
   "comparison": {
     "heading": "So schneiden wir ab",
@@ -168,30 +168,30 @@
       "startingCost": "Einstiegskosten"
     },
     "faultray": {
-      "approach": "Mathematical Simulation",
+      "approach": "Mathematische Simulation",
       "productionRisk": "Null",
       "setupTime": "5 Minuten",
       "scenarios": "2.000+ automatisch generiert",
       "availabilityProof": "N-Layer modellbasierte Schätzung",
-      "aiAgentModeling": "10-mode taxonomy",
+      "aiAgentModeling": "Taxonomie mit 10 Modi",
       "startingCost": "Kostenlos / OSS"
     },
     "gremlin": {
-      "approach": "Real Fault Injection",
+      "approach": "Echte Fehlerinjektion",
       "productionRisk": "Hoch",
       "setupTime": "Tage",
       "scenarios": "Manuelle Konfiguration",
       "startingCost": "$10.000+/Jahr"
     },
     "steadybit": {
-      "approach": "Real Fault Injection",
+      "approach": "Echte Fehlerinjektion",
       "productionRisk": "Mittel",
       "setupTime": "Stunden",
       "scenarios": "Template-basiert",
       "startingCost": "$5.000+/Jahr"
     },
     "awsFis": {
-      "approach": "Real Fault Injection",
+      "approach": "Echte Fehlerinjektion",
       "productionRisk": "Hoch",
       "setupTime": "Stunden",
       "scenarios": "Nur AWS-Services",
@@ -199,7 +199,7 @@
     }
   },
   "nlayer": {
-    "heading": "N-Layer (5-Layer) Availability Limit Model",
+    "heading": "N-Layer-Modell (5 Schichten) für Verfügbarkeitsgrenzen",
     "subheading": "Zerlegt Ihre Verfügbarkeitsobergrenzen-Schätzung in fünf unabhängige Beschränkungsschichten (modellbasiert; die Genauigkeit hängt von der Topologietreue ab)",
     "layers": [
       {
@@ -226,7 +226,7 @@
     "whyTitle": "Warum das wichtig ist",
     "whyP1": "Die meisten Teams jagen Hardware-Nines, während ihre Software-Schicht die Verfügbarkeit auf 4 Nines begrenzt. FaultRay zeigt genau, wo Ihr Engpass liegt, damit Sie in die richtige Schicht investieren.",
     "whyP2": "Das N-Layer-Modell ist erweiterbar: Fügen Sie Geographic, Economic oder benutzerdefinierte domänenspezifische Beschränkungsschichten hinzu, um die einzigartigen Verfügbarkeitsgrenzen Ihrer Organisation abzubilden.",
-    "bindingTitle": "Binding Constraint Detection",
+    "bindingTitle": "Erkennung des begrenzenden Engpasses",
     "bindingDesc": "Wenn eine Simulation eine Verfügbarkeit vorhersagt, die eine Schichtobergrenze überschreitet, kennzeichnet FaultRay dies und identifiziert die bindende Beschränkungsschicht als Ziel für Infrastrukturverbesserungen."
   },
   "quickstart": {
@@ -249,7 +249,7 @@
       999
     ],
     "taxNote": "",
-    "japaneseSupportBadge": "Japanese support included",
+    "japaneseSupportBadge": "Japanischer Support inklusive",
     "plans": [
       {
         "name": "Free",
@@ -269,11 +269,11 @@
     ]
   },
   "socialProof": {
-    "heading": "Trusted by the Developer Community",
+    "heading": "Von der Entwickler-Community geschätzt",
     "githubStars": "GitHub Stars",
-    "betaMessage": "Currently in beta. We'd love your feedback.",
-    "betaSubtitle": "We are in early access. Your feedback helps us improve.",
-    "betaCta": "Send Feedback",
+    "betaMessage": "Derzeit in der Beta. Wir freuen uns über Ihr Feedback.",
+    "betaSubtitle": "Wir befinden uns im Early Access. Ihr Feedback hilft uns, besser zu werden.",
+    "betaCta": "Feedback senden",
     "openSource": "Open Source"
   },
   "roi": {
@@ -296,7 +296,7 @@
     "resources": "Ressourcen",
     "legal": "Rechtliches",
     "copyright": "© 2026 FaultRay. Open Source unter der Apache License 2.0.",
-    "japaneseSupport": "Japanese support available"
+    "japaneseSupport": "Japanischer Support verfügbar"
   },
   "languageSwitcher": {
     "label": "Sprache"

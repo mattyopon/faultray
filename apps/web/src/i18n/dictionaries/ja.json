@@ -168,30 +168,30 @@
       "startingCost": "開始コスト"
     },
     "faultray": {
-      "approach": "Mathematical Simulation",
+      "approach": "数理シミュレーション",
       "productionRisk": "ゼロ",
       "setupTime": "5分",
       "scenarios": "2,000+ 自動生成",
       "availabilityProof": "N-Layer 数学的証明",
-      "aiAgentModeling": "10-mode taxonomy",
+      "aiAgentModeling": "10モード分類",
       "startingCost": "無料 / OSS"
     },
     "gremlin": {
-      "approach": "Real Fault Injection",
+      "approach": "実障害注入",
       "productionRisk": "高",
       "setupTime": "数日",
       "scenarios": "手動設定",
       "startingCost": "¥1,500,000+/年"
     },
     "steadybit": {
-      "approach": "Real Fault Injection",
+      "approach": "実障害注入",
       "productionRisk": "中",
       "setupTime": "数時間",
       "scenarios": "テンプレートベース",
       "startingCost": "¥750,000+/年"
     },
     "awsFis": {
-      "approach": "Real Fault Injection",
+      "approach": "実障害注入",
       "productionRisk": "高",
       "setupTime": "数時間",
       "scenarios": "AWSサービスのみ",
@@ -281,6 +281,7 @@
     "heading": "エンジニアの現場経験が裏付ける信頼",
     "githubStars": "GitHub Stars",
     "betaMessage": "インフラ障害診断の現場経験から生まれたツールです。現在ベータテスト中。",
+    "betaSubtitle": "アーリーアクセス期間中です。皆さまのフィードバックが改善の力になります。",
     "betaCta": "無料診断を申し込む",
     "openSource": "オープンソース"
   },

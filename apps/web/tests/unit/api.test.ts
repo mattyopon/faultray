@@ -7,6 +7,16 @@ import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 // We test the internal apiFetch behavior via the exported `api` object
 // by mocking global fetch.
 
+// Project methods auto-resolve the Supabase access token when none is passed.
+// Stub it so token resolution is instant and deterministic (no real Supabase
+// client / getSession under fake timers).
+vi.mock("@/lib/supabase/client", () => ({
+  getAccessToken: () => Promise.resolve(undefined),
+  createClient: () => {
+    throw new Error("createClient should not be called in api tests");
+  },
+}));
+
 let api: typeof import("@/lib/api").api;
 
 beforeEach(async () => {

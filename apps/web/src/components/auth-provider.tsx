@@ -9,8 +9,9 @@ import {
   useCallback,
   type ReactNode,
 } from "react";
+import type { PlanTier } from "@/lib/types";
 
-export type PlanTier = "free" | "pro" | "business";
+export type { PlanTier };
 
 interface AuthContextType {
   user: User | null;

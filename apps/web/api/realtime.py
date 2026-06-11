@@ -24,6 +24,7 @@ Path routing uses the request path to determine which handler to call.
 """
 
 from http.server import BaseHTTPRequestHandler
+import hmac
 import json
 import os
 import re
@@ -277,7 +278,67 @@ def _validate_api_key(headers) -> bool:
     if not expected:
         return False
     provided = headers.get("X-API-Key", "")
-    return provided == expected
+    # Constant-time compare — a plain == leaks the key length/prefix to a
+    # timing oracle.
+    return hmac.compare_digest(provided, expected)
+
+
+def _bearer_token(headers):
+    """Extract the Bearer token from the Authorization header, or None."""
+    auth = headers.get("Authorization") or headers.get("authorization") or ""
+    if auth.startswith("Bearer "):
+        token = auth[len("Bearer "):].strip()
+        return token or None
+    return None
+
+
+def _resolve_user_id(headers):
+    """Validate the caller's Supabase access token and return their user id.
+
+    Uses the GoTrue ``/auth/v1/user`` endpoint so no JWT signing secret is
+    required — the anon key (already in the function env) plus the user's
+    token is enough. Returns None for a missing or invalid token.
+    """
+    token = _bearer_token(headers)
+    if not token:
+        return None
+    supabase_url = os.environ.get("NEXT_PUBLIC_SUPABASE_URL", "").rstrip("/")
+    anon_key = os.environ.get("NEXT_PUBLIC_SUPABASE_ANON_KEY", "")
+    if not supabase_url or not anon_key:
+        return None
+    req = urllib.request.Request(
+        f"{supabase_url}/auth/v1/user",
+        method="GET",
+        headers={"apikey": anon_key, "Authorization": f"Bearer {token}"},
+    )
+    try:
+        resp = urllib.request.urlopen(req, timeout=10)
+        data = json.loads(resp.read())
+    except Exception:
+        return None
+    uid = data.get("id") if isinstance(data, dict) else None
+    return uid if isinstance(uid, str) and _sanitize_uuid(uid) else None
+
+
+def _user_team_ids(user_id: str) -> list:
+    """Resolve every team the user belongs to (owned or member).
+
+    Uses the service-role client; ``user_id`` is already validated as a UUID.
+    Resolution covers ``teams.owner_id`` because the signup trigger creates a
+    personal team for each user but does not populate ``team_members``.
+    """
+    team_ids = set()
+    owned = _proj_supabase_request("GET", "teams", f"?owner_id=eq.{user_id}&select=id")
+    for row in owned or []:
+        if row.get("id"):
+            team_ids.add(row["id"])
+    member = _proj_supabase_request(
+        "GET", "team_members", f"?user_id=eq.{user_id}&select=team_id"
+    )
+    for row in member or []:
+        if row.get("team_id"):
+            team_ids.add(row["team_id"])
+    return [tid for tid in team_ids if _sanitize_uuid(str(tid))]
 
 
 def _apm_list_agents():
@@ -400,14 +461,19 @@ def _apm_heartbeat(agent_id: str, body: dict, headers) -> tuple:
         return 401, {"error": "Invalid or missing X-API-Key"}
     if not _apm_supabase_configured():
         return 200, {"ok": True, "agent_id": agent_id, "demo": True}
+    # APIVULN-02: agent_id arrives from the URL path — sanitize before it is
+    # embedded in the PostgREST filter, matching the other APM read paths.
+    safe_agent_id = _sanitize_agent_id(agent_id)
+    if not safe_agent_id:
+        return 400, {"error": "Invalid agent_id format"}
     patch = {"last_seen": _now_iso()}
     if "status" in body:
         patch["status"] = body["status"]
     for field in ("cpu_percent", "memory_percent", "disk_percent"):
         if field in body:
             patch[field] = body[field]
-    _apm_supabase_request("PATCH", "apm_agents", f"?agent_id=eq.{agent_id}", patch)
-    return 200, {"ok": True, "agent_id": agent_id}
+    _apm_supabase_request("PATCH", "apm_agents", f"?agent_id=eq.{safe_agent_id}", patch)
+    return 200, {"ok": True, "agent_id": safe_agent_id}
 
 
 def _apm_purge(body: dict, headers) -> tuple:
@@ -553,12 +619,19 @@ def _get_demo_runs(project_id: str):
     ]
 
 
-def _proj_list():
-    if not _proj_supabase_configured():
+def _proj_list(team_ids):
+    # team_ids is None in demo mode (Supabase unconfigured); otherwise a list
+    # of the caller's team UUIDs (possibly empty) used to scope the query.
+    if team_ids is None:
         return 200, _get_demo_projects()
-    projects = _proj_supabase_request("GET", "projects", "?order=updated_at.desc")
+    if not team_ids:
+        return 200, []
+    in_list = ",".join(team_ids)
+    projects = _proj_supabase_request(
+        "GET", "projects", f"?team_id=in.({in_list})&order=updated_at.desc"
+    )
     if projects is None:
-        return 200, _get_demo_projects()
+        return 200, []
     for project in projects:
         runs = _proj_supabase_request(
             "GET", "simulation_runs",
@@ -575,12 +648,12 @@ def _proj_list():
     return 200, projects
 
 
-def _proj_get(project_id: str):
+def _proj_get(project_id: str, team_ids):
     # SUPA-01 / APIVULN-02 fix: validate project_id before embedding in URL query
     safe_project_id = _sanitize_uuid(project_id)
     if not safe_project_id:
         return 400, {"error": "Invalid project_id format (must be UUID)"}
-    if not _proj_supabase_configured():
+    if team_ids is None:  # demo mode
         projects = _get_demo_projects()
         project = next((p for p in projects if p["id"] == safe_project_id), None)
         if not project:
@@ -591,6 +664,10 @@ def _proj_get(project_id: str):
     if not projects:
         return 404, {"error": "Project not found"}
     project = projects[0]
+    # Tenant guard: a project outside the caller's team(s) must look identical
+    # to one that does not exist (no existence oracle).
+    if project.get("team_id") not in team_ids:
+        return 404, {"error": "Project not found"}
     runs = _proj_supabase_request(
         "GET", "simulation_runs",
         f"?project_id=eq.{safe_project_id}&order=created_at.desc&limit=50",
@@ -602,11 +679,19 @@ def _proj_get(project_id: str):
     return 200, {**project, "runs": runs}
 
 
-def _proj_create(body: dict):
+def _proj_owned_by(safe_project_id: str, team_ids) -> bool:
+    """True if the project belongs to one of the caller's teams."""
+    rows = _proj_supabase_request(
+        "GET", "projects", f"?id=eq.{safe_project_id}&select=team_id&limit=1"
+    )
+    return bool(rows) and rows[0].get("team_id") in team_ids
+
+
+def _proj_create(body: dict, team_ids):
     name = body.get("name", "").strip()
     if not name:
         return 400, {"error": "'name' is required"}
-    if not _proj_supabase_configured():
+    if team_ids is None:  # demo mode
         new_project = {
             "id": f"demo-{name.lower().replace(' ', '-')}-{int(datetime.now(timezone.utc).timestamp())}",
             "team_id": "demo-team",
@@ -622,10 +707,16 @@ def _proj_create(body: dict):
             "run_count": 0,
         }
         return 201, new_project
+    if not team_ids:
+        return 403, {"error": "No team is associated with this account"}
+    # Stamp the owner's team so the row is scoped (and visible) to them. The
+    # previous code left team_id NULL, which is why every project was orphaned
+    # and only reachable through the unfiltered service-role list.
     record = {
         "name": name,
         "description": body.get("description", ""),
         "topology_yaml": body.get("topology_yaml"),
+        "team_id": team_ids[0],
         "created_at": _now_iso(),
         "updated_at": _now_iso(),
     }
@@ -636,12 +727,14 @@ def _proj_create(body: dict):
     return 201, {**created, "run_count": 0, "last_score": None, "last_run_at": None}
 
 
-def _proj_update(project_id: str, body: dict):
+def _proj_update(project_id: str, body: dict, team_ids):
     safe_project_id = _sanitize_uuid(project_id)
     if not safe_project_id:
         return 400, {"error": "Invalid project_id format (must be UUID)"}
-    if not _proj_supabase_configured():
+    if team_ids is None:  # demo mode
         return 200, {"ok": True, "id": safe_project_id, "demo": True}
+    if not _proj_owned_by(safe_project_id, team_ids):
+        return 404, {"error": "Project not found"}
     patch = {"updated_at": _now_iso()}
     for field in ("name", "description", "topology_yaml", "status"):
         if field in body:
@@ -653,12 +746,14 @@ def _proj_update(project_id: str, body: dict):
     return 200, updated
 
 
-def _proj_delete(project_id: str):
+def _proj_delete(project_id: str, team_ids):
     safe_project_id = _sanitize_uuid(project_id)
     if not safe_project_id:
         return 400, {"error": "Invalid project_id format (must be UUID)"}
-    if not _proj_supabase_configured():
+    if team_ids is None:  # demo mode
         return 200, {"ok": True, "id": safe_project_id, "demo": True}
+    if not _proj_owned_by(safe_project_id, team_ids):
+        return 404, {"error": "Project not found"}
     _proj_supabase_request("DELETE", "projects", f"?id=eq.{safe_project_id}")
     return 200, {"ok": True, "id": safe_project_id}
 
@@ -877,35 +972,49 @@ class handler(BaseHTTPRequestHandler):
             self._json(400, {"error": "Invalid JSON"})
             return
         try:
+            team_ids, err = self._project_team_scope()
+            if err:
+                self._json(*err)
+                return
             parsed = urlparse(self.path)
             query = parse_qs(parsed.query)
             project_id = query.get("id", [None])[0]
             if not project_id:
                 self._json(400, {"error": "Missing ?id= parameter"})
                 return
-            status, data = _proj_update(project_id, body)
+            status, data = _proj_update(project_id, body, team_ids)
             self._json(status, data)
-        except Exception as e:
-            self._json(500, {"error": f"Projects PATCH error: {e}"})
+        except Exception:
+            self._json(500, {"error": "Project update failed"})
 
     def do_DELETE(self):
         try:
+            team_ids, err = self._project_team_scope()
+            if err:
+                self._json(*err)
+                return
             parsed = urlparse(self.path)
             query = parse_qs(parsed.query)
             project_id = query.get("id", [None])[0]
             if not project_id:
                 self._json(400, {"error": "Missing ?id= parameter"})
                 return
-            status, data = _proj_delete(project_id)
+            status, data = _proj_delete(project_id, team_ids)
             self._json(status, data)
-        except Exception as e:
-            self._json(500, {"error": f"Projects DELETE error: {e}"})
+        except Exception:
+            self._json(500, {"error": "Project deletion failed"})
 
     # -----------------------------------------------------------------------
     # APM
     # -----------------------------------------------------------------------
 
     def _handle_apm_get(self, path: str, query: dict):
+        # APM data has no tenant column (global infra monitoring). Require the
+        # shared API key once real data is configured so agent hostnames/IPs
+        # and metrics are not world-readable; POST handlers already enforce it.
+        if _apm_supabase_configured() and not _validate_api_key(self.headers):
+            self._json(401, {"error": "Invalid or missing X-API-Key"})
+            return
         if path == "/api/apm/agents":
             status, data = _apm_list_agents()
             self._json(status, data)
@@ -945,20 +1054,43 @@ class handler(BaseHTTPRequestHandler):
     # Projects
     # -----------------------------------------------------------------------
 
+    def _project_team_scope(self):
+        """Resolve the caller's team scope for the /api/projects endpoints.
+
+        Returns ``(team_ids, error)``:
+          - ``error`` is None on success, or ``(status, body)`` to return.
+          - ``team_ids`` is None in demo mode (Supabase unconfigured),
+            otherwise the list of the caller's team UUIDs.
+        """
+        if not _proj_supabase_configured():
+            return None, None
+        user_id = _resolve_user_id(self.headers)
+        if not user_id:
+            return None, (401, {"error": "Authentication required"})
+        return _user_team_ids(user_id), None
+
     def _handle_projects_get(self, query: dict):
+        team_ids, err = self._project_team_scope()
+        if err:
+            self._json(*err)
+            return
         project_id = query.get("id", [None])[0]
         if project_id:
-            status, data = _proj_get(project_id)
+            status, data = _proj_get(project_id, team_ids)
         else:
-            status, data = _proj_list()
+            status, data = _proj_list(team_ids)
         self._json(status, data)
 
     def _handle_projects_post(self, body: dict):
+        team_ids, err = self._project_team_scope()
+        if err:
+            self._json(*err)
+            return
         try:
-            status, data = _proj_create(body)
+            status, data = _proj_create(body, team_ids)
             self._json(status, data)
-        except Exception as e:
-            self._json(500, {"error": f"Projects POST error: {e}"})
+        except Exception:
+            self._json(500, {"error": "Project creation failed"})
 
     # -----------------------------------------------------------------------
     # Chat

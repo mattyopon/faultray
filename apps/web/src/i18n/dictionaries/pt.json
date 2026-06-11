@@ -127,7 +127,7 @@
         "desc": "Painel web completo com editor de topologia, explorador de cenários, drill-down N-Layer, mapa de calor, rascunhos de pesquisa DORA e resumos executivos."
       }
     ],
-    "viewAll": "View Full Feature Details"
+    "viewAll": "Ver todos os recursos em detalhes"
   },
   "agentResilience": {
     "badge": "Novo na v11.0",
@@ -249,7 +249,7 @@
       999
     ],
     "taxNote": "",
-    "japaneseSupportBadge": "Japanese support included",
+    "japaneseSupportBadge": "Suporte em japonês incluído",
     "plans": [
       {
         "name": "Grátis",
@@ -269,11 +269,11 @@
     ]
   },
   "socialProof": {
-    "heading": "Trusted by the Developer Community",
+    "heading": "Aprovado pela comunidade de desenvolvedores",
     "githubStars": "GitHub Stars",
-    "betaMessage": "Currently in beta. We'd love your feedback.",
-    "betaSubtitle": "We are in early access. Your feedback helps us improve.",
-    "betaCta": "Send Feedback",
+    "betaMessage": "Atualmente em beta. Adoraríamos receber seu feedback.",
+    "betaSubtitle": "Estamos em acesso antecipado. Seu feedback nos ajuda a melhorar.",
+    "betaCta": "Enviar feedback",
     "openSource": "Open Source"
   },
   "roi": {
@@ -296,7 +296,7 @@
     "resources": "Recursos",
     "legal": "Legal",
     "copyright": "© 2026 FaultRay. Código aberto sob a Apache License 2.0.",
-    "japaneseSupport": "Japanese support available"
+    "japaneseSupport": "Suporte em japonês disponível"
   },
   "languageSwitcher": {
     "label": "Idioma"

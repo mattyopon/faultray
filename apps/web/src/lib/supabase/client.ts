@@ -12,3 +12,20 @@ export function createClient() {
 
   return createBrowserClient(url, key);
 }
+
+/**
+ * Current Supabase access token for the logged-in user, or undefined.
+ *
+ * Used to authenticate calls to the Python API (e.g. /api/projects), which
+ * runs in a separate runtime and cannot read the Next.js session cookie.
+ * Returns undefined on the server or when no session exists.
+ */
+export async function getAccessToken(): Promise<string | undefined> {
+  if (typeof window === "undefined") return undefined;
+  try {
+    const { data } = await createClient().auth.getSession();
+    return data.session?.access_token ?? undefined;
+  } catch {
+    return undefined;
+  }
+}

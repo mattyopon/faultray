@@ -4,15 +4,26 @@ import { applyRateLimit } from "@/lib/rate-limit";
 
 export const dynamic = "force-dynamic";
 
-/** Allowed action values for audit log writes (whitelist). */
+/**
+ * Allowed action values for audit log writes (whitelist).
+ * Must match the CHECK constraint on audit_logs.action
+ * (supabase/migrations/011_audit_logs.sql) — values outside that set are
+ * rejected by Postgres, so listing them here would turn every insert into
+ * a 500.
+ */
 const ALLOWED_ACTIONS = new Set([
-  "simulation.run",
-  "report.view",
-  "settings.update",
-  "team.invite",
-  "task.create",
-  "task.update",
-  "task.delete",
+  "LOGIN",
+  "LOGOUT",
+  "SIMULATION_RUN",
+  "REPORT_EXPORT",
+  "SETTINGS_CHANGE",
+  "API_KEY_CREATED",
+  "API_KEY_REVOKED",
+  "PROJECT_CREATED",
+  "PROJECT_DELETED",
+  "MEMBER_INVITED",
+  "PLAN_CHANGED",
+  "DATA_EXPORT",
 ]);
 
 /**
@@ -45,8 +56,12 @@ export async function GET(request: Request) {
   const url = new URL(request.url);
   const action = url.searchParams.get("action");
   const outcome = url.searchParams.get("outcome");
-  const limit = Math.min(parseInt(url.searchParams.get("limit") || "50", 10), 100);
-  const offset = parseInt(url.searchParams.get("offset") || "0", 10);
+  // Clamp pagination params — NaN or negative values would otherwise be
+  // passed straight into .range() and break the query.
+  const rawLimit = parseInt(url.searchParams.get("limit") || "50", 10);
+  const rawOffset = parseInt(url.searchParams.get("offset") || "0", 10);
+  const limit = Number.isFinite(rawLimit) ? Math.min(Math.max(rawLimit, 1), 100) : 50;
+  const offset = Number.isFinite(rawOffset) ? Math.max(rawOffset, 0) : 0;
 
   let query = supabase
     .from("audit_logs")

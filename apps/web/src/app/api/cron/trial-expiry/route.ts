@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { applyRateLimit } from "@/lib/rate-limit";
+import { verifyCronAuth } from "@/lib/cron-auth";
 
 export const dynamic = "force-dynamic";
 
@@ -25,12 +26,11 @@ export async function POST(request: Request) {
   const limited = await applyRateLimit(request, { limit: 5, windowMs: 60_000 });
   if (limited) return limited;
 
-  const cronSecret = process.env.CRON_SECRET;
-  const authHeader = request.headers.get("authorization");
-
-  if (!cronSecret || authHeader !== `Bearer ${cronSecret}`) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
+  // Same auth as /api/cron/trial-reminders: constant-time secret compare +
+  // optional CRON_ALLOWED_IPS. The inline `!==` check this replaced was
+  // timing-variable and ignored the IP allowlist.
+  const unauthorized = verifyCronAuth(request);
+  if (unauthorized) return unauthorized;
 
   const { createClient } = await import("@supabase/supabase-js");
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;

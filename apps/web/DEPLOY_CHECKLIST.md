@@ -11,11 +11,17 @@
 |--------|-----|------|
 | `NEXT_PUBLIC_SUPABASE_URL` | `https://xxx.supabase.co` | 必須 |
 | `NEXT_PUBLIC_SUPABASE_ANON_KEY` | `eyJhb...` | 必須 |
+| `SUPABASE_SERVICE_ROLE_KEY` | `eyJhb...` | 必須（webhook / cron / 退会処理） |
 | `NEXT_PUBLIC_SITE_URL` | `https://faultray.com` | 必須 |
 | `STRIPE_SECRET_KEY` | `sk_test_...` or `sk_live_...` | 決済時必須 |
 | `STRIPE_WEBHOOK_SECRET` | `whsec_...` | Webhook時必須 |
-| `STRIPE_PRO_PRICE_ID` | `price_...` | 決済時必須 |
-| `STRIPE_BUSINESS_PRICE_ID` | `price_...` | 決済時必須 |
+| `STRIPE_STARTER_PRICE_IDS` | `price_...`（カンマ区切り可） | 決済時必須 |
+| `STRIPE_PRO_PRICE_IDS` | `price_...`（カンマ区切り可） | 決済時必須 |
+| `STRIPE_BUSINESS_PRICE_IDS` | `price_...`（カンマ区切り可） | 決済時必須 |
+| `CRON_SECRET` | ランダム文字列 | cron 利用時必須 |
+
+その他の任意変数（Resend / Upstash / GA / Hotjar / Sentry / ADMIN_EMAILS など）は
+[.env.local.example](./.env.local.example) を参照。
 
 ## 2. Supabase 設定
 
