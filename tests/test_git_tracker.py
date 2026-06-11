@@ -25,10 +25,13 @@ def _create_test_repo(tmp_path: Path) -> Path:
             text=True,
         )
 
-    # Initialize repo
+    # Initialize repo (signing off: a global gpgsign=true, e.g. in CI
+    # containers, would otherwise make every test commit fail)
     _git(["init"])
     _git(["config", "user.email", "test@test.com"])
     _git(["config", "user.name", "Test"])
+    _git(["config", "commit.gpgsign", "false"])
+    _git(["config", "tag.gpgsign", "false"])
 
     # Commit 1: Initial model with 2 components
     model_v1 = {
@@ -197,6 +200,11 @@ class TestGitArchitectureTracker:
             cwd=str(repo_path),
             capture_output=True,
         )
+        subprocess.run(
+            ["git", "config", "commit.gpgsign", "false"],
+            cwd=str(repo_path),
+            capture_output=True,
+        )
 
         # Create a commit that doesn't touch the model file
         (repo_path / "readme.txt").write_text("hello")
@@ -246,6 +254,7 @@ class TestGitArchitectureTracker:
         _git(["init"])
         _git(["config", "user.email", "test@test.com"])
         _git(["config", "user.name", "Test"])
+        _git(["config", "commit.gpgsign", "false"])
 
         model = {
             "schema_version": "3.0",

@@ -26,9 +26,14 @@ logger = logging.getLogger(__name__)
 _JWT_SECRET = (
     os.environ.get("FAULTRAY_JWT_SECRET")
     or os.environ.get("JWT_SECRET_KEY")
-    or "faultray-dev-secret-change-me"
+    or ""
 )
-if _JWT_SECRET == "faultray-dev-secret-change-me":
+if not _JWT_SECRET:
+    if os.environ.get("FAULTRAY_ENV", "development") == "production":
+        raise RuntimeError(
+            "FAULTRAY_JWT_SECRET (or JWT_SECRET_KEY) must be set in production"
+        )
+    _JWT_SECRET = "faultray-dev-secret-change-me"  # development-only default
     logger.warning(
         "Using default JWT secret — set FAULTRAY_JWT_SECRET or JWT_SECRET_KEY for production"
     )

@@ -23,6 +23,7 @@ from pathlib import Path
 from typing import Any
 
 from faultray.model.graph import InfraGraph
+from faultray.reporter.style import score_bucket
 
 logger = logging.getLogger(__name__)
 
@@ -596,11 +597,9 @@ class TopologyDiffer:
 </html>"""
 
 
+_SCORE_HEX = {"good": "#28a745", "fair": "#ffc107", "poor": "#dc3545"}
+
+
 def _score_color(score: float) -> str:
     """Return a CSS color for a resilience score."""
-    if score >= 80:
-        return "#28a745"
-    elif score >= 60:
-        return "#ffc107"
-    else:
-        return "#dc3545"
+    return _SCORE_HEX[score_bucket(score)]

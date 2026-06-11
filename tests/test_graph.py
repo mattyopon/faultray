@@ -756,3 +756,43 @@ def test_dependency_to_unknown_target_does_not_crash_resilience_v2() -> None:
     g.add_dependency(_dep("a", "ghost"))  # dangling target
     out = g.resilience_score_v2()
     assert isinstance(out["score"], float)
+
+
+# ----------------------------- cache invalidation ---------------------------
+
+
+def test_critical_paths_cache_invalidated_on_mutation() -> None:
+    """Cached critical paths must refresh after topology changes."""
+    g = InfraGraph()
+    for cid in ("a", "b"):
+        g.add_component(_comp(cid))
+    g.add_dependency(_dep("a", "b"))
+    assert g.get_critical_paths() == [["a", "b"]]
+
+    # Extending the chain must invalidate the cached result
+    g.add_component(_comp("c"))
+    g.add_dependency(_dep("b", "c"))
+    assert g.get_critical_paths()[0] == ["a", "b", "c"]
+
+    # Removing the new edge must invalidate again ("c" becomes an isolated
+    # node, which counts as its own single-node entry/leaf path)
+    assert g.remove_dependency("b", "c") is True
+    assert g.get_critical_paths() == [["a", "b"], ["c"]]
+
+
+def test_remove_dependency_missing_edge_returns_false() -> None:
+    g = InfraGraph()
+    g.add_component(_comp("a"))
+    g.add_component(_comp("b"))
+    assert g.remove_dependency("a", "b") is False
+
+
+def test_critical_paths_cached_result_is_not_aliased() -> None:
+    """Mutating a returned path must not corrupt the cache."""
+    g = InfraGraph()
+    for cid in ("a", "b"):
+        g.add_component(_comp(cid))
+    g.add_dependency(_dep("a", "b"))
+    first = g.get_critical_paths()
+    first[0].append("tampered")
+    assert g.get_critical_paths() == [["a", "b"]]

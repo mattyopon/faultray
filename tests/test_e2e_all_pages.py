@@ -11,7 +11,15 @@ from __future__ import annotations
 
 import pytest
 
-pytestmark = pytest.mark.e2e
+from tests.conftest import production_reachable
+
+pytestmark = [
+    pytest.mark.e2e,
+    pytest.mark.skipif(
+        not production_reachable(),
+        reason="deployed faultray.com is not reachable from this environment",
+    ),
+]
 
 try:
     import httpx
