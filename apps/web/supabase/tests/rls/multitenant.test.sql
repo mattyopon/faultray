@@ -54,7 +54,7 @@ create extension if not exists pgtap;
 -- member_systems WITH CHECK:  2 assertion (#83, migration 018, structural existence)
 -- delete_user_account RPC  :  6 assertion (#70 finding 3-5, migration 017)
 --   pre/post check         :  6  (org_p delete via owner CASCADE + cascade chain, org_q untouched)
-select plan(93);
+select plan(98);
 
 -- ============================================================
 -- Setup: auth.users を直接 INSERT して 3 ユーザー + 2 team を作成
@@ -999,6 +999,69 @@ select isnt(
   NULL,
   '#83: member_systems UPDATE policy exists with WITH CHECK (cross-company guard)'
 );
+
+-- ============================================================
+-- #110 + #111: audit_logs INSERT path + action vocabulary alignment
+-- (migration 019) — Must run BEFORE the delete_user_account block below,
+-- since that block removes user_a from auth.users / profiles.
+-- ============================================================
+--
+-- 1) user_a is a team_x member → INSERT under user_a's own user_id with
+--    team_x is accepted; SELECT also returns it. The action value uses the
+--    canonical UPPER_SNAKE vocabulary (rejected before #111).
+-- 2) Spoofing user_id (user_a sets user_id = user_b) is rejected by WITH CHECK.
+-- 3) user_a inserting into team_y (cross-team) is rejected by WITH CHECK.
+-- 4) team_id = NULL is allowed when user_id matches auth.uid().
+
+select test_as_user(:'user_a_id'::uuid);
+
+prepare ok_insert as
+  insert into public.audit_logs (team_id, user_id, actor_email, action, outcome)
+  values (:'team_x_id'::uuid, :'user_a_id'::uuid, 'a@example.com', 'SIMULATION_RUN', 'SUCCESS');
+select lives_ok(
+  'execute ok_insert',
+  '#110: same-team member can INSERT audit_logs under own user_id'
+);
+
+select is(
+  (select count(*)::int from public.audit_logs
+   where team_id = :'team_x_id'::uuid and user_id = :'user_a_id'::uuid),
+  1,
+  '#110: the row landed and is visible via SELECT'
+);
+
+prepare spoof_user as
+  insert into public.audit_logs (team_id, user_id, actor_email, action)
+  values (:'team_x_id'::uuid, :'user_b_id'::uuid, 'b@example.com', 'LOGIN');
+select throws_ok(
+  'execute spoof_user',
+  NULL,
+  NULL,
+  '#110: user_id spoofing (user_id <> auth.uid()) is rejected by WITH CHECK'
+);
+
+prepare cross_team as
+  insert into public.audit_logs (team_id, user_id, actor_email, action)
+  values (:'team_y_id'::uuid, :'user_a_id'::uuid, 'a@example.com', 'LOGIN');
+select throws_ok(
+  'execute cross_team',
+  NULL,
+  NULL,
+  '#110: cross-team INSERT rejected — user_a cannot log against team_y'
+);
+
+prepare null_team as
+  insert into public.audit_logs (team_id, user_id, actor_email, action)
+  values (NULL, :'user_a_id'::uuid, 'a@example.com', 'SETTINGS_CHANGE');
+select lives_ok(
+  'execute null_team',
+  '#110: team_id NULL is accepted when user_id matches auth.uid()'
+);
+
+deallocate ok_insert;
+deallocate spoof_user;
+deallocate cross_team;
+deallocate null_team;
 
 -- ============================================================
 -- #70 finding 3-5: delete_user_account RPC が 009 テーブル対応 (migration 017)

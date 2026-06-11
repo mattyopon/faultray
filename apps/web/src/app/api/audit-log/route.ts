@@ -1,30 +1,18 @@
 import { NextResponse } from "next/server";
 import { requireAuth } from "@/lib/api-auth";
 import { applyRateLimit } from "@/lib/rate-limit";
+import { AUDIT_LOG_ACTION_SET } from "@/lib/audit-log-actions";
 
 export const dynamic = "force-dynamic";
 
 /**
  * Allowed action values for audit log writes (whitelist).
- * Must match the CHECK constraint on audit_logs.action
- * (supabase/migrations/011_audit_logs.sql) — values outside that set are
- * rejected by Postgres, so listing them here would turn every insert into
- * a 500.
+ * #111: the previous list was lowercase dotted names (e.g. "simulation.run")
+ * which the DB CHECK constraint never accepted, so every POST returned 500.
+ * The canonical UPPER_SNAKE vocabulary lives in src/lib/audit-log-actions.ts
+ * and is mirrored by migration 019.
  */
-const ALLOWED_ACTIONS = new Set([
-  "LOGIN",
-  "LOGOUT",
-  "SIMULATION_RUN",
-  "REPORT_EXPORT",
-  "SETTINGS_CHANGE",
-  "API_KEY_CREATED",
-  "API_KEY_REVOKED",
-  "PROJECT_CREATED",
-  "PROJECT_DELETED",
-  "MEMBER_INVITED",
-  "PLAN_CHANGED",
-  "DATA_EXPORT",
-]);
+const ALLOWED_ACTIONS = AUDIT_LOG_ACTION_SET;
 
 /**
  * GET /api/audit-log — List audit log entries for the user's team.
@@ -40,12 +28,13 @@ export async function GET(request: Request) {
   const { createClient } = await import("@/lib/supabase/server");
   const supabase = await createClient();
 
-  // Resolve user's team — only active memberships can view audit logs
+  // Resolve user's team. ``team_members`` has no ``status`` column today —
+  // every row already represents an active membership (status was an org_members
+  // concept we mis-copied). Filtering by it returns zero rows and breaks reads.
   const { data: membership } = await supabase
     .from("team_members")
     .select("team_id")
     .eq("user_id", user.id)
-    .eq("status", "active")
     .limit(1)
     .maybeSingle();
 
@@ -120,12 +109,12 @@ export async function POST(request: Request) {
   const { createClient } = await import("@/lib/supabase/server");
   const supabase = await createClient();
 
-  // Resolve team — only active memberships can write audit logs
+  // Resolve team — see GET handler comment; team_members has no ``status``
+  // column today, so we filter only by user_id.
   const { data: membership } = await supabase
     .from("team_members")
     .select("team_id")
     .eq("user_id", user.id)
-    .eq("status", "active")
     .limit(1)
     .maybeSingle();
 

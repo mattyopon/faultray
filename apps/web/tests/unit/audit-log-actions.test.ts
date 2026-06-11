@@ -1,50 +1,56 @@
 /**
- * L2 Regression: audit-log API whitelist must match the DB CHECK constraint.
+ * L2 Regression: audit-log vocabulary wiring and migration continuity.
  *
- * The POST /api/audit-log whitelist (ALLOWED_ACTIONS) used to contain
- * lowercase dotted values ("simulation.run", "task.create", …) while the
- * CHECK constraint on audit_logs.action (migration 011) only accepts
- * uppercase values ('SIMULATION_RUN', …). Every insert that passed the API
- * whitelist was then rejected by Postgres, turning the endpoint into a
- * guaranteed 500. This test parses both sources and asserts the API set is
- * a subset of the DB set so they cannot silently drift again.
+ * The POST /api/audit-log whitelist used to contain lowercase dotted values
+ * ("simulation.run", …) while the DB CHECK on audit_logs.action only accepts
+ * uppercase values, turning every insert into a guaranteed 500. The canonical
+ * vocabulary now lives in src/lib/audit-log-actions.ts; the integration test
+ * (tests/integration/audit-log-vocabulary.test.ts) proves it matches the
+ * migration-019 CHECK. This file covers the two gaps that test leaves open:
+ *
+ *  1. route.ts must actually USE the canonical set — an inline list could
+ *     drift from the constraint while the integration test stays green.
+ *  2. Migration 019 replaces the 011 CHECK, so 019's vocabulary must remain
+ *     a superset of 011's — otherwise rows written under the old constraint
+ *     would violate the new one and the ALTER would fail on deploy.
  */
 import { describe, it, expect } from "vitest";
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 
+import { AUDIT_LOG_ACTIONS } from "@/lib/audit-log-actions";
+
 const ROUTE_PATH = resolve(__dirname, "../../src/app/api/audit-log/route.ts");
-const MIGRATION_PATH = resolve(
+const MIGRATION_011 = resolve(
   __dirname,
   "../../supabase/migrations/011_audit_logs.sql"
 );
 
-function apiActions(): string[] {
-  const src = readFileSync(ROUTE_PATH, "utf-8");
-  const block = src.match(/ALLOWED_ACTIONS = new Set\(\[([\s\S]*?)\]\)/);
-  if (!block) throw new Error("ALLOWED_ACTIONS set not found in route.ts");
-  return [...block[1].matchAll(/"([^"]+)"/g)].map((m) => m[1]);
-}
-
-function dbActions(): string[] {
-  const sql = readFileSync(MIGRATION_PATH, "utf-8");
+function legacyDbActions(): string[] {
+  const sql = readFileSync(MIGRATION_011, "utf-8");
   const block = sql.match(/action text NOT NULL CHECK \(action IN \(([\s\S]*?)\)\)/);
   if (!block) throw new Error("action CHECK constraint not found in migration 011");
   return [...block[1].matchAll(/'([^']+)'/g)].map((m) => m[1]);
 }
 
-describe("L2: audit-log action whitelist vs DB constraint", () => {
-  it("parses a non-empty whitelist from both sources", () => {
-    expect(apiActions().length).toBeGreaterThan(0);
-    expect(dbActions().length).toBeGreaterThan(0);
+describe("L2: audit-log action vocabulary wiring", () => {
+  it("route.ts wires ALLOWED_ACTIONS to the canonical AUDIT_LOG_ACTION_SET", () => {
+    const src = readFileSync(ROUTE_PATH, "utf-8");
+    expect(src).toMatch(
+      /import \{ AUDIT_LOG_ACTION_SET \} from "@\/lib\/audit-log-actions"/
+    );
+    expect(src).toMatch(/const ALLOWED_ACTIONS = AUDIT_LOG_ACTION_SET;/);
+    // No parallel inline vocabulary that could drift from the canonical set.
+    expect(src).not.toMatch(/ALLOWED_ACTIONS = new Set\(\[/);
   });
 
-  it("every API-allowed action is accepted by the DB CHECK constraint", () => {
-    const db = new Set(dbActions());
-    const rejected = apiActions().filter((a) => !db.has(a));
+  it("canonical vocabulary keeps every action from the legacy 011 constraint", () => {
+    const canonical = new Set<string>(AUDIT_LOG_ACTIONS);
+    const dropped = legacyDbActions().filter((a) => !canonical.has(a));
     expect(
-      rejected,
-      `actions allowed by the API but rejected by audit_logs.action CHECK: ${rejected.join(", ")}`
+      dropped,
+      `actions valid under migration 011 but missing from the canonical set ` +
+        `(existing rows would violate the migration-019 CHECK): ${dropped.join(", ")}`
     ).toHaveLength(0);
   });
 });
