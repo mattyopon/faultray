@@ -67,11 +67,27 @@ async function getSupabaseAdmin() {
   return createClient(url, serviceRoleKey);
 }
 
-async function updateUserPlan(userId: string, plan: PlanTier, subscriptionStatus?: string): Promise<void> {
+/**
+ * #112: ``plan === null`` means "could not resolve a plan from Stripe — keep
+ * whatever is currently in the profile". We must never substitute a paid tier
+ * as a fallback because that silently rewrites the customer's entitlement.
+ */
+async function updateUserPlan(
+  userId: string,
+  plan: PlanTier | null,
+  subscriptionStatus?: string
+): Promise<void> {
   const supabase = await getSupabaseAdmin();
-  const updatePayload: Record<string, unknown> = { plan };
+  const updatePayload: Record<string, unknown> = {};
+  if (plan !== null) {
+    updatePayload.plan = plan;
+  }
   if (subscriptionStatus !== undefined) {
     updatePayload.subscription_status = subscriptionStatus;
+  }
+  if (Object.keys(updatePayload).length === 0) {
+    // Nothing to write (no plan change, no status change).
+    return;
   }
   const { error } = await supabase
     .from("profiles")
@@ -104,7 +120,7 @@ async function resolveUserByCustomerId(
 
 async function updateUserByCustomerId(
   customerId: string,
-  plan: PlanTier,
+  plan: PlanTier | null,
   subscriptionStatus?: string
 ): Promise<void> {
   const userId = await resolveUserByCustomerId(customerId);
@@ -531,14 +547,24 @@ export async function POST(request: Request) {
           // NOTE (#31): replaced `as any` cast with InvoiceWithSubscription.
           const subscriptionId: string | null = extractSubscriptionId(invoice);
 
-          let resolvedPlan: PlanTier = "pro"; // fallback
+          // #112: never default to a paid tier here. When subscription /
+          // priceId resolution fails, keep the existing plan (null) and only
+          // flip status to past_due. Transient Stripe retrieve errors are
+          // re-thrown so Stripe retries, instead of silently downgrading.
+          let resolvedPlan: PlanTier | null = null;
           if (subscriptionId) {
             try {
               const subscription = await stripe.subscriptions.retrieve(subscriptionId);
               const priceId = subscription.items.data[0]?.price?.id;
-              resolvedPlan = (priceId ? planTierFromPriceId(priceId) : null) ?? "pro";
+              resolvedPlan = priceId ? planTierFromPriceId(priceId) : null;
+              if (resolvedPlan === null) {
+                console.warn(
+                  `[stripe/webhook] payment_failed: unresolved plan for priceId=${priceId ?? "(missing)"}; preserving existing plan`
+                );
+              }
             } catch (err) {
               console.error("[stripe/webhook] Failed to retrieve subscription for payment_failed:", err);
+              throw err;
             }
           }
 
@@ -570,10 +596,19 @@ export async function POST(request: Request) {
           );
           const priceId = subscription.items.data[0]?.price?.id;
           const plan = priceId ? planTierFromPriceId(priceId) : null;
-          const resolvedPlan: PlanTier = plan ?? "pro";
+          // #112: don't fall back to "pro" — that silently rewrites the
+          // entitlement of starter/business customers whose price ID isn't in
+          // our local mapping. Preserve the existing plan instead and only flip
+          // status to "active". Operators can fix the mapping and replay.
+          const resolvedPlan: PlanTier | null = plan;
+          if (resolvedPlan === null) {
+            console.warn(
+              `[stripe/webhook] payment_succeeded: unresolved plan for priceId=${priceId ?? "(missing)"}; preserving existing plan`
+            );
+          }
           await updateUserByCustomerId(customerId, resolvedPlan, "active");
           console.info(
-            `[stripe/webhook] invoice.payment_succeeded: customer=${customerId} plan=${resolvedPlan}`
+            `[stripe/webhook] invoice.payment_succeeded: customer=${customerId} plan=${resolvedPlan ?? "(preserved)"}`
           );
         }
         break;
