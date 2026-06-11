@@ -8,6 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 ## [Unreleased]
 
 ### Fixed
+- **Packaging**: `python-multipart` added to core dependencies — `/setup`, simulation and graph form endpoints returned 500 (`AssertionError: The python-multipart library must be installed`) on a clean install
 - **Security**: Team Workspace API (`/api/teams/*`) endpoints now require authentication/RBAC (previously unauthenticated)
 - **Security**: `/api/v1` SaaS route permission checker now enforces real RBAC instead of allowing anonymous access
 - **Security**: JWT secret falls back to the dev default only outside production; `FAULTRAY_ENV=production` without `FAULTRAY_JWT_SECRET` now fails fast
