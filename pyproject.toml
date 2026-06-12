@@ -82,7 +82,7 @@ sakura = [
 alibaba = [
     "alibabacloud-ecs20140526>=3.0",
     "alibabacloud-rds20140815>=3.0",
-    "alibabacloud-slb20140515>=3.0",
+    "alibabacloud-slb20140515>=3.3.31",
     "requests>=2.33.1",
 ]
 oci = [
@@ -99,7 +99,7 @@ all-clouds = [
     "requests>=2.33.1",
     "alibabacloud-ecs20140526>=3.0",
     "alibabacloud-rds20140815>=3.0",
-    "alibabacloud-slb20140515>=3.0",
+    "alibabacloud-slb20140515>=3.3.31",
     "oci>=2.175.0",
     "pynetbox>=7.0",
 ]
