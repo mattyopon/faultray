@@ -15,6 +15,7 @@ import logging
 import time
 from dataclasses import dataclass, field
 
+from faultray.discovery.base import CloudScannerBase
 from faultray.model.components import (
     AutoScalingConfig,
     Component,
@@ -68,13 +69,13 @@ class K8sDiscoveryResult:
     scan_duration_seconds: float = 0.0
 
 
-class K8sScanner:
+class K8sScanner(CloudScannerBase):
     """Discover Kubernetes infrastructure and generate InfraGraph automatically."""
 
     def __init__(self, context: str | None = None, namespace: str | None = None):
+        super().__init__()
         self.context = context
         self.namespace = namespace
-        self._warnings: list[str] = []
         # Service selector tracking: service_comp_id -> selector labels
         self._service_selectors: dict[str, dict[str, str]] = {}
         # Service port tracking: service_comp_id -> exposed port (first entry of spec.ports)
@@ -128,44 +129,16 @@ class K8sScanner:
             ("NetworkPolicies", self._scan_network_policies),
         ]
 
-        for name, scanner_fn in scanners:
-            try:
-                scanner_fn(graph)
-            except RuntimeError:
-                raise  # Re-raise library import errors
-            except Exception as exc:
-                msg = f"Failed to scan {name}: {exc}"
-                logger.warning(msg)
-                self._warnings.append(msg)
-
-        # Post-processing
-        try:
-            self._apply_hpa(graph)
-        except Exception as exc:
-            msg = f"Failed to apply HPA configs: {exc}"
-            logger.warning(msg)
-            self._warnings.append(msg)
-
-        try:
-            self._apply_pdb(graph)
-        except Exception as exc:
-            msg = f"Failed to apply PDB configs: {exc}"
-            logger.warning(msg)
-            self._warnings.append(msg)
-
-        try:
-            self._apply_network_policies(graph)
-        except Exception as exc:
-            msg = f"Failed to apply network policies: {exc}"
-            logger.warning(msg)
-            self._warnings.append(msg)
-
-        try:
-            self._infer_dependencies(graph)
-        except Exception as exc:
-            msg = f"Failed to infer dependencies: {exc}"
-            logger.warning(msg)
-            self._warnings.append(msg)
+        self._run_scanners(
+            graph,
+            scanners,
+            post_processors=[
+                ("apply HPA configs", self._apply_hpa),
+                ("apply PDB configs", self._apply_pdb),
+                ("apply network policies", self._apply_network_policies),
+                ("infer dependencies", self._infer_dependencies),
+            ],
+        )
 
         duration = time.monotonic() - start
         dep_count = len(graph.all_dependency_edges())

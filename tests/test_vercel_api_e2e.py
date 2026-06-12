@@ -14,8 +14,16 @@ from __future__ import annotations
 
 import pytest
 
+from tests.conftest import production_reachable
+
 # Mark all tests in this file as E2E (network-required)
-pytestmark = pytest.mark.e2e
+pytestmark = [
+    pytest.mark.e2e,
+    pytest.mark.skipif(
+        not production_reachable(),
+        reason="deployed faultray.com is not reachable from this environment",
+    ),
+]
 
 FAULTRAY_URL = "https://faultray.com"
 

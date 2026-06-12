@@ -454,7 +454,9 @@ async def billing_checkout(request: Request, user=Depends(_require_permission("m
         return JSONResponse({"checkout_url": url})
     except Exception as exc:
         logger.error("Checkout session creation failed: %s", exc, exc_info=True)
-        return JSONResponse({"error": str(exc)}, status_code=500)
+        return JSONResponse(
+            {"error": "Failed to create checkout session."}, status_code=500
+        )
 
 
 @app.post("/api/webhooks/stripe")
@@ -507,7 +509,9 @@ async def billing_portal(request: Request, team_id: str = "", user=Depends(_requ
         return JSONResponse({"portal_url": url})
     except Exception as exc:
         logger.error("Customer portal creation failed: %s", exc, exc_info=True)
-        return JSONResponse({"error": str(exc)}, status_code=500)
+        return JSONResponse(
+            {"error": "Failed to create customer portal session."}, status_code=500
+        )
 
 
 @app.get("/api/billing/usage", response_class=JSONResponse)

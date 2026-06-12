@@ -335,10 +335,10 @@ class ChangeRiskPredictor:
                 )
 
         elif ctype == ChangeType.REMOVE_DEPENDENCY:
-            # NetworkX edge removal on the cloned graph
+            # Edge removal on the cloned graph (public API keeps caches valid)
             target = change.parameters.get("target_id", "")
-            if target and graph._graph.has_edge(cid, target):
-                graph._graph.remove_edge(cid, target)
+            if target:
+                graph.remove_dependency(cid, target)
 
         elif ctype == ChangeType.CHANGE_REGION:
             comp = graph.get_component(cid)

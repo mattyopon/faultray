@@ -210,6 +210,14 @@ def _ensure_dir() -> None:
     _FAULTRAY_DIR.mkdir(parents=True, exist_ok=True)
 
 
+def _restrict_permissions(path: Path) -> None:
+    """Make *path* readable/writable by the owner only (best effort)."""
+    try:
+        path.chmod(0o600)
+    except OSError:  # e.g. filesystems without POSIX permissions
+        logger.debug("Could not restrict permissions on %s", path)
+
+
 def _load_coupons() -> list[Coupon]:
     """Load all coupons from ~/.faultray/coupons.json."""
     if not _COUPONS_FILE.exists():
@@ -223,13 +231,14 @@ def _load_coupons() -> list[Coupon]:
 
 
 def _save_coupons(coupons: list[Coupon]) -> None:
-    """Persist coupon list to ~/.faultray/coupons.json."""
+    """Persist coupon list to ~/.faultray/coupons.json (owner-only readable)."""
     _ensure_dir()
     data = [c.to_dict() for c in coupons]
     _COUPONS_FILE.write_text(
         json.dumps(data, indent=2, ensure_ascii=False),
         encoding="utf-8",
     )
+    _restrict_permissions(_COUPONS_FILE)
 
 
 def _load_license() -> RedeemedCoupon | None:
@@ -262,6 +271,7 @@ def _save_license(redeemed: RedeemedCoupon) -> None:
         json.dumps(existing, indent=2, ensure_ascii=False),
         encoding="utf-8",
     )
+    _restrict_permissions(_LICENSE_FILE)
 
 
 # ---------------------------------------------------------------------------

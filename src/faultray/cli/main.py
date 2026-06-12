@@ -54,6 +54,23 @@ def _version_callback(value: bool) -> None:
         raise typer.Exit()
 
 
+def _init_language() -> None:
+    """Activate the display language: FAULTRAY_LANG env > config ui.language."""
+    import os
+
+    from faultray.i18n import set_language
+
+    lang = os.environ.get("FAULTRAY_LANG", "").strip()
+    if not lang:
+        try:
+            from faultray.config import load_config
+
+            lang = str(load_config().ui.get("language", "en"))
+        except Exception:
+            lang = "en"
+    set_language(lang)
+
+
 def _tier_banner() -> str:
     """Return a startup banner string showing the active license tier."""
     from faultray import __version__
@@ -90,6 +107,8 @@ def main(
     ),
 ) -> None:
     """FaultRay — Zero-risk infrastructure chaos engineering simulator."""
+    _init_language()
+
     # Skip the banner when --json is anywhere in the raw args so that
     # machine-readable output is not contaminated with human-readable text.
     if "--json" not in _raw_cli_args:

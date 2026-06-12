@@ -1,9 +1,11 @@
 name: Deploy Landing Page
 
+# The landing page lives in landing/ (there is no site/ directory; the
+# old path made the push trigger dead and manual runs fail on upload).
 on:
   push:
     branches: [main]
-    paths: ['site/**']
+    paths: ['landing/**']
   workflow_dispatch:
 
 permissions:
@@ -26,6 +28,6 @@ jobs:
       - uses: actions/configure-pages@v6
       - uses: actions/upload-pages-artifact@v5
         with:
-          path: site
+          path: landing
       - id: deployment
         uses: actions/deploy-pages@v5

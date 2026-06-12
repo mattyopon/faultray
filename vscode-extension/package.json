@@ -13,15 +13,15 @@
   "contributes": {
     "commands": [
       {
-        "command": "faultzero.scan",
+        "command": "faultray.scan",
         "title": "FaultRay: Scan Infrastructure"
       },
       {
-        "command": "faultzero.simulate",
+        "command": "faultray.simulate",
         "title": "FaultRay: Run Simulation"
       },
       {
-        "command": "faultzero.showScore",
+        "command": "faultray.showScore",
         "title": "FaultRay: Show Score"
       }
     ],

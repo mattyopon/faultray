@@ -13,12 +13,21 @@ import datetime as _dt
 import logging
 import uuid
 
-from fastapi import APIRouter, HTTPException, Request
+from fastapi import APIRouter, Depends, HTTPException, Request
 from fastapi.responses import JSONResponse
 
 logger = logging.getLogger(__name__)
 
 teams_router = APIRouter(prefix="/api/teams", tags=["teams"])
+
+
+def _require_permission(permission: str):
+    """Lazy wrapper around auth.require_permission (avoids circular import)."""
+    async def _dep(request: Request):
+        from faultray.api.auth import require_permission
+
+        return await require_permission(permission)(request)
+    return _dep
 
 
 # ---------------------------------------------------------------------------
@@ -81,7 +90,9 @@ def _now_iso() -> str:
 # ---------------------------------------------------------------------------
 
 @teams_router.post("/")
-async def create_team(request: Request) -> JSONResponse:
+async def create_team(
+    request: Request, user=Depends(_require_permission("create_project"))
+) -> JSONResponse:
     """Create a new team workspace.
 
     Expects JSON body: ``{"name": "...", "owner_id": "..."}``
@@ -146,7 +157,9 @@ async def create_team(request: Request) -> JSONResponse:
 
 
 @teams_router.get("/")
-async def list_teams(user_id: str | None = None) -> JSONResponse:
+async def list_teams(
+    user_id: str | None = None, user=Depends(_require_permission("view_dashboard"))
+) -> JSONResponse:
     """List teams, optionally filtered by user membership."""
     try:
         from sqlalchemy import text
@@ -189,7 +202,9 @@ async def list_teams(user_id: str | None = None) -> JSONResponse:
 
 
 @teams_router.get("/{team_id}")
-async def get_team(team_id: str) -> JSONResponse:
+async def get_team(
+    team_id: str, user=Depends(_require_permission("view_dashboard"))
+) -> JSONResponse:
     """Get a single team with its members."""
     try:
         from sqlalchemy import text
@@ -245,7 +260,9 @@ async def get_team(team_id: str) -> JSONResponse:
 # ---------------------------------------------------------------------------
 
 @teams_router.post("/{team_id}/members")
-async def add_member(team_id: str, request: Request) -> JSONResponse:
+async def add_member(
+    team_id: str, request: Request, user=Depends(_require_permission("create_project"))
+) -> JSONResponse:
     """Add a member to a team.
 
     Expects JSON body: ``{"user_id": "...", "role": "viewer"}``
@@ -315,7 +332,9 @@ async def add_member(team_id: str, request: Request) -> JSONResponse:
 
 
 @teams_router.delete("/{team_id}/members/{user_id}")
-async def remove_member(team_id: str, user_id: str) -> JSONResponse:
+async def remove_member(
+    team_id: str, user_id: str, user=Depends(_require_permission("create_project"))
+) -> JSONResponse:
     """Remove a member from a team.
 
     The team owner cannot be removed.
@@ -364,7 +383,9 @@ async def remove_member(team_id: str, user_id: str) -> JSONResponse:
 # ---------------------------------------------------------------------------
 
 @teams_router.post("/{team_id}/projects")
-async def create_project(team_id: str, request: Request) -> JSONResponse:
+async def create_project(
+    team_id: str, request: Request, user=Depends(_require_permission("create_project"))
+) -> JSONResponse:
     """Create a project within a team.
 
     Expects JSON body: ``{"name": "..."}``
@@ -434,7 +455,9 @@ async def create_project(team_id: str, request: Request) -> JSONResponse:
 
 
 @teams_router.get("/{team_id}/projects")
-async def list_projects(team_id: str) -> JSONResponse:
+async def list_projects(
+    team_id: str, user=Depends(_require_permission("view_dashboard"))
+) -> JSONResponse:
     """List all projects belonging to a team."""
     try:
         from sqlalchemy import text
