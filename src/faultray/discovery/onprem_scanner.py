@@ -330,14 +330,6 @@ class OnPremScanner:
         except Exception as exc:
             self._warnings.append(f"NetBox VMs scan error: {exc}")
 
-        # Discover IP addresses for dependency inference
-        try:
-            ips = nb.ipam.ip_addresses.all()
-            for ip in ips:
-                pass  # IP data already captured via device primary_ip
-        except Exception:
-            pass
-
     def _add_netbox_device(self, graph: InfraGraph, device: Any, is_vm: bool) -> None:
         """Add a NetBox device or VM as an InfraGraph component."""
         device_id = str(getattr(device, "id", ""))

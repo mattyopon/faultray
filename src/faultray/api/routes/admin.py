@@ -113,6 +113,32 @@ async def setup_create_admin(request: Request):
         return RedirectResponse(url="/", status_code=302)
 
     form = await request.form()
+
+    # Optional bootstrap gate: when FAULTRAY_SETUP_TOKEN is configured, the very
+    # first-admin creation must present a matching token (form field or header).
+    # This closes the "race to takeover" on a fresh, internet-reachable instance
+    # (#140) while leaving the default first-run UX unchanged when unset.
+    import os as _os
+
+    setup_token = _os.environ.get("FAULTRAY_SETUP_TOKEN", "")
+    if setup_token:
+        import hmac as _hmac
+
+        provided = str(
+            form.get("setup_token") or request.headers.get("X-Setup-Token", "")
+        )
+        if not _hmac.compare_digest(provided, setup_token):
+            logger.warning("Rejected /setup attempt: missing/invalid setup token")
+            return templates.TemplateResponse(
+                request,
+                "setup.html",
+                {
+                    "success": False,
+                    "error": "A valid setup token is required to create the first admin.",
+                },
+                status_code=403,
+            )
+
     name = str(form.get("name", "")).strip()
     email = str(form.get("email", "")).strip()
 

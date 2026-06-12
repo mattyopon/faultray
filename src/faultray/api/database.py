@@ -238,6 +238,10 @@ _session_factory = None
 def _get_engine(url: str | None = None):
     global _engine
     if _engine is None:
+        if url is None:
+            # SQLite cannot create the parent directory itself; without this,
+            # the first connection on a fresh machine fails with OperationalError.
+            DB_DIR.mkdir(parents=True, exist_ok=True)
         db_url = url or get_database_url()
         _engine = create_async_engine(db_url, echo=False)
     return _engine

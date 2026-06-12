@@ -59,6 +59,21 @@ _HEALTH_COLORS: dict[HealthStatus, str] = {
 }
 
 
+def _json_for_script(data: object) -> str:
+    """Serialize *data* as JSON safe to embed inside a <script> block.
+
+    ``json.dumps`` leaves ``<``, ``>`` and ``&`` untouched, so component names
+    containing ``</script>`` could otherwise break out of the script context
+    (XSS). Escaping them as ``\\uXXXX`` keeps the JSON semantically identical.
+    """
+    return (
+        json.dumps(data, ensure_ascii=False)
+        .replace("<", "\\u003c")
+        .replace(">", "\\u003e")
+        .replace("&", "\\u0026")
+    )
+
+
 def _node_size(comp: Component, graph: InfraGraph) -> int:
     """Node radius: larger for components with more dependents."""
     dep_count = len(graph.get_dependents(comp.id))
@@ -114,9 +129,9 @@ def generate_topology_html(graph: InfraGraph, output_path: Path) -> None:
         if t in used_types
     ]
 
-    nodes_json = json.dumps(nodes, ensure_ascii=False)
-    edges_json = json.dumps(edges, ensure_ascii=False)
-    legend_json = json.dumps(legend_entries, ensure_ascii=False)
+    nodes_json = _json_for_script(nodes)
+    edges_json = _json_for_script(edges)
+    legend_json = _json_for_script(legend_entries)
     title = _xml_escape(f"FaultRay Topology — {len(nodes)} components")
 
     html = _TEMPLATE.format(

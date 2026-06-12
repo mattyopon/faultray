@@ -442,6 +442,12 @@ class TestCrossCuttingConcerns:
 
     def test_options_returns_cors_headers(self) -> None:
         """OPTIONS requests should return CORS headers."""
+        # httpx.options is not redirected to the local app by conftest, so
+        # this one genuinely needs the deployed site.
+        from tests.conftest import production_reachable
+
+        if not production_reachable():
+            pytest.skip("deployed faultray.com is not reachable from this environment")
         r = httpx.options(f"{FAULTRAY_URL}/api/health", timeout=_TIMEOUT)
         # 200 or 204 are both valid for OPTIONS
         assert r.status_code in (200, 204)

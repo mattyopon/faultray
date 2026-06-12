@@ -460,14 +460,15 @@ class TestSimulationRunWithDB:
         # Just ensure it doesn't raise
         reset_engine()
 
-    def test_simulation_run_get_saves_to_db(self, demo_db_client):
-        """Cover line 419: run_id is set in response when DB works."""
+    def test_simulation_run_get_does_not_persist(self, demo_db_client):
+        """The public /simulation/run GET must NOT write a run row (#141):
+        anonymous demo traffic should not create unbounded shared state."""
         resp = demo_db_client.get("/simulation/run")
         assert resp.status_code == 200
         data = resp.json()
         assert "resilience_score" in data
-        # run_id should be present when DB is working
-        assert "run_id" in data
+        # Public endpoint no longer persists, so no run_id is returned.
+        assert "run_id" not in data
 
     def test_api_simulate_post_saves_to_db(self, demo_db_client):
         """Cover line 439: run_id is set in post response, plus audit log (line 456)."""

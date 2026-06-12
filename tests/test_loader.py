@@ -293,3 +293,46 @@ dependencies: []
     # Other fields should be defaults
     assert comp.network.rtt_ms == 1.0
     assert comp.network.jitter_ms == 0.5
+
+
+def test_load_external_sla_from_yaml():
+    """external_sla should be loaded into the component (regression: was silently dropped)."""
+    path = _write_yaml("""
+components:
+  - id: payment-api
+    name: Payment API
+    type: external_api
+    external_sla:
+      provider_sla: 99.95
+  - id: app
+    name: App
+    type: app_server
+
+dependencies: []
+""")
+    graph = load_yaml(path)
+    comp = graph.get_component("payment-api")
+    assert comp is not None
+    assert comp.external_sla is not None
+    assert comp.external_sla.provider_sla == 99.95
+    # Components without the key keep the None default
+    plain = graph.get_component("app")
+    assert plain is not None
+    assert plain.external_sla is None
+
+
+def test_load_external_sla_null_roundtrip():
+    """A round-tripped model with ``external_sla: null`` must load fine."""
+    path = _write_yaml("""
+components:
+  - id: app
+    name: App
+    type: app_server
+    external_sla: null
+
+dependencies: []
+""")
+    graph = load_yaml(path)
+    comp = graph.get_component("app")
+    assert comp is not None
+    assert comp.external_sla is None

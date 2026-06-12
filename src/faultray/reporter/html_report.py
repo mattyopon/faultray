@@ -13,6 +13,7 @@ from jinja2 import Environment, FileSystemLoader
 
 from faultray.model.components import HealthStatus
 from faultray.model.graph import InfraGraph
+from faultray.reporter.style import iter_effects_with_delta, score_bucket, util_bucket
 from faultray.simulator.engine import ScenarioResult, SimulationReport
 
 
@@ -41,20 +42,16 @@ def _health_class(health: HealthStatus) -> str:
     }.get(health, "healthy")
 
 
+_SCORE_COLORS = {"good": "green", "fair": "yellow", "poor": "red"}
+_UTIL_COLORS = {"high": "red", "elevated": "yellow", "normal": "green"}
+
+
 def _score_color(score: float) -> str:
-    if score >= 80:
-        return "green"
-    if score >= 60:
-        return "yellow"
-    return "red"
+    return _SCORE_COLORS[score_bucket(score)]
 
 
 def _util_color(util: float) -> str:
-    if util > 80:
-        return "red"
-    if util > 60:
-        return "yellow"
-    return "green"
+    return _UTIL_COLORS[util_bucket(util)]
 
 
 # ---------------------------------------------------------------------------
@@ -64,7 +61,6 @@ def _util_color(util: float) -> str:
 def _build_finding(result: ScenarioResult) -> dict:
     """Convert a ScenarioResult (or DynamicScenarioResult) into a template-friendly dict."""
     effects = []
-    prev_time = 0
 
     # DynamicScenarioResult has snapshots with cascade_effects instead of cascade
     if hasattr(result, "cascade"):
@@ -78,13 +74,8 @@ def _build_finding(result: ScenarioResult) -> dict:
     else:
         raw_effects = []
 
-    for eff in raw_effects:
-        time_str = ""
-        if eff.estimated_time_seconds > 0:
-            delta = eff.estimated_time_seconds - prev_time
-            time_str = f"+{delta}s"
-            prev_time = eff.estimated_time_seconds
-
+    for eff, delta in iter_effects_with_delta(raw_effects):
+        time_str = f"+{delta}s" if delta is not None else ""
         effects.append({
             "component_name": eff.component_name,
             "health_icon": _health_icon(eff.health),

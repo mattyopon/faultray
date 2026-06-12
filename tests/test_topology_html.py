@@ -476,3 +476,27 @@ def test_generate_topology_json_valid() -> None:
     edges = json.loads(html[edge_start:edge_end])
     assert isinstance(nodes, list)
     assert isinstance(edges, list)
+
+
+# ---------------------------------------------------------------------------
+# Script-injection safety
+# ---------------------------------------------------------------------------
+
+class TestScriptInjectionSafety:
+    def test_component_name_cannot_break_out_of_script_block(self) -> None:
+        g = InfraGraph()
+        g.add_component(
+            Component(
+                id="evil",
+                name='</script><script>alert("xss")</script>',
+                type=ComponentType.APP_SERVER,
+            )
+        )
+        html = _generate_and_read(g)
+        # The literal closing tag from the name must not survive serialization
+        assert "</script><script>alert" not in html
+        # The data must still round-trip as valid JSON
+        node_start = html.index("const NODES = ") + len("const NODES = ")
+        node_end = html.index(";\n    const EDGES", node_start)
+        nodes = json.loads(html[node_start:node_end])
+        assert nodes[0]["name"] == '</script><script>alert("xss")</script>'

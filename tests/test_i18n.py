@@ -98,3 +98,42 @@ class TestMessages:
         assert t("no_issues") == "No issues found"
         set_language("ja")
         assert t("no_issues") == "問題は見つかりませんでした"
+
+
+class TestReportLocalization:
+    """Console report renders through i18n (default English unchanged)."""
+
+    def test_japanese_report_strings(self):
+        from io import StringIO
+
+        from rich.console import Console
+
+        from faultray.i18n import set_language
+        from faultray.model.demo import create_demo_graph
+        from faultray.reporter.report import print_infrastructure_summary
+
+        set_language("ja")
+        try:
+            buf = StringIO()
+            console = Console(file=buf, width=120)
+            print_infrastructure_summary(create_demo_graph(), console=console)
+            output = buf.getvalue()
+            assert "インフラ概要" in output
+            assert "レジリエンススコア" in output
+        finally:
+            set_language("en")
+
+    def test_english_report_strings_unchanged(self):
+        from io import StringIO
+
+        from rich.console import Console
+
+        from faultray.model.demo import create_demo_graph
+        from faultray.reporter.report import print_infrastructure_summary
+
+        buf = StringIO()
+        console = Console(file=buf, width=120)
+        print_infrastructure_summary(create_demo_graph(), console=console)
+        output = buf.getvalue()
+        assert "Infrastructure Overview" in output
+        assert "Resilience Score" in output

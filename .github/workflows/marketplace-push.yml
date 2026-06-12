@@ -28,10 +28,18 @@ jobs:
       - name: Build Docker image
         run: docker build -t faultray:latest .
 
+      - name: Extract version from pyproject.toml
+        id: get_version
+        run: |
+          set -euo pipefail
+          VERSION=$(python3 -c "import tomllib; print(tomllib.load(open('pyproject.toml','rb'))['project']['version'])")
+          echo "version=${VERSION}" >> "$GITHUB_OUTPUT"
+          echo "Extracted version: ${VERSION}"
+
       - name: Tag and push to Marketplace ECR
         run: |
-          docker tag faultray:latest ${{ env.MARKETPLACE_ECR }}:11.0.1
+          docker tag faultray:latest ${{ env.MARKETPLACE_ECR }}:${{ steps.get_version.outputs.version }}
           docker tag faultray:latest ${{ env.MARKETPLACE_ECR }}:latest
-          docker push ${{ env.MARKETPLACE_ECR }}:11.0.1
+          docker push ${{ env.MARKETPLACE_ECR }}:${{ steps.get_version.outputs.version }}
           docker push ${{ env.MARKETPLACE_ECR }}:latest
           echo "Pushed to ${{ env.MARKETPLACE_ECR }}"

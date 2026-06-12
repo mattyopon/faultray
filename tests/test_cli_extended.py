@@ -18,7 +18,9 @@ from types import SimpleNamespace
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
-from click.exceptions import Exit as ClickExit
+# The same class the CLI raises (typer vendors click since 0.16, so
+# click.exceptions.Exit is no longer the type raised by typer.Exit()).
+from typer import Exit as ClickExit
 from typer.testing import CliRunner
 
 from faultray.cli import app

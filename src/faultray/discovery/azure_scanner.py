@@ -14,6 +14,7 @@ import logging
 import time
 from dataclasses import dataclass, field
 
+from faultray.discovery.base import CloudScannerBase
 from faultray.model.components import (
     AutoScalingConfig,
     Capacity,
@@ -70,13 +71,13 @@ class AzureDiscoveryResult:
     scan_duration_seconds: float = 0.0
 
 
-class AzureScanner:
+class AzureScanner(CloudScannerBase):
     """Discover Azure infrastructure and generate InfraGraph automatically."""
 
     def __init__(self, subscription_id: str, resource_group: str | None = None):
+        super().__init__()
         self.subscription_id = subscription_id
         self.resource_group = resource_group
-        self._warnings: list[str] = []
         # NSG rule tracking for dependency inference
         self._nsg_rules: list[dict] = []
         # Component subnet tracking: component_id -> subnet_id
@@ -106,30 +107,14 @@ class AzureScanner:
             ("DNS", self._scan_dns),
         ]
 
-        for name, scanner_fn in scanners:
-            try:
-                scanner_fn(graph)
-            except RuntimeError:
-                raise  # Re-raise library import errors
-            except Exception as exc:
-                msg = f"Failed to scan {name}: {exc}"
-                logger.warning(msg)
-                self._warnings.append(msg)
-
-        # Post-processing
-        try:
-            self._infer_dependencies(graph)
-        except Exception as exc:
-            msg = f"Failed to infer dependencies: {exc}"
-            logger.warning(msg)
-            self._warnings.append(msg)
-
-        try:
-            self._detect_security(graph)
-        except Exception as exc:
-            msg = f"Failed to detect security profiles: {exc}"
-            logger.warning(msg)
-            self._warnings.append(msg)
+        self._run_scanners(
+            graph,
+            scanners,
+            post_processors=[
+                ("infer dependencies", self._infer_dependencies),
+                ("detect security profiles", self._detect_security),
+            ],
+        )
 
         duration = time.monotonic() - start
         dep_count = len(graph.all_dependency_edges())
