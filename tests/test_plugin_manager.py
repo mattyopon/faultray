@@ -740,3 +740,39 @@ except BaseException:
                 '        g = cls.__dict__["close"].__globals__\n'
                 '        break'
             )
+
+
+# ---------------------------------------------------------------------------
+# Discovery must not execute plugin code (#149)
+# ---------------------------------------------------------------------------
+
+class TestMetadataReadIsStatic:
+    def test_metadata_read_without_executing_module(self, tmp_path: Path):
+        """_read_metadata_from_file extracts PLUGIN_METADATA via AST and must
+        never import the module — a side effect at import time proves a
+        regression to exec-based discovery."""
+        marker = tmp_path / "executed.marker"
+        plugin = tmp_path / "sneaky.py"
+        plugin.write_text(
+            textwrap.dedent(f"""\
+                from pathlib import Path
+                Path({str(marker)!r}).write_text("ran")  # would run if imported
+
+                PLUGIN_METADATA = {{
+                    "name": "sneaky",
+                    "version": "1.0.0",
+                    "type": "scenario_generator",
+                }}
+            """)
+        )
+        meta = PluginManager._read_metadata_from_file(plugin)
+        assert meta is not None
+        assert meta.name == "sneaky"
+        assert not marker.exists(), "module was executed during metadata read"
+
+    def test_non_literal_metadata_is_ignored(self, tmp_path: Path):
+        """A computed (non-literal) PLUGIN_METADATA can't be statically read and
+        must yield None rather than falling back to execution."""
+        plugin = tmp_path / "dynamic.py"
+        plugin.write_text("PLUGIN_METADATA = dict(name='x', version='1.0.0')\n")
+        assert PluginManager._read_metadata_from_file(plugin) is None

@@ -20,6 +20,7 @@ Plugin discovery:
 
 from __future__ import annotations
 
+import ast
 import importlib
 import importlib.util
 import logging
@@ -483,16 +484,42 @@ class PluginManager:
         return found
 
     @staticmethod
-    def _read_metadata_from_file(py_file: Path) -> PluginMetadata | None:
-        """Extract ``PLUGIN_METADATA`` dict from a Python source file."""
-        try:
-            spec = importlib.util.spec_from_file_location(py_file.stem, py_file)
-            if spec is None or spec.loader is None:
-                return None
-            module = importlib.util.module_from_spec(spec)
-            spec.loader.exec_module(module)  # type: ignore[union-attr]
+    def _extract_metadata_literal(py_file: Path) -> dict | None:
+        """Statically read a ``PLUGIN_METADATA = {...}`` literal via AST.
 
-            raw = getattr(module, "PLUGIN_METADATA", None)
+        Returns the dict if it is a pure literal (``ast.literal_eval``-able),
+        else None. Never imports or executes the file.
+        """
+        try:
+            source = py_file.read_text(encoding="utf-8")
+            tree = ast.parse(source, filename=str(py_file))
+        except (OSError, SyntaxError, ValueError):
+            return None
+
+        for node in tree.body:
+            if not isinstance(node, ast.Assign):
+                continue
+            targets = [t.id for t in node.targets if isinstance(t, ast.Name)]
+            if "PLUGIN_METADATA" not in targets:
+                continue
+            try:
+                value = ast.literal_eval(node.value)
+            except (ValueError, SyntaxError):
+                return None
+            return value if isinstance(value, dict) else None
+        return None
+
+    @staticmethod
+    def _read_metadata_from_file(py_file: Path) -> PluginMetadata | None:
+        """Extract ``PLUGIN_METADATA`` dict from a Python source file.
+
+        Parses the source with the ``ast`` module and statically evaluates the
+        ``PLUGIN_METADATA`` literal. The file is **not** imported or executed,
+        so merely discovering/listing plugins can never run third-party code
+        (the discovery path must stay safe even for untrusted directories).
+        """
+        try:
+            raw = PluginManager._extract_metadata_literal(py_file)
             if not isinstance(raw, dict):
                 return None
 

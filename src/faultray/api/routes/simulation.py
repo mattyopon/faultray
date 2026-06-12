@@ -56,11 +56,9 @@ async def simulation_run_get():
     set_last_report(report)
     report_dict = _report_to_dict(report)
 
-    # Persist to database
-    run_id = await _save_run(report_dict, engine_type="static")
-    if run_id is not None:
-        report_dict["run_id"] = run_id
-
+    # This endpoint is public (demo/dashboard). It intentionally does NOT
+    # persist a run row: anonymous traffic must not write unbounded shared
+    # state. Authenticated run persistence is handled by the /api/v1 routes.
     return JSONResponse(report_dict)
 
 

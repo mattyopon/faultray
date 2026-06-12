@@ -507,7 +507,7 @@ async def score_infrastructure(request: ScoreRequest) -> JSONResponse:
     except Exception as exc:
         logger.warning("Insurance scoring failed: %s", exc, exc_info=True)
         return JSONResponse(
-            {"error": f"Failed to compute insurance score: {exc}"},
+            {"error": "Failed to compute insurance score. Check the submitted model and try again."},
             status_code=400,
         )
 

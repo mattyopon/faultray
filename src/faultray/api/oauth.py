@@ -42,39 +42,43 @@ _JWT_EXPIRY_SECONDS = 86400  # 24 hours
 
 
 def create_jwt(payload: dict[str, Any]) -> str:
-    """Create a signed JWT token."""
+    """Create a signed JWT token.
+
+    Requires ``python-jose``. We deliberately do NOT fall back to an unsigned
+    token when the library is missing: an unsigned, attacker-forgeable blob
+    accepted as a credential is an authentication bypass (see decode_jwt).
+    """
     try:
         from jose import jwt as jose_jwt
+    except ImportError as exc:
+        raise RuntimeError(
+            "JWT issuance requires 'python-jose'. Install it "
+            "(pip install 'faultray[saas]') or use API-key authentication."
+        ) from exc
 
-        payload = {**payload, "exp": int(time.time()) + _JWT_EXPIRY_SECONDS,
-                   "iat": int(time.time())}
-        return jose_jwt.encode(payload, _JWT_SECRET, algorithm=_JWT_ALGORITHM)
-    except ImportError:
-        import base64
-        import json
-
-        payload = {**payload, "exp": int(time.time()) + _JWT_EXPIRY_SECONDS,
-                   "iat": int(time.time())}
-        return base64.urlsafe_b64encode(json.dumps(payload).encode()).decode()
+    payload = {**payload, "exp": int(time.time()) + _JWT_EXPIRY_SECONDS,
+               "iat": int(time.time())}
+    return jose_jwt.encode(payload, _JWT_SECRET, algorithm=_JWT_ALGORITHM)
 
 
 def decode_jwt(token: str) -> dict[str, Any] | None:
-    """Decode and verify a JWT token. Returns None if invalid/expired."""
+    """Decode and verify a signed JWT. Returns None if invalid/expired.
+
+    Fails closed when ``python-jose`` is unavailable: rather than trusting an
+    unsigned base64 payload (which anyone could forge), we reject all JWTs so
+    the caller falls back to API-key authentication.
+    """
     try:
         from jose import jwt as jose_jwt
-
-        return jose_jwt.decode(token, _JWT_SECRET, algorithms=[_JWT_ALGORITHM])
     except ImportError:
-        import base64
-        import json
+        logger.warning(
+            "python-jose not installed; rejecting JWT (no signature verification "
+            "available). Install 'faultray[saas]' to enable JWT auth."
+        )
+        return None
 
-        try:
-            data = json.loads(base64.urlsafe_b64decode(token))
-            if data.get("exp", 0) < time.time():
-                return None
-            return data
-        except Exception:
-            return None
+    try:
+        return jose_jwt.decode(token, _JWT_SECRET, algorithms=[_JWT_ALGORITHM])
     except Exception:
         return None
 
