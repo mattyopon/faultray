@@ -26,7 +26,9 @@ jobs:
           python-version: '3.11'
 
       - name: Install FaultRay
-        run: pip install faultray  # or pip install -e . if in same repo
+        # Install the checked-out code under review, not a published build,
+        # so the gate actually validates the PR's changes.
+        run: pip install -e .
 
       - name: Find infrastructure YAML files
         id: find-yaml

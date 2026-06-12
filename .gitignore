@@ -39,3 +39,9 @@ docs/proposal/executive-report.html
 *.synctex.gz
 paper/*.log
 paper/*.out
+
+# Secrets & legal strategy — never commit (issues #136 #147 #148)
+.env.*
+*.env
+docs/patent/
+marketing/publish-*.sh
