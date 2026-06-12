@@ -16,15 +16,44 @@ logger = logging.getLogger(__name__)
 
 
 def _require_permission(permission: str):
-    """FastAPI dependency that enforces RBAC via auth.require_permission.
+    """Delegate to the real ``faultray.api.auth.require_permission``.
 
-    The auth module is imported lazily to avoid a circular import with the
-    server module.
+    #138: this previously returned ``{"user_id": "anonymous", ...}`` for
+    every caller — every protected v1 SaaS endpoint (billing checkout,
+    portal, tier-gated compliance) was reachable unauthenticated. We now
+    bind to the real auth dependency.
+
+    The auth helper returns ``None`` when no user can be resolved
+    (missing/invalid token, bootstrap mode), which is fine for some
+    legacy routes but not for paid-feature endpoints — we convert that
+    to a 401 here. A non-HTTPException leaking out of the auth layer
+    must also fail closed (503), matching #139's
+    ``routes/_shared._require_permission``.
+
+    Import is lazy to avoid circular imports with ``faultray.api.server``.
     """
     async def _checker(request: Request):
-        from faultray.api.auth import require_permission
-
-        return await require_permission(permission)(request)
+        from faultray.api.auth import require_permission as _real_require_permission
+        try:
+            real_dep = _real_require_permission(permission)
+            user = await real_dep(request)
+        except HTTPException:
+            raise
+        except Exception as exc:
+            logger.exception(
+                "auth layer raised unexpected exception in saas v1 _require_permission(%r)",
+                permission,
+            )
+            raise HTTPException(
+                status_code=503,
+                detail="Authorization service is temporarily unavailable.",
+            ) from exc
+        if user is None:
+            raise HTTPException(
+                status_code=401,
+                detail="Authentication required.",
+            )
+        return user
     return _checker
 
 saas_router = APIRouter(prefix="/api/v1", tags=["saas"])

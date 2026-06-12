@@ -347,6 +347,29 @@ class TestAuthIntegration:
         assert _is_public("/api/v1/billing/portal") is False
 
 
+class TestSaasV1Unauthenticated:
+    """#138: every protected v1 SaaS route must return 401 when no user
+    can be resolved. Previously the local ``_require_permission`` stub
+    always returned a synthetic ``anonymous`` principal, so callers
+    reached the endpoint body unauthenticated.
+    """
+
+    def test_checkout_unauthenticated_returns_401(self, unauth_client):
+        resp = unauth_client.post(
+            "/api/v1/billing/checkout",
+            json={"tier": "pro", "team_id": "team-1"},
+        )
+        assert resp.status_code == 401, resp.text
+
+    def test_portal_unauthenticated_returns_401(self, unauth_client):
+        resp = unauth_client.get("/api/v1/billing/portal?team_id=team-1")
+        assert resp.status_code == 401, resp.text
+
+    def test_compliance_report_unauthenticated_returns_401(self, unauth_client):
+        resp = unauth_client.get("/api/v1/compliance/report?framework=dora")
+        assert resp.status_code == 401, resp.text
+
+
 class TestProtectedSaaSEndpointsRejectUnauthenticated:
     """Regression guard (#143): every tier-gated v1 SaaS endpoint must reject
     callers with no credentials. These would have caught the placeholder auth
