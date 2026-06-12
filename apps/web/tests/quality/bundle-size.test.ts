@@ -14,7 +14,9 @@ function getDirSizeBytes(dir: string): number {
   let total = 0;
   for (const entry of readdirSync(dir, { withFileTypes: true, recursive: true })) {
     if (entry.isFile()) {
-      const fullPath = path.join(entry.parentPath ?? entry.path, entry.name);
+      // @types/node 25 dropped Dirent.path (removed upstream in Node 24);
+      // parentPath is its replacement and exists since Node 20.12.
+      const fullPath = path.join(entry.parentPath, entry.name);
       total += statSync(fullPath).size;
     }
   }
