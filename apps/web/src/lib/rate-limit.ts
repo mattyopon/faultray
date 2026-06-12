@@ -40,6 +40,17 @@ async function _getUpstashClient(): Promise<unknown | null> {
   const token = process.env.UPSTASH_REDIS_REST_TOKEN;
   if (!url || !token) {
     _upstashUnavailable = true;
+    // #116: the in-memory fallback is per-process — on multi-instance
+    // serverless it is trivially bypassed with concurrency. Surface that
+    // loudly (once per instance) so production isn't silently running on
+    // best-effort limits. Configuring Upstash remains an operator opt-in.
+    if (process.env.VERCEL_ENV === "production") {
+      console.warn(
+        "[rate-limit] UPSTASH_REDIS_REST_URL/TOKEN not set — falling back to " +
+          "per-instance in-memory rate limiting. Limits are not shared across " +
+          "serverless instances; configure Upstash for production-grade limiting."
+      );
+    }
     return null;
   }
 

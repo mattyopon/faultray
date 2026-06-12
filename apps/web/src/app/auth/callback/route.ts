@@ -57,26 +57,79 @@ export async function GET(request: Request) {
       const supabase = await createClient();
       const { error, data } = await supabase.auth.exchangeCodeForSession(code);
       if (!error && data.user) {
-        // Provision 7-day Business trial for brand-new users
         const userId = data.user.id;
-        const { data: existingProfile } = await supabase
+
+        // #123: don't swallow lookup errors — a transient DB fault used to be
+        // indistinguishable from "first-time user" and silently took the
+        // wrong branch while still issuing a session.
+        const { data: existingProfile, error: profileError } = await supabase
           .from("profiles")
-          .select("id, plan, trial_ends_at")
+          .select("id, plan, trial_ends_at, stripe_customer_id")
           .eq("id", userId)
           .maybeSingle();
 
+        if (profileError) {
+          console.error(
+            "[auth/callback] Profile lookup failed:",
+            profileError.message
+          );
+          return NextResponse.redirect(`${origin}/login?error=profile_setup_failed`);
+        }
+
+        const { shouldProvisionTrial, trialEndIso } = await import(
+          "@/lib/trial-provisioning"
+        );
+
+        let isNewUser = false;
         if (!existingProfile) {
-          // First-ever sign-in: create profile with trial
-          const trialEnd = new Date(
-            Date.now() + 7 * 24 * 60 * 60 * 1000
-          ).toISOString();
-          await supabase.from("profiles").insert({
+          // Trigger missing/failed: create the profile + trial ourselves.
+          // #123: a failed insert means the account has no usable profile —
+          // fail loudly instead of redirecting into a broken session.
+          isNewUser = true;
+          const { error: insertError } = await supabase.from("profiles").insert({
             id: userId,
             plan: "business",
-            trial_ends_at: trialEnd,
+            trial_ends_at: trialEndIso(),
           });
+          if (insertError) {
+            console.error(
+              "[auth/callback] Profile bootstrap failed:",
+              insertError.message
+            );
+            return NextResponse.redirect(
+              `${origin}/login?error=profile_setup_failed`
+            );
+          }
+        } else if (shouldProvisionTrial(existingProfile, data.user.created_at)) {
+          // #114: the handle_new_user trigger pre-creates the profile, so the
+          // !existingProfile branch never ran for normal sign-ups and nobody
+          // got the promised 7-day Business trial. A profile still in its
+          // trigger default state (free / no trial / no Stripe) belonging to
+          // an auth user created minutes ago IS a fresh signup — provision it.
+          isNewUser = true;
+          const { error: trialError } = await supabase
+            .from("profiles")
+            .update({ plan: "business", trial_ends_at: trialEndIso() })
+            .eq("id", userId)
+            // Re-assert the precondition so a concurrent webhook/coupon write
+            // between read and update can't be clobbered.
+            .eq("plan", "free")
+            .is("trial_ends_at", null)
+            .is("stripe_customer_id", null);
+          if (trialError) {
+            // Trial is recoverable support-side — don't block a working
+            // sign-in over the entitlement write.
+            console.error(
+              "[auth/callback] Trial provisioning failed:",
+              trialError.message
+            );
+            isNewUser = false;
+          }
+        }
 
-          // Send welcome email to new users
+        if (isNewUser) {
+          // Welcome email for both new-user paths (previously unreachable for
+          // trigger-created profiles, i.e. effectively never sent).
           try {
             const { sendEmail } = await import("@/lib/email");
             const { welcomeEmail } = await import("@/lib/email-templates");
@@ -93,7 +146,6 @@ export async function GET(request: Request) {
             // Non-critical — do not block sign-in on email failure
           }
         }
-        // Existing profiles: no changes (trial already handled)
 
         return NextResponse.redirect(`${origin}${redirectTo}`);
       }

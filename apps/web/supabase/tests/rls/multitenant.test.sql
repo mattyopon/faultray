@@ -54,7 +54,7 @@ create extension if not exists pgtap;
 -- member_systems WITH CHECK:  2 assertion (#83, migration 018, structural existence)
 -- delete_user_account RPC  :  6 assertion (#70 finding 3-5, migration 017)
 --   pre/post check         :  6  (org_p delete via owner CASCADE + cascade chain, org_q untouched)
-select plan(98);
+select plan(104);
 
 -- ============================================================
 -- Setup: auth.users を直接 INSERT して 3 ユーザー + 2 team を作成
@@ -846,34 +846,40 @@ select throws_ok(
 --   contact_requests : INSERT は誰でも可、SELECT 等は policy 不在 → RLS deny
 --   coupons          : SELECT は authenticated のみ、INSERT 等は RLS deny
 
--- ── contact_requests: anon が INSERT 可、SELECT 不可 ──
+-- ── contact_requests: #118 (migration 020) で browser 直接アクセスを全面閉鎖。
+--    INSERT は /api/contact (service_role) のみ、SELECT は従来どおり不可
+--    (grant 自体も revoke 済みのため permission denied になる)。──
 select test_as_anon();
 
-select lives_ok(
+select throws_ok(
   $$ insert into public.contact_requests (company, name, email, company_size, message)
      values ('Acme', 'Anon Sender', 'anon@test.local', '11-50', 'inquiry from public form') $$,
-  'contact_requests: anon CAN INSERT (public form path)'
+  '42501', null,
+  'contact_requests: anon direct INSERT denied after #118 lockdown'
 );
 
-select is(
-  (select count(*)::int from public.contact_requests),
-  0,
-  'contact_requests: anon SELECT returns 0 rows (no SELECT policy)'
+select throws_ok(
+  $$ select count(*) from public.contact_requests $$,
+  '42501', null,
+  'contact_requests: anon SELECT denied (grant revoked)'
 );
 
--- ── contact_requests: authenticated も INSERT 可、SELECT 不可 ──
 select test_as_user(:'user_a_id'::uuid);
 
-select lives_ok(
+select throws_ok(
   $$ insert into public.contact_requests (company, name, email, company_size, message)
      values ('Acme2', 'User A', 'a@test.local', '50-200', 'logged-in user inquiry') $$,
-  'contact_requests: authenticated CAN INSERT'
+  '42501', null,
+  'contact_requests: authenticated direct INSERT denied after #118 lockdown'
 );
 
+-- NB: CI harness re-grants table privileges to authenticated after
+-- migrations, so the 020 revoke is not observable here — the portable
+-- invariant is RLS: no SELECT policy means zero visible rows.
 select is(
   (select count(*)::int from public.contact_requests),
   0,
-  'contact_requests: authenticated SELECT returns 0 rows (no SELECT policy)'
+  'contact_requests: authenticated sees zero rows (no SELECT policy)'
 );
 
 -- ── coupons: service_role でテスト用クーポン投入 (RLS bypass) ──
@@ -1118,6 +1124,63 @@ select is(
   (select count(*)::int from public.org_members where user_id = :'user_c_id'::uuid),
   1,
   '#70: unrelated user_c org_membership preserved'
+);
+
+-- ============================================================
+-- #118 (migration 020): contact_requests は browser から直接 INSERT 不可
+-- ============================================================
+
+select test_as_anon();
+select throws_ok(
+  $$insert into public.contact_requests (company, name, email, company_size, message)
+    values ('Acme', 'Mallory', 'm@evil.test', '1-10', 'spam')$$,
+  '42501', null,
+  '#118: anon direct INSERT into contact_requests is denied (server route only)'
+);
+
+select test_as_user(:'user_c_id'::uuid);
+select throws_ok(
+  $$insert into public.contact_requests (company, name, email, company_size, message)
+    values ('Acme', 'Carol', 'c@test.local', '1-10', 'hi')$$,
+  '42501', null,
+  '#118: authenticated direct INSERT into contact_requests is denied'
+);
+
+select test_as_service_role();
+select lives_ok(
+  $$insert into public.contact_requests (company, name, email, company_size, message)
+    values ('Acme', 'Server', 's@test.local', '1-10', 'via /api/contact')$$,
+  '#118: service_role (server route) can still INSERT contact_requests'
+);
+
+-- ============================================================
+-- #117 (migration 021): org_members の生存行は (org_id, lower(email)) で一意
+-- ============================================================
+
+select test_as_service_role();
+select lives_ok(
+  $$insert into public.org_members (org_id, email, role, status)
+    values ('bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb', 'dup@test.local', 'member', 'pending')$$,
+  '#117: first pending invite inserts fine'
+);
+
+-- 大文字違い + status 違いでも「生存行」同士なら一意制約違反になる
+select throws_ok(
+  $$insert into public.org_members (org_id, email, role, status)
+    values ('bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb', 'DUP@test.local', 'member', 'active')$$,
+  '23505', null,
+  '#117: second live row for same (org, email) violates org_members_live_email_unique'
+);
+
+-- removed に落とせば再招待できる
+update public.org_members
+   set status = 'removed'
+ where org_id = 'bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb'
+   and lower(email) = 'dup@test.local';
+select lives_ok(
+  $$insert into public.org_members (org_id, email, role, status)
+    values ('bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb', 'dup@test.local', 'member', 'pending')$$,
+  '#117: re-invite after removed is allowed (partial index excludes removed)'
 );
 
 -- ============================================================

@@ -67,15 +67,29 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Forbidden: admin or owner required" }, { status: 403 });
   }
 
-  // 既存招待チェック
-  const { data: existing } = await supabase
+  // #117: 読み取りと挿入で正規化を揃える (旧コードは read 側だけ trim 無し)。
+  const normalizedEmail = email.toLowerCase().trim();
+
+  // 既存招待チェック。.single() は「複数行」も「0行」もエラーにするため、
+  // 重複が一度できると error (無視されていた) → existing=null → さらに重複、
+  // という増殖ループになっていた。maybeSingle + limit(1) + error の hard-fail
+  // に変更。最終的な一意性は migration 021 の partial unique index が保証する。
+  const { data: existing, error: existingError } = await supabase
     .from("org_members")
     .select("id, status")
     .eq("org_id", org_id)
-    .eq("email", email.toLowerCase())
-    .single();
+    .eq("email", normalizedEmail)
+    .neq("status", "removed")
+    .limit(1)
+    .maybeSingle();
 
-  if (existing && existing.status !== "removed") {
+  if (existingError) {
+    return NextResponse.json(
+      { error: "Failed to check existing invitations" },
+      { status: 500 }
+    );
+  }
+  if (existing) {
     return NextResponse.json(
       { error: "This email is already invited or a member" },
       { status: 409 }
@@ -87,7 +101,7 @@ export async function POST(request: Request) {
     .from("org_members")
     .insert({
       org_id,
-      email: email.toLowerCase().trim(),
+      email: normalizedEmail,
       role: normalizedRole,
       status: "pending",
     })
@@ -95,6 +109,15 @@ export async function POST(request: Request) {
     .single();
 
   if (insertError || !member) {
+    // 並行リクエストが pre-insert read をすり抜けた場合、migration 021 の
+    // org_members_live_email_unique がここで 23505 を返す — レースの正しい
+    // 結末として 409 にマップする。
+    if (insertError?.code === "23505") {
+      return NextResponse.json(
+        { error: "This email is already invited or a member" },
+        { status: 409 }
+      );
+    }
     return NextResponse.json({ error: "Failed to create invitation" }, { status: 500 });
   }
 

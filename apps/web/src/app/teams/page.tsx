@@ -525,16 +525,27 @@ export default function TeamsPage() {
                     onChange={async (e) => {
                       const newRole = e.target.value;
                       try {
-                        await fetch(`/api/org/members/${member.id}`, {
+                        // #119: only reflect the change after the server
+                        // confirms it. The select is controlled by state, so
+                        // on failure a re-render snaps it back to the real
+                        // role instead of showing a phantom change.
+                        const res = await fetch(`/api/org/members/${member.id}`, {
                           method: "PATCH",
                           headers: { "Content-Type": "application/json" },
                           body: JSON.stringify({ role: newRole }),
                         });
+                        if (!res.ok) {
+                          const data = (await res.json().catch(() => ({}))) as { error?: string };
+                          console.error("[teams] role change failed:", data.error ?? res.status);
+                          setMembers((prev) => [...prev]);
+                          return;
+                        }
                         setMembers((prev) =>
                           prev.map((m) => m.id === member.id ? { ...m, role: newRole } : m)
                         );
-                      } catch {
-                        // Non-critical — role badge stays as-is
+                      } catch (err) {
+                        console.error("[teams] role change failed:", err);
+                        setMembers((prev) => [...prev]);
                       }
                     }}
                     className="text-xs bg-[var(--border-color)] border border-[var(--border-color)] text-[var(--text-secondary)] rounded-md px-2 py-1 focus:outline-none focus:border-[var(--gold)]/50"

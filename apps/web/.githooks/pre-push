@@ -1,0 +1,49 @@
+#!/usr/bin/env bash
+# #87: scan working-tree .env files (excluding *.example) for live-looking
+# secrets before every push. These files are gitignored so repo-level
+# detect-secrets never sees them, yet they have held real service-role JWTs
+# and provider tokens before (#78). Project policy: local env files carry
+# placeholders only — real values live in Vercel env / GitHub Secrets.
+#
+# Bypass for a single push (e.g. while actively rotating):
+#   SKIP_ENV_SECRET_SCAN=1 git push
+set -euo pipefail
+
+if [ "${SKIP_ENV_SECRET_SCAN:-}" = "1" ]; then
+  echo "[pre-push] SKIP_ENV_SECRET_SCAN=1 — skipping local env secret scan" >&2
+  exit 0
+fi
+
+shopt -s nullglob
+candidates=(.env .env.* )
+findings=0
+
+for f in "${candidates[@]}"; do
+  case "$f" in
+    *.example) continue ;;
+  esac
+  [ -f "$f" ] || continue
+
+  # Live-credential shapes: Supabase/GoTrue JWTs, Stripe secret/webhook keys,
+  # GitHub tokens, AWS access keys, Vercel tokens.
+  if grep -nE 'eyJ[A-Za-z0-9_-]{30,}|sk_(live|test)_[A-Za-z0-9]{16,}|whsec_[A-Za-z0-9]{16,}|gh[pousr]_[A-Za-z0-9]{30,}|AKIA[0-9A-Z]{16}' "$f" \
+      | sed -E 's/(eyJ[A-Za-z0-9_-]{8})[A-Za-z0-9_-]+/\1…<redacted>/; s/((sk_(live|test)|whsec|gh[pousr])_[A-Za-z0-9]{4})[A-Za-z0-9]+/\1…<redacted>/' \
+      | sed "s|^|  $f:|"; then
+    findings=1
+  fi
+done
+
+if [ "$findings" = "1" ]; then
+  cat >&2 <<'MSG'
+
+[pre-push] ⛔ Live-looking secrets found in local .env files (lines above).
+Project policy (#78/#87): local env files hold placeholders only — real
+values belong in Vercel env vars / GitHub Secrets. If a real token sat in
+these files, assume it needs rotation. To push anyway once:
+
+  SKIP_ENV_SECRET_SCAN=1 git push
+MSG
+  exit 1
+fi
+
+exit 0

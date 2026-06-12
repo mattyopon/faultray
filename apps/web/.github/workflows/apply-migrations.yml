@@ -77,7 +77,11 @@ jobs:
           fi
           # Validate: plain filenames only (no slashes or shell metachars),
           # and they must exist. This runs BEFORE the names are written to
-          # the step output, so later ${{ }} interpolation is safe.
+          # the step output, so the Apply step's template interpolation of
+          # steps.resolve.outputs.files is safe. (NB: never write a literal
+          # double-brace expression in this block, even in a comment —
+          # Actions expands it and an empty/broken one invalidates the
+          # whole workflow file.)
           for f in $FILES; do
             case "$f" in
               (*[!0-9A-Za-z._-]*|"")

@@ -49,24 +49,27 @@ export default function ContactPage() {
     setError(null);
 
     try {
-      const { createClient } = await import("@/lib/supabase/client");
-      const supabase = createClient();
-      const { error: dbError } = await supabase
-        .from("contact_requests")
-        .insert({
+      // #118: submissions go through the server route (validation + rate
+      // limit + service-role insert). Direct browser writes to
+      // contact_requests were revoked in migration 020.
+      const res = await fetch("/api/contact", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
           company: form.company,
           name: form.name,
           email: form.email,
           company_size: form.companySize,
           message: form.message,
-        });
+        }),
+      });
+      const data = (await res.json().catch(() => ({}))) as { error?: string };
 
-      if (dbError) throw dbError;
+      if (!res.ok) throw new Error(data.error || "Submission failed. Please try again.");
 
       setSubmitted(true);
       setForm(INITIAL_FORM);
     } catch (err) {
-      // Supabase not configured or insert failed — show user-friendly error
       const message =
         err instanceof Error ? err.message : "Submission failed. Please try again.";
       setError(message);

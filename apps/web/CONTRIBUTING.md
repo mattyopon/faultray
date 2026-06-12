@@ -12,6 +12,11 @@ cp .env.local.example .env.local  # fill in Supabase + Stripe keys
 npm run dev
 ```
 
+`npm install` also wires the repo's git hooks (`git config core.hooksPath .githooks`).
+The pre-push hook scans local `.env*` files for live-looking secrets (#87):
+local env files must hold **placeholders only** — real values belong in Vercel
+env vars / GitHub Secrets. One-off bypass: `SKIP_ENV_SECRET_SCAN=1 git push`.
+
 ## Branch Conventions
 
 | Branch | Purpose |
@@ -67,6 +72,25 @@ fix: prevent double-submit on simulate button
 docs: update CONTRIBUTING.md
 chore: upgrade next to 15.3
 ```
+
+## Dependency Updates (dependabot policy)
+
+Codified from the #75 review (PR #69 retro):
+
+- **One PR per dependency.** Don't bundle ecosystem bumps into a single commit
+  unless a transitive constraint forces it — bundling defeats per-dep
+  bisectability. (Exception: a batch catch-up is acceptable when every bump is
+  verified together against the full local suite and the PR body lists each
+  version delta, as in #133/#134.)
+- **Never ratchet past the proposed version silently.** If dependabot proposes
+  1.8 and you ship 1.14, the commit message must say so and why.
+- **Caret vs exact pin is a deliberate decision.** Changing pin style
+  (`16.2.1` → `^16.2.1` or vice versa) must be called out in the commit
+  message, not smuggled in with a version bump.
+- **Major (or effective-major) bumps need a behavioral checklist** in the PR
+  body: link the upstream changelog and list what was re-verified. If a major
+  is incompatible (e.g. eslint 10 vs eslint-config-next's bundled plugins),
+  document the blocker on the dependabot PR instead of forcing it.
 
 ## Reporting Bugs
 

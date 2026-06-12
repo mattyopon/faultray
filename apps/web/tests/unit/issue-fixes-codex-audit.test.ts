@@ -60,6 +60,69 @@ describe("#120/#121: deterministic org selection", () => {
   });
 });
 
+describe("#118: contact form goes through the server route", () => {
+  it("contact page POSTs to /api/contact instead of writing Supabase directly", () => {
+    const src = read("src/app/contact/page.tsx");
+    expect(src).toMatch(/fetch\(\s*["']\/api\/contact["']/);
+    expect(src).not.toMatch(/\.from\(\s*["']contact_requests["']\s*\)/);
+  });
+
+  it("the server route validates, rate-limits and uses the service-role key", () => {
+    const src = read("src/app/api/contact/route.ts");
+    expect(src).toMatch(/applyRateLimit/);
+    expect(src).toMatch(/SUPABASE_SERVICE_ROLE_KEY/);
+    expect(src).toMatch(/FIELD_LIMITS/);
+  });
+});
+
+describe("#119: member-role PATCH is a real, guarded endpoint", () => {
+  it("the route exists with auth + owner/admin gate + owner-row protection", () => {
+    const src = read("src/app/api/org/members/[id]/route.ts");
+    expect(src).toMatch(/requireAuth/);
+    expect(src).toMatch(/isOwner && !isAdmin|!isOwner && !isAdmin/);
+    expect(src).toMatch(/owner's role cannot be changed/i);
+  });
+
+  it("teams page only mutates state after res.ok", () => {
+    const src = read("src/app/teams/page.tsx");
+    const handler = src.match(
+      /onChange=\{async \(e\) => \{[\s\S]*?\n {20}\}\}/
+    );
+    expect(handler, "role onChange handler not found").toBeTruthy();
+    expect(handler![0]).toMatch(/if \(!res\.ok\)/);
+  });
+});
+
+describe("#117: invite dedup is race-safe", () => {
+  const src = read("src/app/api/org/invite/route.ts");
+
+  it("existence check uses maybeSingle and hard-fails on query error", () => {
+    expect(src).toMatch(/existingError/);
+    expect(src).toMatch(/Failed to check existing invitations/);
+  });
+
+  it("maps a unique-constraint race (23505) to 409", () => {
+    expect(src).toMatch(/23505/);
+  });
+});
+
+describe("#123: auth callback fails loudly on profile bootstrap errors", () => {
+  const src = read("src/app/auth/callback/route.ts");
+
+  it("checks the profile lookup error and redirects to an error page", () => {
+    expect(src).toMatch(/profileError/);
+    expect(src).toMatch(/profile_setup_failed/);
+  });
+
+  it("provisions trials via the shared helper with a re-asserted precondition", () => {
+    expect(src).toMatch(/shouldProvisionTrial/);
+    // The conditional update must re-check the default state to avoid
+    // clobbering a concurrent webhook/coupon write.
+    expect(src).toMatch(/\.eq\("plan", "free"\)/);
+    expect(src).toMatch(/\.is\("trial_ends_at", null\)/);
+  });
+});
+
 describe("#122: tasks/[id] distinguishes query failure from missing row", () => {
   const src = read("src/app/api/tasks/[id]/route.ts");
 
