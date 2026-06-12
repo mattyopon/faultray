@@ -601,3 +601,25 @@ class TestDependencyInference:
         edge = graph.get_dependency_edge("aws_instance.app", "aws_db_instance.db")
         # Should exist from either inferred rules or explicit reference
         assert edge is not None
+
+
+class TestCapacityIsolation:
+    """_extract_capacity must never mutate the shared DEFAULT_CAPACITY entries."""
+
+    def test_resource_attributes_do_not_bleed_between_components(self):
+        from faultray.discovery.terraform import DEFAULT_CAPACITY
+
+        default_disk = DEFAULT_CAPACITY[ComponentType.DATABASE].max_disk_gb
+        state = _make_state(
+            _make_resource("aws_db_instance", "big", {"allocated_storage": 9999}),
+            _make_resource("aws_db_instance", "plain", {"name": "plain"}),
+        )
+        graph = parse_tf_state(state)
+
+        big = graph.get_component("aws_db_instance.big")
+        plain = graph.get_component("aws_db_instance.plain")
+        assert big is not None and big.capacity.max_disk_gb == 9999.0
+        # Regression: the shared default Capacity object used to be mutated
+        # in place, so "plain" inherited 9999 from "big".
+        assert plain is not None and plain.capacity.max_disk_gb == default_disk
+        assert DEFAULT_CAPACITY[ComponentType.DATABASE].max_disk_gb == default_disk

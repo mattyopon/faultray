@@ -438,7 +438,10 @@ def _extract_replicas(res_type: str, values: dict) -> int:
 
 def _extract_capacity(res_type: str, values: dict, comp_type: ComponentType) -> Capacity:
     """Extract capacity from resource attributes."""
-    base = DEFAULT_CAPACITY.get(comp_type, Capacity())
+    # Copy: returning the shared DEFAULT_CAPACITY entry and mutating it
+    # below would bleed one resource's attributes into every later
+    # component of the same type (and corrupt the defaults themselves).
+    base = DEFAULT_CAPACITY.get(comp_type, Capacity()).model_copy(deep=True)
 
     # RDS max connections (based on instance class)
     if "allocated_storage" in values:
