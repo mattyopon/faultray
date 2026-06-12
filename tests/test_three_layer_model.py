@@ -366,3 +366,79 @@ def test_five_layer_summary_format():
     assert "Layer 4" in summary
     assert "Layer 5" in summary
     assert "5-Layer" in summary
+
+
+# ---------------------------------------------------------------------------
+# System range: floor (series-product) / ceiling (min-composition)
+# ---------------------------------------------------------------------------
+
+def test_system_ceiling_is_min_of_layers():
+    graph = _graph_with_external_api()
+    result = compute_five_layer_model(graph)
+    layer_avails = [
+        result.layer1_software.availability,
+        result.layer2_hardware.availability,
+        result.layer3_theoretical.availability,
+        result.layer4_operational.availability,
+        result.layer5_external.availability,
+    ]
+    assert result.system_ceiling == pytest.approx(min(layer_avails))
+
+
+def test_system_floor_is_product_of_layers():
+    graph = _graph_with_external_api()
+    result = compute_five_layer_model(graph)
+    expected = 1.0
+    for a in [
+        result.layer1_software.availability,
+        result.layer2_hardware.availability,
+        result.layer3_theoretical.availability,
+        result.layer4_operational.availability,
+        result.layer5_external.availability,
+    ]:
+        expected *= a
+    assert result.system_floor == pytest.approx(expected)
+
+
+def test_system_floor_never_exceeds_ceiling():
+    graph = _graph_with_external_api()
+    result = compute_five_layer_model(graph)
+    assert 0.0 <= result.system_floor <= result.system_ceiling <= 1.0
+
+
+def test_weakest_layer_matches_ceiling():
+    graph = _graph_with_external_api()
+    result = compute_five_layer_model(graph)
+    weakest = result.weakest_layer
+    layer = getattr(result, weakest)
+    assert layer.availability == pytest.approx(result.system_ceiling)
+
+
+def test_three_layer_exposes_system_range():
+    graph = _simple_graph()
+    result = compute_three_layer_model(graph)
+    avails = [
+        result.layer1_software.availability,
+        result.layer2_hardware.availability,
+        result.layer3_theoretical.availability,
+    ]
+    assert result.system_ceiling == pytest.approx(min(avails))
+    floor = avails[0] * avails[1] * avails[2]
+    assert result.system_floor == pytest.approx(floor)
+
+
+def test_five_layer_summary_contains_range():
+    """Summary must present both bounds so users plan against the floor."""
+    graph = _graph_with_external_api()
+    result = compute_five_layer_model(graph)
+    summary = result.summary
+    assert "Floor" in summary
+    assert "Ceiling" in summary
+    assert "Weakest layer" in summary
+
+
+def test_empty_graph_system_range_is_zero():
+    graph = InfraGraph()
+    result = compute_five_layer_model(graph)
+    assert result.system_floor == 0.0
+    assert result.system_ceiling == 0.0
