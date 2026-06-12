@@ -345,3 +345,24 @@ class TestAuthIntegration:
 
         assert _is_public("/api/v1/billing/checkout") is False
         assert _is_public("/api/v1/billing/portal") is False
+
+
+class TestProtectedSaaSEndpointsRejectUnauthenticated:
+    """Regression guard (#143): every tier-gated v1 SaaS endpoint must reject
+    callers with no credentials. These would have caught the placeholder auth
+    dependency that previously let anonymous requests through.
+    """
+
+    def test_billing_checkout_requires_auth(self, unauth_client):
+        resp = unauth_client.post(
+            "/api/v1/billing/checkout", json={"tier": "pro", "team_id": "t1"}
+        )
+        assert resp.status_code in (401, 403), resp.text
+
+    def test_billing_portal_requires_auth(self, unauth_client):
+        resp = unauth_client.get("/api/v1/billing/portal?team_id=t1")
+        assert resp.status_code in (401, 403), resp.text
+
+    def test_compliance_report_requires_auth(self, unauth_client):
+        resp = unauth_client.get("/api/v1/compliance/report")
+        assert resp.status_code in (401, 403), resp.text

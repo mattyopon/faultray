@@ -13,7 +13,8 @@ authors = [
     {name = "Yutaro Maeda", email = "mattyopon@gmail.com"},
 ]
 classifiers = [
-    "Development Status :: 5 - Production/Stable",
+    # Matches the "research prototype" positioning in the description above
+    "Development Status :: 4 - Beta",
     "Intended Audience :: Developers",
     "Intended Audience :: System Administrators",
     "License :: OSI Approved :: Apache Software License",
@@ -38,6 +39,9 @@ dependencies = [
     "networkx>=3.0",
     "psutil>=7.2.2",
     "fastapi>=0.115",
+    # Form parsing (/setup, simulation and graph upload routes) — without
+    # this a clean install 500s on those endpoints. >=0.0.18: CVE-2024-53981.
+    "python-multipart>=0.0.18",
     "itsdangerous>=2.1",
     "uvicorn>=0.34",
     "jinja2>=3.1.6",

@@ -8,11 +8,18 @@ from pathlib import Path
 from typing import TYPE_CHECKING, Protocol
 import importlib.util
 import logging
+import os
 
 if TYPE_CHECKING:
     from faultray.model.graph import InfraGraph
 
 logger = logging.getLogger(__name__)
+
+# Loading a plugin imports and runs its module — arbitrary code execution by
+# design. We refuse to do that for a caller-supplied directory unless the
+# caller explicitly marks it trusted (or the operator opts in via env), so a
+# stray/hostile *.py in a pointed-at directory cannot silently run.
+_PLUGIN_EXEC_ENV = "FAULTRAY_ALLOW_PLUGIN_EXEC"
 
 
 class ScenarioPlugin(Protocol):
@@ -82,10 +89,29 @@ class PluginRegistry:
         cls._discovery_plugins.append(plugin)
 
     @classmethod
-    def load_plugins_from_dir(cls, plugin_dir: Path):
-        """Load all .py files from a directory as plugins."""
+    def load_plugins_from_dir(cls, plugin_dir: Path, trusted: bool = False):
+        """Load all .py files from a directory as plugins.
+
+        Loading executes each module, so this is gated behind an explicit trust
+        decision. Pass ``trusted=True`` (the CLI does this only when the user
+        names a ``--plugins-dir`` and confirms) or set ``FAULTRAY_ALLOW_PLUGIN_EXEC=1``.
+        Without that, the directory is skipped with a warning rather than
+        executing arbitrary code.
+        """
         if not plugin_dir.exists():
             return
+        if not (trusted or os.environ.get(_PLUGIN_EXEC_ENV) == "1"):
+            logger.warning(
+                "Refusing to load plugins from %s: loading runs arbitrary code. "
+                "Pass trusted=True or set %s=1 to opt in.",
+                plugin_dir,
+                _PLUGIN_EXEC_ENV,
+            )
+            return
+        logger.warning(
+            "Executing plugin modules from %s — only do this for directories you trust.",
+            plugin_dir,
+        )
         for py_file in sorted(plugin_dir.glob("*.py")):
             if py_file.name.startswith("_"):
                 continue

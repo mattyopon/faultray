@@ -10,11 +10,12 @@ import level.  Zero mocks -- every invocation is a real subprocess call.
 from __future__ import annotations
 
 import subprocess
+import sys
 from pathlib import Path
 
 import pytest
 
-_PYTHON = "python3"
+_PYTHON = sys.executable  # the interpreter running the tests, not whatever "python3" resolves to
 _REPO = str(Path(__file__).parent.parent)
 _TIMEOUT = 15
 

@@ -303,3 +303,45 @@ class TestSlackSignature:
         finally:
             os.environ.pop("FAULTRAY_ALLOW_UNSIGNED_SLACK", None)
             os.environ.pop("FAULTRAY_ENV", None)
+
+
+# ---------------------------------------------------------------------------
+# First-admin bootstrap gate (#140)
+# ---------------------------------------------------------------------------
+
+async def _delete_all_users() -> None:
+    from sqlalchemy import delete
+
+    sf = get_session_factory()
+    async with sf() as session:
+        await session.execute(delete(UserRow))
+        await session.commit()
+
+
+class TestSetupTokenGate:
+    """When FAULTRAY_SETUP_TOKEN is set, first-admin creation requires it."""
+
+    def test_setup_rejected_without_token(self, anon_client, monkeypatch):
+        monkeypatch.setenv("FAULTRAY_SETUP_TOKEN", "s3cret-bootstrap")
+        _run_async(_delete_all_users())
+        resp = anon_client.post(
+            "/setup", data={"name": "Admin", "email": "a@b.com"}
+        )
+        assert resp.status_code == 403
+
+    def test_setup_accepts_matching_token(self, anon_client, monkeypatch):
+        monkeypatch.setenv("FAULTRAY_SETUP_TOKEN", "s3cret-bootstrap")
+        _run_async(_delete_all_users())
+        resp = anon_client.post(
+            "/setup",
+            data={"name": "Admin", "email": "a@b.com", "setup_token": "s3cret-bootstrap"},
+        )
+        assert resp.status_code == 200
+
+    def test_setup_open_when_token_unset(self, anon_client, monkeypatch):
+        monkeypatch.delenv("FAULTRAY_SETUP_TOKEN", raising=False)
+        _run_async(_delete_all_users())
+        resp = anon_client.post(
+            "/setup", data={"name": "Admin", "email": "a@b.com"}
+        )
+        assert resp.status_code == 200

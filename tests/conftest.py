@@ -36,6 +36,31 @@ TEST_API_KEY = "test-api-key-for-faultray-tests"
 TEST_API_KEY_HASH = hash_api_key(TEST_API_KEY)
 
 
+_PROD_PROBE_RESULT: bool | None = None
+
+
+def production_reachable(url: str = "https://faultray.com") -> bool:
+    """True when the deployed site genuinely answers (result cached).
+
+    Production-bound e2e tests use this to skip in offline environments and
+    behind egress proxies that answer for any host: the homepage must return
+    200 with an HTML content type to count as reachable.
+    """
+    global _PROD_PROBE_RESULT
+    if _PROD_PROBE_RESULT is None:
+        try:
+            import httpx
+
+            resp = httpx.get(url, timeout=5.0, follow_redirects=True)
+            _PROD_PROBE_RESULT = (
+                resp.status_code == 200
+                and "text/html" in resp.headers.get("content-type", "")
+            )
+        except Exception:
+            _PROD_PROBE_RESULT = False
+    return _PROD_PROBE_RESULT
+
+
 def _run_async(coro):
     """Run an async coroutine from sync code (no running event loop).
 

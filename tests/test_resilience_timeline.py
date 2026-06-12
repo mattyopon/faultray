@@ -8,6 +8,8 @@ from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from unittest.mock import MagicMock
 
+import pytest
+
 
 from faultray.model.components import (
     AutoScalingConfig,
@@ -629,6 +631,8 @@ class TestLoadSnapshotsOSError:
 
     def test_returns_empty_on_os_error(self, tmp_path):
         import os
+        if hasattr(os, "geteuid") and os.geteuid() == 0:
+            pytest.skip("chmod 000 does not block reads when running as root")
         tl = _timeline_in_tmp(tmp_path)
         # Write something then make file unreadable
         with open(tl.storage_path, "w") as f:
