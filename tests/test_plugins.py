@@ -100,20 +100,48 @@ class TestPluginRegistry:
             """)
         )
 
-        PluginRegistry.load_plugins_from_dir(tmp_path)
+        PluginRegistry.load_plugins_from_dir(tmp_path, trusted=True)
         assert len(PluginRegistry.get_scenario_plugins()) == 1
         assert PluginRegistry.get_scenario_plugins()[0].name == "my-plugin"
 
     def test_load_plugins_skips_underscore_files(self, tmp_path: Path):
         """Files starting with _ should be skipped."""
         (tmp_path / "_internal.py").write_text("raise RuntimeError('should not load')")
-        PluginRegistry.load_plugins_from_dir(tmp_path)
+        PluginRegistry.load_plugins_from_dir(tmp_path, trusted=True)
         assert PluginRegistry.get_scenario_plugins() == []
 
     def test_load_plugins_nonexistent_dir(self, tmp_path: Path):
         """Loading from a non-existent directory should be a no-op."""
         PluginRegistry.load_plugins_from_dir(tmp_path / "nonexistent")
         assert PluginRegistry.get_scenario_plugins() == []
+
+    def test_untrusted_dir_does_not_execute_code(self, tmp_path: Path):
+        """Without trusted=True / the opt-in env, a plugin dir must NOT be
+        executed (security: #150). A module that would crash on import proves
+        it was never run."""
+        (tmp_path / "evil.py").write_text("raise RuntimeError('executed!')")
+        # No exception, no registration — the directory is skipped entirely.
+        PluginRegistry.load_plugins_from_dir(tmp_path)
+        assert PluginRegistry.get_scenario_plugins() == []
+
+    def test_env_opt_in_allows_loading(self, tmp_path: Path, monkeypatch):
+        """FAULTRAY_ALLOW_PLUGIN_EXEC=1 is an accepted opt-in for loading."""
+        plugin_file = tmp_path / "envplugin.py"
+        plugin_file.write_text(
+            textwrap.dedent("""\
+                class EnvPlugin:
+                    name = "env-plugin"
+                    description = "x"
+                    def generate_scenarios(self, graph, component_ids, components):
+                        return []
+
+                def register(registry):
+                    registry.register_scenario(EnvPlugin())
+            """)
+        )
+        monkeypatch.setenv("FAULTRAY_ALLOW_PLUGIN_EXEC", "1")
+        PluginRegistry.load_plugins_from_dir(tmp_path)
+        assert any(p.name == "env-plugin" for p in PluginRegistry.get_scenario_plugins())
 
 
 # ---------------------------------------------------------------------------
@@ -296,7 +324,7 @@ class TestLoadPluginsFromDirExtended:
         """Plugin files with syntax errors should be skipped gracefully."""
         bad_file = tmp_path / "bad_plugin.py"
         bad_file.write_text("def register(registry):\n    raise RuntimeError('boom')\n")
-        PluginRegistry.load_plugins_from_dir(tmp_path)
+        PluginRegistry.load_plugins_from_dir(tmp_path, trusted=True)
         # Should not crash, and no plugins should be registered
         assert len(PluginRegistry.get_scenario_plugins()) == 0
 
@@ -304,7 +332,7 @@ class TestLoadPluginsFromDirExtended:
         """Plugin files without register() should be loaded but not register anything."""
         plugin_file = tmp_path / "no_register.py"
         plugin_file.write_text("x = 42\n")
-        PluginRegistry.load_plugins_from_dir(tmp_path)
+        PluginRegistry.load_plugins_from_dir(tmp_path, trusted=True)
         assert len(PluginRegistry.get_scenario_plugins()) == 0
 
     def test_load_multiple_plugins(self, tmp_path: Path):
@@ -321,5 +349,5 @@ class TestLoadPluginsFromDirExtended:
                 def register(registry):
                     registry.register_scenario(Plugin{i}())
             """))
-        PluginRegistry.load_plugins_from_dir(tmp_path)
+        PluginRegistry.load_plugins_from_dir(tmp_path, trusted=True)
         assert len(PluginRegistry.get_scenario_plugins()) == 3

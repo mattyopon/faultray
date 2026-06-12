@@ -1,10 +1,18 @@
 #!/bin/bash
-# FaultRay v11.0.0 Release Script
+# FaultRay Release Script
 # Run this AFTER patent filing is complete
 
 set -e
 
-VERSION="11.0.0"
+# Derive the version from pyproject.toml so the tag and artifacts always match
+# the package metadata (a hardcoded value drifts and uploads the wrong dist/).
+REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+VERSION="$(python3 -c "import tomllib; print(tomllib.load(open('${REPO_ROOT}/pyproject.toml','rb'))['project']['version'])")"
+
+if [ -z "${VERSION}" ]; then
+  echo "ERROR: could not read version from pyproject.toml" >&2
+  exit 1
+fi
 
 echo "=== FaultRay v${VERSION} Release ==="
 

@@ -24,6 +24,7 @@ from faultray.model.components import (
     CostProfile,
     DegradationConfig,
     Dependency,
+    ExternalSLAConfig,
     FailoverConfig,
     NetworkProfile,
     OperationalProfile,
@@ -176,6 +177,11 @@ def load_yaml(path: Path | str) -> InfraGraph:
             if "team" in entry
             else OperationalTeamConfig()
         )
+        # .get() truthiness: round-tripped models (model_dump) contain
+        # ``external_sla: null``, which must behave like an absent key.
+        external_sla = (
+            ExternalSLAConfig(**entry["external_sla"]) if entry.get("external_sla") else None
+        )
 
         component = Component(
             id=comp_id,
@@ -199,6 +205,7 @@ def load_yaml(path: Path | str) -> InfraGraph:
             security=security_profile,
             compliance_tags=compliance_tags,
             team=team_config,
+            external_sla=external_sla,
             parameters=entry.get("parameters", {}),
             tags=entry.get("tags", []),
             # Ownership & lifecycle tracking

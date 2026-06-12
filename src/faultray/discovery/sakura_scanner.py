@@ -18,6 +18,7 @@ import logging
 import time
 from dataclasses import dataclass, field
 
+from faultray.discovery.base import CloudScannerBase
 from faultray.model.components import (
     Capacity,
     Component,
@@ -88,7 +89,7 @@ class SakuraDiscoveryResult:
     scan_duration_seconds: float = 0.0
 
 
-class SakuraScanner:
+class SakuraScanner(CloudScannerBase):
     """Discover Sakura Cloud infrastructure and generate InfraGraph automatically.
 
     Authenticates with Sakura Cloud API using API token + secret.
@@ -107,11 +108,11 @@ class SakuraScanner:
         secret: str,
         zone: str = "tk1v",
     ) -> None:
+        super().__init__()
         self.token = token
         self.secret = secret
         self.zone = zone
         self._base_url = _SAKURA_API_BASE.format(zone=zone)
-        self._warnings: list[str] = []
         # Switch ID -> list of component IDs connected to that switch
         self._switch_members: dict[str, list[str]] = {}
         # Component ID -> list of switch IDs it belongs to
@@ -137,22 +138,12 @@ class SakuraScanner:
             ("VPCRouters", lambda g: self._scan_vpc_routers(g, session)),
         ]
 
-        for name, scanner_fn in scanners:
-            try:
-                scanner_fn(graph)
-            except RuntimeError:
-                raise  # Re-raise library import errors
-            except Exception as exc:
-                msg = f"Failed to scan Sakura {name}: {exc}"
-                logger.warning(msg)
-                self._warnings.append(msg)
-
-        try:
-            self._infer_dependencies(graph)
-        except Exception as exc:
-            msg = f"Failed to infer Sakura dependencies: {exc}"
-            logger.warning(msg)
-            self._warnings.append(msg)
+        self._run_scanners(
+            graph,
+            scanners,
+            post_processors=[("infer Sakura dependencies", self._infer_dependencies)],
+            scan_error_fmt="Failed to scan Sakura {name}: {exc}",
+        )
 
         duration = time.monotonic() - start
         dep_count = len(graph.all_dependency_edges())
@@ -413,8 +404,6 @@ class SakuraScanner:
                        graph.components[m].type == ComponentType.APP_SERVER]
             dbs = [m for m in members if m in graph.components and
                    graph.components[m].type == ComponentType.DATABASE]
-            storages = [m for m in members if m in graph.components and
-                        graph.components[m].type == ComponentType.STORAGE]
 
             # LB -> servers
             for lb in lbs:
@@ -441,9 +430,5 @@ class SakuraScanner:
                     )
                     graph.add_dependency(dep)
 
-            # Servers -> Storage (disks already linked directly; skip)
-            # Any component -> storage via switch (only if no direct disk link exists)
-            for srv in servers:
-                for st in storages:
-                    # Avoid duplicate: disk scanning already creates server->disk dep
-                    pass
+            # Servers -> Storage: intentionally no extra deps here — disk
+            # scanning already creates the direct server->disk dependencies.

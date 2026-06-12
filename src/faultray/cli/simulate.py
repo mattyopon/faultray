@@ -243,12 +243,17 @@ def simulate(
         console.print("Run [cyan]faultray scan[/] first to create a model.")
         raise typer.Exit(1)
 
-    # Load plugins if a directory is specified
+    # Load plugins if a directory is specified. Naming --plugins-dir is the
+    # user's explicit opt-in to execute that directory's code, so we pass
+    # trusted=True but surface a clear security notice first.
     if plugins_dir is not None:
         from faultray.plugins.registry import PluginRegistry
 
-        console.print(f"[cyan]Loading plugins from {plugins_dir}...[/]")
-        PluginRegistry.load_plugins_from_dir(plugins_dir)
+        console.print(
+            f"[yellow]Loading plugins from {plugins_dir} — this executes Python "
+            f"from that directory. Only use directories you trust.[/]"
+        )
+        PluginRegistry.load_plugins_from_dir(plugins_dir, trusted=True)
 
     if json_output:
         # Suppress logging to stdout so JSON output is parseable

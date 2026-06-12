@@ -137,3 +137,52 @@ class TestGenerateOAuthUrl:
         )
         url = generate_oauth_url(config)
         assert url == ""
+
+
+# ---------------------------------------------------------------------------
+# Fail-closed behaviour when python-jose is unavailable (#137)
+# ---------------------------------------------------------------------------
+
+def test_decode_jwt_rejects_when_jose_missing(monkeypatch):
+    """Without python-jose, decode_jwt must reject every token rather than
+    trust an unsigned, forgeable payload (auth bypass guard)."""
+    import builtins
+    import base64
+    import json as _json
+
+    from faultray.api import oauth
+
+    real_import = builtins.__import__
+
+    def _no_jose(name, *args, **kwargs):
+        if name == "jose" or name.startswith("jose."):
+            raise ImportError("python-jose not installed")
+        return real_import(name, *args, **kwargs)
+
+    monkeypatch.setattr(builtins, "__import__", _no_jose)
+
+    # A hand-forged "token" that the old base64 fallback would have accepted.
+    forged = base64.urlsafe_b64encode(
+        _json.dumps({"sub": "1", "exp": 99999999999}).encode()
+    ).decode()
+    assert oauth.decode_jwt(forged) is None
+
+
+def test_create_jwt_refuses_unsigned_fallback(monkeypatch):
+    """create_jwt must raise (not emit an unsigned token) when jose is absent."""
+    import builtins
+
+    from faultray.api import oauth
+
+    real_import = builtins.__import__
+
+    def _no_jose(name, *args, **kwargs):
+        if name == "jose" or name.startswith("jose."):
+            raise ImportError("python-jose not installed")
+        return real_import(name, *args, **kwargs)
+
+    monkeypatch.setattr(builtins, "__import__", _no_jose)
+
+    import pytest as _pytest
+    with _pytest.raises(RuntimeError):
+        oauth.create_jwt({"sub": "1"})

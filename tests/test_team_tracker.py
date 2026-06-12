@@ -749,6 +749,8 @@ class TestHistoryLoadErrors:
     def test_load_history_os_error(self, tmp_path):
         """OSError when reading history file (line 462-463)."""
         import os
+        if hasattr(os, "geteuid") and os.geteuid() == 0:
+            pytest.skip("chmod 000 does not block reads when running as root")
         tracker = TeamTracker(history_path=tmp_path / "team_history.jsonl")
         # Create the file, then make it unreadable
         with open(tmp_path / "team_history.jsonl", "w") as f:

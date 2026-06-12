@@ -7,6 +7,27 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+### Fixed
+- **Packaging**: `python-multipart` added to core dependencies — `/setup`, simulation and graph form endpoints returned 500 (`AssertionError: The python-multipart library must be installed`) on a clean install
+- **Security**: Team Workspace API (`/api/teams/*`) endpoints now require authentication/RBAC (previously unauthenticated)
+- **Security**: `/api/v1` SaaS route permission checker now enforces real RBAC instead of allowing anonymous access
+- **Security**: JWT secret falls back to the dev default only outside production; `FAULTRAY_ENV=production` without `FAULTRAY_JWT_SECRET` now fails fast
+- **Security**: Topology HTML report escapes `<`/`>`/`&` in embedded JSON, preventing `</script>` breakout (XSS) via component names
+- **Security**: Stripe checkout/portal and GraphQL error responses no longer leak internal exception details
+- **Security**: GraphQL endpoint rejects queries longer than 10,000 characters (DoS guard)
+- **Security**: `~/.faultray/coupons.json` and `license.json` are written with owner-only permissions (0600)
+- **Model**: `external_sla` is now loaded from YAML (was silently ignored, breaking Layer 5 external SLA cascading)
+- **API**: SQLite engine creation ensures `~/.faultray/` exists, fixing first-run `OperationalError` on fresh machines
+- **Discovery**: AWS/OCI/Alibaba scanners log skipped resources instead of silently swallowing exceptions; removed dead NetBox/Sakura loops
+
+### Changed
+- **Performance**: `InfraGraph.get_cascade_path()` uses a single DFS without copying the graph and caps enumeration (`max_paths=10000`); pathological diamond-chain graphs that previously hung now return in milliseconds
+- **Docs**: `COMMERCIAL.md` and `CLA.md` updated to reflect the Apache 2.0 relicense (previously still claimed BSL 1.1)
+- **Packaging**: PyPI classifier downgraded to `Development Status :: 4 - Beta` to match the "research prototype" positioning
+- **CI**: Superseded PR runs are cancelled via `concurrency`; AWS Marketplace push derives the image tag from `pyproject.toml` (was hardcoded `11.0.1`)
+- **Tooling**: pre-commit ruff/mypy bumped and mypy given the same type stubs as CI
+- **VS Code extension**: command IDs and CLI invocations migrated from legacy `faultzero`/`chaosproof` names to `faultray`
+
 ## [11.2.0] — 2026-04-11
 
 ### Changed

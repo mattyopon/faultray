@@ -13,7 +13,8 @@ authors = [
     {name = "Yutaro Maeda", email = "mattyopon@gmail.com"},
 ]
 classifiers = [
-    "Development Status :: 5 - Production/Stable",
+    # Matches the "research prototype" positioning in the description above
+    "Development Status :: 4 - Beta",
     "Intended Audience :: Developers",
     "Intended Audience :: System Administrators",
     "License :: OSI Approved :: Apache Software License",
@@ -32,12 +33,15 @@ classifiers = [
 ]
 keywords = ["chaos-engineering", "sre", "devops", "infrastructure", "simulation", "reliability", "slo", "fault-injection", "resilience-testing", "availability", "disaster-recovery", "incident-response", "terraform", "prometheus", "dora-compliance", "ai-agent", "agentic-ai"]
 dependencies = [
-    "typer>=0.15",
+    "typer>=0.26.7",
     "rich>=13.0",
     "pydantic>=2.0",
     "networkx>=3.0",
     "psutil>=7.2.2",
     "fastapi>=0.115",
+    # Form parsing (/setup, simulation and graph upload routes) — without
+    # this a clean install 500s on those endpoints. >=0.0.18: CVE-2024-53981.
+    "python-multipart>=0.0.18",
     "itsdangerous>=2.1",
     "uvicorn>=0.34",
     "jinja2>=3.1.6",
@@ -82,7 +86,7 @@ alibaba = [
     "requests>=2.33.1",
 ]
 oci = [
-    "oci>=2.0",
+    "oci>=2.175.0",
 ]
 onprem = [
     "pynetbox>=7.0",
@@ -96,7 +100,7 @@ all-clouds = [
     "alibabacloud-ecs20140526>=3.0",
     "alibabacloud-rds20140815>=3.0",
     "alibabacloud-slb20140515>=3.3.31",
-    "oci>=2.0",
+    "oci>=2.175.0",
     "pynetbox>=7.0",
 ]
 pdf = [

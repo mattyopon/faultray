@@ -1,13 +1,36 @@
 repos:
   - repo: https://github.com/astral-sh/ruff-pre-commit
-    rev: v0.8.0
+    # Keep in sync with the ruff version pinned in pyproject.toml [dev]
+    rev: v0.15.11
     hooks:
       - id: ruff
         args: [--fix]
       - id: ruff-format
   - repo: https://github.com/pre-commit/mirrors-mypy
-    rev: v1.13.0
+    rev: v1.15.0
     hooks:
       - id: mypy
-        additional_dependencies: []
+        # Same type stubs as CI so pre-commit and CI agree
+        additional_dependencies:
+          - types-PyYAML>=6.0
+          - types-networkx>=3.0
         args: [--ignore-missing-imports]
+  # Block hardcoded secrets at commit time (defense-in-depth alongside the
+  # gitleaks CI workflow), so tokens like the ones flagged in #136/#148 cannot
+  # be reintroduced locally.
+  - repo: https://github.com/gitleaks/gitleaks
+    rev: v8.18.4
+    hooks:
+      - id: gitleaks
+  # #136: refuse to commit .env / .env.* files outright. .env.example is
+  # tracked as a template and stays allowed. (gitleaks scans content; this
+  # hook catches the filename itself, which covers the specific regression
+  # #136 was filed against even when the file holds no detectable secret.)
+  - repo: local
+    hooks:
+      - id: forbid-env-files
+        name: forbid committing .env files
+        entry: bash -c 'echo ".env / .env.* files must not be committed (#136). Move secrets to a vault and commit only .env.example."; exit 1'
+        language: system
+        files: '^\.env(\.(?!example$)[^/]+)?$'
+        pass_filenames: false

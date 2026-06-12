@@ -8,6 +8,11 @@ on:
     # Weekly mutation testing — Sunday 02:00 UTC
     - cron: "0 2 * * 0"
 
+# Cancel superseded runs on the same branch/PR to save CI minutes.
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
 jobs:
   test:
     runs-on: ubuntu-latest

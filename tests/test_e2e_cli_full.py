@@ -11,12 +11,13 @@ from __future__ import annotations
 
 import json
 import subprocess
+import sys
 import tempfile
 from pathlib import Path
 
 import pytest
 
-_PYTHON = "python3"
+_PYTHON = sys.executable  # the interpreter running the tests, not whatever "python3" resolves to
 _TIMEOUT = 60
 _REPO = str(Path(__file__).parent.parent)
 
