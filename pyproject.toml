@@ -74,7 +74,7 @@ azure = [
     "azure-mgmt-redis>=14.5.0",
 ]
 k8s = [
-    "kubernetes>=28.0",
+    "kubernetes>=35.0.0",
 ]
 sakura = [
     "requests>=2.33.1",
@@ -95,7 +95,7 @@ all-clouds = [
     "boto3>=1.28",
     "google-cloud-compute>=1.0",
     "azure-identity>=1.25.3",
-    "kubernetes>=28.0",
+    "kubernetes>=35.0.0",
     "requests>=2.33.1",
     "alibabacloud-ecs20140526>=3.0",
     "alibabacloud-rds20140815>=3.0",
