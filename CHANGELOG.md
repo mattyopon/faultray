@@ -7,6 +7,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+### Added
+- **CLI**: `faultray import terraform <file>` — convert `terraform show -json` output (state or plan) or a raw `terraform.tfstate` into an editable topology YAML wired into `simulate`/`evaluate`. Components for ALB/EC2/ECS/EKS/Lambda/RDS/DynamoDB/ElastiCache/SQS/SNS/S3/EFS/Route53/API Gateway/CloudFront; dependency edges are evidence-based only (configuration references, `depends_on`, ARN/endpoint cross-references, ALB/event-source/task-definition wiring) with conservative `requires` defaults; external HTTPS URLs in Lambda/ECS env vars become `external_api` components with provider SLAs
+
 ### Fixed
 - **Packaging**: `python-multipart` added to core dependencies — `/setup`, simulation and graph form endpoints returned 500 (`AssertionError: The python-multipart library must be installed`) on a clean install
 - **Security**: Team Workspace API (`/api/teams/*`) endpoints now require authentication/RBAC (previously unauthenticated)

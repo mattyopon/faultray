@@ -102,6 +102,26 @@ faultray tf-import --dir TERRAFORM_DIR [OPTIONS]
 | `--output` / `-o` | Output model file path |
 | `--state` | Path to Terraform state file |
 
+### `import terraform`
+
+Convert `terraform show -json` output (state or plan) or a raw
+`terraform.tfstate` into an editable topology YAML for `simulate` /
+`evaluate`. Dependency edges are evidence-based (configuration
+references, `depends_on`, ARN/endpoint cross-references, ALB/Lambda/ECS
+wiring patterns); unknown semantics default to `requires`.
+
+```bash
+terraform show -json > state.json
+faultray import terraform state.json [OPTIONS]
+faultray simulate -m terraform-topology.yaml
+```
+
+| Option | Description |
+|--------|-------------|
+| `--output` / `-o` | Topology YAML output path (default: `terraform-topology.yaml`) |
+| `--force` / `-f` | Overwrite the output file if it exists |
+| `--json` | Output JSON summary |
+
 ### `diff`
 
 Compare two infrastructure models and show changes.

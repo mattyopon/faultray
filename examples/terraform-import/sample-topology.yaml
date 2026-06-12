@@ -1,0 +1,188 @@
+# FaultRay topology — imported from Terraform (state JSON).
+# Review before relying on simulation results:
+#   - edges are evidence-based; semantics default to 'requires'
+#     (conservative). Relax to 'optional'/'async' where appropriate.
+#   - components with no edges need manual wiring.
+#
+# Edge evidence:
+#   aws_ecs_service.api -> aws_db_instance.main: via aws_ecs_task_definition
+#   aws_ecs_service.api -> aws_elasticache_replication_group.cache: via aws_ecs_task_definition
+#   aws_ecs_service.api -> aws_s3_bucket.assets: via aws_ecs_task_definition
+#   aws_ecs_service.api -> aws_sqs_queue.jobs: via aws_ecs_task_definition
+#   aws_ecs_service.api -> external:api.stripe.com: https URL in environment variables
+#   aws_lambda_function.worker -> aws_db_instance.main: attribute reference (appdb.c1a2b3c4d5e6.ap-northeast-1.rds.amazonaws.com:5432)
+#   aws_lambda_function.worker -> aws_sqs_queue.jobs: lambda event source mapping
+#   aws_lambda_function.worker -> external:api.sendgrid.com: https URL in environment variables
+#   aws_lb.app -> aws_ecs_service.api: load balancer wiring via aws_lb_target_group.api
+#   aws_lb.app -> aws_instance.static_web: load balancer wiring via aws_lb_target_group.static
+#   aws_route53_record.app -> aws_lb.app: depends_on
+schema_version: '4.0'
+components:
+- id: aws_db_instance.main
+  name: app-db
+  type: database
+  host: appdb.c1a2b3c4d5e6.ap-northeast-1.rds.amazonaws.com
+  port: 5432
+  replicas: 2
+  capacity:
+    max_connections: 500
+    timeout_seconds: 60.0
+  region:
+    region: ap-northeast-1
+    availability_zone: ap-northeast-1a
+  parameters:
+    terraform_type: aws_db_instance
+    terraform_address: aws_db_instance.main
+- id: aws_ecs_service.api
+  name: api
+  type: app_server
+  replicas: 3
+  capacity:
+    max_connections: 1000
+    timeout_seconds: 30.0
+  parameters:
+    terraform_type: aws_ecs_service
+    terraform_address: aws_ecs_service.api
+- id: aws_elasticache_replication_group.cache
+  name: cache
+  type: cache
+  host: app-cache.x9y8z7.ng.0001.apne1.cache.amazonaws.com
+  port: 6379
+  replicas: 2
+  capacity:
+    max_connections: 10000
+    timeout_seconds: 5.0
+  parameters:
+    terraform_type: aws_elasticache_replication_group
+    terraform_address: aws_elasticache_replication_group.cache
+- id: aws_instance.static_web
+  name: static-web
+  type: app_server
+  host: 10.0.1.20
+  capacity:
+    max_connections: 200
+    timeout_seconds: 30.0
+  region:
+    region: ap-northeast-1
+    availability_zone: ap-northeast-1a
+  parameters:
+    terraform_type: aws_instance
+    terraform_address: aws_instance.static_web
+- id: aws_lambda_function.worker
+  name: app-worker
+  type: serverless
+  capacity:
+    max_connections: 1000
+    timeout_seconds: 60.0
+  external_sla:
+    provider_sla: 99.95
+  parameters:
+    terraform_type: aws_lambda_function
+    terraform_address: aws_lambda_function.worker
+- id: aws_lb.app
+  name: app-alb
+  type: load_balancer
+  host: app-alb-1234567890.ap-northeast-1.elb.amazonaws.com
+  port: 443
+  capacity:
+    max_connections: 50000
+    timeout_seconds: 30.0
+  parameters:
+    terraform_type: aws_lb
+    terraform_address: aws_lb.app
+- id: aws_route53_record.app
+  name: app.example.com
+  type: dns
+  host: app.example.com
+  port: 53
+  capacity:
+    max_connections: 1000
+    timeout_seconds: 30.0
+  external_sla:
+    provider_sla: 100.0
+  parameters:
+    terraform_type: aws_route53_record
+    terraform_address: aws_route53_record.app
+- id: aws_s3_bucket.assets
+  name: app-assets-123456789012
+  type: storage
+  host: app-assets-123456789012.s3.ap-northeast-1.amazonaws.com
+  capacity:
+    max_connections: 1000
+    timeout_seconds: 30.0
+    max_disk_gb: 1000.0
+  external_sla:
+    provider_sla: 99.9
+  parameters:
+    terraform_type: aws_s3_bucket
+    terraform_address: aws_s3_bucket.assets
+- id: aws_sqs_queue.jobs
+  name: app-jobs
+  type: queue
+  port: 443
+  capacity:
+    max_connections: 5000
+    timeout_seconds: 30.0
+  external_sla:
+    provider_sla: 99.9
+  parameters:
+    terraform_type: aws_sqs_queue
+    terraform_address: aws_sqs_queue.jobs
+- id: external:api.sendgrid.com
+  name: api.sendgrid.com
+  type: external_api
+  host: api.sendgrid.com
+  port: 443
+  capacity:
+    max_connections: 10000
+    timeout_seconds: 10.0
+  external_sla:
+    provider_sla: 99.9
+  parameters:
+    source: environment variable URL
+- id: external:api.stripe.com
+  name: api.stripe.com
+  type: external_api
+  host: api.stripe.com
+  port: 443
+  capacity:
+    max_connections: 10000
+    timeout_seconds: 10.0
+  external_sla:
+    provider_sla: 99.9
+  parameters:
+    source: environment variable URL
+dependencies:
+- source: aws_ecs_service.api
+  target: aws_db_instance.main
+  type: requires
+- source: aws_ecs_service.api
+  target: aws_elasticache_replication_group.cache
+  type: requires
+- source: aws_ecs_service.api
+  target: aws_s3_bucket.assets
+  type: requires
+- source: aws_ecs_service.api
+  target: aws_sqs_queue.jobs
+  type: requires
+- source: aws_ecs_service.api
+  target: external:api.stripe.com
+  type: requires
+- source: aws_lambda_function.worker
+  target: aws_db_instance.main
+  type: requires
+- source: aws_lambda_function.worker
+  target: aws_sqs_queue.jobs
+  type: requires
+- source: aws_lambda_function.worker
+  target: external:api.sendgrid.com
+  type: requires
+- source: aws_lb.app
+  target: aws_ecs_service.api
+  type: requires
+- source: aws_lb.app
+  target: aws_instance.static_web
+  type: requires
+- source: aws_route53_record.app
+  target: aws_lb.app
+  type: requires

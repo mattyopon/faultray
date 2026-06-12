@@ -1,0 +1,276 @@
+{
+  "format_version": "1.0",
+  "terraform_version": "1.9.0",
+  "values": {
+    "root_module": {
+      "resources": [
+        {
+          "address": "aws_route53_record.app",
+          "type": "aws_route53_record",
+          "name": "app",
+          "mode": "managed",
+          "values": {
+            "id": "Z0123456789ABC_app.example.com_A",
+            "name": "app.example.com",
+            "fqdn": "app.example.com",
+            "type": "A",
+            "alias": [
+              {
+                "name": "app-alb-1234567890.ap-northeast-1.elb.amazonaws.com",
+                "zone_id": "Z14GRHDCWA56QT",
+                "evaluate_target_health": true
+              }
+            ]
+          },
+          "depends_on": ["aws_lb.app"]
+        },
+        {
+          "address": "aws_lb.app",
+          "type": "aws_lb",
+          "name": "app",
+          "mode": "managed",
+          "values": {
+            "id": "arn:aws:elasticloadbalancing:ap-northeast-1:123456789012:loadbalancer/app/app-alb/50dc6c495c0c9188",
+            "arn": "arn:aws:elasticloadbalancing:ap-northeast-1:123456789012:loadbalancer/app/app-alb/50dc6c495c0c9188",
+            "name": "app-alb",
+            "dns_name": "app-alb-1234567890.ap-northeast-1.elb.amazonaws.com",
+            "load_balancer_type": "application",
+            "tags": { "Name": "app-alb" }
+          }
+        },
+        {
+          "address": "aws_lb_listener.https",
+          "type": "aws_lb_listener",
+          "name": "https",
+          "mode": "managed",
+          "values": {
+            "id": "arn:aws:elasticloadbalancing:ap-northeast-1:123456789012:listener/app/app-alb/50dc6c495c0c9188/f2f7dc8efc522ab2",
+            "arn": "arn:aws:elasticloadbalancing:ap-northeast-1:123456789012:listener/app/app-alb/50dc6c495c0c9188/f2f7dc8efc522ab2",
+            "load_balancer_arn": "arn:aws:elasticloadbalancing:ap-northeast-1:123456789012:loadbalancer/app/app-alb/50dc6c495c0c9188",
+            "port": 443,
+            "protocol": "HTTPS",
+            "default_action": [
+              {
+                "type": "forward",
+                "target_group_arn": "arn:aws:elasticloadbalancing:ap-northeast-1:123456789012:targetgroup/api/73e2d6bc24d8a067"
+              }
+            ]
+          },
+          "depends_on": ["aws_lb.app", "aws_lb_target_group.api"]
+        },
+        {
+          "address": "aws_lb_target_group.api",
+          "type": "aws_lb_target_group",
+          "name": "api",
+          "mode": "managed",
+          "values": {
+            "id": "arn:aws:elasticloadbalancing:ap-northeast-1:123456789012:targetgroup/api/73e2d6bc24d8a067",
+            "arn": "arn:aws:elasticloadbalancing:ap-northeast-1:123456789012:targetgroup/api/73e2d6bc24d8a067",
+            "name": "api",
+            "port": 8080,
+            "protocol": "HTTP",
+            "target_type": "ip"
+          }
+        },
+        {
+          "address": "aws_lb_listener_rule.static",
+          "type": "aws_lb_listener_rule",
+          "name": "static",
+          "mode": "managed",
+          "values": {
+            "id": "arn:aws:elasticloadbalancing:ap-northeast-1:123456789012:listener-rule/app/app-alb/50dc6c495c0c9188/f2f7dc8efc522ab2/9683b2d02a6cabee",
+            "listener_arn": "arn:aws:elasticloadbalancing:ap-northeast-1:123456789012:listener/app/app-alb/50dc6c495c0c9188/f2f7dc8efc522ab2",
+            "action": [
+              {
+                "type": "forward",
+                "target_group_arn": "arn:aws:elasticloadbalancing:ap-northeast-1:123456789012:targetgroup/static/8d3c1b2a4e5f6071"
+              }
+            ]
+          },
+          "depends_on": ["aws_lb_listener.https", "aws_lb_target_group.static"]
+        },
+        {
+          "address": "aws_lb_target_group.static",
+          "type": "aws_lb_target_group",
+          "name": "static",
+          "mode": "managed",
+          "values": {
+            "id": "arn:aws:elasticloadbalancing:ap-northeast-1:123456789012:targetgroup/static/8d3c1b2a4e5f6071",
+            "arn": "arn:aws:elasticloadbalancing:ap-northeast-1:123456789012:targetgroup/static/8d3c1b2a4e5f6071",
+            "name": "static",
+            "port": 80,
+            "protocol": "HTTP",
+            "target_type": "instance"
+          }
+        },
+        {
+          "address": "aws_lb_target_group_attachment.static",
+          "type": "aws_lb_target_group_attachment",
+          "name": "static",
+          "mode": "managed",
+          "values": {
+            "id": "arn:aws:elasticloadbalancing:ap-northeast-1:123456789012:targetgroup/static/8d3c1b2a4e5f6071-20260101",
+            "target_group_arn": "arn:aws:elasticloadbalancing:ap-northeast-1:123456789012:targetgroup/static/8d3c1b2a4e5f6071",
+            "target_id": "i-0a1b2c3d4e5f60789",
+            "port": 80
+          },
+          "depends_on": ["aws_instance.static_web", "aws_lb_target_group.static"]
+        },
+        {
+          "address": "aws_instance.static_web",
+          "type": "aws_instance",
+          "name": "static_web",
+          "mode": "managed",
+          "values": {
+            "id": "i-0a1b2c3d4e5f60789",
+            "instance_type": "t3.small",
+            "private_ip": "10.0.1.20",
+            "availability_zone": "ap-northeast-1a",
+            "tags": { "Name": "static-web" }
+          }
+        },
+        {
+          "address": "aws_ecs_service.api",
+          "type": "aws_ecs_service",
+          "name": "api",
+          "mode": "managed",
+          "values": {
+            "id": "arn:aws:ecs:ap-northeast-1:123456789012:service/app/api",
+            "name": "api",
+            "desired_count": 3,
+            "launch_type": "FARGATE",
+            "task_definition": "arn:aws:ecs:ap-northeast-1:123456789012:task-definition/api:42",
+            "load_balancer": [
+              {
+                "target_group_arn": "arn:aws:elasticloadbalancing:ap-northeast-1:123456789012:targetgroup/api/73e2d6bc24d8a067",
+                "container_name": "api",
+                "container_port": 8080
+              }
+            ]
+          },
+          "depends_on": [
+            "aws_ecs_task_definition.api",
+            "aws_lb_listener.https"
+          ]
+        },
+        {
+          "address": "aws_ecs_task_definition.api",
+          "type": "aws_ecs_task_definition",
+          "name": "api",
+          "mode": "managed",
+          "values": {
+            "id": "api",
+            "arn": "arn:aws:ecs:ap-northeast-1:123456789012:task-definition/api:42",
+            "family": "api",
+            "container_definitions": "[{\"name\":\"api\",\"image\":\"123456789012.dkr.ecr.ap-northeast-1.amazonaws.com/api:1.0\",\"portMappings\":[{\"containerPort\":8080}],\"environment\":[{\"name\":\"DATABASE_URL\",\"value\":\"postgres://app:pass@appdb.c1a2b3c4d5e6.ap-northeast-1.rds.amazonaws.com:5432/app\"},{\"name\":\"REDIS_URL\",\"value\":\"redis://app-cache.x9y8z7.ng.0001.apne1.cache.amazonaws.com:6379\"},{\"name\":\"QUEUE_URL\",\"value\":\"https://sqs.ap-northeast-1.amazonaws.com/123456789012/app-jobs\"},{\"name\":\"ASSETS_BUCKET\",\"value\":\"app-assets-123456789012\"},{\"name\":\"ASSETS_HOST\",\"value\":\"app-assets-123456789012.s3.ap-northeast-1.amazonaws.com\"},{\"name\":\"STRIPE_API_BASE\",\"value\":\"https://api.stripe.com/v1\"}]}]"
+          }
+        },
+        {
+          "address": "aws_db_instance.main",
+          "type": "aws_db_instance",
+          "name": "main",
+          "mode": "managed",
+          "values": {
+            "id": "appdb",
+            "identifier": "appdb",
+            "arn": "arn:aws:rds:ap-northeast-1:123456789012:db:appdb",
+            "endpoint": "appdb.c1a2b3c4d5e6.ap-northeast-1.rds.amazonaws.com:5432",
+            "address": "appdb.c1a2b3c4d5e6.ap-northeast-1.rds.amazonaws.com",
+            "engine": "postgres",
+            "instance_class": "db.r6g.large",
+            "allocated_storage": 100,
+            "multi_az": true,
+            "port": 5432,
+            "availability_zone": "ap-northeast-1a",
+            "tags": { "Name": "app-db" }
+          }
+        },
+        {
+          "address": "aws_elasticache_replication_group.cache",
+          "type": "aws_elasticache_replication_group",
+          "name": "cache",
+          "mode": "managed",
+          "values": {
+            "id": "app-cache",
+            "arn": "arn:aws:elasticache:ap-northeast-1:123456789012:replicationgroup:app-cache",
+            "replication_group_id": "app-cache",
+            "primary_endpoint_address": "app-cache.x9y8z7.ng.0001.apne1.cache.amazonaws.com",
+            "num_cache_clusters": 2,
+            "engine": "redis",
+            "port": 6379
+          }
+        },
+        {
+          "address": "aws_sqs_queue.jobs",
+          "type": "aws_sqs_queue",
+          "name": "jobs",
+          "mode": "managed",
+          "values": {
+            "id": "https://sqs.ap-northeast-1.amazonaws.com/123456789012/app-jobs",
+            "url": "https://sqs.ap-northeast-1.amazonaws.com/123456789012/app-jobs",
+            "arn": "arn:aws:sqs:ap-northeast-1:123456789012:app-jobs",
+            "name": "app-jobs"
+          }
+        },
+        {
+          "address": "aws_s3_bucket.assets",
+          "type": "aws_s3_bucket",
+          "name": "assets",
+          "mode": "managed",
+          "values": {
+            "id": "app-assets-123456789012",
+            "bucket": "app-assets-123456789012",
+            "arn": "arn:aws:s3:::app-assets-123456789012",
+            "bucket_regional_domain_name": "app-assets-123456789012.s3.ap-northeast-1.amazonaws.com"
+          }
+        },
+        {
+          "address": "aws_lambda_function.worker",
+          "type": "aws_lambda_function",
+          "name": "worker",
+          "mode": "managed",
+          "values": {
+            "id": "app-worker",
+            "function_name": "app-worker",
+            "arn": "arn:aws:lambda:ap-northeast-1:123456789012:function:app-worker",
+            "invoke_arn": "arn:aws:apigateway:ap-northeast-1:lambda:path/2015-03-31/functions/arn:aws:lambda:ap-northeast-1:123456789012:function:app-worker/invocations",
+            "runtime": "python3.12",
+            "timeout": 60,
+            "environment": [
+              {
+                "variables": {
+                  "DATABASE_URL": "postgres://app:pass@appdb.c1a2b3c4d5e6.ap-northeast-1.rds.amazonaws.com:5432/app",
+                  "SENDGRID_API_BASE": "https://api.sendgrid.com/v3"
+                }
+              }
+            ]
+          }
+        },
+        {
+          "address": "aws_lambda_event_source_mapping.jobs",
+          "type": "aws_lambda_event_source_mapping",
+          "name": "jobs",
+          "mode": "managed",
+          "values": {
+            "id": "5f8e2b1a-1234-4abc-9def-0123456789ab",
+            "event_source_arn": "arn:aws:sqs:ap-northeast-1:123456789012:app-jobs",
+            "function_name": "arn:aws:lambda:ap-northeast-1:123456789012:function:app-worker",
+            "batch_size": 10
+          },
+          "depends_on": ["aws_sqs_queue.jobs", "aws_lambda_function.worker"]
+        },
+        {
+          "address": "aws_security_group.app",
+          "type": "aws_security_group",
+          "name": "app",
+          "mode": "managed",
+          "values": {
+            "id": "sg-0123456789abcdef0",
+            "name": "app-sg",
+            "vpc_id": "vpc-0a1b2c3d4e5f67890"
+          }
+        }
+      ]
+    }
+  }
+}
