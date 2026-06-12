@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import { useState, useEffect, useCallback } from "react";
 
 const STORAGE_KEY = "faultray_cookie_consent";
 
@@ -10,8 +10,17 @@ function hasConsent(): boolean {
 }
 
 export function CookieConsent() {
-  // Lazy initializer reads localStorage once at mount — avoids effect-based setState
-  const [visible, setVisible] = useState(() => !hasConsent());
+  // Hidden on the server AND on the client's first render so hydration
+  // sees identical trees (lazy-reading localStorage in useState caused a
+  // site-wide React #418 mismatch); the banner appears after mount.
+  const [visible, setVisible] = useState(false);
+
+  useEffect(() => {
+    if (!hasConsent()) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      setVisible(true);
+    }
+  }, []);
 
   const accept = useCallback(() => {
     localStorage.setItem(STORAGE_KEY, "accepted");

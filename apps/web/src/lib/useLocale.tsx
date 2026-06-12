@@ -17,10 +17,19 @@ export function LocaleProvider({ children }: { children: ReactNode }) {
   const [locale, setLocaleState] = useState<Locale>(defaultLocale);
 
   useEffect(() => {
+    // I18N-05: パス先頭のロケール（/ja 等）は「いま表示している言語」なので
+    // cookie より優先する。cookie はロケール無しページでのフォールバック。
+    // render 中の usePathname は rewrite 環境で hydration mismatch を
+    // 起こしうるため、effect 内で window.location を読む（Next docs 準拠）。
+    const seg = window.location.pathname.split("/")[1];
+    if (locales.includes(seg as Locale)) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      setLocaleState(seg as Locale);
+      return;
+    }
     // LIB-06: ロケールcookieのパース — (\w+)ではハイフン等が含まれないため[^;,\s]+に拡張
     const match = document.cookie.match(/(?:^|;\s*)NEXT_LOCALE=([^;,\s]+)/);
     if (match && locales.includes(match[1] as Locale)) {
-      // eslint-disable-next-line react-hooks/set-state-in-effect
       setLocaleState(match[1] as Locale);
     }
   }, []);
