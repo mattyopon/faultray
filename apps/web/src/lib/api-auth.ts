@@ -98,9 +98,19 @@ function checkCsrf(request: Request): NextResponse | null {
   }
 
   if (allowed.size === 0) {
-    // 設定 mis でいかなる allowlist も組み立てられない → fail-open
-    // (production で NEXT_PUBLIC_SITE_URL が malformed だと全 request 403 に
-    //  なるのを避ける従来挙動を維持)
+    // #113: no valid origin could be derived (every configured origin missing
+    // or malformed). Fail CLOSED in production — returning null drops Origin
+    // enforcement on every state-changing route (account delete, coupon redeem,
+    // org/task mutations), so an env typo would silently reopen CSRF. A
+    // misconfiguration that 403s is loud and recoverable; a silent bypass is
+    // not. Dev/preview keep the permissive path so local work and ephemeral
+    // preview URLs aren't blocked.
+    if (isProduction) {
+      return NextResponse.json(
+        { error: "Forbidden: CSRF origin allowlist unavailable" },
+        { status: 403 }
+      );
+    }
     return null;
   }
 

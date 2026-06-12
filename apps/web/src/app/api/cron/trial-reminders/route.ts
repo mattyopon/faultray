@@ -34,12 +34,18 @@ export async function POST(request: Request) {
   const threeDaysLater = new Date(now.getTime() + 3 * 24 * 60 * 60 * 1000);
   const fourDaysLater = new Date(now.getTime() + 4 * 24 * 60 * 60 * 1000);
 
+  // #115: trial users carry a paid plan ('business' from the auth-callback
+  // provisioning, or 'pro' from a coupon) plus trial_ends_at — NOT plan='free'.
+  // Filtering plan='free' selected the empty/wrong set, so reminders never
+  // reached the people about to expire. The real signal for "still trialing,
+  // not yet converted" is: a trial_ends_at in the window AND no Stripe customer
+  // (a converted customer has stripe_customer_id set after checkout).
   const { data: users, error: queryError } = await supabase
     .from("profiles")
     .select("id, email, full_name, trial_ends_at")
     .gte("trial_ends_at", threeDaysLater.toISOString())
     .lt("trial_ends_at", fourDaysLater.toISOString())
-    .eq("plan", "free");
+    .is("stripe_customer_id", null);
 
   if (queryError) {
     console.error("[cron/trial-reminders] Query error:", queryError.message);

@@ -25,6 +25,7 @@ async function getOrgId(
     .select("org_id")
     .eq("user_id", userId)
     .eq("status", "active")
+    .order("invited_at", { ascending: true })
     .limit(1);
 
   if (memberships && memberships.length > 0) {
@@ -35,6 +36,7 @@ async function getOrgId(
     .from("organizations")
     .select("id")
     .eq("owner_id", userId)
+    .order("created_at", { ascending: true })
     .limit(1);
 
   if (ownedOrgs && ownedOrgs.length > 0) {

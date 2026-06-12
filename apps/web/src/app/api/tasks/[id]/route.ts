@@ -53,13 +53,19 @@ export async function PATCH(
     }
   }
 
-  // タスクが自分の組織のものか確認
-  const { data: existing } = await supabase
+  // タスクが自分の組織のものか確認。#122: real な query error と「行なし」を
+  // 区別する。maybeSingle は 0 行で {data:null, error:null} を返すので、error は
+  // DB 障害時のみ立つ。これを 404 に潰すと outage が「タスク無し」に偽装され、
+  // 監視・自動リトライが効かなくなる。
+  const { data: existing, error: existingError } = await supabase
     .from("tasks")
     .select("id, org_id")
     .eq("id", id)
-    .single();
+    .maybeSingle();
 
+  if (existingError) {
+    return NextResponse.json({ error: "Failed to look up task" }, { status: 500 });
+  }
   if (!existing) {
     return NextResponse.json({ error: "Task not found" }, { status: 404 });
   }
@@ -143,13 +149,19 @@ export async function DELETE(
 
   const { id } = await params;
 
-  // タスクが自分の組織のものか確認
-  const { data: existing } = await supabase
+  // タスクが自分の組織のものか確認。#122: real な query error と「行なし」を
+  // 区別する。maybeSingle は 0 行で {data:null, error:null} を返すので、error は
+  // DB 障害時のみ立つ。これを 404 に潰すと outage が「タスク無し」に偽装され、
+  // 監視・自動リトライが効かなくなる。
+  const { data: existing, error: existingError } = await supabase
     .from("tasks")
     .select("id, org_id")
     .eq("id", id)
-    .single();
+    .maybeSingle();
 
+  if (existingError) {
+    return NextResponse.json({ error: "Failed to look up task" }, { status: 500 });
+  }
   if (!existing) {
     return NextResponse.json({ error: "Task not found" }, { status: 404 });
   }

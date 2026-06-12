@@ -28,13 +28,15 @@ export async function GET(request: Request) {
     .from("org_members")
     .select("org_id")
     .eq("user_id", user.id)
-    .eq("status", "active");
+    .eq("status", "active")
+    .order("invited_at", { ascending: true });
 
   // ownerとして作成した組織も含める
   const { data: ownedOrgs } = await supabase
     .from("organizations")
     .select("id")
-    .eq("owner_id", user.id);
+    .eq("owner_id", user.id)
+    .order("created_at", { ascending: true });
 
   const orgIds = Array.from(
     new Set([
