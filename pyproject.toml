@@ -86,7 +86,7 @@ alibaba = [
     "requests>=2.33.1",
 ]
 oci = [
-    "oci>=2.0",
+    "oci>=2.175.0",
 ]
 onprem = [
     "pynetbox>=7.0",
@@ -100,7 +100,7 @@ all-clouds = [
     "alibabacloud-ecs20140526>=3.0",
     "alibabacloud-rds20140815>=3.0",
     "alibabacloud-slb20140515>=3.0",
-    "oci>=2.0",
+    "oci>=2.175.0",
     "pynetbox>=7.0",
 ]
 pdf = [
