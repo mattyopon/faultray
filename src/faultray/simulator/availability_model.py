@@ -72,6 +72,49 @@ class AvailabilityLayer:
     details: dict[str, float]  # per-component or per-factor breakdown
 
 
+def _compose_layers(
+    layers: list[tuple[str, AvailabilityLayer]],
+) -> tuple[float, float, str]:
+    """Compose categorical layers into ``(floor, ceiling, weakest_layer)``.
+
+    ceiling — min-composition (weakest link): valid when a single underlying
+        incident degrades multiple layers together (correlated failures).
+        This is the *optimistic* end of the range.
+    floor — classical series-product: valid when layers fail independently.
+        This is the *conservative* end of the range.
+
+    Neither operator is universally correct, so both are reported and the
+    gap quantifies sensitivity to the independence assumption. Capacity
+    planning should be done against the floor.
+    """
+    if not layers:
+        return 0.0, 0.0, "none"
+    ceiling = 1.0
+    floor = 1.0
+    weakest = layers[0][0]
+    for name, layer in layers:
+        if layer.availability < ceiling:
+            ceiling = layer.availability
+            weakest = name
+        floor *= layer.availability
+    return max(0.0, min(1.0, floor)), max(0.0, min(1.0, ceiling)), weakest
+
+
+def _range_summary_lines(
+    floor: float, ceiling: float, weakest: str
+) -> list[str]:
+    """Render the floor/ceiling range for ``summary`` output."""
+    return [
+        "  " + "-" * 58,
+        "  System range (plan against the floor):",
+        f"    Floor   (series-product, conservative): {_to_nines(floor):.2f} nines "
+        f"({floor * 100:.6f}%) — {_annual_downtime(floor):.0f}s/year",
+        f"    Ceiling (min-composition, optimistic):   {_to_nines(ceiling):.2f} nines "
+        f"({ceiling * 100:.6f}%) — {_annual_downtime(ceiling):.0f}s/year",
+        f"    Weakest layer: {weakest}",
+    ]
+
+
 @dataclass
 class ThreeLayerResult:
     """Complete 3-Layer Availability Limit Model result."""
@@ -80,8 +123,31 @@ class ThreeLayerResult:
     layer2_hardware: AvailabilityLayer
     layer3_theoretical: AvailabilityLayer
 
+    def _layers(self) -> list[tuple[str, AvailabilityLayer]]:
+        return [
+            ("layer1_software", self.layer1_software),
+            ("layer2_hardware", self.layer2_hardware),
+            ("layer3_theoretical", self.layer3_theoretical),
+        ]
+
+    @property
+    def system_floor(self) -> float:
+        """Conservative lower bound: series-product across layers."""
+        return _compose_layers(self._layers())[0]
+
+    @property
+    def system_ceiling(self) -> float:
+        """Optimistic upper bound: min-composition across layers."""
+        return _compose_layers(self._layers())[1]
+
+    @property
+    def weakest_layer(self) -> str:
+        """Name of the layer that determines the min-composition ceiling."""
+        return _compose_layers(self._layers())[2]
+
     @property
     def summary(self) -> str:
+        floor, ceiling, weakest = _compose_layers(self._layers())
         lines = [
             "3-Layer Availability Limit Model",
             "=" * 50,
@@ -95,6 +161,7 @@ class ThreeLayerResult:
             f"({self.layer3_theoretical.availability * 100:.6f}%) "
             f"— {self.layer3_theoretical.annual_downtime_seconds:.0f}s/year",
         ]
+        lines.extend(_range_summary_lines(floor, ceiling, weakest))
         return "\n".join(lines)
 
 
@@ -108,8 +175,33 @@ class FiveLayerResult:
     layer4_operational: AvailabilityLayer
     layer5_external: AvailabilityLayer
 
+    def _layers(self) -> list[tuple[str, AvailabilityLayer]]:
+        return [
+            ("layer1_software", self.layer1_software),
+            ("layer2_hardware", self.layer2_hardware),
+            ("layer3_theoretical", self.layer3_theoretical),
+            ("layer4_operational", self.layer4_operational),
+            ("layer5_external", self.layer5_external),
+        ]
+
+    @property
+    def system_floor(self) -> float:
+        """Conservative lower bound: series-product across layers."""
+        return _compose_layers(self._layers())[0]
+
+    @property
+    def system_ceiling(self) -> float:
+        """Optimistic upper bound: min-composition across layers."""
+        return _compose_layers(self._layers())[1]
+
+    @property
+    def weakest_layer(self) -> str:
+        """Name of the layer that determines the min-composition ceiling."""
+        return _compose_layers(self._layers())[2]
+
     @property
     def summary(self) -> str:
+        floor, ceiling, weakest = _compose_layers(self._layers())
         lines = [
             "5-Layer Availability Limit Model",
             "=" * 60,
@@ -129,6 +221,7 @@ class FiveLayerResult:
             f"({self.layer5_external.availability * 100:.6f}%) "
             f"— {self.layer5_external.annual_downtime_seconds:.0f}s/year",
         ]
+        lines.extend(_range_summary_lines(floor, ceiling, weakest))
         return "\n".join(lines)
 
 

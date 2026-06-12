@@ -290,6 +290,22 @@ def _resolve_availability_layers() -> list[dict]:
             "availabilityPercent": round(_safe_float(layer.availability * 100), 6),
             "annualDowntimeSeconds": round(_safe_float(layer.annual_downtime_seconds), 1),
         })
+
+    # Composed system range: floor (series-product, conservative) and
+    # ceiling (min-composition, optimistic). Plan against the floor.
+    for name, avail in [
+        ("System Floor (series-product, conservative)", result.system_floor),
+        ("System Ceiling (min-composition, optimistic)", result.system_ceiling),
+    ]:
+        nines = -math.log10(1.0 - avail) if avail < 1.0 else 99.0
+        layers.append({
+            "name": name,
+            "nines": round(_safe_float(nines), 2),
+            "availabilityPercent": round(_safe_float(avail * 100), 6),
+            "annualDowntimeSeconds": round(
+                _safe_float((1.0 - avail) * 365.25 * 24 * 3600), 1
+            ),
+        })
     return layers
 
 

@@ -339,6 +339,19 @@ def _run_evaluation(
                 "annual_downtime_seconds": round(five_layer.layer5_external.annual_downtime_seconds, 0),
                 "description": five_layer.layer5_external.description,
             },
+            # Floor (series-product) and ceiling (min-composition) bound the
+            # system estimate; plan against the floor (conservative).
+            "system": {
+                "floor_percent": round(five_layer.system_floor * 100, 6),
+                "ceiling_percent": round(five_layer.system_ceiling * 100, 6),
+                "floor_annual_downtime_seconds": round(
+                    (1.0 - five_layer.system_floor) * 365.25 * 24 * 3600, 0
+                ),
+                "ceiling_annual_downtime_seconds": round(
+                    (1.0 - five_layer.system_ceiling) * 365.25 * 24 * 3600, 0
+                ),
+                "weakest_layer": five_layer.weakest_layer,
+            },
         }
         raw["five_layer"] = five_layer
     except Exception as e:
@@ -904,6 +917,17 @@ def _print_rich_report(evaluation_data: dict, ops_days: int) -> None:
             console.print(
                 f"     [{color}]{label:25s} {nines:.2f} nines "
                 f"({avail_pct:.4f}%) — {dt:.0f}s/year[/]"
+            )
+        system = limits.get("system", {})
+        if system:
+            console.print(
+                f"     [bold]System floor (conservative): "
+                f"{system.get('floor_percent', 0):.4f}% — plan against this[/]"
+            )
+            console.print(
+                f"     System ceiling (optimistic):  "
+                f"{system.get('ceiling_percent', 0):.4f}% "
+                f"(weakest layer: {system.get('weakest_layer', '?')})"
             )
 
     # 7. Resilience Score v2
