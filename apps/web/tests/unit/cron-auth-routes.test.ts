@@ -39,5 +39,15 @@ describe("L2: cron route authentication", () => {
       // `Bearer ${CRON_SECRET}` template literal in route code.
       expect(src).not.toMatch(/Bearer \$\{[^}]*[Ss]ecret/);
     });
+
+    it(`${name}: exports a GET handler (Vercel Cron invokes with GET)`, () => {
+      // Regression: vercel.json schedules these paths and Vercel Cron
+      // calls them with GET. A POST-only route answers 405 to every
+      // scheduled run — the job silently never executes.
+      const src = readFileSync(file, "utf-8");
+      expect(src).toMatch(
+        /export\s+(const\s+GET|async\s+function\s+GET|\{[^}]*\bGET\b)/
+      );
+    });
   }
 });

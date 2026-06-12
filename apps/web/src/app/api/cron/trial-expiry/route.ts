@@ -5,7 +5,7 @@ import { verifyCronAuth } from "@/lib/cron-auth";
 export const dynamic = "force-dynamic";
 
 /**
- * POST /api/cron/trial-expiry
+ * GET|POST /api/cron/trial-expiry
  *
  * Daily cron (see vercel.json crons).
  *
@@ -59,3 +59,9 @@ export async function POST(request: Request) {
 
   return NextResponse.json({ downgraded });
 }
+
+// Vercel Cron invokes cron paths with GET (attaching
+// `Authorization: Bearer ${CRON_SECRET}` automatically), so a POST-only
+// handler 405s every scheduled run and trials never get downgraded.
+// POST stays supported for manual/scripted invocation.
+export const GET = POST;

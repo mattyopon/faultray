@@ -7,8 +7,9 @@ import { verifyCronAuth } from "@/lib/cron-auth";
 export const dynamic = "force-dynamic";
 
 /**
- * POST /api/cron/trial-reminders
- * Called by Vercel Cron or external scheduler (daily).
+ * GET|POST /api/cron/trial-reminders
+ * Called by Vercel Cron (GET, daily — see vercel.json) or an external
+ * scheduler (POST).
  * Finds users whose trial ends in exactly 3 days and sends reminder emails.
  * Protected by CRON_SECRET + optional CRON_ALLOWED_IPS (#27).
  */
@@ -79,3 +80,9 @@ export async function POST(request: Request) {
 
   return NextResponse.json({ sent, total: users.length, errors: errors.length > 0 ? errors : undefined });
 }
+
+// Vercel Cron invokes cron paths with GET (attaching
+// `Authorization: Bearer ${CRON_SECRET}` automatically), so a POST-only
+// handler 405s every scheduled run and reminder emails never go out.
+// POST stays supported for manual/scripted invocation.
+export const GET = POST;

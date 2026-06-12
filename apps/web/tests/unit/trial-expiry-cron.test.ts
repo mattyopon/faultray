@@ -54,13 +54,17 @@ describe("L2: /api/cron/trial-expiry", () => {
     vi.resetModules();
   });
 
-  async function invoke(headers: Record<string, string> = {}) {
-    const { POST } = await import("@/app/api/cron/trial-expiry/route");
+  async function invoke(
+    headers: Record<string, string> = {},
+    method: "POST" | "GET" = "POST",
+  ) {
+    const route = await import("@/app/api/cron/trial-expiry/route");
+    const handler = method === "GET" ? route.GET : route.POST;
     const req = new Request("https://test.local/api/cron/trial-expiry", {
-      method: "POST",
+      method,
       headers,
     });
-    const res = await POST(req);
+    const res = await handler(req);
     const body = (await res.json()) as Record<string, unknown>;
     return { status: res.status, body };
   }
@@ -135,5 +139,24 @@ describe("L2: /api/cron/trial-expiry", () => {
   it("invokes the exact RPC function name", async () => {
     await invoke({ authorization: "Bearer test-secret" });
     expect(capturedRpcName).toBe("downgrade_expired_trials");
+  });
+
+  // Vercel Cron invokes the path with GET; a POST-only route 405s every
+  // scheduled run, so the GET handler is the one production actually uses.
+  it("GET (Vercel Cron) runs the downgrade with valid secret", async () => {
+    rpcResult = { data: [{ id: "u1", email: "u1@test.local" }], error: null };
+    const { status, body } = await invoke(
+      { authorization: "Bearer test-secret" },
+      "GET",
+    );
+    expect(status).toBe(200);
+    expect(body.downgraded).toBe(1);
+    expect(capturedRpcName).toBe("downgrade_expired_trials");
+  });
+
+  it("GET still requires the cron secret", async () => {
+    const { status } = await invoke({}, "GET");
+    expect(status).toBe(401);
+    expect(capturedRpcName).toBeNull();
   });
 });
