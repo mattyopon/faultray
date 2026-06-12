@@ -1,0 +1,123 @@
+name: Apply Supabase Migrations
+
+# Applies supabase/migrations/*.sql to the PRODUCTION database.
+#
+# Two triggers:
+#   - push to main touching supabase/migrations/** — applies only the files
+#     ADDED by that push (each migration runs exactly once, when it lands).
+#   - workflow_dispatch — apply explicitly named files (first run / re-runs /
+#     backfilling older migrations).
+#
+# Idempotency: applied versions are recorded in public.applied_migrations and
+# skipped on later runs, so re-running after a partial failure is safe. To
+# force a re-apply, delete the row for that version first.
+#
+# Requirements:
+#   - Secret SUPABASE_DB_URL: the **Session pooler** connection string from
+#     Supabase Dashboard → Connect (the direct db.<ref>.supabase.co host is
+#     IPv6-only on newer projects and GitHub-hosted runners have no IPv6).
+#   - Migration files must be transaction-safe (no CREATE INDEX CONCURRENTLY
+#     etc.) — each file is applied inside a single transaction together with
+#     its tracking-table insert.
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "supabase/migrations/**"
+  workflow_dispatch:
+    inputs:
+      files:
+        description: >-
+          Space-separated migration filenames under supabase/migrations/,
+          e.g. "019_audit_log_insert_and_vocabulary.sql"
+        required: true
+        type: string
+
+concurrency:
+  group: apply-supabase-migrations
+  cancel-in-progress: false
+
+jobs:
+  apply:
+    name: Apply migrations to production
+    runs-on: ubuntu-latest
+    env:
+      SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          # push trigger diffs HEAD^..HEAD to find newly added files
+          fetch-depth: 2
+
+      - name: Install PostgreSQL client
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y postgresql-client-16
+
+      - name: Resolve migration files
+        id: resolve
+        env:
+          # Interpolate the dispatch input via env, never inline in the
+          # script, so a crafted input cannot inject shell.
+          FILES_INPUT: ${{ inputs.files }}
+        run: |
+          set -euo pipefail
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            FILES="$FILES_INPUT"
+          else
+            # HEAD^..HEAD covers squash-merges and merge commits (first-parent
+            # diff). A direct push of several commits at once would only see
+            # the last one — use workflow_dispatch to backfill in that case.
+            FILES=$(git diff --name-only --diff-filter=A HEAD^ HEAD -- 'supabase/migrations/*.sql' \
+              | xargs -rn1 basename | sort | tr '\n' ' ')
+          fi
+          if [ -z "${FILES// /}" ]; then
+            echo "No newly added migration files in this push — nothing to do."
+          fi
+          # Validate: plain filenames only (no slashes or shell metachars),
+          # and they must exist. This runs BEFORE the names are written to
+          # the step output, so later ${{ }} interpolation is safe.
+          for f in $FILES; do
+            case "$f" in
+              (*[!0-9A-Za-z._-]*|"")
+                echo "::error::Invalid migration filename: $f"; exit 1 ;;
+            esac
+            if [ ! -f "supabase/migrations/$f" ]; then
+              echo "::error::supabase/migrations/$f does not exist"; exit 1
+            fi
+          done
+          echo "files=$FILES" >> "$GITHUB_OUTPUT"
+          echo "Will apply: ${FILES:-<none>}"
+
+      - name: Apply
+        if: steps.resolve.outputs.files != ''
+        run: |
+          set -euo pipefail
+          if [ -z "${SUPABASE_DB_URL:-}" ]; then
+            echo "::error::SUPABASE_DB_URL secret is not set (use the Session pooler connection string)"
+            exit 1
+          fi
+          # Tracking table (idempotent).
+          psql "$SUPABASE_DB_URL" -v ON_ERROR_STOP=1 -qc "
+            create table if not exists public.applied_migrations (
+              version    text primary key,
+              applied_at timestamptz not null default now()
+            );"
+          for f in ${{ steps.resolve.outputs.files }}; do
+            ver="${f%.sql}"
+            done_already=$(psql "$SUPABASE_DB_URL" -tAc \
+              "select 1 from public.applied_migrations where version = '$ver'")
+            if [ "$done_already" = "1" ]; then
+              echo "== $f already applied — skipping"
+              continue
+            fi
+            echo "== applying $f =="
+            # File + tracking insert run in ONE transaction: either the
+            # migration lands and is recorded, or neither happens.
+            psql "$SUPABASE_DB_URL" -v ON_ERROR_STOP=1 --single-transaction \
+              -f "supabase/migrations/$f" \
+              -v ver="$ver" \
+              -c "insert into public.applied_migrations(version) values (:'ver');"
+            echo "== $f applied =="
+          done
