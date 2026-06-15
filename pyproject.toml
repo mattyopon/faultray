@@ -64,7 +64,7 @@ aws = [
 gcp = [
     "google-cloud-compute>=1.0",
     "google-cloud-sql-admin>=1.0",
-    "google-cloud-redis>=2.0",
+    "google-cloud-redis>=2.21.0",
     "google-cloud-storage>=2.0",
 ]
 azure = [
