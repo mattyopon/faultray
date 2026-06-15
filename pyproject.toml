@@ -107,7 +107,7 @@ pdf = [
     "fpdf2>=2.8",
 ]
 mcp = [
-    "mcp>=1.0,<1.28",
+    "mcp>=1.27.2,<1.28",
 ]
 # Streamlit UI (ui/streamlit_app.py). Mirrors the minimum set of runtime
 # deps that the Streamlit Cloud manifest (requirements.txt) also lists,
