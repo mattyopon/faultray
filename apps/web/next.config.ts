@@ -55,6 +55,10 @@ function buildCsp(): string {
 }
 
 const nextConfig: NextConfig = {
+  // SEC: do not advertise the framework. Next.js adds `X-Powered-By: Next.js`
+  // by default; setting this to false removes it.
+  // ZAP 10037 "Server Leaks Information via X-Powered-By" — Refs mattyopon/faultray#172
+  poweredByHeader: false,
   // Optional Upstash backend for src/lib/rate-limit.ts: these packages are
   // intentionally NOT in package.json (operator installs them to opt in).
   // Keep them out of the server bundle so the dynamic import becomes a
