@@ -1,7 +1,7 @@
 # FaultRay Streamlit UI — 最小依存関係
 # Streamlit Community Cloud での動作を考慮し、軽量な構成にしています
 
-streamlit>=1.35.0
+streamlit>=1.58.0
 pyyaml>=6.0.3
 
 # FaultRayエンジン（インストール済みの場合に使用）

@@ -113,7 +113,7 @@ mcp = [
 # deps that the Streamlit Cloud manifest (requirements.txt) also lists,
 # so `pip install -e ".[streamlit]"` reproduces that environment locally.
 streamlit = [
-    "streamlit>=1.35.0",
+    "streamlit>=1.58.0",
 ]
 dev = [
     "pytest>=8.0",

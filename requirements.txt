@@ -18,7 +18,7 @@
 #   2. Add it to pyproject.toml first; only mirror here if (1) holds.
 # Rationale: #85 (avoid drift between manifest and pyproject).
 # ============================================================
-streamlit>=1.35.0
+streamlit>=1.58.0
 pyyaml>=6.0.3
 networkx>=3.0
 pydantic>=2.0
