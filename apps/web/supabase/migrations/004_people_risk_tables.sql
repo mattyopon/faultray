@@ -19,14 +19,17 @@ create table if not exists public.companies (
 alter table public.companies enable row level security;
 
 -- 自分が所有する会社のみ参照可
+drop policy if exists "Owner can view own company" on public.companies;
 create policy "Owner can view own company"
   on public.companies for select
   using (owner_id = auth.uid());
 
+drop policy if exists "Owner can insert own company" on public.companies;
 create policy "Owner can insert own company"
   on public.companies for insert
   with check (owner_id = auth.uid());
 
+drop policy if exists "Owner can update own company" on public.companies;
 create policy "Owner can update own company"
   on public.companies for update
   using (owner_id = auth.uid())
@@ -47,6 +50,7 @@ create index if not exists idx_members_company on public.members(company_id);
 
 alter table public.members enable row level security;
 
+drop policy if exists "Company owner can view members" on public.members;
 create policy "Company owner can view members"
   on public.members for select
   using (
@@ -55,6 +59,7 @@ create policy "Company owner can view members"
     )
   );
 
+drop policy if exists "Company owner can insert members" on public.members;
 create policy "Company owner can insert members"
   on public.members for insert
   with check (
@@ -63,6 +68,7 @@ create policy "Company owner can insert members"
     )
   );
 
+drop policy if exists "Company owner can update members" on public.members;
 create policy "Company owner can update members"
   on public.members for update
   using (
@@ -76,6 +82,7 @@ create policy "Company owner can update members"
     )
   );
 
+drop policy if exists "Company owner can delete members" on public.members;
 create policy "Company owner can delete members"
   on public.members for delete
   using (
@@ -100,6 +107,7 @@ create index if not exists idx_systems_company on public.systems(company_id);
 
 alter table public.systems enable row level security;
 
+drop policy if exists "Company owner can view systems" on public.systems;
 create policy "Company owner can view systems"
   on public.systems for select
   using (
@@ -108,6 +116,7 @@ create policy "Company owner can view systems"
     )
   );
 
+drop policy if exists "Company owner can insert systems" on public.systems;
 create policy "Company owner can insert systems"
   on public.systems for insert
   with check (
@@ -116,6 +125,7 @@ create policy "Company owner can insert systems"
     )
   );
 
+drop policy if exists "Company owner can update systems" on public.systems;
 create policy "Company owner can update systems"
   on public.systems for update
   using (
@@ -129,6 +139,7 @@ create policy "Company owner can update systems"
     )
   );
 
+drop policy if exists "Company owner can delete systems" on public.systems;
 create policy "Company owner can delete systems"
   on public.systems for delete
   using (
@@ -155,6 +166,7 @@ create index if not exists idx_member_systems_system on public.member_systems(sy
 alter table public.member_systems enable row level security;
 
 -- member_systems の RLS: 所属する company_id を辿って判定
+drop policy if exists "Company owner can view member_systems" on public.member_systems;
 create policy "Company owner can view member_systems"
   on public.member_systems for select
   using (
@@ -165,6 +177,7 @@ create policy "Company owner can view member_systems"
     )
   );
 
+drop policy if exists "Company owner can insert member_systems" on public.member_systems;
 create policy "Company owner can insert member_systems"
   on public.member_systems for insert
   with check (
@@ -175,6 +188,7 @@ create policy "Company owner can insert member_systems"
     )
   );
 
+drop policy if exists "Company owner can update member_systems" on public.member_systems;
 create policy "Company owner can update member_systems"
   on public.member_systems for update
   using (
@@ -185,6 +199,7 @@ create policy "Company owner can update member_systems"
     )
   );
 
+drop policy if exists "Company owner can delete member_systems" on public.member_systems;
 create policy "Company owner can delete member_systems"
   on public.member_systems for delete
   using (
@@ -212,6 +227,7 @@ create index if not exists idx_actions_company on public.actions(company_id);
 
 alter table public.actions enable row level security;
 
+drop policy if exists "Company owner can view actions" on public.actions;
 create policy "Company owner can view actions"
   on public.actions for select
   using (
@@ -220,6 +236,7 @@ create policy "Company owner can view actions"
     )
   );
 
+drop policy if exists "Company owner can insert actions" on public.actions;
 create policy "Company owner can insert actions"
   on public.actions for insert
   with check (
@@ -228,6 +245,7 @@ create policy "Company owner can insert actions"
     )
   );
 
+drop policy if exists "Company owner can update actions" on public.actions;
 create policy "Company owner can update actions"
   on public.actions for update
   using (
@@ -241,6 +259,7 @@ create policy "Company owner can update actions"
     )
   );
 
+drop policy if exists "Company owner can delete actions" on public.actions;
 create policy "Company owner can delete actions"
   on public.actions for delete
   using (
@@ -265,6 +284,7 @@ create index if not exists idx_risk_snapshots_company on public.risk_snapshots(c
 
 alter table public.risk_snapshots enable row level security;
 
+drop policy if exists "Company owner can view risk_snapshots" on public.risk_snapshots;
 create policy "Company owner can view risk_snapshots"
   on public.risk_snapshots for select
   using (
@@ -273,6 +293,7 @@ create policy "Company owner can view risk_snapshots"
     )
   );
 
+drop policy if exists "Company owner can insert risk_snapshots" on public.risk_snapshots;
 create policy "Company owner can insert risk_snapshots"
   on public.risk_snapshots for insert
   with check (

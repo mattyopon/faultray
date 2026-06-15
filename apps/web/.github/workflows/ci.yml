@@ -197,6 +197,27 @@ jobs:
             exit 1
           fi
 
+      - name: Re-apply migrations (idempotency check)
+        # ISSUE-75 (item 1, idempotency half): re-run every migration a second time
+        # against the same Postgres instance. Migrations must be idempotent
+        # (IF NOT EXISTS / DROP ... IF EXISTS / CREATE OR REPLACE), so the second
+        # pass must succeed with no errors. A failure here means some DDL is not
+        # idempotent — the class of bug PR #67 fixed by hand.
+        #
+        # NOTE: runs AFTER the pgTAP tests on purpose. "Apply migrations" ends with
+        # a broad grant (to authenticated/service_role) that compensates for
+        # per-table REVOKEs (e.g. the #118 contact_requests lockdown); re-running
+        # the migrations alone does NOT re-run that compensating grant, so a
+        # double-apply leaves a different grant state. Running last keeps the
+        # idempotency check (migrations must not error on re-apply) while the pgTAP
+        # RLS tests observe the correct single-apply grant state.
+        run: |
+          set -euo pipefail
+          for f in supabase/migrations/*.sql; do
+            echo "== re-applying $f =="
+            psql -v ON_ERROR_STOP=1 -f "$f"
+          done
+
   build:
     name: Build Check
     runs-on: ubuntu-latest

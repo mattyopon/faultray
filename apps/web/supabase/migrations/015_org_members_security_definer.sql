@@ -110,20 +110,24 @@ create policy "Admins can invite"
 -- ── tasks: FOR ALL を SELECT/UPDATE/DELETE/INSERT に分離 + INSERT WITH CHECK ──
 drop policy if exists "Org members can manage tasks" on public.tasks;
 
+drop policy if exists "Org members can read tasks" on public.tasks;
 create policy "Org members can read tasks"
   on public.tasks for select
   using (org_id in (select public.user_org_ids()));
 
+drop policy if exists "Org members can update tasks" on public.tasks;
 create policy "Org members can update tasks"
   on public.tasks for update
   using (org_id in (select public.user_org_ids()));
 
+drop policy if exists "Org members can delete tasks" on public.tasks;
 create policy "Org members can delete tasks"
   on public.tasks for delete
   using (org_id in (select public.user_org_ids()));
 
 -- INSERT は created_by を auth.uid() に固定 (#70 finding 2)。
 -- 同時に org_id が active membership 内であることを要求。
+drop policy if exists "Org members can insert tasks" on public.tasks;
 create policy "Org members can insert tasks"
   on public.tasks for insert
   with check (

@@ -21,6 +21,14 @@
 --   外側で route が個別 cancel する (現状維持)。
 -- ============================================================
 
+-- Idempotency: migration 017 later re-creates this function with an extended
+-- return type (adds orgs_deleted / org_memberships_deleted / tasks_deleted).
+-- On a re-apply pass the existing function already has 017's signature, so a
+-- bare CREATE OR REPLACE here fails with "cannot change return type of existing
+-- function". Drop first (mirrors 017's own DROP → CREATE) so this migration is
+-- safely re-runnable. End-state schema is unchanged.
+drop function if exists public.delete_user_account(uuid);
+
 create or replace function public.delete_user_account(uid uuid)
 returns table (
   teams_deleted integer,

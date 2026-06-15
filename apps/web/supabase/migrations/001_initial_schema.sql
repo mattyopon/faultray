@@ -95,15 +95,18 @@ alter table public.billing_events enable row level security;
 alter table public.usage enable row level security;
 
 -- Profiles: users can read/update their own profile
+drop policy if exists "Users can view own profile" on public.profiles;
 create policy "Users can view own profile"
   on public.profiles for select
   using (auth.uid() = id);
 
+drop policy if exists "Users can update own profile" on public.profiles;
 create policy "Users can update own profile"
   on public.profiles for update
   using (auth.uid() = id);
 
 -- Teams: members can view their teams
+drop policy if exists "Team members can view teams" on public.teams;
 create policy "Team members can view teams"
   on public.teams for select
   using (
@@ -113,11 +116,13 @@ create policy "Team members can view teams"
     )
   );
 
+drop policy if exists "Users can create teams" on public.teams;
 create policy "Users can create teams"
   on public.teams for insert
   with check (owner_id = auth.uid());
 
 -- Team members: members can view team membership
+drop policy if exists "Members can view team members" on public.team_members;
 create policy "Members can view team members"
   on public.team_members for select
   using (
@@ -128,6 +133,7 @@ create policy "Members can view team members"
   );
 
 -- Projects: team members can view/create projects
+drop policy if exists "Team members can view projects" on public.projects;
 create policy "Team members can view projects"
   on public.projects for select
   using (
@@ -137,6 +143,7 @@ create policy "Team members can view projects"
     )
   );
 
+drop policy if exists "Team members can create projects" on public.projects;
 create policy "Team members can create projects"
   on public.projects for insert
   with check (
@@ -147,6 +154,7 @@ create policy "Team members can create projects"
   );
 
 -- Simulation runs: team members can view/create runs
+drop policy if exists "Team members can view runs" on public.simulation_runs;
 create policy "Team members can view runs"
   on public.simulation_runs for select
   using (
@@ -156,6 +164,7 @@ create policy "Team members can view runs"
     )
   );
 
+drop policy if exists "Team members can create runs" on public.simulation_runs;
 create policy "Team members can create runs"
   on public.simulation_runs for insert
   with check (
@@ -166,6 +175,7 @@ create policy "Team members can create runs"
   );
 
 -- Usage: team members can view usage
+drop policy if exists "Team members can view usage" on public.usage;
 create policy "Team members can view usage"
   on public.usage for select
   using (
@@ -176,6 +186,7 @@ create policy "Team members can view usage"
   );
 
 -- Billing events: team owners/admins can view
+drop policy if exists "Team admins can view billing" on public.billing_events;
 create policy "Team admins can view billing"
   on public.billing_events for select
   using (

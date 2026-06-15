@@ -81,7 +81,7 @@ alter table public.tasks
 -- caller backward-compatible。
 drop function if exists public.delete_user_account(uuid);
 
-create function public.delete_user_account(uid uuid)
+create or replace function public.delete_user_account(uid uuid)
 returns table (
   teams_deleted          integer,
   runs_deleted           integer,

@@ -52,10 +52,13 @@ alter table public.apm_metrics enable row level security;
 alter table public.apm_alerts enable row level security;
 
 -- Service role can do everything (used by API)
+drop policy if exists "Service role full access" on public.apm_agents;
 create policy "Service role full access" on public.apm_agents
   for all using (true) with check (true);
+drop policy if exists "Service role full access" on public.apm_metrics;
 create policy "Service role full access" on public.apm_metrics
   for all using (true) with check (true);
+drop policy if exists "Service role full access" on public.apm_alerts;
 create policy "Service role full access" on public.apm_alerts
   for all using (true) with check (true);
 
@@ -68,6 +71,7 @@ begin
 end;
 $$ language plpgsql;
 
+drop trigger if exists trg_update_agent_last_seen on public.apm_agents;
 create trigger trg_update_agent_last_seen
   before update on public.apm_agents
   for each row execute function update_agent_last_seen();

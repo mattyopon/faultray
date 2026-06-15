@@ -9,6 +9,7 @@
 -- (SELECT + UPDATE already exist from 001_initial_schema.sql)
 
 -- Allow users to delete their own profile (soft deletion; hard delete via /api/account/delete)
+drop policy if exists "Users can delete own profile" on public.profiles;
 create policy "Users can delete own profile"
   on public.profiles for delete
   using (auth.uid() = id);
@@ -18,6 +19,7 @@ create policy "Users can delete own profile"
 -- ============================================================
 
 -- Only team owner or admin can update team metadata
+drop policy if exists "Team owner can update team" on public.teams;
 create policy "Team owner can update team"
   on public.teams for update
   using (
@@ -28,6 +30,7 @@ create policy "Team owner can update team"
   );
 
 -- Only team owner can delete a team
+drop policy if exists "Team owner can delete team" on public.teams;
 create policy "Team owner can delete team"
   on public.teams for delete
   using (owner_id = auth.uid());
@@ -37,6 +40,7 @@ create policy "Team owner can delete team"
 -- ============================================================
 
 -- Team owners/admins can add members
+drop policy if exists "Team admins can insert team members" on public.team_members;
 create policy "Team admins can insert team members"
   on public.team_members for insert
   with check (
@@ -47,6 +51,7 @@ create policy "Team admins can insert team members"
   );
 
 -- Team owners/admins can update member roles
+drop policy if exists "Team admins can update team members" on public.team_members;
 create policy "Team admins can update team members"
   on public.team_members for update
   using (
@@ -57,6 +62,7 @@ create policy "Team admins can update team members"
   );
 
 -- Team owners/admins can remove members; members can remove themselves
+drop policy if exists "Team admins can delete team members" on public.team_members;
 create policy "Team admins can delete team members"
   on public.team_members for delete
   using (
@@ -72,6 +78,7 @@ create policy "Team admins can delete team members"
 -- ============================================================
 
 -- Team members can update their team's projects
+drop policy if exists "Team members can update projects" on public.projects;
 create policy "Team members can update projects"
   on public.projects for update
   using (
@@ -82,6 +89,7 @@ create policy "Team members can update projects"
   );
 
 -- Team owners/admins can delete projects
+drop policy if exists "Team admins can delete projects" on public.projects;
 create policy "Team admins can delete projects"
   on public.projects for delete
   using (
@@ -96,6 +104,7 @@ create policy "Team admins can delete projects"
 -- ============================================================
 
 -- Team owners/admins can delete runs
+drop policy if exists "Team admins can delete runs" on public.simulation_runs;
 create policy "Team admins can delete runs"
   on public.simulation_runs for delete
   using (
