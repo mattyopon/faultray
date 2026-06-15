@@ -98,6 +98,22 @@ const nextConfig: NextConfig = {
           { key: "X-Frame-Options", value: "DENY" },
           { key: "X-Content-Type-Options", value: "nosniff" },
           { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },
+          // ZAP #172: Cross-Origin-Opener-Policy isolates this top-level browsing
+          // context from cross-origin openers (Spectre / tab-nabbing mitigation).
+          // We use `same-origin-allow-popups` (NOT bare `same-origin`): the
+          // allow-popups form keeps a reference to popups WE open, so OAuth popup
+          // logins (Google / GitHub via Supabase) and Stripe popups keep working,
+          // while still severing the opener link for cross-origin pages that open us.
+          {
+            key: "Cross-Origin-Opener-Policy",
+            value: "same-origin-allow-popups",
+          },
+          // ZAP #172: Cross-Origin-Embedder-Policy (COEP: require-corp) is
+          // intentionally DEFERRED. Enabling it would force every cross-origin
+          // resource (Supabase, Stripe, Google Fonts, GA4/Hotjar, OG images) to
+          // opt in via a Cross-Origin-Resource-Policy / CORP header; any resource
+          // that does not would be blocked, almost certainly breaking the app.
+          // Tracked separately in mattyopon/faultray#172 (follow-up).
           // SEC-03: Strict CSP — replaces the previous frame-ancestors-only policy
           {
             key: "Content-Security-Policy",

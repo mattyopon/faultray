@@ -31,6 +31,19 @@ describe("L8: Content Security Policy", () => {
     expect(configContent).toContain("frame-ancestors 'none'");
   });
 
+  it("sets Cross-Origin-Opener-Policy as same-origin-allow-popups (ZAP #172)", () => {
+    // allow-popups preserves OAuth popup logins; bare same-origin would break them.
+    expect(configContent).toContain("Cross-Origin-Opener-Policy");
+    expect(configContent).toContain("same-origin-allow-popups");
+  });
+
+  it("does NOT enable Cross-Origin-Embedder-Policy / require-corp (deferred, ZAP #172)", () => {
+    // COEP would force CORP opt-in on every cross-origin resource and break the app.
+    // Assert it is not set as a response header KEY. (The deferral rationale in
+    // next.config.ts mentions "require-corp" in a comment, so don't grep raw text.)
+    expect(configContent).not.toMatch(/key:\s*["']Cross-Origin-Embedder-Policy["']/);
+  });
+
   it("applies headers to all routes", () => {
     // The source pattern should cover all routes
     expect(configContent).toMatch(/source:\s*["']\/(.*?)["']/);
