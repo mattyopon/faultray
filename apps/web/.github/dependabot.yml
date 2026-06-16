@@ -9,6 +9,14 @@ updates:
       interval: "weekly"
       day: "monday"
     open-pull-requests-limit: 5
+    # eslint 10 is not yet supported by eslint-config-next's bundled plugins
+    # (eslint-plugin-react/import/jsx-a11y still peer-require eslint <= 9, and
+    # eslint-plugin-react crashes on eslint 10: "getFilename is not a function").
+    # Hold eslint at v9 so the grouped dev-dependencies PR stays mergeable;
+    # remove this once eslint-config-next ships eslint 10 compatibility.
+    ignore:
+      - dependency-name: "eslint"
+        update-types: ["version-update:semver-major"]
     # Group dev dependencies into a single PR so security noise stays low.
     # Runtime deps (Next.js / React / Supabase / Stripe) ship individual PRs
     # for visibility.
