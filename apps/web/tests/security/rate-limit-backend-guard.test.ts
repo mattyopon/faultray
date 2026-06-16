@@ -59,4 +59,46 @@ describe("#116: production rate-limit backend guard", () => {
       }).ok
     ).toBe(false);
   });
+
+  describe("ALLOW_INMEMORY_RATELIMIT opt-out", () => {
+    it("unblocks a production build (with a warning) when explicitly set", () => {
+      for (const v of ["1", "true", "TRUE", " true "]) {
+        const r = evaluateRateLimitBackend({
+          VERCEL_ENV: "production",
+          ALLOW_INMEMORY_RATELIMIT: v,
+        });
+        expect(r.ok, `value=${JSON.stringify(v)}`).toBe(true);
+        expect(r.warn, `value=${JSON.stringify(v)}`).toBe(true);
+      }
+    });
+
+    it("does NOT opt out for falsy / unrelated values — block stays the default", () => {
+      for (const v of ["", "0", "false", "no", "yes", "enabled"]) {
+        const r = evaluateRateLimitBackend({
+          VERCEL_ENV: "production",
+          ALLOW_INMEMORY_RATELIMIT: v,
+        });
+        expect(r.ok, `value=${JSON.stringify(v)}`).toBe(false);
+      }
+    });
+
+    it("prefers a real Upstash backend over the opt-out (no spurious warning)", () => {
+      const r = evaluateRateLimitBackend({
+        VERCEL_ENV: "production",
+        ALLOW_INMEMORY_RATELIMIT: "1",
+        UPSTASH_REDIS_REST_URL: "https://example.upstash.io",
+        UPSTASH_REDIS_REST_TOKEN: "tkn", // pragma: allowlist secret
+      });
+      expect(r.ok).toBe(true);
+      expect(r.warn).toBe(false);
+    });
+
+    it("stays a no-op outside production even when the opt-out is set", () => {
+      const r = evaluateRateLimitBackend({
+        VERCEL_ENV: "preview",
+        ALLOW_INMEMORY_RATELIMIT: "1",
+      });
+      expect(r).toMatchObject({ ok: true, enforced: false, warn: false });
+    });
+  });
 });
