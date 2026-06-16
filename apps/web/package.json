@@ -4,6 +4,7 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
+    "prebuild": "node scripts/check-rate-limit-backend.mjs",
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
@@ -21,6 +22,8 @@
   "dependencies": {
     "@supabase/ssr": "^0.10.3",
     "@supabase/supabase-js": "^2.108.2",
+    "@upstash/ratelimit": "^2.0.8",
+    "@upstash/redis": "^1.38.0",
     "clsx": "^2.1.1",
     "lucide-react": "^1.14.0",
     "next": "^16.2.9",

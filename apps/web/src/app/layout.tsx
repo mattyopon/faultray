@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { headers } from "next/headers";
 import { Inter, Noto_Sans_JP, Geist_Mono } from "next/font/google";
 import Script from "next/script";
 import { AuthProvider } from "@/components/auth-provider";
@@ -150,7 +151,16 @@ const jsonLd = [
   },
 ];
 
-export default function RootLayout({
+// #32 / #85: strict (nonce-based) CSP is staged behind FAULTRAY_CSP_STRICT.
+// When on, the layout reads the per-request nonce (set by src/proxy.ts) and
+// stamps it on every executable inline / third-party <script>, and reading
+// headers() opts the tree into dynamic rendering — which nonce-based CSP
+// requires. When off, we skip headers() entirely so static rendering (and CDN
+// caching) is preserved and scripts run under the historical 'unsafe-inline'
+// policy. See docs/csp-nonce-plan.md.
+const STRICT_CSP = process.env.FAULTRAY_CSP_STRICT === "1";
+
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
@@ -160,6 +170,10 @@ export default function RootLayout({
   // Validate as numeric-only to prevent XSS via env var injection
   const rawHotjarId = process.env.NEXT_PUBLIC_HOTJAR_ID;
   const hotjarId = rawHotjarId && /^\d+$/.test(rawHotjarId) ? rawHotjarId : undefined;
+
+  const nonce = STRICT_CSP
+    ? ((await headers()).get("x-faultray-nonce") ?? undefined)
+    : undefined;
 
   // I18N-04: Detect locale from cookie/Accept-Language for html lang attribute
   // Falls back to "en" for root layout; locale-specific layouts override via their own html element
@@ -180,6 +194,7 @@ export default function RootLayout({
             attacker-controlled value in jsonLd can never terminate the script tag early. */}
         <script
           type="application/ld+json"
+          nonce={nonce}
           dangerouslySetInnerHTML={{
             __html: JSON.stringify(jsonLd)
               .replace(/</g, "\\u003c")
@@ -195,8 +210,9 @@ export default function RootLayout({
             <Script
               src={`https://www.googletagmanager.com/gtag/js?id=${gaId}`}
               strategy="afterInteractive"
+              nonce={nonce}
             />
-            <Script id="ga4-init" strategy="afterInteractive">
+            <Script id="ga4-init" strategy="afterInteractive" nonce={nonce}>
               {`
                 (function(){
                   var consent = typeof localStorage !== 'undefined'
@@ -214,7 +230,7 @@ export default function RootLayout({
         )}
         {/* ANALYTICS-04: Hotjar — heatmap & session recording (consent-gated) */}
         {hotjarId && (
-          <Script id="hotjar-init" strategy="afterInteractive">
+          <Script id="hotjar-init" strategy="afterInteractive" nonce={nonce}>
             {`(function(){
               var consent=typeof localStorage!=='undefined'?localStorage.getItem('faultray_cookie_consent'):null;
               if(consent!=='accepted')return;
@@ -231,6 +247,7 @@ export default function RootLayout({
         )}
         {/* Inline script runs before React hydration — prevents layout shift */}
         <script
+          nonce={nonce}
           dangerouslySetInnerHTML={{
             __html: `(function(){
               var p=window.location.pathname;

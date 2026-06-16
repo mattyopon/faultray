@@ -5,6 +5,7 @@
 import { describe, it, expect } from "vitest";
 import { readFileSync } from "fs";
 import path from "path";
+import { buildCsp } from "../../src/lib/csp";
 
 const configPath = path.resolve(__dirname, "../../next.config.ts");
 
@@ -26,9 +27,15 @@ describe("L8: Content Security Policy", () => {
     expect(configContent).toContain("strict-origin-when-cross-origin");
   });
 
-  it("sets Content-Security-Policy with frame-ancestors", () => {
-    expect(configContent).toContain("Content-Security-Policy");
-    expect(configContent).toContain("frame-ancestors 'none'");
+  it("builds a Content-Security-Policy with frame-ancestors (now served by proxy.ts)", () => {
+    // CSP moved out of next.config.ts into src/lib/csp.ts / src/proxy.ts so it
+    // can carry a per-request nonce. The default (non-strict) policy must still
+    // include the clickjacking guard.
+    const csp = buildCsp({ strict: false, isDev: false, supabaseOrigin: "" });
+    expect(csp).toContain("frame-ancestors 'none'");
+    // And next.config must NOT also emit a CSP header (that would intersect two
+    // policies in the browser).
+    expect(configContent).not.toMatch(/key:\s*["']Content-Security-Policy["']/);
   });
 
   it("sets Cross-Origin-Opener-Policy as same-origin-allow-popups (ZAP #172)", () => {

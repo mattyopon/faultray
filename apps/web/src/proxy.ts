@@ -1,5 +1,6 @@
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
+import { buildCsp } from "@/lib/csp";
 
 const locales = ["en", "ja", "de", "fr", "zh", "ko", "es", "pt"];
 const defaultLocale = "en";
@@ -93,13 +94,41 @@ export async function proxy(request: NextRequest) {
     return new NextResponse("Forbidden", { status: 403 });
   }
 
-  // #32 CSP nonce scaffold — generate per-request nonce and expose via
-  // the `x-faultray-nonce` request header so the root layout / <Script>
-  // tags can consume it. Docs: docs/csp-nonce-plan.md
+  // #32 / #85 CSP nonce — generate a per-request nonce and own the
+  // Content-Security-Policy header here (next.config.ts no longer sets it).
+  // Docs: docs/csp-nonce-plan.md
   const _nonceBytes = new Uint8Array(16);
   crypto.getRandomValues(_nonceBytes);
   const nonce = Buffer.from(_nonceBytes).toString("base64");
+
+  // Strict (nonce-based) CSP is staged behind FAULTRAY_CSP_STRICT so the
+  // 'unsafe-inline' removal can be verified on a preview before becoming the
+  // production default (see docs/csp-nonce-plan.md, Phase 3). When the flag is
+  // off, buildCsp() returns the historical 'unsafe-inline' policy unchanged.
+  const strictCsp = process.env.FAULTRAY_CSP_STRICT === "1";
+  const cspValue = buildCsp({
+    strict: strictCsp,
+    isDev: process.env.NODE_ENV === "development",
+    supabaseOrigin: (process.env.NEXT_PUBLIC_SUPABASE_URL ?? "").replace(/\/$/, ""),
+    nonce,
+  });
+
+  // Expose the nonce to the rendering layer so the root layout / <Script> tags
+  // can stamp it on executable inline scripts. In strict mode also forward the
+  // CSP on the *request* so Next.js auto-applies the nonce to its own framework
+  // and inline scripts (it parses `'nonce-…'` out of the request CSP header).
   request.headers.set("x-faultray-nonce", nonce);
+  if (strictCsp) {
+    request.headers.set("content-security-policy", cspValue);
+  }
+
+  // Apply the response CSP to browser-facing document responses. Redirects and
+  // the IP-block/oversize early returns don't carry a rendered document, so the
+  // CSP is set on the pass-through / authenticated responses below.
+  const withCsp = (res: NextResponse): NextResponse => {
+    res.headers.set("Content-Security-Policy", cspValue);
+    return res;
+  };
 
   const { pathname } = request.nextUrl;
 
@@ -164,7 +193,7 @@ export async function proxy(request: NextRequest) {
 
   // If Supabase is not configured, pass through
   if (!supabaseUrl || !supabaseKey) {
-    return NextResponse.next();
+    return withCsp(NextResponse.next({ request }));
   }
 
   let supabaseResponse = NextResponse.next({ request });
@@ -210,7 +239,7 @@ export async function proxy(request: NextRequest) {
     return NextResponse.redirect(url);
   }
 
-  return supabaseResponse;
+  return withCsp(supabaseResponse);
 }
 
 export const config = {

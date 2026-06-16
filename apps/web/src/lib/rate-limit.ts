@@ -2,14 +2,17 @@
  * Rate limiter for Next.js API routes (#25).
  *
  * Strategy:
- *   1. If UPSTASH_REDIS_REST_URL + UPSTASH_REDIS_REST_TOKEN are set
- *      AND @upstash/ratelimit is installed → use the distributed
- *      token-bucket backend that works across Vercel serverless
- *      invocations.
- *   2. Else → fall back to the in-memory sliding window. This path
- *      is only effective on single-process deployments (local dev,
- *      self-hosted). Vercel serverless per-instance processes will
- *      **not** share counters — documented limitation.
+ *   1. If UPSTASH_REDIS_REST_URL + UPSTASH_REDIS_REST_TOKEN are set →
+ *      use the distributed sliding-window backend (@upstash/ratelimit +
+ *      @upstash/redis, first-class deps as of #116) that shares counters
+ *      across Vercel serverless invocations.
+ *   2. Else → fall back to the in-memory sliding window. This path is only
+ *      effective on single-process deployments (local dev, self-hosted).
+ *      Vercel serverless per-instance processes do **not** share counters.
+ *      To stop production from silently shipping on this fallback, a
+ *      build-time guard (scripts/check-rate-limit-backend.mjs, wired as the
+ *      `prebuild` step) fails a Vercel production build when the Upstash env
+ *      is absent (#116). The runtime request path is unchanged.
  *
  * The public API (applyRateLimit, rateLimit, getClientIp) is stable
  * across both backends.
@@ -55,17 +58,23 @@ async function _getUpstashClient(): Promise<unknown | null> {
   }
 
   try {
-    // Dynamic import so the dependency stays optional. Expect-error on
-    // both lines because these packages are not in package.json — the
-    // operator installs them only when opting into Upstash backend.
-    // @ts-expect-error optional-peer-dep
+    // Lazy dynamic import: only pull the Upstash SDK into the runtime when the
+    // backend is actually configured, keeping cold-starts light on the
+    // in-memory path. The packages are first-class dependencies (#116), so no
+    // optional-peer-dep / @ts-expect-error handling is needed.
     const { Ratelimit } = await import("@upstash/ratelimit");
-    // @ts-expect-error optional-peer-dep
     const { Redis } = await import("@upstash/redis");
     const redis = new Redis({ url, token });
     _upstashClient = { Ratelimit, redis };
     return _upstashClient;
-  } catch {
+  } catch (err) {
+    // The env is configured but client init failed (bad URL/token, network).
+    // Surface it rather than silently degrading to the per-instance limiter.
+    console.error(
+      "[rate-limit] Upstash backend init failed despite configuration — " +
+        "falling back to in-memory:",
+      err instanceof Error ? err.message : err
+    );
     _upstashUnavailable = true;
     return null;
   }

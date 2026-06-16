@@ -1,78 +1,22 @@
 import type { NextConfig } from "next";
 
-// SEC-03: Build a strict Content-Security-Policy.
-// Each source list is intentionally minimal — only domains actually loaded by the app.
-//
-// default-src 'self'            — fallback: block everything not listed below
-// script-src                    — Next.js inline chunks + GA4 + Hotjar + Stripe
-// style-src                     — Next.js injects inline <style> tags at runtime
-// img-src                       — self, data URIs, OG images served via Vercel image optimizer,
-//                                 Google/Hotjar tracking pixels
-// font-src                      — Google Fonts static assets
-// connect-src                   — Supabase API, GA4 collect, Hotjar ingestion, Stripe API
-// frame-src                     — Stripe hosted fields run inside an iframe
-// frame-ancestors 'none'        — prevent clickjacking (redundant with X-Frame-Options: DENY)
-// base-uri 'self'               — prevent <base href> hijack
-// form-action 'self'            — prevent form POST to attacker origin
-// upgrade-insecure-requests     — force HTTPS for mixed-content resources
-function buildCsp(): string {
-  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL ?? "";
-  // Strip trailing slash for use as a CSP source
-  const supabaseOrigin = supabaseUrl.replace(/\/$/, "");
-
-  const directives: string[] = [
-    "default-src 'self'",
-    // TODO: nonce-based CSPに移行すべき。nonce-basedにすれば 'unsafe-inline' を除去できる。
-    // ただし Next.js の静的エクスポートおよびインラインスクリプト注入との互換性のために
-    // 現状は 'unsafe-inline' を維持している。移行にはカスタムサーバー or middleware での
-    // nonce生成と、すべてのインライン <script> / <style> への nonce属性付与が必要。
-    // 参照: https://nextjs.org/docs/app/building-your-application/configuring/content-security-policy
-    "script-src 'self' 'unsafe-inline' https://www.googletagmanager.com https://static.hotjar.com https://script.hotjar.com https://js.stripe.com",
-    "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
-    "img-src 'self' data: blob: https://faultray.com https://www.google-analytics.com https://www.googletagmanager.com https://*.hotjar.com",
-    "font-src 'self' https://fonts.gstatic.com",
-    [
-      "connect-src 'self'",
-      supabaseOrigin,
-      "https://www.google-analytics.com",
-      "https://analytics.google.com",
-      "https://stats.g.doubleclick.net",
-      "https://*.hotjar.com",
-      "https://*.hotjar.io",
-      "wss://*.hotjar.com",
-      "https://api.stripe.com",
-    ]
-      .filter(Boolean)
-      .join(" "),
-    "frame-src https://js.stripe.com https://hooks.stripe.com",
-    "frame-ancestors 'none'",
-    "base-uri 'self'",
-    "form-action 'self'",
-    "upgrade-insecure-requests",
-  ];
-
-  return directives.join("; ");
-}
+// SEC-03 / #32 / #85: the Content-Security-Policy is now generated per request
+// in src/proxy.ts (so it can carry a per-request nonce under FAULTRAY_CSP_STRICT
+// and remove 'unsafe-inline'). It is intentionally NOT set here — a static
+// next.config header cannot vary per request, and setting CSP in both places
+// would emit two CSP headers that the browser enforces as their intersection.
+// See src/lib/csp.ts (buildCsp) and docs/csp-nonce-plan.md.
 
 const nextConfig: NextConfig = {
   // SEC: do not advertise the framework. Next.js adds `X-Powered-By: Next.js`
   // by default; setting this to false removes it.
   // ZAP 10037 "Server Leaks Information via X-Powered-By" — Refs mattyopon/faultray#172
   poweredByHeader: false,
-  // Optional Upstash backend for src/lib/rate-limit.ts: these packages are
-  // intentionally NOT in package.json (operator installs them to opt in).
-  // Keep them out of the server bundle so the dynamic import becomes a
-  // runtime require (guarded by try/catch), and suppress the expected
-  // module-not-found build warning when they are absent.
+  // #116: the Upstash rate-limit backend (@upstash/ratelimit + @upstash/redis)
+  // are first-class dependencies. Keep them server-external so they are loaded
+  // at runtime (only when UPSTASH_* env is configured, via the lazy dynamic
+  // import in src/lib/rate-limit.ts) rather than bundled into every server chunk.
   serverExternalPackages: ["@upstash/ratelimit", "@upstash/redis"],
-  turbopack: {
-    ignoreIssue: [
-      {
-        path: "**/src/lib/rate-limit.ts",
-        title: /Module not found/,
-      },
-    ],
-  },
   async headers() {
     // #88 (P3-4): CORS allowlist を server-only env で管理する。
     //   ALLOWED_ORIGIN : single origin。next.config.ts の static header は
@@ -114,11 +58,10 @@ const nextConfig: NextConfig = {
           // opt in via a Cross-Origin-Resource-Policy / CORP header; any resource
           // that does not would be blocked, almost certainly breaking the app.
           // Tracked separately in mattyopon/faultray#172 (follow-up).
-          // SEC-03: Strict CSP — replaces the previous frame-ancestors-only policy
-          {
-            key: "Content-Security-Policy",
-            value: buildCsp(),
-          },
+          //
+          // Content-Security-Policy is set per request in src/proxy.ts (nonce
+          // support under FAULTRAY_CSP_STRICT), not here — see the note at the
+          // top of this file.
           // SEC-04: Prevent MIME-type sniffing attacks on downloads
           { key: "X-DNS-Prefetch-Control", value: "on" },
           // SEC-05: Strict Transport Security (max-age 1 year, include subdomains)
