@@ -1,0 +1,47 @@
+-- 022: profiles に subscription_event_at を追加し、Stripe webhook の
+--      last-write-wins / TOCTOU (#82 / P2-4, epic #77) を DB-atomic に防ぐ。
+-- ----------------------------------------------------------------------------
+-- 背景:
+--   並列イベント (例: invoice.payment_succeeded と customer.subscription.deleted
+--   が同時到着) や遅延リトライで、古い event が新しい state を上書きし、
+--   profiles.plan / subscription_status が Stripe の真の最新と乖離する。
+--
+-- 設計 (Codex review で best-effort ledger gate から作り替え):
+--   - profiles に subscription_event_at (= その profile を最後に変更した Stripe
+--     event の event.created を timestamptz 化した値) を nullable で追加。
+--   - webhook の plan/status 更新は条件付き UPDATE
+--       UPDATE profiles
+--          SET ..., subscription_event_at = :incoming
+--        WHERE id = :id
+--          AND (subscription_event_at IS NULL OR subscription_event_at <= :incoming)
+--     とし、incoming event が「最後に適用した event 以降」のときだけ適用する。
+--     述語評価と書き込みが 1 つの atomic statement なので、同一 customer に対する
+--     新旧 event が同時に in-flight でも順序が逆転しない (processed 済み行に依存
+--     する ledger ベースの best-effort gate と違い、true な per-row serializer)。
+--   - 既存行は backfill しない (NULL のまま)。NULL は「未記録 = 適用」に倒れる
+--     ので、移行直後の active customer は次の event で自然に高水位を確立する。
+--
+-- 受容する移行ウィンドウ residual (Codex review, 採用判断: 受容して明記):
+--   既存 profile の高水位は移行時 NULL なので、ロールアウト後の最初の mutating
+--   event は遅延した古い event でも `IS NULL` ガードを通過して適用される。理論上、
+--   各 customer が次の event を受け取るまでの間、初見の古い event が状態を巻き戻し
+--   うる。SQL だけでこれを直す方法は無い:
+--     * processed_at / now() で backfill すると、人工的に高い高水位を作り、実際には
+--       より新しい遅延 event が恒久 skip される (Codex 1巡目の別指摘と相互排他)。
+--     * DB には各 profile の「真の最終 event.created」が無い。
+--   緩和要因: idempotency ledger (processed_stripe_events) が処理済み event を
+--   dedup するため、再送される旧 event の大半は updateUserPlan に到達しない。影響は
+--   ロールアウト直後のウィンドウに限定され、各 customer の次 event で自動補正される。
+--   ウィンドウを完全に無くしたい場合は、全顧客の最新 Stripe イベント時刻を Stripe API
+--   から取得して subscription_event_at を埋める一回限りの運用 backfill を別途行う
+--   (本 migration の scope 外)。
+--
+-- セキュリティ (billing-bypass 防止, epic #77 P1-1):
+--   013 の column-level GRANT は authenticated に email/full_name/avatar_url/
+--   notification_preferences のみ UPDATE を許可している。新規列 subscription_event_at
+--   はその whitelist に含まれないため、authenticated/anon は書き込めない
+--   (plan/subscription_status と同様 service_role 専用)。追加の REVOKE は不要。
+-- ----------------------------------------------------------------------------
+
+alter table public.profiles
+  add column if not exists subscription_event_at timestamptz;

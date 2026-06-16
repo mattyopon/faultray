@@ -53,8 +53,14 @@ describe("L2: stripe webhook plan-preserve (#112)", () => {
     expect(src).toMatch(/let\s+resolvedPlan:\s*PlanTier\s*\|\s*null\s*=\s*null/);
   });
 
-  it("payment_succeeded assigns resolvedPlan from plan without paid-tier fallback", () => {
+  it("payment_succeeded resolves resolvedPlan via price→metadata fallback, no paid-tier default (#112/#144)", () => {
     const src = readFileSync(WEBHOOK_PATH, "utf-8");
-    expect(src).toMatch(/const\s+resolvedPlan:\s*PlanTier\s*\|\s*null\s*=\s*plan;/);
+    // #144: checkout uses inline price_data, so the price ID is unmapped and the
+    // tier must be recovered from the trusted subscription metadata.plan. The
+    // type stays `PlanTier | null` (null = preserve current) — never a hardcoded
+    // paid tier (the `?? "pro"` shapes are forbidden by the tests above).
+    expect(src).toMatch(
+      /const\s+resolvedPlan:\s*PlanTier\s*\|\s*null\s*=\s*\(priceId\s*\?\s*planTierFromPriceId\(priceId\)\s*:\s*null\)\s*\?\?\s*planTierFromMetadata\(subscription\.metadata\?\.plan\)/
+    );
   });
 });

@@ -57,6 +57,24 @@ function planTierFromPriceId(priceId: string): PlanTier | null {
   return null;
 }
 
+// #144 review (Codex): the checkout route creates subscriptions with INLINE
+// `price_data` (src/app/api/stripe/checkout/route.ts), so Stripe mints a fresh,
+// generated price ID that is NOT one of the configured STRIPE_*_PRICE_IDS —
+// planTierFromPriceId() therefore returns null for essentially every
+// checkout-created subscription. The authoritative tier for those is carried in
+// the subscription's `metadata.plan` (set by checkout's
+// subscription_data.metadata). Trusting metadata for the PLAN tier is safe and
+// consistent with checkout.session.completed (which already trusts
+// session.metadata.plan); user IDENTITY is still resolved only via customer_id
+// (the #79 boundary), never metadata. Only paid tiers are accepted — a missing
+// or "free"/garbage value yields null so callers preserve the existing plan.
+function planTierFromMetadata(value: string | null | undefined): PlanTier | null {
+  if (value === "starter" || value === "pro" || value === "business") {
+    return value;
+  }
+  return null;
+}
+
 async function getSupabaseAdmin() {
   const { createClient } = await import("@supabase/supabase-js");
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
@@ -67,15 +85,63 @@ async function getSupabaseAdmin() {
   return createClient(url, serviceRoleKey);
 }
 
+// 42703 = Postgres undefined_column; PGRST204 = PostgREST schema-cache miss.
+// Used to detect `profiles.subscription_event_at` not existing yet (migration
+// 022 not applied) so the recency guard can fail open instead of bricking
+// billing during the deploy window.
+function isUndefinedColumnError(error: {
+  code?: string;
+  message?: string;
+}): boolean {
+  if (error.code === "42703" || error.code === "PGRST204") return true;
+  return (
+    typeof error.message === "string" &&
+    error.message.includes("subscription_event_at") &&
+    /does not exist|schema cache/i.test(error.message)
+  );
+}
+
 /**
  * #112: ``plan === null`` means "could not resolve a plan from Stripe — keep
  * whatever is currently in the profile". We must never substitute a paid tier
  * as a fallback because that silently rewrites the customer's entitlement.
+ *
+ * #82 / P2-4 (review): the per-customer recency guard lives HERE and is
+ * enforced atomically by the database. `profiles.subscription_event_at` holds
+ * the Stripe `event.created` time of the most recent event that mutated this
+ * profile's plan/subscription_status. The conditional UPDATE applies the change
+ * only when the incoming event is newer-or-equal
+ * (`subscription_event_at IS NULL OR subscription_event_at <= incoming`) and
+ * advances `subscription_event_at` in the same statement. Because Postgres
+ * evaluates the predicate and the write as one atomic statement, two events
+ * racing for the same customer cannot apply out of order — even while both are
+ * in flight. This replaces the previous best-effort ledger high-water gate,
+ * which only saw already-`processed` rows and could let concurrent in-flight
+ * events both pass.
+ *
+ * Fail-open cases (apply without ordering):
+ *   - `eventCreatedAt == null` (event.created absent/invalid) → cannot order it.
+ *   - migration 022 not applied yet (`subscription_event_at` column missing) →
+ *     do not brick the webhook during the deploy window; the guard re-engages
+ *     automatically once the column exists.
+ *
+ * Accepted residual — same-second events: Stripe's `event.created` is
+ * whole-second resolution and carries no sub-second / sequence order, so two
+ * DISTINCT mutating events for the same customer in the same second are
+ * genuinely unordered. The predicate is `<=` (newer-OR-equal), so both apply
+ * and the last writer wins for that second. We deliberately do not invent a
+ * tie-breaker: a strict `<` would merely flip which arrival order loses, and a
+ * status-priority rule would bake in a product decision that can be wrong (e.g.
+ * a legitimate same-second reactivation). The ledger still prevents
+ * double-applying the *same* event, the window is one second, and any resulting
+ * skew self-corrects on the next (later-second) event for the customer. (Codex
+ * review 2026-06-16; product decision: accept + document.)
  */
 async function updateUserPlan(
   userId: string,
   plan: PlanTier | null,
-  subscriptionStatus?: string
+  subscriptionStatus: string | undefined,
+  eventCreatedAt: Date | null
 ): Promise<void> {
   const supabase = await getSupabaseAdmin();
   const updatePayload: Record<string, unknown> = {};
@@ -86,15 +152,61 @@ async function updateUserPlan(
     updatePayload.subscription_status = subscriptionStatus;
   }
   if (Object.keys(updatePayload).length === 0) {
-    // Nothing to write (no plan change, no status change).
+    // Nothing to write (no plan change, no status change) — do not bump the
+    // recency high-water for a no-op.
     return;
   }
-  const { error } = await supabase
+
+  // Fail-open when we cannot order the event.
+  if (!eventCreatedAt) {
+    const { error } = await supabase
+      .from("profiles")
+      .update(updatePayload)
+      .eq("id", userId);
+    if (error) {
+      throw new Error(`Failed to update profile: ${error.message}`);
+    }
+    return;
+  }
+
+  const incomingIso = eventCreatedAt.toISOString();
+  const { data, error } = await supabase
     .from("profiles")
-    .update(updatePayload)
-    .eq("id", userId);
+    .update({ ...updatePayload, subscription_event_at: incomingIso })
+    .eq("id", userId)
+    // Apply only if this event is newer-or-equal to the last applied one. The
+    // `lte` (newer-OR-equal) admits same-second events both ways by design —
+    // see the "Accepted residual — same-second events" note above.
+    .or(`subscription_event_at.is.null,subscription_event_at.lte.${incomingIso}`)
+    .select("id");
+
   if (error) {
+    if (isUndefinedColumnError(error)) {
+      console.error(
+        "[stripe/webhook] subscription_event_at missing (migration 022 not " +
+          "applied?) — applying without recency guard:",
+        error.message
+      );
+      const { error: fallbackError } = await supabase
+        .from("profiles")
+        .update(updatePayload)
+        .eq("id", userId);
+      if (fallbackError) {
+        throw new Error(`Failed to update profile: ${fallbackError.message}`);
+      }
+      return;
+    }
     throw new Error(`Failed to update profile: ${error.message}`);
+  }
+
+  if (!data || data.length === 0) {
+    // 0 rows updated: the stored subscription_event_at is newer than this
+    // event, so a newer event already applied — skip this stale write. (The
+    // userId was resolved/bootstrapped by the caller, so the row exists.)
+    console.warn(
+      `[stripe/webhook] superseded by newer event for user=${userId} ` +
+        `(event.created=${incomingIso}) — skipping stale billing update.`
+    );
   }
 }
 
@@ -121,7 +233,8 @@ async function resolveUserByCustomerId(
 async function updateUserByCustomerId(
   customerId: string,
   plan: PlanTier | null,
-  subscriptionStatus?: string
+  subscriptionStatus: string | undefined,
+  eventCreatedAt: Date | null
 ): Promise<void> {
   const userId = await resolveUserByCustomerId(customerId);
   if (!userId) {
@@ -135,7 +248,7 @@ async function updateUserByCustomerId(
         `bootstrap (checkout.session.completed) で stripe_customer_id が未 persist。`
     );
   }
-  await updateUserPlan(userId, plan, subscriptionStatus);
+  await updateUserPlan(userId, plan, subscriptionStatus, eventCreatedAt);
 }
 
 // #79 P1: bootstrap path専用。`checkout.session.completed` で初めて customerId が
@@ -257,9 +370,20 @@ export async function POST(request: Request) {
     );
   }
 
-  const eventCustomerId =
-    typeof (event.data.object as { customer?: unknown })?.customer === "string"
-      ? ((event.data.object as { customer?: string }).customer ?? null)
+  // The idempotency ledger's customer_id is recorded for observability/orphan
+  // review (the unmapped-deleted warn points here). It is normalized via
+  // customerIdFrom() so an expanded `customer` object is stored as its id.
+  const eventCustomerId = customerIdFrom(
+    event.data.object as { customer?: string | { id: string } | null }
+  );
+
+  // #82 / P2-4: Stripe `event.created` (Unix seconds) → timestamptz. Passed to
+  // updateUserPlan, where the DB-atomic recency guard compares it against
+  // `profiles.subscription_event_at`. Null (event.created absent/invalid) makes
+  // the guard fail open. Not written to the ledger.
+  const eventCreatedAt: Date | null =
+    typeof event.created === "number" && Number.isFinite(event.created)
+      ? new Date(event.created * 1000)
       : null;
 
   let claimedNew = false;
@@ -410,6 +534,8 @@ export async function POST(request: Request) {
     }
   }
   // claimedNew === true: we own this event; must mark processed/failed before return.
+  // The per-customer recency guard is enforced atomically inside updateUserPlan
+  // (profiles.subscription_event_at), so handlers just pass eventCreatedAt.
 
   try {
     switch (event.type) {
@@ -454,7 +580,12 @@ export async function POST(request: Request) {
             `Bootstrap failed: ${bootstrap.reason} (user_id=${userId} customer=${customerId})`
           );
         }
-        await updateUserPlan(userId, plan, "active");
+        // #82 / P2-4 (review): checkout is gated by the same DB-atomic recency
+        // guard as the other mutating paths (inside updateUserPlan). In a
+        // repeat-checkout that reuses an existing Stripe customer, a delayed
+        // older checkout.session.completed cannot re-activate a profile whose
+        // newer subscription.deleted / invoice event was already applied.
+        await updateUserPlan(userId, plan, "active", eventCreatedAt);
         console.info(
           `[stripe/webhook] checkout.session.completed: user=${userId} customer=${customerId} plan=${plan}`
         );
@@ -474,16 +605,31 @@ export async function POST(request: Request) {
         }
         const status = subscription.status; // active | past_due | canceled | ...
 
-        // Determine plan from first price item
+        // Determine plan: prefer the configured price-ID mapping, then fall back
+        // to the subscription's metadata.plan. #144 (Codex): checkout creates
+        // subscriptions with inline price_data, so the price ID is unmapped —
+        // without the metadata fallback an active checkout subscription resolves
+        // to "free", which downgrades a paid customer AND advances the recency
+        // high-water, gating out the older checkout.session.completed that
+        // carried the real plan.
         const priceId = subscription.items.data[0]?.price?.id;
-        const plan = priceId ? planTierFromPriceId(priceId) : null;
+        const plan =
+          (priceId ? planTierFromPriceId(priceId) : null) ??
+          planTierFromMetadata(subscription.metadata?.plan);
 
-        const resolvedPlan: PlanTier =
-          (status === "active" || status === "trialing") && plan ? plan : "free";
+        // active/trialing → keep the paid tier. If it is genuinely unresolvable
+        // (no price mapping, no metadata) pass null to PRESERVE the existing plan
+        // rather than forcing "free" — never downgrade an active subscription on
+        // an identification miss (consistent with #112). Non-active states revoke
+        // entitlement to "free".
+        const resolvedPlan: PlanTier | null =
+          status === "active" || status === "trialing" ? plan : "free";
 
-        await updateUserByCustomerId(customerId, resolvedPlan, status);
+        // #82 / P2-4: 古い event が新しい state を上書きしないよう updateUserPlan 内の
+        // DB-atomic recency guard で防ぐ。
+        await updateUserByCustomerId(customerId, resolvedPlan, status, eventCreatedAt);
         console.info(
-          `[stripe/webhook] customer.subscription.updated: customer=${customerId} status=${status} plan=${resolvedPlan}`
+          `[stripe/webhook] customer.subscription.updated: customer=${customerId} status=${status} plan=${resolvedPlan ?? "(preserved)"}`
         );
         break;
       }
@@ -508,13 +654,29 @@ export async function POST(request: Request) {
 
         const userId = await resolveUserByCustomerId(customerId);
         if (!userId) {
-          console.info(
-            `[stripe/webhook] customer.subscription.deleted: customer=${customerId} ` +
-              `not mapped — likely account/delete flow, ack-ing without mutation.`
+          // #77 P2-3: customer_id mapping miss を silent に握りつぶさない。
+          // /api/account/delete は profile を先に消してから Stripe を cancel する
+          // ため、その flow の deleted event は profile 不在で正常に到達する。よって
+          // 500 retry で Stripe を 3 日間空回りさせるのは過剰だが、「mapping miss を
+          // 観測できないまま 200 で消す」のも #77 P2-3 が指摘する穴。
+          //
+          // 折衷: 200 ack は維持しつつ (account/delete flow を壊さない)、構造化
+          // `console.warn` で **必ず surface** し、`unmapped_customer` の可視性を
+          // 確保する。recently-bootstrapped でない customer の deleted が継続的に
+          // 来る場合は alert / dead-letter のフックポイントになる。
+          console.warn(
+            `[stripe/webhook] customer.subscription.deleted: UNMAPPED customer=${customerId} ` +
+              `event=${event.id} — no profile maps to this stripe_customer_id. ` +
+              `Likely the account/delete flow (profile removed before Stripe cancel), ` +
+              `but if this customer was never deleted in-app this is a lost cancellation ` +
+              `(#77 P2-3). Ack-ing 200 to avoid retry storms; review ledger for orphans.`
           );
           break;
         }
-        await updateUserPlan(userId, "free", "canceled");
+
+        // #82 / P2-4: stale な deleted が新しい active state を上書きしないよう
+        // updateUserPlan 内の DB-atomic recency guard で防ぐ。
+        await updateUserPlan(userId, "free", "canceled", eventCreatedAt);
         console.info(
           `[stripe/webhook] customer.subscription.deleted: customer=${customerId} user=${userId}`
         );
@@ -547,28 +709,63 @@ export async function POST(request: Request) {
           // NOTE (#31): replaced `as any` cast with InvoiceWithSubscription.
           const subscriptionId: string | null = extractSubscriptionId(invoice);
 
-          // #112: never default to a paid tier here. When subscription /
-          // priceId resolution fails, keep the existing plan (null) and only
-          // flip status to past_due. Transient Stripe retrieve errors are
-          // re-thrown so Stripe retries, instead of silently downgrading.
-          let resolvedPlan: PlanTier | null = null;
-          if (subscriptionId) {
-            try {
-              const subscription = await stripe.subscriptions.retrieve(subscriptionId);
-              const priceId = subscription.items.data[0]?.price?.id;
-              resolvedPlan = priceId ? planTierFromPriceId(priceId) : null;
-              if (resolvedPlan === null) {
-                console.warn(
-                  `[stripe/webhook] payment_failed: unresolved plan for priceId=${priceId ?? "(missing)"}; preserving existing plan`
-                );
-              }
-            } catch (err) {
-              console.error("[stripe/webhook] Failed to retrieve subscription for payment_failed:", err);
-              throw err;
-            }
+          // #144 review (Codex): a failed invoice with no subscription is a
+          // one-off / customer invoice that does NOT describe subscription state.
+          // Marking the profile past_due and advancing profiles.subscription_event_at
+          // for it could record a newer high-water that gates out a later (older-
+          // created) subscription lifecycle event — e.g. a cancellation — as stale.
+          // Mirror payment_succeeded's subscription-only guard: ack without
+          // touching the profile or the high-water.
+          if (!subscriptionId) {
+            console.warn(
+              `[stripe/webhook] invoice.payment_failed: customer=${customerId} ` +
+                `attempt=${attemptCount} has no subscription — ack without marking past_due.`
+            );
+            break;
           }
 
-          await updateUserByCustomerId(customerId, resolvedPlan, "past_due");
+          // #112: never default to a paid tier here. When priceId resolution
+          // fails, keep the existing plan (null) and only flip status to
+          // past_due. Transient Stripe retrieve errors are re-thrown so Stripe
+          // retries, instead of silently downgrading.
+          let resolvedPlan: PlanTier | null = null;
+          try {
+            const subscription = await stripe.subscriptions.retrieve(subscriptionId);
+            // #82 / P2-4 review (Codex): mirror the payment_succeeded guard. A
+            // payment_failed can arrive for an already-canceled subscription —
+            // e.g. the final dunning attempt on an outstanding invoice fails
+            // *after* the subscription was canceled. Writing past_due here would
+            // advance the recency high-water, after which the (older-created)
+            // customer.subscription.deleted is gated out as stale and the profile
+            // is left in a paid-looking past_due state instead of canceled. For
+            // terminal subscription states, leave the authoritative status to the
+            // lifecycle handlers (deleted) and do NOT mutate or bump the
+            // high-water. (active/past_due/unpaid are all legitimate here and
+            // must still mark past_due, so this is a terminal-state deny-list,
+            // not the active/trialing allow-list used by payment_succeeded.)
+            const subStatus = subscription.status;
+            if (subStatus === "canceled" || subStatus === "incomplete_expired") {
+              console.warn(
+                `[stripe/webhook] invoice.payment_failed: subscription=${subscriptionId} ` +
+                  `status=${subStatus} (terminal) — not marking past_due.`
+              );
+              break;
+            }
+            const priceId = subscription.items.data[0]?.price?.id;
+            resolvedPlan = priceId ? planTierFromPriceId(priceId) : null;
+            if (resolvedPlan === null) {
+              console.warn(
+                `[stripe/webhook] payment_failed: unresolved plan for priceId=${priceId ?? "(missing)"}; preserving existing plan`
+              );
+            }
+          } catch (err) {
+            console.error("[stripe/webhook] Failed to retrieve subscription for payment_failed:", err);
+            throw err;
+          }
+
+          // #82 / P2-4: 古い payment_failed が新しい active/canceled state を
+          // past_due に巻き戻さないよう updateUserPlan 内の guard で防ぐ。
+          await updateUserByCustomerId(customerId, resolvedPlan, "past_due", eventCreatedAt);
           // TODO: trigger email notification via RETAIN-01 email system when implemented
         }
         break;
@@ -594,19 +791,46 @@ export async function POST(request: Request) {
           const subscription = await stripe.subscriptions.retrieve(
             subscriptionId
           );
+          // #82 / P2-4 review (Codex): a paid invoice can arrive for a
+          // NON-active subscription — e.g. an outstanding/final invoice settled
+          // after the subscription was already canceled. Hardcoding
+          // status='active' here would reactivate a canceled customer AND
+          // advance the recency high-water, after which the (older-created)
+          // customer.subscription.deleted is gated out as stale and the profile
+          // stays active. Only mark active when the subscription truly is
+          // active/trialing; otherwise leave the authoritative status to the
+          // subscription lifecycle handlers (updated/deleted) and do not bump
+          // the high-water.
+          const subStatus = subscription.status;
+          if (subStatus !== "active" && subStatus !== "trialing") {
+            console.warn(
+              `[stripe/webhook] invoice.payment_succeeded: subscription=${subscriptionId} ` +
+                `status=${subStatus} (not active/trialing) — not marking active.`
+            );
+            break;
+          }
           const priceId = subscription.items.data[0]?.price?.id;
-          const plan = priceId ? planTierFromPriceId(priceId) : null;
           // #112: don't fall back to "pro" — that silently rewrites the
           // entitlement of starter/business customers whose price ID isn't in
           // our local mapping. Preserve the existing plan instead and only flip
           // status to "active". Operators can fix the mapping and replay.
-          const resolvedPlan: PlanTier | null = plan;
+          // #144 (Codex): checkout uses inline price_data so the generated price
+          // ID is unmapped; recover the trusted tier from the subscription's
+          // metadata.plan so a payment_succeeded processed BEFORE the older
+          // checkout.session.completed records the correct plan + high-water,
+          // instead of preserving the old/free plan and then gating the checkout
+          // event out as stale.
+          const resolvedPlan: PlanTier | null =
+            (priceId ? planTierFromPriceId(priceId) : null) ??
+            planTierFromMetadata(subscription.metadata?.plan);
           if (resolvedPlan === null) {
             console.warn(
               `[stripe/webhook] payment_succeeded: unresolved plan for priceId=${priceId ?? "(missing)"}; preserving existing plan`
             );
           }
-          await updateUserByCustomerId(customerId, resolvedPlan, "active");
+          // #82 / P2-4: 古い payment_succeeded が新しい canceled/past_due state を
+          // active に巻き戻さないよう updateUserPlan 内の guard で防ぐ。
+          await updateUserByCustomerId(customerId, resolvedPlan, "active", eventCreatedAt);
           console.info(
             `[stripe/webhook] invoice.payment_succeeded: customer=${customerId} plan=${resolvedPlan ?? "(preserved)"}`
           );
@@ -636,8 +860,10 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }
 
-  // Success path: flip claim from 'processing' to 'processed'.
-  // Must happen AFTER all side effects committed.
+  // Success path: flip claim 'processing' → 'processed'. The recency high-water
+  // (profiles.subscription_event_at) was already advanced atomically with the
+  // billing write inside updateUserPlan, so there is no separate marker to
+  // record here. Happens AFTER all side effects committed.
   if (claimedNew) {
     const { error: markError } = await dedupeAdmin
       .from("processed_stripe_events")
