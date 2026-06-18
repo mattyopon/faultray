@@ -54,7 +54,7 @@ create extension if not exists pgtap;
 -- member_systems WITH CHECK:  2 assertion (#83, migration 018, structural existence)
 -- delete_user_account RPC  :  6 assertion (#70 finding 3-5, migration 017)
 --   pre/post check         :  6  (org_p delete via owner CASCADE + cascade chain, org_q untouched)
-select plan(104);
+select plan(110);
 
 -- ============================================================
 -- Setup: auth.users を直接 INSERT して 3 ユーザー + 2 team を作成
@@ -76,6 +76,13 @@ select plan(104);
 \set om_a_p_id  'eeeeeeee-eeee-eeee-eeee-eeeeeeeeeeee'
 \set om_b_p_id  'ffffffff-ffff-ffff-ffff-ffffffffffff'
 \set om_c_q_id  '00000000-1111-2222-3333-444444444444'
+-- People-Risk (#U5/U32, migration 023) fixture ids
+\set pr_company_a_id '12121212-aaaa-aaaa-aaaa-121212121212'
+\set pr_company_c_id '13131313-cccc-cccc-cccc-131313131313'
+\set pr_system_a_id  '14141414-aaaa-aaaa-aaaa-141414141414'
+\set pr_system_c_id  '15151515-cccc-cccc-cccc-151515151515'
+\set pr_member_a_id  '16161616-aaaa-aaaa-aaaa-161616161616'
+\set pr_member_c_id  '17171717-cccc-cccc-cccc-171717171717'
 
 -- auth.users (最小フィールド)
 insert into auth.users (id, email, raw_user_meta_data, aud, role)
@@ -113,6 +120,22 @@ insert into public.profiles (id, email, full_name) values
   (:'user_a_id'::uuid, 'a@test.local', 'User A'),
   (:'user_b_id'::uuid, 'b@test.local', 'User B'),
   (:'user_c_id'::uuid, 'c@test.local', 'User C');
+
+-- People-Risk fixtures (#U5/U32, migration 023): real companies owned by A and
+-- C (each with one system + member + member_system) to test member_systems
+-- tenant isolation against the public demo company seeded by migration 004.
+insert into public.companies (id, name, owner_id) values
+  (:'pr_company_a_id'::uuid, 'PR Co A', :'user_a_id'::uuid),
+  (:'pr_company_c_id'::uuid, 'PR Co C', :'user_c_id'::uuid);
+insert into public.systems (id, company_id, name, type) values
+  (:'pr_system_a_id'::uuid, :'pr_company_a_id'::uuid, 'sys-a', 'database'),
+  (:'pr_system_c_id'::uuid, :'pr_company_c_id'::uuid, 'sys-c', 'database');
+insert into public.members (id, company_id, name) values
+  (:'pr_member_a_id'::uuid, :'pr_company_a_id'::uuid, 'PR Member A'),
+  (:'pr_member_c_id'::uuid, :'pr_company_c_id'::uuid, 'PR Member C');
+insert into public.member_systems (member_id, system_id, access_level, is_sole_owner, risk_level) values
+  (:'pr_member_a_id'::uuid, :'pr_system_a_id'::uuid, 'owner', true, 'critical'),
+  (:'pr_member_c_id'::uuid, :'pr_system_c_id'::uuid, 'owner', true, 'critical');
 
 -- team X: owner A, member B
 insert into public.teams (id, name, owner_id) values (:'team_x_id'::uuid, 'Team X', :'user_a_id'::uuid);
@@ -1068,6 +1091,50 @@ deallocate ok_insert;
 deallocate spoof_user;
 deallocate cross_team;
 deallocate null_team;
+
+-- ============================================================
+-- People-Risk member_systems SELECT isolation (#U5/U32, migration 023).
+-- owner-scoped + public demo company (11111111-…) readable to all authenticated
+-- users. Behavioral coverage for the prod RLS drift documented in migration 018.
+-- NOTE: placed BEFORE the delete_user_account block — that test deletes user_a,
+-- which would null pr_company_a.owner_id (ON DELETE SET NULL) and invalidate
+-- the owner-scoped assertions.
+-- ============================================================
+select test_as_user(:'user_a_id'::uuid);
+select ok(
+  exists(select 1 from public.member_systems ms join public.members m on m.id = ms.member_id
+         where m.company_id = :'pr_company_a_id'::uuid),
+  'people-risk: user_a sees own company member_systems'
+);
+select ok(
+  not exists(select 1 from public.member_systems ms join public.members m on m.id = ms.member_id
+             where m.company_id = :'pr_company_c_id'::uuid),
+  'people-risk: user_a CANNOT see another tenant member_systems (cross-tenant)'
+);
+select ok(
+  exists(select 1 from public.member_systems ms join public.members m on m.id = ms.member_id
+         where m.company_id = '11111111-1111-1111-1111-111111111111'::uuid),
+  'people-risk: user_a sees demo company member_systems (demo readable)'
+);
+
+select test_as_user(:'user_c_id'::uuid);
+select ok(
+  not exists(select 1 from public.member_systems ms join public.members m on m.id = ms.member_id
+             where m.company_id = :'pr_company_a_id'::uuid),
+  'people-risk: user_c CANNOT see user_a tenant member_systems (cross-tenant)'
+);
+
+select test_as_anon();
+select ok(
+  exists(select 1 from public.member_systems ms join public.members m on m.id = ms.member_id
+         where m.company_id = '11111111-1111-1111-1111-111111111111'::uuid),
+  'people-risk: anon sees demo member_systems'
+);
+select ok(
+  not exists(select 1 from public.member_systems ms join public.members m on m.id = ms.member_id
+             where m.company_id = :'pr_company_a_id'::uuid),
+  'people-risk: anon CANNOT see real-tenant member_systems'
+);
 
 -- ============================================================
 -- #70 finding 3-5: delete_user_account RPC が 009 テーブル対応 (migration 017)
