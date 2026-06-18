@@ -52,8 +52,22 @@ function checkCsrf(request: Request): NextResponse | null {
   }
 
   const origin = request.headers.get("origin");
-  // Origin ヘッダーなし (サーバー間・curl など) は通過させる
-  if (!origin) return null;
+  // Origin ヘッダーなし (サーバー間・curl など) は通過させる…ただし SEC (U1):
+  // 以前は Origin 不在を常に許可していた (CSRF fail-open)。modern browser は
+  // Origin を省いても Sec-Fetch-Site を送るため、Origin 不在 かつ cross-site の
+  // ブラウザリクエストは CSRF として拒否する。Sec-Fetch-Site を送らない
+  // 旧ブラウザ / 非ブラウザ (curl・サーバー間) は従来どおり通過 (additive・
+  // 同一オリジン POST を壊さない)。
+  if (!origin) {
+    const fetchSite = request.headers.get("sec-fetch-site");
+    if (fetchSite === "cross-site" || fetchSite === "cross-origin") {
+      return NextResponse.json(
+        { error: "Forbidden: cross-site request" },
+        { status: 403 }
+      );
+    }
+    return null;
+  }
 
   const allowed = new Set<string>();
 
