@@ -304,6 +304,13 @@ class SimulationEngine:
         # Sort by risk score descending
         results.sort(key=lambda r: r.risk_score, reverse=True)
 
+        # TODO(review/U8): resilience_score reflects only the STATIC graph
+        # structure and ignores the scenario outcomes computed above (a system
+        # with many critical findings can still report a high score). Folding
+        # scenario results into this number is a product-defining change with
+        # broad impact (reproducibility tests and topology-diff assert this
+        # equals graph.resilience_score()), so it is deferred rather than
+        # guessed here.
         return SimulationReport(
             results=results,
             resilience_score=self.graph.resilience_score(),
