@@ -77,6 +77,11 @@ export async function POST(request: Request) {
     .update({ current_uses: coupon.current_uses + 1 })
     .eq("id", coupon.id)
     .eq("current_uses", coupon.current_uses)
+    // Re-assert `revoked = false` in the UPDATE itself: the validation above ran
+    // against a stale SELECT, so an operator revoking the coupon between the
+    // SELECT and this write would otherwise still let the redemption through.
+    // The optimistic current_uses lock alone does not cover a revoke flip.
+    .eq("revoked", false)
     .select("id");
 
   if (incrementError) {
@@ -101,7 +106,15 @@ export async function POST(request: Request) {
 
   const { error: profileError } = await admin
     .from("profiles")
-    .update({ plan: coupon.tier, trial_ends_at: expiresAt })
+    // subscription_status='trialing' marks this as a non-paying, time-boxed
+    // grant. Without it the column keeps its 'active' DEFAULT, which the
+    // trial-expiry job treats as a paying customer and never downgrades — a
+    // coupon would grant the paid plan forever (see migration 025).
+    .update({
+      plan: coupon.tier,
+      trial_ends_at: expiresAt,
+      subscription_status: "trialing",
+    })
     .eq("id", user.id);
 
   if (profileError) {

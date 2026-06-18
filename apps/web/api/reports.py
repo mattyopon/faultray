@@ -22,7 +22,6 @@ from http.server import BaseHTTPRequestHandler
 import html
 import json
 import os
-import urllib.parse
 from urllib.parse import urlparse, parse_qs
 
 
@@ -483,135 +482,19 @@ BENCHMARKS = {
 # BILLING — helpers
 # ===========================================================================
 
-PRICE_IDS = {
-    "pro": os.environ.get("STRIPE_PRO_PRICE_ID", ""),
-    "business": os.environ.get("STRIPE_BUSINESS_PRICE_ID", ""),
-}
 
-
-def _billing_checkout(raw_body: bytes, origin: str) -> tuple:
-    """Handle Stripe checkout session creation. Returns (status, data)."""
-    try:
-        import stripe
-    except ImportError:
-        return 500, {"error": "stripe package not installed"}
-
-    stripe_key = os.environ.get("STRIPE_SECRET_KEY")
-    if not stripe_key:
-        return 500, {"error": "STRIPE_SECRET_KEY not configured"}
-    stripe.api_key = stripe_key
-
-    try:
-        body = json.loads(raw_body) if raw_body else {}
-    except (json.JSONDecodeError, ValueError):
-        return 400, {"error": "Invalid JSON"}
-
-    plan = body.get("plan", "")
-    if plan not in ("pro", "business"):
-        return 400, {"error": "Invalid plan. Must be 'pro' or 'business'"}
-
-    price_id = PRICE_IDS.get(plan)
-    if not price_id:
-        return 500, {"error": f"Price ID not configured for plan: {plan}"}
-
-    try:
-        session = stripe.checkout.Session.create(
-            mode="subscription",
-            line_items=[{"price": price_id, "quantity": 1}],
-            success_url=f"{origin}/dashboard?checkout=success&plan={plan}",
-            cancel_url=f"{origin}/pricing?checkout=cancelled",
-            metadata={"plan": plan},
-        )
-        return 200, {"url": session.url}
-    except Exception as e:
-        return 400, {"error": str(e)}
-
-
-def _billing_webhook(payload: bytes, sig_header: str) -> tuple:
-    """Handle Stripe webhook. Returns (status, data)."""
-    try:
-        import stripe
-    except ImportError:
-        return 500, {"error": "stripe package not installed"}
-
-    stripe_key = os.environ.get("STRIPE_SECRET_KEY")
-    webhook_secret = os.environ.get("STRIPE_WEBHOOK_SECRET")
-    if not stripe_key or not webhook_secret:
-        return 500, {"error": "Stripe not configured"}
-    stripe.api_key = stripe_key
-
-    try:
-        event = stripe.Webhook.construct_event(payload, sig_header, webhook_secret)
-    except (ValueError, stripe.SignatureVerificationError) as e:
-        return 400, {"error": f"Webhook verification failed: {e}"}
-
-    if event["type"] == "checkout.session.completed":
-        session = event["data"]["object"]
-        customer_id = session.get("customer")
-        plan = session.get("metadata", {}).get("plan", "pro")
-        email = session.get("customer_details", {}).get("email")
-        _billing_update_supabase(email, {"plan": plan, "stripe_customer_id": customer_id})
-
-    elif event["type"] == "customer.subscription.deleted":
-        customer_id = event["data"]["object"].get("customer")
-        _billing_update_supabase_by_customer(customer_id, {"plan": "free"})
-
-    return 200, {"received": True}
-
-
-def _billing_update_supabase(email, data):
-    if not email:
-        return
-    supabase_url = os.environ.get("NEXT_PUBLIC_SUPABASE_URL")
-    service_key = os.environ.get("SUPABASE_SERVICE_ROLE_KEY")
-    if not supabase_url or not service_key:
-        return
-    # SEC: URL-encode before embedding in the PostgREST filter — a crafted
-    # email (Stripe customer_details is end-user controlled) must not be able
-    # to inject additional query operators. Same pattern as realtime.py.
-    safe_email = urllib.parse.quote(str(email), safe="")
-    try:
-        import urllib.request
-        req = urllib.request.Request(
-            f"{supabase_url}/rest/v1/profiles?email=eq.{safe_email}",
-            data=json.dumps(data).encode(),
-            method="PATCH",
-            headers={
-                "Content-Type": "application/json",
-                "apikey": service_key,
-                "Authorization": f"Bearer {service_key}",
-                "Prefer": "return=minimal",
-            },
-        )
-        urllib.request.urlopen(req, timeout=10)
-    except Exception:
-        pass
-
-
-def _billing_update_supabase_by_customer(customer_id, data):
-    if not customer_id:
-        return
-    supabase_url = os.environ.get("NEXT_PUBLIC_SUPABASE_URL")
-    service_key = os.environ.get("SUPABASE_SERVICE_ROLE_KEY")
-    if not supabase_url or not service_key:
-        return
-    safe_customer_id = urllib.parse.quote(str(customer_id), safe="")
-    try:
-        import urllib.request
-        req = urllib.request.Request(
-            f"{supabase_url}/rest/v1/profiles?stripe_customer_id=eq.{safe_customer_id}",
-            data=json.dumps(data).encode(),
-            method="PATCH",
-            headers={
-                "Content-Type": "application/json",
-                "apikey": service_key,
-                "Authorization": f"Bearer {service_key}",
-                "Prefer": "return=minimal",
-            },
-        )
-        urllib.request.urlopen(req, timeout=10)
-    except Exception:
-        pass
+# ---------------------------------------------------------------------------
+# Legacy billing path — DECOMMISSIONED (dual-model security review)
+# ---------------------------------------------------------------------------
+# The old /api/billing surface (checkout + a second Stripe webhook) is removed.
+# Its webhook bound a profile's plan by the END-USER-CONTROLLED
+# `customer_details.email`, so a payer could set another user's email and
+# hijack/downgrade that account's entitlement; checkout was unauthenticated with
+# no user binding. The authoritative, hardened billing lives in the TypeScript
+# routes /api/stripe/checkout and /api/stripe/webhook (customer_id
+# source-of-truth, idempotency ledger, recency guard, service-role-only writes).
+# The /api/billing rewrite has been removed from vercel.json; `_handle_billing_post`
+# below additionally returns 410 Gone so the path can never mutate billing again.
 
 
 # ===========================================================================
@@ -732,13 +615,17 @@ class handler(BaseHTTPRequestHandler):
     # -----------------------------------------------------------------------
 
     def _handle_billing_post(self, raw_body: bytes):
-        sig_header = self.headers.get("Stripe-Signature", "")
-        origin = self.headers.get("Origin", "https://faultray.com")
-        if sig_header:
-            status, data = _billing_webhook(raw_body, sig_header)
-        else:
-            status, data = _billing_checkout(raw_body, origin)
-        self._json(status, data)
+        # DECOMMISSIONED — see the legacy-billing note above. Billing is handled
+        # exclusively by /api/stripe/*. Refuse rather than mutate entitlements.
+        self._json(
+            410,
+            {
+                "error": {
+                    "message": "This billing endpoint is decommissioned. "
+                    "Use /api/stripe/checkout and /api/stripe/webhook."
+                }
+            },
+        )
 
     # -----------------------------------------------------------------------
     # Shared helpers

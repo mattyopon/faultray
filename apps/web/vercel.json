@@ -44,7 +44,6 @@
     { "source": "/api/analysis", "destination": "/api/engine" },
     { "source": "/api/discovery", "destination": "/api/engine" },
     { "source": "/api/finance", "destination": "/api/reports" },
-    { "source": "/api/billing", "destination": "/api/reports" },
     { "source": "/api/risk", "destination": "/api/reports" },
     { "source": "/api/apm/:path*", "destination": "/api/realtime" },
     { "source": "/api/projects", "destination": "/api/realtime" },

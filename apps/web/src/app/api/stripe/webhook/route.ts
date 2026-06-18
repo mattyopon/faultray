@@ -137,6 +137,33 @@ function isUndefinedColumnError(error: {
  * skew self-corrects on the next (later-second) event for the customer. (Codex
  * review 2026-06-16; product decision: accept + document.)
  */
+// The DB CHECK constraint `profiles_subscription_status_check` only permits
+// ('active','past_due','canceled','trialing'). Stripe emits more subscription
+// statuses than that — `incomplete`, `incomplete_expired`, `unpaid`, `paused`.
+// `customer.subscription.updated` forwards the RAW status, so any of those would
+// raise a CHECK violation (23514), fail the webhook into a ~3-day retry loop, and
+// drop the intended write (e.g. an `unpaid`/`incomplete_expired` downgrade). Map
+// any non-allowed status to the closest allowed value at the single DB-write
+// boundary so every current and future caller is safe.
+const ALLOWED_SUBSCRIPTION_STATUSES = new Set([
+  "active",
+  "past_due",
+  "canceled",
+  "trialing",
+]);
+
+export function normalizeSubscriptionStatus(
+  status: string | undefined
+): string | undefined {
+  if (status === undefined) return undefined;
+  if (ALLOWED_SUBSCRIPTION_STATUSES.has(status)) return status;
+  // All remaining Stripe statuses (incomplete, incomplete_expired, unpaid,
+  // paused, and any future value) are non-active/non-entitling → 'canceled'.
+  // This is corrected on the next (recency-guarded) event if the subscription
+  // recovers to active.
+  return "canceled";
+}
+
 async function updateUserPlan(
   userId: string,
   plan: PlanTier | null,
@@ -149,7 +176,8 @@ async function updateUserPlan(
     updatePayload.plan = plan;
   }
   if (subscriptionStatus !== undefined) {
-    updatePayload.subscription_status = subscriptionStatus;
+    updatePayload.subscription_status =
+      normalizeSubscriptionStatus(subscriptionStatus);
   }
   if (Object.keys(updatePayload).length === 0) {
     // Nothing to write (no plan change, no status change) — do not bump the

@@ -16,7 +16,7 @@ import logging
 import os
 import tempfile
 import time
-from urllib.parse import urlparse, parse_qs
+from urllib.parse import urlparse, parse_qs, quote
 
 # API-07: 構造化ロギング設定
 logging.basicConfig(
@@ -660,8 +660,60 @@ def _run_simulation(topology_yaml: str) -> dict:
         os.unlink(tmp_path)
 
 
-def _save_run_to_supabase(data: dict) -> dict:
-    """Persist a simulation run to the Supabase simulation_runs table."""
+def _supabase_rest_get(supabase_url: str, service_key: str, path_and_query: str):
+    """Service-role GET against PostgREST. Returns parsed JSON or None on error."""
+    import urllib.request as _urllib_req
+
+    req = _urllib_req.Request(
+        f"{supabase_url}/rest/v1/{path_and_query}",
+        headers={
+            "apikey": service_key,
+            "Authorization": f"Bearer {service_key}",
+        },
+    )
+    try:
+        with _urllib_req.urlopen(req, timeout=10) as resp:
+            return json.loads(resp.read())
+    except Exception:
+        return None
+
+
+def _project_team_id(supabase_url: str, service_key: str, project_id) -> str | None:
+    """Resolve the owning team_id for a project_id (None if it doesn't exist)."""
+    pid = quote(str(project_id), safe="")
+    rows = _supabase_rest_get(
+        supabase_url, service_key, f"projects?id=eq.{pid}&select=team_id"
+    )
+    if isinstance(rows, list) and rows:
+        return rows[0].get("team_id")
+    return None
+
+
+def _user_in_team(supabase_url: str, service_key: str, team_id, user_id: str) -> bool:
+    """True iff user_id is a member of team_id."""
+    tid = quote(str(team_id), safe="")
+    uid = quote(str(user_id), safe="")
+    rows = _supabase_rest_get(
+        supabase_url,
+        service_key,
+        f"team_members?team_id=eq.{tid}&user_id=eq.{uid}&select=team_id",
+    )
+    return isinstance(rows, list) and len(rows) > 0
+
+
+def _save_run_to_supabase(data: dict, caller_user_id: str | None = None) -> dict:
+    """Persist a simulation run to the Supabase simulation_runs table.
+
+    SEC: `project_id` is attacker-controllable. The insert below uses the service
+    role and therefore BYPASSES RLS, so without an explicit ownership check any
+    authenticated caller could write simulation_runs rows against another tenant's
+    project_id (and the row would land with a NULL team_id, escaping tenant
+    scoping). When a project_id is supplied we resolve its owning team and require
+    the JWT caller to be a member before inserting, and we stamp team_id so the
+    row is correctly tenant-scoped. A None caller_user_id means an internal/agent
+    API-key call (or unconfigured-auth dev mode) which `_authenticate` already
+    trusts.
+    """
     import urllib.request as _urllib_req
 
     supabase_url = os.environ.get("NEXT_PUBLIC_SUPABASE_URL", "").rstrip("/")
@@ -679,8 +731,17 @@ def _save_run_to_supabase(data: dict) -> dict:
         "total_scenarios": data.get("total_scenarios", 0),
         "result_data": json.dumps(data.get("result_data") or {}),
     }
-    if data.get("project_id"):
-        record["project_id"] = data["project_id"]
+    project_id = data.get("project_id")
+    if project_id:
+        team_id = _project_team_id(supabase_url, service_key, project_id)
+        if not team_id:
+            return {"ok": False, "error": "project not found"}
+        if caller_user_id is not None and not _user_in_team(
+            supabase_url, service_key, team_id, caller_user_id
+        ):
+            return {"ok": False, "error": "forbidden: not a member of project team"}
+        record["project_id"] = project_id
+        record["team_id"] = team_id
 
     body = json.dumps(record).encode()
     req = _urllib_req.Request(
@@ -1449,7 +1510,7 @@ class handler(BaseHTTPRequestHandler):
     def _handle_simulate(self, data: dict):
         try:
             if data.get("action") == "save-run":
-                result = _save_run_to_supabase(data)
+                result = _save_run_to_supabase(data, self._resolve_user_id())
                 self._json(200, result)
                 return
 
@@ -1477,7 +1538,10 @@ class handler(BaseHTTPRequestHandler):
 
             project_id = data.get("project_id")
             if project_id:
-                _save_run_to_supabase({**result, "project_id": project_id, "result_data": result})
+                _save_run_to_supabase(
+                    {**result, "project_id": project_id, "result_data": result},
+                    self._resolve_user_id(),
+                )
 
             self._json(200, result)
 
@@ -1674,3 +1738,36 @@ class handler(BaseHTTPRequestHandler):
                 return resp.status == 200
         except Exception:
             return False
+
+    def _resolve_user_id(self) -> str | None:
+        """Return the Supabase user id for a Bearer-JWT caller, else None.
+
+        None for the X-API-Key (internal/agent) path and unconfigured-auth dev
+        mode — both already trusted by `_authenticate`. Used to bind tenant-scoped
+        writes (e.g. saving a simulation run against a project_id) to the caller.
+        """
+        auth_header = self.headers.get("Authorization", "")
+        if not auth_header.startswith("Bearer "):
+            return None
+        token = auth_header[len("Bearer "):].strip()
+        supabase_url = os.environ.get("NEXT_PUBLIC_SUPABASE_URL", "")
+        anon_key = os.environ.get("NEXT_PUBLIC_SUPABASE_ANON_KEY", "")
+        if not supabase_url or not anon_key or not token:
+            return None
+        import urllib.request
+        try:
+            req = urllib.request.Request(
+                f"{supabase_url}/auth/v1/user",
+                headers={
+                    "Authorization": f"Bearer {token}",
+                    "apikey": anon_key,
+                },
+            )
+            with urllib.request.urlopen(req, timeout=3) as resp:
+                if resp.status != 200:
+                    return None
+                payload = json.loads(resp.read())
+                uid = payload.get("id")
+                return uid if isinstance(uid, str) and uid else None
+        except Exception:
+            return None

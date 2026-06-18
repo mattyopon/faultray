@@ -54,7 +54,7 @@ create extension if not exists pgtap;
 -- member_systems WITH CHECK:  2 assertion (#83, migration 018, structural existence)
 -- delete_user_account RPC  :  6 assertion (#70 finding 3-5, migration 017)
 --   pre/post check         :  6  (org_p delete via owner CASCADE + cascade chain, org_q untouched)
-select plan(110);
+select plan(120);
 
 -- ============================================================
 -- Setup: auth.users を直接 INSERT して 3 ユーザー + 2 team を作成
@@ -1134,6 +1134,103 @@ select ok(
   not exists(select 1 from public.member_systems ms join public.members m on m.id = ms.member_id
              where m.company_id = :'pr_company_a_id'::uuid),
   'people-risk: anon CANNOT see real-tenant member_systems'
+);
+
+-- ============================================================
+-- Trial / billing correctness (migrations 025 + 026).
+-- MUST run BEFORE the delete_user_account block below (it deletes user_a and
+-- would null company owner_id / remove the profile these assertions use).
+-- ============================================================
+
+-- actions.system_id cross-tenant guard (migration 026 A).
+-- user_a owns pr_company_a (12121212…) + pr_system_a (14141414…);
+-- pr_system_c (15151515…) belongs to user_c's company.
+select test_as_user(:'user_a_id'::uuid);
+
+select lives_ok(
+  $$ insert into public.actions (company_id, system_id, title, status)
+     values ('12121212-aaaa-aaaa-aaaa-121212121212'::uuid,
+             '14141414-aaaa-aaaa-aaaa-141414141414'::uuid,
+             'own-system action', 'pending') $$,
+  'actions: owner can INSERT referencing OWN company system'
+);
+
+select throws_ok(
+  $$ insert into public.actions (company_id, system_id, title, status)
+     values ('12121212-aaaa-aaaa-aaaa-121212121212'::uuid,
+             '15151515-cccc-cccc-cccc-151515151515'::uuid,
+             'cross-tenant action', 'pending') $$,
+  NULL::text, NULL::text,
+  'actions: owner CANNOT INSERT referencing another tenant system_id (026)'
+);
+
+select lives_ok(
+  $$ insert into public.actions (company_id, system_id, title, status)
+     values ('12121212-aaaa-aaaa-aaaa-121212121212'::uuid, null,
+             'no-system action', 'pending') $$,
+  'actions: NULL system_id is allowed (action need not reference a system)'
+);
+
+-- organizations owner DELETE policy (migration 026 B) — enables the org-create
+-- rollback that was previously RLS-denied (leaving owner-less orphan orgs).
+select test_as_service_role();
+insert into public.organizations (id, name, owner_id)
+  values ('0a0a0a0a-0000-0000-0000-00000000000a'::uuid, 'Org RollbackTest', :'user_a_id'::uuid);
+select test_as_user(:'user_a_id'::uuid);
+select lives_ok(
+  $$ delete from public.organizations where id = '0a0a0a0a-0000-0000-0000-00000000000a' $$,
+  'organizations: owner can DELETE own org (026 — org-create rollback works)'
+);
+
+-- downgrade_expired_trials revenue-leak fix (migration 025 A).
+-- A self-serve trial / coupon grant leaves subscription_status at its 'active'
+-- DEFAULT with NO stripe_customer_id; before 025 the keep-list masked it as
+-- paying and it was NEVER downgraded. A real paying customer (has a
+-- stripe_customer_id) must still be preserved.
+select test_as_service_role();
+update public.profiles
+   set plan = 'business', trial_ends_at = now() - interval '1 day',
+       stripe_customer_id = null, subscription_status = 'active'
+ where id = :'user_b_id'::uuid;
+update public.profiles
+   set plan = 'business', trial_ends_at = now() - interval '1 day',
+       stripe_customer_id = 'cus_real_paying', subscription_status = 'active'
+ where id = :'user_c_id'::uuid;
+
+select lives_ok(
+  $$ select public.downgrade_expired_trials() $$,
+  'downgrade_expired_trials: runs as service_role'
+);
+select is(
+  (select plan from public.profiles where id = :'user_b_id'::uuid),
+  'free',
+  'downgrade: expired trial with NULL stripe_customer_id IS downgraded (revenue-leak fix)'
+);
+select is(
+  (select plan from public.profiles where id = :'user_c_id'::uuid),
+  'business',
+  'downgrade: expired trial WITH a real stripe_customer_id is preserved (paying customer)'
+);
+
+-- provision_business_trial RPC (migration 025 B).
+-- The callback can no longer write billing columns with the user client (013
+-- column grants), so it provisions via this SECURITY DEFINER RPC. user_a's
+-- profile is still in the trigger-default state here.
+select test_as_user(:'user_a_id'::uuid);
+select ok(
+  public.provision_business_trial(),
+  'provision_business_trial: default-state profile is provisioned (returns true)'
+);
+select test_as_service_role();
+select is(
+  (select plan from public.profiles where id = :'user_a_id'::uuid),
+  'business',
+  'provision_business_trial: plan set to business'
+);
+select test_as_user(:'user_a_id'::uuid);
+select ok(
+  not public.provision_business_trial(),
+  'provision_business_trial: second call is a no-op (precondition no longer holds)'
 );
 
 -- ============================================================

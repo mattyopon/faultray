@@ -68,6 +68,10 @@ export async function GET(request: Request) {
             id: userId,
             plan: "business",
             trial_ends_at: trialEndIso(),
+            // Mark as a non-paying trial so trial-expiry can downgrade it later
+            // (a profile whose status stayed at the 'active' DEFAULT is never
+            // downgraded — see migration 025).
+            subscription_status: "trialing",
           });
           if (insertError) {
             console.error(
@@ -87,16 +91,16 @@ export async function GET(request: Request) {
           // got the promised 7-day Business trial. A profile still in its
           // trigger default state (free / no trial / no Stripe) belonging to
           // an auth user created minutes ago IS a fresh signup — provision it.
-          isNewUser = true;
-          const { error: trialError } = await supabase
-            .from("profiles")
-            .update({ plan: "business", trial_ends_at: trialEndIso() })
-            .eq("id", userId)
-            // Re-assert the precondition so a concurrent webhook/coupon write
-            // between read and update can't be clobbered.
-            .eq("plan", "free")
-            .is("trial_ends_at", null)
-            .is("stripe_customer_id", null);
+          // SEC/bug (#114 + migration 013): billing columns (plan/trial_ends_at/
+          // subscription_status) are service-role-only since 013 revoked the
+          // authenticated UPDATE grant, so this update with the *user* client was
+          // column-grant DENIED — the promised 7-day Business trial silently
+          // never applied. Provision through a narrowly-scoped SECURITY DEFINER
+          // RPC (migration 025) that re-asserts the trigger-default precondition
+          // server-side and stamps subscription_status='trialing'.
+          const { data: provisioned, error: trialError } = await supabase.rpc(
+            "provision_business_trial"
+          );
           if (trialError) {
             // Trial is recoverable support-side — don't block a working
             // sign-in over the entitlement write.
@@ -105,6 +109,10 @@ export async function GET(request: Request) {
               trialError.message
             );
             isNewUser = false;
+          } else {
+            // Only treat as a fresh trial (welcome email) when the RPC actually
+            // provisioned a row (precondition still held).
+            isNewUser = provisioned === true;
           }
         }
 

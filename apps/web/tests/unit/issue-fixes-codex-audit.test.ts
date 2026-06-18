@@ -114,12 +114,16 @@ describe("#123: auth callback fails loudly on profile bootstrap errors", () => {
     expect(src).toMatch(/profile_setup_failed/);
   });
 
-  it("provisions trials via the shared helper with a re-asserted precondition", () => {
+  it("provisions trials via the shared freshness helper + service-role RPC", () => {
     expect(src).toMatch(/shouldProvisionTrial/);
-    // The conditional update must re-check the default state to avoid
-    // clobbering a concurrent webhook/coupon write.
-    expect(src).toMatch(/\.eq\("plan", "free"\)/);
-    expect(src).toMatch(/\.is\("trial_ends_at", null\)/);
+    // Billing columns (plan/trial_ends_at/subscription_status) are
+    // service-role-only since migration 013 revoked the authenticated UPDATE
+    // grant, so the previous user-client column update was silently denied.
+    // Provisioning now goes through the provision_business_trial SECURITY
+    // DEFINER RPC (migration 025), which re-asserts the trigger-default
+    // precondition server-side to avoid clobbering a concurrent webhook/coupon
+    // write.
+    expect(src).toMatch(/provision_business_trial/);
   });
 });
 
