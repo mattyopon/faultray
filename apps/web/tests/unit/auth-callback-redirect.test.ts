@@ -1,78 +1,66 @@
 /**
- * L2 Regression: auth/callback redirectTo allow-list (#26).
+ * L2 Regression: post-auth `redirectTo` validation (#26 + deep-link bugfix).
  *
- * Before #26 the accept regex `^\/(?:[...]*)$` matched `//evil.com` and
- * similar path-normalization traps. Fix is an explicit allow-list of
- * app route prefixes.
- *
- * This test extracts the regex-free logic via readFileSync + eval so
- * we verify the actual source, not a stale copy.
+ * The login page and OAuth callback now share one validator
+ * (src/lib/safe-redirect → isSafeInternalPath). This test exercises the REAL
+ * exported function (no source-string scraping / reimplemented copy), and locks
+ * in both the open-redirect protections and the fix for dropped deep links:
+ * valid internal paths like `/people-risk/actions` must be accepted (previously
+ * the callback's narrow allow-list silently redirected them to /dashboard).
  */
 import { describe, it, expect } from "vitest";
-import { readFileSync } from "node:fs";
-import { resolve } from "node:path";
+import { isSafeInternalPath } from "@/lib/safe-redirect";
 
-const CALLBACK_PATH = resolve(
-  __dirname,
-  "../../src/app/auth/callback/route.ts"
-);
-
-describe("L2: auth/callback redirectTo allow-list (#26)", () => {
-  it("source no longer uses a permissive regex", () => {
-    const src = readFileSync(CALLBACK_PATH, "utf-8");
-    // The old permissive regex accepted '//evil.com'. Guard against it
-    // returning via refactor.
-    expect(src).not.toMatch(/SAFE_REDIRECT_RE\s*=\s*\/\^\\\//);
-    // Explicit allow-list constant should be present.
-    expect(src).toMatch(/SAFE_REDIRECT_PREFIXES/);
-    // Core app routes we expect to whitelist.
-    for (const route of ["/dashboard", "/settings", "/simulate"]) {
-      expect(src).toContain(`"${route}"`);
-    }
-  });
-
-  it("rejects protocol-relative and backslash variants in the allow-list logic", () => {
-    // Exercise the runtime logic by extracting + executing the predicate.
-    // We re-declare it here mirroring the source exactly — if the source
-    // refactors in a way that changes behavior, the previous test catches
-    // the shape, and this test locks in the behavior.
-    const SAFE_REDIRECT_PREFIXES = [
-      "/dashboard", "/settings", "/simulate", "/projects", "/reports",
-      "/compliance", "/dora", "/pricing", "/billing", "/whatif",
-    ];
-    const isSafeRedirect = (value: string): boolean => {
-      if (!value.startsWith("/") || value.startsWith("//") || value.startsWith("/\\")) return false;
-      if (value.includes("..") || value.includes("\\")) return false;
-      return SAFE_REDIRECT_PREFIXES.some(
-        (p) => value === p || value.startsWith(`${p}/`) || value.startsWith(`${p}?`) || value.startsWith(`${p}#`)
-      );
-    };
-
-    // Unsafe inputs → false
-    for (const bad of [
+describe("L2: isSafeInternalPath (shared post-auth redirect validator)", () => {
+  it("rejects open-redirect, traversal and malformed values", () => {
+    const bad: Array<string | null | undefined> = [
       "//evil.com",
       "///evil.com",
       "/\\evil.com",
+      "\\\\evil.com",
       "https://evil.com",
-      "/evil-path",        // not in allow-list
-      "/./dashboard",      // path-normalization trap
-      "/dashboard/../admin",
-      "",                  // empty
-      " /dashboard",       // leading whitespace
-    ]) {
-      expect(isSafeRedirect(bad), `expected reject for ${JSON.stringify(bad)}`).toBe(false);
+      "http://evil.com",
+      "javascript:alert(1)",
+      "/dashboard/../admin", // traversal
+      "/dashboard\\..\\admin",
+      "/%2e%2e/admin", // percent-encoded traversal
+      "/%2E%2E/admin", // percent-encoded traversal (upper)
+      "/%252e%252e/admin", // double-encoded traversal
+      "/%5Cevil.com", // percent-encoded backslash
+      "/foo bar", // internal whitespace
+      "/foo\tbar", // internal tab
+      "/foo%", // malformed percent-encoding
+      "", // empty
+      " /dashboard", // leading whitespace
+      "/dashboard ", // trailing whitespace
+      "evil.com", // no leading slash
+      null,
+      undefined,
+    ];
+    for (const v of bad) {
+      expect(isSafeInternalPath(v), `expected reject for ${JSON.stringify(v)}`).toBe(false);
     }
+  });
 
-    // Safe inputs → true
-    for (const good of [
+  it("accepts same-origin internal paths, including deep links", () => {
+    const good = [
       "/dashboard",
       "/dashboard/",
       "/dashboard/123",
       "/settings?tab=account",
       "/compliance#soc2",
       "/whatif",
-    ]) {
-      expect(isSafeRedirect(good), `expected accept for ${JSON.stringify(good)}`).toBe(true);
+      // deep links the old narrow allow-list dropped to /dashboard:
+      "/people-risk/actions",
+      "/people-risk/members/abc",
+      "/teams",
+      "/audit-log",
+      // legitimate encoded space in a query value must still pass (the tightened
+      // whitespace check only rejects RAW whitespace, not encoded):
+      "/search?q=a%20b",
+    ];
+    for (const v of good) {
+      expect(isSafeInternalPath(v), `expected accept for ${JSON.stringify(v)}`).toBe(true);
     }
   });
 });

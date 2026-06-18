@@ -62,37 +62,42 @@ export async function DELETE(request: Request) {
     // 1. Pre-read stripe_customer_id BEFORE the atomic delete (#29).
     //    The RPC in step 2 will wipe the profile row, so we must capture
     //    external-system identifiers ahead of time.
-    const { data: profile } = await admin
+    const { data: profile, error: profileError } = await admin
       .from("profiles")
       .select("stripe_customer_id")
       .eq("id", userId)
       .maybeSingle();
+    // SEC/bug: a FAILED read (transient DB fault) must NOT be conflated with
+    // "no Stripe customer". If we swallowed the error, stripeCustomerId would
+    // default to null, the cancellation block below would be skipped, and we'd
+    // proceed to irreversibly delete the account while an active subscription
+    // keeps billing — the exact orphaned-billing failure this ordering exists to
+    // prevent, just triggered by a profile-read fault instead of a Stripe fault.
+    // maybeSingle() returns {data:null,error:null} for a genuine no-row result
+    // (legitimately no profile → nothing to cancel), so only a real error aborts.
+    if (profileError) {
+      console.error(
+        "[account/delete] Profile pre-read failed — aborting deletion to avoid orphaning billing:",
+        profileError.message
+      );
+      return NextResponse.json(
+        {
+          error:
+            "Could not verify your billing state right now. Your account was NOT deleted — please try again shortly.",
+        },
+        { status: 502 }
+      );
+    }
     const stripeCustomerId =
       (profile?.stripe_customer_id as string | null | undefined) ?? null;
 
-    // 2. Atomic DB deletion via SECURITY DEFINER RPC (#29).
-    //    Replaces a 7-step non-transactional sequence that could leave
-    //    orphan rows on failure. The RPC wraps the whole cascade in a
-    //    single PL/pgSQL transaction and returns per-table counts.
-    const { error: rpcError } = await admin.rpc("delete_user_account", {
-      uid: userId,
-    });
-    if (rpcError) {
-      console.error(
-        "[account/delete] delete_user_account RPC failed:",
-        rpcError.message
-      );
-      return NextResponse.json(
-        { error: "Account deletion failed. Please contact support." },
-        { status: 500 }
-      );
-    }
-
-    // 3. Cancel Stripe subscriptions using the pre-read customer id.
-    //    External call — deliberately outside the DB tx. Failure is
-    //    logged but non-fatal (data cleanup has already succeeded;
-    //    Stripe customer.subscription.deleted webhook will eventually
-    //    reconcile).
+    // 2. Cancel Stripe subscriptions BEFORE any irreversible deletion (U7/bug).
+    //    Previously this ran AFTER the DB+auth delete and swallowed errors: if
+    //    Stripe were unreachable the subscription would keep billing with no
+    //    profile left to reconcile (and no cancellation event is emitted if we
+    //    never cancel, so the webhook can't "eventually reconcile"). We now
+    //    cancel first and ABORT the deletion on failure — the user retries once
+    //    Stripe is reachable; meanwhile account + subscription stay consistent.
     const stripeSecretKey = process.env.STRIPE_SECRET_KEY;
     if (
       stripeCustomerId &&
@@ -129,8 +134,32 @@ export async function DELETE(request: Request) {
         );
       } catch (stripeErr) {
         const msg = stripeErr instanceof Error ? stripeErr.message : "Unknown error";
-        console.error("[account/delete] Stripe cancellation error (non-fatal):", msg);
+        console.error("[account/delete] Stripe cancellation failed — aborting deletion:", msg);
+        return NextResponse.json(
+          {
+            error:
+              "Could not cancel your active subscription right now. Your account was NOT deleted — please try again shortly.",
+          },
+          { status: 502 }
+        );
       }
+    }
+
+    // 3. Atomic DB deletion via SECURITY DEFINER RPC (#29). Runs only after any
+    //    subscription has been cancelled, so a billing record can't outlive the
+    //    account. The RPC wraps the whole cascade in a single PL/pgSQL tx.
+    const { error: rpcError } = await admin.rpc("delete_user_account", {
+      uid: userId,
+    });
+    if (rpcError) {
+      console.error(
+        "[account/delete] delete_user_account RPC failed:",
+        rpcError.message
+      );
+      return NextResponse.json(
+        { error: "Account deletion failed. Please contact support." },
+        { status: 500 }
+      );
     }
 
     // 4. Delete the auth user (point-of-no-return, external to DB tx)

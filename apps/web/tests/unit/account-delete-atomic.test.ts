@@ -48,6 +48,7 @@ vi.mock("stripe", () => {
 let _profileRow: { stripe_customer_id: string | null } | null = {
   stripe_customer_id: "cus_test_abc",
 };
+let _profileError: { message: string } | null = null;
 let _rpcError: { message: string } | null = null;
 let _deleteAuthError: { message: string } | null = null;
 const _rpcCalls: Array<{ fn: string; args: unknown }> = [];
@@ -61,7 +62,7 @@ vi.mock("@supabase/supabase-js", () => ({
           eq: (_col: string, val: string) => ({
             maybeSingle: async () => {
               _profileSelectCalls.push({ eq: val });
-              return { data: _profileRow, error: null };
+              return { data: _profileError ? null : _profileRow, error: _profileError };
             },
           }),
         }),
@@ -87,12 +88,17 @@ describe("L2: /api/account/delete — atomic RPC + Stripe preserve (#29)", () =>
     vi.spyOn(console, "info").mockImplementation(() => undefined);
     _getUserOverride = { user: _mockUser, error: null };
     _profileRow = { stripe_customer_id: "cus_test_abc" };
+    _profileError = null;
     _rpcError = null;
     _deleteAuthError = null;
     _rpcCalls.length = 0;
     _profileSelectCalls.length = 0;
     _mockStripeList.mockReset();
     _mockStripeCancel.mockReset();
+    // Default: no subscriptions. The cancel-before-delete path now always runs
+    // (when a stripe_customer_id is present), so list() needs a sane default.
+    _mockStripeList.mockResolvedValue({ data: [] });
+    _mockStripeCancel.mockResolvedValue({});
     process.env.NEXT_PUBLIC_SUPABASE_URL = "https://test.supabase.co";
     process.env.SUPABASE_SERVICE_ROLE_KEY = "test-service-role-key";  // pragma: allowlist secret
     process.env.STRIPE_SECRET_KEY = "sk_test_real";  // pragma: allowlist secret
@@ -147,20 +153,38 @@ describe("L2: /api/account/delete — atomic RPC + Stripe preserve (#29)", () =>
     expect(_mockStripeCancel).toHaveBeenCalledTimes(2);
   });
 
-  it("returns 500 when the RPC fails (and does NOT hit Stripe)", async () => {
+  it("returns 500 when the RPC fails (no subs, so cancel never runs)", async () => {
     _rpcError = { message: "unique_violation" };
 
     const { status } = await invoke();
     expect(status).toBe(500);
+    // Default mock has no subscriptions, so cancel is never invoked.
     expect(_mockStripeCancel).not.toHaveBeenCalled();
   });
 
-  it("Stripe error is non-fatal (deletion still succeeds)", async () => {
+  it("aborts deletion (502) when Stripe cancellation fails — no zombie billing", async () => {
+    // Cancellation now runs BEFORE the irreversible delete; if it fails we must
+    // NOT delete the account (else the subscription keeps billing with nothing
+    // left to reconcile).
     _mockStripeList.mockRejectedValue(new Error("Stripe API down"));
 
     const { status, body } = await invoke();
-    expect(status).toBe(200);
-    expect(body.deleted).toBe(true);
+    expect(status).toBe(502);
+    expect(body.deleted).toBeUndefined();
+    expect(_rpcCalls).toHaveLength(0); // deletion did not proceed
+  });
+
+  it("aborts deletion (502) when the profile pre-read errors — no orphaned billing", async () => {
+    // A transient DB fault reading stripe_customer_id must NOT be treated as
+    // "no customer". Deleting anyway would orphan an active subscription with no
+    // profile left to reconcile.
+    _profileError = { message: "connection reset by peer" };
+
+    const { status, body } = await invoke();
+    expect(status).toBe(502);
+    expect(body.deleted).toBeUndefined();
+    expect(_rpcCalls).toHaveLength(0); // deletion did not proceed
+    expect(_mockStripeCancel).not.toHaveBeenCalled();
   });
 
   it("skips Stripe when stripe_customer_id is null", async () => {

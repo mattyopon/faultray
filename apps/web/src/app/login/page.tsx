@@ -7,22 +7,7 @@ import { Suspense, useState } from "react";
 import { Mail, Loader2, CheckCircle2, Lock } from "lucide-react";
 import { useLocale } from "@/lib/useLocale";
 import { appDict } from "@/i18n/app-dict";
-
-// SEC (U29): accept only same-origin internal paths for post-login redirects.
-function isSafeInternalPath(raw: string | null): boolean {
-  if (!raw) return false;
-  // Single leading slash only; reject protocol-relative (//), backslashes
-  // (browsers fold \ → /, enabling //host) and any path traversal.
-  if (!raw.startsWith("/") || raw.startsWith("//")) return false;
-  if (raw.includes("\\") || raw.includes("..")) return false;
-  // Defense in depth: resolving against an arbitrary origin must stay on it.
-  try {
-    const base = "https://faultray.invalid";
-    return new URL(raw, base).origin === base;
-  } catch {
-    return false;
-  }
-}
+import { isSafeInternalPath } from "@/lib/safe-redirect";
 
 function LoginForm() {
   const locale = useLocale();

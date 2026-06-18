@@ -74,20 +74,25 @@ export async function updateActionStatus(
   id: string,
   status: Action["status"]
 ): Promise<void> {
-  // SEC (U32): scope the mutation by company and verify a row was actually
-  // updated. `.update().eq("id")` without a company predicate is a cross-tenant
-  // write under weak RLS; without `.select()` a zero-row update returns no
-  // error and the UI falsely shows success.
-  const { data, error } = await supabase()
+  // SEC (U32): keep the company predicate so this can never become a
+  // cross-tenant write under weak RLS.
+  //
+  // NOTE: People-Risk is currently a DEMO-only feature wired to the seeded demo
+  // company (DEMO_COMPANY_ID, owner_id = NULL), which is intentionally
+  // read-only at the RLS layer (migration 023). So this UPDATE legitimately
+  // affects 0 rows and the actions page applies an OPTIMISTIC, per-session
+  // update — interactive but ephemeral. We therefore do NOT throw on a 0-row
+  // result here (an earlier rowcount check broke the demo's "mark done" button:
+  // the throw skipped the optimistic UI update). A genuine DB error still
+  // propagates. If People-Risk becomes real multi-tenant (writable per-org
+  // data), reinstate a rows-affected check so a silently-failed real write
+  // can't masquerade as success.
+  const { error } = await supabase()
     .from("actions")
     .update({ status })
     .eq("id", id)
-    .eq("company_id", DEMO_COMPANY_ID)
-    .select("id");
+    .eq("company_id", DEMO_COMPANY_ID);
   if (error) throw error;
-  if (!data || data.length === 0) {
-    throw new Error("Action not found or not in scope");
-  }
 }
 
 /* ── Snapshots ───────────────────────────────────────────── */

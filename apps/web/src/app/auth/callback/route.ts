@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { isSafeInternalPath } from "@/lib/safe-redirect";
 
 export const dynamic = "force-dynamic";
 
@@ -15,41 +16,14 @@ export async function GET(request: Request) {
     return NextResponse.redirect(`${origin}/login?error=${msg}`);
   }
 
-  // SEC-02 / #26: Validate redirectTo via explicit allow-list of internal
-  // app routes. Previous regex `^\/(?:[...]*)$` accepted `//evil.com` and
-  // similar path-normalization traps. While NextResponse.redirect(origin+path)
-  // prevents true cross-origin open redirect, the user-visible URL could
-  // still render as `https://faultray.com//evil.com` which is confusing.
-  // An allow-list of top-level segments removes the attack surface entirely.
-  const SAFE_REDIRECT_PREFIXES: ReadonlyArray<string> = [
-    "/dashboard",
-    "/settings",
-    "/simulate",
-    "/projects",
-    "/reports",
-    "/compliance",
-    "/dora",
-    "/pricing",
-    "/billing",
-    "/whatif",
-  ];
+  // SEC/#26: validate redirectTo as a SAME-ORIGIN internal path, shared with the
+  // login page (src/lib/safe-redirect). The redirect is built same-origin below
+  // (`${origin}${redirectTo}`), so any internal path that passes is safe from
+  // open-redirect. The previous narrow prefix allow-list silently dropped valid
+  // deep links (e.g. /people-risk/actions) to /dashboard even though the login
+  // page accepted them.
   const rawRedirectTo = searchParams.get("redirectTo") || "/dashboard";
-  const isSafeRedirect = (value: string): boolean => {
-    // Must be a proper internal path (single leading slash, no protocol / authority marker)
-    if (!value.startsWith("/") || value.startsWith("//") || value.startsWith("/\\")) {
-      return false;
-    }
-    // Reject path-traversal segments that could normalize out of the
-    // allow-listed prefix (e.g. `/dashboard/../admin` → `/admin`).
-    if (value.includes("..") || value.includes("\\")) {
-      return false;
-    }
-    // Must begin with one of our known top-level segments
-    return SAFE_REDIRECT_PREFIXES.some(
-      (p) => value === p || value.startsWith(`${p}/`) || value.startsWith(`${p}?`) || value.startsWith(`${p}#`)
-    );
-  };
-  const redirectTo = isSafeRedirect(rawRedirectTo) ? rawRedirectTo : "/dashboard";
+  const redirectTo = isSafeInternalPath(rawRedirectTo) ? rawRedirectTo : "/dashboard";
 
   if (code) {
     try {
