@@ -325,3 +325,24 @@ class TestDefaultMTBF:
         result = run_monte_carlo(graph, n_trials=1000, seed=42)
         # App alone is on critical path, availability should be reasonable
         assert result.availability_mean > 0.9
+
+
+# ---------------------------------------------------------------------------
+# Hardening: CI clamp and non-positive trial guard
+# ---------------------------------------------------------------------------
+
+class TestMonteCarloHardening:
+    def test_confidence_interval_clamped_to_unit_interval(self) -> None:
+        graph = _simple_graph()
+        result = run_monte_carlo(graph, n_trials=2000, seed=7)
+        lo, hi = result.confidence_interval_95
+        assert 0.0 <= lo <= 1.0
+        assert 0.0 <= hi <= 1.0
+        assert lo <= hi
+
+    def test_zero_trials_does_not_crash(self) -> None:
+        graph = _simple_graph()
+        # n_trials <= 0 must be coerced to a valid run (no div-by-zero).
+        result = run_monte_carlo(graph, n_trials=0, seed=1)
+        assert result.n_trials >= 1
+        assert 0.0 <= result.availability_mean <= 1.0

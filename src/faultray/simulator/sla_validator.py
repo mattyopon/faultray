@@ -433,6 +433,11 @@ class SLAValidatorEngine:
         if not graph.components:
             return 1.0
 
+        # Guard against div-by-zero / meaningless results on a non-positive
+        # trial count.
+        if simulations < 1:
+            simulations = 1
+
         rng = random.Random(seed)
         target_avail = target.target_availability
 
@@ -477,9 +482,12 @@ class SLAValidatorEngine:
                 sampled_mtbf = rng.expovariate(1.0 / info["mtbf_hours"]) if info["mtbf_hours"] > 0 else 0.0
                 sampled_mtbf = max(sampled_mtbf, 1e-6)
 
-                # Sample MTTR from log-normal distribution
+                # Sample MTTR from log-normal distribution.
+                # Correct mu by -sigma^2/2 so the distribution's MEAN (not its
+                # median) equals mttr_hours; otherwise MTTR is biased upward by
+                # exp(sigma^2/2) and availability is under-estimated.
                 if info["mttr_hours"] > 0:
-                    mu = math.log(info["mttr_hours"])
+                    mu = math.log(info["mttr_hours"]) - (0.5 ** 2) / 2.0
                     sampled_mttr = rng.lognormvariate(mu, 0.5)
                 else:
                     sampled_mttr = 1e-9
@@ -488,7 +496,9 @@ class SLAValidatorEngine:
                 # Single-instance availability
                 a_single = sampled_mtbf / (sampled_mtbf + sampled_mttr)
 
-                # Apply redundancy
+                # Apply redundancy.
+                # TODO(review/U10): assumes 1-of-N redundancy; k-of-n / quorum
+                # systems are over-stated (see monte_carlo.py).
                 a_tier = 1.0 - (1.0 - a_single) ** info["replicas"]
 
                 # Multiply into system if critical

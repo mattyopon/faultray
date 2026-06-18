@@ -125,16 +125,17 @@ def _sample_exponential(rng: random.Random, mean: float) -> float:
 
 
 def _sample_lognormal(rng: random.Random, mean: float) -> float:
-    """Sample from a log-normal distribution whose *underlying normal*
-    has the given mean as its median.
+    """Sample from a log-normal distribution whose *expected value* is ``mean``.
 
-    We set mu = ln(mean) and sigma = 0.5 (moderate variance) so that
-    the median of the log-normal equals *mean*.
+    Previously this set ``mu = ln(mean)``, which makes ``mean`` the MEDIAN, not
+    the mean — the distribution's actual expectation is ``mean * exp(sigma^2/2)``
+    (~+13% at sigma=0.5). That biased sampled MTTR upward and so under-estimated
+    availability. We correct mu by ``-sigma^2/2`` so E[X] == ``mean`` exactly.
     """
     if mean <= 0:
         return 0.0
     sigma = 0.5
-    mu = math.log(mean)
+    mu = math.log(mean) - (sigma ** 2) / 2.0  # makes E[X] == mean (not median)
     return rng.lognormvariate(mu, sigma)
 
 
@@ -170,6 +171,11 @@ def run_monte_carlo(
     MonteCarloResult
         Percentiles, mean, std, confidence interval, and per-trial results.
     """
+    # Guard against a non-positive trial count (would otherwise yield
+    # statistically meaningless all-zero results).
+    if n_trials < 1:
+        n_trials = 1
+
     if not graph.components:
         return MonteCarloResult(
             n_trials=n_trials,
@@ -236,6 +242,12 @@ def run_monte_carlo(
             a_single = sampled_mtbf / (sampled_mtbf + sampled_mttr)
 
             # 4. Apply redundancy: P(all replicas fail) = (1 - A)^replicas
+            # TODO(review/U10): this assumes 1-of-N redundancy (any single
+            # replica keeps the tier up). Quorum / k-of-n systems (e.g. a
+            # database needing a majority) are over-stated by this formula.
+            # The component model has no quorum parameter yet; 1-of-N is the
+            # safe default for stateless replicas. Revisit when a k-of-n
+            # attribute exists.
             a_tier = 1.0 - (1.0 - a_single) ** info["replicas"]
 
             # 5. Multiply into system availability if on critical path
@@ -252,11 +264,13 @@ def run_monte_carlo(
     avail_p95 = _percentile(trial_results, 95)
     avail_p99 = _percentile(trial_results, 99)
 
-    # 95% confidence interval for the mean (normal approximation)
+    # 95% confidence interval for the mean (normal approximation).
+    # Availability is a probability, so clamp the interval to [0, 1] — the
+    # normal approximation can otherwise produce bounds < 0 or > 1.
     n = len(trial_results)
     se = avail_std / math.sqrt(n) if n > 0 else 0.0
-    ci_lower = avail_mean - 1.96 * se
-    ci_upper = avail_mean + 1.96 * se
+    ci_lower = max(0.0, avail_mean - 1.96 * se)
+    ci_upper = min(1.0, avail_mean + 1.96 * se)
 
     # Annual downtime from percentiles
     # p50 downtime: median availability -> median downtime
