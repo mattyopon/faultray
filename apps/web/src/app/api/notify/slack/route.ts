@@ -33,8 +33,10 @@ export async function POST(request: Request) {
   if (!webhookUrl || typeof webhookUrl !== "string") {
     return NextResponse.json({ error: "webhookUrl is required" }, { status: 400 });
   }
-  if (typeof score !== "number") {
-    return NextResponse.json({ error: "score is required" }, { status: 400 });
+  if (typeof score !== "number" || !Number.isFinite(score)) {
+    // SEC (U16): reject NaN/Infinity (e.g. JSON `1e999` parses to Infinity),
+    // which would render as "Infinity/100" in the Slack message.
+    return NextResponse.json({ error: "score must be a finite number" }, { status: 400 });
   }
 
   const criticalCount = typeof critical === "number" ? critical : 0;
@@ -47,8 +49,12 @@ export async function POST(request: Request) {
   } catch {
     return NextResponse.json({ error: "webhookUrl must be a Slack incoming webhook URL" }, { status: 400 });
   }
-  if (parsedWebhookUrl.hostname !== "hooks.slack.com") {
-    return NextResponse.json({ error: "webhookUrl must be a Slack incoming webhook URL" }, { status: 400 });
+  // SEC (U25): pin https + exact host. The host check already defeats
+  // `hooks.slack.com.evil.com` / userinfo (`@evil.com`) bypasses; also require
+  // https so the webhook (which embeds a secret token in its path) is never
+  // sent in cleartext.
+  if (parsedWebhookUrl.protocol !== "https:" || parsedWebhookUrl.hostname !== "hooks.slack.com") {
+    return NextResponse.json({ error: "webhookUrl must be an https Slack incoming webhook URL" }, { status: 400 });
   }
 
   const scoreEmoji = score >= 90 ? ":white_check_mark:" : score >= 70 ? ":warning:" : ":red_circle:";
