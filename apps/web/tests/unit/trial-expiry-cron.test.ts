@@ -24,12 +24,12 @@ let rpcResult: { data: Array<{ id: string; email: string }> | null; error: { mes
   data: [],
   error: null,
 };
-let capturedRpcName: string | null = null;
+let capturedRpcNames: string[] = [];
 
 vi.mock("@supabase/supabase-js", () => ({
   createClient: vi.fn(() => ({
     rpc: vi.fn((name: string) => {
-      capturedRpcName = name;
+      capturedRpcNames.push(name);
       return Promise.resolve(rpcResult);
     }),
   })),
@@ -42,7 +42,7 @@ describe("L2: /api/cron/trial-expiry", () => {
     vi.spyOn(console, "error").mockImplementation(() => undefined);
     vi.spyOn(console, "info").mockImplementation(() => undefined);
     rpcResult = { data: [], error: null };
-    capturedRpcName = null;
+    capturedRpcNames = [];
     process.env.CRON_SECRET = "test-secret";  // pragma: allowlist secret
     process.env.NEXT_PUBLIC_SUPABASE_URL = "https://test.supabase.co";
     process.env.SUPABASE_SERVICE_ROLE_KEY = "test-service-key";  // pragma: allowlist secret
@@ -74,13 +74,13 @@ describe("L2: /api/cron/trial-expiry", () => {
     expect(status).toBe(401);
     expect(body.error).toBe("Unauthorized");
     // RPC must not have been called when unauthorized
-    expect(capturedRpcName).toBeNull();
+    expect(capturedRpcNames).toEqual([]);
   });
 
   it("returns 401 with wrong bearer token", async () => {
     const { status } = await invoke({ authorization: "Bearer wrong" });
     expect(status).toBe(401);
-    expect(capturedRpcName).toBeNull();
+    expect(capturedRpcNames).toEqual([]);
   });
 
   it("returns 503 when Supabase env is missing", async () => {
@@ -99,7 +99,7 @@ describe("L2: /api/cron/trial-expiry", () => {
     });
     expect(status).toBe(200);
     expect(body.downgraded).toBe(0);
-    expect(capturedRpcName).toBe("downgrade_expired_trials");
+    expect(capturedRpcNames[0]).toBe("downgrade_expired_trials");
   });
 
   it("returns downgraded count equal to RPC rows", async () => {
@@ -138,7 +138,7 @@ describe("L2: /api/cron/trial-expiry", () => {
 
   it("invokes the exact RPC function name", async () => {
     await invoke({ authorization: "Bearer test-secret" });
-    expect(capturedRpcName).toBe("downgrade_expired_trials");
+    expect(capturedRpcNames[0]).toBe("downgrade_expired_trials");
   });
 
   // Vercel Cron invokes the path with GET; a POST-only route 405s every
@@ -151,12 +151,12 @@ describe("L2: /api/cron/trial-expiry", () => {
     );
     expect(status).toBe(200);
     expect(body.downgraded).toBe(1);
-    expect(capturedRpcName).toBe("downgrade_expired_trials");
+    expect(capturedRpcNames[0]).toBe("downgrade_expired_trials");
   });
 
   it("GET still requires the cron secret", async () => {
     const { status } = await invoke({}, "GET");
     expect(status).toBe(401);
-    expect(capturedRpcName).toBeNull();
+    expect(capturedRpcNames).toEqual([]);
   });
 });

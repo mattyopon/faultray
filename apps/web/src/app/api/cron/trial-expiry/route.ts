@@ -59,7 +59,30 @@ export async function POST(request: Request) {
 
   console.info(`[cron/trial-expiry] Downgraded ${downgraded} users`);
 
-  return NextResponse.json({ downgraded });
+  // U6: also expire stale pending org invites (email-based invites never
+  // expired). Non-fatal — a failure here must not block the trial downgrade.
+  let expiredInvites = 0;
+  try {
+    const { data: invData, error: invErr } = await supabase.rpc(
+      "expire_stale_org_invites"
+    );
+    if (invErr) {
+      console.error(
+        "[cron/trial-expiry] expire_stale_org_invites error:",
+        invErr.message
+      );
+    } else if (typeof invData === "number") {
+      expiredInvites = invData;
+    }
+  } catch (e) {
+    console.error(
+      "[cron/trial-expiry] expire_stale_org_invites threw:",
+      e instanceof Error ? e.message : e
+    );
+  }
+  console.info(`[cron/trial-expiry] Expired ${expiredInvites} stale org invites`);
+
+  return NextResponse.json({ downgraded, expiredInvites });
 }
 
 // Vercel Cron invokes cron paths with GET (attaching
