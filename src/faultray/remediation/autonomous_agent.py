@@ -12,6 +12,7 @@ from __future__ import annotations
 
 import json
 import logging
+import os
 import subprocess
 import uuid
 from dataclasses import dataclass, field
@@ -150,6 +151,13 @@ class AutonomousRemediationAgent:
 
     _STEP_TIMEOUT = 300  # seconds per execution step
 
+    # Live execution (`terraform apply -auto-approve`, `kubectl apply`) against
+    # real infrastructure is DEFAULT-OFF. It only runs when ALL of the
+    # following hold: dry_run is False, auto_approve is True, AND the operator
+    # has explicitly opted in via the FAULTRAY_ALLOW_AUTO_APPLY environment
+    # variable. Any other combination falls back to dry-run (preview only).
+    _AUTO_APPLY_ENV = "FAULTRAY_ALLOW_AUTO_APPLY"
+
     def __init__(
         self,
         model_path: str = "faultray-model.json",
@@ -179,6 +187,18 @@ class AutonomousRemediationAgent:
     # ------------------------------------------------------------------
     # Public API
     # ------------------------------------------------------------------
+
+    def _auto_apply_allowed(self) -> bool:
+        """Return True only when live IaC apply is fully opted into.
+
+        Requires dry_run=False AND auto_approve=True AND the explicit
+        ``FAULTRAY_ALLOW_AUTO_APPLY`` env opt-in. Defaults to False so the
+        agent never modifies live infrastructure unless an operator has taken
+        all three deliberate steps.
+        """
+        env_optin = os.environ.get(self._AUTO_APPLY_ENV, "").strip().lower()
+        env_allowed = env_optin in ("1", "true", "yes", "on")
+        return (not self.dry_run) and self.auto_approve and env_allowed
 
     def run_cycle(self) -> RemediationCycle:
         """Run one full detect -> fix -> verify cycle (synchronous)."""
@@ -486,6 +506,17 @@ class AutonomousRemediationAgent:
 
         steps = self._plan_to_steps(plan)
 
+        live_apply = self._auto_apply_allowed()
+        if (not self.dry_run) and not live_apply:
+            # Live apply was requested but is not fully opted-in. Fail safe to
+            # preview-only rather than touching real infrastructure.
+            logger.warning(
+                "Live IaC apply requested but not permitted; falling back to "
+                "dry-run. To enable, set %s=1 AND auto_approve=True AND "
+                "dry_run=False.",
+                self._AUTO_APPLY_ENV,
+            )
+
         for step in steps:
             required = self._step_permissions(step)
             if not required.issubset(ratchet.remaining_permissions):
@@ -503,8 +534,9 @@ class AutonomousRemediationAgent:
             elif step.risk_level == "medium":
                 ratchet.apply_ratchet(SensitivityLevel.CONFIDENTIAL)
 
-            # Execute
-            if not self.dry_run:
+            # Execute — only when live apply is fully opted-in (see
+            # _auto_apply_allowed); otherwise record a dry-run preview.
+            if live_apply:
                 result = self._execute_step(step)
                 cycle.execution_log.append({
                     "step": step.description,
@@ -677,7 +709,7 @@ class AutonomousRemediationAgent:
             1 for e in cycle.execution_log if e.get("status") == "failed"
         )
 
-        mode = "DRY-RUN" if self.dry_run else "LIVE"
+        mode = "LIVE" if self._auto_apply_allowed() else "DRY-RUN"
 
         cycle.report_summary = (
             f"[{mode}] Remediation cycle {cycle.id}: "
@@ -796,7 +828,7 @@ class AutonomousRemediationAgent:
 
     def _render_markdown_report(self, cycle: RemediationCycle) -> str:
         """Render a markdown report for a remediation cycle."""
-        mode = "DRY-RUN" if self.dry_run else "LIVE"
+        mode = "LIVE" if self._auto_apply_allowed() else "DRY-RUN"
         improvement = cycle.improvement_achieved or 0.0
         final = cycle.final_score or cycle.simulated_score
 
