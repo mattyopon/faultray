@@ -806,7 +806,12 @@ class TestOAuthRoutes:
                 with patch(
                     "faultray.api.oauth.get_user_profile",
                     new_callable=AsyncMock,
-                    return_value={"email": "new@example.com", "name": "New User"},
+                    return_value={
+                        "email": "new@example.com",
+                        "name": "New User",
+                        "id": "gh-new-1",
+                        "email_verified": True,
+                    },
                 ):
                     db_client.cookies.set("oauth_state", state)
                     # C3 fix: OAuth callback now redirects to / instead of JSON
@@ -818,7 +823,8 @@ class TestOAuthRoutes:
                     assert resp.headers["location"] == "/"
 
     def test_oauth_callback_existing_user(self, db_client):
-        """Cover lines 868-874: existing user gets API key rotated."""
+        """Existing user is logged in (linked by verified email); the API key is
+        NOT rotated on login (security follow-up)."""
         import hashlib
         import hmac as _hmac
         from faultray.api.auth import hash_api_key
@@ -853,6 +859,8 @@ class TestOAuthRoutes:
                     return_value={
                         "email": "existing@example.com",
                         "name": "Updated Name",
+                        "id": "gh-existing-1",
+                        "email_verified": True,
                     },
                 ):
                     db_client.cookies.set("oauth_state", state)
@@ -863,6 +871,19 @@ class TestOAuthRoutes:
                     )
                     assert resp.status_code == 302
                     assert resp.headers["location"] == "/"
+
+                    # SEC: the existing account's API key must NOT be rotated on
+                    # an OAuth login (that rotation was the takeover lever).
+                    import sqlite3
+                    conn = sqlite3.connect(db_client._db_path)
+                    try:
+                        row = conn.execute(
+                            "SELECT api_key_hash FROM users WHERE email=?",
+                            ("existing@example.com",),
+                        ).fetchone()
+                    finally:
+                        conn.close()
+                    assert row[0] == hash_api_key("old-key")
 
     def test_oauth_callback_db_failure(self, client):
         """Cover lines 881-883: user creation fails."""
