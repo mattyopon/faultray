@@ -586,9 +586,9 @@ _v1_router = _APIRouter(prefix="/api/v1")
 
 
 @_v1_router.get("/graph-data", response_class=JSONResponse)
-async def v1_graph_data():
+async def v1_graph_data(user=Depends(_require_permission("view_results"))):
     from faultray.api.routes.graph import api_graph_data
-    return await api_graph_data()
+    return await api_graph_data(user)
 
 
 @_v1_router.post("/simulate", response_class=JSONResponse)
