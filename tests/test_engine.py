@@ -7,6 +7,8 @@ import tempfile
 from pathlib import Path
 from unittest.mock import MagicMock, patch
 
+import pytest
+
 
 from faultray.model.components import (
     Component,
@@ -241,7 +243,12 @@ class TestRunScenario:
         with patch.object(engine.cascade_engine, "simulate_fault", side_effect=RuntimeError("boom")):
             result = engine.run_scenario(_scenario(faults=[_fault("db")]))
         assert result.error == "boom"
+        # risk_score is 0.0 only because it could not be computed — the result
+        # must be distinguishable as errored, not silently treated as safe.
         assert result.risk_score == 0.0
+        assert result.is_errored is True
+        assert result.is_critical is False
+        assert result.is_warning is False
 
     def test_exception_in_traffic_spike(self):
         engine = self._engine()
@@ -249,6 +256,19 @@ class TestRunScenario:
             result = engine.run_scenario(_scenario(traffic_multiplier=2.0))
         assert result.error == "bad"
         assert result.risk_score == 0.0
+        assert result.is_errored is True
+
+    def test_errored_scenario_not_counted_as_passed(self):
+        """An errored scenario must NOT appear in report.passed (false negative)."""
+        from faultray.simulator.engine import SimulationReport
+
+        engine = self._engine()
+        with patch.object(engine.cascade_engine, "simulate_fault", side_effect=RuntimeError("boom")):
+            result = engine.run_scenario(_scenario(faults=[_fault("db")]))
+        report = SimulationReport(results=[result])
+        assert result in report.errored
+        assert result not in report.passed
+        assert report.passed == []
 
 
 # ---------------------------------------------------------------------------
@@ -311,8 +331,12 @@ class TestExecuteScenarioLikelihood:
         result = engine._execute_scenario(_scenario(faults=faults))
         assert result.cascade.likelihood <= 0.05
 
-    def test_merged_chain_uses_min_likelihood(self):
-        """When multiple chains have effects, merged uses min likelihood."""
+    def test_merged_chain_uses_product_likelihood(self):
+        """Compound independent faults => joint likelihood is the PRODUCT.
+
+        The product of two probabilities in (0,1] is <= each factor and stays
+        within (0,1]; using min() would have over-stated the joint likelihood.
+        """
         graph = _make_graph(
             _comp("a", "A", metrics=ResourceMetrics(cpu_percent=95)),
             _comp("b", "B"),
@@ -322,6 +346,17 @@ class TestExecuteScenarioLikelihood:
         result = engine._execute_scenario(_scenario(faults=faults))
         assert result.cascade.likelihood > 0
         assert result.cascade.likelihood <= 1.0
+
+        # The merged likelihood must equal the product of the per-chain
+        # likelihoods (and be <= the minimum, never the min itself when both
+        # factors are < 1).
+        chains = []
+        c1 = engine.cascade_engine.simulate_fault(faults[0])
+        c2 = engine.cascade_engine.simulate_fault(faults[1])
+        chains = [c for c in (c1, c2) if c.effects]
+        if len(chains) == 2:
+            expected = chains[0].likelihood * chains[1].likelihood
+            assert result.cascade.likelihood == pytest.approx(expected)
 
     def test_no_effects_chains_ignored_for_likelihood(self):
         """Chains with no effects are ignored for min-likelihood calculation."""
