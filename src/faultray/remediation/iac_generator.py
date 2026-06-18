@@ -11,12 +11,51 @@ recovery) and include cost estimates and expected resilience score impact.
 
 from __future__ import annotations
 
+import re
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any, Callable
 
 from faultray.model.components import Component
 from faultray.model.graph import InfraGraph
+
+
+# ---------------------------------------------------------------------------
+# Input sanitisation — untrusted component id/name flow into generated
+# Terraform/Kubernetes that an operator later applies. Without sanitisation a
+# crafted id/name injects resources/manifests (and, via the file path, a
+# directory-traversal write). Identifiers are forced onto a strict allow-list;
+# free-text values are escaped for the double-quoted string contexts they land
+# in.
+# ---------------------------------------------------------------------------
+
+_SAFE_ID_RE = re.compile(r"[^a-zA-Z0-9_-]")
+
+
+def _safe_identifier(value: str) -> str:
+    """Force *value* onto a strict ``[a-zA-Z0-9_-]`` allow-list.
+
+    Used for every interpolation of a component id into a Terraform/K8s
+    resource label, resource name, or generated file path. Path separators and
+    any other metacharacter are replaced so the result can never traverse
+    directories or break out of an identifier position.
+    """
+    cleaned = _SAFE_ID_RE.sub("_", value).strip("_-")
+    return cleaned or "resource"
+
+
+def _escape_hcl_value(value: str) -> str:
+    """Escape *value* for a double-quoted HCL/YAML string literal.
+
+    Neutralises quote/backslash break-outs and newlines so a crafted component
+    name cannot inject additional HCL attributes or YAML keys.
+    """
+    return (
+        value.replace("\\", "\\\\")
+        .replace('"', '\\"')
+        .replace("\n", " ")
+        .replace("\r", " ")
+    )
 
 
 # ---------------------------------------------------------------------------
@@ -627,18 +666,23 @@ class IaCGenerator:
                     counters[rule.key] += 1
                     idx = counters[rule.key]
 
+                    # Sanitise untrusted id/name before they reach generated
+                    # HCL/YAML and the on-disk file path (injection + traversal).
+                    safe_id = _safe_identifier(comp.id)
+                    safe_name = _escape_hcl_value(comp.name)
+
                     rendered = rule.template.format(
-                        comp_id=comp.id,
-                        comp_name=comp.name,
+                        comp_id=safe_id,
+                        comp_name=safe_name,
                     )
 
                     description = rule.description_template.format(
-                        comp_id=comp.id,
-                        comp_name=comp.name,
+                        comp_id=safe_id,
+                        comp_name=safe_name,
                     )
 
                     phase_dir = _PHASE_DIR[rule.phase]
-                    filename = f"{idx:02d}-{comp.id}-{rule.key}{rule.file_extension}"
+                    filename = f"{idx:02d}-{safe_id}-{rule.key}{rule.file_extension}"
                     file_path = f"{phase_dir}/{filename}"
 
                     all_files.append(

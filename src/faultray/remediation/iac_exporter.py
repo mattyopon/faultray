@@ -68,6 +68,40 @@ def _sanitize_k8s_name(name: str) -> str:
     return re.sub(r"[^a-z0-9-]", "-", name.lower()).strip("-")
 
 
+def _esc(value: str) -> str:
+    """Escape free-text for a double-quoted HCL/YAML/Python string or comment.
+
+    Component names/hosts are untrusted and are interpolated directly into
+    generated Terraform/CloudFormation/Kubernetes/Pulumi-Python — for Pulumi
+    that string is *executable code*, so an unescaped quote is code injection at
+    ``pulumi up``. Neutralise quote/backslash break-outs and strip newlines.
+    """
+    return (
+        str(value)
+        .replace("\\", "\\\\")
+        .replace('"', '\\"')
+        .replace("\n", " ")
+        .replace("\r", " ")
+    )
+
+
+def _sanitize_graph_for_export(graph: InfraGraph) -> InfraGraph:
+    """Return a shallow copy of *graph* with free-text string fields escaped.
+
+    Identifiers are independently sanitised (``_sanitize_id`` /
+    ``_sanitize_k8s_name``); this covers every ``comp.name`` / ``comp.host``
+    interpolation across all export formats in one place.
+    """
+    safe = InfraGraph()
+    for comp in graph.components.values():
+        safe.add_component(
+            comp.model_copy(update={"name": _esc(comp.name), "host": _esc(comp.host)})
+        )
+    for dep in graph.all_dependency_edges():
+        safe.add_dependency(dep)
+    return safe
+
+
 # ---------------------------------------------------------------------------
 # Port mapping helpers
 # ---------------------------------------------------------------------------
@@ -1308,6 +1342,7 @@ class IaCExporter:
     # ---- Terraform ---------------------------------------------------------
 
     def export_terraform(self, graph: InfraGraph) -> IaCExportResult:
+        graph = _sanitize_graph_for_export(graph)
         warnings: list[str] = []
         unsupported: list[str] = []
 
@@ -1373,6 +1408,7 @@ class IaCExporter:
     # ---- CloudFormation ----------------------------------------------------
 
     def export_cloudformation(self, graph: InfraGraph) -> IaCExportResult:
+        graph = _sanitize_graph_for_export(graph)
         warnings: list[str] = []
         unsupported: list[str] = []
 
@@ -1424,6 +1460,7 @@ class IaCExporter:
     # ---- Kubernetes --------------------------------------------------------
 
     def export_kubernetes(self, graph: InfraGraph) -> IaCExportResult:
+        graph = _sanitize_graph_for_export(graph)
         warnings: list[str] = []
         unsupported: list[str] = []
         files: dict[str, str] = {}
@@ -1480,6 +1517,7 @@ class IaCExporter:
     # ---- Docker Compose ----------------------------------------------------
 
     def export_docker_compose(self, graph: InfraGraph) -> IaCExportResult:
+        graph = _sanitize_graph_for_export(graph)
         warnings: list[str] = []
         unsupported: list[str] = []
 
@@ -1527,6 +1565,7 @@ class IaCExporter:
     # ---- Ansible -----------------------------------------------------------
 
     def export_ansible(self, graph: InfraGraph) -> IaCExportResult:
+        graph = _sanitize_graph_for_export(graph)
         warnings: list[str] = []
         unsupported: list[str] = []
 
@@ -1583,6 +1622,7 @@ class IaCExporter:
     # ---- Pulumi (Python) ---------------------------------------------------
 
     def export_pulumi(self, graph: InfraGraph) -> IaCExportResult:
+        graph = _sanitize_graph_for_export(graph)
         warnings: list[str] = []
         unsupported: list[str] = []
 
