@@ -172,3 +172,70 @@ class TestEvidenceExportLoad:
         output.write_text(json.dumps(data), encoding="utf-8")
         loaded = EvidenceSigner.load_evidence(output)
         assert signer.verify_report(loaded, SAMPLE_REPORT) is False
+
+
+# ---------------------------------------------------------------------------
+# Fail-closed default key + RSA verify path
+# ---------------------------------------------------------------------------
+
+class TestEvidenceSignerHardening:
+    def test_legacy_default_key_rejected(self):
+        from faultray.reporter.evidence_signing import (
+            EvidenceSigner,
+            SigningKeyError,
+        )
+
+        with pytest.raises(SigningKeyError):
+            EvidenceSigner(signing_key="faultray-default-key")
+
+    def test_legacy_default_key_allowed_with_optin(self, monkeypatch):
+        import warnings
+        from faultray.reporter.evidence_signing import EvidenceSigner
+
+        monkeypatch.setenv("FAULTRAY_ALLOW_DEFAULT_SIGNING_KEY", "1")
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore")
+            signer = EvidenceSigner(signing_key="faultray-default-key")
+        ev = signer.sign_report("r", "t", {"x": 1})
+        assert signer.verify_report(ev, "r") is True
+
+    def test_rsa_sign_and_verify_roundtrip(self, tmp_path):
+        cryptography = pytest.importorskip("cryptography")
+        import datetime as _dt
+        from cryptography.hazmat.primitives.asymmetric import rsa
+        from cryptography.hazmat.primitives import serialization, hashes
+        from cryptography import x509
+        from cryptography.x509.oid import NameOID
+        from faultray.reporter.evidence_signing import EvidenceSigner
+
+        key = rsa.generate_private_key(public_exponent=65537, key_size=2048)
+        name = x509.Name([x509.NameAttribute(NameOID.COMMON_NAME, "test")])
+        cert = (
+            x509.CertificateBuilder()
+            .subject_name(name)
+            .issuer_name(name)
+            .public_key(key.public_key())
+            .serial_number(x509.random_serial_number())
+            .not_valid_before(_dt.datetime.utcnow())
+            .not_valid_after(_dt.datetime.utcnow() + _dt.timedelta(days=1))
+            .sign(key, hashes.SHA256())
+        )
+        cert_path = tmp_path / "cert.pem"
+        key_path = tmp_path / "key.pem"
+        cert_path.write_bytes(cert.public_bytes(serialization.Encoding.PEM))
+        key_path.write_bytes(
+            key.private_bytes(
+                serialization.Encoding.PEM,
+                serialization.PrivateFormat.PKCS8,
+                serialization.NoEncryption(),
+            )
+        )
+
+        signer = EvidenceSigner(
+            certificate_path=cert_path, private_key_path=key_path
+        )
+        ev = signer.sign_report("report", "components: []", {"a": 1})
+        assert ev.signing_algorithm == "RSA-SHA256"
+        # The RSA verify path must succeed (was previously HMAC-only -> failed).
+        assert signer.verify_report(ev, "report") is True
+        assert signer.verify_report(ev, "tampered") is False

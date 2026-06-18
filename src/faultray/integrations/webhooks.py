@@ -4,15 +4,73 @@
 """Webhook integrations for notifications."""
 from __future__ import annotations
 
+import ipaddress
 import logging
 import smtplib
+import socket
 from dataclasses import dataclass, field
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
+from urllib.parse import urlparse
 
 import httpx
 
 logger = logging.getLogger(__name__)
+
+
+class WebhookSecurityError(ValueError):
+    """Raised when an outbound webhook URL fails SSRF validation."""
+
+
+def _is_blocked_ip(ip_str: str) -> bool:
+    """Return True for loopback / private / link-local / reserved addresses."""
+    try:
+        ip = ipaddress.ip_address(ip_str)
+    except ValueError:
+        return False
+    return (
+        ip.is_private
+        or ip.is_loopback
+        or ip.is_link_local      # 169.254.0.0/16 (cloud metadata)
+        or ip.is_reserved
+        or ip.is_multicast
+        or ip.is_unspecified
+    )
+
+
+def _validate_webhook_url(url: str) -> None:
+    """Validate an outbound webhook URL against SSRF.
+
+    Rejects non-http(s) schemes and hosts that are (or resolve to) loopback,
+    private, link-local (cloud metadata 169.254.169.254), or reserved
+    addresses. If a hostname cannot be resolved we allow it through — the
+    connection then fails on its own — rather than introduce a hard dependency
+    on DNS, but any *resolved* private target is blocked.
+    """
+    parsed = urlparse(url)
+    if parsed.scheme not in ("http", "https"):
+        raise WebhookSecurityError(
+            f"Webhook URL scheme must be http(s), got {parsed.scheme!r}"
+        )
+    host = parsed.hostname
+    if not host:
+        raise WebhookSecurityError("Webhook URL has no host")
+
+    # Literal IP in the URL → check directly.
+    if _is_blocked_ip(host):
+        raise WebhookSecurityError(f"Webhook URL host {host!r} is not allowed")
+
+    # Resolve the hostname and block if ANY resolved address is private.
+    try:
+        infos = socket.getaddrinfo(host, parsed.port or None)
+    except OSError:
+        return  # cannot resolve; let the connection fail naturally
+    for info in infos:
+        sockaddr = info[4]
+        if sockaddr and _is_blocked_ip(sockaddr[0]):
+            raise WebhookSecurityError(
+                f"Webhook URL host {host!r} resolves to a blocked address"
+            )
 
 
 @dataclass
@@ -57,7 +115,12 @@ async def send_slack_notification(webhook_url: str, report_summary: dict) -> boo
 
     payload = {"blocks": blocks}
     try:
-        async with httpx.AsyncClient() as client:
+        _validate_webhook_url(webhook_url)
+    except WebhookSecurityError:
+        logger.warning("Blocked Slack webhook URL (SSRF guard).", exc_info=True)
+        return False
+    try:
+        async with httpx.AsyncClient(follow_redirects=False) as client:
             resp = await client.post(webhook_url, json=payload, timeout=10)
             return resp.status_code == 200
     except Exception:
@@ -99,7 +162,12 @@ async def send_pagerduty_event(routing_key: str, report_summary: dict) -> bool:
 async def send_generic_webhook(url: str, report_summary: dict) -> bool:
     """Send results to any webhook URL."""
     try:
-        async with httpx.AsyncClient() as client:
+        _validate_webhook_url(url)
+    except WebhookSecurityError:
+        logger.warning("Blocked generic webhook URL (SSRF guard).", exc_info=True)
+        return False
+    try:
+        async with httpx.AsyncClient(follow_redirects=False) as client:
             resp = await client.post(url, json=report_summary, timeout=10)
             return resp.status_code < 400
     except Exception:
@@ -160,7 +228,12 @@ async def send_teams(webhook_url: str, report_summary: dict) -> bool:
         )
 
     try:
-        async with httpx.AsyncClient() as client:
+        _validate_webhook_url(webhook_url)
+    except WebhookSecurityError:
+        logger.warning("Blocked Teams webhook URL (SSRF guard).", exc_info=True)
+        return False
+    try:
+        async with httpx.AsyncClient(follow_redirects=False) as client:
             resp = await client.post(webhook_url, json=card, timeout=10)
             return resp.status_code < 400
     except Exception:
