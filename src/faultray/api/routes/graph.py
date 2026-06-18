@@ -34,7 +34,7 @@ async def graph_page(request: Request):
 
 
 @router.get("/api/graph-data", response_class=JSONResponse)
-async def api_graph_data():
+async def api_graph_data(user=Depends(_require_permission("view_results"))):
     """Return graph data as nodes + edges for D3.js."""
     graph = get_graph()
     data = graph.to_dict()
@@ -74,7 +74,7 @@ async def api_graph_data():
 # ---------------------------------------------------------------------------
 
 @router.get("/api/topology", response_class=JSONResponse)
-async def get_topology():
+async def get_topology(user=Depends(_require_permission("view_results"))):
     """Return infrastructure topology as nodes/edges for D3.js blast radius visualizer."""
     graph = get_graph()
     if not graph.components:
@@ -313,7 +313,9 @@ async def topology_diff_page(request: Request):
 
 
 @router.post("/api/topology-diff")
-async def topology_diff_api(request: Request):
+async def topology_diff_api(
+    request: Request, user=Depends(_require_permission("view_results"))
+):
     """Compare two uploaded YAML files and return diff results."""
     import tempfile
 

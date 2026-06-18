@@ -689,6 +689,26 @@ class TestAuditLogs:
         data = resp.json()
         assert data["count"] == 2
 
+    def test_audit_logs_require_authentication(self, db_client):
+        """Unauthenticated callers must NOT be able to read audit logs."""
+        from faultray.api.routes._shared import _optional_user
+
+        now = "2026-01-01T00:00:00"
+        _seed_sync(db_client._db_path, "audit_logs", [{
+            "action": "secret_action",
+            "resource_type": "test",
+            "ip_address": "10.1.2.3",
+            "created_at": now,
+        }])
+
+        # Simulate an unauthenticated request (no resolvable user).
+        app.dependency_overrides[_optional_user] = lambda: None
+        try:
+            resp = db_client.get("/api/audit-logs")
+            assert resp.status_code == 401
+        finally:
+            app.dependency_overrides.clear()
+
 
 # ===================================================================
 # 10. OAuth login/callback (covers lines 807-883)
@@ -980,6 +1000,93 @@ class TestMultiTenantProjects:
             assert "Team Proj" in names
         finally:
             app.dependency_overrides.clear()
+
+
+# ===================================================================
+# 12b. Multi-tenant IDOR protection on individual run access
+# ===================================================================
+
+class TestRunTenantIsolation:
+    """Behavioural tests for tenant isolation on run access / project creation.
+
+    These call the route coroutines directly (robust against FastAPI route
+    registration timing) with a configured DB and explicit mock users.
+    """
+
+    def _status(self, response) -> int:
+        return getattr(response, "status_code", None)
+
+    def test_get_run_cross_tenant_returns_404(self, db_setup):
+        from faultray.api.routes.projects import get_run
+
+        now = "2026-01-01T00:00:00"
+        tids = _seed_sync(db_setup, "teams", [
+            {"name": "team-a", "created_at": now},
+            {"name": "team-b", "created_at": now},
+        ])
+        team_a, team_b = tids[0], tids[1]
+        pids = _seed_sync(db_setup, "projects", [{
+            "name": "a-proj", "team_id": team_a, "created_at": now, "updated_at": now,
+        }])
+        rids = _seed_sync(db_setup, "simulation_runs", [{
+            "engine_type": "static", "risk_score": 50.0,
+            "project_id": pids[0], "created_at": now,
+        }])
+        run_id = rids[0]
+
+        team_b_user = SimpleNamespace(id=2, team_id=team_b, role="viewer")
+        team_a_user = SimpleNamespace(id=1, team_id=team_a, role="viewer")
+
+        # Cross-tenant access is denied (404, no enumeration oracle).
+        resp = _run_async(get_run(run_id, user=team_b_user))
+        assert self._status(resp) == 404
+        # Same-tenant access succeeds.
+        resp_ok = _run_async(get_run(run_id, user=team_a_user))
+        assert self._status(resp_ok) == 200
+
+    def test_delete_run_cross_tenant_returns_404(self, db_setup):
+        from faultray.api.routes.projects import delete_run
+
+        now = "2026-01-01T00:00:00"
+        tids = _seed_sync(db_setup, "teams", [
+            {"name": "team-a", "created_at": now},
+            {"name": "team-b", "created_at": now},
+        ])
+        team_a, team_b = tids[0], tids[1]
+        pids = _seed_sync(db_setup, "projects", [{
+            "name": "a-proj", "team_id": team_a, "created_at": now, "updated_at": now,
+        }])
+        rids = _seed_sync(db_setup, "simulation_runs", [{
+            "engine_type": "static", "risk_score": 50.0,
+            "project_id": pids[0], "created_at": now,
+        }])
+        run_id = rids[0]
+
+        team_b_user = SimpleNamespace(id=2, team_id=team_b, role="editor")
+        fake_request = SimpleNamespace(client=SimpleNamespace(host="127.0.0.1"))
+        resp = _run_async(delete_run(run_id, request=fake_request, user=team_b_user))
+        assert self._status(resp) == 404
+
+    def test_create_project_rejects_foreign_team(self, db_setup):
+        from faultray.api.routes.projects import create_project
+
+        now = "2026-01-01T00:00:00"
+        tids = _seed_sync(db_setup, "teams", [
+            {"name": "team-a", "created_at": now},
+            {"name": "team-b", "created_at": now},
+        ])
+        team_a, team_b = tids[0], tids[1]
+
+        team_a_user = SimpleNamespace(id=3, team_id=team_a, role="editor")
+
+        async def _json():
+            return {"name": "evil", "team_id": team_b}
+
+        fake_request = SimpleNamespace(
+            json=_json, client=SimpleNamespace(host="127.0.0.1")
+        )
+        resp = _run_async(create_project(request=fake_request, user=team_a_user))
+        assert self._status(resp) == 403
 
 
 # ===================================================================
@@ -1407,11 +1514,16 @@ class TestDBErrorBranches:
             assert "note" in data
 
     def test_list_audit_logs_db_error(self, client):
-        """Cover lines 791-793: list_audit_logs returns fallback on DB error."""
+        """Cover lines 791-793: list_audit_logs returns fallback on DB error.
+
+        Audit logs now require authentication, so resolve an authenticated
+        (admin-style, no team) user before triggering the DB error.
+        """
+        mock_user = SimpleNamespace(id=1, team_id=None, role="admin")
         with patch(
             "faultray.api.auth.get_current_user",
             new_callable=AsyncMock,
-            return_value=None,
+            return_value=mock_user,
         ), patch(
             "faultray.api.database.get_session_factory",
             side_effect=Exception("DB unavailable"),
