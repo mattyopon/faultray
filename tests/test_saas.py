@@ -438,7 +438,7 @@ class TestBillingEnforcement:
         from tests.conftest import _run_async
         from sqlalchemy import select
 
-        sf = self._temp_sf(tmp_path)
+        _sf = self._temp_sf(tmp_path)
         mgr = StripeManager.__new__(StripeManager)  # bypass Stripe key setup
         mgr._enabled = True
 
