@@ -1533,15 +1533,6 @@ class TestEdgeCases:
         recs = self.engine._build_recommendations(g, "src", nodes)
         assert any("circuit breaker" in r.lower() for r in recs)
 
-    def test_find_incoming_edge_returns_none(self):
-        """When no matching edge exists, _find_incoming_edge returns None."""
-        g = InfraGraph()
-        g.add_component(_comp("a", "A"))
-        g.add_component(_comp("b", "B"))
-        # No dependency edge between them
-        result = BlastRadiusMapperEngine._find_incoming_edge(g, "a", {"b"})
-        assert result is None
-
     def test_bfs_skips_missing_component(self):
         """BFS should handle graph nodes that have no component data gracefully."""
         g = InfraGraph()

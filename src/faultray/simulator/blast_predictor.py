@@ -139,9 +139,11 @@ class BlastPredictor:
         max_depth = 0
 
         # BFS from the failed component through dependents (upstream impact)
-        # Queue entries: (component_id, current_probability, depth)
+        # Queue entries: (component_id, current_probability, depth, parent_id).
+        # parent_id is the node this one cascaded FROM — needed to look up the
+        # correct dependency edge for multi-hop nodes (see the criticality calc).
         visited: set[str] = {component_id}
-        queue: deque[tuple[str, float, int]] = deque()
+        queue: deque[tuple[str, float, int, str]] = deque()
 
         # Seed the queue with components that depend ON the failed component
         for dep_comp in graph.get_dependents(component_id):
@@ -152,11 +154,11 @@ class BlastPredictor:
                 initial_prob = self._initial_impact_probability(
                     edge_weight, dep_type
                 )
-                queue.append((dep_comp.id, initial_prob, 1))
+                queue.append((dep_comp.id, initial_prob, 1, component_id))
                 visited.add(dep_comp.id)
 
         while queue:
-            comp_id, current_prob, depth = queue.popleft()
+            comp_id, current_prob, depth, parent_id = queue.popleft()
             if depth > _MAX_BFS_DEPTH:
                 continue
 
@@ -175,8 +177,12 @@ class BlastPredictor:
                 # Probability too low to matter
                 continue
 
-            # Determine impact level
-            edge = graph.get_dependency_edge(comp_id, component_id)
+            # Determine impact level. Use the edge to this node's PARENT in the
+            # cascade (the node it propagated from), not to the original root —
+            # for a 2nd+ hop node there is usually no direct edge to the root, so
+            # the old `get_dependency_edge(comp_id, component_id)` always missed
+            # and fell back to 0.5, misclassifying dependency criticality.
+            edge = graph.get_dependency_edge(comp_id, parent_id)
             dep_criticality = edge.weight if edge else 0.5
             impact_level = self._classify_impact(prob, dep_criticality)
 
@@ -214,7 +220,7 @@ class BlastPredictor:
                     next_prob = prob * self._initial_impact_probability(
                         next_weight, next_dep_type
                     )
-                    queue.append((next_dep.id, next_prob, depth + 1))
+                    queue.append((next_dep.id, next_prob, depth + 1, comp_id))
                     visited.add(next_dep.id)
 
         # Calculate blast radius score
