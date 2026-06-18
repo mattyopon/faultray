@@ -613,8 +613,10 @@ class TestExportRegulatoryPackage:
     def test_audit_trail_signed(self, tmp_path: Path):
         out_dir = tmp_path / "pkg"
         sim = [{"name": "test", "result": "pass"}]
-        report = self.gen.generate_full_report(_minimal_graph(), simulation_results=sim)
-        self.gen.export_regulatory_package(report, out_dir, sign=True)
+        # Signing now requires a key (HMAC, not a forgeable plain hash).
+        gen = DORAuditReportGenerator(signing_key="test-signing-key")
+        report = gen.generate_full_report(_minimal_graph(), simulation_results=sim)
+        gen.export_regulatory_package(report, out_dir, sign=True)
         trail = json.loads((out_dir / "audit-trail.json").read_text())
         assert trail["signed"] is True
         if trail["chain"]:
@@ -987,12 +989,23 @@ class TestAuditTrail:
 
     def test_audit_trail_signed_has_hashes(self):
         sim = [{"name": "test", "result": "fail"}]
-        report = self.gen.generate_full_report(_minimal_graph(), simulation_results=sim)
-        trail = self.gen._build_audit_trail(report, sign=True)
+        gen = DORAuditReportGenerator(signing_key="test-signing-key")
+        report = gen.generate_full_report(_minimal_graph(), simulation_results=sim)
+        trail = gen._build_audit_trail(report, sign=True)
         assert trail["signed"] is True
         for item in trail["chain"]:
             assert "integrity_hash" in item
         assert "chain_integrity_hash" in trail
+
+    def test_audit_trail_sign_without_key_fails_closed(self):
+        # Signing requested with no key must raise rather than emit a forgeable
+        # "signed" artifact.
+        import pytest as _pytest
+
+        gen = DORAuditReportGenerator()  # no signing key
+        report = gen.generate_full_report(_minimal_graph(), simulation_results=[])
+        with _pytest.raises(ValueError, match="signing"):
+            gen._build_audit_trail(report, sign=True)
 
     def test_audit_trail_sequence_numbers(self):
         sim = [
@@ -1066,8 +1079,9 @@ class TestEdgeCases:
             {"name": "disaster recovery", "result": "fail", "severity": "critical"},
             {"name": "health check", "result": "pass", "severity": "low"},
         ]
-        report = self.gen.generate_full_report(_full_graph(), simulation_results=sim)
-        pkg = self.gen.export_regulatory_package(report, tmp_path / "full-pkg", sign=True)
+        gen = DORAuditReportGenerator(signing_key="test-signing-key")
+        report = gen.generate_full_report(_full_graph(), simulation_results=sim)
+        pkg = gen.export_regulatory_package(report, tmp_path / "full-pkg", sign=True)
         # 8 base files + up to 3 optional new-engine files
         assert len(pkg.files_written) >= 8
 
