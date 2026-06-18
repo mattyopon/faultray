@@ -1,13 +1,47 @@
-// LIB-01 fix: validate API_BASE is defined when set to a non-empty value.
+// SEC (U28): validate API_BASE and lock token attachment to a trusted origin.
 //
-// Env var name aligns with .env.local (`NEXT_PUBLIC_FAULTRAY_API_URL`).
-// A legacy `NEXT_PUBLIC_API_URL` is still honored as a fallback so existing
-// deploys and CI envs keep working through the rename rollout; new code
-// should set only NEXT_PUBLIC_FAULTRAY_API_URL.
-const API_BASE =
+// NEXT_PUBLIC_FAULTRAY_API_URL selects the backend origin. Because we attach the
+// Supabase access token (`Authorization: Bearer ...`) to these requests, an
+// attacker-controlled or misconfigured base URL would exfiltrate the token and
+// request bodies (SSRF / token leak). We therefore (1) require the configured
+// base to be a valid absolute https:// URL (http:// only for localhost in dev),
+// and (2) only build requests against that validated origin with a relative
+// path. A malformed/insecure non-empty base fails CLOSED (throws at module
+// load) rather than silently leaking credentials.
+//
+// A legacy `NEXT_PUBLIC_API_URL` is still honored as a fallback through the
+// rename rollout; new code should set only NEXT_PUBLIC_FAULTRAY_API_URL.
+const _RAW_API_BASE = (
   process.env.NEXT_PUBLIC_FAULTRAY_API_URL ||
   process.env.NEXT_PUBLIC_API_URL ||
-  "";
+  ""
+).trim();
+
+function _isLocalhost(hostname: string): boolean {
+  return hostname === "localhost" || hostname === "127.0.0.1" || hostname === "[::1]" || hostname === "::1";
+}
+
+/**
+ * Validated, trusted backend origin. "" means same-origin (relative fetch).
+ * Throws on a malformed/insecure configured base so deploys fail closed
+ * instead of attaching the access token to an untrusted host.
+ */
+export const TRUSTED_API_ORIGIN: string = (() => {
+  if (!_RAW_API_BASE) return "";
+  let u: URL;
+  try {
+    u = new URL(_RAW_API_BASE);
+  } catch {
+    throw new Error("[API] NEXT_PUBLIC_FAULTRAY_API_URL must be a valid absolute URL");
+  }
+  if (u.protocol !== "https:" && !(u.protocol === "http:" && _isLocalhost(u.hostname))) {
+    throw new Error("[API] NEXT_PUBLIC_FAULTRAY_API_URL must use https:// (http:// only for localhost)");
+  }
+  return u.origin;
+})();
+
+// Validated prefix for building request URLs ("" = relative/same-origin).
+const API_BASE = TRUSTED_API_ORIGIN ? _RAW_API_BASE.replace(/\/+$/, "") : "";
 
 interface ApiOptions {
   method?: string;
@@ -22,8 +56,20 @@ interface ApiOptions {
 interface CacheEntry { data: unknown; expiresAt: number; }
 const _apiCache = new Map<string, CacheEntry>();
 
+// SEC (U28): never store the raw access token in cache keys, and key by a
+// per-token fingerprint so one user's cached response can't be served to
+// another (cross-user cache poisoning). FNV-1a 32-bit, non-reversible.
+function _fingerprint(s: string): string {
+  let h = 0x811c9dc5;
+  for (let i = 0; i < s.length; i++) {
+    h ^= s.charCodeAt(i);
+    h = Math.imul(h, 0x01000193);
+  }
+  return (h >>> 0).toString(36);
+}
+
 function _cacheKey(path: string, token?: string): string {
-  return `${token ?? "anon"}:${path}`;
+  return `${token ? _fingerprint(token) : "anon"}:${path}`;
 }
 
 // FETCHPAT-01: Default timeout 30s to prevent indefinite hangs
@@ -52,8 +98,20 @@ async function _authToken(): Promise<string | undefined> {
   }
 }
 
+// SEC (U28): only retry idempotent methods. Retrying POST/PATCH/PUT/DELETE on
+// 429/5xx/network errors can duplicate side effects (double checkout, double
+// save, repeated destructive mutations).
+const IDEMPOTENT_METHODS = new Set(["GET", "HEAD", "OPTIONS"]);
+
 async function apiFetch<T>(path: string, options: ApiOptions = {}): Promise<T> {
   const { method = "GET", body, token, signal, cacheTtl } = options;
+  const isIdempotent = IDEMPOTENT_METHODS.has(method.toUpperCase());
+
+  // SEC (U28): reject absolute / protocol-relative paths so the `path` arg
+  // cannot redirect a token-bearing request to an arbitrary host.
+  if (!path.startsWith("/") || path.startsWith("//")) {
+    throw new Error("[API] path must be a relative path starting with '/'");
+  }
 
   // FETCHPAT-05: Serve from cache for GET requests with cacheTtl set
   if (method === "GET" && cacheTtl && cacheTtl > 0) {
@@ -103,8 +161,8 @@ async function apiFetch<T>(path: string, options: ApiOptions = {}): Promise<T> {
       });
 
       if (!res.ok) {
-        // ERROR-03: Retry on transient server errors
-        if (RETRY_STATUS_CODES.has(res.status) && attempt < MAX_RETRIES) {
+        // ERROR-03: Retry on transient server errors — idempotent methods only.
+        if (RETRY_STATUS_CODES.has(res.status) && isIdempotent && attempt < MAX_RETRIES) {
           const delay = Math.min(1000 * 2 ** attempt, 8000);
           await sleep(delay);
           lastError = new Error(`HTTP ${res.status}: ${res.statusText}`);
@@ -137,6 +195,11 @@ async function apiFetch<T>(path: string, options: ApiOptions = {}): Promise<T> {
         throw err;
       }
       lastError = err instanceof Error ? err : new Error(String(err));
+      // SEC (U28): never retry non-idempotent methods on network errors.
+      if (!isIdempotent) {
+        clearTimeout(timeoutId);
+        throw lastError;
+      }
       if (attempt < MAX_RETRIES) {
         const delay = Math.min(1000 * 2 ** attempt, 8000);
         await sleep(delay);

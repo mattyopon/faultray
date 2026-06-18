@@ -320,6 +320,33 @@ def _resolve_user_id(headers):
     return uid if isinstance(uid, str) and _sanitize_uuid(uid) else None
 
 
+def _resolve_user(headers):
+    """Validate the caller's Supabase access token and return the verified
+    user dict ({"id", "email", ...}) from GoTrue ``/auth/v1/user``, or None.
+
+    Authorization decisions MUST use this verified identity — never a
+    client-supplied email/id from the request body (SEC U33).
+    """
+    token = _bearer_token(headers)
+    if not token:
+        return None
+    supabase_url = os.environ.get("NEXT_PUBLIC_SUPABASE_URL", "").rstrip("/")
+    anon_key = os.environ.get("NEXT_PUBLIC_SUPABASE_ANON_KEY", "")
+    if not supabase_url or not anon_key:
+        return None
+    req = urllib.request.Request(
+        f"{supabase_url}/auth/v1/user",
+        method="GET",
+        headers={"apikey": anon_key, "Authorization": f"Bearer {token}"},
+    )
+    try:
+        resp = urllib.request.urlopen(req, timeout=10)
+        data = json.loads(resp.read())
+    except Exception:
+        return None
+    return data if isinstance(data, dict) and data.get("id") else None
+
+
 def _user_team_ids(user_id: str) -> list:
     """Resolve every team the user belongs to (owned or member).
 
@@ -1120,21 +1147,30 @@ class handler(BaseHTTPRequestHandler):
         self._json(200, {"status": "ok", "engine": "faultray", "version": version})
 
     def _handle_health_post(self, data: dict):
-        action = data.get("action", "admin-check")
-        email = data.get("email", "").strip().lower()
-        if not email:
-            self._json(400, {"error": "Missing email"})
+        # SEC (U33): authorization MUST be derived from the verified session,
+        # never from a client-supplied email. We verify the caller's Supabase
+        # access token and use the email embedded in it; the request-body
+        # `email` is ignored. This removes both the unauthenticated, service-
+        # role plan mutation and the admin-enumeration oracle.
+        user = _resolve_user(self.headers)
+        caller_email = str((user or {}).get("email", "")).strip().lower()
+        if not caller_email:
+            self._json(401, {"error": "Authentication required"})
             return
+        action = data.get("action", "admin-check")
+        is_admin = _is_admin(caller_email)
         if action == "admin-check":
-            self._json(200, {"is_admin": _is_admin(email)})
+            # Authenticated caller learns only their OWN admin status.
+            self._json(200, {"is_admin": is_admin})
         elif action == "switch-plan":
-            if not _is_admin(email):
+            if not is_admin:
                 self._json(403, {"error": "Not authorized"})
                 return
-            result = _switch_plan(email, data.get("plan", ""))
+            # Operate only on the authenticated admin's own account.
+            result = _switch_plan(caller_email, data.get("plan", ""))
             self._json(400 if "error" in result else 200, result)
         else:
-            self._json(200, {"is_admin": _is_admin(email)})
+            self._json(200, {"is_admin": is_admin})
 
     # -----------------------------------------------------------------------
     # Shared helpers

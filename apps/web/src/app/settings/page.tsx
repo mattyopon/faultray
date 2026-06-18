@@ -140,10 +140,17 @@ export default function SettingsPage() {
       // Supabase not configured
     }
     try {
+      // SEC (U33): the server authorizes admin status from the verified access
+      // token, not a body email. Attach the Supabase token; send no email.
+      const { getAccessToken } = await import("@/lib/supabase/client");
+      const accessToken = await getAccessToken();
       const res = await fetch("/api/health", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email: user.email }),
+        headers: {
+          "Content-Type": "application/json",
+          ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {}),
+        },
+        body: JSON.stringify({ action: "admin-check" }),
       });
       const { is_admin } = await res.json();
       setIsAdmin(!!is_admin);
@@ -168,10 +175,17 @@ export default function SettingsPage() {
     setSwitchingPlan(true);
     setPlanFeedback(null);
     try {
+      // SEC (U33): authorize via the verified token; the server switches only
+      // the authenticated admin's own account (body email is ignored).
+      const { getAccessToken } = await import("@/lib/supabase/client");
+      const accessToken = await getAccessToken();
       const res = await fetch("/api/health", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ action: "switch-plan", email: user.email, plan }),
+        headers: {
+          "Content-Type": "application/json",
+          ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {}),
+        },
+        body: JSON.stringify({ action: "switch-plan", plan }),
       });
       const data = await res.json();
       if (data.error) {

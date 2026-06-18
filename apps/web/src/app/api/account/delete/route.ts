@@ -25,14 +25,17 @@ export async function DELETE(request: Request) {
   if (authError) return authError;
 
   // Parse optional confirmation body
-  let body: { confirm?: boolean } = {};
+  let body: { confirm?: unknown } = {};
   try {
-    body = (await request.json()) as { confirm?: boolean };
+    body = (await request.json()) as { confirm?: unknown };
   } catch {
     // No body is fine; we already authenticated above
   }
 
-  if (!body.confirm) {
+  // SEC (U16): require the strict boolean `true`. `!body.confirm` accepted any
+  // truthy value (e.g. {"confirm": 1} or {"confirm": "x"}) → type-confusion that
+  // could trigger an irreversible delete with an unintended payload.
+  if (body.confirm !== true) {
     return NextResponse.json(
       { error: "Confirmation required. Send { \"confirm\": true } in the request body." },
       { status: 400 }
@@ -98,14 +101,31 @@ export async function DELETE(request: Request) {
     ) {
       try {
         const stripe = new Stripe(stripeSecretKey, { timeout: 30000 });
-        const subscriptions = await stripe.subscriptions.list({
-          customer: stripeCustomerId,
-        });
+        // SEC (U7): cancel ALL subscriptions across pages. `list()` returns
+        // only the first page (default 10), so a customer with >10 subs would
+        // keep billing. Paginate explicitly via has_more / starting_after, and
+        // skip already-canceled ones.
+        const toCancel: string[] = [];
+        let startingAfter: string | undefined;
+        for (;;) {
+          const page = await stripe.subscriptions.list({
+            customer: stripeCustomerId,
+            status: "all",
+            limit: 100,
+            ...(startingAfter ? { starting_after: startingAfter } : {}),
+          });
+          const subs = page.data ?? [];
+          for (const sub of subs) {
+            if (sub.status !== "canceled") toCancel.push(sub.id);
+          }
+          if (!page.has_more || subs.length === 0) break;
+          startingAfter = subs[subs.length - 1].id;
+        }
         await Promise.all(
-          subscriptions.data.map((sub) => stripe.subscriptions.cancel(sub.id))
+          toCancel.map((id) => stripe.subscriptions.cancel(id))
         );
         console.info(
-          `[account/delete] Cancelled ${subscriptions.data.length} Stripe subscription(s) for customer ${stripeCustomerId}`
+          `[account/delete] Cancelled ${toCancel.length} Stripe subscription(s) for customer ${stripeCustomerId}`
         );
       } catch (stripeErr) {
         const msg = stripeErr instanceof Error ? stripeErr.message : "Unknown error";

@@ -1,3 +1,15 @@
+// SEC (U25): escape interpolated user-controlled values (e.g. an OAuth display
+// name or email local-part) before embedding them in email HTML, to prevent
+// HTML/content injection and phishing-style spoofing inside the inbox.
+function esc(s: string): string {
+  return s
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
+}
+
 function baseLayout(content: string): string {
   return `<!DOCTYPE html>
 <html lang="en">
@@ -61,7 +73,7 @@ export function welcomeEmail(
   if (locale === "ja") {
     const subject = "FaultRay へようこそ — システムのレジリエンスを推定しましょう";
     const html = baseLayout(`
-      <h1 style="margin:0 0 16px;font-size:24px;font-weight:700;color:#f1f5f9;">${name} 様、はじめまして</h1>
+      <h1 style="margin:0 0 16px;font-size:24px;font-weight:700;color:#f1f5f9;">${esc(name)} 様、はじめまして</h1>
       <p style="margin:0 0 16px;font-size:15px;line-height:1.7;color:#94a3b8;">
         7 日間の Business トライアルを開始しました。FaultRay は本番環境に触れず
         2,000+ の障害シナリオをシミュレートできます。
@@ -80,7 +92,7 @@ export function welcomeEmail(
   }
   const subject = "Welcome to FaultRay — Let's estimate your system's resilience";
   const html = baseLayout(`
-    <h1 style="margin:0 0 16px;font-size:24px;font-weight:700;color:#f1f5f9;">Welcome, ${name}!</h1>
+    <h1 style="margin:0 0 16px;font-size:24px;font-weight:700;color:#f1f5f9;">Welcome, ${esc(name)}!</h1>
     <p style="margin:0 0 16px;font-size:15px;line-height:1.7;color:#94a3b8;">
       Your 7-day Business trial is now active. FaultRay lets you simulate 2,000+ failure scenarios
       — without touching production.
@@ -107,7 +119,7 @@ export function trialReminderEmail(
     const subject = `FaultRay トライアル残り ${daysLeft} 日`;
     const urgencyColor = daysLeft <= 2 ? "#ef4444" : "#FFD700";
     const html = baseLayout(`
-      <h1 style="margin:0 0 16px;font-size:24px;font-weight:700;color:#f1f5f9;">${name} 様</h1>
+      <h1 style="margin:0 0 16px;font-size:24px;font-weight:700;color:#f1f5f9;">${esc(name)} 様</h1>
       <p style="margin:0 0 16px;font-size:15px;line-height:1.7;color:#94a3b8;">
         FaultRay Business トライアルの残り期間は
         <strong style="color:${urgencyColor};">${daysLeft} 日</strong>です。
@@ -123,7 +135,7 @@ export function trialReminderEmail(
   const subject = `Your FaultRay trial ends in ${daysLeft} day${daysLeft === 1 ? "" : "s"}`;
   const urgencyColor = daysLeft <= 2 ? "#ef4444" : "#FFD700";
   const html = baseLayout(`
-    <h1 style="margin:0 0 16px;font-size:24px;font-weight:700;color:#f1f5f9;">Hi ${name},</h1>
+    <h1 style="margin:0 0 16px;font-size:24px;font-weight:700;color:#f1f5f9;">Hi ${esc(name)},</h1>
     <p style="margin:0 0 16px;font-size:15px;line-height:1.7;color:#94a3b8;">
       Your FaultRay Business trial expires in
       <strong style="color:${urgencyColor};">${daysLeft} day${daysLeft === 1 ? "" : "s"}</strong>.
@@ -148,7 +160,7 @@ export function simulationCompleteEmail(
   const scoreColor = score >= 80 ? "#22c55e" : score >= 60 ? "#FFD700" : "#ef4444";
   const subject = `Simulation complete — Resilience score: ${score}/100`;
   const html = baseLayout(`
-    <h1 style="margin:0 0 16px;font-size:24px;font-weight:700;color:#f1f5f9;">Hi ${name},</h1>
+    <h1 style="margin:0 0 16px;font-size:24px;font-weight:700;color:#f1f5f9;">Hi ${esc(name)},</h1>
     <p style="margin:0 0 24px;font-size:15px;line-height:1.7;color:#94a3b8;">
       Your FaultRay simulation has finished. Here's a summary of your results:
     </p>

@@ -32,13 +32,18 @@ export async function fetchMembers(): Promise<MemberWithSystems[]> {
 export async function fetchMemberById(
   id: string
 ): Promise<MemberWithSystems | null> {
+  // SEC (U32): scope by company in code, not RLS alone. Without the
+  // company_id predicate this is an IDOR — any member id from any tenant would
+  // be readable if the RLS policy is ever weakened/drifted. maybeSingle() so a
+  // cross-tenant id returns null (not a 500).
   const { data, error } = await supabase()
     .from("members")
     .select("*, member_systems(*, systems(*))")
     .eq("id", id)
-    .single();
+    .eq("company_id", DEMO_COMPANY_ID)
+    .maybeSingle();
   if (error) return null;
-  return data as unknown as MemberWithSystems;
+  return (data ?? null) as unknown as MemberWithSystems | null;
 }
 
 /* ── Systems ─────────────────────────────────────────────── */
@@ -69,11 +74,20 @@ export async function updateActionStatus(
   id: string,
   status: Action["status"]
 ): Promise<void> {
-  const { error } = await supabase()
+  // SEC (U32): scope the mutation by company and verify a row was actually
+  // updated. `.update().eq("id")` without a company predicate is a cross-tenant
+  // write under weak RLS; without `.select()` a zero-row update returns no
+  // error and the UI falsely shows success.
+  const { data, error } = await supabase()
     .from("actions")
     .update({ status })
-    .eq("id", id);
+    .eq("id", id)
+    .eq("company_id", DEMO_COMPANY_ID)
+    .select("id");
   if (error) throw error;
+  if (!data || data.length === 0) {
+    throw new Error("Action not found or not in scope");
+  }
 }
 
 /* ── Snapshots ───────────────────────────────────────────── */
@@ -100,14 +114,19 @@ export async function fetchSummary(): Promise<PeopleRiskSummary> {
       .from("systems")
       .select("id")
       .eq("company_id", DEMO_COMPANY_ID),
+    // SEC (U32): scope member_systems to the company too. Previously this read
+    // EVERY visible member_systems row, so under permissive/drifted RLS the
+    // summary aggregated (and leaked counts) across other tenants. Inner-join
+    // to members and filter by company.
     supabase()
       .from("member_systems")
-      .select("system_id, is_sole_owner, risk_level"),
+      .select("system_id, is_sole_owner, risk_level, members!inner(company_id)")
+      .eq("members.company_id", DEMO_COMPANY_ID),
   ]);
 
   const members = (membersRes.data ?? []) as Pick<Member, "id" | "status">[];
   const systems = (systemsRes.data ?? []) as Pick<System, "id">[];
-  const ms = (msRes.data ?? []) as Pick<
+  const ms = (msRes.data ?? []) as unknown as Pick<
     MemberSystem,
     "system_id" | "is_sole_owner" | "risk_level"
   >[];

@@ -14,11 +14,16 @@ export const dynamic = "force-dynamic";
  * Protected by CRON_SECRET + optional CRON_ALLOWED_IPS (#27).
  */
 export async function POST(request: Request) {
-  const limited = await applyRateLimit(request, { limit: 5, windowMs: 60_000 });
-  if (limited) return limited;
-
+  // SEC (U17): authenticate BEFORE rate-limiting. The cron-secret check is
+  // cheap, so doing it first means unauthenticated callers are rejected (401)
+  // without consuming the shared rate-limit bucket. Otherwise an attacker could
+  // exhaust the limit and 429 the real cron, so trials never expire / reminders
+  // never send.
   const unauthorized = verifyCronAuth(request);
   if (unauthorized) return unauthorized;
+
+  const limited = await applyRateLimit(request, { limit: 5, windowMs: 60_000 });
+  if (limited) return limited;
 
   const { createClient } = await import("@supabase/supabase-js");
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;

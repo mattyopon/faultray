@@ -8,16 +8,33 @@ import { Mail, Loader2, CheckCircle2, Lock } from "lucide-react";
 import { useLocale } from "@/lib/useLocale";
 import { appDict } from "@/i18n/app-dict";
 
+// SEC (U29): accept only same-origin internal paths for post-login redirects.
+function isSafeInternalPath(raw: string | null): boolean {
+  if (!raw) return false;
+  // Single leading slash only; reject protocol-relative (//), backslashes
+  // (browsers fold \ → /, enabling //host) and any path traversal.
+  if (!raw.startsWith("/") || raw.startsWith("//")) return false;
+  if (raw.includes("\\") || raw.includes("..")) return false;
+  // Defense in depth: resolving against an arbitrary origin must stay on it.
+  try {
+    const base = "https://faultray.invalid";
+    return new URL(raw, base).origin === base;
+  } catch {
+    return false;
+  }
+}
+
 function LoginForm() {
   const locale = useLocale();
   const t = appDict.login[locale] ?? appDict.login.en;
   const searchParams = useSearchParams();
-  // Validate redirectTo to prevent open redirect — only allow internal paths
+  // SEC (U29): validate redirectTo to prevent open redirect. The previous
+  // check allowed backslashes (`/%5Cevil.com`), which browsers normalize to
+  // `//evil.com` → a protocol-relative external redirect when applied via
+  // `window.location.href`. Reject backslashes and path traversal, and require
+  // a single leading slash. Defense in depth: confirm same-origin via URL().
   const rawRedirectTo = searchParams.get("redirectTo") || "/dashboard";
-  const redirectTo =
-    rawRedirectTo.startsWith("/") && !rawRedirectTo.startsWith("//")
-      ? rawRedirectTo
-      : "/dashboard";
+  const redirectTo = isSafeInternalPath(rawRedirectTo) ? rawRedirectTo : "/dashboard";
   const isProduction = process.env.NEXT_PUBLIC_SITE_URL === "https://faultray.com";
 
   // AUTH-01: Show error message when OAuth fails

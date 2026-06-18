@@ -23,14 +23,16 @@ export const dynamic = "force-dynamic";
  * Protected by CRON_SECRET (Bearer) to prevent unauthorized invocation.
  */
 export async function POST(request: Request) {
-  const limited = await applyRateLimit(request, { limit: 5, windowMs: 60_000 });
-  if (limited) return limited;
-
+  // SEC (U17): authenticate BEFORE rate-limiting so unauthenticated callers
+  // can't consume the shared rate-limit bucket and 429 the real cron.
   // Same auth as /api/cron/trial-reminders: constant-time secret compare +
   // optional CRON_ALLOWED_IPS. The inline `!==` check this replaced was
   // timing-variable and ignored the IP allowlist.
   const unauthorized = verifyCronAuth(request);
   if (unauthorized) return unauthorized;
+
+  const limited = await applyRateLimit(request, { limit: 5, windowMs: 60_000 });
+  if (limited) return limited;
 
   const { createClient } = await import("@supabase/supabase-js");
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;

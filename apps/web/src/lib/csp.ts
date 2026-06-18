@@ -72,6 +72,10 @@ export function buildCsp({ strict, isDev, supabaseOrigin, nonce }: CspOptions): 
       "frame-ancestors 'none'",
       "base-uri 'self'",
       "form-action 'self'",
+      // SEC (U13): block plugin/embed vectors in the default policy too (this
+      // was only present in the strict policy). Safe, no legitimate <object>/
+      // <embed> usage in the app.
+      "object-src 'none'",
       "upgrade-insecure-requests",
     ];
     return directives.join("; ");

@@ -73,6 +73,10 @@ export async function GET(request: Request) {
             "[auth/callback] Profile lookup failed:",
             profileError.message
           );
+          // SEC (U29): exchangeCodeForSession already set session cookies. Don't
+          // leave an authenticated-but-broken session reachable — sign out so
+          // the error redirect can't be bypassed by navigating to a gated route.
+          await supabase.auth.signOut();
           return NextResponse.redirect(`${origin}/login?error=profile_setup_failed`);
         }
 
@@ -96,6 +100,9 @@ export async function GET(request: Request) {
               "[auth/callback] Profile bootstrap failed:",
               insertError.message
             );
+            // SEC (U29): fail closed — clear the just-issued session rather than
+            // leaving an authenticated account with no usable profile.
+            await supabase.auth.signOut();
             return NextResponse.redirect(
               `${origin}/login?error=profile_setup_failed`
             );

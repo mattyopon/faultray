@@ -31,6 +31,16 @@ export async function sendEmail({
     return { success: false, error: "No API key" };
   }
 
+  // SEC (U25): defense-in-depth recipient/subject validation. The Resend HTTP
+  // API builds headers server-side, but reject multi-recipient / CRLF payloads
+  // so untrusted input can't smuggle extra recipients or header lines.
+  const recipient = to.trim();
+  if (!/^[^\s@,;]+@[^\s@,;]+\.[^\s@,;]+$/.test(recipient)) {
+    console.error("[email] invalid recipient — not sent");
+    return { success: false, error: "Invalid recipient" };
+  }
+  const safeSubject = subject.replace(/[\r\n]+/g, " ").slice(0, 998);
+
   let lastStatus = 0;
   let lastText = "";
 
@@ -44,8 +54,8 @@ export async function sendEmail({
         },
         body: JSON.stringify({
           from: "FaultRay <noreply@faultray.com>",
-          to,
-          subject,
+          to: recipient,
+          subject: safeSubject,
           html,
         }),
       });

@@ -156,10 +156,18 @@ export async function rateLimit(
 
 export function getClientIp(request: Request): string {
   const h = request.headers;
-  const cfIp = h.get("cf-connecting-ip");
-  if (cfIp) return cfIp;
+  // SEC (U14): do NOT blindly trust cf-connecting-ip. Any client can send that
+  // header, and this app is fronted by Vercel (not Cloudflare), so an attacker
+  // could spoof it to evade rate limits or lock out another user. Only honor it
+  // when explicitly deployed behind Cloudflare (TRUST_CF_CONNECTING_IP=1).
+  // Otherwise prefer Vercel's platform-set x-real-ip, which the client cannot
+  // override at the edge.
+  if (process.env.TRUST_CF_CONNECTING_IP === "1") {
+    const cfIp = h.get("cf-connecting-ip");
+    if (cfIp) return cfIp.trim();
+  }
   const realIp = h.get("x-real-ip");
-  if (realIp) return realIp;
+  if (realIp) return realIp.trim();
   const forwarded = h.get("x-forwarded-for");
   if (forwarded) return forwarded.split(",")[0].trim();
   return "anonymous";

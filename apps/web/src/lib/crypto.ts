@@ -28,11 +28,24 @@ function getEncryptionKey(): string {
 const ENC_PREFIX = "ENC:";
 
 async function getKey(): Promise<CryptoKey> {
-  // Pad/truncate to exactly 32 bytes for AES-256
-  const keyBytes = new TextEncoder().encode(
-    getEncryptionKey().padEnd(32, "0").slice(0, 32)
+  // SEC (U15): derive a full-entropy 32-byte AES-256 key. The previous code did
+  // `key.padEnd(32,"0").slice(0,32)`, which silently accepted short/low-entropy
+  // secrets (zero-padded) and truncated/ignored hex/base64 encoding — quietly
+  // destroying key strength. Require a sufficiently long secret and derive the
+  // key via SHA-256 so the secret's full entropy is used and no key is silently
+  // weakened. (This module has no callers yet, so the derivation change does not
+  // affect any existing ciphertext.)
+  const secret = getEncryptionKey();
+  if (secret.length < 32) {
+    throw new Error(
+      "ENCRYPTION_KEY must be at least 32 characters (e.g. `openssl rand -hex 32`)."
+    );
+  }
+  const digest = await crypto.subtle.digest(
+    "SHA-256",
+    new TextEncoder().encode(secret)
   );
-  return crypto.subtle.importKey("raw", keyBytes, "AES-GCM", false, [
+  return crypto.subtle.importKey("raw", digest, "AES-GCM", false, [
     "encrypt",
     "decrypt",
   ]);
