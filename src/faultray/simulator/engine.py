@@ -34,12 +34,23 @@ class ScenarioResult:
     error: str | None = None
 
     @property
+    def is_errored(self) -> bool:
+        """True when the scenario failed to execute.
+
+        Errored scenarios carry ``risk_score == 0.0`` only because the score
+        could not be computed — NOT because the scenario is safe. Callers must
+        treat this as "unknown / errored", never as "passed".
+        """
+        return self.error is not None
+
+    @property
     def is_critical(self) -> bool:
-        return self.risk_score >= 7.0
+        # An errored scenario has an unknown (not zero) risk; do not classify it.
+        return self.error is None and self.risk_score >= 7.0
 
     @property
     def is_warning(self) -> bool:
-        return 4.0 <= self.risk_score < 7.0
+        return self.error is None and 4.0 <= self.risk_score < 7.0
 
 
 @dataclass
@@ -61,8 +72,18 @@ class SimulationReport:
         return [r for r in self.results if r.is_warning]
 
     @property
+    def errored(self) -> list[ScenarioResult]:
+        """Scenarios that failed to execute (distinct from 'passed')."""
+        return [r for r in self.results if r.is_errored]
+
+    @property
     def passed(self) -> list[ScenarioResult]:
-        return [r for r in self.results if not r.is_critical and not r.is_warning]
+        # An errored scenario is NOT "passed": its risk is unknown, not zero.
+        # Excluding it prevents a failed simulation from masquerading as safe.
+        return [
+            r for r in self.results
+            if not r.is_errored and not r.is_critical and not r.is_warning
+        ]
 
 
 class SimulationEngine:
@@ -111,11 +132,16 @@ class SimulationEngine:
                 trigger=scenario.name,
                 total_components=total_components,
             )
-            # Use the minimum likelihood from all chains (compound failures
-            # are only as likely as the least likely sub-fault)
+            # Compound (simultaneous) faults are independent events, so the
+            # joint likelihood is the PRODUCT of the sub-fault likelihoods, not
+            # the minimum. Using min() systematically over-stated the
+            # likelihood (hence the risk) of independent compound scenarios.
             likelihoods = [c.likelihood for c in chains if c.effects]
             if likelihoods:
-                merged.likelihood = min(likelihoods)
+                joint = 1.0
+                for p in likelihoods:
+                    joint *= p
+                merged.likelihood = joint
 
             # Apply a steep likelihood penalty when a scenario directly faults
             # a very high fraction of components.  Simultaneous all-down events
@@ -131,7 +157,17 @@ class SimulationEngine:
 
             for chain in chains:
                 merged.effects.extend(chain.effects)
-            risk_score = merged.severity
+
+            # A compound scenario is a strictly larger event than any one of its
+            # sub-faults, so its risk must never score *below* the worst
+            # individual sub-fault — even though the product likelihood (above)
+            # correctly lowers the joint probability. Take the max of the
+            # merged severity and the strongest single-chain severity.
+            # TODO(review/U8): risk_score conflates impact and likelihood;
+            # a cleaner model would score blast-radius/impact and likelihood
+            # separately rather than reconciling them with this max().
+            worst_single = max((c.severity for c in chains if c.effects), default=0.0)
+            risk_score = max(merged.severity, worst_single)
         else:
             merged = CascadeChain(
                 trigger=scenario.name,
