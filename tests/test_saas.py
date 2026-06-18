@@ -389,3 +389,88 @@ class TestProtectedSaaSEndpointsRejectUnauthenticated:
     def test_compliance_report_requires_auth(self, unauth_client):
         resp = unauth_client.get("/api/v1/compliance/report")
         assert resp.status_code in (401, 403), resp.text
+
+
+# ---------------------------------------------------------------------------
+# Billing enforcement: fail-closed usage + idempotent webhooks
+# ---------------------------------------------------------------------------
+
+
+class TestBillingEnforcement:
+    """UsageTracker fail-closed behaviour and webhook replay protection."""
+
+    def _temp_sf(self, tmp_path):
+        from faultray.api.database import (
+            Base,
+            get_session_factory,
+            reset_engine,
+            _get_engine,
+        )
+        from tests.conftest import _run_async
+
+        db_path = tmp_path / "billing.db"
+        url = f"sqlite+aiosqlite:///{db_path}"
+        reset_engine()
+        engine = _get_engine(url)
+
+        async def _create():
+            async with engine.begin() as conn:
+                await conn.run_sync(Base.metadata.create_all)
+
+        _run_async(_create())
+        return get_session_factory(url)
+
+    def test_check_limit_fails_closed_on_db_error(self, tmp_path):
+        from faultray.api.billing import UsageTracker
+        from tests.conftest import _run_async
+
+        # A session factory that raises -> usage cannot be determined.
+        def _broken_sf():
+            raise RuntimeError("DB down")
+
+        tracker = UsageTracker(_broken_sf)
+        allowed = _run_async(tracker.check_limit("team-x", "simulation"))
+        assert allowed is False  # deny, never fail open
+
+    def test_webhook_event_is_idempotent(self, tmp_path):
+        from faultray.api.billing import StripeManager
+        from faultray.api.database import SubscriptionRow, get_session_factory
+        from tests.conftest import _run_async
+        from sqlalchemy import select
+
+        sf = self._temp_sf(tmp_path)
+        mgr = StripeManager.__new__(StripeManager)  # bypass Stripe key setup
+        mgr._enabled = True
+
+        event = {
+            "event_type": "checkout.session.completed",
+            "event_id": "evt_123",
+            "team_id": "team-idem",
+            "tier": "pro",
+            "customer_id": "cus_1",
+        }
+
+        async def _run():
+            await mgr.persist_webhook_event(event)
+            # Simulate a later downgrade arriving as a REPLAY of the SAME id.
+            replay = {
+                "event_type": "customer.subscription.deleted",
+                "event_id": "evt_123",
+                "team_id": "team-idem",
+            }
+            await mgr.persist_webhook_event(replay)
+            async with get_session_factory()() as session:
+                row = (
+                    await session.execute(
+                        select(SubscriptionRow).where(
+                            SubscriptionRow.team_id == "team-idem"
+                        )
+                    )
+                ).scalar_one_or_none()
+                return row
+
+        row = _run_async(_run())
+        # The replayed event id was ignored, so the pro tier is retained
+        # (the duplicate delete did NOT downgrade).
+        assert row is not None
+        assert row.tier == "pro"

@@ -129,9 +129,11 @@ def generate_license_key(
     team_hash = hashlib.sha256(team_id.encode()).hexdigest()[:8]
 
     message = f"{_KEY_PREFIX}-{tier_tag}-{team_hash}"
+    # Use the FULL HMAC-SHA256 digest. Truncating to 8 hex chars (32 bits) made
+    # the signature brute-forceable (~2^32); the full digest is not.
     signature = hmac.new(
         secret.encode(), message.encode(), hashlib.sha256,
-    ).hexdigest()[:8]
+    ).hexdigest()
 
     return f"{message}-{signature}"
 
@@ -141,11 +143,17 @@ def generate_license_key(
 # ---------------------------------------------------------------------------
 
 
-def verify_license_key(key: str, secret: str | None = None) -> PricingTier | None:
+def verify_license_key(
+    key: str, secret: str | None = None, *, team_id: str | None = None
+) -> PricingTier | None:
     """Verify a license key and return the encoded tier if valid.
 
     Returns ``None`` when the key is malformed, the secret is missing, or
     the signature does not match.
+
+    When *team_id* is supplied the key is also bound to that team: the embedded
+    team hash must match ``sha256(team_id)``. This prevents a key issued for one
+    team from being reused by another.
     """
     secret = secret or os.environ.get(_ENV_LICENSE_SECRET, "")
     if not secret:
@@ -167,15 +175,22 @@ def verify_license_key(key: str, secret: str | None = None) -> PricingTier | Non
         logger.debug("License key tier unknown: %s", tier_tag)
         return None
 
-    # Recompute expected signature
+    # Recompute expected signature over the FULL digest (no truncation).
     message = f"{prefix}-{tier_tag}-{team_hash}"
     expected_sig = hmac.new(
         secret.encode(), message.encode(), hashlib.sha256,
-    ).hexdigest()[:8]
+    ).hexdigest()
 
     if not hmac.compare_digest(provided_sig, expected_sig):
         logger.debug("License key signature mismatch")
         return None
+
+    # Team binding: reject a validly-signed key issued for a different team.
+    if team_id is not None:
+        expected_team_hash = hashlib.sha256(team_id.encode()).hexdigest()[:8]
+        if not hmac.compare_digest(team_hash, expected_team_hash):
+            logger.debug("License key team binding mismatch")
+            return None
 
     return _VALID_TIERS[tier_tag]
 
