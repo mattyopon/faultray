@@ -171,7 +171,12 @@ async def _optional_user(request: Request):
 
 
 def _require_permission(permission: str):
-    """Lazy wrapper around auth.require_permission (opt-in RBAC)."""
+    """Lazy wrapper around auth.require_permission (opt-in RBAC).
+
+    Fails closed: an unexpected error in the auth layer (DB outage, bad role,
+    import failure) must deny the request, never silently grant it by
+    returning ``None`` (which downstream handlers treat as no-auth-required).
+    """
     async def _dep(request: Request):
         try:
             from faultray.api.auth import require_permission
@@ -180,7 +185,8 @@ def _require_permission(permission: str):
         except HTTPException:
             raise
         except Exception:
-            return None
+            logger.exception("Authorization check failed unexpectedly; denying request")
+            raise HTTPException(status_code=500, detail="Authorization check failed")
     return _dep
 
 
