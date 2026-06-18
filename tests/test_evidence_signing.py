@@ -200,7 +200,7 @@ class TestEvidenceSignerHardening:
         assert signer.verify_report(ev, "r") is True
 
     def test_rsa_sign_and_verify_roundtrip(self, tmp_path):
-        cryptography = pytest.importorskip("cryptography")
+        pytest.importorskip("cryptography")
         import datetime as _dt
         from cryptography.hazmat.primitives.asymmetric import rsa
         from cryptography.hazmat.primitives import serialization, hashes
