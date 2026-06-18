@@ -14,15 +14,23 @@ import logging
 from dataclasses import dataclass, field
 from typing import Any
 
-from fastapi import APIRouter
+from fastapi import APIRouter, Depends
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel
 
+from faultray.api.routes._shared import _require_permission
 from faultray.model.graph import InfraGraph
 
 logger = logging.getLogger(__name__)
 
-insurance_router = APIRouter(prefix="/api/insurance", tags=["insurance"])
+# SEC: the insurance scoring/benchmark API is a Business/Enterprise-tier paid
+# feature but was mounted unauthenticated. Gate the router so it at least
+# requires auth (no-auth/no-users mode still allows; enforced once users exist).
+insurance_router = APIRouter(
+    prefix="/api/insurance",
+    tags=["insurance"],
+    dependencies=[Depends(_require_permission("view_results"))],
+)
 
 
 # ---------------------------------------------------------------------------

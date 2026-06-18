@@ -469,7 +469,16 @@ class ScoreDecomposer:
         # Final score
         # ------------------------------------------------------------------
         final_score = max(0.0, min(100.0, running_score))
-        penalties_total = total_spof_penalty + total_failover_penalty + total_util_penalty + chain_penalty
+        # Must include total_host_penalty — running_score subtracts it (above), so
+        # omitting it here made the breakdown not reconcile with the final score
+        # (base_score - penalties_total != total_score, off by the host penalty).
+        penalties_total = (
+            total_spof_penalty
+            + total_host_penalty
+            + total_failover_penalty
+            + total_util_penalty
+            + chain_penalty
+        )
         bonuses_total = 0.0  # In v1, bonuses are implicit (reduced penalties)
 
         grade = _score_to_grade(final_score)

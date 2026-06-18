@@ -118,6 +118,40 @@ class CascadeChain:
         return min(10.0, max(0.0, round(raw_score, 1)))
 
 
+# Health severity ordering — higher = worse. Module-level so both the cascade
+# engine (monotonic worst-health propagation) and compound-scenario merging
+# share one definition.
+HEALTH_RANK: dict[HealthStatus, int] = {
+    HealthStatus.HEALTHY: 0,
+    HealthStatus.DEGRADED: 1,
+    HealthStatus.OVERLOADED: 2,
+    HealthStatus.DOWN: 3,
+}
+
+
+def dedupe_worst_effects(effects: list[CascadeEffect]) -> list[CascadeEffect]:
+    """Collapse effects to one per component, keeping the worst health.
+
+    A compound scenario merges several sub-chains that can each touch the SAME
+    component (e.g. a traffic spike *and* a fault on the same node — the default
+    "X down + Nx traffic" categories generated per component). Concatenating
+    their effects double-counts that component, which inflates
+    ``CascadeChain.severity``'s ``affected_count`` — used both as the impact
+    denominator and the ``spread_score`` numerator, and to decide the
+    ``affected_count <= 1`` (single-component, max-3.0) cap. The duplicate can
+    therefore push a single-component fault to a full-system 10.0 and spuriously
+    flag it critical. Keep one effect per ``component_id`` carrying its
+    worst-observed health (ties keep the later effect, preserving accumulated
+    latency/reason from deeper propagation).
+    """
+    worst: dict[str, CascadeEffect] = {}
+    for effect in effects:
+        prev = worst.get(effect.component_id)
+        if prev is None or HEALTH_RANK[effect.health] >= HEALTH_RANK[prev.health]:
+            worst[effect.component_id] = effect
+    return list(worst.values())
+
+
 class CascadeEngine:
     """Simulates cascading failures through the dependency graph.
 
@@ -695,13 +729,9 @@ class CascadeEngine:
 
     # Health severity ordering — higher = worse. Used to decide whether a
     # newly computed cascade outcome replaces a previously recorded one
-    # (Property 1: Monotonicity — health may only worsen).
-    _HEALTH_RANK: dict[HealthStatus, int] = {
-        HealthStatus.HEALTHY: 0,
-        HealthStatus.DEGRADED: 1,
-        HealthStatus.OVERLOADED: 2,
-        HealthStatus.DOWN: 3,
-    }
+    # (Property 1: Monotonicity — health may only worsen). Aliased to the
+    # module-level HEALTH_RANK so the merge dedup and the engine agree.
+    _HEALTH_RANK = HEALTH_RANK
 
     def _propagate(
         self,

@@ -305,8 +305,13 @@ async def whatif_page(request: Request):
 
 
 @router.get("/api/whatif/components")
-async def whatif_components():
-    """Return current components with their parameters for the what-if UI."""
+async def whatif_components(user=Depends(_require_permission("view_results"))):
+    """Return current components with their parameters for the what-if UI.
+
+    SEC: this inventory leaks component names/types/replicas/circuit-breakers/
+    failover/autoscaling and the baseline score, so it must be gated like the
+    other simulation endpoints (was unauthenticated).
+    """
     from faultray.api.routes._shared import _estimate_availability
 
     graph = get_graph()
