@@ -419,7 +419,9 @@ async def whatif_calculate(request: Request):
 
 
 @router.post("/api/whatif/export")
-async def whatif_export(request: Request):
+async def whatif_export(
+    request: Request, user=Depends(_require_permission("export_results"))
+):
     """Export modified infrastructure as YAML."""
     import copy
 
@@ -568,6 +570,7 @@ async def fmea_page(request: Request):
 async def api_fmea(
     component: str | None = None,
     min_rpn: int = 0,
+    user=Depends(_require_permission("view_results")),
 ):
     """Run FMEA analysis and return results as JSON."""
     from faultray.simulator.fmea_engine import FMEAEngine
@@ -638,6 +641,7 @@ async def api_anomalies(
     request: Request,
     anomaly_type: str | None = None,
     severity: str | None = None,
+    user=Depends(_require_permission("view_results")),
 ):
     """Run anomaly detection and return results."""
     graph = get_graph()

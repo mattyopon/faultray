@@ -428,6 +428,14 @@ def get_active_coupon_tier() -> str | None:
 
     This is the integration point for :func:`faultray.licensing.get_active_tier`.
     """
+    # TODO(review/U4): ~/.faultray/license.json is plain, unsigned JSON, so a
+    # user with local filesystem write access can forge an enterprise tier by
+    # editing it directly (local-CLI threat model). A real fix is to HMAC-sign
+    # the redeemed-coupon record with FAULTRAY_LICENSE_SECRET and verify it
+    # here, mirroring licensing.verify_license_key. Deferred: requires a signing
+    # secret to be provisioned to the redemption path and breaks existing
+    # unsigned license.json files. Server-side enforcement (billing.check_limit,
+    # now fail-closed) is the authoritative gate.
     redeemed = _load_license()
     if redeemed is None:
         return None

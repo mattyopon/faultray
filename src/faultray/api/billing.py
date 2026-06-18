@@ -148,8 +148,10 @@ class UsageTracker:
 
                 return True
         except Exception:
-            logger.debug("Could not check usage limit.", exc_info=True)
-            return True  # fail open
+            # Fail CLOSED: if we cannot determine usage (DB error, unknown
+            # tier, etc.) deny rather than silently grant unlimited paid usage.
+            logger.warning("Could not check usage limit; denying.", exc_info=True)
+            return False
 
     async def get_usage(self, team_id: str, period: str = "") -> dict:
         """Get current usage summary for a team."""
@@ -409,8 +411,53 @@ class StripeManager:
     # -- Webhook → DB persistence helper -----------------------------------
 
     async def persist_webhook_event(self, event_data: dict) -> None:
-        """Persist subscription state changes from a processed webhook event."""
+        """Persist subscription state changes from a processed webhook event.
+
+        Idempotent: each Stripe event id is recorded once; a replayed event is
+        ignored so a duplicate delivery cannot re-apply a state change (e.g.
+        re-upgrade after a cancellation).
+        """
         event_type = event_data.get("event_type", "")
+        event_id = event_data.get("event_id", "")
+
+        # Replay / idempotency guard keyed by Stripe event id.
+        if event_id:
+            try:
+                from faultray.api.database import (
+                    ProcessedWebhookEventRow,
+                    get_session_factory,
+                )
+                from sqlalchemy import select
+
+                sf = get_session_factory()
+                async with sf() as session:
+                    already = (
+                        await session.execute(
+                            select(ProcessedWebhookEventRow.id).where(
+                                ProcessedWebhookEventRow.event_id == event_id
+                            )
+                        )
+                    ).scalar_one_or_none()
+                    if already is not None:
+                        logger.info(
+                            "Skipping already-processed webhook event %s", event_id
+                        )
+                        return
+                    session.add(
+                        ProcessedWebhookEventRow(
+                            event_id=event_id, event_type=event_type
+                        )
+                    )
+                    await session.commit()
+            except Exception:
+                # If the ledger write fails (e.g. a concurrent duplicate hit the
+                # unique constraint), do not apply the state change twice.
+                logger.warning(
+                    "Webhook idempotency check failed for event %s; skipping.",
+                    event_id,
+                    exc_info=True,
+                )
+                return
 
         if event_type == "checkout.session.completed":
             await self._activate_subscription(

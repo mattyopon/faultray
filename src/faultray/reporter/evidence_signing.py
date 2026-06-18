@@ -209,13 +209,24 @@ class EvidenceSigner:
                 signing is used.
             private_key_path: Path to a PEM-encoded RSA private key.
         """
-        # Detect legacy default-key usage and emit a deprecation warning
+        # Fail closed on the legacy hard-coded default key: it is publicly known,
+        # so any signature made with it is forgeable and cannot provide
+        # integrity. Reject it unless an operator has *explicitly* opted in via
+        # FAULTRAY_ALLOW_DEFAULT_SIGNING_KEY (dev only).
         if signing_key == _LEGACY_DEFAULT_KEY:
+            if os.environ.get("FAULTRAY_ALLOW_DEFAULT_SIGNING_KEY", "").strip().lower() not in (
+                "1", "true", "yes", "on",
+            ):
+                raise SigningKeyError(
+                    "The default signing key 'faultray-default-key' is publicly "
+                    "known and forgeable; it is not permitted. Configure a real "
+                    "key via the signing_key parameter or FAULTRAY_SIGNING_KEY. "
+                    "(Set FAULTRAY_ALLOW_DEFAULT_SIGNING_KEY=1 only for local dev.)"
+                )
             warnings.warn(
-                "EvidenceSigner: the default key 'faultray-default-key' is deprecated "
-                "and must not be used in production compliance contexts.  "
-                "Configure a real key via the signing_key parameter or the "
-                "FAULTRAY_SIGNING_KEY environment variable.",
+                "EvidenceSigner: using the publicly-known default key "
+                "'faultray-default-key' (explicitly opted in). This provides NO "
+                "real integrity and must never be used in production.",
                 DeprecationWarning,
                 stacklevel=2,
             )
@@ -232,6 +243,7 @@ class EvidenceSigner:
         # X.509 certificate-based signing setup
         self._cert_thumbprint = ""
         self._private_key: Any = None
+        self._public_key: Any = None
         self._use_cert = False
 
         if certificate_path is not None and private_key_path is not None:
@@ -354,6 +366,18 @@ class EvidenceSigner:
             chain_hash=evidence.chain_hash,
         )
 
+        # RSA-SHA256 verification when the record was signed with a certificate
+        # and we hold the corresponding public key. Previously this path was
+        # missing entirely: an RSA-signed record could never verify (verify was
+        # HMAC-only), so signatures silently failed.
+        if evidence.signing_algorithm == "RSA-SHA256":
+            if self._public_key is not None and self._verify_rsa(
+                sign_payload, evidence.signature
+            ):
+                return True
+            # No public key / mismatch → cannot validate an RSA signature here.
+            return False
+
         # Try current key
         if self._key is not None:
             if self._verify_hmac(self._key, sign_payload, evidence.signature):
@@ -364,8 +388,6 @@ class EvidenceSigner:
             if self._verify_hmac(old_key, sign_payload, evidence.signature):
                 return True
 
-        # Certificate-based verification: fall through to HMAC keys only;
-        # cert-based verification requires the caller to have cert context
         return False
 
     def add_counter_signature(
@@ -524,6 +546,9 @@ class EvidenceSigner:
 
             cert = load_pem_x509_certificate(cert_pem, default_backend())
             self._private_key = load_pem_private_key(key_pem, password=None, backend=default_backend())
+            # Retain the certificate's public key so signatures produced with
+            # this signer can also be verified (RSA-SHA256 verify path).
+            self._public_key = cert.public_key()
 
             # Compute certificate thumbprint (SHA-256 of DER-encoded cert)
             der_bytes = cert.public_bytes(
@@ -598,6 +623,26 @@ class EvidenceSigner:
         try:
             actual = hmac.new(key, payload.encode(), hashlib.sha256).hexdigest()
             return hmac.compare_digest(actual, expected_hex)
+        except Exception:  # noqa: BLE001
+            return False
+
+    def _verify_rsa(self, payload: str, signature_hex: str) -> bool:
+        """Verify an RSA-SHA256 signature against the loaded public key."""
+        try:
+            from cryptography.hazmat.primitives import hashes
+            from cryptography.hazmat.primitives.asymmetric import padding
+            from cryptography.exceptions import InvalidSignature
+
+            try:
+                self._public_key.verify(
+                    bytes.fromhex(signature_hex),
+                    payload.encode(),
+                    padding.PKCS1v15(),
+                    hashes.SHA256(),
+                )
+                return True
+            except InvalidSignature:
+                return False
         except Exception:  # noqa: BLE001
             return False
 

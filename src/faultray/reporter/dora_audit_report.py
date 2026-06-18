@@ -18,6 +18,7 @@ from __future__ import annotations
 import hashlib
 import json
 import logging
+import os
 from dataclasses import dataclass, field, asdict
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
@@ -135,8 +136,11 @@ class DORAuditReportGenerator:
     (regulatory-formatted evidence).
     """
 
-    def __init__(self, signing_key: str = "faultray-default-key") -> None:
-        self._signing_key = signing_key
+    def __init__(self, signing_key: str | None = None) -> None:
+        # No hard-coded default key: a publicly-known key provides no integrity.
+        # Resolve from the environment when not supplied; signing helpers that
+        # consume this must fail closed when it is still None.
+        self._signing_key = signing_key or os.environ.get("FAULTRAY_SIGNING_KEY")
 
     # ------------------------------------------------------------------
     # Primary report generation

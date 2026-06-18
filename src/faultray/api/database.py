@@ -154,6 +154,24 @@ class SubscriptionRow(Base):
     )
 
 
+class ProcessedWebhookEventRow(Base):
+    """Ledger of processed billing webhook event ids (replay/idempotency guard).
+
+    Stripe may deliver the same event more than once. Recording each event id
+    here lets ``persist_webhook_event`` skip a duplicate so, e.g., a replayed
+    ``customer.subscription.deleted`` cannot be used to re-trigger state changes
+    after a cancellation.
+    """
+    __tablename__ = "processed_webhook_events"
+
+    id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
+    event_id: Mapped[str] = mapped_column(String(255), nullable=False, unique=True)
+    event_type: Mapped[str | None] = mapped_column(String(100), nullable=True)
+    processed_at: Mapped[_dt.datetime] = mapped_column(
+        DateTime, server_default=func.now(), nullable=False,
+    )
+
+
 class UsageLogRow(Base):
     """Per-team resource usage log."""
     __tablename__ = "usage_logs"

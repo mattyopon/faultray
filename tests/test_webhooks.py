@@ -213,3 +213,49 @@ class TestGenericWebhook:
                 "https://example.com/webhook", report_summary_critical,
             )
             assert result is False
+
+
+# ---------------------------------------------------------------------------
+# SSRF protection on outbound webhooks
+# ---------------------------------------------------------------------------
+
+
+class TestWebhookSSRF:
+    """Outbound webhooks must refuse loopback / private / metadata targets."""
+
+    import pytest as _pytest
+
+    @_pytest.mark.asyncio
+    async def test_generic_webhook_blocks_metadata_ip(self):
+        from faultray.integrations.webhooks import send_generic_webhook
+
+        # Must NOT even attempt the request; returns False without exfiltrating.
+        result = await send_generic_webhook(
+            "http://169.254.169.254/latest/meta-data/iam/", {"x": 1}
+        )
+        assert result is False
+
+    @_pytest.mark.asyncio
+    async def test_slack_webhook_blocks_localhost(self):
+        from faultray.integrations.webhooks import send_slack_notification
+
+        result = await send_slack_notification(
+            "http://127.0.0.1:8080/hook", {"critical_count": 0}
+        )
+        assert result is False
+
+    def test_validate_rejects_private_and_bad_scheme(self):
+        from faultray.integrations.webhooks import (
+            _validate_webhook_url,
+            WebhookSecurityError,
+        )
+
+        for bad in (
+            "http://localhost/x",
+            "http://10.0.0.1/x",
+            "http://169.254.169.254/x",
+            "file:///etc/passwd",
+            "ftp://example.com/x",
+        ):
+            with self._pytest.raises(WebhookSecurityError):
+                _validate_webhook_url(bad)

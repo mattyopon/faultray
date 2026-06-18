@@ -29,13 +29,20 @@ _JWT_SECRET = (
     or ""
 )
 if not _JWT_SECRET:
+    # Fail closed: never fall back to a hard-coded, publicly-known default
+    # secret (anyone could forge an admin JWT with it). In any non-explicitly
+    # opted-in environment we generate a random, ephemeral per-process secret
+    # instead. Tokens signed with it are unforgeable but do not survive a
+    # restart — acceptable for local development, never relied on in prod.
     if os.environ.get("FAULTRAY_ENV", "development") == "production":
         raise RuntimeError(
             "FAULTRAY_JWT_SECRET (or JWT_SECRET_KEY) must be set in production"
         )
-    _JWT_SECRET = "faultray-dev-secret-change-me"  # development-only default
+    _JWT_SECRET = secrets.token_urlsafe(64)
     logger.warning(
-        "Using default JWT secret — set FAULTRAY_JWT_SECRET or JWT_SECRET_KEY for production"
+        "No FAULTRAY_JWT_SECRET / JWT_SECRET_KEY configured; using a random "
+        "ephemeral per-process JWT secret. Sessions will not persist across "
+        "restarts. Set FAULTRAY_JWT_SECRET for stable, multi-process auth."
     )
 _JWT_ALGORITHM = "HS256"
 _JWT_EXPIRY_SECONDS = 86400  # 24 hours

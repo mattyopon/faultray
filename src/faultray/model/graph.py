@@ -15,6 +15,7 @@ from .components import SCHEMA_VERSION, Component, ComponentType, Dependency
 
 
 _MAX_COMPONENTS = 10_000  # DoS guard — prevent unbounded memory growth
+_MAX_JSON_BYTES = 10 * 1024 * 1024  # 10 MB — JSON input cap (parity with YAML)
 
 
 class InfraGraph:
@@ -452,7 +453,25 @@ class InfraGraph:
             from faultray.model.loader import load_yaml
             return load_yaml(path)
 
+        # DoS guard: cap the input size before parsing, at parity with the YAML
+        # loader. Without this, untrusted JSON could exhaust memory.
+        if isinstance(path, str):
+            path = Path(path)
+        try:
+            file_size = path.stat().st_size
+        except OSError:
+            file_size = 0
+        if file_size > _MAX_JSON_BYTES:
+            raise ValueError(
+                f"JSON model file too large ({file_size:,} bytes). "
+                f"Maximum allowed: {_MAX_JSON_BYTES:,} bytes."
+            )
+
         data = json.loads(path.read_text())
+        if not isinstance(data, dict):
+            raise ValueError(
+                f"Expected a JSON object at the top level, got {type(data).__name__}"
+            )
         # Handle missing schema_version gracefully
         file_version = data.get("schema_version")
         if file_version is None:
@@ -466,8 +485,40 @@ class InfraGraph:
                 SCHEMA_VERSION,
             )
         graph = cls()
-        for c in data.get("components", []):
+        raw_components = data.get("components", [])
+        # _MAX_COMPONENTS is enforced inside add_component (raises before
+        # building the 10,001st object); a pre-check keeps the error explicit.
+        if isinstance(raw_components, list) and len(raw_components) > _MAX_COMPONENTS:
+            raise ValueError(
+                f"JSON model has too many components "
+                f"({len(raw_components)} > {_MAX_COMPONENTS})."
+            )
+        for c in raw_components:
             graph.add_component(Component(**c))
+
+        # Validate dependency endpoints exist BEFORE adding edges — at parity
+        # with the YAML loader. add_dependency() would otherwise create dangling
+        # NetworkX nodes for unknown ids, bypassing the component guard and
+        # corrupting the graph.
+        known_ids = set(graph.components.keys())
         for d in data.get("dependencies", []):
-            graph.add_dependency(Dependency(**d))
+            dep = Dependency(**d)
+            if dep.source_id not in known_ids:
+                raise ValueError(
+                    f"Dependency source '{dep.source_id}' does not match any component id"
+                )
+            if dep.target_id not in known_ids:
+                raise ValueError(
+                    f"Dependency target '{dep.target_id}' does not match any component id"
+                )
+            graph.add_dependency(dep)
+
+        # Reject cycles: the graph must be a DAG (parity with the YAML loader).
+        if not nx.is_directed_acyclic_graph(graph._graph):
+            cycles = list(nx.simple_cycles(graph._graph))
+            cycle_str = " -> ".join(cycles[0] + [cycles[0][0]]) if cycles else "unknown"
+            raise ValueError(
+                f"Circular dependency detected: {cycle_str}. "
+                f"Infrastructure graph must be a DAG."
+            )
         return graph

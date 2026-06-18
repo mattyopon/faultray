@@ -57,6 +57,43 @@ class IacExportResult:
 # ---------------------------------------------------------------------------
 
 
+def _esc(value: str) -> str:
+    """Escape free-text for a double-quoted HCL/YAML string or a ``#`` comment.
+
+    Component names/hosts are untrusted input that lands inside generated IaC
+    that an engineer later applies. Neutralise quote/backslash break-outs and
+    strip newlines so a crafted value cannot inject extra HCL attributes / YAML
+    keys or escape a single-line comment.
+    """
+    return (
+        str(value)
+        .replace("\\", "\\\\")
+        .replace('"', '\\"')
+        .replace("\n", " ")
+        .replace("\r", " ")
+    )
+
+
+def _sanitize_graph_for_export(graph: InfraGraph) -> InfraGraph:
+    """Return a shallow copy of *graph* with free-text string fields escaped.
+
+    All component generators below interpolate ``comp.name`` / ``comp.host``
+    (and dependents' names) directly into HCL/YAML. Escaping once here covers
+    every interpolation site (values *and* comments) without touching the
+    structural identifiers, which are independently sanitised via ``_tf_id`` /
+    ``_cfn_id`` / ``_k8s_name``.
+    """
+    safe = InfraGraph()
+    for comp in graph.components.values():
+        safe_comp = comp.model_copy(
+            update={"name": _esc(comp.name), "host": _esc(comp.host)}
+        )
+        safe.add_component(safe_comp)
+    for dep in graph.all_dependency_edges():
+        safe.add_dependency(dep)
+    return safe
+
+
 def _tf_id(name: str) -> str:
     """Sanitise a component id/name into a valid Terraform resource label."""
     return re.sub(r"[^a-zA-Z0-9]", "_", name).strip("_").lower()
@@ -864,17 +901,20 @@ class IacExporter:
             :class:`IacExportResult` with ``files``, ``warnings``, and
             ``spof_components`` populated.
         """
+        # Escape untrusted free-text (names/hosts) before any interpolation.
+        safe_graph = _sanitize_graph_for_export(self._graph)
+        safe_region = _esc(provider_region)
         if fmt == ExportFormat.TERRAFORM:
             return _generate_terraform(
-                self._graph, provider_region, include_comments, mark_spof, version
+                safe_graph, safe_region, include_comments, mark_spof, version
             )
         if fmt == ExportFormat.CLOUDFORMATION:
             return _generate_cloudformation(
-                self._graph, include_comments, mark_spof, version
+                safe_graph, include_comments, mark_spof, version
             )
         if fmt == ExportFormat.KUBERNETES:
             return _generate_kubernetes(
-                self._graph, include_comments, mark_spof, version
+                safe_graph, include_comments, mark_spof, version
             )
         msg = f"Unsupported export format: {fmt}"
         raise ValueError(msg)

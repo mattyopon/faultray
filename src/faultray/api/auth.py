@@ -65,14 +65,25 @@ def require_permission(permission: str):
 
 
 async def _resolve_user(request: Request) -> UserRow | None:
-    """Resolve user for permission checks, reusing get_current_user logic."""
+    """Resolve user for permission checks, reusing get_current_user logic.
+
+    Fails closed: ``get_current_user`` returns ``None`` only for legitimately
+    public / no-users-configured cases, and raises ``HTTPException`` for auth
+    failures. Any *other* exception (DB outage, bad data) must NOT be swallowed
+    into a None that ``require_permission`` would treat as "access allowed";
+    surface it as a 500 so the request is denied.
+    """
     try:
         credentials = await _bearer_scheme(request)
         return await get_current_user(request, credentials)
     except HTTPException:
         raise
-    except Exception:
-        return None
+    except Exception as exc:
+        logger.exception("User resolution failed unexpectedly; denying request")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Authorization check failed",
+        ) from exc
 
 # ---------------------------------------------------------------------------
 # Helpers

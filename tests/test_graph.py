@@ -796,3 +796,49 @@ def test_critical_paths_cached_result_is_not_aliased() -> None:
     first = g.get_critical_paths()
     first[0].append("tampered")
     assert g.get_critical_paths() == [["a", "b"]]
+
+
+# ---------------------------------------------------------------------------
+# JSON load hardening (parity with YAML loader): size cap, dangling refs, DAG
+# ---------------------------------------------------------------------------
+
+def test_load_json_rejects_dangling_dependency(tmp_path: Path) -> None:
+    payload = {
+        "schema_version": SCHEMA_VERSION,
+        "components": [_comp("a").model_dump()],
+        "dependencies": [{"source_id": "a", "target_id": "ghost"}],
+    }
+    path = tmp_path / "dangling.json"
+    path.write_text(json.dumps(payload, default=str))
+    with pytest.raises(ValueError, match="does not match any component"):
+        InfraGraph.load(path)
+
+
+def test_load_json_rejects_cycle(tmp_path: Path) -> None:
+    payload = {
+        "schema_version": SCHEMA_VERSION,
+        "components": [_comp("a").model_dump(), _comp("b").model_dump()],
+        "dependencies": [
+            {"source_id": "a", "target_id": "b"},
+            {"source_id": "b", "target_id": "a"},
+        ],
+    }
+    path = tmp_path / "cycle.json"
+    path.write_text(json.dumps(payload, default=str))
+    with pytest.raises(ValueError, match="[Cc]ircular"):
+        InfraGraph.load(path)
+
+
+def test_load_json_rejects_oversize(tmp_path: Path, monkeypatch) -> None:
+    import faultray.model.graph as graph_module
+
+    monkeypatch.setattr(graph_module, "_MAX_JSON_BYTES", 10)
+    payload = {
+        "schema_version": SCHEMA_VERSION,
+        "components": [_comp("a").model_dump()],
+        "dependencies": [],
+    }
+    path = tmp_path / "big.json"
+    path.write_text(json.dumps(payload, default=str))
+    with pytest.raises(ValueError, match="too large"):
+        InfraGraph.load(path)

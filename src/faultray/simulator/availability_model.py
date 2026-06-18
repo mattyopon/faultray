@@ -364,6 +364,10 @@ def compute_three_layer_model(
     sw_availability = max(0.0, 1.0 - sw_unavail)
 
     # Layer 1 = min(software, hardware) — can't exceed hardware limit
+    # TODO(review/U10): folding system_hw into the Layer-1 software floor double-
+    # counts hardware when the final result also composes Layer-2 (hardware)
+    # separately, slightly overstating the penalty. Left as a conservative
+    # min()-bound pending a decision on the cross-layer composition model.
     system_sw = min(sw_availability, system_hw)
     # Clamp to [0, 1] (B3-1: all layer availabilities are clamped)
     system_sw = max(0.0, min(1.0, system_sw))
@@ -399,7 +403,12 @@ def compute_three_layer_model(
             )
             runtime_penalty += gc_fraction
 
-    # Average across components
+    # Average across components.
+    # TODO(review/U10): independent per-component packet-loss / GC penalties
+    # should COMPOSE (product of per-component availabilities), not average —
+    # averaging understates the aggregate runtime-noise penalty for systems
+    # with many lossy components. Kept as an average pending a product decision
+    # (composing changes the headline availability for every existing model).
     if comp_count > 0:
         network_penalty /= comp_count
         runtime_penalty /= comp_count

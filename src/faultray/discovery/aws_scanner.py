@@ -34,6 +34,34 @@ from faultray.model.graph import InfraGraph
 
 logger = logging.getLogger(__name__)
 
+
+def _extract_endpoint_host(value: str) -> str | None:
+    """Extract ONLY the hostname from an endpoint/connection string.
+
+    ECS environment variables frequently hold full connection strings such as
+    ``postgresql://user:password@db.xyz.rds.amazonaws.com:5432/app``. Storing the
+    raw value would serialise the embedded *password* into the graph / exported
+    YAML / state files (secret exfiltration). We deliberately keep only the host
+    portion, which is all that dependency matching needs, and never retain the
+    credentials, scheme, port, path, or query string.
+    """
+    if not value:
+        return None
+    host = value.strip()
+    # Strip scheme (e.g. ``redis://``) and anything before it.
+    if "://" in host:
+        host = host.split("://", 1)[1]
+    # Drop any path / query component.
+    host = host.split("/", 1)[0].split("?", 1)[0]
+    # Drop userinfo (``user:password@host``) — this is the secret-bearing part.
+    if "@" in host:
+        host = host.rsplit("@", 1)[1]
+    # Drop port.
+    host = host.split(":", 1)[0]
+    host = host.strip().strip("[]")  # tolerate bracketed IPv6 literals
+    return host or None
+
+
 # Mapping from AWS service to FaultRay ComponentType
 AWS_TYPE_MAP: dict[str, ComponentType] = {
     "ec2": ComponentType.APP_SERVER,
@@ -590,7 +618,13 @@ class AWSScanner(CloudScannerBase):
                             "mysql://",
                         ]
                     ):
-                        self._ecs_endpoints.setdefault(comp_id, []).append(val)
+                        # SECURITY: store only the hostname for dependency
+                        # matching — never the raw value, which may embed a
+                        # connection-string password that would otherwise leak
+                        # into the graph / exported YAML / state files.
+                        host = _extract_endpoint_host(val)
+                        if host:
+                            self._ecs_endpoints.setdefault(comp_id, []).append(host)
         except Exception as exc:
             logger.debug("Skipping task definition %s: %s", td_arn, exc)
 

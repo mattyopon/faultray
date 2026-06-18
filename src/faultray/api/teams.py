@@ -85,6 +85,67 @@ def _now_iso() -> str:
     return _dt.datetime.now(_dt.timezone.utc).isoformat()
 
 
+def _is_global_admin(user) -> bool:
+    """Return True for a platform admin (role == 'admin'), who bypasses
+    per-team membership checks. ``user is None`` is the backward-compatible
+    no-auth mode and is also treated as unrestricted."""
+    if user is None:
+        return True
+    return str(getattr(user, "role", "") or "").lower() == "admin"
+
+
+async def _team_member_role(session, team_id: str, user) -> str | None:
+    """Return the caller's role in *team_id* ('admin'/'editor'/'viewer'),
+    'owner' if they own it, or None if they are not a member."""
+    from sqlalchemy import text
+
+    uid = str(getattr(user, "id", "")) if user is not None else ""
+    if not uid:
+        return None
+    owner = (
+        await session.execute(
+            text("SELECT owner_id FROM team_workspaces WHERE id = :id"),
+            {"id": team_id},
+        )
+    ).fetchone()
+    if owner is not None and owner[0] == uid:
+        return "owner"
+    row = (
+        await session.execute(
+            text(
+                "SELECT role FROM team_members "
+                "WHERE team_id = :team_id AND user_id = :user_id"
+            ),
+            {"team_id": team_id, "user_id": uid},
+        )
+    ).fetchone()
+    return row[0] if row is not None else None
+
+
+async def _require_team_access(
+    session, team_id: str, user, *, manage: bool = False
+) -> None:
+    """Authorise the caller against a specific team (tenant isolation).
+
+    - Platform admins (and no-auth mode) are always allowed.
+    - Otherwise the caller must be a member of *team_id*.
+    - When *manage* is True (membership / project mutations) the caller must be
+      the team owner or a team-level admin.
+
+    Raises 403 on denial. Note: the team-existence (404) check is performed by
+    callers before this so genuine 404s are preserved.
+    """
+    if _is_global_admin(user):
+        return
+    role = await _team_member_role(session, team_id, user)
+    if role is None:
+        raise HTTPException(status_code=403, detail="Not a member of this team")
+    if manage and role not in ("owner", "admin"):
+        raise HTTPException(
+            status_code=403, detail="Team owner or admin role required"
+        )
+
+
 # ---------------------------------------------------------------------------
 # Team CRUD
 # ---------------------------------------------------------------------------
@@ -226,6 +287,8 @@ async def get_team(
             if row is None:
                 raise HTTPException(status_code=404, detail="Team not found")
 
+            await _require_team_access(session, team_id, user)
+
             members_rows = (
                 await session.execute(
                     text(
@@ -297,6 +360,10 @@ async def add_member(
             if team_row is None:
                 raise HTTPException(status_code=404, detail="Team not found")
 
+            # Only the team owner / a team admin may add members. This blocks
+            # the "editor self-adds as admin to any team" privilege escalation.
+            await _require_team_access(session, team_id, user, manage=True)
+
             # Check if already a member
             existing = (
                 await session.execute(
@@ -355,6 +422,9 @@ async def remove_member(
             ).fetchone()
             if team_row is None:
                 raise HTTPException(status_code=404, detail="Team not found")
+
+            await _require_team_access(session, team_id, user, manage=True)
+
             if team_row[0] == user_id:
                 raise HTTPException(status_code=400, detail="Cannot remove the team owner")
 
@@ -416,6 +486,8 @@ async def create_project(
             if team_row is None:
                 raise HTTPException(status_code=404, detail="Team not found")
 
+            await _require_team_access(session, team_id, user, manage=True)
+
             project_id = uuid.uuid4().hex[:12]
             now = _now_iso()
 
@@ -475,6 +547,8 @@ async def list_projects(
             ).fetchone()
             if team_row is None:
                 raise HTTPException(status_code=404, detail="Team not found")
+
+            await _require_team_access(session, team_id, user)
 
             rows = (
                 await session.execute(

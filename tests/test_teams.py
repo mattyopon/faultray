@@ -274,3 +274,78 @@ class TestTeamProjects:
     def test_list_projects_team_not_found(self, client):
         resp = client.get("/api/teams/nonexistent/projects")
         assert resp.status_code == 404
+
+
+# ---------------------------------------------------------------------------
+# Team authorization / tenant isolation (non-admin callers)
+# ---------------------------------------------------------------------------
+
+
+class TestTeamAuthorization:
+    """A non-admin user must not manage or read teams they don't belong to."""
+
+    _EDITOR_KEY = "editor-team-key"
+
+    def _seed_editor(self):
+        """Create an editor (non-admin) user and return its DB id."""
+        from sqlalchemy import select
+        from faultray.api.auth import hash_api_key
+        from faultray.api.database import UserRow, get_session_factory
+        from tests.conftest import _run_async
+
+        async def _mk():
+            sf = get_session_factory()
+            async with sf() as session:
+                existing = (
+                    await session.execute(
+                        select(UserRow).where(
+                            UserRow.api_key_hash == hash_api_key(self._EDITOR_KEY)
+                        )
+                    )
+                ).scalar_one_or_none()
+                if existing is not None:
+                    return existing.id
+                u = UserRow(
+                    email="editor@faultray.local",
+                    name="Editor",
+                    api_key_hash=hash_api_key(self._EDITOR_KEY),
+                    role="editor",
+                )
+                session.add(u)
+                await session.commit()
+                await session.refresh(u)
+                return u.id
+
+        return _run_async(_mk())
+
+    def test_editor_cannot_self_add_admin_to_foreign_team(self, client):
+        # Admin creates a team owned by someone else.
+        team = _create_team(client, owner_id="owner-99")
+        team_id = team["id"]
+
+        editor_id = self._seed_editor()
+
+        editor_client = TestClient(
+            app,
+            raise_server_exceptions=False,
+            headers={"Authorization": f"Bearer {self._EDITOR_KEY}"},
+        )
+        # Editor (not a member) tries to add themselves as admin -> denied.
+        resp = editor_client.post(
+            f"/api/teams/{team_id}/members",
+            json={"user_id": str(editor_id), "role": "admin"},
+        )
+        assert resp.status_code == 403
+
+    def test_editor_cannot_read_foreign_team(self, client):
+        team = _create_team(client, owner_id="owner-99")
+        team_id = team["id"]
+        self._seed_editor()
+
+        editor_client = TestClient(
+            app,
+            raise_server_exceptions=False,
+            headers={"Authorization": f"Bearer {self._EDITOR_KEY}"},
+        )
+        resp = editor_client.get(f"/api/teams/{team_id}")
+        assert resp.status_code == 403
