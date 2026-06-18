@@ -144,6 +144,11 @@ class ChainVerificationReport:
     invalid_records: list[dict]   # [{index, evidence_id, reason}]
     chain_intact: bool
     summary: str
+    # True only when a cryptographic SIGNATURE was verified for EVERY record
+    # (report_contents covered the whole chain and all signatures checked out).
+    # chain_intact alone only attests the hash-chain linkage, so callers must not
+    # treat it as proof that signatures are valid — check this flag for that.
+    signatures_verified: bool = False
 
 
 # ---------------------------------------------------------------------------
@@ -457,6 +462,15 @@ class EvidenceSigner:
         invalid: list[dict] = []
         report_contents = report_contents or []
 
+        # Two modes: when ANY report content is supplied we are in full-signature
+        # mode and EVERY record must have content to verify against. Otherwise a
+        # caller could skip signature verification on some records (and still get
+        # chain_intact=True, which attests only hash-chain linkage) simply by
+        # omitting their report bodies. With no content at all this is the
+        # documented linkage-only mode and signatures_verified stays False.
+        full_signature_mode = len(report_contents) > 0
+        all_signatures_ok = True
+
         for i, ev in enumerate(evidence_chain):
             reasons: list[str] = []
 
@@ -474,10 +488,17 @@ class EvidenceSigner:
                         f"got {ev.chain_hash[:16] if ev.chain_hash else 'empty'}…"
                     )
 
-            # Signature verification (only when report content is available)
-            if i < len(report_contents):
-                if not self.verify_report(ev, report_contents[i]):
-                    reasons.append("Signature verification failed")
+            # Signature verification
+            if full_signature_mode:
+                if i < len(report_contents):
+                    if not self.verify_report(ev, report_contents[i]):
+                        reasons.append("Signature verification failed")
+                        all_signatures_ok = False
+                else:
+                    # Fail closed: missing body in full-signature mode means this
+                    # record's signature was NOT verified — do not let it pass.
+                    reasons.append("Signature not verified — report content missing")
+                    all_signatures_ok = False
 
             if reasons:
                 invalid.append({
@@ -506,6 +527,7 @@ class EvidenceSigner:
             invalid_records=invalid,
             chain_intact=chain_intact,
             summary=summary,
+            signatures_verified=full_signature_mode and all_signatures_ok,
         )
 
     def export_evidence(self, evidence: SignedEvidence, output_path: Path) -> None:
