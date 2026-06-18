@@ -48,8 +48,13 @@ class FakeURL:
 
 
 class FakeRequest:
-    def __init__(self, path: str):
+    def __init__(self, path: str, headers: dict | None = None):
         self.url = FakeURL(path)
+        # get_current_user / the bearer scheme read these; provide them so the
+        # auth layer runs its real logic instead of raising an AttributeError
+        # (which the now-fail-closed _resolve_user would surface as a 500).
+        self.headers = headers or {}
+        self.session: dict = {}
 
 
 class FakeCredentials:
@@ -137,8 +142,32 @@ class TestRolePermissions:
 # ---------------------------------------------------------------------------
 
 class TestRequirePermission:
-    async def test_no_auth_mode_allows_all(self, rbac_db):
-        """When no users exist in DB, RBAC is opt-in — allow everything."""
+    async def test_no_auth_mode_public_path_allows(self, rbac_db):
+        """A PUBLIC path with no users configured resolves to None (allowed)."""
+        factory, engine = rbac_db
+
+        import faultray.api.auth as auth_module
+        original_factory = auth_module.get_session_factory
+        auth_module.get_session_factory = lambda: factory
+
+        try:
+            checker = require_permission("run_simulation")
+            # /simulation/run is a public path -> get_current_user returns None.
+            request = FakeRequest("/simulation/run")
+            result = await checker(request)
+            assert result is None
+        finally:
+            auth_module.get_session_factory = original_factory
+
+    async def test_no_users_protected_path_denied(self, rbac_db):
+        """A PROTECTED path with no users configured is DENIED, not allowed.
+
+        Previously this surfaced as None ('allow all') only because
+        _resolve_user swallowed the auth error (a fail-open). With fail-closed
+        RBAC the protected path correctly raises (no users -> 403).
+        """
+        from fastapi import HTTPException
+
         factory, engine = rbac_db
 
         import faultray.api.auth as auth_module
@@ -148,9 +177,9 @@ class TestRequirePermission:
         try:
             checker = require_permission("run_simulation")
             request = FakeRequest("/api/simulate")
-            result = await checker(request)
-            # No users -> backward-compatible mode -> returns None (allowed)
-            assert result is None
+            with pytest.raises(HTTPException) as exc_info:
+                await checker(request)
+            assert exc_info.value.status_code in (401, 403)
         finally:
             auth_module.get_session_factory = original_factory
 
