@@ -99,7 +99,7 @@ def compliance_monitor(
             else:
                 _print_snapshot(snap)
         if json_output:
-            console.print_json(data=results)
+            console.print_json(data=results[0] if len(results) == 1 else results)
 
     elif trend:
         results = []
@@ -117,7 +117,7 @@ def compliance_monitor(
             else:
                 _print_trend(t, fw)
         if json_output:
-            console.print_json(data=results)
+            console.print_json(data=results[0] if len(results) == 1 else results)
 
     else:
         # Default: assess and show results
@@ -136,7 +136,7 @@ def compliance_monitor(
             else:
                 _print_snapshot(snap)
         if json_output:
-            console.print_json(data=results)
+            console.print_json(data=results[0] if len(results) == 1 else results)
 
 
 def _print_snapshot(snap) -> None:
