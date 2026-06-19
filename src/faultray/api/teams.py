@@ -164,12 +164,29 @@ async def create_team(
         raise HTTPException(status_code=400, detail="Invalid JSON body")
 
     name = body.get("name", "").strip()
-    owner_id = body.get("owner_id", "").strip()
+    requested_owner = body.get("owner_id", "").strip()
 
     if not name:
         raise HTTPException(status_code=400, detail="'name' is required")
-    if not owner_id:
-        raise HTTPException(status_code=400, detail="'owner_id' is required")
+
+    # SEC: trusting a body owner_id let a user create a workspace owned by — and
+    # granting team-admin to — an arbitrary id. A platform admin (and the
+    # backward-compatible no-auth mode) keeps the explicit-owner contract; a
+    # regular user can only create a team owned by themselves.
+    caller_id = str(getattr(user, "id", "")) if user is not None else ""
+    if _is_global_admin(user):
+        if not requested_owner:
+            raise HTTPException(status_code=400, detail="'owner_id' is required")
+        owner_id = requested_owner
+    else:
+        if requested_owner and requested_owner != caller_id:
+            raise HTTPException(
+                status_code=403,
+                detail="Cannot create a team owned by another user",
+            )
+        owner_id = caller_id
+        if not owner_id:
+            raise HTTPException(status_code=400, detail="'owner_id' is required")
 
     try:
         from sqlalchemy import text
@@ -222,6 +239,12 @@ async def list_teams(
     user_id: str | None = None, user=Depends(_require_permission("view_dashboard"))
 ) -> JSONResponse:
     """List teams, optionally filtered by user membership."""
+    # SEC: a non-admin may only list their OWN team memberships. Trusting the
+    # query `user_id` let any view_dashboard user enumerate another user's teams,
+    # and omitting it listed EVERY team. Platform admins (and no-auth mode) keep
+    # the unrestricted/arbitrary-filter behavior.
+    if not _is_global_admin(user):
+        user_id = str(getattr(user, "id", "")) if user is not None else ""
     try:
         from sqlalchemy import text
 

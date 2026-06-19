@@ -253,10 +253,16 @@ async def get_google_user(access_token: str) -> dict:
 
 
 async def get_user_profile(config: OAuthConfig, access_token: str) -> dict:
-    """Return a normalised user dict ``{email, name, id, avatar_url}`` from the provider."""
+    """Return a normalised user dict ``{email, name, id, avatar_url, email_verified}``.
+
+    ``email_verified`` reflects whether the provider asserts the email is verified;
+    callers must require it before linking an OAuth login to an existing account.
+    """
     if config.provider == "github":
         raw = await get_github_user(access_token)
         email = raw.get("email")
+        # A public GitHub profile email is verified by GitHub.
+        email_verified = bool(email)
         if not email:
             # Fetch primary verified email from GitHub API
             try:
@@ -269,16 +275,21 @@ async def get_user_profile(config: OAuthConfig, access_token: str) -> dict:
                     for e in emails:
                         if e.get("primary") and e.get("verified"):
                             email = e["email"]
+                            email_verified = True
                             break
                     if not email and emails:
+                        # Fallback to the first email, carrying its verified flag.
                         email = emails[0].get("email", "")
+                        email_verified = bool(emails[0].get("verified"))
             except Exception:
                 email = f"{raw.get('login', 'unknown')}@github"
+                email_verified = False
         return {
             "id": str(raw.get("id", "")),
             "email": email or f"{raw.get('login', 'unknown')}@github",
             "name": raw.get("name") or raw.get("login", "unknown"),
             "avatar_url": raw.get("avatar_url", ""),
+            "email_verified": email_verified,
         }
     elif config.provider == "google":
         raw = await get_google_user(access_token)
@@ -287,6 +298,10 @@ async def get_user_profile(config: OAuthConfig, access_token: str) -> dict:
             "email": raw.get("email", "unknown@google"),
             "name": raw.get("name", "unknown"),
             "avatar_url": raw.get("picture", ""),
+            # Google userinfo exposes verification under verified_email/email_verified.
+            "email_verified": bool(
+                raw.get("verified_email") or raw.get("email_verified")
+            ),
         }
     raise RuntimeError(f"Unsupported provider: {config.provider}")
 

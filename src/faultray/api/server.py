@@ -526,6 +526,29 @@ async def billing_usage(team_id: str = "", user=Depends(_require_permission("vie
     if not team_id:
         return JSONResponse({"error": "team_id query parameter is required"}, status_code=400)
 
+    # SEC: tenant IDOR — any view_results user could read ANY team's usage and
+    # subscription by guessing team_id. Require team membership before the
+    # lookup. Platform admins (and no-auth / no-users mode) are exempt.
+    from faultray.api.teams import (
+        _ensure_tables as _ensure_team_tables,
+        _get_session_factory as _get_team_session_factory,
+        _is_global_admin,
+        _team_member_role,
+    )
+
+    if not _is_global_admin(user):
+        try:
+            sf = _get_team_session_factory()
+            async with sf() as session:
+                await _ensure_team_tables(session)
+                role = await _team_member_role(session, team_id, user)
+        except Exception:
+            role = None
+        if role is None:
+            return JSONResponse(
+                {"error": "Forbidden: not a member of this team"}, status_code=403
+            )
+
     tracker = _UsageTracker(db_session_factory=None)
     usage = await tracker.get_usage(team_id)
 

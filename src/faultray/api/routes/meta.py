@@ -12,17 +12,24 @@ from __future__ import annotations
 
 import logging
 
-from fastapi import APIRouter, Request
+from fastapi import APIRouter, Depends, Request
 from fastapi.responses import JSONResponse
 
 from faultray.api.routes._shared import (
+    _require_permission,
     build_demo_graph,
     get_graph,
 )
 
 logger = logging.getLogger(__name__)
 
-router = APIRouter()
+# SEC: these dispatchers (analysis / compliance / governance / finance / reports
+# / risk / discovery) expose graph state and the same sensitive output the
+# parallel authenticated routes gate (e.g. routes/compliance.py requires
+# view_results). They were mounted with NO auth dependency. Gate the whole
+# router. In no-auth / no-users mode require_permission resolves to None and
+# allows (backward compatible); once users are configured it enforces.
+router = APIRouter(dependencies=[Depends(_require_permission("view_results"))])
 
 
 def _ensure_graph():

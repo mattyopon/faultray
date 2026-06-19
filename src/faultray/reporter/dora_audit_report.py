@@ -16,6 +16,7 @@ Article 25 TLPT requires live production testing by qualified testers.
 from __future__ import annotations
 
 import hashlib
+import hmac
 import json
 import logging
 import os
@@ -833,6 +834,20 @@ class DORAuditReportGenerator:
         }
 
     def _build_audit_trail(self, report: DORAuditReport, sign: bool = False) -> dict:
+        # SEC: signing must be a real keyed MAC, not a plain hash anyone can
+        # recompute after editing an entry. Fail closed when signing is requested
+        # without a key rather than emit a forgeable artifact labelled "signed".
+        if sign and not self._signing_key:
+            raise ValueError(
+                "Audit-trail signing requested but no signing key is configured. "
+                "Set FAULTRAY_SIGNING_KEY or pass signing_key= to the generator."
+            )
+
+        def _mac(payload: str) -> str:
+            return hmac.new(
+                self._signing_key.encode(), payload.encode(), hashlib.sha256
+            ).hexdigest()
+
         chain: list[dict] = []
         for i, rec in enumerate(report.evidence_records):
             ts = rec.timestamp.isoformat() if hasattr(rec.timestamp, "isoformat") else str(rec.timestamp)
@@ -851,7 +866,7 @@ class DORAuditReportGenerator:
             }
             if sign:
                 payload = json.dumps(entry, sort_keys=True, default=str)
-                entry["integrity_hash"] = hashlib.sha256(payload.encode()).hexdigest()
+                entry["integrity_hash"] = _mac(payload)
             chain.append(entry)
 
         trail: dict[str, Any] = {
@@ -865,9 +880,9 @@ class DORAuditReportGenerator:
         }
 
         if sign:
-            # Chain-level integrity hash
+            # Chain-level integrity MAC
             chain_payload = json.dumps(chain, sort_keys=True, default=str)
-            trail["chain_integrity_hash"] = hashlib.sha256(chain_payload.encode()).hexdigest()
+            trail["chain_integrity_hash"] = _mac(chain_payload)
 
         return trail
 

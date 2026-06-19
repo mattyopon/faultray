@@ -5,6 +5,7 @@
 
 from __future__ import annotations
 
+import html
 import logging
 
 from fastapi import APIRouter
@@ -54,7 +55,11 @@ async def scorecard_widget(project_id: str = "default"):
     Can be embedded via ``<iframe src="/widget/scorecard">``.
     """
     score, status, color = _get_score_and_status()
-    html = f"""<!DOCTYPE html>
+    # SEC: project_id is an attacker-controllable query param reflected into the
+    # iframe HTML below — escape it to prevent reflected XSS. (score/status/color
+    # are server-derived from a fixed palette.)
+    safe_project_id = html.escape(project_id)
+    body = f"""<!DOCTYPE html>
 <html>
 <head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head>
 <body style="margin:0;padding:0;background:transparent;">
@@ -64,11 +69,11 @@ async def scorecard_widget(project_id: str = "default"):
     <h3 style="margin: 0 0 8px; color: #58a6ff;">FaultRay</h3>
     <div style="font-size: 2rem; font-weight: bold; color: {color};">{score}/100</div>
     <div style="margin-top: 8px; color: #8b949e;">{status}</div>
-    <div style="margin-top: 4px; font-size: 0.75rem; color: #484f58;">Project: {project_id}</div>
+    <div style="margin-top: 4px; font-size: 0.75rem; color: #484f58;">Project: {safe_project_id}</div>
 </div>
 </body>
 </html>"""
-    return HTMLResponse(html)
+    return HTMLResponse(body)
 
 
 @widget_router.get("/widget/badge")

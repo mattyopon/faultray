@@ -34,6 +34,47 @@ def evidence(signer: EvidenceSigner) -> SignedEvidence:
     )
 
 
+class TestVerifyChainSignatureMode:
+    """Regression: verify_chain must not let a caller skip signature checks by
+    omitting report bodies, and must expose whether signatures were verified
+    (chain_intact alone only attests hash-chain linkage)."""
+
+    def _chain(self, signer: EvidenceSigner):
+        r0, t0, s0 = "report-0", SAMPLE_TOPOLOGY, {"a": 1}
+        r1, t1, s1 = "report-1", SAMPLE_TOPOLOGY, {"a": 2}
+        ev0 = signer.sign_report(r0, t0, s0)
+        ev1 = signer.sign_report(r1, t1, s1, previous_evidence=ev0)
+        return [ev0, ev1], [r0, r1]
+
+    def test_full_contents_verifies_signatures(self, signer: EvidenceSigner) -> None:
+        chain, contents = self._chain(signer)
+        rep = signer.verify_chain(chain, report_contents=contents)
+        assert rep.chain_intact is True
+        assert rep.signatures_verified is True
+
+    def test_partial_contents_fails_closed(self, signer: EvidenceSigner) -> None:
+        # Omitting the second body must NOT yield chain_intact=True — the record
+        # whose signature wasn't verified is flagged.
+        chain, contents = self._chain(signer)
+        rep = signer.verify_chain(chain, report_contents=contents[:1])
+        assert rep.chain_intact is False
+        assert rep.signatures_verified is False
+
+    def test_linkage_only_mode_does_not_claim_signatures(self, signer: EvidenceSigner) -> None:
+        # No contents = documented linkage-only mode: linkage may be intact, but
+        # signatures_verified must be False so callers don't mistake it.
+        chain, _ = self._chain(signer)
+        rep = signer.verify_chain(chain)
+        assert rep.signatures_verified is False
+
+    def test_tampered_signature_detected_in_full_mode(self, signer: EvidenceSigner) -> None:
+        chain, contents = self._chain(signer)
+        # Tamper with the body so the signature no longer matches.
+        rep = signer.verify_chain(chain, report_contents=["TAMPERED", contents[1]])
+        assert rep.chain_intact is False
+        assert rep.signatures_verified is False
+
+
 # ---------------------------------------------------------------------------
 # Sign & Verify
 # ---------------------------------------------------------------------------

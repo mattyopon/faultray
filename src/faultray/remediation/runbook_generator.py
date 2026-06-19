@@ -20,6 +20,7 @@ from __future__ import annotations
 
 import html as html_mod
 import logging
+import re
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
 from pathlib import Path
@@ -30,6 +31,21 @@ from faultray.simulator.cascade import CascadeEffect
 from faultray.simulator.engine import ScenarioResult, SimulationReport
 
 logger = logging.getLogger(__name__)
+
+_UNSAFE_TOKEN_RE = re.compile(r"[^A-Za-z0-9._-]")
+
+
+def _safe_cmd_token(value: str | None) -> str:
+    """Sanitize a component id for interpolation into shell / kubectl commands.
+
+    Component ids come from user-supplied topology and the generated runbook
+    commands are meant to be copy-pasted by an operator. An id such as
+    ``web; rm -rf /`` or ``$(curl evil)`` must not be able to inject extra
+    commands or arguments, so reduce it to a conservative identifier charset
+    (the same characters a real Kubernetes resource name / DNS label allows).
+    """
+    safe = _UNSAFE_TOKEN_RE.sub("-", value or "")
+    return safe[:253] or "component"
 
 
 # ---------------------------------------------------------------------------
@@ -511,6 +527,13 @@ class RunbookGenerator:
         comp = graph.get_component(primary_comp_id) if primary_comp_id else None
         if comp:
             comp_name = comp.name
+        # SEC: primary_comp_id is interpolated into shell/kubectl commands below
+        # that an operator may copy-paste. Sanitize it AFTER the graph lookup
+        # above (which needs the original id) so a malicious component id can't
+        # inject commands. comp_name only appears in human-readable text and
+        # comment lines, so it is left readable.
+        if primary_comp_id:
+            primary_comp_id = _safe_cmd_token(primary_comp_id)
 
         # ---- Detection ----
         steps.append(RunbookStep(

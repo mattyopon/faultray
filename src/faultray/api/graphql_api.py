@@ -29,12 +29,21 @@ import math
 import re
 from typing import Any
 
-from fastapi import APIRouter, Request
+from fastapi import APIRouter, Depends, Request
 from fastapi.responses import JSONResponse
+
+from faultray.api.routes._shared import _require_permission
 
 logger = logging.getLogger(__name__)
 
-graphql_router = APIRouter(tags=["graphql"])
+# SEC: the GraphQL endpoint exposes the full topology/component inventory and a
+# runSimulation mutation on the shared graph. It was unauthenticated. Gate the
+# router (no-auth/no-users mode still resolves to allow; enforced once users
+# exist).
+graphql_router = APIRouter(
+    tags=["graphql"],
+    dependencies=[Depends(_require_permission("view_results"))],
+)
 
 # Reject oversized queries before parsing (DoS guard).
 _MAX_QUERY_LENGTH = 10_000

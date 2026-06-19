@@ -12,7 +12,11 @@ from dataclasses import dataclass, field
 from pathlib import Path
 
 from faultray.model.graph import InfraGraph
-from faultray.simulator.cascade import CascadeChain, CascadeEngine
+from faultray.simulator.cascade import (
+    CascadeChain,
+    CascadeEngine,
+    dedupe_worst_effects,
+)
 from faultray.simulator.agent_scenarios import generate_agent_scenarios
 from faultray.simulator.scenarios import Scenario, generate_default_scenarios
 
@@ -66,6 +70,29 @@ class SimulationReport:
     @property
     def critical_findings(self) -> list[ScenarioResult]:
         return [r for r in self.results if r.is_critical]
+
+    @property
+    def simulated_resilience_score(self) -> float:
+        """Resilience score adjusted for the scenarios actually simulated.
+
+        ``resilience_score`` is purely STRUCTURAL (graph topology) and never
+        moves when the simulation discovers critical cascades, so a fragile
+        system can report a high static score (TODO(review/U8)). This folds the
+        simulated outcomes in: the static score is scaled down by how much of
+        the scenario space turned out critical and how severe those findings
+        were. Exposed as a SEPARATE field so the static ``resilience_score``
+        (asserted equal to ``graph.resilience_score()`` by reproducibility /
+        topology-diff tests) is unchanged.
+        """
+        if not self.results:
+            return self.resilience_score
+        critical = self.critical_findings
+        if not critical:
+            return self.resilience_score
+        crit_fraction = len(critical) / len(self.results)
+        avg_crit_severity = sum(r.risk_score for r in critical) / len(critical) / 10.0
+        penalty = max(0.0, min(1.0, crit_fraction * avg_crit_severity))
+        return round(self.resilience_score * (1.0 - penalty), 1)
 
     @property
     def warnings(self) -> list[ScenarioResult]:
@@ -155,8 +182,13 @@ class SimulationEngine:
                 elif direct_ratio >= 0.5:
                     merged.likelihood = min(merged.likelihood, 0.3)
 
-            for chain in chains:
-                merged.effects.extend(chain.effects)
+            # Dedupe across sub-chains by component so a node faulted by more
+            # than one sub-scenario (e.g. spike + fault on the same component)
+            # is not double-counted in severity's affected_count. Keep the
+            # worst-health effect per component.
+            merged.effects = dedupe_worst_effects(
+                [effect for chain in chains for effect in chain.effects]
+            )
 
             # A compound scenario is a strictly larger event than any one of its
             # sub-faults, so its risk must never score *below* the worst
@@ -304,13 +336,11 @@ class SimulationEngine:
         # Sort by risk score descending
         results.sort(key=lambda r: r.risk_score, reverse=True)
 
-        # TODO(review/U8): resilience_score reflects only the STATIC graph
-        # structure and ignores the scenario outcomes computed above (a system
-        # with many critical findings can still report a high score). Folding
-        # scenario results into this number is a product-defining change with
-        # broad impact (reproducibility tests and topology-diff assert this
-        # equals graph.resilience_score()), so it is deferred rather than
-        # guessed here.
+        # resilience_score is the STATIC structural score (reproducibility and
+        # topology-diff tests assert it equals graph.resilience_score(), so it is
+        # intentionally left unchanged). The scenario-adjusted number that DOES
+        # move with critical findings is exposed separately as the
+        # SimulationReport.simulated_resilience_score property (U8).
         return SimulationReport(
             results=results,
             resilience_score=self.graph.resilience_score(),

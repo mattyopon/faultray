@@ -284,24 +284,65 @@ async def oauth_callback(request: Request, code: str = "", state: str = "", prov
         from faultray.api.database import UserRow, get_session_factory
         from sqlalchemy import select
 
+        oauth_id = str(profile.get("id") or "").strip()
+        email = profile.get("email")
+        email_verified = bool(profile.get("email_verified"))
+
         session_factory = get_session_factory()
         async with session_factory() as session:
-            stmt = select(UserRow).where(UserRow.email == profile["email"])
-            result = await session.execute(stmt)
-            user = result.scalar_one_or_none()
-
-            api_key = generate_api_key()
+            # SEC: match by the STABLE provider identity (provider, oauth_id)
+            # first — it can't be spoofed by asserting another user's email.
+            user = None
+            if oauth_id:
+                stmt = select(UserRow).where(
+                    UserRow.oauth_provider == config.provider,
+                    UserRow.oauth_id == oauth_id,
+                )
+                user = (await session.execute(stmt)).scalar_one_or_none()
 
             if user is None:
-                user = UserRow(
-                    email=profile["email"],
-                    name=profile["name"],
-                    api_key_hash=hash_api_key(api_key),
-                )
-                session.add(user)
+                # Fall back to email ONLY when the provider says it is verified, to
+                # link a pre-existing account on first OAuth sign-in. Without the
+                # verified gate, anyone who could get a provider to assert a
+                # victim's email could take over the account (and previously also
+                # rotate its API key).
+                email_user = None
+                if email and email_verified:
+                    stmt = select(UserRow).where(UserRow.email == email)
+                    email_user = (await session.execute(stmt)).scalar_one_or_none()
+
+                if email_user is not None:
+                    if email_user.oauth_id and email_user.oauth_id != oauth_id:
+                        logger.warning(
+                            "OAuth link refused: email already bound to a different identity"
+                        )
+                        return JSONResponse(
+                            {"error": "Account already linked to a different identity"},
+                            status_code=409,
+                        )
+                    # Link the OAuth identity; do NOT rotate the API key.
+                    user = email_user
+                    user.oauth_provider = config.provider
+                    if oauth_id:
+                        user.oauth_id = oauth_id
+                    user.name = profile.get("name") or user.name
+                else:
+                    # Brand-new account.
+                    api_key = generate_api_key()
+                    user = UserRow(
+                        email=email,
+                        name=profile.get("name"),
+                        api_key_hash=hash_api_key(api_key),
+                        oauth_provider=config.provider,
+                        oauth_id=oauth_id or None,
+                    )
+                    session.add(user)
             else:
-                user.api_key_hash = hash_api_key(api_key)
-                user.name = profile["name"]
+                # Existing account matched by stable identity: refresh name + log
+                # in. Do NOT rotate api_key_hash on login — rotating it on every
+                # OAuth sign-in both broke the user's key and was the lever that
+                # made takeover impactful.
+                user.name = profile.get("name") or user.name
 
             await session.commit()
             await session.refresh(user)

@@ -228,6 +228,34 @@ def test_generate_for_component():
     assert "post_incident" in phases
 
 
+def test_safe_cmd_token_strips_shell_metacharacters():
+    from faultray.remediation.runbook_generator import _safe_cmd_token
+
+    assert _safe_cmd_token("web") == "web"
+    assert _safe_cmd_token("my-svc.ns_1") == "my-svc.ns_1"  # safe chars preserved
+    assert "$(" not in _safe_cmd_token("db$(touch pwned)")
+    assert ";" not in _safe_cmd_token("db; rm -rf /")
+    assert " " not in _safe_cmd_token("db; rm -rf /")
+    assert _safe_cmd_token("") == "component"
+    assert _safe_cmd_token(None) == "component"
+
+
+def test_generate_for_component_sanitizes_id_in_commands():
+    """SEC: a component id with shell metacharacters must not survive into the
+    generated kubectl/curl commands (operators copy-paste them)."""
+    malicious = "db$(touch pwned); rm -rf /"
+    graph = InfraGraph()
+    graph.add_component(Component(id=malicious, name="DB", type=ComponentType.DATABASE))
+    rb = RunbookGenerator().generate_for_component(graph, malicious)
+
+    commands = "\n".join(c for s in rb.steps for c in (s.commands or []))
+    # The injected command substitution / chained command from the id is gone.
+    assert "$(touch pwned)" not in commands
+    assert "rm -rf" not in commands
+    # The sanitized token (alnum preserved) is still used in real commands.
+    assert "kubectl" in commands and "db" in commands
+
+
 def test_generate_for_component_database_specific_steps():
     """Database components should get DB-specific steps."""
     graph = _build_test_graph()

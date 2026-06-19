@@ -542,16 +542,20 @@ class BlastRadiusMapperEngine:
         visited: set[str] = {source_id}
         max_depth = 0
 
-        queue: deque[tuple[str, int]] = deque()
+        # Queue entries: (component_id, depth, parent_id). parent_id is the node
+        # this one cascaded FROM, so we read the EXACT dependency edge between
+        # them — picking "any visited predecessor edge" used the wrong
+        # circuit-breaker/weight/mitigation for multi-parent nodes.
+        queue: deque[tuple[str, int, str]] = deque()
 
         # Seed with direct dependents
         for dep_comp in graph.get_dependents(source_id):
             if dep_comp.id not in visited:
-                queue.append((dep_comp.id, 1))
+                queue.append((dep_comp.id, 1, source_id))
                 visited.add(dep_comp.id)
 
         while queue:
-            comp_id, depth = queue.popleft()
+            comp_id, depth, parent_id = queue.popleft()
             if depth > _MAX_BFS_DEPTH:
                 continue
 
@@ -561,10 +565,10 @@ class BlastRadiusMapperEngine:
 
             max_depth = max(max_depth, depth)
 
-            # Determine dependency edge properties
+            # Determine dependency edge properties from the EXACT parent edge.
             has_cb = False
             dep_weight = 1.0
-            edge = self._find_incoming_edge(graph, comp_id, visited)
+            edge = graph.get_dependency_edge(comp_id, parent_id)
             if edge is not None:
                 has_cb = edge.circuit_breaker.enabled
                 dep_weight = edge.weight
@@ -596,21 +600,10 @@ class BlastRadiusMapperEngine:
             if not (has_cb and has_failover and comp.replicas >= 2):
                 for next_dep in graph.get_dependents(comp_id):
                     if next_dep.id not in visited:
-                        queue.append((next_dep.id, depth + 1))
+                        queue.append((next_dep.id, depth + 1, comp_id))
                         visited.add(next_dep.id)
 
         return nodes, max_depth
-
-    @staticmethod
-    def _find_incoming_edge(graph: InfraGraph, comp_id: str, visited: set[str]):
-        """Find dependency edge from comp_id to a visited predecessor."""
-        deps = graph.get_dependencies(comp_id)
-        for dep_comp in deps:
-            if dep_comp.id in visited:
-                edge = graph.get_dependency_edge(comp_id, dep_comp.id)
-                if edge is not None:
-                    return edge
-        return None
 
     # ------------------------------------------------------------------
     # Private: critical paths
