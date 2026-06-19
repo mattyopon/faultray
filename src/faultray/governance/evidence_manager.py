@@ -15,7 +15,9 @@ Ported from JPGovAI's evidence + audit_trail services, adapted to FaultRay:
 from __future__ import annotations
 
 import hashlib
+import hmac
 import json
+import os
 import uuid
 from dataclasses import asdict, dataclass
 from datetime import datetime, timezone
@@ -100,8 +102,23 @@ def _compute_file_hash(file_path: str) -> str:
 
 
 def _compute_event_hash(previous_hash: str, event_data: str) -> str:
-    """Compute chain hash: SHA-256(previous_hash + event_data)."""
-    return _sha256(previous_hash + event_data)
+    """Compute the chain hash linking this event to the previous one.
+
+    When FAULTRAY_SIGNING_KEY is configured, use a keyed HMAC-SHA256 so a
+    filesystem attacker who rewrites the evidence file cannot recompute valid
+    chain hashes without the key (tamper-PROOF). Without a key it falls back to
+    the plain SHA-256 chain (tamper-EVIDENT only) to preserve existing behavior.
+    Both register and verify go through this function, so they stay consistent;
+    for strong guarantees set FAULTRAY_SIGNING_KEY (and anchor chain heads
+    externally).
+    """
+    payload = previous_hash + event_data
+    key = os.environ.get("FAULTRAY_SIGNING_KEY")
+    if key:
+        return hmac.new(
+            key.encode("utf-8"), payload.encode("utf-8"), hashlib.sha256
+        ).hexdigest()
+    return _sha256(payload)
 
 
 # ---------------------------------------------------------------------------

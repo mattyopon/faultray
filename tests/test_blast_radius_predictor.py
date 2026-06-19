@@ -1414,37 +1414,6 @@ class TestDisconnectedComponents:
 
 
 # ===========================================================================
-# Test: _find_incoming_edge returns None (covers line 308)
-# ===========================================================================
-
-
-class TestFindIncomingEdge:
-    def test_incoming_edge_returns_none_for_disconnected(self):
-        """When a component has no dependency to any visited node, return None."""
-        graph = InfraGraph()
-        graph.add_component(_make_component("a", "A"))
-        graph.add_component(_make_component("b", "B"))
-        # No edges between them
-
-        predictor = BlastRadiusPredictor(graph)
-        edge = predictor._find_incoming_edge("a", {"b"})
-        assert edge is None
-
-    def test_incoming_edge_returns_edge(self):
-        """When a component depends on a visited node, return the edge."""
-        graph = InfraGraph()
-        graph.add_component(_make_component("a", "A"))
-        graph.add_component(_make_component("b", "B"))
-        graph.add_dependency(_make_dep("a", "b"))
-
-        predictor = BlastRadiusPredictor(graph)
-        edge = predictor._find_incoming_edge("a", {"b"})
-        assert edge is not None
-        assert edge.source_id == "a"
-        assert edge.target_id == "b"
-
-
-# ===========================================================================
 # Test: _estimate_user_impact and _estimate_revenue_impact with
 # crafted AffectedComponent lists (covers lines 439, 447, 478, 484)
 # ===========================================================================

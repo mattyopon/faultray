@@ -237,16 +237,20 @@ class BlastRadiusPredictor:
         visited: set[str] = {component_id}
 
         # Queue entries: (component_id, depth)
-        queue: deque[tuple[str, int]] = deque()
+        # Queue entries: (component_id, depth, parent_id) — parent_id is the node
+        # this one cascaded FROM, so we read the EXACT dependency edge between
+        # them instead of "any visited predecessor edge" (which used the wrong
+        # circuit-breaker / weight / mitigation for multi-parent nodes).
+        queue: deque[tuple[str, int, str]] = deque()
 
         # Seed with direct dependents
         for dep_comp in self.graph.get_dependents(component_id):
             if dep_comp.id not in visited:
-                queue.append((dep_comp.id, 1))
+                queue.append((dep_comp.id, 1, component_id))
                 visited.add(dep_comp.id)
 
         while queue:
-            comp_id, depth = queue.popleft()
+            comp_id, depth, parent_id = queue.popleft()
             if depth > _MAX_BFS_DEPTH:
                 continue
 
@@ -254,12 +258,10 @@ class BlastRadiusPredictor:
             if comp is None:
                 continue
 
-            # Check if there's a dependency edge from comp to the source
-            # (or to any of the components already known to be affected)
-            # For the first level, the source is the failed component.
-            # For deeper levels, we need to find which edge brought us here.
-            # We look at which visited predecessor this component depends on.
-            dependency_edge = self._find_incoming_edge(comp_id, visited)
+            # Use the dependency edge from this node to the parent it cascaded
+            # from, so the circuit-breaker / weight / mitigation is the correct
+            # one for THIS propagation path.
+            dependency_edge = self.graph.get_dependency_edge(comp_id, parent_id)
 
             has_cb = False
             has_failover = comp.failover.enabled
@@ -290,25 +292,10 @@ class BlastRadiusPredictor:
             if not mitigated:
                 for next_dep in self.graph.get_dependents(comp_id):
                     if next_dep.id not in visited:
-                        queue.append((next_dep.id, depth + 1))
+                        queue.append((next_dep.id, depth + 1, comp_id))
                         visited.add(next_dep.id)
 
         return affected
-
-    def _find_incoming_edge(self, comp_id: str, visited: set[str]):
-        """Find the dependency edge from comp_id to any visited predecessor.
-
-        Returns the Dependency object or None.
-        """
-        # The component depends on some target in visited.
-        # In the graph, an edge from comp_id -> target means comp_id depends on target.
-        deps = self.graph.get_dependencies(comp_id)
-        for dep_comp in deps:
-            if dep_comp.id in visited:
-                edge = self.graph.get_dependency_edge(comp_id, dep_comp.id)
-                if edge is not None:
-                    return edge
-        return None
 
     def _find_propagation_paths(self, source_id: str) -> list[list[str]]:
         """Find all failure propagation paths from the source component.
