@@ -32,6 +32,7 @@ Layer 5 (External SLA Cascading):
 from __future__ import annotations
 
 import math
+import os
 from dataclasses import dataclass
 
 from faultray.model.graph import InfraGraph
@@ -244,6 +245,7 @@ def compute_three_layer_model(
     deploys_per_month: float = 8.0,
     human_error_rate: float = 0.001,
     config_drift_rate: float = 0.0005,
+    legacy_composition: bool = False,
 ) -> ThreeLayerResult:
     """Compute the 3-Layer Availability Limit Model for an infrastructure graph.
 
@@ -257,7 +259,22 @@ def compute_three_layer_model(
         Probability of a human-caused incident per month (Layer 1).
     config_drift_rate:
         Probability of configuration drift causing degradation per month (Layer 1).
+    legacy_composition:
+        Restore the historical (pre-U10) cross-layer composition. By DEFAULT the
+        corrected model is used: Layer 1 is pure software (the hardware limit is
+        composed once, in Layer 2, instead of being double-counted into the
+        software floor), and independent per-component runtime/network penalties
+        compose as a PRODUCT rather than an average. Set this (or
+        FAULTRAY_LEGACY_AVAILABILITY=1) only to reproduce the old headline
+        numbers.
     """
+    # U10 resolved: the corrected composition is the default. The legacy model is
+    # available as an escape hatch (param or env) for anyone reproducing old
+    # headline numbers.
+    use_corrected = not (
+        legacy_composition
+        or os.environ.get("FAULTRAY_LEGACY_AVAILABILITY") == "1"
+    )
     if not graph.components:
         empty_layer = AvailabilityLayer(
             availability=0.0, nines=0.0, annual_downtime_seconds=365.25 * 24 * 3600,
@@ -363,12 +380,14 @@ def compute_three_layer_model(
     sw_unavail = deploy_unavail + human_error_rate + config_drift_rate
     sw_availability = max(0.0, 1.0 - sw_unavail)
 
-    # Layer 1 = min(software, hardware) — can't exceed hardware limit
-    # TODO(review/U10): folding system_hw into the Layer-1 software floor double-
-    # counts hardware when the final result also composes Layer-2 (hardware)
-    # separately, slightly overstating the penalty. Left as a conservative
-    # min()-bound pending a decision on the cross-layer composition model.
-    system_sw = min(sw_availability, system_hw)
+    # Layer 1 = software limit. The historical model folds the hardware limit in
+    # via min(software, hardware), which double-counts hardware because Layer 2
+    # composes it separately (U10). With compose_layers, Layer 1 is PURE software
+    # and hardware is accounted once in Layer 2.
+    if use_corrected:
+        system_sw = sw_availability
+    else:
+        system_sw = min(sw_availability, system_hw)
     # Clamp to [0, 1] (B3-1: all layer availabilities are clamped)
     system_sw = max(0.0, min(1.0, system_sw))
 
@@ -390,28 +409,40 @@ def compute_three_layer_model(
     # Perfect software (zero deploy downtime, zero human error) but
     # irreducible physical noise: packet loss + GC pauses + jitter
     # =====================================================================
-    network_penalty = 0.0
-    runtime_penalty = 0.0
     comp_count = len(graph.components)
 
-    for comp in graph.components.values():
-        network_penalty += comp.network.packet_loss_rate
-        if comp.runtime_jitter.gc_pause_frequency > 0:
-            gc_fraction = (
-                comp.runtime_jitter.gc_pause_ms / 1000.0
-                * comp.runtime_jitter.gc_pause_frequency
-            )
-            runtime_penalty += gc_fraction
-
-    # Average across components.
-    # TODO(review/U10): independent per-component packet-loss / GC penalties
-    # should COMPOSE (product of per-component availabilities), not average —
-    # averaging understates the aggregate runtime-noise penalty for systems
-    # with many lossy components. Kept as an average pending a product decision
-    # (composing changes the headline availability for every existing model).
-    if comp_count > 0:
-        network_penalty /= comp_count
-        runtime_penalty /= comp_count
+    if use_corrected:
+        # Corrected (U10): independent per-component packet-loss / GC penalties
+        # COMPOSE as the product of per-component availabilities. The aggregate
+        # penalty is 1 - ∏(1 - penalty_i), which (unlike the average) does not
+        # understate runtime noise for systems with many lossy components.
+        net_avail = 1.0
+        rt_avail = 1.0
+        for comp in graph.components.values():
+            net_avail *= max(0.0, 1.0 - comp.network.packet_loss_rate)
+            if comp.runtime_jitter.gc_pause_frequency > 0:
+                gc_fraction = (
+                    comp.runtime_jitter.gc_pause_ms / 1000.0
+                    * comp.runtime_jitter.gc_pause_frequency
+                )
+                rt_avail *= max(0.0, 1.0 - gc_fraction)
+        network_penalty = 1.0 - net_avail
+        runtime_penalty = 1.0 - rt_avail
+    else:
+        # Historical model: sum then average across components.
+        network_penalty = 0.0
+        runtime_penalty = 0.0
+        for comp in graph.components.values():
+            network_penalty += comp.network.packet_loss_rate
+            if comp.runtime_jitter.gc_pause_frequency > 0:
+                gc_fraction = (
+                    comp.runtime_jitter.gc_pause_ms / 1000.0
+                    * comp.runtime_jitter.gc_pause_frequency
+                )
+                runtime_penalty += gc_fraction
+        if comp_count > 0:
+            network_penalty /= comp_count
+            runtime_penalty /= comp_count
 
     # Layer 3 (Runtime Noise Floor) is independent of Layer 2:
     # A_L3 = (1 - p_loss) * (1 - f_gc)
