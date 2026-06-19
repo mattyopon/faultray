@@ -60,7 +60,20 @@ export default function HeatmapPage() {
   useEffect(() => {
     api
       .getHeatmap()
-      .then((result) => setData(result))
+      .then((result) =>
+        // Guard against a 200 with a partial/malformed body: the render maps
+        // data.categories and filters data.components, which would throw at
+        // render time (uncaught by this .catch). Normalize both to arrays.
+        setData({
+          ...result,
+          categories: Array.isArray(result?.categories)
+            ? result.categories
+            : [],
+          components: Array.isArray(result?.components)
+            ? result.components
+            : [],
+        })
+      )
       .catch((err) => { console.error("[heatmap] API error, using demo data:", err); setData(DEMO_DATA); })
       .finally(() => setLoading(false));
   }, []);
@@ -142,7 +155,7 @@ export default function HeatmapPage() {
                           />
                         </div>
                         <p className="text-sm font-medium text-[#e2e8f0] truncate">{comp.name}</p>
-                        <p className="text-xs text-[var(--text-muted)]">{comp.type.replace("_", " ")}</p>
+                        <p className="text-xs text-[var(--text-muted)]">{comp.type.replace(/_/g, " ")}</p>
                       </button>
                     ))}
                   </div>

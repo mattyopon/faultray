@@ -74,10 +74,10 @@ export default function SettingsPage() {
   const { showToast, toasts, dismiss } = useToast();
 
   // BRAND-02: テーマ設定（ライトモード / ダークモード / システム）
-  const [theme, setTheme] = useState<"dark" | "light" | "system">(() => {
-    if (typeof window === "undefined") return "dark";
-    return (localStorage.getItem("faultray_theme") as "dark" | "light" | "system") ?? "dark";
-  });
+  // Initialize to a stable SSR value ("dark") and read the saved theme from
+  // localStorage in an effect — reading localStorage in the initializer makes
+  // the client's first render diverge from the server HTML (hydration mismatch).
+  const [theme, setTheme] = useState<"dark" | "light" | "system">("dark");
 
   const applyTheme = useCallback((t: "dark" | "light" | "system") => {
     setTheme(t);
@@ -87,6 +87,11 @@ export default function SettingsPage() {
       : t;
     document.documentElement.setAttribute("data-theme", resolved === "light" ? "light" : "dark");
   }, []);
+
+  useEffect(() => {
+    const saved = localStorage.getItem("faultray_theme") as "dark" | "light" | "system" | null;
+    if (saved && saved !== "dark") applyTheme(saved);
+  }, [applyTheme]);
 
   // API Keys
   const [apiKeys, setApiKeys] = useState<Array<{ key: string; created: string }>>([]);
@@ -144,7 +149,11 @@ export default function SettingsPage() {
         .single();
       if (data) {
         setCurrentPlan(data.plan || "free");
-        setTrialEndsAt(data.trial_ends_at || null);
+        // Guard against a malformed date string producing NaN days-left downstream.
+        const rawTrial = data.trial_ends_at as string | null | undefined;
+        setTrialEndsAt(
+          rawTrial && !Number.isNaN(new Date(rawTrial).getTime()) ? rawTrial : null,
+        );
       }
     } catch {
       // Supabase not configured
@@ -370,10 +379,15 @@ export default function SettingsPage() {
     ]);
   }
 
-  function handleCopyKey(key: string) {
-    navigator.clipboard.writeText(key);
-    setCopiedKey(key);
-    setTimeout(() => setCopiedKey(null), 2000);
+  async function handleCopyKey(key: string) {
+    try {
+      if (!navigator.clipboard) throw new Error("Clipboard API unavailable");
+      await navigator.clipboard.writeText(key);
+      setCopiedKey(key);
+      setTimeout(() => setCopiedKey(null), 2000);
+    } catch {
+      showToast(locale === "ja" ? "コピーに失敗しました" : "Copy failed", "error");
+    }
   }
 
   function handleDeleteKey(key: string) {
@@ -381,20 +395,48 @@ export default function SettingsPage() {
   }
 
   function toggleNotification(key: keyof typeof notifications) {
-    setNotifications((prev) => {
-      const next = { ...prev, [key]: !prev[key] };
-      // Persist to localStorage so the setting survives page reloads (SAAS-04)
-      try { localStorage.setItem("faultray_notifications", JSON.stringify(next)); } catch { /* ignore */ }
-      // RETAIN-02: Also persist to Supabase via API
-      fetch("/api/notification-preferences", {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ [key]: next[key] }),
-      }).catch((err) => console.error("[settings] Failed to save notification preference:", err));
-      setNotificationSaved(true);
-      setTimeout(() => setNotificationSaved(false), 2000);
-      return next;
-    });
+    // Compute the next state outside the setState updater. The updater must be
+    // pure — running side effects (fetch/localStorage/setTimeout) inside it
+    // causes duplicate requests/timers when React invokes it twice (Strict Mode).
+    const prev = notifications;
+    // Capture only the toggled key's previous value so a failed save reverts
+    // just that key — concurrent toggles of other keys are preserved.
+    const prevValue = prev[key];
+    const nextValue = !prevValue;
+    const next = { ...prev, [key]: nextValue };
+    setNotifications(next);
+    // Persist to localStorage so the setting survives page reloads (SAAS-04)
+    try { localStorage.setItem("faultray_notifications", JSON.stringify(next)); } catch { /* ignore */ }
+    setNotificationSaved(true);
+    setTimeout(() => setNotificationSaved(false), 2000);
+    // RETAIN-02: Also persist to Supabase via API. On failure, revert the
+    // optimistic local state + localStorage so they don't silently diverge.
+    fetch("/api/notification-preferences", {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ [key]: nextValue }),
+    })
+      .then((res) => {
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      })
+      .catch((err) => {
+        console.error("[settings] Failed to save notification preference:", err);
+        // Restore only the toggled key (functional update) so we don't clobber
+        // other keys the user may have changed while this request was in flight.
+        setNotifications((curr) => ({ ...curr, [key]: prevValue }));
+        // Patch just this key in the persisted copy too (read-modify-write) so
+        // localStorage stays in sync without overwriting other concurrent edits.
+        try {
+          const stored = localStorage.getItem("faultray_notifications");
+          const parsed = stored ? JSON.parse(stored) : { ...prev };
+          parsed[key] = prevValue;
+          localStorage.setItem("faultray_notifications", JSON.stringify(parsed));
+        } catch { /* ignore */ }
+        showToast(
+          locale === "ja" ? "通知設定の保存に失敗しました" : "Failed to save notification preference",
+          "error",
+        );
+      });
   }
 
   return (
@@ -516,7 +558,7 @@ export default function SettingsPage() {
               </span>
             </div>
             {trialDaysLeft <= 7 && (
-              <a
+              <Link
                 href="/pricing"
                 className={`text-xs font-bold px-3 py-1.5 rounded-lg border transition-colors whitespace-nowrap ${
                   trialDaysLeft <= 3
@@ -525,7 +567,7 @@ export default function SettingsPage() {
                 }`}
               >
                 {locale === "ja" ? "アップグレード" : "Upgrade Now"}
-              </a>
+              </Link>
             )}
           </div>
         )}
@@ -648,7 +690,13 @@ export default function SettingsPage() {
                   {locale === "ja" ? "解約すると以下を失います:" : "You&apos;ll lose access to:"}
                 </p>
                 <ul className="space-y-1.5 text-sm text-[var(--text-secondary)]">
-                  {(currentPlan === "pro"
+                  {(currentPlan === "starter"
+                    ? [
+                        locale === "ja" ? "月 30 回のシミュレーション" : "30 simulations / month",
+                        locale === "ja" ? "DORA リサーチドラフト（研究プロトタイプ, PDF）" : "DORA evidence drafts (research prototype, PDF)",
+                        locale === "ja" ? "メールサポート" : "Email support",
+                      ]
+                    : currentPlan === "pro"
                     ? [
                         locale === "ja" ? "DORA リサーチドラフト（研究プロトタイプ, PDF）" : "DORA evidence drafts (research prototype, PDF)",
                         locale === "ja" ? "AI 信頼性アドバイザー" : "AI reliability advisor",
@@ -865,12 +913,18 @@ export default function SettingsPage() {
         </p>
         <div className="p-4 rounded-xl bg-[var(--bg-tertiary)] border border-[var(--border-color)] flex items-center gap-3">
           <code className="flex-1 text-sm font-mono text-[var(--gold)]">
-            https://faultray.com/?ref={user?.email?.split("@")[0] ?? "yourname"}
+            https://faultray.com/?ref={encodeURIComponent(user?.email?.split("@")[0] ?? "yourname")}
           </code>
           <button
-            onClick={() => {
-              const url = `https://faultray.com/?ref=${user?.email?.split("@")[0] ?? "yourname"}`;
-              navigator.clipboard.writeText(url);
+            onClick={async () => {
+              const url = `https://faultray.com/?ref=${encodeURIComponent(user?.email?.split("@")[0] ?? "yourname")}`;
+              try {
+                if (!navigator.clipboard) throw new Error("Clipboard API unavailable");
+                await navigator.clipboard.writeText(url);
+                showToast(locale === "ja" ? "コピーしました" : "Copied", "success");
+              } catch {
+                showToast(locale === "ja" ? "コピーに失敗しました" : "Copy failed", "error");
+              }
             }}
             className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-lg bg-[var(--border-color)] text-[var(--text-secondary)] hover:text-white hover:bg-[#2d3748] transition-colors shrink-0"
           >

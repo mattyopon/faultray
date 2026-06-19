@@ -50,14 +50,19 @@ export async function updateSession(request: NextRequest) {
     "/shadow-it",
     "/onboarding",
   ];
-  const isProtected = protectedPaths.some((path) =>
-    request.nextUrl.pathname.startsWith(path)
+  const { pathname } = request.nextUrl;
+  // Match on path-segment boundaries so e.g. "/admin" does not also protect
+  // a distinct public route like "/admin-public" or "/admininfo".
+  const isProtected = protectedPaths.some(
+    (path) => pathname === path || pathname.startsWith(path + "/")
   );
 
   if (isProtected && !user) {
     const url = request.nextUrl.clone();
     url.pathname = "/login";
-    url.searchParams.set("redirectTo", request.nextUrl.pathname);
+    // Preserve the original query string so deep links survive the login
+    // round-trip (e.g. /invite?token=abc, /dashboard?tab=billing).
+    url.searchParams.set("redirectTo", pathname + request.nextUrl.search);
     return NextResponse.redirect(url);
   }
 

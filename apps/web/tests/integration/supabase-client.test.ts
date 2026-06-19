@@ -5,7 +5,7 @@
 import { describe, it, expect, vi, afterEach } from "vitest";
 
 afterEach(() => {
-  vi.unstubAllGlobals();
+  vi.unstubAllEnvs();
   vi.resetModules();
 });
 

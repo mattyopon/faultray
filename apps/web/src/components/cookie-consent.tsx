@@ -5,8 +5,16 @@ import { useState, useEffect, useCallback } from "react";
 const STORAGE_KEY = "faultray_cookie_consent";
 
 function hasConsent(): boolean {
-  if (typeof localStorage === "undefined") return true;
-  return localStorage.getItem(STORAGE_KEY) !== null;
+  // Safe default for unknown consent is "not consented": when storage is
+  // unavailable we cannot prove consent was given, so report no consent so
+  // the banner is shown (and analytics stays off) rather than silently
+  // assuming the user agreed.
+  if (typeof localStorage === "undefined") return false;
+  try {
+    return localStorage.getItem(STORAGE_KEY) !== null;
+  } catch {
+    return false;
+  }
 }
 
 export function CookieConsent() {

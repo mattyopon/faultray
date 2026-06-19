@@ -11,10 +11,13 @@ interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
 }
 
 const Button = forwardRef<HTMLButtonElement, ButtonProps>(
-  ({ className, variant = "primary", size = "md", loading = false, disabled, children, ...props }, ref) => {
+  ({ className, variant = "primary", size = "md", loading = false, disabled, type, children, ...props }, ref) => {
     return (
       <button
         ref={ref}
+        // Default to type="button" so a Button placed inside a <form> does not
+        // submit it implicitly (the native default is type="submit").
+        type={type ?? "button"}
         // UICOMP-01: aria-busy for loading state, aria-disabled for disabled state
         aria-busy={loading || undefined}
         aria-disabled={disabled || loading || undefined}

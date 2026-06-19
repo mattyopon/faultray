@@ -22,7 +22,7 @@ export async function generateMetadata(): Promise<Metadata> {
       url: `${BASE}/ja`,
       images: [
         {
-          url: "/og-image.png",
+          url: `${BASE}/og-image.png`,
           width: 1200,
           height: 630,
           alt: "FaultRay — 本番を止めずに構造的障害リスクを事前評価（研究プロトタイプ）",
@@ -34,7 +34,7 @@ export async function generateMetadata(): Promise<Metadata> {
       title: "FaultRay — 本番を止めずに構造的障害リスクを事前評価（研究プロトタイプ）",
       description:
         "本番を止めずに構造的な障害リスクを事前評価する研究プロトタイプSaaS。宣言されたインフラ定義から稼働率上限を推定。",
-      images: ["/og-image.png"],
+      images: [`${BASE}/og-image.png`],
     },
   };
 }

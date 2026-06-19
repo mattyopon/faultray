@@ -18,13 +18,28 @@ export interface ServiceProbe {
   note?: string;
 }
 
-async function _withTimeout<T>(p: Promise<T>, ms: number): Promise<T> {
-  return Promise.race([
-    p,
-    new Promise<T>((_, reject) =>
-      setTimeout(() => reject(new Error(`timeout after ${ms}ms`)), ms)
-    ),
-  ]);
+// Fetch with a hard timeout that actually aborts the underlying request and
+// always clears its timer. A plain Promise.race against a setTimeout would let
+// the HTTP request keep running (holding a socket) after the timeout "wins",
+// and would leak the timer on a fast success — repeated probes against a hung
+// dependency could exhaust sockets/fds.
+async function _fetchWithTimeout(
+  url: string,
+  init: RequestInit,
+  ms: number
+): Promise<Response> {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), ms);
+  try {
+    return await fetch(url, { ...init, signal: controller.signal });
+  } catch (err) {
+    if (err instanceof Error && err.name === "AbortError") {
+      throw new Error(`timeout after ${ms}ms`);
+    }
+    throw err;
+  } finally {
+    clearTimeout(timer);
+  }
 }
 
 export async function probeSupabase(): Promise<ServiceProbe> {
@@ -32,8 +47,16 @@ export async function probeSupabase(): Promise<ServiceProbe> {
   try {
     const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
     if (!url) return { name: "Supabase", status: "unknown", latency_ms: null, note: "not configured" };
-    await _withTimeout(fetch(`${url}/rest/v1/`, { method: "HEAD" }), 1500);
-    return { name: "Supabase", status: "operational", latency_ms: Date.now() - start };
+    const res = await _fetchWithTimeout(`${url}/rest/v1/`, { method: "HEAD" }, 1500);
+    const latency = Date.now() - start;
+    // Don't blindly treat any completed response as operational: a 5xx means
+    // Supabase is up but failing (outage). The unauthenticated /rest/v1/ probe
+    // legitimately returns 401/404 when the service is healthy, so only 5xx is
+    // a failure here.
+    if (res.status >= 500) {
+      return { name: "Supabase", status: "outage", latency_ms: latency, note: `HTTP ${res.status}` };
+    }
+    return { name: "Supabase", status: "operational", latency_ms: latency };
   } catch (err) {
     return {
       name: "Supabase",
@@ -50,11 +73,12 @@ export async function probeStripe(): Promise<ServiceProbe> {
     const key = process.env.STRIPE_SECRET_KEY;
     if (!key || key === "sk_test_placeholder")
       return { name: "Stripe", status: "unknown", latency_ms: null, note: "not configured" };
-    const res = await _withTimeout(
-      fetch("https://api.stripe.com/v1/charges?limit=1", {
+    const res = await _fetchWithTimeout(
+      "https://api.stripe.com/v1/charges?limit=1",
+      {
         method: "GET",
         headers: { Authorization: `Bearer ${key}` },
-      }),
+      },
       1500
     );
     const latency = Date.now() - start;
@@ -81,11 +105,12 @@ export async function probeResend(): Promise<ServiceProbe> {
     const key = process.env.RESEND_API_KEY;
     if (!key)
       return { name: "Email (Resend)", status: "unknown", latency_ms: null, note: "not configured" };
-    const res = await _withTimeout(
-      fetch("https://api.resend.com/domains", {
+    const res = await _fetchWithTimeout(
+      "https://api.resend.com/domains",
+      {
         method: "GET",
         headers: { Authorization: `Bearer ${key}` },
-      }),
+      },
       1500
     );
     const latency = Date.now() - start;

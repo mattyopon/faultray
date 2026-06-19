@@ -40,7 +40,11 @@ export function LocaleProvider({ children }: { children: ReactNode }) {
   }, [locale]);
 
   const setLocale = useCallback((newLocale: Locale) => {
-    document.cookie = `NEXT_LOCALE=${newLocale};path=/;max-age=31536000`;
+    // Reject unsupported values: an out-of-range locale would persist into the
+    // cookie and onto document.documentElement.lang, and a value containing
+    // ";" or "," would corrupt the cookie. Encode the value defensively.
+    if (!locales.includes(newLocale)) return;
+    document.cookie = `NEXT_LOCALE=${encodeURIComponent(newLocale)};path=/;max-age=31536000`;
     setLocaleState(newLocale);
   }, []);
 

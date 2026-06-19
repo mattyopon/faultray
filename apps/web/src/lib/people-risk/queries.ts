@@ -42,7 +42,10 @@ export async function fetchMemberById(
     .eq("id", id)
     .eq("company_id", DEMO_COMPANY_ID)
     .maybeSingle();
-  if (error) return null;
+  // maybeSingle() returns data:null/error:null when the row is genuinely
+  // absent, so only a real error (permission/network/DB) reaches here. Throw it
+  // instead of masquerading transient failures as "member not found".
+  if (error) throw error;
   return (data ?? null) as unknown as MemberWithSystems | null;
 }
 
@@ -128,6 +131,12 @@ export async function fetchSummary(): Promise<PeopleRiskSummary> {
       .select("system_id, is_sole_owner, risk_level, members!inner(company_id)")
       .eq("members.company_id", DEMO_COMPANY_ID),
   ]);
+
+  // Surface query failures instead of substituting empty arrays, which would
+  // return a misleading all-zero summary on a transient DB/permission error.
+  if (membersRes.error) throw membersRes.error;
+  if (systemsRes.error) throw systemsRes.error;
+  if (msRes.error) throw msRes.error;
 
   const members = (membersRes.data ?? []) as Pick<Member, "id" | "status">[];
   const systems = (systemsRes.data ?? []) as Pick<System, "id">[];

@@ -1,7 +1,7 @@
 "use client";
 
 import { Card } from "@/components/ui/card";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import {
   CircleDot,
   RefreshCw,
@@ -74,17 +74,24 @@ export default function TrafficLightPage() {
   const [selected, setSelected] = useState<string | null>(null);
   const [lastRefresh, setLastRefresh] = useState(new Date());
   const [countdown, setCountdown] = useState(30);
+  const countdownRef = useRef(countdown);
 
-  // Auto-refresh countdown
+  // Keep a ref in sync with countdown (ref mutation in an effect is allowed).
+  useEffect(() => {
+    countdownRef.current = countdown;
+  }, [countdown]);
+
+  // Auto-refresh countdown. setState calls live in the async interval callback
+  // (not the effect body) and are not nested inside another updater, keeping the
+  // countdown updater pure and avoiding StrictMode double-invoke side effects.
   useEffect(() => {
     const interval = setInterval(() => {
-      setCountdown((c) => {
-        if (c <= 1) {
-          setLastRefresh(new Date());
-          return 30;
-        }
-        return c - 1;
-      });
+      if (countdownRef.current <= 1) {
+        setLastRefresh(new Date());
+        setCountdown(30);
+      } else {
+        setCountdown((c) => c - 1);
+      }
     }, 1000);
     return () => clearInterval(interval);
   }, []);

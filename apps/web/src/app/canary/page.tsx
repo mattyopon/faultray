@@ -3,7 +3,7 @@
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { FlaskRound, TrendingUp, TrendingDown, CheckCircle2, AlertTriangle } from "lucide-react";
 import { useLocale } from "@/lib/useLocale";
 import { appDict } from "@/i18n/app-dict";
@@ -70,11 +70,17 @@ export default function CanaryPage() {
   const locale = useLocale();
   const t = appDict.canary[locale] ?? appDict.canary.en;
   const [action, setAction] = useState<{ id: string; type: "promote" | "rollback" } | null>(null);
+  const actionTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const handleAction = (id: string, type: "promote" | "rollback") => {
     setAction({ id, type });
-    setTimeout(() => setAction(null), 2000);
+    if (actionTimer.current) clearTimeout(actionTimer.current);
+    actionTimer.current = setTimeout(() => setAction(null), 2000);
   };
+
+  useEffect(() => () => {
+    if (actionTimer.current) clearTimeout(actionTimer.current);
+  }, []);
 
   return (
     <div className="w-full px-6 py-10">

@@ -250,7 +250,7 @@ export default function CalendarPage() {
           <Card className="mt-4">
             <p className="text-sm font-semibold text-[var(--gold)] mb-3">{locale === "ja" ? "今後の予定" : "Upcoming"}</p>
             <div className="space-y-2">
-              {DEMO_EVENTS.sort((a, b) => a.date.localeCompare(b.date)).map((ev) => {
+              {[...DEMO_EVENTS].sort((a, b) => a.date.localeCompare(b.date)).map((ev) => {
                 const colors = TYPE_COLORS[ev.type] ?? { dot: "#64748b" };
                 return (
                   <div key={ev.id} className="flex items-center gap-2 text-sm">

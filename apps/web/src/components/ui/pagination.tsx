@@ -73,9 +73,20 @@ export function Pagination({ currentPage, totalPages, onPageChange, className }:
 /** Hook to paginate an array client-side */
 export function usePagination<T>(items: T[], pageSize = 20) {
   const [page, setPage] = useState(1);
-  const totalPages = Math.max(1, Math.ceil(items.length / pageSize));
-  const paginatedItems = items.slice((page - 1) * pageSize, page * pageSize);
-  return { page, setPage, totalPages, paginatedItems };
+  // Sanitize pageSize: 0 would make totalPages Infinity and slice bounds NaN;
+  // negative / non-finite values produce nonsensical pagination. Floor FIRST so
+  // a fractional value like 0.5 doesn't pass the >0 check and then floor to 0.
+  const flooredPageSize = Number.isFinite(pageSize) ? Math.floor(pageSize) : 0;
+  const safePageSize = flooredPageSize >= 1 ? flooredPageSize : 20;
+  const totalPages = Math.max(1, Math.ceil(items.length / safePageSize));
+  // Clamp the page used for slicing (and exposed to consumers) so a shrunk
+  // list (filter/delete) never leaves the user on a blank page past the end of
+  // the data. Reads always go through this clamped value, so an out-of-range
+  // stored `page` is self-correcting without a state-syncing effect.
+  const safePage = Math.min(Math.max(1, page), totalPages);
+  const paginatedItems = items.slice((safePage - 1) * safePageSize, safePage * safePageSize);
+
+  return { page: safePage, setPage, totalPages, paginatedItems };
 }
 
 // useState must be imported for the hook

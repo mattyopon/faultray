@@ -160,11 +160,24 @@ export default function IncidentsPage() {
   const t = appDict.incidents[locale] ?? appDict.incidents.en;
 
   useEffect(() => {
+    let mounted = true;
     api
       .getIncidents()
-      .then((result) => setData(result))
-      .catch((err) => { console.error("[incidents] API error, using demo data:", err); setData(DEMO_DATA); })
-      .finally(() => setLoading(false));
+      .then((result) => {
+        if (!mounted) return;
+        if (result && Array.isArray(result.incidents) && result.summary) {
+          setData(result);
+        } else {
+          setData(DEMO_DATA);
+        }
+      })
+      .catch((err) => {
+        if (!mounted) return;
+        console.error("[incidents] API error, using demo data:", err);
+        setData(DEMO_DATA);
+      })
+      .finally(() => { if (mounted) setLoading(false); });
+    return () => { mounted = false; };
   }, []);
 
   return (

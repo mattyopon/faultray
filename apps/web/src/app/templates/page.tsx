@@ -171,8 +171,8 @@ export default function TemplatesPage() {
     const matchesFilter = filter === "all" || tpl.industry === filter;
     const matchesSearch =
       search === "" ||
-      t[tpl.nameKey]?.toLowerCase().includes(search.toLowerCase()) ||
-      t[tpl.descKey]?.toLowerCase().includes(search.toLowerCase());
+      (t[tpl.nameKey] ?? "").toLowerCase().includes(search.toLowerCase()) ||
+      (t[tpl.descKey] ?? "").toLowerCase().includes(search.toLowerCase());
     return matchesFilter && matchesSearch;
   });
 

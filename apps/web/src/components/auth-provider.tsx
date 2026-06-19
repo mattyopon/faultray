@@ -7,6 +7,7 @@ import {
   useEffect,
   useState,
   useCallback,
+  useRef,
   type ReactNode,
 } from "react";
 import type { PlanTier } from "@/lib/types";
@@ -40,8 +41,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [loading, setLoading] = useState(true);
   const [plan, setPlan] = useState<PlanTier>("free");
   const [planLoading, setPlanLoading] = useState(false);
+  // Tracks the most recently requested plan-fetch target so a slower
+  // request for a previous user cannot overwrite the current user's plan
+  // (account switch / sign-out race).
+  const latestPlanUidRef = useRef<string | null>(null);
 
   const fetchPlan = useCallback(async (uid: string) => {
+    latestPlanUidRef.current = uid;
     setPlanLoading(true);
     try {
       const { createClient } = await import("@/lib/supabase/client");
@@ -51,6 +57,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         .select("plan, trial_ends_at, subscription_status")
         .eq("id", uid)
         .single();
+      // A newer fetch (account switch) or sign-out superseded this request:
+      // do not let a stale response overwrite the current plan.
+      if (latestPlanUidRef.current !== uid) return;
       if (data?.plan) {
         // trial_ends_at が過去でも、subscription_status が paid (active /
         // trialing / past_due) なら downgrade しない (CodeRabbit Major):
@@ -80,11 +89,24 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         } else {
           setPlan((data.plan as PlanTier) || "free");
         }
+      } else {
+        // No row / null plan: fall back to "free" so a previous user's
+        // plan never persists across an account switch.
+        setPlan("free");
       }
-    } catch {
-      // Supabase not configured — remain "free"
+    } catch (err) {
+      // Transient failure (network / Supabase / RLS hiccup) for the current
+      // user must NOT downgrade the UI to "free" — that hides paid features
+      // while the subscription is unchanged (Codex P2). The plan is cleared on
+      // sign-out / account switch elsewhere; here we preserve the existing plan
+      // and only stop loading below.
+      if (latestPlanUidRef.current === uid) {
+        console.debug("[auth] plan fetch failed; keeping current plan", err);
+      }
     } finally {
-      setPlanLoading(false);
+      // Same guard for loading: a stale request must not flip planLoading off
+      // for the current (newer) request that is still in flight.
+      if (latestPlanUidRef.current === uid) setPlanLoading(false);
     }
   }, []);
 
@@ -101,8 +123,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       return;
     }
 
+    // Capture the subscription in effect scope so React can tear it down
+    // on unmount (returning the cleanup from inside the .then() callback
+    // would be ignored by React, leaking the listener).
+    let cancelled = false;
+    let unsubscribe: (() => void) | undefined;
+
     // Dynamic import to avoid build-time errors
     import("@/lib/supabase/client").then(({ createClient }) => {
+      if (cancelled) return;
       const supabase = createClient();
       const {
         data: { subscription },
@@ -113,28 +142,35 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         if (nextUser) {
           fetchPlan(nextUser.id);
         } else {
+          // Cancel any in-flight plan fetch for a previous user.
+          latestPlanUidRef.current = null;
           setPlan("free");
           // ERRMSG-03: Redirect to login with session_expired flag when session is lost
           // while user was on an app page (not the landing / login pages)
-          if (event === "SIGNED_OUT" || event === "TOKEN_REFRESHED") {
+          if (event === "SIGNED_OUT") {
             if (typeof window !== "undefined") {
-              const isAppPage = !["", "/", "/login", "/pricing", "/features",
+              const isAppPage = !["/", "/login", "/pricing", "/features",
                 "/en", "/ja", "/de", "/fr", "/zh", "/ko", "/es", "/pt",
                 "/case-studies", "/changelog", "/contact", "/demo",
                 "/privacy", "/terms", "/tokushoho", "/dpa", "/help", "/support",
+                "/status", "/ringi",
               ].some((p) => window.location.pathname === p || window.location.pathname.startsWith(p + "/"));
-              if (isAppPage && event === "SIGNED_OUT") {
+              if (isAppPage) {
                 window.location.href = "/login?error=session_expired";
               }
             }
           }
         }
       });
-
-      return () => subscription.unsubscribe();
+      unsubscribe = () => subscription.unsubscribe();
     }).catch(() => {
       setLoading(false);
     });
+
+    return () => {
+      cancelled = true;
+      unsubscribe?.();
+    };
   }, [fetchPlan]);
 
   const signOut = async () => {

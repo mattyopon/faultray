@@ -44,12 +44,18 @@ function LoginForm() {
   const supabase = createClient();
 
   const signInWith = async (provider: "github" | "google") => {
-    await supabase.auth.signInWithOAuth({
+    // signInWithOAuth returns { error } instead of throwing. On success it
+    // redirects; on failure (misconfigured provider, blocked popup, network
+    // error) the button would otherwise appear to do nothing. Surface the error.
+    const { error } = await supabase.auth.signInWithOAuth({
       provider,
       options: {
         redirectTo: `${window.location.origin}/auth/callback?redirectTo=${encodeURIComponent(redirectTo)}`,
       },
     });
+    if (error) {
+      setEmailError(error.message);
+    }
   };
 
   // MISSED-05: ディスポーザブルメールドメインのブロックリスト

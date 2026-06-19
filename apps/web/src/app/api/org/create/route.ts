@@ -50,9 +50,22 @@ export async function POST(request: Request) {
     });
 
   if (memberError) {
-    // メンバー追加失敗 — ownerなしの不整合な組織が残らないようにロールバック
+    // メンバー追加失敗 — ownerなしの不整合な組織が残らないようにロールバック。
+    // 削除失敗を握りつぶすと owner なしの孤児 org が残り、membership ベースの
+    // authz では二度と管理できなくなる。delete の error を確認して surface する
+    // (恒久対策は org 作成 + membership を 1 トランザクション RPC 化する follow-up)。
     console.error("Failed to add owner as member, rolling back org creation:", memberError);
-    await supabase.from("organizations").delete().eq("id", org.id);
+    const { error: rollbackError } = await supabase
+      .from("organizations")
+      .delete()
+      .eq("id", org.id);
+    if (rollbackError) {
+      console.error(
+        "[org/create] ROLLBACK FAILED — ownerless organization left behind:",
+        org.id,
+        rollbackError.message
+      );
+    }
     return NextResponse.json({ error: "Failed to initialize organization membership" }, { status: 500 });
   }
 

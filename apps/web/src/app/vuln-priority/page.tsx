@@ -2,7 +2,7 @@
 
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { useEffect, useState } from "react";
+import { Fragment, useEffect, useState } from "react";
 import { ShieldAlert, Loader2, TrendingUp } from "lucide-react";
 import { useLocale } from "@/lib/useLocale";
 import { appDict } from "@/i18n/app-dict";
@@ -53,6 +53,29 @@ const DEMO_DATA: VulnPriorityData = {
   ],
 };
 
+function isRiskFactor(f: unknown): f is RiskFactor {
+  if (typeof f !== "object" || f === null) return false;
+  const o = f as Record<string, unknown>;
+  return typeof o.name === "string" && typeof o.value === "string" && Number.isFinite(o.weight);
+}
+
+function isVulnEntry(e: unknown): e is VulnEntry {
+  if (typeof e !== "object" || e === null) return false;
+  const o = e as Record<string, unknown>;
+  return (
+    Number.isFinite(o.rank) &&
+    typeof o.component === "string" &&
+    typeof o.vuln_id === "string" &&
+    Number.isFinite(o.vuln_score) &&
+    Number.isFinite(o.blast_radius) &&
+    Number.isFinite(o.exploitability) &&
+    Number.isFinite(o.priority_score) &&
+    Array.isArray(o.risk_factors) &&
+    o.risk_factors.every(isRiskFactor) &&
+    typeof o.status === "string"
+  );
+}
+
 function priorityColor(score: number): string {
   if (score >= 85) return "#ef4444";
   if (score >= 65) return "#f59e0b";
@@ -76,10 +99,35 @@ export default function VulnPriorityPage() {
   useEffect(() => {
     const controller = new AbortController();
     fetch("/api/proxy?path=/api/v1/vuln-priority", { signal: controller.signal })
-      .then((r) => r.json())
-      .then((d) => setData(d))
-      .catch((err) => { console.error("[vuln-priority] API error, using demo data:", err); setData(DEMO_DATA); })
-      .finally(() => setLoading(false));
+      .then((r) => {
+        if (!r.ok) throw new Error(`HTTP ${r.status}`);
+        return r.json();
+      })
+      .then((d) => {
+        // Validate the untrusted response before replacing the safe DEMO_DATA;
+        // a non-2xx error body or malformed payload would otherwise crash the
+        // render (d.avg_priority_score.toFixed, d.entries.map, ...).
+        if (
+          d &&
+          typeof d.avg_priority_score === "number" &&
+          Array.isArray(d.entries) &&
+          d.entries.every(isVulnEntry)
+        ) {
+          setData(d);
+        } else {
+          setData(DEMO_DATA);
+        }
+      })
+      .catch((err) => {
+        // An aborted request (component unmount) is not a failure — bail out
+        // before logging or touching state on an unmounted component.
+        if ((err as { name?: string })?.name === "AbortError") return;
+        console.error("[vuln-priority] API error, using demo data:", err);
+        setData(DEMO_DATA);
+      })
+      .finally(() => {
+        if (!controller.signal.aborted) setLoading(false);
+      });
     return () => controller.abort();
   }, []);
 
@@ -141,9 +189,8 @@ export default function VulnPriorityPage() {
                 </thead>
                 <tbody>
                   {data.entries.map((entry) => (
-                    <>
+                    <Fragment key={entry.vuln_id}>
                       <tr
-                        key={entry.vuln_id}
                         className="border-b border-[var(--border-color)]/50 hover:bg-white/[0.02] cursor-pointer"
                         onClick={() => setExpanded(expanded === entry.vuln_id ? null : entry.vuln_id)}
                       >
@@ -175,7 +222,7 @@ export default function VulnPriorityPage() {
                         </td>
                       </tr>
                       {expanded === entry.vuln_id && (
-                        <tr key={`${entry.vuln_id}-detail`} className="border-b border-[var(--border-color)]/50">
+                        <tr className="border-b border-[var(--border-color)]/50">
                           <td colSpan={7} className="px-4 py-3 bg-white/[0.01]">
                             <div className="flex flex-wrap gap-3">
                               {entry.risk_factors.map((rf) => (
@@ -189,7 +236,7 @@ export default function VulnPriorityPage() {
                           </td>
                         </tr>
                       )}
-                    </>
+                    </Fragment>
                   ))}
                 </tbody>
               </table>

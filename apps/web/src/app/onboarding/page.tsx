@@ -86,8 +86,14 @@ function getRecommendations(
   if (!answers[4]) {
     recs.push({ icon: BookOpen, labelKey: "rec5", href: "/runbooks", priority: "medium" });
   }
-  if (!answers[2]) {
-    recs.push({ icon: Shield, labelKey: "rec4", href: "/compliance", priority: "low" });
+  // Q5 ("preparing for IPO or audit?") — when yes, compliance readiness matters.
+  if ((!answers[2] || answers[5]) && !recs.some((r) => r.labelKey === "rec4")) {
+    recs.push({
+      icon: Shield,
+      labelKey: "rec4",
+      href: "/compliance",
+      priority: answers[5] ? "high" : "low",
+    });
   }
   return recs.slice(0, 4);
 }
@@ -175,7 +181,7 @@ export default function OnboardingPage() {
   const recommendations = getRecommendations(state.answers, t);
 
   const canProceedStep1 = state.cloud !== null && state.industry !== null;
-  const canProceedStep2 = Object.keys(state.answers).length === 5;
+  const canProceedStep2 = [1, 2, 3, 4, 5].every((id) => typeof state.answers[id] === "boolean");
 
   return (
     <div className="min-h-screen pt-4 pb-12">

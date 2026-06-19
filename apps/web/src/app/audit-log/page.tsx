@@ -6,7 +6,7 @@
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { useState, useMemo, useEffect } from "react";
+import { useState, useMemo, useEffect, Fragment } from "react";
 import {
   Shield,
   Search,
@@ -200,18 +200,25 @@ export default function AuditLogPage() {
       .then((res) => res.json())
       .then((data) => {
         if (data.entries && data.entries.length > 0) {
-          setEntries(data.entries.map((e: Record<string, unknown>) => ({
-            id: e.id,
-            timestamp: e.created_at,
-            actor: e.actor_email?.toString().split("@")[0] ?? "Unknown",
-            actorEmail: e.actor_email ?? "",
-            action: e.action,
-            resource: e.resource,
-            ipAddress: e.ip_address ?? "",
-            userAgent: e.user_agent ?? "",
-            outcome: e.outcome ?? "SUCCESS",
-            details: e.details,
-          })));
+          setEntries(data.entries.map((e: Record<string, unknown>) => {
+            // Preserve the server's canonical action even when this page has
+            // not listed it yet — display/filter/export fall back to the raw
+            // value. Relabeling unknown-but-valid actions (e.g. REPORT_VIEW) to
+            // "LOGIN" would corrupt the audit trail (Codex P2).
+            const action = String(e.action ?? "") as AuditAction;
+            return {
+              id: String(e.id ?? ""),
+              timestamp: String(e.created_at ?? ""),
+              actor: e.actor_email?.toString().split("@")[0] ?? "Unknown",
+              actorEmail: String(e.actor_email ?? ""),
+              action,
+              resource: e.resource as string | undefined,
+              ipAddress: String(e.ip_address ?? ""),
+              userAgent: String(e.user_agent ?? ""),
+              outcome: e.outcome === "FAILURE" ? "FAILURE" : "SUCCESS",
+              details: e.details as string | undefined,
+            };
+          }));
         }
       })
       .catch((err) => console.error("[audit-log] Failed to fetch:", err))
@@ -224,7 +231,7 @@ export default function AuditLogPage() {
         !search ||
         entry.actor.toLowerCase().includes(search.toLowerCase()) ||
         entry.actorEmail.toLowerCase().includes(search.toLowerCase()) ||
-        ACTION_LABELS[entry.action].toLowerCase().includes(search.toLowerCase()) ||
+        (ACTION_LABELS[entry.action] ?? entry.action).toLowerCase().includes(search.toLowerCase()) ||
         (entry.resource ?? "").toLowerCase().includes(search.toLowerCase());
       const matchesOutcome = outcomeFilter === "ALL" || entry.outcome === outcomeFilter;
       return matchesSearch && matchesOutcome;
@@ -234,9 +241,18 @@ export default function AuditLogPage() {
   // Export as CSV (client-side)
   const exportCsv = () => {
     const header = "timestamp,actor,email,action,resource,ip,outcome,details";
+    // Neutralize spreadsheet formula injection: prefix cells starting with
+    // =, +, -, @, tab or CR with a single quote before quote-escaping.
+    const escapeCell = (v: unknown) => {
+      let s = String(v);
+      // Neutralize whitespace-prefixed payloads too (e.g. " =1+1"), which a
+      // spreadsheet trims before evaluating as a formula.
+      if (/^[\s]*[=+\-@]/.test(s)) s = "'" + s;
+      return `"${s.replace(/"/g, '""')}"`;
+    };
     const rows = filtered.map((e) =>
       [e.timestamp, e.actor, e.actorEmail, e.action, e.resource ?? "", e.ipAddress, e.outcome, e.details ?? ""]
-        .map((v) => `"${String(v).replace(/"/g, '""')}"`)
+        .map(escapeCell)
         .join(",")
     );
     const blob = new Blob([[header, ...rows].join("\n")], { type: "text/csv" });
@@ -331,17 +347,19 @@ export default function AuditLogPage() {
             </thead>
             <tbody>
               {filtered.map((entry) => {
-                const ActionIcon = ACTION_ICONS[entry.action];
+                const ActionIcon = ACTION_ICONS[entry.action] ?? Eye;
                 const isExpanded = expandedId === entry.id;
                 return (
-                  <>
+                  <Fragment key={entry.id}>
                     <tr
-                      key={entry.id}
                       className="border-b border-[var(--border-color)]/50 hover:bg-white/[0.02] cursor-pointer"
                       onClick={() => setExpandedId(isExpanded ? null : entry.id)}
                     >
                       <td className="py-3 px-3 text-[var(--text-muted)] font-mono text-xs whitespace-nowrap">
-                        {new Date(entry.timestamp).toLocaleString()}
+                        {(() => {
+                          const d = new Date(entry.timestamp);
+                          return isNaN(d.getTime()) ? "—" : d.toLocaleString();
+                        })()}
                       </td>
                       <td className="py-3 px-3">
                         <div className="flex items-center gap-2">
@@ -357,7 +375,7 @@ export default function AuditLogPage() {
                       <td className="py-3 px-3">
                         <div className="flex items-center gap-1.5">
                           <ActionIcon size={12} className="text-[var(--gold)] shrink-0" />
-                          <span className="text-white text-xs whitespace-nowrap">{ACTION_LABELS[entry.action]}</span>
+                          <span className="text-white text-xs whitespace-nowrap">{ACTION_LABELS[entry.action] ?? entry.action}</span>
                         </div>
                       </td>
                       <td className="py-3 px-3 text-[var(--text-secondary)] text-xs hidden md:table-cell max-w-[200px] truncate">
@@ -379,7 +397,7 @@ export default function AuditLogPage() {
                       </td>
                     </tr>
                     {isExpanded && (
-                      <tr key={`${entry.id}-detail`} className="border-b border-[var(--border-color)]/50 bg-white/[0.01]">
+                      <tr className="border-b border-[var(--border-color)]/50 bg-white/[0.01]">
                         <td colSpan={7} className="py-3 px-6">
                           <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-xs">
                             <div>
@@ -402,7 +420,7 @@ export default function AuditLogPage() {
                         </td>
                       </tr>
                     )}
-                  </>
+                  </Fragment>
                 );
               })}
               {filtered.length === 0 && (

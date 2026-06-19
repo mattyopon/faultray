@@ -79,8 +79,15 @@ function isAllowedIp(request: NextRequest): boolean {
   const siteUrl = process.env.NEXT_PUBLIC_SITE_URL;
   if (siteUrl === "https://faultray.com") return true; // Production — no restriction
 
+  // SEC: the leftmost `x-forwarded-for` value is client-controlled — a request
+  // can send `X-Forwarded-For: <allowed-ip>` to bypass this allowlist. This app
+  // is fronted by Vercel, which sets `x-real-ip` to the real peer address that
+  // the client cannot override; prefer it (mirrors getClientIp in
+  // src/lib/rate-limit.ts) and only fall back to the XFF leftmost when absent.
+  const realIp = request.headers.get("x-real-ip")?.trim();
   const forwardedFor = request.headers.get("x-forwarded-for");
-  const clientIp = forwardedFor ? forwardedFor.split(",")[0].trim() : "";
+  const clientIp =
+    realIp || (forwardedFor ? forwardedFor.split(",")[0].trim() : "");
 
   const allowed = allowedIps.split(",").map((ip) => ip.trim());
   return allowed.includes(clientIp);
@@ -216,9 +223,16 @@ export async function proxy(request: NextRequest) {
     },
   });
 
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  // SEC: auth checks must fail closed. getUser() can throw or return an error
+  // (network / JWT decode failures); a thrown error would otherwise crash the
+  // proxy (500) and an error result must not be treated as "authenticated".
+  let user = null;
+  try {
+    const { data, error } = await supabase.auth.getUser();
+    if (!error) user = data.user;
+  } catch {
+    user = null;
+  }
 
   // Strip locale prefix for protected path check
   let pathForCheck = pathname;
@@ -236,7 +250,14 @@ export async function proxy(request: NextRequest) {
   if (isProtected && !user) {
     const url = request.nextUrl.clone();
     url.pathname = "/login";
-    url.searchParams.set("redirectTo", request.nextUrl.pathname);
+    // Preserve the original query string so e.g. /projects/123?tab=a returns to
+    // the same view after login. The login/callback consumers validate this
+    // value with isSafeInternalPath (src/lib/safe-redirect.ts), which permits
+    // query strings, before using it.
+    url.searchParams.set(
+      "redirectTo",
+      request.nextUrl.pathname + request.nextUrl.search
+    );
     return NextResponse.redirect(url);
   }
 

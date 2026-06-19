@@ -30,10 +30,19 @@ const nextConfig: NextConfig = {
     //   (review-loop, Codex P2): `||` で繋ぐ — hosted env で `ALLOWED_ORIGIN=`
     //   (空文字) は珍しくない誤設定で、`??` だと "" がそのまま header 値になり
     //   全 browser の CORS check が落ちる。空文字は unset と同義に扱う。
-    const allowedOrigin =
+    const CANONICAL_ORIGIN = "https://faultray.com";
+    const configuredOrigin =
       process.env.ALLOWED_ORIGIN ||
       process.env.NEXT_PUBLIC_SITE_URL ||
-      "https://faultray.com";
+      CANONICAL_ORIGIN;
+    // SEC: this /api block also emits `Access-Control-Allow-Credentials: true`,
+    // and the CORS spec forbids the `*` wildcard together with credentials
+    // (browsers reject the response). A misconfigured `ALLOWED_ORIGIN=*` is an
+    // easy footgun; the empty-string case is already handled by the `||` chain
+    // above, so reject `*` the same way and fall back to the canonical origin
+    // instead of serving an invalid, insecure header.
+    const allowedOrigin =
+      configuredOrigin === "*" ? CANONICAL_ORIGIN : configuredOrigin;
 
     return [
       {

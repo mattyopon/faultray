@@ -4,7 +4,9 @@ import Link from "next/link";
 export const metadata: Metadata = {
   title: "Changelog",
   description: "FaultRay product updates, new features, and improvements.",
-  robots: { index: false },
+  // robots is intentionally inherited from changelog/layout.tsx ({ index: true,
+  // follow: true }); a page-level robots object would shallow-replace it and
+  // (a) flip the public changelog to noindex and (b) drop the `follow` flag.
 };
 
 interface Release {

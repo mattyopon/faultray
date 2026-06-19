@@ -126,9 +126,28 @@ export async function DELETE(request: Request) {
           if (!page.has_more || subs.length === 0) break;
           startingAfter = subs[subs.length - 1].id;
         }
-        await Promise.all(
+        // Use allSettled so one transient failure doesn't abort the whole
+        // batch and leave a partially-cancelled state. Treat an
+        // already-canceled / resource_missing subscription as success (the
+        // desired end state is "not active"); only a genuine failure on a
+        // still-active subscription aborts the deletion.
+        const results = await Promise.allSettled(
           toCancel.map((id) => stripe.subscriptions.cancel(id))
         );
+        const genuineFailures = results.filter((r) => {
+          if (r.status === "fulfilled") return false;
+          const reason = r.reason as { code?: string } | undefined;
+          // Stripe surfaces 'resource_missing' when the subscription no longer
+          // exists; an already-canceled sub is also an acceptable end state.
+          return reason?.code !== "resource_missing";
+        });
+        if (genuineFailures.length > 0) {
+          const first = genuineFailures[0] as PromiseRejectedResult;
+          const reason = first.reason;
+          throw reason instanceof Error
+            ? reason
+            : new Error("Stripe subscription cancellation failed");
+        }
         console.info(
           `[account/delete] Cancelled ${toCancel.length} Stripe subscription(s) for customer ${stripeCustomerId}`
         );

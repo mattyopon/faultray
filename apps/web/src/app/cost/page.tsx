@@ -145,6 +145,22 @@ function clamp(v: number, min: number, max: number): number {
   return Math.max(min, Math.min(max, v));
 }
 
+/**
+ * Parse a numeric <input> value safely: reject non-finite results (e.g. "",
+ * "1e", "abc" → NaN) by keeping a fallback, and clamp into [min, max] so an
+ * out-of-range typed value cannot corrupt downstream currency/SVG/Excel math.
+ */
+function parseNumericInput(
+  raw: string,
+  fallback: number,
+  min: number,
+  max: number
+): number {
+  const n = Number(raw);
+  if (!Number.isFinite(n)) return fallback;
+  return clamp(n, min, max);
+}
+
 /* ============================================================
  * SVG Chart components
  * ============================================================ */
@@ -306,7 +322,15 @@ function generateExcelXml(data: {
   humanCost: Record<string, string | number>[];
   sensitivity: Record<string, string | number>[];
 }): string {
-  const escXml = (s: string | number) => String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+  // Escape for XML text AND attribute context (escXml's output is interpolated
+  // into ss:Name="..."), so double quotes must be escaped too.
+  const escXml = (s: string | number) =>
+    String(s)
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;")
+      .replace(/"/g, "&quot;")
+      .replace(/'/g, "&apos;");
 
   function sheet(name: string, rows: Record<string, string | number>[]): string {
     if (rows.length === 0) return "";
@@ -407,8 +431,15 @@ export default function CostPage() {
     : 0;
   const improvedAvailability = (1 - improvedDowntimeHours / 8760) * 100;
   const improvedSlaViolation = improvedAvailability < slaTarget;
+  // Scale the improved penalty by the actual SLA gap using the same formula as
+  // currentSlaPenalty. Hardcoding a single month under-reported the improved
+  // violation for high SLA targets (e.g. 99.999%), overstating the savings.
+  const improvedSlaGap = slaTarget - improvedAvailability;
+  const improvedSlaViolationMonths = improvedSlaViolation
+    ? Math.ceil((improvedSlaGap / (100 - slaTarget)) * 12)
+    : 0;
   const improvedSlaPenalty = improvedSlaViolation
-    ? monthlyRevenue * (slaPenaltyRate / 100) * 1
+    ? monthlyRevenue * (slaPenaltyRate / 100) * clamp(improvedSlaViolationMonths, 1, 12)
     : 0;
 
   // 3. DORA
@@ -533,11 +564,16 @@ export default function CostPage() {
       })),
     });
     const blob = new Blob([xml], { type: "application/vnd.ms-excel" });
+    const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
-    a.href = URL.createObjectURL(blob);
+    a.href = url;
     a.download = "faultray-cost-analysis.xls";
+    // Append for Firefox; revoking on the same tick as click() can cancel the
+    // download in Firefox/WebKit before the download manager reads the URL.
+    document.body.appendChild(a);
     a.click();
-    URL.revokeObjectURL(a.href);
+    a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
   }, [
     currentTotalCost, improvedTotalCost, totalSavings, currentDirectLoss,
     currentSlaPenalty, expectedDoraFine, currentHumanCost, contractSla,
@@ -597,7 +633,7 @@ export default function CostPage() {
               <input
                 type="number"
                 value={revenuePerHour}
-                onChange={(e) => setRevenuePerHour(Number(e.target.value))}
+                onChange={(e) => setRevenuePerHour((prev) => parseNumericInput(e.target.value, prev, 0, 200000))}
                 aria-label={`${t.revenuePerHour} (${currencySymbol})`}
                 className="w-full px-3 py-2.5 bg-[var(--bg-tertiary)] border border-[var(--border-color)] rounded-lg text-sm font-mono text-[#e2e8f0] focus:border-[var(--gold)]/50 focus:outline-none"
               />
@@ -607,7 +643,7 @@ export default function CostPage() {
                 max={200000}
                 step={1000}
                 value={revenuePerHour}
-                onChange={(e) => setRevenuePerHour(Number(e.target.value))}
+                onChange={(e) => setRevenuePerHour((prev) => parseNumericInput(e.target.value, prev, 0, 200000))}
                 aria-label={`${t.revenuePerHour} slider`}
                 className="w-full mt-1 accent-[#FFD700]"
               />
@@ -624,7 +660,7 @@ export default function CostPage() {
               <input
                 type="number"
                 value={annualRevenue}
-                onChange={(e) => setAnnualRevenue(Number(e.target.value))}
+                onChange={(e) => setAnnualRevenue((prev) => parseNumericInput(e.target.value, prev, 0, 1_000_000_000_000))}
                 aria-label={`${t.annualRevenue} (${currencySymbol})`}
                 className="w-full px-3 py-2.5 bg-[var(--bg-tertiary)] border border-[var(--border-color)] rounded-lg text-sm font-mono text-[#e2e8f0] focus:border-[var(--gold)]/50 focus:outline-none"
               />
@@ -655,7 +691,7 @@ export default function CostPage() {
                 min={0}
                 max={100}
                 value={slaPenaltyRate}
-                onChange={(e) => setSlaPenaltyRate(Number(e.target.value))}
+                onChange={(e) => setSlaPenaltyRate((prev) => parseNumericInput(e.target.value, prev, 0, 100))}
                 aria-label={`${t.slaPenaltyRate} (%)`}
                 className="w-full px-3 py-2.5 bg-[var(--bg-tertiary)] border border-[var(--border-color)] rounded-lg text-sm font-mono text-[#e2e8f0] focus:border-[var(--gold)]/50 focus:outline-none"
               />
@@ -671,7 +707,7 @@ export default function CostPage() {
                 min={1}
                 max={100}
                 value={incidentTeamSize}
-                onChange={(e) => setIncidentTeamSize(Number(e.target.value))}
+                onChange={(e) => setIncidentTeamSize((prev) => parseNumericInput(e.target.value, prev, 1, 100))}
                 aria-label={t.incidentTeamSize}
                 className="w-full px-3 py-2.5 bg-[var(--bg-tertiary)] border border-[var(--border-color)] rounded-lg text-sm font-mono text-[#e2e8f0] focus:border-[var(--gold)]/50 focus:outline-none"
               />
@@ -686,7 +722,7 @@ export default function CostPage() {
                 min={10}
                 max={500}
                 value={avgHourlyRate}
-                onChange={(e) => setAvgHourlyRate(Number(e.target.value))}
+                onChange={(e) => setAvgHourlyRate((prev) => parseNumericInput(e.target.value, prev, 10, 500))}
                 aria-label={`${t.avgHourlyRate} (${currencySymbol})`}
                 className="w-full px-3 py-2.5 bg-[var(--bg-tertiary)] border border-[var(--border-color)] rounded-lg text-sm font-mono text-[#e2e8f0] focus:border-[var(--gold)]/50 focus:outline-none"
               />
@@ -700,7 +736,7 @@ export default function CostPage() {
                 type="number"
                 min={0}
                 value={cyberInsurancePremium}
-                onChange={(e) => setCyberInsurancePremium(Number(e.target.value))}
+                onChange={(e) => setCyberInsurancePremium((prev) => parseNumericInput(e.target.value, prev, 0, 1_000_000_000))}
                 aria-label={`${t.cyberInsurance} (${currencySymbol}/${t.perYearLabel})`}
                 className="w-full px-3 py-2.5 bg-[var(--bg-tertiary)] border border-[var(--border-color)] rounded-lg text-sm font-mono text-[#e2e8f0] focus:border-[var(--gold)]/50 focus:outline-none"
               />

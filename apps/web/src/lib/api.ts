@@ -134,22 +134,42 @@ async function apiFetch<T>(path: string, options: ApiOptions = {}): Promise<T> {
   const timeoutController = new AbortController();
   const timeoutId = setTimeout(() => timeoutController.abort(), DEFAULT_TIMEOUT_MS);
   let combinedSignal: AbortSignal;
+  // Track listeners so they can be removed on every exit path (avoid leaking a
+  // retained closure on a long-lived/shared caller signal).
+  let abort: (() => void) | undefined;
+  let mergeController: AbortController | undefined;
   if (signal) {
     // Merge: abort if either fires
-    const mergeController = new AbortController();
-    const abort = () => mergeController.abort();
+    mergeController = new AbortController();
+    abort = () => mergeController!.abort();
     signal.addEventListener("abort", abort, { once: true });
     timeoutController.signal.addEventListener("abort", abort, { once: true });
     combinedSignal = mergeController.signal;
+    // If the caller signal already fired before we attached the listener, the
+    // abort event won't replay — propagate the cancellation explicitly.
+    if (signal.aborted) mergeController.abort();
   } else {
     combinedSignal = timeoutController.signal;
   }
 
+  // Remove abort listeners and clear the timeout. Safe to call multiple times.
+  const cleanup = () => {
+    clearTimeout(timeoutId);
+    if (signal && abort) {
+      signal.removeEventListener("abort", abort);
+      timeoutController.signal.removeEventListener("abort", abort);
+    }
+  };
+
   // ERROR-03: Retry loop with exponential backoff
   let lastError: Error = new Error("API request failed");
   for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
-    // Abort if caller signal is already aborted
-    if (combinedSignal.aborted) break;
+    // Abort if caller signal is already aborted (or aborted during a backoff
+    // sleep): surface a proper AbortError rather than a stale/generic error.
+    if (combinedSignal.aborted) {
+      cleanup();
+      throw new DOMException("Aborted", "AbortError");
+    }
 
     try {
       // FETCH-01 fix: pass AbortSignal when provided to prevent memory leaks
@@ -172,7 +192,13 @@ async function apiFetch<T>(path: string, options: ApiOptions = {}): Promise<T> {
         throw new Error(error.error?.message || error.message || "API request failed");
       }
 
-      const data = await res.json() as T;
+      // A successful empty-body response (e.g. 204 No Content) has no JSON to
+      // parse; res.json() would throw and trigger a needless retry of an
+      // already-successful idempotent request.
+      const data =
+        res.status === 204
+          ? (undefined as T)
+          : ((await res.json()) as T);
 
       // FETCHPAT-05: Store in cache for GET requests with cacheTtl
       if (method === "GET" && cacheTtl && cacheTtl > 0) {
@@ -186,18 +212,18 @@ async function apiFetch<T>(path: string, options: ApiOptions = {}): Promise<T> {
         }
       }
 
-      clearTimeout(timeoutId);
+      cleanup();
       return data;
     } catch (err) {
       // Don't retry on abort (user-initiated or timeout)
       if (err instanceof Error && err.name === "AbortError") {
-        clearTimeout(timeoutId);
+        cleanup();
         throw err;
       }
       lastError = err instanceof Error ? err : new Error(String(err));
       // SEC (U28): never retry non-idempotent methods on network errors.
       if (!isIdempotent) {
-        clearTimeout(timeoutId);
+        cleanup();
         throw lastError;
       }
       if (attempt < MAX_RETRIES) {
@@ -206,7 +232,7 @@ async function apiFetch<T>(path: string, options: ApiOptions = {}): Promise<T> {
       }
     }
   }
-  clearTimeout(timeoutId);
+  cleanup();
   throw lastError;
 }
 
@@ -719,7 +745,7 @@ export const api = {
     apiFetch<IncidentsData>("/api/reports?action=incidents", { token }),
 
   getBenchmark: (industry: string, token?: string) =>
-    apiFetch<BenchmarkData>(`/api/finance?action=benchmark&industry=${industry}`, { token }),
+    apiFetch<BenchmarkData>(`/api/finance?action=benchmark&industry=${encodeURIComponent(industry)}`, { token }),
 
   createCheckoutSession: (plan: "starter" | "pro" | "business", interval: "month" | "year" = "month", token?: string) =>
     apiFetch<{ url: string }>("/api/stripe/checkout", {
@@ -733,13 +759,13 @@ export const api = {
 
   getApmMetrics: (agentId: string, metric?: string, token?: string) =>
     apiFetch<ApmMetricPoint[]>(
-      `/api/apm/agents/${agentId}/metrics${metric ? `?metric_name=${metric}` : ""}`,
+      `/api/apm/agents/${encodeURIComponent(agentId)}/metrics${metric ? `?metric_name=${encodeURIComponent(metric)}` : ""}`,
       { token }
     ),
 
   getApmAlerts: (severity?: string, token?: string) =>
     apiFetch<ApmAlert[]>(
-      `/api/apm/alerts${severity ? `?severity=${severity}` : ""}`,
+      `/api/apm/alerts${severity ? `?severity=${encodeURIComponent(severity)}` : ""}`,
       { token }
     ),
 
@@ -754,7 +780,7 @@ export const api = {
     apiFetch<Project[]>("/api/projects", { token: token ?? (await _authToken()) }),
 
   getProject: async (id: string, token?: string) =>
-    apiFetch<ProjectWithRuns>(`/api/projects?id=${id}`, { token: token ?? (await _authToken()) }),
+    apiFetch<ProjectWithRuns>(`/api/projects?id=${encodeURIComponent(id)}`, { token: token ?? (await _authToken()) }),
 
   createProject: async (
     data: { name: string; description: string; topology_yaml?: string; topology_type?: string },
@@ -763,13 +789,13 @@ export const api = {
     apiFetch<Project>("/api/projects", { method: "POST", body: data, token: token ?? (await _authToken()) }),
 
   updateProject: async (id: string, data: Partial<Project>, token?: string) =>
-    apiFetch<Project>(`/api/projects?id=${id}`, { method: "PATCH", body: data, token: token ?? (await _authToken()) }),
+    apiFetch<Project>(`/api/projects?id=${encodeURIComponent(id)}`, { method: "PATCH", body: data, token: token ?? (await _authToken()) }),
 
   deleteProject: async (id: string, token?: string) =>
-    apiFetch<{ ok: boolean; id: string }>(`/api/projects?id=${id}`, { method: "DELETE", token: token ?? (await _authToken()) }),
+    apiFetch<{ ok: boolean; id: string }>(`/api/projects?id=${encodeURIComponent(id)}`, { method: "DELETE", token: token ?? (await _authToken()) }),
 
   getProjectRuns: async (projectId: string, token?: string) =>
-    apiFetch<ProjectWithRuns>(`/api/projects?id=${projectId}`, { token: token ?? (await _authToken()) }),
+    apiFetch<ProjectWithRuns>(`/api/projects?id=${encodeURIComponent(projectId)}`, { token: token ?? (await _authToken()) }),
 
   saveRun: (
     data: {

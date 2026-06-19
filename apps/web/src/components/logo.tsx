@@ -1,6 +1,4 @@
-import { forwardRef } from "react";
-
-let _logoCounter = 0;
+import { forwardRef, useId } from "react";
 
 interface LogoProps {
   size?: number;
@@ -12,7 +10,11 @@ export const Logo = forwardRef<SVGSVGElement, LogoProps>(function Logo(
   { size = 28, "aria-hidden": ariaHidden, className },
   ref
 ) {
-  const id = `logo-${++_logoCounter}`;
+  // useId gives a stable, deterministic id that matches between server and
+  // client renders (a module-level counter mutated during render is impure
+  // and produces SSR/client hydration mismatches for the clipPath ids).
+  const reactId = useId();
+  const id = `logo-${reactId.replace(/:/g, "")}`;
   const hidden = ariaHidden === true || ariaHidden === "true";
 
   // Small size (< 64px): simplified design — fault line + background only

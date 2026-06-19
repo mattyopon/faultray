@@ -8,8 +8,15 @@ GET  /api/governance?action=sla          → SLA/SLO data
 
 from http.server import BaseHTTPRequestHandler
 import json
+import logging
 import os
 from urllib.parse import urlparse, parse_qs
+
+_logger = logging.getLogger("faultray.compliance")
+
+# Cap the request body so a spoofed/oversized Content-Length cannot exhaust
+# memory before validation runs.
+_MAX_BODY_BYTES = 1024 * 1024  # 1 MB
 
 
 SUPPORTED_FRAMEWORKS = [
@@ -33,12 +40,15 @@ def _run_compliance(framework: str, evidence_data: dict | None = None) -> dict:
     fw = ComplianceFramework(framework)
 
     if evidence_data:
-        # Filter to only valid fields
-        valid_fields = {
-            k: v
-            for k, v in evidence_data.items()
-            if hasattr(InfrastructureEvidence, k)
-        }
+        # Filter to only valid constructor fields. hasattr(InfrastructureEvidence, k)
+        # checks the CLASS, so dunders/methods ('__init__', '__class__', ...) would
+        # pass and be forwarded as kwargs (TypeError), while instance-only fields set
+        # in __init__ would be silently dropped. Whitelist the real init params.
+        import inspect
+
+        allowed = set(inspect.signature(InfrastructureEvidence).parameters)
+        allowed.discard("self")
+        valid_fields = {k: v for k, v in evidence_data.items() if k in allowed}
         evidence = InfrastructureEvidence(**valid_fields)
     else:
         evidence = InfrastructureEvidence()
@@ -107,22 +117,45 @@ class handler(BaseHTTPRequestHandler):
 
             if action:
                 data = _dispatch_governance(action)
-                if data:
+                if data is not None:
                     self._send_json(200, data)
                 else:
                     self._send_error(400, f"Unknown action '{action}'")
             else:
                 self._send_json(200, {"supported_actions": ["dora", "ai-governance", "sla"]})
-        except Exception as e:
-            self._send_error(500, f"Governance error: {e}")
+        except Exception:
+            _logger.exception("Governance GET failed")
+            self._send_error(500, "Internal server error")
 
     def do_POST(self):
+        # Validate Content-Length and cap body size BEFORE reading into memory so
+        # a spoofed/negative/oversized length cannot exhaust memory or block on a
+        # read-until-EOF (negative length).
         try:
             content_length = int(self.headers.get("Content-Length", 0))
+        except (TypeError, ValueError):
+            self._send_error(400, "Invalid Content-Length header")
+            return
+        if content_length < 0:
+            self._send_error(400, "Invalid Content-Length header")
+            return
+        if content_length > _MAX_BODY_BYTES:
+            self._send_error(413, "Request body too large")
+            return
+
+        try:
             body = self.rfile.read(content_length)
             data = json.loads(body) if body else {}
 
-            framework = data.get("framework", "").lower()
+            if not isinstance(data, dict):
+                self._send_error(400, "Request body must be a JSON object")
+                return
+
+            framework = data.get("framework", "")
+            if not isinstance(framework, str):
+                self._send_error(400, "'framework' must be a string")
+                return
+            framework = framework.lower()
 
             if not framework:
                 self._send_error(
@@ -141,20 +174,23 @@ class handler(BaseHTTPRequestHandler):
                 return
 
             evidence = data.get("evidence")
+            if evidence is not None and not isinstance(evidence, dict):
+                self._send_error(400, "'evidence' must be a JSON object")
+                return
             result = _run_compliance(framework, evidence)
             self._send_json(200, result)
 
         except json.JSONDecodeError:
             self._send_error(400, "Invalid JSON in request body")
-        except Exception as e:
-            error_type = type(e).__name__
-            self._send_error(500, f"Compliance error ({error_type}): {e}")
+        except Exception:
+            _logger.exception("Compliance POST failed")
+            self._send_error(500, "Internal server error")
 
     def do_OPTIONS(self):
         self.send_response(204)
         self._send_cors_headers()
         self.send_header(
-            "Access-Control-Allow-Methods", "POST, OPTIONS"
+            "Access-Control-Allow-Methods", "GET, POST, OPTIONS"
         )
         self.send_header(
             "Access-Control-Allow-Headers", "Content-Type, Authorization"

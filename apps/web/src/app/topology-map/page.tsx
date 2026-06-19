@@ -94,8 +94,19 @@ export default function TopologyMapPage() {
   useEffect(() => {
     const controller = new AbortController();
     fetch("/api/proxy?path=/api/v1/topology-map", { signal: controller.signal })
-      .then((r) => r.json())
-      .then((d) => setData(d))
+      .then((r) => {
+        // A non-2xx (e.g. JSON error body) or a payload missing nodes/edges
+        // would otherwise be stored verbatim and crash the render on
+        // data.nodes/data.edges access. Throw so the .catch fallback runs.
+        if (!r.ok) throw new Error(`Topology fetch failed: ${r.status}`);
+        return r.json();
+      })
+      .then((d) => {
+        if (!d || !Array.isArray(d.nodes) || !Array.isArray(d.edges)) {
+          throw new Error("Topology response missing nodes/edges arrays");
+        }
+        setData(d);
+      })
       .catch((err) => { console.error("[topology-map] API error, using demo data:", err); setData(DEMO_DATA); })
       .finally(() => setLoading(false));
     return () => controller.abort();

@@ -163,7 +163,7 @@ function PreviewScoreRing({ score }: { score: number }) {
 
 export default function DemoPage() {
   const rawLocale = useLocale();
-  const locale = rawLocale in T ? (rawLocale as keyof typeof T) : "en";
+  const locale = Object.prototype.hasOwnProperty.call(T, rawLocale) ? (rawLocale as keyof typeof T) : "en";
   const t = T[locale];
   const [selectedIndustry, setSelectedIndustry] = useState<IndustryKey | null>(null);
   const preview = selectedIndustry ? INDUSTRY_TEMPLATES[selectedIndustry] : null;

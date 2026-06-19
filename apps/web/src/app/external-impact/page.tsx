@@ -49,6 +49,40 @@ const DEMO_DATA: ExternalImpactData = {
   ],
 };
 
+const RISK_LEVELS = ["critical", "high", "medium", "low"] as const;
+
+function isExternalService(s: unknown): s is ExternalService {
+  if (typeof s !== "object" || s === null) return false;
+  const o = s as Record<string, unknown>;
+  return (
+    typeof o.id === "string" &&
+    typeof o.name === "string" &&
+    typeof o.category === "string" &&
+    typeof o.risk_level === "string" &&
+    (RISK_LEVELS as readonly string[]).includes(o.risk_level) &&
+    Array.isArray(o.dependent_components) &&
+    o.dependent_components.every((c) => typeof c === "string") &&
+    Number.isFinite(o.monthly_downtime_minutes) &&
+    Number.isFinite(o.blast_radius_percent) &&
+    Number.isFinite(o.sla_percent) &&
+    typeof o.fallback_available === "boolean"
+  );
+}
+
+function isExternalImpactData(d: unknown): d is ExternalImpactData {
+  if (typeof d !== "object" || d === null) return false;
+  const obj = d as Record<string, unknown>;
+  return (
+    typeof obj.scan_date === "string" &&
+    Number.isFinite(obj.total_services) &&
+    Number.isFinite(obj.unprotected_count) &&
+    Number.isFinite(obj.critical_count) &&
+    Number.isFinite(obj.avg_blast_radius) &&
+    Array.isArray(obj.services) &&
+    obj.services.every(isExternalService)
+  );
+}
+
 function riskColor(level: string): string {
   if (level === "critical") return "#ef4444";
   if (level === "high") return "#f59e0b";
@@ -71,19 +105,35 @@ export default function ExternalImpactPage() {
   const t = appDict.externalImpact[locale] ?? appDict.externalImpact.en;
 
   useEffect(() => {
+    let active = true;
     const controller = new AbortController();
     fetch("/api/proxy?path=/api/v1/external-impact", { signal: controller.signal })
-      .then((r) => r.json())
-      .then((d) => setData(d))
-      .catch((err) => { console.error("[external-impact] API error, using demo data:", err); setData(DEMO_DATA); })
-      .finally(() => setLoading(false));
-    return () => controller.abort();
+      .then((r) => {
+        if (!r.ok) throw new Error(`HTTP ${r.status}`);
+        return r.json();
+      })
+      .then((d) => {
+        if (!active) return;
+        setData(isExternalImpactData(d) ? d : DEMO_DATA);
+      })
+      .catch((err) => {
+        if ((err as { name?: string })?.name === "AbortError") return;
+        console.error("[external-impact] API error, using demo data:", err);
+        if (active) setData(DEMO_DATA);
+      })
+      .finally(() => {
+        if (active) setLoading(false);
+      });
+    return () => {
+      active = false;
+      controller.abort();
+    };
   }, []);
 
-  const riskOrder = { critical: 4, high: 3, medium: 2, low: 1 };
+  const riskOrder: Record<string, number> = { critical: 4, high: 3, medium: 2, low: 1 };
   const sorted = [...data.services].sort((a, b) => {
     if (sortBy === "blast_radius") return b.blast_radius_percent - a.blast_radius_percent;
-    if (sortBy === "risk_level") return riskOrder[b.risk_level] - riskOrder[a.risk_level];
+    if (sortBy === "risk_level") return (riskOrder[b.risk_level] ?? 0) - (riskOrder[a.risk_level] ?? 0);
     return b.monthly_downtime_minutes - a.monthly_downtime_minutes;
   });
 

@@ -148,7 +148,10 @@ function ErrorBudgetChart({
   const chartH = h - pad.top - pad.bottom;
   const days = history.length;
 
-  const toX = (day: number) => pad.left + ((day - 1) / (days - 1)) * chartW;
+  // Guard the denominator: a single-point (or empty) history makes days - 1 === 0,
+  // which would yield Infinity/NaN coordinates and corrupt the SVG path.
+  const toX = (day: number) =>
+    days <= 1 ? pad.left + chartW / 2 : pad.left + ((day - 1) / (days - 1)) * chartW;
   const toY = (pct: number) => pad.top + chartH - (pct / 100) * chartH;
 
   const pathD = history
@@ -234,9 +237,15 @@ function statusVariant(status: string): "green" | "yellow" | "red" | "default" {
 }
 
 function sloCompliance(slo: SloItem): boolean {
-  // For latency/error-rate: current should be <= target
-  // For throughput/hit-rate: current should be >= target
-  if (slo.unit === "req/s" || slo.name.includes("Hit Rate")) {
+  // Higher-is-better: throughput, hit rate, and success-rate/availability
+  // percentages (e.g. "HTTP Success Rate" 99.96 vs target 99.9 is compliant).
+  // Lower-is-better: latency and error-rate metrics.
+  if (
+    slo.unit === "req/s" ||
+    slo.name.includes("Hit Rate") ||
+    slo.name.includes("Success Rate") ||
+    slo.name.includes("Availability")
+  ) {
     return slo.current >= slo.target;
   }
   return slo.current <= slo.target;
@@ -262,10 +271,64 @@ export default function SlaPage() {
   useEffect(() => {
     const controller = new AbortController();
     fetch("/api/governance?action=sla", { signal: controller.signal })
-      .then((r) => r.json())
-      .then((d) => { if (d && d.sla_overview) setData(d); })
-      .catch((err) => console.error("[sla] fetch error:", err))
-      .finally(() => setLoading(false));
+      .then((r) => {
+        if (!r.ok) throw new Error(`HTTP ${r.status}`);
+        return r.json();
+      })
+      .then((d) => {
+        // Validate every field the render path consumes before replacing the
+        // safe DEMO fallback. Previously only sla_overview was checked, so a
+        // response missing slo_breakdown/error_budget_history/validation/
+        // contracts crashed the render (.map/.toFixed on undefined).
+        const ov = d?.sla_overview;
+        const ovValid =
+          ov &&
+          typeof ov === "object" &&
+          Number.isFinite(ov.target) &&
+          Number.isFinite(ov.current) &&
+          Number.isFinite(ov.error_budget_total_minutes) &&
+          Number.isFinite(ov.error_budget_used_minutes) &&
+          Number.isFinite(ov.error_budget_remaining_pct);
+        const sloValid =
+          Array.isArray(d?.slo_breakdown) &&
+          d.slo_breakdown.every(
+            (s: unknown) =>
+              typeof s === "object" &&
+              s !== null &&
+              typeof (s as Record<string, unknown>).name === "string" &&
+              Number.isFinite((s as Record<string, unknown>).target) &&
+              Number.isFinite((s as Record<string, unknown>).current) &&
+              typeof (s as Record<string, unknown>).unit === "string",
+          );
+        const historyValid =
+          Array.isArray(d?.error_budget_history) &&
+          d.error_budget_history.every(
+            (h: unknown) =>
+              typeof h === "object" &&
+              h !== null &&
+              Number.isFinite((h as Record<string, unknown>).day) &&
+              Number.isFinite((h as Record<string, unknown>).budget_used_pct),
+          );
+        if (
+          d &&
+          ovValid &&
+          sloValid &&
+          historyValid &&
+          d.validation &&
+          d.validation.availability_by_layer &&
+          Array.isArray(d.validation.recommendations) &&
+          Array.isArray(d.contracts)
+        ) {
+          setData(d);
+        }
+      })
+      .catch((err) => {
+        if ((err as { name?: string })?.name === "AbortError") return;
+        console.error("[sla] fetch error:", err);
+      })
+      .finally(() => {
+        if (!controller.signal.aborted) setLoading(false);
+      });
     return () => controller.abort();
   }, []);
 
@@ -347,7 +410,7 @@ export default function SlaPage() {
             <tbody>
               {data.slo_breakdown.map((slo) => {
                 const ok = sloCompliance(slo);
-                const usePct = (slo.unit === "%" || slo.unit === "%") && !slo.name.includes("Error");
+                const usePct = slo.unit === "%" && !slo.name.includes("Error");
                 const barValue = usePct
                   ? slo.current
                   : slo.unit === "req/s" || slo.name.includes("Hit")

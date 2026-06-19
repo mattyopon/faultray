@@ -173,7 +173,7 @@ export default function SuggestionsPage() {
                 </div>
               </Card>
               {isLocked && (
-                <div className="absolute inset-0 flex items-center justify-center rounded-2xl/60 backdrop-blur-sm">
+                <div className="absolute inset-0 flex items-center justify-center rounded-2xl backdrop-blur-sm">
                   <Link
                     href="/pricing"
                     className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-[var(--gold)] text-[#0a0e1a] font-semibold text-sm hover:bg-[#FFC700] transition-colors"

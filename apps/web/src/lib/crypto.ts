@@ -63,7 +63,16 @@ export async function encrypt(text: string): Promise<string> {
   const combined = new Uint8Array(12 + cipherBuffer.byteLength);
   combined.set(iv, 0);
   combined.set(new Uint8Array(cipherBuffer), 12);
-  const base64 = btoa(String.fromCharCode(...combined));
+  // Build the binary string in fixed-size chunks. Spreading every byte as a
+  // separate argument (String.fromCharCode(...combined)) overflows the call
+  // stack (RangeError) for larger payloads, so encryption would fail based on
+  // plaintext size.
+  let binary = "";
+  const CHUNK = 0x8000;
+  for (let i = 0; i < combined.length; i += CHUNK) {
+    binary += String.fromCharCode(...combined.subarray(i, i + CHUNK));
+  }
+  const base64 = btoa(binary);
   return `${ENC_PREFIX}${base64}`;
 }
 

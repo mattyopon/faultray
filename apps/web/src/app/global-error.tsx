@@ -27,7 +27,11 @@ export default function GlobalError({
       // Use the globally initialized Sentry client (injected via sentry.client.config.ts)
       const sentryCapture = (window as unknown as Record<string, unknown>).__sentryCapture;
       if (typeof sentryCapture === "function") {
-        (sentryCapture as (e: Error) => void)(error);
+        try {
+          (sentryCapture as (e: Error) => void)(error);
+        } catch (reportErr) {
+          console.error("[FaultRay] Failed to report error to Sentry:", reportErr, error);
+        }
       } else {
         console.error("[FaultRay] Uncaught error (Sentry not initialized):", error);
       }
@@ -71,7 +75,11 @@ export default function GlobalError({
               {isJa ? "重大なエラーが発生しました" : "Critical error"}
             </h1>
             <p style={{ color: "#94a3b8", marginBottom: 8, fontSize: 14 }}>
-              {error.message ?? (isJa ? "予期しないエラーが発生しました。" : "An unexpected error occurred.")}
+              {process.env.NODE_ENV === "development"
+                ? error.message
+                : isJa
+                ? "予期しないエラーが発生しました。"
+                : "An unexpected error occurred."}
             </p>
             {error.digest && (
               <p

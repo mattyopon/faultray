@@ -15,6 +15,15 @@ export const dynamic = "force-dynamic";
 const ALLOWED_ACTIONS = AUDIT_LOG_ACTION_SET;
 
 /**
+ * Allowed outcome values for audit log writes (whitelist).
+ * Must mirror the DB CHECK constraint `audit_logs_outcome_check`
+ * (migration 011: outcome IN ('SUCCESS','FAILURE')). An arbitrary
+ * caller-supplied value would otherwise surface as an unhandled Postgres
+ * error (500) for what is really a client (400) mistake.
+ */
+const ALLOWED_OUTCOMES = new Set(["SUCCESS", "FAILURE"]);
+
+/**
  * GET /api/audit-log — List audit log entries for the user's team.
  * Query params: ?action=LOGIN&outcome=FAILURE&limit=50&offset=0
  */
@@ -31,12 +40,19 @@ export async function GET(request: Request) {
   // Resolve user's team. ``team_members`` has no ``status`` column today —
   // every row already represents an active membership (status was an org_members
   // concept we mis-copied). Filtering by it returns zero rows and breaks reads.
-  const { data: membership } = await supabase
+  const { data: membership, error: membershipError } = await supabase
     .from("team_members")
     .select("team_id")
     .eq("user_id", user.id)
     .limit(1)
     .maybeSingle();
+
+  // A DB/RLS failure must not be conflated with "no membership" — that would
+  // hide an outage behind an empty (but 200) audit log.
+  if (membershipError) {
+    console.error("[audit-log] Membership lookup error:", membershipError.message);
+    return NextResponse.json({ error: "Failed to fetch audit logs" }, { status: 500 });
+  }
 
   if (!membership) {
     return NextResponse.json({ entries: [], total: 0 });
@@ -101,6 +117,21 @@ export async function POST(request: Request) {
     return NextResponse.json(
       {
         error: `Invalid action '${action}'. Allowed values: ${[...ALLOWED_ACTIONS].join(", ")}`,
+      },
+      { status: 400 }
+    );
+  }
+
+  // Validate outcome against the same fixed vocabulary the DB CHECK enforces,
+  // so a bad value is a 400 (client error) rather than an unhandled 500.
+  if (
+    outcome !== undefined &&
+    outcome !== null &&
+    (typeof outcome !== "string" || !ALLOWED_OUTCOMES.has(outcome))
+  ) {
+    return NextResponse.json(
+      {
+        error: `Invalid outcome '${String(outcome)}'. Allowed values: ${[...ALLOWED_OUTCOMES].join(", ")}`,
       },
       { status: 400 }
     );

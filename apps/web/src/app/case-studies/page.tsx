@@ -101,9 +101,9 @@ export default function CaseStudiesPage() {
         <p className="text-xs text-[var(--text-muted)]">
           以下はベータプログラムの匿名化された想定事例です。実在の企業名・個人名は含まれていません。
           正式な導入事例は準備中です。事例掲載にご協力いただける方は{" "}
-          <Link href="mailto:sales@faultray.com" className="text-[var(--gold)] hover:underline">
+          <a href="mailto:sales@faultray.com" className="text-[var(--gold)] hover:underline">
             sales@faultray.com
-          </Link>{" "}
+          </a>{" "}
           までご連絡ください。
         </p>
       </div>

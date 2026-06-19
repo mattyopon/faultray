@@ -57,14 +57,29 @@ export default function SystemsPage() {
   const locale = useLocale();
   const [systems, setSystems] = useState<SystemWithMembers[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState(false);
   const [search, setSearch] = useState("");
   const [filterType, setFilterType] = useState<string>("all");
   const [filterStatus, setFilterStatus] = useState<string>("all");
 
   useEffect(() => {
+    let cancelled = false;
     fetchSystems()
-      .then(setSystems)
-      .finally(() => setLoading(false));
+      .then((data) => {
+        if (!cancelled) setSystems(Array.isArray(data) ? data : []);
+      })
+      .catch((e) => {
+        if (cancelled) return;
+        console.error("Failed to load systems:", e);
+        setLoadError(true);
+        setSystems([]);
+      })
+      .finally(() => {
+        if (!cancelled) setLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   const filtered = systems.filter((s) => {
@@ -119,6 +134,17 @@ export default function SystemsPage() {
             : `${systems.length} systems (GAS: ${gasCount}, Orphaned: ${orphanedCount})`}
         </p>
       </div>
+
+      {loadError && (
+        <Card className="p-4 border border-red-500/20 bg-red-500/[0.03]">
+          <p className="text-sm text-red-400 flex items-center gap-2">
+            <AlertTriangle size={16} className="shrink-0" />
+            {locale === "ja"
+              ? "システムの読み込みに失敗しました。後ほど再度お試しください。"
+              : "Failed to load systems. Please try again later."}
+          </p>
+        </Card>
+      )}
 
       {/* Filters */}
       <div className="flex flex-col sm:flex-row gap-3">
@@ -210,7 +236,8 @@ export default function SystemsPage() {
                       ms.access_level === "owner" ||
                       ms.access_level === "admin"
                   )
-                  .map((ms) => ms.members);
+                  .map((ms) => ms.members)
+                  .filter((m): m is NonNullable<typeof m> => Boolean(m));
                 const _hasLeftOwner = owners.some((m) => m.status === "left");
 
                 return (

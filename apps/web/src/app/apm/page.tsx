@@ -42,21 +42,43 @@ export default function ApmPage() {
 
   const load = () => {
     const controller = new AbortController();
+    const onError = (err: unknown) => {
+      if ((err as { name?: string })?.name === "AbortError") return;
+      console.error("[apm] fetch error:", err);
+    };
     fetch("/api/apm/agents", { signal: controller.signal })
       .then((r) => r.json())
-      .then((d) => { if (Array.isArray(d?.agents)) setAgentList(d.agents); })
-      .catch((err) => console.error("[apm] fetch error:", err));
+      .then((d) => {
+        if (controller.signal.aborted) return;
+        if (Array.isArray(d?.agents)) {
+          setAgentList(
+            (d.agents as unknown[]).filter(
+              (a): a is Agent =>
+                !!a &&
+                typeof (a as Agent).id === "string" &&
+                typeof (a as Agent).hostname === "string" &&
+                Number.isFinite((a as Agent).cpu) &&
+                Number.isFinite((a as Agent).mem),
+            ),
+          );
+        }
+      })
+      .catch(onError);
     fetch("/api/apm/alerts", { signal: controller.signal })
       .then((r) => r.json())
-      .then((d) => { if (Array.isArray(d?.alerts)) setAlertList(d.alerts); })
-      .catch((err) => console.error("[apm] fetch error:", err));
+      .then((d) => {
+        if (controller.signal.aborted) return;
+        if (Array.isArray(d?.alerts)) setAlertList(d.alerts);
+      })
+      .catch(onError);
     return () => controller.abort();
   };
 
   useEffect(load, []);
 
-  const avgCpu = agentList.filter((a) => a.status !== "offline").reduce((s, a) => s + a.cpu, 0) / Math.max(1, agentList.filter((a) => a.status !== "offline").length);
-  const avgMem = agentList.filter((a) => a.status !== "offline").reduce((s, a) => s + a.mem, 0) / Math.max(1, agentList.filter((a) => a.status !== "offline").length);
+  const onlineAgents = agentList.filter((a) => a.status !== "offline");
+  const avgCpu = onlineAgents.reduce((s, a) => s + a.cpu, 0) / Math.max(1, onlineAgents.length);
+  const avgMem = onlineAgents.reduce((s, a) => s + a.mem, 0) / Math.max(1, onlineAgents.length);
 
   return (
     <div className="w-full px-6 py-10">

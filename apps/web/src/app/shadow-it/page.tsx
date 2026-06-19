@@ -81,10 +81,27 @@ export default function ShadowItPage() {
   useEffect(() => {
     const controller = new AbortController();
     fetch("/api/proxy?path=/api/v1/shadow-it", { signal: controller.signal })
-      .then((r) => r.json())
-      .then((d) => setData(d))
-      .catch((err) => { console.error("[shadow-it] API error, using demo data:", err); setData(DEMO_DATA); })
-      .finally(() => setLoading(false));
+      .then((r) => {
+        // A non-2xx (e.g. JSON error body) or a payload missing components
+        // would otherwise be stored verbatim and crash the render on
+        // data.components.filter(...). Throw so the .catch fallback runs.
+        if (!r.ok) throw new Error(`Shadow-IT fetch failed: ${r.status}`);
+        return r.json();
+      })
+      .then((d) => {
+        if (!d || !Array.isArray(d.components)) {
+          throw new Error("Shadow-IT response missing components array");
+        }
+        setData(d);
+      })
+      .catch((err) => {
+        // An aborted request (component unmount) is not a failure — don't
+        // overwrite state on an unmounted component.
+        if ((err as { name?: string })?.name === "AbortError") return;
+        console.error("[shadow-it] API error, using demo data:", err);
+        setData(DEMO_DATA);
+      })
+      .finally(() => { if (!controller.signal.aborted) setLoading(false); });
     return () => controller.abort();
   }, []);
 

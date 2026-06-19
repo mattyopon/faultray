@@ -68,18 +68,28 @@ export async function PATCH(
   }
 
   // 呼び出し元がその org の owner か active admin かを検証 (invite と同じ規則)。
-  const { data: selfMember } = await supabase
+  // 認可 lookup の DB error を握りつぶすと「権限なし」と「DB 障害」が区別できず、
+  // 正当な admin/owner の操作が誤って 403 になる。genuine error は 500 にする。
+  const { data: selfMember, error: selfMemberError } = await supabase
     .from("org_members")
     .select("role, status")
     .eq("org_id", target.org_id)
     .eq("user_id", user.id)
     .maybeSingle();
 
-  const { data: orgOwner } = await supabase
+  const { data: orgOwner, error: orgOwnerError } = await supabase
     .from("organizations")
     .select("owner_id")
     .eq("id", target.org_id)
     .maybeSingle();
+
+  if (selfMemberError || orgOwnerError) {
+    console.error(
+      "[org/members/[id]] Authorization lookup failed:",
+      selfMemberError?.message ?? orgOwnerError?.message
+    );
+    return NextResponse.json({ error: "Failed to verify permissions" }, { status: 500 });
+  }
 
   const isOwner = orgOwner?.owner_id === user.id;
   const isAdmin =
@@ -93,15 +103,28 @@ export async function PATCH(
     );
   }
 
+  // Re-assert `role <> 'owner'` in the UPDATE predicate itself to close the
+  // TOCTOU window: the `target.role === 'owner'` check above ran against an
+  // earlier read, so a member promoted to owner between that read and this write
+  // could otherwise have their owner role overwritten despite the prohibition.
   const { data: updated, error: updateError } = await supabase
     .from("org_members")
     .update({ role })
     .eq("id", id)
+    .neq("role", "owner")
     .select("id, org_id, email, role, status, invited_at, joined_at")
-    .single();
+    .maybeSingle();
 
-  if (updateError || !updated) {
+  if (updateError) {
     return NextResponse.json({ error: "Failed to update role" }, { status: 500 });
+  }
+  if (!updated) {
+    // No row matched the `id AND role <> 'owner'` predicate: the member became
+    // an owner concurrently (or was removed). Refuse rather than silently no-op.
+    return NextResponse.json(
+      { error: "The owner's role cannot be changed here" },
+      { status: 409 }
+    );
   }
 
   return NextResponse.json({ success: true, member: updated });

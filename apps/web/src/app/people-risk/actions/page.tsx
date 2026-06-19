@@ -54,6 +54,7 @@ export default function ActionsPage() {
   const locale = useLocale();
   const [actions, setActions] = useState<ActionWithSystem[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState(false);
   const [updating, setUpdating] = useState<string | null>(null);
   const [filterStatus, setFilterStatus] = useState<string>("all");
 
@@ -64,9 +65,22 @@ export default function ActionsPage() {
   };
 
   useEffect(() => {
+    let cancelled = false;
     fetchActions()
-      .then(setActions)
-      .finally(() => setLoading(false));
+      .then((data) => {
+        if (!cancelled) setActions(data);
+      })
+      .catch((e) => {
+        if (cancelled) return;
+        console.error("Failed to load actions:", e);
+        setLoadError(true);
+      })
+      .finally(() => {
+        if (!cancelled) setLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   const handleStatusChange = useCallback(
@@ -127,6 +141,17 @@ export default function ActionsPage() {
             : "Actions to reduce knowledge concentration risks"}
         </p>
       </div>
+
+      {loadError && (
+        <Card className="p-4 border border-red-500/20 bg-red-500/[0.03]">
+          <p className="text-sm text-red-400 flex items-center gap-2">
+            <AlertTriangle size={16} className="shrink-0" />
+            {locale === "ja"
+              ? "アクションの読み込みに失敗しました。後ほど再度お試しください。"
+              : "Failed to load actions. Please try again later."}
+          </p>
+        </Card>
+      )}
 
       {/* Stats */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">

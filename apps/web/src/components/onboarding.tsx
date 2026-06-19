@@ -181,13 +181,11 @@ export function Onboarding() {
     }
   }, []);
 
+  // close() only hides the modal for this session. Permanent suppression is
+  // opt-in via the "don't show again" checkbox (see handleDone); otherwise the
+  // checkbox would be meaningless because every dismissal persisted the flag.
   const close = useCallback(() => {
     setVisible(false);
-    try {
-      localStorage.setItem(STORAGE_KEY, "true");
-    } catch {
-      // ignore
-    }
   }, []);
 
   const handleSkip = useCallback(() => {
@@ -244,7 +242,9 @@ export function Onboarding() {
 
   if (!visible) return null;
 
-  const Icon = stepIcons[step];
+  // Fall back to a valid icon if step ever drifts out of range, so rendering
+  // <Icon /> can never throw "Element type is invalid".
+  const Icon = stepIcons[step] ?? Sparkles;
   const currentStep = t.steps[step];
   const isLast = step === TOTAL_STEPS - 1;
 

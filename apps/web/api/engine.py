@@ -526,7 +526,14 @@ def _run_simulation(topology_yaml: str) -> dict:
 
     fd, tmp_path = tempfile.mkstemp(suffix=".yaml")
     try:
-        with os.fdopen(fd, "w") as f:
+        try:
+            f = os.fdopen(fd, "w")
+        except Exception:
+            # fdopen never took ownership of the fd; close it ourselves so a
+            # failure here cannot leak file descriptors.
+            os.close(fd)
+            raise
+        with f:
             f.write(topology_yaml)
 
         graph = load_yaml(tmp_path)
@@ -759,7 +766,15 @@ def _save_run_to_supabase(data: dict, caller_user_id: str | None = None) -> dict
     )
     try:
         resp = _urllib_req.urlopen(req, timeout=10)
-        result = json.loads(resp.read())
+        try:
+            result = json.loads(resp.read())
+        finally:
+            # Close the response/socket promptly without requiring urlopen's
+            # return value to be a context manager (tests patch it with a plain
+            # fake), so sustained load can't leak file descriptors.
+            close = getattr(resp, "close", None)
+            if callable(close):
+                close()
         run_id = result[0]["id"] if isinstance(result, list) and result else "saved"
         return {"ok": True, "id": run_id}
     except Exception as e:
@@ -887,7 +902,12 @@ def _run_heatmap(topology_yaml=None) -> dict:
 
             fd, tmp_path = tempfile.mkstemp(suffix=".yaml")
             try:
-                with os.fdopen(fd, "w") as f:
+                try:
+                    f = os.fdopen(fd, "w")
+                except Exception:
+                    os.close(fd)
+                    raise
+                with f:
                     f.write(topology_yaml)
                 graph = load_yaml(tmp_path)
                 engine = SimulationEngine(graph)
@@ -928,14 +948,10 @@ def _run_whatif(component_id: str, parameter: str, value: float) -> dict:
         clamped = max(-impact_config["max_effect"], min(impact_config["max_effect"], raw_impact))
         new_score = max(0, min(100, WHATIF_BASELINE["overall_score"] + clamped))
 
-        if new_score >= 99.999:
-            new_nines = 5.0
-        elif new_score >= 99.0:
-            new_nines = 4.0 + (new_score - 99.0) / 0.99
-        elif new_score >= 90.0:
-            new_nines = 3.0 + (new_score - 90.0) / 9.0
-        else:
-            new_nines = 2.0 + (new_score - 80.0) / 10.0
+        # Reuse the canonical score→nines conversion so what-if numbers match
+        # the simulation/discovery endpoints (the old bespoke formula produced
+        # inflated/negative nines for scores below 90).
+        new_nines, _ = _calc_nines_and_avail(new_score)
 
         return {
             "baseline": WHATIF_BASELINE,
@@ -1508,6 +1524,23 @@ class handler(BaseHTTPRequestHandler):
     _MAX_YAML_BYTES = 512 * 1024      # 512 KB
     _MAX_YAML_COMPONENTS = 200         # 200 components per topology
 
+    def _validate_parse_input_size(self, value, field_name: str) -> str | None:
+        """Reject non-string or oversized Terraform/Kubernetes parse inputs.
+
+        json.loads / yaml.safe_load_all materialize the whole input; without a
+        cap a large authenticated payload can exhaust CPU/memory (the global body
+        cap is larger and these fields can be the bulk of it). Mirrors the YAML
+        byte limit used by the simulate path.
+        """
+        if not isinstance(value, str):
+            return f"'{field_name}' must be a string"
+        if len(value.encode("utf-8")) > self._MAX_YAML_BYTES:
+            return (
+                f"'{field_name}' exceeds maximum size of "
+                f"{self._MAX_YAML_BYTES // 1024} KB."
+            )
+        return None
+
     def _validate_topology_yaml(self, topology_yaml: str) -> str | None:
         """Return an error message if the YAML fails size/syntax/component checks, else None."""
         # PYVAL-01: size limit
@@ -1526,12 +1559,15 @@ class handler(BaseHTTPRequestHandler):
             # Return first line of error; do not leak parser internals
             first_line = str(exc).split("\n")[0]
             return f"topology_yaml contains invalid YAML syntax: {first_line}"
-        # PYVAL-02: component count limit — count after safe parse
-        import re
-        component_ids = re.findall(r"^\s+-\s+id:", topology_yaml, re.MULTILINE)
-        if len(component_ids) > self._MAX_YAML_COMPONENTS:
+        # PYVAL-02: component count limit — count from the PARSED structure, not a
+        # regex over the raw text. Flow style, quoted keys, anchors/aliases, and
+        # alternate indentation all evade a text regex, letting an attacker submit
+        # thousands of components past the cap.
+        components = parsed.get("components")
+        component_count = len(components) if isinstance(components, list) else 0
+        if component_count > self._MAX_YAML_COMPONENTS:
             return (
-                f"topology_yaml contains {len(component_ids)} components, "
+                f"topology_yaml contains {component_count} components, "
                 f"which exceeds the maximum of {self._MAX_YAML_COMPONENTS}. "
                 "Please split into smaller topologies."
             )
@@ -1557,21 +1593,35 @@ class handler(BaseHTTPRequestHandler):
                 )
                 return
 
+            # A non-string topology (dict/list/number) would otherwise reach
+            # _run_simulation and crash with a TypeError (500) when written to
+            # the temp file. Reject it as a client error instead.
+            if not isinstance(topology_yaml, str):
+                self._error(400, "'topology_yaml' must be a string")
+                return
+
             # PYVAL-01/02: validate input size before processing
-            if isinstance(topology_yaml, str):
-                validation_error = self._validate_topology_yaml(topology_yaml)
-                if validation_error:
-                    self._error(413, validation_error)
-                    return
+            validation_error = self._validate_topology_yaml(topology_yaml)
+            if validation_error:
+                self._error(413, validation_error)
+                return
 
             result = _run_simulation(topology_yaml)
 
             project_id = data.get("project_id")
             if project_id:
-                _save_run_to_supabase(
+                save = _save_run_to_supabase(
                     {**result, "project_id": project_id, "result_data": result},
                     self._resolve_user_id(),
                 )
+                # Don't silently swallow a rejected persist: a missing project or
+                # a caller who is not a member of the project's team must surface
+                # as an error rather than a 200 implying the run was saved.
+                if not save.get("ok"):
+                    err = save.get("error", "")
+                    status = 403 if "forbidden" in err else 404 if "not found" in err else 502
+                    self._error(status, err or "Failed to save simulation run")
+                    return
 
             self._json(200, result)
 
@@ -1640,8 +1690,19 @@ class handler(BaseHTTPRequestHandler):
                 if not region:
                     self._error(400, "Missing 'region'")
                     return
-                if not data.get("role_arn") and not (data.get("access_key_id") and data.get("secret_access_key")):
-                    self._error(400, "Provide 'access_key_id' + 'secret_access_key', or 'role_arn'")
+                # Credential policy must match _run_aws_scan: long-lived access
+                # keys are rejected (use role_arn for cross-account, or the
+                # deployment's ambient IAM role for same-account). The old gate
+                # advertised access keys as valid only for _run_aws_scan to reject
+                # them later, and blocked ambient-IAM (no-credential) requests.
+                if data.get("access_key_id") or data.get("secret_access_key"):
+                    self._error(
+                        400,
+                        "Passing AWS access keys in the request body is not supported "
+                        "for security reasons. Use 'role_arn' for cross-account access, "
+                        "or attach an IAM role to the FaultRay deployment for "
+                        "same-account access.",
+                    )
                     return
                 self._json(200, _run_aws_scan(data))
 
@@ -1668,6 +1729,10 @@ class handler(BaseHTTPRequestHandler):
                         "or the contents of a .tfstate file.",
                     )
                     return
+                size_error = self._validate_parse_input_size(tfstate_json, "tfstate_json")
+                if size_error:
+                    self._error(413, size_error)
+                    return
                 self._json(200, _run_terraform_parse(tfstate_json))
 
             elif action == "kubernetes":
@@ -1678,6 +1743,10 @@ class handler(BaseHTTPRequestHandler):
                         "Missing 'manifests' in request body. "
                         "Provide Kubernetes YAML/JSON manifests or kubectl output.",
                     )
+                    return
+                size_error = self._validate_parse_input_size(manifests, "manifests")
+                if size_error:
+                    self._error(413, size_error)
                     return
                 self._json(200, _run_k8s_parse(manifests, data.get("namespace")))
 

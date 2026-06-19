@@ -65,11 +65,30 @@ export default function MemberDetailPage({
   const t = appDict.memberDetail[locale] ?? appDict.memberDetail.en;
   const [member, setMember] = useState<MemberWithSystems | null>(null);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState(false);
 
   useEffect(() => {
+    let cancelled = false;
+    // Reset to the skeleton while the new id loads so stale data isn't shown.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setLoading(true);
+    setMember(null);
+    setLoadError(false);
     fetchMemberById(id)
-      .then(setMember)
-      .finally(() => setLoading(false));
+      .then((d) => {
+        if (!cancelled) setMember(d);
+      })
+      .catch((e) => {
+        if (cancelled) return;
+        console.error("Failed to load member:", e);
+        setLoadError(true);
+      })
+      .finally(() => {
+        if (!cancelled) setLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
   }, [id]);
 
   if (loading) {
@@ -80,6 +99,28 @@ export default function MemberDetailPage({
           <div className="h-32 bg-[#1e293b] rounded-2xl" />
           <div className="h-48 bg-[#1e293b] rounded-2xl" />
         </div>
+      </div>
+    );
+  }
+
+  if (loadError) {
+    return (
+      <div className="p-6 md:p-10 max-w-5xl mx-auto">
+        <Link
+          href="/people-risk/members"
+          className="text-sm text-[#94a3b8] hover:text-white flex items-center gap-1 mb-4"
+        >
+          <ArrowLeft size={14} />
+          {t.backToList}
+        </Link>
+        <Card className="p-8 text-center border border-red-500/20 bg-red-500/[0.03]">
+          <AlertTriangle size={20} className="mx-auto text-red-400 mb-2" />
+          <p className="text-red-400">
+            {locale === "ja"
+              ? "メンバー情報の読み込みに失敗しました。後ほど再度お試しください。"
+              : "Failed to load member. Please try again later."}
+          </p>
+        </Card>
       </div>
     );
   }
@@ -129,7 +170,7 @@ export default function MemberDetailPage({
                 : "bg-[#FFD700]/10 text-[#FFD700]"
             }`}
           >
-            {member.name.slice(0, 1)}
+            {member.name?.slice(0, 1) ?? "?"}
           </div>
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-2 flex-wrap">
@@ -166,7 +207,7 @@ export default function MemberDetailPage({
               </div>
             </div>
           </div>
-          <Link href={`/people-risk/blast-radius?member=${member.id}`}>
+          <Link href={`/people-risk/blast-radius?member=${encodeURIComponent(member.id)}`}>
             <Button variant="danger" size="sm">
               {t.departureSimulation}
             </Button>
@@ -240,9 +281,9 @@ export default function MemberDetailPage({
                   accessLabels[ms.access_level ?? ""]?.en ??
                   ms.access_level;
                 const typeLabel =
-                  systemTypeLabels[system.type ?? ""]?.[locale] ??
-                  systemTypeLabels[system.type ?? ""]?.en ??
-                  system.type;
+                  systemTypeLabels[system?.type ?? ""]?.[locale] ??
+                  systemTypeLabels[system?.type ?? ""]?.en ??
+                  system?.type;
                 return (
                   <tr
                     key={ms.id}
@@ -250,8 +291,8 @@ export default function MemberDetailPage({
                   >
                     <td className="py-3">
                       <div>
-                        <p className="text-white font-medium">{system.name}</p>
-                        {system.description && (
+                        <p className="text-white font-medium">{system?.name ?? (locale === "ja" ? "(不明なシステム)" : "(Unknown system)")}</p>
+                        {system?.description && (
                           <p className="text-xs text-[#64748b] mt-0.5 line-clamp-1">
                             {system.description}
                           </p>
@@ -276,7 +317,7 @@ export default function MemberDetailPage({
                         <span className="text-[#64748b]">-</span>
                       )}
                     </td>
-                    <td className="py-3">{statusBadge(system.status, t)}</td>
+                    <td className="py-3">{statusBadge(system?.status ?? null, t)}</td>
                     <td className="py-3">{riskBadge(ms.risk_level)}</td>
                   </tr>
                 );
@@ -314,7 +355,7 @@ export default function MemberDetailPage({
                 >
                   <p className="text-[#94a3b8]">
                     <span className="text-white font-medium">
-                      {ms.systems.name}:
+                      {ms.systems?.name ?? (locale === "ja" ? "(不明なシステム)" : "(Unknown system)")}:
                     </span>{" "}
                     {ms.notes}
                   </p>

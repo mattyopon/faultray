@@ -57,9 +57,26 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "webhookUrl must be an https Slack incoming webhook URL" }, { status: 400 });
   }
 
+  // Escape Slack mrkdwn metacharacters and cap length so user-controlled fields
+  // cannot inject links (`<http://evil|click>`), control tokens, or oversized
+  // content into the rendered alert.
+  const escapeMrkdwn = (value: string, maxLen = 500): string =>
+    value
+      .slice(0, maxLen)
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;");
+
+  const safeSource =
+    typeof source === "string" ? escapeMrkdwn(source, 100) : "";
+  const safeTopRecommendation =
+    typeof topRecommendation === "string"
+      ? escapeMrkdwn(topRecommendation, 500)
+      : "";
+
   const scoreEmoji = score >= 90 ? ":white_check_mark:" : score >= 70 ? ":warning:" : ":red_circle:";
   const criticalText = criticalCount > 0 ? `:rotating_light: *${criticalCount} CRITICAL* issue${criticalCount !== 1 ? "s" : ""}` : ":white_check_mark: No critical issues";
-  const sourceText = source ? ` (${source})` : "";
+  const sourceText = safeSource ? ` (${safeSource})` : "";
 
   const payload = {
     text: "FaultRay Simulation Complete",
@@ -85,13 +102,13 @@ export async function POST(request: Request) {
           },
         ],
       },
-      ...(topRecommendation
+      ...(safeTopRecommendation
         ? [
             {
               type: "section",
               text: {
                 type: "mrkdwn",
-                text: `:bulb: *Top Recommendation:* ${topRecommendation}`,
+                text: `:bulb: *Top Recommendation:* ${safeTopRecommendation}`,
               },
             },
           ]
@@ -110,11 +127,18 @@ export async function POST(request: Request) {
     ],
   };
 
+  // Bound the outbound call: a slow/stalled Slack endpoint would otherwise hold
+  // this request handler (and its socket) open until the platform-level timeout,
+  // which can exhaust resources under load. This is the only outbound call and
+  // is user-triggerable.
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 5000);
   try {
     const res = await fetch(webhookUrl, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(payload),
+      signal: controller.signal,
     });
 
     if (!res.ok) {
@@ -127,7 +151,16 @@ export async function POST(request: Request) {
 
     return NextResponse.json({ ok: true });
   } catch (err) {
+    if (err instanceof Error && err.name === "AbortError") {
+      console.error("[notify/slack] Webhook request timed out");
+      return NextResponse.json(
+        { error: "Slack webhook timed out" },
+        { status: 504 }
+      );
+    }
     console.error("[notify/slack] Error reaching webhook:", err instanceof Error ? err.message : err);
     return NextResponse.json({ error: "Failed to reach Slack webhook" }, { status: 502 });
+  } finally {
+    clearTimeout(timeout);
   }
 }

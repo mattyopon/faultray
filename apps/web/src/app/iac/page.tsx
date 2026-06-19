@@ -332,7 +332,10 @@ export default function IaCPage() {
   }
 
   function handleCopy() {
-    navigator.clipboard.writeText(currentCode).catch(() => {});
+    // navigator.clipboard is undefined in insecure contexts (HTTP) / unsupported
+    // browsers; accessing .writeText on it throws synchronously, which the
+    // trailing .catch() would NOT handle. Guard with optional chaining.
+    navigator.clipboard?.writeText(currentCode).catch(() => {});
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
   }
@@ -344,8 +347,13 @@ export default function IaCPage() {
     const a = document.createElement("a");
     a.href = url;
     a.download = `faultray-phase${activePhase}-remediation.${ext}`;
+    // Firefox requires the anchor to be in the DOM for a synthetic click to
+    // trigger the download; and revoking the object URL on the same tick can
+    // cancel the download in some browsers — defer revocation.
+    document.body.appendChild(a);
     a.click();
-    URL.revokeObjectURL(url);
+    a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
   }
 
   const totalScore = PHASES.reduce((acc, p) => acc + parseFloat(p.scoreGain), 0);
@@ -449,8 +457,11 @@ export default function IaCPage() {
                         const a = document.createElement("a");
                         a.href = url;
                         a.download = `faultray-phase${p.phase}-remediation.tf`;
+                        // Append for Firefox; defer revoke so the download isn't cancelled.
+                        document.body.appendChild(a);
                         a.click();
-                        URL.revokeObjectURL(url);
+                        a.remove();
+                        setTimeout(() => URL.revokeObjectURL(url), 1000);
                       }}
                       className="h-7 text-xs border-[var(--border-color)] text-[var(--text-secondary)] hover:text-white"
                     >

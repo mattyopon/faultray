@@ -187,8 +187,13 @@ function layoutNodes(nodes: GraphNode[], edges: GraphEdge[], canvasWidth: number
     inDeg[n.id] = 0;
   }
   for (const e of edges) {
-    if (adj[e.source]) adj[e.source].push(e.target);
-    if (inDeg[e.target] !== undefined) inDeg[e.target]++;
+    // Only count an edge when BOTH endpoints exist. Incrementing in-degree for a
+    // target whose source is missing would leave that target permanently above
+    // zero in-degree, wrongly forcing it into layer 0.
+    if (adj[e.source] && inDeg[e.target] !== undefined) {
+      adj[e.source].push(e.target);
+      inDeg[e.target]++;
+    }
   }
 
   // Topological sort with BFS for layer assignment
@@ -237,8 +242,11 @@ function layoutNodes(nodes: GraphNode[], edges: GraphEdge[], canvasWidth: number
   const PAD_TOP = 60;
   const PAD_LEFT = 40;
 
-  // Compute total width needed
-  const maxLayerWidth = Math.max(...layers.map(l => l.length * (NODE_W + NODE_GAP) - NODE_GAP));
+  // Compute total width needed. Guard the empty-graph case: Math.max() with no
+  // args returns -Infinity, which would corrupt the SVG viewBox.
+  const maxLayerWidth = layers.length
+    ? Math.max(...layers.map(l => l.length * (NODE_W + NODE_GAP) - NODE_GAP))
+    : 0;
   const effectiveWidth = Math.max(canvasWidth - PAD_LEFT * 2, maxLayerWidth);
 
   const positions: Record<string, { x: number; y: number }> = {};
@@ -296,51 +304,78 @@ export default function TopologyPage() {
   const [simTimestamp, setSimTimestamp] = useState<string | null>(null);
   const t = appDict.topology[locale] ?? appDict.topology.en;
 
-  const loadData = useCallback(async () => {
+  const loadData = useCallback(async (isActive: () => boolean) => {
     setLoading(true);
+
+    // Resolve a pristine base graph (fresh API result if valid, else demo data).
+    // The simulation transform is always derived from this stable base so that
+    // repeated Refresh clicks never re-apply the multiplier to already-adjusted
+    // risk values.
+    let base: GraphData = DEMO_DATA;
     try {
       const result = await api.getGraphData();
-      // Validate shape before casting to GraphData
       if (result && Array.isArray(result.nodes) && Array.isArray(result.edges)) {
-        setData(result as unknown as GraphData);
+        base = result as unknown as GraphData;
       }
     } catch {
-      // Use demo data
+      // Fall back to demo data.
     }
 
-    // Apply simulation results from localStorage if available
+    if (!isActive()) return;
+
+    // Apply simulation results from localStorage if available, validating shape.
+    let displayData = base;
+    let nextSimScore: number | null = null;
+    let nextSimTimestamp: string | null = null;
     try {
       const saved = localStorage.getItem("faultray_last_simulation");
       if (saved) {
         const sim = JSON.parse(saved);
-        if (sim.overall_score !== undefined) {
-          setData((prev) => ({
-            ...prev,
-            nodes: prev.nodes.map((node) => {
-              const isCritical = (sim.critical_failures || []).some(
-                (f: { scenario: string }) => f.scenario.toLowerCase().includes(node.name.toLowerCase().split(" ")[0])
+        if (sim && typeof sim === "object" && Number.isFinite(sim.overall_score)) {
+          const overallScore: number = sim.overall_score;
+          const criticalFailures: { scenario?: unknown }[] = Array.isArray(sim.critical_failures)
+            ? sim.critical_failures
+            : [];
+          const scoreRatio = (100 - overallScore) / 100;
+          displayData = {
+            ...base,
+            nodes: base.nodes.map((node) => {
+              const firstWord = node.name.toLowerCase().split(" ")[0];
+              const isCritical = criticalFailures.some(
+                (f) => typeof f?.scenario === "string" && f.scenario.toLowerCase().includes(firstWord),
               );
               if (isCritical) {
                 return { ...node, risk: Math.max(node.risk, 75) };
               }
-              const scoreRatio = (100 - sim.overall_score) / 100;
               return { ...node, risk: Math.round(node.risk * (1 + scoreRatio * 0.3)) };
             }),
-          }));
-          setSimScore(sim.overall_score);
-          setSimTimestamp(sim.timestamp || null);
+          };
+          nextSimScore = overallScore;
+          nextSimTimestamp =
+            typeof sim.timestamp === "string" && !Number.isNaN(Date.parse(sim.timestamp))
+              ? sim.timestamp
+              : null;
         }
       }
     } catch {
-      // localStorage not available
+      // localStorage not available / malformed — fall back to the base graph.
     }
 
+    if (!isActive()) return;
+    setData(displayData);
+    setSimScore(nextSimScore);
+    setSimTimestamp(nextSimTimestamp);
     setLoading(false);
   }, []);
 
   useEffect(() => {
+    let active = true;
+    const isActive = () => active;
     // eslint-disable-next-line react-hooks/set-state-in-effect
-    loadData();
+    loadData(isActive);
+    return () => {
+      active = false;
+    };
   }, [loadData]);
 
   // Responsive width
@@ -364,7 +399,15 @@ export default function TopologyPage() {
 
   const nodeMap = Object.fromEntries(data.nodes.map((n) => [n.id, n]));
   const selected = selectedNode ? nodeMap[selectedNode] : null;
-  const selectedRisk = selectedNode ? DEMO_RISK[selectedNode] : null;
+  // Prefer rich demo risk detail when available; otherwise synthesize a minimal
+  // NodeRiskData from the selected node so API-loaded nodes still show a panel
+  // with their actual (possibly simulation-adjusted) risk score.
+  const selectedRisk: NodeRiskData | null = selectedNode
+    ? DEMO_RISK[selectedNode] ??
+      (selected
+        ? { risk_score: selected.risk ?? 0, failure_scenarios: [], suggestions: [] }
+        : null)
+    : null;
 
   // Connected edges for highlighting
   const connectedEdges = useMemo(() => {
@@ -403,7 +446,7 @@ export default function TopologyPage() {
           </h1>
           <p className="text-[var(--text-secondary)] text-sm">{t.subtitle}</p>
         </div>
-        <Button variant="secondary" size="sm" onClick={loadData} disabled={loading}>
+        <Button variant="secondary" size="sm" onClick={() => loadData(() => true)} disabled={loading}>
           <RefreshCw size={14} className={loading ? "animate-spin" : ""} />
           {t.refresh}
         </Button>
@@ -611,8 +654,9 @@ export default function TopologyPage() {
               {data.nodes.map((node) => {
                 const pos = positions[node.id];
                 if (!pos) return null;
-                const risk = DEMO_RISK[node.id];
-                const score = risk?.risk_score ?? 0;
+                // Prefer the node's own (possibly simulation-adjusted / API-loaded)
+                // risk; fall back to the demo risk map only when absent.
+                const score = node.risk ?? DEMO_RISK[node.id]?.risk_score ?? 0;
                 const svc = getServiceColor(node.type);
                 const isSelected = selectedNode === node.id;
                 const isHovered = hoveredNode === node.id;

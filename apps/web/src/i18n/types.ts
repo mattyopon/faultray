@@ -6,18 +6,11 @@
  * sweep.
  */
 
-export type Locale = "en" | "ja" | "de" | "fr" | "es" | "zh" | "ko" | "pt";
-
-export const LOCALES: readonly Locale[] = [
-  "en",
-  "ja",
-  "de",
-  "fr",
-  "es",
-  "zh",
-  "ko",
-  "pt",
-];
+// Single source of truth for locales lives in ./config. Re-export it here so
+// there is only one Locale union / locale list — a second, independently
+// ordered copy previously lived here and could silently diverge from config
+// (and from the dictionaries map) when locales were added or removed.
+export { locales as LOCALES, type Locale } from "./config";
 
 /** Section-level dictionary — string keys only at the leaf. */
 export type SectionDict = Readonly<

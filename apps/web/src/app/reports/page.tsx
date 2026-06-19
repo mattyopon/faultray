@@ -81,6 +81,30 @@ const _JA_DORA_PILLARS: Record<string, string> = {
   "Pillar V": "Pillar V: 情報共有",
 };
 
+// Translate the actual availability bottleneck rather than hardcoding the
+// software-layer label, which corrupted reports whose bottleneck was hardware /
+// theoretical / another layer.
+const JA_BOTTLENECK: Record<string, string> = {
+  "Software layer": "ソフトウェア層",
+  "Hardware layer": "ハードウェア層",
+  "Theoretical limit": "理論限界",
+};
+function jaBottleneck(value: string): string {
+  return JA_BOTTLENECK[value] ?? value;
+}
+
+// Translate the report risk level with a fallback to the original value so an
+// unrecognized level (e.g. "Critical") is not silently downgraded to "低".
+const JA_RISK_LEVEL: Record<string, string> = {
+  Low: "低",
+  Medium: "中",
+  High: "高",
+  Critical: "重大",
+};
+function jaRiskLevel(value: string): string {
+  return JA_RISK_LEVEL[value] ?? value;
+}
+
 function severityBadge(sev: string) {
   switch (sev) {
     case "CRITICAL": return "red" as const;
@@ -112,7 +136,6 @@ export default function ReportsPage() {
 
   // Sync reportLang with app locale on first load (reports only support en/ja output)
   useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect
     setReportLang(locale === "ja" ? "ja" : "en");
   }, [locale]);
 
@@ -148,6 +171,10 @@ export default function ReportsPage() {
         process.env.NEXT_PUBLIC_API_URL ||
         "";
       const res = await fetch(`${apiBase}/api/report-executive?format=html&lang=${reportLang}`);
+      // fetch only rejects on network failure; a 4xx/5xx still resolves. Without
+      // this check the server's error body (HTML/JSON) would be saved as the
+      // user's "report". Throw so the catch falls back to client-side generation.
+      if (!res.ok) throw new Error(`Report fetch failed: ${res.status}`);
       const html = await res.text();
       const blob = new Blob([html], { type: "text/html" });
       const url = URL.createObjectURL(blob);
@@ -359,7 +386,7 @@ export default function ReportsPage() {
               ))}
             </div>
             <p className="text-xs text-[var(--gold)] mt-3">
-              {t.bottleneck} {rl === "ja" ? "ソフトウェア層" : report.availability_breakdown.bottleneck}
+              {t.bottleneck} {rl === "ja" ? jaBottleneck(report.availability_breakdown.bottleneck) : report.availability_breakdown.bottleneck}
             </p>
           </Card>}
 
@@ -459,7 +486,7 @@ function generateJaReport(report: ExecutiveReport) {
     title: "FaultRay インフラレジリエンスレポート",
     executive_summary: {
       ...report.executive_summary,
-      risk_level: report.executive_summary.risk_level === "Medium" ? "中" : report.executive_summary.risk_level === "High" ? "高" : "低",
+      risk_level: jaRiskLevel(report.executive_summary.risk_level),
     },
     key_findings: report.key_findings.map((f) => {
       const ja = JA_FINDINGS[f.finding];
@@ -467,7 +494,7 @@ function generateJaReport(report: ExecutiveReport) {
     }),
     availability_breakdown: {
       ...report.availability_breakdown,
-      bottleneck: "ソフトウェア層",
+      bottleneck: jaBottleneck(report.availability_breakdown.bottleneck),
     },
     improvement_roadmap: report.improvement_roadmap.map((item) => {
       const ja = JA_ROADMAP[item.action];
@@ -476,24 +503,44 @@ function generateJaReport(report: ExecutiveReport) {
   };
 }
 
+// Escape HTML metacharacters so API-sourced report fields cannot inject markup
+// or script into the generated, downloadable .html artifact (stored XSS when the
+// file is opened). Applied to every dynamic value interpolated into the template.
+function escapeHtml(value: unknown): string {
+  return String(value ?? "")
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
+}
+
+// Format a possibly-missing/malformed generated_at without emitting the literal
+// "Invalid Date" into the report (#10).
+function formatGeneratedAt(raw: string | undefined, lang: "en" | "ja"): string {
+  const d = new Date(raw ?? "");
+  if (isNaN(d.getTime())) return "—";
+  return d.toLocaleString(lang === "ja" ? "ja-JP" : "en-US");
+}
+
 // Generate HTML report for download
 function generateHtmlReport(report: ExecutiveReport, lang: "en" | "ja") {
   const isJa = lang === "ja";
-  const title = isJa ? "FaultRay インフラレジリエンスレポート" : report.title;
+  const title = escapeHtml(isJa ? "FaultRay インフラレジリエンスレポート" : report.title);
 
   const findingsHtml = report.key_findings.map((f) => {
     const ja = JA_FINDINGS[f.finding];
     const finding = isJa && ja ? ja.finding : f.finding;
     const impact = isJa && ja ? ja.impact : f.impact;
     const rec = isJa && ja ? ja.recommendation : f.recommendation;
-    return `<tr><td>${f.severity}</td><td>${finding}</td><td>${impact}</td><td>${rec}</td></tr>`;
+    return `<tr><td>${escapeHtml(f.severity)}</td><td>${escapeHtml(finding)}</td><td>${escapeHtml(impact)}</td><td>${escapeHtml(rec)}</td></tr>`;
   }).join("\n");
 
   const roadmapHtml = report.improvement_roadmap.map((item) => {
     const ja = JA_ROADMAP[item.action];
     const action = isJa && ja ? ja.action : item.action;
     const effort = isJa && ja ? ja.effort : item.effort;
-    return `<tr><td>${item.priority}</td><td>${action}</td><td>${effort}</td><td>${item.impact}</td><td>${item.timeline}</td></tr>`;
+    return `<tr><td>${escapeHtml(item.priority)}</td><td>${escapeHtml(action)}</td><td>${escapeHtml(effort)}</td><td>${escapeHtml(item.impact)}</td><td>${escapeHtml(item.timeline)}</td></tr>`;
   }).join("\n");
 
   return `<!DOCTYPE html>
@@ -509,12 +556,12 @@ th{color:#64748b;font-size:12px;text-transform:uppercase}.score{font-size:48px;f
 </head>
 <body>
 <h1>${title}</h1>
-<p style="color:#64748b">${isJa ? "生成日時" : "Generated"}: ${new Date(report.generated_at).toLocaleString(lang === "ja" ? "ja-JP" : "en-US")}</p>
+<p style="color:#64748b">${isJa ? "生成日時" : "Generated"}: ${escapeHtml(formatGeneratedAt(report.generated_at, lang))}</p>
 <div class="grid">
-<div class="stat"><div class="score">${report.executive_summary.overall_score}</div><div style="color:#64748b">${isJa ? "スコア" : "Score"}</div></div>
-<div class="stat"><div class="score" style="color:#10b981">${report.executive_summary.availability_estimate}</div><div style="color:#64748b">${isJa ? "可用性" : "Availability"}</div></div>
-<div class="stat"><div class="score" style="color:#e2e8f0;font-size:36px">${report.executive_summary.total_scenarios_tested.toLocaleString()}</div><div style="color:#64748b">${isJa ? "テストシナリオ" : "Scenarios"}</div></div>
-<div class="stat"><div class="score" style="color:#ef4444">${report.executive_summary.critical_issues}</div><div style="color:#64748b">${isJa ? "重大な問題" : "Critical Issues"}</div></div>
+<div class="stat"><div class="score">${escapeHtml(report.executive_summary.overall_score)}</div><div style="color:#64748b">${isJa ? "スコア" : "Score"}</div></div>
+<div class="stat"><div class="score" style="color:#10b981">${escapeHtml(report.executive_summary.availability_estimate)}</div><div style="color:#64748b">${isJa ? "可用性" : "Availability"}</div></div>
+<div class="stat"><div class="score" style="color:#e2e8f0;font-size:36px">${escapeHtml(report.executive_summary.total_scenarios_tested.toLocaleString())}</div><div style="color:#64748b">${isJa ? "テストシナリオ" : "Scenarios"}</div></div>
+<div class="stat"><div class="score" style="color:#ef4444">${escapeHtml(report.executive_summary.critical_issues)}</div><div style="color:#64748b">${isJa ? "重大な問題" : "Critical Issues"}</div></div>
 </div>
 <h2>${isJa ? "主要な検出事項" : "Key Findings"}</h2>
 <table><tr><th>${isJa ? "深刻度" : "Severity"}</th><th>${isJa ? "検出事項" : "Finding"}</th><th>${isJa ? "影響" : "Impact"}</th><th>${isJa ? "推奨対応" : "Recommendation"}</th></tr>${findingsHtml}</table>

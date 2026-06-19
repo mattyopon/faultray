@@ -85,35 +85,63 @@ export default function DashboardPage() {
   const showPaymentFailed = subscriptionStatus === "past_due";
 
   useEffect(() => {
+    // Locale-aware load-failure message (read at error time from the current
+    // locale closure). Effect intentionally runs once on mount.
+    const loadErrorMsg = () => (locale === "ja" ? "データの取得に失敗しました" : "Failed to load data");
     Promise.all([
       api.getRuns(undefined, 5).then((data) => setRuns(data.runs || [])).catch((err) => {
         console.error("[dashboard] Failed to fetch runs:", err);
-        setFetchError("データの取得に失敗しました");
+        setFetchError(loadErrorMsg());
         setRuns([]);
       }),
       api.getProjects().then((data) => setProjects(Array.isArray(data) ? data.slice(0, 3) : [])).catch((err) => {
         console.error("[dashboard] Failed to fetch projects:", err);
-        setFetchError("データの取得に失敗しました");
+        setFetchError(loadErrorMsg());
         setProjects([]);
       }),
     ]).finally(() => setLoading(false));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   useEffect(() => {
-    if (!user) return;
-    import("@/lib/supabase/client").then(({ createClient }) => {
-      const supabase = createClient();
-      supabase
-        .from("profiles")
-        .select("trial_ends_at, plan, subscription_status")
-        .eq("id", user.id)
-        .maybeSingle()
-        .then(({ data }) => {
-          if (data?.trial_ends_at) setTrialEndsAt(data.trial_ends_at as string);
-          if (data?.plan) setCurrentPlan(data.plan as string);
-          if (data?.subscription_status) setSubscriptionStatus(data.subscription_status as string);
-        });
-    }).catch(() => {/* Supabase not configured */});
+    if (!user) {
+      // Reset billing/trial state on sign-out / account switch so a previous
+      // account's plan or trial deadline never lingers in the UI.
+      setTrialEndsAt(null);
+      setCurrentPlan("");
+      setSubscriptionStatus("active");
+      return;
+    }
+    // `cancelled` guards against out-of-order resolutions when `user` changes
+    // rapidly (stale profile overwriting newer state) and setState-after-unmount.
+    let cancelled = false;
+    (async () => {
+      try {
+        const { createClient } = await import("@/lib/supabase/client");
+        const supabase = createClient();
+        const { data, error } = await supabase
+          .from("profiles")
+          .select("trial_ends_at, plan, subscription_status")
+          .eq("id", user.id)
+          .maybeSingle();
+        if (cancelled) return;
+        if (error) {
+          console.error("[dashboard] Profile fetch failed:", error);
+          return;
+        }
+        // Validate the trial date so a malformed value doesn't produce NaN
+        // days-left / comparisons downstream.
+        if (data?.trial_ends_at && !Number.isNaN(new Date(data.trial_ends_at as string).getTime())) {
+          setTrialEndsAt(data.trial_ends_at as string);
+        }
+        if (data?.plan) setCurrentPlan(data.plan as string);
+        if (data?.subscription_status) setSubscriptionStatus(data.subscription_status as string);
+      } catch (err) {
+        // Supabase not configured or query rejected (network/RLS).
+        if (!cancelled) console.error("[dashboard] Profile query rejected:", err);
+      }
+    })();
+    return () => { cancelled = true; };
   }, [user]);
 
   const latestRun = runs[0];
@@ -368,7 +396,7 @@ export default function DashboardPage() {
             </div>
             <p className="text-xs text-[var(--text-muted)] uppercase tracking-wider">{t.availability}</p>
           </div>
-          <p className="text-2xl font-bold font-mono">99.99%</p>
+          <p className="text-2xl font-bold font-mono">{isSampleMode || !latestRun?.availability_estimate ? "99.99%" : latestRun.availability_estimate}</p>
           <p className="text-xs text-[var(--text-muted)] mt-1">4.00 {t.nines}</p>
         </Card>
 
@@ -403,7 +431,7 @@ export default function DashboardPage() {
             <p className="text-xs text-[var(--text-muted)] uppercase tracking-wider">{t.criticalIssues}</p>
           </div>
           <p className="text-2xl font-bold font-mono">
-            {isSampleMode ? SAMPLE_CRITICAL : 3}
+            {isSampleMode ? SAMPLE_CRITICAL : (latestRun?.scenarios_failed ?? 0)}
           </p>
           <p className="text-xs text-red-400 mt-1">
             {isSampleMode
@@ -415,9 +443,14 @@ export default function DashboardPage() {
 
       {/* CHURN-03 / KPI-02: Score Improvement Trend — value visualization */}
       {runs.length >= 2 && (() => {
+        // Guard against runs whose score is null/undefined at runtime (in-progress
+        // or unscored runs) — getRuns does not validate per-field, so an unguarded
+        // .toFixed()/height calc would throw and crash the dashboard.
+        const safeScore = (run: SimulationRun) =>
+          typeof run.overall_score === "number" ? run.overall_score : 0;
         const recent = runs.slice(0, 5).reverse();
-        const first = recent[0].overall_score;
-        const last = recent[recent.length - 1].overall_score;
+        const first = safeScore(recent[0]);
+        const last = safeScore(recent[recent.length - 1]);
         const delta = last - first;
         const improved = delta > 0;
         return (
@@ -439,16 +472,17 @@ export default function DashboardPage() {
             </div>
             <div className="flex items-end gap-2 h-16">
               {recent.map((run, i) => {
-                const h = Math.round((run.overall_score / 100) * 64);
+                const s = safeScore(run);
+                const h = Math.round((s / 100) * 64);
                 const isLast = i === recent.length - 1;
                 return (
                   <div key={run.id} className="flex-1 flex flex-col items-center gap-1">
                     <div
                       className={`w-full rounded-t-md transition-all ${isLast ? "bg-[var(--gold)]" : "bg-[var(--border-color)]"}`}
                       style={{ height: h }}
-                      title={`${run.overall_score.toFixed(1)}`}
+                      title={`${s.toFixed(1)}`}
                     />
-                    <span className="text-[10px] text-[var(--text-muted)] font-mono">{run.overall_score.toFixed(0)}</span>
+                    <span className="text-[10px] text-[var(--text-muted)] font-mono">{s.toFixed(0)}</span>
                   </div>
                 );
               })}
@@ -571,7 +605,7 @@ export default function DashboardPage() {
                       {new Date(run.created_at).toLocaleDateString()}
                     </td>
                     <td className="py-3 px-2 font-mono font-semibold">
-                      {run.overall_score.toFixed(1)}
+                      {typeof run.overall_score === "number" ? run.overall_score.toFixed(1) : "—"}
                     </td>
                     <td className="py-3 px-2 text-[var(--text-secondary)]">{run.availability_estimate}</td>
                     <td className="py-3 px-2 text-[var(--text-secondary)]">

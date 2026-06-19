@@ -4,7 +4,7 @@ import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { api, type ProjectWithRuns } from "@/lib/api";
 import { useLocale } from "@/lib/useLocale";
 import { appDict } from "@/i18n/app-dict";
@@ -150,18 +150,34 @@ export default function ProjectDetailPage() {
   const params = useParams();
   const projectId = params?.id as string;
   const [project, setProject] = useState<ProjectWithRuns | null>(null);
-  const [loading, setLoading] = useState(true);
+  // Initialize loading from whether we actually have an id to fetch, so the
+  // missing-id case never leaves the page stuck on the spinner (and we avoid
+  // synchronous setState inside the effect body).
+  const [loading, setLoading] = useState(!!projectId);
   const locale = useLocale();
   const t = appDict.projects[locale] ?? appDict.projects.en;
   const router = useRouter();
 
+  // Reset during render when the projectId changes so navigating between
+  // projects shows the loader instead of the previously-loaded project's data.
+  // (React's recommended "adjust state during render" pattern — avoids a
+  // synchronous setState inside the effect body and the extra paint it causes.)
+  const prevProjectIdRef = useRef<string | undefined>(projectId);
+  if (prevProjectIdRef.current !== projectId) {
+    prevProjectIdRef.current = projectId;
+    setProject(null);
+    setLoading(!!projectId);
+  }
+
   useEffect(() => {
     if (!projectId) return;
+    let ignore = false;
     api
       .getProject(projectId)
-      .then((data) => setProject(data))
-      .catch(() => setProject(null))
-      .finally(() => setLoading(false));
+      .then((data) => { if (!ignore) setProject(data); })
+      .catch(() => { if (!ignore) setProject(null); })
+      .finally(() => { if (!ignore) setLoading(false); });
+    return () => { ignore = true; };
   }, [projectId]);
 
   const handleExport = () => {
@@ -170,9 +186,11 @@ export default function ProjectDetailPage() {
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
-    a.download = `${project.name.replace(/\s+/g, "-").toLowerCase()}-export.json`;
+    const safeName = (project.name ?? "project").replace(/\s+/g, "-").toLowerCase();
+    a.download = `${safeName}-export.json`;
     a.click();
-    URL.revokeObjectURL(url);
+    // Defer revocation so browsers (notably WebKit) can start the download first.
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
   };
 
   if (loading) {

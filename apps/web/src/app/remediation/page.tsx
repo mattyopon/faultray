@@ -84,13 +84,22 @@ interface IntegrationSettings {
 }
 
 function loadIntegrationSettings(): IntegrationSettings {
+  const defaults: IntegrationSettings = { jiraDomain: "", backlogSpace: "", slackWebhook: "" };
   try {
     const raw = localStorage.getItem(INTEGRATION_STORAGE_KEY);
-    if (raw) return JSON.parse(raw) as IntegrationSettings;
+    if (raw) {
+      const parsed = JSON.parse(raw) as Partial<IntegrationSettings>;
+      // Coerce each field to a string so downstream string ops (e.g. startsWith) are safe.
+      return {
+        jiraDomain: typeof parsed?.jiraDomain === "string" ? parsed.jiraDomain : "",
+        backlogSpace: typeof parsed?.backlogSpace === "string" ? parsed.backlogSpace : "",
+        slackWebhook: typeof parsed?.slackWebhook === "string" ? parsed.slackWebhook : "",
+      };
+    }
   } catch {
     // ignore
   }
-  return { jiraDomain: "", backlogSpace: "", slackWebhook: "" };
+  return defaults;
 }
 
 /* ------------------------------------------------------------------ */
@@ -252,9 +261,11 @@ function buildRemediationData(sim: SimulationResult): RemediationData {
     const effortWeeks = effortMap[sug.effort] ?? 2;
     const costMap: Record<string, number> = { Low: 5000, Medium: 12000, High: 20000 };
     const costEur = costMap[sug.effort] ?? 10000;
-    // Use score_gain directly if available (new API), fallback to parsing impact string
-    const scoreImpact = (sug as Record<string, unknown>).score_gain
-      ? Number((sug as Record<string, unknown>).score_gain)
+    // Use score_gain directly if available (new API), fallback to parsing impact string.
+    // Use explicit presence check so a valid score_gain of 0 is not treated as missing.
+    const rawGain = (sug as Record<string, unknown>).score_gain;
+    const scoreImpact = rawGain != null && Number.isFinite(Number(rawGain))
+      ? Number(rawGain)
       : (() => { const m = sug.impact.match(/([\d.]+)/); return m ? parseFloat(m[1]) * 5 : 3; })();
     actions.push({
       id: id++,
@@ -465,32 +476,44 @@ function priorityColor(p: string): "red" | "yellow" | "default" | "green" {
 /*  PDF / HTML export                                                   */
 /* ------------------------------------------------------------------ */
 
+// Escape user/simulation-derived strings before interpolating into the HTML
+// report (opened via a same-origin Blob URL), preventing stored-XSS.
+function escapeHtml(s: unknown): string {
+  return String(s)
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
+}
+
 function generateHtmlReport(data: RemediationData, t: Record<string, string>, locale: string): string {
   const projected = calcProjectedScore(data);
   const projectedDora = calcProjectedDora(data);
   const annualCost = calcAnnualDowntimeCost(data.score);
   const projectedCost = calcAnnualDowntimeCost(projected);
   const roi = calcRoi(data);
+  const h = escapeHtml;
 
   const rows = data.actions
     .map(
       (a) =>
         `<tr>
           <td>${a.id}</td>
-          <td>${a.title[locale] ?? a.title.en}</td>
-          <td>${t[a.priority] ?? a.priority}</td>
-          <td>${a.effortWeeks} ${a.effortWeeks > 1 ? t.weeks : t.week}</td>
-          <td>${formatEur(a.costEur)}</td>
+          <td>${h(a.title[locale] ?? a.title.en)}</td>
+          <td>${h(t[a.priority] ?? a.priority)}</td>
+          <td>${a.effortWeeks} ${h(a.effortWeeks > 1 ? t.weeks : t.week)}</td>
+          <td>${h(formatEur(a.costEur))}</td>
           <td>+${a.scoreImpact}</td>
         </tr>`
     )
     .join("\n");
 
   return `<!DOCTYPE html>
-<html lang="${locale}">
+<html lang="${h(locale)}">
 <head>
 <meta charset="UTF-8">
-<title>${t.title} - FaultRay</title>
+<title>${h(t.title)} - FaultRay</title>
 <style>
   body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 900px; margin: 0 auto; padding: 40px 20px; color: #1a1a2e; }
   h1 { color: #0a0e1a; border-bottom: 3px solid #FFD700; padding-bottom: 12px; }
@@ -509,40 +532,40 @@ function generateHtmlReport(data: RemediationData, t: Record<string, string>, lo
 </style>
 </head>
 <body>
-<h1>${t.title}</h1>
-<p style="color:#64748b">${t.subtitle}</p>
+<h1>${h(t.title)}</h1>
+<p style="color:#64748b">${h(t.subtitle)}</p>
 
-<h2>${t.executiveSummary}</h2>
+<h2>${h(t.executiveSummary)}</h2>
 <div class="summary-grid">
-  <div class="summary-card"><div class="label">${t.currentScore}</div><div class="value">${data.score} / 100</div></div>
-  <div class="summary-card"><div class="label">${t.doraCompliance}</div><div class="value">${data.doraCompliance}%</div></div>
-  <div class="summary-card"><div class="label">${t.estimatedAnnualDowntimeCost}</div><div class="value">${formatEur(annualCost)}</div></div>
-  <div class="summary-card"><div class="label">${t.projectedScore}</div><div class="value" style="color:#10b981">${projected} / 100</div></div>
-  <div class="summary-card"><div class="label">${t.roiPayback}</div><div class="value">${roi} ${t.months}</div></div>
+  <div class="summary-card"><div class="label">${h(t.currentScore)}</div><div class="value">${data.score} / 100</div></div>
+  <div class="summary-card"><div class="label">${h(t.doraCompliance)}</div><div class="value">${data.doraCompliance}%</div></div>
+  <div class="summary-card"><div class="label">${h(t.estimatedAnnualDowntimeCost)}</div><div class="value">${h(formatEur(annualCost))}</div></div>
+  <div class="summary-card"><div class="label">${h(t.projectedScore)}</div><div class="value" style="color:#10b981">${projected} / 100</div></div>
+  <div class="summary-card"><div class="label">${h(t.roiPayback)}</div><div class="value">${roi} ${h(t.months)}</div></div>
 </div>
 
-<h2>${t.prioritizedActions}</h2>
+<h2>${h(t.prioritizedActions)}</h2>
 <table>
-  <thead><tr><th>#</th><th>${t.action}</th><th>${t.priority}</th><th>${t.effort}</th><th>${t.cost}</th><th>${t.expectedEffect}</th></tr></thead>
+  <thead><tr><th>#</th><th>${h(t.action)}</th><th>${h(t.priority)}</th><th>${h(t.effort)}</th><th>${h(t.cost)}</th><th>${h(t.expectedEffect)}</th></tr></thead>
   <tbody>${rows}</tbody>
 </table>
 
-<h2>${t.beforeAfter}</h2>
+<h2>${h(t.beforeAfter)}</h2>
 <div class="before-after">
   <div class="ba-col">
-    <strong>${t.before}</strong><br/>
-    ${t.score}: ${data.score}<br/>
-    ${t.availability}: ${data.availability}<br/>
-    ${t.doraComplianceShort}: ${data.doraCompliance}%<br/>
-    ${t.annualCost}: ${formatEur(annualCost)}
+    <strong>${h(t.before)}</strong><br/>
+    ${h(t.score)}: ${data.score}<br/>
+    ${h(t.availability)}: ${h(data.availability)}<br/>
+    ${h(t.doraComplianceShort)}: ${data.doraCompliance}%<br/>
+    ${h(t.annualCost)}: ${h(formatEur(annualCost))}
   </div>
   <div class="ba-arrow">\u2192</div>
   <div class="ba-col">
-    <strong>${t.after}</strong><br/>
-    ${t.score}: ${projected}<br/>
-    ${t.availability}: ${calcProjectedAvailability(data)}<br/>
-    ${t.doraComplianceShort}: ${projectedDora}%<br/>
-    ${t.annualCost}: ${formatEur(projectedCost)}
+    <strong>${h(t.after)}</strong><br/>
+    ${h(t.score)}: ${projected}<br/>
+    ${h(t.availability)}: ${h(calcProjectedAvailability(data))}<br/>
+    ${h(t.doraComplianceShort)}: ${projectedDora}%<br/>
+    ${h(t.annualCost)}: ${h(formatEur(projectedCost))}
   </div>
 </div>
 
@@ -583,7 +606,9 @@ function generateExcelXml(
   const projectedCost = calcAnnualDowntimeCost(projected);
   const roi = calcRoi(data);
   const totalCost = data.actions.reduce((s, a) => s + a.costEur, 0);
-  const maxWeek = Math.max(...data.actions.map((a) => a.startWeek + a.effortWeeks));
+  const maxWeek = data.actions.length
+    ? Math.max(...data.actions.map((a) => a.startWeek + a.effortWeeks))
+    : 0;
 
   const statusLabel = (s: TaskStatus): string => {
     const map: Record<TaskStatus, string> = {
@@ -760,7 +785,8 @@ function buildGoogleCalendarUrl(
 ): string {
   const { start, end } = calcActionDates(action);
   const title = `${t.calendarEventPrefix} ${action.title[locale] ?? action.title.en}`;
-  const details = `${t.calendarPriority}: ${t[action.priority] ?? action.priority}\\n${t.calendarCost}: ${formatEur(action.costEur)}\\n${t.calendarExpectedEffect}: +${action.scoreImpact}`;
+  // Use real newlines; URLSearchParams encodes them correctly (%0A).
+  const details = `${t.calendarPriority}: ${t[action.priority] ?? action.priority}\n${t.calendarCost}: ${formatEur(action.costEur)}\n${t.calendarExpectedEffect}: +${action.scoreImpact}`;
   const params = new URLSearchParams({
     action: "TEMPLATE",
     text: title,
@@ -768,6 +794,15 @@ function buildGoogleCalendarUrl(
     details,
   });
   return `https://calendar.google.com/calendar/render?${params.toString()}`;
+}
+
+// Escape TEXT values per RFC 5545 (backslash, semicolon, comma, newlines).
+function escapeIcs(s: string): string {
+  return String(s)
+    .replace(/\\/g, "\\\\")
+    .replace(/;/g, "\\;")
+    .replace(/,/g, "\\,")
+    .replace(/\r\n|\r|\n/g, "\\n");
 }
 
 function generateIcsFile(
@@ -779,22 +814,27 @@ function generateIcsFile(
     .map((action) => {
       const { start, end } = calcActionDates(action);
       const title = `${t.calendarEventPrefix} ${action.title[locale] ?? action.title.en}`;
-      const description = `${t.calendarPriority}: ${t[action.priority] ?? action.priority}\\n${t.calendarCost}: ${formatEur(action.costEur)}\\n${t.calendarExpectedEffect}: +${action.scoreImpact}`;
-      return `BEGIN:VEVENT
-DTSTART:${formatDateForIcs(start)}
-DTEND:${formatDateForIcs(end)}
-SUMMARY:${title}
-DESCRIPTION:${description}
-STATUS:CONFIRMED
-END:VEVENT`;
+      // Real newlines between fields; escapeIcs converts them to the RFC \n form.
+      const description = `${t.calendarPriority}: ${t[action.priority] ?? action.priority}\n${t.calendarCost}: ${formatEur(action.costEur)}\n${t.calendarExpectedEffect}: +${action.scoreImpact}`;
+      return [
+        "BEGIN:VEVENT",
+        `DTSTART:${formatDateForIcs(start)}`,
+        `DTEND:${formatDateForIcs(end)}`,
+        `SUMMARY:${escapeIcs(title)}`,
+        `DESCRIPTION:${escapeIcs(description)}`,
+        "STATUS:CONFIRMED",
+        "END:VEVENT",
+      ].join("\r\n");
     })
-    .join("\n");
+    .join("\r\n");
 
-  return `BEGIN:VCALENDAR
-VERSION:2.0
-PRODID:-//FaultRay//Remediation Plan//EN
-${events}
-END:VCALENDAR`;
+  return [
+    "BEGIN:VCALENDAR",
+    "VERSION:2.0",
+    "PRODID:-//FaultRay//Remediation Plan//EN",
+    events,
+    "END:VCALENDAR",
+  ].join("\r\n");
 }
 
 /* ------------------------------------------------------------------ */
@@ -899,7 +939,11 @@ function buildAllActionsCsv(
   locale: string,
   t: Record<string, string>,
 ): string {
-  const csvEscape = (s: string) => `"${s.replace(/"/g, '""')}"`;
+  // Quote-escape and neutralize spreadsheet formula injection (leading =,+,-,@,tab,CR).
+  const csvEscape = (s: string) => {
+    const safe = String(s).replace(/^([=+\-@\t\r])/, "'$1");
+    return `"${safe.replace(/"/g, '""')}"`;
+  };
   const header = ["#", t.action, t.priority, t.assignee, t.status ?? "Status", t.effort, t.cost, t.expectedEffect, t.deadline].map(csvEscape).join(",");
   const rows = actions.map((a) => {
     const ts = taskStates[a.id] ?? { assignee: "", status: "todo" as TaskStatus, comment: "", deadline: "" };
@@ -918,7 +962,7 @@ function buildAllActionsCsv(
       csvEscape(statusMap[ts.status] ?? ts.status),
       String(a.effortWeeks),
       String(a.costEur),
-      `+${a.scoreImpact}`,
+      csvEscape(`+${a.scoreImpact}`),
       csvEscape(ts.deadline || start.toISOString().split("T")[0]),
     ].join(",");
   });
@@ -1040,11 +1084,38 @@ export default function RemediationPage() {
   const [editingTaskId, setEditingTaskId] = useState<number | null>(null);
   const [editForm, setEditForm] = useState<TaskState>({ assignee: "", status: "todo", comment: "", deadline: "" });
   const [toast, setToast] = useState<string | null>(null);
+  const toastTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const showToast = useCallback((msg: string) => {
     setToast(msg);
-    setTimeout(() => setToast(null), 2500);
+    if (toastTimerRef.current) clearTimeout(toastTimerRef.current);
+    toastTimerRef.current = setTimeout(() => setToast(null), 2500);
   }, []);
+
+  useEffect(() => {
+    return () => {
+      if (toastTimerRef.current) clearTimeout(toastTimerRef.current);
+    };
+  }, []);
+
+  // Copy helper: only show success when the clipboard write actually resolves.
+  const copyToClipboard = useCallback(
+    (text: string) => {
+      const ok = tAny.copiedToClipboard ?? "Copied!";
+      const fail = locale === "ja" ? "コピーに失敗しました" : "Copy failed";
+      // navigator.clipboard is undefined in insecure contexts / older browsers.
+      // Feature-detect first so we never report success when no write happened.
+      if (!navigator.clipboard?.writeText) {
+        showToast(fail);
+        return;
+      }
+      navigator.clipboard
+        .writeText(text)
+        .then(() => showToast(ok))
+        .catch(() => showToast(fail));
+    },
+    [locale, tAny, showToast],
+  );
 
   useEffect(() => {
     if (loadedRef.current) return;
@@ -1079,14 +1150,30 @@ export default function RemediationPage() {
     const blob = new Blob([html], { type: "text/html;charset=utf-8" });
     const blobUrl = URL.createObjectURL(blob);
     const win = window.open(blobUrl, "_blank");
-    if (win) {
-      setTimeout(() => {
-        win.print();
-        URL.revokeObjectURL(blobUrl);
-      }, 800);
-    } else {
+    if (!win) {
       URL.revokeObjectURL(blobUrl);
+      return;
     }
+    // Print once the document has loaded; revoke after printing finishes so the
+    // print spooler still has access to the Blob URL.
+    let revoked = false;
+    // Schedule the safety-net revoke up front (outside the load listener) so a
+    // very fast load — or a load event we miss attaching to — can't leak the
+    // object URL. afterprint clears it once printing finishes.
+    const safetyTimer = setTimeout(() => {
+      revoked = true;
+      URL.revokeObjectURL(blobUrl);
+    }, 60000);
+    const revoke = () => {
+      if (revoked) return;
+      revoked = true;
+      clearTimeout(safetyTimer);
+      URL.revokeObjectURL(blobUrl);
+    };
+    win.addEventListener("load", () => {
+      win.addEventListener("afterprint", revoke);
+      win.print();
+    });
   }, [data, tAny, locale]);
 
   const handleDownloadExcel = useCallback(() => {
@@ -1174,10 +1261,9 @@ export default function RemediationPage() {
   const handleCopyForTool = useCallback(
     (action: ActionItem) => {
       const md = buildActionMarkdown(action, locale, tAny, taskStates[action.id]);
-      navigator.clipboard.writeText(md);
-      showToast(tAny.copiedToClipboard ?? "Copied!");
+      copyToClipboard(md);
     },
-    [locale, tAny, taskStates, showToast],
+    [locale, tAny, taskStates, copyToClipboard],
   );
 
   const handleDownloadAllCsv = useCallback(() => {
@@ -1189,16 +1275,14 @@ export default function RemediationPage() {
   const handleCopyAllMarkdown = useCallback(() => {
     if (!data) return;
     const md = buildAllActionsMarkdown(data.actions, taskStates, locale, tAny);
-    navigator.clipboard.writeText(md);
-    showToast(tAny.copiedToClipboard ?? "Copied!");
-  }, [data, taskStates, locale, tAny, showToast]);
+    copyToClipboard(md);
+  }, [data, taskStates, locale, tAny, copyToClipboard]);
 
   /* ---- Share handlers ---- */
 
   const handleCopyLink = useCallback(() => {
-    navigator.clipboard.writeText(window.location.href);
-    showToast(tAny.copiedToClipboard ?? "Copied!");
-  }, [showToast, tAny]);
+    copyToClipboard(window.location.href);
+  }, [copyToClipboard]);
 
   const handleShareEmail = useCallback(
     (text: string, subject?: string) => {
@@ -1245,10 +1329,9 @@ export default function RemediationPage() {
 
   const handleCopyText = useCallback(
     (text: string) => {
-      navigator.clipboard.writeText(text);
-      showToast(tAny.copiedToClipboard ?? "Copied!");
+      copyToClipboard(text);
     },
-    [showToast, tAny],
+    [copyToClipboard],
   );
 
   const buildTaskExportItems = useCallback(
@@ -1311,9 +1394,15 @@ export default function RemediationPage() {
   const projectedCost = calcAnnualDowntimeCost(projected);
   const roi = calcRoi(data);
   const totalActionCost = data.actions.reduce((s, a) => s + a.costEur, 0);
-  const maxWeek = Math.max(...data.actions.map((a) => a.startWeek + a.effortWeeks));
+  const maxWeek = data.actions.length
+    ? Math.max(...data.actions.map((a) => a.startWeek + a.effortWeeks))
+    : 0;
   const scoreLabel = data.score >= 85 ? t.excellent : data.score >= 70 ? t.good : t.needsImprovement;
   const scoreColor = data.score >= 85 ? "text-emerald-400" : data.score >= 70 ? "text-yellow-400" : "text-red-400";
+  const scoreDeltaNum = Math.round((projected - data.score) * 10) / 10;
+  const scoreDeltaStr = scoreDeltaNum >= 0 ? `+${scoreDeltaNum}` : `${scoreDeltaNum}`;
+  const doraDeltaNum = projectedDora - data.doraCompliance;
+  const doraDeltaStr = doraDeltaNum >= 0 ? `+${doraDeltaNum}` : `${doraDeltaNum}`;
 
   const planShareText = buildPlanShareText(data, locale, tAny);
 
@@ -1573,7 +1662,7 @@ export default function RemediationPage() {
           <div className="space-y-3">
             <div className="flex justify-between">
               <span className="text-sm text-[var(--text-secondary)]">{t.score}</span>
-              <span className="font-mono font-bold text-emerald-400">{projected} <span className="text-xs text-emerald-500">(+{Math.round((projected - data.score) * 10) / 10})</span></span>
+              <span className="font-mono font-bold text-emerald-400">{projected} <span className="text-xs text-emerald-500">({scoreDeltaStr})</span></span>
             </div>
             <div className="flex justify-between">
               <span className="text-sm text-[var(--text-secondary)]">{t.availability}</span>
@@ -1581,7 +1670,7 @@ export default function RemediationPage() {
             </div>
             <div className="flex justify-between">
               <span className="text-sm text-[var(--text-secondary)]">{t.doraComplianceShort}</span>
-              <span className="font-mono font-bold text-emerald-400">{projectedDora}% <span className="text-xs text-emerald-500">(+{projectedDora - data.doraCompliance}%)</span></span>
+              <span className="font-mono font-bold text-emerald-400">{projectedDora}% <span className="text-xs text-emerald-500">({doraDeltaStr}%)</span></span>
             </div>
             <div className="flex justify-between">
               <span className="text-sm text-[var(--text-secondary)]">{t.annualCost}</span>

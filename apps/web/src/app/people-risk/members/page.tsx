@@ -26,13 +26,27 @@ export default function MembersPage() {
   const locale = useLocale();
   const [members, setMembers] = useState<MemberWithSystems[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState(false);
   const [search, setSearch] = useState("");
   const [filterStatus, setFilterStatus] = useState<"all" | "active" | "left">("all");
 
   useEffect(() => {
+    let cancelled = false;
     fetchMembers()
-      .then(setMembers)
-      .finally(() => setLoading(false));
+      .then((data) => {
+        if (!cancelled) setMembers(data);
+      })
+      .catch((e) => {
+        if (cancelled) return;
+        console.error("Failed to load members:", e);
+        setLoadError(true);
+      })
+      .finally(() => {
+        if (!cancelled) setLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   const filtered = members.filter((m) => {
@@ -40,7 +54,7 @@ export default function MembersPage() {
     if (search) {
       const q = search.toLowerCase();
       return (
-        m.name.toLowerCase().includes(q) ||
+        (m.name ?? "").toLowerCase().includes(q) ||
         (m.department ?? "").toLowerCase().includes(q) ||
         (m.role ?? "").toLowerCase().includes(q)
       );
@@ -82,6 +96,17 @@ export default function MembersPage() {
         </div>
       </div>
 
+      {loadError && (
+        <Card className="p-4 border border-red-500/20 bg-red-500/[0.03]">
+          <p className="text-sm text-red-400 flex items-center gap-2">
+            <AlertTriangle size={16} className="shrink-0" />
+            {locale === "ja"
+              ? "メンバーの読み込みに失敗しました。後ほど再度お試しください。"
+              : "Failed to load members. Please try again later."}
+          </p>
+        </Card>
+      )}
+
       {/* Filters */}
       <div className="flex flex-col sm:flex-row gap-3">
         <div className="relative flex-1 max-w-sm">
@@ -109,7 +134,11 @@ export default function MembersPage() {
                   : "border-[#1e293b] text-[#94a3b8] hover:border-[#475569]"
               }`}
             >
-              {s === "all" ? "全員" : s === "active" ? "在籍" : "退職済み"}
+              {s === "all"
+                ? locale === "ja" ? "全員" : "All"
+                : s === "active"
+                  ? locale === "ja" ? "在籍" : "Active"
+                  : locale === "ja" ? "退職済み" : "Former"}
             </button>
           ))}
         </div>
@@ -143,7 +172,7 @@ export default function MembersPage() {
                             : "bg-emerald-500/10 text-emerald-400"
                     }`}
                   >
-                    {member.name.slice(0, 1)}
+                    {member.name?.slice(0, 1) ?? "?"}
                   </div>
 
                   {/* Info */}
@@ -153,7 +182,7 @@ export default function MembersPage() {
                         {member.name}
                       </p>
                       {member.status === "left" && (
-                        <Badge variant="default">退職済み</Badge>
+                        <Badge variant="default">{locale === "ja" ? "退職済み" : "Former"}</Badge>
                       )}
                     </div>
                     <p className="text-xs text-[#64748b]">
@@ -169,7 +198,7 @@ export default function MembersPage() {
                     </div>
                     {criticalCount > 0 && (
                       <div className="text-center">
-                        <p className="text-[#64748b]">危険</p>
+                        <p className="text-[#64748b]">{locale === "ja" ? "危険" : "Critical"}</p>
                         <p className="text-red-400 font-semibold flex items-center gap-1">
                           <AlertTriangle size={12} />
                           {criticalCount}

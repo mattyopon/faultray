@@ -30,6 +30,8 @@ vi.mock("@/lib/supabase/client", () => {
 
 afterEach(() => {
   vi.clearAllMocks();
+  vi.unstubAllEnvs();
+  vi.resetModules();
 });
 
 describe("AuthProvider", () => {

@@ -47,6 +47,54 @@ const DEMO_DATA: AttackSurfaceData = {
   ],
 };
 
+function isExternalComponent(c: unknown): boolean {
+  if (typeof c !== "object" || c === null) return false;
+  const o = c as Record<string, unknown>;
+  return (
+    typeof o.id === "string" &&
+    typeof o.name === "string" &&
+    typeof o.exposure === "string" &&
+    Array.isArray(o.ports) &&
+    o.ports.every((p) => typeof p === "number") &&
+    Array.isArray(o.protocols) &&
+    o.protocols.every((p) => typeof p === "string") &&
+    Number.isFinite(o.risk_score) &&
+    Array.isArray(o.vulnerabilities) &&
+    o.vulnerabilities.every((v) => {
+      if (typeof v !== "object" || v === null) return false;
+      const vo = v as Record<string, unknown>;
+      return (
+        typeof vo.type === "string" &&
+        typeof vo.severity === "string" &&
+        typeof vo.mitigation === "string"
+      );
+    })
+  );
+}
+
+function isInternalComponent(c: unknown): boolean {
+  if (typeof c !== "object" || c === null) return false;
+  const o = c as Record<string, unknown>;
+  return typeof o.id === "string" && typeof o.name === "string" && Number.isFinite(o.risk_score);
+}
+
+function isAttackSurfaceData(d: unknown): d is AttackSurfaceData {
+  if (typeof d !== "object" || d === null) return false;
+  const obj = d as Record<string, unknown>;
+  const summary = obj.summary as Record<string, unknown> | undefined;
+  return (
+    typeof summary === "object" &&
+    summary !== null &&
+    typeof summary.risk_level === "string" &&
+    Array.isArray(obj.external_components) &&
+    obj.external_components.every(isExternalComponent) &&
+    Array.isArray(obj.internal_components) &&
+    obj.internal_components.every(isInternalComponent) &&
+    Array.isArray(obj.recommendations) &&
+    obj.recommendations.every((r) => typeof r === "string")
+  );
+}
+
 function severityColor(sev: string): string {
   switch (sev) {
     case "critical": return "#ef4444";
@@ -64,11 +112,24 @@ export default function SecurityPage() {
   const t = appDict.security[locale] ?? appDict.security.en;
 
   useEffect(() => {
+    let active = true;
     api
       .getAttackSurface()
-      .then((result) => setData(result))
-      .catch((err) => { console.error("[security] API error, using demo data:", err); setData(DEMO_DATA); })
-      .finally(() => setLoading(false));
+      .then((result) => {
+        if (!active) return;
+        setData(isAttackSurfaceData(result) ? result : DEMO_DATA);
+      })
+      .catch((err) => {
+        if (!active) return;
+        console.error("[security] API error, using demo data:", err);
+        setData(DEMO_DATA);
+      })
+      .finally(() => {
+        if (active) setLoading(false);
+      });
+    return () => {
+      active = false;
+    };
   }, []);
 
   return (
@@ -169,7 +230,7 @@ export default function SecurityPage() {
                 {t.internalComponents}
               </h3>
               <div className="space-y-2">
-                {data.internal_components.sort((a, b) => b.risk_score - a.risk_score).map((comp) => (
+                {[...data.internal_components].sort((a, b) => b.risk_score - a.risk_score).map((comp) => (
                   <div key={comp.id} className="flex items-center justify-between p-3 rounded-lg bg-white/[0.02]">
                     <span className="text-sm">{comp.name}</span>
                     <div className="flex items-center gap-2">

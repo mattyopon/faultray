@@ -131,8 +131,13 @@ function TaskCard({
 
   const handleDelete = async () => {
     setDeleting(true);
-    await onDelete(task.id);
-    setDeleting(false);
+    try {
+      await onDelete(task.id);
+    } finally {
+      // Always reset, otherwise a rejected onDelete (network error) would leave
+      // the delete button permanently disabled with a spinner.
+      setDeleting(false);
+    }
   };
 
   return (
@@ -257,8 +262,9 @@ export default function TeamsPage() {
     } finally {
       setOrgLoading(false);
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+    // locale is referenced for error messages; include it so a runtime locale
+    // change doesn't leave the callback emitting messages in the old language.
+  }, [locale]);
 
   const fetchTasks = useCallback(async () => {
     setTasksLoading(true);
@@ -267,7 +273,12 @@ export default function TeamsPage() {
       if (res.ok) {
         const data = (await res.json()) as { tasks: Task[] };
         setTasks(data.tasks ?? []);
+      } else {
+        console.error("[teams] failed to load tasks:", res.status);
       }
+    } catch (err) {
+      // Don't let a network error become an unhandled rejection in the effect.
+      console.error("[teams] failed to load tasks:", err);
     } finally {
       setTasksLoading(false);
     }
@@ -285,6 +296,7 @@ export default function TeamsPage() {
   const handleCreateOrg = async () => {
     if (!orgName.trim()) return;
     setOrgCreateLoading(true);
+    setOrgError(null);
     try {
       const res = await fetch("/api/org/create", {
         method: "POST",
@@ -295,7 +307,13 @@ export default function TeamsPage() {
         setOrgName("");
         setCreatingOrg(false);
         await fetchOrgAndMembers();
+      } else {
+        // Surface API errors instead of silently failing.
+        const data = (await res.json().catch(() => ({}))) as { error?: string };
+        setOrgError(data.error ?? (locale === "ja" ? "組織の作成に失敗しました" : "Failed to create organization"));
       }
+    } catch {
+      setOrgError(locale === "ja" ? "ネットワークエラー" : "Network error");
     } finally {
       setOrgCreateLoading(false);
     }
@@ -351,29 +369,51 @@ export default function TeamsPage() {
         setNewTaskDue("");
         setShowTaskForm(false);
         await fetchTasks();
+      } else {
+        console.error("[teams] task creation failed:", res.status);
       }
+    } catch (err) {
+      // Prevent a network error from becoming an unhandled rejection.
+      console.error("[teams] task creation failed:", err);
     } finally {
       setTaskCreateLoading(false);
     }
   };
 
   const handleStatusChange = async (taskId: string, status: string) => {
-    const res = await fetch(`/api/tasks/${taskId}`, {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ status }),
-    });
-    if (res.ok) {
-      setTasks((prev) =>
-        prev.map((t) => (t.id === taskId ? { ...t, status, updated_at: new Date().toISOString() } : t))
-      );
+    // onChange invokes this as a floating promise; catch so a network error
+    // does not become an unhandled rejection. The select is controlled by
+    // task.status, so on failure it snaps back to the persisted value.
+    try {
+      const res = await fetch(`/api/tasks/${taskId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ status }),
+      });
+      if (res.ok) {
+        setTasks((prev) =>
+          prev.map((t) => (t.id === taskId ? { ...t, status, updated_at: new Date().toISOString() } : t))
+        );
+      } else {
+        console.error("[teams] task status update failed:", res.status);
+      }
+    } catch (err) {
+      console.error("[teams] task status update failed:", err);
     }
   };
 
   const handleDeleteTask = async (taskId: string) => {
-    const res = await fetch(`/api/tasks/${taskId}`, { method: "DELETE" });
-    if (res.ok) {
-      setTasks((prev) => prev.filter((t) => t.id !== taskId));
+    // Surface non-ok / network failures instead of silently leaving the task.
+    // (TaskCard awaits this and resets its spinner in a finally block.)
+    try {
+      const res = await fetch(`/api/tasks/${taskId}`, { method: "DELETE" });
+      if (res.ok) {
+        setTasks((prev) => prev.filter((t) => t.id !== taskId));
+      } else {
+        console.error("[teams] task delete failed:", res.status);
+      }
+    } catch (err) {
+      console.error("[teams] task delete failed:", err);
     }
   };
 
@@ -395,7 +435,7 @@ export default function TeamsPage() {
     return (
       <div className="w-full px-6 py-20 flex items-center justify-center gap-3 text-[var(--text-muted)]">
         <Loader2 size={20} className="animate-spin" />
-        <span>組織を読み込み中...</span>
+        <span>{locale === "ja" ? "組織を読み込み中..." : "Loading organization..."}</span>
       </div>
     );
   }
@@ -710,7 +750,7 @@ export default function TeamsPage() {
         {tasksLoading ? (
           <div className="flex items-center justify-center py-12 gap-3 text-[var(--text-muted)]">
             <Loader2 size={18} className="animate-spin" />
-            <span>タスクを読み込み中...</span>
+            <span>{locale === "ja" ? "タスクを読み込み中..." : "Loading tasks..."}</span>
           </div>
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">

@@ -82,13 +82,25 @@ export default function BusFactorPage() {
     const controller = new AbortController();
     fetch("/api/proxy?path=/api/v1/bus-factor", { signal: controller.signal })
       .then((r) => r.json())
-      .then((d) => setData(d))
-      .catch((err) => { console.error("[bus-factor] API error, using demo data:", err); setData(DEMO_DATA); })
-      .finally(() => setLoading(false));
+      .then((d) => {
+        if (d && Array.isArray(d.people) && Array.isArray(d.unowned_components)) {
+          setData(d as BusFactorData);
+        } else {
+          setData(DEMO_DATA);
+        }
+      })
+      .catch((err) => {
+        if (err instanceof Error && err.name === "AbortError") return;
+        console.error("[bus-factor] API error, using demo data:", err);
+        setData(DEMO_DATA);
+      })
+      .finally(() => {
+        if (!controller.signal.aborted) setLoading(false);
+      });
     return () => controller.abort();
   }, []);
 
-  const sorted = [...data.people].sort((a, b) => b.risk_score - a.risk_score);
+  const sorted = [...(Array.isArray(data?.people) ? data.people : [])].sort((a, b) => b.risk_score - a.risk_score);
 
   return (
     <div className="w-full px-6 py-10">

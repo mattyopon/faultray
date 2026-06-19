@@ -45,7 +45,13 @@ export function GettingStarted({ hasRun, locale = "en" }: GettingStartedProps) {
       }
       const stored = localStorage.getItem(STORAGE_KEY_CHECKED);
       if (stored) {
-        setCheckedItems(JSON.parse(stored) as Record<number, boolean>);
+        // Validate shape: JSON.parse("null") / arrays / primitives are valid
+        // JSON but not indexable as Record<number, boolean>, and would make
+        // later checkedItems[i] accesses throw during render.
+        const parsed: unknown = JSON.parse(stored);
+        if (parsed && typeof parsed === "object" && !Array.isArray(parsed)) {
+          setCheckedItems(parsed as Record<number, boolean>);
+        }
       }
     } catch { /* ignore */ }
   }, []);

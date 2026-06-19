@@ -138,8 +138,15 @@ export async function GET(request: Request) {
 
         return NextResponse.redirect(`${origin}${redirectTo}`);
       }
-    } catch {
-      // Supabase not configured
+    } catch (err) {
+      // Was a silent catch-all ("Supabase not configured"), which also swallowed
+      // genuine runtime faults (DB/network/unexpected errors) with no trace,
+      // making production incidents impossible to debug. Log before falling
+      // through to the generic auth_failed redirect.
+      console.error(
+        "[auth/callback] Unexpected error during code exchange:",
+        err instanceof Error ? err.message : err
+      );
     }
   }
 

@@ -160,8 +160,11 @@ function latencyColor(ms: number): string {
 }
 
 function WaterfallBar({ span, totalMs }: { span: Span; totalMs: number }) {
-  const left = (span.startMs / totalMs) * 100;
-  const width = Math.max(0.5, (span.durationMs / totalMs) * 100);
+  // Guard against a zero (or negative) total duration, which would yield
+  // NaN/Infinity CSS dimensions and break the chart layout.
+  const safeTotal = totalMs > 0 ? totalMs : 0;
+  const left = safeTotal > 0 ? (span.startMs / safeTotal) * 100 : 0;
+  const width = safeTotal > 0 ? Math.max(0.5, (span.durationMs / safeTotal) * 100) : 100;
   const color = SERVICE_COLORS[span.service] ?? "#64748b";
 
   return (
@@ -198,7 +201,13 @@ export default function TracesPage() {
     if (filterService !== "all" && !trace.services.includes(filterService)) return false;
     if (filterStatus !== "all" && trace.status !== filterStatus) return false;
     if (filterLatency > 0 && trace.durationMs < filterLatency) return false;
-    if (searchQuery && !trace.name.toLowerCase().includes(searchQuery.toLowerCase())) return false;
+    if (searchQuery) {
+      const q = searchQuery.toLowerCase();
+      const matches =
+        trace.name.toLowerCase().includes(q) ||
+        trace.spans.some((s) => s.operation.toLowerCase().includes(q));
+      if (!matches) return false;
+    }
     return true;
   });
 

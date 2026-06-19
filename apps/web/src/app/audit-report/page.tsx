@@ -3,7 +3,7 @@
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import {
   FileSpreadsheet,
   Download,
@@ -154,21 +154,33 @@ function scoreColor(score: number): string {
 export default function AuditReportPage() {
   useLocale();
 
-  // eslint-disable-next-line react-hooks/purity
-  const reportSizeKb = useRef(Math.round(Math.random() * 200 + 150));
+  // Lazy state init so Math.random() runs once (on mount) instead of on every
+  // render — the previous useRef(Math.random()) evaluated its argument each
+  // render (a render-purity violation that the eslint-disable masked).
+  const [reportSizeKb] = useState(() => Math.round(Math.random() * 200 + 150));
   const [selectedFramework, setSelectedFramework] = useState<Framework>("SOC2");
   const [selectedFormat, setSelectedFormat] = useState<Format>("PDF");
   const [isGenerating, setIsGenerating] = useState(false);
   const [generated, setGenerated] = useState(false);
   const [expandedSection, setExpandedSection] = useState<string | null>("exec");
   const [expandedFinding, setExpandedFinding] = useState<string | null>(null);
+  const generateTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // Clear any pending generation timer on unmount so its callback cannot fire
+  // (and update state) after the component is gone.
+  useEffect(() => {
+    return () => {
+      if (generateTimerRef.current) clearTimeout(generateTimerRef.current);
+    };
+  }, []);
 
   const meta = REPORT_METADATA[selectedFramework];
 
   function handleGenerate() {
     setIsGenerating(true);
     setGenerated(false);
-    setTimeout(() => {
+    if (generateTimerRef.current) clearTimeout(generateTimerRef.current);
+    generateTimerRef.current = setTimeout(() => {
       setIsGenerating(false);
       setGenerated(true);
     }, 1800);
@@ -299,7 +311,7 @@ export default function AuditReportPage() {
             {generated && (
               <p className="text-xs text-emerald-400 text-center mt-2 flex items-center justify-center gap-1">
                 <CheckCircle2 size={11} />
-                Report ready · {reportSizeKb.current} KB
+                Report ready · {reportSizeKb} KB
               </p>
             )}
           </Card>

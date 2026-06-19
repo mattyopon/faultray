@@ -38,13 +38,19 @@ export default function GovernancePage() {
   useEffect(() => {
     const controller = new AbortController();
     fetch("/api/governance?action=ai-governance", { signal: controller.signal })
-      .then((r) => r.json())
-      .then((d) => {
-        if (d?.maturity_level) setMaturity(d.maturity_level);
-        if (d?.meti_score) setMetiScore(d.meti_score);
-        if (d?.iso_42001_score) setIsoScore(d.iso_42001_score);
+      .then((r) => {
+        if (!r.ok) throw new Error(`HTTP ${r.status}`);
+        return r.json();
       })
-      .catch((err) => console.error("[governance] fetch error:", err));
+      .then((d) => {
+        if (typeof d?.maturity_level === "number") setMaturity(d.maturity_level);
+        if (typeof d?.meti_score === "number") setMetiScore(d.meti_score);
+        if (typeof d?.iso_42001_score === "number") setIsoScore(d.iso_42001_score);
+      })
+      .catch((err) => {
+        if ((err as DOMException)?.name === "AbortError") return;
+        console.error("[governance] fetch error:", err);
+      });
     return () => controller.abort();
   }, []);
 

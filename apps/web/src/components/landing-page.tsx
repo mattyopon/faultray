@@ -438,6 +438,10 @@ export async function LandingPage({ lang }: { lang: Locale }) {
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6 ">
             {dict.features.cards.map((f: { title: string; desc: string }, i: number) => {
               const Icon = featureIcons[i];
+              // Guard against a locale providing more cards than icons: an
+              // undefined Icon would throw "Element type is invalid" and crash
+              // the whole server-rendered page.
+              if (!Icon) return null;
               // LP-DETAIL-03: First 3 features are highlighted as "Core" capabilities
               const isCore = i < 3;
               return (
@@ -493,6 +497,8 @@ export async function LandingPage({ lang }: { lang: Locale }) {
           <div className="grid md:grid-cols-2 gap-6 mb-12">
             {dict.agentResilience.cards.map((f: { title: string; desc: string }, i: number) => {
               const Icon = agentFeatureIcons[i];
+              // Guard against locale/icon-array desync crashing the SSR render.
+              if (!Icon) return null;
               return (
                 <div
                   key={f.title}
@@ -635,6 +641,9 @@ export async function LandingPage({ lang }: { lang: Locale }) {
             <div className=" flex flex-col layer-stack">
               {dict.nlayer.layers.map((layer: { label: string; desc: string }, i: number) => {
                 const style = layerStyles[i];
+                // Guard against a locale defining more layers than layerStyles:
+                // dereferencing style.* below would otherwise crash the render.
+                if (!style) return null;
                 return (
                   <div
                     key={layer.label}
@@ -980,6 +989,9 @@ export async function LandingPage({ lang }: { lang: Locale }) {
           <div className="grid md:grid-cols-3 gap-6 max-w-[1000px] mx-auto mb-20">
             {dict.pricing.plans.map((plan: { name: string; desc: string; cta: string }, i: number) => {
               const data = planData[i];
+              // Guard against a locale providing more plans than planData:
+              // dereferencing data.* below would otherwise crash the render.
+              if (!data) return null;
               return (
                 <div
                   key={plan.name}
@@ -1123,12 +1135,12 @@ export async function LandingPage({ lang }: { lang: Locale }) {
               <h4 className="text-xs font-bold text-[var(--text-secondary)] uppercase tracking-wider mb-4">{dict.footer.resources}</h4>
               <ul className="space-y-2.5">
                 <li>
-                  <Link href="https://github.com/mattyopon/faultray" target="_blank" className="text-sm text-[var(--text-muted)] hover:text-[var(--text-primary)] transition-colors">
+                  <Link href="https://github.com/mattyopon/faultray" target="_blank" rel="noopener noreferrer" className="text-sm text-[var(--text-muted)] hover:text-[var(--text-primary)] transition-colors">
                     GitHub
                   </Link>
                 </li>
                 <li>
-                  <Link href="https://pypi.org/project/faultray/" target="_blank" className="text-sm text-[var(--text-muted)] hover:text-[var(--text-primary)] transition-colors">
+                  <Link href="https://pypi.org/project/faultray/" target="_blank" rel="noopener noreferrer" className="text-sm text-[var(--text-muted)] hover:text-[var(--text-primary)] transition-colors">
                     PyPI
                   </Link>
                 </li>
@@ -1141,6 +1153,7 @@ export async function LandingPage({ lang }: { lang: Locale }) {
                   <Link
                     href="https://github.com/mattyopon/faultray/blob/main/docs/"
                     target="_blank"
+                    rel="noopener noreferrer"
                     className="text-sm text-[var(--text-muted)] hover:text-[var(--text-primary)] transition-colors"
                   >
                     Documentation
@@ -1169,6 +1182,7 @@ export async function LandingPage({ lang }: { lang: Locale }) {
                   <Link
                     href="https://github.com/mattyopon/faultray/blob/main/LICENSE"
                     target="_blank"
+                    rel="noopener noreferrer"
                     className="text-sm text-[var(--text-muted)] hover:text-[var(--text-primary)] transition-colors"
                     title="Apache License 2.0: open source under permissive license. Free for any use including commercial."
                   >

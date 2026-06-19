@@ -41,9 +41,11 @@ export default async function AdminPage() {
     redirect("/");
   }
 
-  // ADMIN_EMAILS is a server-side only env var (no NEXT_PUBLIC_ prefix)
+  // ADMIN_EMAILS is a server-side only env var (no NEXT_PUBLIC_ prefix).
+  // Require a confirmed email so an unverified address can't match the allowlist.
   const adminEmails = (process.env.ADMIN_EMAILS ?? "").split(",").map((e) => e.trim()).filter(Boolean);
-  const isAdmin = user.email != null && adminEmails.includes(user.email);
+  const isAdmin =
+    user.email != null && user.email_confirmed_at != null && adminEmails.includes(user.email);
 
   if (!isAdmin) {
     redirect("/");

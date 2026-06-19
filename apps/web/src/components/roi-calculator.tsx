@@ -39,7 +39,7 @@ export function RoiCalculator({ dict, lang }: RoiCalculatorProps) {
     const annualLoss = monthlyRevenue * (incidentHours / 720) * incidentCount * 12;
     // FaultRay効果 = 年間損失 × 0.7 (70%削減)
     const savings = annualLoss * 0.7;
-    // 年間コスト (Pro): ja = 45万円/年, others = $3,588/年
+    // 年間コスト (Pro 月払い): ja = 54万円/年 (¥45,000/月 × 12), others = $3,588/年 ($299/月 × 12)
     const annualCost = isJa ? 54 : 3.588; // 万円 or $K
     // ROI = (削減額 - 年間コスト) / 年間コスト × 100
     const roi = annualCost > 0 ? ((savings - annualCost) / annualCost) * 100 : 0;

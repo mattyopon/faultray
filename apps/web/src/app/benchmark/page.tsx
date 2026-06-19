@@ -2,11 +2,14 @@
 
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { api, type BenchmarkData } from "@/lib/api";
 import { Trophy, Loader2 } from "lucide-react";
 import { useLocale } from "@/lib/useLocale";
 import { appDict } from "@/i18n/app-dict";
+
+// Clamp untrusted API numbers to a safe [0,100] CSS-percentage range (guards NaN/out-of-range).
+const clampPct = (n: number) => Math.min(100, Math.max(0, Number(n) || 0));
 
 const INDUSTRIES = [
   { id: "fintech", name: "FinTech", emoji: "bank" },
@@ -41,17 +44,21 @@ export default function BenchmarkPage() {
   const [loading, setLoading] = useState(false);
   const locale = useLocale();
   const t = appDict.benchmark[locale] ?? appDict.benchmark.en;
+  const requestRef = useRef(0);
 
   const loadBenchmark = async (industry: string) => {
+    const requestId = ++requestRef.current;
     setSelectedIndustry(industry);
     setLoading(true);
     try {
       const result = await api.getBenchmark(industry);
+      if (requestRef.current !== requestId) return;
       setData(result);
     } catch {
+      if (requestRef.current !== requestId) return;
       setData({ ...DEMO_DATA, industry_id: industry, industry: INDUSTRIES.find((i) => i.id === industry)?.name || industry });
     } finally {
-      setLoading(false);
+      if (requestRef.current === requestId) setLoading(false);
     }
   };
 
@@ -117,27 +124,27 @@ export default function BenchmarkPage() {
               {/* Range bar */}
               <div
                 className="absolute top-0 bottom-0 bg-gradient-to-r from-red-500/20 via-yellow-500/20 to-emerald-500/20"
-                style={{ left: `${(data.industry_bottom_10 / 100) * 100}%`, right: `${100 - (data.industry_top_10 / 100) * 100}%` }}
+                style={{ left: `${clampPct(data.industry_bottom_10)}%`, right: `${100 - clampPct(data.industry_top_10)}%` }}
               />
               {/* Industry average marker */}
               <div
                 className="absolute top-0 bottom-0 w-0.5 bg-[#64748b]"
-                style={{ left: `${data.industry_average}%` }}
+                style={{ left: `${clampPct(data.industry_average)}%` }}
               />
               <div
                 className="absolute top-1 text-xs text-[var(--text-muted)]"
-                style={{ left: `${data.industry_average}%`, transform: "translateX(-50%)" }}
+                style={{ left: `${clampPct(data.industry_average)}%`, transform: "translateX(-50%)" }}
               >
                 Avg
               </div>
               {/* Your position */}
               <div
                 className="absolute top-1/2 -translate-y-1/2 w-4 h-4 rounded-full bg-[var(--gold)] border-2 border-[var(--gold)] shadow-[0_0_10px_rgba(255,215,0,0.5)]"
-                style={{ left: `${data.your_score}%`, transform: "translateX(-50%) translateY(-50%)" }}
+                style={{ left: `${clampPct(data.your_score)}%`, transform: "translateX(-50%) translateY(-50%)" }}
               />
               <div
                 className="absolute bottom-1 text-xs font-bold text-[var(--gold)]"
-                style={{ left: `${data.your_score}%`, transform: "translateX(-50%)" }}
+                style={{ left: `${clampPct(data.your_score)}%`, transform: "translateX(-50%)" }}
               >
                 You
               </div>
@@ -168,20 +175,20 @@ export default function BenchmarkPage() {
                     {/* Industry avg */}
                     <div
                       className="absolute top-0 bottom-0 bg-[#64748b]/30 rounded-full"
-                      style={{ width: `${cat.industry_avg}%` }}
+                      style={{ width: `${clampPct(cat.industry_avg)}%` }}
                     />
                     {/* Your score */}
                     <div
                       className="absolute top-0 bottom-0 rounded-full"
                       style={{
-                        width: `${cat.your_score}%`,
+                        width: `${clampPct(cat.your_score)}%`,
                         backgroundColor: cat.your_score >= cat.industry_avg ? "#10b981" : "#f59e0b",
                       }}
                     />
                     {/* Top 10 marker */}
                     <div
                       className="absolute top-0 bottom-0 w-0.5 bg-emerald-400"
-                      style={{ left: `${cat.top_10}%` }}
+                      style={{ left: `${clampPct(cat.top_10)}%` }}
                     />
                   </div>
                 </div>

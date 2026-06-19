@@ -52,6 +52,11 @@ export async function PATCH(
       );
     }
   }
+  // title comes from untrusted JSON: a non-string value (e.g. {"title":123})
+  // would throw on .trim() below and surface as a 500. Reject with 400.
+  if (body.title !== undefined && typeof body.title !== "string") {
+    return NextResponse.json({ error: "title must be a string" }, { status: 400 });
+  }
 
   // タスクが自分の組織のものか確認。#122: real な query error と「行なし」を
   // 区別する。maybeSingle は 0 行で {data:null, error:null} を返すので、error は
@@ -70,19 +75,26 @@ export async function PATCH(
     return NextResponse.json({ error: "Task not found" }, { status: 404 });
   }
 
-  const { data: membership } = await supabase
+  // 認可 lookup は maybeSingle() で「行なし (= 非メンバー)」と「DB 障害」を区別する。
+  // .single() だと両者が同じ error になり、transient な DB 障害が 403 に化けて
+  // 監視・リトライを誤らせる。genuine error は 500 にする。
+  const { data: membership, error: membershipError } = await supabase
     .from("org_members")
     .select("id")
     .eq("org_id", existing.org_id)
     .eq("user_id", user.id)
     .eq("status", "active")
-    .single();
+    .maybeSingle();
 
-  const { data: orgOwner } = await supabase
+  const { data: orgOwner, error: orgOwnerError } = await supabase
     .from("organizations")
     .select("owner_id")
     .eq("id", existing.org_id)
-    .single();
+    .maybeSingle();
+
+  if (membershipError || orgOwnerError) {
+    return NextResponse.json({ error: "Failed to verify permissions" }, { status: 500 });
+  }
 
   if (!membership && orgOwner?.owner_id !== user.id) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
@@ -166,19 +178,25 @@ export async function DELETE(
     return NextResponse.json({ error: "Task not found" }, { status: 404 });
   }
 
-  const { data: membership } = await supabase
+  // 認可 lookup は maybeSingle() で「行なし (= 非メンバー)」と「DB 障害」を区別する
+  // (PATCH と同じ理由)。genuine error は 500 にする。
+  const { data: membership, error: membershipError } = await supabase
     .from("org_members")
     .select("id")
     .eq("org_id", existing.org_id)
     .eq("user_id", user.id)
     .eq("status", "active")
-    .single();
+    .maybeSingle();
 
-  const { data: orgOwner } = await supabase
+  const { data: orgOwner, error: orgOwnerError } = await supabase
     .from("organizations")
     .select("owner_id")
     .eq("id", existing.org_id)
-    .single();
+    .maybeSingle();
+
+  if (membershipError || orgOwnerError) {
+    return NextResponse.json({ error: "Failed to verify permissions" }, { status: 500 });
+  }
 
   if (!membership && orgOwner?.owner_id !== user.id) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });

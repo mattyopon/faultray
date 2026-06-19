@@ -44,14 +44,25 @@ function BlastRadiusContent() {
   );
 
   useEffect(() => {
+    let stale = false;
     fetchMembers()
       .then((data) => {
+        if (stale) return;
         setMembers(data);
         if (preselectedMember) {
           setSelectedId(preselectedMember);
         }
       })
-      .finally(() => setLoading(false));
+      .catch((e) => {
+        if (stale) return;
+        console.error("Failed to load members:", e);
+      })
+      .finally(() => {
+        if (!stale) setLoading(false);
+      });
+    return () => {
+      stale = true;
+    };
   }, [preselectedMember]);
 
   const selectedMember = members.find((m) => m.id === selectedId) ?? null;
@@ -235,10 +246,10 @@ function BlastRadiusContent() {
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2">
                         <p className="text-sm font-medium text-white">
-                          {system.name}
+                          {system?.name ?? (locale === "ja" ? "(不明なシステム)" : "(Unknown system)")}
                         </p>
                         <Badge variant="default" className="text-[10px]">
-                          {system.type?.toUpperCase()}
+                          {system?.type?.toUpperCase()}
                         </Badge>
                       </div>
                       <p className="text-xs text-[#64748b] mt-0.5">
@@ -283,7 +294,7 @@ function BlastRadiusContent() {
                         {locale === "ja" ? (
                           <>
                             <span className="text-white font-medium">
-                              {ms.systems.name}
+                              {ms.systems?.name ?? "(不明なシステム)"}
                             </span>
                             のバックアップ管理者を設定してください
                           </>
@@ -291,7 +302,7 @@ function BlastRadiusContent() {
                           <>
                             Assign a backup administrator for{" "}
                             <span className="text-white font-medium">
-                              {ms.systems.name}
+                              {ms.systems?.name ?? "(Unknown system)"}
                             </span>
                           </>
                         )}

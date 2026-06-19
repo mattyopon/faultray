@@ -112,11 +112,30 @@ export default function LogsPage() {
 
   const filtered = useMemo(() => {
     void refreshKey; // force re-filter on manual refresh
+    // Parse advertised query syntax: level:<value> and service:<value> tokens,
+    // with any remaining words treated as a free-text substring match.
+    const tokens = searchQuery.trim().toLowerCase().split(/\s+/).filter(Boolean);
+    const levelTokens: string[] = [];
+    const serviceTokens: string[] = [];
+    const textTokens: string[] = [];
+    for (const tok of tokens) {
+      if (tok.startsWith("level:")) levelTokens.push(tok.slice("level:".length));
+      else if (tok.startsWith("service:")) serviceTokens.push(tok.slice("service:".length));
+      else textTokens.push(tok);
+    }
+    const freeText = textTokens.join(" ");
     return DEMO_LOGS.filter((log) => {
       if (filterLevel !== "all" && log.level !== filterLevel) return false;
       if (filterService !== "all" && log.service !== filterService) return false;
       if (showAnomaly && !log.anomaly) return false;
-      if (searchQuery && !log.message.toLowerCase().includes(searchQuery.toLowerCase()) && !log.service.toLowerCase().includes(searchQuery.toLowerCase())) return false;
+      if (levelTokens.length > 0 && !levelTokens.includes(log.level.toLowerCase())) return false;
+      if (serviceTokens.length > 0 && !serviceTokens.includes(log.service.toLowerCase())) return false;
+      if (
+        freeText &&
+        !log.message.toLowerCase().includes(freeText) &&
+        !log.service.toLowerCase().includes(freeText)
+      )
+        return false;
       return true;
     });
   }, [searchQuery, filterLevel, filterService, showAnomaly, refreshKey]);

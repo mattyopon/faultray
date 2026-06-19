@@ -37,6 +37,11 @@ const LOCALE_CURRENCY: Record<Locale, string> = {
   pt: "BRL",
 };
 
+// Currencies with no minor (sub) unit: never render fractional digits and
+// never divide by 100. Single source of truth shared by formatCurrency and
+// formatCurrencyFromCents so the two stay in sync.
+const ZERO_DECIMAL_CURRENCIES = new Set(["JPY", "KRW", "VND", "IDR"]);
+
 // ---------------------------------------------------------------------------
 // Date formatting
 // ---------------------------------------------------------------------------
@@ -117,7 +122,7 @@ export function formatCurrency(
     style: "currency",
     currency,
     minimumFractionDigits: 0,
-    maximumFractionDigits: currency === "JPY" || currency === "KRW" ? 0 : 2,
+    maximumFractionDigits: ZERO_DECIMAL_CURRENCIES.has(currency) ? 0 : 2,
   }).format(amount);
 }
 
@@ -131,9 +136,8 @@ export function formatCurrencyFromCents(
   currencyOverride?: string
 ): string {
   const currency = currencyOverride ?? LOCALE_CURRENCY[locale] ?? "USD";
-  // JPY and KRW have no sub-units — do not divide
-  const zeroDemicalCurrencies = ["JPY", "KRW", "VND", "IDR"];
-  const amount = zeroDemicalCurrencies.includes(currency) ? cents : cents / 100;
+  // Zero-decimal currencies have no sub-units — do not divide.
+  const amount = ZERO_DECIMAL_CURRENCIES.has(currency) ? cents : cents / 100;
   return formatCurrency(amount, locale, currency);
 }
 

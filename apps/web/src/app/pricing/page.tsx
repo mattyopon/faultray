@@ -95,6 +95,21 @@ const featureComparison = [
   { name: "Support", free: "Community", starter: "Email (48h)", pro: "Email (24h)", business: "Dedicated (1h)" },
 ];
 
+// Only allow navigation to https Stripe checkout/billing hosts.
+function isValidCheckoutUrl(url: string): boolean {
+  try {
+    const u = new URL(url);
+    if (u.protocol !== "https:") return false;
+    return (
+      u.hostname === "checkout.stripe.com" ||
+      u.hostname === "billing.stripe.com" ||
+      u.hostname.endsWith(".stripe.com")
+    );
+  } catch {
+    return false;
+  }
+}
+
 function CellValue({ value }: { value: string | boolean }) {
   if (value === true) return <Check size={18} className="text-emerald-400 mx-auto" />;
   if (value === false) return <Minus size={18} className="text-[var(--text-muted)] mx-auto" />;
@@ -112,15 +127,22 @@ export default function PricingPage() {
   const handleCheckout = async (plan: "pro" | "business") => {
     setLoadingPlan(plan);
     setCheckoutError(null);
+    const errMsg = isJa
+      ? "決済処理に失敗しました。再試行するか、サポートにお問い合わせください。"
+      : "Checkout failed. Please try again or contact support.";
     try {
       const interval = billing === "annual" ? "year" : "month";
       const { url } = await api.createCheckoutSession(plan, interval);
-      if (url) {
+      // Validate the checkout URL before navigating to avoid open-redirect /
+      // javascript: scheme injection if the response is ever tampered with.
+      if (url && isValidCheckoutUrl(url)) {
         window.location.href = url;
+      } else {
+        setCheckoutError({ plan, message: errMsg });
       }
     } catch {
       // Stripe not configured — show retry UI instead of silent redirect
-      setCheckoutError({ plan, message: "決済処理に失敗しました。再試行するか、サポートにお問い合わせください。" });
+      setCheckoutError({ plan, message: errMsg });
     } finally {
       setLoadingPlan(null);
     }
@@ -140,17 +162,17 @@ export default function PricingPage() {
                 disabled={loadingPlan !== null}
                 className="px-3 py-1.5 text-xs font-medium rounded bg-red-500/20 text-red-300 hover:bg-red-500/30 border border-red-500/30 transition-colors disabled:opacity-50"
               >
-                再試行
+                {isJa ? "再試行" : "Retry"}
               </button>
               <a
-                href="mailto:support@faultray.io?subject=決済エラー"
+                href={`mailto:support@faultray.io?subject=${encodeURIComponent(isJa ? "決済エラー" : "Checkout error")}`}
                 className="px-3 py-1.5 text-xs font-medium rounded bg-[var(--bg-tertiary)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] border border-[var(--border-color)] transition-colors"
               >
-                サポートに連絡
+                {isJa ? "サポートに連絡" : "Contact support"}
               </a>
             </div>
           </div>
-          <button onClick={() => setCheckoutError(null)} aria-label="閉じる" className="text-[var(--text-muted)] hover:text-[var(--text-primary)] text-sm leading-none">&times;</button>
+          <button onClick={() => setCheckoutError(null)} aria-label={isJa ? "閉じる" : "Close"} className="text-[var(--text-muted)] hover:text-[var(--text-primary)] text-sm leading-none">&times;</button>
         </div>
       )}
       <div className="text-center mb-10">

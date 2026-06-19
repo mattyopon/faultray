@@ -3,7 +3,7 @@
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { GitBranch, CheckCircle2, AlertTriangle, RefreshCw } from "lucide-react";
 import { useLocale } from "@/lib/useLocale";
 import { appDict } from "@/i18n/app-dict";
@@ -58,14 +58,20 @@ export default function DriftPage() {
   const locale = useLocale();
   const t = appDict.drift[locale] ?? appDict.drift.en;
   const [remediating, setRemediating] = useState<string | null>(null);
+  const remediateTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const activeDrifts = DRIFT_EVENTS.filter((d) => d.status === "active");
   const isDrifted = activeDrifts.length > 0;
 
   const handleRemediate = (id: string) => {
     setRemediating(id);
-    setTimeout(() => setRemediating(null), 2000);
+    if (remediateTimer.current) clearTimeout(remediateTimer.current);
+    remediateTimer.current = setTimeout(() => setRemediating(null), 2000);
   };
+
+  useEffect(() => () => {
+    if (remediateTimer.current) clearTimeout(remediateTimer.current);
+  }, []);
 
   return (
     <div className="w-full px-6 py-10">

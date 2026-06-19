@@ -26,12 +26,19 @@ Path routing uses the request path to determine which handler to call.
 from http.server import BaseHTTPRequestHandler
 import hmac
 import json
+import logging
 import os
 import re
 import urllib.parse
 import urllib.request
 from urllib.parse import urlparse, parse_qs
 from datetime import datetime, timezone, timedelta
+
+_logger = logging.getLogger("faultray.realtime")
+
+# Cap the request body so a spoofed/oversized Content-Length cannot exhaust
+# memory before validation runs.
+_MAX_BODY_BYTES = 1024 * 1024  # 1 MB
 
 
 # ---------------------------------------------------------------------------
@@ -40,7 +47,7 @@ from datetime import datetime, timezone, timedelta
 
 _SAFE_UUID_RE = re.compile(r"^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$", re.IGNORECASE)
 _SAFE_AGENT_ID_RE = re.compile(r"^[0-9a-zA-Z_\-]{1,64}$")
-_SAFE_SEVERITY_RE = re.compile(r"^(critical|high|medium|low|info)$", re.IGNORECASE)
+_SAFE_SEVERITY_RE = re.compile(r"^(critical|high|medium|low|warning|info)$", re.IGNORECASE)
 _SAFE_METRIC_NAME_RE = re.compile(r"^[0-9a-zA-Z_\-.]{1,64}$")
 _SAFE_POSITIVE_INT_RE = re.compile(r"^\d{1,6}$")
 
@@ -193,7 +200,10 @@ def _get_demo_alerts(severity_filter=None):
         },
     ]
     if severity_filter:
-        alerts = [a for a in alerts if a["severity"] == severity_filter]
+        # Demo data stores severities uppercase (CRITICAL/WARNING) while callers
+        # pass the raw query value (e.g. 'critical'); compare case-insensitively.
+        sev = str(severity_filter).upper()
+        alerts = [a for a in alerts if a["severity"].upper() == sev]
     return alerts
 
 
@@ -390,8 +400,11 @@ def _apm_agent_metrics(agent_id: str, query_params: dict):
     params = f"?agent_id=eq.{safe_agent_id}&order=collected_at.desc&limit={safe_limit}"
     if metric_name:
         safe_metric_name = _sanitize_metric_name(metric_name)
-        if safe_metric_name:
-            params += f"&metric_name=eq.{safe_metric_name}"
+        # Reject an invalid filter rather than silently dropping it and returning
+        # ALL metrics for the agent (over-disclosure of unrequested data).
+        if not safe_metric_name:
+            return 400, {"error": "Invalid metric_name format"}
+        params += f"&metric_name=eq.{safe_metric_name}"
     metrics = _apm_supabase_request("GET", "apm_metrics", params)
     if metrics is None:
         return 200, _get_demo_metrics(agent_id)
@@ -404,10 +417,13 @@ def _apm_list_alerts(query_params: dict):
         return 200, _get_demo_alerts(severity)
     params = "?order=fired_at.desc&limit=100"
     if severity:
-        # APIVULN-02 fix: validate severity before embedding in URL
+        # APIVULN-02 fix: validate severity before embedding in URL. Reject an
+        # invalid filter rather than silently dropping it and returning ALL
+        # alerts (over-disclosure of unrequested data).
         safe_severity = _sanitize_severity(severity)
-        if safe_severity:
-            params += f"&severity=eq.{safe_severity}"
+        if not safe_severity:
+            return 400, {"error": "Invalid severity filter"}
+        params += f"&severity=eq.{safe_severity}"
     alerts = _apm_supabase_request("GET", "apm_alerts", params)
     if alerts is None:
         return 200, _get_demo_alerts(severity)
@@ -463,10 +479,19 @@ def _apm_ingest_metrics(body: dict, headers) -> tuple:
 def _apm_register_agent(body: dict, headers) -> tuple:
     if not _validate_api_key(headers):
         return 401, {"error": "Invalid or missing X-API-Key"}
-    agent_id = body.get("agent_id", "").strip()
-    hostname = body.get("hostname", "").strip()
+    agent_id = body.get("agent_id", "")
+    hostname = body.get("hostname", "")
+    # A non-string value (number/object/null) would crash on .strip(); reject it.
+    if not isinstance(agent_id, str) or not isinstance(hostname, str):
+        return 400, {"error": "'agent_id' and 'hostname' must be strings"}
+    agent_id = agent_id.strip()
+    hostname = hostname.strip()
     if not agent_id or not hostname:
         return 400, {"error": "'agent_id' and 'hostname' are required"}
+    # Enforce the same agent_id format the read/heartbeat paths require, so a
+    # registration can't create a record those paths later reject (orphaned row).
+    if not _sanitize_agent_id(agent_id):
+        return 400, {"error": "Invalid agent_id format"}
     if not _apm_supabase_configured():
         return 200, {"ok": True, "agent_id": agent_id, "demo": True}
     record = {
@@ -495,6 +520,10 @@ def _apm_heartbeat(agent_id: str, body: dict, headers) -> tuple:
         return 400, {"error": "Invalid agent_id format"}
     patch = {"last_seen": _now_iso()}
     if "status" in body:
+        # Constrain to the known enum; aggregations (_apm_stats) assume a bounded
+        # vocabulary, and an arbitrary/oversized string would corrupt counts.
+        if body["status"] not in ("running", "degraded", "offline"):
+            return 400, {"error": "Invalid status"}
         patch["status"] = body["status"]
     for field in ("cpu_percent", "memory_percent", "disk_percent"):
         if field in body:
@@ -508,7 +537,15 @@ def _apm_purge(body: dict, headers) -> tuple:
         return 401, {"error": "Invalid or missing X-API-Key"}
     if not _apm_supabase_configured():
         return 200, {"ok": True, "demo": True}
-    days = int(body.get("older_than_days", 7))
+    # older_than_days is untrusted: a non-numeric string raises ValueError and a
+    # null/list/dict raises TypeError. Validate and bound it to a sane range.
+    raw_days = body.get("older_than_days", 7)
+    try:
+        days = int(raw_days)
+    except (TypeError, ValueError):
+        return 400, {"error": "'older_than_days' must be an integer"}
+    if days < 0 or days > 36500:
+        return 400, {"error": "'older_than_days' is out of range"}
     cutoff = (datetime.now(timezone.utc) - timedelta(days=days)).isoformat()
     _apm_supabase_request("DELETE", "apm_metrics", f"?collected_at=lt.{cutoff}")
     return 200, {"ok": True, "purged_before": cutoff}
@@ -715,7 +752,10 @@ def _proj_owned_by(safe_project_id: str, team_ids) -> bool:
 
 
 def _proj_create(body: dict, team_ids):
-    name = body.get("name", "").strip()
+    name = body.get("name", "")
+    if not isinstance(name, str):
+        return 400, {"error": "'name' must be a string"}
+    name = name.strip()
     if not name:
         return 400, {"error": "'name' is required"}
     if team_ids is None:  # demo mode
@@ -909,8 +949,9 @@ def _switch_plan(email: str, plan: str) -> dict:
         if result:
             return {"ok": True, "plan": result[0].get("plan", plan)}
         return {"error": "Profile not found"}
-    except Exception as e:
-        return {"error": str(e)}
+    except Exception:
+        _logger.exception("Plan switch failed")
+        return {"error": "Plan update failed"}
 
 
 # ===========================================================================
@@ -941,62 +982,64 @@ class handler(BaseHTTPRequestHandler):
                 # Default: health check
                 self._handle_health_get()
 
-        except Exception as e:
-            self._json(500, {"error": f"Realtime GET error: {e}"})
+        except Exception:
+            _logger.exception("Realtime GET failed")
+            self._json(500, {"error": "Internal server error"})
 
-    def do_POST(self):
+    def _read_json_body(self):
+        """Read and JSON-parse the request body with a size cap.
+
+        Returns (body, error). On error, the response has already been sent and
+        the caller must return. Caps Content-Length BEFORE reading so a spoofed/
+        oversized/negative length cannot exhaust memory or block on read-to-EOF.
+        """
         try:
             length = int(self.headers.get("Content-Length", 0))
-            raw = self.rfile.read(length)
-        except Exception:
-            raw = b""
+        except (TypeError, ValueError):
+            self._json(400, {"error": "Invalid Content-Length header"})
+            return None, True
+        if length < 0:
+            self._json(400, {"error": "Invalid Content-Length header"})
+            return None, True
+        if length > _MAX_BODY_BYTES:
+            self._json(413, {"error": "Request body too large"})
+            return None, True
+        try:
+            raw = self.rfile.read(length) if length else b""
+            return (json.loads(raw) if raw else {}), False
+        except (json.JSONDecodeError, ValueError):
+            self._json(400, {"error": "Invalid JSON"})
+            return None, True
+
+    def do_POST(self):
+        body, err = self._read_json_body()
+        if err:
+            return
 
         parsed = urlparse(self.path)
         path = parsed.path.rstrip("/")
 
-        if "/apm" in path:
-            try:
-                body = json.loads(raw) if raw else {}
-            except (json.JSONDecodeError, ValueError):
-                self._json(400, {"error": "Invalid JSON"})
-                return
-            self._handle_apm_post(path, body)
-        elif "/projects" in path:
-            try:
-                body = json.loads(raw) if raw else {}
-            except (json.JSONDecodeError, ValueError):
-                self._json(400, {"error": "Invalid JSON"})
-                return
-            self._handle_projects_post(body)
-        elif "/health" in path:
-            try:
-                body = json.loads(raw) if raw else {}
-            except (json.JSONDecodeError, ValueError):
-                self._json(400, {"error": "Invalid JSON"})
-                return
-            self._handle_health_post(body)
-        elif "/chat" in path:
-            try:
-                body = json.loads(raw) if raw else {}
-            except (json.JSONDecodeError, ValueError):
-                self._json(400, {"error": "Invalid JSON"})
-                return
-            self._handle_chat_post(body)
-        else:
-            # Default: chat
-            try:
-                body = json.loads(raw) if raw else {}
-            except (json.JSONDecodeError, ValueError):
-                self._json(400, {"error": "Invalid JSON"})
-                return
-            self._handle_chat_post(body)
+        # Wrap dispatch so any unhandled error (e.g. a network failure resolving
+        # the caller) returns a JSON 500 instead of aborting the connection.
+        try:
+            if "/apm" in path:
+                self._handle_apm_post(path, body)
+            elif "/projects" in path:
+                self._handle_projects_post(body)
+            elif "/health" in path:
+                self._handle_health_post(body)
+            elif "/chat" in path:
+                self._handle_chat_post(body)
+            else:
+                # Default: chat
+                self._handle_chat_post(body)
+        except Exception:
+            _logger.exception("Realtime POST failed")
+            self._json(500, {"error": "Internal server error"})
 
     def do_PATCH(self):
-        try:
-            length = int(self.headers.get("Content-Length", 0))
-            body = json.loads(self.rfile.read(length)) if length > 0 else {}
-        except (json.JSONDecodeError, ValueError):
-            self._json(400, {"error": "Invalid JSON"})
+        body, err = self._read_json_body()
+        if err:
             return
         try:
             team_ids, err = self._project_team_scope()
@@ -1125,7 +1168,9 @@ class handler(BaseHTTPRequestHandler):
 
     def _handle_chat_post(self, data: dict):
         message = data.get("message", "")
-        if not message:
+        # _generate_chat_response calls message.lower(); a non-string truthy value
+        # (number/object) would raise. Require a non-empty string.
+        if not isinstance(message, str) or not message.strip():
             self._json(400, {"error": {"message": "Missing 'message' in request body"}})
             return
         try:

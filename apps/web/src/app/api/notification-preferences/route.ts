@@ -77,11 +77,19 @@ export async function PATCH(request: Request) {
   const supabase = await createClient();
 
   // Merge with existing preferences
-  const { data: existing } = await supabase
+  const { data: existing, error: readError } = await supabase
     .from("profiles")
     .select("notification_preferences")
     .eq("id", user.id)
     .maybeSingle();
+
+  // A failed read must not be treated as "no existing preferences": merging into
+  // {} and writing back would silently drop every key the user already had set
+  // while still returning 200. Fail loudly instead.
+  if (readError) {
+    console.error("[notification-preferences] Read error:", readError.message);
+    return NextResponse.json({ error: "Failed to update preferences" }, { status: 500 });
+  }
 
   const merged = { ...(existing?.notification_preferences ?? {}), ...body };
 

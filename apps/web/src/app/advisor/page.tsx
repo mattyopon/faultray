@@ -17,6 +17,26 @@ interface Message {
   actions?: Array<{ label: string; href: string }>;
 }
 
+const MAX_MESSAGE_LENGTH = 500;
+
+// Only allow internal relative paths or explicit https URLs as suggested-action links.
+// This prevents model-controlled action hrefs from injecting javascript: or other unsafe schemes.
+function safeActionHref(href: unknown): string | null {
+  if (typeof href !== "string") return null;
+  const trimmed = href.trim();
+  if (!trimmed) return null;
+  // Internal absolute path (but not protocol-relative //host).
+  if (trimmed.startsWith("/") && !trimmed.startsWith("//")) return trimmed;
+  // Otherwise require an explicit https origin.
+  try {
+    const url = new URL(trimmed);
+    if (url.protocol === "https:") return url.href;
+  } catch {
+    return null;
+  }
+  return null;
+}
+
 const SUGGESTIONS = [
   "How can I improve my resilience score?",
   "What is FaultRay?",
@@ -106,8 +126,8 @@ export default function AdvisorPage() {
   }, [messages]);
 
   const sendMessage = async (text?: string) => {
-    const message = text || input;
-    if (!message.trim() || loading) return;
+    const message = (typeof text === "string" ? text : input).trim().slice(0, MAX_MESSAGE_LENGTH);
+    if (!message || loading) return;
 
     const userMsg: Message = { role: "user", content: message };
     setMessages((prev) => [...prev, userMsg]);
@@ -258,13 +278,17 @@ export default function AdvisorPage() {
                 <div className="text-sm whitespace-pre-wrap">{msg.content}</div>
                 {msg.actions && msg.actions.length > 0 && (
                   <div className="flex flex-wrap gap-2 mt-3 pt-3 border-t border-[var(--border-color)]">
-                    {msg.actions.map((action) => (
-                      <Link key={action.href} href={action.href}>
-                        <Button variant="secondary" size="sm">
-                          {action.label}
-                        </Button>
-                      </Link>
-                    ))}
+                    {msg.actions.map((action) => {
+                      const href = safeActionHref(action.href);
+                      if (!href) return null;
+                      return (
+                        <Link key={href} href={href}>
+                          <Button variant="secondary" size="sm">
+                            {action.label}
+                          </Button>
+                        </Link>
+                      );
+                    })}
                   </div>
                 )}
                 {msg.sources && msg.sources.length > 0 && (

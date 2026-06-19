@@ -21,8 +21,16 @@ Path routing uses the request path to determine which handler to call.
 from http.server import BaseHTTPRequestHandler
 import html
 import json
+import logging
+import math
 import os
 from urllib.parse import urlparse, parse_qs
+
+_logger = logging.getLogger("faultray.reports")
+
+# Cap the request body so a spoofed/oversized Content-Length cannot exhaust
+# memory before validation runs.
+_MAX_BODY_BYTES = 1024 * 1024  # 1 MB
 
 
 # ===========================================================================
@@ -523,12 +531,26 @@ class handler(BaseHTTPRequestHandler):
                 content_type, data = _dispatch_reports(action, params)
                 self._send_reports_response(content_type, data)
 
-        except Exception as e:
-            self._error(500, f"Reports GET error: {e}")
+        except Exception:
+            _logger.exception("Reports GET failed")
+            self._error(500, "Internal server error")
 
     def do_POST(self):
+        # Validate Content-Length and cap body size BEFORE reading into memory so
+        # a spoofed/negative/oversized length cannot exhaust memory or block on a
+        # read-until-EOF (negative length).
         try:
             content_length = int(self.headers.get("Content-Length", 0))
+        except (TypeError, ValueError):
+            self._error(400, "Invalid Content-Length header")
+            return
+        if content_length < 0:
+            self._error(400, "Invalid Content-Length header")
+            return
+        if content_length > _MAX_BODY_BYTES:
+            self._error(413, "Request body too large")
+            return
+        try:
             raw_body = self.rfile.read(content_length)
         except Exception:
             raw_body = b""
@@ -536,13 +558,19 @@ class handler(BaseHTTPRequestHandler):
         parsed = urlparse(self.path)
         path = parsed.path.rstrip("/")
 
-        if "/finance" in path:
-            self._handle_finance_post(raw_body)
-        elif "/billing" in path:
-            self._handle_billing_post(raw_body)
-        else:
-            # Default: reports / risk
-            self._handle_reports_post(raw_body)
+        # Wrap dispatch: unlike do_GET, an exception escaping here (e.g. a bad
+        # float cast) would otherwise abort the connection with no JSON error.
+        try:
+            if "/finance" in path:
+                self._handle_finance_post(raw_body)
+            elif "/billing" in path:
+                self._handle_billing_post(raw_body)
+            else:
+                # Default: reports / risk
+                self._handle_reports_post(raw_body)
+        except Exception:
+            _logger.exception("Reports POST failed")
+            self._error(500, "Internal server error")
 
     # -----------------------------------------------------------------------
     # Reports
@@ -553,6 +581,9 @@ class handler(BaseHTTPRequestHandler):
             body = json.loads(raw_body) if raw_body else {}
         except (json.JSONDecodeError, ValueError):
             self._error(400, "Invalid JSON in request body")
+            return
+        if not isinstance(body, dict):
+            self._error(400, "Request body must be a JSON object")
             return
         action = body.get("action", "")
         if not action:
@@ -597,15 +628,35 @@ class handler(BaseHTTPRequestHandler):
         except (json.JSONDecodeError, ValueError):
             self._error(400, "Invalid JSON")
             return
+        if not isinstance(data, dict):
+            self._error(400, "Request body must be a JSON object")
+            return
 
         action = data.get("action", "")
 
         if action == "cost":
             revenue = data.get("revenue_per_hour", 15000)
+            # Validate the untrusted cast: a non-numeric/null/list/object value
+            # raises TypeError/ValueError, and 'nan'/'inf' would flow through to
+            # produce non-JSON-serializable output.
+            try:
+                revenue = float(revenue)
+            except (TypeError, ValueError):
+                self._error(400, "'revenue_per_hour' must be a number")
+                return
+            if not math.isfinite(revenue):
+                self._error(400, "'revenue_per_hour' must be a finite number")
+                return
             industry = data.get("industry", "saas")
-            self._json(200, _analyze_cost(float(revenue), industry))
+            if not isinstance(industry, str):
+                self._error(400, "'industry' must be a string")
+                return
+            self._json(200, _analyze_cost(revenue, industry))
         elif action == "benchmark":
             industry = data.get("industry", "saas")
+            if not isinstance(industry, str):
+                self._error(400, "'industry' must be a string")
+                return
             self._json(200, BENCHMARKS.get(industry, BENCHMARKS["saas"]))
         else:
             self._error(400, "Missing or invalid 'action' field. Must be 'cost' or 'benchmark'.")

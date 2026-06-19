@@ -66,6 +66,24 @@ export async function POST(request: Request) {
   const { createClient: createAdminClient } = await import("@supabase/supabase-js");
   const admin = createAdminClient(supabaseUrl, serviceRoleKey);
 
+  // 3b. coupon.days を increment の前に検証する。null / NaN / 非数値文字列だと
+  //     `new Date(NaN).toISOString()` が RangeError を投げる。これは increment の
+  //     後ろ (line 103〜) で計算していたため、不正な days を持つ coupon では
+  //     current_uses だけ消費されて 500 になる "burn-without-credit" を招く。
+  //     検証を increment より前に置き、設定不備は use を消費する前に弾く。
+  const couponDays = Number(coupon.days);
+  if (!Number.isFinite(couponDays) || couponDays <= 0 || couponDays > 3650) {
+    console.error(
+      "[coupon/redeem] misconfigured coupon.days:",
+      coupon.id,
+      coupon.days
+    );
+    return NextResponse.json(
+      { error: "Coupon is misconfigured. Please contact support." },
+      { status: 500 }
+    );
+  }
+
   // 4. クーポンのcurrent_usesを楽観的ロックでインクリメント。
   // WHERE current_uses = coupon.current_uses で競合を検出。
   // admin client で実行: coupons の RLS は SELECT (authenticated) のみ許可、
@@ -82,6 +100,13 @@ export async function POST(request: Request) {
     // SELECT and this write would otherwise still let the redemption through.
     // The optimistic current_uses lock alone does not cover a revoke flip.
     .eq("revoked", false)
+    // Re-assert the max_uses bound at write time. The capacity check above ran
+    // against a stale SELECT; if an operator lowers max_uses between the SELECT
+    // and this write the redemption could otherwise still push current_uses past
+    // the cap. The CAS pins current_uses = coupon.current_uses, so comparing
+    // max_uses against that literal is equivalent to `max_uses > current_uses`.
+    // (max_uses <= 0 means "unlimited".)
+    .or(`max_uses.lte.0,max_uses.gt.${coupon.current_uses}`)
     .select("id");
 
   if (incrementError) {
@@ -101,10 +126,10 @@ export async function POST(request: Request) {
   // P1-1: profiles.plan / trial_ends_at は migration 013 で user role の UPDATE
   // 権限が剥奪されている (billing bypass 防止)。
   const expiresAt = new Date(
-    Date.now() + coupon.days * 24 * 60 * 60 * 1000
+    Date.now() + couponDays * 24 * 60 * 60 * 1000
   ).toISOString();
 
-  const { error: profileError } = await admin
+  const { data: updatedProfiles, error: profileError } = await admin
     .from("profiles")
     // subscription_status='trialing' marks this as a non-paying, time-boxed
     // grant. Without it the column keeps its 'active' DEFAULT, which the
@@ -115,15 +140,24 @@ export async function POST(request: Request) {
       trial_ends_at: expiresAt,
       subscription_status: "trialing",
     })
-    .eq("id", user.id);
+    .eq("id", user.id)
+    // PostgREST returns no error when an UPDATE matches zero rows (e.g. the
+    // profile row is missing for user.id). Without checking affected rows the
+    // coupon use would be burned with no plan granted and no rollback (since
+    // profileError is null). Select the touched row so a zero-row update is
+    // treated as a failure and routed through the rollback below.
+    .select("id");
 
-  if (profileError) {
+  if (profileError || !updatedProfiles || updatedProfiles.length === 0) {
     // P1-B 補強: profile update が失敗したら current_uses を decrement で
     // best-effort rollback。完璧ではない (race / DB error の二段失敗もある)
     // が、follow-up issue で 1-RPC transaction 化するまでの暫定。
     // (review-loop 2 P1): rollback の affected row 数も見る。0 行なら別 worker
     // がこの間に increment しているため burn-without-credit 確定。
-    console.error("[coupon/redeem] profile update failed:", profileError.message);
+    console.error(
+      "[coupon/redeem] profile update failed:",
+      profileError?.message ?? "0 rows updated (profile row missing for user)"
+    );
     // rollback も admin client (service_role) で実行。migration 016 で coupons の
     // UPDATE policy は不在 (RLS deny) のため user client では rollback も無効
     // → 常に burn-without-credit に陥る (#72 PR #100 Codex review-loop 2 指摘)。

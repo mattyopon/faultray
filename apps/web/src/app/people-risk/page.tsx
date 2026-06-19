@@ -254,8 +254,11 @@ export default function PeopleRiskDashboard() {
     Promise.allSettled([fetchSummary(), fetchSnapshots(), fetchActions()])
       .then(([sRes, snRes, aRes]) => {
         if (sRes.status === "fulfilled") setSummary(sRes.value);
+        else console.error("[people-risk] summary load failed:", sRes.reason);
         if (snRes.status === "fulfilled") setSnapshots(snRes.value);
+        else console.error("[people-risk] snapshots load failed:", snRes.reason);
         if (aRes.status === "fulfilled") setActions(aRes.value);
+        else console.error("[people-risk] actions load failed:", aRes.reason);
       })
       .finally(() => setLoading(false));
   }, [user]);

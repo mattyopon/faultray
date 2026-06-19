@@ -60,8 +60,30 @@ export default function TimelinePage() {
   const [typeFilter, setTypeFilter] = useState<EventType | "all">("all");
   const [timeRange, setTimeRange] = useState<"24h" | "3d" | "7d">("7d");
 
+  // Range window in milliseconds, keyed off the selected range.
+  const RANGE_MS: Record<typeof timeRange, number> = {
+    "24h": 24 * 60 * 60 * 1000,
+    "3d": 3 * 24 * 60 * 60 * 1000,
+    "7d": 7 * 24 * 60 * 60 * 1000,
+  };
+
+  // Deterministically parse "YYYY-MM-DD HH:mm UTC" — Date parsing of this
+  // non-ISO format is implementation-defined (local tz / NaN) across engines,
+  // so normalize to ISO 8601 ("YYYY-MM-DDTHH:mmZ") before Date.parse.
+  const parseTs = (raw: string): number => Date.parse(raw.replace(" UTC", "Z").replace(" ", "T"));
+
+  // Anchor the window to the most recent event so the time-range buttons
+  // actually filter the (static) demo data instead of being decorative.
+  const latestTs = TIMELINE_EVENTS.reduce((max, ev) => {
+    const ts = parseTs(ev.timestamp);
+    return Number.isFinite(ts) && ts > max ? ts : max;
+  }, 0);
+  const cutoff = latestTs - RANGE_MS[timeRange];
+
   const filtered = TIMELINE_EVENTS.filter((ev) => {
     if (typeFilter !== "all" && ev.type !== typeFilter) return false;
+    const ts = parseTs(ev.timestamp);
+    if (Number.isFinite(ts) && ts < cutoff) return false;
     return true;
   });
 

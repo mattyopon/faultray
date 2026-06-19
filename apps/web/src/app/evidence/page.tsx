@@ -402,12 +402,23 @@ function downloadJson(data: unknown, filename: string) {
   a.href = url;
   a.download = filename;
   a.click();
-  URL.revokeObjectURL(url);
+  // Defer revocation so the browser can start the download first.
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
 }
 
 function downloadCsv(rows: string[][], filename: string) {
   const csvContent = rows
-    .map((row) => row.map((cell) => `"${cell.replace(/"/g, '""')}"`).join(","))
+    .map((row) =>
+      row
+        .map((cell) => {
+          const cellStr = String(cell ?? "");
+          // Neutralize spreadsheet formula injection: a leading =, +, -, @, or
+          // control char is treated as a formula by Excel/Sheets even inside quotes.
+          const safe = /^[=+\-@\t\r]/.test(cellStr) ? `'${cellStr}` : cellStr;
+          return `"${safe.replace(/"/g, '""')}"`;
+        })
+        .join(","),
+    )
     .join("\n");
   const blob = new Blob(["\uFEFF" + csvContent], { type: "text/csv;charset=utf-8" });
   const url = URL.createObjectURL(blob);
@@ -415,7 +426,8 @@ function downloadCsv(rows: string[][], filename: string) {
   a.href = url;
   a.download = filename;
   a.click();
-  URL.revokeObjectURL(url);
+  // Defer revocation so the browser can start the download first.
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
 }
 
 // ─── Sub-Components ───────────────────────────────────────────

@@ -25,8 +25,9 @@ import { useRouter } from "next/navigation";
 function ScoreRing({ score, size = 64 }: { score: number; size?: number }) {
   const radius = 45;
   const circumference = 2 * Math.PI * radius;
-  const offset = circumference - (score / 100) * circumference;
-  const color = score >= 90 ? "#10B981" : score >= 70 ? "#FFD700" : "#ef4444";
+  const safe = Number.isFinite(score) ? Math.min(100, Math.max(0, score)) : 0;
+  const offset = circumference - (safe / 100) * circumference;
+  const color = safe >= 90 ? "#10B981" : safe >= 70 ? "#FFD700" : "#ef4444";
 
   return (
     <div className="relative shrink-0" style={{ width: size, height: size }}>
@@ -42,7 +43,7 @@ function ScoreRing({ score, size = 64 }: { score: number; size?: number }) {
         />
       </svg>
       <div className="absolute inset-0 flex flex-col items-center justify-center">
-        <span className="text-sm font-extrabold" style={{ color }}>{score.toFixed(0)}</span>
+        <span className="text-sm font-extrabold" style={{ color }}>{safe.toFixed(0)}</span>
       </div>
     </div>
   );
@@ -77,11 +78,16 @@ function NewProjectModal({
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
   const [saving, setSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const modalRef = useRef<HTMLDivElement>(null);
 
   // MODAL-05: Esc key closes NewProjectModal
   useEffect(() => {
     if (!open) return;
+    // Reset form state each time the modal opens so stale input/errors don't linger.
+    setName("");
+    setDescription("");
+    setError(null);
     const handleKey = (e: KeyboardEvent) => {
       if (e.key === "Escape") onClose();
     };
@@ -96,6 +102,7 @@ function NewProjectModal({
     e.preventDefault();
     if (!name.trim()) return;
     setSaving(true);
+    setError(null);
     try {
       const project = await api.createProject({ name: name.trim(), description: description.trim() });
       onCreated(project);
@@ -103,23 +110,14 @@ function NewProjectModal({
       setDescription("");
       onClose();
     } catch (err) {
+      // Do NOT fabricate a local project — that would falsely signal success and
+      // lose data on refresh. Surface the error and keep the modal open to retry.
       console.error("[projects] Failed to create project:", err);
-      // Local placeholder for offline resilience
-      const fallback: Project = {
-        id: `local-${Date.now()}`,
-        name: name.trim(),
-        description: description.trim(),
-        topology_yaml: null,
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString(),
-        run_count: 0,
-        last_score: null,
-        last_run_at: null,
-      };
-      onCreated(fallback);
-      setName("");
-      setDescription("");
-      onClose();
+      setError(
+        locale === "ja"
+          ? "プロジェクトの作成に失敗しました。もう一度お試しください。"
+          : "Failed to create project. Please try again."
+      );
     } finally {
       setSaving(false);
     }
@@ -136,6 +134,11 @@ function NewProjectModal({
           </button>
         </div>
         <form onSubmit={handleSubmit} className="space-y-4">
+          {error && (
+            <div role="alert" className="p-3 bg-red-500/10 border border-red-500/20 rounded-lg text-red-400 text-sm">
+              {error}
+            </div>
+          )}
           <div>
             <label className="block text-xs text-[var(--text-muted)] uppercase tracking-wider mb-2">{t.name}</label>
             <input
@@ -144,6 +147,7 @@ function NewProjectModal({
               placeholder="e.g. Production AWS"
               aria-label={t.name}
               required
+              maxLength={100}
               className="w-full px-4 py-2.5 border border-[var(--border-color)] rounded-lg text-sm text-white placeholder-[var(--text-muted)] focus:outline-none focus:border-[var(--gold)]/50 transition-colors"
             />
           </div>
@@ -177,28 +181,31 @@ export default function ProjectsPage() {
   const [projects, setProjects] = useState<Project[]>([]);
   const [loading, setLoading] = useState(true);
   const [modalOpen, setModalOpen] = useState(false);
-  const [fetchError, setFetchError] = useState<string | null>(null);
+  const [fetchError, setFetchError] = useState(false);
   const locale = useLocale();
   const t = appDict.projects[locale] ?? appDict.projects.en;
   const router = useRouter();
 
   useEffect(() => {
+    let ignore = false;
     api
       .getProjects()
-      .then((data) => setProjects(Array.isArray(data) ? data : []))
+      .then((data) => { if (!ignore) setProjects(Array.isArray(data) ? data : []); })
       .catch((err) => {
+        if (ignore) return;
         console.error("[projects] Failed to fetch projects:", err);
-        setFetchError("プロジェクトの取得に失敗しました");
+        setFetchError(true);
         setProjects([]);
       })
-      .finally(() => setLoading(false));
+      .finally(() => { if (!ignore) setLoading(false); });
+    return () => { ignore = true; };
   }, []);
 
   return (
     <div className="w-full px-6 py-10">
       {fetchError && (
         <div className="mb-4 p-3 bg-red-500/10 border border-red-500/20 rounded-lg text-red-400 text-sm">
-          {fetchError}
+          {locale === "ja" ? "プロジェクトの取得に失敗しました" : "Failed to fetch projects"}
         </div>
       )}
 
@@ -236,8 +243,10 @@ export default function ProjectsPage() {
         </div>
       ) : (
         <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {projects.map((project) => (
-            <Link key={project.id} href={`/projects/${project.id}`}>
+          {projects.map((project) => {
+            const projectId = encodeURIComponent(String(project.id));
+            return (
+            <Link key={project.id} href={`/projects/${projectId}`}>
               <Card className="group cursor-pointer hover:border-[var(--gold)]/30 hover:bg-[var(--bg-card-hover)] transition-all duration-200 h-full">
                 {/* Card Header */}
                 <div className="flex items-start justify-between mb-4">
@@ -285,8 +294,9 @@ export default function ProjectsPage() {
                   </Badge>
                   <button
                     onClick={(e) => {
+                      e.stopPropagation();
                       e.preventDefault();
-                      router.push(`/simulate?project=${project.id}`);
+                      router.push(`/simulate?project=${projectId}`);
                     }}
                     className="flex items-center gap-1.5 text-xs text-[var(--gold)] hover:underline"
                   >
@@ -296,7 +306,8 @@ export default function ProjectsPage() {
                 </div>
               </Card>
             </Link>
-          ))}
+            );
+          })}
         </div>
       )}
 

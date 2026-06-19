@@ -25,11 +25,21 @@ export function Tooltip({ content, children, side = "top", className, delay = 30
   const id = useMemo(() => `tooltip-${rawId.replace(/:/g, "")}`, [rawId]);
 
   function show() {
-    timerRef.current = setTimeout(() => setVisible(true), delay);
+    // Clear any pending timer first so overlapping triggers (mouse + focus)
+    // don't leave an orphaned timeout that hide() can no longer cancel and
+    // that would re-show the tooltip after it was hidden.
+    if (timerRef.current) clearTimeout(timerRef.current);
+    timerRef.current = setTimeout(() => {
+      timerRef.current = null;
+      setVisible(true);
+    }, delay);
   }
 
   function hide() {
-    if (timerRef.current) clearTimeout(timerRef.current);
+    if (timerRef.current) {
+      clearTimeout(timerRef.current);
+      timerRef.current = null;
+    }
     setVisible(false);
   }
 
@@ -39,6 +49,17 @@ export function Tooltip({ content, children, side = "top", className, delay = 30
     }
     document.addEventListener("keydown", onKeyDown);
     return () => document.removeEventListener("keydown", onKeyDown);
+  }, []);
+
+  // Clear any pending show timer on unmount so it can't fire setVisible on an
+  // unmounted component.
+  useEffect(() => {
+    return () => {
+      if (timerRef.current) {
+        clearTimeout(timerRef.current);
+        timerRef.current = null;
+      }
+    };
   }, []);
 
   const positionClass = {

@@ -166,7 +166,12 @@ export default async function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  const gaId = process.env.NEXT_PUBLIC_GA_ID;
+  // ANALYTICS: GA4 measurement ID — validate the env value (G-XXXX / GTM-XXXX)
+  // before it is interpolated into an inline script / URL. An unvalidated value
+  // containing a quote could otherwise break out of the string literal and
+  // execute arbitrary JS under the nonce-authorized inline script.
+  const rawGaId = process.env.NEXT_PUBLIC_GA_ID;
+  const gaId = rawGaId && /^(G|GTM|UA)-[A-Z0-9-]+$/i.test(rawGaId) ? rawGaId : undefined;
   // ANALYTICS-04: Hotjar ID — set NEXT_PUBLIC_HOTJAR_ID env var to enable heatmap/session recording
   // Validate as numeric-only to prevent XSS via env var injection
   const rawHotjarId = process.env.NEXT_PUBLIC_HOTJAR_ID;
@@ -205,29 +210,32 @@ export default async function RootLayout({
         />
       </head>
       <body className="min-h-full flex flex-col">
-        {/* Google Analytics 4 — only injected when NEXT_PUBLIC_GA_ID is set and user consented */}
+        {/* Google Analytics 4 — only injected when NEXT_PUBLIC_GA_ID is set AND the
+            user has consented. The gtag.js loader is injected from inside the
+            consent-gated IIFE (like Hotjar below) so it is never fetched before
+            consent — loading it earlier would establish the GA tag/cookies and
+            defeat the consent gate (GDPR/ePrivacy). gaId is validated above and
+            interpolated via JSON.stringify to prevent script injection. */}
         {gaId && (
-          <>
-            <Script
-              src={`https://www.googletagmanager.com/gtag/js?id=${gaId}`}
-              strategy="afterInteractive"
-              nonce={nonce}
-            />
-            <Script id="ga4-init" strategy="afterInteractive" nonce={nonce}>
-              {`
-                (function(){
-                  var consent = typeof localStorage !== 'undefined'
-                    ? localStorage.getItem('faultray_cookie_consent')
-                    : null;
-                  if (consent !== 'accepted') return;
-                  window.dataLayer = window.dataLayer || [];
-                  function gtag(){dataLayer.push(arguments);}
-                  gtag('js', new Date());
-                  gtag('config', '${gaId}');
-                })();
-              `}
-            </Script>
-          </>
+          <Script id="ga4-init" strategy="afterInteractive" nonce={nonce}>
+            {`
+              (function(){
+                var consent = typeof localStorage !== 'undefined'
+                  ? localStorage.getItem('faultray_cookie_consent')
+                  : null;
+                if (consent !== 'accepted') return;
+                var id = ${JSON.stringify(gaId)};
+                var s = document.createElement('script');
+                s.async = 1;
+                s.src = 'https://www.googletagmanager.com/gtag/js?id=' + encodeURIComponent(id);
+                document.head.appendChild(s);
+                window.dataLayer = window.dataLayer || [];
+                function gtag(){dataLayer.push(arguments);}
+                gtag('js', new Date());
+                gtag('config', id);
+              })();
+            `}
+          </Script>
         )}
         {/* ANALYTICS-04: Hotjar — heatmap & session recording (consent-gated) */}
         {hotjarId && (

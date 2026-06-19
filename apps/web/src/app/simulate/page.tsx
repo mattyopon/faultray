@@ -734,9 +734,17 @@ function CopyButton({ text }: { text: string }) {
   const locale = useLocale();
 
   const handleCopy = () => {
-    navigator.clipboard.writeText(text);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
+    // navigator.clipboard is undefined in insecure contexts / older browsers, so
+    // accessing .writeText directly can throw. Feature-detect and only show the
+    // "copied" confirmation once the write actually resolves.
+    if (!navigator.clipboard?.writeText) return;
+    navigator.clipboard
+      .writeText(text)
+      .then(() => {
+        setCopied(true);
+        setTimeout(() => setCopied(false), 2000);
+      })
+      .catch(() => setCopied(false));
   };
 
   return (
@@ -946,6 +954,10 @@ function SimulatePageInner() {
   const [error, setError] = useState<string | null>(null);
   const [saveWarning, setSaveWarning] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  // FLOW-06: track the post-success redirect timer so it can be cancelled on
+  // reset/unmount and never fires navigation after the component is gone.
+  const redirectTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const simStartRef = useRef<number>(0);
 
   // Project selector
   const [projects, setProjects] = useState<Project[]>([]);
@@ -963,11 +975,24 @@ function SimulatePageInner() {
     api.getProjects().then((data) => setProjects(Array.isArray(data) ? data : [])).catch((err) => console.error("[simulate] fetch error:", err));
   }, []);
 
-  // If a project is preselected and has topology_yaml, load it
+  // Cancel any pending post-success redirect on unmount.
+  useEffect(() => {
+    return () => {
+      if (redirectTimerRef.current) clearTimeout(redirectTimerRef.current);
+    };
+  }, []);
+
+  // If a project is preselected and has topology_yaml, load it.
+  // Track the project we've already seeded so a later `projects` array-identity
+  // change (e.g. getProjects resolving after the user started editing) does not
+  // clobber unsaved YAML the user has already typed.
+  const seededProjectIdRef = useRef<string | null>(null);
   useEffect(() => {
     if (!selectedProjectId || !projects.length) return;
+    if (seededProjectIdRef.current === selectedProjectId) return;
     const proj = projects.find((p) => p.id === selectedProjectId);
     if (proj?.topology_yaml) {
+      seededProjectIdRef.current = selectedProjectId;
       setYamlText(proj.topology_yaml);
       setSelected(null);
     }
@@ -1000,13 +1025,36 @@ function SimulatePageInner() {
     setUploadedFileName(file.name);
     const reader = new FileReader();
     reader.onload = (ev) => {
-      const text = ev.target?.result as string;
+      if (typeof ev.target?.result !== "string") {
+        setError("Could not read file contents.");
+        setUploadedFileName(null);
+        // Block Run: clear any stale topology + set a blocking yamlError so the
+        // Run button (which gates on yamlError/yamlText) can't run old input.
+        setYamlText("");
+        setYamlError("Could not read file contents.");
+        return;
+      }
+      const text = ev.target.result;
       const { ok, text: cleaned, error: sanitizeError } = sanitizeYamlInput(text);
       if (!ok) {
-        setError(sanitizeError ?? "Invalid YAML input.");
+        const msg = sanitizeError ?? "Invalid YAML input.";
+        setError(msg);
+        // Block Run so a stale topology from a previous upload/edit can't be run.
+        setYamlText("");
+        setYamlError(msg);
         return;
       }
       setYamlText(cleaned);
+      setYamlError(null);
+    };
+    reader.onerror = () => {
+      setError("Failed to read the uploaded file. Please try again.");
+      setUploadedFileName(null);
+      setYamlText("");
+      setYamlError("Failed to read the uploaded file. Please try again.");
+    };
+    reader.onabort = () => {
+      setUploadedFileName(null);
     };
     reader.readAsText(file);
   };
@@ -1018,12 +1066,14 @@ function SimulatePageInner() {
   })();
 
   const runSimulation = async () => {
-    if (!canRun) return;
+    if (!canRun || yamlError) return;
     setRunning(true);
     setRunProgress(0);
     setError(null);
     setResult(null);
     setScanSummary(undefined);
+    // CONVERT-01: measure time-to-aha from when the simulation actually starts.
+    simStartRef.current = performance.now();
 
     // DEMO-03: Fake progress bar — gives user visual feedback during simulation
     const progressSteps = [
@@ -1057,22 +1107,32 @@ function SimulatePageInner() {
           scenario: selected || "custom",
           critical_count: res.critical_failures?.length ?? 0,
         });
-        // CONVERT-01: Aha Momentの計測 — 初回シミュレーション完了を特別にトラッキング
-        const ahaKey = "faultray_aha_moment_reached";
-        if (!localStorage.getItem(ahaKey)) {
-          localStorage.setItem(ahaKey, new Date().toISOString());
-          trackEvent("aha_moment", {
-            score: res.overall_score,
-            time_to_aha_ms: Date.now() - performance.timeOrigin,
-            critical_count: res.critical_failures?.length ?? 0,
-          });
+        // CONVERT-01: Aha Momentの計測 — 初回シミュレーション完了を特別にトラッキング.
+        // Guard localStorage access: it can throw (SecurityError in private mode,
+        // QuotaExceededError on write) and must not abort the post-success flow.
+        try {
+          const ahaKey = "faultray_aha_moment_reached";
+          if (!localStorage.getItem(ahaKey)) {
+            localStorage.setItem(ahaKey, new Date().toISOString());
+            trackEvent("aha_moment", {
+              score: res.overall_score,
+              time_to_aha_ms: Math.round(performance.now() - simStartRef.current),
+              critical_count: res.critical_failures?.length ?? 0,
+            });
+          }
+        } catch {
+          // Storage unavailable — non-critical for the simulation result.
         }
         // Save to localStorage for topology/dashboard to read
-        localStorage.setItem("faultray_last_simulation", JSON.stringify({
-          ...res,
-          timestamp: new Date().toISOString(),
-          source: selected || "custom",
-        }));
+        try {
+          localStorage.setItem("faultray_last_simulation", JSON.stringify({
+            ...res,
+            timestamp: new Date().toISOString(),
+            source: selected || "custom",
+          }));
+        } catch {
+          // Storage unavailable/quota exceeded — non-critical.
+        }
 
         // Also persist to Supabase (best-effort)
         try {
@@ -1102,9 +1162,21 @@ function SimulatePageInner() {
           if (rawIntegrations) {
             const integrations = JSON.parse(rawIntegrations) as Record<string, string>;
             const webhookUrl = integrations.slackWebhook;
-            if (webhookUrl && webhookUrl.startsWith("https://hooks.slack.com/")) {
-              const criticalCount = res.critical_failures.length;
-              const topRecommendation = res.suggestions[0]?.title;
+            // Client-side check is only a UX hint (the server must independently
+            // validate this URL to prevent SSRF). Parse with URL() and require an
+            // exact host match so values like hooks.slack.com.evil.com are rejected.
+            let isSlackWebhook = false;
+            if (webhookUrl) {
+              try {
+                const u = new URL(webhookUrl);
+                isSlackWebhook = u.protocol === "https:" && u.hostname === "hooks.slack.com";
+              } catch {
+                isSlackWebhook = false;
+              }
+            }
+            if (webhookUrl && isSlackWebhook) {
+              const criticalCount = res.critical_failures?.length ?? 0;
+              const topRecommendation = res.suggestions?.[0]?.title;
               fetch("/api/notify/slack", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
@@ -1124,8 +1196,10 @@ function SimulatePageInner() {
           // Non-critical: notification failure does not affect simulation
         }
 
-        // FLOW-06: Auto-redirect to results page after successful simulation
-        setTimeout(() => {
+        // FLOW-06: Auto-redirect to results page after successful simulation.
+        // Store the timer so resetState/unmount can cancel a stale redirect.
+        if (redirectTimerRef.current) clearTimeout(redirectTimerRef.current);
+        redirectTimerRef.current = setTimeout(() => {
           router.push("/results");
         }, 1500);
       }
@@ -1167,6 +1241,10 @@ function SimulatePageInner() {
   };
 
   const resetState = () => {
+    if (redirectTimerRef.current) {
+      clearTimeout(redirectTimerRef.current);
+      redirectTimerRef.current = null;
+    }
     setResult(null);
     setScanSummary(undefined);
     setSelected(null);
@@ -1534,7 +1612,7 @@ function SimulatePageInner() {
               <div className="flex flex-col items-center gap-4">
                 <Button
                   size="lg"
-                  disabled={!canRun || running}
+                  disabled={!canRun || running || !!yamlError}
                   onClick={runSimulation}
                   className="min-w-[200px]"
                 >

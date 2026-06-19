@@ -75,7 +75,7 @@ function LayerCard({ layer, t }: { layer: ScoreLayer; t: (typeof appDict.scoreDe
       <div className="h-2 bg-white/5 rounded-full overflow-hidden mb-2">
         <div
           className="h-full rounded-full transition-all duration-700"
-          style={{ width: `${layer.score}%`, backgroundColor: scoreColor(layer.score) }}
+          style={{ width: `${Math.max(0, Math.min(100, Number(layer.score) || 0))}%`, backgroundColor: scoreColor(layer.score) }}
         />
       </div>
       <p className="text-xs text-[var(--text-muted)]">
@@ -116,11 +116,56 @@ export default function ScoreDetailPage() {
   const t = appDict.scoreDetail[locale] ?? appDict.scoreDetail.en;
 
   useEffect(() => {
+    let active = true;
     api
       .getScoreExplain()
-      .then((result) => setData(result))
-      .catch((err) => { console.error("[score-detail] API error, using demo data:", err); setData(DEMO_DATA); })
-      .finally(() => setLoading(false));
+      .then((result) => {
+        if (!active) return;
+        // Validate the untrusted response shape before replacing the safe
+        // DEMO_DATA initial state — otherwise null/malformed payloads crash
+        // the render (data.overall_score.toFixed, data.layers.map, etc.).
+        const isValidLayer = (l: unknown): boolean => {
+          if (typeof l !== "object" || l === null) return false;
+          const o = l as Record<string, unknown>;
+          return (
+            typeof o.name === "string" &&
+            Number.isFinite(o.score) &&
+            Number.isFinite(o.weight) &&
+            Number.isFinite(o.weighted_score) &&
+            Array.isArray(o.factors) &&
+            o.factors.every((f) => {
+              if (typeof f !== "object" || f === null) return false;
+              const fo = f as Record<string, unknown>;
+              return typeof fo.name === "string" && Number.isFinite(fo.score);
+            })
+          );
+        };
+        const isValidDetractor = (dd: unknown): boolean => {
+          if (typeof dd !== "object" || dd === null) return false;
+          const o = dd as Record<string, unknown>;
+          return (
+            typeof o.factor === "string" &&
+            typeof o.layer === "string" &&
+            Number.isFinite(o.score) &&
+            Number.isFinite(o.potential_gain)
+          );
+        };
+        if (
+          result &&
+          Number.isFinite(result.overall_score) &&
+          Array.isArray(result.layers) &&
+          result.layers.every(isValidLayer) &&
+          Array.isArray(result.top_detractors) &&
+          result.top_detractors.every(isValidDetractor)
+        ) {
+          setData(result);
+        } else {
+          setData(DEMO_DATA);
+        }
+      })
+      .catch((err) => { if (active) { console.error("[score-detail] API error, using demo data:", err); setData(DEMO_DATA); } })
+      .finally(() => { if (active) setLoading(false); });
+    return () => { active = false; };
   }, []);
 
   return (
@@ -150,7 +195,11 @@ export default function ScoreDetailPage() {
 
           {/* DEMO-04: 経営者向けサマリー */}
           {(() => {
-            const incidentCount = Math.round((100 - data.overall_score) / 10 * 3);
+            // Clamp the (possibly out-of-range/NaN) score to [0,100] and floor the
+            // derived incident count at 0 so the executive summary never shows a
+            // negative or NaN count / loss.
+            const safeScore = Math.max(0, Math.min(100, Number(data.overall_score) || 0));
+            const incidentCount = Math.max(0, Math.round((100 - safeScore) / 10 * 3));
             const lossAmount = locale === "ja"
               ? `${(incidentCount * 150).toLocaleString()}万円`
               : `$${(incidentCount * 15000).toLocaleString()}`;

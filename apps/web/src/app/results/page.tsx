@@ -42,10 +42,20 @@ export default function ResultsPage() {
 
   // TABLE-02: CSVエクスポート実装
   const exportCsv = () => {
+    // RFC 4180 escaping + spreadsheet formula-injection neutralization.
+    const escapeCsv = (v: unknown) => {
+      let s = String(v ?? "");
+      if (/^[=+\-@\t\r\n]/.test(s)) s = "'" + s;
+      if (/[",\r\n]/.test(s)) s = `"${s.replace(/"/g, '""')}"`;
+      return s;
+    };
     const header = "id,date,score,availability,engine,passed,failed,total";
-    const rows = filteredRuns.map((r) =>
-      [r.id, r.created_at, r.overall_score.toFixed(1), r.availability_estimate, r.engine_type, r.scenarios_passed, r.scenarios_failed, r.total_scenarios].join(",")
-    );
+    const rows = filteredRuns.map((r) => {
+      const score = typeof r.overall_score === "number" && Number.isFinite(r.overall_score) ? r.overall_score.toFixed(1) : "";
+      return [r.id, r.created_at, score, r.availability_estimate, r.engine_type, r.scenarios_passed, r.scenarios_failed, r.total_scenarios]
+        .map(escapeCsv)
+        .join(",");
+    });
     const blob = new Blob([[header, ...rows].join("\n")], { type: "text/csv" });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
@@ -104,15 +114,17 @@ export default function ResultsPage() {
       ) : (
         <>
         <div className="space-y-4">
-          {pagedRuns.map((run) => (
+          {pagedRuns.map((run) => {
+            const hasScore = typeof run.overall_score === "number" && Number.isFinite(run.overall_score);
+            return (
             <Card key={run.id} hover className="cursor-pointer">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-6">
                   <div className="text-center min-w-[80px]">
                     <p className={`text-2xl font-extrabold font-mono ${
-                      run.overall_score >= 90 ? "text-emerald-400" : run.overall_score >= 70 ? "text-[var(--gold)]" : "text-red-400"
+                      hasScore && run.overall_score >= 90 ? "text-emerald-400" : hasScore && run.overall_score >= 70 ? "text-[var(--gold)]" : "text-red-400"
                     }`}>
-                      {run.overall_score.toFixed(1)}
+                      {hasScore ? run.overall_score.toFixed(1) : "N/A"}
                     </p>
                     <p className="text-[10px] text-[var(--text-muted)] uppercase tracking-wider">{t.score}</p>
                   </div>
@@ -123,7 +135,12 @@ export default function ResultsPage() {
                       <Badge variant="default">{run.engine_type}</Badge>
                     </div>
                     <p className="text-xs text-[var(--text-muted)]">
-                      {new Date(run.created_at).toLocaleDateString(locale, { weekday: "short", month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" })}
+                      {(() => {
+                        const d = new Date(run.created_at);
+                        return isNaN(d.getTime())
+                          ? "—"
+                          : d.toLocaleDateString(locale, { weekday: "short", month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" });
+                      })()}
                     </p>
                   </div>
                 </div>
@@ -141,7 +158,8 @@ export default function ResultsPage() {
                 </div>
               </div>
             </Card>
-          ))}
+            );
+          })}
         </div>
         {/* TABLE-01: ページネーション */}
         <Pagination currentPage={page} totalPages={totalPages} onPageChange={setPage} />

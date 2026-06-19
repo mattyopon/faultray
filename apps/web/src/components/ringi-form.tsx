@@ -30,6 +30,12 @@ const PLAN_USD_ANNUAL: Record<Plan, string> = {
   business: "$9,590",
 };
 
+const PLAN_LABEL: Record<Plan, string> = {
+  starter: "Starter",
+  pro: "Pro",
+  business: "Business",
+};
+
 export function RingiForm() {
   const [companyName, setCompanyName] = useState("");
   const [plan, setPlan] = useState<Plan>("pro");
@@ -201,7 +207,7 @@ export function RingiForm() {
                 <tr className="bg-[#FFD700]/[0.08]">
                   <td className="ringi-white px-4 py-3 text-white font-semibold">申請プランの月額費用</td>
                   <td className="ringi-gold px-4 py-3 text-right text-[#FFD700] font-bold text-base" colSpan={2}>
-                    {PLAN_MONTHLY[plan]}／月（{plan === "pro" ? "Pro" : "Business"}プラン）
+                    {PLAN_MONTHLY[plan]}／月（{PLAN_LABEL[plan]}プラン）
                   </td>
                 </tr>
               </tbody>

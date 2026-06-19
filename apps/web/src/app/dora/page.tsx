@@ -135,17 +135,27 @@ export default function DoraPage() {
   useEffect(() => {
     const controller = new AbortController();
     fetch("/api/governance?action=dora", { signal: controller.signal })
-      .then((r) => r.json())
+      .then((r) => {
+        if (!r.ok) throw new Error(`HTTP ${r.status}`);
+        return r.json();
+      })
       .then((d: { overall_score?: number; pillars?: Pillar[] }) => {
-        if (typeof d?.overall_score === "number") {
+        if (typeof d?.overall_score === "number" && Number.isFinite(d.overall_score)) {
           setScore(d.overall_score);
           setIsFromApi(true);
         }
         if (Array.isArray(d?.pillars) && d.pillars.length > 0) {
-          setPillars(d.pillars);
+          const valid = d.pillars.filter(
+            (p) =>
+              p && typeof p.id === "string" && typeof p.name === "string" &&
+              typeof p.score === "number" && Number.isFinite(p.score) &&
+              typeof p.status === "string"
+          );
+          if (valid.length > 0) setPillars(valid);
         }
       })
-      .catch(() => {
+      .catch((err) => {
+        if (err instanceof Error && err.name === "AbortError") return;
         // Fallback: use DEFAULT_PILLARS average
         const avg = Math.round(DEFAULT_PILLARS.reduce((sum, p) => sum + p.score, 0) / DEFAULT_PILLARS.length);
         setScore(avg);
@@ -230,21 +240,24 @@ export default function DoraPage() {
       <Card>
         <h2 className="text-lg font-bold mb-4">{t.pillarOverview}</h2>
         <div className="space-y-3">
-          {pillars.map((p) => (
+          {pillars.map((p) => {
+            const safeScore = Number.isFinite(p.score) ? Math.min(100, Math.max(0, p.score)) : 0;
+            return (
             <div key={p.id} className="flex items-center gap-4">
               <span className="w-48 text-sm text-[var(--text-secondary)]">{p.name}</span>
               <div className="flex-1 h-3 bg-[var(--border-color)] rounded-full overflow-hidden">
                 <div
-                  className={`h-full rounded-full transition-all duration-500 ${p.score >= 80 ? "bg-emerald-400" : p.score >= 60 ? "bg-amber-400" : "bg-red-400"}`}
-                  style={{ width: `${p.score}%` }}
+                  className={`h-full rounded-full transition-all duration-500 ${safeScore >= 80 ? "bg-emerald-400" : safeScore >= 60 ? "bg-amber-400" : "bg-red-400"}`}
+                  style={{ width: `${safeScore}%` }}
                 />
               </div>
-              <span className="font-mono w-12 text-right text-sm">{p.score}%</span>
+              <span className="font-mono w-12 text-right text-sm">{safeScore}%</span>
               <Badge variant={p.status === "compliant" ? "green" : p.status === "partial" ? "yellow" : "red"}>
                 {p.status === "compliant" ? t.compliant : p.status === "partial" ? t.partial : t.nonCompliant}
               </Badge>
             </div>
-          ))}
+            );
+          })}
         </div>
         {!isFromApi && (
           <p className="text-xs text-[var(--text-muted)] mt-4 pt-3 border-t border-[var(--border-color)] flex items-center gap-1.5">

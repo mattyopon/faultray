@@ -311,6 +311,27 @@ async function bootstrapUserCustomer(
     return { ok: false, reason: "customer_mismatch" };
   }
   if (existingCustomer === null) {
+    // #79 hardening: before binding this customerId to userId, ensure it is not
+    // ALREADY bound to a DIFFERENT profile. Without this (and absent a DB UNIQUE
+    // index on profiles.stripe_customer_id), a forged metadata.user_id or a
+    // re-used Stripe customer could map one customerId to two userIds, making
+    // later customer_id-based resolution (resolveUserByCustomerId) ambiguous and
+    // granting entitlements to the wrong account.
+    const { data: otherOwner, error: otherOwnerError } = await supabase
+      .from("profiles")
+      .select("id")
+      .eq("stripe_customer_id", customerId)
+      .neq("id", userId)
+      .maybeSingle();
+    if (otherOwnerError) {
+      throw new Error(
+        `Bootstrap customer-collision check failed: ${otherOwnerError.message}`
+      );
+    }
+    if (otherOwner) {
+      return { ok: false, reason: "customer_mismatch" };
+    }
+
     const { error: updateError } = await supabase
       .from("profiles")
       .update({ stripe_customer_id: customerId })

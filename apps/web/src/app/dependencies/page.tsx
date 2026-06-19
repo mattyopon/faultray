@@ -151,18 +151,20 @@ function TrafficLight({ status }: { status: ServiceStatus }) {
 }
 
 function computeBlastRadius(serviceId: string, services: Service[]): Service[] {
-  // BFS: find all services that transitively depend on this service
-  const visited = new Set<string>();
+  // BFS: find all services that transitively depend on this service.
+  // `seen` is marked at enqueue time (not dequeue time) so that in a diamond
+  // dependency graph — where a downstream service is reachable via two paths
+  // before it is dequeued — each affected service is added exactly once.
+  const seen = new Set<string>([serviceId]);
   const queue = [serviceId];
   const affected: Service[] = [];
 
   while (queue.length > 0) {
     const current = queue.shift()!;
-    if (visited.has(current)) continue;
-    visited.add(current);
 
     for (const svc of services) {
-      if (svc.dependsOn.includes(current) && !visited.has(svc.id)) {
+      if (svc.dependsOn.includes(current) && !seen.has(svc.id)) {
+        seen.add(svc.id);
         affected.push(svc);
         queue.push(svc.id);
       }
@@ -372,7 +374,7 @@ export default function DependenciesPage() {
                         key={i}
                         className="w-7 h-7 rounded-full bg-[var(--border-color)] border border-[var(--border-color)] flex items-center justify-center text-xs text-[var(--text-muted)]"
                       >
-                        {String.fromCharCode(65 + i)}
+                        {String.fromCharCode(65 + (i % 26))}
                       </div>
                     ))}
                     {selected.personalizationAlert && (

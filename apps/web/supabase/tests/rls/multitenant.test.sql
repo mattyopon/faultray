@@ -215,6 +215,11 @@ $$ language plpgsql;
 create or replace function test_as_service_role() returns void as $$
 begin
   perform set_config('role', 'service_role', true);
+  -- Clear any JWT claims left over from a preceding test_as_user(): service_role
+  -- bypasses RLS, but a stale 'sub' would make auth.uid() resolve to the previous
+  -- user inside any DEFINER routine / DEFAULT expression run under this context,
+  -- misattributing seeded rows. Reset so auth.uid() is NULL while acting as service_role.
+  perform set_config('request.jwt.claims', '', true);
 end;
 $$ language plpgsql;
 

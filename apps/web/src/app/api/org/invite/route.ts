@@ -44,19 +44,31 @@ export async function POST(request: Request) {
     );
   }
 
-  // 自分がowner/adminかチェック
-  const { data: selfMember } = await supabase
+  // 自分がowner/adminかチェック。
+  // .single() は 0 行でも error を返すため、member 行を持たない org owner では
+  // この query が error になり、その error を握りつぶすと「DB 障害」と「行なし」が
+  // 区別できなくなる。maybeSingle() に変更し、genuine な DB error は 500 に、
+  // 行なしは「member ではない」として扱う。
+  const { data: selfMember, error: selfMemberError } = await supabase
     .from("org_members")
     .select("role, status")
     .eq("org_id", org_id)
     .eq("user_id", user.id)
-    .single();
+    .maybeSingle();
 
-  const { data: orgOwner } = await supabase
+  const { data: orgOwner, error: orgOwnerError } = await supabase
     .from("organizations")
     .select("owner_id")
     .eq("id", org_id)
-    .single();
+    .maybeSingle();
+
+  if (selfMemberError || orgOwnerError) {
+    console.error(
+      "[org/invite] Authorization lookup failed:",
+      selfMemberError?.message ?? orgOwnerError?.message
+    );
+    return NextResponse.json({ error: "Failed to verify permissions" }, { status: 500 });
+  }
 
   const isOwner = orgOwner?.owner_id === user.id;
   const isAdmin =

@@ -37,13 +37,23 @@ export default function WhatIfPage() {
 
   const locale = useLocale();
   const t = appDict.whatif[locale] ?? appDict.whatif.en;
-  const selectedParam = PARAMETERS.find((p) => p.id === parameter)!;
+  const selectedParam = PARAMETERS.find((p) => p.id === parameter) ?? PARAMETERS[0];
 
   const runAnalysis = async () => {
     setLoading(true);
     setErrorMessage(null);
+    // Clamp to the active parameter's range: a value left over from a previously
+    // selected parameter (value only resets on parameter change, not component change)
+    // could otherwise fall outside [min,max] and be sent to the backend.
+    const safeValue = Math.min(selectedParam.max, Math.max(selectedParam.min, value));
     try {
-      const res = await api.whatIf(component, parameter, value);
+      const res = await api.whatIf(component, parameter, safeValue);
+      if (!res || !res.baseline || !res.modified || !res.delta
+        || typeof res.baseline.overall_score !== "number"
+        || typeof res.modified.overall_score !== "number"
+        || typeof res.delta.score !== "number") {
+        throw new Error("Malformed analysis response from backend.");
+      }
       setResult(res);
     } catch (err) {
       // Surface the real failure rather than silently fabricating a score.
@@ -108,8 +118,8 @@ export default function WhatIfPage() {
                 value={parameter}
                 onChange={(e) => {
                   setParameter(e.target.value);
-                  const p = PARAMETERS.find((p) => p.id === e.target.value)!;
-                  setValue(p.default);
+                  const p = PARAMETERS.find((p) => p.id === e.target.value);
+                  if (p) setValue(p.default);
                 }}
                 aria-label={t.parameter}
                 className="w-full px-3 py-2.5 bg-[var(--bg-tertiary)] border border-[var(--border-color)] rounded-lg text-sm text-[#e2e8f0] focus:border-[var(--gold)]/50 focus:outline-none"

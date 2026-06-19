@@ -52,11 +52,18 @@ export async function GET(request: Request) {
   // 最初の組織の情報とメンバーを返す（将来的に複数組織対応可能）
   const orgId = orgIds[0];
 
-  const { data: org } = await supabase
+  // .single() は 0 行でも error を返すため、stale/deleted な orgId や transient
+  // な DB 障害を「org: null」に潰してしまう。maybeSingle() に変更し、genuine な
+  // query error は 500 にして missing org (null) と区別する。
+  const { data: org, error: orgError } = await supabase
     .from("organizations")
     .select("id, name, plan, created_at")
     .eq("id", orgId)
-    .single();
+    .maybeSingle();
+
+  if (orgError) {
+    return NextResponse.json({ error: "Failed to fetch organization" }, { status: 500 });
+  }
 
   const { data: members, error: membersError } = await supabase
     .from("org_members")

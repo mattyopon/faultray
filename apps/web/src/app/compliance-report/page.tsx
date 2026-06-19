@@ -3,9 +3,10 @@
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { FileText, Loader2, Download, ExternalLink, ShieldCheck, CheckCircle2, AlertTriangle, XCircle } from "lucide-react";
 import { useLocale } from "@/lib/useLocale";
+import { isValidLocale } from "@/i18n/config";
 import { appDict } from "@/i18n/app-dict";
 import { useToast } from "@/lib/useToast";
 import { Toast } from "@/components/ui/toast";
@@ -130,16 +131,47 @@ export default function ComplianceReportPage() {
   const locale = useLocale();
   const t = appDict.complianceReport[locale] ?? appDict.complianceReport.en;
   const { showToast, toasts, dismiss } = useToast();
+  const generateTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // Clear any pending generation timer on unmount so its callback cannot fire
+  // (open a tab / set state / show a toast) after the component is gone.
+  useEffect(() => {
+    return () => {
+      if (generateTimerRef.current) clearTimeout(generateTimerRef.current);
+    };
+  }, []);
 
   const fw = FRAMEWORK_DATA[selected];
 
   const handleGenerate = () => {
     setGenerating(true);
+    if (generateTimerRef.current) clearTimeout(generateTimerRef.current);
     // Simulate generation and open report
-    setTimeout(() => {
+    generateTimerRef.current = setTimeout(() => {
       setGenerating(false);
-      const params = new URLSearchParams({ framework: selected, locale });
-      window.open(`/api/reports?action=report&format=html&${params.toString()}`, "_blank");
+      // Validate the locale against the known set before forwarding it to the
+      // HTML-report endpoint (defense-in-depth against a tampered locale being
+      // reflected into the generated HTML). `selected` is already constrained.
+      const safeLocale = isValidLocale(locale) ? locale : "en";
+      const params = new URLSearchParams({ framework: selected, locale: safeLocale });
+      // noopener,noreferrer prevents the opened report tab from accessing
+      // window.opener (reverse tabnabbing). A deferred window.open is also no
+      // longer a user gesture, so browsers may block it — check for null and
+      // surface that instead of a misleading success toast.
+      const win = window.open(
+        `/api/reports?action=report&format=html&${params.toString()}`,
+        "_blank",
+        "noopener,noreferrer"
+      );
+      if (!win) {
+        showToast(
+          locale === "ja"
+            ? "ポップアップがブロックされました。ポップアップを許可してください。"
+            : "Popup blocked. Please allow popups and try again.",
+          "error"
+        );
+        return;
+      }
       showToast(
         locale === "ja"
           ? `${selected} レポートを生成しました`

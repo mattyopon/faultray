@@ -3,7 +3,7 @@
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
   TrendingUp,
   CheckCircle2,
@@ -255,18 +255,33 @@ export default function IpoReadinessPage() {
   const [generating, setGenerating] = useState(false);
   const [reportReady, setReportReady] = useState(false);
   const [reportBlob, setReportBlob] = useState<string | null>(null);
+  const generateTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  // Mirror the current object URL in a ref so the unmount cleanup can revoke
+  // whatever URL is live without re-subscribing on every regeneration.
+  const reportBlobRef = useRef<string | null>(null);
 
   const overall = calcOverallScore(CHECKLIST);
   const ready = CHECKLIST.filter((c) => c.status === "ready").length;
   const needsWork = CHECKLIST.filter((c) => c.status === "needs_work").length;
   const notStarted = CHECKLIST.filter((c) => c.status === "not_started").length;
 
+  // Clear any pending generation timer and revoke the live object URL on unmount.
+  useEffect(() => () => {
+    if (generateTimer.current) clearTimeout(generateTimer.current);
+    if (reportBlobRef.current) URL.revokeObjectURL(reportBlobRef.current);
+  }, []);
+
   function handleGenerate() {
     setGenerating(true);
     setReportReady(false);
-    setTimeout(() => {
+    if (generateTimer.current) clearTimeout(generateTimer.current);
+    generateTimer.current = setTimeout(() => {
       const html = generateHTMLReport(CHECKLIST, t, overall);
       const blob = URL.createObjectURL(new Blob([html], { type: "text/html" }));
+      // Revoke the previously generated URL before replacing it to avoid leaking
+      // a blob for every regeneration.
+      if (reportBlobRef.current) URL.revokeObjectURL(reportBlobRef.current);
+      reportBlobRef.current = blob;
       setReportBlob(blob);
       setGenerating(false);
       setReportReady(true);

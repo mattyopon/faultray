@@ -5,7 +5,7 @@ import { useAuth } from "@/components/auth-provider";
 import { Button } from "@/components/ui/button";
 import { NavLanguageSwitcher } from "@/components/language-switcher";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { useState, useEffect, useMemo, useCallback, useRef } from "react";
 import {
   LayoutDashboard,
@@ -198,6 +198,7 @@ function SidebarNavItem({
 
 export function Navbar() {
   const pathname = usePathname();
+  const router = useRouter();
   const { user, loading: authLoading, plan, signOut } = useAuth();
   const isFree = plan === "free";
   const [scrolled, setScrolled] = useState(false);
@@ -226,8 +227,11 @@ export function Navbar() {
   // NAV-DETAIL-06: キーボードショートカット — ⌘K, G+D/S/R/H ナビ
   const gPending = useRef(false);
   const handleGlobalKeyDown = useCallback((e: KeyboardEvent) => {
-    const tag = (e.target as HTMLElement).tagName;
-    if (tag === "INPUT" || tag === "TEXTAREA") return;
+    const target = e.target as HTMLElement;
+    const tag = target.tagName;
+    // Also bail out of editable contexts (contentEditable rich-text editors),
+    // otherwise "g" followed by d/s/r/h while typing hijacks navigation.
+    if (tag === "INPUT" || tag === "TEXTAREA" || target.isContentEditable) return;
     if ((e.metaKey || e.ctrlKey) && e.key === "k") {
       e.preventDefault();
       setCmdOpen((prev) => !prev);
@@ -238,13 +242,15 @@ export function Navbar() {
       setTimeout(() => { gPending.current = false; }, 800);
       return;
     }
-    if (gPending.current && typeof window !== "undefined") {
+    if (gPending.current) {
       const routes: Record<string, string> = { d: "/dashboard", s: "/simulate", r: "/results", h: "/help" };
       const route = routes[e.key.toLowerCase()];
-      if (route) { e.preventDefault(); window.location.href = route; }
+      // Use the Next.js client router for in-app navigation (consistent with
+      // the Link-based navigation elsewhere; avoids a full document reload).
+      if (route) { e.preventDefault(); router.push(route); }
       gPending.current = false;
     }
-  }, []);
+  }, [router]);
 
   useEffect(() => {
     window.addEventListener("keydown", handleGlobalKeyDown);

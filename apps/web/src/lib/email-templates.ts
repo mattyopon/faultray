@@ -55,7 +55,12 @@ function baseLayout(content: string): string {
 }
 
 function ctaButton(href: string, label: string): string {
-  return `<a href="${href}" style="display:inline-block;padding:12px 28px;background:#FFD700;color:#0a0e1a;font-weight:700;font-size:14px;border-radius:8px;text-decoration:none;margin-top:24px;">${label}</a>`;
+  // Defense-in-depth: even though all current callers pass hardcoded
+  // https://faultray.com URLs and pre-escaped labels, escape both for HTML
+  // attribute/text context and reject non-http(s) schemes so a future dynamic
+  // caller can't inject markup or a `javascript:`/`data:` href.
+  const safeHref = /^https?:\/\//i.test(href) ? esc(href) : "#";
+  return `<a href="${safeHref}" style="display:inline-block;padding:12px 28px;background:#FFD700;color:#0a0e1a;font-weight:700;font-size:14px;border-radius:8px;text-decoration:none;margin-top:24px;">${esc(label)}</a>`;
 }
 
 // ───────────────────────────────────────────────────────────

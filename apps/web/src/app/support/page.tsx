@@ -31,6 +31,9 @@ const T = {
     channels: "Support Channels",
     faq: "Quick Answers",
     planSla: "Response Time by Plan",
+    planHeader: "Plan",
+    channelHeader: "Channel",
+    slaHeader: "Response SLA",
     communityTitle: "Community Forum",
     communityDesc: "Ask questions, share ideas, and learn from other FaultRay users on GitHub Discussions.",
     communityBadge: "Free",
@@ -89,6 +92,9 @@ const T = {
     channels: "サポートチャネル",
     faq: "よくある質問",
     planSla: "プラン別 対応時間",
+    planHeader: "プラン",
+    channelHeader: "チャネル",
+    slaHeader: "対応時間",
     communityTitle: "コミュニティフォーラム",
     communityDesc: "GitHub Discussions でFaultRayユーザーと質問・アイデアを共有できます。",
     communityBadge: "無料",
@@ -101,7 +107,7 @@ const T = {
     emailBadge: "Pro以上",
     emailLink: "support@faultray.com にメール",
     slackTitle: "専用 Slack チャンネル",
-    slackDesc: "4時間以内の対応を保証するリアルタイムサポート。FaultRayエンジニアと直接連携。",
+    slackDesc: "FaultRayエンジニアと直接連携できる共有チャンネル。営業時間内の初回応答目標は4時間です（ベストエフォート。詳細はサポート規約をご参照ください）。",
     slackBadge: "Business",
     slackLink: "Slack アクセスを申請",
     helpTitle: "アプリ内ヘルプ",
@@ -279,11 +285,11 @@ export default function SupportPage() {
           <table className="w-full text-sm">
             <thead>
               <tr className="border-b border-[var(--border-color)]">
-                <th scope="col" className="text-left py-2 pr-4 text-[var(--text-muted)] font-medium">Plan</th>
-                <th scope="col" className="text-left py-2 pr-4 text-[var(--text-muted)] font-medium">Channel</th>
+                <th scope="col" className="text-left py-2 pr-4 text-[var(--text-muted)] font-medium">{t.planHeader}</th>
+                <th scope="col" className="text-left py-2 pr-4 text-[var(--text-muted)] font-medium">{t.channelHeader}</th>
                 <th scope="col" className="text-left py-2 text-[var(--text-muted)] font-medium">
                   <Clock size={12} className="inline mr-1" />
-                  Response SLA
+                  {t.slaHeader}
                 </th>
               </tr>
             </thead>
