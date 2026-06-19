@@ -47,10 +47,20 @@ const LANGUAGES = [
 ];
 
 function generateApiKey(): string {
+  // SECURITY: use a CSPRNG (Web Crypto), not Math.random which is predictable
+  // and unsuitable for secret tokens. Reject bytes in the biased tail so each
+  // character is uniformly distributed over the alphabet.
   const chars = "abcdefghijklmnopqrstuvwxyz0123456789";
+  const limit = Math.floor(256 / chars.length) * chars.length;
+  const buf = new Uint8Array(1);
   let key = "fray_sk_";
   for (let i = 0; i < 32; i++) {
-    key += chars[Math.floor(Math.random() * chars.length)];
+    let b: number;
+    do {
+      crypto.getRandomValues(buf);
+      b = buf[0];
+    } while (b >= limit);
+    key += chars[b % chars.length];
   }
   return key;
 }

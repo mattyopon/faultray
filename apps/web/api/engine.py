@@ -11,10 +11,12 @@ Path routing uses the request path to determine which handler to call.
 """
 
 from http.server import BaseHTTPRequestHandler
+import hmac
 import json
 import logging
 import os
 import tempfile
+import threading
 import time
 from urllib.parse import urlparse, parse_qs, quote
 
@@ -561,7 +563,7 @@ def _run_simulation(topology_yaml: str) -> dict:
                     "scenario": r.scenario.name,
                     "impact": (
                         f"Risk score {r.risk_score:.1f}/10 - "
-                        f"{len(r.cascade.effects)} components affected"
+                        f"{len(r.cascade.effects) if r.cascade else 0} components affected"
                     ),
                     "severity": "CRITICAL" if r.risk_score >= 8.0 else "HIGH",
                 }
@@ -895,7 +897,7 @@ def _run_heatmap(topology_yaml=None) -> dict:
                 for node in graph.nodes:
                     risk = 50
                     for r in report.results:
-                        if hasattr(r, "cascade") and node.id in [e.component_id for e in r.cascade.effects]:
+                        if getattr(r, "cascade", None) and node.id in [e.component_id for e in r.cascade.effects]:
                             risk = max(risk, int(r.risk_score * 10))
                     components.append({
                         "id": node.id,
@@ -990,7 +992,7 @@ def _build_discovery_result(report, scan_summary: dict) -> dict:
     for r in report.critical_findings[:10]:
         critical_failures.append({
             "scenario": r.scenario.name,
-            "impact": f"Risk score {r.risk_score:.1f}/10 - {len(r.cascade.effects)} components affected",
+            "impact": f"Risk score {r.risk_score:.1f}/10 - {len(r.cascade.effects) if r.cascade else 0} components affected",
             "severity": "CRITICAL" if r.risk_score >= 8.0 else "HIGH",
         })
     suggestions = []
@@ -1036,6 +1038,9 @@ def _is_safe_role_arn(arn: str) -> bool:
     return bool(_SAFE_ROLE_ARN_RE.match(arn))
 
 
+_aws_scan_lock = threading.Lock()  # serializes os.environ mutation in _run_aws_scan
+
+
 def _run_aws_scan(data: dict) -> dict:
     """Scan AWS infrastructure and run simulation.
 
@@ -1061,35 +1066,45 @@ def _run_aws_scan(data: dict) -> dict:
             "deployment for same-account access."
         )
 
-    if role_arn:
-        # Validate ARN format before use
-        if not _is_safe_role_arn(role_arn):
-            raise ValueError(f"Invalid role_arn format: {role_arn!r}")
-
-        sts = boto3.client("sts", region_name=region)
-        assumed = sts.assume_role(RoleArn=role_arn, RoleSessionName="faultray-scan", DurationSeconds=900)
-        creds = assumed["Credentials"]
-        os.environ["AWS_ACCESS_KEY_ID"] = creds["AccessKeyId"]
-        os.environ["AWS_SECRET_ACCESS_KEY"] = creds["SecretAccessKey"]
-        os.environ["AWS_SESSION_TOKEN"] = creds["SessionToken"]
-    # else: boto3 will use the ambient IAM role / instance profile / env vars
-
-    try:
-        scanner = AWSScanner(region=region)
-        result = scanner.scan()
-        engine = SimulationEngine(result.graph)
-        report = engine.run_all_defaults(include_feed=False, include_plugins=False)
-        return _build_discovery_result(report, {
-            "region": result.region,
-            "components_found": result.components_found,
-            "dependencies_inferred": result.dependencies_inferred,
-            "scan_duration_seconds": round(result.scan_duration_seconds, 2),
-            "warnings": result.warnings[:5],
-        })
-    finally:
-        os.environ.pop("AWS_ACCESS_KEY_ID", None)
-        os.environ.pop("AWS_SECRET_ACCESS_KEY", None)
-        os.environ.pop("AWS_SESSION_TOKEN", None)
+    # AWS-CREDS fix: os.environ is process-global and shared across handler
+    # threads. The old code wrote assumed-role creds into os.environ and the
+    # finally unconditionally popped them, so concurrent scans could bleed
+    # credentials across tenants and ambient AWS_* env credentials (instance
+    # profiles) were destroyed. Serialize all AWS scans under a lock and
+    # snapshot/restore the env instead of deleting it.
+    if role_arn and not _is_safe_role_arn(role_arn):
+        raise ValueError(f"Invalid role_arn format: {role_arn!r}")
+    _aws_env_keys = ("AWS_ACCESS_KEY_ID", "AWS_SECRET_ACCESS_KEY", "AWS_SESSION_TOKEN")
+    with _aws_scan_lock:
+        _prev_env = None
+        if role_arn:
+            sts = boto3.client("sts", region_name=region)
+            assumed = sts.assume_role(RoleArn=role_arn, RoleSessionName="faultray-scan", DurationSeconds=900)
+            creds = assumed["Credentials"]
+            _prev_env = {k: os.environ.get(k) for k in _aws_env_keys}
+            os.environ["AWS_ACCESS_KEY_ID"] = creds["AccessKeyId"]
+            os.environ["AWS_SECRET_ACCESS_KEY"] = creds["SecretAccessKey"]
+            os.environ["AWS_SESSION_TOKEN"] = creds["SessionToken"]
+        # else: boto3 uses the ambient IAM role / instance profile / env vars
+        try:
+            scanner = AWSScanner(region=region)
+            result = scanner.scan()
+            engine = SimulationEngine(result.graph)
+            report = engine.run_all_defaults(include_feed=False, include_plugins=False)
+            return _build_discovery_result(report, {
+                "region": result.region,
+                "components_found": result.components_found,
+                "dependencies_inferred": result.dependencies_inferred,
+                "scan_duration_seconds": round(result.scan_duration_seconds, 2),
+                "warnings": result.warnings[:5],
+            })
+        finally:
+            if _prev_env is not None:
+                for _k, _v in _prev_env.items():
+                    if _v is None:
+                        os.environ.pop(_k, None)
+                    else:
+                        os.environ[_k] = _v
 
 
 def _run_gcp_scan(data: dict) -> dict:
@@ -1161,7 +1176,7 @@ def _run_terraform_parse(tfstate_json_str: str) -> dict:
             "scenario": r.scenario.name,
             "impact": (
                 f"Risk score {r.risk_score:.1f}/10 - "
-                f"{len(r.cascade.effects)} components affected"
+                f"{len(r.cascade.effects) if r.cascade else 0} components affected"
             ),
             "severity": "CRITICAL" if r.risk_score >= 8.0 else "HIGH",
         })
@@ -1240,7 +1255,7 @@ def _run_k8s_parse(manifests: str, namespace=None) -> dict:
             "scenario": r.scenario.name,
             "impact": (
                 f"Risk score {r.risk_score:.1f}/10 - "
-                f"{len(r.cascade.effects)} components affected"
+                f"{len(r.cascade.effects) if r.cascade else 0} components affected"
             ),
             "severity": "CRITICAL" if r.risk_score >= 8.0 else "HIGH",
         })
@@ -1448,8 +1463,22 @@ class handler(BaseHTTPRequestHandler):
         # ENG-02 fix: authenticate before processing any request
         if not self._authenticate():
             return
+        # API-DoS fix: validate Content-Length and cap body size BEFORE reading
+        # the body into memory, so a spoofed/oversized/negative length cannot
+        # exhaust memory (the per-endpoint YAML limit ran only after the full
+        # read, providing no protection).
         try:
             content_length = int(self.headers.get("Content-Length", 0))
+        except (TypeError, ValueError):
+            self._error(400, "Invalid Content-Length header")
+            return
+        if content_length < 0:
+            self._error(400, "Invalid Content-Length header")
+            return
+        if content_length > self._MAX_BODY_BYTES:
+            self._error(413, "Request body too large")
+            return
+        try:
             raw = self.rfile.read(content_length)
             body = json.loads(raw) if raw else {}
         except (json.JSONDecodeError, ValueError):
@@ -1475,6 +1504,7 @@ class handler(BaseHTTPRequestHandler):
     # -----------------------------------------------------------------------
 
     # PYVAL-01/02: Hard limits to prevent DoS via oversized inputs
+    _MAX_BODY_BYTES = 2 * 1024 * 1024  # 2 MB hard cap on the whole request body
     _MAX_YAML_BYTES = 512 * 1024      # 512 KB
     _MAX_YAML_COMPONENTS = 200         # 200 components per topology
 
@@ -1700,7 +1730,7 @@ class handler(BaseHTTPRequestHandler):
         # 1. Check X-API-Key header (agent/CI access)
         api_key_header = self.headers.get("X-API-Key", "")
         internal_secret = os.environ.get("FAULTRAY_ENGINE_SECRET", "")
-        if internal_secret and api_key_header == internal_secret:
+        if internal_secret and hmac.compare_digest(api_key_header, internal_secret):
             return True
 
         # 2. Check Authorization: Bearer <jwt>
@@ -1710,10 +1740,15 @@ class handler(BaseHTTPRequestHandler):
             if self._verify_supabase_jwt(token):
                 return True
 
-        # 3. If Supabase is not configured, allow (dev/test mode only)
+        # 3. If Supabase is not configured, only allow when an explicit dev
+        #    opt-in flag is set. Previously this failed OPEN on any missing
+        #    config, so a typo or failed secret fetch in production silently
+        #    disabled all authentication (full backdoor). Require an explicit
+        #    FAULTRAY_ALLOW_UNAUTHENTICATED=1 that is never set in prod.
         supabase_url = os.environ.get("NEXT_PUBLIC_SUPABASE_URL", "")
         supabase_key = os.environ.get("SUPABASE_SERVICE_ROLE_KEY", "")
-        if not supabase_url or not supabase_key:
+        if (not supabase_url or not supabase_key) and \
+                os.environ.get("FAULTRAY_ALLOW_UNAUTHENTICATED") == "1":
             return True
 
         self._json(401, {"error": {"message": "Authentication required"}})
