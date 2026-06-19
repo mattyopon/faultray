@@ -245,7 +245,7 @@ def compute_three_layer_model(
     deploys_per_month: float = 8.0,
     human_error_rate: float = 0.001,
     config_drift_rate: float = 0.0005,
-    compose_layers: bool = False,
+    legacy_composition: bool = False,
 ) -> ThreeLayerResult:
     """Compute the 3-Layer Availability Limit Model for an infrastructure graph.
 
@@ -259,19 +259,21 @@ def compute_three_layer_model(
         Probability of a human-caused incident per month (Layer 1).
     config_drift_rate:
         Probability of configuration drift causing degradation per month (Layer 1).
-    compose_layers:
-        Opt-in to the corrected cross-layer composition (U10): keep Layer 1 as
-        pure software (do not fold the hardware limit into it — hardware is
-        composed once in Layer 2), and combine independent per-component runtime/
-        network penalties as a PRODUCT rather than an average. Default False
-        preserves the historical headline numbers; also enabled by setting
-        FAULTRAY_COMPOSE_AVAILABILITY_LAYERS=1.
+    legacy_composition:
+        Restore the historical (pre-U10) cross-layer composition. By DEFAULT the
+        corrected model is used: Layer 1 is pure software (the hardware limit is
+        composed once, in Layer 2, instead of being double-counted into the
+        software floor), and independent per-component runtime/network penalties
+        compose as a PRODUCT rather than an average. Set this (or
+        FAULTRAY_LEGACY_AVAILABILITY=1) only to reproduce the old headline
+        numbers.
     """
-    # Opt-in (param or env) — default keeps the historical composition so existing
-    # models' headline availability is unchanged.
-    compose_layers = (
-        compose_layers
-        or os.environ.get("FAULTRAY_COMPOSE_AVAILABILITY_LAYERS") == "1"
+    # U10 resolved: the corrected composition is the default. The legacy model is
+    # available as an escape hatch (param or env) for anyone reproducing old
+    # headline numbers.
+    use_corrected = not (
+        legacy_composition
+        or os.environ.get("FAULTRAY_LEGACY_AVAILABILITY") == "1"
     )
     if not graph.components:
         empty_layer = AvailabilityLayer(
@@ -382,7 +384,7 @@ def compute_three_layer_model(
     # via min(software, hardware), which double-counts hardware because Layer 2
     # composes it separately (U10). With compose_layers, Layer 1 is PURE software
     # and hardware is accounted once in Layer 2.
-    if compose_layers:
+    if use_corrected:
         system_sw = sw_availability
     else:
         system_sw = min(sw_availability, system_hw)
@@ -409,7 +411,7 @@ def compute_three_layer_model(
     # =====================================================================
     comp_count = len(graph.components)
 
-    if compose_layers:
+    if use_corrected:
         # Corrected (U10): independent per-component packet-loss / GC penalties
         # COMPOSE as the product of per-component availabilities. The aggregate
         # penalty is 1 - ∏(1 - penalty_i), which (unlike the average) does not
