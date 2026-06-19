@@ -70,8 +70,11 @@ class AuditEvent:
     event_type: str = ""  # evidence_added, assessment_run, policy_generated, etc.
     description: str = ""
     timestamp: str = ""
-    hash: str = ""  # SHA-256 of (prev_hash + event_data)
+    hash: str = ""  # SHA-256 or keyed HMAC-SHA256 of (prev_hash + event_data)
     previous_hash: str = ""
+    # Which algorithm produced ``hash``. Legacy chains (written before keyed
+    # signing) have no field → treated as "sha256", so they keep verifying.
+    hash_alg: str = "sha256"
 
     def __post_init__(self) -> None:
         if not self.id:
@@ -101,23 +104,38 @@ def _compute_file_hash(file_path: str) -> str:
     return h.hexdigest()
 
 
-def _compute_event_hash(previous_hash: str, event_data: str) -> str:
+def _resolve_signing_key() -> bytes | None:
+    """Signing key from FAULTRAY_SIGNING_KEY or FAULTRAY_SIGNING_KEY_FILE.
+
+    Shared with reporter.evidence_signing so the governance audit chain honors
+    the same key-file convention (not only the inline env var).
+    """
+    try:
+        from faultray.reporter.evidence_signing import _load_key_from_env
+
+        return _load_key_from_env()
+    except Exception:
+        raw = os.environ.get("FAULTRAY_SIGNING_KEY")
+        return raw.encode("utf-8") if raw else None
+
+
+def _compute_event_hash(
+    previous_hash: str, event_data: str, key: bytes | None
+) -> str:
     """Compute the chain hash linking this event to the previous one.
 
-    When FAULTRAY_SIGNING_KEY is configured, use a keyed HMAC-SHA256 so a
-    filesystem attacker who rewrites the evidence file cannot recompute valid
-    chain hashes without the key (tamper-PROOF). Without a key it falls back to
-    the plain SHA-256 chain (tamper-EVIDENT only) to preserve existing behavior.
-    Both register and verify go through this function, so they stay consistent;
-    for strong guarantees set FAULTRAY_SIGNING_KEY (and anchor chain heads
-    externally).
+    With a key, use keyed HMAC-SHA256 (tamper-PROOF — a filesystem attacker can't
+    recompute it without the key). Without a key, plain SHA-256 (tamper-EVIDENT).
+    The algorithm is recorded per event (AuditEvent.hash_alg) so an existing
+    plain chain keeps verifying after a key is configured (each event is checked
+    with the algorithm it was written with), and verify_chain forward-locks: once
+    an HMAC event appears no later event may downgrade to plain. (A determined
+    attacker who can rewrite the whole file from before the first HMAC event
+    still needs out-of-band anchoring of chain heads for full assurance.)
     """
     payload = previous_hash + event_data
-    key = os.environ.get("FAULTRAY_SIGNING_KEY")
     if key:
-        return hmac.new(
-            key.encode("utf-8"), payload.encode("utf-8"), hashlib.sha256
-        ).hexdigest()
+        return hmac.new(key, payload.encode("utf-8"), hashlib.sha256).hexdigest()
     return _sha256(payload)
 
 
@@ -183,7 +201,9 @@ def _append_audit_event(event_type: str, description: str) -> AuditEvent:
         sort_keys=True, ensure_ascii=False,
     )
     event.previous_hash = previous_hash
-    event.hash = _compute_event_hash(previous_hash, event_data)
+    key = _resolve_signing_key()
+    event.hash_alg = "hmac-sha256" if key else "sha256"
+    event.hash = _compute_event_hash(previous_hash, event_data, key)
 
     chain.append(asdict(event))
     _save_audit_chain(chain)
@@ -303,14 +323,31 @@ def verify_chain() -> bool:
     if chain[0].get("previous_hash") != GENESIS_HASH:
         return False
 
+    key = _resolve_signing_key()
+    seen_hmac = False
+
     for i, event in enumerate(chain):
-        # Recompute the hash
+        alg = event.get("hash_alg", "sha256")
+        if alg == "hmac-sha256":
+            # A keyed event can only be verified with the key.
+            if key is None:
+                return False
+            seen_hmac = True
+            event_key: bytes | None = key
+        else:
+            # Forward-lock: once the chain switched to HMAC, a later plain event
+            # is a downgrade attempt, not a legitimate legacy entry.
+            if seen_hmac:
+                return False
+            event_key = None
+
+        # Recompute the hash with the algorithm this event was written with.
         event_data = json.dumps(
             {"event_type": event["event_type"], "description": event["description"],
              "timestamp": event["timestamp"], "id": event["id"]},
             sort_keys=True, ensure_ascii=False,
         )
-        expected_hash = _compute_event_hash(event["previous_hash"], event_data)
+        expected_hash = _compute_event_hash(event["previous_hash"], event_data, event_key)
         if event["hash"] != expected_hash:
             return False
 
@@ -336,6 +373,7 @@ def get_audit_events() -> list[AuditEvent]:
             timestamp=e.get("timestamp", ""),
             hash=e.get("hash", ""),
             previous_hash=e.get("previous_hash", ""),
+            hash_alg=e.get("hash_alg", "sha256"),
         )
         for e in chain
     ]
