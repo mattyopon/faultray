@@ -1,6 +1,6 @@
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
-import { buildCsp } from "@/lib/csp";
+import { buildCsp, cspStrictEnabled } from "@/lib/csp";
 
 const locales = ["en", "ja", "de", "fr", "zh", "ko", "es", "pt"];
 const defaultLocale = "en";
@@ -101,11 +101,12 @@ export async function proxy(request: NextRequest) {
   crypto.getRandomValues(_nonceBytes);
   const nonce = Buffer.from(_nonceBytes).toString("base64");
 
-  // Strict (nonce-based) CSP is staged behind FAULTRAY_CSP_STRICT so the
-  // 'unsafe-inline' removal can be verified on a preview before becoming the
-  // production default (see docs/csp-nonce-plan.md, Phase 3). When the flag is
-  // off, buildCsp() returns the historical 'unsafe-inline' policy unchanged.
-  const strictCsp = process.env.FAULTRAY_CSP_STRICT === "1";
+  // Strict (nonce-based) CSP is the default (#85): it removes 'unsafe-inline'
+  // from script-src/style-src. Setting FAULTRAY_CSP_STRICT=0 falls back to the
+  // historical 'unsafe-inline' policy (and restores static rendering / CDN
+  // caching) without a code change — an emergency rollback hatch only. See
+  // docs/csp-nonce-plan.md.
+  const strictCsp = cspStrictEnabled();
   const cspValue = buildCsp({
     strict: strictCsp,
     isDev: process.env.NODE_ENV === "development",

@@ -8,6 +8,7 @@ import { Breadcrumb } from "@/components/breadcrumb";
 import { LocaleProvider } from "@/lib/useLocale";
 import { CookieConsent } from "@/components/cookie-consent";
 import { ResearchPrototypeBanner } from "@/components/research-prototype-banner";
+import { cspStrictEnabled } from "@/lib/csp";
 import "./globals.css";
 
 const inter = Inter({
@@ -151,14 +152,14 @@ const jsonLd = [
   },
 ];
 
-// #32 / #85: strict (nonce-based) CSP is staged behind FAULTRAY_CSP_STRICT.
-// When on, the layout reads the per-request nonce (set by src/proxy.ts) and
-// stamps it on every executable inline / third-party <script>, and reading
-// headers() opts the tree into dynamic rendering — which nonce-based CSP
-// requires. When off, we skip headers() entirely so static rendering (and CDN
-// caching) is preserved and scripts run under the historical 'unsafe-inline'
-// policy. See docs/csp-nonce-plan.md.
-const STRICT_CSP = process.env.FAULTRAY_CSP_STRICT === "1";
+// #32 / #85: strict (nonce-based) CSP is the default. The layout reads the
+// per-request nonce (set by src/proxy.ts) and stamps it on every executable
+// inline / third-party <script>; reading headers() opts the tree into dynamic
+// rendering — which nonce-based CSP requires. The rollback hatch
+// FAULTRAY_CSP_STRICT=0 (see cspStrictEnabled) skips headers() entirely so
+// static rendering (and CDN caching) is preserved and scripts run under the
+// historical 'unsafe-inline' policy. See docs/csp-nonce-plan.md.
+const STRICT_CSP = cspStrictEnabled();
 
 export default async function RootLayout({
   children,

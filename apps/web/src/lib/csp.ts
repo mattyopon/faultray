@@ -2,12 +2,12 @@
  * Content-Security-Policy builder (#32 / #85, ZAP mattyopon/faultray#172).
  *
  * Two modes:
- *  - default (`strict: false`): keeps `'unsafe-inline'` on script-src/style-src.
- *    This is the historical policy, served while the nonce migration is staged
- *    behind `FAULTRAY_CSP_STRICT`. Output is byte-for-byte the policy that used
- *    to live in next.config.ts, so moving CSP generation into src/proxy.ts does
- *    not change the live default policy.
- *  - strict (`strict: true` + a per-request `nonce`): removes `'unsafe-inline'`
+ *  - non-strict (`strict: false`): keeps `'unsafe-inline'` on script-src/style-src.
+ *    This is the historical policy, now retained only as the opt-out / rollback
+ *    path (`FAULTRAY_CSP_STRICT=0`, see `cspStrictEnabled`). Output is
+ *    byte-for-byte the policy that used to live in next.config.ts.
+ *  - strict (`strict: true` + a per-request `nonce`): the DEFAULT (#85). Removes
+ *    `'unsafe-inline'`
  *    from script-src (replaced by `'nonce-…'` + `'strict-dynamic'`) and from
  *    style-src ELEMENTS (replaced by `'nonce-…'`). Inline style ATTRIBUTES —
  *    which React emits for `style={{…}}` and which a nonce cannot cover — are
@@ -54,6 +54,22 @@ function connectSrc(supabaseOrigin: string): string {
   ]
     .filter(Boolean)
     .join(" ");
+}
+
+/**
+ * Whether the strict (nonce-based, `'unsafe-inline'`-free) CSP is active.
+ *
+ * Strict CSP is now the DEFAULT (#85). It is only disabled when
+ * `FAULTRAY_CSP_STRICT` is explicitly set to `"0"` — an operational escape
+ * hatch that restores the historical `'unsafe-inline'` policy (and with it
+ * static rendering / CDN caching) without a code change, e.g. for an emergency
+ * rollback if a nonce-propagation issue surfaces on a deploy. Any other value
+ * (unset, "1", "true", …) keeps strict mode on.
+ */
+export function cspStrictEnabled(
+  env: Record<string, string | undefined> = process.env,
+): boolean {
+  return env.FAULTRAY_CSP_STRICT !== "0";
 }
 
 export function buildCsp({ strict, isDev, supabaseOrigin, nonce }: CspOptions): string {

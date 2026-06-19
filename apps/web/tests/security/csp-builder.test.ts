@@ -8,9 +8,24 @@
  *     still permitted via style-src-attr.
  */
 import { describe, it, expect } from "vitest";
-import { buildCsp } from "../../src/lib/csp";
+import { buildCsp, cspStrictEnabled } from "../../src/lib/csp";
 
 const SUPA = "https://proj.supabase.co";
+
+describe("cspStrictEnabled — strict is the default (#85)", () => {
+  it("is on when the flag is unset", () => {
+    expect(cspStrictEnabled({})).toBe(true);
+  });
+
+  it("is on for any value other than '0'", () => {
+    expect(cspStrictEnabled({ FAULTRAY_CSP_STRICT: "1" })).toBe(true);
+    expect(cspStrictEnabled({ FAULTRAY_CSP_STRICT: "true" })).toBe(true);
+  });
+
+  it("is the ONLY off switch: FAULTRAY_CSP_STRICT='0' (rollback hatch)", () => {
+    expect(cspStrictEnabled({ FAULTRAY_CSP_STRICT: "0" })).toBe(false);
+  });
+});
 
 describe("buildCsp — default (non-strict) policy", () => {
   const csp = buildCsp({ strict: false, isDev: false, supabaseOrigin: SUPA });

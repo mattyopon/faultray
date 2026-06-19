@@ -42,28 +42,33 @@ the app produce. ZAP (mattyopon/faultray#172) flags both `script-src` and
       on `style-src`. Inline style *attributes* (React `style={{…}}`, which a
       nonce cannot cover) are kept working via `style-src-attr 'unsafe-inline'`,
       so `style-src` itself is `unsafe-inline`-free.
-- [x] Strict mode ships behind `FAULTRAY_CSP_STRICT=1` so the change can be
-      verified on a preview deploy without a production rollback. When unset,
-      `buildCsp` returns the historical `'unsafe-inline'` policy unchanged and
-      pages render statically as before.
-- [ ] **Operator step:** set `FAULTRAY_CSP_STRICT=1` on a Vercel **preview**
-      deploy and verify (no CSP violations in the console; GA4 / Hotjar /
-      Stripe load; fonts + inline styles render; hydration works on app pages).
-- [ ] Flip the default on (set `FAULTRAY_CSP_STRICT=1` in production) once
-      preview telemetry is clean, then drop the flag and make strict the default
-      in a follow-up.
+- [x] Strict mode is now the **default** (#85): `cspStrictEnabled()` returns
+      true unless `FAULTRAY_CSP_STRICT=0`. The historical `'unsafe-inline'`
+      policy is retained only as an opt-out / rollback path.
+- [x] **Rollback hatch:** setting `FAULTRAY_CSP_STRICT=0` (Vercel env, then
+      redeploy) instantly restores the `'unsafe-inline'` policy **and** static
+      rendering / CDN caching — no code change needed — if a nonce-propagation
+      issue surfaces on a deploy.
+- [ ] **Post-deploy smoke check (operator):** after this ships, confirm on the
+      live deploy that there are no CSP violations in the browser console, GA4 /
+      Hotjar / Stripe load, fonts + inline styles render, and hydration works on
+      app pages. If anything breaks, set `FAULTRAY_CSP_STRICT=0`, redeploy, and
+      nonce the offending script.
 
 ## Tradeoff: dynamic rendering
 
-Nonce-based CSP requires per-request rendering, so when `FAULTRAY_CSP_STRICT=1`
-every page is dynamically rendered (no static optimization / CDN caching, higher
-server cost). This is why it is staged behind the flag rather than flipped on
-unconditionally. With the flag off there is **no** rendering change.
+Nonce-based CSP requires per-request rendering, so with strict mode on (the
+default) every page is dynamically rendered (no static optimization / CDN
+caching, higher server cost). This is the accepted cost of removing
+`'unsafe-inline'`. Setting `FAULTRAY_CSP_STRICT=0` reverts to the static
+`'unsafe-inline'` policy if the caching/cost tradeoff ever needs to be undone.
 
-## Why not cut over immediately
+## Residual risk + rollback
 
 Next.js 16 ships internal inline scripts (hydration marker, route prefetch)
-whose nonce propagation should be handled automatically via the request CSP
-header, but cannot be browser-verified from CI here. A flag-gated rollout lets
-the nonce path be validated on a preview before it becomes the production
-default, without bricking hydration for every user.
+whose nonce propagation is handled automatically via the request CSP header
+(confirmed against `node_modules/next/dist/docs/.../content-security-policy.md`,
+"How nonces work in Next.js"), but cannot be browser-verified from CI here.
+That is why the `FAULTRAY_CSP_STRICT=0` rollback hatch is retained rather than
+dropped: if hydration breaks on the live deploy, ops flip the env var and
+redeploy to instantly restore the previous behavior, no code revert needed.
