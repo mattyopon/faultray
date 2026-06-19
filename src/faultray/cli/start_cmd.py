@@ -103,18 +103,59 @@ def _handle_scan_infrastructure(con: Console) -> None:
         try:
             from faultray.cli.discovery import scan as _scan
 
-            # ``scan`` is a Typer/Click Command object, not a plain function, so
-            # it must be invoked with an argv list rather than keyword args.
-            # standalone_mode=False prevents Click from calling sys.exit() and
-            # lets us handle control flow ourselves.
-            argv = ["--aws", "--region", region]
-            if profile:
-                argv += ["--profile", profile]
+            # ``scan`` is a Typer *callback* (a plain function), not a Click
+            # Command — Typer's @app.command() registers it but returns the
+            # undecorated function. Calling _scan(argv, standalone_mode=False)
+            # therefore passes argv as the first positional (``output``) plus an
+            # unexpected ``standalone_mode`` kwarg and raises TypeError. Invoke
+            # it as a normal function instead, mirroring how the other wizard
+            # handlers call tf_check/dora_assess. Because the undecorated
+            # function's defaults are Typer OptionInfo sentinels (not real
+            # values), every parameter the body reads must be passed explicitly.
             try:
-                _scan(argv, standalone_mode=False)
-            except SystemExit:
-                # A Click/Typer Exit (e.g. missing credentials) should not abort
-                # the whole wizard — fall through to the manual hint below.
+                _scan(
+                    output=Path("faultray-model.json"),
+                    hostname=None,
+                    prometheus_url=None,
+                    aws=True,
+                    gcp=False,
+                    azure=False,
+                    k8s=False,
+                    sakura=False,
+                    alibaba=False,
+                    oci=False,
+                    onprem=False,
+                    multi=False,
+                    region=region,
+                    profile=profile or None,
+                    project=None,
+                    subscription=None,
+                    resource_group=None,
+                    context=None,
+                    namespace=None,
+                    sakura_token=None,
+                    sakura_secret=None,
+                    sakura_zone="tk1v",
+                    alibaba_access_key=None,
+                    alibaba_access_secret=None,
+                    alibaba_vpc=None,
+                    oci_compartment=None,
+                    oci_config_file=None,
+                    oci_profile="DEFAULT",
+                    netbox_url=None,
+                    netbox_token=None,
+                    cmdb=None,
+                    nmap_xml=None,
+                    onprem_region="onprem",
+                    save_yaml=None,
+                    infer_hidden=False,
+                    infer_confidence=0.7,
+                )
+            except (typer.Exit, SystemExit):
+                # The scan body raises typer.Exit (a RuntimeError subclass, NOT
+                # SystemExit) for handled failures such as missing credentials.
+                # It already printed a helpful message, so swallow it rather than
+                # aborting the whole wizard or relabelling it "Scan error".
                 pass
         except Exception as exc:
             con.print(f"[red]Scan error: {exc}[/]")

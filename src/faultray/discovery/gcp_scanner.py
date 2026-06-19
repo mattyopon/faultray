@@ -582,13 +582,21 @@ class GCPScanner(CloudScannerBase):
                     svc_cfg = func.service_config
                     mem_str = getattr(svc_cfg, "available_memory", "")
                     if mem_str:
-                        # Parse the numeric prefix directly; order-dependent
-                        # string stripping mangled values like "512Mi" -> "512i".
+                        # Parse the numeric value AND its unit suffix, converting
+                        # to MB. Cloud Functions reports memory as e.g. "256",
+                        # "512M"/"512Mi" (MB), or "1G"/"2G"/"1Gi" (GB). Taking
+                        # only the numeric prefix mis-parsed "1G" as 1 MB and the
+                        # earlier string-stripping mangled "512Mi" -> "512i".
                         import re
 
-                        m = re.match(r"(\d+)", str(mem_str))
+                        m = re.match(r"\s*(\d+(?:\.\d+)?)\s*([a-zA-Z]*)", str(mem_str))
                         if m:
-                            memory_mb = int(m.group(1))
+                            value = float(m.group(1))
+                            unit = m.group(2).lower()
+                            if unit.startswith("g"):  # G, Gi -> gibibytes/gigabytes
+                                value *= 1024
+                            # M, Mi, or no unit -> already MB; leave as-is.
+                            memory_mb = int(value)
                     timeout_str = getattr(svc_cfg, "timeout_seconds", 60)
                     try:
                         timeout_seconds = int(timeout_str)

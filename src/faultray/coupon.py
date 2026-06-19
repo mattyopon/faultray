@@ -422,14 +422,15 @@ def redeem_coupon(code: str) -> RedeemedCoupon:
                 raise ValueError(f"Coupon {code} is expired or has reached its usage limit.")
 
             now = datetime.now(tz=timezone.utc)
+            # Redemption *eligibility* is already enforced above (is_valid()
+            # rejects redeeming after expires_at). The redeemed license then
+            # grants a fresh ``coupon.days`` window from the moment of
+            # redemption, matching create_coupon's documented contract ("Number
+            # of days the coupon remains valid after redemption"). Do NOT clamp
+            # active_until to coupon.expires_at — that conflates the redemption
+            # deadline with the granted access duration and would shorten valid
+            # redemptions made near the coupon's expiry.
             active_until = now + timedelta(days=coupon.days)
-            # Cap the granted access at the coupon's own expiry so redeeming on
-            # the last valid day cannot extend access to ~2x the intended window.
-            expires = datetime.fromisoformat(coupon.expires_at)
-            if expires.tzinfo is None:
-                expires = expires.replace(tzinfo=timezone.utc)
-            if expires < active_until:
-                active_until = expires
 
             redeemed = RedeemedCoupon(
                 code=code,

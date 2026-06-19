@@ -44,17 +44,6 @@ def _check_k8s_lib() -> None:
         )
 
 
-def _workload_namespace(comp_id: str) -> str:
-    """Extract the namespace from a workload component id.
-
-    Workload ids are formatted ``{kind}-{namespace}-{name}`` (e.g.
-    ``deploy-prod-api`` / ``sts-prod-db``). Returns ``""`` if it cannot be
-    determined.
-    """
-    parts = comp_id.split("-", 2)
-    return parts[1] if len(parts) >= 3 else ""
-
-
 def _looks_like_database(name: str, labels: dict[str, str] | None = None) -> bool:
     """Heuristic to determine if a workload is a database based on name/labels."""
     name_lower = name.lower()
@@ -96,12 +85,38 @@ class K8sScanner(CloudScannerBase):
         self._service_ports: dict[str, int] = {}
         # Deployment/StatefulSet label tracking: comp_id -> labels
         self._workload_labels: dict[str, dict[str, str]] = {}
+        # Deployment/StatefulSet namespace tracking: comp_id -> namespace.
+        # Stored from the workload's real metadata so namespace lookups never
+        # rely on splitting the synthetic comp_id (which breaks for hyphenated
+        # namespaces like "prod-us").
+        self._workload_namespaces: dict[str, str] = {}
         # HPA targets: comp_id -> AutoScalingConfig
         self._hpa_configs: dict[str, AutoScalingConfig] = {}
         # PDB tracking: comp_id -> (min_available, max_unavailable)
         self._pdb_configs: dict[str, dict] = {}
         # Network policy tracking: comp_id -> has network policy
         self._network_policies: set[str] = set()
+
+    def _workload_namespace(self, comp_id: str) -> str:
+        """Return the namespace for a workload component id.
+
+        Prefers the namespace captured from the workload's real Kubernetes
+        metadata at scan time (``self._workload_namespaces``). This is
+        authoritative and, crucially, correct for hyphenated namespaces: the
+        synthetic comp_id ``{kind}-{namespace}-{name}`` cannot be reliably split
+        on hyphens because both the namespace and the name may contain hyphens
+        (e.g. ``deploy-prod-us-api`` is ambiguous between ns ``prod-us``/name
+        ``api`` and ns ``prod``/name ``us-api``).
+
+        Falls back to splitting the comp_id only when the namespace was not
+        recorded (best-effort for code paths that populate labels without the
+        namespace map). Returns ``""`` when it cannot be determined.
+        """
+        ns = self._workload_namespaces.get(comp_id)
+        if ns is not None:
+            return ns
+        parts = comp_id.split("-", 2)
+        return parts[1] if len(parts) >= 3 else ""
 
     def _get_api_client(self):
         """Create a kubernetes API client."""
@@ -189,6 +204,7 @@ class K8sScanner(CloudScannerBase):
                     selector_labels = dict(deploy.spec.selector.match_labels)
 
                 self._workload_labels[comp_id] = {**labels, **selector_labels}
+                self._workload_namespaces[comp_id] = ns
 
                 # Determine component type
                 comp_type = ComponentType.DATABASE if _looks_like_database(name, labels) else ComponentType.APP_SERVER
@@ -228,6 +244,7 @@ class K8sScanner(CloudScannerBase):
                     selector_labels = dict(sts.spec.selector.match_labels)
 
                 self._workload_labels[comp_id] = {**labels, **selector_labels}
+                self._workload_namespaces[comp_id] = ns
 
                 # StatefulSets are often databases; heuristic based on name/labels
                 comp_type = ComponentType.DATABASE if _looks_like_database(name, labels) else ComponentType.APP_SERVER
@@ -411,7 +428,7 @@ class K8sScanner(CloudScannerBase):
                 for comp_id, labels in self._workload_labels.items():
                     if not selector:
                         continue
-                    if _workload_namespace(comp_id) != pdb_ns:
+                    if self._workload_namespace(comp_id) != pdb_ns:
                         continue
                     # Check if all PDB selector labels exist in workload labels
                     if all(labels.get(k) == v for k, v in selector.items()):
@@ -441,7 +458,7 @@ class K8sScanner(CloudScannerBase):
                 # NetworkPolicies are namespace-scoped: a workload must be in
                 # the policy's namespace to be affected.
                 for comp_id, labels in self._workload_labels.items():
-                    if _workload_namespace(comp_id) != ns:
+                    if self._workload_namespace(comp_id) != ns:
                         continue
                     if not selector:
                         # Empty selector matches all pods in namespace
@@ -543,7 +560,7 @@ class K8sScanner(CloudScannerBase):
             for comp_id, labels in self._workload_labels.items():
                 if comp_id not in graph.components:
                     continue
-                if _workload_namespace(comp_id) != svc_ns:
+                if self._workload_namespace(comp_id) != svc_ns:
                     continue
                 if all(labels.get(k) == v for k, v in selector.items()):
                     matching_workloads.append(comp_id)

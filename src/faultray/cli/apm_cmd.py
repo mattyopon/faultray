@@ -51,6 +51,23 @@ def _write_config_securely(config_path: Path, contents: str) -> None:
         pass
 
 
+def _apm_auth_headers(api_key: str | None) -> dict[str, str]:
+    """Build Authorization headers for collector query requests.
+
+    The collector's APM router enforces a Bearer API key when
+    ``FAULTRAY_APM_API_KEY`` is configured server-side, so the read commands
+    (``agents``/``metrics``/``alerts``) must send it too. The key is taken from
+    the explicit ``--api-key`` option when provided, otherwise from the
+    ``FAULTRAY_APM_API_KEY`` environment variable. When neither is set we send
+    no header (the collector runs open on private networks).
+    """
+    key = api_key or os.environ.get("FAULTRAY_APM_API_KEY", "")
+    key = key.strip()
+    if not key:
+        return {}
+    return {"Authorization": f"Bearer {key}"}
+
+
 def _pid_is_apm_agent(pid: int) -> bool:
     """Best-effort check that *pid* is actually a FaultRay APM agent process.
 
@@ -381,6 +398,12 @@ def apm_status(
 def apm_list_agents(
     server: str = typer.Option("http://localhost:8080", "--server", "-s", help="FaultRay server URL"),
     json_output: bool = typer.Option(False, "--json", help="Output as JSON"),
+    api_key: str = typer.Option(
+        None,
+        "--api-key",
+        "-k",
+        help="Collector API key (defaults to $FAULTRAY_APM_API_KEY)",
+    ),
 ) -> None:
     """List all registered APM agents. / 登録済みAPMエージェントを一覧表示。
 
@@ -404,7 +427,11 @@ def apm_list_agents(
     import httpx
 
     try:
-        resp = httpx.get(f"{server}/api/apm/agents", timeout=10.0)
+        resp = httpx.get(
+            f"{server}/api/apm/agents",
+            timeout=10.0,
+            headers=_apm_auth_headers(api_key),
+        )
         resp.raise_for_status()
         agents = resp.json()
     except httpx.HTTPStatusError as e:
@@ -453,6 +480,12 @@ def apm_metrics(
     metric: str = typer.Option(None, "--metric", "-m", help="Specific metric name"),
     server: str = typer.Option("http://localhost:8080", "--server", "-s", help="FaultRay server URL"),
     json_output: bool = typer.Option(False, "--json", help="Output as JSON"),
+    api_key: str = typer.Option(
+        None,
+        "--api-key",
+        "-k",
+        help="Collector API key (defaults to $FAULTRAY_APM_API_KEY)",
+    ),
 ) -> None:
     """Query metrics for an APM agent. / APMエージェントのメトリクスを照会。
 
@@ -485,6 +518,7 @@ def apm_metrics(
             f"{server}/api/apm/agents/{agent_id}/metrics",
             params=params,
             timeout=10.0,
+            headers=_apm_auth_headers(api_key),
         )
         resp.raise_for_status()
         data = resp.json()
@@ -529,6 +563,12 @@ def apm_alerts(
     severity: str = typer.Option(None, "--severity", help="Filter by severity"),
     server: str = typer.Option("http://localhost:8080", "--server", "-s", help="FaultRay server URL"),
     json_output: bool = typer.Option(False, "--json", help="Output as JSON"),
+    api_key: str = typer.Option(
+        None,
+        "--api-key",
+        "-k",
+        help="Collector API key (defaults to $FAULTRAY_APM_API_KEY)",
+    ),
 ) -> None:
     """List APM alerts. / APMアラートを一覧表示。
 
@@ -558,7 +598,12 @@ def apm_alerts(
         params["severity"] = severity
 
     try:
-        resp = httpx.get(f"{server}/api/apm/alerts", params=params, timeout=10.0)
+        resp = httpx.get(
+            f"{server}/api/apm/alerts",
+            params=params,
+            timeout=10.0,
+            headers=_apm_auth_headers(api_key),
+        )
         resp.raise_for_status()
         data = resp.json()
     except httpx.HTTPStatusError as e:

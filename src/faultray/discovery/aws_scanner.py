@@ -50,6 +50,18 @@ def _extract_endpoint_host(value: str) -> str | None:
     from urllib.parse import urlsplit
 
     raw = value.strip()
+    # JDBC URLs nest the real connection URL behind a ``jdbc:<driver>:`` prefix
+    # (e.g. ``jdbc:postgresql://db.example.com:5432/app``). Left intact, urlsplit
+    # treats ``jdbc`` as the scheme and the rest as an opaque path, yielding an
+    # empty hostname. Strip the leading ``jdbc:`` (and the driver token that
+    # follows it) so the nested ``postgresql://...`` URL is parsed normally.
+    if raw.lower().startswith("jdbc:"):
+        raw = raw[len("jdbc:"):]
+        # Drop the driver token before the nested scheme/host. Either
+        # ``postgresql://host`` (already a parseable URL) or, for driver-only
+        # forms like ``mysql:host:port``, the leading ``mysql:`` segment.
+        if "://" not in raw and ":" in raw:
+            raw = raw.split(":", 1)[1]
     # urlsplit needs a scheme to populate netloc/hostname; synthesise one when
     # the connection string omits it. This correctly handles userinfo whose
     # password contains reserved characters such as ``/`` (which naive string
