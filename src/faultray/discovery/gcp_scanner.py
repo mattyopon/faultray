@@ -145,7 +145,6 @@ class GCPScanner(CloudScannerBase):
                     if inst.status != "RUNNING":
                         continue
 
-                    str(inst.id)
                     name = inst.name
                     zone_name = zone.split("/")[-1] if "/" in zone else zone
 
@@ -322,11 +321,21 @@ class GCPScanner(CloudScannerBase):
                 except (ValueError, IndexError):
                     port = 443
 
+                # The generated client exposes the IP as ``i_p_address`` (or
+                # ``ip_address`` depending on version); the previous capital-I
+                # ``I_p_address`` never matched, dropping the host address.
+                ip_value = (
+                    getattr(rule, "i_p_address", None)
+                    or getattr(rule, "ip_address", None)
+                    or getattr(rule, "I_p_address", "")
+                )
+                host = ip_value if isinstance(ip_value, str) else ""
+
                 component = Component(
                     id=comp_id,
                     name=rule_name,
                     type=ComponentType.LOAD_BALANCER,
-                    host=getattr(rule, "I_p_address", "") or "",
+                    host=host,
                     port=port,
                     replicas=3,  # Global LB is inherently distributed
                     region=RegionConfig(region="global"),
@@ -465,8 +474,9 @@ class GCPScanner(CloudScannerBase):
                 # Check versioning
                 versioning_enabled = bucket.versioning_enabled if hasattr(bucket, "versioning_enabled") else False
 
-                # Check default encryption
-                getattr(bucket, "default_kms_key_name", None)
+                # Check default encryption (CMEK vs Google-managed key).
+                kms_key = getattr(bucket, "default_kms_key_name", None)
+                cmek_enabled = bool(kms_key) and isinstance(kms_key, str)
 
                 component = Component(
                     id=comp_id,
@@ -480,7 +490,7 @@ class GCPScanner(CloudScannerBase):
                         encryption_at_rest=True,  # GCS always encrypts at rest
                         backup_enabled=versioning_enabled,
                     ),
-                    tags=["gcs"],
+                    tags=["gcs", f"cmek:{cmek_enabled}"],
                 )
                 graph.add_component(component)
         except Exception as exc:
@@ -572,10 +582,13 @@ class GCPScanner(CloudScannerBase):
                     svc_cfg = func.service_config
                     mem_str = getattr(svc_cfg, "available_memory", "")
                     if mem_str:
-                        try:
-                            memory_mb = int(str(mem_str).replace("M", "").replace("Mi", ""))
-                        except ValueError:
-                            pass
+                        # Parse the numeric prefix directly; order-dependent
+                        # string stripping mangled values like "512Mi" -> "512i".
+                        import re
+
+                        m = re.match(r"(\d+)", str(mem_str))
+                        if m:
+                            memory_mb = int(m.group(1))
                     timeout_str = getattr(svc_cfg, "timeout_seconds", 60)
                     try:
                         timeout_seconds = int(timeout_str)

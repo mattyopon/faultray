@@ -32,6 +32,7 @@ import json
 import logging
 import os
 import platform
+import re
 import sys
 import threading
 import uuid
@@ -47,6 +48,12 @@ logger = logging.getLogger(__name__)
 
 MAX_EVENTS_PER_SESSION: int = 100
 FLUSH_INTERVAL_SECONDS: int = 60
+
+# Telemetry event names must be short, static identifiers (e.g. "command.simulate").
+# Rejecting free-form names prevents a caller from accidentally using a command
+# line, file path, or other user input as the event name, which would bypass
+# property sanitisation and leak sensitive data.
+_EVENT_NAME_RE = re.compile(r"^[A-Za-z0-9_.\-]{1,64}$")
 
 _FAULTRAY_DIR: Path = Path.home() / ".faultray"
 _TELEMETRY_ID_FILE: Path = _FAULTRAY_DIR / "telemetry_id"
@@ -159,11 +166,16 @@ def _send_posthog(
     anonymous_id: str,
     event: str,
     properties: dict[str, Any],
-) -> None:
-    """Send a single event to PostHog.  Errors are swallowed silently."""
+) -> bool:
+    """Send a single event to PostHog.
+
+    Returns True on apparent success, False if PostHog is unavailable or the
+    send failed, so the caller can fall back to the local JSONL buffer instead
+    of silently dropping the event.
+    """
     posthog = _try_import_posthog()
     if posthog is None:
-        return
+        return False
     try:
         posthog.api_key = api_key
         posthog.host = endpoint
@@ -173,8 +185,10 @@ def _send_posthog(
             properties=properties,
         )
         posthog.flush()
+        return True
     except Exception as exc:
         logger.debug("PostHog send failed (silenced): %s", exc)
+        return False
 
 
 # ---------------------------------------------------------------------------
@@ -259,6 +273,12 @@ class Telemetry:
             properties: Optional dict of **non-identifying** metadata.
         """
         if not self._enabled:
+            return
+        # Reject dynamic / free-form event names so dynamic strings (command
+        # lines, paths, user input) cannot be recorded verbatim as the event,
+        # bypassing property sanitisation.
+        if not isinstance(event, str) or not _EVENT_NAME_RE.match(event):
+            logger.debug("Telemetry: dropping non-static event name %r", event)
             return
         with self._lock:
             if self._session_count >= MAX_EVENTS_PER_SESSION:
@@ -379,13 +399,17 @@ class Telemetry:
         props = record["properties"]
 
         if self._posthog_api_key:
-            _send_posthog(
+            sent = _send_posthog(
                 api_key=self._posthog_api_key,
                 endpoint=self._posthog_endpoint,
                 anonymous_id=props.get("anonymous_id", "anonymous"),
                 event=event,
                 properties=props,
             )
+            # On delivery failure, fall back to the local JSONL buffer (when
+            # enabled) instead of silently losing the event.
+            if not sent and self._local_fallback:
+                _append_to_local_jsonl(record)
         elif self._local_fallback:
             _append_to_local_jsonl(record)
 

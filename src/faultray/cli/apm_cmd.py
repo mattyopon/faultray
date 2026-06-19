@@ -29,6 +29,46 @@ app.add_typer(apm_app, name="apm")
 
 
 # ---------------------------------------------------------------------------
+# Helpers
+# ---------------------------------------------------------------------------
+
+
+def _write_config_securely(config_path: Path, contents: str) -> None:
+    """Write the agent config with owner-only permissions (it holds an api_key).
+
+    The parent directory is created (mode 0700) and the file is chmod'd to 0600
+    so the API key is not world-readable under the default umask.
+    """
+    config_path.parent.mkdir(parents=True, exist_ok=True)
+    try:
+        os.chmod(config_path.parent, 0o700)
+    except OSError:
+        # Best-effort: not all platforms / filesystems support chmod.
+        pass
+    config_path.write_text(contents, encoding="utf-8")
+    try:
+        os.chmod(config_path, 0o600)
+    except OSError:
+        pass
+
+
+def _pid_is_apm_agent(pid: int) -> bool:
+    """Best-effort check that *pid* is actually a FaultRay APM agent process.
+
+    Reads ``/proc/<pid>/cmdline`` (Linux) and looks for the faultray marker.
+    Returns True when we cannot determine identity (no /proc, read error) so we
+    fall back to the previous, less strict behaviour rather than refusing to act.
+    """
+    try:
+        cmdline = Path(f"/proc/{pid}/cmdline").read_bytes()
+    except (OSError, ValueError):
+        # /proc unavailable (non-Linux) or unreadable — don't make assumptions.
+        return True
+    text = cmdline.replace(b"\x00", b" ").decode("utf-8", "replace").lower()
+    return "faultray" in text
+
+
+# ---------------------------------------------------------------------------
 # Agent lifecycle commands
 # ---------------------------------------------------------------------------
 
@@ -77,10 +117,9 @@ def apm_install(
     )
 
     config_path = Path(config_dir) / "agent.yaml"
-    config_path.parent.mkdir(parents=True, exist_ok=True)
-    config_path.write_text(
+    _write_config_securely(
+        config_path,
         yaml.dump(config.model_dump(), default_flow_style=False, sort_keys=False),
-        encoding="utf-8",
     )
 
     console.print(f"[green]Agent configuration written to:[/] {config_path}")
@@ -132,12 +171,19 @@ def apm_start(
         try:
             pid = int(pid_path.read_text().strip())
             os.kill(pid, 0)  # Check if process exists
-            console.print(
-                f"[yellow]Agent already running (PID {pid}). "
-                f"Stop it first with: faultray apm stop[/]"
-            )
-            raise typer.Exit(1)
         except (OSError, ValueError):
+            # Process is gone or PID file is garbage — stale, remove it.
+            pid_path.unlink(missing_ok=True)
+        else:
+            # A process with that PID exists; confirm it is actually our agent
+            # before refusing to start (PIDs get reused).
+            if _pid_is_apm_agent(pid):
+                console.print(
+                    f"[yellow]Agent already running (PID {pid}). "
+                    f"Stop it first with: faultray apm stop[/]"
+                )
+                raise typer.Exit(1)
+            # Unrelated process reusing the PID — treat the file as stale.
             pid_path.unlink(missing_ok=True)
 
     agent = APMAgent(agent_config)
@@ -164,16 +210,45 @@ def apm_start(
             console.print("[yellow]Background mode not supported on this OS. Running in foreground.[/]")
             agent.start()
             return
+        except OSError as exc:
+            console.print(f"[red]Could not fork agent process: {exc}[/]")
+            raise typer.Exit(1)
 
         if pid > 0:
             console.print(f"[green]Agent started in background (PID {pid})[/]")
             return
         else:
-            # Child process
+            # Child process — detach from the controlling terminal.
             os.setsid()
-            sys.stdin.close()
-            agent.start()
-            sys.exit(0)
+
+            # Redirect std streams to /dev/null so the daemon is not tied to the
+            # parent's terminal (which keeps stdout/stderr open otherwise).
+            devnull_fd = os.open(os.devnull, os.O_RDWR)
+            os.dup2(devnull_fd, 0)
+            os.dup2(devnull_fd, 1)
+            os.dup2(devnull_fd, 2)
+            if devnull_fd > 2:
+                os.close(devnull_fd)
+
+            # Write the PID file the *child* owns so stop/status can find us.
+            try:
+                pid_path.parent.mkdir(parents=True, exist_ok=True)
+                tmp_path = pid_path.with_suffix(pid_path.suffix + ".tmp")
+                tmp_path.write_text(str(os.getpid()))
+                os.replace(tmp_path, pid_path)
+            except OSError:
+                pass
+
+            try:
+                agent.start()
+            finally:
+                # Clean up our PID file on exit so we don't leave a stale one.
+                try:
+                    if pid_path.read_text().strip() == str(os.getpid()):
+                        pid_path.unlink(missing_ok=True)
+                except (OSError, ValueError):
+                    pass
+            os._exit(0)
 
 
 @apm_app.command("stop")
@@ -217,6 +292,21 @@ def apm_stop(
 
     try:
         pid = int(pid_path.read_text().strip())
+    except (OSError, ValueError) as e:
+        console.print(f"[red]Could not stop agent: {e}[/]")
+        pid_path.unlink(missing_ok=True)
+        raise typer.Exit(1)
+
+    # Guard against signalling an unrelated process that reused the PID.
+    if not _pid_is_apm_agent(pid):
+        console.print(
+            f"[yellow]PID {pid} is not a FaultRay agent (stale PID file). "
+            f"Removing stale PID file.[/]"
+        )
+        pid_path.unlink(missing_ok=True)
+        raise typer.Exit(1)
+
+    try:
         os.kill(pid, signal.SIGTERM)
         console.print(f"[green]Sent SIGTERM to agent (PID {pid})[/]")
         pid_path.unlink(missing_ok=True)
@@ -316,7 +406,14 @@ def apm_list_agents(
 
     try:
         resp = httpx.get(f"{server}/api/apm/agents", timeout=10.0)
+        resp.raise_for_status()
         agents = resp.json()
+    except httpx.HTTPStatusError as e:
+        console.print(
+            f"[red]Server returned an error: HTTP {e.response.status_code} "
+            f"{e.response.reason_phrase}[/]"
+        )
+        raise typer.Exit(1)
     except Exception as e:
         console.print(f"[red]Could not connect to server: {e}[/]")
         raise typer.Exit(1)
@@ -390,7 +487,14 @@ def apm_metrics(
             params=params,
             timeout=10.0,
         )
+        resp.raise_for_status()
         data = resp.json()
+    except httpx.HTTPStatusError as e:
+        console.print(
+            f"[red]Server returned an error: HTTP {e.response.status_code} "
+            f"{e.response.reason_phrase}[/]"
+        )
+        raise typer.Exit(1)
     except Exception as e:
         console.print(f"[red]Could not connect to server: {e}[/]")
         raise typer.Exit(1)
@@ -456,7 +560,14 @@ def apm_alerts(
 
     try:
         resp = httpx.get(f"{server}/api/apm/alerts", params=params, timeout=10.0)
+        resp.raise_for_status()
         data = resp.json()
+    except httpx.HTTPStatusError as e:
+        console.print(
+            f"[red]Server returned an error: HTTP {e.response.status_code} "
+            f"{e.response.reason_phrase}[/]"
+        )
+        raise typer.Exit(1)
     except Exception as e:
         console.print(f"[red]Could not connect to server: {e}[/]")
         raise typer.Exit(1)
@@ -562,7 +673,7 @@ def apm_report(
     # Summary panel
     score = report.get("score", 0)
     avail = report.get("availability_estimate", "unknown")
-    ts = report.get("timestamp", "")[:19]
+    ts = str(report.get("timestamp", "") or "")[:19]
     score_color = "green" if score >= 80 else ("yellow" if score >= 50 else "red")
 
     console.print(
@@ -721,10 +832,9 @@ def apm_setup() -> None:
     )
 
     config_path = config_dir_path / "agent.yaml"
-    config_path.parent.mkdir(parents=True, exist_ok=True)
-    config_path.write_text(
+    _write_config_securely(
+        config_path,
         _yaml.dump(config.model_dump(), default_flow_style=False, sort_keys=False),
-        encoding="utf-8",
     )
 
     console.print(f"[green]Configuration written to:[/] {config_path}")

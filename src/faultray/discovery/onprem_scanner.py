@@ -617,7 +617,14 @@ class OnPremScanner:
                 state_el = port_el.find("state")
                 if state_el is None or state_el.get("state") != "open":
                     continue
-                portid = int(port_el.get("portid") or 0)
+                try:
+                    portid = int(port_el.get("portid") or 0)
+                except ValueError:
+                    logger.warning(
+                        "Skipping nmap port with invalid portid: %r",
+                        port_el.get("portid"),
+                    )
+                    continue
                 svc_el = port_el.find("service")
                 svc_name = svc_el.get("name", "") if svc_el is not None else ""
                 open_ports.append((portid, svc_name))

@@ -7,6 +7,7 @@ from __future__ import annotations
 
 import json as json_mod
 from pathlib import Path
+from typing import Optional
 
 import typer
 from rich.console import Console
@@ -19,14 +20,14 @@ from faultray.cli.main import app, console
 @app.command()
 def optimize(
     yaml_file: Path = typer.Argument(..., help="Infrastructure YAML file"),
-    budget: float = typer.Option(
+    budget: Optional[float] = typer.Option(
         None, "--budget", "-b", help="Maximum monthly budget in dollars"
     ),
-    target_score: float = typer.Option(
+    target_score: Optional[float] = typer.Option(
         None, "--target-score", "-t", help="Target resilience score (0-100)"
     ),
     steps: int = typer.Option(
-        20, "--steps", "-s", help="Number of points on the Pareto frontier"
+        20, "--steps", "-s", min=1, help="Number of points on the Pareto frontier"
     ),
     json_output: bool = typer.Option(False, "--json", help="Output as JSON"),
 ) -> None:
@@ -55,21 +56,24 @@ def optimize(
         console.print(f"[red]File not found: {yaml_file}[/]")
         raise typer.Exit(1)
 
-    console.print(f"[cyan]Loading infrastructure from {yaml_file}...[/]")
+    if not json_output:
+        console.print(f"[cyan]Loading infrastructure from {yaml_file}...[/]")
     try:
         graph = load_yaml(yaml_file)
     except (FileNotFoundError, ValueError) as exc:
         console.print(f"[red]{exc}[/]")
         raise typer.Exit(1)
 
-    console.print(
-        f"[cyan]Running Pareto optimization ({len(graph.components)} components)...[/]"
-    )
+    if not json_output:
+        console.print(
+            f"[cyan]Running Pareto optimization ({len(graph.components)} components)...[/]"
+        )
 
     optimizer = ParetoOptimizer()
 
     if budget is not None:
-        console.print(f"[cyan]Budget constraint: ${budget:,.0f}/mo[/]")
+        if not json_output:
+            console.print(f"[cyan]Budget constraint: ${budget:,.0f}/mo[/]")
         solution = optimizer.find_best_for_budget(graph, budget)
         if json_output:
             console.print_json(_solution_to_json(solution))
@@ -78,7 +82,8 @@ def optimize(
         return
 
     if target_score is not None:
-        console.print(f"[cyan]Target score: {target_score}[/]")
+        if not json_output:
+            console.print(f"[cyan]Target score: {target_score}[/]")
         solution = optimizer.find_cheapest_for_score(graph, target_score)
         if json_output:
             console.print_json(_solution_to_json(solution))

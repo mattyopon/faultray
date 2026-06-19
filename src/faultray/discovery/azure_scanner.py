@@ -92,6 +92,13 @@ class AzureScanner(CloudScannerBase):
         """
         _check_azure_libs()
 
+        # Reset per-run state so a reused scanner does not leak warnings or
+        # subnet/NSG/cluster state from a previous scan into the new graph.
+        self._warnings.clear()
+        self._nsg_rules.clear()
+        self._component_subnets.clear()
+        self._aks_clusters.clear()
+
         start = time.monotonic()
         graph = InfraGraph()
 
@@ -132,8 +139,14 @@ class AzureScanner(CloudScannerBase):
 
     def _scan_virtual_machines(self, graph: InfraGraph) -> None:
         """Discover Azure Virtual Machines."""
-        from azure.identity import DefaultAzureCredential
-        from azure.mgmt.compute import ComputeManagementClient
+        try:
+            from azure.identity import DefaultAzureCredential
+            from azure.mgmt.compute import ComputeManagementClient
+        except ImportError:
+            self._warnings.append(
+                "azure-mgmt-compute not installed, skipping Virtual Machines scan"
+            )
+            return
 
         credential = DefaultAzureCredential()
         client = ComputeManagementClient(credential, self.subscription_id)
@@ -278,7 +291,8 @@ class AzureScanner(CloudScannerBase):
                 comp_id = f"azredis-{cache_name}"
                 location = getattr(cache, "location", "")
                 host_name = getattr(cache, "host_name", "")
-                port = getattr(cache, "ssl_port", 6380)
+                # ssl_port may be present but None during provisioning.
+                port = getattr(cache, "ssl_port", None) or 6380
 
                 # SKU info
                 sku_name = ""
@@ -395,7 +409,8 @@ class AzureScanner(CloudScannerBase):
                 total_nodes = 0
                 agent_pools = getattr(cluster, "agent_pool_profiles", []) or []
                 for pool in agent_pools:
-                    total_nodes += getattr(pool, "count", 0)
+                    # count may be declared but None (e.g. during provisioning).
+                    total_nodes += getattr(pool, "count", 0) or 0
 
                 # HA: multiple availability zones
                 zones = []
@@ -598,7 +613,10 @@ class AzureScanner(CloudScannerBase):
             credential = DefaultAzureCredential()
             client = DnsManagementClient(credential, self.subscription_id)
 
-            zones = client.zones.list()
+            if self.resource_group:
+                zones = client.zones.list_by_resource_group(self.resource_group)
+            else:
+                zones = client.zones.list()
 
             for zone in zones:
                 zone_name = zone.name
@@ -629,7 +647,11 @@ class AzureScanner(CloudScannerBase):
             )
             return
 
-        existing_edges: set[tuple[str, str]] = set()
+        # Seed from edges already in the graph (e.g. from another analyzer)
+        # so we never create duplicate dependencies.
+        existing_edges: set[tuple[str, str]] = {
+            (e.source_id, e.target_id) for e in graph.all_dependency_edges()
+        }
 
         try:
             credential = DefaultAzureCredential()

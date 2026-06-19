@@ -339,34 +339,43 @@ def _register_commands() -> None:
     global _commands_loaded  # noqa: PLW0603
     if _commands_loaded:
         return
+    # Guard against re-entry while we are in the middle of loading (e.g. if an
+    # imported module triggers get_command again), but only mark the work as
+    # *complete* once discovery, imports and panel application all succeed.
+    # Anything that escapes the per-module try (glob, _apply_help_panels) would
+    # otherwise leave registration permanently skipped.
     _commands_loaded = True
+    try:
+        known_set = set(_KNOWN_MODULES)
 
-    known_set = set(_KNOWN_MODULES)
+        # Discover any new modules not in the explicit list.
+        extra: list[str] = []
+        for cmd_file in sorted(_CLI_DIR.glob("*.py")):
+            if cmd_file.name.startswith("_") or cmd_file.name == "main.py":
+                continue
+            stem = cmd_file.stem
+            if stem not in known_set:
+                extra.append(stem)
 
-    # Discover any new modules not in the explicit list.
-    extra: list[str] = []
-    for cmd_file in sorted(_CLI_DIR.glob("*.py")):
-        if cmd_file.name.startswith("_") or cmd_file.name == "main.py":
-            continue
-        stem = cmd_file.stem
-        if stem not in known_set:
-            extra.append(stem)
+        for stem in (*_KNOWN_MODULES, *extra):
+            module_name = f"faultray.cli.{stem}"
+            if module_name in sys.modules:
+                continue
+            try:
+                importlib.import_module(module_name)
+            except Exception:
+                logger.warning(
+                    "Failed to load CLI command module %s",
+                    module_name,
+                    exc_info=True,
+                )
 
-    for stem in (*_KNOWN_MODULES, *extra):
-        module_name = f"faultray.cli.{stem}"
-        if module_name in sys.modules:
-            continue
-        try:
-            importlib.import_module(module_name)
-        except Exception:
-            logger.warning(
-                "Failed to load CLI command module %s",
-                module_name,
-                exc_info=True,
-            )
-
-    # Apply rich_help_panel groupings after all commands are registered.
-    _apply_help_panels()
+        # Apply rich_help_panel groupings after all commands are registered.
+        _apply_help_panels()
+    except Exception:
+        # Allow a later invocation to retry rather than skipping forever.
+        _commands_loaded = False
+        raise
 
 
 # ---------------------------------------------------------------------------
@@ -407,22 +416,51 @@ def _patch_typer_testing() -> bool:
 
 # Patch now if already imported.
 if not _patch_typer_testing():
-    # Otherwise, install a one-shot import hook.
-    class _PatchTyperTesting:
-        """One-shot meta-path hook: patches typer.testing after it is imported."""
+    # Otherwise, install a one-shot import hook using the modern importlib
+    # ``MetaPathFinder.find_spec`` protocol. The legacy ``find_module`` /
+    # ``load_module`` API this used to rely on was removed in Python 3.12, so
+    # this is implemented via ``find_spec`` to keep working on 3.12+.
+    import importlib.abc
+    import importlib.util
+    from importlib.machinery import ModuleSpec
 
-        def find_module(self, fullname: str, path: object = None) -> object:  # noqa: ANN401
-            if fullname == "typer.testing":
-                return self
-            return None
+    class _PatchTyperTestingLoader(importlib.abc.Loader):
+        """Wraps the real loader so the patch runs right after exec_module."""
 
-        def load_module(self, fullname: str) -> object:  # noqa: ANN401
-            sys.meta_path.remove(self)  # one-shot: remove before re-importing
-            mod = importlib.import_module(fullname)
+        def __init__(self, real_loader: object) -> None:
+            self._real_loader = real_loader
+
+        def create_module(self, spec: ModuleSpec) -> object:  # noqa: ANN401
+            return self._real_loader.create_module(spec)  # type: ignore[union-attr]
+
+        def exec_module(self, module: object) -> None:
+            self._real_loader.exec_module(module)  # type: ignore[union-attr]
             _patch_typer_testing()
-            return mod
 
-    sys.meta_path.insert(0, _PatchTyperTesting())  # type: ignore[arg-type]
+    class _PatchTyperTestingFinder(importlib.abc.MetaPathFinder):
+        """One-shot meta-path finder: patches typer.testing after import."""
+
+        def find_spec(
+            self,
+            fullname: str,
+            path: object = None,
+            target: object = None,
+        ) -> object:  # noqa: ANN401
+            if fullname != "typer.testing":
+                return None
+            # Remove ourselves *before* delegating so the recursive find_spec
+            # below uses the other finders and we never re-enter.
+            try:
+                sys.meta_path.remove(self)
+            except ValueError:
+                return None
+            spec = importlib.util.find_spec(fullname)
+            if spec is None or spec.loader is None:
+                return spec
+            spec.loader = _PatchTyperTestingLoader(spec.loader)
+            return spec
+
+    sys.meta_path.insert(0, _PatchTyperTestingFinder())
 
 
 __all__ = ["app", "_print_dynamic_results"]

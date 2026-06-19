@@ -8,6 +8,7 @@ from __future__ import annotations
 from pathlib import Path
 
 import typer
+import yaml
 from rich.panel import Panel
 from rich.table import Table
 
@@ -34,7 +35,7 @@ def _load_graph(yaml_file: Path) -> "InfraGraph":  # noqa: F821
         else:
             from faultray.model.graph import InfraGraph
             return InfraGraph.load(yaml_file)
-    except (FileNotFoundError, ValueError) as exc:
+    except (FileNotFoundError, OSError, ValueError, KeyError, TypeError, yaml.YAMLError) as exc:
         console.print(f"[red]{exc}[/]")
         raise typer.Exit(1)
 
@@ -59,20 +60,22 @@ def calendar_schedule(
     graph = _load_graph(model)
     cal = ChaosCalendar(graph)
 
-    if add:
-        window_name = name or f"window-{add.replace(' ', '-')}"
-        window = ChaosWindow(
-            name=window_name,
-            cron_expression=add,
-            max_blast_radius=max_blast,
-            max_duration_minutes=max_duration,
-        )
-        cal.add_window(window)
-        if not json_output:
-            console.print(f"[green]Added chaos window: {window_name} ({add})[/]")
+    try:
+        if add:
+            window_name = name or f"window-{add.replace(' ', '-')}"
+            window = ChaosWindow(
+                name=window_name,
+                cron_expression=add,
+                max_blast_radius=max_blast,
+                max_duration_minutes=max_duration,
+            )
+            cal.add_window(window)
+            if not json_output:
+                console.print(f"[green]Added chaos window: {window_name} ({add})[/]")
 
-    schedule = cal.get_schedule()
-    cal.close()
+        schedule = cal.get_schedule()
+    finally:
+        cal.close()
 
     if json_output:
         console.print_json(data={"windows": schedule})
@@ -114,10 +117,16 @@ def calendar_forecast(
     """
     from faultray.simulator.chaos_calendar import ChaosCalendar
 
+    if days <= 0:
+        console.print("[red]--days must be a positive number of days.[/]")
+        raise typer.Exit(1)
+
     graph = _load_graph(model)
     cal = ChaosCalendar(graph)
-    forecast = cal.risk_forecast(horizon_days=days)
-    cal.close()
+    try:
+        forecast = cal.risk_forecast(horizon_days=days)
+    finally:
+        cal.close()
 
     if json_output:
         console.print_json(data={
@@ -175,8 +184,10 @@ def calendar_suggest(
 
     graph = _load_graph(model)
     cal = ChaosCalendar(graph)
-    suggestions = cal.suggest_experiments()
-    cal.close()
+    try:
+        suggestions = cal.suggest_experiments()
+    finally:
+        cal.close()
 
     if json_output:
         console.print_json(data={"suggestions": suggestions})
@@ -275,7 +286,12 @@ def calendar_auto_schedule(
     graph = _load_graph(model)
     cal = ChaosCalendar()
 
-    freq = RecurrencePattern(frequency)
+    try:
+        freq = RecurrencePattern(frequency)
+    except ValueError:
+        valid = ", ".join(p.value for p in RecurrencePattern)
+        console.print(f"[red]Invalid frequency '{frequency}'. Choose from: {valid}[/]")
+        raise typer.Exit(1)
     experiments = cal.auto_schedule(graph, frequency=freq, owner=owner)
 
     if json_output:
@@ -404,8 +420,27 @@ def calendar_blackout(
 
     from faultray.scheduler.chaos_calendar import BlackoutWindow, ChaosCalendar
 
-    start_dt = datetime.fromisoformat(start).replace(tzinfo=timezone.utc)
-    end_dt = datetime.fromisoformat(end).replace(tzinfo=timezone.utc)
+    try:
+        start_parsed = datetime.fromisoformat(start)
+        end_parsed = datetime.fromisoformat(end)
+    except ValueError as exc:
+        console.print(f"[red]Invalid ISO 8601 date/time: {exc}[/]")
+        raise typer.Exit(1)
+
+    start_dt = (
+        start_parsed.replace(tzinfo=timezone.utc)
+        if start_parsed.tzinfo is None
+        else start_parsed.astimezone(timezone.utc)
+    )
+    end_dt = (
+        end_parsed.replace(tzinfo=timezone.utc)
+        if end_parsed.tzinfo is None
+        else end_parsed.astimezone(timezone.utc)
+    )
+
+    if end_dt <= start_dt:
+        console.print("[red]Blackout end must be after start.[/]")
+        raise typer.Exit(1)
 
     cal = ChaosCalendar()
     bw = BlackoutWindow(start=start_dt, end=end_dt, reason=reason)
@@ -444,5 +479,9 @@ def calendar_export(
         return
 
     ical = cal.export_ical()
-    output.write_text(ical)
+    try:
+        output.write_text(ical)
+    except OSError as exc:
+        console.print(f"[red]Failed to write {output}: {exc}[/]")
+        raise typer.Exit(1)
     console.print(f"[green]Exported calendar to {output}[/]")

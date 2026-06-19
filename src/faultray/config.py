@@ -77,6 +77,13 @@ def save_config(config: FaultRayConfig, path: Path | None = None) -> None:
     }
     with open(config_path, "w") as f:
         yaml.dump(data, f, default_flow_style=False, sort_keys=False)
+    # The config can contain secrets (Slack/PagerDuty/Teams webhooks, API keys),
+    # so restrict it to owner read/write only. Best effort: some filesystems do
+    # not support POSIX permissions.
+    try:
+        config_path.chmod(0o600)
+    except OSError:
+        logger.debug("Could not restrict permissions on %s", config_path)
 
 
 def set_nested_value(config: FaultRayConfig, key_path: str, value: str) -> None:
@@ -100,15 +107,29 @@ def set_nested_value(config: FaultRayConfig, key_path: str, value: str) -> None:
     if not isinstance(section_dict, dict):
         raise ValueError(f"Config section '{section}' is not a dict.")
 
-    # Parse value type
-    parsed_value: str | int | float = value
-    try:
-        parsed_value = int(value)
-    except ValueError:
+    # Parse value type. Booleans MUST be handled before int/float/string so a
+    # CLI value of 'false' becomes the bool False rather than a truthy string
+    # (which would silently invert disable toggles like telemetry.enabled).
+    parsed_value: str | int | float | bool
+    lowered = value.strip().lower()
+    existing = section_dict.get(key)
+    if lowered in ("true", "yes", "on") or (
+        isinstance(existing, bool) and lowered == "1"
+    ):
+        parsed_value = True
+    elif lowered in ("false", "no", "off") or (
+        isinstance(existing, bool) and lowered == "0"
+    ):
+        parsed_value = False
+    else:
+        parsed_value = value
         try:
-            parsed_value = float(value)
+            parsed_value = int(value)
         except ValueError:
-            pass  # keep as string
+            try:
+                parsed_value = float(value)
+            except ValueError:
+                pass  # keep as string
 
     section_dict[key] = parsed_value
 

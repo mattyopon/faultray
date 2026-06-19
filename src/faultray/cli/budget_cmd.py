@@ -49,6 +49,12 @@ def budget(
     """
     from faultray.simulator.failure_budget import FailureBudgetAllocator
 
+    if subcommand != "allocate":
+        raise typer.BadParameter(
+            f"Unknown subcommand '{subcommand}'. Supported: allocate",
+            param_hint="subcommand",
+        )
+
     graph = _load_graph_for_analysis(model_file, None)
 
     allocator = FailureBudgetAllocator(graph, slo_target=slo, window_days=window)

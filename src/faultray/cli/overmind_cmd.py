@@ -27,6 +27,7 @@ Examples::
 
 from __future__ import annotations
 
+import html
 import json
 from pathlib import Path
 
@@ -180,18 +181,31 @@ def overmind_compare(
         console.print(f"[red]Failed to read Overmind JSON: {exc}[/]")
         raise typer.Exit(1)
 
-    graph = _load_graph_optional(faultray_yaml, quiet=json_output)
+    # A meaningful comparison needs a real model, so fail (rather than silently
+    # comparing against an empty graph) if the model can't be loaded.
+    graph = _load_graph_optional(faultray_yaml, quiet=json_output, required=True)
 
     # Parse and enrich (to determine unmapped)
-    analysis = OvermindBridge.from_overmind_json(raw_data)
-    bridge = OvermindBridge(graph=graph)
-    enriched = bridge.enrich_with_cascade(analysis, graph)
+    try:
+        analysis = OvermindBridge.from_overmind_json(raw_data)
+        bridge = OvermindBridge(graph=graph)
+        enriched = bridge.enrich_with_cascade(analysis, graph)
+    except (KeyError, TypeError, ValueError) as exc:
+        console.print(f"[red]Failed to parse/enrich Overmind data: {exc}[/]")
+        raise typer.Exit(1)
 
-    blast_items = analysis.all_blast_radius_items
+    # Coverage must account for resources that Overmind flagged but that fall
+    # outside the blast-radius list as well; use set arithmetic over the full
+    # universe of mapped + unmapped resources.
+    blast_set = set(analysis.all_blast_radius_items)
     unmapped = set(enriched.unmapped_resources)
-    mapped = [item for item in blast_items if item not in unmapped]
+    mapped_set = blast_set - unmapped
+    universe = blast_set | unmapped
 
-    coverage_pct = (len(mapped) / len(blast_items) * 100) if blast_items else 100.0
+    blast_items = sorted(blast_set)
+    mapped = sorted(mapped_set)
+
+    coverage_pct = (len(mapped_set) / len(universe) * 100) if universe else 100.0
 
     if json_output:
         console.print_json(data={
@@ -214,11 +228,20 @@ def overmind_compare(
 # ---------------------------------------------------------------------------
 
 
-def _load_graph_optional(model: Path, *, quiet: bool = False):
-    """Load a FaultRay InfraGraph if the model file exists; return empty graph otherwise."""
+def _load_graph_optional(model: Path, *, quiet: bool = False, required: bool = False):
+    """Load a FaultRay InfraGraph from ``model``.
+
+    By default (``required=False``) missing or unreadable models degrade
+    gracefully to an empty graph.  When ``required=True`` a missing or
+    unreadable model is a hard error (clean message + ``typer.Exit(1)``) so
+    callers that need a real model don't silently produce misleading output.
+    """
     from faultray.model.graph import InfraGraph
 
     if not model.exists():
+        if required:
+            console.print(f"[red]Model file not found: {model}[/]")
+            raise typer.Exit(1)
         if not quiet:
             console.print(
                 f"[yellow]Model file not found: {model}  "
@@ -236,6 +259,9 @@ def _load_graph_optional(model: Path, *, quiet: bool = False):
             return load_yaml(model)
         return InfraGraph.load(model)
     except Exception as exc:
+        if required:
+            console.print(f"[red]Failed to load model: {exc}[/]")
+            raise typer.Exit(1)
         if not quiet:
             console.print(f"[yellow]Could not load model ({exc}), using empty graph.[/]")
         return InfraGraph()
@@ -410,24 +436,26 @@ def _write_html_report(report: dict, output_path: Path) -> None:
             f'border-radius:4px;font-size:0.85em">{sev.upper()}</span>'
         )
 
+    # sev_badge() returns markup the code itself generated, so it is NOT escaped.
+    # Every other interpolated value comes from untrusted Overmind JSON.
     risks_html = "\n".join(
         f"<tr><td>{sev_badge(r['severity'])}</td>"
-        f"<td>{r['title']}</td>"
-        f"<td>{r['description'][:120]}</td></tr>"
+        f"<td>{html.escape(str(r['title']))}</td>"
+        f"<td>{html.escape((r.get('description') or '')[:120])}</td></tr>"
         for r in risks[:50]
     )
 
     impacts_html = "\n".join(
-        f"<tr><td>{i['component_name']}</td>"
-        f"<td>{i['triggered_by']}</td>"
+        f"<tr><td>{html.escape(str(i['component_name']))}</td>"
+        f"<td>{html.escape(str(i['triggered_by']))}</td>"
         f"<td>{i['cascade_severity']:.1f}/10</td>"
         f"<td>{len(i['affected_downstream'])}</td></tr>"
         for i in impacts[:50]
     )
 
-    recs_html = "\n".join(f"<li>{rec}</li>" for rec in recs)
+    recs_html = "\n".join(f"<li>{html.escape(str(rec))}</li>" for rec in recs)
 
-    html = f"""<!DOCTYPE html>
+    html_doc = f"""<!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8">
@@ -450,7 +478,7 @@ def _write_html_report(report: dict, output_path: Path) -> None:
 </head>
 <body>
 <h1>FaultRay x Overmind Combined Report</h1>
-<p class="generated">Generated: {report['generated_at']}</p>
+<p class="generated">Generated: {html.escape(str(report['generated_at']))}</p>
 
 <div class="summary-grid">
   <div class="card">
@@ -494,4 +522,4 @@ def _write_html_report(report: dict, output_path: Path) -> None:
 </body>
 </html>"""
 
-    output_path.write_text(html, encoding="utf-8")
+    output_path.write_text(html_doc, encoding="utf-8")

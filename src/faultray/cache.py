@@ -9,7 +9,10 @@ import hashlib
 import json
 import logging
 import sqlite3
+import threading
 import time
+from collections.abc import Iterator
+from contextlib import contextmanager
 from pathlib import Path
 
 logger = logging.getLogger(__name__)
@@ -27,6 +30,7 @@ class ResultCache:
         self.db_path.parent.mkdir(parents=True, exist_ok=True)
         self._hits = 0
         self._misses = 0
+        self._stats_lock = threading.Lock()
         self._init_db()
 
     def _init_db(self) -> None:
@@ -51,9 +55,21 @@ class ResultCache:
                 """
             )
 
-    def _connect(self) -> sqlite3.Connection:
-        """Open a connection to the cache database."""
-        return sqlite3.connect(str(self.db_path))
+    @contextmanager
+    def _connect(self) -> Iterator[sqlite3.Connection]:
+        """Open a connection to the cache database.
+
+        Yields a connection that is committed on clean exit, rolled back on
+        error, and ALWAYS closed afterwards. Using ``sqlite3.connect`` as a
+        bare context manager only commits/rolls back; it never closes the
+        connection, leaking file descriptors in long-running processes.
+        """
+        conn = sqlite3.connect(str(self.db_path))
+        try:
+            with conn:
+                yield conn
+        finally:
+            conn.close()
 
     def get(self, graph_hash: str, scenario_id: str) -> dict | None:
         """Retrieve a cached result, or None if not found / expired."""
@@ -68,7 +84,8 @@ class ResultCache:
             ).fetchone()
 
         if row is None:
-            self._misses += 1
+            with self._stats_lock:
+                self._misses += 1
             return None
 
         result_json, created_at, ttl_hours = row
@@ -76,10 +93,12 @@ class ResultCache:
         if age_hours > ttl_hours:
             # Expired -- remove and return None
             self.invalidate_entry(graph_hash, scenario_id)
-            self._misses += 1
+            with self._stats_lock:
+                self._misses += 1
             return None
 
-        self._hits += 1
+        with self._stats_lock:
+            self._hits += 1
         result: dict[str, object] = json.loads(result_json)
         return result
 
@@ -144,8 +163,11 @@ class ResultCache:
         if self.db_path.exists():
             size_bytes = self.db_path.stat().st_size
 
-        total = self._hits + self._misses
-        hit_rate = self._hits / total if total > 0 else 0.0
+        with self._stats_lock:
+            hits = self._hits
+            misses = self._misses
+        total = hits + misses
+        hit_rate = hits / total if total > 0 else 0.0
 
         return {
             "entries": entries,

@@ -156,8 +156,19 @@ async def setup_create_admin(request: Request):
         )
 
     api_key = generate_api_key()
+    from sqlalchemy.exc import IntegrityError
+
     try:
         async with session_factory() as session:
+            # SEC (TOCTOU): re-check inside the SAME transaction as the insert so
+            # two concurrent /setup POSTs cannot both pass the earlier has_users
+            # check and each create an admin. The unique-email constraint is the
+            # backstop: a colliding concurrent insert raises IntegrityError,
+            # which we treat as "setup already completed".
+            recheck = await session.execute(select(UserRow.id).limit(1))
+            if recheck.scalar_one_or_none() is not None:
+                return RedirectResponse(url="/", status_code=302)
+
             user = UserRow(
                 email=email,
                 name=name,
@@ -176,6 +187,20 @@ async def setup_create_admin(request: Request):
                 "success": True,
                 "api_key": api_key,
             },
+        )
+    except IntegrityError:
+        # A concurrent request won the race (duplicate email / first admin).
+        logger.warning("Setup race detected: admin already created concurrently")
+        return templates.TemplateResponse(
+            request,
+            "setup.html",
+            {
+                "success": False,
+                "error": "Setup has already been completed.",
+                "form_name": name,
+                "form_email": email,
+            },
+            status_code=409,
         )
     except Exception as exc:
         logger.warning("Setup failed: %s", exc)
@@ -327,14 +352,27 @@ async def oauth_callback(request: Request, code: str = "", state: str = "", prov
                         user.oauth_id = oauth_id
                     user.name = profile.get("name") or user.name
                 else:
-                    # Brand-new account.
+                    # Brand-new account. SEC: require a stable provider id AND a
+                    # provider-verified, non-empty email before minting an
+                    # account. Creating rows with an unverified or null email
+                    # allows account-confusion/duplicate-email attacks and rows
+                    # that bypass uniqueness assumptions.
+                    if not oauth_id or not email or not email_verified:
+                        logger.warning(
+                            "OAuth account creation refused: missing oauth_id or "
+                            "unverified/empty email (provider=%s)", config.provider,
+                        )
+                        return JSONResponse(
+                            {"error": "A verified email is required to sign in."},
+                            status_code=400,
+                        )
                     api_key = generate_api_key()
                     user = UserRow(
                         email=email,
                         name=profile.get("name"),
                         api_key_hash=hash_api_key(api_key),
                         oauth_provider=config.provider,
-                        oauth_id=oauth_id or None,
+                        oauth_id=oauth_id,
                     )
                     session.add(user)
             else:

@@ -8,6 +8,7 @@ from __future__ import annotations
 from pathlib import Path
 
 import typer
+import yaml
 
 from faultray.cli.main import (
     DEFAULT_MODEL_PATH,
@@ -108,7 +109,6 @@ def tf_check(
                 if delta_loss > 0:
                     delta_msg = f"This change [red]increases[/] annual risk by ${delta_loss:,.0f}"
                 elif delta_loss < 0:
-                    f"[green]-${abs(delta_loss):,.0f}[/]"
                     delta_msg = f"This change [green]reduces[/] annual risk by ${abs(delta_loss):,.0f}"
                 else:
                     delta_msg = "No change in financial risk"
@@ -206,7 +206,7 @@ def score_custom(
 
     try:
         engine = CustomScoringEngine.from_yaml(graph, policy)
-    except (ValueError, Exception) as exc:
+    except (ValueError, OSError, yaml.YAMLError) as exc:
         console.print(f"[red]Failed to load policy: {exc}[/]")
         raise typer.Exit(1)
 
@@ -234,7 +234,8 @@ def correlate(
     ),
     pagerduty_key: str | None = typer.Option(
         None, "--pagerduty-key",
-        help="PagerDuty API key for incident import",
+        envvar="PAGERDUTY_API_KEY",
+        help="PagerDuty API key for incident import (or set PAGERDUTY_API_KEY to avoid passing it on the CLI).",
     ),
     days: int = typer.Option(
         90, "--days",

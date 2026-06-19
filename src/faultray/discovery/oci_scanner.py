@@ -139,12 +139,14 @@ class OCIScanner(CloudScannerBase):
         if self.region:
             config["region"] = self.region
 
+        # VCN must be scanned first so the subnet->VCN mapping is populated
+        # before Compute / DB / LB scanners try to resolve VCN membership.
         scanners = [
+            ("VCN", lambda g: self._scan_vcn(g, config)),
             ("Compute", lambda g: self._scan_compute(g, config)),
             ("DBSystems", lambda g: self._scan_db_systems(g, config)),
             ("AutonomousDB", lambda g: self._scan_autonomous_db(g, config)),
             ("LoadBalancers", lambda g: self._scan_load_balancers(g, config)),
-            ("VCN", lambda g: self._scan_vcn(g, config)),
             ("ObjectStorage", lambda g: self._scan_object_storage(g, config)),
         ]
 
@@ -455,7 +457,7 @@ class OCIScanner(CloudScannerBase):
                     id=comp_id,
                     name=bucket_name,
                     type=ComponentType.STORAGE,
-                    host=f"{namespace}.objectstorage.{region}.oci.customer-oci.com",
+                    host=f"objectstorage.{region}.oraclecloud.com",
                     port=443,
                     replicas=3,  # OCI Object Storage is inherently replicated
                     region=RegionConfig(region=region),

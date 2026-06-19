@@ -158,7 +158,7 @@ async def heatmap_page(request: Request):
 
 
 @router.get("/api/risk-heatmap", response_class=JSONResponse)
-async def api_risk_heatmap():
+async def api_risk_heatmap(user=Depends(_require_permission("view_results"))):
     """Return risk heat map data as JSON."""
     graph = get_graph()
     if not graph.components:

@@ -33,7 +33,7 @@ from faultray.cli.main import app, console
 
 @app.command()
 def nl(
-    description: str = typer.Argument(
+    description: str | None = typer.Argument(
         None,
         help="Natural language infrastructure description. "
         "Example: '3 web servers behind ALB, connected to Aurora with 2 read replicas'",
@@ -122,7 +122,12 @@ def nl(
 
     # Save to file
     if output:
-        output.write_text(yaml_output, encoding="utf-8")
+        try:
+            output.parent.mkdir(parents=True, exist_ok=True)
+            output.write_text(yaml_output, encoding="utf-8")
+        except OSError as exc:
+            console.print(f"[red]Failed to write {output}: {exc}[/]")
+            raise typer.Exit(1)
         console.print(f"[green]Saved to:[/] {output}")
 
     # Simulate

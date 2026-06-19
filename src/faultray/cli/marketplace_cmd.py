@@ -164,7 +164,7 @@ def _difficulty_styled(difficulty: str) -> str:
 
 
 def _rating_stars(rating: float) -> str:
-    filled = int(round(rating))
+    filled = max(0, min(5, int(round(rating))))
     return "[yellow]" + "*" * filled + "[/][dim]" + "*" * (5 - filled) + "[/]"
 
 
@@ -298,7 +298,8 @@ def _cmd_info(mp, package_id: str, json_output: bool) -> None:
 
         for i, s in enumerate(pkg.scenarios, 1):
             fault_count = len(s.get("faults", []))
-            traffic = s.get("traffic_multiplier", 1.0)
+            raw_traffic = s.get("traffic_multiplier")
+            traffic = float(raw_traffic) if isinstance(raw_traffic, (int, float)) else 1.0
             traffic_str = f"{traffic:.0f}x" if traffic != 1.0 else "1x"
             scenario_table.add_row(
                 str(i),

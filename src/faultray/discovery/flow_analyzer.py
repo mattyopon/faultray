@@ -118,8 +118,10 @@ class FlowLogAnalyzer:
         else:
             logs = _logs_client
 
-        end_ms = int(datetime.datetime.now(datetime.timezone.utc).timestamp() * 1000)
-        start_ms = end_ms - hours * 3600 * 1000
+        # CloudWatch Logs Insights start_query expects Unix epoch *seconds*,
+        # not milliseconds; passing milliseconds queries a far-future window.
+        end_s = int(datetime.datetime.now(datetime.timezone.utc).timestamp())
+        start_s = end_s - hours * 3600
 
         raw_lines: list[str] = []
 
@@ -127,8 +129,8 @@ class FlowLogAnalyzer:
             # Start query
             query_id = logs.start_query(
                 logGroupName=log_group,
-                startTime=start_ms,
-                endTime=end_ms,
+                startTime=start_s,
+                endTime=end_s,
                 queryString="fields @message | limit 10000",
             ).get("queryId", "")
 
@@ -208,6 +210,11 @@ class FlowLogAnalyzer:
 
         for line in lines:
             parts = line.split()
+            # Support comma-delimited (CSV) rows in addition to the default
+            # space-delimited VPC Flow Log format: a CSV row collapses to a
+            # single whitespace token, so fall back to splitting on commas.
+            if len(parts) < len(_FLOW_LOG_FIELDS) and "," in line:
+                parts = [p.strip() for p in line.split(",")]
             if len(parts) < len(_FLOW_LOG_FIELDS):
                 continue
 

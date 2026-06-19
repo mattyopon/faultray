@@ -81,21 +81,33 @@ def fmea(
     if csv_output:
         rows = engine.to_spreadsheet_format(report)
         if min_rpn > 0:
-            rows = [r for r in rows if r["RPN"] >= min_rpn]
+            def _rpn_ok(row: dict) -> bool:
+                try:
+                    return int(row.get("RPN")) >= min_rpn
+                except (TypeError, ValueError):
+                    return False
+
+            rows = [r for r in rows if _rpn_ok(r)]
+
+        if not rows:
+            console.print("[yellow]No failure modes matched the filter; nothing to export.[/]")
+            return
 
         if output_file:
-            with open(output_file, "w", newline="") as f:
-                if rows:
+            try:
+                with open(output_file, "w", newline="", encoding="utf-8") as f:
                     writer = csv.DictWriter(f, fieldnames=rows[0].keys())
                     writer.writeheader()
                     writer.writerows(rows)
+            except OSError as exc:
+                console.print(f"[red]Failed to write {output_file}: {exc}[/]")
+                raise typer.Exit(1)
             console.print(f"[green]FMEA report exported to {output_file}[/]")
         else:
             buf = io.StringIO()
-            if rows:
-                writer = csv.DictWriter(buf, fieldnames=rows[0].keys())
-                writer.writeheader()
-                writer.writerows(rows)
+            writer = csv.DictWriter(buf, fieldnames=rows[0].keys())
+            writer.writeheader()
+            writer.writerows(rows)
             console.print(buf.getvalue())
         return
 

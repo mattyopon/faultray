@@ -131,6 +131,7 @@ def load_infrastructure(yaml_content: str) -> str:
     # create a temporary file.
     import tempfile
 
+    tmp_path: Path | None = None
     try:
         with tempfile.NamedTemporaryFile(
             mode="w", suffix=".yaml", delete=False, encoding="utf-8"
@@ -139,7 +140,6 @@ def load_infrastructure(yaml_content: str) -> str:
             tmp_path = Path(tmp.name)
 
         graph = load_yaml(tmp_path)
-        tmp_path.unlink(missing_ok=True)
     except FileNotFoundError as exc:
         return f"Error: {exc}"
     except ValidationError as exc:
@@ -148,6 +148,10 @@ def load_infrastructure(yaml_content: str) -> str:
         return f"YAML parse error: {exc}"
     except Exception as exc:  # noqa: BLE001
         return f"Error loading infrastructure: {exc}"
+    finally:
+        # Always remove the temp file, even if load_yaml raised.
+        if tmp_path is not None:
+            tmp_path.unlink(missing_ok=True)
 
     _set_graph(graph, "inline YAML")
     summary = graph.summary()

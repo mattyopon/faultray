@@ -24,10 +24,12 @@ FaultRay bridges both.
 
 from __future__ import annotations
 
+import json
 from pathlib import Path
 from typing import Annotated
 
 import typer
+import yaml
 from rich.panel import Panel
 from rich.table import Table
 
@@ -59,7 +61,15 @@ def _load_graph(yaml_file: Path) -> "InfraGraph":  # noqa: F821
         else:
             from faultray.model.graph import InfraGraph
             return InfraGraph.load(yaml_file)
-    except (FileNotFoundError, ValueError) as exc:
+    except (
+        FileNotFoundError,
+        OSError,
+        ValueError,
+        KeyError,
+        TypeError,
+        json.JSONDecodeError,
+        yaml.YAMLError,
+    ) as exc:
         console.print(f"[red]{exc}[/]")
         raise typer.Exit(1)
 
@@ -1107,7 +1117,7 @@ def dora_rts_export(
                 provider_type="ICT Third-Party Service Provider",
                 service_description=f"External API service '{comp.name}'",
                 criticality_assessment=crit,
-                concentration_risk_flag=not comp.failover.enabled,
+                concentration_risk_flag=(not comp.failover.enabled) if comp.failover else True,
             )
             reg_formatter.add_record(record)
 
@@ -1263,7 +1273,7 @@ def dora_audit_cmd(
                 provider_type="ICT Third-Party Service Provider",
                 service_description=f"External API service '{comp.name}'",
                 criticality_assessment=crit,
-                concentration_risk_flag=not comp.failover.enabled,
+                concentration_risk_flag=(not comp.failover.enabled) if comp.failover else True,
             )
             reg_formatter.add_record(record)
 
@@ -1326,7 +1336,7 @@ def dora_audit_cmd(
     collected: list[str] = list(all_files)
     for sub_dir in (evidence_dir, regulatory_dir, templates_dir):
         if sub_dir.exists():
-            for fpath in sorted(sub_dir.iterdir()):
+            for fpath in sorted(sub_dir.rglob("*")):
                 if fpath.is_file():
                     rel = str(fpath.relative_to(output))
                     collected.append(rel)

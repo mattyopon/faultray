@@ -154,11 +154,19 @@ async def assess_compliance(request: ComplianceRequest):
             status_code=400, detail=f"Unknown framework: {request.framework}"
         )
 
+    import dataclasses
+
+    # Filter against the dataclass's *declared fields*, not hasattr() on the
+    # class. hasattr() also matches inherited methods/dunders (which would make
+    # the constructor raise) and would drop any field that lacks a class-level
+    # default; dataclasses.fields() is the correct allow-list of constructor
+    # parameters.
+    _evidence_fields = {f.name for f in dataclasses.fields(InfrastructureEvidence)}
     evidence = InfrastructureEvidence(
         **{
             k: v
             for k, v in request.evidence.items()
-            if hasattr(InfrastructureEvidence, k)
+            if k in _evidence_fields
         }
     )
     engine = ComplianceFrameworksEngine(evidence)

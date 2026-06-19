@@ -9,10 +9,12 @@ Integrates into the existing FaultRay FastAPI application via
 
 from __future__ import annotations
 
+import hmac
 import logging
+import os
 from typing import Any
 
-from fastapi import APIRouter, HTTPException, Request, status
+from fastapi import APIRouter, Depends, HTTPException, Query, Request, status
 from pydantic import BaseModel
 
 from faultray.apm.metrics_db import MetricsDB
@@ -25,7 +27,18 @@ from faultray.apm.models import (
 
 logger = logging.getLogger(__name__)
 
-apm_router = APIRouter(prefix="/api/apm", tags=["APM"])
+# Upper bound applied to client-supplied ``limit`` query params to prevent
+# resource-exhaustion via huge or negative result sets.
+_MAX_LIMIT = 10000
+
+
+def _configured_api_key() -> str:
+    """Return the configured collector API key, or '' if auth is disabled.
+
+    Auth is enforced only when ``FAULTRAY_APM_API_KEY`` is set; otherwise the
+    collector runs open (intended for trusted private-network deployments).
+    """
+    return os.environ.get("FAULTRAY_APM_API_KEY", "").strip()
 
 # ---------------------------------------------------------------------------
 # Module-level MetricsDB instance (initialised lazily)
@@ -56,14 +69,37 @@ def set_metrics_db(db: MetricsDB) -> None:
 async def _verify_agent_key(request: Request) -> str | None:
     """Verify the agent API key from the Authorization header.
 
-    Returns the agent identifier or None if auth is not enforced.
-    For now, accept any Bearer token if present — the collector is
-    designed to be deployed on a private network.
+    If ``FAULTRAY_APM_API_KEY`` is configured, a matching ``Bearer`` token is
+    required and a 401 is raised otherwise (constant-time comparison). If no
+    key is configured the collector runs open (private-network deployment) and
+    the supplied token, if any, is returned for informational use.
     """
     auth = request.headers.get("Authorization", "")
-    if auth.startswith("Bearer "):
-        return auth[7:]
-    return None
+    token = auth[7:] if auth.startswith("Bearer ") else ""
+
+    expected = _configured_api_key()
+    if not expected:
+        # Auth not enforced — accept the request.
+        return token or None
+
+    if not token or not hmac.compare_digest(token, expected):
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid or missing API key",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+    return token
+
+
+# ---------------------------------------------------------------------------
+# Router (auth enforced on every endpoint when FAULTRAY_APM_API_KEY is set)
+# ---------------------------------------------------------------------------
+
+apm_router = APIRouter(
+    prefix="/api/apm",
+    tags=["APM"],
+    dependencies=[Depends(_verify_agent_key)],
+)
 
 
 # ---------------------------------------------------------------------------
@@ -218,8 +254,8 @@ async def get_agent_metrics(
     start_time: str | None = None,
     end_time: str | None = None,
     aggregation: str = "avg",
-    interval: int = 60,
-    limit: int = 1000,
+    interval: int = Query(60, ge=1, le=86400),
+    limit: int = Query(1000, ge=1, le=_MAX_LIMIT),
 ) -> list[dict[str, Any]]:
     """Query metrics for a specific agent."""
     db = get_metrics_db()
@@ -238,6 +274,14 @@ async def get_agent_metrics(
 async def query_metrics(query: MetricsQuery) -> list[dict[str, Any]]:
     """Advanced metrics query with filters and aggregation."""
     db = get_metrics_db()
+    # The DB layer queries a single metric; reject multi-metric requests rather
+    # than silently dropping all but the first name.
+    if len(query.metric_names) > 1:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Querying multiple metric_names is not supported; "
+                   "send one metric_name per request.",
+        )
     return db.query_metrics(
         agent_id=query.agent_id,
         metric_name=query.metric_names[0] if query.metric_names else None,
@@ -257,7 +301,7 @@ async def query_metrics(query: MetricsQuery) -> list[dict[str, Any]]:
 async def list_alerts(
     agent_id: str | None = None,
     severity: str | None = None,
-    limit: int = 100,
+    limit: int = Query(100, ge=1, le=_MAX_LIMIT),
 ) -> list[dict[str, Any]]:
     """List recent alerts."""
     db = get_metrics_db()

@@ -8,6 +8,7 @@ from __future__ import annotations
 from pathlib import Path
 
 import typer
+import yaml
 from rich.panel import Panel
 from rich.table import Table
 
@@ -34,7 +35,7 @@ def _load_graph(yaml_file: Path) -> "InfraGraph":  # noqa: F821
         else:
             from faultray.model.graph import InfraGraph
             return InfraGraph.load(yaml_file)
-    except (FileNotFoundError, ValueError) as exc:
+    except (OSError, ValueError, KeyError, TypeError, yaml.YAMLError) as exc:
         console.print(f"[red]{exc}[/]")
         raise typer.Exit(1)
 

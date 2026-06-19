@@ -22,6 +22,20 @@ CRITICAL_THRESHOLD = 7.0
 WARNING_THRESHOLD = 4.0
 
 
+def _as_float(value: Any, default: float = 0.0) -> float:
+    """Coerce a possibly-None / non-numeric JSON value to float.
+
+    Handles keys present with an explicit ``null`` value (where ``dict.get``
+    returns None rather than the default) so downstream arithmetic and
+    comparisons cannot raise TypeError.
+    """
+    if isinstance(value, bool):
+        return float(value)
+    if isinstance(value, (int, float)):
+        return float(value)
+    return default
+
+
 @dataclass
 class DiffResult:
     """Result of comparing two simulation runs."""
@@ -48,8 +62,11 @@ class SimulationDiffer:
         keys like ``resilience_score``, ``results`` (list of scenario dicts),
         etc.
         """
-        score_before = before.get("resilience_score", 0.0)
-        score_after = after.get("resilience_score", 0.0)
+        # Coerce explicitly: .get(key, default) returns None when the key
+        # exists with an explicit null value (these dicts come from on-disk
+        # JSON), which would raise TypeError on subtraction.
+        score_before = _as_float(before.get("resilience_score"))
+        score_after = _as_float(after.get("resilience_score"))
         score_delta = round(score_after - score_before, 4)
 
         # Extract scenario-level severity info
@@ -58,20 +75,20 @@ class SimulationDiffer:
 
         before_critical = {
             name for name, info in before_scenarios.items()
-            if info.get("is_critical") or info.get("risk_score", 0) >= CRITICAL_THRESHOLD
+            if info.get("is_critical") or _as_float(info.get("risk_score")) >= CRITICAL_THRESHOLD
         }
         after_critical = {
             name for name, info in after_scenarios.items()
-            if info.get("is_critical") or info.get("risk_score", 0) >= CRITICAL_THRESHOLD
+            if info.get("is_critical") or _as_float(info.get("risk_score")) >= CRITICAL_THRESHOLD
         }
         before_warning = {
             name for name, info in before_scenarios.items()
-            if (info.get("is_warning") or WARNING_THRESHOLD <= info.get("risk_score", 0) < CRITICAL_THRESHOLD)
+            if (info.get("is_warning") or WARNING_THRESHOLD <= _as_float(info.get("risk_score")) < CRITICAL_THRESHOLD)
             and name not in before_critical
         }
         after_warning = {
             name for name, info in after_scenarios.items()
-            if (info.get("is_warning") or WARNING_THRESHOLD <= info.get("risk_score", 0) < CRITICAL_THRESHOLD)
+            if (info.get("is_warning") or WARNING_THRESHOLD <= _as_float(info.get("risk_score")) < CRITICAL_THRESHOLD)
             and name not in after_critical
         }
 

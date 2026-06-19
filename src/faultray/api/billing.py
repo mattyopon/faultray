@@ -94,10 +94,18 @@ class UsageTracker:
         except Exception:
             logger.debug("Could not track simulation usage.", exc_info=True)
 
-    async def check_limit(self, team_id: str, resource: str) -> bool:
+    async def check_limit(
+        self, team_id: str, resource: str, current_count: int | None = None,
+    ) -> bool:
         """Check if team is within usage limits.
 
         Returns True if usage is allowed, False if limit reached.
+
+        For ``resource == "components"`` the live component count is not stored
+        per-team in the database (components live in the in-memory infra graph),
+        so the caller passes it via *current_count*; an unlimited tier always
+        allows, otherwise creation is allowed only while strictly under the
+        configured maximum.
         """
         try:
             from faultray.api.database import (
@@ -144,7 +152,14 @@ class UsageTracker:
                     return count < limit
 
                 if resource == "components":
-                    return limits.max_components == -1  # defer actual check to caller
+                    if limits.max_components == -1:
+                        return True
+                    # Compare the caller-supplied live count against the limit.
+                    # If no count was provided we cannot prove the team is under
+                    # limit, so fail closed (deny) rather than silently allow.
+                    if current_count is None:
+                        return False
+                    return current_count < limits.max_components
 
                 return True
         except Exception:
@@ -275,6 +290,11 @@ class StripeManager:
             cancel_url=cancel_url,
             client_reference_id=team_id,
             metadata={"team_id": team_id, "tier": tier.value},
+            # Propagate the team id onto the created Subscription too, so later
+            # customer.subscription.updated/deleted webhooks (which read team_id
+            # from the *subscription* metadata, not the session) can identify
+            # the team and apply the downgrade on cancellation.
+            subscription_data={"metadata": {"team_id": team_id, "tier": tier.value}},
         )
         return session.url  # type: ignore[return-value]
 
@@ -326,7 +346,11 @@ class StripeManager:
             result["team_id"] = session_obj.get("client_reference_id", "")
             result["customer_id"] = session_obj.get("customer", "")
             result["subscription_id"] = session_obj.get("subscription", "")
-            result["tier"] = session_obj.get("metadata", {}).get("tier", "pro")
+            # Fail closed: derive the tier from the trusted price→tier mapping
+            # first, and only fall back to validated checkout metadata. An
+            # absent/unknown value yields the lowest tier (free) so a malformed
+            # or attacker-influenced event can never silently grant a paid tier.
+            result["tier"] = self._resolve_tier_from_event(session_obj)
 
         elif event["type"] in (
             "customer.subscription.updated",
@@ -344,6 +368,39 @@ class StripeManager:
             result["subscription_id"] = invoice_obj.get("subscription", "")
 
         return result
+
+    @staticmethod
+    def _resolve_tier_from_event(session_obj: dict) -> str:
+        """Derive a validated pricing tier from a checkout session event.
+
+        Resolution order (fails closed at every step):
+        1. The Stripe price id, mapped back through ``STRIPE_PRICE_MAP`` (the
+           server-controlled, trusted source of truth) when present on the
+           event's line items.
+        2. The checkout ``metadata.tier`` value, but only if it parses to a
+           known :class:`PricingTier`.
+        Anything else -> ``free`` (never a paid tier from untrusted/absent data).
+        """
+        # 1. Prefer the trusted price→tier mapping if a price id is available.
+        price_id = ""
+        try:
+            line_items = (session_obj.get("line_items") or {}).get("data") or []
+            if line_items:
+                price = line_items[0].get("price") or {}
+                price_id = price.get("id", "") if isinstance(price, dict) else ""
+        except Exception:  # pragma: no cover - defensive
+            price_id = ""
+        if price_id:
+            for tier, mapped in STRIPE_PRICE_MAP.items():
+                if mapped and mapped == price_id:
+                    return tier.value
+
+        # 2. Fall back to checkout metadata, validated against PricingTier.
+        meta_tier = (session_obj.get("metadata") or {}).get("tier", "")
+        try:
+            return PricingTier(meta_tier).value
+        except ValueError:
+            return PricingTier.FREE.value
 
     # -- Subscription queries ----------------------------------------------
 
@@ -413,24 +470,31 @@ class StripeManager:
     async def persist_webhook_event(self, event_data: dict) -> None:
         """Persist subscription state changes from a processed webhook event.
 
-        Idempotent: each Stripe event id is recorded once; a replayed event is
-        ignored so a duplicate delivery cannot re-apply a state change (e.g.
-        re-upgrade after a cancellation).
+        Idempotent *and* atomic: the idempotency-ledger insert and the
+        subscription state mutation happen inside a single transaction that is
+        committed exactly once at the end. The event is therefore marked
+        "processed" only when its state change has also been applied -- if the
+        mutation (or the process) fails, nothing is committed, so Stripe's retry
+        is reprocessed normally rather than short-circuited as a duplicate.
+        Concurrent duplicates are deduped by the ledger's unique constraint
+        (IntegrityError -> skip).
         """
         event_type = event_data.get("event_type", "")
         event_id = event_data.get("event_id", "")
 
-        # Replay / idempotency guard keyed by Stripe event id.
-        if event_id:
-            try:
-                from faultray.api.database import (
-                    ProcessedWebhookEventRow,
-                    get_session_factory,
-                )
-                from sqlalchemy import select
+        from faultray.api.database import (
+            ProcessedWebhookEventRow,
+            get_session_factory,
+        )
+        from sqlalchemy import select
+        from sqlalchemy.exc import IntegrityError
 
-                sf = get_session_factory()
-                async with sf() as session:
+        sf = get_session_factory()
+        try:
+            async with sf() as session:
+                # Replay / idempotency guard keyed by Stripe event id, applied
+                # in the SAME transaction as the state change below.
+                if event_id:
                     already = (
                         await session.execute(
                             select(ProcessedWebhookEventRow.id).where(
@@ -448,91 +512,86 @@ class StripeManager:
                             event_id=event_id, event_type=event_type
                         )
                     )
-                    await session.commit()
-            except Exception:
-                # If the ledger write fails (e.g. a concurrent duplicate hit the
-                # unique constraint), do not apply the state change twice.
-                logger.warning(
-                    "Webhook idempotency check failed for event %s; skipping.",
-                    event_id,
-                    exc_info=True,
-                )
-                return
+                    # Flush so a concurrent duplicate trips the unique
+                    # constraint here (before we apply the state change), rather
+                    # than at final commit.
+                    await session.flush()
 
-        if event_type == "checkout.session.completed":
-            await self._activate_subscription(
-                team_id=event_data.get("team_id", ""),
-                tier=event_data.get("tier", "pro"),
-                customer_id=event_data.get("customer_id", ""),
+                # ---- apply the state change within the same transaction ----
+                if event_type == "checkout.session.completed":
+                    await self._activate_subscription(
+                        session,
+                        team_id=event_data.get("team_id", ""),
+                        tier=event_data.get("tier", PricingTier.FREE.value),
+                        customer_id=event_data.get("customer_id", ""),
+                    )
+                elif event_type == "customer.subscription.deleted":
+                    team_id = event_data.get("team_id", "")
+                    if team_id:
+                        await self._downgrade_to_free(session, team_id)
+                elif event_type == "invoice.payment_failed":
+                    customer_id = event_data.get("customer_id", "")
+                    if customer_id:
+                        logger.warning(
+                            "Payment failed for customer %s — subscription may be at risk",
+                            customer_id,
+                        )
+
+                # Single commit: idempotency record + state change are atomic.
+                await session.commit()
+        except IntegrityError:
+            # A concurrent delivery already recorded this event id; the unique
+            # constraint rolled us back. The other transaction owns the state
+            # change, so skipping here is correct (no double-apply).
+            logger.info(
+                "Webhook event %s already being processed concurrently; skipping.",
+                event_id,
             )
-
-        elif event_type == "customer.subscription.deleted":
-            team_id = event_data.get("team_id", "")
-            if team_id:
-                await self._downgrade_to_free(team_id)
-
-        elif event_type == "invoice.payment_failed":
-            customer_id = event_data.get("customer_id", "")
-            if customer_id:
-                logger.warning(
-                    "Payment failed for customer %s — subscription may be at risk",
-                    customer_id,
-                )
 
     async def _activate_subscription(
-        self, team_id: str, tier: str, customer_id: str,
+        self, session, team_id: str, tier: str, customer_id: str,
     ) -> None:
-        """Create or update a subscription row after successful checkout."""
+        """Create or update a subscription row after successful checkout.
+
+        Operates on the caller-provided *session* (does NOT commit) so the
+        change is atomic with the webhook idempotency record.
+        """
         if not team_id:
             return
-        try:
-            from faultray.api.database import SubscriptionRow, get_session_factory
-            from sqlalchemy import select
+        from faultray.api.database import SubscriptionRow
+        from sqlalchemy import select
 
-            sf = get_session_factory()
-            async with sf() as session:
-                stmt = select(SubscriptionRow).where(
-                    SubscriptionRow.team_id == team_id
-                )
-                result = await session.execute(stmt)
-                sub = result.scalar_one_or_none()
+        result = await session.execute(
+            select(SubscriptionRow).where(SubscriptionRow.team_id == team_id)
+        )
+        sub = result.scalar_one_or_none()
 
-                if sub is None:
-                    sub = SubscriptionRow(
-                        team_id=team_id,
-                        tier=tier,
-                        stripe_customer_id=customer_id,
-                    )
-                    session.add(sub)
-                else:
-                    sub.tier = tier
-                    sub.stripe_customer_id = customer_id
-
-                await session.commit()
-                logger.info("Activated %s subscription for team %s", tier, team_id)
-        except Exception:
-            logger.error(
-                "Failed to activate subscription for team %s", team_id, exc_info=True,
+        if sub is None:
+            sub = SubscriptionRow(
+                team_id=team_id,
+                tier=tier,
+                stripe_customer_id=customer_id,
             )
+            session.add(sub)
+        else:
+            sub.tier = tier
+            sub.stripe_customer_id = customer_id
 
-    async def _downgrade_to_free(self, team_id: str) -> None:
-        """Downgrade a team to the free tier."""
-        try:
-            from faultray.api.database import SubscriptionRow, get_session_factory
-            from sqlalchemy import select
+        logger.info("Activated %s subscription for team %s", tier, team_id)
 
-            sf = get_session_factory()
-            async with sf() as session:
-                stmt = select(SubscriptionRow).where(
-                    SubscriptionRow.team_id == team_id
-                )
-                result = await session.execute(stmt)
-                sub = result.scalar_one_or_none()
-                if sub is not None:
-                    sub.tier = PricingTier.FREE.value
-                    await session.commit()
-                    logger.info("Downgraded team %s to free tier", team_id)
-        except Exception:
-            logger.error(
-                "Failed to downgrade team %s", team_id, exc_info=True,
-            )
+    async def _downgrade_to_free(self, session, team_id: str) -> None:
+        """Downgrade a team to the free tier.
+
+        Operates on the caller-provided *session* (does NOT commit) so the
+        change is atomic with the webhook idempotency record.
+        """
+        from faultray.api.database import SubscriptionRow
+        from sqlalchemy import select
+
+        result = await session.execute(
+            select(SubscriptionRow).where(SubscriptionRow.team_id == team_id)
+        )
+        sub = result.scalar_one_or_none()
+        if sub is not None:
+            sub.tier = PricingTier.FREE.value
+            logger.info("Downgraded team %s to free tier", team_id)

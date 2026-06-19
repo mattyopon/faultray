@@ -126,7 +126,8 @@ def ops_sim(
             console.print(f"[red]YAML file not found: {yaml_file}[/]")
             raise typer.Exit(1)
 
-        console.print(f"[cyan]Loading infrastructure from YAML: {yaml_file}...[/]")
+        if not json_output:
+            console.print(f"[cyan]Loading infrastructure from YAML: {yaml_file}...[/]")
         try:
             graph, ops_config = load_yaml_with_ops(yaml_file)
         except (FileNotFoundError, ValueError) as exc:
@@ -137,7 +138,8 @@ def ops_sim(
         if str(model).endswith((".yaml", ".yml")):
             from faultray.model.loader import load_yaml_with_ops
 
-            console.print(f"[cyan]Loading infrastructure from YAML: {model}...[/]")
+            if not json_output:
+                console.print(f"[cyan]Loading infrastructure from YAML: {model}...[/]")
             try:
                 graph, ops_config = load_yaml_with_ops(model)
             except (FileNotFoundError, ValueError) as exc:
@@ -145,7 +147,8 @@ def ops_sim(
                 raise typer.Exit(1)
             slos = ops_config.get("slos", [])
         else:
-            console.print(f"[cyan]Loading infrastructure model from {model}...[/]")
+            if not json_output:
+                console.print(f"[cyan]Loading infrastructure model from {model}...[/]")
             graph = InfraGraph.load(model)
     else:
         console.print(f"[red]Model file not found: {model}[/]")
@@ -181,16 +184,36 @@ def ops_sim(
             _print_ops_results(result, console)
             console.print()
     else:
+        from faultray.simulator.ops_engine import TimeUnit
         from faultray.simulator.traffic import create_diurnal_weekly, create_growth_trend
+
+        # Map the --step flag to a TimeUnit (validated above via step_map).
+        step_unit_map = {
+            "1min": TimeUnit.MINUTE,
+            "5min": TimeUnit.FIVE_MINUTES,
+            "1hour": TimeUnit.HOUR,
+        }
+        time_unit = step_unit_map[step]
 
         # Parse deploy days into day_of_week integers (0=Mon)
         day_map = {"mon": 0, "tue": 1, "wed": 2, "thu": 3, "fri": 4, "sat": 5, "sun": 6}
         parsed_deploy_days: list[int] = []
+        invalid_days: list[str] = []
         if deploy_days is not None:
             for d in deploy_days.split(","):
                 d = d.strip().lower()
+                if not d:
+                    continue
                 if d in day_map:
                     parsed_deploy_days.append(day_map[d])
+                else:
+                    invalid_days.append(d)
+            if invalid_days:
+                console.print(
+                    f"[red]Invalid day name(s): {', '.join(invalid_days)}. "
+                    f"Use: mon, tue, wed, thu, fri, sat, sun[/]"
+                )
+                raise typer.Exit(1)
         else:
             parsed_deploy_days = [1, 3]  # Tue, Thu
 
@@ -224,6 +247,7 @@ def ops_sim(
             id=f"ops-custom-{days}d",
             name=f"Custom ({days}d, step={step})",
             duration_days=days,
+            time_unit=time_unit,
             traffic_patterns=traffic_patterns,
             scheduled_deploys=scheduled_deploys,
             enable_random_failures=not no_random,
@@ -297,6 +321,8 @@ def whatif(
                 _print_multi_whatif_result(mresult, console)
                 console.print()
         else:
+            from faultray.simulator.whatif_engine import SUPPORTED_PARAMETERS
+
             # Parse "mttr_factor=2.0,traffic_factor=3.0" into dict
             params: dict[str, float] = {}
             for pair in multi.split(","):
@@ -305,7 +331,18 @@ def whatif(
                     console.print(f"[red]Invalid parameter format: '{pair}'. Expected 'name=value'.[/]")
                     raise typer.Exit(1)
                 key, val = pair.split("=", 1)
-                params[key.strip()] = float(val.strip())
+                key = key.strip()
+                if key not in SUPPORTED_PARAMETERS:
+                    console.print(
+                        f"[red]Unknown parameter '{key}'. Valid: "
+                        f"{', '.join(sorted(SUPPORTED_PARAMETERS))}[/]"
+                    )
+                    raise typer.Exit(1)
+                try:
+                    params[key] = float(val.strip())
+                except ValueError:
+                    console.print(f"[red]Invalid value for '{key}': '{val.strip()}' is not a number.[/]")
+                    raise typer.Exit(1)
 
             console.print(f"[cyan]Running multi-parameter what-if: {params}...[/]")
             scenario = MultiWhatIfScenario(
@@ -322,9 +359,21 @@ def whatif(
             _print_whatif_result(result, console)
             console.print()
     elif parameter and values:
-        from faultray.simulator.whatif_engine import WhatIfScenario
+        from faultray.simulator.whatif_engine import SUPPORTED_PARAMETERS, WhatIfScenario
 
-        parsed_values = [float(v.strip()) for v in values.split(",")]
+        if parameter not in SUPPORTED_PARAMETERS:
+            console.print(
+                f"[red]Unknown parameter '{parameter}'. Valid: "
+                f"{', '.join(sorted(SUPPORTED_PARAMETERS))}[/]"
+            )
+            raise typer.Exit(1)
+
+        try:
+            parsed_values = [float(v.strip()) for v in values.split(",")]
+        except ValueError:
+            console.print(f"[red]Invalid --values: '{values}' must be comma-separated numbers.[/]")
+            raise typer.Exit(1)
+
         console.print(f"[cyan]Running what-if analysis: {parameter} = {parsed_values}...[/]")
         scenario = WhatIfScenario(
             base_scenario=engine._create_default_base_scenario(),
@@ -636,6 +685,10 @@ def monte_carlo_cmd(
         # Use JSON model
         faultray monte-carlo --model model.json
     """
+    if n_trials <= 0:
+        console.print("[red]--trials must be greater than 0[/]")
+        raise typer.Exit(1)
+
     resolved_yaml = yaml_pos or yaml_file
     graph = _load_graph_for_analysis(model, resolved_yaml)
 
@@ -729,6 +782,10 @@ def cost(
 
     from faultray.simulator.cost_engine import CostImpactEngine
     from faultray.simulator.engine import SimulationEngine
+
+    if top <= 0:
+        console.print("[red]--top must be greater than 0[/]")
+        raise typer.Exit(1)
 
     resolved_yaml = yaml_pos or yaml_file
     graph = _load_graph_for_analysis(model, resolved_yaml)
@@ -1223,6 +1280,10 @@ def fix(
     from rich.table import Table
 
     from faultray.remediation.iac_generator import IaCGenerator
+
+    if target_score < 0 or target_score > 100:
+        console.print("[red]--target-score must be between 0 and 100[/]")
+        raise typer.Exit(1)
 
     resolved_yaml = yaml_pos or yaml_file
     graph = _load_graph_for_analysis(model, resolved_yaml)

@@ -44,6 +44,17 @@ def _check_k8s_lib() -> None:
         )
 
 
+def _workload_namespace(comp_id: str) -> str:
+    """Extract the namespace from a workload component id.
+
+    Workload ids are formatted ``{kind}-{namespace}-{name}`` (e.g.
+    ``deploy-prod-api`` / ``sts-prod-db``). Returns ``""`` if it cannot be
+    determined.
+    """
+    parts = comp_id.split("-", 2)
+    return parts[1] if len(parts) >= 3 else ""
+
+
 def _looks_like_database(name: str, labels: dict[str, str] | None = None) -> bool:
     """Heuristic to determine if a workload is a database based on name/labels."""
     name_lower = name.lower()
@@ -384,6 +395,7 @@ class K8sScanner(CloudScannerBase):
                 pdbs = policy_v1.list_pod_disruption_budget_for_all_namespaces()
 
             for pdb in pdbs.items:
+                pdb_ns = pdb.metadata.namespace or "default"
                 selector = dict(pdb.spec.selector.match_labels or {}) if pdb.spec.selector and pdb.spec.selector.match_labels else {}
 
                 min_available = None
@@ -393,9 +405,13 @@ class K8sScanner(CloudScannerBase):
                 if pdb.spec.max_unavailable is not None:
                     max_unavailable = pdb.spec.max_unavailable
 
-                # Match PDB to workloads by label selector
+                # Match PDB to workloads by label selector. PDBs are
+                # namespace-scoped, so only match workloads in the PDB's
+                # namespace.
                 for comp_id, labels in self._workload_labels.items():
                     if not selector:
+                        continue
+                    if _workload_namespace(comp_id) != pdb_ns:
                         continue
                     # Check if all PDB selector labels exist in workload labels
                     if all(labels.get(k) == v for k, v in selector.items()):
@@ -421,8 +437,12 @@ class K8sScanner(CloudScannerBase):
                 ns = policy.metadata.namespace or "default"
                 selector = dict(policy.spec.pod_selector.match_labels or {}) if policy.spec.pod_selector and policy.spec.pod_selector.match_labels else {}
 
-                # Match network policy to workloads by label selector
+                # Match network policy to workloads by label selector.
+                # NetworkPolicies are namespace-scoped: a workload must be in
+                # the policy's namespace to be affected.
                 for comp_id, labels in self._workload_labels.items():
+                    if _workload_namespace(comp_id) != ns:
+                        continue
                     if not selector:
                         # Empty selector matches all pods in namespace
                         if f"namespace:{ns}" in graph.components.get(comp_id, Component(id="", name="", type=ComponentType.APP_SERVER)).tags:
@@ -508,20 +528,25 @@ class K8sScanner(CloudScannerBase):
             if not selector:
                 continue
 
-            # Find workloads matching this service's selector
-            matching_workloads = []
-            for comp_id, labels in self._workload_labels.items():
-                if comp_id not in graph.components:
-                    continue
-                if all(labels.get(k) == v for k, v in selector.items()):
-                    matching_workloads.append(comp_id)
-
             # Extract service namespace from svc_comp_id: "svc-{ns}-{name}"
             parts = svc_comp_id.split("-", 2)
             if len(parts) < 3:
                 continue
             svc_ns = parts[1]
             svc_port = self._service_ports.get(svc_comp_id, 0)
+
+            # Find workloads matching this service's selector. Service selectors
+            # are namespace-scoped, so only workloads in the Service's namespace
+            # may match — otherwise identically-labelled workloads elsewhere
+            # would get spurious dependency edges.
+            matching_workloads = []
+            for comp_id, labels in self._workload_labels.items():
+                if comp_id not in graph.components:
+                    continue
+                if _workload_namespace(comp_id) != svc_ns:
+                    continue
+                if all(labels.get(k) == v for k, v in selector.items()):
+                    matching_workloads.append(comp_id)
 
             # Rule 1 — Ingress → matching workloads
             for comp_id in graph.components:

@@ -68,6 +68,15 @@ def backtest(
     """
     from faultray.simulator.backtest_engine import BacktestEngine
 
+    # Validate engine selection. NOTE: BacktestEngine has no engine parameter
+    # (it always uses the cascade engine), so the value is only validated here
+    # and surfaced in the header; it is not wired into the engine.
+    if engine not in ("cascade", "all"):
+        console.print(
+            f"[red]Unknown engine: {engine}. Use 'cascade' or 'all'.[/]"
+        )
+        raise typer.Exit(1)
+
     # Load graph
     graph = _load_graph_for_analysis(infra_file, yaml_file)
 

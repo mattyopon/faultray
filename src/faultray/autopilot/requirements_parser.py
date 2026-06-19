@@ -166,6 +166,30 @@ _REGION_MAP: dict[str, str] = {
 
 
 # ---------------------------------------------------------------------------
+# Helpers
+# ---------------------------------------------------------------------------
+
+
+def _tech_mentioned(tech: str, text: str) -> bool:
+    """Return True if *tech* appears as a standalone token in *text*.
+
+    ASCII technology names use token-boundary matching so short keys such as
+    'go' do not match unrelated words like 'ongoing'. Names containing
+    punctuation (e.g. 'node.js', 'sql server') are matched literally with the
+    same surrounding-boundary rule. Non-ASCII (e.g. Japanese) keys fall back to
+    plain substring matching, where word boundaries do not apply.
+    """
+    if not tech:
+        return False
+    # Non-ASCII keys: \b semantics don't apply meaningfully, use substring.
+    if not tech.isascii():
+        return tech in text
+    # Token boundary: the match must not be flanked by alphanumeric characters.
+    pattern = r"(?<![a-z0-9])" + re.escape(tech) + r"(?![a-z0-9])"
+    return re.search(pattern, text) is not None
+
+
+# ---------------------------------------------------------------------------
 # RequirementsParser
 # ---------------------------------------------------------------------------
 
@@ -242,11 +266,14 @@ class RequirementsParser:
         return "web_app"  # default
 
     def _extract_availability(self, lower: str) -> float:
-        """Extract availability target (e.g. '99.9%', '99.99%')."""
-        # Match patterns like 99.9%, 99.99%, four nines, five nines
-        m = re.search(r"(99\.9{1,3})\s*%", lower)
+        """Extract availability target (e.g. '99.9%', '99.95%', '99.99%')."""
+        # Match the full percentage value, not just a '99.9' prefix, so that
+        # '99.95%' yields 99.95 rather than being truncated to 99.9.
+        m = re.search(r"\b(\d{2,3}(?:\.\d+)?)\s*%", lower)
         if m:
-            return float(m.group(1))
+            val = float(m.group(1))
+            if 0.0 < val <= 100.0:
+                return val
         if "five nines" in lower or "99.999" in lower:
             return 99.999
         if "four nines" in lower or "99.99" in lower:
@@ -271,9 +298,9 @@ class RequirementsParser:
             return label, "medium"
 
         # Japanese: 万PV
-        m = re.search(r"(\d+)\s*万\s*(?:pv|ページ|ユーザー)", lower)
+        m = re.search(r"(\d+(?:\.\d+)?)\s*万\s*(?:pv|ページ|ユーザー)", lower)
         if m:
-            pv_man = int(m.group(1))
+            pv_man = float(m.group(1))
             label = f"{m.group(1)}万 PV/month"
             if pv_man >= 100:
                 return label, "high"
@@ -304,13 +331,15 @@ class RequirementsParser:
 
     def _extract_region(self, lower: str) -> str:
         """Extract AWS region from region keywords."""
+        # Explicit region code like ap-northeast-1 / us-east-2 takes precedence
+        # so that broad keywords (e.g. 'us-east') do not override an explicit
+        # 'us-east-2' to the wrong 'us-east-1'.
+        m = re.search(r"\b(?:ap|us|eu|sa|ca|me|af)-[a-z]+-\d\b", lower)
+        if m:
+            return m.group(0)
         for keyword, region in _REGION_MAP.items():
             if keyword in lower:
                 return region
-        # Explicit region code like ap-northeast-1
-        m = re.search(r"(ap|us|eu|sa|ca|me|af)-[a-z]+-\d", lower)
-        if m:
-            return m.group(0)
         return "ap-northeast-1"  # default to Tokyo
 
     def _extract_budget(self, lower: str) -> str:
@@ -353,7 +382,7 @@ class RequirementsParser:
 
         # Match known technology names
         for tech, role in _TECH_ROLE_MAP.items():
-            if tech in lower:
+            if _tech_mentioned(tech, lower):
                 if role not in found_roles:
                     scaling = "auto" if any(
                         k in lower for k in ["autoscale", "auto-scale", "自動スケール", "オートスケール"]

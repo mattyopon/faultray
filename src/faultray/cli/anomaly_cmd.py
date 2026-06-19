@@ -23,7 +23,7 @@ def anomaly(
         None, "--type", "-t", help="Filter by anomaly type (e.g. replica_outlier, utilization_outlier)"
     ),
     severity: str = typer.Option(
-        None, "--severity", "-s", help="Filter by severity (critical, warning, info)"
+        None, "--severity", "-s", help="Filter by severity (critical, high, medium, low, info)"
     ),
     json_output: bool = typer.Option(False, "--json", help="Output as JSON"),
 ) -> None:
@@ -82,22 +82,28 @@ def anomaly(
             raise typer.Exit(1)
 
     if severity:
-        if severity not in ("critical", "warning", "info"):
-            console.print(f"[red]Unknown severity: {severity}. Use critical, warning, or info.[/]")
+        if severity not in ("critical", "high", "medium", "low", "info"):
+            console.print(
+                f"[red]Unknown severity: {severity}. "
+                f"Use critical, high, medium, low, or info.[/]"
+            )
             raise typer.Exit(1)
         filtered_anomalies = [
-            a for a in filtered_anomalies if a.severity == severity
+            a for a in filtered_anomalies if a.severity.value == severity
         ]
 
     total_components = len(graph.components)
     anomaly_rate = (report.total_count / total_components * 100) if total_components > 0 else 0.0
 
+    critical_count = sum(1 for a in filtered_anomalies if a.severity.value == "critical")
+    high_count = sum(1 for a in filtered_anomalies if a.severity.value == "high")
+
     if json_output:
         data = {
             "total_components_analyzed": total_components,
             "anomaly_rate": round(anomaly_rate, 1),
-            "critical_count": report.critical_count,
-            "high_count": report.high_count,
+            "critical_count": critical_count,
+            "high_count": high_count,
             "health_score": report.health_score,
             "risk_areas": report.risk_areas,
             "top_recommendations": report.top_recommendations,
@@ -106,11 +112,10 @@ def anomaly(
                     "type": a.anomaly_type.value,
                     "component_id": a.component_id,
                     "component_name": a.component_name,
-                    "severity": a.severity,
+                    "severity": a.severity.value,
                     "description": a.description,
-                    "expected_value": a.expected_value,
-                    "actual_value": a.actual_value,
-                    "z_score": a.z_score,
+                    "metric_value": a.metric_value,
+                    "expected_range": a.expected_range,
                     "recommendation": a.recommendation,
                     "confidence": a.confidence,
                 }
@@ -148,14 +153,15 @@ def _print_anomaly_report(
     if anomaly_rate > 50:
         rate_color = "red"
 
-    high_count = report.high_count
-    other_count = len(anomalies) - report.critical_count - high_count
+    critical_count = sum(1 for a in anomalies if a.severity.value == "critical")
+    high_count = sum(1 for a in anomalies if a.severity.value == "high")
+    other_count = len(anomalies) - critical_count - high_count
 
     summary = (
         f"[bold]Components Analyzed:[/] {total}\n"
         f"[bold]Anomaly Rate:[/] [{rate_color}]{anomaly_rate:.1f}%[/]\n"
         f"[bold]Health Score:[/] {report.health_score:.1f}/100\n"
-        f"[bold]Critical:[/] [red]{report.critical_count}[/]  |  "
+        f"[bold]Critical:[/] [red]{critical_count}[/]  |  "
         f"[bold]High:[/] [yellow]{high_count}[/]  |  "
         f"[bold]Other:[/] {other_count}"
     )

@@ -11,6 +11,8 @@ from __future__ import annotations
 
 import hashlib
 import json
+import os
+import re
 import uuid
 from dataclasses import dataclass, field
 from pathlib import Path
@@ -25,6 +27,10 @@ MARKETPLACE_DIR = Path.home() / ".faultray" / "marketplace"
 
 VALID_CATEGORIES = {"database", "network", "security", "traffic", "compound"}
 VALID_DOMAINS = {"ecommerce", "fintech", "saas", "healthcare", "general"}
+
+# Manifest IDs become filenames; restrict to a strict allowlist so values like
+# "../x" or absolute paths cannot escape the marketplace directory.
+_MANIFEST_ID_RE = re.compile(r"^[A-Za-z0-9_-]+$")
 
 
 @dataclass
@@ -120,7 +126,26 @@ class ScenarioMarketplace:
         self._store.mkdir(parents=True, exist_ok=True)
 
     def _manifest_path(self, manifest_id: str) -> Path:
-        return self._store / f"{manifest_id}.json"
+        # Reject path separators / traversal before building the path, and
+        # verify the resolved path stays inside the marketplace directory.
+        if not manifest_id or not _MANIFEST_ID_RE.match(manifest_id):
+            raise ValueError(f"Invalid manifest id: {manifest_id!r}")
+        path = (self._store / f"{manifest_id}.json").resolve()
+        store = self._store.resolve()
+        if path != store and store not in path.parents:
+            raise ValueError(f"Manifest id escapes marketplace directory: {manifest_id!r}")
+        return path
+
+    @staticmethod
+    def _atomic_write_json(path: Path, data: dict) -> None:
+        """Write JSON via a temp file + atomic replace.
+
+        Prevents a partially written manifest if the process is interrupted
+        mid-write during a read-modify-write (download/rate) update.
+        """
+        tmp = path.with_name(path.name + ".tmp")
+        tmp.write_text(json.dumps(data, indent=2, default=str), encoding="utf-8")
+        os.replace(tmp, path)
 
     # ------------------------------------------------------------------
     # CRUD
@@ -131,7 +156,7 @@ class ScenarioMarketplace:
         if not manifest.id:
             manifest.id = uuid.uuid4().hex[:12]
         path = self._manifest_path(manifest.id)
-        path.write_text(json.dumps(manifest.to_dict(), indent=2, default=str), encoding="utf-8")
+        self._atomic_write_json(path, manifest.to_dict())
         return manifest.id
 
     def download(self, manifest_id: str) -> ScenarioManifest:
@@ -141,7 +166,7 @@ class ScenarioMarketplace:
             raise FileNotFoundError(f"Manifest not found: {manifest_id}")
         data = json.loads(path.read_text(encoding="utf-8"))
         data["downloads"] = data.get("downloads", 0) + 1
-        path.write_text(json.dumps(data, indent=2, default=str), encoding="utf-8")
+        self._atomic_write_json(path, data)
         return ScenarioManifest.from_dict(data)
 
     def get(self, manifest_id: str) -> ScenarioManifest:
@@ -204,7 +229,7 @@ class ScenarioMarketplace:
         else:
             ratings.append({"author": author, "score": score, "comment": comment})
         data["ratings"] = ratings
-        path.write_text(json.dumps(data, indent=2, default=str), encoding="utf-8")
+        self._atomic_write_json(path, data)
 
     def top_rated(self, n: int = 10) -> list[ScenarioManifest]:
         """Return the top-N manifests sorted by average rating (descending)."""

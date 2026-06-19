@@ -18,7 +18,7 @@ from faultray.cli.main import _load_graph_for_analysis, app, console
 def sla_budget(
     model: Path = typer.Argument(..., help="Infrastructure model file (YAML or JSON)"),
     incidents: int = typer.Option(
-        0, "--incidents", "-i",
+        0, "--incidents", "-i", min=0,
         help="Number of 30-min incidents assumed this month (applied to every component).",
     ),
     json_output: bool = typer.Option(False, "--json", help="Output as JSON"),

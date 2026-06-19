@@ -56,6 +56,26 @@ def _require_permission(permission: str):
         return user
     return _checker
 
+async def _require_team_billing_access(team_id: str, user) -> None:
+    """Authorise *user* to perform billing actions for *team_id*.
+
+    Reuses the repo's team-membership helper so billing endpoints cannot be
+    used cross-tenant (IDOR). Platform admins and the backward-compatible
+    no-auth mode are exempt (handled inside ``_require_team_access``). Raises
+    ``HTTPException(403)`` when the caller is not an owner/admin of the team.
+    """
+    from faultray.api.teams import (
+        _ensure_tables as _ensure_team_tables,
+        _get_session_factory as _get_team_session_factory,
+        _require_team_access,
+    )
+
+    sf = _get_team_session_factory()
+    async with sf() as session:
+        await _ensure_team_tables(session)
+        await _require_team_access(session, team_id, user, manage=True)
+
+
 saas_router = APIRouter(prefix="/api/v1", tags=["saas"])
 
 
@@ -243,12 +263,26 @@ async def auth_callback(provider: str, code: str = "", state: str = ""):
         access_token = await exchange_code_for_token(config, code)
         profile = await get_user_profile(config, access_token)
 
+        # Use .get() — providers omit fields (e.g. GitHub may not return a
+        # public email/name) and a KeyError here would surface as an opaque
+        # OAuth failure. Validate required identity claims explicitly.
+        email = profile.get("email")
+        name = profile.get("name") or email or "unknown"
+        if not email:
+            raise HTTPException(
+                status_code=400,
+                detail="OAuth provider did not supply an email address.",
+            )
+
+        # Forward the provider's email-verification status so the user layer can
+        # refuse to link/create accounts on an unverified email (nOAuth guard).
         user, jwt_token = await get_or_create_oauth_user(
             provider=provider,
             oauth_id=profile.get("id", ""),
-            email=profile["email"],
-            name=profile["name"],
+            email=email,
+            name=name,
             avatar_url=profile.get("avatar_url", ""),
+            email_verified=bool(profile.get("email_verified")),
         )
 
         return JSONResponse({
@@ -263,9 +297,18 @@ async def auth_callback(provider: str, code: str = "", state: str = ""):
                 "avatar_url": getattr(user, "avatar_url", ""),
             },
         })
+    except HTTPException:
+        raise
+    except ValueError as exc:
+        # Identity/linking rejected by get_or_create_oauth_user (e.g. unverified
+        # email, or email already bound to a different provider identity).
+        logger.warning("OAuth account linking refused for %s: %s", provider, exc)
+        raise HTTPException(status_code=400, detail="OAuth authentication failed")
     except Exception as exc:
+        # Log full detail server-side but return a generic message so raw
+        # provider/internal error text is not leaked to unauthenticated callers.
         logger.error("OAuth callback failed for %s: %s", provider, exc, exc_info=True)
-        raise HTTPException(status_code=400, detail=f"OAuth authentication failed: {exc}")
+        raise HTTPException(status_code=400, detail="OAuth authentication failed")
 
 
 # ============================================================================
@@ -307,6 +350,12 @@ async def billing_checkout_v1(
     if tier == PricingTier.FREE:
         raise HTTPException(status_code=400, detail="Cannot purchase the free tier.")
 
+    # SEC (IDOR): manage_billing alone does not authorise acting on an arbitrary
+    # team. Require the caller to be an owner/admin of body.team_id (platform
+    # admins and no-auth mode are exempt) before binding a checkout session to
+    # that team.
+    await _require_team_billing_access(body.team_id, user)
+
     success_url = body.success_url or f"{request.base_url}billing?status=success"
     cancel_url = body.cancel_url or f"{request.base_url}billing?status=cancelled"
 
@@ -320,7 +369,9 @@ async def billing_checkout_v1(
         return CheckoutResponse(checkout_url=url)
     except Exception as exc:
         logger.error("Checkout session creation failed: %s", exc, exc_info=True)
-        raise HTTPException(status_code=500, detail=str(exc))
+        raise HTTPException(
+            status_code=500, detail="Failed to create checkout session."
+        )
 
 
 @saas_router.post("/billing/webhook", tags=["billing"])
@@ -367,6 +418,11 @@ async def billing_portal_v1(
     if not team_id:
         raise HTTPException(status_code=400, detail="team_id query parameter is required")
 
+    # SEC (IDOR): authorise the caller against the supplied team_id before
+    # exposing that team's Stripe customer portal (which manages subscriptions
+    # and payment details). Platform admins / no-auth mode are exempt.
+    await _require_team_billing_access(team_id, user)
+
     mgr = StripeManager()
     if not mgr.enabled:
         raise HTTPException(
@@ -390,7 +446,9 @@ async def billing_portal_v1(
         return PortalResponse(portal_url=url)
     except Exception as exc:
         logger.error("Customer portal creation failed: %s", exc, exc_info=True)
-        raise HTTPException(status_code=500, detail=str(exc))
+        raise HTTPException(
+            status_code=500, detail="Failed to create customer portal session."
+        )
 
 
 # ============================================================================

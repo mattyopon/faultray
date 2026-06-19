@@ -11,7 +11,7 @@ from __future__ import annotations
 
 import time
 from pathlib import Path
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Optional
 
 import typer
 from rich.panel import Panel
@@ -33,7 +33,7 @@ def drift(
         ...,
         help="YAML/JSON infrastructure file (for baseline) or baseline JSON file (for detect/watch)",
     ),
-    file2: Path = typer.Argument(
+    file2: Optional[Path] = typer.Argument(
         default=None,
         help="Current infrastructure YAML/JSON file (for detect/watch)",
     ),
@@ -93,7 +93,7 @@ def _do_baseline(
     json_output: bool,
 ) -> None:
     """Save current infrastructure state as a golden baseline."""
-    graph = _load_graph_for_analysis(yaml_file, yaml_file)
+    graph = _load_graph_for_analysis(yaml_file, None)
 
     if output is None:
         output = Path("drift-baseline.json")
@@ -168,6 +168,10 @@ def _do_watch(
     json_output: bool,
 ) -> None:
     """Continuously monitor for drift at a given interval."""
+    if interval <= 0:
+        console.print("[red]Interval must be > 0[/]")
+        raise typer.Exit(1)
+
     if current_path is None:
         console.print(
             "[red]Missing current infrastructure file. "
@@ -196,7 +200,15 @@ def _do_watch(
                 time.sleep(interval)
                 continue
 
-            report = detector.detect_from_file(baseline_path, current_path)
+            try:
+                report = detector.detect_from_file(baseline_path, current_path)
+            except Exception as exc:  # noqa: BLE001
+                console.print(
+                    f"[red]Error detecting drift: {exc}, "
+                    f"retrying in {interval}s...[/]"
+                )
+                time.sleep(interval)
+                continue
 
             if report.total_drifts > 0:
                 if json_output:

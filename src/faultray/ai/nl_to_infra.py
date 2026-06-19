@@ -84,6 +84,22 @@ class ParsedInfrastructure:
 
 
 # ---------------------------------------------------------------------------
+# Limits
+# ---------------------------------------------------------------------------
+
+# Upper bound on replica/instance counts parsed from free-form text. Counts are
+# parsed with int() from arbitrary natural-language input; without a cap a value
+# like "999999999 servers" could drive pathological output / resource
+# exhaustion (DoS) downstream.
+MAX_REPLICAS: int = 100
+
+
+def _clamp_count(value: int) -> int:
+    """Clamp a parsed count to the inclusive range [1, MAX_REPLICAS]."""
+    return max(1, min(value, MAX_REPLICAS))
+
+
+# ---------------------------------------------------------------------------
 # Pattern definitions
 # ---------------------------------------------------------------------------
 
@@ -437,8 +453,14 @@ class NLInfraParser:
         # Step 7: Auto-infer missing relationships
         self._auto_infer_relationships(result)
 
-        # Step 8: Deduplicate component IDs
-        self._deduplicate_ids(result.components)
+        # Step 8: Deduplicate component IDs. Relationships recorded in steps 6-7
+        # reference the pre-dedup names, so rewrite their endpoints through the
+        # rename map to avoid silently dropping edges whose component was renamed.
+        rename_map = self._deduplicate_ids(result.components)
+        if rename_map:
+            for pr in result.relationships:
+                pr.source = rename_map.get(pr.source, pr.source)
+                pr.target = rename_map.get(pr.target, pr.target)
 
         return result
 
@@ -594,12 +616,12 @@ class NLInfraParser:
             before_text = text[:comp.position].rstrip()
             num_match = re.search(r'(?<![a-zA-Z0-9])(\d+)\s*$', before_text)
             if num_match:
-                comp.replicas = int(num_match.group(1))
+                comp.replicas = _clamp_count(int(num_match.group(1)))
 
         # Strategy 2: count pattern matching
         for pattern_str in COUNT_PATTERNS:
             for match in re.finditer(pattern_str, text, re.IGNORECASE):
-                count = int(match.group(1))
+                count = _clamp_count(int(match.group(1)))
                 match_start = match.start()
 
                 # Find the closest component that PRECEDES this count
@@ -725,7 +747,7 @@ class NLInfraParser:
             for match in re.finditer(pattern_str, text, re.IGNORECASE):
                 # Try to get count from group, default to 1 for "a read replica"
                 try:
-                    count = int(match.group(1))
+                    count = _clamp_count(int(match.group(1)))
                 except (IndexError, TypeError):
                     count = 1
 
@@ -755,13 +777,16 @@ class NLInfraParser:
                         c.name for c in new_components
                     }
                     if replica_name not in existing_names:
+                        # Assign a unique position past the end of the text so
+                        # replicas sort after real components without colliding
+                        # with each other or a real component at match_pos+1000.
                         replica = ParsedComponent(
                             name=replica_name,
                             component_type=ComponentType.DATABASE,
                             replicas=count,
                             properties=dict(closest_db.properties),
                             source_text=match.group(0),
-                            position=match_pos + 1000,  # append to end
+                            position=len(text) + 1 + len(new_components),
                         )
                         new_components.append(replica)
 
@@ -868,15 +893,27 @@ class NLInfraParser:
                             ))
                             existing_pairs.add(pair)
 
-    def _deduplicate_ids(self, components: list[ParsedComponent]) -> None:
-        """Ensure all component IDs are unique by appending numbers."""
+    def _deduplicate_ids(
+        self, components: list[ParsedComponent]
+    ) -> dict[str, str]:
+        """Ensure all component IDs are unique by appending numbers.
+
+        Returns a mapping of original-name -> new-name for components that were
+        renamed, so callers can rewrite relationships that referenced the old
+        name. The first occurrence of a duplicated name keeps the original
+        name; only later occurrences are renamed.
+        """
         seen: dict[str, int] = {}
+        rename_map: dict[str, str] = {}
         for comp in components:
             if comp.name in seen:
                 seen[comp.name] += 1
-                comp.name = f"{comp.name}-{seen[comp.name]}"
+                new_name = f"{comp.name}-{seen[comp.name]}"
+                rename_map[comp.name] = new_name
+                comp.name = new_name
             else:
                 seen[comp.name] = 1
+        return rename_map
 
     # ------------------------------------------------------------------
     # YAML / Graph generation helpers

@@ -7,6 +7,7 @@ from __future__ import annotations
 
 import json
 from pathlib import Path
+from typing import Optional
 
 import typer
 from rich.panel import Panel
@@ -26,10 +27,10 @@ def chaos_monkey(
         help="Chaos level: monkey (single), gorilla (same-type group), kong (massive), army (progressive).",
     ),
     rounds: int = typer.Option(
-        10, "--rounds", "-r",
+        10, "--rounds", "-r", min=1,
         help="Number of experiment rounds.",
     ),
-    seed: int = typer.Option(
+    seed: Optional[int] = typer.Option(
         None, "--seed", "-s",
         help="RNG seed for reproducibility.",
     ),
@@ -42,10 +43,10 @@ def chaos_monkey(
         help="Progressive stress test (increase failures until breaking point).",
     ),
     max_failures: int = typer.Option(
-        5, "--max-failures",
+        5, "--max-failures", min=1,
         help="Maximum simultaneous failures for stress test.",
     ),
-    exclude: str = typer.Option(
+    exclude: Optional[str] = typer.Option(
         None, "--exclude", "-e",
         help="Comma-separated component IDs to exclude.",
     ),
@@ -117,7 +118,7 @@ def chaos_monkey(
         console.print(f"[red]Invalid level '{level}'. Choose from: monkey, gorilla, kong, army[/]")
         raise typer.Exit(1)
 
-    exclude_list = [x.strip() for x in exclude.split(",")] if exclude else []
+    exclude_list = [x.strip() for x in exclude.split(",") if x.strip()] if exclude else []
 
     config = ChaosMonkeyConfig(
         level=chaos_level,
@@ -190,6 +191,12 @@ def _print_report(report: object) -> None:
     else:
         survival_style = "bold red"
 
+    score_range = report.resilience_score_range
+    if score_range and len(score_range) >= 2:
+        range_str = f"{score_range[0]:.1f} - {score_range[1]:.1f}"
+    else:
+        range_str = "n/a"
+
     console.print(Panel(
         f"[bold cyan]Chaos Monkey Report[/]\n\n"
         f"Level: [bold]{report.config.level.value.title()}[/]  |  "
@@ -198,8 +205,7 @@ def _print_report(report: object) -> None:
         f"Survival Rate: [{survival_style}]{survival_pct:.1f}%[/{survival_style}]\n"
         f"Avg Cascade Depth: [bold]{report.avg_cascade_depth:.1f}[/]  |  "
         f"Avg Affected: [bold]{report.avg_affected:.1f}[/]\n"
-        f"Resilience Range: [bold]{report.resilience_score_range[0]:.1f} - "
-        f"{report.resilience_score_range[1]:.1f}[/]\n"
+        f"Resilience Range: [bold]{range_str}[/]\n"
         f"Most Dangerous: [bold red]{report.most_dangerous_component}[/]  |  "
         f"Safest: [bold green]{report.safest_component}[/]",
         title="Chaos Monkey Summary",
@@ -270,7 +276,7 @@ def _print_stress_test(experiments: list) -> None:
 
     console.print(table)
 
-    if breaking_point:
+    if breaking_point is not None:
         console.print(Panel(
             f"[bold red]Breaking point: {breaking_point} simultaneous failures[/]\n\n"
             "The system cannot sustain this many concurrent failures.",

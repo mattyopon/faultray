@@ -68,10 +68,19 @@ class APMAgent:
         self._running = True
         self._start_time = time.monotonic()
 
-        # Install signal handlers
+        # Install signal handlers. ``loop.add_signal_handler`` is not
+        # implemented on some platforms (e.g. Windows' ProactorEventLoop),
+        # where it raises NotImplementedError — fall back to ``signal.signal``.
         loop = asyncio.get_running_loop()
         for sig in (signal.SIGINT, signal.SIGTERM):
-            loop.add_signal_handler(sig, self._request_stop)
+            try:
+                loop.add_signal_handler(sig, self._request_stop)
+            except NotImplementedError:
+                try:
+                    signal.signal(sig, lambda *_: self._request_stop())
+                except (ValueError, OSError):
+                    # Not in the main thread / unsupported signal — skip.
+                    logger.debug("Could not install handler for signal %s", sig)
 
         logger.info(
             "FaultRay APM Agent starting (id=%s, collector=%s, interval=%ds)",
@@ -119,6 +128,14 @@ class APMAgent:
         except (OSError, AttributeError):
             load = (0.0, 0.0, 0.0)
 
+        # net_connections requires elevated privileges on macOS/Windows and
+        # some hardened Linux hosts; guard it so an AccessDenied/OSError does
+        # not abort the entire host-metric collection for this cycle.
+        try:
+            net_conns = len(psutil.net_connections(kind="inet"))
+        except (psutil.AccessDenied, OSError):
+            net_conns = 0
+
         return HostMetrics(
             cpu_percent=psutil.cpu_percent(interval=0),
             cpu_count=psutil.cpu_count() or 1,
@@ -130,7 +147,7 @@ class APMAgent:
             disk_total_gb=disk.total / (1024**3),
             network_bytes_sent=net.bytes_sent,
             network_bytes_recv=net.bytes_recv,
-            network_connections=len(psutil.net_connections(kind="inet")),
+            network_connections=net_conns,
             load_avg_1m=load[0],
             load_avg_5m=load[1],
             load_avg_15m=load[2],
@@ -369,7 +386,12 @@ class APMAgent:
             async with self._send_lock:
                 self._metrics_buffer.extend(batches)
         except Exception:
-            logger.error("Failed to send metrics", exc_info=True)
+            logger.error("Failed to send metrics — re-buffering for retry", exc_info=True)
+            # Any other send failure (timeout, read/write error, serialization,
+            # transient DNS, etc.) must not silently discard already-cleared
+            # batches — re-buffer them so they are retried on the next flush.
+            async with self._send_lock:
+                self._metrics_buffer.extend(batches)
 
     def _collect_batch(self) -> MetricsBatch:
         """Collect a complete metrics batch."""
@@ -497,11 +519,9 @@ class APMAgent:
 def _get_local_ip() -> str:
     """Get the local IP address."""
     try:
-        s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-        s.connect(("8.8.8.8", 80))
-        ip = s.getsockname()[0]
-        s.close()
-        return ip
+        with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as s:
+            s.connect(("8.8.8.8", 80))
+            return s.getsockname()[0]
     except Exception:
         return "127.0.0.1"
 

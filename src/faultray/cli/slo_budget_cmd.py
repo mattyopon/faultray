@@ -55,6 +55,16 @@ def slo_budget(
     from faultray.simulator.engine import SimulationEngine
     from faultray.simulator.slo_budget import SLOBudgetSimulator
 
+    if not (0.0 < slo < 100.0):
+        console.print("[red]SLO target must be between 0 and 100[/]")
+        raise typer.Exit(1)
+    if consumed < 0.0:
+        console.print("[red]Consumed minutes must be >= 0[/]")
+        raise typer.Exit(1)
+    if window <= 0:
+        console.print("[red]Window must be greater than 0[/]")
+        raise typer.Exit(1)
+
     graph = _load_graph_for_analysis(model_file, None)
 
     if not json_output:

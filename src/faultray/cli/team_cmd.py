@@ -40,8 +40,26 @@ def _get_tracker():
 
 def _get_mapping(graph, mapping_file: Path | None = None) -> dict[str, list[str]]:
     """Get team mapping from file or auto-assign."""
-    if mapping_file and mapping_file.exists():
-        data = json.loads(mapping_file.read_text(encoding="utf-8"))
+    if mapping_file is not None:
+        if not mapping_file.exists():
+            console.print(f"[red]Mapping file not found: {mapping_file}[/]")
+            raise typer.Exit(1)
+        try:
+            data = json.loads(mapping_file.read_text(encoding="utf-8"))
+        except (OSError, ValueError) as exc:
+            console.print(f"[red]Failed to read mapping file {mapping_file}: {exc}[/]")
+            raise typer.Exit(1)
+        if not isinstance(data, dict) or not all(
+            isinstance(k, str)
+            and isinstance(v, list)
+            and all(isinstance(item, str) for item in v)
+            for k, v in data.items()
+        ):
+            console.print(
+                "[red]Invalid mapping file: expected a JSON object mapping "
+                "team names to lists of component IDs.[/]"
+            )
+            raise typer.Exit(1)
         return data
     from faultray.simulator.team_tracker import auto_assign_teams
     return auto_assign_teams(graph)
@@ -272,7 +290,8 @@ def team_record(
 
     tracker.record_snapshot(graph, team_mapping)
     console.print("[green]Team metrics snapshot recorded.[/]")
-    console.print("[dim]History stored at: ~/.faultzero/team_history.jsonl[/]")
+    history_path = getattr(tracker, "_history_path", "~/.faultray/team_history.jsonl")
+    console.print(f"[dim]History stored at: {history_path}[/]")
 
 
 @team_app.command("history")

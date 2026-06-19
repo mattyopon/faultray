@@ -33,6 +33,13 @@ try:
 except ImportError:  # Windows
     _FCNTL_AVAILABLE = False
 
+try:
+    import msvcrt as _msvcrt  # Windows-only stdlib
+
+    _MSVCRT_AVAILABLE = True
+except ImportError:  # POSIX
+    _MSVCRT_AVAILABLE = False
+
 logger = logging.getLogger(__name__)
 
 
@@ -47,28 +54,44 @@ _LOCK_FILE = Path.home() / ".faultray" / ".coupon.lock"
 def _coupon_lock() -> Generator[None, None, None]:
     """Exclusive file lock for atomic coupon read-modify-write operations.
 
-    On POSIX systems this uses ``fcntl.flock`` for advisory locking.
-    On Windows (where fcntl is unavailable) the lock is skipped and a
-    warning is emitted, because concurrent access on Windows is unlikely in
-    the current CLI-centric usage pattern.
+    On POSIX systems this uses ``fcntl.flock``; on Windows it uses
+    ``msvcrt.locking``. Both provide mutual exclusion for concurrent
+    redeem/create/revoke operations so usage counters are not lost. Only when
+    neither primitive is available is the lock skipped (with a warning).
     """
-    if not _FCNTL_AVAILABLE:
-        warnings.warn(
-            "fcntl is not available on this platform; coupon operations are "
-            "not protected against concurrent access.",
-            RuntimeWarning,
-            stacklevel=3,
-        )
-        yield
+    _LOCK_FILE.parent.mkdir(parents=True, exist_ok=True)
+
+    if _FCNTL_AVAILABLE:
+        with open(_LOCK_FILE, "w") as _lf:
+            _fcntl.flock(_lf, _fcntl.LOCK_EX)
+            try:
+                yield
+            finally:
+                _fcntl.flock(_lf, _fcntl.LOCK_UN)
         return
 
-    _LOCK_FILE.parent.mkdir(parents=True, exist_ok=True)
-    with open(_LOCK_FILE, "w") as _lf:
-        _fcntl.flock(_lf, _fcntl.LOCK_EX)
-        try:
-            yield
-        finally:
-            _fcntl.flock(_lf, _fcntl.LOCK_UN)
+    if _MSVCRT_AVAILABLE:
+        with open(_LOCK_FILE, "w") as _lf:
+            # Lock a single byte; msvcrt.locking blocks until the region is free.
+            _lf.write("0")
+            _lf.flush()
+            _lf.seek(0)
+            _msvcrt.locking(_lf.fileno(), _msvcrt.LK_LOCK, 1)
+            try:
+                yield
+            finally:
+                _lf.seek(0)
+                _msvcrt.locking(_lf.fileno(), _msvcrt.LK_UNLCK, 1)
+        return
+
+    warnings.warn(
+        "No file-locking primitive (fcntl/msvcrt) is available on this "
+        "platform; coupon operations are not protected against concurrent "
+        "access.",
+        RuntimeWarning,
+        stacklevel=3,
+    )
+    yield
 
 # ---------------------------------------------------------------------------
 # Constants
@@ -219,15 +242,34 @@ def _restrict_permissions(path: Path) -> None:
 
 
 def _load_coupons() -> list[Coupon]:
-    """Load all coupons from ~/.faultray/coupons.json."""
+    """Load all coupons from ~/.faultray/coupons.json.
+
+    A single malformed *record* is skipped (logged) so one bad entry does not
+    discard the whole registry. A corrupt *file* (invalid JSON or wrong
+    top-level type) raises :class:`ValueError` rather than silently returning an
+    empty list: mutating callers (create/redeem/revoke) must not overwrite a
+    corrupt store with an empty one and permanently lose valid coupons.
+    """
     if not _COUPONS_FILE.exists():
         return []
     try:
         raw = json.loads(_COUPONS_FILE.read_text(encoding="utf-8"))
-        return [Coupon.from_dict(item) for item in raw]
-    except Exception:
-        logger.warning("Failed to load coupons.json; treating as empty", exc_info=True)
-        return []
+    except (OSError, json.JSONDecodeError) as exc:
+        logger.error("coupons.json is unreadable or corrupt: %s", exc)
+        raise ValueError(
+            "coupons.json is corrupt or unreadable; refusing to proceed to "
+            "avoid overwriting it. Inspect or remove the file manually."
+        ) from exc
+    if not isinstance(raw, list):
+        raise ValueError("coupons.json has an unexpected format (expected a list).")
+
+    coupons: list[Coupon] = []
+    for item in raw:
+        try:
+            coupons.append(Coupon.from_dict(item))
+        except (KeyError, TypeError) as exc:
+            logger.warning("Skipping malformed coupon record: %s", exc)
+    return coupons
 
 
 def _save_coupons(coupons: list[Coupon]) -> None:
@@ -317,6 +359,10 @@ def create_coupon(
         )
     if days < 1:
         raise ValueError("days must be at least 1")
+    if max_uses < 0:
+        # A negative value would otherwise behave like unlimited (is_valid only
+        # enforces the limit when max_uses > 0).
+        raise ValueError("max_uses must be 0 (unlimited) or a positive integer")
 
     now = datetime.now(tz=timezone.utc)
     expires = now + timedelta(days=days)
@@ -377,10 +423,13 @@ def redeem_coupon(code: str) -> RedeemedCoupon:
 
             now = datetime.now(tz=timezone.utc)
             active_until = now + timedelta(days=coupon.days)
-
-            # Increment usage counter
-            coupons[i].current_uses += 1
-            _save_coupons(coupons)
+            # Cap the granted access at the coupon's own expiry so redeeming on
+            # the last valid day cannot extend access to ~2x the intended window.
+            expires = datetime.fromisoformat(coupon.expires_at)
+            if expires.tzinfo is None:
+                expires = expires.replace(tzinfo=timezone.utc)
+            if expires < active_until:
+                active_until = expires
 
             redeemed = RedeemedCoupon(
                 code=code,
@@ -388,7 +437,12 @@ def redeem_coupon(code: str) -> RedeemedCoupon:
                 redeemed_at=now.isoformat(),
                 active_until=active_until.isoformat(),
             )
+            # Write the license FIRST; only then consume a use. If the license
+            # write fails we must not have consumed a coupon use (which would
+            # corrupt usage accounting without granting access).
             _save_license(redeemed)
+            coupons[i].current_uses += 1
+            _save_coupons(coupons)
             return redeemed
 
         raise ValueError(f"Coupon code '{code}' not found.")

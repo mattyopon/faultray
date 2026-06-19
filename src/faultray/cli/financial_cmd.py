@@ -5,6 +5,7 @@
 
 from __future__ import annotations
 
+import html
 from pathlib import Path
 
 import typer
@@ -248,7 +249,7 @@ def financial_cmd(
         # Minimal HTML output
         data = _report_to_dict(report)
         html_content = _render_html(data)
-        console.print(html_content)
+        console.print(html_content, markup=False, highlight=False)
     else:
         _print_financial_report(report)
 
@@ -258,18 +259,18 @@ def _render_html(data: dict) -> str:
     risks_rows = ""
     for r in data.get("top_risks", []):
         risks_rows += (
-            f"<tr><td>{r['component_id']}</td>"
-            f"<td>{r['component_type']}</td>"
+            f"<tr><td>{html.escape(str(r['component_id']), quote=True)}</td>"
+            f"<td>{html.escape(str(r['component_type']), quote=True)}</td>"
             f"<td>${r['annual_loss']:,.0f}</td>"
             f"<td>{r['annual_downtime_hours']:.1f}h</td>"
-            f"<td>{r['risk_description']}</td></tr>\n"
+            f"<td>{html.escape(str(r['risk_description']), quote=True)}</td></tr>\n"
         )
 
     fixes_rows = ""
     for f in data.get("recommended_fixes", []):
         fixes_rows += (
-            f"<tr><td>{f['component_id']}</td>"
-            f"<td>{f['description']}</td>"
+            f"<tr><td>{html.escape(str(f['component_id']), quote=True)}</td>"
+            f"<td>{html.escape(str(f['description']), quote=True)}</td>"
             f"<td>${f['annual_cost']:,.0f}</td>"
             f"<td>${f['annual_savings']:,.0f}</td>"
             f"<td>{f['roi']:.1f}x</td></tr>\n"

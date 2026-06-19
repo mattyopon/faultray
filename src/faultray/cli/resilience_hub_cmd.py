@@ -13,6 +13,7 @@ Commands:
 
 from __future__ import annotations
 
+import html
 import json
 from pathlib import Path
 from typing import Optional
@@ -265,25 +266,38 @@ def _load_policy(
 
     from faultray.integrations.aws_resilience_hub_bridge import DisruptionType
 
+    if not isinstance(data, dict):
+        console.print("[red]Invalid policy file: expected a YAML mapping at the top level.[/]")
+        raise typer.Exit(1)
+
     rto_raw = data.get("rto_seconds", {})
     rpo_raw = data.get("rpo_seconds", {})
+    if not isinstance(rto_raw, dict) or not isinstance(rpo_raw, dict):
+        console.print("[red]Invalid policy file: 'rto_seconds'/'rpo_seconds' must be mappings.[/]")
+        raise typer.Exit(1)
 
     rto: dict[DisruptionType, int] = {}
     rpo: dict[DisruptionType, int] = {}
 
-    for dt in DisruptionType:
-        key = dt.value
-        if key in rto_raw:
-            rto[dt] = int(rto_raw[key])
-        if key in rpo_raw:
-            rpo[dt] = int(rpo_raw[key])
+    try:
+        for dt in DisruptionType:
+            key = dt.value
+            if key in rto_raw:
+                rto[dt] = int(rto_raw[key])
+            if key in rpo_raw:
+                rpo[dt] = int(rpo_raw[key])
+
+        min_score_threshold = float(data.get("min_score_threshold", min_score))
+    except (TypeError, ValueError) as exc:
+        console.print(f"[red]Invalid policy file: could not parse RTO/RPO/score values: {exc}[/]")
+        raise typer.Exit(1)
 
     return ResiliencyPolicy(
         policy_name=data.get("policy_name", "custom-policy"),
         description=data.get("description", ""),
         rto_seconds=rto if rto else ResiliencyPolicy.__dataclass_fields__["rto_seconds"].default_factory(),  # type: ignore[attr-defined]
         rpo_seconds=rpo if rpo else ResiliencyPolicy.__dataclass_fields__["rpo_seconds"].default_factory(),  # type: ignore[attr-defined]
-        min_score_threshold=float(data.get("min_score_threshold", min_score)),
+        min_score_threshold=min_score_threshold,
     )
 
 
@@ -500,11 +514,11 @@ def _print_html_report(hub_output: dict) -> None:
         d_color = "#22c55e" if d_score >= 80 else ("#eab308" if d_score >= 60 else "#ef4444")
         disruption_rows += (
             f"<tr>"
-            f"<td>{dtype}</td>"
+            f"<td>{html.escape(str(dtype))}</td>"
             f"<td style='color:{d_color}'>{d_score:.1f}</td>"
             f"<td>{data['rtoInSecs'] // 60}m</td>"
             f"<td>{data['rpoInSecs'] // 60}m</td>"
-            f"<td>{data['policyStatus']}</td>"
+            f"<td>{html.escape(str(data['policyStatus']))}</td>"
             f"</tr>\n"
         )
 
@@ -513,15 +527,17 @@ def _print_html_report(hub_output: dict) -> None:
         sev_colors = {"HIGH": "#ef4444", "MEDIUM": "#eab308", "LOW": "#6b7280"}
         sev_color = sev_colors.get(rec.get("severity", "LOW"), "#6b7280")
         rec_items += (
-            f"<li><span style='color:{sev_color}'>[{rec.get('severity','LOW')}]</span> "
-            f"[{rec.get('disruptionType','General')}] {rec.get('recommendation','')}</li>\n"
+            f"<li><span style='color:{sev_color}'>"
+            f"[{html.escape(str(rec.get('severity', 'LOW')))}]</span> "
+            f"[{html.escape(str(rec.get('disruptionType', 'General')))}] "
+            f"{html.escape(str(rec.get('recommendation', '')))}</li>\n"
         )
 
-    html = f"""<!DOCTYPE html>
+    html_doc = f"""<!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>FaultRay Resilience Hub Prediction — {app_name}</title>
+<title>FaultRay Resilience Hub Prediction — {html.escape(str(app_name))}</title>
 <style>
   body {{ font-family: system-ui, sans-serif; max-width: 900px; margin: 2rem auto; padding: 0 1rem; }}
   h1 {{ color: #1e40af; }}
@@ -535,9 +551,9 @@ def _print_html_report(hub_output: dict) -> None:
 </head>
 <body>
 <h1>FaultRay — AWS Resilience Hub Pre-Deploy Prediction</h1>
-<p><strong>Application:</strong> {app_name}</p>
+<p><strong>Application:</strong> {html.escape(str(app_name))}</p>
 <p class="score">{score:.1f} / 100</p>
-<p class="status">{status}</p>
+<p class="status">{html.escape(str(status))}</p>
 <p><strong>Resources analyzed:</strong> {hub_output['resourceCount']}</p>
 
 <h2>Disruption Resilience Breakdown</h2>
@@ -553,4 +569,4 @@ def _print_html_report(hub_output: dict) -> None:
 </body>
 </html>"""
 
-    console.print(html)
+    console.print(html_doc, markup=False)

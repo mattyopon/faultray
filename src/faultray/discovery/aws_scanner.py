@@ -47,19 +47,21 @@ def _extract_endpoint_host(value: str) -> str | None:
     """
     if not value:
         return None
-    host = value.strip()
-    # Strip scheme (e.g. ``redis://``) and anything before it.
-    if "://" in host:
-        host = host.split("://", 1)[1]
-    # Drop any path / query component.
-    host = host.split("/", 1)[0].split("?", 1)[0]
-    # Drop userinfo (``user:password@host``) — this is the secret-bearing part.
-    if "@" in host:
-        host = host.rsplit("@", 1)[1]
-    # Drop port.
-    host = host.split(":", 1)[0]
-    host = host.strip().strip("[]")  # tolerate bracketed IPv6 literals
-    return host or None
+    from urllib.parse import urlsplit
+
+    raw = value.strip()
+    # urlsplit needs a scheme to populate netloc/hostname; synthesise one when
+    # the connection string omits it. This correctly handles userinfo whose
+    # password contains reserved characters such as ``/`` (which naive string
+    # splitting on ``/`` would truncate, losing or corrupting the host).
+    try:
+        parts = urlsplit(raw if "://" in raw else f"scheme://{raw}")
+        host = parts.hostname  # already strips userinfo, port and IPv6 brackets
+    except ValueError:
+        host = None
+    if not host:
+        return None
+    return host.strip().strip("[]") or None
 
 
 # Mapping from AWS service to FaultRay ComponentType
@@ -86,6 +88,23 @@ _DB_CACHE_PORTS = {3306, 5432, 6379, 11211, 27017, 5439}  # MySQL, PG, Redis, Me
 def _is_critical_port(port: int) -> bool:
     """Return True if port typically indicates a database or cache service."""
     return port in _DB_CACHE_PORTS
+
+
+def _latest_datapoint(datapoints: list[dict]) -> dict:
+    """Return the most recent CloudWatch datapoint by ``Timestamp``.
+
+    ``GetMetricStatistics`` does not guarantee chronological ordering, so the
+    caller must not assume ``datapoints[0]`` is the latest sample. Datapoints
+    without a ``Timestamp`` (e.g. in tests) are treated as oldest.
+    """
+    import datetime as _dt
+
+    def _ts(dp: dict):
+        return dp.get("Timestamp") or _dt.datetime.min.replace(
+            tzinfo=_dt.timezone.utc
+        )
+
+    return max(datapoints, key=_ts)
 
 
 def _boto3_session(region: str, profile: str | None = None):
@@ -132,14 +151,20 @@ class AWSScanner(CloudScannerBase):
         self._sg_inbound_rules: dict[str, list[tuple[str, int]]] = {}
         # ALB target group -> target component ids
         self._alb_targets: dict[str, list[str]] = {}
+        # Load balancer ARN -> component id (exact mapping for target groups)
+        self._lb_arn_to_component: dict[str, str] = {}
         # ECS env vars with endpoints
         self._ecs_endpoints: dict[str, list[str]] = {}
-        # Route53 alias targets
-        self._route53_aliases: dict[str, str] = {}
+        # Route53 alias targets (a hosted zone has many alias records)
+        self._route53_aliases: dict[str, list[str]] = {}
         # Instance-id -> component-id mapping
         self._instance_to_component: dict[str, str] = {}
         # Subnet-id -> is-private mapping
         self._subnet_private: dict[str, bool] = {}
+        # Component-id -> subnet-id (EC2 components) for segmentation detection
+        self._component_subnet: dict[str, str] = {}
+        # Component-ids that are Aurora clusters (metric dimension differs)
+        self._rds_clusters: set[str] = set()
 
     def scan(self) -> AWSDiscoveryResult:
         """Run a full AWS infrastructure scan.
@@ -218,7 +243,9 @@ class AWSScanner(CloudScannerBase):
 
                         # Determine AZ / subnet
                         az = inst.get("Placement", {}).get("AvailabilityZone", "")
-                        inst.get("SubnetId", "")
+                        subnet_id = inst.get("SubnetId", "")
+                        if subnet_id:
+                            self._component_subnet[comp_id] = subnet_id
 
                         component = Component(
                             id=comp_id,
@@ -248,7 +275,9 @@ class AWSScanner(CloudScannerBase):
                 for sg in page.get("SecurityGroups", []):
                     sg_id = sg["GroupId"]
                     for rule in sg.get("IpPermissions", []):
-                        from_port = rule.get("FromPort", 0)
+                        # FromPort is absent for some rules and explicitly None
+                        # for all-traffic ("-1") rules; normalize both to 0.
+                        from_port = rule.get("FromPort") or 0
                         for pair in rule.get("UserIdGroupPairs", []):
                             source_sg = pair.get("GroupId", "")
                             if source_sg:
@@ -294,6 +323,7 @@ class AWSScanner(CloudScannerBase):
                 for cluster in page.get("DBClusters", []):
                     cluster_id = cluster["DBClusterIdentifier"]
                     comp_id = f"rds-{cluster_id}"
+                    self._rds_clusters.add(comp_id)
                     members = cluster.get("DBClusterMembers", [])
                     num_members = len(members) if members else 1
                     az = cluster.get("AvailabilityZones", [])
@@ -404,7 +434,7 @@ class AWSScanner(CloudScannerBase):
                     num_nodes = sum(
                         len(ng.get("NodeGroupMembers", [])) for ng in node_groups
                     )
-                    rg.get("MultiAZ", "") == "enabled"
+                    multi_az = rg.get("MultiAZ", "") == "enabled"
 
                     component = Component(
                         id=comp_id,
@@ -414,7 +444,9 @@ class AWSScanner(CloudScannerBase):
                         port=6379,
                         replicas=max(num_nodes, 1),
                         failover=FailoverConfig(
-                            enabled=rg.get("AutomaticFailover", "") == "enabled",
+                            enabled=(
+                                rg.get("AutomaticFailover", "") == "enabled" or multi_az
+                            ),
                             promotion_time_seconds=15.0,
                         ),
                         region=RegionConfig(region=self.region),
@@ -503,6 +535,9 @@ class AWSScanner(CloudScannerBase):
                     for sg_id in sg_ids:
                         self._sg_to_components.setdefault(sg_id, []).append(comp_id)
 
+                    # Exact ARN -> component mapping for target-group lookup
+                    self._lb_arn_to_component[lb_arn] = comp_id
+
                     graph.add_component(component)
         except Exception as exc:
             self._warnings.append(f"ALB/NLB scan error: {exc}")
@@ -520,12 +555,13 @@ class AWSScanner(CloudScannerBase):
                             if target_id.startswith("i-"):
                                 comp_id = self._instance_to_component.get(target_id)
                                 if comp_id:
-                                    lb_name = lb_arn.split("/")[-2] if "/" in lb_arn else lb_arn
-                                    # Find the ALB component id
-                                    for cid in graph.components:
-                                        if lb_name in cid:
-                                            self._alb_targets.setdefault(cid, []).append(comp_id)
-                                            break
+                                    # Map the target to the exact LB component by
+                                    # ARN rather than fragile substring matching.
+                                    lb_comp_id = self._lb_arn_to_component.get(lb_arn)
+                                    if lb_comp_id:
+                                        self._alb_targets.setdefault(
+                                            lb_comp_id, []
+                                        ).append(comp_id)
                     except Exception as exc:
                         logger.debug("Skipping target health for %s: %s", tg_arn, exc)
             except Exception as exc:
@@ -643,6 +679,9 @@ class AWSScanner(CloudScannerBase):
                 try:
                     loc = s3.get_bucket_location(Bucket=bucket_name)
                     bucket_region = loc.get("LocationConstraint") or "us-east-1"
+                    # Legacy buckets report the constraint "EU" for eu-west-1.
+                    if bucket_region == "EU":
+                        bucket_region = "eu-west-1"
                 except Exception:
                     bucket_region = self.region
 
@@ -765,8 +804,20 @@ class AWSScanner(CloudScannerBase):
         r53 = session.client("route53")
 
         try:
-            hz_resp = r53.list_hosted_zones()
-            for zone in hz_resp.get("HostedZones", []):
+            # Paginate hosted zones (list_hosted_zones is truncated via Marker).
+            zones: list[dict] = []
+            marker: str | None = None
+            while True:
+                hz_kwargs = {"Marker": marker} if marker else {}
+                hz_resp = r53.list_hosted_zones(**hz_kwargs)
+                zones.extend(hz_resp.get("HostedZones", []))
+                if not hz_resp.get("IsTruncated"):
+                    break
+                marker = hz_resp.get("NextMarker")
+                if not marker:
+                    break
+
+            for zone in zones:
                 zone_id = zone["Id"].split("/")[-1]
                 zone_name = zone["Name"].rstrip(".")
 
@@ -781,14 +832,32 @@ class AWSScanner(CloudScannerBase):
                 )
                 graph.add_component(component)
 
-                # Check alias targets for dependency inference
+                # Check alias targets for dependency inference. A zone holds
+                # many alias records, all of which we keep; record sets are
+                # paginated via NextRecordName/NextRecordType.
                 try:
-                    rr_resp = r53.list_resource_record_sets(HostedZoneId=zone_id)
-                    for rr in rr_resp.get("ResourceRecordSets", []):
-                        alias = rr.get("AliasTarget", {})
-                        dns_name = alias.get("DNSName", "")
-                        if dns_name:
-                            self._route53_aliases[comp_id] = dns_name
+                    rr_kwargs: dict = {"HostedZoneId": zone_id}
+                    while True:
+                        rr_resp = r53.list_resource_record_sets(**rr_kwargs)
+                        for rr in rr_resp.get("ResourceRecordSets", []):
+                            alias = rr.get("AliasTarget", {})
+                            dns_name = alias.get("DNSName", "")
+                            if dns_name:
+                                self._route53_aliases.setdefault(comp_id, []).append(
+                                    dns_name
+                                )
+                        if not rr_resp.get("IsTruncated"):
+                            break
+                        next_name = rr_resp.get("NextRecordName")
+                        if not next_name:
+                            break
+                        rr_kwargs = {
+                            "HostedZoneId": zone_id,
+                            "StartRecordName": next_name,
+                        }
+                        next_type = rr_resp.get("NextRecordType")
+                        if next_type:
+                            rr_kwargs["StartRecordType"] = next_type
                 except Exception as exc:
                     logger.debug("Skipping record sets for zone %s: %s", zone_id, exc)
         except Exception as exc:
@@ -910,24 +979,25 @@ class AWSScanner(CloudScannerBase):
                             )
                             graph.add_dependency(dep)
 
-        # 4. Route53 alias dependencies
-        for dns_comp_id, alias_dns in self._route53_aliases.items():
-            alias_lower = alias_dns.lower().rstrip(".")
-            for comp_id, comp in graph.components.items():
-                if comp_id == dns_comp_id:
-                    continue
-                if comp.host and comp.host.lower() in alias_lower:
-                    edge_key = (dns_comp_id, comp_id)
-                    if edge_key not in existing_edges:
-                        existing_edges.add(edge_key)
-                        dep = Dependency(
-                            source_id=dns_comp_id,
-                            target_id=comp_id,
-                            dependency_type="requires",
-                            protocol="dns",
-                            port=0,
-                        )
-                        graph.add_dependency(dep)
+        # 4. Route53 alias dependencies (each zone may have many alias targets)
+        for dns_comp_id, alias_dns_list in self._route53_aliases.items():
+            for alias_dns in alias_dns_list:
+                alias_lower = alias_dns.lower().rstrip(".")
+                for comp_id, comp in graph.components.items():
+                    if comp_id == dns_comp_id:
+                        continue
+                    if comp.host and comp.host.lower() in alias_lower:
+                        edge_key = (dns_comp_id, comp_id)
+                        if edge_key not in existing_edges:
+                            existing_edges.add(edge_key)
+                            dep = Dependency(
+                                source_id=dns_comp_id,
+                                target_id=comp_id,
+                                dependency_type="requires",
+                                protocol="dns",
+                                port=0,
+                            )
+                            graph.add_dependency(dep)
 
     # ── Metric Enrichment ────────────────────────────────────────────────────
 
@@ -943,7 +1013,12 @@ class AWSScanner(CloudScannerBase):
                     self._fetch_ec2_metrics(cw, instance_id, comp)
                 elif comp_id.startswith("rds-"):
                     db_id = comp_id.replace("rds-", "", 1)
-                    self._fetch_rds_metrics(cw, db_id, comp)
+                    if comp_id in self._rds_clusters:
+                        # Aurora clusters use the DBClusterIdentifier dimension,
+                        # not DBInstanceIdentifier.
+                        self._fetch_rds_metrics(cw, db_id, comp, is_cluster=True)
+                    else:
+                        self._fetch_rds_metrics(cw, db_id, comp)
             except Exception as exc:
                 logger.debug("Skipping CloudWatch metrics for %s: %s", comp_id, exc)
 
@@ -965,20 +1040,25 @@ class AWSScanner(CloudScannerBase):
         )
         datapoints = resp.get("Datapoints", [])
         if datapoints:
-            avg_cpu = datapoints[0].get("Average", 0.0)
-            comp.metrics.cpu_percent = avg_cpu
+            # CloudWatch does not return datapoints in chronological order;
+            # pick the most recent by timestamp.
+            latest = _latest_datapoint(datapoints)
+            comp.metrics.cpu_percent = latest.get("Average", 0.0)
 
-    def _fetch_rds_metrics(self, cw, db_id: str, comp: Component) -> None:
-        """Fetch CPU utilization from CloudWatch for an RDS instance."""
+    def _fetch_rds_metrics(
+        self, cw, db_id: str, comp: Component, is_cluster: bool = False
+    ) -> None:
+        """Fetch CPU utilization from CloudWatch for an RDS instance/cluster."""
         import datetime
 
         end = datetime.datetime.now(datetime.timezone.utc)
         start = end - datetime.timedelta(hours=1)
 
+        dimension_name = "DBClusterIdentifier" if is_cluster else "DBInstanceIdentifier"
         resp = cw.get_metric_statistics(
             Namespace="AWS/RDS",
             MetricName="CPUUtilization",
-            Dimensions=[{"Name": "DBInstanceIdentifier", "Value": db_id}],
+            Dimensions=[{"Name": dimension_name, "Value": db_id}],
             StartTime=start,
             EndTime=end,
             Period=3600,
@@ -986,8 +1066,8 @@ class AWSScanner(CloudScannerBase):
         )
         datapoints = resp.get("Datapoints", [])
         if datapoints:
-            avg_cpu = datapoints[0].get("Average", 0.0)
-            comp.metrics.cpu_percent = avg_cpu
+            latest = _latest_datapoint(datapoints)
+            comp.metrics.cpu_percent = latest.get("Average", 0.0)
 
     # ── Security Profile Detection ───────────────────────────────────────────
 
@@ -1037,15 +1117,14 @@ class AWSScanner(CloudScannerBase):
             if any(comp.host and comp.host in arn for arn in waf_protected_arns):
                 comp.security.waf_protected = True
 
-        # Check network segmentation using subnet info
+        # Check network segmentation using subnet info. A component is only
+        # segmented if *its own* subnet is private — not if any subnet in the
+        # account happens to be private.
         for comp_id, comp in graph.components.items():
             if comp_id.startswith("ec2-"):
-                comp_id.replace("ec2-", "", 1)
-                # Check if the component's subnet is private
-                for subnet_id, is_private in self._subnet_private.items():
-                    if is_private:
-                        comp.security.network_segmented = True
-                        break
+                subnet_id = self._component_subnet.get(comp_id, "")
+                if subnet_id and self._subnet_private.get(subnet_id, False):
+                    comp.security.network_segmented = True
 
         # Encryption in transit: check if port is 443 or has TLS configured
         for comp in graph.components.values():
@@ -1185,4 +1264,7 @@ def export_yaml(graph: InfraGraph, path: Path) -> None:
     if deps_list:
         output["dependencies"] = deps_list
 
-    path.write_text(yaml.dump(output, default_flow_style=False, sort_keys=False, allow_unicode=True))
+    path.write_text(
+        yaml.dump(output, default_flow_style=False, sort_keys=False, allow_unicode=True),
+        encoding="utf-8",
+    )

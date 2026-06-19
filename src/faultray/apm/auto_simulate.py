@@ -168,11 +168,14 @@ class AutoSimulator:
             if not dependents or comp.replicas > 1:
                 continue
 
-            # Check whether at least one dependent has a "requires" edge
+            # Check whether at least one dependent has a "requires" edge.
+            # A dependent always has an edge to ``comp`` (it came from the
+            # graph's predecessors), so a missing edge is not treated as a
+            # hard dependency — only explicit "requires" edges count.
             hard_deps = []
             for dep_comp in dependents:
                 edge = self.graph.get_dependency_edge(dep_comp.id, comp.id)
-                if edge is None or edge.dependency_type == "requires":
+                if edge is not None and edge.dependency_type == "requires":
                     hard_deps.append(dep_comp.id)
 
             if hard_deps:

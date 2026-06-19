@@ -153,11 +153,11 @@ class AnomalyEngine:
                         rule_name=rule.name,
                         agent_id=agent_id,
                         metric_name=rule.metric_name,
-                        metric_value=value,
+                        metric_value=metric_value,
                         threshold=rule.threshold,
                         severity=rule.severity,
                         message=(
-                            f"{rule.metric_name} = {value:.1f} "
+                            f"{rule.metric_name} = {metric_value:.1f} "
                             f"{rule.condition} {rule.threshold} on {agent_id}"
                         ),
                     )

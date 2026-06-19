@@ -126,12 +126,12 @@ terraform {{
     }}
   }}
 
+  # Terraform backend blocks cannot reference input variables. Use partial
+  # configuration: supply bucket/region/dynamodb_table at init time via
+  # `terraform init -backend-config=...` (or a backend config file).
   backend "s3" {{
-    bucket         = "${{var.terraform_state_bucket}}"
-    key            = "{project}/terraform.tfstate"
-    region         = var.aws_region
-    encrypt        = true
-    dynamodb_table = "${{var.terraform_lock_table}}"
+    key     = "{project}/terraform.tfstate"
+    encrypt = true
   }}
 }}
 
@@ -210,6 +210,11 @@ variable "db_instance_class" {{
   description = "RDS instance class"
   type        = string
   default     = "{self._db_instance_class(spec)}"
+}}
+
+variable "acm_certificate_arn" {{
+  description = "ACM certificate ARN for the ALB HTTPS listener"
+  type        = string
 }}
 """
 
@@ -414,21 +419,28 @@ resource "aws_security_group" "{project}_alb_sg" {{
 }}
 """)
 
-        # App SG
+        # App SG.
+        # Only emit the ALB-sourced ingress rule when an ALB exists; an empty
+        # security group id (security_groups = [""]) is rejected by AWS. Scope
+        # the rule to the application container port (3000) for least privilege
+        # instead of the entire TCP range.
+        app_ingress = ""
+        if has_alb:
+            app_ingress = f"""
+  ingress {{
+    description     = "From ALB"
+    from_port       = 3000
+    to_port         = 3000
+    protocol        = "tcp"
+    security_groups = [aws_security_group.{project}_alb_sg.id]
+  }}
+"""
         blocks.append(f"""\
 resource "aws_security_group" "{project}_app_sg" {{
   name        = "${{var.project_name}}-app-sg"
   description = "Security group for application servers"
   vpc_id      = aws_vpc.{project}_vpc.id
-
-  ingress {{
-    description     = "From ALB"
-    from_port       = 0
-    to_port         = 65535
-    protocol        = "tcp"
-    security_groups = [{f'aws_security_group.{project}_alb_sg.id' if has_alb else '""'}]
-  }}
-
+{app_ingress}
   egress {{
     from_port   = 0
     to_port     = 0
@@ -444,6 +456,14 @@ resource "aws_security_group" "{project}_app_sg" {{
 
         # DB SG
         if has_db:
+            # Derive the DB port from the database engine so MySQL databases
+            # (port 3306) are reachable, not just PostgreSQL (5432).
+            db_port = 5432
+            for comp in graph.components.values():
+                if comp.type == ComponentType.DATABASE:
+                    if any(tag in comp.tags for tag in ["mysql", "rds_mysql"]):
+                        db_port = 3306
+                    break
             blocks.append(f"""\
 resource "aws_security_group" "{project}_db_sg" {{
   name        = "${{var.project_name}}-db-sg"
@@ -452,8 +472,8 @@ resource "aws_security_group" "{project}_db_sg" {{
 
   ingress {{
     description     = "From app servers"
-    from_port       = 5432
-    to_port         = 5432
+    from_port       = {db_port}
+    to_port         = {db_port}
     protocol        = "tcp"
     security_groups = [aws_security_group.{project}_app_sg.id]
   }}
@@ -513,7 +533,7 @@ resource "aws_security_group" "{project}_cache_sg" {{
 
         for comp in graph.components.values():
             safe = _tf_name(comp.id)
-            if comp.type == ComponentType.LOAD_BALANCER and "cloudfront" not in comp.id:
+            if comp.type == ComponentType.LOAD_BALANCER and "cloudfront" not in comp.id.lower():
                 lines.append(f"""\
 output "{safe}_dns_name" {{
   description = "DNS name of {comp.name}"
@@ -612,6 +632,7 @@ resource "aws_lb_listener" "{project}_{safe}_https" {{
   port              = "443"
   protocol          = "HTTPS"
   ssl_policy        = "ELBSecurityPolicy-TLS13-1-2-2021-06"
+  certificate_arn   = var.acm_certificate_arn
 
   default_action {{
     type             = "forward"
@@ -766,12 +787,36 @@ resource "aws_db_instance" "{project}_{safe}" {{
   performance_insights_enabled          = true
   performance_insights_retention_period = 7
   monitoring_interval                   = 60
+  monitoring_role_arn                   = aws_iam_role.{project}_{safe}_monitoring.arn
 
   auto_minor_version_upgrade = true
 
   tags = {{
     Name = "${{var.project_name}}-{safe}"
   }}
+}}
+
+# Enhanced monitoring requires an IAM role when monitoring_interval > 0.
+resource "aws_iam_role" "{project}_{safe}_monitoring" {{
+  name = "${{var.project_name}}-{safe}-rds-monitoring"
+
+  assume_role_policy = jsonencode({{
+    Version = "2012-10-17"
+    Statement = [
+      {{
+        Action = "sts:AssumeRole"
+        Effect = "Allow"
+        Principal = {{
+          Service = "monitoring.rds.amazonaws.com"
+        }}
+      }}
+    ]
+  }})
+}}
+
+resource "aws_iam_role_policy_attachment" "{project}_{safe}_monitoring" {{
+  role       = aws_iam_role.{project}_{safe}_monitoring.name
+  policy_arn = "arn:aws:iam::aws:policy/service-role/AmazonRDSEnhancedMonitoringRole"
 }}
 
 resource "random_password" "{safe}_password" {{
@@ -847,17 +892,61 @@ resource "aws_elasticache_replication_group" "{project}_{safe}" {{
         min_capacity = comp.autoscaling.min_replicas if comp.autoscaling.enabled else 1
         max_capacity = comp.autoscaling.max_replicas if comp.autoscaling.enabled else 2
 
-        # Build secrets block dynamically — only include if a DB component exists
+        # Build secrets block dynamically — only include if a DB component exists.
+        # Reference individual JSON keys of the Secrets Manager secret (via the
+        # `:<json-key>::` ARN suffix) rather than injecting the whole JSON
+        # document into a single DATABASE_URL variable.
         if db_safe is not None:
+            secret_arn = f"aws_secretsmanager_secret.{db_safe}_credentials.arn"
             secrets_block = f"""\
       secrets = [
         {{
-          name      = "DATABASE_URL"
-          valueFrom = aws_secretsmanager_secret.{db_safe}_credentials.arn
+          name      = "DB_USERNAME"
+          valueFrom = "${{{secret_arn}}}:username::"
+        }},
+        {{
+          name      = "DB_PASSWORD"
+          valueFrom = "${{{secret_arn}}}:password::"
+        }},
+        {{
+          name      = "DB_HOST"
+          valueFrom = "${{{secret_arn}}}:host::"
+        }},
+        {{
+          name      = "DB_PORT"
+          valueFrom = "${{{secret_arn}}}:port::"
+        }},
+        {{
+          name      = "DB_NAME"
+          valueFrom = "${{{secret_arn}}}:dbname::"
         }}
       ]"""
         else:
             secrets_block = "      secrets = []"
+
+        # When a DB secret is injected, the ECS execution role needs explicit
+        # permission to read it (the managed AmazonECSTaskExecutionRolePolicy
+        # does not grant GetSecretValue on customer secrets).
+        if db_safe is not None:
+            secrets_policy_block = f"""
+
+resource "aws_iam_role_policy" "{project}_{safe}_secrets_access" {{
+  name = "${{var.project_name}}-{safe}-secrets-access"
+  role = aws_iam_role.{project}_ecs_execution_role.id
+
+  policy = jsonencode({{
+    Version = "2012-10-17"
+    Statement = [
+      {{
+        Effect   = "Allow"
+        Action   = ["secretsmanager:GetSecretValue"]
+        Resource = [aws_secretsmanager_secret.{db_safe}_credentials.arn]
+      }}
+    ]
+  }})
+}}"""
+        else:
+            secrets_policy_block = ""
 
         # Build load_balancer block dynamically — only include if an LB component exists
         if lb_safe is not None:
@@ -891,6 +980,8 @@ resource "aws_ecs_task_definition" "{project}_{safe}_task" {{
   memory                   = "1024"
   execution_role_arn       = aws_iam_role.{project}_ecs_execution_role.arn
   task_role_arn            = aws_iam_role.{project}_ecs_task_role.arn
+
+  depends_on = [aws_cloudwatch_log_group.{project}_{safe}_logs]
 
   container_definitions = jsonencode([
     {{
@@ -989,6 +1080,7 @@ resource "aws_appautoscaling_policy" "{project}_{safe}_cpu_scaling" {{
     scale_out_cooldown = 60
   }}
 }}
+{secrets_policy_block}
 """
 
     def _gen_iam(self, project: str) -> str:

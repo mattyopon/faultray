@@ -103,7 +103,7 @@ def _risk_style(level: str) -> str:
 
 def _risk_bar(score: float, width: int = 20) -> str:
     """Return a visual risk bar using Unicode blocks."""
-    filled = int(score * width)
+    filled = max(0, min(width, int(round(score * width))))
     empty = width - filled
     if score >= 0.75:
         color = "red"

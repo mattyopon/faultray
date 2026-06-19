@@ -16,6 +16,7 @@ import datetime as _dt
 import json
 import logging
 import sqlite3
+import threading
 from pathlib import Path
 from typing import Any
 
@@ -45,6 +46,11 @@ class MetricsDB:
         self.db_path = Path(db_path)
         self.retention_hours = retention_hours
         self._conn: sqlite3.Connection | None = None
+        # The single connection is created with check_same_thread=False and may
+        # be reached from FastAPI's threadpool and background tasks. sqlite3
+        # connections/cursors are not safe for concurrent use across threads,
+        # so serialize all access (execute + commit) with a reentrant lock.
+        self._lock = threading.RLock()
 
     # ------------------------------------------------------------------
     # Lifecycle
@@ -58,6 +64,9 @@ class MetricsDB:
         )
         self._conn.execute("PRAGMA journal_mode=WAL")
         self._conn.execute("PRAGMA synchronous=NORMAL")
+        # Wait (rather than failing immediately) if another connection holds a
+        # write lock; complements the in-process lock for cross-process access.
+        self._conn.execute("PRAGMA busy_timeout=10000")
         self._create_tables()
 
     def close(self) -> None:
@@ -164,79 +173,83 @@ class MetricsDB:
                 json.dumps(m.get("tags", {})),
                 m.get("timestamp", _dt.datetime.now(_dt.timezone.utc).isoformat()),
             ))
-        self.conn.executemany(
-            """
-            INSERT INTO metric_points (agent_id, name, value, metric_type, tags_json, timestamp)
-            VALUES (?, ?, ?, ?, ?, ?)
-            """,
-            rows,
-        )
-        self.conn.commit()
+        with self._lock:
+            self.conn.executemany(
+                """
+                INSERT INTO metric_points (agent_id, name, value, metric_type, tags_json, timestamp)
+                VALUES (?, ?, ?, ?, ?, ?)
+                """,
+                rows,
+            )
+            self.conn.commit()
         return len(rows)
 
     def register_agent(self, info: dict[str, Any]) -> None:
         """Register or update an agent entry."""
         now = _dt.datetime.now(_dt.timezone.utc).isoformat()
-        self.conn.execute(
-            """
-            INSERT INTO agent_registry
-                (agent_id, hostname, ip_address, os_info, agent_version,
-                 labels_json, status, registered_at, last_seen)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
-            ON CONFLICT(agent_id) DO UPDATE SET
-                hostname = excluded.hostname,
-                ip_address = excluded.ip_address,
-                os_info = excluded.os_info,
-                agent_version = excluded.agent_version,
-                labels_json = excluded.labels_json,
-                status = excluded.status,
-                last_seen = excluded.last_seen
-            """,
-            (
-                info.get("agent_id", ""),
-                info.get("hostname", ""),
-                info.get("ip_address", ""),
-                info.get("os_info", ""),
-                info.get("agent_version", ""),
-                json.dumps(info.get("labels", {})),
-                info.get("status", "running"),
-                info.get("registered_at", now),
-                now,
-            ),
-        )
-        self.conn.commit()
+        with self._lock:
+            self.conn.execute(
+                """
+                INSERT INTO agent_registry
+                    (agent_id, hostname, ip_address, os_info, agent_version,
+                     labels_json, status, registered_at, last_seen)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+                ON CONFLICT(agent_id) DO UPDATE SET
+                    hostname = excluded.hostname,
+                    ip_address = excluded.ip_address,
+                    os_info = excluded.os_info,
+                    agent_version = excluded.agent_version,
+                    labels_json = excluded.labels_json,
+                    status = excluded.status,
+                    last_seen = excluded.last_seen
+                """,
+                (
+                    info.get("agent_id", ""),
+                    info.get("hostname", ""),
+                    info.get("ip_address", ""),
+                    info.get("os_info", ""),
+                    info.get("agent_version", ""),
+                    json.dumps(info.get("labels", {})),
+                    info.get("status", "running"),
+                    info.get("registered_at", now),
+                    now,
+                ),
+            )
+            self.conn.commit()
 
     def update_agent_heartbeat(self, agent_id: str, status: str = "running") -> None:
         now = _dt.datetime.now(_dt.timezone.utc).isoformat()
-        self.conn.execute(
-            "UPDATE agent_registry SET status = ?, last_seen = ? WHERE agent_id = ?",
-            (status, now, agent_id),
-        )
-        self.conn.commit()
+        with self._lock:
+            self.conn.execute(
+                "UPDATE agent_registry SET status = ?, last_seen = ? WHERE agent_id = ?",
+                (status, now, agent_id),
+            )
+            self.conn.commit()
 
     def insert_alert(self, alert: dict[str, Any]) -> None:
         """Insert an alert record."""
-        self.conn.execute(
-            """
-            INSERT OR IGNORE INTO alerts
-                (alert_id, rule_name, agent_id, metric_name, metric_value,
-                 threshold, severity, message, fired_at, resolved_at)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-            """,
-            (
-                alert.get("alert_id", ""),
-                alert.get("rule_name", ""),
-                alert.get("agent_id", ""),
-                alert.get("metric_name", ""),
-                float(alert.get("metric_value", 0)),
-                float(alert.get("threshold", 0)),
-                alert.get("severity", "warning"),
-                alert.get("message", ""),
-                alert.get("fired_at", _dt.datetime.now(_dt.timezone.utc).isoformat()),
-                alert.get("resolved_at"),
-            ),
-        )
-        self.conn.commit()
+        with self._lock:
+            self.conn.execute(
+                """
+                INSERT OR IGNORE INTO alerts
+                    (alert_id, rule_name, agent_id, metric_name, metric_value,
+                     threshold, severity, message, fired_at, resolved_at)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                """,
+                (
+                    alert.get("alert_id", ""),
+                    alert.get("rule_name", ""),
+                    alert.get("agent_id", ""),
+                    alert.get("metric_name", ""),
+                    float(alert.get("metric_value", 0)),
+                    float(alert.get("threshold", 0)),
+                    alert.get("severity", "warning"),
+                    alert.get("message", ""),
+                    alert.get("fired_at", _dt.datetime.now(_dt.timezone.utc).isoformat()),
+                    alert.get("resolved_at"),
+                ),
+            )
+            self.conn.commit()
 
     def insert_traces(self, traces: list[dict[str, Any]]) -> int:
         rows = []
@@ -253,16 +266,17 @@ class MetricsDB:
                 json.dumps(t.get("tags", {})),
                 t.get("start_time", _dt.datetime.now(_dt.timezone.utc).isoformat()),
             ))
-        self.conn.executemany(
-            """
-            INSERT INTO traces
-                (trace_id, span_id, parent_span_id, operation, service,
-                 duration_ms, status_code, error, tags_json, start_time)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-            """,
-            rows,
-        )
-        self.conn.commit()
+        with self._lock:
+            self.conn.executemany(
+                """
+                INSERT INTO traces
+                    (trace_id, span_id, parent_span_id, operation, service,
+                     duration_ms, status_code, error, tags_json, start_time)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                """,
+                rows,
+            )
+            self.conn.commit()
         return len(rows)
 
     # ------------------------------------------------------------------
@@ -280,6 +294,11 @@ class MetricsDB:
         limit: int = 1000,
     ) -> list[dict[str, Any]]:
         """Query metrics with optional aggregation over time buckets."""
+        # Guard against divide-by-zero / negative buckets in the bucketing
+        # expression below (interval is interpolated into the SQL).
+        interval_seconds = max(1, int(interval_seconds))
+        limit = max(1, int(limit))
+
         agg_fn = {
             "avg": "AVG(value)",
             "min": "MIN(value)",
@@ -306,26 +325,33 @@ class MetricsDB:
 
         where = f"WHERE {' AND '.join(conditions)}" if conditions else ""
 
-        # Group by time buckets using strftime
+        # Group by time buckets using strftime. The LIMIT must keep the most
+        # recent buckets, so select the latest N (bucket DESC) in an inner
+        # query and re-sort ascending for the caller.
         sql = f"""
-            SELECT
-                name,
-                agent_id,
-                {agg_fn} AS value,
-                CAST(strftime('%s', timestamp) AS INTEGER) / {interval_seconds}
-                    * {interval_seconds} AS bucket,
-                COUNT(*) AS sample_count
-            FROM metric_points
-            {where}
-            GROUP BY name, agent_id, bucket
+            SELECT name, agent_id, value, bucket, sample_count FROM (
+                SELECT
+                    name,
+                    agent_id,
+                    {agg_fn} AS value,
+                    CAST(strftime('%s', timestamp) AS INTEGER) / {interval_seconds}
+                        * {interval_seconds} AS bucket,
+                    COUNT(*) AS sample_count
+                FROM metric_points
+                {where}
+                GROUP BY name, agent_id, bucket
+                ORDER BY bucket DESC
+                LIMIT ?
+            )
             ORDER BY bucket ASC
-            LIMIT ?
         """
         params.append(limit)
 
-        cursor = self.conn.execute(sql, params)
+        with self._lock:
+            cursor = self.conn.execute(sql, params)
+            rows = cursor.fetchall()
         results = []
-        for row in cursor.fetchall():
+        for row in rows:
             results.append({
                 "metric_name": row[0],
                 "agent_id": row[1],
@@ -336,22 +362,36 @@ class MetricsDB:
         return results
 
     def get_latest_metrics(self, agent_id: str) -> list[dict[str, Any]]:
-        """Get the most recent value for each metric name for an agent."""
-        cursor = self.conn.execute(
-            """
-            SELECT name, value, metric_type, tags_json, timestamp
-            FROM metric_points
-            WHERE agent_id = ?
-            AND id IN (
-                SELECT MAX(id)
-                FROM metric_points
-                WHERE agent_id = ?
-                GROUP BY name
+        """Get the most recent value for each metric name for an agent.
+
+        "Most recent" is determined by the metric timestamp (with the row id as
+        a tie-breaker), so delayed/backfilled points cannot overwrite a newer
+        value just because they were inserted later.
+        """
+        with self._lock:
+            cursor = self.conn.execute(
+                """
+                SELECT mp.name, mp.value, mp.metric_type, mp.tags_json, mp.timestamp
+                FROM metric_points mp
+                JOIN (
+                    SELECT name, MAX(timestamp) AS max_ts
+                    FROM metric_points
+                    WHERE agent_id = ?
+                    GROUP BY name
+                ) latest
+                  ON mp.name = latest.name AND mp.timestamp = latest.max_ts
+                WHERE mp.agent_id = ?
+                AND mp.id = (
+                    SELECT MAX(id) FROM metric_points
+                    WHERE agent_id = mp.agent_id
+                      AND name = mp.name
+                      AND timestamp = mp.timestamp
+                )
+                ORDER BY mp.name
+                """,
+                (agent_id, agent_id),
             )
-            ORDER BY name
-            """,
-            (agent_id, agent_id),
-        )
+            rows = cursor.fetchall()
         return [
             {
                 "name": r[0],
@@ -360,18 +400,20 @@ class MetricsDB:
                 "tags": json.loads(r[3]) if r[3] else {},
                 "timestamp": r[4],
             }
-            for r in cursor.fetchall()
+            for r in rows
         ]
 
     def list_agents(self) -> list[dict[str, Any]]:
-        cursor = self.conn.execute(
-            """
-            SELECT agent_id, hostname, ip_address, os_info, agent_version,
-                   labels_json, status, registered_at, last_seen
-            FROM agent_registry
-            ORDER BY last_seen DESC
-            """
-        )
+        with self._lock:
+            cursor = self.conn.execute(
+                """
+                SELECT agent_id, hostname, ip_address, os_info, agent_version,
+                       labels_json, status, registered_at, last_seen
+                FROM agent_registry
+                ORDER BY last_seen DESC
+                """
+            )
+            rows = cursor.fetchall()
         return [
             {
                 "agent_id": r[0],
@@ -384,19 +426,20 @@ class MetricsDB:
                 "registered_at": r[7],
                 "last_seen": r[8],
             }
-            for r in cursor.fetchall()
+            for r in rows
         ]
 
     def get_agent(self, agent_id: str) -> dict[str, Any] | None:
-        cursor = self.conn.execute(
-            """
-            SELECT agent_id, hostname, ip_address, os_info, agent_version,
-                   labels_json, status, registered_at, last_seen
-            FROM agent_registry WHERE agent_id = ?
-            """,
-            (agent_id,),
-        )
-        r = cursor.fetchone()
+        with self._lock:
+            cursor = self.conn.execute(
+                """
+                SELECT agent_id, hostname, ip_address, os_info, agent_version,
+                       labels_json, status, registered_at, last_seen
+                FROM agent_registry WHERE agent_id = ?
+                """,
+                (agent_id,),
+            )
+            r = cursor.fetchone()
         if r is None:
             return None
         return {
@@ -426,17 +469,20 @@ class MetricsDB:
             conditions.append("severity = ?")
             params.append(severity)
         where = f"WHERE {' AND '.join(conditions)}" if conditions else ""
+        limit = max(1, int(limit))
         params.append(limit)
-        cursor = self.conn.execute(
-            f"""
-            SELECT alert_id, rule_name, agent_id, metric_name, metric_value,
-                   threshold, severity, message, fired_at, resolved_at
-            FROM alerts {where}
-            ORDER BY fired_at DESC
-            LIMIT ?
-            """,
-            params,
-        )
+        with self._lock:
+            cursor = self.conn.execute(
+                f"""
+                SELECT alert_id, rule_name, agent_id, metric_name, metric_value,
+                       threshold, severity, message, fired_at, resolved_at
+                FROM alerts {where}
+                ORDER BY fired_at DESC
+                LIMIT ?
+                """,
+                params,
+            )
+            rows = cursor.fetchall()
         return [
             {
                 "alert_id": r[0],
@@ -450,7 +496,7 @@ class MetricsDB:
                 "fired_at": r[8],
                 "resolved_at": r[9],
             }
-            for r in cursor.fetchall()
+            for r in rows
         ]
 
     # ------------------------------------------------------------------
@@ -463,24 +509,26 @@ class MetricsDB:
             _dt.datetime.now(_dt.timezone.utc)
             - _dt.timedelta(hours=self.retention_hours)
         ).isoformat()
-        cursor = self.conn.execute(
-            "DELETE FROM metric_points WHERE timestamp < ?", (cutoff,)
-        )
-        deleted = cursor.rowcount
-        # Also purge old traces
-        self.conn.execute("DELETE FROM traces WHERE start_time < ?", (cutoff,))
-        self.conn.commit()
+        with self._lock:
+            cursor = self.conn.execute(
+                "DELETE FROM metric_points WHERE timestamp < ?", (cutoff,)
+            )
+            deleted = cursor.rowcount
+            # Also purge old traces
+            self.conn.execute("DELETE FROM traces WHERE start_time < ?", (cutoff,))
+            self.conn.commit()
         if deleted > 0:
             logger.info("Purged %d old metric points (cutoff=%s)", deleted, cutoff)
         return deleted
 
     def get_stats(self) -> dict[str, int]:
         """Return database statistics."""
-        c = self.conn
-        metrics_count = c.execute("SELECT COUNT(*) FROM metric_points").fetchone()[0]
-        agents_count = c.execute("SELECT COUNT(*) FROM agent_registry").fetchone()[0]
-        alerts_count = c.execute("SELECT COUNT(*) FROM alerts").fetchone()[0]
-        traces_count = c.execute("SELECT COUNT(*) FROM traces").fetchone()[0]
+        with self._lock:
+            c = self.conn
+            metrics_count = c.execute("SELECT COUNT(*) FROM metric_points").fetchone()[0]
+            agents_count = c.execute("SELECT COUNT(*) FROM agent_registry").fetchone()[0]
+            alerts_count = c.execute("SELECT COUNT(*) FROM alerts").fetchone()[0]
+            traces_count = c.execute("SELECT COUNT(*) FROM traces").fetchone()[0]
         return {
             "metric_points": metrics_count,
             "agents": agents_count,

@@ -227,7 +227,7 @@ def _print_team_view(report, con) -> None:
             str(len(t.owned_components)),
             f"[{risk_color}]${t.total_annual_risk:,.0f}[/]",
             f"[{risk_color}]{t.percentage_of_total_risk:.1f}%[/]",
-            t.highest_risk_component[:20],
+            (t.highest_risk_component or "—")[:20],
             f"${t.recommended_budget:,.0f}",
         )
 

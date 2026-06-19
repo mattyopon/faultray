@@ -115,8 +115,11 @@ PUBLIC_PATHS = frozenset({
     "/static",
     "/components",
     "/simulation",
-    "/graph",
     "/simulation/run",
+    # NOTE: '/graph' was removed from the public set — the interactive graph
+    # view exposes internal infrastructure topology and should require auth
+    # (the page route itself enforces no extra permission, but it is no longer
+    # bypassed by _is_public when auth is configured).
     # ADMIN-AUTH (#100): health / versioning / docs endpoints stay public
     "/api/health",
     "/api/versions",
@@ -136,9 +139,10 @@ def _is_public(path: str) -> bool:
     """Check whether *path* is a public (no-auth) endpoint."""
     if path in PUBLIC_PATHS:
         return True
-    # Allow setup paths (initial admin creation — always public)
-    if path == "/setup" or path.startswith("/setup/"):
-        return True
+    # NOTE: /setup is intentionally NOT made unconditionally public here. It is
+    # allowed only in the no-users bootstrap branch of get_current_user (via
+    # SETUP_PATHS); once an admin exists, /setup requires authentication so the
+    # setup surface is not reachable unauthenticated after initial bootstrap.
     # Allow static file sub-paths
     if path.startswith("/static/"):
         return True
@@ -224,21 +228,29 @@ async def get_current_user(
 
         token = credentials.credentials
 
-        # Try JWT token first (OAuth2 sessions)
-        try:
-            from faultray.api.oauth import decode_jwt
+        # Try JWT token first (OAuth2 sessions). A single Bearer token is tried
+        # as a JWT and then as an API key, so a token that is simply *not* a JWT
+        # (e.g. a raw API key) must fall through rather than error. decode_jwt
+        # already returns None for an invalid/expired/forged signature (it does
+        # not raise), so the only thing we guard here is a malformed 'sub'
+        # claim. We deliberately do NOT swallow unexpected errors (e.g. DB
+        # failures) — those propagate to _resolve_user and fail closed (deny),
+        # instead of silently masking them and falling through to API-key auth.
+        from faultray.api.oauth import decode_jwt
 
-            jwt_payload = decode_jwt(token)
-            if jwt_payload and "sub" in jwt_payload:
+        jwt_payload = decode_jwt(token)
+        if jwt_payload and "sub" in jwt_payload:
+            try:
                 user_id = int(jwt_payload["sub"])
+            except (ValueError, TypeError):
+                user_id = None
+            if user_id is not None:
                 result = await session.execute(
                     select(UserRow).where(UserRow.id == user_id)
                 )
                 user = result.scalar_one_or_none()
                 if user is not None:
                     return user
-        except Exception:
-            pass
 
         # Fall back to API key authentication
         key_hash = hash_api_key(token)

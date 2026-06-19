@@ -18,7 +18,6 @@ from rich.panel import Panel
 from rich.table import Table
 
 from faultray.cli.main import (
-    DEFAULT_MODEL_PATH,
     _load_graph_for_analysis,
     app,
     console,
@@ -55,12 +54,13 @@ def score(
         faultray deps score model.json --json
         faultray deps score infra.yaml --all
     """
-    yaml_path = model if str(model).endswith((".yaml", ".yml")) else None
-    json_path = model if yaml_path is None else None
-    graph = _load_graph_for_analysis(
-        json_path or DEFAULT_MODEL_PATH,
-        yaml_path,
-    )
+    if not model.is_file():
+        raise typer.BadParameter(f"Model file does not exist: {model}")
+
+    # Route by extension (case-insensitive): YAML/YML -> load_yaml,
+    # anything else (e.g. JSON) -> InfraGraph.load via the helper.
+    is_yaml = Path(model).suffix.lower() in {".yaml", ".yml"}
+    graph = _load_graph_for_analysis(model, model if is_yaml else None)
 
     from faultray.simulator.dependency_scorer import DependencyScorer
 
@@ -174,16 +174,79 @@ def heatmap(
         faultray deps heatmap infra.yaml
         faultray deps heatmap model.json --json
     """
-    yaml_path = model if str(model).endswith((".yaml", ".yml")) else None
-    json_path = model if yaml_path is None else None
-    graph = _load_graph_for_analysis(
-        json_path or DEFAULT_MODEL_PATH,
-        yaml_path,
-    )
+    if not model.is_file():
+        raise typer.BadParameter(f"Model file does not exist: {model}")
+
+    # Route by extension (case-insensitive): YAML/YML -> load_yaml,
+    # anything else (e.g. JSON) -> InfraGraph.load via the helper.
+    is_yaml = Path(model).suffix.lower() in {".yaml", ".yml"}
+    graph = _load_graph_for_analysis(model, model if is_yaml else None)
 
     from faultray.simulator.dependency_scorer import DependencyScorer
 
     scorer = DependencyScorer(graph)
     data = scorer.dependency_heatmap_data()
 
+    if not json_output:
+        _print_heatmap_table(data)
+        return
+
     console.print_json(data=data)
+
+
+def _print_heatmap_table(data: dict) -> None:
+    """Render dependency heatmap data as a Rich table."""
+    summary = data.get("summary", {})
+    summary_text = (
+        f"[bold]Total Edges:[/] {data.get('total_edges', 0)}\n"
+        f"[red]Critical:[/] {summary.get('critical', 0)}  "
+        f"[yellow]High:[/] {summary.get('high', 0)}  "
+        f"[dim yellow]Medium:[/] {summary.get('medium', 0)}  "
+        f"[green]Low:[/] {summary.get('low', 0)}"
+    )
+    console.print()
+    console.print(Panel(
+        summary_text,
+        title="[bold cyan]Dependency Heatmap[/]",
+        border_style="cyan",
+    ))
+
+    edges = data.get("edges", [])
+    if not edges:
+        console.print("\n[dim]No dependency edges to display.[/]")
+        return
+
+    table = Table(title="Dependency Heatmap", show_header=True)
+    table.add_column("Source", width=16, style="cyan")
+    table.add_column("->", width=3, justify="center")
+    table.add_column("Target", width=16, style="green")
+    table.add_column("Score", width=6, justify="right")
+    table.add_column("Level", width=10, justify="center")
+    table.add_column("Cascade", width=8, justify="right")
+    table.add_column("Affected", width=8, justify="right")
+    table.add_column("Cost", width=12, justify="right")
+
+    crit_colors = {
+        "critical": "red",
+        "high": "yellow",
+        "medium": "dim yellow",
+        "low": "green",
+    }
+
+    for edge in sorted(edges, key=lambda e: e.get("score", 0), reverse=True):
+        criticality = edge.get("criticality", "low")
+        color = crit_colors.get(criticality, "white")
+        table.add_row(
+            str(edge.get("source", "")),
+            "->",
+            str(edge.get("target", "")),
+            f"[{color}]{edge.get('score', 0):.1f}[/]",
+            f"[{color}]{criticality.upper()}[/]",
+            f"depth={edge.get('cascade_depth', 0)}",
+            str(edge.get("affected_count", 0)),
+            f"${edge.get('cost', 0):,.0f}",
+        )
+
+    console.print()
+    console.print(table)
+    console.print()

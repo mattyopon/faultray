@@ -38,11 +38,13 @@ def import_metrics(
     ),
     api_key: str = typer.Option(
         "", "--api-key",
-        help="API key for the monitoring platform.",
+        envvar="FAULTRAY_API_KEY",
+        help="API key for the monitoring platform (or set FAULTRAY_API_KEY to avoid passing it on the CLI).",
     ),
     app_key: str = typer.Option(
         "", "--app-key",
-        help="Application key (Datadog only).",
+        envvar="FAULTRAY_APP_KEY",
+        help="Application key, Datadog only (or set FAULTRAY_APP_KEY to avoid passing it on the CLI).",
     ),
     account_id: str = typer.Option(
         "", "--account-id",
@@ -82,6 +84,59 @@ def import_metrics(
     graph = _load_graph_for_analysis(model_file, None)
     hub = ObservabilityHub(graph)
 
+    # Exactly one source may be active at a time; elif precedence would
+    # otherwise silently ignore the others.
+    active_sources = sum(bool(s) for s in (datadog, newrelic, grafana, json_file))
+    if active_sources > 1:
+        console.print(
+            "[red]Specify only one source: --datadog, --newrelic, --grafana, or --json-file.[/]"
+        )
+        raise typer.Exit(1)
+
+    try:
+        result = _dispatch_import(
+            hub,
+            datadog=datadog,
+            newrelic=newrelic,
+            grafana=grafana,
+            json_file=json_file,
+            api_key=api_key,
+            app_key=app_key,
+            account_id=account_id,
+            grafana_url=grafana_url,
+            dashboard_uid=dashboard_uid,
+            hours=hours,
+            json_output=json_output,
+        )
+    except typer.Exit:
+        # Validation errors inside the dispatch already printed a clean message.
+        raise
+    except (OSError, ValueError) as exc:
+        console.print(f"[red]Metric import failed: {exc}[/]")
+        raise typer.Exit(1)
+    except Exception as exc:  # noqa: BLE001 - surface HTTP/client errors cleanly
+        console.print(f"[red]Metric import failed: {type(exc).__name__}: {exc}[/]")
+        raise typer.Exit(1)
+
+    _render_import_result(result, json_output)
+
+
+def _dispatch_import(
+    hub,
+    *,
+    datadog: bool,
+    newrelic: bool,
+    grafana: bool,
+    json_file: str,
+    api_key: str,
+    app_key: str,
+    account_id: str,
+    grafana_url: str,
+    dashboard_uid: str,
+    hours: int,
+    json_output: bool,
+):
+    """Resolve the requested source and import metrics from it."""
     if datadog:
         if not api_key or not app_key:
             console.print("[red]--api-key and --app-key are required for Datadog[/]")
@@ -90,7 +145,7 @@ def import_metrics(
         if not json_output:
             console.print(f"[cyan]Importing metrics from Datadog (last {hours}h)...[/]")
 
-        result = hub.import_from_datadog(api_key, app_key, hours=hours)
+        return hub.import_from_datadog(api_key, app_key, hours=hours)
 
     elif newrelic:
         if not api_key or not account_id:
@@ -100,7 +155,7 @@ def import_metrics(
         if not json_output:
             console.print(f"[cyan]Importing metrics from New Relic (last {hours}h)...[/]")
 
-        result = hub.import_from_newrelic(api_key, account_id, hours=hours)
+        return hub.import_from_newrelic(api_key, account_id, hours=hours)
 
     elif grafana:
         if not api_key or not grafana_url or not dashboard_uid:
@@ -110,7 +165,7 @@ def import_metrics(
         if not json_output:
             console.print("[cyan]Importing metrics from Grafana...[/]")
 
-        result = hub.import_from_grafana(grafana_url, api_key, dashboard_uid)
+        return hub.import_from_grafana(grafana_url, api_key, dashboard_uid)
 
     elif json_file:
         json_path = Path(json_file)
@@ -121,12 +176,15 @@ def import_metrics(
         if not json_output:
             console.print(f"[cyan]Importing metrics from {json_file}...[/]")
 
-        result = hub.import_from_json(json_path)
+        return hub.import_from_json(json_path)
 
     else:
         console.print("[red]Specify a source: --datadog, --newrelic, --grafana, or --json-file[/]")
         raise typer.Exit(1)
 
+
+def _render_import_result(result, json_output: bool) -> None:
+    """Render an import result as JSON or a Rich summary."""
     if json_output:
         data = {
             "source": result.source,
@@ -162,10 +220,12 @@ def import_metrics(
         detail_table.add_column("Value", justify="right", width=12)
 
         for d in result.details:
+            raw_value = d.get("value")
+            value = float(raw_value) if isinstance(raw_value, (int, float)) else 0.0
             detail_table.add_row(
                 d.get("component_id", ""),
                 d.get("metric", ""),
-                f"{d.get('value', 0):.2f}",
+                f"{value:.2f}",
             )
 
         console.print()
