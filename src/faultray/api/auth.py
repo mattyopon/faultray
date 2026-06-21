@@ -129,10 +129,12 @@ PUBLIC_PATHS = frozenset({
     "/components",
     "/simulation",
     "/simulation/run",
-    # NOTE: '/graph' was removed from the public set — the interactive graph
-    # view exposes internal infrastructure topology and should require auth
-    # (the page route itself enforces no extra permission, but it is no longer
-    # bypassed by _is_public when auth is configured).
+    # NOTE: '/graph' is intentionally NOT public — the interactive graph view
+    # exposes internal infrastructure topology, so its page route carries a
+    # _require_permission("view_results") dependency (see routes/graph.py),
+    # matching the /api/graph-data endpoint that feeds it. (Dropping it from
+    # this set alone would not enforce auth: _is_public only runs inside
+    # get_current_user, which is reached via an auth dependency, not globally.)
     # ADMIN-AUTH (#100): health / versioning / docs endpoints stay public
     "/api/health",
     "/api/versions",

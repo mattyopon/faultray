@@ -1306,6 +1306,17 @@ def gas_scan_cmd(
         "-d",
         help="Google Workspace domain (e.g. example.co.jp). Used with --credentials.",
     ),
+    admin_email: str | None = typer.Option(
+        None,
+        "--admin-email",
+        "-a",
+        envvar="FAULTRAY_GAS_ADMIN_EMAIL",
+        help=(
+            "Workspace admin to impersonate via domain-wide delegation. "
+            "Required for org-wide scans with service-account credentials; "
+            "without it the scan only sees the service account's own resources."
+        ),
+    ),
     json_output: bool = typer.Option(
         False,
         "--json",
@@ -1329,7 +1340,16 @@ def gas_scan_cmd(
     from faultray.discovery.gas_scanner import GASScanner
     from faultray.discovery.personalization_analyzer import PersonalizationAnalyzer
 
-    scanner = GASScanner(credentials_path=credentials, domain=domain)
+    scanner = GASScanner(
+        credentials_path=credentials, domain=domain, admin_email=admin_email
+    )
+
+    if credentials and not admin_email and not json_output:
+        console.print(
+            "[yellow]Warning:[/] --admin-email not set; without domain-wide "
+            "delegation the scan only sees the service account's own resources, "
+            "not the whole organization."
+        )
 
     if credentials:
         console.print("[cyan]Google Workspace GAS スキャン開始...[/]")
