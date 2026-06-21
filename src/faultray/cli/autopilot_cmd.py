@@ -201,8 +201,8 @@ def autopilot(
         console.print(
             "\n[dim]Next steps:[/dim]\n"
             f"  cd {out_dir}\n"
-            "  terraform init\n"
-            "  terraform plan -var='terraform_state_bucket=YOUR_BUCKET'\n"
+            "  terraform init -backend-config='bucket=YOUR_STATE_BUCKET'\n"
+            "  terraform plan\n"
             "  terraform apply"
         )
 

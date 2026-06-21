@@ -183,11 +183,6 @@ variable "availability_zones" {{
   default     = ["{safe_region}a", "{safe_region}c"]
 }}
 
-variable "terraform_state_bucket" {{
-  description = "S3 bucket for Terraform state"
-  type        = string
-}}
-
 variable "terraform_lock_table" {{
   description = "DynamoDB table for Terraform state locking"
   type        = string

@@ -67,6 +67,10 @@ class GASScript:
     updated_at: datetime
     last_executed: datetime | None
     shared_with: list[str] = field(default_factory=list)
+    # True when the Drive permission lookup failed, so the share list is UNKNOWN
+    # (distinct from a confirmed single-owner script). Risk scoring must not
+    # apply the single-owner personalization penalty when sharing is unknown.
+    sharing_unknown: bool = False
     triggers: list[dict[str, Any]] = field(default_factory=list)
     linked_services: list[str] = field(default_factory=list)
     drive_location: str = ""
@@ -295,6 +299,7 @@ class GASScanner:
                 owner = owners[0] if owners else {}
                 now = datetime.now(tz=timezone.utc)
                 owner_email = owner.get("emailAddress", "unknown@example.com")
+                shared = self._fetch_shared_with(f["id"], owner_email)
                 script = GASScript(
                     id=f["id"],
                     name=f.get("name", "Unnamed"),
@@ -303,7 +308,8 @@ class GASScanner:
                     created_at=_parse_drive_timestamp(f.get("createdTime"), now),
                     updated_at=_parse_drive_timestamp(f.get("modifiedTime"), now),
                     last_executed=None,
-                    shared_with=self._fetch_shared_with(f["id"], owner_email),
+                    shared_with=shared if shared is not None else [],
+                    sharing_unknown=shared is None,
                     drive_location="/".join(f.get("parents", [])),
                 )
                 scripts.append(script)
@@ -314,12 +320,13 @@ class GASScanner:
 
         return scripts
 
-    def _fetch_shared_with(self, file_id: str, owner_email: str) -> list[str]:
+    def _fetch_shared_with(self, file_id: str, owner_email: str) -> list[str] | None:
         """Drive API: list the principals a script is shared with.
 
         Returns the list of email addresses (including the owner) the file is
-        shared with. On failure the list is left empty rather than aborting
-        discovery; callers should treat an empty list as "unknown sharing".
+        shared with. On a permission-lookup failure returns ``None`` (rather
+        than aborting discovery) to signal that sharing is UNKNOWN — callers
+        must not treat that as a confirmed single-owner script.
         """
         try:
             from googleapiclient.errors import HttpError  # type: ignore[import-untyped]
@@ -347,7 +354,7 @@ class GASScanner:
                     break
         except HttpError as exc:
             logger.warning("Could not fetch permissions for script %s: %s", file_id, exc)
-            return []
+            return None
         # Ensure the owner is represented even if not returned as a permission.
         if owner_email and owner_email not in shared:
             shared.append(owner_email)
@@ -430,8 +437,10 @@ class GASScanner:
             score += 4
             reasons.append("Owner has left the organization")
 
-        # Single owner, no shared access
-        if len(script.shared_with) <= 1:
+        # Single owner, no shared access. Skip this penalty when sharing is
+        # UNKNOWN (the Drive permission lookup failed): treating an unknown
+        # share list as single-owner would inflate the risk score.
+        if not script.sharing_unknown and len(script.shared_with) <= 1:
             score += 3
             reasons.append("Only 1 person has access (personalization risk)")
 
@@ -456,7 +465,10 @@ class GASScanner:
 
         # Estimate dependent users from shared_with list
         dependent_users = max(0, len(script.shared_with) - 1)
-        has_backup_owner = len(script.shared_with) > 1
+        # On unknown sharing we cannot confirm the absence of a backup owner, so
+        # don't report one as missing (which would raise a false alarm in the
+        # personalization analyzer); only a known share list of >1 confirms one.
+        has_backup_owner = script.sharing_unknown or len(script.shared_with) > 1
 
         return GASRisk(
             script_id=script.id,

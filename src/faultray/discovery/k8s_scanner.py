@@ -88,6 +88,11 @@ class K8sScanner(CloudScannerBase):
         # the synthetic svc_comp_id (which breaks for hyphenated namespaces like
         # "prod-us": "svc-prod-us-api".split("-", 2)[1] == "prod", not "prod-us").
         self._service_namespaces: dict[str, str] = {}
+        # Ingress namespace tracking: ingress comp_id -> namespace. Stored from
+        # the Ingress's real metadata so namespace lookups never rely on
+        # splitting the synthetic "ingress-{namespace}-{name}" id (which breaks
+        # for hyphenated namespaces like "prod-us").
+        self._ingress_namespaces: dict[str, str] = {}
         # Deployment/StatefulSet label tracking: comp_id -> labels
         self._workload_labels: dict[str, dict[str, str]] = {}
         # Deployment/StatefulSet namespace tracking: comp_id -> namespace.
@@ -138,6 +143,22 @@ class K8sScanner(CloudScannerBase):
         if ns is not None:
             return ns
         parts = svc_comp_id.split("-", 2)
+        return parts[1] if len(parts) >= 3 else ""
+
+    def _ingress_namespace(self, ingress_comp_id: str) -> str:
+        """Return the namespace for an Ingress component id.
+
+        Prefers the namespace captured from the Ingress's real Kubernetes
+        metadata at scan time (``self._ingress_namespaces``), which is correct
+        for hyphenated namespaces where splitting the synthetic
+        ``ingress-{namespace}-{name}`` id on hyphens is ambiguous. Falls back to
+        splitting only when the namespace was not recorded; returns ``""`` when
+        undeterminable.
+        """
+        ns = self._ingress_namespaces.get(ingress_comp_id)
+        if ns is not None:
+            return ns
+        parts = ingress_comp_id.split("-", 2)
         return parts[1] if len(parts) >= 3 else ""
 
     def _get_api_client(self):
@@ -334,6 +355,7 @@ class K8sScanner(CloudScannerBase):
                 name = ingress.metadata.name
                 ns = ingress.metadata.namespace or "default"
                 comp_id = f"ingress-{ns}-{name}"
+                self._ingress_namespaces[comp_id] = ns
 
                 # Extract host
                 host = ""
@@ -595,8 +617,11 @@ class K8sScanner(CloudScannerBase):
             for comp_id in graph.components:
                 if not comp_id.startswith("ingress-"):
                     continue
-                # Check if ingress is in the same namespace
-                ingress_ns = comp_id.split("-", 2)[1] if len(comp_id.split("-", 2)) > 1 else ""
+                # Check if ingress is in the same namespace. Use the recorded
+                # Ingress namespace so hyphenated namespaces (e.g. "prod-us")
+                # match instead of being truncated to "prod" by splitting the
+                # synthetic comp_id, which would drop every Ingress→workload edge.
+                ingress_ns = self._ingress_namespace(comp_id)
                 if ingress_ns != svc_ns:
                     continue
 
