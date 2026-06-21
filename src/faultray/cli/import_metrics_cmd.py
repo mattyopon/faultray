@@ -5,6 +5,7 @@
 
 from __future__ import annotations
 
+import os
 from pathlib import Path
 
 import typer
@@ -38,8 +39,11 @@ def import_metrics(
     ),
     api_key: str = typer.Option(
         "", "--api-key",
-        envvar="FAULTRAY_API_KEY",
-        help="API key for the monitoring platform (or set FAULTRAY_API_KEY to avoid passing it on the CLI).",
+        help=(
+            "API key for the monitoring platform. If omitted, it is read from "
+            "the provider-specific env var: DATADOG_API_KEY, NEW_RELIC_API_KEY, "
+            "or GRAFANA_API_KEY."
+        ),
     ),
     app_key: str = typer.Option(
         "", "--app-key",
@@ -92,6 +96,17 @@ def import_metrics(
             "[red]Specify only one source: --datadog, --newrelic, --grafana, or --json-file.[/]"
         )
         raise typer.Exit(1)
+
+    # Resolve the API key from a PROVIDER-SPECIFIC env var when not passed
+    # explicitly. A single shared variable risks sending one provider's key (or
+    # an unrelated FaultRay token) to a different provider's endpoint.
+    if not api_key:
+        if datadog:
+            api_key = os.environ.get("DATADOG_API_KEY", "")
+        elif newrelic:
+            api_key = os.environ.get("NEW_RELIC_API_KEY", "")
+        elif grafana:
+            api_key = os.environ.get("GRAFANA_API_KEY", "")
 
     try:
         result = _dispatch_import(

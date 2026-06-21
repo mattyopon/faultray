@@ -27,7 +27,13 @@ router = APIRouter()
 # ---------------------------------------------------------------------------
 
 @router.get("/graph", response_class=HTMLResponse)
-async def graph_page(request: Request):
+async def graph_page(
+    request: Request, user=Depends(_require_permission("view_results"))
+):
+    # The interactive graph exposes internal infrastructure topology, so the
+    # page route is protected with the same permission as the /api/graph-data
+    # endpoint that feeds it. Removing it from PUBLIC_PATHS alone did not
+    # enforce auth (no global auth middleware runs _is_public).
     return templates.TemplateResponse(request, "graph.html", {
         "has_data": len(get_graph().components) > 0,
     })
