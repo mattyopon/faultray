@@ -125,6 +125,11 @@ class SakuraScanner(CloudScannerBase):
         """
         _check_requests()
 
+        # Reset per-scan state so a reused scanner does not infer dependencies
+        # from switch memberships discovered in a previous scan.
+        self._switch_members.clear()
+        self._component_switches.clear()
+
         start = time.monotonic()
         graph = InfraGraph()
         session = _make_session(self.token, self.secret)

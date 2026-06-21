@@ -321,29 +321,42 @@ def gameday(
             console.print(f"[red]Game Day plan not found: {plan}[/]")
             raise typer.Exit(1)
 
-        raw = yaml.safe_load(plan.read_text(encoding="utf-8"))
+        raw = yaml.safe_load(plan.read_text(encoding="utf-8")) or {}
         if not isinstance(raw, dict):
             console.print("[red]Game Day plan must be a YAML mapping.[/]")
             raise typer.Exit(1)
 
+        raw_steps = raw.get("steps", [])
+        if not isinstance(raw_steps, list):
+            console.print("[red]Game Day plan 'steps' must be a list.[/]")
+            raise typer.Exit(1)
+
         steps: list[GameDayStep] = []
-        for raw_step in raw.get("steps", []):
-            fault = None
-            if "fault" in raw_step and raw_step["fault"]:
-                fault_data = raw_step["fault"]
-                fault = Fault(
-                    target_component_id=fault_data["target_component_id"],
-                    fault_type=FaultType(fault_data["fault_type"]),
-                    severity=fault_data.get("severity", 1.0),
-                    duration_seconds=fault_data.get("duration_seconds", 300),
-                )
-            steps.append(GameDayStep(
-                time_offset_seconds=raw_step.get("time_offset_seconds", 0),
-                action=raw_step.get("action", "manual_check"),
-                fault=fault,
-                expected_outcome=raw_step.get("expected_outcome", ""),
-                runbook_step=raw_step.get("runbook_step", ""),
-            ))
+        try:
+            for raw_step in raw_steps:
+                if not isinstance(raw_step, dict):
+                    raise ValueError("each step must be a mapping")
+                fault = None
+                if raw_step.get("fault"):
+                    fault_data = raw_step["fault"]
+                    if not isinstance(fault_data, dict):
+                        raise ValueError("step 'fault' must be a mapping")
+                    fault = Fault(
+                        target_component_id=fault_data["target_component_id"],
+                        fault_type=FaultType(fault_data["fault_type"]),
+                        severity=fault_data.get("severity", 1.0),
+                        duration_seconds=fault_data.get("duration_seconds", 300),
+                    )
+                steps.append(GameDayStep(
+                    time_offset_seconds=raw_step.get("time_offset_seconds", 0),
+                    action=raw_step.get("action", "manual_check"),
+                    fault=fault,
+                    expected_outcome=raw_step.get("expected_outcome", ""),
+                    runbook_step=raw_step.get("runbook_step", ""),
+                ))
+        except (KeyError, ValueError) as exc:
+            console.print(f"[red]Invalid Game Day plan: {exc}[/]")
+            raise typer.Exit(1)
 
         gameday_plan = GameDayPlan(
             name=raw.get("name", "Unnamed Game Day"),

@@ -419,9 +419,12 @@ class FaultRay:
         with tempfile.NamedTemporaryFile(suffix=".html", delete=False) as f:
             output_path = Path(f.name)
 
-        generate_dora_report(self._graph, report, ai_report, output_path)
-        html_content = output_path.read_text()
-        output_path.unlink(missing_ok=True)
+        try:
+            generate_dora_report(self._graph, report, ai_report, output_path)
+            html_content = output_path.read_text()
+        finally:
+            # Always remove the temp file, even if generation/read raised.
+            output_path.unlink(missing_ok=True)
         return html_content
 
     # ------------------------------------------------------------------
@@ -565,6 +568,22 @@ class FaultRay:
 
         return _gen(self._graph)
 
+    def _dependency_closure(self, component_id: str) -> set[str]:
+        """Return all component IDs reachable from *component_id* via its
+        dependencies (its direct and transitive dependency closure).
+
+        Excludes the starting component itself.
+        """
+        closure: set[str] = set()
+        stack = [component_id]
+        while stack:
+            current = stack.pop()
+            for dep in self._graph.get_dependencies(current):
+                if dep.id not in closure:
+                    closure.add(dep.id)
+                    stack.append(dep.id)
+        return closure
+
     def check_hallucination_risk(self, component_id: str) -> list[tuple]:
         """Check cross-layer hallucination risk for a specific component failure.
 
@@ -592,14 +611,13 @@ class FaultRay:
         agent_types = {ComponentType.AI_AGENT, ComponentType.AGENT_ORCHESTRATOR}
         risks: list[tuple] = []
 
-        # Find all agents that depend (directly or transitively) on this component
+        # Find all agents that depend (directly or transitively) on this
+        # component by walking the agent's full dependency closure, not just its
+        # immediate dependencies.
         for agent in self._graph.components.values():
             if agent.type not in agent_types:
                 continue
-            deps = self._graph.get_dependencies(agent.id)
-            dep_ids = {d.id for d in deps}
-            # Also check transitive: if the failed component is in the
-            # set of components affected by agent's dependencies
+            dep_ids = self._dependency_closure(agent.id)
             if component_id in dep_ids:
                 params = agent.parameters or {}
                 hallucination_risk = float(params.get("hallucination_risk", 0.05))

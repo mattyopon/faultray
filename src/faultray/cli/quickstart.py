@@ -5,6 +5,7 @@
 
 from __future__ import annotations
 
+import os
 import shutil
 from pathlib import Path
 
@@ -169,9 +170,12 @@ def quickstart(
 
         try:
             import uvicorn
+            # Bind to loopback by default; opt in to a public bind explicitly
+            # via FAULTRAY_HOST (e.g. FAULTRAY_HOST=0.0.0.0).
+            host = os.getenv("FAULTRAY_HOST", "127.0.0.1")
             uvicorn.run(
                 "faultray.api.server:app",
-                host="0.0.0.0",  # nosec B104
+                host=host,
                 port=8000,
                 log_level="info",
             )
@@ -182,6 +186,6 @@ def quickstart(
         console.print(
             "\n[dim]Next steps:[/]\n"
             f"  1. Edit [cyan]{output}[/] to customize your infrastructure\n"
-            "  2. Run [cyan]faultray simulate {output}[/] for detailed analysis\n"
+            f"  2. Run [cyan]faultray simulate {output}[/] for detailed analysis\n"
             "  3. Run [cyan]faultray serve[/] to open the web dashboard\n"
         )

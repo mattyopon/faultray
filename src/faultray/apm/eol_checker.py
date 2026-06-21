@@ -207,7 +207,9 @@ class EOLChecker:
     """Checks detected software versions against the EOL database."""
 
     def __init__(self, today: date | None = None) -> None:
-        self.today = today or date.today()
+        # Use UTC so the "today" boundary matches the UTC ``checked_at`` stamp
+        # and EOL determinations are stable regardless of server timezone.
+        self.today = today or datetime.now(timezone.utc).date()
         self._db = {(e.name, e.version): e for e in EOL_DATABASE}
 
     def detect_from_processes(
@@ -223,7 +225,12 @@ class EOLChecker:
         for proc in processes:
             proc_name = proc.get("name", "")
             cmdline = proc.get("cmdline", "")
-            pid = int(proc.get("pid", 0))
+            # pid comes from untrusted agent data — coerce defensively so a
+            # missing/null/non-numeric value skips, not aborts, the batch.
+            try:
+                pid = int(proc.get("pid", 0))
+            except (ValueError, TypeError):
+                pid = 0
 
             for sw_name, source, pattern in _DETECT_PATTERNS:
                 text = proc_name if source == "name" else cmdline
@@ -275,12 +282,15 @@ class EOLChecker:
         for sw in detected:
             warning = self._check_one(sw)
             if warning:
-                report.warnings.append(warning)
                 if warning.status == "eol":
+                    report.warnings.append(warning)
                     report.critical_count += 1
                 elif warning.status == "approaching":
+                    report.warnings.append(warning)
                     report.warning_count += 1
                 else:
+                    # Supported ("ok") software is counted but not surfaced as a
+                    # warning, so a non-empty warnings list means actionable items.
                     report.ok_count += 1
             else:
                 report.ok_count += 1

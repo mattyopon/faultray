@@ -56,10 +56,15 @@ def antipatterns(
         # JSON output for CI/CD
         faultray antipatterns infra.yaml --json
     """
-    graph = _load_graph_for_analysis(
-        model=Path("faultray-model.json"),
-        yaml_file=yaml_file,
-    )
+    allowed_severities = {"critical", "high", "medium"}
+    if min_severity not in allowed_severities:
+        raise typer.BadParameter(
+            f"Invalid severity '{min_severity}'. "
+            f"Choose from: {', '.join(sorted(allowed_severities))}",
+            param_hint="--min-severity",
+        )
+
+    graph = _load_graph_for_analysis(yaml_file, None)
 
     detector = AntiPatternDetector(graph)
     patterns = detector.detect_by_severity(min_severity)

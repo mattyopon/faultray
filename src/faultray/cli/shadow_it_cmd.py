@@ -39,7 +39,7 @@ def shadow_it(
     if json_output:
         import logging as _logging
         _logging.getLogger("faultray").setLevel(_logging.ERROR)
-    graph = _load_graph_for_analysis(model, model)
+    graph = _load_graph_for_analysis(model, None)
     analyzer = ShadowITAnalyzer()
     report = analyzer.analyze(graph)
 

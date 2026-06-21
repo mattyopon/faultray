@@ -104,9 +104,12 @@ def _choose_from(label: str, options: list[str], con: Console) -> str:
         con.print(f"  [cyan]{idx}[/]. {opt}")
     choice = Prompt.ask(f"Select {label}", default="1")
     try:
-        return options[int(choice) - 1]
-    except (ValueError, IndexError):
-        return options[0]
+        idx = int(choice)
+        if 1 <= idx <= len(options):
+            return options[idx - 1]
+    except ValueError:
+        pass
+    return options[0]
 
 
 def _ask_component(
@@ -189,15 +192,16 @@ def _build_dependencies(components: list[dict]) -> list[dict]:
         for st in storage_ids:
             deps.append({"source": a, "target": st, "type": "optional", "weight": 0.5})
 
-    # Cross-env VPN connections: cloud apps -> vpn -> onprem dbs (and vice versa)
+    # Cross-env VPN connections: cloud apps -> connectivity -> onprem dbs.
+    # The connectivity component (external_api) id is not necessarily cloud-
+    # prefixed (e.g. "vpn_connection"), so wire every cloud app to it
+    # regardless of the connectivity component's own prefix.
     for ext in ext_ids:
-        # Connect cloud apps to VPN
+        # Connect cloud apps to the connectivity component
         for a in app_ids:
-            if _is_cloud_id(a) and not _is_cloud_id(ext):
-                continue
             if _is_cloud_id(a):
                 deps.append({"source": a, "target": ext, "type": "requires"})
-        # Connect VPN to on-prem DBs
+        # Connect connectivity component to on-prem DBs
         for db in db_ids:
             if not _is_cloud_id(db):
                 deps.append({"source": ext, "target": db, "type": "requires"})
@@ -249,10 +253,13 @@ def init(
         console.print(f"  [cyan]{idx}[/]. {labels[opt]}")
 
     env_choice = Prompt.ask("Select environment type", default="3")
+    env_type = "hybrid"
     try:
-        env_type = env_options[int(env_choice) - 1]
-    except (ValueError, IndexError):
-        env_type = "hybrid"
+        idx = int(env_choice)
+        if 1 <= idx <= len(env_options):
+            env_type = env_options[idx - 1]
+    except ValueError:
+        pass
 
     console.print(f"  [green]Selected:[/] {env_type}\n")
 
@@ -265,10 +272,13 @@ def init(
             labels = {"aws": "AWS", "gcp": "Google Cloud (GCP)", "azure": "Microsoft Azure"}
             console.print(f"  [cyan]{idx}[/]. {labels[p]}")
         provider_choice = Prompt.ask("Select cloud provider", default="1")
+        cloud_provider = "aws"
         try:
-            cloud_provider = providers[int(provider_choice) - 1]
-        except (ValueError, IndexError):
-            cloud_provider = "aws"
+            idx = int(provider_choice)
+            if 1 <= idx <= len(providers):
+                cloud_provider = providers[idx - 1]
+        except ValueError:
+            pass
         console.print(f"  [green]Selected:[/] {cloud_provider}\n")
 
     # ---- 3. On-premise components --------------------------------------------
@@ -325,10 +335,11 @@ def init(
                 if Confirm.ask("  Enable autoscaling?", default=True, console=console):
                     min_r = IntPrompt.ask("  Min replicas", default=2, console=console)
                     max_r = IntPrompt.ask("  Max replicas", default=8, console=console)
+                    min_replicas = max(1, min_r)
                     comp["autoscaling"] = {
                         "enabled": True,
-                        "min_replicas": max(1, min_r),
-                        "max_replicas": max(max_r, min_r),
+                        "min_replicas": min_replicas,
+                        "max_replicas": max(max_r, min_replicas),
                     }
                 cloud_components.append(comp)
 

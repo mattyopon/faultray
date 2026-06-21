@@ -20,6 +20,7 @@ from __future__ import annotations
 
 import logging
 import math
+import re
 from collections.abc import Callable
 from dataclasses import dataclass, field
 from enum import Enum
@@ -154,6 +155,33 @@ def _nines_to_score(nines: float) -> float:
     if nines >= 5:
         return 100.0
     return round((1.0 - 10 ** (-nines)) * 100.0, 1)
+
+
+def _dedup_changes(changes: list[ArchitectureChange]) -> list[ArchitectureChange]:
+    """Remove duplicate changes that target the same remediation.
+
+    quick_wins and critical_changes can both flag the same single-replica SPOF,
+    so concatenating them would double-count resilience_impact and apply the
+    same change twice.
+
+    Identity is (change_type, component_id, description). The description is
+    included so that genuinely-distinct remediations for one component are
+    preserved: e.g. a SPOF replica increase, enabling failover, and enabling
+    autoscaling all share change_type "modify_component" and the same
+    component_id, yet are different fixes with different ``after_state`` values.
+    Keying on (change_type, component_id) alone dropped all but the first,
+    omitting necessary after_state fixes from the plan/apply. Exact duplicates
+    (identical description) still dedup. The first occurrence wins.
+    """
+    seen: set[tuple[str, str | None, str]] = set()
+    deduped: list[ArchitectureChange] = []
+    for change in changes:
+        key = (change.change_type, change.component_id, change.description)
+        if key in seen:
+            continue
+        seen.add(key)
+        deduped.append(change)
+    return deduped
 
 
 def _estimate_total_cost(changes: list[ArchitectureChange]) -> str:
@@ -339,7 +367,9 @@ class ArchitectureAdvisor:
         # Missing circuit breakers on dependency edges
         for edge in graph.all_dependency_edges():
             if not edge.circuit_breaker.enabled:
-                graph.get_component(edge.target_id)
+                # Skip edges that dangle to a non-existent target.
+                if graph.get_component(edge.target_id) is None:
+                    continue
                 wins.append(
                     ArchitectureChange(
                         change_type="modify_dependency",
@@ -669,6 +699,38 @@ class ArchitectureAdvisor:
         lines.append("    classDef new fill:#fd7e14,color:#fff")
         return "\n".join(lines)
 
+    @staticmethod
+    def _safe_mermaid_id(raw_id: str) -> str:
+        """Map an arbitrary component id to a safe Mermaid node identifier.
+
+        Mermaid node ids must not contain quotes, brackets, edge syntax,
+        newlines, or directives. We deterministically replace any unsafe
+        character with '_' so the same id always yields the same node id
+        (keeping node declarations and edges consistent).
+        """
+        safe = re.sub(r"[^A-Za-z0-9_]", "_", raw_id)
+        if not safe:
+            safe = "node"
+        if safe[0].isdigit():
+            safe = "n_" + safe
+        return safe
+
+    @staticmethod
+    def _escape_mermaid_label(text: str) -> str:
+        """Escape free-form text for safe use inside a Mermaid node/label.
+
+        Strips control characters/newlines and escapes quotes and brackets so
+        label or subgraph-title text cannot terminate the node or inject extra
+        Mermaid statements.
+        """
+        # Remove newlines / control chars that could inject new statements.
+        cleaned = re.sub(r"[\r\n\t\x00-\x1f]", " ", text)
+        cleaned = cleaned.replace("\\", "")
+        cleaned = cleaned.replace('"', "'")
+        cleaned = cleaned.replace("[", "(").replace("]", ")")
+        cleaned = cleaned.replace("{", "(").replace("}", ")")
+        return cleaned
+
     def _classify_changed_ids(
         self, graph: InfraGraph, changes: list[ArchitectureChange]
     ) -> tuple[set[str], set[str]]:
@@ -696,14 +758,17 @@ class ArchitectureAdvisor:
 
         for az_name, comps in az_groups.items():
             if az_name != "default":
-                safe_name = az_name.replace("-", "_").replace(" ", "_")
-                lines.append(f'    subgraph {safe_name}["{az_name}"]')
+                safe_name = self._safe_mermaid_id(az_name)
+                title = self._escape_mermaid_label(az_name)
+                lines.append(f'    subgraph {safe_name}["{title}"]')
             for comp in comps:
                 node_label = self._mermaid_node_label(comp)
                 css_class = ("modified" if comp.id in modified_ids
                              else "new" if comp.id in new_ids else "existing")
                 indent = "        " if az_name != "default" else "    "
-                lines.append(f"{indent}{comp.id}{node_label}:::{css_class}")
+                lines.append(
+                    f"{indent}{self._safe_mermaid_id(comp.id)}{node_label}:::{css_class}"
+                )
             if az_name != "default":
                 lines.append("    end")
 
@@ -715,14 +780,19 @@ class ArchitectureAdvisor:
                 if change.component_id not in graph.components:
                     comp_type = change.after_state.get("type", "custom")
                     replicas = change.after_state.get("replicas", 1)
-                    label = change.component_id + (f" x{replicas}" if replicas > 1 else "")
+                    label = self._escape_mermaid_label(change.component_id) + (
+                        f" x{replicas}" if isinstance(replicas, int) and replicas > 1 else ""
+                    )
                     shape = self._mermaid_shape_for_type(comp_type)
-                    lines.append(f"    {change.component_id}{shape[0]}{label}{shape[1]}:::new")
+                    node_id = self._safe_mermaid_id(change.component_id)
+                    lines.append(f"    {node_id}{shape[0]}{label}{shape[1]}:::new")
 
     def _render_mermaid_edges(self, graph: InfraGraph, lines: list[str]) -> None:
         for edge in graph.all_dependency_edges():
             arrow = self._mermaid_arrow_for_edge(edge)
-            lines.append(f"    {edge.source_id}{arrow}{edge.target_id}")
+            src = self._safe_mermaid_id(edge.source_id)
+            dst = self._safe_mermaid_id(edge.target_id)
+            lines.append(f"    {src}{arrow}{dst}")
 
     @staticmethod
     def _mermaid_arrow_for_edge(edge: Dependency) -> str:
@@ -743,7 +813,9 @@ class ArchitectureAdvisor:
             if change.change_type == "add_dependency" and change.component_id:
                 parts = change.component_id.split("->")
                 if len(parts) == 2:
-                    lines.append(f"    {parts[0]} -.->|new| {parts[1]}")
+                    src = self._safe_mermaid_id(parts[0].strip())
+                    dst = self._safe_mermaid_id(parts[1].strip())
+                    lines.append(f"    {src} -.->|new| {dst}")
 
     # ------------------------------------------------------------------
     # Apply proposal
@@ -881,7 +953,6 @@ class ArchitectureAdvisor:
     ) -> list[ArchitectureProposal]:
         """Build tiered proposals from quick wins to full redesign."""
         proposals: list[ArchitectureProposal] = []
-        _nines_to_score(target_nines)
 
         # Proposal 1: Quick Wins Only
         if quick_wins:
@@ -913,7 +984,9 @@ class ArchitectureAdvisor:
 
         # Proposal 2: High Availability Upgrade (quick wins + critical changes)
         if critical_changes:
-            ha_changes = quick_wins[:5] + critical_changes
+            # Deduplicate: a SPOF can be flagged by both quick_wins and
+            # critical_changes; counting/applying it twice inflates the score.
+            ha_changes = _dedup_changes(quick_wins[:5] + critical_changes)
             ha_impact = sum(c.resilience_impact for c in ha_changes)
             projected = min(100.0, current_score + ha_impact)
             ha_patterns = list(
@@ -946,7 +1019,7 @@ class ArchitectureAdvisor:
 
         # Proposal 3: Full Resilience Architecture (if target >= 4 nines and has components)
         if target_nines >= 4.0 and len(graph.components) > 0:
-            full_changes = list(quick_wins) + list(critical_changes)
+            full_changes = _dedup_changes(list(quick_wins) + list(critical_changes))
 
             # Add multi-region if applicable
             regions = {
@@ -1082,7 +1155,7 @@ class ArchitectureAdvisor:
 
     def _mermaid_node_label(self, comp: Component) -> str:
         """Generate Mermaid node label based on component type."""
-        label = comp.name or comp.id
+        label = self._escape_mermaid_label(comp.name or comp.id)
         if comp.replicas > 1:
             label += f" x{comp.replicas}"
 
@@ -1113,8 +1186,24 @@ class ArchitectureAdvisor:
             "add_component": self._apply_add_component,
             "add_dependency": self._apply_add_dependency,
         }.get(change.change_type)
-        if handler and change.component_id:
-            handler(graph, change)
+        if handler is None:
+            # Graph-level patterns (e.g. 'add_pattern' multi-region) and any
+            # unknown change types are not materialized on the graph. Log so the
+            # divergence between projected_score and the applied graph is visible
+            # rather than silently swallowed.
+            logger.warning(
+                "Architecture change type %r (component_id=%r) is not applicable "
+                "to the graph and was skipped.",
+                change.change_type,
+                change.component_id,
+            )
+            return
+        if not change.component_id:
+            logger.warning(
+                "Skipping %r change with no component_id.", change.change_type
+            )
+            return
+        handler(graph, change)
 
     def _apply_modify_component(
         self, graph: InfraGraph, change: ArchitectureChange
@@ -1123,8 +1212,22 @@ class ArchitectureAdvisor:
         if comp is None:
             return
         after = change.after_state
+        # Capture the pre-change replica count so autoscaling defaults below are
+        # derived from the original capacity, not the post-change value.
+        original_replicas = comp.replicas
         if "replicas" in after:
-            comp.replicas = after["replicas"]
+            # after_state may originate from untrusted/AI output; reject
+            # non-positive or non-integer replica counts instead of corrupting
+            # the graph.
+            raw = after["replicas"]
+            if isinstance(raw, bool) or not isinstance(raw, int) or raw < 1:
+                logger.warning(
+                    "Ignoring invalid replicas=%r for component %r",
+                    raw, change.component_id,
+                )
+            else:
+                comp.replicas = raw
+                original_replicas = raw
         if after.get("failover_enabled"):
             comp.failover = FailoverConfig(
                 enabled=True,
@@ -1138,10 +1241,17 @@ class ArchitectureAdvisor:
                 ),
             )
         if after.get("autoscaling_enabled"):
+            min_replicas = after.get("min_replicas", original_replicas)
+            max_replicas = after.get("max_replicas", max(original_replicas * 3, 1))
+            # Guard against inverted/invalid bounds from untrusted input.
+            if not isinstance(min_replicas, int) or min_replicas < 1:
+                min_replicas = max(original_replicas, 1)
+            if not isinstance(max_replicas, int) or max_replicas < min_replicas:
+                max_replicas = max(min_replicas, original_replicas * 3, 1)
             comp.autoscaling = AutoScalingConfig(
                 enabled=True,
-                min_replicas=after.get("min_replicas", comp.replicas),
-                max_replicas=after.get("max_replicas", comp.replicas * 3),
+                min_replicas=min_replicas,
+                max_replicas=max_replicas,
                 scale_up_threshold=after.get(
                     "scale_up_threshold",
                     comp.autoscaling.scale_up_threshold,

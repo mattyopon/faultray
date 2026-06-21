@@ -24,13 +24,13 @@ def timeline(
         "show",
         help="Action: show, trends, milestones, export, record, reset",
     ),
-    days: int = typer.Option(90, "--days", "-d", help="Number of days to display"),
+    days: int = typer.Option(90, "--days", "-d", min=1, help="Number of days to display"),
     output: Path | None = typer.Option(None, "--output", "-o", help="Output path for export"),
     model: Path = typer.Option(DEFAULT_MODEL_PATH, "--model", "-m", help="Model file for 'record' action"),
     yaml_file: Path | None = typer.Option(None, "--yaml", "-y", help="YAML model file for 'record' action"),
     event: str | None = typer.Option(None, "--event", "-e", help="Event description for 'record' action"),
     json_output: bool = typer.Option(False, "--json", help="Output as JSON"),
-    width: int = typer.Option(40, "--width", "-w", help="Sparkline width"),
+    width: int = typer.Option(40, "--width", "-w", min=1, help="Sparkline width"),
 ) -> None:
     """Track and visualize infrastructure resilience evolution over time.
 

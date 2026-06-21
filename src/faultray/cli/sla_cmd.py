@@ -47,8 +47,8 @@ def sla_validate(
     from faultray.simulator.sla_validator import SLATarget, SLAValidatorEngine
 
     # Convert percentage to nines
-    if target >= 100.0:
-        console.print("[red]Target must be less than 100%[/]")
+    if not (0.0 < target < 100.0):
+        console.print("[red]Target must be between 0 and 100[/]")
         raise typer.Exit(1)
     target_nines = -math.log10(1.0 - target / 100.0)
 
@@ -124,8 +124,8 @@ def sla_prove(
 
     from faultray.simulator.sla_validator import SLATarget, SLAValidatorEngine
 
-    if target >= 100.0:
-        console.print("[red]Target must be less than 100%[/]")
+    if not (0.0 < target < 100.0):
+        console.print("[red]Target must be between 0 and 100[/]")
         raise typer.Exit(1)
     target_nines = -math.log10(1.0 - target / 100.0)
 
@@ -176,8 +176,8 @@ def sla_improve(
 
     from faultray.simulator.sla_validator import SLAValidatorEngine
 
-    if target >= 100.0:
-        console.print("[red]Target must be less than 100%[/]")
+    if not (0.0 < target < 100.0):
+        console.print("[red]Target must be between 0 and 100[/]")
         raise typer.Exit(1)
     target_nines = -math.log10(1.0 - target / 100.0)
 

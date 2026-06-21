@@ -20,17 +20,29 @@ from faultray.model.graph import InfraGraph
 # We capture the raw arg list in TyperGroup.parse_args() *before* Click
 # processes them, because by the time @app.callback() runs the sub-command's
 # options are no longer visible through the context.
+#
+# The raw args are stashed on the Click context (ctx.meta) — which is
+# per-invocation — so concurrent invocations in the same process do not clobber
+# each other's state.
 # ---------------------------------------------------------------------------
 
-_raw_cli_args: list[str] = []
+_RAW_ARGS_META_KEY = "faultray.raw_cli_args"
+
+
+def _json_requested(args: list[str]) -> bool:
+    """Return True if ``--json`` appears as a flag in *args*.
+
+    Handles both the bare ``--json`` token and the equals form ``--json=true``
+    so machine-readable output is reliably detected regardless of syntax.
+    """
+    return any(tok == "--json" or tok.startswith("--json=") for tok in args)
 
 
 class _ArgCapturingGroup(typer.core.TyperGroup):
     """TyperGroup subclass that snapshots raw CLI args before parsing."""
 
     def parse_args(self, ctx: click.Context, args: list[str]) -> list[str]:
-        global _raw_cli_args  # noqa: PLW0603
-        _raw_cli_args = list(args)
+        ctx.meta[_RAW_ARGS_META_KEY] = list(args)
         return super().parse_args(ctx, args)
 
 
@@ -111,7 +123,8 @@ def main(
 
     # Skip the banner when --json is anywhere in the raw args so that
     # machine-readable output is not contaminated with human-readable text.
-    if "--json" not in _raw_cli_args:
+    raw_args = ctx.meta.get(_RAW_ARGS_META_KEY, [])
+    if not _json_requested(raw_args):
         console.print(f"[dim]{_tier_banner()}[/]")
 
     if debug or verbose:
@@ -441,7 +454,8 @@ def _print_multi_whatif_result(result: object, con: Console) -> None:
     table.add_column("Value", justify="right", width=8)
 
     for param, value in parameters.items():
-        table.add_row(param, f"{value:.2f}")
+        value_str = f"{value:.2f}" if isinstance(value, (int, float)) else str(value)
+        table.add_row(param, value_str)
 
     table.add_section()
     table.add_row("Avg Availability", f"{avg_avail:.4f}%")

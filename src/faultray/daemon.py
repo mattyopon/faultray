@@ -7,6 +7,7 @@ from __future__ import annotations
 
 import json
 import logging
+import os
 import signal
 import time
 from pathlib import Path
@@ -183,27 +184,69 @@ class FaultRayDaemon:
                     logger.warning("Teams notification failed", exc_info=True)
 
         try:
-            asyncio.run(_send())
+            try:
+                running_loop = asyncio.get_running_loop()
+            except RuntimeError:
+                running_loop = None
+
+            if running_loop is None:
+                # No event loop running: safe to use asyncio.run.
+                asyncio.run(_send())
+            else:
+                # Already inside an event loop (daemon embedded in an async
+                # app): asyncio.run would raise. Run _send in a dedicated
+                # thread with its own loop and wait for it to finish.
+                import threading
+
+                error: list[BaseException] = []
+
+                def _runner() -> None:
+                    try:
+                        asyncio.run(_send())
+                    except BaseException as exc:  # noqa: BLE001
+                        error.append(exc)
+
+                t = threading.Thread(target=_runner, name="faultray-daemon-notify")
+                t.start()
+                t.join()
+                if error:
+                    raise error[0]
         except Exception:
             logger.warning("Notification dispatch failed", exc_info=True)
 
     def _save_result(self, result: dict) -> None:
-        """Persist the latest result to disk."""
+        """Persist the latest result to disk atomically.
+
+        Write to a temp file in the same directory then os.replace() it over the
+        target so a crash/interruption mid-write cannot leave latest.json
+        truncated or empty (which would lose the previous valid result and
+        produce invalid JSON on next startup).
+        """
         path = self._latest_result_path()
         if path:
             path.parent.mkdir(parents=True, exist_ok=True)
-            path.write_text(
+            tmp = path.with_name(path.name + ".tmp")
+            tmp.write_text(
                 json.dumps(result, indent=2, default=str),
                 encoding="utf-8",
             )
+            os.replace(tmp, path)
 
     def _latest_result_path(self) -> Path | None:
         """Path to the latest daemon result file."""
         return self.results_dir / "latest.json"
 
-    def _interruptible_sleep(self, seconds: int) -> None:
-        """Sleep in 1-second increments to allow graceful shutdown."""
-        for _ in range(seconds):
+    def _interruptible_sleep(self, seconds: float) -> None:
+        """Sleep in 1-second increments to allow graceful shutdown.
+
+        Coerces *seconds* to int for the loop (range() rejects floats) and
+        sleeps any fractional remainder afterwards.
+        """
+        whole = int(seconds)
+        for _ in range(whole):
             if not self._running:
-                break
+                return
             time.sleep(1)
+        remainder = seconds - whole
+        if remainder > 0 and self._running:
+            time.sleep(remainder)

@@ -49,7 +49,7 @@ def badge(
         faultray badge infra.yaml --label "infra score"
     """
     try:
-        graph = _load_graph_for_analysis(yaml_file, yaml_file)
+        graph = _load_graph_for_analysis(yaml_file, None)
     except (ValueError, RuntimeError) as exc:
         console.print(f"[red]{exc}[/]")
         raise typer.Exit(1) from exc

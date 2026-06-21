@@ -441,7 +441,12 @@ def policy_generate(
         raise typer.Exit(1)
 
     if output:
-        output.write_text(doc.content, encoding="utf-8")
+        try:
+            output.parent.mkdir(parents=True, exist_ok=True)
+            output.write_text(doc.content, encoding="utf-8")
+        except OSError as exc:
+            console.print(f"[red]Failed to write {output}: {exc}[/]")
+            raise typer.Exit(1)
         console.print(f"[green]Policy written to {output}[/]")
     else:
         console.print(doc.content)
@@ -531,7 +536,10 @@ def _auto_assess(
         for c in graph.components.values()
         for kw in ("auth", "waf", "firewall", "gateway", "oauth", "iam")
     )
-    has_encryption = any(c.port == 443 for c in graph.components.values())
+    has_encryption = any(
+        getattr(c, "port", None) in (443, 8443, 6443)
+        for c in graph.components.values()
+    )
     has_dr = any(
         getattr(c, "region", None) is not None
         and (getattr(getattr(c, "region", None), "dr_target_region", None) or not getattr(getattr(c, "region", None), "is_primary", True))

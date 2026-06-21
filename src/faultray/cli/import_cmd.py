@@ -91,7 +91,12 @@ def import_terraform_cmd(
         )
         raise typer.Exit(1)
 
-    output.write_text(topology_yaml(result), encoding="utf-8")
+    try:
+        output.parent.mkdir(parents=True, exist_ok=True)
+        output.write_text(topology_yaml(result), encoding="utf-8")
+    except OSError as exc:
+        console.print(f"[red]Failed to write {output}: {exc}[/]")
+        raise typer.Exit(1)
 
     isolated = result.isolated_component_ids
     if json_output:

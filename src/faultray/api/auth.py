@@ -102,6 +102,19 @@ def generate_api_key() -> str:
     return secrets.token_urlsafe(48)
 
 
+def _looks_like_jwt(token: str) -> bool:
+    """Return True if *token* has the structural shape of a JWT.
+
+    A JWS-compact JWT is exactly three non-empty, dot-separated base64url
+    segments (``header.payload.signature``). API keys produced by
+    :func:`generate_api_key` are a single URL-safe token with no dots, so this
+    cheaply distinguishes the two without importing the (optionally
+    misconfigured) JWT subsystem for plain API keys.
+    """
+    parts = token.split(".")
+    return len(parts) == 3 and all(parts)
+
+
 # ---------------------------------------------------------------------------
 # Public endpoints that skip auth
 # ---------------------------------------------------------------------------
@@ -115,8 +128,11 @@ PUBLIC_PATHS = frozenset({
     "/static",
     "/components",
     "/simulation",
-    "/graph",
     "/simulation/run",
+    # NOTE: '/graph' was removed from the public set — the interactive graph
+    # view exposes internal infrastructure topology and should require auth
+    # (the page route itself enforces no extra permission, but it is no longer
+    # bypassed by _is_public when auth is configured).
     # ADMIN-AUTH (#100): health / versioning / docs endpoints stay public
     "/api/health",
     "/api/versions",
@@ -136,9 +152,10 @@ def _is_public(path: str) -> bool:
     """Check whether *path* is a public (no-auth) endpoint."""
     if path in PUBLIC_PATHS:
         return True
-    # Allow setup paths (initial admin creation — always public)
-    if path == "/setup" or path.startswith("/setup/"):
-        return True
+    # NOTE: /setup is intentionally NOT made unconditionally public here. It is
+    # allowed only in the no-users bootstrap branch of get_current_user (via
+    # SETUP_PATHS); once an admin exists, /setup requires authentication so the
+    # setup surface is not reachable unauthenticated after initial bootstrap.
     # Allow static file sub-paths
     if path.startswith("/static/"):
         return True
@@ -224,21 +241,48 @@ async def get_current_user(
 
         token = credentials.credentials
 
-        # Try JWT token first (OAuth2 sessions)
-        try:
-            from faultray.api.oauth import decode_jwt
+        # Try JWT token first (OAuth2 sessions). A single Bearer token is tried
+        # as a JWT and then as an API key, so a token that is simply *not* a JWT
+        # (e.g. a raw API key) must fall through rather than error. decode_jwt
+        # already returns None for an invalid/expired/forged signature (it does
+        # not raise), so the only thing we guard here is a malformed 'sub'
+        # claim. We deliberately do NOT swallow unexpected errors (e.g. DB
+        # failures) — those propagate to _resolve_user and fail closed (deny),
+        # instead of silently masking them and falling through to API-key auth.
+        #
+        # Only treat the token as a JWT when it *looks* like one (three
+        # dot-separated segments). A raw API key never matches this shape, so we
+        # skip importing faultray.api.oauth for it entirely — that module raises
+        # at import time when FAULTRAY_ENV=production without a configured JWT
+        # secret, and a JWT *configuration/import* failure must not block
+        # API-key-only deployments. We catch such setup failures and fall
+        # through to the API-key path rather than 500-ing.
+        if _looks_like_jwt(token):
+            jwt_payload = None
+            try:
+                from faultray.api.oauth import decode_jwt
 
-            jwt_payload = decode_jwt(token)
-            if jwt_payload and "sub" in jwt_payload:
-                user_id = int(jwt_payload["sub"])
-                result = await session.execute(
-                    select(UserRow).where(UserRow.id == user_id)
+                jwt_payload = decode_jwt(token)
+            except Exception:
+                # JWT subsystem misconfigured/unavailable (e.g. no secret in
+                # production, missing python-jose). Fall through to API-key auth
+                # instead of failing the whole request.
+                logger.warning(
+                    "JWT decode unavailable; falling back to API-key auth.",
+                    exc_info=True,
                 )
-                user = result.scalar_one_or_none()
-                if user is not None:
-                    return user
-        except Exception:
-            pass
+            if jwt_payload and "sub" in jwt_payload:
+                try:
+                    user_id = int(jwt_payload["sub"])
+                except (ValueError, TypeError):
+                    user_id = None
+                if user_id is not None:
+                    result = await session.execute(
+                        select(UserRow).where(UserRow.id == user_id)
+                    )
+                    user = result.scalar_one_or_none()
+                    if user is not None:
+                        return user
 
         # Fall back to API key authentication
         key_hash = hash_api_key(token)

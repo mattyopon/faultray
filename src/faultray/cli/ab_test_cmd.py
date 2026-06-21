@@ -49,14 +49,17 @@ def ab_test(
         # JSON output for CI/CD
         faultray ab-test --a current.yaml --b proposed.yaml --json
     """
-    graph_a = _load_graph_for_analysis(
-        model=Path("faultray-model.json"),
-        yaml_file=variant_a,
-    )
-    graph_b = _load_graph_for_analysis(
-        model=Path("faultray-model.json"),
-        yaml_file=variant_b,
-    )
+    if not variant_a.is_file():
+        raise typer.BadParameter(
+            f"Variant A file does not exist: {variant_a}", param_hint="--a"
+        )
+    if not variant_b.is_file():
+        raise typer.BadParameter(
+            f"Variant B file does not exist: {variant_b}", param_hint="--b"
+        )
+
+    graph_a = _load_graph_for_analysis(variant_a, None)
+    graph_b = _load_graph_for_analysis(variant_b, None)
 
     tester = ChaosABTester(graph_a, graph_b, name_a=name_a, name_b=name_b)
     report = tester.test_default()

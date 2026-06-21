@@ -269,9 +269,16 @@ def runbook_generate(
             ext = ".md"
 
         output.mkdir(parents=True, exist_ok=True)
-        out_path = output / f"{rb.id}{ext}"
-        out_path.write_text(content, encoding="utf-8")
-        console.print(f"[green]Runbook saved to {out_path}[/]")
+        # rb.id is data-derived; sanitize to a safe basename and verify the
+        # resolved path stays inside the output directory (path traversal).
+        filename = f"{Path(rb.id).name}{ext}"
+        base = output.resolve()
+        dest = (base / filename).resolve()
+        if Path(filename).is_absolute() or not (dest == base or base in dest.parents):
+            console.print(f"[red]Refusing to write outside output dir: {rb.id}[/]")
+            raise typer.Exit(1)
+        dest.write_text(content, encoding="utf-8")
+        console.print(f"[green]Runbook saved to {dest}[/]")
         _print_runbook_summary(rb)
         return
 

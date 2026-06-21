@@ -23,7 +23,7 @@ def report_command(
         ...,
         help="Report type: executive, compliance",
     ),
-    model: Path = typer.Argument(
+    model: Path | None = typer.Argument(
         None,
         help="Model file path (JSON or YAML). Defaults to faultray-model.json.",
     ),
@@ -119,6 +119,12 @@ def _generate_compliance_report(graph, framework: str | None, output: Path | Non
     from faultray.simulator.compliance_monitor import ComplianceFramework, ComplianceMonitor
 
     monitor = ComplianceMonitor()
+    # Track once and reuse for every assessment/evidence package below.
+    monitor.track(graph)
+
+    # The payload that gets written to --output (when requested). Holds the
+    # selected framework's package, or all frameworks when none is selected.
+    output_payload: dict = {}
 
     if framework:
         # Map user input to enum
@@ -136,60 +142,71 @@ def _generate_compliance_report(graph, framework: str | None, output: Path | Non
             console.print(f"[dim]Available: {', '.join(fw_map.keys())}[/]")
             raise typer.Exit(1)
 
-        monitor.track(graph)
         snapshot = monitor.assess(graph, fw)
         package = monitor.generate_evidence_package(fw)
+        output_payload = {fw.value: package}
 
         if json_output:
             console.print_json(data=package)
-            return
+        else:
+            # Print summary
+            console.print(f"\n[bold]{fw.value.upper()} Compliance Report[/]")
+            console.print(f"  Total Controls: {snapshot.total_controls}")
+            console.print(f"  [green]Compliant: {snapshot.compliant}[/]")
+            console.print(f"  [yellow]Partial: {snapshot.partial}[/]")
+            console.print(f"  [red]Non-Compliant: {snapshot.non_compliant}[/]")
+            console.print(f"  Compliance: [bold]{snapshot.compliance_percentage:.1f}%[/]")
 
-        # Print summary
-        console.print(f"\n[bold]{fw.value.upper()} Compliance Report[/]")
-        console.print(f"  Total Controls: {snapshot.total_controls}")
-        console.print(f"  [green]Compliant: {snapshot.compliant}[/]")
-        console.print(f"  [yellow]Partial: {snapshot.partial}[/]")
-        console.print(f"  [red]Non-Compliant: {snapshot.non_compliant}[/]")
-        console.print(f"  Compliance: [bold]{snapshot.compliance_percentage:.1f}%[/]")
-
-        for ctrl in snapshot.controls:
-            color = {
-                "compliant": "green",
-                "partial": "yellow",
-                "non_compliant": "red",
-                "not_applicable": "dim",
-                "unknown": "dim",
-            }.get(ctrl.status.value, "white")
-            console.print(f"  [{color}]{ctrl.control_id}: {ctrl.title} ({ctrl.status.value})[/]")
+            for ctrl in snapshot.controls:
+                color = {
+                    "compliant": "green",
+                    "partial": "yellow",
+                    "non_compliant": "red",
+                    "not_applicable": "dim",
+                    "unknown": "dim",
+                }.get(ctrl.status.value, "white")
+                console.print(f"  [{color}]{ctrl.control_id}: {ctrl.title} ({ctrl.status.value})[/]")
     else:
         # All frameworks
-        monitor.track(graph)
         results = monitor.assess_all(graph)
+        output_payload = {
+            fw.value: monitor.generate_evidence_package(fw)
+            for fw in ComplianceFramework
+        }
 
         if json_output:
-            all_packages = {}
-            for fw in ComplianceFramework:
-                all_packages[fw.value] = monitor.generate_evidence_package(fw)
-            console.print_json(data=all_packages)
-            return
+            console.print_json(data=output_payload)
+        else:
+            console.print("\n[bold]Compliance Report (All Frameworks)[/]\n")
+            for fw, snapshot in results.items():
+                color = "green" if snapshot.compliance_percentage >= 80 else "yellow" if snapshot.compliance_percentage >= 50 else "red"
+                console.print(
+                    f"  [{color}]{fw.value.upper():10s}[/]  "
+                    f"{snapshot.compliance_percentage:5.1f}%  "
+                    f"({snapshot.compliant}/{snapshot.total_controls} compliant)"
+                )
 
-        console.print("\n[bold]Compliance Report (All Frameworks)[/]\n")
-        for fw, snapshot in results.items():
-            color = "green" if snapshot.compliance_percentage >= 80 else "yellow" if snapshot.compliance_percentage >= 50 else "red"
-            console.print(
-                f"  [{color}]{fw.value.upper():10s}[/]  "
-                f"{snapshot.compliance_percentage:5.1f}%  "
-                f"({snapshot.compliant}/{snapshot.total_controls} compliant)"
-            )
-
+    # Always write the file when --output is given, regardless of --json and
+    # honoring the selected framework (only that framework's package).
     if output:
-        if not json_output:
-            monitor.track(graph)
-            all_packages = {}
-            for fw in ComplianceFramework:
-                all_packages[fw.value] = monitor.generate_evidence_package(fw)
+        try:
+            output.parent.mkdir(parents=True, exist_ok=True)
             output.write_text(
-                json_lib.dumps(all_packages, indent=2, default=str),
+                json_lib.dumps(output_payload, indent=2, default=str),
                 encoding="utf-8",
             )
+        except OSError as exc:
+            console.print(f"[red]Failed to write {output}: {exc}[/]")
+            raise typer.Exit(1)
+        # In --json mode stdout must stay valid, machine-readable JSON (already
+        # emitted above via print_json). Route the human-readable confirmation
+        # to stderr so it doesn't corrupt the JSON contract; otherwise print it
+        # normally to stdout.
+        if json_output:
+            from rich.console import Console
+
+            Console(stderr=True).print(
+                f"[green]Compliance report saved to {output}[/]"
+            )
+        else:
             console.print(f"\n[green]Compliance report saved to {output}[/]")

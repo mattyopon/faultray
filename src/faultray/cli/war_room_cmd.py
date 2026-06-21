@@ -5,7 +5,6 @@
 
 from __future__ import annotations
 
-import json
 from pathlib import Path
 
 import typer
@@ -122,7 +121,7 @@ def war_room(
             ],
             "lessons_learned": report.lessons_learned,
         }
-        console.print_json(json.dumps(data, indent=2))
+        console.print_json(data=data)
         return
 
     _print_war_room_report(report, console)

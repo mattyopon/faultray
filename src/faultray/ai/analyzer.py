@@ -332,19 +332,25 @@ class FaultRayAnalyzer:
 
         for comp in graph.components.values():
             bottleneck_reasons: list[str] = []
+            # Track every utilization value that triggered a bottleneck so the
+            # severity reflects the worst dimension (including connection pool).
+            triggered_utils: list[float] = []
 
             if comp.metrics.cpu_percent > 70:
                 bottleneck_reasons.append(
                     f"CPU at {comp.metrics.cpu_percent:.0f}%"
                 )
+                triggered_utils.append(comp.metrics.cpu_percent)
             if comp.metrics.memory_percent > 70:
                 bottleneck_reasons.append(
                     f"Memory at {comp.metrics.memory_percent:.0f}%"
                 )
+                triggered_utils.append(comp.metrics.memory_percent)
             if comp.metrics.disk_percent > 70:
                 bottleneck_reasons.append(
                     f"Disk at {comp.metrics.disk_percent:.0f}%"
                 )
+                triggered_utils.append(comp.metrics.disk_percent)
 
             # Connection pool utilization
             if comp.capacity.connection_pool_size > 0:
@@ -358,15 +364,12 @@ class FaultRayAnalyzer:
                         f"({comp.metrics.network_connections}/"
                         f"{comp.capacity.connection_pool_size})"
                     )
+                    triggered_utils.append(pool_util)
 
             if not bottleneck_reasons:
                 continue
 
-            max_util = max(
-                comp.metrics.cpu_percent,
-                comp.metrics.memory_percent,
-                comp.metrics.disk_percent,
-            )
+            max_util = max(triggered_utils)
             severity = "high" if max_util > 85 else "medium"
 
             recs.append(AIRecommendation(
@@ -534,6 +537,16 @@ class FaultRayAnalyzer:
         for rec in high_recs[:2]:
             steps.append(f"[High] {rec.title}: {rec.remediation.split('.')[0]}")
 
+        # theoretical_max can become reachable from medium-severity changes
+        # alone; in that case fall back to medium recommendations so the path
+        # is never an empty header.
+        if not steps:
+            medium_recs = [r for r in recommendations if r.severity == "medium"]
+            for rec in medium_recs[:3]:
+                steps.append(
+                    f"[Medium] {rec.title}: {rec.remediation.split('.')[0]}"
+                )
+
         steps_text = "\n".join(f"  {i+1}. {s}" for i, s in enumerate(steps))
         return (
             f"To reach {next_tier:.1f} nines "
@@ -581,10 +594,8 @@ class FaultRayAnalyzer:
     ) -> str:
         """Generate a 3-5 sentence natural language summary."""
         total_components = len(graph.components)
-        len(simulation_report.critical_findings)
         warning_count = len(simulation_report.warnings)
         spof_count = sum(1 for r in recommendations if r.category == "spof")
-        sum(1 for r in recommendations if r.category == "cascade")
         critical_recs = sum(1 for r in recommendations if r.severity == "critical")
 
         # Opening sentence
@@ -602,13 +613,25 @@ class FaultRayAnalyzer:
         # SPOF detail
         spof_detail = ""
         if spof_count > 0:
-            # Find the worst SPOF
+            # Find the worst SPOF by severity. _generate_summary runs before
+            # recommendations are sorted, so we cannot rely on list order.
             spof_recs = [r for r in recommendations if r.category == "spof"]
             if spof_recs:
-                worst = spof_recs[0]
+                severity_rank = {"critical": 0, "high": 1, "medium": 2, "low": 3}
+                worst = min(
+                    spof_recs,
+                    key=lambda r: severity_rank.get(r.severity, 99),
+                )
+                # Extract a short fragment of the description defensively: the
+                # template is "<name> (<type>) has only N replica...". Re-parsing
+                # prose is fragile (component names may contain ' has ' or '. If'),
+                # so guard every split and fall back to the full description.
+                head = worst.description.split(". If")[0]
+                parts = head.split(" has ", 1)
+                detail = parts[1] if len(parts) > 1 else head
                 spof_detail = (
                     f" The biggest risk is a single-point-of-failure in "
-                    f"{worst.component_id} -- {worst.description.split('. If')[0].split(' has ')[1]}."
+                    f"{worst.component_id} -- {detail}."
                 )
 
         # Availability sentence
@@ -636,7 +659,3 @@ class FaultRayAnalyzer:
             warnings_text = ""
 
         return opening + spof_detail + avail_detail + improvement + warnings_text
-
-
-# Backward-compatible alias
-FaultRayAnalyzer = FaultRayAnalyzer

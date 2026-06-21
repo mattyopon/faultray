@@ -102,14 +102,17 @@ def _handle_scan_infrastructure(con: Console) -> None:
         con.print(f"\n[cyan]Scanning AWS ({region})...[/]")
         try:
             from faultray.cli.discovery import scan as _scan
-            import click
 
-            # Build CLI args and invoke via Click context
-            args: list[str] = ["--aws", "--region", region]
-            if profile:
-                args += ["--profile", profile]
-            ctx = click.Context(click.Command("scan"))
-            with ctx:
+            # ``scan`` is a Typer *callback* (a plain function), not a Click
+            # Command — Typer's @app.command() registers it but returns the
+            # undecorated function. Calling _scan(argv, standalone_mode=False)
+            # therefore passes argv as the first positional (``output``) plus an
+            # unexpected ``standalone_mode`` kwarg and raises TypeError. Invoke
+            # it as a normal function instead, mirroring how the other wizard
+            # handlers call tf_check/dora_assess. Because the undecorated
+            # function's defaults are Typer OptionInfo sentinels (not real
+            # values), every parameter the body reads must be passed explicitly.
+            try:
                 _scan(
                     output=Path("faultray-model.json"),
                     hostname=None,
@@ -148,6 +151,12 @@ def _handle_scan_infrastructure(con: Console) -> None:
                     infer_hidden=False,
                     infer_confidence=0.7,
                 )
+            except (typer.Exit, SystemExit):
+                # The scan body raises typer.Exit (a RuntimeError subclass, NOT
+                # SystemExit) for handled failures such as missing credentials.
+                # It already printed a helpful message, so swallow it rather than
+                # aborting the whole wizard or relabelling it "Scan error".
+                pass
         except Exception as exc:
             con.print(f"[red]Scan error: {exc}[/]")
             con.print(f"[dim]Try running manually: faultray scan --aws --region {region}[/]")
@@ -184,7 +193,11 @@ def _handle_dora_compliance(con: Console) -> None:
     try:
         from faultray.cli.dora_cmd import dora_assess
 
-        target_yaml = yaml_file or (yaml_candidates[0] if yaml_candidates else None)
+        # ``yaml_file`` is already None when a JSON model exists (so the model is
+        # preferred); only set when a YAML model was found and no JSON model.
+        # Do NOT fall back to an arbitrary cwd YAML here — that would override
+        # the model-when-present precedence.
+        target_yaml = yaml_file
         dora_assess(
             yaml_file=target_yaml,
             model=model_path,
@@ -366,6 +379,7 @@ def _handle_apm_monitoring(con: Console) -> None:
         api_key = Prompt.ask(
             "API key (optional, press Enter to skip) / APIキー（任意）",
             default="",
+            password=True,
         )
         interval_str = Prompt.ask(
             "Collection interval in seconds / 収集間隔（秒）",
@@ -398,10 +412,28 @@ def _handle_apm_monitoring(con: Console) -> None:
         )
         if start_now == "y":
             con.print("\n[cyan]Starting APM agent in background...[/]")
-            con.print("[dim]Run [cyan]faultray apm status[/dim] to verify.[/]")
-            con.print("[dim]Run [cyan]faultray apm stop[/dim] to stop the agent.[/]")
-            con.print("\n[bold]Or use the interactive wizard:[/]")
-            con.print("  [cyan]faultray apm setup[/]")
+            agent_yaml = Path.home() / ".faultray" / "agent.yaml"
+            try:
+                from faultray.cli.apm_cmd import apm_start
+
+                apm_start(config=str(agent_yaml), foreground=False)
+            except KeyboardInterrupt:
+                raise
+            except SystemExit:
+                # apm_start raises typer.Exit (SystemExit) on conditions like
+                # "already running"; surface a hint instead of aborting the wizard.
+                con.print(
+                    f"[dim]If the agent did not start, run: "
+                    f"faultray apm start --config {agent_yaml}[/]"
+                )
+            except Exception as exc:
+                con.print(f"[red]Could not start agent automatically: {exc}[/]")
+                con.print(
+                    f"[dim]Start manually with: faultray apm start --config {agent_yaml}[/]"
+                )
+            else:
+                con.print("[dim]Run [cyan]faultray apm status[/dim] to verify.[/]")
+                con.print("[dim]Run [cyan]faultray apm stop[/dim] to stop the agent.[/]")
 
         con.print("\n[bold]Next steps / 次のステップ:[/]")
         con.print("  [cyan]faultray apm status[/]           — Check agent status / 状態確認")

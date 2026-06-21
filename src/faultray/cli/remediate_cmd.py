@@ -125,6 +125,7 @@ def remediate_run(
         raise typer.Exit(1) from None
     except Exception as exc:
         console.print(f"[red]Remediation failed: {exc}[/]")
+        console.print_exception()
         raise typer.Exit(1) from None
 
     if json_output:

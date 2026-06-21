@@ -25,6 +25,12 @@ def _parse_interval(interval_str: str) -> int:
         pass
 
     total = 0
+    if not re.fullmatch(r"\s*(?:\d+\s*[hms]\s*)+", interval_str, re.IGNORECASE):
+        raise ValueError(
+            f"Invalid interval format: '{interval_str}'. "
+            "Use formats like '1h', '30m', '3600', '1h30m', '90s'."
+        )
+
     pattern = re.compile(r"(\d+)\s*([hms])", re.IGNORECASE)
     matches = pattern.findall(interval_str)
     if not matches:

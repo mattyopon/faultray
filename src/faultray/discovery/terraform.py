@@ -166,9 +166,19 @@ def parse_tf_plan(plan_json: dict) -> dict:
 
 _MAX_INPUT_BYTES = 10 * 1024 * 1024  # 10 MB
 
+# Maximum time (seconds) to wait for an external terraform invocation before
+# giving up, so a stuck terraform process cannot hang the caller forever.
+_TERRAFORM_TIMEOUT_SECONDS = 300
 
-def _validate_path(path: Path, label: str) -> None:
-    """Validate that *path* exists and is a regular file/directory without path traversal.
+
+def _validate_path(path: Path, label: str, kind: str | None = None) -> None:
+    """Validate that *path* exists (and optionally is the expected *kind*).
+
+    Args:
+        path: The path to validate.
+        label: Human-readable label used in error messages.
+        kind: Expected type, ``"file"`` or ``"dir"``. When given, the path
+            must be a regular file / directory respectively.
 
     Raises:
         ValueError: If the path fails validation.
@@ -179,11 +189,15 @@ def _validate_path(path: Path, label: str) -> None:
         raise ValueError(f"Invalid {label} path: {exc}") from exc
     if not resolved.exists():
         raise ValueError(f"{label} path does not exist: {resolved}")
+    if kind == "file" and not resolved.is_file():
+        raise ValueError(f"{label} path is not a file: {resolved}")
+    if kind == "dir" and not resolved.is_dir():
+        raise ValueError(f"{label} path is not a directory: {resolved}")
 
 
 def load_tf_state_file(path: Path) -> InfraGraph:
     """Load from a terraform.tfstate file directly."""
-    _validate_path(path, "state file")
+    _validate_path(path, "state file", kind="file")
     file_size = path.stat().st_size
     if file_size > _MAX_INPUT_BYTES:
         raise ValueError(
@@ -196,14 +210,20 @@ def load_tf_state_file(path: Path) -> InfraGraph:
 def load_tf_state_cmd(tf_dir: Path | None = None) -> InfraGraph:
     """Run 'terraform show -json' and parse the output."""
     if tf_dir is not None:
-        _validate_path(tf_dir, "terraform directory")
+        _validate_path(tf_dir, "terraform directory", kind="dir")
     cmd = ["terraform", "show", "-json"]
-    result = subprocess.run(
-        cmd,
-        capture_output=True,
-        text=True,
-        cwd=tf_dir,
-    )
+    try:
+        result = subprocess.run(
+            cmd,
+            capture_output=True,
+            text=True,
+            cwd=tf_dir,
+            timeout=_TERRAFORM_TIMEOUT_SECONDS,
+        )
+    except subprocess.TimeoutExpired as exc:
+        raise RuntimeError(
+            f"terraform show timed out after {_TERRAFORM_TIMEOUT_SECONDS}s"
+        ) from exc
     if result.returncode != 0:
         raise RuntimeError(f"terraform show failed: {result.stderr}")
 
@@ -214,19 +234,25 @@ def load_tf_state_cmd(tf_dir: Path | None = None) -> InfraGraph:
 def load_tf_plan_cmd(plan_file: Path | None = None, tf_dir: Path | None = None) -> dict:
     """Run 'terraform show -json <planfile>' and parse the output."""
     if tf_dir is not None:
-        _validate_path(tf_dir, "terraform directory")
+        _validate_path(tf_dir, "terraform directory", kind="dir")
     cmd = ["terraform", "show", "-json"]
     if plan_file:
-        _validate_path(plan_file, "plan file")
+        _validate_path(plan_file, "plan file", kind="file")
         # Use resolved absolute path to prevent path traversal
         cmd.append(str(plan_file.resolve()))
 
-    result = subprocess.run(
-        cmd,
-        capture_output=True,
-        text=True,
-        cwd=tf_dir,
-    )
+    try:
+        result = subprocess.run(
+            cmd,
+            capture_output=True,
+            text=True,
+            cwd=tf_dir,
+            timeout=_TERRAFORM_TIMEOUT_SECONDS,
+        )
+    except subprocess.TimeoutExpired as exc:
+        raise RuntimeError(
+            f"terraform show timed out after {_TERRAFORM_TIMEOUT_SECONDS}s"
+        ) from exc
     if result.returncode != 0:
         raise RuntimeError(f"terraform show failed: {result.stderr}")
 

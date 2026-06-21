@@ -130,8 +130,16 @@ def export_iac(
     else:
         # Multi-file output (directory)
         out_path.mkdir(parents=True, exist_ok=True)
+        base = out_path.resolve()
         for filename, content in result.files.items():
-            file_path = out_path / filename
+            # filename comes from the exporter result; reject absolute paths
+            # and any '..' escapes that would write outside the output dir.
+            file_path = (base / filename).resolve()
+            if Path(filename).is_absolute() or not (
+                file_path == base or base in file_path.parents
+            ):
+                console.print(f"[red]Refusing to write outside output dir: {filename}[/]")
+                raise typer.Exit(1)
             file_path.parent.mkdir(parents=True, exist_ok=True)
             file_path.write_text(content, encoding="utf-8")
             console.print(f"[green]Wrote:[/] {file_path}")

@@ -83,10 +83,11 @@ def compliance_monitor(
         if not json_output:
             console.print(f"[green]Compliance snapshot recorded to {store_path}[/]")
 
+        results: list[dict] = []
         for fw in frameworks:
             snap = monitor.assess(graph, fw)
             if json_output:
-                data = {
+                results.append({
                     "framework": fw.value,
                     "timestamp": snap.timestamp.isoformat(),
                     "compliance_percentage": snap.compliance_percentage,
@@ -94,43 +95,48 @@ def compliance_monitor(
                     "compliant": snap.compliant,
                     "partial": snap.partial,
                     "non_compliant": snap.non_compliant,
-                }
-                console.print_json(data=data)
+                })
             else:
                 _print_snapshot(snap)
+        if json_output:
+            console.print_json(data=results[0] if len(results) == 1 else results)
 
     elif trend:
+        results = []
         for fw in frameworks:
             t = monitor.get_trends(fw)
             if json_output:
-                data = {
+                results.append({
                     "framework": fw.value,
                     "trend": t.trend,
                     "current_percentage": t.current_percentage,
                     "delta_30d": t.delta_30d,
                     "snapshot_count": len(t.snapshots),
                     "risk_areas": t.risk_areas,
-                }
-                console.print_json(data=data)
+                })
             else:
                 _print_trend(t, fw)
+        if json_output:
+            console.print_json(data=results[0] if len(results) == 1 else results)
 
     else:
         # Default: assess and show results
+        results = []
         for fw in frameworks:
             snap = monitor.assess(graph, fw)
             if json_output:
-                data = {
+                results.append({
                     "framework": fw.value,
                     "compliance_percentage": snap.compliance_percentage,
                     "total_controls": snap.total_controls,
                     "compliant": snap.compliant,
                     "partial": snap.partial,
                     "non_compliant": snap.non_compliant,
-                }
-                console.print_json(data=data)
+                })
             else:
                 _print_snapshot(snap)
+        if json_output:
+            console.print_json(data=results[0] if len(results) == 1 else results)
 
 
 def _print_snapshot(snap) -> None:

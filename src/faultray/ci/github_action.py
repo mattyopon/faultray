@@ -9,6 +9,7 @@ that run FaultRay resilience checks as part of the CI/CD pipeline.
 
 from __future__ import annotations
 
+import shlex
 from dataclasses import dataclass
 
 import yaml
@@ -103,6 +104,12 @@ class CIGateGenerator:
             {
                 "name": "Run Resilience Analysis",
                 "id": "resilience",
+                # Bind workflow_dispatch inputs through env so they are never
+                # expanded directly into the shell (avoids script injection).
+                "env": {
+                    "INPUT_INFRA_FILE": "${{ github.event.inputs.infrastructure_file }}",
+                    "INPUT_MIN_SCORE": "${{ github.event.inputs.min_score }}",
+                },
                 "run": self._build_analysis_script(config),
             },
             {
@@ -138,10 +145,14 @@ class CIGateGenerator:
                 "name": "Notify Slack",
                 "if": "always()",
                 "run": self._build_slack_script(config),
+                # Always reference a GitHub secret; never serialize the literal
+                # webhook URL into the committed workflow file. GitHub context
+                # values are bound via env so they are not expanded into the
+                # shell/JSON payload directly.
                 "env": {
-                    "SLACK_WEBHOOK": "${{ secrets.SLACK_WEBHOOK }}"
-                    if not config.slack_webhook
-                    else config.slack_webhook,
+                    "SLACK_WEBHOOK": "${{ secrets.SLACK_WEBHOOK }}",
+                    "GH_REPOSITORY": "${{ github.repository }}",
+                    "GH_SHA": "${{ github.sha }}",
                 },
             })
 
@@ -179,9 +190,11 @@ class CIGateGenerator:
         lines = [
             "set -euo pipefail",
             "",
-            "# Use workflow_dispatch inputs if available, otherwise use env defaults",
-            'INFRA_FILE="${{ github.event.inputs.infrastructure_file || env.INFRA_FILE }}"',
-            'MIN_SCORE="${{ github.event.inputs.min_score || env.MIN_SCORE }}"',
+            "# Use workflow_dispatch inputs if available, otherwise use env defaults.",
+            "# Inputs are bound via the step env block (INPUT_*) so they are never",
+            "# expanded directly into the shell; this prevents script injection.",
+            'INFRA_FILE="${INPUT_INFRA_FILE:-$INFRA_FILE}"',
+            'MIN_SCORE="${INPUT_MIN_SCORE:-$MIN_SCORE}"',
             "",
             '# Verify infrastructure file exists',
             'if [ ! -f "$INFRA_FILE" ]; then',
@@ -191,6 +204,13 @@ class CIGateGenerator:
             "",
             "# Run FaultRay simulation",
             'faultray simulate --model "$INFRA_FILE" --json > results.json',
+            "",
+            "# Validate results.json parsed and produced a numeric score",
+            'if ! python3 -c "import json,sys; d=json.load(open(\'results.json\')); '
+            'sys.exit(0 if isinstance(d.get(\'resilience_score\', 0), (int, float)) else 1)"; then',
+            '  echo "::error::results.json missing or has a non-numeric resilience_score"',
+            '  exit 1',
+            'fi',
             "",
             "# Extract metrics",
             "SCORE=$(python3 -c \"import json; print(json.load(open('results.json')).get('resilience_score', 0))\")",
@@ -207,7 +227,7 @@ class CIGateGenerator:
             "# Check thresholds",
             'FAILED=0',
             "",
-            'if [ "$(echo "$SCORE < $MIN_SCORE" | bc -l)" -eq 1 ]; then',
+            'if [ "$(echo "${SCORE:-0} < ${MIN_SCORE:-0}" | bc -l)" -eq 1 ]; then',
             '  echo "::error::Resilience score $SCORE is below minimum $MIN_SCORE"',
             '  FAILED=1',
             'fi',
@@ -285,7 +305,7 @@ const { data: comments } = await github.rest.issues.listComments({
 });
 
 const botComment = comments.find(c =>
-  c.body.includes('FaultRay Resilience Gate')
+  c.body && c.body.includes('FaultRay Resilience Gate')
 );
 
 if (botComment) {
@@ -320,16 +340,20 @@ if (botComment) {
             '  COLOR="#28a745"',
             'fi',
             "",
-            "curl -s -X POST \"$SLACK_WEBHOOK\" \\",
+            "# Build the JSON payload safely with jq so untrusted values "
+            "(repo/sha/score) cannot break out of JSON quoting or the command.",
+            'PAYLOAD=$(jq -n \\',
+            '  --arg color "$COLOR" \\',
+            '  --arg status "$STATUS" \\',
+            '  --arg score "$SCORE" \\',
+            '  --arg critical "$CRITICAL" \\',
+            '  --arg footer "${GH_REPOSITORY:-} @ ${GH_SHA:-}" \\',
+            "  '{attachments: [{color: $color, title: (\"FaultRay Resilience Gate: \" + $status), "
+            "text: (\"Score: \" + $score + \"/100 | Critical: \" + $critical), footer: $footer}]}')",
+            "",
+            'curl -s -X POST "$SLACK_WEBHOOK" \\',
             "  -H 'Content-Type: application/json' \\",
-            "  -d \"{",
-            '    \\\"attachments\\\": [{',
-            '      \\\"color\\\": \\\"$COLOR\\\",',
-            '      \\\"title\\\": \\\"FaultRay Resilience Gate: $STATUS\\\",',
-            '      \\\"text\\\": \\\"Score: $SCORE/100 | Critical: $CRITICAL\\\",',
-            '      \\\"footer\\\": \\\"${{ github.repository }} @ ${{ github.sha }}\\\"',
-            "    }]",
-            '  }"',
+            '  -d "$PAYLOAD"',
         ]
         return "\n".join(lines)
 
@@ -376,7 +400,7 @@ if (botComment) {
                     "pip install faultray",
                 ],
                 "script": [
-                    f"faultray simulate --model {config.infrastructure_file} --json > results.json",
+                    f"faultray simulate --model {shlex.quote(config.infrastructure_file)} --json > results.json",
                     "SCORE=$(python3 -c \"import json; print(json.load(open('results.json')).get('resilience_score', 0))\")",
                     "CRITICAL=$(python3 -c \"import json; print(json.load(open('results.json')).get('critical', 0))\")",
                     f'if [ "$(echo "$SCORE < {config.min_resilience_score}" | bc -l)" -eq 1 ]; then '
@@ -411,11 +435,16 @@ if (botComment) {
         str
             Groovy content for a Jenkins pipeline stage.
         """
+        # Quote for the shell, then escape for the Groovy single-quoted string
+        # literal so a value containing shell metacharacters or quotes cannot
+        # break out of either context.
+        infra_sh = shlex.quote(config.infrastructure_file)
+        infra_groovy = infra_sh.replace("\\", "\\\\").replace("'", "\\'")
         lines = [
             "stage('Resilience Gate') {",
             "    steps {",
             "        sh 'pip install faultray'",
-            f"        sh 'faultray simulate --model {config.infrastructure_file} --json > results.json'",
+            f"        sh 'faultray simulate --model {infra_groovy} --json > results.json'",
             "        script {",
             "            def results = readJSON file: 'results.json'",
             f"            def minScore = {config.min_resilience_score}",

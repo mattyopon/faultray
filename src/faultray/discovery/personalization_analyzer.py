@@ -208,19 +208,23 @@ class PersonalizationAnalyzer:
                 }
             )
 
+        now_utc = datetime.now(tz=timezone.utc)
+
+        def _days_since_update(script: Any) -> int | None:
+            """Days since *script* was updated, tolerating naive datetimes."""
+            updated = getattr(script, "updated_at", None)
+            if updated is None:
+                return None
+            # A naive datetime cannot be subtracted from an aware one; assume
+            # naive timestamps are already in UTC.
+            if updated.tzinfo is None:
+                updated = updated.replace(tzinfo=timezone.utc)
+            return (now_utc - updated).days
+
         stale_count = sum(
             1
             for s in gas_result.scripts
-            if (
-                hasattr(s, "updated_at")
-                and (
-                    __import__("datetime").datetime.now(
-                        tz=__import__("datetime").timezone.utc
-                    )
-                    - s.updated_at
-                ).days
-                > 365
-            )
+            if (_days_since_update(s) or 0) > 365
         )
         if stale_count:
             actions.append(

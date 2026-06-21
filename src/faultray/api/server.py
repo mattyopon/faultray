@@ -418,6 +418,34 @@ from faultray.api.billing import (
 _stripe_mgr = _StripeManager()
 
 
+async def _user_can_manage_team_billing(team_id: str, user) -> bool:
+    """Return True if *user* may perform billing actions for *team_id*.
+
+    Reuses the teams module's membership helpers so billing write operations
+    (checkout / portal) cannot be driven cross-tenant via a guessed team_id
+    (IDOR). Platform admins and the backward-compatible no-auth/no-users mode
+    are allowed; otherwise the caller must be the team owner or a team admin.
+    """
+    from faultray.api.teams import (
+        _ensure_tables as _ensure_team_tables,
+        _get_session_factory as _get_team_session_factory,
+        _is_global_admin,
+        _team_member_role,
+    )
+
+    if _is_global_admin(user):
+        return True
+    try:
+        sf = _get_team_session_factory()
+        async with sf() as session:
+            await _ensure_team_tables(session)
+            role = await _team_member_role(session, team_id, user)
+    except Exception:
+        # Fail closed: if we cannot establish membership, deny.
+        return False
+    return role in ("owner", "admin")
+
+
 @app.post("/api/billing/checkout", response_class=JSONResponse)
 async def billing_checkout(request: Request, user=Depends(_require_permission("manage_billing"))):
     """Create a Stripe Checkout Session and return the redirect URL."""
@@ -435,6 +463,15 @@ async def billing_checkout(request: Request, user=Depends(_require_permission("m
 
     if not team_id:
         return JSONResponse({"error": "team_id is required"}, status_code=400)
+
+    # SEC (IDOR): manage_billing alone must not allow acting on an arbitrary
+    # team. Require owner/admin membership of team_id (platform admins and
+    # no-auth mode exempt) before binding a checkout session to that team.
+    if not await _user_can_manage_team_billing(team_id, user):
+        return JSONResponse(
+            {"error": "Forbidden: not authorised to manage this team's billing"},
+            status_code=403,
+        )
 
     try:
         tier = _PricingTier(tier_str)
@@ -497,6 +534,14 @@ async def billing_portal(request: Request, team_id: str = "", user=Depends(_requ
 
     if not team_id:
         return JSONResponse({"error": "team_id query parameter is required"}, status_code=400)
+
+    # SEC (IDOR): authorise the caller against team_id before exposing that
+    # team's Stripe customer portal (manage subscriptions / payment details).
+    if not await _user_can_manage_team_billing(team_id, user):
+        return JSONResponse(
+            {"error": "Forbidden: not authorised to manage this team's billing"},
+            status_code=403,
+        )
 
     sub = await _stripe_mgr.get_subscription(team_id)
     if sub is None or not sub.get("stripe_customer_id"):

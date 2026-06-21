@@ -5,6 +5,7 @@
 
 from __future__ import annotations
 
+import html
 from pathlib import Path
 
 import typer
@@ -351,12 +352,14 @@ def _print_replay_result(result, con: Console) -> None:
     verdict = "[green]SURVIVED[/]" if result.survived else "[bold red]WOULD HAVE FAILED[/]"
 
     # Summary panel
+    rc = inc.root_cause or ""
+    root_cause_shown = rc[:120] + ("..." if len(rc) > 120 else "")
     summary = (
         f"[bold]Incident:[/] {inc.name}\n"
         f"[bold]Provider:[/] {inc.provider.upper()}  "
         f"[bold]Date:[/] {inc.date.strftime('%Y-%m-%d')}  "
         f"[bold]Duration:[/] {_format_timedelta(inc.duration)}\n"
-        f"[bold]Root Cause:[/] {inc.root_cause[:120]}...\n\n"
+        f"[bold]Root Cause:[/] {root_cause_shown}\n\n"
         f"[bold]Verdict:[/] {verdict}\n"
         f"[bold]Impact Score:[/] {result.impact_score}/10  "
         f"[bold]Grade:[/] [{grade_c}]{result.resilience_grade_during_incident}[/]\n"
@@ -491,11 +494,11 @@ def _generate_html_report(results: list, graph) -> str:
         )
         rows += f"""
         <tr class="{verdict_class}">
-            <td>{r.incident.name}</td>
-            <td>{r.incident.provider.upper()}</td>
+            <td>{html.escape(str(r.incident.name))}</td>
+            <td>{html.escape(str(r.incident.provider).upper())}</td>
             <td class="verdict-{verdict_class}">{verdict_text}</td>
             <td>{r.impact_score:.1f}</td>
-            <td>{r.resilience_grade_during_incident}</td>
+            <td>{html.escape(str(r.resilience_grade_during_incident))}</td>
             <td>{_format_timedelta(r.downtime_estimate)}</td>
             <td>{affected_count}</td>
         </tr>"""

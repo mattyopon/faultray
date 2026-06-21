@@ -9,13 +9,37 @@ infer dependencies, then updates the FaultRay InfraGraph accordingly.
 
 from __future__ import annotations
 
+import ipaddress
 import logging
+import re
+import threading
 
 from faultray.apm.models import ConnectionInfo, MetricsBatch, ProcessInfo
 from faultray.model.components import Component, ComponentType, Dependency
 from faultray.model.graph import InfraGraph
 
 logger = logging.getLogger(__name__)
+
+# Validation / bounds for untrusted agent-reported identifiers.
+_AGENT_ID_RE = re.compile(r"^[A-Za-z0-9._-]{1,64}$")
+# Cap distinct new remote components created from a single batch to bound
+# graph growth from a malicious/buggy agent reporting many endpoints.
+_MAX_NEW_REMOTES_PER_BATCH = 256
+
+
+def _valid_agent_id(agent_id: str) -> bool:
+    return bool(_AGENT_ID_RE.match(agent_id or ""))
+
+
+def _valid_remote(addr: str, port: int) -> bool:
+    """Validate a remote endpoint reported by an agent."""
+    if not (0 < port <= 65535):
+        return False
+    try:
+        ipaddress.ip_address(addr)
+    except ValueError:
+        return False
+    return True
 
 # Well-known port → likely service type mapping
 _PORT_SERVICE_MAP: dict[int, tuple[str, ComponentType]] = {
@@ -39,12 +63,16 @@ _PORT_SERVICE_MAP: dict[int, tuple[str, ComponentType]] = {
 # ---------------------------------------------------------------------------
 
 _graph: InfraGraph | None = None
+# Guards both the module-level ``_graph`` reference and all mutations applied to
+# it, since batches may be processed concurrently by threadpool/async workers.
+_graph_lock = threading.RLock()
 
 
 def set_topology_graph(graph: InfraGraph) -> None:
     """Set the InfraGraph to update with agent topology data."""
     global _graph
-    _graph = graph
+    with _graph_lock:
+        _graph = graph
 
 
 def get_topology_graph() -> InfraGraph | None:
@@ -62,75 +90,97 @@ def update_topology_from_batch(batch: MetricsBatch) -> list[str]:
     Returns a list of change descriptions (e.g. "added component X",
     "added dependency X -> Y").
     """
-    graph = _graph
-    if graph is None:
+    # Reject agent ids that don't match the strict pattern so they cannot
+    # spoof/collide with other component ids (e.g. via ':' or 'host-').
+    if not _valid_agent_id(batch.agent_id):
+        logger.warning("Ignoring batch with invalid agent_id: %r", batch.agent_id)
         return []
 
-    changes: list[str] = []
+    with _graph_lock:
+        graph = _graph
+        if graph is None:
+            return []
 
-    # Ensure the agent host is represented as a component
-    host_id = f"host-{batch.agent_id}"
-    if graph.get_component(host_id) is None:
-        comp = Component(
-            id=host_id,
-            name=f"Host ({batch.agent_id})",
-            type=ComponentType.APP_SERVER,
-        )
-        graph.add_component(comp)
-        changes.append(f"added component {host_id}")
+        changes: list[str] = []
 
-    # Discover services from listening processes
-    listeners = _extract_listeners(batch.processes)
-    for port, proc_name in listeners.items():
-        svc_id = f"svc-{batch.agent_id}-{port}"
-        if graph.get_component(svc_id) is None:
-            svc_type = _infer_service_type(port)
-            display_name = _PORT_SERVICE_MAP.get(port, (proc_name, svc_type))[0]
+        # Ensure the agent host is represented as a component
+        host_id = f"host-{batch.agent_id}"
+        if graph.get_component(host_id) is None:
             comp = Component(
-                id=svc_id,
-                name=f"{display_name}:{port} ({batch.agent_id})",
-                type=svc_type,
+                id=host_id,
+                name=f"Host ({batch.agent_id})",
+                type=ComponentType.APP_SERVER,
             )
             graph.add_component(comp)
-            changes.append(f"added service {svc_id} ({display_name}:{port})")
+            changes.append(f"added component {host_id}")
 
-            # Link service to host
-            dep = Dependency(source_id=host_id, target_id=svc_id)
-            graph.add_dependency(dep)
+        # Discover services from listening processes
+        listeners = _extract_listeners(batch.processes)
+        for port, proc_name in listeners.items():
+            svc_id = f"svc-{batch.agent_id}-{port}"
+            if graph.get_component(svc_id) is None:
+                svc_type = _infer_service_type(port)
+                display_name = _PORT_SERVICE_MAP.get(port, (proc_name, svc_type))[0]
+                comp = Component(
+                    id=svc_id,
+                    name=f"{display_name}:{port} ({batch.agent_id})",
+                    type=svc_type,
+                )
+                graph.add_component(comp)
+                changes.append(f"added service {svc_id} ({display_name}:{port})")
 
-    # Discover outbound dependencies from established connections
-    all_conns = list(batch.connections)
-    for proc in batch.processes:
-        all_conns.extend(proc.connections)
+            # Link service to host (also repairs a missing edge for an
+            # already-existing service component).
+            if graph.get_dependency_edge(host_id, svc_id) is None:
+                dep = Dependency(source_id=host_id, target_id=svc_id)
+                graph.add_dependency(dep)
 
-    outbound = _extract_outbound(all_conns, listeners)
-    for remote_addr, remote_port, local_port in outbound:
-        remote_id = f"remote-{remote_addr}:{remote_port}"
-        if graph.get_component(remote_id) is None:
-            remote_type = _infer_service_type(remote_port)
-            svc_name = _PORT_SERVICE_MAP.get(remote_port, (f"svc-{remote_port}", remote_type))[0]
-            comp = Component(
-                id=remote_id,
-                name=f"{svc_name} ({remote_addr}:{remote_port})",
-                type=remote_type,
+        # Discover outbound dependencies from established connections
+        all_conns = list(batch.connections)
+        for proc in batch.processes:
+            all_conns.extend(proc.connections)
+
+        outbound = _extract_outbound(all_conns, listeners)
+        new_remotes = 0
+        for remote_addr, remote_port, local_port in outbound:
+            # Drop endpoints that fail validation (untrusted agent data).
+            if not _valid_remote(remote_addr, remote_port):
+                continue
+
+            remote_id = f"remote-{remote_addr}:{remote_port}"
+            if graph.get_component(remote_id) is None:
+                # Bound the number of new remote components per batch.
+                if new_remotes >= _MAX_NEW_REMOTES_PER_BATCH:
+                    logger.warning(
+                        "Reached new-remote cap (%d) for agent %s — skipping rest",
+                        _MAX_NEW_REMOTES_PER_BATCH, batch.agent_id,
+                    )
+                    break
+                remote_type = _infer_service_type(remote_port)
+                svc_name = _PORT_SERVICE_MAP.get(remote_port, (f"svc-{remote_port}", remote_type))[0]
+                comp = Component(
+                    id=remote_id,
+                    name=f"{svc_name} ({remote_addr}:{remote_port})",
+                    type=remote_type,
+                )
+                graph.add_component(comp)
+                new_remotes += 1
+                changes.append(f"discovered remote {remote_id}")
+
+            # Add dependency from local service → remote
+            local_svc_id = f"svc-{batch.agent_id}-{local_port}" if local_port in listeners else host_id
+            edge = graph.get_dependency_edge(local_svc_id, remote_id)
+            if edge is None:
+                dep = Dependency(source_id=local_svc_id, target_id=remote_id)
+                graph.add_dependency(dep)
+                changes.append(f"added dependency {local_svc_id} -> {remote_id}")
+
+        if changes:
+            logger.info(
+                "Topology updated from agent %s: %d changes", batch.agent_id, len(changes)
             )
-            graph.add_component(comp)
-            changes.append(f"discovered remote {remote_id}")
 
-        # Add dependency from local service → remote
-        local_svc_id = f"svc-{batch.agent_id}-{local_port}" if local_port in listeners else host_id
-        edge = graph.get_dependency_edge(local_svc_id, remote_id)
-        if edge is None:
-            dep = Dependency(source_id=local_svc_id, target_id=remote_id)
-            graph.add_dependency(dep)
-            changes.append(f"added dependency {local_svc_id} -> {remote_id}")
-
-    if changes:
-        logger.info(
-            "Topology updated from agent %s: %d changes", batch.agent_id, len(changes)
-        )
-
-    return changes
+        return changes
 
 
 # ---------------------------------------------------------------------------
@@ -165,8 +215,9 @@ def _extract_outbound(
             continue
         if not conn.remote_addr or conn.remote_port == 0:
             continue
-        # Skip loopback to own services
-        if conn.remote_addr in ("127.0.0.1", "::1") and conn.remote_port in local_listeners:
+        # Skip loopback to own services (covers all of 127.0.0.0/8, ::1, the
+        # unspecified address, and link-local — not just the two literals).
+        if _is_local_addr(conn.remote_addr) and conn.remote_port in local_listeners:
             continue
         key = (conn.remote_addr, conn.remote_port)
         if key not in seen:
@@ -174,6 +225,15 @@ def _extract_outbound(
             result.append((conn.remote_addr, conn.remote_port, conn.local_port))
 
     return result
+
+
+def _is_local_addr(addr: str) -> bool:
+    """Return True for loopback / unspecified / link-local addresses."""
+    try:
+        ip = ipaddress.ip_address(addr)
+    except ValueError:
+        return False
+    return ip.is_loopback or ip.is_unspecified or ip.is_link_local
 
 
 def _infer_service_type(port: int) -> ComponentType:

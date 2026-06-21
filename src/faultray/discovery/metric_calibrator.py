@@ -17,6 +17,51 @@ from faultray.model.graph import InfraGraph
 logger = logging.getLogger(__name__)
 
 
+def _validate_prometheus_url(url: str, *, resolve: bool) -> None:
+    """Validate a Prometheus endpoint URL to mitigate SSRF.
+
+    Only ``http``/``https`` schemes are permitted. When *resolve* is True (i.e.
+    a real network client is about to be created), the host is resolved and
+    requests to the cloud metadata service / link-local range
+    (169.254.0.0/16, fe80::/10) are rejected — the classic SSRF target.
+
+    Raises:
+        ValueError: If the URL is not a safe Prometheus endpoint.
+    """
+    import ipaddress
+    import socket
+    from urllib.parse import urlsplit
+
+    parts = urlsplit(url)
+    if parts.scheme not in ("http", "https"):
+        raise ValueError(
+            f"Prometheus URL must use http/https, got: {parts.scheme!r}"
+        )
+    host = parts.hostname
+    if not host:
+        raise ValueError("Prometheus URL has no host")
+
+    if not resolve:
+        return
+
+    try:
+        infos = socket.getaddrinfo(host, parts.port or None)
+    except OSError as exc:
+        raise ValueError(f"Cannot resolve Prometheus host {host!r}: {exc}") from exc
+
+    for info in infos:
+        addr = info[4][0]
+        try:
+            ip = ipaddress.ip_address(addr)
+        except ValueError:
+            continue
+        if ip.is_link_local:
+            raise ValueError(
+                f"Refusing to query link-local/metadata address {addr} "
+                f"(possible SSRF)"
+            )
+
+
 @dataclass
 class CalibrationResult:
     """Result of calibrating a single metric on a component."""
@@ -66,6 +111,10 @@ class MetricCalibrator:
             A list of :class:`CalibrationResult` entries.
         """
         import httpx
+
+        # Validate the endpoint before issuing any request. Only resolve/IP-check
+        # when we are about to open a real network client (no injected client).
+        _validate_prometheus_url(url, resolve=_client is None)
 
         client = _client or httpx.Client(base_url=url.rstrip("/"), timeout=30)
         results: list[CalibrationResult] = []
@@ -196,9 +245,6 @@ class MetricCalibrator:
                 if metric_id.startswith("cpu_"):
                     sim_value = comp.metrics.cpu_percent
                     metric_name = "cpu_percent"
-                elif metric_id.startswith("mem_"):
-                    sim_value = comp.metrics.memory_percent
-                    metric_name = "memory_percent"
                 else:
                     continue
 
@@ -306,22 +352,9 @@ class MetricCalibrator:
             }
         )
 
-        if comp_type == "database":
-            queries.append(
-                {
-                    "Id": f"mem_{safe_id}",
-                    "MetricStat": {
-                        "Metric": {
-                            "Namespace": "AWS/RDS",
-                            "MetricName": "FreeableMemory",
-                            "Dimensions": [
-                                {"Name": "DBInstanceIdentifier", "Value": comp_id}
-                            ],
-                        },
-                        "Period": 300,
-                        "Stat": "Average",
-                    },
-                }
-            )
+        # NOTE: AWS/RDS FreeableMemory is reported in *bytes*, not a percentage,
+        # so it must not be mapped onto memory_percent. Without total-memory
+        # metadata to derive a true utilization percentage we deliberately omit
+        # a memory query here rather than corrupt the metric with a byte count.
 
         return queries

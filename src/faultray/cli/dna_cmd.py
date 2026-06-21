@@ -42,7 +42,7 @@ def dna(
     from faultray.model.dna import DNAEngine
 
     if action == "fingerprint":
-        graph = _load_graph_for_analysis(file1, file1)
+        graph = _load_graph_for_analysis(file1, None)
         dna_result = DNAEngine.compute(graph)
 
         if json_output:
@@ -86,8 +86,8 @@ def dna(
             console.print("[red]Please provide two model files for comparison.[/]")
             raise typer.Exit(1)
 
-        graph1 = _load_graph_for_analysis(file1, file1)
-        graph2 = _load_graph_for_analysis(file2, file2)
+        graph1 = _load_graph_for_analysis(file1, None)
+        graph2 = _load_graph_for_analysis(file2, None)
         result = DNAEngine.compare(graph1, graph2)
 
         if json_output:

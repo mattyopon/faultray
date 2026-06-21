@@ -81,6 +81,12 @@ def autopilot(
         "--skip-simulation",
         help="Skip simulation step (faster, less validation)",
     ),
+    yes: bool = typer.Option(
+        False,
+        "--yes",
+        "-y",
+        help="Confirm destructive actions (required for --deploy in non-interactive mode)",
+    ),
 ) -> None:
     """Full autopilot pipeline: requirements → topology → simulation → Terraform.
 
@@ -115,6 +121,10 @@ def autopilot(
     # Run pipeline
     # -----------------------------------------------------------------------
     if from_yaml:
+        if not from_yaml.exists():
+            console.print(f"[red]Error:[/red] YAML file not found: {from_yaml}")
+            raise typer.Exit(1)
+
         if not json_output:
             console.print(f"\n[yellow]Step 1-3 skipped[/yellow] (using existing YAML: {from_yaml})")
         result = pipeline.run_from_yaml(from_yaml)
@@ -191,8 +201,8 @@ def autopilot(
         console.print(
             "\n[dim]Next steps:[/dim]\n"
             f"  cd {out_dir}\n"
-            "  terraform init\n"
-            "  terraform plan -var='terraform_state_bucket=YOUR_BUCKET'\n"
+            "  terraform init -backend-config='bucket=YOUR_STATE_BUCKET'\n"
+            "  terraform plan\n"
             "  terraform apply"
         )
 
@@ -200,6 +210,14 @@ def autopilot(
     # Optional: run terraform apply (only if --deploy flag passed)
     # -----------------------------------------------------------------------
     if not terraform_only:
+        # Guard against unattended `terraform apply -auto-approve`: require an
+        # explicit confirmation (interactive prompt or --yes) before deploying.
+        if not interactive and not yes:
+            console.print(
+                "[red]Refusing to run 'terraform apply' without confirmation.[/red] "
+                "Re-run with --yes to approve, or --interactive to confirm at each step."
+            )
+            raise typer.Exit(1)
         if not json_output:
             console.print("\n[bold yellow]WARNING:[/bold yellow] --deploy flag is set. Running terraform apply...")
         _run_terraform_apply(out_dir, interactive=interactive, json_output=json_output)

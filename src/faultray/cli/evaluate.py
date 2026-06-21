@@ -10,6 +10,7 @@ analysis, and capacity planning.
 
 from __future__ import annotations
 
+import html
 import logging
 from pathlib import Path
 
@@ -75,7 +76,9 @@ def _run_evaluation(
             from faultray.simulator.engine import SimulationEngine
 
             static_engine = SimulationEngine(graph)
-            static_report = static_engine.run_all_defaults()
+            static_report = static_engine.run_all_defaults(
+                max_scenarios=max_scenarios if max_scenarios > 0 else 0,
+            )
 
             total_generated = len(static_report.results)
             static_total = len(static_report.results)
@@ -660,6 +663,10 @@ def evaluate(
         faultray evaluate --max-scenarios 100
     """
 
+    if max_scenarios < 0:
+        console.print("[red]--max-scenarios must be >= 0 (0 = no limit)[/]")
+        raise typer.Exit(1)
+
     resolved_model = file if file is not None else model
     graph = _load_graph_for_analysis(resolved_model, yaml_file=None)
 
@@ -773,10 +780,16 @@ def _print_rich_report(evaluation_data: dict, ops_days: int) -> None:
     verdict_color = _verdict_color(verdict)
 
     raw = evaluation_data["_raw"]
-    static_report = raw["static_report"]
     whatif_results = raw["whatif_results"]
-    raw["cap_report"]
-    ops_result = raw["ops_result"]
+
+    # static_report / ops_result raw objects may be None if an engine was
+    # disabled or raised; fall back to the normalized dicts (which carry
+    # defaults) for any scalar we render.
+    static_resilience_score = static["resilience_score"]
+    ops_downtime_seconds = ops["total_downtime_seconds"]
+    ops_total_deploys = ops["total_deploys"]
+    ops_total_degradation_events = ops["total_degradation_events"]
+    ops_peak_utilization = ops["peak_utilization"]
 
     static_total = static["total_scenarios"]
     total_generated = static["generated_scenarios"]
@@ -815,7 +828,7 @@ def _print_rich_report(evaluation_data: dict, ops_days: int) -> None:
 
     # 1. Static
     console.print("\n  [bold]1. Static Simulation[/]")
-    console.print(f"     Resilience Score: [bold]{static_report.resilience_score:.0f}/100[/]")
+    console.print(f"     Resilience Score: [bold]{static_resilience_score:.0f}/100[/]")
     console.print(
         f"     Scenarios: [bold]{static_total:,}[/] tested"
         f" ({total_generated:,} generated)"
@@ -855,14 +868,14 @@ def _print_rich_report(evaluation_data: dict, ops_days: int) -> None:
         avail_color = "red"
     console.print(
         f"     Availability: [{avail_color}]{ops_avg_avail:.3f}%[/]  |  "
-        f"Downtime: {ops_result.total_downtime_seconds:.1f}s"
+        f"Downtime: {ops_downtime_seconds:.1f}s"
     )
     console.print(
         f"     Events: {ops_total_events} total "
-        f"({ops_result.total_deploys} deploys, "
-        f"{ops_result.total_degradation_events} degradation)"
+        f"({ops_total_deploys} deploys, "
+        f"{ops_total_degradation_events} degradation)"
     )
-    console.print(f"     Peak Utilization: {ops_result.peak_utilization:.1f}%")
+    console.print(f"     Peak Utilization: {ops_peak_utilization:.1f}%")
 
     # 4. What-If
     console.print("\n  [bold]4. What-If Analysis[/]")
@@ -974,11 +987,10 @@ def _print_rich_report(evaluation_data: dict, ops_days: int) -> None:
 
     # Overall Assessment
     l1_nines = limits.get("layer1_software", {}).get("nines", 0) if limits else 0
-    limits.get("layer2_hardware", {}).get("nines", 0) if limits else 0
     l3_nines = limits.get("layer3_theoretical", {}).get("nines", 0) if limits else 0
     assessment_lines = (
         f"  Overall Assessment\n"
-        f"  [dim]|[/] Architecture Score: [bold]{static_report.resilience_score:.0f}/100[/] (structural)\n"
+        f"  [dim]|[/] Architecture Score: [bold]{static_resilience_score:.0f}/100[/] (structural)\n"
         f"  [dim]|[/] Operational Score: [{avail_color}]{ops_avg_avail:.3f}%[/] availability\n"
         f"  [dim]|[/] Availability Ceiling: [bold]{l3_nines:.2f} nines[/] (theoretical)\n"
         f"  [dim]|[/] Practical Ceiling: [bold]{l1_nines:.2f} nines[/] (software limit)\n"
@@ -1008,22 +1020,37 @@ def _export_html_report(
     whatif_results: list,
     cap_report: object,
 ) -> None:
-    """Generate a cross-engine HTML evaluation report."""
+    """Generate a cross-engine HTML evaluation report.
+
+    All model-derived values (model name, scenario names, parameter names,
+    component ids, etc.) are HTML-escaped before interpolation to prevent
+    stored XSS. Numeric values are coerced before formatting.
+    """
     verdict = data.get("verdict", "UNKNOWN")
+    # verdict_color is selected from a fixed literal set (safe in CSS context).
     verdict_color = "#e74c3c" if verdict == "NEEDS ATTENTION" else (
         "#f39c12" if verdict == "ACCEPTABLE" else "#2ecc71"
     )
+    verdict_safe = html.escape(str(verdict))
+    model_safe = html.escape(str(data.get("model", "")))
 
     static = data.get("static", {})
     dynamic = data.get("dynamic", {})
     ops = data.get("ops", {})
     capacity = data.get("capacity", {})
 
+    def _num(value: object, default: float = 0.0) -> float:
+        """Coerce a possibly-missing/None value to float for safe formatting."""
+        try:
+            return float(value)  # type: ignore[arg-type]
+        except (TypeError, ValueError):
+            return default
+
     html_content = f"""<!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<title>FaultRay Full Evaluation Report - {data.get('model', '')}</title>
+<title>FaultRay Full Evaluation Report - {model_safe}</title>
 <style>
 body {{ font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
        margin: 2em auto; max-width: 900px; color: #333; }}
@@ -1045,30 +1072,30 @@ th {{ background: #f8f9fa; }}
 </head>
 <body>
 <h1>FaultRay Full Evaluation Report</h1>
-<p>Model: <strong>{data.get('model', '')}</strong> |
-   Components: {data.get('components', 0)} |
-   Dependencies: {data.get('dependencies', 0)}</p>
-<p class="verdict">{verdict}</p>
+<p>Model: <strong>{model_safe}</strong> |
+   Components: {int(_num(data.get('components', 0)))} |
+   Dependencies: {int(_num(data.get('dependencies', 0)))}</p>
+<p class="verdict">{verdict_safe}</p>
 
 <h2>1. Static Simulation</h2>
-<div class="metric">Resilience Score: <strong>{static.get('resilience_score', 0)}/100</strong></div>
-<div class="metric">Scenarios: {static.get('total_scenarios', 0)} tested</div>
-<div class="metric critical">Critical: {static.get('critical', 0)}</div>
-<div class="metric warning">Warning: {static.get('warning', 0)}</div>
-<div class="metric pass">Passed: {static.get('passed', 0)}</div>
+<div class="metric">Resilience Score: <strong>{_num(static.get('resilience_score', 0)):.1f}/100</strong></div>
+<div class="metric">Scenarios: {int(_num(static.get('total_scenarios', 0)))} tested</div>
+<div class="metric critical">Critical: {int(_num(static.get('critical', 0)))}</div>
+<div class="metric warning">Warning: {int(_num(static.get('warning', 0)))}</div>
+<div class="metric pass">Passed: {int(_num(static.get('passed', 0)))}</div>
 
 <h2>2. Dynamic Simulation</h2>
-<div class="metric">Scenarios: {dynamic.get('total_scenarios', 0)} tested</div>
-<div class="metric critical">Critical: {dynamic.get('critical', 0)}</div>
-<div class="metric warning">Warning: {dynamic.get('warning', 0)}</div>
-<div class="metric pass">Passed: {dynamic.get('passed', 0)}</div>
-{'<p>Worst: ' + str(dynamic.get('worst_scenario', '')) + ' (severity: ' + str(dynamic.get('worst_severity', 0)) + ')</p>' if dynamic.get('worst_severity', 0) >= 4.0 else ''}
+<div class="metric">Scenarios: {int(_num(dynamic.get('total_scenarios', 0)))} tested</div>
+<div class="metric critical">Critical: {int(_num(dynamic.get('critical', 0)))}</div>
+<div class="metric warning">Warning: {int(_num(dynamic.get('warning', 0)))}</div>
+<div class="metric pass">Passed: {int(_num(dynamic.get('passed', 0)))}</div>
+{'<p>Worst: ' + html.escape(str(dynamic.get('worst_scenario', ''))) + ' (severity: ' + format(_num(dynamic.get('worst_severity', 0)), '.1f') + ')</p>' if _num(dynamic.get('worst_severity', 0)) >= 4.0 else ''}
 
-<h2>3. Ops Simulation ({ops.get('duration_days', 7)} days)</h2>
-<div class="metric">Availability: {ops.get('avg_availability', 100.0):.3f}%</div>
-<div class="metric">Downtime: {ops.get('total_downtime_seconds', 0):.1f}s</div>
-<div class="metric">Events: {ops.get('total_events', 0)}</div>
-<div class="metric">Peak Utilization: {ops.get('peak_utilization', 0):.1f}%</div>
+<h2>3. Ops Simulation ({int(_num(ops.get('duration_days', 7)))} days)</h2>
+<div class="metric">Availability: {_num(ops.get('avg_availability', 100.0)):.3f}%</div>
+<div class="metric">Downtime: {_num(ops.get('total_downtime_seconds', 0)):.1f}s</div>
+<div class="metric">Events: {int(_num(ops.get('total_events', 0)))}</div>
+<div class="metric">Peak Utilization: {_num(ops.get('peak_utilization', 0)):.1f}%</div>
 
 <h2>4. What-If Analysis</h2>
 <table>
@@ -1077,26 +1104,28 @@ th {{ background: #f8f9fa; }}
 
     whatif_data = data.get("whatif", {}).get("results", {})
     for param, info in whatif_data.items():
-        values_str = ", ".join(str(v) for v in info.get("values", []))
+        param_safe = html.escape(str(param))
+        values_str = html.escape(", ".join(str(v) for v in info.get("values", [])))
+        # "PASS"/"FAIL" are literals we produce, so they need no escaping.
         pass_str = ", ".join("PASS" if p else "FAIL" for p in info.get("slo_pass", []))
         bp = info.get("breakpoint")
-        bp_str = str(bp) if bp is not None else "None"
-        html_content += f"<tr><td>{param}</td><td>{values_str}</td><td>{pass_str}</td><td>{bp_str}</td></tr>\n"
+        bp_str = html.escape(str(bp)) if bp is not None else "None"
+        html_content += f"<tr><td>{param_safe}</td><td>{values_str}</td><td>{pass_str}</td><td>{bp_str}</td></tr>\n"
 
     html_content += f"""</table>
 
 <h2>5. Capacity Planning</h2>
-<div class="metric">Over-provisioned: {capacity.get('over_provisioned_count', 0)} components</div>
-<div class="metric">Cost Change: {capacity.get('cost_reduction_percent', 0):.1f}%</div>
-<div class="metric">Bottlenecks: {capacity.get('bottleneck_count', 0)} components</div>
+<div class="metric">Over-provisioned: {int(_num(capacity.get('over_provisioned_count', 0)))} components</div>
+<div class="metric">Cost Change: {_num(capacity.get('cost_reduction_percent', 0)):.1f}%</div>
+<div class="metric">Bottlenecks: {int(_num(capacity.get('bottleneck_count', 0)))} components</div>
 
 <h2>Overall Assessment</h2>
 <ul>
-<li>Architecture Score: {static.get('resilience_score', 0)}/100 (structural)</li>
-<li>Operational Score: {ops.get('avg_availability', 100.0):.3f}% availability</li>
-<li>Dynamic Risks: {dynamic.get('critical', 0)} CRITICAL, {dynamic.get('warning', 0)} WARNING</li>
-<li>Cost Optimization: {abs(capacity.get('cost_reduction_percent', 0)):.1f}% possible</li>
-<li>Verdict: <strong>{verdict}</strong></li>
+<li>Architecture Score: {_num(static.get('resilience_score', 0)):.1f}/100 (structural)</li>
+<li>Operational Score: {_num(ops.get('avg_availability', 100.0)):.3f}% availability</li>
+<li>Dynamic Risks: {int(_num(dynamic.get('critical', 0)))} CRITICAL, {int(_num(dynamic.get('warning', 0)))} WARNING</li>
+<li>Cost Optimization: {abs(_num(capacity.get('cost_reduction_percent', 0))):.1f}% possible</li>
+<li>Verdict: <strong>{verdict_safe}</strong></li>
 </ul>
 
 <hr>

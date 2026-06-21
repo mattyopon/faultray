@@ -34,6 +34,22 @@ except ImportError:  # pragma: no cover
     _GOOGLE_AVAILABLE = False
 
 
+def _parse_drive_timestamp(value: str | None, fallback: datetime) -> datetime:
+    """Parse a Drive RFC3339 timestamp, tolerating fractional-second variants.
+
+    ``datetime.fromisoformat`` does not reliably parse every RFC3339 form on
+    Python < 3.11 (and raises on malformed input on any version), so failures
+    fall back to *fallback* instead of aborting discovery.
+    """
+    if not value:
+        return fallback
+    try:
+        return datetime.fromisoformat(value.replace("Z", "+00:00"))
+    except ValueError:
+        logger.warning("Could not parse Drive timestamp %r; using fallback", value)
+        return fallback
+
+
 # ---------------------------------------------------------------------------
 # Dataclasses
 # ---------------------------------------------------------------------------
@@ -51,6 +67,10 @@ class GASScript:
     updated_at: datetime
     last_executed: datetime | None
     shared_with: list[str] = field(default_factory=list)
+    # True when the Drive permission lookup failed, so the share list is UNKNOWN
+    # (distinct from a confirmed single-owner script). Risk scoring must not
+    # apply the single-owner personalization penalty when sharing is unknown.
+    sharing_unknown: bool = False
     triggers: list[dict[str, Any]] = field(default_factory=list)
     linked_services: list[str] = field(default_factory=list)
     drive_location: str = ""
@@ -142,15 +162,21 @@ class GASScanner:
         self,
         credentials_path: str | None = None,
         domain: str | None = None,
+        admin_email: str | None = None,
     ) -> None:
         """Initialize with Google OAuth2 credentials.
 
         Args:
             credentials_path: Path to service account JSON credentials file.
             domain: Google Workspace domain (e.g. "example.co.jp").
+            admin_email: Workspace admin to impersonate via domain-wide
+                delegation. Required for organization-wide discovery: without
+                it the service account only sees resources it owns and Admin
+                SDK / Drive enumeration cannot reach all users' scripts.
         """
         self.credentials_path = credentials_path
         self.domain = domain
+        self.admin_email = admin_email
         self._drive_service: Any = None
         self._script_service: Any = None
         self._admin_service: Any = None
@@ -241,6 +267,11 @@ class GASScanner:
         creds = service_account.Credentials.from_service_account_file(  # type: ignore[union-attr]
             self.credentials_path, scopes=scopes
         )
+        # Domain-wide delegation: impersonate an admin so Drive / Admin SDK
+        # enumeration covers the whole organization rather than just the
+        # service account's own resources.
+        if self.admin_email:
+            creds = creds.with_subject(self.admin_email)
         self._drive_service = build("drive", "v3", credentials=creds)  # type: ignore[assignment]
         self._script_service = build("script", "v1", credentials=creds)  # type: ignore[assignment]
         self._admin_service = build("admin", "directory_v1", credentials=creds)  # type: ignore[assignment]
@@ -267,18 +298,18 @@ class GASScanner:
                 owners = f.get("owners", [{}])
                 owner = owners[0] if owners else {}
                 now = datetime.now(tz=timezone.utc)
+                owner_email = owner.get("emailAddress", "unknown@example.com")
+                shared = self._fetch_shared_with(f["id"], owner_email)
                 script = GASScript(
                     id=f["id"],
                     name=f.get("name", "Unnamed"),
-                    owner_email=owner.get("emailAddress", "unknown@example.com"),
+                    owner_email=owner_email,
                     owner_name=owner.get("displayName", "Unknown"),
-                    created_at=datetime.fromisoformat(
-                        f.get("createdTime", now.isoformat()).replace("Z", "+00:00")
-                    ),
-                    updated_at=datetime.fromisoformat(
-                        f.get("modifiedTime", now.isoformat()).replace("Z", "+00:00")
-                    ),
+                    created_at=_parse_drive_timestamp(f.get("createdTime"), now),
+                    updated_at=_parse_drive_timestamp(f.get("modifiedTime"), now),
                     last_executed=None,
+                    shared_with=shared if shared is not None else [],
+                    sharing_unknown=shared is None,
                     drive_location="/".join(f.get("parents", [])),
                 )
                 scripts.append(script)
@@ -289,25 +320,83 @@ class GASScanner:
 
         return scripts
 
+    def _fetch_shared_with(self, file_id: str, owner_email: str) -> list[str] | None:
+        """Drive API: list the principals a script is shared with.
+
+        Returns the list of email addresses (including the owner) the file is
+        shared with. On a permission-lookup failure returns ``None`` (rather
+        than aborting discovery) to signal that sharing is UNKNOWN — callers
+        must not treat that as a confirmed single-owner script.
+        """
+        try:
+            from googleapiclient.errors import HttpError  # type: ignore[import-untyped]
+        except ImportError:  # pragma: no cover
+            HttpError = Exception  # type: ignore[assignment,misc]
+
+        shared: list[str] = []
+        page_token: str | None = None
+        try:
+            while True:
+                params: dict[str, Any] = {
+                    "fileId": file_id,
+                    "fields": "nextPageToken, permissions(emailAddress,role,type)",
+                    "supportsAllDrives": True,
+                }
+                if page_token:
+                    params["pageToken"] = page_token
+                resp = self._drive_service.permissions().list(**params).execute()
+                for perm in resp.get("permissions", []):
+                    email = perm.get("emailAddress")
+                    if email:
+                        shared.append(email)
+                page_token = resp.get("nextPageToken")
+                if not page_token:
+                    break
+        except HttpError as exc:
+            logger.warning("Could not fetch permissions for script %s: %s", file_id, exc)
+            return None
+        # Ensure the owner is represented even if not returned as a permission.
+        if owner_email and owner_email not in shared:
+            shared.append(owner_email)
+        return shared
+
     def _analyze_triggers(self, script_id: str) -> list[dict[str, Any]]:
-        """Apps Script API: get triggers for a script."""
+        """Apps Script API: get deployment triggers for a script.
+
+        Uses ``projects().deployments().list()`` — ``projects().get()`` only
+        returns project metadata (title/creator), never deployments or
+        triggers, so the previous implementation always saw zero triggers.
+
+        Note: installable time-based triggers are not fully exposed by the
+        public Apps Script API; on failure we cannot distinguish "no triggers"
+        from "could not determine", so we surface an explicit ``unknown`` entry
+        rather than silently returning an empty (no-trigger) list.
+        """
+        try:
+            from googleapiclient.errors import HttpError  # type: ignore[import-untyped]
+        except ImportError:  # pragma: no cover
+            HttpError = Exception  # type: ignore[assignment,misc]
+
         try:
             result = (
                 self._script_service.projects()
-                .get(scriptId=script_id)
+                .deployments()
+                .list(scriptId=script_id)
                 .execute()
             )
-            # Real API returns deployment/trigger info; simplified extraction
             triggers: list[dict[str, Any]] = []
             for deployment in result.get("deployments", []):
                 entry_points = deployment.get("entryPoints", [])
                 for ep in entry_points:
                     ep_type = ep.get("entryPointType", "")
-                    triggers.append({"type": "time" if "TRIGGER" in ep_type else "manual", "raw": ep})
+                    triggers.append(
+                        {"type": "time" if "TRIGGER" in ep_type else "manual", "raw": ep}
+                    )
             return triggers
-        except Exception:  # noqa: BLE001
-            logger.debug("Could not fetch triggers for script %s", script_id)
-            return []
+        except HttpError as exc:
+            logger.warning("Could not fetch triggers for script %s: %s", script_id, exc)
+            # Distinguish failure from a genuine absence of triggers.
+            return [{"type": "unknown", "raw": {}}]
 
     def _check_owner_status(self, email: str) -> str:
         """Admin SDK: check if owner is still an active user in the org."""
@@ -348,8 +437,10 @@ class GASScanner:
             score += 4
             reasons.append("Owner has left the organization")
 
-        # Single owner, no shared access
-        if len(script.shared_with) <= 1:
+        # Single owner, no shared access. Skip this penalty when sharing is
+        # UNKNOWN (the Drive permission lookup failed): treating an unknown
+        # share list as single-owner would inflate the risk score.
+        if not script.sharing_unknown and len(script.shared_with) <= 1:
             score += 3
             reasons.append("Only 1 person has access (personalization risk)")
 
@@ -374,7 +465,10 @@ class GASScanner:
 
         # Estimate dependent users from shared_with list
         dependent_users = max(0, len(script.shared_with) - 1)
-        has_backup_owner = len(script.shared_with) > 1
+        # On unknown sharing we cannot confirm the absence of a backup owner, so
+        # don't report one as missing (which would raise a false alarm in the
+        # personalization analyzer); only a known share list of >1 confirms one.
+        has_backup_owner = script.sharing_unknown or len(script.shared_with) > 1
 
         return GASRisk(
             script_id=script.id,

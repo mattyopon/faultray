@@ -36,6 +36,44 @@ from faultray.model.graph import InfraGraph
 
 logger = logging.getLogger(__name__)
 
+
+def _rfc3986_encode(value: str) -> str:
+    """Percent-encode *value* per Alibaba Cloud RPC signing (RFC3986).
+
+    ``urllib.parse.urlencode`` uses ``quote_plus`` which encodes spaces as
+    ``+`` and does not match the canonicalization Alibaba's signature
+    verification expects. The RPC spec requires spaces as ``%20`` and ``*``
+    as ``%2A`` while leaving ``~`` unescaped.
+    """
+    import urllib.parse
+
+    return (
+        urllib.parse.quote(str(value), safe="~")
+        .replace("+", "%20")
+        .replace("*", "%2A")
+    )
+
+
+def _build_rpc_signature(params: dict[str, str], secret: str) -> str:
+    """Build an Alibaba Cloud RPC HMAC-SHA1 signature for *params*.
+
+    The canonical query string is built with spec-compliant RFC3986
+    percent-encoding so the computed StringToSign matches the server's.
+    """
+    import base64
+    import hashlib
+    import hmac
+
+    canonical = "&".join(
+        f"{_rfc3986_encode(k)}={_rfc3986_encode(v)}"
+        for k, v in sorted(params.items())
+    )
+    string_to_sign = f"GET&%2F&{_rfc3986_encode(canonical)}"
+    key = f"{secret}&".encode()
+    digest = hmac.new(key, string_to_sign.encode(), hashlib.sha1).digest()
+    return base64.b64encode(digest).decode()
+
+
 # Mapping from Alibaba Cloud service to FaultRay ComponentType
 ALIBABA_TYPE_MAP: dict[str, ComponentType] = {
     "ecs": ComponentType.APP_SERVER,
@@ -413,21 +451,7 @@ class AlibabaScanner(CloudScannerBase):
             # Use direct HTTP call with HMAC-SHA1 signing via requests
             # This avoids requiring the separate redis SDK package
             # We construct a minimal Alibaba Cloud RPC API call
-            import hashlib
-            import hmac
-            import base64
-            import urllib.parse
             from datetime import datetime, timezone
-
-            def _sign_request(params: dict, secret: str) -> str:
-                sorted_params = sorted(params.items())
-                query = urllib.parse.urlencode([
-                    (k, v) for k, v in sorted_params
-                ])
-                string_to_sign = f"GET&%2F&{urllib.parse.quote(query, safe='')}"
-                key = f"{secret}&".encode()
-                digest = hmac.new(key, string_to_sign.encode(), hashlib.sha1).digest()
-                return base64.b64encode(digest).decode()
 
             timestamp = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
             import uuid
@@ -444,10 +468,16 @@ class AlibabaScanner(CloudScannerBase):
                 "PageNumber": "1",
                 "PageSize": "100",
             }
-            params["Signature"] = _sign_request(params, self.access_key_secret)
+            params["Signature"] = _build_rpc_signature(params, self.access_key_secret)
             url = "https://r-kvstore.aliyuncs.com/"
             resp = requests.get(url, params=params, timeout=30)
 
+            if resp.status_code != 200:
+                self._warnings.append(
+                    f"Alibaba Redis scan returned HTTP {resp.status_code}: "
+                    f"{resp.text[:200]}"
+                )
+                return
             if resp.status_code == 200:
                 data = resp.json()
                 instances = (
@@ -459,7 +489,8 @@ class AlibabaScanner(CloudScannerBase):
                     comp_id = f"alibaba-redis-{inst_id}"
 
                     host = inst.get("ConnectionDomain", "")
-                    port = int(inst.get("Port", 6379))
+                    port_val = inst.get("Port")
+                    port = int(port_val) if port_val is not None else 6379
                     vpc_id = inst.get("VpcId", "")
                     if vpc_id:
                         self._vpc_members.setdefault(vpc_id, []).append(comp_id)
@@ -514,8 +545,16 @@ class AlibabaScanner(CloudScannerBase):
                 "Date": date_str,
                 "Authorization": f"OSS {self.access_key_id}:{signature}",
             }
-            resp = requests.get("https://oss-cn-hangzhou.aliyuncs.com/", headers=headers, timeout=30)
+            resp = requests.get(
+                f"https://oss-{self.region}.aliyuncs.com/", headers=headers, timeout=30
+            )
 
+            if resp.status_code != 200:
+                self._warnings.append(
+                    f"Alibaba OSS scan returned HTTP {resp.status_code}: "
+                    f"{resp.text[:200]}"
+                )
+                return
             if resp.status_code == 200:
                 import defusedxml.ElementTree as ET
                 root = ET.fromstring(resp.text)
@@ -546,10 +585,6 @@ class AlibabaScanner(CloudScannerBase):
     def _scan_vpc(self, graph: InfraGraph) -> None:
         """Discover Alibaba Cloud VPCs (metadata only, for dependency context)."""
         try:
-            import hashlib
-            import hmac
-            import base64
-            import urllib.parse
             import uuid
             from datetime import datetime, timezone
 
@@ -569,16 +604,15 @@ class AlibabaScanner(CloudScannerBase):
                 "PageNumber": "1",
                 "PageSize": "100",
             }
-            sorted_params = sorted(params.items())
-            query = urllib.parse.urlencode(sorted_params)
-            string_to_sign = f"GET&%2F&{urllib.parse.quote(query, safe='')}"
-            key = f"{self.access_key_secret}&".encode()
-            sig = base64.b64encode(
-                hmac.new(key, string_to_sign.encode(), hashlib.sha1).digest()
-            ).decode()
-            params["Signature"] = sig
+            params["Signature"] = _build_rpc_signature(params, self.access_key_secret)
 
             resp = requests.get(f"https://vpc.{self.region}.aliyuncs.com/", params=params, timeout=30)
+            if resp.status_code != 200:
+                self._warnings.append(
+                    f"Alibaba VPC scan returned HTTP {resp.status_code}: "
+                    f"{resp.text[:200]}"
+                )
+                return
             if resp.status_code == 200:
                 pass  # VPC metadata used for dependency inference only; no components created
         except Exception as exc:

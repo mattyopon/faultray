@@ -5,6 +5,7 @@
 
 from __future__ import annotations
 
+import html
 from pathlib import Path
 from typing import TYPE_CHECKING
 
@@ -337,9 +338,14 @@ th {{ background: #f8f9fa; }}
 </div>
 """
 
+    # Known priority levels map to CSS class names; anything else falls back to
+    # a safe default so an attacker-controlled priority can't inject markup via
+    # the class attribute.
+    _priority_classes = {"critical", "high", "medium", "low"}
+
     for phase in plan.phases:
         html_content += f"""
-<h2>Phase {phase.phase_number}: {phase.name}</h2>
+<h2>Phase {phase.phase_number}: {html.escape(str(phase.name))}</h2>
 <p>{phase.estimated_weeks} weeks | Team of {phase.team_size} |
    Score: {phase.score_before:.1f} &rarr; {phase.score_after:.1f} |
    Cost: ${phase.phase_cost:,.0f}</p>
@@ -353,11 +359,13 @@ th {{ background: #f8f9fa; }}
                 if task.roi_percent != float("inf")
                 else "infinite"
             )
+            priority_class = task.priority if task.priority in _priority_classes else ""
             html_content += (
-                f"<tr><td>{task.id}</td>"
-                f"<td>{task.title}</td>"
-                f'<td class="{task.priority}">{task.priority.upper()}</td>'
-                f"<td>{task.required_role}</td>"
+                f"<tr><td>{html.escape(str(task.id))}</td>"
+                f"<td>{html.escape(str(task.title))}</td>"
+                f'<td class="{html.escape(str(priority_class), quote=True)}">'
+                f"{html.escape(str(task.priority).upper())}</td>"
+                f"<td>{html.escape(str(task.required_role))}</td>"
                 f"<td>{task.estimated_hours:.0f}</td>"
                 f"<td>${task.monthly_cost_increase:,.0f}</td>"
                 f"<td>{roi_display}</td></tr>\n"
@@ -457,104 +465,106 @@ def _build_yaml_from_answers(
     """Build a YAML infrastructure definition from quickstart answers."""
     import yaml
 
-    _TEMPLATES.get(template, _TEMPLATES["web-app"])
-
     # Start with template components and customize
     components: list[dict] = []
     dependencies: list[dict] = []
 
-    # Load balancer
-    if lb:
+    # The web-app layout is the default; microservices/data-pipeline rebuild
+    # the component list from scratch below, so only run this block when it
+    # will actually be used (avoids building components just to discard them).
+    if template not in ("microservices", "data-pipeline"):
+        # Load balancer
+        if lb:
+            components.append({
+                "id": "lb",
+                "name": "Load Balancer",
+                "type": "load_balancer",
+                "port": 443,
+                "replicas": 1,
+                "metrics": {"cpu_percent": 20, "memory_percent": 30},
+                "capacity": {"max_connections": 10000, "max_rps": 50000},
+            })
+
+        # API servers
         components.append({
-            "id": "lb",
-            "name": "Load Balancer",
-            "type": "load_balancer",
-            "port": 443,
-            "replicas": 1,
-            "metrics": {"cpu_percent": 20, "memory_percent": 30},
-            "capacity": {"max_connections": 10000, "max_rps": 50000},
-        })
-
-    # API servers
-    components.append({
-        "id": "app",
-        "name": "API Server",
-        "type": "app_server",
-        "port": 8080,
-        "replicas": api_replicas,
-        "metrics": {"cpu_percent": 40, "memory_percent": 50},
-        "capacity": {"max_connections": 1000},
-    })
-
-    if lb:
-        dependencies.append({"source": "lb", "target": "app", "type": "requires"})
-
-    # Database
-    if database and database.lower() != "none":
-        db_key = database.lower()
-        db_port = _DB_PORTS.get(db_key, 5432)
-        db_name = _DB_NAMES.get(db_key, database)
-        components.append({
-            "id": "db",
-            "name": db_name,
-            "type": "database",
-            "port": db_port,
-            "replicas": 1,
-            "metrics": {"cpu_percent": 35, "memory_percent": 60},
-            "capacity": {"max_connections": 200},
-        })
-        dependencies.append({"source": "app", "target": "db", "type": "requires"})
-
-    # Cache
-    if cache:
-        components.append({
-            "id": "cache",
-            "name": "Redis Cache",
-            "type": "cache",
-            "port": 6379,
-            "replicas": 1,
-            "metrics": {"cpu_percent": 15, "memory_percent": 45},
-            "capacity": {"max_connections": 10000},
-        })
-        dependencies.append({"source": "app", "target": "cache", "type": "optional"})
-
-    # Message queue
-    if queue and queue.lower() != "none":
-        queue_name = queue
-        queue_port = 5672
-        if queue.lower() == "kafka":
-            queue_port = 9092
-        elif queue.lower() == "sqs":
-            queue_port = 443
-            queue_name = "SQS"
-        elif queue.lower() == "rabbitmq":
-            queue_port = 5672
-            queue_name = "RabbitMQ"
-
-        components.append({
-            "id": "queue",
-            "name": queue_name,
-            "type": "queue",
-            "port": queue_port,
-            "replicas": 1,
-            "metrics": {"cpu_percent": 20, "memory_percent": 40},
+            "id": "app",
+            "name": "API Server",
+            "type": "app_server",
+            "port": 8080,
+            "replicas": api_replicas,
+            "metrics": {"cpu_percent": 40, "memory_percent": 50},
             "capacity": {"max_connections": 1000},
         })
-        dependencies.append({"source": "app", "target": "queue", "type": "async"})
 
-    # CDN
-    if cdn:
-        components.append({
-            "id": "cdn",
-            "name": "CloudFront CDN",
-            "type": "load_balancer",
-            "port": 443,
-            "replicas": 1,
-            "metrics": {"cpu_percent": 5, "memory_percent": 10},
-            "capacity": {"max_connections": 100000},
-        })
-        target = "lb" if lb else "app"
-        dependencies.append({"source": "cdn", "target": target, "type": "requires"})
+        if lb:
+            dependencies.append({"source": "lb", "target": "app", "type": "requires"})
+
+        # Database
+        if database and database.lower() != "none":
+            db_key = database.lower()
+            db_port = _DB_PORTS.get(db_key, 5432)
+            db_name = _DB_NAMES.get(db_key, database)
+            components.append({
+                "id": "db",
+                "name": db_name,
+                "type": "database",
+                "port": db_port,
+                "replicas": 1,
+                "metrics": {"cpu_percent": 35, "memory_percent": 60},
+                "capacity": {"max_connections": 200},
+            })
+            dependencies.append({"source": "app", "target": "db", "type": "requires"})
+
+        # Cache
+        if cache:
+            components.append({
+                "id": "cache",
+                "name": "Redis Cache",
+                "type": "cache",
+                "port": 6379,
+                "replicas": 1,
+                "metrics": {"cpu_percent": 15, "memory_percent": 45},
+                "capacity": {"max_connections": 10000},
+            })
+            dependencies.append({"source": "app", "target": "cache", "type": "optional"})
+
+        # Message queue
+        if queue and queue.lower() != "none":
+            queue_name = queue
+            queue_port = 5672
+            if queue.lower() == "kafka":
+                queue_port = 9092
+            elif queue.lower() == "sqs":
+                queue_port = 443
+                queue_name = "SQS"
+            elif queue.lower() == "rabbitmq":
+                queue_port = 5672
+                queue_name = "RabbitMQ"
+
+            components.append({
+                "id": "queue",
+                "name": queue_name,
+                "type": "queue",
+                "port": queue_port,
+                "replicas": 1,
+                "metrics": {"cpu_percent": 20, "memory_percent": 40},
+                "capacity": {"max_connections": 1000},
+            })
+            dependencies.append({"source": "app", "target": "queue", "type": "async"})
+
+        # CDN
+        if cdn:
+            components.append({
+                "id": "cdn",
+                "name": "CloudFront CDN",
+                "type": "load_balancer",
+                "port": 443,
+                "replicas": 1,
+                "metrics": {"cpu_percent": 5, "memory_percent": 10},
+                "capacity": {"max_connections": 100000},
+            })
+            target = "lb" if lb else "app"
+            dependencies.append({"source": "cdn", "target": target, "type": "requires"})
 
     # For microservices template, add extra services
     if template == "microservices":
@@ -766,6 +776,8 @@ def quickstart(
     if is_non_interactive:
         # Non-interactive mode
         selected_template = template if template in _TEMPLATES else "web-app"
+        if api_replicas is not None and api_replicas < 1:
+            raise typer.BadParameter("api_replicas must be >= 1")
         selected_replicas = api_replicas if api_replicas is not None else 2
         selected_db = database if database else "postgres"
         use_cache = cache is not None and cache.lower() != "none"
@@ -830,6 +842,7 @@ def quickstart(
         lb=use_lb if selected_template != "data-pipeline" else False,
     )
 
+    output.parent.mkdir(parents=True, exist_ok=True)
     output.write_text(yaml_content, encoding="utf-8")
 
     # Load and simulate
@@ -850,7 +863,10 @@ def quickstart(
 
     # Quick report
     v2 = graph.resilience_score_v2()
-    score = v2["score"]
+    score = v2.get("score")
+    if score is None:
+        console.print("[red]Resilience score unavailable for this model.[/]")
+        raise typer.Exit(1)
     critical = len(sim_report.critical_findings)
     warnings = len(sim_report.warnings)
 

@@ -21,19 +21,19 @@ def velocity(
         help="Path to YAML/JSON infrastructure model file.",
     ),
     deploys_per_week: float = typer.Option(
-        10.0, "--deploys-per-week", "-d",
+        10.0, "--deploys-per-week", "-d", min=0,
         help="Number of deployments per week.",
     ),
     cfr: float = typer.Option(
-        5.0, "--cfr",
+        5.0, "--cfr", min=0, max=100,
         help="Change failure rate (percentage of deploys causing incidents).",
     ),
     mttr: float = typer.Option(
-        60.0, "--mttr",
+        60.0, "--mttr", min=0,
         help="Mean time to recovery in minutes.",
     ),
     lead_time: float = typer.Option(
-        24.0, "--lead-time",
+        24.0, "--lead-time", min=0,
         help="Lead time from commit to production in hours.",
     ),
     sweep: bool = typer.Option(

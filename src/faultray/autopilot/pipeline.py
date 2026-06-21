@@ -141,8 +141,20 @@ class AutopilotPipeline:
             return
 
         output_dir.mkdir(parents=True, exist_ok=True)
+        base = output_dir.resolve()
         for filename, content in result.terraform.files.items():
-            filepath = output_dir / filename
+            # Guard against path traversal / arbitrary file write: reject
+            # absolute paths and any filename whose resolved location escapes
+            # output_dir (e.g. '/etc/passwd', '../../foo.tf').
+            candidate = Path(filename)
+            if candidate.is_absolute():
+                raise ValueError(f"Unsafe Terraform filename (absolute path): {filename!r}")
+            filepath = (base / candidate).resolve()
+            if filepath != base and base not in filepath.parents:
+                raise ValueError(
+                    f"Unsafe Terraform filename escapes output directory: {filename!r}"
+                )
+            filepath.parent.mkdir(parents=True, exist_ok=True)
             filepath.write_text(content, encoding="utf-8")
             logger.info("Written: %s", filepath)
 

@@ -83,14 +83,83 @@ class K8sScanner(CloudScannerBase):
         # and to distinguish front-end (80/443) vs back-end ports for
         # east/west HTTP-tier dependency inference.
         self._service_ports: dict[str, int] = {}
+        # Service namespace tracking: svc_comp_id -> namespace. Stored from the
+        # Service's real metadata so namespace lookups never rely on splitting
+        # the synthetic svc_comp_id (which breaks for hyphenated namespaces like
+        # "prod-us": "svc-prod-us-api".split("-", 2)[1] == "prod", not "prod-us").
+        self._service_namespaces: dict[str, str] = {}
+        # Ingress namespace tracking: ingress comp_id -> namespace. Stored from
+        # the Ingress's real metadata so namespace lookups never rely on
+        # splitting the synthetic "ingress-{namespace}-{name}" id (which breaks
+        # for hyphenated namespaces like "prod-us").
+        self._ingress_namespaces: dict[str, str] = {}
         # Deployment/StatefulSet label tracking: comp_id -> labels
         self._workload_labels: dict[str, dict[str, str]] = {}
+        # Deployment/StatefulSet namespace tracking: comp_id -> namespace.
+        # Stored from the workload's real metadata so namespace lookups never
+        # rely on splitting the synthetic comp_id (which breaks for hyphenated
+        # namespaces like "prod-us").
+        self._workload_namespaces: dict[str, str] = {}
         # HPA targets: comp_id -> AutoScalingConfig
         self._hpa_configs: dict[str, AutoScalingConfig] = {}
         # PDB tracking: comp_id -> (min_available, max_unavailable)
         self._pdb_configs: dict[str, dict] = {}
         # Network policy tracking: comp_id -> has network policy
         self._network_policies: set[str] = set()
+
+    def _workload_namespace(self, comp_id: str) -> str:
+        """Return the namespace for a workload component id.
+
+        Prefers the namespace captured from the workload's real Kubernetes
+        metadata at scan time (``self._workload_namespaces``). This is
+        authoritative and, crucially, correct for hyphenated namespaces: the
+        synthetic comp_id ``{kind}-{namespace}-{name}`` cannot be reliably split
+        on hyphens because both the namespace and the name may contain hyphens
+        (e.g. ``deploy-prod-us-api`` is ambiguous between ns ``prod-us``/name
+        ``api`` and ns ``prod``/name ``us-api``).
+
+        Falls back to splitting the comp_id only when the namespace was not
+        recorded (best-effort for code paths that populate labels without the
+        namespace map). Returns ``""`` when it cannot be determined.
+        """
+        ns = self._workload_namespaces.get(comp_id)
+        if ns is not None:
+            return ns
+        parts = comp_id.split("-", 2)
+        return parts[1] if len(parts) >= 3 else ""
+
+    def _service_namespace(self, svc_comp_id: str) -> str:
+        """Return the namespace for a Service component id.
+
+        Prefers the namespace captured from the Service's real Kubernetes
+        metadata at scan time (``self._service_namespaces``). This is correct
+        for hyphenated namespaces, where splitting the synthetic
+        ``svc-{namespace}-{name}`` id on hyphens is ambiguous (e.g.
+        ``svc-prod-us-api`` could be ns ``prod-us``/name ``api`` or ns
+        ``prod``/name ``us-api``). Falls back to splitting only when the
+        namespace was not recorded; returns ``""`` when undeterminable.
+        """
+        ns = self._service_namespaces.get(svc_comp_id)
+        if ns is not None:
+            return ns
+        parts = svc_comp_id.split("-", 2)
+        return parts[1] if len(parts) >= 3 else ""
+
+    def _ingress_namespace(self, ingress_comp_id: str) -> str:
+        """Return the namespace for an Ingress component id.
+
+        Prefers the namespace captured from the Ingress's real Kubernetes
+        metadata at scan time (``self._ingress_namespaces``), which is correct
+        for hyphenated namespaces where splitting the synthetic
+        ``ingress-{namespace}-{name}`` id on hyphens is ambiguous. Falls back to
+        splitting only when the namespace was not recorded; returns ``""`` when
+        undeterminable.
+        """
+        ns = self._ingress_namespaces.get(ingress_comp_id)
+        if ns is not None:
+            return ns
+        parts = ingress_comp_id.split("-", 2)
+        return parts[1] if len(parts) >= 3 else ""
 
     def _get_api_client(self):
         """Create a kubernetes API client."""
@@ -178,6 +247,7 @@ class K8sScanner(CloudScannerBase):
                     selector_labels = dict(deploy.spec.selector.match_labels)
 
                 self._workload_labels[comp_id] = {**labels, **selector_labels}
+                self._workload_namespaces[comp_id] = ns
 
                 # Determine component type
                 comp_type = ComponentType.DATABASE if _looks_like_database(name, labels) else ComponentType.APP_SERVER
@@ -217,6 +287,7 @@ class K8sScanner(CloudScannerBase):
                     selector_labels = dict(sts.spec.selector.match_labels)
 
                 self._workload_labels[comp_id] = {**labels, **selector_labels}
+                self._workload_namespaces[comp_id] = ns
 
                 # StatefulSets are often databases; heuristic based on name/labels
                 comp_type = ComponentType.DATABASE if _looks_like_database(name, labels) else ComponentType.APP_SERVER
@@ -258,6 +329,7 @@ class K8sScanner(CloudScannerBase):
                 selector = dict(svc.spec.selector or {}) if svc.spec.selector else {}
                 svc_comp_id = f"svc-{ns}-{name}"
                 self._service_selectors[svc_comp_id] = selector
+                self._service_namespaces[svc_comp_id] = ns
 
                 # Capture the first exposed port so _infer_dependencies can
                 # (1) attach it to the generated edge and
@@ -283,6 +355,7 @@ class K8sScanner(CloudScannerBase):
                 name = ingress.metadata.name
                 ns = ingress.metadata.namespace or "default"
                 comp_id = f"ingress-{ns}-{name}"
+                self._ingress_namespaces[comp_id] = ns
 
                 # Extract host
                 host = ""
@@ -318,6 +391,7 @@ class K8sScanner(CloudScannerBase):
                                     svc_comp_id = f"svc-{ns}-{backend_svc_name}"
                                     # Store for later dependency resolution
                                     self._service_selectors.setdefault(svc_comp_id, {})
+                                    self._service_namespaces.setdefault(svc_comp_id, ns)
         except Exception as exc:
             self._warnings.append(f"Ingress scan error: {exc}")
 
@@ -384,6 +458,7 @@ class K8sScanner(CloudScannerBase):
                 pdbs = policy_v1.list_pod_disruption_budget_for_all_namespaces()
 
             for pdb in pdbs.items:
+                pdb_ns = pdb.metadata.namespace or "default"
                 selector = dict(pdb.spec.selector.match_labels or {}) if pdb.spec.selector and pdb.spec.selector.match_labels else {}
 
                 min_available = None
@@ -393,9 +468,13 @@ class K8sScanner(CloudScannerBase):
                 if pdb.spec.max_unavailable is not None:
                     max_unavailable = pdb.spec.max_unavailable
 
-                # Match PDB to workloads by label selector
+                # Match PDB to workloads by label selector. PDBs are
+                # namespace-scoped, so only match workloads in the PDB's
+                # namespace.
                 for comp_id, labels in self._workload_labels.items():
                     if not selector:
+                        continue
+                    if self._workload_namespace(comp_id) != pdb_ns:
                         continue
                     # Check if all PDB selector labels exist in workload labels
                     if all(labels.get(k) == v for k, v in selector.items()):
@@ -421,8 +500,12 @@ class K8sScanner(CloudScannerBase):
                 ns = policy.metadata.namespace or "default"
                 selector = dict(policy.spec.pod_selector.match_labels or {}) if policy.spec.pod_selector and policy.spec.pod_selector.match_labels else {}
 
-                # Match network policy to workloads by label selector
+                # Match network policy to workloads by label selector.
+                # NetworkPolicies are namespace-scoped: a workload must be in
+                # the policy's namespace to be affected.
                 for comp_id, labels in self._workload_labels.items():
+                    if self._workload_namespace(comp_id) != ns:
+                        continue
                     if not selector:
                         # Empty selector matches all pods in namespace
                         if f"namespace:{ns}" in graph.components.get(comp_id, Component(id="", name="", type=ComponentType.APP_SERVER)).tags:
@@ -508,27 +591,37 @@ class K8sScanner(CloudScannerBase):
             if not selector:
                 continue
 
-            # Find workloads matching this service's selector
+            # Derive the service namespace from the recorded metadata (not by
+            # splitting the synthetic svc_comp_id), so hyphenated namespaces like
+            # "prod-us" match their workloads instead of being truncated to
+            # "prod" and dropping every Service↔Deployment edge.
+            svc_ns = self._service_namespace(svc_comp_id)
+            if not svc_ns:
+                continue
+            svc_port = self._service_ports.get(svc_comp_id, 0)
+
+            # Find workloads matching this service's selector. Service selectors
+            # are namespace-scoped, so only workloads in the Service's namespace
+            # may match — otherwise identically-labelled workloads elsewhere
+            # would get spurious dependency edges.
             matching_workloads = []
             for comp_id, labels in self._workload_labels.items():
                 if comp_id not in graph.components:
                     continue
+                if self._workload_namespace(comp_id) != svc_ns:
+                    continue
                 if all(labels.get(k) == v for k, v in selector.items()):
                     matching_workloads.append(comp_id)
-
-            # Extract service namespace from svc_comp_id: "svc-{ns}-{name}"
-            parts = svc_comp_id.split("-", 2)
-            if len(parts) < 3:
-                continue
-            svc_ns = parts[1]
-            svc_port = self._service_ports.get(svc_comp_id, 0)
 
             # Rule 1 — Ingress → matching workloads
             for comp_id in graph.components:
                 if not comp_id.startswith("ingress-"):
                     continue
-                # Check if ingress is in the same namespace
-                ingress_ns = comp_id.split("-", 2)[1] if len(comp_id.split("-", 2)) > 1 else ""
+                # Check if ingress is in the same namespace. Use the recorded
+                # Ingress namespace so hyphenated namespaces (e.g. "prod-us")
+                # match instead of being truncated to "prod" by splitting the
+                # synthetic comp_id, which would drop every Ingress→workload edge.
+                ingress_ns = self._ingress_namespace(comp_id)
                 if ingress_ns != svc_ns:
                     continue
 
@@ -555,8 +648,10 @@ class K8sScanner(CloudScannerBase):
                 if other_comp_id not in self._workload_labels:
                     continue
 
-                # Same namespace heuristic
-                other_ns = other_comp_id.split("-", 2)[1] if len(other_comp_id.split("-", 2)) > 1 else ""
+                # Same namespace heuristic. Use the recorded workload namespace
+                # so hyphenated namespaces are compared correctly (the synthetic
+                # comp_id cannot be reliably split on hyphens).
+                other_ns = self._workload_namespace(other_comp_id)
                 if other_ns != svc_ns:
                     continue
 

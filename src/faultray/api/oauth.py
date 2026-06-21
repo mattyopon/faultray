@@ -101,6 +101,10 @@ GOOGLE_AUTHORIZE_URL = "https://accounts.google.com/o/oauth2/v2/auth"
 GOOGLE_TOKEN_URL = "https://oauth2.googleapis.com/token"
 GOOGLE_USER_URL = "https://www.googleapis.com/oauth2/v2/userinfo"
 
+# Explicit timeout for all outbound provider calls so a stalled provider cannot
+# tie up server workers indefinitely.
+_HTTP_TIMEOUT = httpx.Timeout(10.0)
+
 
 # ---------------------------------------------------------------------------
 # Configuration
@@ -119,20 +123,17 @@ class OAuthConfig:
     def from_env(cls, provider: str) -> Optional["OAuthConfig"]:
         """Build config from ``FAULTRAY_OAUTH_{PROVIDER}_*`` env vars.
 
-        Falls back to legacy ``FAULTRAY_OAUTH_*`` then ``FAULTRAY_OAUTH_*`` for
-        backward compatibility.
-
         Returns ``None`` when the required ``CLIENT_ID`` / ``CLIENT_SECRET``
         variables are not set.
         """
-        new_prefix = f"FAULTRAY_OAUTH_{provider.upper()}"
-        mid_prefix = f"FAULTRAY_OAUTH_{provider.upper()}"
-        old_prefix = f"FAULTRAY_OAUTH_{provider.upper()}"
-        client_id = os.getenv(f"{new_prefix}_CLIENT_ID", os.getenv(f"{mid_prefix}_CLIENT_ID", os.getenv(f"{old_prefix}_CLIENT_ID")))
-        client_secret = os.getenv(f"{new_prefix}_CLIENT_SECRET", os.getenv(f"{mid_prefix}_CLIENT_SECRET", os.getenv(f"{old_prefix}_CLIENT_SECRET")))
+        # NOTE: a previous "legacy prefix" fallback chain read three *identical*
+        # prefixes, so it never actually supported any older variable name. The
+        # dead chain has been removed; only the documented prefix is consulted.
+        prefix = f"FAULTRAY_OAUTH_{provider.upper()}"
+        client_id = os.getenv(f"{prefix}_CLIENT_ID")
+        client_secret = os.getenv(f"{prefix}_CLIENT_SECRET")
         redirect_uri = os.getenv(
-            f"{new_prefix}_REDIRECT_URI",
-            os.getenv(f"{mid_prefix}_REDIRECT_URI", os.getenv(f"{old_prefix}_REDIRECT_URI", "http://localhost:8000/auth/callback")),
+            f"{prefix}_REDIRECT_URI", "http://localhost:8000/auth/callback"
         )
         if client_id and client_secret:
             return cls(
@@ -156,29 +157,64 @@ def generate_oauth_url(config: OAuthConfig, state: str | None = None) -> str:
     if state is None:
         state = secrets.token_urlsafe(32)
 
+    from urllib.parse import urlencode
+
+    # Percent-encode every parameter so a value containing reserved characters
+    # ('&', '=', '#', ...) in client_id / redirect_uri / state cannot inject or
+    # override other OAuth parameters. ``safe=':'`` keeps the ':' in the fixed
+    # ``user:email`` scope literal (and is harmless for the other values).
     if config.provider == "github":
-        return (
-            f"{GITHUB_AUTHORIZE_URL}"
-            f"?client_id={config.client_id}"
-            f"&redirect_uri={config.redirect_uri}"
-            f"&scope=user:email"
-            f"&state={state}"
+        params = urlencode(
+            {
+                "client_id": config.client_id,
+                "redirect_uri": config.redirect_uri,
+                "scope": "user:email",
+                "state": state,
+            },
+            safe=":",
         )
+        return f"{GITHUB_AUTHORIZE_URL}?{params}"
     elif config.provider == "google":
-        return (
-            f"{GOOGLE_AUTHORIZE_URL}"
-            f"?client_id={config.client_id}"
-            f"&redirect_uri={config.redirect_uri}"
-            f"&response_type=code"
-            f"&scope=email+profile"
-            f"&state={state}"
+        params = urlencode(
+            {
+                "client_id": config.client_id,
+                "redirect_uri": config.redirect_uri,
+                "response_type": "code",
+                "scope": "email profile",
+                "state": state,
+            },
+            safe=":",
         )
+        return f"{GOOGLE_AUTHORIZE_URL}?{params}"
     return ""
 
 
 # ---------------------------------------------------------------------------
 # Token exchange helpers
 # ---------------------------------------------------------------------------
+
+def _parse_token_response(resp: "httpx.Response", provider_label: str) -> dict:
+    """Validate an OAuth token-endpoint response and return the parsed JSON.
+
+    Checks the HTTP status first and guards against non-JSON bodies (provider
+    error pages), converting any failure into a clear ``RuntimeError`` instead
+    of letting an opaque ``JSONDecodeError`` escape.
+    """
+    import json as _json
+
+    try:
+        resp.raise_for_status()
+    except httpx.HTTPError as exc:
+        raise RuntimeError(
+            f"{provider_label} token exchange HTTP error: {exc}"
+        ) from exc
+    try:
+        return resp.json()
+    except (ValueError, _json.JSONDecodeError) as exc:
+        raise RuntimeError(
+            f"{provider_label} token exchange returned a non-JSON response"
+        ) from exc
+
 
 async def exchange_code_for_token(config: OAuthConfig, code: str) -> str:
     """Exchange an authorization *code* for an access token.
@@ -188,7 +224,7 @@ async def exchange_code_for_token(config: OAuthConfig, code: str) -> str:
     Raises ``RuntimeError`` on failure.
     """
     if config.provider == "github":
-        async with httpx.AsyncClient() as client:
+        async with httpx.AsyncClient(timeout=_HTTP_TIMEOUT) as client:
             resp = await client.post(
                 GITHUB_TOKEN_URL,
                 data={
@@ -199,14 +235,14 @@ async def exchange_code_for_token(config: OAuthConfig, code: str) -> str:
                 },
                 headers={"Accept": "application/json"},
             )
-            data = resp.json()
+            data = _parse_token_response(resp, "GitHub")
             token = data.get("access_token")
             if not token:
                 raise RuntimeError(f"GitHub token exchange failed: {data}")
             return token
 
     elif config.provider == "google":
-        async with httpx.AsyncClient() as client:
+        async with httpx.AsyncClient(timeout=_HTTP_TIMEOUT) as client:
             resp = await client.post(
                 GOOGLE_TOKEN_URL,
                 data={
@@ -217,7 +253,7 @@ async def exchange_code_for_token(config: OAuthConfig, code: str) -> str:
                     "redirect_uri": config.redirect_uri,
                 },
             )
-            data = resp.json()
+            data = _parse_token_response(resp, "Google")
             token = data.get("access_token")
             if not token:
                 raise RuntimeError(f"Google token exchange failed: {data}")
@@ -232,7 +268,7 @@ async def exchange_code_for_token(config: OAuthConfig, code: str) -> str:
 
 async def get_github_user(access_token: str) -> dict:
     """Fetch the authenticated GitHub user profile."""
-    async with httpx.AsyncClient() as client:
+    async with httpx.AsyncClient(timeout=_HTTP_TIMEOUT) as client:
         resp = await client.get(
             GITHUB_USER_URL,
             headers={"Authorization": f"Bearer {access_token}"},
@@ -243,7 +279,7 @@ async def get_github_user(access_token: str) -> dict:
 
 async def get_google_user(access_token: str) -> dict:
     """Fetch the authenticated Google user profile."""
-    async with httpx.AsyncClient() as client:
+    async with httpx.AsyncClient(timeout=_HTTP_TIMEOUT) as client:
         resp = await client.get(
             GOOGLE_USER_URL,
             headers={"Authorization": f"Bearer {access_token}"},
@@ -266,7 +302,7 @@ async def get_user_profile(config: OAuthConfig, access_token: str) -> dict:
         if not email:
             # Fetch primary verified email from GitHub API
             try:
-                async with httpx.AsyncClient() as client:
+                async with httpx.AsyncClient(timeout=_HTTP_TIMEOUT) as client:
                     emails_resp = await client.get(
                         "https://api.github.com/user/emails",
                         headers={"Authorization": f"Bearer {access_token}"},
@@ -317,60 +353,102 @@ async def get_or_create_oauth_user(
     email: str,
     name: str,
     avatar_url: str = "",
+    email_verified: bool = False,
 ) -> tuple[Any, str]:
     """Find or create a user via OAuth, then return ``(user, jwt_token)``.
 
-    If a user with the same email already exists, link the OAuth provider
-    to the existing account. Otherwise, create a new user with a random
-    API key.
+    Lookup is by the stable provider identity ``(oauth_provider, oauth_id)``
+    FIRST. Linking to an existing *local* account that shares the email is the
+    classic pre-account-takeover (nOAuth) lever, so it is only performed when
+    the provider asserts the email is verified (``email_verified is True``) and
+    the existing account does not already carry a *different* provider identity.
+
+    New-account creation likewise requires a verified email; we never mint an
+    account from an unverified or empty provider email.
+
+    Raises ``ValueError`` when the request cannot be satisfied safely (the
+    callers translate this into an OAuth failure response).
     """
     from faultray.api.auth import hash_api_key, generate_api_key
     from faultray.api.database import UserRow, get_session_factory
     from sqlalchemy import select
 
+    if not oauth_id:
+        raise ValueError("Missing provider account id")
+
     sf = get_session_factory()
     async with sf() as session:
-        # Try by email first
+        # 1. Match on the stable provider identity first.
         result = await session.execute(
-            select(UserRow).where(UserRow.email == email)
+            select(UserRow).where(
+                UserRow.oauth_provider == provider,
+                UserRow.oauth_id == oauth_id,
+            )
         )
         user = result.scalar_one_or_none()
 
-        if user is None:
-            # Try by OAuth ID
-            result = await session.execute(
-                select(UserRow).where(
-                    UserRow.oauth_provider == provider,
-                    UserRow.oauth_id == oauth_id,
-                )
-            )
-            user = result.scalar_one_or_none()
-
-        if user is None:
-            api_key = generate_api_key()
-            user = UserRow(
-                email=email,
-                name=name,
-                api_key_hash=hash_api_key(api_key),
-                role="editor",
-                oauth_provider=provider,
-                oauth_id=oauth_id,
-                avatar_url=avatar_url,
-                tier="free",
-            )
-            session.add(user)
-            await session.commit()
-            await session.refresh(user)
-            logger.info("Created new OAuth user: %s (%s)", email, provider)
-        else:
-            # Update OAuth info if missing
-            if not user.oauth_provider:
-                user.oauth_provider = provider
-                user.oauth_id = oauth_id
+        if user is not None:
+            # Known identity: refresh mutable profile fields and sign in.
             if avatar_url:
                 user.avatar_url = avatar_url
             await session.commit()
             await session.refresh(user)
+        else:
+            # 2. No identity match. Consider linking to an existing local
+            #    account by email ONLY when the email is provider-verified.
+            existing_by_email = None
+            if email:
+                result = await session.execute(
+                    select(UserRow).where(UserRow.email == email)
+                )
+                existing_by_email = result.scalar_one_or_none()
+
+            if existing_by_email is not None:
+                if not email_verified:
+                    # Unverified email matching an existing account -> refuse to
+                    # auto-link (would let an attacker take over the account).
+                    raise ValueError(
+                        "Email is not verified by the provider; cannot link to "
+                        "an existing account"
+                    )
+                if existing_by_email.oauth_provider and (
+                    existing_by_email.oauth_provider != provider
+                    or existing_by_email.oauth_id != oauth_id
+                ):
+                    # Account is already bound to a different provider identity;
+                    # do not silently rebind it to this one.
+                    raise ValueError(
+                        "Account is already linked to a different OAuth identity"
+                    )
+                # Safe to link the verified email to this provider identity.
+                user = existing_by_email
+                user.oauth_provider = provider
+                user.oauth_id = oauth_id
+                if avatar_url:
+                    user.avatar_url = avatar_url
+                await session.commit()
+                await session.refresh(user)
+            else:
+                # 3. Brand-new account. Require a verified, non-empty email.
+                if not email or not email_verified:
+                    raise ValueError(
+                        "A verified email is required to create an account"
+                    )
+                api_key = generate_api_key()
+                user = UserRow(
+                    email=email,
+                    name=name,
+                    api_key_hash=hash_api_key(api_key),
+                    role="editor",
+                    oauth_provider=provider,
+                    oauth_id=oauth_id,
+                    avatar_url=avatar_url,
+                    tier="free",
+                )
+                session.add(user)
+                await session.commit()
+                await session.refresh(user)
+                logger.info("Created new OAuth user: %s (%s)", email, provider)
 
         token = create_jwt({
             "sub": str(user.id),

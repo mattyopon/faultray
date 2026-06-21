@@ -47,7 +47,7 @@ def score_explain(
     """
     from faultray.simulator.score_decomposition import ScoreDecomposer
 
-    graph = _load_graph_for_analysis(model, model)
+    graph = _load_graph_for_analysis(model, None)
     decomposer = ScoreDecomposer()
     decomposition = decomposer.decompose(graph)
 

@@ -178,7 +178,7 @@ async def load_demo(request: Request):
 # ---------------------------------------------------------------------------
 
 @router.get("/api/dashboard/summary", response_class=JSONResponse)
-async def dashboard_summary():
+async def dashboard_summary(_user=Depends(_require_permission("view_dashboard"))):
     """Aggregated dashboard data for the enhanced V2 dashboard."""
     graph = get_graph()
     summary = graph.summary()
@@ -339,7 +339,9 @@ async def api_score_history(
 # ---------------------------------------------------------------------------
 
 @router.get("/htmx/score-cards", response_class=HTMLResponse)
-async def htmx_score_cards(request: Request):
+async def htmx_score_cards(
+    request: Request, _user=Depends(_require_permission("view_results"))
+):
     """Dashboard score-card HTML fragment (htmx partial)."""
     graph = get_graph()
     summary = graph.summary()
@@ -356,7 +358,9 @@ async def htmx_score_cards(request: Request):
 
 
 @router.get("/htmx/risk-table", response_class=HTMLResponse)
-async def htmx_risk_table(request: Request):
+async def htmx_risk_table(
+    request: Request, _user=Depends(_require_permission("view_results"))
+):
     """Risk table HTML fragment (htmx partial)."""
     _last_report = get_last_report()
     report_data = None
@@ -451,7 +455,9 @@ async def get_badge_markdown(base_url: str = "http://localhost:8000"):
 # ---------------------------------------------------------------------------
 
 @router.get("/reports", response_class=HTMLResponse)
-async def reports_page(request: Request):
+async def reports_page(
+    request: Request, _user=Depends(_require_permission("view_results"))
+):
     _last_report = get_last_report()
     return templates.TemplateResponse(request, "reports.html", {
         "has_data": _last_report is not None,
@@ -459,8 +465,16 @@ async def reports_page(request: Request):
 
 
 @router.get("/report/executive", response_class=HTMLResponse)
-async def executive_report(company_name: str = "Your Organization"):
-    """Generate executive report (printable HTML)."""
+async def executive_report(
+    company_name: str = "Your Organization",
+    _user=Depends(_require_permission("view_results")),
+):
+    """Generate executive report (printable HTML).
+
+    Requires authentication: when no cached report exists this runs a full
+    simulation + AI analysis + report generation, which is expensive, so it
+    must not be reachable by unauthenticated callers (DoS vector).
+    """
     graph = get_graph()
     if not graph.components:
         return HTMLResponse(

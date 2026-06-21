@@ -6,6 +6,7 @@
 from __future__ import annotations
 
 from pathlib import Path
+from typing import Optional
 
 import typer
 from rich.panel import Panel
@@ -16,15 +17,15 @@ from faultray.cli.main import app, console
 
 @app.command("compare-envs")
 def compare_envs(
-    prod: Path = typer.Option(
+    prod: Optional[Path] = typer.Option(
         None, "--prod",
         help="Path to production YAML model.",
     ),
-    staging: Path = typer.Option(
+    staging: Optional[Path] = typer.Option(
         None, "--staging",
         help="Path to staging YAML model.",
     ),
-    dev: Path = typer.Option(
+    dev: Optional[Path] = typer.Option(
         None, "--dev",
         help="Path to dev YAML model.",
     ),
@@ -69,9 +70,15 @@ def compare_envs(
         )
         raise typer.Exit(1)
 
+    if not 0.0 <= tolerance <= 100.0:
+        console.print(
+            f"[red]--tolerance must be between 0 and 100 (got {tolerance}).[/]"
+        )
+        raise typer.Exit(1)
+
     # Validate paths
     for name, path in env_configs.items():
-        if not path.exists():
+        if not path.is_file():
             console.print(f"[red]File not found for {name}: {path}[/]")
             raise typer.Exit(1)
 

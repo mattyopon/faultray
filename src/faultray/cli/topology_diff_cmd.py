@@ -9,6 +9,7 @@ import json as json_mod
 from pathlib import Path
 
 import typer
+import yaml
 from rich.panel import Panel
 from rich.table import Table
 
@@ -20,7 +21,7 @@ def topo_diff_command(
     before: Path = typer.Argument(..., help="Path to the 'before' YAML topology file"),
     after: Path = typer.Argument(..., help="Path to the 'after' YAML topology file"),
     html: bool = typer.Option(False, "--html", help="Generate HTML report"),
-    output: Path = typer.Option(None, "--output", "-o", help="Output file path (for HTML/JSON)"),
+    output: Path | None = typer.Option(None, "--output", "-o", help="Output file path (for HTML/JSON)"),
     mermaid: bool = typer.Option(False, "--mermaid", help="Output Mermaid diagram"),
     json_output: bool = typer.Option(False, "--json", help="Output JSON summary"),
 ) -> None:
@@ -52,13 +53,21 @@ def topo_diff_command(
     from faultray.reporter.topology_diff import TopologyDiffer
 
     differ = TopologyDiffer()
-    result = differ.diff_files(before, after)
+    try:
+        result = differ.diff_files(before, after)
+    except (OSError, ValueError, yaml.YAMLError, json_mod.JSONDecodeError, KeyError) as exc:
+        console.print(f"[red]Failed to diff topologies: {exc}[/]")
+        raise typer.Exit(1)
 
     # JSON output
     if json_output:
         data = result.to_dict()
         if output:
-            output.write_text(json_mod.dumps(data, indent=2, default=str))
+            try:
+                output.write_text(json_mod.dumps(data, indent=2, default=str), encoding="utf-8")
+            except OSError as exc:
+                console.print(f"[red]Failed to write {output}: {exc}[/]")
+                raise typer.Exit(1)
             console.print(f"[green]JSON written to {output}[/]")
         else:
             console.print_json(data=data)
@@ -68,7 +77,11 @@ def topo_diff_command(
     if mermaid:
         mermaid_text = differ.to_mermaid(result)
         if output:
-            output.write_text(mermaid_text)
+            try:
+                output.write_text(mermaid_text, encoding="utf-8")
+            except OSError as exc:
+                console.print(f"[red]Failed to write {output}: {exc}[/]")
+                raise typer.Exit(1)
             console.print(f"[green]Mermaid diagram written to {output}[/]")
         else:
             console.print(mermaid_text)
@@ -78,7 +91,11 @@ def topo_diff_command(
     if html:
         html_text = differ.to_html(result)
         out_path = output or Path("topology-diff.html")
-        out_path.write_text(html_text)
+        try:
+            out_path.write_text(html_text, encoding="utf-8")
+        except OSError as exc:
+            console.print(f"[red]Failed to write {out_path}: {exc}[/]")
+            raise typer.Exit(1)
         console.print(f"[green]HTML report written to {out_path}[/]")
         return
 

@@ -9,6 +9,7 @@ import json as json_mod
 from pathlib import Path
 
 import typer
+import yaml
 from rich.console import Console
 from rich.panel import Panel
 from rich.table import Table
@@ -33,7 +34,7 @@ def _load_graph(yaml_file: Path) -> "InfraGraph":  # noqa: F821
 
     try:
         return load_yaml(yaml_file)
-    except (FileNotFoundError, ValueError) as exc:
+    except (FileNotFoundError, ValueError, OSError, yaml.YAMLError) as exc:
         console.print(f"[red]{exc}[/]")
         raise typer.Exit(1)
 
@@ -149,9 +150,10 @@ def genome_analyze(
     from faultray.simulator.chaos_genome import ChaosGenomeEngine
 
     graph = _load_graph(yaml_file)
-    console.print(
-        f"[cyan]Analyzing genome for {len(graph.components)} components...[/]"
-    )
+    if not json_output:
+        console.print(
+            f"[cyan]Analyzing genome for {len(graph.components)} components...[/]"
+        )
 
     engine = ChaosGenomeEngine()
     genome = engine.analyze(graph)
@@ -259,10 +261,11 @@ def genome_compare(
     graph_a = _load_graph(yaml1)
     graph_b = _load_graph(yaml2)
 
-    console.print(
-        f"[cyan]Comparing genomes: {yaml1.name} ({len(graph_a.components)} components) "
-        f"vs {yaml2.name} ({len(graph_b.components)} components)...[/]"
-    )
+    if not json_output:
+        console.print(
+            f"[cyan]Comparing genomes: {yaml1.name} ({len(graph_a.components)} components) "
+            f"vs {yaml2.name} ({len(graph_b.components)} components)...[/]"
+        )
 
     engine = ChaosGenomeEngine()
     genome_a = engine.analyze(graph_a)
@@ -369,9 +372,10 @@ def genome_benchmark(
     from faultray.simulator.chaos_genome import ChaosGenomeEngine
 
     graph = _load_graph(yaml_file)
-    console.print(
-        f"[cyan]Benchmarking genome against {industry} industry...[/]"
-    )
+    if not json_output:
+        console.print(
+            f"[cyan]Benchmarking genome against {industry} industry...[/]"
+        )
 
     engine = ChaosGenomeEngine()
     genome = engine.analyze(graph)
@@ -502,10 +506,14 @@ def genome_history(
         raise typer.Exit(0)
 
     profiles: list[GenomeProfile] = []
+    allowed_trait_fields = {f.name for f in dataclasses.fields(GenomeTrait)}
     for hf in history_files:
         try:
             data = json_mod.loads(hf.read_text())
-            traits = [GenomeTrait(**t) for t in data.get("traits", [])]
+            traits = [
+                GenomeTrait(**{k: v for k, v in t.items() if k in allowed_trait_fields})
+                for t in data.get("traits", [])
+            ]
             ts = data.get("timestamp", "")
             if isinstance(ts, str):
                 try:
@@ -527,7 +535,14 @@ def genome_history(
                 timestamp=timestamp,
             )
             profiles.append(profile)
-        except Exception as exc:
+        except (
+            OSError,
+            AttributeError,
+            TypeError,
+            KeyError,
+            ValueError,
+            json_mod.JSONDecodeError,
+        ) as exc:
             console.print(f"[yellow]Skipping {hf.name}: {exc}[/]")
 
     if not profiles:

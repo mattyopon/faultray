@@ -127,6 +127,38 @@ def _baseline_summary_from_report(report: object) -> dict:
     }
 
 
+def _write_baseline(path: Path, report: object) -> None:
+    """Write a baseline summary JSON for the given report."""
+    current_summary = _baseline_summary_from_report(report)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    with open(path, "w", encoding="utf-8") as fh:
+        json.dump(current_summary, fh, indent=2, ensure_ascii=False)
+
+
+def _load_baseline_data(path: Path) -> dict:
+    """Load and validate a baseline JSON file.
+
+    Exits with code 1 (clean error) if the file is unreadable, not valid JSON,
+    or is missing fields required by the comparison logic.
+    """
+    try:
+        with open(path, encoding="utf-8") as fh:
+            baseline_data = json.load(fh)
+    except (json.JSONDecodeError, OSError) as exc:
+        console.print(f"\n[red]Failed to load baseline: {exc}[/]")
+        raise typer.Exit(1)
+
+    required_keys = {"resilience_score", "critical", "warning"}
+    if not isinstance(baseline_data, dict) or not required_keys <= set(baseline_data):
+        have = set(baseline_data) if isinstance(baseline_data, dict) else set()
+        missing = ", ".join(sorted(required_keys - have))
+        console.print(
+            f"\n[red]Baseline file is missing required field(s): {missing}[/]"
+        )
+        raise typer.Exit(1)
+    return baseline_data
+
+
 def _compare_baseline(current: dict, baseline: dict, con) -> bool:
     """Compare current results against baseline and print summary.
 
@@ -287,7 +319,20 @@ def simulate(
     _auto_record_history(graph, report)
 
     if json_output:
+        # JSON mode: still honor --save-baseline / --baseline side effects, but
+        # keep stdout as pure JSON (no human-readable text, no comparison panel).
+        if save_baseline is not None:
+            _write_baseline(save_baseline, report)
+        baseline_regressed = False
+        if baseline is not None and baseline.exists():
+            baseline_data = _load_baseline_data(baseline)
+            current_summary = _baseline_summary_from_report(report)
+            baseline_regressed = (
+                current_summary["resilience_score"] < baseline_data["resilience_score"]
+            )
         console.print_json(data=_static_report_to_json(report))
+        if baseline_regressed:
+            raise typer.Exit(1)
         return
 
     # Scenario stats
@@ -366,10 +411,7 @@ def simulate(
 
     # Save baseline
     if save_baseline is not None:
-        current_summary = _baseline_summary_from_report(report)
-        save_baseline.parent.mkdir(parents=True, exist_ok=True)
-        with open(save_baseline, "w", encoding="utf-8") as fh:
-            json.dump(current_summary, fh, indent=2, ensure_ascii=False)
+        _write_baseline(save_baseline, report)
         console.print(f"\n[green]Baseline saved to {save_baseline}[/]")
 
     # Compare against baseline
@@ -377,13 +419,7 @@ def simulate(
         if not baseline.exists():
             console.print(f"\n[yellow]Baseline file not found: {baseline} (skipping comparison)[/]")
         else:
-            try:
-                with open(baseline, encoding="utf-8") as fh:
-                    baseline_data = json.load(fh)
-            except (json.JSONDecodeError, OSError) as exc:
-                console.print(f"\n[red]Failed to load baseline: {exc}[/]")
-                raise typer.Exit(1)
-
+            baseline_data = _load_baseline_data(baseline)
             current_summary = _baseline_summary_from_report(report)
             regressed = _compare_baseline(current_summary, baseline_data, console)
             if regressed:
@@ -421,7 +457,11 @@ def dynamic(
         console.print("Run [cyan]faultray scan[/] first to create a model.")
         raise typer.Exit(1)
 
-    # Validate step < duration
+    # Validate durations are positive and step < duration
+    if duration <= 0:
+        raise typer.BadParameter("--duration must be > 0")
+    if step <= 0:
+        raise typer.BadParameter("--step must be > 0")
     if step >= duration:
         console.print("[red]Error: --step must be smaller than --duration[/]")
         raise typer.Exit(1)
@@ -452,7 +492,7 @@ def dynamic(
     if html:
         from faultray.reporter.html_report import save_html_report
 
-        save_html_report(results, graph, html)
+        save_html_report(report, graph, html)
         console.print(f"\n[green]HTML report saved to {html}[/]")
 
 

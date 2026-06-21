@@ -39,7 +39,7 @@ def attack_surface(
     """
     from faultray.simulator.attack_surface import AttackSurfaceAnalyzer
 
-    graph = _load_graph_for_analysis(model, model)
+    graph = _load_graph_for_analysis(model, None)
     analyzer = AttackSurfaceAnalyzer()
     report = analyzer.analyze(graph)
 

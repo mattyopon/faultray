@@ -37,10 +37,7 @@ def contract_validate(
     """
     from faultray.contracts.engine import ContractEngine
 
-    graph = _load_graph_for_analysis(
-        model=Path("faultray-model.json"),
-        yaml_file=infra_file,
-    )
+    graph = _load_graph_for_analysis(infra_file, None)
 
     engine = ContractEngine()
 
@@ -96,10 +93,7 @@ def contract_generate(
         console.print(f"[red]Invalid strictness '{strictness}'. Use: relaxed, standard, strict[/]")
         raise typer.Exit(1)
 
-    graph = _load_graph_for_analysis(
-        model=Path("faultray-model.json"),
-        yaml_file=infra_file,
-    )
+    graph = _load_graph_for_analysis(infra_file, None)
 
     engine = ContractEngine()
     contract = engine.generate_default_contract(graph, strictness=strictness)

@@ -70,6 +70,13 @@ def slo_impact(
         )
         raise typer.Exit(1)
 
+    if not (0.0 < slo < 100.0):
+        console.print("[red]SLO target must be between 0 and 100[/]")
+        raise typer.Exit(1)
+    if consumed < 0.0:
+        console.print("[red]Consumed minutes must be >= 0[/]")
+        raise typer.Exit(1)
+
     # Parse budget window (e.g. "30d" -> 30)
     window_days = _parse_window_days(budget_window)
 
@@ -281,11 +288,10 @@ def _parse_window_days(window: str) -> int:
     # Try plain integer
     try:
         days = int(window)
-    except ValueError:
-        console.print(
-            f"[yellow]Warning: could not parse window '{window}', using 30d.[/]"
-        )
-        return 30
+    except ValueError as exc:
+        raise typer.BadParameter(
+            f"could not parse budget window '{window}'; use e.g. '30d' or '7d'"
+        ) from exc
     if days <= 0:
         raise typer.BadParameter("budget window must be positive")
     return days

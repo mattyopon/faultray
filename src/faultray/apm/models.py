@@ -280,9 +280,9 @@ class MetricsQuery(BaseModel):
     start_time: _dt.datetime | None = None
     end_time: _dt.datetime | None = None
     aggregation: str = "avg"  # avg, min, max, sum, count
-    interval_seconds: int = 60  # bucket size for aggregation
+    interval_seconds: int = Field(default=60, ge=1, le=86400)  # bucket size
     tags: dict[str, str] = Field(default_factory=dict)
-    limit: int = 1000
+    limit: int = Field(default=1000, ge=1, le=10000)
 
 
 class MetricsResponse(BaseModel):
