@@ -83,6 +83,11 @@ class K8sScanner(CloudScannerBase):
         # and to distinguish front-end (80/443) vs back-end ports for
         # east/west HTTP-tier dependency inference.
         self._service_ports: dict[str, int] = {}
+        # Service namespace tracking: svc_comp_id -> namespace. Stored from the
+        # Service's real metadata so namespace lookups never rely on splitting
+        # the synthetic svc_comp_id (which breaks for hyphenated namespaces like
+        # "prod-us": "svc-prod-us-api".split("-", 2)[1] == "prod", not "prod-us").
+        self._service_namespaces: dict[str, str] = {}
         # Deployment/StatefulSet label tracking: comp_id -> labels
         self._workload_labels: dict[str, dict[str, str]] = {}
         # Deployment/StatefulSet namespace tracking: comp_id -> namespace.
@@ -116,6 +121,23 @@ class K8sScanner(CloudScannerBase):
         if ns is not None:
             return ns
         parts = comp_id.split("-", 2)
+        return parts[1] if len(parts) >= 3 else ""
+
+    def _service_namespace(self, svc_comp_id: str) -> str:
+        """Return the namespace for a Service component id.
+
+        Prefers the namespace captured from the Service's real Kubernetes
+        metadata at scan time (``self._service_namespaces``). This is correct
+        for hyphenated namespaces, where splitting the synthetic
+        ``svc-{namespace}-{name}`` id on hyphens is ambiguous (e.g.
+        ``svc-prod-us-api`` could be ns ``prod-us``/name ``api`` or ns
+        ``prod``/name ``us-api``). Falls back to splitting only when the
+        namespace was not recorded; returns ``""`` when undeterminable.
+        """
+        ns = self._service_namespaces.get(svc_comp_id)
+        if ns is not None:
+            return ns
+        parts = svc_comp_id.split("-", 2)
         return parts[1] if len(parts) >= 3 else ""
 
     def _get_api_client(self):
@@ -286,6 +308,7 @@ class K8sScanner(CloudScannerBase):
                 selector = dict(svc.spec.selector or {}) if svc.spec.selector else {}
                 svc_comp_id = f"svc-{ns}-{name}"
                 self._service_selectors[svc_comp_id] = selector
+                self._service_namespaces[svc_comp_id] = ns
 
                 # Capture the first exposed port so _infer_dependencies can
                 # (1) attach it to the generated edge and
@@ -346,6 +369,7 @@ class K8sScanner(CloudScannerBase):
                                     svc_comp_id = f"svc-{ns}-{backend_svc_name}"
                                     # Store for later dependency resolution
                                     self._service_selectors.setdefault(svc_comp_id, {})
+                                    self._service_namespaces.setdefault(svc_comp_id, ns)
         except Exception as exc:
             self._warnings.append(f"Ingress scan error: {exc}")
 
@@ -545,11 +569,13 @@ class K8sScanner(CloudScannerBase):
             if not selector:
                 continue
 
-            # Extract service namespace from svc_comp_id: "svc-{ns}-{name}"
-            parts = svc_comp_id.split("-", 2)
-            if len(parts) < 3:
+            # Derive the service namespace from the recorded metadata (not by
+            # splitting the synthetic svc_comp_id), so hyphenated namespaces like
+            # "prod-us" match their workloads instead of being truncated to
+            # "prod" and dropping every Service↔Deployment edge.
+            svc_ns = self._service_namespace(svc_comp_id)
+            if not svc_ns:
                 continue
-            svc_ns = parts[1]
             svc_port = self._service_ports.get(svc_comp_id, 0)
 
             # Find workloads matching this service's selector. Service selectors
@@ -597,8 +623,10 @@ class K8sScanner(CloudScannerBase):
                 if other_comp_id not in self._workload_labels:
                     continue
 
-                # Same namespace heuristic
-                other_ns = other_comp_id.split("-", 2)[1] if len(other_comp_id.split("-", 2)) > 1 else ""
+                # Same namespace heuristic. Use the recorded workload namespace
+                # so hyphenated namespaces are compared correctly (the synthetic
+                # comp_id cannot be reliably split on hyphens).
+                other_ns = self._workload_namespace(other_comp_id)
                 if other_ns != svc_ns:
                     continue
 

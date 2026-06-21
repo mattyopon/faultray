@@ -71,7 +71,13 @@ def _apm_auth_headers(api_key: str | None) -> dict[str, str]:
 def _pid_is_apm_agent(pid: int) -> bool:
     """Best-effort check that *pid* is actually a FaultRay APM agent process.
 
-    Reads ``/proc/<pid>/cmdline`` (Linux) and looks for the faultray marker.
+    Reads ``/proc/<pid>/cmdline`` (Linux). The agent is launched by forking the
+    ``faultray apm start`` process (no exec), so its cmdline still contains the
+    ``apm`` marker *and* the ``start`` subcommand. Matching merely on
+    ``"faultray"`` was too loose: a reused stale PID pointing at another FaultRay
+    command (e.g. ``faultray serve``) would be misidentified as the agent, so
+    ``apm start`` would wrongly refuse and ``apm stop`` would SIGTERM the server.
+
     Returns True when we cannot determine identity (no /proc, read error) so we
     fall back to the previous, less strict behaviour rather than refusing to act.
     """
@@ -80,8 +86,18 @@ def _pid_is_apm_agent(pid: int) -> bool:
     except (OSError, ValueError):
         # /proc unavailable (non-Linux) or unreadable — don't make assumptions.
         return True
-    text = cmdline.replace(b"\x00", b" ").decode("utf-8", "replace").lower()
-    return "faultray" in text
+    # cmdline args are NUL-separated; tokenise so subcommand matching is exact
+    # (avoids matching "start" inside an unrelated path/argument substring).
+    tokens = [
+        t.decode("utf-8", "replace").lower()
+        for t in cmdline.split(b"\x00")
+        if t
+    ]
+    if not any("faultray" in t for t in tokens):
+        return False
+    # Require the apm-agent-specific markers: the "apm" command group and the
+    # "start" subcommand that launches the long-running agent.
+    return "apm" in tokens and "start" in tokens
 
 
 # ---------------------------------------------------------------------------

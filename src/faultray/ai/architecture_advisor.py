@@ -160,15 +160,23 @@ def _nines_to_score(nines: float) -> float:
 def _dedup_changes(changes: list[ArchitectureChange]) -> list[ArchitectureChange]:
     """Remove duplicate changes that target the same remediation.
 
-    quick_wins and critical_changes can both flag the same single-replica SPOF
-    (same change_type + component_id), so concatenating them would double-count
-    resilience_impact and apply the same change twice. Identity is
-    (change_type, component_id); the first occurrence wins.
+    quick_wins and critical_changes can both flag the same single-replica SPOF,
+    so concatenating them would double-count resilience_impact and apply the
+    same change twice.
+
+    Identity is (change_type, component_id, description). The description is
+    included so that genuinely-distinct remediations for one component are
+    preserved: e.g. a SPOF replica increase, enabling failover, and enabling
+    autoscaling all share change_type "modify_component" and the same
+    component_id, yet are different fixes with different ``after_state`` values.
+    Keying on (change_type, component_id) alone dropped all but the first,
+    omitting necessary after_state fixes from the plan/apply. Exact duplicates
+    (identical description) still dedup. The first occurrence wins.
     """
-    seen: set[tuple[str, str | None]] = set()
+    seen: set[tuple[str, str | None, str]] = set()
     deduped: list[ArchitectureChange] = []
     for change in changes:
-        key = (change.change_type, change.component_id)
+        key = (change.change_type, change.component_id, change.description)
         if key in seen:
             continue
         seen.add(key)

@@ -6,6 +6,7 @@ supply chain, OAuth, billing, and miscellaneous endpoints."""
 
 from __future__ import annotations
 
+import asyncio
 import logging
 import os
 
@@ -22,6 +23,18 @@ from faultray.api.routes._shared import _require_permission
 logger = logging.getLogger(__name__)
 
 router = APIRouter()
+
+# Serializes first-admin creation within this process. The in-transaction
+# has_users recheck below is not, on its own, atomic across concurrent
+# requests: with SQLite (and without a portable SELECT ... FOR UPDATE / advisory
+# lock) two concurrent first-run POSTs using *different* emails could each read
+# an empty users table and each insert an admin row, since the unique-email
+# constraint cannot catch distinct emails. This asyncio.Lock closes the
+# realistic window — multiple coroutines interleaving on one event loop — so
+# only one admin is created per process. Residual risk: separate processes
+# (multi-worker deployments) do not share this lock; the unique-email backstop
+# and the FAULTRAY_SETUP_TOKEN gate remain the cross-process mitigations.
+_first_admin_lock = asyncio.Lock()
 
 
 # ---------------------------------------------------------------------------
@@ -159,25 +172,30 @@ async def setup_create_admin(request: Request):
     from sqlalchemy.exc import IntegrityError
 
     try:
-        async with session_factory() as session:
-            # SEC (TOCTOU): re-check inside the SAME transaction as the insert so
-            # two concurrent /setup POSTs cannot both pass the earlier has_users
-            # check and each create an admin. The unique-email constraint is the
-            # backstop: a colliding concurrent insert raises IntegrityError,
-            # which we treat as "setup already completed".
-            recheck = await session.execute(select(UserRow.id).limit(1))
-            if recheck.scalar_one_or_none() is not None:
-                return RedirectResponse(url="/", status_code=302)
+        # Serialize the recheck-through-commit critical section so concurrent
+        # coroutines cannot both observe an empty users table and both insert an
+        # admin (the unique-email constraint does not catch distinct emails).
+        async with _first_admin_lock:
+            async with session_factory() as session:
+                # SEC (TOCTOU): re-check inside the SAME transaction as the
+                # insert (belt-and-braces with the lock above, and the only
+                # guard across processes that don't share the lock). The
+                # unique-email constraint is the final backstop: a colliding
+                # concurrent insert raises IntegrityError, treated as "setup
+                # already completed".
+                recheck = await session.execute(select(UserRow.id).limit(1))
+                if recheck.scalar_one_or_none() is not None:
+                    return RedirectResponse(url="/", status_code=302)
 
-            user = UserRow(
-                email=email,
-                name=name,
-                api_key_hash=hash_api_key(api_key),
-                role="admin",
-            )
-            session.add(user)
-            await session.commit()
-            await session.refresh(user)
+                user = UserRow(
+                    email=email,
+                    name=name,
+                    api_key_hash=hash_api_key(api_key),
+                    role="admin",
+                )
+                session.add(user)
+                await session.commit()
+                await session.refresh(user)
 
         logger.info("Setup complete: admin user created (id=%s, email=%s)", user.id, email)
         return templates.TemplateResponse(

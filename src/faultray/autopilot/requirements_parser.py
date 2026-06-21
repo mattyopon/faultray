@@ -266,14 +266,29 @@ class RequirementsParser:
         return "web_app"  # default
 
     def _extract_availability(self, lower: str) -> float:
-        """Extract availability target (e.g. '99.9%', '99.95%', '99.99%')."""
-        # Match the full percentage value, not just a '99.9' prefix, so that
-        # '99.95%' yields 99.95 rather than being truncated to 99.9.
-        m = re.search(r"\b(\d{2,3}(?:\.\d+)?)\s*%", lower)
-        if m:
-            val = float(m.group(1))
-            if 0.0 < val <= 100.0:
-                return val
+        """Extract availability target (e.g. '99.9%', '99.95%', '99.99%').
+
+        Only treats a bare percentage as an availability target when it is
+        either (a) written in an availability/SLA/uptime/nines context, or
+        (b) a nines-style figure (>= 99%). This prevents unrelated percentages
+        such as "keep CPU below 80%" or "90% test coverage" from clobbering the
+        availability target (and silently disabling the multi_az default).
+        """
+        # (a) A percentage that sits next to availability-context wording.
+        #     Match the full percentage value, not just a '99.9' prefix, so that
+        #     '99.95%' yields 99.95 rather than being truncated to 99.9.
+        ctx = r"(?:availab|uptime|sla|slo|可用性|稼働率|nines?)"
+        pct = r"(\d{2,3}(?:\.\d+)?)\s*%"
+        for pattern in (rf"{ctx}\D{{0,40}}?{pct}", rf"{pct}\D{{0,40}}?{ctx}"):
+            m = re.search(pattern, lower)
+            if m:
+                val = float(m.group(1))
+                if 0.0 < val <= 100.0:
+                    return val
+
+        # (b) Nines wording, or a nines-style bare percentage (>= 99%). Bare
+        #     percentages below 99 are ignored here — they are almost never an
+        #     availability target and are the source of the false positives.
         if "five nines" in lower or "99.999" in lower:
             return 99.999
         if "four nines" in lower or "99.99" in lower:
@@ -282,6 +297,11 @@ class RequirementsParser:
             return 99.9
         if "two nines" in lower or "99%" in lower:
             return 99.0
+        m = re.search(r"\b(99(?:\.\d+)?|100)\s*%", lower)
+        if m:
+            val = float(m.group(1))
+            if 0.0 < val <= 100.0:
+                return val
         return 99.9  # conservative default
 
     def _extract_traffic(self, lower: str) -> tuple[str, str]:

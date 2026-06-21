@@ -896,23 +896,36 @@ class NLInfraParser:
     def _deduplicate_ids(
         self, components: list[ParsedComponent]
     ) -> dict[str, str]:
-        """Ensure all component IDs are unique by appending numbers.
+        """Collapse repeated mentions of a component to a single canonical id.
 
-        Returns a mapping of original-name -> new-name for components that were
-        renamed, so callers can rewrite relationships that referenced the old
-        name. The first occurrence of a duplicated name keeps the original
-        name; only later occurrences are renamed.
+        Components are identified by slug (``name``). Distinct components always
+        get distinct slugs (e.g. ``sqs``/``kafka`` for two different queues), so
+        two entries that share a slug are repeated *mentions* of one logical
+        component — e.g. "API Gateway connects to EC2, and EC2 connects to
+        Redis" extracts ``ec2`` twice. They must collapse to the SAME id rather
+        than being renamed to a duplicate (``ec2-2``): renaming + rewriting all
+        ``ec2`` endpoints to ``ec2-2`` orphaned the original ``ec2`` and stole
+        its edges.
+
+        The first occurrence is canonical and kept in ``components``; later
+        same-slug duplicates are removed in place. The returned mapping points
+        every removed duplicate's name at the canonical name so callers'
+        relationship-endpoint rewrites stay correct (here, a no-op because the
+        names already matched).
         """
-        seen: dict[str, int] = {}
+        seen: set[str] = set()
         rename_map: dict[str, str] = {}
+        deduped: list[ParsedComponent] = []
         for comp in components:
             if comp.name in seen:
-                seen[comp.name] += 1
-                new_name = f"{comp.name}-{seen[comp.name]}"
-                rename_map[comp.name] = new_name
-                comp.name = new_name
-            else:
-                seen[comp.name] = 1
+                # Repeated mention of an already-seen component: drop it and map
+                # its name to the canonical (first) occurrence's name.
+                rename_map[comp.name] = comp.name
+                continue
+            seen.add(comp.name)
+            deduped.append(comp)
+        # Mutate the caller's list in place to drop the collapsed duplicates.
+        components[:] = deduped
         return rename_map
 
     # ------------------------------------------------------------------

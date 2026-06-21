@@ -198,4 +198,15 @@ def _generate_compliance_report(graph, framework: str | None, output: Path | Non
         except OSError as exc:
             console.print(f"[red]Failed to write {output}: {exc}[/]")
             raise typer.Exit(1)
-        console.print(f"\n[green]Compliance report saved to {output}[/]")
+        # In --json mode stdout must stay valid, machine-readable JSON (already
+        # emitted above via print_json). Route the human-readable confirmation
+        # to stderr so it doesn't corrupt the JSON contract; otherwise print it
+        # normally to stdout.
+        if json_output:
+            from rich.console import Console
+
+            Console(stderr=True).print(
+                f"[green]Compliance report saved to {output}[/]"
+            )
+        else:
+            console.print(f"\n[green]Compliance report saved to {output}[/]")
