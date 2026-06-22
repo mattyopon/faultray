@@ -295,7 +295,9 @@ async def replay_incident(
 # ---------------------------------------------------------------------------
 
 @router.get("/whatif", response_class=HTMLResponse)
-async def whatif_page(request: Request):
+async def whatif_page(
+    request: Request, _user=Depends(_require_permission("view_results"))
+):
     """Interactive what-if analysis page."""
     graph = get_graph()
     return templates.TemplateResponse(request, "whatif.html", {
@@ -475,7 +477,9 @@ async def whatif_export(
 # ---------------------------------------------------------------------------
 
 @router.get("/chaos-monkey", response_class=HTMLResponse)
-async def chaos_monkey_page(request: Request):
+async def chaos_monkey_page(
+    request: Request, _user=Depends(_require_permission("view_results"))
+):
     """Chaos Monkey dashboard."""
     graph = get_graph()
     return templates.TemplateResponse(request, "chaos_monkey.html", {
@@ -562,7 +566,9 @@ async def api_chaos_monkey(request: Request):
 # ---------------------------------------------------------------------------
 
 @router.get("/fmea", response_class=HTMLResponse)
-async def fmea_page(request: Request):
+async def fmea_page(
+    request: Request, _user=Depends(_require_permission("view_results"))
+):
     """FMEA dashboard."""
     graph = get_graph()
     return templates.TemplateResponse(request, "fmea.html", {
@@ -632,7 +638,9 @@ async def api_fmea(
 # ---------------------------------------------------------------------------
 
 @router.get("/anomaly", response_class=HTMLResponse)
-async def anomaly_page(request: Request):
+async def anomaly_page(
+    request: Request, _user=Depends(_require_permission("view_results"))
+):
     """Anomaly Detection page."""
     graph = get_graph()
     return templates.TemplateResponse(request, "anomaly.html", {
@@ -712,7 +720,9 @@ async def api_anomalies(
 # ---------------------------------------------------------------------------
 
 @router.get("/optimizer", response_class=HTMLResponse)
-async def optimizer_page(request: Request):
+async def optimizer_page(
+    request: Request, _user=Depends(_require_permission("view_results"))
+):
     """Pareto Optimizer page."""
     graph = get_graph()
     return templates.TemplateResponse(request, "optimizer.html", {
@@ -796,7 +806,9 @@ async def api_optimize(
 # ---------------------------------------------------------------------------
 
 @router.get("/analyze", response_class=HTMLResponse)
-async def analyze_page(request: Request):
+async def analyze_page(
+    request: Request, _user=Depends(_require_permission("view_results"))
+):
     """Run AI analysis and render the analyze page."""
     graph = get_graph()
     has_data = len(graph.components) > 0
@@ -873,7 +885,10 @@ async def get_architecture_advice(
 
 
 @router.get("/advisor", response_class=HTMLResponse)
-async def advisor_page(request: Request, target_nines: float = 4.0):
+async def advisor_page(
+    request: Request, target_nines: float = 4.0,
+    _user=Depends(_require_permission("view_results")),
+):
     """Architecture Advisor page."""
     graph = get_graph()
     has_data = len(graph.components) > 0

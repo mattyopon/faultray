@@ -1483,12 +1483,16 @@ class TestReportToDict:
 # ===================================================================
 
 class TestAnalyzeNoReport:
-    def test_analyze_page_runs_simulation_when_no_report(self, demo_client):
-        """Cover lines 354-355: analyze page runs simulation when _last_report is None."""
+    def test_analyze_page_runs_simulation_when_no_report(self, demo_db_client):
+        """Cover lines 354-355: analyze page runs simulation when _last_report is None.
+
+        /analyze now requires auth (view_results), so this uses the authenticated
+        demo_db_client to reach the handler body and exercise the simulation branch.
+        """
         import faultray.api.server as srv
         srv._last_report = None
         try:
-            resp = demo_client.get("/analyze")
+            resp = demo_db_client.get("/analyze")
             assert resp.status_code == 200
             assert "text/html" in resp.headers.get("content-type", "")
             # _last_report should be set now

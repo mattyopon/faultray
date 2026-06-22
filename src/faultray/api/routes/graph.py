@@ -142,7 +142,9 @@ async def get_topology(user=Depends(_require_permission("view_results"))):
 
 
 @router.get("/blast-radius", response_class=HTMLResponse)
-async def blast_radius_page(request: Request):
+async def blast_radius_page(
+    request: Request, _user=Depends(_require_permission("view_results"))
+):
     """Interactive blast radius visualizer."""
     return templates.TemplateResponse(request, "blast_radius.html", {
         "has_data": len(get_graph().components) > 0,
@@ -154,7 +156,9 @@ async def blast_radius_page(request: Request):
 # ---------------------------------------------------------------------------
 
 @router.get("/heatmap", response_class=HTMLResponse)
-async def heatmap_page(request: Request):
+async def heatmap_page(
+    request: Request, _user=Depends(_require_permission("view_results"))
+):
     """Interactive risk heat map page."""
     graph = get_graph()
     return templates.TemplateResponse(request, "heatmap.html", {
@@ -189,7 +193,9 @@ async def api_risk_heatmap(user=Depends(_require_permission("view_results"))):
 # ---------------------------------------------------------------------------
 
 @router.get("/cost-attribution", response_class=HTMLResponse)
-async def cost_attribution_page(request: Request):
+async def cost_attribution_page(
+    request: Request, _user=Depends(_require_permission("view_results"))
+):
     """Cost attribution dashboard page."""
     graph = get_graph()
     report_data = None
@@ -310,7 +316,9 @@ async def api_cost_attribution(
 # ---------------------------------------------------------------------------
 
 @router.get("/topology-diff", response_class=HTMLResponse)
-async def topology_diff_page(request: Request):
+async def topology_diff_page(
+    request: Request, _user=Depends(_require_permission("view_results"))
+):
     """Topology Diff page."""
     return templates.TemplateResponse(request, "topology_diff.html", {
         "has_data": True,
@@ -441,7 +449,9 @@ async def benchmark_industry(
 # ---------------------------------------------------------------------------
 
 @router.get("/score-explain", response_class=HTMLResponse)
-async def score_explain_page(request: Request):
+async def score_explain_page(
+    request: Request, _user=Depends(_require_permission("view_results"))
+):
     """Resilience Score Decomposition page."""
     graph = get_graph()
     has_data = len(graph.components) > 0
@@ -482,7 +492,9 @@ async def api_score_decomposition(user=Depends(_require_permission("view_results
 # ---------------------------------------------------------------------------
 
 @router.get("/attack-surface", response_class=HTMLResponse)
-async def attack_surface_page(request: Request):
+async def attack_surface_page(
+    request: Request, _user=Depends(_require_permission("view_results"))
+):
     """Attack Surface Analysis page."""
     graph = get_graph()
     has_data = len(graph.components) > 0
