@@ -361,7 +361,9 @@ async def whatif_components(user=Depends(_require_permission("view_results"))):
 
 
 @router.post("/api/whatif/calculate")
-async def whatif_calculate(request: Request):
+async def whatif_calculate(
+    request: Request, user=Depends(_require_permission("view_results"))
+):
     """Calculate resilience for modified parameters."""
     import copy
 
@@ -489,7 +491,9 @@ async def chaos_monkey_page(
 
 
 @router.post("/api/chaos-monkey", response_class=JSONResponse)
-async def api_chaos_monkey(request: Request):
+async def api_chaos_monkey(
+    request: Request, user=Depends(_require_permission("view_results"))
+):
     """Run a Chaos Monkey experiment and return results."""
     from faultray.simulator.chaos_monkey import ChaosLevel, ChaosMonkey, ChaosMonkeyConfig
 
@@ -736,6 +740,7 @@ async def api_optimize(
     request: Request,
     budget: float | None = None,
     target_score: float | None = None,
+    user=Depends(_require_permission("view_results")),
 ):
     """Run Pareto optimization and return frontier data."""
     graph = get_graph()

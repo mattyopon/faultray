@@ -1106,6 +1106,23 @@ class TestSensitivePagesRequireAuth:
             "sensitive pages must require authentication"
         )
 
+    # Backing analysis APIs that feed the (now protected) pages — callers must
+    # not be able to bypass the page auth and hit these directly.
+    SENSITIVE_APIS = [
+        ("post", "/api/whatif/calculate"),
+        ("post", "/api/chaos-monkey"),
+        ("get", "/api/optimize"),
+    ]
+
+    @pytest.mark.parametrize("method,path", SENSITIVE_APIS)
+    def test_sensitive_api_requires_auth(self, method, path):
+        anon = TestClient(app, raise_server_exceptions=False)
+        resp = getattr(anon, method)(path)
+        assert resp.status_code in (401, 403), (
+            f"{method.upper()} {path} reachable without auth (got {resp.status_code}); "
+            "analysis APIs must require authentication"
+        )
+
 
 # ===================================================================
 # 20. API v1 Versioned Endpoints
