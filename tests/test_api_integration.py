@@ -1071,6 +1071,61 @@ class TestHTMLPages:
         assert resp.status_code == 200
 
 
+class TestSensitivePagesRequireAuth:
+    """Regression guard: internal pages that expose infrastructure topology /
+    analysis (or run expensive computation) must require authentication and
+    must NOT be reachable anonymously. The page route alone is not protected
+    by removing it from PUBLIC_PATHS — it needs a _require_permission dependency
+    (no global auth middleware runs _is_public)."""
+
+    # Newly protected in the page-auth audit + the pages that were already
+    # protected. None of these should be reachable without credentials.
+    SENSITIVE_PAGES = [
+        # graph.py
+        "/graph", "/components", "/blast-radius", "/heatmap",
+        "/cost-attribution", "/topology-diff", "/score-explain",
+        "/attack-surface",
+        # compliance.py
+        "/compliance", "/security", "/cost",
+        # simulation.py
+        "/simulation", "/whatif", "/chaos-monkey", "/fmea", "/anomaly",
+        "/optimizer", "/analyze", "/advisor",
+        # server.py / dashboard.py / admin.py
+        "/billing", "/reports", "/report/executive", "/settings",
+        "/marketplace", "/calendar", "/chat", "/templates", "/agents",
+        "/supply-chain",
+    ]
+
+    @pytest.mark.parametrize("path", SENSITIVE_PAGES)
+    def test_sensitive_page_requires_auth(self, path):
+        # Fresh client with NO Authorization header. The auth dependency rejects
+        # the request before the (sometimes expensive) handler body runs.
+        anon = TestClient(app, raise_server_exceptions=False)
+        resp = anon.get(path)
+        assert resp.status_code in (401, 403), (
+            f"{path} is reachable without auth (got {resp.status_code}); "
+            "sensitive pages must require authentication"
+        )
+
+    # Backing analysis APIs that feed the (now protected) pages — callers must
+    # not be able to bypass the page auth and hit these directly.
+    SENSITIVE_APIS = [
+        ("post", "/api/whatif/calculate"),
+        ("post", "/api/chaos-monkey"),
+        ("get", "/api/optimize"),
+        ("get", "/simulation/run"),
+    ]
+
+    @pytest.mark.parametrize("method,path", SENSITIVE_APIS)
+    def test_sensitive_api_requires_auth(self, method, path):
+        anon = TestClient(app, raise_server_exceptions=False)
+        resp = getattr(anon, method)(path)
+        assert resp.status_code in (401, 403), (
+            f"{method.upper()} {path} reachable without auth (got {resp.status_code}); "
+            "analysis APIs must require authentication"
+        )
+
+
 # ===================================================================
 # 20. API v1 Versioned Endpoints
 # ===================================================================

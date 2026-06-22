@@ -126,15 +126,13 @@ PUBLIC_PATHS = frozenset({
     "/openapi.json",
     "/demo",
     "/static",
-    "/components",
-    "/simulation",
-    "/simulation/run",
-    # NOTE: '/graph' is intentionally NOT public — the interactive graph view
-    # exposes internal infrastructure topology, so its page route carries a
-    # _require_permission("view_results") dependency (see routes/graph.py),
-    # matching the /api/graph-data endpoint that feeds it. (Dropping it from
-    # this set alone would not enforce auth: _is_public only runs inside
-    # get_current_user, which is reached via an auth dependency, not globally.)
+    # NOTE: '/components', '/simulation', '/simulation/run' and '/graph' are
+    # intentionally NOT public — they expose infrastructure inventory/topology
+    # and cached simulation findings (or execute simulations). Their routes
+    # carry _require_permission dependencies (routes/graph.py, routes/
+    # simulation.py). Dropping a path from this set alone does NOT enforce auth:
+    # _is_public only runs inside get_current_user, reached via an auth
+    # dependency, not by any global middleware.
     # ADMIN-AUTH (#100): health / versioning / docs endpoints stay public
     "/api/health",
     "/api/versions",

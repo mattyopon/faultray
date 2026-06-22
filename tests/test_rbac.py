@@ -152,8 +152,8 @@ class TestRequirePermission:
 
         try:
             checker = require_permission("run_simulation")
-            # /simulation/run is a public path -> get_current_user returns None.
-            request = FakeRequest("/simulation/run")
+            # /demo is a public path -> get_current_user returns None.
+            request = FakeRequest("/demo")
             result = await checker(request)
             assert result is None
         finally:

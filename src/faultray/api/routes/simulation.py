@@ -32,7 +32,9 @@ router = APIRouter()
 # ---------------------------------------------------------------------------
 
 @router.get("/simulation", response_class=HTMLResponse)
-async def simulation_page(request: Request):
+async def simulation_page(
+    request: Request, _user=Depends(_require_permission("view_results"))
+):
     report_data = None
     _last_report = get_last_report()
     if _last_report is not None:
@@ -45,7 +47,9 @@ async def simulation_page(request: Request):
 
 
 @router.get("/simulation/run")
-async def simulation_run_get():
+async def simulation_run_get(
+    _user=Depends(_require_permission("run_simulation")),
+):
     """Run simulation and return JSON results (GET endpoint)."""
     graph = get_graph()
     if not graph.components:
@@ -295,7 +299,9 @@ async def replay_incident(
 # ---------------------------------------------------------------------------
 
 @router.get("/whatif", response_class=HTMLResponse)
-async def whatif_page(request: Request):
+async def whatif_page(
+    request: Request, _user=Depends(_require_permission("view_results"))
+):
     """Interactive what-if analysis page."""
     graph = get_graph()
     return templates.TemplateResponse(request, "whatif.html", {
@@ -359,7 +365,9 @@ async def whatif_components(user=Depends(_require_permission("view_results"))):
 
 
 @router.post("/api/whatif/calculate")
-async def whatif_calculate(request: Request):
+async def whatif_calculate(
+    request: Request, user=Depends(_require_permission("view_results"))
+):
     """Calculate resilience for modified parameters."""
     import copy
 
@@ -475,7 +483,9 @@ async def whatif_export(
 # ---------------------------------------------------------------------------
 
 @router.get("/chaos-monkey", response_class=HTMLResponse)
-async def chaos_monkey_page(request: Request):
+async def chaos_monkey_page(
+    request: Request, _user=Depends(_require_permission("view_results"))
+):
     """Chaos Monkey dashboard."""
     graph = get_graph()
     return templates.TemplateResponse(request, "chaos_monkey.html", {
@@ -485,7 +495,9 @@ async def chaos_monkey_page(request: Request):
 
 
 @router.post("/api/chaos-monkey", response_class=JSONResponse)
-async def api_chaos_monkey(request: Request):
+async def api_chaos_monkey(
+    request: Request, user=Depends(_require_permission("run_simulation"))
+):
     """Run a Chaos Monkey experiment and return results."""
     from faultray.simulator.chaos_monkey import ChaosLevel, ChaosMonkey, ChaosMonkeyConfig
 
@@ -562,7 +574,9 @@ async def api_chaos_monkey(request: Request):
 # ---------------------------------------------------------------------------
 
 @router.get("/fmea", response_class=HTMLResponse)
-async def fmea_page(request: Request):
+async def fmea_page(
+    request: Request, _user=Depends(_require_permission("view_results"))
+):
     """FMEA dashboard."""
     graph = get_graph()
     return templates.TemplateResponse(request, "fmea.html", {
@@ -632,7 +646,9 @@ async def api_fmea(
 # ---------------------------------------------------------------------------
 
 @router.get("/anomaly", response_class=HTMLResponse)
-async def anomaly_page(request: Request):
+async def anomaly_page(
+    request: Request, _user=Depends(_require_permission("view_results"))
+):
     """Anomaly Detection page."""
     graph = get_graph()
     return templates.TemplateResponse(request, "anomaly.html", {
@@ -712,7 +728,9 @@ async def api_anomalies(
 # ---------------------------------------------------------------------------
 
 @router.get("/optimizer", response_class=HTMLResponse)
-async def optimizer_page(request: Request):
+async def optimizer_page(
+    request: Request, _user=Depends(_require_permission("view_results"))
+):
     """Pareto Optimizer page."""
     graph = get_graph()
     return templates.TemplateResponse(request, "optimizer.html", {
@@ -726,6 +744,7 @@ async def api_optimize(
     request: Request,
     budget: float | None = None,
     target_score: float | None = None,
+    user=Depends(_require_permission("view_results")),
 ):
     """Run Pareto optimization and return frontier data."""
     graph = get_graph()
@@ -796,7 +815,9 @@ async def api_optimize(
 # ---------------------------------------------------------------------------
 
 @router.get("/analyze", response_class=HTMLResponse)
-async def analyze_page(request: Request):
+async def analyze_page(
+    request: Request, _user=Depends(_require_permission("view_results"))
+):
     """Run AI analysis and render the analyze page."""
     graph = get_graph()
     has_data = len(graph.components) > 0
@@ -873,7 +894,10 @@ async def get_architecture_advice(
 
 
 @router.get("/advisor", response_class=HTMLResponse)
-async def advisor_page(request: Request, target_nines: float = 4.0):
+async def advisor_page(
+    request: Request, target_nines: float = 4.0,
+    _user=Depends(_require_permission("view_results")),
+):
     """Architecture Advisor page."""
     graph = get_graph()
     has_data = len(graph.components) > 0

@@ -22,7 +22,9 @@ router = APIRouter()
 
 
 @router.get("/compliance", response_class=HTMLResponse)
-async def compliance_page(request: Request):
+async def compliance_page(
+    request: Request, _user=Depends(_require_permission("view_results"))
+):
     graph = get_graph()
     return templates.TemplateResponse(request, "compliance.html", {
         "has_data": len(graph.components) > 0,
@@ -114,7 +116,9 @@ async def api_compliance_check(
 # ---------------------------------------------------------------------------
 
 @router.get("/security", response_class=HTMLResponse)
-async def security_page(request: Request):
+async def security_page(
+    request: Request, _user=Depends(_require_permission("view_results"))
+):
     graph = get_graph()
     return templates.TemplateResponse(request, "security.html", {
         "has_data": len(graph.components) > 0,
@@ -122,7 +126,9 @@ async def security_page(request: Request):
 
 
 @router.get("/cost", response_class=HTMLResponse)
-async def cost_page(request: Request):
+async def cost_page(
+    request: Request, _user=Depends(_require_permission("view_results"))
+):
     graph = get_graph()
     return templates.TemplateResponse(request, "cost.html", {
         "has_data": len(graph.components) > 0,
