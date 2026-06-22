@@ -407,13 +407,17 @@ class TestDashboardWithReport:
         finally:
             srv._last_report = None
 
-    def test_simulation_page_with_report(self, demo_client):
-        """Cover line 326: simulation page with _last_report set."""
+    def test_simulation_page_with_report(self, demo_db_client):
+        """Cover line 326: simulation page with _last_report set.
+
+        /simulation now requires auth (view_results), so this uses the
+        authenticated demo_db_client.
+        """
         import faultray.api.server as srv
         report = _make_report()
         srv._last_report = report
         try:
-            resp = demo_client.get("/simulation")
+            resp = demo_db_client.get("/simulation")
             assert resp.status_code == 200
         finally:
             srv._last_report = None

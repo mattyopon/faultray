@@ -32,7 +32,9 @@ router = APIRouter()
 # ---------------------------------------------------------------------------
 
 @router.get("/simulation", response_class=HTMLResponse)
-async def simulation_page(request: Request):
+async def simulation_page(
+    request: Request, _user=Depends(_require_permission("view_results"))
+):
     report_data = None
     _last_report = get_last_report()
     if _last_report is not None:
@@ -45,7 +47,9 @@ async def simulation_page(request: Request):
 
 
 @router.get("/simulation/run")
-async def simulation_run_get():
+async def simulation_run_get(
+    _user=Depends(_require_permission("run_simulation")),
+):
     """Run simulation and return JSON results (GET endpoint)."""
     graph = get_graph()
     if not graph.components:
@@ -492,7 +496,7 @@ async def chaos_monkey_page(
 
 @router.post("/api/chaos-monkey", response_class=JSONResponse)
 async def api_chaos_monkey(
-    request: Request, user=Depends(_require_permission("view_results"))
+    request: Request, user=Depends(_require_permission("run_simulation"))
 ):
     """Run a Chaos Monkey experiment and return results."""
     from faultray.simulator.chaos_monkey import ChaosLevel, ChaosMonkey, ChaosMonkeyConfig

@@ -86,14 +86,17 @@ class TestPublicPaths:
     def test_static_subpath_is_public(self):
         assert _is_public("/static/css/style.css") is True
 
-    def test_components_is_public(self):
-        assert _is_public("/components") is True
+    def test_components_is_not_public(self):
+        # Inventory page now requires auth (page-auth audit).
+        assert _is_public("/components") is False
 
-    def test_simulation_is_public(self):
-        assert _is_public("/simulation") is True
+    def test_simulation_is_not_public(self):
+        # Renders cached simulation findings — now requires auth.
+        assert _is_public("/simulation") is False
 
-    def test_simulation_run_is_public(self):
-        assert _is_public("/simulation/run") is True
+    def test_simulation_run_is_not_public(self):
+        # Runs a simulation + mutates global state — now requires auth.
+        assert _is_public("/simulation/run") is False
 
     def test_api_simulate_is_not_public(self):
         assert _is_public("/api/simulate") is False

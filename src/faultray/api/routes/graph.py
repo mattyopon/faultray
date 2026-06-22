@@ -535,7 +535,9 @@ async def api_attack_surface(user=Depends(_require_permission("view_results"))):
 # ---------------------------------------------------------------------------
 
 @router.get("/components", response_class=HTMLResponse)
-async def components_page(request: Request):
+async def components_page(
+    request: Request, _user=Depends(_require_permission("view_results"))
+):
     graph = get_graph()
     comps = []
     for comp in graph.components.values():

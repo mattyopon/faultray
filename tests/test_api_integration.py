@@ -1082,13 +1082,14 @@ class TestSensitivePagesRequireAuth:
     # protected. None of these should be reachable without credentials.
     SENSITIVE_PAGES = [
         # graph.py
-        "/graph", "/blast-radius", "/heatmap", "/cost-attribution",
-        "/topology-diff", "/score-explain", "/attack-surface",
+        "/graph", "/components", "/blast-radius", "/heatmap",
+        "/cost-attribution", "/topology-diff", "/score-explain",
+        "/attack-surface",
         # compliance.py
         "/compliance", "/security", "/cost",
         # simulation.py
-        "/whatif", "/chaos-monkey", "/fmea", "/anomaly", "/optimizer",
-        "/analyze", "/advisor",
+        "/simulation", "/whatif", "/chaos-monkey", "/fmea", "/anomaly",
+        "/optimizer", "/analyze", "/advisor",
         # server.py / dashboard.py / admin.py
         "/billing", "/reports", "/report/executive", "/settings",
         "/marketplace", "/calendar", "/chat", "/templates", "/agents",
@@ -1112,6 +1113,7 @@ class TestSensitivePagesRequireAuth:
         ("post", "/api/whatif/calculate"),
         ("post", "/api/chaos-monkey"),
         ("get", "/api/optimize"),
+        ("get", "/simulation/run"),
     ]
 
     @pytest.mark.parametrize("method,path", SENSITIVE_APIS)
