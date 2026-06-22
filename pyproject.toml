@@ -162,7 +162,11 @@ markers = [
 ]
 
 [tool.mypy]
-python_version = "3.11"
+# Target 3.12 (the minimum that parses third-party stubs using PEP 695 `type`
+# statements, e.g. numpy >= 2.5). The runtime support floor is still 3.11 —
+# that compatibility is enforced by the 3.11 pytest job, not by this static
+# type-check target.
+python_version = "3.12"
 warn_return_any = true
 warn_unused_configs = true
 disallow_untyped_defs = true
