@@ -59,7 +59,7 @@ saas = [
     "python-jose[cryptography]>=3.3",
 ]
 aws = [
-    "boto3>=1.28",
+    "boto3>=1.43.34",
 ]
 gcp = [
     "google-cloud-compute>=1.0",
@@ -92,7 +92,7 @@ onprem = [
     "pynetbox>=7.0",
 ]
 all-clouds = [
-    "boto3>=1.28",
+    "boto3>=1.43.34",
     "google-cloud-compute>=1.0",
     "azure-identity>=1.25.3",
     "kubernetes>=35.0.0",
