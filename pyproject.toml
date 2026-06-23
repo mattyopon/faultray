@@ -80,7 +80,7 @@ sakura = [
     "requests>=2.33.1",
 ]
 alibaba = [
-    "alibabacloud-ecs20140526>=3.0",
+    "alibabacloud-ecs20140526>=7.8.6",
     "alibabacloud-rds20140815>=3.0",
     "alibabacloud-slb20140515>=3.3.31",
     "requests>=2.33.1",
@@ -97,7 +97,7 @@ all-clouds = [
     "azure-identity>=1.25.3",
     "kubernetes>=35.0.0",
     "requests>=2.33.1",
-    "alibabacloud-ecs20140526>=3.0",
+    "alibabacloud-ecs20140526>=7.8.6",
     "alibabacloud-rds20140815>=3.0",
     "alibabacloud-slb20140515>=3.3.31",
     "oci>=2.175.0",
