@@ -102,6 +102,19 @@ jobs:
             echo "::error::SUPABASE_DB_URL secret is not set (use the Session pooler connection string)"
             exit 1
           fi
+          # Preflight: the direct (db.<ref>.supabase.co) host is IPv6-only and
+          # GitHub-hosted runners have no IPv6 — psql would stall, then fail
+          # with an opaque timeout. Catch the wrong connection string here with
+          # an actionable message. (Never echo $SUPABASE_DB_URL — it has the pwd.)
+          case "$SUPABASE_DB_URL" in
+            *@db.*.supabase.co:*|*@db.*.supabase.co/*)
+              echo "::error::SUPABASE_DB_URL is the DIRECT connection (db.<ref>.supabase.co, IPv6-only) and GitHub runners have no IPv6. Use the Session pooler from Supabase Dashboard -> Connect: postgresql://postgres.<ref>:<pwd>@aws-0-<region>.pooler.supabase.com:5432/postgres"
+              exit 1 ;;
+          esac
+          case "$SUPABASE_DB_URL" in
+            *pooler.supabase.com:6543*)
+              echo "::warning::SUPABASE_DB_URL uses the transaction pooler (port 6543); this workflow expects the Session pooler (port 5432). Continuing, but switch if you hit session/prepared-statement errors." ;;
+          esac
           # Tracking table (idempotent).
           psql "$SUPABASE_DB_URL" -v ON_ERROR_STOP=1 -qc "
             create table if not exists public.applied_migrations (
