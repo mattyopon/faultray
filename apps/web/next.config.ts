@@ -61,12 +61,30 @@ const nextConfig: NextConfig = {
             key: "Cross-Origin-Opener-Policy",
             value: "same-origin-allow-popups",
           },
-          // ZAP #172: Cross-Origin-Embedder-Policy (COEP: require-corp) is
-          // intentionally DEFERRED. Enabling it would force every cross-origin
-          // resource (Supabase, Stripe, Google Fonts, GA4/Hotjar, OG images) to
-          // opt in via a Cross-Origin-Resource-Policy / CORP header; any resource
-          // that does not would be blocked, almost certainly breaking the app.
-          // Tracked separately in mattyopon/faultray#172 (follow-up).
+          // ZAP faultray#182: Cross-Origin-Resource-Policy controls who may
+          // embed THIS app's own responses cross-origin. `same-origin` is safe:
+          // the app already sends X-Frame-Options: DENY / frame-ancestors 'none'
+          // (nothing is meant to embed us), CORP is browser-enforced only (it
+          // does not block server-side OG / social-preview crawlers), and it does
+          // not constrain the third-party resources WE load (those carry their
+          // own CORP). Clears the ZAP "CORP header missing" finding on pages/fonts.
+          {
+            key: "Cross-Origin-Resource-Policy",
+            value: "same-origin",
+          },
+          // ZAP faultray#182: Cross-Origin-Embedder-Policy — ENFORCED COEP stays
+          // DEFERRED. Both `require-corp` and `credentialless` gate cross-origin
+          // embeds (Stripe Elements/Checkout iframes js.stripe.com / hooks.stripe.com,
+          // GA4 / Hotjar, Google Fonts, OG images) on a CORP/COEP opt-in they don't
+          // all send — flipping it on would almost certainly break checkout + analytics.
+          // Instead we ship the SAFE first phase: a Report-Only header. It never
+          // blocks anything (so nothing breaks today) but lets the Vercel preview /
+          // browser surface what WOULD be blocked, so a future enforced rollout can
+          // be data-driven. Promote to the enforced header only after that review.
+          {
+            key: "Cross-Origin-Embedder-Policy-Report-Only",
+            value: "credentialless",
+          },
           //
           // Content-Security-Policy is set per request in src/proxy.ts (nonce
           // support under FAULTRAY_CSP_STRICT), not here — see the note at the
