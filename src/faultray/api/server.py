@@ -350,6 +350,54 @@ async def rate_limit_middleware(request: Request, call_next):
 
 
 # ---------------------------------------------------------------------------
+# Security response headers
+# ---------------------------------------------------------------------------
+
+# Content-Security-Policy: a browser-side backstop for the stored-DOM-XSS sinks
+# and the CDN supply-chain surface. It allowlists exactly the CDNs the
+# templates load (htmx/alpine via unpkg, mermaid via jsdelivr, d3 via d3js.org)
+# and locks down framing, base-uri, and object/embed. 'unsafe-inline'/'unsafe-
+# eval' are retained for now because the UI relies on inline scripts/styles and
+# Alpine/Mermaid; tightening those is tracked as a follow-up (move inline
+# handlers to files + nonces). Override wholesale with FAULTRAY_CSP if needed.
+_DEFAULT_CSP = (
+    "default-src 'self'; "
+    "script-src 'self' 'unsafe-inline' 'unsafe-eval' "
+    "https://unpkg.com https://cdn.jsdelivr.net; "
+    "style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; "
+    "img-src 'self' data: https:; "
+    "font-src 'self' data: https:; "
+    "connect-src 'self'; "
+    "frame-ancestors 'none'; "
+    "base-uri 'self'; "
+    "form-action 'self'; "
+    "object-src 'none'"
+)
+_CSP = os.environ.get("FAULTRAY_CSP", _DEFAULT_CSP)
+
+
+@app.middleware("http")
+async def security_headers_middleware(request: Request, call_next):
+    """Attach security headers to every response (HTML and API)."""
+    response = await call_next(request)
+    headers = response.headers
+    headers.setdefault("Content-Security-Policy", _CSP)
+    headers.setdefault("X-Frame-Options", "DENY")
+    headers.setdefault("X-Content-Type-Options", "nosniff")
+    headers.setdefault("Referrer-Policy", "strict-origin-when-cross-origin")
+    headers.setdefault(
+        "Permissions-Policy", "geolocation=(), microphone=(), camera=()"
+    )
+    # HSTS only when served over HTTPS in production (avoid pinning HSTS on
+    # plain-HTTP dev where it would wedge the browser onto https://localhost).
+    if _is_production:
+        headers.setdefault(
+            "Strict-Transport-Security", "max-age=31536000; includeSubDomains"
+        )
+    return response
+
+
+# ---------------------------------------------------------------------------
 # Structured error responses
 # ---------------------------------------------------------------------------
 

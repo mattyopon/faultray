@@ -15,6 +15,7 @@ from rich.panel import Panel
 from rich.table import Table
 
 from faultray.cli.main import _load_graph_for_analysis, app, console
+from faultray.reporter.csv_safe import neutralize_rows
 
 
 @app.command()
@@ -92,6 +93,10 @@ def fmea(
         if not rows:
             console.print("[yellow]No failure modes matched the filter; nothing to export.[/]")
             return
+
+        # Defuse spreadsheet formula injection in user-derived cells before
+        # writing to either a file or stdout.
+        rows = neutralize_rows(rows)
 
         if output_file:
             try:

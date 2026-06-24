@@ -243,3 +243,77 @@ class TestAuditChainExport:
         assert data["integrity_verified"] is True
         assert data["first_entry"] is None
         assert data["last_entry"] is None
+
+
+# ---------------------------------------------------------------------------
+# Keyed HMAC tamper-evidence (FAULTRAY_SIGNING_KEY)
+# ---------------------------------------------------------------------------
+
+class TestAuditChainSigning:
+    """The chain is only cryptographically tamper-evident when keyed."""
+
+    def test_unkeyed_chain_is_not_tamper_evident(
+        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        monkeypatch.delenv("FAULTRAY_SIGNING_KEY", raising=False)
+        chain = AuditChain(log_path=tmp_path / "a.jsonl")
+        entry = chain.append("simulation_run", "system", "ran")
+        assert entry.signed is False
+        assert chain.tamper_evident is False
+        valid, msg = chain.verify_integrity()
+        assert valid is True
+        assert "not cryptographically signed" in msg
+
+    def test_keyed_chain_is_hmac_verified(self, tmp_path: Path) -> None:
+        chain = AuditChain(log_path=tmp_path / "a.jsonl", signing_key="s3cret")
+        entry = chain.append("simulation_run", "system", "ran", data="payload")
+        assert entry.signed is True
+        assert chain.tamper_evident is True
+        valid, msg = chain.verify_integrity()
+        assert valid is True
+        assert "HMAC-verified" in msg
+
+    def test_signing_key_changes_the_link(self, tmp_path: Path) -> None:
+        a = AuditChain(log_path=tmp_path / "a.jsonl", signing_key="key-a")
+        b = AuditChain(log_path=tmp_path / "b.jsonl", signing_key="key-b")
+        ea = a.append("x", "system", "d", data="same")
+        eb = b.append("x", "system", "d", data="same")
+        # Same inputs, different keys -> different MACs (forgery needs the key).
+        assert ea.entry_hash != eb.entry_hash
+
+    def test_wrong_key_on_reload_fails_closed(self, tmp_path: Path) -> None:
+        log = tmp_path / "a.jsonl"
+        signer = AuditChain(log_path=log, signing_key="real-key")
+        signer.append("simulation_run", "system", "ran", data="payload")
+        # Attacker/operator without the real key cannot vouch for the chain.
+        forger = AuditChain(log_path=log, signing_key="wrong-key")
+        valid, msg = forger.verify_integrity()
+        assert valid is False
+        assert "tampered" in msg
+
+    def test_signed_entry_without_key_fails_closed(
+        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        log = tmp_path / "a.jsonl"
+        AuditChain(log_path=log, signing_key="real-key").append("a", "system", "d")
+        monkeypatch.delenv("FAULTRAY_SIGNING_KEY", raising=False)
+        unkeyed = AuditChain(log_path=log)
+        valid, msg = unkeyed.verify_integrity()
+        assert valid is False
+        assert "no signing key" in msg
+
+    def test_require_signing_raises_without_key(
+        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        monkeypatch.delenv("FAULTRAY_SIGNING_KEY", raising=False)
+        with pytest.raises(RuntimeError, match="signing is required"):
+            AuditChain(log_path=tmp_path / "a.jsonl", require_signing=True)
+
+    def test_export_reports_tamper_evidence(self, tmp_path: Path) -> None:
+        chain = AuditChain(log_path=tmp_path / "a.jsonl", signing_key="k")
+        chain.append("a", "system", "d")
+        out = tmp_path / "export.json"
+        chain.export_for_audit(out)
+        data = json.loads(out.read_text(encoding="utf-8"))
+        assert data["tamper_evident"] is True
+        assert data["signature_algorithm"] == "hmac-sha256"

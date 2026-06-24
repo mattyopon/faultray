@@ -819,32 +819,56 @@ class TestExecutionFailure:
 
 
 # ===========================================================================
-# 25. High cost warning in simulation
+# 25. Cost / step hard stops in simulation (fail-safe, not advisory)
 # ===========================================================================
 
 
-class TestHighCostWarning:
-    def test_high_cost_plan_generates_side_effect(self, tmp_path: Path) -> None:
-        agent = _make_agent(tmp_path)
-        from faultray.remediation.iac_generator import RemediationFile, RemediationPlan
+def _one_file_plan(cost: float, *, files: int = 1):
+    from faultray.remediation.iac_generator import RemediationFile, RemediationPlan
 
-        plan = RemediationPlan(
-            total_monthly_cost=15000.0,
-            expected_score_before=50.0,
-            expected_score_after=80.0,
-            files=[
-                RemediationFile(
-                    path="expensive.tf",
-                    content="resource {}",
-                    description="Expensive fix",
-                    phase=3,
-                    impact_score_delta=30.0,
-                    monthly_cost=15000.0,
-                    category="dr",
-                ),
-            ],
-        )
-        result = agent._simulate_with_fix(_unhealthy_graph(), plan)
-        assert any("High estimated cost" in s for s in result.side_effects)
-        # High cost alone shouldn't fail the simulation
+    return RemediationPlan(
+        total_monthly_cost=cost,
+        expected_score_before=50.0,
+        expected_score_after=80.0,
+        files=[
+            RemediationFile(
+                path=f"fix-{i}.tf",
+                content="resource {}",
+                description="Fix",
+                phase=3,
+                impact_score_delta=30.0,
+                monthly_cost=cost / max(files, 1),
+                category="dr",
+            )
+            for i in range(files)
+        ],
+    )
+
+
+class TestCostAndStepHardStops:
+    def test_cost_under_cap_passes_without_warning(self, tmp_path: Path) -> None:
+        agent = _make_agent(tmp_path)  # default cap $100k/mo
+        result = agent._simulate_with_fix(_unhealthy_graph(), _one_file_plan(15000.0))
         assert result.passed
+        assert not any("cost" in s.lower() for s in result.side_effects)
+
+    def test_cost_over_cap_fails_closed(self, tmp_path: Path) -> None:
+        agent = _make_agent(tmp_path)
+        # A runaway plan must NOT pass simulation (previously the cost carve-out
+        # let any cost through with only an advisory string).
+        result = agent._simulate_with_fix(_unhealthy_graph(), _one_file_plan(1_000_000.0))
+        assert result.passed is False
+        assert any("safety cap" in s for s in result.side_effects)
+
+    def test_configurable_cost_cap(self, tmp_path: Path) -> None:
+        agent = _make_agent(tmp_path)
+        agent.max_monthly_cost = 5000.0
+        result = agent._simulate_with_fix(_unhealthy_graph(), _one_file_plan(8000.0))
+        assert result.passed is False
+
+    def test_too_many_steps_fails_closed(self, tmp_path: Path) -> None:
+        agent = _make_agent(tmp_path)
+        agent.max_steps = 10
+        result = agent._simulate_with_fix(_unhealthy_graph(), _one_file_plan(100.0, files=11))
+        assert result.passed is False
+        assert any("steps" in s for s in result.side_effects)

@@ -3,18 +3,29 @@
 
 """Append-only audit chain for simulation evidence.
 
-Implements a hash-chain audit log where each entry includes the hash
-of the previous entry, creating a tamper-evident sequence similar to
-a blockchain but without consensus overhead.
+Implements a hash-chain audit log where each entry links to the previous
+entry. Tamper-evidence is only genuine when a signing key is configured:
+each link is then an HMAC-SHA256 keyed with ``FAULTRAY_SIGNING_KEY`` (or a
+key passed to the constructor), so the chain cannot be silently rewritten
+without the secret. Without a key the chain is merely *structurally*
+consistent (plain SHA-256), which is detectable by anyone and therefore
+NOT cryptographically tamper-evident — callers in regulated contexts should
+construct the chain with ``require_signing=True`` to fail closed when no
+key is present, mirroring the keyed-MAC pattern in ``dora_audit_report`` and
+``licensing``.
 """
 
 from __future__ import annotations
 
 import hashlib
+import hmac
 import json
-from dataclasses import dataclass, asdict
+import os
+from dataclasses import dataclass, asdict, field
 from datetime import datetime, timezone
 from pathlib import Path
+
+_ENV_SIGNING_KEY = "FAULTRAY_SIGNING_KEY"  # noqa: S105 - env var name, not a secret
 
 
 @dataclass
@@ -25,20 +36,66 @@ class AuditEntry:
     action: str  # e.g., "simulation_run", "report_generated", "topology_loaded"
     actor: str  # e.g., "user@email.com", "api_key:xxx", "system"
     details: str  # Human-readable description
-    data_hash: str  # SHA-256 of the action's data
-    previous_hash: str  # Hash of the previous entry (chain link)
-    entry_hash: str  # Hash of this entry (including previous_hash)
+    data_hash: str  # MAC of the action's data
+    previous_hash: str  # MAC of the previous entry (chain link)
+    entry_hash: str  # MAC of this entry (including previous_hash)
+    signed: bool = field(default=False)  # True when computed with a keyed HMAC
 
 
 class AuditChain:
-    """Append-only hash-chain audit log."""
+    """Append-only hash-chain audit log.
+
+    When a signing key is configured the links are keyed HMAC-SHA256 and the
+    chain is genuinely tamper-evident. Without a key the links fall back to
+    plain SHA-256 and the chain is only structurally consistent; in that mode
+    ``verify_integrity`` and ``export_for_audit`` explicitly report that the
+    log is NOT cryptographically signed rather than overstating its guarantees.
+    """
 
     GENESIS_HASH = "0" * 64  # Genesis block hash
 
-    def __init__(self, log_path: Path | None = None) -> None:
+    def __init__(
+        self,
+        log_path: Path | None = None,
+        signing_key: str | None = None,
+        *,
+        require_signing: bool = False,
+    ) -> None:
         self._entries: list[AuditEntry] = []
         self._log_path = log_path or Path.home() / ".faultray" / "audit_chain.jsonl"
+        # Resolve the key from the environment when not supplied explicitly.
+        self._signing_key = (
+            signing_key if signing_key is not None else os.environ.get(_ENV_SIGNING_KEY)
+        ) or None
+        self._require_signing = require_signing
+        if require_signing and not self._signing_key:
+            raise RuntimeError(
+                "Audit chain signing is required but no key is configured. "
+                f"Set {_ENV_SIGNING_KEY} or pass signing_key= to the AuditChain."
+            )
         self._load()
+
+    @property
+    def tamper_evident(self) -> bool:
+        """True only when a signing key is configured (keyed HMAC links)."""
+        return bool(self._signing_key)
+
+    def _mac(self, payload: str) -> tuple[str, bool]:
+        """Return ``(hexdigest, signed)`` for *payload*.
+
+        Uses keyed HMAC-SHA256 when a signing key is configured (the
+        tamper-evident path); otherwise falls back to plain SHA-256 and
+        reports ``signed=False`` so callers never mistake the unkeyed digest
+        for a tamper-proof signature.
+        """
+        if self._signing_key:
+            return (
+                hmac.new(
+                    self._signing_key.encode(), payload.encode(), hashlib.sha256
+                ).hexdigest(),
+                True,
+            )
+        return hashlib.sha256(payload.encode()).hexdigest(), False
 
     def append(
         self,
@@ -51,11 +108,13 @@ class AuditChain:
         sequence = len(self._entries)
         previous_hash = self._entries[-1].entry_hash if self._entries else self.GENESIS_HASH
         timestamp = datetime.now(timezone.utc).isoformat()
-        data_hash = hashlib.sha256(data.encode()).hexdigest()
+        data_hash, _ = self._mac(data)
 
-        # Create entry hash from all fields including previous hash
+        # Create the chain link (entry hash) from all fields including the
+        # previous hash. Keyed with HMAC when a signing key is configured so
+        # the chain cannot be rewritten without the secret.
         entry_payload = f"{sequence}|{timestamp}|{action}|{actor}|{data_hash}|{previous_hash}"
-        entry_hash = hashlib.sha256(entry_payload.encode()).hexdigest()
+        entry_hash, signed = self._mac(entry_payload)
 
         entry = AuditEntry(
             sequence=sequence,
@@ -66,6 +125,7 @@ class AuditChain:
             data_hash=data_hash,
             previous_hash=previous_hash,
             entry_hash=entry_hash,
+            signed=signed,
         )
 
         self._entries.append(entry)
@@ -77,6 +137,7 @@ class AuditChain:
         if not self._entries:
             return True, "Empty chain"
 
+        all_signed = True
         for i, entry in enumerate(self._entries):
             # Check sequence
             if entry.sequence != i:
@@ -87,16 +148,39 @@ class AuditChain:
             if entry.previous_hash != expected_prev:
                 return False, f"Chain broken at entry {i}: previous_hash mismatch"
 
-            # Verify entry hash
+            # A signed entry can only be verified with the key that produced
+            # it: fail closed if it is signed but no key is configured.
+            if entry.signed and not self._signing_key:
+                return False, (
+                    f"Entry {i} is HMAC-signed but no signing key is configured "
+                    f"to verify it (set {_ENV_SIGNING_KEY})"
+                )
+            if self._require_signing and not entry.signed:
+                return False, f"Entry {i} is not cryptographically signed (require_signing)"
+            all_signed = all_signed and entry.signed
+
+            # Recompute the link with the same algorithm that produced it.
             entry_payload = (
                 f"{entry.sequence}|{entry.timestamp}|{entry.action}"
                 f"|{entry.actor}|{entry.data_hash}|{entry.previous_hash}"
             )
-            expected_hash = hashlib.sha256(entry_payload.encode()).hexdigest()
-            if entry.entry_hash != expected_hash:
+            if entry.signed:
+                expected_hash = hmac.new(
+                    self._signing_key.encode(), entry_payload.encode(), hashlib.sha256
+                ).hexdigest()
+            else:
+                expected_hash = hashlib.sha256(entry_payload.encode()).hexdigest()
+            if not hmac.compare_digest(entry.entry_hash, expected_hash):
                 return False, f"Entry hash tampered at entry {i}"
 
-        return True, f"Chain valid: {len(self._entries)} entries"
+        n = len(self._entries)
+        if all_signed and self._signing_key:
+            return True, f"Chain valid (HMAC-verified): {n} entries"
+        return True, (
+            f"Chain structurally valid: {n} entries "
+            f"(WARNING: not cryptographically signed; set {_ENV_SIGNING_KEY} "
+            "for tamper-evidence)"
+        )
 
     def get_entries(self, action: str | None = None, limit: int = 100) -> list[AuditEntry]:
         """Retrieve audit entries, optionally filtered by action."""
@@ -135,6 +219,8 @@ class AuditChain:
             "chain_length": len(self._entries),
             "integrity_verified": valid,
             "integrity_message": message,
+            "tamper_evident": self.tamper_evident,
+            "signature_algorithm": "hmac-sha256" if self.tamper_evident else "sha256-unkeyed",
             "first_entry": self._entries[0].timestamp if self._entries else None,
             "last_entry": self._entries[-1].timestamp if self._entries else None,
             "entries": [asdict(e) for e in self._entries],

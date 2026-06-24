@@ -10,6 +10,7 @@ import json
 import logging
 from pathlib import Path
 
+from faultray.reporter.csv_safe import neutralize_rows
 from faultray.simulator.engine import SimulationReport
 
 logger = logging.getLogger(__name__)
@@ -85,7 +86,8 @@ def export_csv(report: SimulationReport, path: Path) -> Path:
     with open(path, "w", newline="", encoding="utf-8") as fh:
         writer = csv.DictWriter(fh, fieldnames=fieldnames)
         writer.writeheader()
-        writer.writerows(rows)
+        # Defuse spreadsheet formula injection in user-derived cells.
+        writer.writerows(neutralize_rows(rows))
 
     return path.resolve()
 

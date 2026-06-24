@@ -340,3 +340,75 @@ class TestLicensingIntegration:
         monkeypatch.delenv("FAULTRAY_LICENSE_SECRET", raising=False)
 
         assert get_active_tier() == PricingTier.FREE
+
+
+# ---------------------------------------------------------------------------
+# license.json HMAC signing (forgery resistance)
+# ---------------------------------------------------------------------------
+
+
+class TestCouponLicenseSigning:
+    """When FAULTRAY_LICENSE_SECRET is set, license.json must be signed and
+    tamper/forgery is rejected (fail closed)."""
+
+    def test_redeem_writes_signature_when_secret_set(
+        self, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        import faultray.coupon as m
+
+        monkeypatch.setenv("FAULTRAY_LICENSE_SECRET", "topsecret")
+        coupon = create_coupon(tier="business", days=30)
+        redeem_coupon(coupon.code)
+        data = json.loads(m._LICENSE_FILE.read_text())
+        assert "coupon_sig" in data and len(data["coupon_sig"]) == 64
+        assert get_active_coupon_tier() == "business"
+
+    def test_forged_tier_is_rejected(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        import faultray.coupon as m
+
+        monkeypatch.setenv("FAULTRAY_LICENSE_SECRET", "topsecret")
+        coupon = create_coupon(tier="pro", days=30)
+        redeem_coupon(coupon.code)
+
+        # Attacker edits the tier to enterprise WITHOUT the secret (cannot re-sign).
+        data = json.loads(m._LICENSE_FILE.read_text())
+        data["coupon"]["tier"] = "enterprise"
+        m._LICENSE_FILE.write_text(json.dumps(data))
+
+        # Forgery fails the HMAC check and is ignored.
+        assert get_active_coupon_tier() is None
+
+    def test_unsigned_file_rejected_when_secret_set(
+        self, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        import faultray.coupon as m
+
+        # Write an unsigned (legacy/hand-crafted) license while a secret is set.
+        monkeypatch.setenv("FAULTRAY_LICENSE_SECRET", "topsecret")
+        future = (datetime.now(tz=timezone.utc) + timedelta(days=10)).isoformat()
+        m._FAULTRAY_DIR.mkdir(parents=True, exist_ok=True)
+        m._LICENSE_FILE.write_text(json.dumps({"coupon": {
+            "code": "FRAY-AAAA-BBBB-CCCC", "tier": "enterprise",
+            "redeemed_at": future, "active_until": future,
+        }}))
+        assert get_active_coupon_tier() is None
+
+    def test_secret_rotation_invalidates_old_signature(
+        self, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        monkeypatch.setenv("FAULTRAY_LICENSE_SECRET", "old-secret")
+        coupon = create_coupon(tier="business", days=30)
+        redeem_coupon(coupon.code)
+        assert get_active_coupon_tier() == "business"
+        # Rotate the secret: the old signature no longer verifies.
+        monkeypatch.setenv("FAULTRAY_LICENSE_SECRET", "new-secret")
+        assert get_active_coupon_tier() is None
+
+    def test_unsigned_flow_still_works_without_secret(
+        self, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        # Local convenience path: no secret => unsigned redeem/read still works.
+        monkeypatch.delenv("FAULTRAY_LICENSE_SECRET", raising=False)
+        coupon = create_coupon(tier="pro", days=30)
+        redeem_coupon(coupon.code)
+        assert get_active_coupon_tier() == "pro"

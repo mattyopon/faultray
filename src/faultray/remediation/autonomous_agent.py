@@ -168,6 +168,8 @@ class AutonomousRemediationAgent:
         output_dir: str = "~/.faultray/remediation/",
         cloud_provider: str | None = None,
         terraform_dir: str | None = None,
+        max_monthly_cost: float = 100_000.0,
+        max_steps: int = 50,
     ) -> None:
         self.model_path = model_path
         self.auto_approve = auto_approve
@@ -177,6 +179,11 @@ class AutonomousRemediationAgent:
         self.output_dir = Path(output_dir).expanduser()
         self.cloud_provider = cloud_provider
         self.terraform_dir = terraform_dir
+        # Hard fail-safe ceilings: a plan whose projected monthly cost or step
+        # count exceeds these is rejected outright (never executed), instead of
+        # passing simulation with an advisory warning string.
+        self.max_monthly_cost = max_monthly_cost
+        self.max_steps = max_steps
 
         # Ensure storage directories exist
         self._cycles_dir = self.output_dir / "cycles"
@@ -421,10 +428,30 @@ class AutonomousRemediationAgent:
 
         side_effects: list[str] = []
 
-        # Check for overly aggressive cost
-        if plan.total_monthly_cost > 10000:
-            side_effects.append(
-                f"High estimated cost: ${plan.total_monthly_cost:,.2f}/mo"
+        # HARD STOP: a plan whose projected monthly cost exceeds the configured
+        # ceiling is rejected outright. Previously this was an advisory string
+        # that still let the plan pass (the cost carve-out below), so a
+        # $1M/mo plan would sail through simulation.
+        if plan.total_monthly_cost > self.max_monthly_cost:
+            return _SimResult(
+                passed=False,
+                new_score=predicted_after,
+                side_effects=[
+                    f"Estimated cost ${plan.total_monthly_cost:,.2f}/mo exceeds the "
+                    f"${self.max_monthly_cost:,.2f}/mo safety cap"
+                ],
+            )
+
+        # HARD STOP: an unbounded number of steps is rejected outright rather
+        # than executed step-by-step.
+        if len(plan.files) > self.max_steps:
+            return _SimResult(
+                passed=False,
+                new_score=predicted_after,
+                side_effects=[
+                    f"Plan has {len(plan.files)} steps, exceeding the safety cap "
+                    f"of {self.max_steps}"
+                ],
             )
 
         # Check for score regression
@@ -453,9 +480,10 @@ class AutonomousRemediationAgent:
                     f"max allowed ({self.max_risk_level})"
                 )
 
-        passed = len(side_effects) == 0 or all(
-            "High estimated cost" in s for s in side_effects
-        )
+        # Any remaining side effect (e.g. a risk-level violation) fails the
+        # simulation. There is no cost carve-out: cost is enforced by the hard
+        # ceiling above, not by an advisory string that still passes.
+        passed = len(side_effects) == 0
 
         return _SimResult(
             passed=passed,
@@ -505,6 +533,29 @@ class AutonomousRemediationAgent:
             )
 
         steps = self._plan_to_steps(plan)
+
+        # Fail-safe guard at the execution boundary: even when a caller reaches
+        # execution without going through _simulate_with_fix (e.g.
+        # approve_and_execute), never run an over-budget or over-long plan.
+        plan_cost = getattr(plan, "total_monthly_cost", 0.0) or 0.0
+        if len(steps) > self.max_steps:
+            cycle.status = "blocked"
+            cycle.execution_log.append({
+                "step": "(pre-flight)",
+                "status": "blocked",
+                "reason": f"Plan has {len(steps)} steps, exceeding the safety cap "
+                          f"of {self.max_steps}",
+            })
+            return cycle
+        if plan_cost > self.max_monthly_cost:
+            cycle.status = "blocked"
+            cycle.execution_log.append({
+                "step": "(pre-flight)",
+                "status": "blocked",
+                "reason": f"Estimated cost ${plan_cost:,.2f}/mo exceeds the "
+                          f"${self.max_monthly_cost:,.2f}/mo safety cap",
+            })
+            return cycle
 
         live_apply = self._auto_apply_allowed()
         if (not self.dry_run) and not live_apply:
