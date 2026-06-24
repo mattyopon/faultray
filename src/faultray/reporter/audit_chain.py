@@ -159,11 +159,17 @@ class AuditChain:
                     f"Entry {i} is HMAC-signed but no signing key is configured "
                     f"to verify it (set {_ENV_SIGNING_KEY})"
                 )
-            if self._require_signing and not entry.signed:
-                return False, f"Entry {i} is not cryptographically signed (require_signing)"
+            # In a signed deployment (key configured) every entry MUST be signed,
+            # otherwise an attacker who can write the JSONL could append an
+            # unsigned entry after a valid signed chain and recompute its plain
+            # SHA-256 link. Reject unsigned entries whenever a key is configured.
+            if (self._signing_key or self._require_signing) and not entry.signed:
+                return False, (
+                    f"Entry {i} is unsigned in a signed chain "
+                    f"(a configured key requires every entry to be HMAC-signed)"
+                )
             all_signed = all_signed and entry.signed
 
-            # Recompute the link with the same algorithm that produced it.
             entry_payload = (
                 f"{entry.sequence}|{entry.timestamp}|{entry.action}"
                 f"|{entry.actor}|{entry.data_hash}|{entry.previous_hash}"
@@ -173,10 +179,25 @@ class AuditChain:
                 expected_hash = hmac.new(
                     self._signing_key.encode(), entry_payload.encode(), hashlib.sha256
                 ).hexdigest()
+                if not hmac.compare_digest(entry.entry_hash, expected_hash):
+                    return False, f"Entry hash tampered at entry {i}"
             else:
-                expected_hash = hashlib.sha256(entry_payload.encode()).hexdigest()
-            if not hmac.compare_digest(entry.entry_hash, expected_hash):
-                return False, f"Entry hash tampered at entry {i}"
+                # Unsigned (only reachable with no key configured). Accept either
+                # the current details-inclusive payload OR the pre-upgrade legacy
+                # payload (without details), so existing unsigned logs still
+                # verify. Unsigned entries carry no cryptographic guarantee
+                # either way, so the fallback loses no security.
+                legacy_payload = (
+                    f"{entry.sequence}|{entry.timestamp}|{entry.action}"
+                    f"|{entry.actor}|{entry.data_hash}|{entry.previous_hash}"
+                )
+                expected_new = hashlib.sha256(entry_payload.encode()).hexdigest()
+                expected_old = hashlib.sha256(legacy_payload.encode()).hexdigest()
+                if not (
+                    hmac.compare_digest(entry.entry_hash, expected_new)
+                    or hmac.compare_digest(entry.entry_hash, expected_old)
+                ):
+                    return False, f"Entry hash tampered at entry {i}"
 
         n = len(self._entries)
         if all_signed and self._signing_key:

@@ -341,3 +341,42 @@ class TestAuditDetailsAndExport:
         data = json.loads(out.read_text(encoding="utf-8"))
         assert data["tamper_evident"] is False
         assert data["signature_algorithm"] == "sha256-unkeyed"
+
+
+class TestAuditLegacyAndAppendGuards:
+    def test_legacy_unsigned_entry_without_details_still_verifies(
+        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        import hashlib
+        monkeypatch.delenv("FAULTRAY_SIGNING_KEY", raising=False)
+        chain = AuditChain(log_path=tmp_path / "a.jsonl")
+        seq, ts, action, actor, details = (
+            0, "2026-01-01T00:00:00+00:00", "act", "system", "legacy details"
+        )
+        data_hash = hashlib.sha256(b"").hexdigest()
+        prev = AuditChain.GENESIS_HASH
+        # Pre-upgrade payload omitted `details`.
+        legacy_payload = f"{seq}|{ts}|{action}|{actor}|{data_hash}|{prev}"
+        legacy_hash = hashlib.sha256(legacy_payload.encode()).hexdigest()
+        chain._entries = [AuditEntry(seq, ts, action, actor, details, data_hash, prev, legacy_hash)]
+        ok, _ = chain.verify_integrity()
+        assert ok is True
+
+    def test_unsigned_append_to_signed_chain_is_rejected(self, tmp_path: Path) -> None:
+        import hashlib
+        chain = AuditChain(log_path=tmp_path / "a.jsonl", signing_key="k")
+        chain.append("a", "system", "d")  # legitimate signed entry 0
+        e0 = chain._entries[0]
+        seq, ts, action, actor, details = (
+            1, "2026-01-01T00:00:00+00:00", "evil", "attacker", "forged"
+        )
+        data_hash = hashlib.sha256(b"").hexdigest()
+        prev = e0.entry_hash
+        payload = f"{seq}|{ts}|{action}|{actor}|{data_hash}|{prev}|{details}"
+        forged = hashlib.sha256(payload.encode()).hexdigest()  # attacker computes plain sha256
+        chain._entries.append(
+            AuditEntry(seq, ts, action, actor, details, data_hash, prev, forged, signed=False)
+        )
+        ok, msg = chain.verify_integrity()
+        assert ok is False
+        assert "unsigned" in msg
