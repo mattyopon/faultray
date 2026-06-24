@@ -115,6 +115,49 @@ def test_invalid_content_length_rejected_with_400() -> None:
     assert resp.status_code == 400
 
 
+def test_oversize_body_without_content_length_rejected_during_parsing() -> None:
+    # Chunked / omitted Content-Length: the header pre-check is skipped, so the
+    # ASGI receive cap must reject the body DURING parsing, before request.form()
+    # spools the whole multipart payload to temp disk.
+    from starlette.requests import Request
+
+    from faultray.api.routes.graph import _MAX_REQUEST_BYTES, topology_diff_api
+
+    boundary = b"capTESTboundary"
+    head = (
+        b"--" + boundary + b"\r\n"
+        b'Content-Disposition: form-data; name="after_file"; filename="a.yaml"\r\n'
+        b"\r\n"
+    )
+    one_mb = b"x" * (1024 * 1024)
+    # Enough 1 MB file-content chunks to push the cumulative body past the cap
+    # (the closing boundary is intentionally never reached).
+    n_chunks = _MAX_REQUEST_BYTES // len(one_mb) + 2
+    messages = [head] + [one_mb] * n_chunks
+
+    idx = 0
+
+    async def receive():
+        nonlocal idx
+        if idx < len(messages):
+            body = messages[idx]
+            idx += 1
+            return {"type": "http.request", "body": body, "more_body": True}
+        return {"type": "http.request", "body": b"", "more_body": False}
+
+    scope = {
+        "type": "http",
+        "method": "POST",
+        "path": "/api/topology-diff",
+        # No content-length header → header pre-check is skipped on purpose.
+        "headers": [(b"content-type", b"multipart/form-data; boundary=" + boundary)],
+        "query_string": b"",
+    }
+    req = Request(scope, receive)
+    resp = asyncio.run(topology_diff_api(req, user={"id": "t"}))
+    assert resp.status_code == 413
+
+
 def test_endpoint_valid_upload_does_not_leak_temp_files(auth_client) -> None:
     tmpdir = Path(tempfile.gettempdir())
     before = set(tmpdir.glob("*.yaml"))

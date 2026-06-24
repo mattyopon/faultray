@@ -43,6 +43,13 @@ class _UploadTooLarge(Exception):
         self.field = field
 
 
+class _RequestBodyTooLarge(OSError):
+    """Raised by the ASGI receive cap when the whole request body exceeds
+    ``_MAX_REQUEST_BYTES``. Subclasses ``OSError`` so Starlette's multipart
+    parser closes any spooled temp files (its ``except (MultiPartException,
+    OSError)`` cleanup) before the exception propagates."""
+
+
 async def _save_upload_to_temp(upload, *, field: str, max_bytes: int = _MAX_UPLOAD_BYTES) -> Path:
     """Stream an uploaded file to a temp ``.yaml`` file in 64 KB chunks.
 
@@ -71,6 +78,29 @@ async def _save_upload_to_temp(upload, *, field: str, max_bytes: int = _MAX_UPLO
         if not tmp.closed:
             tmp.close()
     return path
+
+
+def _cap_request_body(request: Request, max_bytes: int) -> None:
+    """Wrap the ASGI ``receive`` so the cumulative request-body size is capped
+    DURING parsing. ``await request.form()`` otherwise spools the whole
+    multipart body to a SpooledTemporaryFile before the per-file cap runs, and a
+    chunked / omitted-Content-Length upload slips past the header pre-check. The
+    wrapper raises :class:`_RequestBodyTooLarge` once the cap is exceeded, so the
+    parser aborts (and closes its spooled files) before the oversized body fully
+    lands on temp disk."""
+    received = 0
+    original_receive = request._receive
+
+    async def capped_receive():
+        nonlocal received
+        message = await original_receive()
+        if message.get("type") == "http.request":
+            received += len(message.get("body", b""))
+            if received > max_bytes:
+                raise _RequestBodyTooLarge()
+        return message
+
+    request._receive = capped_receive
 
 
 # ---------------------------------------------------------------------------
@@ -382,12 +412,17 @@ async def topology_diff_api(
     request: Request, user=Depends(_require_permission("view_results"))
 ):
     """Compare two uploaded YAML files and return diff results."""
-    # Enforce the body cap BEFORE form parsing: ``await request.form()`` buffers
-    # the whole multipart payload to a temp file on disk before any per-file
-    # check below runs, so reject an oversized declared Content-Length up front
-    # to bound temp-disk consumption. (The per-file streaming cap in
-    # ``_save_upload_to_temp`` remains the authoritative per-file limit, and
-    # covers chunked uploads that omit Content-Length.)
+    # Bound the request body so a hostile upload can't exhaust temp disk while
+    # ``await request.form()`` spools the multipart payload. Two layers:
+    #   1. a fast Content-Length pre-check that 413s a declared oversize body
+    #      before any bytes are read, and
+    #   2. an ASGI receive cap (_cap_request_body) that enforces the same limit
+    #      DURING parsing, so a chunked / omitted-Content-Length upload — which
+    #      the header check can't see — is still rejected before the whole body
+    #      lands on temp disk.
+    # The per-file streaming cap in ``_save_upload_to_temp`` stays the precise
+    # per-file limit.
+    limit_mb = _MAX_REQUEST_BYTES // (1024 * 1024)
     content_length = request.headers.get("content-length")
     if content_length is not None:
         try:
@@ -397,12 +432,18 @@ async def topology_diff_api(
         if declared_bytes < 0:
             return JSONResponse({"error": "Invalid Content-Length header"}, status_code=400)
         if declared_bytes > _MAX_REQUEST_BYTES:
-            limit_mb = _MAX_REQUEST_BYTES // (1024 * 1024)
             return JSONResponse(
                 {"error": f"Request body exceeds the {limit_mb} MB limit"},
                 status_code=413,
             )
-    form = await request.form()
+    _cap_request_body(request, _MAX_REQUEST_BYTES)
+    try:
+        form = await request.form()
+    except _RequestBodyTooLarge:
+        return JSONResponse(
+            {"error": f"Request body exceeds the {limit_mb} MB limit"},
+            status_code=413,
+        )
     before_file = form.get("before_file")
     after_file = form.get("after_file")
 
