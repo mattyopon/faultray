@@ -111,9 +111,13 @@ class AuditChain:
         data_hash, _ = self._mac(data)
 
         # Create the chain link (entry hash) from all fields including the
-        # previous hash. Keyed with HMAC when a signing key is configured so
-        # the chain cannot be rewritten without the secret.
-        entry_payload = f"{sequence}|{timestamp}|{action}|{actor}|{data_hash}|{previous_hash}"
+        # previous hash AND the human-readable details (otherwise details could
+        # be altered on a signed entry without detection). Keyed with HMAC when
+        # a signing key is configured so the chain cannot be rewritten.
+        entry_payload = (
+            f"{sequence}|{timestamp}|{action}|{actor}|{data_hash}"
+            f"|{previous_hash}|{details}"
+        )
         entry_hash, signed = self._mac(entry_payload)
 
         entry = AuditEntry(
@@ -163,6 +167,7 @@ class AuditChain:
             entry_payload = (
                 f"{entry.sequence}|{entry.timestamp}|{entry.action}"
                 f"|{entry.actor}|{entry.data_hash}|{entry.previous_hash}"
+                f"|{entry.details}"
             )
             if entry.signed:
                 expected_hash = hmac.new(
@@ -215,12 +220,20 @@ class AuditChain:
     def export_for_audit(self, output_path: Path) -> None:
         """Export the full chain as a JSON file for auditors."""
         valid, message = self.verify_integrity()
+        # Tamper-evidence is only TRUE when a key is configured AND every loaded
+        # entry was actually HMAC-signed. A key present over legacy unsigned
+        # entries must not be advertised as tamper-evident.
+        evident = (
+            self.tamper_evident
+            and bool(self._entries)
+            and all(e.signed for e in self._entries)
+        )
         export = {
             "chain_length": len(self._entries),
             "integrity_verified": valid,
             "integrity_message": message,
-            "tamper_evident": self.tamper_evident,
-            "signature_algorithm": "hmac-sha256" if self.tamper_evident else "sha256-unkeyed",
+            "tamper_evident": evident,
+            "signature_algorithm": "hmac-sha256" if evident else "sha256-unkeyed",
             "first_entry": self._entries[0].timestamp if self._entries else None,
             "last_entry": self._entries[-1].timestamp if self._entries else None,
             "entries": [asdict(e) for e in self._entries],

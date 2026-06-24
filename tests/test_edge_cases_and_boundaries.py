@@ -693,11 +693,10 @@ class TestInputValidation:
     # --- Special characters in IDs ---
 
     def test_special_chars_in_component_id(self):
-        """IDs with spaces, newlines, tabs, and special chars."""
-        special_ids = [
+        """Spaces/slashes/quotes are allowed; newlines/tabs (control chars) are
+        rejected at the model boundary."""
+        allowed_ids = [
             "has space",
-            "has\nnewline",
-            "has\ttab",
             "has/slash",
             "has\\backslash",
             'has"quote',
@@ -706,18 +705,20 @@ class TestInputValidation:
             "has#hash",
         ]
         graph = InfraGraph()
-        for sid in special_ids:
+        for sid in allowed_ids:
             graph.add_component(_make_component(cid=sid, name=f"comp-{sid[:5]}"))
-        assert len(graph.components) == len(special_ids)
-        for sid in special_ids:
+        assert len(graph.components) == len(allowed_ids)
+        for sid in allowed_ids:
             assert graph.get_component(sid) is not None
+        # Control characters (newline/tab) are rejected at the boundary.
+        for bad in ["has\nnewline", "has\ttab"]:
+            with pytest.raises(ValidationError):
+                _make_component(cid=bad, name="x")
 
     def test_null_byte_in_component_id(self):
-        """Null byte in ID should be storable (Python strings allow it)."""
-        c = _make_component(cid="before\x00after", name="NullByte")
-        graph = InfraGraph()
-        graph.add_component(c)
-        assert graph.get_component("before\x00after") is not None
+        """Null byte in ID is rejected at the model boundary (control char)."""
+        with pytest.raises(ValidationError):
+            _make_component(cid="before\x00after", name="NullByte")
 
     # --- NaN/Infinity in numeric fields ---
 

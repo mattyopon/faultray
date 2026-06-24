@@ -13,6 +13,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
+import pydantic
 import pytest
 import yaml
 
@@ -119,7 +120,8 @@ class TestScriptInjection:
     def test_script_in_component_name_stored_literally(
         self, payload: str, tmp_path: Path,
     ) -> None:
-        """Script content in component name should be stored as plain text."""
+        """Inert injection strings (templates/code) are stored verbatim; HTML
+        markup (<>) and control chars are rejected at the model boundary."""
         yaml_content = {
             "components": [
                 {"id": "safe", "name": payload, "type": "app_server"},
@@ -128,17 +130,22 @@ class TestScriptInjection:
         }
         yaml_file = tmp_path / "script.yaml"
         yaml_file.write_text(yaml.dump(yaml_content))
-        graph = load_yaml(yaml_file)
-        comp = graph.get_component("safe")
-        assert comp is not None
-        # The payload should be stored verbatim, never evaluated
-        assert comp.name == payload
+        if any(c in "<>" or ord(c) < 0x20 for c in payload):
+            with pytest.raises(pydantic.ValidationError):
+                load_yaml(yaml_file)
+        else:
+            graph = load_yaml(yaml_file)
+            comp = graph.get_component("safe")
+            assert comp is not None
+            # Inert payload stored verbatim, never evaluated.
+            assert comp.name == payload
 
     @pytest.mark.parametrize("payload", SCRIPT_PAYLOADS)
     def test_script_in_host_field_stored_literally(
         self, payload: str, tmp_path: Path,
     ) -> None:
-        """Script content in host field should be stored as plain text."""
+        """Inert injection strings are stored verbatim in host; HTML markup
+        (<>) and control chars are rejected at the model boundary."""
         yaml_content = {
             "components": [
                 {"id": "h1", "name": "Test", "type": "app_server", "host": payload},
@@ -147,10 +154,14 @@ class TestScriptInjection:
         }
         yaml_file = tmp_path / "host_inj.yaml"
         yaml_file.write_text(yaml.dump(yaml_content))
-        graph = load_yaml(yaml_file)
-        comp = graph.get_component("h1")
-        assert comp is not None
-        assert comp.host == payload
+        if any(c in "<>" or ord(c) < 0x20 for c in payload):
+            with pytest.raises(pydantic.ValidationError):
+                load_yaml(yaml_file)
+        else:
+            graph = load_yaml(yaml_file)
+            comp = graph.get_component("h1")
+            assert comp is not None
+            assert comp.host == payload
 
     @pytest.mark.parametrize("payload", SCRIPT_PAYLOADS)
     def test_script_in_tags_stored_literally(

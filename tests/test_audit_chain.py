@@ -317,3 +317,27 @@ class TestAuditChainSigning:
         data = json.loads(out.read_text(encoding="utf-8"))
         assert data["tamper_evident"] is True
         assert data["signature_algorithm"] == "hmac-sha256"
+
+
+class TestAuditDetailsAndExport:
+    def test_details_are_covered_by_the_mac(self, tmp_path: Path) -> None:
+        chain = AuditChain(log_path=tmp_path / "a.jsonl", signing_key="k")
+        chain.append("act", "system", "original details", data="d")
+        # Tampering the human-readable details must break verification.
+        chain._entries[0].details = "tampered details"
+        ok, _ = chain.verify_integrity()
+        assert ok is False
+
+    def test_unsigned_entries_not_exported_as_tamper_evident(
+        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        log = tmp_path / "a.jsonl"
+        monkeypatch.delenv("FAULTRAY_SIGNING_KEY", raising=False)
+        AuditChain(log_path=log).append("a", "system", "d")  # unsigned legacy
+        # Reload with a key now present — must NOT advertise tamper-evidence.
+        chain = AuditChain(log_path=log, signing_key="k")
+        out = tmp_path / "e.json"
+        chain.export_for_audit(out)
+        data = json.loads(out.read_text(encoding="utf-8"))
+        assert data["tamper_evident"] is False
+        assert data["signature_algorithm"] == "sha256-unkeyed"

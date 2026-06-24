@@ -16,6 +16,7 @@ import tempfile
 from pathlib import Path
 
 import pytest
+from pydantic import ValidationError
 
 from faultray.model.components import (
     Component,
@@ -67,15 +68,13 @@ class TestInputSanitization:
             assert not Path("/etc/passwd_faultray").exists()
 
     def test_component_id_with_null_bytes(self):
-        """Component IDs with null bytes should be stored literally."""
-        graph = InfraGraph()
-        comp = Component(
-            id="comp\x00injected",
-            name="NullByte",
-            type=ComponentType.CACHE,
-        )
-        graph.add_component(comp)
-        assert graph.get_component("comp\x00injected") is not None
+        """Component IDs with null bytes are rejected at the model boundary."""
+        with pytest.raises(ValidationError):
+            Component(
+                id="comp\x00injected",
+                name="NullByte",
+                type=ComponentType.CACHE,
+            )
 
     def test_component_id_with_slashes_and_backslashes(self):
         """IDs containing / and \\ must not cause filesystem side effects."""
@@ -129,16 +128,14 @@ class TestInputSanitization:
         assert finding["effects"][0]["component_name"] == xss_name
 
     def test_component_name_with_script_injection(self):
-        """Component names with script tags should not break graph serialisation."""
-        graph = InfraGraph()
-        comp = Component(
-            id="comp1",
-            name='<img onerror="alert(1)" src=x>',
-            type=ComponentType.WEB_SERVER,
-        )
-        graph.add_component(comp)
-        data = graph.to_dict()
-        assert data["components"][0]["name"] == '<img onerror="alert(1)" src=x>'
+        """Component names containing HTML tags (<>) are rejected at the model
+        boundary, so the tag-injection payload never reaches serialisation."""
+        with pytest.raises(ValidationError):
+            Component(
+                id="comp1",
+                name='<img onerror="alert(1)" src=x>',
+                type=ComponentType.WEB_SERVER,
+            )
 
     # --- YAML / JSON Config Safety ---
 

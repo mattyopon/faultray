@@ -73,6 +73,8 @@ class RemediationFile:
     impact_score_delta: float  # Expected resilience score improvement
     monthly_cost: float  # Estimated monthly cost in USD
     category: str  # "redundancy", "security", "dr", "monitoring"
+    component_id: str = ""  # the component this file remediates
+    rule_key: str = ""  # the REMEDIATION_RULES key that produced this file
 
 
 @dataclass
@@ -694,6 +696,8 @@ class IaCGenerator:
                             impact_score_delta=rule.impact,
                             monthly_cost=rule.cost,
                             category=rule.category,
+                            component_id=comp.id,
+                            rule_key=rule.key,
                         )
                     )
 

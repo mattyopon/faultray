@@ -257,7 +257,10 @@ def test_path_traversal_prevention():
 
 
 def test_xss_prevention_in_html():
-    """Verify HTML reports escape user input."""
+    """The model rejects tag-injection payloads at the boundary, AND HTML
+    reports still escape the special chars that ARE allowed (e.g. &)."""
+    from pydantic import ValidationError
+
     from faultray.model.components import (
         Capacity,
         Component,
@@ -268,14 +271,21 @@ def test_xss_prevention_in_html():
     from faultray.reporter.html_report import generate_html_report
     from faultray.simulator.engine import SimulationEngine
 
-    graph = InfraGraph()
-    xss_payload = "<script>alert('xss')</script>"
-
-    # Add a component whose name contains an XSS payload
-    graph.add_component(
+    # 1. Tag-injection payloads (<>) are rejected at the model boundary.
+    with pytest.raises(ValidationError):
         Component(
             id="xss-test",
-            name=xss_payload,
+            name="<script>alert('xss')</script>",
+            type=ComponentType.APP_SERVER,
+        )
+
+    # 2. Allowed special chars (&) still require — and must receive — escaping.
+    graph = InfraGraph()
+    name = "Acme & Co Servers"
+    graph.add_component(
+        Component(
+            id="amp-test",
+            name=name,
             type=ComponentType.APP_SERVER,
             host="app01",
             port=8080,
@@ -287,15 +297,11 @@ def test_xss_prevention_in_html():
 
     engine = SimulationEngine(graph)
     report = engine.run_all_defaults()
-
     html = generate_html_report(report, graph)
 
-    # The raw script tag should NOT appear unescaped
-    assert "<script>alert('xss')</script>" not in html, (
-        "XSS payload rendered unescaped in HTML report"
-    )
-    # The escaped version should be present
-    assert "&lt;script&gt;" in html or "alert(&#" in html or xss_payload not in html
+    # Raw ampersand must not survive; the escaped form must be present.
+    assert "Acme & Co Servers" not in html, "ampersand rendered unescaped in HTML report"
+    assert "Acme &amp; Co Servers" in html
 
 
 # ── Auth tokens not logged ────────────────────────────────────────────────

@@ -413,7 +413,7 @@ class TestSimulationFailure:
         """A fix whose INDEPENDENTLY MEASURED effect lowers the score fails."""
         agent = _make_agent(tmp_path)
         # Force the measured effect to be a regression (90 -> 50).
-        agent._measure_fix_effect = lambda g: (90.0, 50.0)  # type: ignore[method-assign]
+        agent._measure_fix_effect = lambda g, p=None: (90.0, 50.0)  # type: ignore[method-assign]
         result = agent._simulate_with_fix(_unhealthy_graph(), self._regressing_plan())
         assert not result.passed
         assert result.new_score == 50.0  # measured score is authoritative
@@ -423,7 +423,7 @@ class TestSimulationFailure:
         """When independent measurement is unavailable, fall back to the
         projection — a projected regression still fails (unverified)."""
         agent = _make_agent(tmp_path)
-        agent._measure_fix_effect = lambda g: (None, None)  # type: ignore[method-assign]
+        agent._measure_fix_effect = lambda g, p=None: (None, None)  # type: ignore[method-assign]
         result = agent._simulate_with_fix(_unhealthy_graph(), self._regressing_plan())
         assert not result.passed
         assert any("decrease" in s for s in result.side_effects)
@@ -984,3 +984,26 @@ class TestVerifyRollback:
         # The undo is itself gated: no live-apply opt-in => cannot run destroy.
         agent = _make_agent(tmp_path, dry_run=True)
         assert agent._rollback_step("terraform", "a.tf") is False
+
+
+class TestTargetedRollback:
+    def test_terraform_targets_extracted_from_file(self, tmp_path: Path) -> None:
+        from faultray.remediation.autonomous_agent import AutonomousRemediationAgent
+        p = tmp_path / "x.tf"
+        p.write_text(
+            'resource "aws_db_instance" "replica" {}\n'
+            'resource "aws_s3_bucket" "b" {}\n'
+        )
+        assert AutonomousRemediationAgent._terraform_targets(p) == [
+            "aws_db_instance.replica",
+            "aws_s3_bucket.b",
+        ]
+
+    def test_rollback_refuses_untargeted_destroy(
+        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        # Full opt-in so the gate is open, but no .tf file exists -> no targets
+        # -> rollback must REFUSE (never run an untargeted destroy).
+        monkeypatch.setenv("FAULTRAY_ALLOW_AUTO_APPLY", "1")
+        agent = _make_agent(tmp_path, dry_run=False, auto_approve=True)
+        assert agent._rollback_step("terraform", "missing.tf") is False

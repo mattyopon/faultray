@@ -14,6 +14,7 @@ import copy
 import json
 import logging
 import os
+import re
 import subprocess
 import uuid
 from dataclasses import dataclass, field
@@ -208,7 +209,9 @@ _RULE_MUTATIONS = {
 }
 
 
-def _apply_remediation_intent(graph: InfraGraph) -> int:
+def _apply_remediation_intent(
+    graph: InfraGraph, selected: set[tuple[str, str]] | None = None
+) -> int:
     """Apply the remediation rules' intended structural changes to *graph* in
     place; return the number of fixes applied.
 
@@ -216,6 +219,11 @@ def _apply_remediation_intent(graph: InfraGraph) -> int:
     never drifts from the IaC generator, then applies the corresponding graph
     mutation. This lets SIMULATE MEASURE a fix's real effect on the resilience
     score instead of trusting the generator's self-reported projected delta.
+
+    When *selected* (a set of ``(component_id, rule_key)`` pairs) is given, only
+    those pairs are applied — so the measurement reflects exactly the selected
+    plan, not every rule that happens to match the graph (the IaC generator
+    trims its plan once the target score is reached).
     """
     from faultray.remediation.iac_generator import REMEDIATION_RULES
 
@@ -224,6 +232,8 @@ def _apply_remediation_intent(graph: InfraGraph) -> int:
         for rule in REMEDIATION_RULES:
             mutate = _RULE_MUTATIONS.get(rule.key)
             if mutate is None or not rule.condition(comp):
+                continue
+            if selected is not None and (comp.id, rule.key) not in selected:
                 continue
             mutate(comp)
             applied += 1
@@ -513,19 +523,33 @@ class AutonomousRemediationAgent:
         return generator, iac_plan
 
     def _measure_fix_effect(
-        self, graph: InfraGraph
+        self, graph: InfraGraph, plan: Any = None
     ) -> tuple[float | None, float | None]:
         """Independently MEASURE the fix's effect on the resilience score.
 
-        Deep-copies the graph, applies the remediation rules' structural intent
-        to the copy, and re-scores both — returning ``(before, after)`` measured
-        with the real scoring engine. Returns ``(None, None)`` if measurement is
-        not possible, so the caller can fall back without claiming verification.
+        Deep-copies the graph, applies ONLY the selected plan's structural
+        intent to the copy, and re-scores both — returning ``(before, after)``
+        measured with the real scoring engine. Returns ``(None, None)`` if
+        measurement is not possible, so the caller can fall back without
+        claiming verification.
         """
         try:
             before = graph.resilience_score()
             patched = copy.deepcopy(graph)
-            applied = _apply_remediation_intent(patched)
+            # Restrict the measurement to exactly the files in the selected plan
+            # (the generator trims its plan once the target score is reached);
+            # fall back to all matching rules when the linkage is unavailable.
+            selected: set[tuple[str, str]] | None = None
+            files = getattr(plan, "files", None) if plan is not None else None
+            if files:
+                pairs = {
+                    (f.component_id, f.rule_key)
+                    for f in files
+                    if getattr(f, "component_id", "") and getattr(f, "rule_key", "")
+                }
+                if pairs:
+                    selected = pairs
+            applied = _apply_remediation_intent(patched, selected)
             if applied == 0:
                 return before, before
             after = patched.resilience_score()
@@ -588,7 +612,7 @@ class AutonomousRemediationAgent:
         # Independently MEASURE the fix's effect by applying the remediation
         # rules' structural intent to a graph copy and re-scoring with the real
         # engine — never trust the generator's projected expected_score_after.
-        measured_before, measured_after = self._measure_fix_effect(graph)
+        measured_before, measured_after = self._measure_fix_effect(graph, plan)
         if measured_before is not None and measured_after is not None:
             new_score = measured_after
             if measured_after < measured_before - _SIM_REGRESSION_TOLERANCE:
@@ -691,21 +715,25 @@ class AutonomousRemediationAgent:
         # approve_and_execute), never run an over-budget or over-long plan.
         plan_cost = getattr(plan, "total_monthly_cost", 0.0) or 0.0
         if len(steps) > self.max_steps:
+            reason = (
+                f"Plan has {len(steps)} steps, exceeding the safety cap "
+                f"of {self.max_steps}"
+            )
             cycle.status = "blocked"
+            cycle.report_summary = f"BLOCKED (pre-flight): {reason}"
             cycle.execution_log.append({
-                "step": "(pre-flight)",
-                "status": "blocked",
-                "reason": f"Plan has {len(steps)} steps, exceeding the safety cap "
-                          f"of {self.max_steps}",
+                "step": "(pre-flight)", "status": "blocked", "reason": reason,
             })
             return cycle
         if plan_cost > self.max_monthly_cost:
+            reason = (
+                f"Estimated cost ${plan_cost:,.2f}/mo exceeds the "
+                f"${self.max_monthly_cost:,.2f}/mo safety cap"
+            )
             cycle.status = "blocked"
+            cycle.report_summary = f"BLOCKED (pre-flight): {reason}"
             cycle.execution_log.append({
-                "step": "(pre-flight)",
-                "status": "blocked",
-                "reason": f"Estimated cost ${plan_cost:,.2f}/mo exceeds the "
-                          f"${self.max_monthly_cost:,.2f}/mo safety cap",
+                "step": "(pre-flight)", "status": "blocked", "reason": reason,
             })
             return cycle
 
@@ -893,20 +921,56 @@ class AutonomousRemediationAgent:
                 output=f"kubectl CLI not available: {exc}",
             )
 
+    @staticmethod
+    def _terraform_targets(tf_path: Path) -> list[str]:
+        """Extract ``TYPE.NAME`` resource addresses from a terraform file.
+
+        Used so rollback can ``-target`` ONLY the resources this remediation
+        added, never the whole workspace.
+        """
+        try:
+            content = tf_path.read_text(encoding="utf-8")
+        except OSError:
+            return []
+        return [
+            f"{m.group(1)}.{m.group(2)}"
+            for m in re.finditer(r'resource\s+"([^"]+)"\s+"([^"]+)"', content)
+        ]
+
     def _rollback_step(self, execution_type: str, file_path: str) -> bool:
         """Undo a previously-applied step. Returns True if the undo succeeded.
 
-        terraform -> ``terraform destroy``; kubernetes -> ``kubectl delete -f``.
-        Routed through _apply_guarded so the undo is itself gated/timed/audited.
-        Non-infra steps have nothing to undo and report success.
+        terraform -> targeted ``terraform destroy -target=...`` (NEVER an
+        untargeted destroy, which would deprovision the operator's entire
+        Terraform-managed stack); kubernetes -> ``kubectl delete -f`` (already
+        scoped to the applied file). Routed through _apply_guarded so the undo
+        is itself gated/timed/audited. Non-infra steps have nothing to undo.
         """
         try:
             if execution_type == "terraform":
                 tf_dir = self.terraform_dir or str(self.output_dir / "terraform")
-                r = self._apply_guarded(
-                    ["terraform", "destroy", "-auto-approve", "-no-color"], cwd=tf_dir
-                )
-                return r.returncode == 0
+                tf_path = Path(tf_dir) / Path(file_path).name
+                targets = self._terraform_targets(tf_path)
+                if not targets:
+                    # Refuse to run an untargeted destroy: we cannot determine
+                    # exactly what this step added, so undoing it automatically
+                    # could tear down unrelated infrastructure.
+                    logger.error(
+                        "Cannot safely roll back %s: no resource targets found; "
+                        "refusing untargeted `terraform destroy`. Manual rollback "
+                        "required.",
+                        file_path,
+                    )
+                    return False
+                cmd = ["terraform", "destroy", "-auto-approve", "-no-color"]
+                for target in targets:
+                    cmd.extend(["-target", target])
+                r = self._apply_guarded(cmd, cwd=tf_dir)
+                ok = r.returncode == 0
+                if ok:
+                    # Remove the file so a later apply does not recreate it.
+                    tf_path.unlink(missing_ok=True)
+                return ok
             if execution_type == "kubernetes":
                 k8s_path = self.output_dir / "kubernetes" / Path(file_path).name
                 r = self._apply_guarded(["kubectl", "delete", "-f", str(k8s_path)])
@@ -927,6 +991,13 @@ class AutonomousRemediationAgent:
         self, cycle: RemediationCycle, graph: InfraGraph
     ) -> RemediationCycle:
         """Re-scan and re-simulate to verify improvement."""
+        # A pre-flight hard-stop already blocked execution; do NOT reset the
+        # status (which would let the cycle reach "completed") or re-scan.
+        if cycle.status == "blocked":
+            cycle.completed_at = datetime.now(timezone.utc).isoformat()
+            self._save_cycle(cycle)
+            return cycle
+
         cycle.status = "verifying"
 
         try:
@@ -1000,7 +1071,7 @@ class AutonomousRemediationAgent:
 
         mode = "LIVE" if self._auto_apply_allowed() else "DRY-RUN"
 
-        cycle.report_summary = (
+        generic = (
             f"[{mode}] Remediation cycle {cycle.id}: "
             f"Score {cycle.initial_score:.1f} -> {final:.1f} "
             f"(+{improvement:.1f}). "
@@ -1008,6 +1079,12 @@ class AutonomousRemediationAgent:
             f"Issues found: {len(cycle.issues_found)}. "
             f"Cost: {cycle.estimated_cost}"
         )
+        # Preserve critical warnings (failed rollback / regression / hard-stop
+        # block) rather than overwriting them with the generic summary.
+        if cycle.status in ("rollback_failed", "regressed", "blocked") and cycle.report_summary:
+            cycle.report_summary = f"{cycle.report_summary} | {generic}"
+        else:
+            cycle.report_summary = generic
 
         # Save markdown report
         md = self._render_markdown_report(cycle)
