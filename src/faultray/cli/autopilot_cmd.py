@@ -297,8 +297,14 @@ def _run_terraform_apply(
     import subprocess
 
     def _run(cmd: list[str]) -> int:
-        proc = subprocess.run(cmd, cwd=tf_dir)
-        return proc.returncode
+        try:
+            proc = subprocess.run(cmd, cwd=tf_dir, timeout=600)
+            return proc.returncode
+        except subprocess.TimeoutExpired:
+            console.print(
+                f"[red]Command timed out after 600s: {' '.join(cmd)}[/red]"
+            )
+            return 124
 
     if not json_output:
         console.print("[bold]Running terraform init...[/bold]")

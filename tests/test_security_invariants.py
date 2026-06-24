@@ -9,6 +9,7 @@ file-scoped (not a blanket ban) so they do not break on unrelated existing code.
 
 from __future__ import annotations
 
+import ast
 import re
 from pathlib import Path
 
@@ -79,3 +80,40 @@ def test_audit_chain_links_are_hmac_keyed() -> None:
 def test_csv_exporters_use_neutralizer(rel: str) -> None:
     text = (SRC / rel).read_text(encoding="utf-8")
     assert "csv_safe" in text, f"{rel} writes CSV without the csv_safe neutralizer"
+
+
+# ---------------------------------------------------------------------------
+# Every subprocess call must carry a timeout (no hung children)
+# ---------------------------------------------------------------------------
+
+_SUBPROCESS_FUNCS = {"run", "call", "check_call", "check_output", "Popen"}
+
+
+def _subprocess_calls_without_timeout() -> list[str]:
+    offenders: list[str] = []
+    for path in SRC.rglob("*.py"):
+        try:
+            tree = ast.parse(path.read_text(encoding="utf-8"))
+        except SyntaxError:
+            continue
+        for node in ast.walk(tree):
+            if not isinstance(node, ast.Call):
+                continue
+            func = node.func
+            if (
+                isinstance(func, ast.Attribute)
+                and isinstance(func.value, ast.Name)
+                and func.value.id == "subprocess"
+                and func.attr in _SUBPROCESS_FUNCS
+            ):
+                if "timeout" not in {kw.arg for kw in node.keywords}:
+                    offenders.append(f"{path.relative_to(SRC)}:{node.lineno}")
+    return offenders
+
+
+def test_no_subprocess_call_without_timeout() -> None:
+    """A subprocess without timeout= can hang a worker/agent forever. Every
+    call in src/ must pass timeout= (the autonomous agent routes apply/destroy
+    through _apply_guarded which enforces it)."""
+    offenders = _subprocess_calls_without_timeout()
+    assert not offenders, f"subprocess call(s) missing timeout=: {offenders}"

@@ -221,12 +221,16 @@ class TerraformFaultRayProvider:
     def _run_terraform_show(self, plan_file: Path) -> dict:
         """Run 'terraform show -json <plan_file>' and return parsed JSON."""
         cmd = ["terraform", "show", "-json", str(plan_file)]
-        result = subprocess.run(
-            cmd,
-            capture_output=True,
-            text=True,
-            cwd=self.tf_dir,
-        )
+        try:
+            result = subprocess.run(
+                cmd,
+                capture_output=True,
+                text=True,
+                cwd=self.tf_dir,
+                timeout=120,
+            )
+        except subprocess.TimeoutExpired as exc:
+            raise RuntimeError("terraform show timed out after 120s") from exc
         if result.returncode != 0:
             raise RuntimeError(f"terraform show failed: {result.stderr}")
         return json.loads(result.stdout)
