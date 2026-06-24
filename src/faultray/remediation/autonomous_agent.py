@@ -10,6 +10,7 @@ improvement. Humans only need to approve (or set auto-approve mode).
 
 from __future__ import annotations
 
+import copy
 import json
 import logging
 import os
@@ -38,6 +39,8 @@ _VALID_STATUSES = frozenset({
     "completed",
     "failed",
     "rolled_back",
+    "rollback_failed",
+    "regressed",
 })
 
 
@@ -134,6 +137,101 @@ class _PlanStep:
     file_path: str
     content: str
     execution_type: str  # "terraform", "kubernetes", "aws_cli", "script"
+
+
+# ---------------------------------------------------------------------------
+# Independent simulation: apply remediation intent to a graph and re-measure
+# ---------------------------------------------------------------------------
+
+# A measured patched score may decrease by at most this (float noise) before it
+# counts as a regression.
+_SIM_REGRESSION_TOLERANCE = 0.5
+# If the generator's projected score exceeds the independently measured score by
+# more than this, we log the divergence (the measured value stays authoritative).
+_SIM_DIVERGENCE_THRESHOLD = 5.0
+
+
+def _mut_add_replicas(comp: Any) -> None:
+    comp.replicas = max(comp.replicas, 2)
+
+
+def _mut_enable_autoscaling(comp: Any) -> None:
+    comp.autoscaling.enabled = True
+    comp.autoscaling.min_replicas = max(2, comp.autoscaling.min_replicas)
+    comp.autoscaling.max_replicas = max(
+        comp.autoscaling.max_replicas, comp.autoscaling.min_replicas, 4
+    )
+
+
+def _mut_encryption_at_rest(comp: Any) -> None:
+    comp.security.encryption_at_rest = True
+
+
+def _mut_waf(comp: Any) -> None:
+    comp.security.waf_protected = True
+
+
+def _mut_network_segmented(comp: Any) -> None:
+    comp.security.network_segmented = True
+
+
+def _mut_tls(comp: Any) -> None:
+    comp.security.encryption_in_transit = True
+
+
+def _mut_dr_region(comp: Any) -> None:
+    comp.region.dr_target_region = comp.region.dr_target_region or "dr-region"
+
+
+def _mut_backup(comp: Any) -> None:
+    comp.security.backup_enabled = True
+
+
+def _mut_failover(comp: Any) -> None:
+    comp.failover.enabled = True
+
+
+# Maps each IaC remediation rule key to the structural change it represents.
+# Kept 1:1 with REMEDIATION_RULES so the independent simulation applies exactly
+# what the generator would fix (a test asserts every rule key is mapped).
+_RULE_MUTATIONS = {
+    "database_no_replica": _mut_add_replicas,
+    "cache_no_replica": _mut_add_replicas,
+    "no_autoscaling": _mut_enable_autoscaling,
+    "no_encryption": _mut_encryption_at_rest,
+    "no_waf": _mut_waf,
+    "no_network_segmentation": _mut_network_segmented,
+    "no_tls": _mut_tls,
+    "no_cross_region": _mut_dr_region,
+    "no_backup": _mut_backup,
+    "no_dns_failover": _mut_failover,
+}
+
+
+def _apply_remediation_intent(graph: InfraGraph) -> int:
+    """Apply the remediation rules' intended structural changes to *graph* in
+    place; return the number of fixes applied.
+
+    Reuses the exact condition predicates from REMEDIATION_RULES so detection
+    never drifts from the IaC generator, then applies the corresponding graph
+    mutation. This lets SIMULATE MEASURE a fix's real effect on the resilience
+    score instead of trusting the generator's self-reported projected delta.
+    """
+    from faultray.remediation.iac_generator import REMEDIATION_RULES
+
+    applied = 0
+    for comp in graph.components.values():
+        for rule in REMEDIATION_RULES:
+            mutate = _RULE_MUTATIONS.get(rule.key)
+            if mutate is None or not rule.condition(comp):
+                continue
+            mutate(comp)
+            applied += 1
+    return applied
+
+
+class _ApplyBlocked(Exception):
+    """Raised when a live-apply subprocess is attempted without full opt-in."""
 
 
 # ---------------------------------------------------------------------------
@@ -239,7 +337,7 @@ class AutonomousRemediationAgent:
         )
         cycle.estimated_cost = f"${iac_plan.total_monthly_cost:,.2f}/mo"
 
-        # Phase 3: SIMULATE (verify fix is safe BEFORE applying)
+        # Phase 3: SIMULATE (independently measure the fix's effect before applying)
         cycle.status = "simulating"
         sim_result = self._simulate_with_fix(graph, iac_plan)
         cycle.simulation_passed = sim_result.passed
@@ -414,19 +512,52 @@ class AutonomousRemediationAgent:
 
         return generator, iac_plan
 
-    def _simulate_with_fix(self, graph: InfraGraph, plan: Any) -> _SimResult:
-        """Apply fix to a copy of the graph, re-simulate to verify improvement.
+    def _measure_fix_effect(
+        self, graph: InfraGraph
+    ) -> tuple[float | None, float | None]:
+        """Independently MEASURE the fix's effect on the resilience score.
 
-        Checks that the predicted score improves and there are no regressions.
+        Deep-copies the graph, applies the remediation rules' structural intent
+        to the copy, and re-scores both — returning ``(before, after)`` measured
+        with the real scoring engine. Returns ``(None, None)`` if measurement is
+        not possible, so the caller can fall back without claiming verification.
         """
-        # The IaC plan predicts improvement; verify it doesn't degrade
+        try:
+            before = graph.resilience_score()
+            patched = copy.deepcopy(graph)
+            applied = _apply_remediation_intent(patched)
+            if applied == 0:
+                return before, before
+            after = patched.resilience_score()
+            return before, after
+        except Exception:
+            logger.warning(
+                "Independent fix simulation failed; falling back to projection",
+                exc_info=True,
+            )
+            return None, None
+
+    def _simulate_with_fix(self, graph: InfraGraph, plan: Any) -> _SimResult:
+        """Verify a fix is safe by INDEPENDENTLY MEASURING its effect.
+
+        Applies the remediation rules' structural intent to a graph copy and
+        re-scores with the real engine, using the measured patched score as the
+        authoritative result rather than the generator's self-reported
+        ``expected_score_after`` (which is just the sum of its own optimistic
+        per-file deltas). Fails on a measured regression or risk-level / budget
+        violation. If independent measurement is unavailable it falls back to
+        the projection but does NOT present it as verified.
+        """
+        # The IaC plan's own projection — used only as a fallback / divergence
+        # reference, never as the authoritative verified score.
         predicted_after = plan.expected_score_after
         predicted_before = plan.expected_score_before
 
         if not plan.files:
-            return _SimResult(passed=True, new_score=predicted_after or graph.resilience_score())
+            return _SimResult(passed=True, new_score=graph.resilience_score())
 
         side_effects: list[str] = []
+        new_score = predicted_after
 
         # HARD STOP: a plan whose projected monthly cost exceeds the configured
         # ceiling is rejected outright. Previously this was an advisory string
@@ -454,17 +585,38 @@ class AutonomousRemediationAgent:
                 ],
             )
 
-        # Check for score regression
-        if predicted_after < predicted_before:
-            side_effects.append(
-                f"Score would decrease: {predicted_before:.1f} -> "
-                f"{predicted_after:.1f}"
+        # Independently MEASURE the fix's effect by applying the remediation
+        # rules' structural intent to a graph copy and re-scoring with the real
+        # engine — never trust the generator's projected expected_score_after.
+        measured_before, measured_after = self._measure_fix_effect(graph)
+        if measured_before is not None and measured_after is not None:
+            new_score = measured_after
+            if measured_after < measured_before - _SIM_REGRESSION_TOLERANCE:
+                side_effects.append(
+                    f"Measured score would decrease: {measured_before:.1f} -> "
+                    f"{measured_after:.1f}"
+                )
+            elif predicted_after - measured_after > _SIM_DIVERGENCE_THRESHOLD:
+                # The generator over-promised relative to the measured effect;
+                # surface it but do not fail — the measured value is authoritative.
+                logger.warning(
+                    "Remediation projection (%.1f) exceeds measured score "
+                    "(%.1f) by more than %.1f",
+                    predicted_after, measured_after, _SIM_DIVERGENCE_THRESHOLD,
+                )
+        else:
+            # Could not measure independently: fall back to the projection but
+            # do NOT present it as an independently verified result.
+            new_score = predicted_after
+            logger.warning(
+                "SIMULATE could not independently measure the fix; using the "
+                "generator projection (UNVERIFIED)"
             )
-            return _SimResult(
-                passed=False,
-                new_score=predicted_after,
-                side_effects=side_effects,
-            )
+            if predicted_after < predicted_before:
+                side_effects.append(
+                    f"Score would decrease: {predicted_before:.1f} -> "
+                    f"{predicted_after:.1f}"
+                )
 
         # Check risk levels against max_risk_level
         risk_order = {"low": 0, "medium": 1, "high": 2, "critical": 3}
@@ -480,14 +632,14 @@ class AutonomousRemediationAgent:
                     f"max allowed ({self.max_risk_level})"
                 )
 
-        # Any remaining side effect (e.g. a risk-level violation) fails the
-        # simulation. There is no cost carve-out: cost is enforced by the hard
-        # ceiling above, not by an advisory string that still passes.
+        # Any remaining side effect (measured regression or a risk-level
+        # violation) fails the simulation. There is no cost carve-out: cost is
+        # enforced by the hard ceiling above, not by an advisory string.
         passed = len(side_effects) == 0
 
         return _SimResult(
             passed=passed,
-            new_score=predicted_after,
+            new_score=new_score,
             side_effects=side_effects,
         )
 
@@ -594,6 +746,11 @@ class AutonomousRemediationAgent:
                     "status": result.status,
                     "output": result.output,
                     "ratchet_permissions": sorted(ratchet.remaining_permissions),
+                    # Record what was actually applied so _verify can perform a
+                    # real rollback (terraform destroy / kubectl delete) on a
+                    # regression — not merely relabel the cycle "rolled_back".
+                    "execution_type": step.execution_type,
+                    "file_path": step.file_path,
                 })
                 if result.status == "failed":
                     cycle.status = "failed"
@@ -634,8 +791,34 @@ class AutonomousRemediationAgent:
             output=f"Executed {step.execution_type}: {step.description}",
         )
 
+    def _apply_guarded(
+        self, cmd: list[str], *, cwd: str | None = None
+    ) -> subprocess.CompletedProcess:
+        """Single chokepoint for every side-effecting subprocess.
+
+        Re-checks _auto_apply_allowed() AT THE BOUNDARY (so a direct caller of
+        _execute_terraform/_execute_kubernetes cannot bypass the orchestration-
+        layer gate), enforces a mandatory timeout, and logs the resolved
+        (dry_run, auto_approve, env opt-in) tuple for auditability. Raises
+        :class:`_ApplyBlocked` when live apply is not fully opted into.
+        """
+        env_optin = os.environ.get(self._AUTO_APPLY_ENV, "")
+        if not self._auto_apply_allowed():
+            logger.warning(
+                "Blocked live apply at boundary: %s (dry_run=%s auto_approve=%s %s=%r)",
+                cmd, self.dry_run, self.auto_approve, self._AUTO_APPLY_ENV, env_optin,
+            )
+            raise _ApplyBlocked(cmd[0] if cmd else "apply")
+        logger.info(
+            "Live apply at boundary: %s (dry_run=%s auto_approve=%s %s=%r)",
+            cmd, self.dry_run, self.auto_approve, self._AUTO_APPLY_ENV, env_optin,
+        )
+        return subprocess.run(
+            cmd, capture_output=True, text=True, timeout=self._STEP_TIMEOUT, cwd=cwd
+        )
+
     def _execute_terraform(self, step: _PlanStep) -> StepResult:
-        """Run terraform plan + apply for a step."""
+        """Run terraform plan + apply for a step (gated by _apply_guarded)."""
         tf_dir = self.terraform_dir or str(self.output_dir / "terraform")
         Path(tf_dir).mkdir(parents=True, exist_ok=True)
 
@@ -644,13 +827,8 @@ class AutonomousRemediationAgent:
         tf_path.write_text(step.content, encoding="utf-8")
 
         try:
-            # terraform plan
-            plan_result = subprocess.run(
-                ["terraform", "plan", "-no-color"],
-                capture_output=True,
-                text=True,
-                timeout=self._STEP_TIMEOUT,
-                cwd=tf_dir,
+            plan_result = self._apply_guarded(
+                ["terraform", "plan", "-no-color"], cwd=tf_dir
             )
             if plan_result.returncode != 0:
                 return StepResult(
@@ -658,13 +836,8 @@ class AutonomousRemediationAgent:
                     output=f"terraform plan failed: {plan_result.stderr}",
                 )
 
-            # terraform apply
-            apply_result = subprocess.run(
-                ["terraform", "apply", "-auto-approve", "-no-color"],
-                capture_output=True,
-                text=True,
-                timeout=self._STEP_TIMEOUT,
-                cwd=tf_dir,
+            apply_result = self._apply_guarded(
+                ["terraform", "apply", "-auto-approve", "-no-color"], cwd=tf_dir
             )
             if apply_result.returncode != 0:
                 return StepResult(
@@ -676,6 +849,11 @@ class AutonomousRemediationAgent:
                 status="success",
                 output=apply_result.stdout[:500],
             )
+        except _ApplyBlocked:
+            return StepResult(
+                status="dry_run",
+                output=f"live apply not opted-in ({self._AUTO_APPLY_ENV}); skipped",
+            )
         except subprocess.TimeoutExpired:
             return StepResult(status="timeout", output="Step timed out")
         except (FileNotFoundError, OSError) as exc:
@@ -685,7 +863,7 @@ class AutonomousRemediationAgent:
             )
 
     def _execute_kubernetes(self, step: _PlanStep) -> StepResult:
-        """Run kubectl apply for a step."""
+        """Run kubectl apply for a step (gated by _apply_guarded)."""
         k8s_dir = self.output_dir / "kubernetes"
         k8s_dir.mkdir(parents=True, exist_ok=True)
 
@@ -693,11 +871,8 @@ class AutonomousRemediationAgent:
         k8s_path.write_text(step.content, encoding="utf-8")
 
         try:
-            result = subprocess.run(
-                ["kubectl", "apply", "-f", str(k8s_path)],
-                capture_output=True,
-                text=True,
-                timeout=self._STEP_TIMEOUT,
+            result = self._apply_guarded(
+                ["kubectl", "apply", "-f", str(k8s_path)]
             )
             if result.returncode != 0:
                 return StepResult(
@@ -705,6 +880,11 @@ class AutonomousRemediationAgent:
                     output=f"kubectl apply failed: {result.stderr}",
                 )
             return StepResult(status="success", output=result.stdout[:500])
+        except _ApplyBlocked:
+            return StepResult(
+                status="dry_run",
+                output=f"live apply not opted-in ({self._AUTO_APPLY_ENV}); skipped",
+            )
         except subprocess.TimeoutExpired:
             return StepResult(status="timeout", output="Step timed out")
         except (FileNotFoundError, OSError) as exc:
@@ -712,6 +892,36 @@ class AutonomousRemediationAgent:
                 status="failed",
                 output=f"kubectl CLI not available: {exc}",
             )
+
+    def _rollback_step(self, execution_type: str, file_path: str) -> bool:
+        """Undo a previously-applied step. Returns True if the undo succeeded.
+
+        terraform -> ``terraform destroy``; kubernetes -> ``kubectl delete -f``.
+        Routed through _apply_guarded so the undo is itself gated/timed/audited.
+        Non-infra steps have nothing to undo and report success.
+        """
+        try:
+            if execution_type == "terraform":
+                tf_dir = self.terraform_dir or str(self.output_dir / "terraform")
+                r = self._apply_guarded(
+                    ["terraform", "destroy", "-auto-approve", "-no-color"], cwd=tf_dir
+                )
+                return r.returncode == 0
+            if execution_type == "kubernetes":
+                k8s_path = self.output_dir / "kubernetes" / Path(file_path).name
+                r = self._apply_guarded(["kubectl", "delete", "-f", str(k8s_path)])
+                return r.returncode == 0
+            return True
+        except (_ApplyBlocked, subprocess.TimeoutExpired, FileNotFoundError, OSError):
+            return False
+
+    def _applied_infra_steps(self, cycle: RemediationCycle) -> list[dict[str, Any]]:
+        """Steps that were actually applied live to real infra (for rollback)."""
+        return [
+            e for e in cycle.execution_log
+            if e.get("status") == "success"
+            and e.get("execution_type") in ("terraform", "kubernetes")
+        ]
 
     def _verify(
         self, cycle: RemediationCycle, graph: InfraGraph
@@ -730,12 +940,40 @@ class AutonomousRemediationAgent:
         cycle.improvement_achieved = final_score - cycle.initial_score
 
         if cycle.improvement_achieved < 0:
-            # Improvement is negative — something went wrong
-            cycle.status = "rolled_back"
-            cycle.report_summary = (
-                f"Rolled back: score decreased from "
-                f"{cycle.initial_score:.1f} to {final_score:.1f}"
-            )
+            applied = self._applied_infra_steps(cycle)
+            if not applied:
+                # Nothing was applied to real infra (dry-run / preview), so there
+                # is nothing to roll back. Do NOT claim "rolled_back" — the score
+                # moved for reasons outside this cycle's changes.
+                cycle.status = "regressed"
+                cycle.report_summary = (
+                    f"Score decreased from {cycle.initial_score:.1f} to "
+                    f"{final_score:.1f}, but no changes were applied (preview only); "
+                    "nothing to roll back."
+                )
+            else:
+                # Real changes were applied: actually undo them and report whether
+                # every undo succeeded.
+                results = [
+                    self._rollback_step(e["execution_type"], e.get("file_path", ""))
+                    for e in applied
+                ]
+                if all(results):
+                    cycle.status = "rolled_back"
+                    cycle.report_summary = (
+                        f"Rolled back {len(applied)} applied step(s): score "
+                        f"decreased from {cycle.initial_score:.1f} to {final_score:.1f}."
+                    )
+                else:
+                    failed = sum(1 for ok in results if not ok)
+                    cycle.status = "rollback_failed"
+                    cycle.report_summary = (
+                        f"REGRESSION with FAILED ROLLBACK: score decreased from "
+                        f"{cycle.initial_score:.1f} to {final_score:.1f}; "
+                        f"{failed} of {len(applied)} applied step(s) could not be "
+                        "undone — changes REMAIN APPLIED, manual intervention required."
+                    )
+                    logger.error(cycle.report_summary)
         else:
             cycle.status = "completed"
 

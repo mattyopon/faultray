@@ -396,29 +396,35 @@ class TestCyclePersistence:
 
 
 class TestSimulationFailure:
-    def test_score_regression_fails_simulation(self, tmp_path: Path) -> None:
-        """_simulate_with_fix should fail if predicted score decreases."""
-        agent = _make_agent(tmp_path)
-
+    def _regressing_plan(self):
         from faultray.remediation.iac_generator import RemediationFile, RemediationPlan
-
-        # Create a plan with negative improvement (must have files to not short-circuit)
-        plan = RemediationPlan(
+        return RemediationPlan(
             expected_score_before=80.0,
             expected_score_after=70.0,
             files=[
                 RemediationFile(
-                    path="bad.tf",
-                    content="resource {}",
-                    description="Bad fix",
-                    phase=3,
-                    impact_score_delta=-10.0,
-                    monthly_cost=0.0,
-                    category="dr",
+                    path="bad.tf", content="resource {}", description="Bad fix",
+                    phase=3, impact_score_delta=-10.0, monthly_cost=0.0, category="dr",
                 ),
             ],
         )
-        result = agent._simulate_with_fix(_unhealthy_graph(), plan)
+
+    def test_measured_regression_fails_simulation(self, tmp_path: Path) -> None:
+        """A fix whose INDEPENDENTLY MEASURED effect lowers the score fails."""
+        agent = _make_agent(tmp_path)
+        # Force the measured effect to be a regression (90 -> 50).
+        agent._measure_fix_effect = lambda g: (90.0, 50.0)  # type: ignore[method-assign]
+        result = agent._simulate_with_fix(_unhealthy_graph(), self._regressing_plan())
+        assert not result.passed
+        assert result.new_score == 50.0  # measured score is authoritative
+        assert any("Measured score would decrease" in s for s in result.side_effects)
+
+    def test_projection_regression_fails_when_unmeasurable(self, tmp_path: Path) -> None:
+        """When independent measurement is unavailable, fall back to the
+        projection — a projected regression still fails (unverified)."""
+        agent = _make_agent(tmp_path)
+        agent._measure_fix_effect = lambda g: (None, None)  # type: ignore[method-assign]
+        result = agent._simulate_with_fix(_unhealthy_graph(), self._regressing_plan())
         assert not result.passed
         assert any("decrease" in s for s in result.side_effects)
 
@@ -714,29 +720,46 @@ class TestPhaseRiskMapping:
 
 
 class TestExecuteStep:
-    def test_execute_terraform_not_found(self, tmp_path: Path) -> None:
-        agent = _make_agent(tmp_path, dry_run=False)
-        step = _PlanStep(
-            description="test tf",
-            risk_level="low",
-            file_path="test.tf",
-            content='resource "null" "test" {}',
-            execution_type="terraform",
+    def _tf_step(self) -> _PlanStep:
+        return _PlanStep(
+            description="test tf", risk_level="low", file_path="test.tf",
+            content='resource "null" "test" {}', execution_type="terraform",
         )
-        result = agent._execute_terraform(step)
-        # terraform CLI likely not installed in test env
+
+    def _k8s_step(self) -> _PlanStep:
+        return _PlanStep(
+            description="test k8s", risk_level="low", file_path="test.yaml",
+            content="apiVersion: v1\nkind: ConfigMap", execution_type="kubernetes",
+        )
+
+    def test_execute_terraform_blocked_without_full_optin(self, tmp_path: Path) -> None:
+        # dry_run=False alone is NOT enough: the boundary guard requires the
+        # full triple opt-in, so a direct call must not shell out to real infra.
+        agent = _make_agent(tmp_path, dry_run=False, auto_approve=False)
+        result = agent._execute_terraform(self._tf_step())
+        assert result.status == "dry_run"
+
+    def test_execute_kubernetes_blocked_without_full_optin(self, tmp_path: Path) -> None:
+        agent = _make_agent(tmp_path, dry_run=False, auto_approve=False)
+        result = agent._execute_kubernetes(self._k8s_step())
+        assert result.status == "dry_run"
+
+    def test_execute_terraform_attempts_with_full_optin(
+        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        # Full opt-in: dry_run=False AND auto_approve=True AND env flag.
+        monkeypatch.setenv("FAULTRAY_ALLOW_AUTO_APPLY", "1")
+        agent = _make_agent(tmp_path, dry_run=False, auto_approve=True)
+        result = agent._execute_terraform(self._tf_step())
+        # terraform CLI is absent in the test env, so it actually attempts and fails.
         assert result.status in ("failed", "timeout")
 
-    def test_execute_kubernetes_not_found(self, tmp_path: Path) -> None:
-        agent = _make_agent(tmp_path, dry_run=False)
-        step = _PlanStep(
-            description="test k8s",
-            risk_level="low",
-            file_path="test.yaml",
-            content="apiVersion: v1\nkind: ConfigMap",
-            execution_type="kubernetes",
-        )
-        result = agent._execute_kubernetes(step)
+    def test_execute_kubernetes_attempts_with_full_optin(
+        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        monkeypatch.setenv("FAULTRAY_ALLOW_AUTO_APPLY", "1")
+        agent = _make_agent(tmp_path, dry_run=False, auto_approve=True)
+        result = agent._execute_kubernetes(self._k8s_step())
         assert result.status in ("failed", "timeout")
 
     def test_execute_step_unknown_type(self, tmp_path: Path) -> None:
@@ -872,3 +895,92 @@ class TestCostAndStepHardStops:
         result = agent._simulate_with_fix(_unhealthy_graph(), _one_file_plan(100.0, files=11))
         assert result.passed is False
         assert any("steps" in s for s in result.side_effects)
+
+
+# ===========================================================================
+# Independent SIMULATE measurement (Wave 1a)
+# ===========================================================================
+
+
+class TestIndependentSimulation:
+    def test_every_remediation_rule_is_mapped_to_a_mutation(self) -> None:
+        """Drift guard: a new IaC rule without a graph mutation would silently
+        make the independent simulation under-measure."""
+        from faultray.remediation.iac_generator import REMEDIATION_RULES
+        from faultray.remediation.autonomous_agent import _RULE_MUTATIONS
+        unmapped = {r.key for r in REMEDIATION_RULES} - set(_RULE_MUTATIONS)
+        assert not unmapped, f"rules missing a structural mutation: {unmapped}"
+
+    def test_apply_intent_improves_and_does_not_mutate_original(self) -> None:
+        import copy
+        from faultray.remediation.autonomous_agent import _apply_remediation_intent
+        g = _unhealthy_graph()
+        before = g.resilience_score()
+        patched = copy.deepcopy(g)
+        applied = _apply_remediation_intent(patched)
+        assert applied > 0
+        assert patched.resilience_score() >= before
+        assert g.resilience_score() == before  # original untouched
+
+    def test_simulate_uses_measured_score_not_projection(self, tmp_path: Path) -> None:
+        from faultray.remediation.iac_generator import RemediationFile, RemediationPlan
+        agent = _make_agent(tmp_path)
+        plan = RemediationPlan(
+            expected_score_before=0.0,
+            expected_score_after=999.0,  # absurd projection must be ignored
+            files=[RemediationFile(path="x.tf", content="r {}", description="d",
+                                   phase=3, impact_score_delta=999.0, monthly_cost=1.0,
+                                   category="dr")],
+        )
+        result = agent._simulate_with_fix(_unhealthy_graph(), plan)
+        assert result.new_score != 999.0
+
+
+# ===========================================================================
+# Real rollback vs honest status (Wave 1c)
+# ===========================================================================
+
+
+class TestVerifyRollback:
+    def _regressing_cycle(self, **kw) -> RemediationCycle:
+        # initial_score far above any real graph score forces improvement < 0.
+        cycle = RemediationCycle(id="t", started_at="now")
+        cycle.initial_score = 1000.0
+        for k, v in kw.items():
+            setattr(cycle, k, v)
+        return cycle
+
+    def test_dry_run_regression_reported_not_rolled_back(self, tmp_path: Path) -> None:
+        agent = _make_agent(tmp_path)
+        cycle = self._regressing_cycle(
+            execution_log=[{"step": "x", "status": "dry_run"}]
+        )
+        agent._verify(cycle, _unhealthy_graph())
+        assert cycle.status == "regressed"
+        assert "nothing to roll back" in cycle.report_summary
+
+    def test_applied_regression_triggers_real_rollback(self, tmp_path: Path) -> None:
+        agent = _make_agent(tmp_path)
+        agent._rollback_step = lambda et, fp: True  # type: ignore[method-assign]
+        cycle = self._regressing_cycle(execution_log=[
+            {"step": "tf", "status": "success",
+             "execution_type": "terraform", "file_path": "a.tf"},
+        ])
+        agent._verify(cycle, _unhealthy_graph())
+        assert cycle.status == "rolled_back"
+
+    def test_failed_rollback_is_surfaced(self, tmp_path: Path) -> None:
+        agent = _make_agent(tmp_path)
+        agent._rollback_step = lambda et, fp: False  # type: ignore[method-assign]
+        cycle = self._regressing_cycle(execution_log=[
+            {"step": "tf", "status": "success",
+             "execution_type": "terraform", "file_path": "a.tf"},
+        ])
+        agent._verify(cycle, _unhealthy_graph())
+        assert cycle.status == "rollback_failed"
+        assert "REMAIN APPLIED" in cycle.report_summary
+
+    def test_rollback_step_blocked_without_optin(self, tmp_path: Path) -> None:
+        # The undo is itself gated: no live-apply opt-in => cannot run destroy.
+        agent = _make_agent(tmp_path, dry_run=True)
+        assert agent._rollback_step("terraform", "a.tf") is False
