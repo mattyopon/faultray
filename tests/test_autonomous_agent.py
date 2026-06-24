@@ -744,6 +744,20 @@ class TestExecuteStep:
         result = agent._execute_kubernetes(self._k8s_step())
         assert result.status == "dry_run"
 
+    def test_execute_terraform_blocked_writes_no_file(self, tmp_path: Path) -> None:
+        # The opt-in is checked BEFORE any write, so a blocked call leaves no
+        # unapproved .tf in the workspace for a later `terraform plan/apply`.
+        agent = _make_agent(tmp_path, dry_run=False, auto_approve=False)
+        result = agent._execute_terraform(self._tf_step())
+        assert result.status == "dry_run"
+        assert not (tmp_path / "remediation" / "terraform" / "test.tf").exists()
+
+    def test_execute_kubernetes_blocked_writes_no_file(self, tmp_path: Path) -> None:
+        agent = _make_agent(tmp_path, dry_run=False, auto_approve=False)
+        result = agent._execute_kubernetes(self._k8s_step())
+        assert result.status == "dry_run"
+        assert not (tmp_path / "remediation" / "kubernetes" / "test.yaml").exists()
+
     def test_execute_terraform_attempts_with_full_optin(
         self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
     ) -> None:
@@ -964,6 +978,18 @@ class TestVerifyRollback:
         agent._rollback_step = lambda et, fp: True  # type: ignore[method-assign]
         cycle = self._regressing_cycle(execution_log=[
             {"step": "tf", "status": "success",
+             "execution_type": "terraform", "file_path": "a.tf"},
+        ])
+        agent._verify(cycle, _unhealthy_graph())
+        assert cycle.status == "rolled_back"
+
+    def test_timeout_regression_triggers_real_rollback(self, tmp_path: Path) -> None:
+        # A timed-out live apply may have partially applied; a regression after
+        # it must attempt rollback, not be dismissed as "nothing applied".
+        agent = _make_agent(tmp_path)
+        agent._rollback_step = lambda et, fp: True  # type: ignore[method-assign]
+        cycle = self._regressing_cycle(execution_log=[
+            {"step": "tf", "status": "timeout",
              "execution_type": "terraform", "file_path": "a.tf"},
         ])
         agent._verify(cycle, _unhealthy_graph())

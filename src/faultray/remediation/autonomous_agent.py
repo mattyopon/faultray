@@ -847,6 +847,15 @@ class AutonomousRemediationAgent:
 
     def _execute_terraform(self, step: _PlanStep) -> StepResult:
         """Run terraform plan + apply for a step (gated by _apply_guarded)."""
+        # Check the live-apply opt-in BEFORE writing anything into the (real)
+        # workspace. Otherwise a blocked/dry-run call still drops an unapproved
+        # .tf file into terraform_dir that a later `terraform plan/apply` would
+        # pick up.
+        if not self._auto_apply_allowed():
+            return StepResult(
+                status="dry_run",
+                output=f"live apply not opted-in ({self._AUTO_APPLY_ENV}); skipped",
+            )
         tf_dir = self.terraform_dir or str(self.output_dir / "terraform")
         Path(tf_dir).mkdir(parents=True, exist_ok=True)
 
@@ -854,6 +863,7 @@ class AutonomousRemediationAgent:
         tf_path = Path(tf_dir) / Path(step.file_path).name
         tf_path.write_text(step.content, encoding="utf-8")
 
+        apply_attempted = False
         try:
             plan_result = self._apply_guarded(
                 ["terraform", "plan", "-no-color"], cwd=tf_dir
@@ -864,6 +874,7 @@ class AutonomousRemediationAgent:
                     output=f"terraform plan failed: {plan_result.stderr}",
                 )
 
+            apply_attempted = True
             apply_result = self._apply_guarded(
                 ["terraform", "apply", "-auto-approve", "-no-color"], cwd=tf_dir
             )
@@ -883,7 +894,13 @@ class AutonomousRemediationAgent:
                 output=f"live apply not opted-in ({self._AUTO_APPLY_ENV}); skipped",
             )
         except subprocess.TimeoutExpired:
-            return StepResult(status="timeout", output="Step timed out")
+            # A timeout DURING apply may have left partial live changes, so it
+            # must enter the rollback set ("timeout"); a timeout during the
+            # read-only plan made no changes ("failed").
+            return StepResult(
+                status="timeout" if apply_attempted else "failed",
+                output="Step timed out",
+            )
         except (FileNotFoundError, OSError) as exc:
             return StepResult(
                 status="failed",
@@ -892,6 +909,14 @@ class AutonomousRemediationAgent:
 
     def _execute_kubernetes(self, step: _PlanStep) -> StepResult:
         """Run kubectl apply for a step (gated by _apply_guarded)."""
+        # Opt-in check BEFORE writing the manifest (see _execute_terraform): a
+        # blocked/dry-run call must not leave an unapproved manifest behind for
+        # a later `kubectl apply`.
+        if not self._auto_apply_allowed():
+            return StepResult(
+                status="dry_run",
+                output=f"live apply not opted-in ({self._AUTO_APPLY_ENV}); skipped",
+            )
         k8s_dir = self.output_dir / "kubernetes"
         k8s_dir.mkdir(parents=True, exist_ok=True)
 
@@ -914,6 +939,8 @@ class AutonomousRemediationAgent:
                 output=f"live apply not opted-in ({self._AUTO_APPLY_ENV}); skipped",
             )
         except subprocess.TimeoutExpired:
+            # kubectl apply is the only command here, so a timeout always
+            # follows an attempted live apply — treat it as possibly-applied.
             return StepResult(status="timeout", output="Step timed out")
         except (FileNotFoundError, OSError) as exc:
             return StepResult(
@@ -980,10 +1007,19 @@ class AutonomousRemediationAgent:
             return False
 
     def _applied_infra_steps(self, cycle: RemediationCycle) -> list[dict[str, Any]]:
-        """Steps that were actually applied live to real infra (for rollback)."""
+        """Steps that may have changed real infra (for rollback).
+
+        Includes "timeout" alongside "success": a live ``terraform``/``kubectl
+        apply`` that timed out may have partially applied before being killed,
+        so it must be in the rollback set — otherwise a regression after a
+        timeout is reported as "nothing applied" and rollback is skipped while
+        infrastructure remains modified. (A plan-phase timeout is recorded as
+        "failed", not "timeout", so it is correctly excluded here.)
+        """
+        applied_statuses = {"success", "timeout"}
         return [
             e for e in cycle.execution_log
-            if e.get("status") == "success"
+            if e.get("status") in applied_statuses
             and e.get("execution_type") in ("terraform", "kubernetes")
         ]
 

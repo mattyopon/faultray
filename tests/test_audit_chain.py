@@ -318,6 +318,26 @@ class TestAuditChainSigning:
         assert data["tamper_evident"] is True
         assert data["signature_algorithm"] == "hmac-sha256"
 
+    def test_append_refuses_signed_onto_unsigned_legacy(
+        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        # Enabling signing on a chain that already has unsigned (legacy) entries
+        # must NOT silently produce a mixed [unsigned..., signed] chain that
+        # verify_integrity() would then reject at entry 0.
+        log = tmp_path / "a.jsonl"
+        monkeypatch.delenv("FAULTRAY_SIGNING_KEY", raising=False)
+        AuditChain(log_path=log).append("legacy", "system", "unsigned")
+        chain = AuditChain(log_path=log, signing_key="k")
+        with pytest.raises(RuntimeError, match="unsigned"):
+            chain.append("new", "system", "would be signed")
+        # Fail-closed: nothing was written; the log still has just the one entry.
+        assert log.read_text(encoding="utf-8").strip().count("\n") == 0
+        # A brand-new signed chain and an already-all-signed chain still append.
+        fresh = AuditChain(log_path=tmp_path / "b.jsonl", signing_key="k")
+        fresh.append("a", "system", "d")
+        fresh.append("b", "system", "d")  # all-signed prefix -> allowed
+        assert fresh.verify_integrity()[0] is True
+
 
 class TestAuditDetailsAndExport:
     def test_details_are_covered_by_the_mac(self, tmp_path: Path) -> None:

@@ -105,6 +105,25 @@ class AuditChain:
         data: str = "",
     ) -> AuditEntry:
         """Append a new entry to the audit chain."""
+        # Refuse to sign a new entry on top of an unsigned (legacy) prefix.
+        # verify_integrity() rejects unsigned entries whenever a key is
+        # configured, so a mixed [unsigned..., signed] chain could never pass
+        # integrity/export — the first audited event after enabling signing
+        # would silently produce an unverifiable log. Fail closed and require an
+        # explicit migration (start a fresh signed chain, or load without a key
+        # to keep appending unsigned). Brand-new and already-all-signed chains
+        # are unaffected.
+        if (self._signing_key or self._require_signing) and any(
+            not e.signed for e in self._entries
+        ):
+            raise RuntimeError(
+                "Refusing to append a signed entry onto an audit chain that "
+                "contains unsigned (legacy) entries: the resulting mixed chain "
+                "would fail verify_integrity() because a configured signing key "
+                "requires every entry to be HMAC-signed. Start a new signed "
+                f"chain, or load this chain without {_ENV_SIGNING_KEY} set to "
+                "keep appending unsigned."
+            )
         sequence = len(self._entries)
         previous_hash = self._entries[-1].entry_hash if self._entries else self.GENESIS_HASH
         timestamp = datetime.now(timezone.utc).isoformat()
