@@ -25,8 +25,14 @@ router = APIRouter()
 # Upload limits for the topology-diff endpoint: stream in bounded chunks and
 # refuse anything larger than the cap so a hostile/huge upload cannot exhaust
 # memory or disk.
-_MAX_UPLOAD_BYTES = 10 * 1024 * 1024  # 10 MB
+_MAX_UPLOAD_BYTES = 10 * 1024 * 1024  # 10 MB per file
 _UPLOAD_CHUNK_BYTES = 64 * 1024  # 64 KB
+# Pre-parse cap on the whole multipart body. ``await request.form()`` spools the
+# entire body to a SpooledTemporaryFile on disk BEFORE the per-file streaming
+# cap in ``_save_upload_to_temp`` runs, so a Content-Length guard here bounds
+# temp-disk use up front. The endpoint takes two files, so allow 2x the per-file
+# cap plus a margin for multipart boundaries/headers.
+_MAX_REQUEST_BYTES = 2 * _MAX_UPLOAD_BYTES + 1024 * 1024  # ~21 MB
 
 
 class _UploadTooLarge(Exception):
@@ -376,6 +382,26 @@ async def topology_diff_api(
     request: Request, user=Depends(_require_permission("view_results"))
 ):
     """Compare two uploaded YAML files and return diff results."""
+    # Enforce the body cap BEFORE form parsing: ``await request.form()`` buffers
+    # the whole multipart payload to a temp file on disk before any per-file
+    # check below runs, so reject an oversized declared Content-Length up front
+    # to bound temp-disk consumption. (The per-file streaming cap in
+    # ``_save_upload_to_temp`` remains the authoritative per-file limit, and
+    # covers chunked uploads that omit Content-Length.)
+    content_length = request.headers.get("content-length")
+    if content_length is not None:
+        try:
+            declared_bytes = int(content_length)
+        except (TypeError, ValueError):
+            return JSONResponse({"error": "Invalid Content-Length header"}, status_code=400)
+        if declared_bytes < 0:
+            return JSONResponse({"error": "Invalid Content-Length header"}, status_code=400)
+        if declared_bytes > _MAX_REQUEST_BYTES:
+            limit_mb = _MAX_REQUEST_BYTES // (1024 * 1024)
+            return JSONResponse(
+                {"error": f"Request body exceeds the {limit_mb} MB limit"},
+                status_code=413,
+            )
     form = await request.form()
     before_file = form.get("before_file")
     after_file = form.get("after_file")

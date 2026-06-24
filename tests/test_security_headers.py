@@ -44,6 +44,21 @@ def test_headers_on_api_responses(client: TestClient) -> None:
     assert "Content-Security-Policy" in r.headers
 
 
+def test_widget_routes_are_embeddable(client: TestClient) -> None:
+    # /widget/* score cards are documented as cross-origin <iframe> embeds
+    # (api/widget.py, /widget/embed.js), so they must NOT carry the deny-all
+    # framing headers that would make browsers refuse to render them.
+    r = client.get("/widget/scorecard")
+    assert r.status_code == 200
+    assert "X-Frame-Options" not in r.headers
+    csp = r.headers.get("Content-Security-Policy", "")
+    assert "frame-ancestors 'none'" not in csp
+    assert "frame-ancestors *" in csp
+    # The rest of the hardening still applies to widget responses.
+    assert "object-src 'none'" in csp
+    assert r.headers.get("X-Content-Type-Options") == "nosniff"
+
+
 @pytest.mark.parametrize("name", ["base.html", "graph.html", "blast_radius.html",
                                    "advisor.html", "topology_diff.html"])
 def test_cdn_scripts_have_sri(name: str) -> None:

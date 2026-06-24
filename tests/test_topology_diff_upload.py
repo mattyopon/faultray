@@ -73,6 +73,48 @@ def test_endpoint_missing_files_returns_400(auth_client) -> None:
     assert resp.status_code == 400
 
 
+def _post_request_with_content_length(value: str | None):
+    """Build a minimal POST Request to /api/topology-diff carrying the given
+    Content-Length. The pre-parse guard returns before reading the body, so no
+    real multipart payload is needed (and `user` is passed directly, bypassing
+    the auth dependency that FastAPI would otherwise inject)."""
+    from starlette.requests import Request
+
+    headers = []
+    if value is not None:
+        headers.append((b"content-length", value.encode()))
+
+    async def receive():
+        return {"type": "http.request", "body": b"", "more_body": False}
+
+    scope = {
+        "type": "http",
+        "method": "POST",
+        "path": "/api/topology-diff",
+        "headers": headers,
+        "query_string": b"",
+    }
+    return Request(scope, receive)
+
+
+def test_oversize_content_length_rejected_before_form_parsing() -> None:
+    # A declared Content-Length past the whole-body cap is rejected up front,
+    # before await request.form() spools the payload to temp disk.
+    from faultray.api.routes.graph import _MAX_REQUEST_BYTES, topology_diff_api
+
+    req = _post_request_with_content_length(str(_MAX_REQUEST_BYTES + 1))
+    resp = asyncio.run(topology_diff_api(req, user={"id": "t"}))
+    assert resp.status_code == 413
+
+
+def test_invalid_content_length_rejected_with_400() -> None:
+    from faultray.api.routes.graph import topology_diff_api
+
+    req = _post_request_with_content_length("not-a-number")
+    resp = asyncio.run(topology_diff_api(req, user={"id": "t"}))
+    assert resp.status_code == 400
+
+
 def test_endpoint_valid_upload_does_not_leak_temp_files(auth_client) -> None:
     tmpdir = Path(tempfile.gettempdir())
     before = set(tmpdir.glob("*.yaml"))
