@@ -117,3 +117,32 @@ def test_no_subprocess_call_without_timeout() -> None:
     through _apply_guarded which enforces it)."""
     offenders = _subprocess_calls_without_timeout()
     assert not offenders, f"subprocess call(s) missing timeout=: {offenders}"
+
+
+# ---------------------------------------------------------------------------
+# CI workflow: PR infra-file selection must not SIGPIPE-abort under pipefail,
+# nor be disabled when the first match has an unsafe (crafted) filename
+# ---------------------------------------------------------------------------
+
+def test_pr_check_selects_yaml_safely() -> None:
+    """faultray-pr-check.yml must NOT pick the infra YAML with `find | head`:
+    under `set -o pipefail`, head closing the pipe after one line kills find
+    with SIGPIPE (exit 141) on PRs with many matches, aborting the whole gate.
+    It must iterate `find -print0` NUL-delimited (process substitution keeps
+    find off the foreground pipeline) and SKIP unsafe filenames rather than
+    surrendering the scan when the first match happens to be unsafe."""
+    wf = (
+        Path(__file__).resolve().parents[1]
+        / ".github" / "workflows" / "faultray-pr-check.yml"
+    )
+    text = wf.read_text(encoding="utf-8")
+    # Strip full-line comments (YAML or shell `#`) so the guard inspects the
+    # actual commands, not the explanatory prose that names the bad pattern.
+    code = "\n".join(
+        ln for ln in text.splitlines() if not ln.lstrip().startswith("#")
+    )
+    assert "-print0" in code, "PR-check must read find output NUL-delimited (-print0)"
+    assert not re.search(r"find\b[^\n|]*\|\s*head", code), (
+        "PR-check selects files with `find | head` — SIGPIPE-aborts under "
+        "pipefail on many-file PRs; use a `find -print0` loop instead"
+    )

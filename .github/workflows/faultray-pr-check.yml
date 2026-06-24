@@ -39,20 +39,38 @@ jobs:
 
       - name: Find infrastructure YAML files
         id: find-yaml
+        shell: bash
         run: |
           set -euo pipefail
-          # Find FaultRay infrastructure YAML files in the PR (one path, quoted).
-          FIRST_FILE=$(find . -name 'faultray*.yaml' -o -name 'faultray*.yml' -o -name 'infrastructure*.yaml' | head -n1)
+          # Pick the first FaultRay infrastructure YAML file in the PR.
+          #
+          # Robustness:
+          #   * Read `find ... -print0` via a NUL-delimited loop, NOT
+          #     `find | head -n1`: head closes the pipe after one line, so on a
+          #     PR with many matches `find` is killed by SIGPIPE (exit 141);
+          #     under `pipefail` that becomes the step status and `set -e`
+          #     aborts the whole check. Process substitution keeps find off the
+          #     foreground pipeline, so its early-exit status never propagates.
+          #   * SKIP unsafe names instead of surrendering: take the first match
+          #     whose name has no whitespace/control chars, so a crafted
+          #     "faultray bad.yaml" cannot disable the simulation when a real
+          #     "faultray.yaml" is also present. Rejecting whitespace also keeps
+          #     the $GITHUB_OUTPUT write free of injected newlines.
+          FIRST_FILE=""
+          while IFS= read -r -d '' f; do
+            case "$f" in
+              *[$' \t\n\r']*) echo "Skipping unsafe filename: $f" >&2; continue ;;
+            esac
+            FIRST_FILE="$f"
+            break
+          done < <(find . \( -name 'faultray*.yaml' -o -name 'faultray*.yml' -o -name 'infrastructure*.yaml' \) -print0)
+
           if [ -z "$FIRST_FILE" ]; then
-            echo "No FaultRay YAML files found"
+            echo "No safe FaultRay YAML files found"
             echo "found=false" >> "$GITHUB_OUTPUT"
           else
-            # Reject paths with control/whitespace chars so a crafted filename
-            # cannot inject extra $GITHUB_OUTPUT lines or break the consumer.
-            case "$FIRST_FILE" in
-              *[$' \t\n\r']*) echo "Unsafe filename; skipping" >&2; echo "found=false" >> "$GITHUB_OUTPUT" ;;
-              *) echo "found=true" >> "$GITHUB_OUTPUT"; echo "first_file=$FIRST_FILE" >> "$GITHUB_OUTPUT" ;;
-            esac
+            echo "found=true" >> "$GITHUB_OUTPUT"
+            echo "first_file=$FIRST_FILE" >> "$GITHUB_OUTPUT"
           fi
 
       - name: Run FaultRay simulation
