@@ -7,18 +7,25 @@ on:
       - '**/*.yml'
       - '**/terraform/**'
       - '**/*.tf'
-      - '**/faultray*.yaml'
-      - '**/faultray*.yaml'
 
 permissions:
   pull-requests: write
   contents: read
 
+concurrency:
+  group: faultray-check-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
 jobs:
   faultray-check:
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     steps:
       - uses: actions/checkout@v6
+        with:
+          # This job runs untrusted PR code (pip install -e .); do not leave the
+          # checkout token in .git/config where that code could read it.
+          persist-credentials: false
 
       - name: Set up Python
         uses: actions/setup-python@v6
@@ -33,21 +40,29 @@ jobs:
       - name: Find infrastructure YAML files
         id: find-yaml
         run: |
-          # Find FaultRay/FaultRay YAML files in the PR
-          FILES=$(find . -name 'faultray*.yaml' -o -name 'faultray*.yaml' -o -name 'faultray*.yml' -o -name 'faultray*.yml' -o -name 'infrastructure*.yaml' | head -5)
-          if [ -z "$FILES" ]; then
+          set -euo pipefail
+          # Find FaultRay infrastructure YAML files in the PR (one path, quoted).
+          FIRST_FILE=$(find . -name 'faultray*.yaml' -o -name 'faultray*.yml' -o -name 'infrastructure*.yaml' | head -n1)
+          if [ -z "$FIRST_FILE" ]; then
             echo "No FaultRay YAML files found"
-            echo "found=false" >> $GITHUB_OUTPUT
+            echo "found=false" >> "$GITHUB_OUTPUT"
           else
-            echo "found=true" >> $GITHUB_OUTPUT
-            echo "files=$FILES" >> $GITHUB_OUTPUT
-            echo "first_file=$(echo $FILES | head -1)" >> $GITHUB_OUTPUT
+            # Reject paths with control/whitespace chars so a crafted filename
+            # cannot inject extra $GITHUB_OUTPUT lines or break the consumer.
+            case "$FIRST_FILE" in
+              *[$' \t\n\r']*) echo "Unsafe filename; skipping" >&2; echo "found=false" >> "$GITHUB_OUTPUT" ;;
+              *) echo "found=true" >> "$GITHUB_OUTPUT"; echo "first_file=$FIRST_FILE" >> "$GITHUB_OUTPUT" ;;
+            esac
           fi
 
       - name: Run FaultRay simulation
         if: steps.find-yaml.outputs.found == 'true'
+        env:
+          # Pass the step output via env and reference it quoted; never
+          # interpolate ${{ steps.*.outputs.* }} into a run: shell block.
+          FILE: ${{ steps.find-yaml.outputs.first_file }}
         run: |
-          FILE="${{ steps.find-yaml.outputs.first_file }}"
+          set -euo pipefail
           echo "Running FaultRay on $FILE..."
 
           # Run simulation with JSON output

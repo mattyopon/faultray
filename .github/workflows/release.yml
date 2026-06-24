@@ -29,13 +29,21 @@ jobs:
     steps:
       - name: Extract version from tag or release
         id: get_version
+        env:
+          # CWE-78: pass the attacker-influenceable release tag via env and
+          # reference it quoted, never interpolate ${{ ... }} into the shell.
+          RELEASE_TAG: ${{ github.event.release.tag_name }}
         run: |
           set -euo pipefail
-          if [ "${{ github.event_name }}" = "push" ]; then
+          if [ "$GITHUB_EVENT_NAME" = "push" ]; then
             VERSION="${GITHUB_REF#refs/tags/v}"
           else
-            VERSION="${{ github.event.release.tag_name }}"
-            VERSION="${VERSION#v}"
+            VERSION="${RELEASE_TAG#v}"
+          fi
+          # Validate against a safe version charset before any downstream use.
+          if ! printf '%s' "$VERSION" | grep -Eq '^[0-9A-Za-z.+-]+$'; then
+            echo "Invalid/unsafe version: $VERSION" >&2
+            exit 1
           fi
           echo "version=${VERSION}" >> "$GITHUB_OUTPUT"
           echo "Extracted version: ${VERSION}"
