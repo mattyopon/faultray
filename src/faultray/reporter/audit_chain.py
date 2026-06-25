@@ -74,14 +74,23 @@ class AuditChain:
                 f"Set {_ENV_SIGNING_KEY} or pass signing_key= to the AuditChain."
             )
         self._load()
-        # Whether new entries may be appended. When signing is active, the
-        # loaded prefix must already verify with the CURRENT key — otherwise a
-        # new (current-key) entry would yield a chain that no key can verify:
-        # an unsigned legacy prefix, OR one signed under a rotated/old key.
-        # Computed once at load (O(n)) rather than re-verifying on every append.
+        # Whether new entries may be appended. The loaded prefix must be
+        # consistent with how the NEXT entry will be written, or that append
+        # would yield a chain no key can verify. Computed once at load (O(n))
+        # rather than re-verifying on every append. Three refusal cases:
+        #   1. signing active, prefix does not verify with the CURRENT key
+        #      (unsigned legacy prefix, OR one signed under a rotated/old key);
+        #   2. NO key configured, but the prefix already contains HMAC-signed
+        #      entries — appending a new UNSIGNED entry would be rejected the
+        #      moment the correct key is restored (an unsigned suffix in a signed
+        #      chain), permanently breaking the log after one keyless event.
         self._appendable = True
-        if (self._signing_key or self._require_signing) and self._entries:
-            self._appendable = self.verify_integrity()[0]
+        if self._entries:
+            if self._signing_key or self._require_signing:
+                self._appendable = self.verify_integrity()[0]
+            elif any(e.signed for e in self._entries):
+                # Signed entries present but no key to continue them: fail closed.
+                self._appendable = False
 
     @property
     def tamper_evident(self) -> bool:
@@ -113,22 +122,24 @@ class AuditChain:
         data: str = "",
     ) -> AuditEntry:
         """Append a new entry to the audit chain."""
-        # Fail closed when the loaded prefix does not verify with the current
-        # key (computed once in __init__): appending a new current-key entry
-        # onto an unsigned (legacy) prefix OR a prefix signed under a different/
-        # rotated key would yield a chain that NO key can verify. Require an
-        # explicit migration (start a fresh signed chain, or load without a key
-        # to keep appending unsigned). Brand-new and already-all-signed chains
-        # are unaffected.
+        # Fail closed when the loaded prefix is inconsistent with how the next
+        # entry will be written (computed once in __init__): appending would
+        # yield a chain that NO key can verify. This covers a current-key entry
+        # onto an unsigned (legacy) prefix or a prefix signed under a different/
+        # rotated key, AND a new UNSIGNED entry (no key configured) onto a prefix
+        # that already has HMAC-signed entries. Require an explicit migration
+        # (start a fresh signed chain, or load with the correct key). Brand-new
+        # and already-all-signed chains are unaffected.
         if not self._appendable:
             raise RuntimeError(
-                "Refusing to append to an audit chain whose existing entries do "
-                "not verify with the current signing key: the loaded prefix has "
-                "unsigned (legacy) entries, or was signed under a different / "
-                "rotated key, so a new current-key entry would make the whole "
+                "Refusing to append to an audit chain whose existing entries are "
+                "inconsistent with the current signing configuration: the loaded "
+                "prefix has unsigned (legacy) entries, was signed under a "
+                "different / rotated key, OR is HMAC-signed while no key is "
+                "configured to continue it, so a new entry would make the whole "
                 f"chain unverifiable. Set the correct {_ENV_SIGNING_KEY}, start a "
-                "new signed chain, or load without a key to keep appending "
-                "unsigned."
+                "new signed chain, or load without a key only for an all-unsigned "
+                "log."
             )
         sequence = len(self._entries)
         previous_hash = self._entries[-1].entry_hash if self._entries else self.GENESIS_HASH

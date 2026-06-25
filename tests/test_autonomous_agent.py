@@ -977,6 +977,30 @@ class TestIndependentSimulation:
         result = agent._simulate_with_fix(_unhealthy_graph(), plan)
         assert result.new_score != 999.0
 
+    def test_unmeasurable_fix_fails_closed_even_when_projection_improves(
+        self, tmp_path: Path
+    ) -> None:
+        # The independent measurement IS the safety gate. When it is unavailable
+        # (e.g. the scorer raised), the simulation must FAIL CLOSED — never
+        # approve a plan on the generator's optimistic projection alone, even
+        # when that projection claims a big improvement.
+        from faultray.remediation.iac_generator import RemediationFile, RemediationPlan
+        agent = _make_agent(tmp_path)
+        agent._measure_fix_effect = lambda g, p=None: (None, None)  # type: ignore[method-assign]
+        plan = RemediationPlan(
+            expected_score_before=10.0,
+            expected_score_after=90.0,  # optimistic improvement, NOT a regression
+            files=[RemediationFile(path="x.tf", content="r {}", description="d",
+                                   phase=3, impact_score_delta=80.0, monthly_cost=1.0,
+                                   category="dr")],
+        )
+        result = agent._simulate_with_fix(_unhealthy_graph(), plan)
+        assert result.passed is False
+        assert any(
+            "UNVERIFIED" in s or "could not be independently measured" in s
+            for s in result.side_effects
+        )
+
 
 # ===========================================================================
 # Real rollback vs honest status (Wave 1c)
@@ -1035,6 +1059,67 @@ class TestVerifyRollback:
         ])
         agent._verify(cycle, _unhealthy_graph())
         assert cycle.status == "rolled_back"
+
+    def test_verify_preserves_failed_apply_no_regression_rolls_back(
+        self, tmp_path: Path
+    ) -> None:
+        # A live apply that failed/timed out but did NOT lower the score must
+        # still end as a failure (never "completed"): _verify resets the status
+        # to "verifying" and would otherwise mark it "completed" on a
+        # non-regressing score. Partial changes are rolled back and the failure
+        # is preserved in status + report.
+        agent = _make_agent(tmp_path)
+        agent._load_or_discover = lambda: _unhealthy_graph()  # type: ignore[method-assign]
+        agent._rollback_step = lambda et, fp: True  # type: ignore[method-assign]
+        cycle = RemediationCycle(id="t", started_at="now")
+        cycle.initial_score = 0.0  # any real score >= 0 -> no regression
+        cycle.status = "failed"    # set terminally by the execution step loop
+        cycle.execution_log = [
+            {"step": "tf", "status": "apply_failed",
+             "execution_type": "terraform", "file_path": "a.tf"},
+        ]
+        agent._verify(cycle, _unhealthy_graph())
+        assert cycle.improvement_achieved >= 0  # not a regression
+        assert cycle.status == "failed"         # NOT "completed"
+        assert "rolled back" in cycle.report_summary.lower()
+
+    def test_verify_failed_apply_rollback_failure_remains_applied(
+        self, tmp_path: Path
+    ) -> None:
+        # If the partial changes from a failed apply cannot be undone, surface
+        # rollback_failed with the "REMAIN APPLIED" warning even without a score
+        # regression.
+        agent = _make_agent(tmp_path)
+        agent._load_or_discover = lambda: _unhealthy_graph()  # type: ignore[method-assign]
+        agent._rollback_step = lambda et, fp: False  # type: ignore[method-assign]
+        cycle = RemediationCycle(id="t", started_at="now")
+        cycle.initial_score = 0.0
+        cycle.status = "failed"
+        cycle.execution_log = [
+            {"step": "tf", "status": "apply_failed",
+             "execution_type": "terraform", "file_path": "a.tf"},
+        ]
+        agent._verify(cycle, _unhealthy_graph())
+        assert cycle.status == "rollback_failed"
+        assert "REMAIN APPLIED" in cycle.report_summary
+
+    def test_verify_failed_plan_phase_no_applied_steps_stays_failed(
+        self, tmp_path: Path
+    ) -> None:
+        # A plan-phase failure (step status "failed", excluded from the applied
+        # set) with no real changes must report "failed", never "completed".
+        agent = _make_agent(tmp_path)
+        agent._load_or_discover = lambda: _unhealthy_graph()  # type: ignore[method-assign]
+        cycle = RemediationCycle(id="t", started_at="now")
+        cycle.initial_score = 0.0
+        cycle.status = "failed"
+        cycle.execution_log = [
+            {"step": "tf", "status": "failed",
+             "execution_type": "terraform", "file_path": "a.tf"},
+        ]
+        agent._verify(cycle, _unhealthy_graph())
+        assert cycle.status == "failed"
+        assert "no changes recorded as applied" in cycle.report_summary
 
     def test_failed_rollback_is_surfaced(self, tmp_path: Path) -> None:
         agent = _make_agent(tmp_path)

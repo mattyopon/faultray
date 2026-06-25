@@ -629,14 +629,25 @@ class AutonomousRemediationAgent:
                     predicted_after, measured_after, _SIM_DIVERGENCE_THRESHOLD,
                 )
         else:
-            # Could not measure independently: fall back to the projection but
-            # do NOT present it as an independently verified result.
+            # Could not independently MEASURE the fix (e.g. the scorer raised).
+            # The whole purpose of this gate is to avoid trusting the generator's
+            # optimistic projection, so FAIL CLOSED: never approve a plan whose
+            # effect we could not verify — even when the projection looks fine.
+            # Surfacing it as a side effect makes the simulation not-pass, so the
+            # cycle records simulation_passed=False with the UNVERIFIED reason
+            # instead of approving an unmeasured projection.
             new_score = predicted_after
             logger.warning(
-                "SIMULATE could not independently measure the fix; using the "
-                "generator projection (UNVERIFIED)"
+                "SIMULATE could not independently measure the fix; refusing to "
+                "approve on the generator projection alone (UNVERIFIED)"
+            )
+            side_effects.append(
+                "Fix effect could not be independently measured (UNVERIFIED) — "
+                "refusing to approve on the generator's projection alone"
             )
             if predicted_after < predicted_before:
+                # Even the optimistic projection shows a regression — keep the
+                # diagnostic alongside the fail-closed marker.
                 side_effects.append(
                     f"Score would decrease: {predicted_before:.1f} -> "
                     f"{predicted_after:.1f}"
@@ -1047,6 +1058,13 @@ class AutonomousRemediationAgent:
             self._save_cycle(cycle)
             return cycle
 
+        # A live apply/step failed or timed out (set terminally by the execution
+        # ratchet's step loop when a result is "failed"/"apply_failed"/"timeout").
+        # The plan aborted mid-way and may have left partial infrastructure
+        # changes, so verification must roll back what it can and NEVER upgrade
+        # the cycle to "completed" — even if the re-scored score did not regress.
+        step_failed = cycle.status == "failed"
+
         cycle.status = "verifying"
 
         try:
@@ -1094,6 +1112,42 @@ class AutonomousRemediationAgent:
                         "undone — changes REMAIN APPLIED, manual intervention required."
                     )
                     logger.error(cycle.report_summary)
+        elif step_failed:
+            # The re-scored score did not regress, but a live apply/step failed
+            # or timed out. That is still a failure — NEVER report "completed".
+            # Undo any partial changes and preserve the terminal failure so the
+            # persisted report cannot bury a failed apply behind a clean score.
+            applied = self._applied_infra_steps(cycle)
+            if applied:
+                results = [
+                    self._rollback_step(e["execution_type"], e.get("file_path", ""))
+                    for e in applied
+                ]
+                if all(results):
+                    cycle.status = "failed"
+                    cycle.report_summary = (
+                        f"Live apply failed/timed out; rolled back {len(applied)} "
+                        f"partially-applied step(s). Score "
+                        f"{cycle.initial_score:.1f} -> {final_score:.1f} (no "
+                        "regression detected, but the apply did not complete)."
+                    )
+                else:
+                    undone_failed = sum(1 for ok in results if not ok)
+                    cycle.status = "rollback_failed"
+                    cycle.report_summary = (
+                        "FAILED APPLY with FAILED ROLLBACK: a live apply failed/"
+                        f"timed out and {undone_failed} of {len(applied)} "
+                        "partially-applied step(s) could not be undone — changes "
+                        "REMAIN APPLIED, manual intervention required."
+                    )
+                    logger.error(cycle.report_summary)
+            else:
+                cycle.status = "failed"
+                cycle.report_summary = (
+                    "Live apply/step failed before completing; no changes "
+                    f"recorded as applied. Score {cycle.initial_score:.1f} -> "
+                    f"{final_score:.1f}."
+                )
         else:
             cycle.status = "completed"
 
@@ -1129,9 +1183,13 @@ class AutonomousRemediationAgent:
             f"Issues found: {len(cycle.issues_found)}. "
             f"Cost: {cycle.estimated_cost}"
         )
-        # Preserve critical warnings (failed rollback / regression / hard-stop
-        # block) rather than overwriting them with the generic summary.
-        if cycle.status in ("rollback_failed", "regressed", "blocked") and cycle.report_summary:
+        # Preserve critical warnings (failed apply / failed rollback / regression
+        # / hard-stop block) rather than overwriting them with the generic
+        # summary. "failed" carries the live-apply-failed message set by _verify.
+        if (
+            cycle.status in ("failed", "rollback_failed", "regressed", "blocked")
+            and cycle.report_summary
+        ):
             cycle.report_summary = f"{cycle.report_summary} | {generic}"
         else:
             cycle.report_summary = generic

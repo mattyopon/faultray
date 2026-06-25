@@ -353,6 +353,23 @@ class TestAuditChainSigning:
         # Nothing written: the log still has just the one key-A entry.
         assert log.read_text(encoding="utf-8").strip().count("\n") == 0
 
+    def test_append_refuses_signed_log_loaded_without_key(
+        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        # A HMAC-signed chain reloaded with NO key configured (misconfigured
+        # signed deployment): appending would write an UNSIGNED entry after the
+        # signed prefix, which verify_integrity() rejects the moment the correct
+        # key is restored — permanently breaking the chain after one keyless
+        # event. Detect the signed prefix even without a key and fail closed.
+        log = tmp_path / "a.jsonl"
+        monkeypatch.delenv("FAULTRAY_SIGNING_KEY", raising=False)
+        AuditChain(log_path=log, signing_key="k").append("a", "system", "d")
+        keyless = AuditChain(log_path=log)  # signed prefix loaded, no key
+        with pytest.raises(RuntimeError, match="no key is configured"):
+            keyless.append("b", "system", "would be unsigned")
+        # Fail-closed: nothing written; the log still has just the one entry.
+        assert log.read_text(encoding="utf-8").strip().count("\n") == 0
+
 
 class TestAuditDetailsAndExport:
     def test_details_are_covered_by_the_mac(self, tmp_path: Path) -> None:
