@@ -6,7 +6,7 @@
 from __future__ import annotations
 
 from enum import Enum
-from pydantic import BaseModel, Field, field_validator
+from pydantic import BaseModel, Field, ValidationInfo, field_validator
 
 SCHEMA_VERSION = "4.0"
 
@@ -295,7 +295,7 @@ class Component(BaseModel):
 
     @field_validator('id', 'name', 'host', 'owner')
     @classmethod
-    def reject_injection_chars(cls, v: str) -> str:
+    def reject_injection_chars(cls, v: str, info: ValidationInfo) -> str:
         """Model-boundary gate against stored XSS / report injection.
 
         These fields flow verbatim from user-supplied topology YAML/JSON into
@@ -304,21 +304,33 @@ class Component(BaseModel):
         enable HTML tag injection (``<``/``>``) and ASCII control characters
         (including the CR/LF/TAB used for CSV cell-break injection), which
         have no legitimate place in a component identifier, name, host, or
-        owner. Output-context escaping at each sink and the CSV formula
-        neutralizer remain the primary, context-aware defenses; this is
-        fail-closed defense-in-depth at the ingestion boundary.
+        owner.
+
+        The ``id`` is additionally interpolated into an inline JavaScript
+        string handler (templates: ``onclick="toggleDetails('{{ comp.id }}')"``),
+        so a quote/backtick/backslash would break out of the JS string and
+        execute. Unlike free-text names (e.g. ``O'Brien's DB``), a component id
+        is a machine identifier with no legitimate need for those characters,
+        so reject them for ``id`` too. Output-context escaping at each sink and
+        the CSV formula neutralizer remain the primary, context-aware defenses;
+        this is fail-closed defense-in-depth at the ingestion boundary.
         """
         if not isinstance(v, str):
             return v
+        disallowed = '<>'
+        if info.field_name == 'id':
+            disallowed += '\'"`\\'  # JS-string break-out chars for the onclick sink
         bad = sorted({
             repr(c) for c in v
-            if c in '<>' or ord(c) < 0x20 or ord(c) == 0x7f
+            if c in disallowed or ord(c) < 0x20 or ord(c) == 0x7f
         })
         if bad:
             raise ValueError(
                 "contains disallowed character(s) "
-                f"{', '.join(bad)}: '<', '>' and control characters are not "
-                "permitted (they enable HTML/CSV injection in downstream reports)"
+                f"{', '.join(bad)}: '<', '>', control characters"
+                + (", and quote/backtick/backslash" if info.field_name == 'id' else "")
+                + " are not permitted (they enable HTML/JS/CSV injection in "
+                "downstream reports/handlers)"
             )
         return v
 

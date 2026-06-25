@@ -693,14 +693,12 @@ class TestInputValidation:
     # --- Special characters in IDs ---
 
     def test_special_chars_in_component_id(self):
-        """Spaces/slashes/quotes are allowed; newlines/tabs (control chars) are
-        rejected at the model boundary."""
+        """Spaces/slashes/@/# are allowed in ids; quote/backtick/backslash and
+        control chars (newline/tab) are rejected — `id` flows into an inline JS
+        handler, so JS-string break-out chars are gated at the boundary."""
         allowed_ids = [
             "has space",
             "has/slash",
-            "has\\backslash",
-            'has"quote',
-            "has'apostrophe",
             "has@at",
             "has#hash",
         ]
@@ -710,8 +708,9 @@ class TestInputValidation:
         assert len(graph.components) == len(allowed_ids)
         for sid in allowed_ids:
             assert graph.get_component(sid) is not None
-        # Control characters (newline/tab) are rejected at the boundary.
-        for bad in ["has\nnewline", "has\ttab"]:
+        # JS-string break-out chars and control chars are rejected for `id`.
+        for bad in ['has"quote', "has'apostrophe", "has\\backslash",
+                    "has`tick", "has\nnewline", "has\ttab"]:
             with pytest.raises(ValidationError):
                 _make_component(cid=bad, name="x")
 

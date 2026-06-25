@@ -780,6 +780,30 @@ class TestExecuteStep:
         # reaches kubectl apply and errors against no cluster -> "apply_failed".
         assert result.status in ("failed", "timeout", "apply_failed")
 
+    def test_ratchet_stops_after_apply_failed(
+        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        # A live apply that errors after starting ("apply_failed") is terminal:
+        # the agent must NOT keep applying later steps onto a partial/failed
+        # apply. Stub a 2-step plan whose first step apply-fails.
+        monkeypatch.setenv("FAULTRAY_ALLOW_AUTO_APPLY", "1")
+        agent = _make_agent(tmp_path, dry_run=False, auto_approve=True)
+        steps = [
+            _PlanStep(description="s1", risk_level="low", file_path="a.tf",
+                      content="", execution_type="terraform"),
+            _PlanStep(description="s2", risk_level="low", file_path="b.tf",
+                      content="", execution_type="terraform"),
+        ]
+        agent._plan_to_steps = lambda plan: steps  # type: ignore[assignment]
+        agent._execute_step = (  # type: ignore[assignment]
+            lambda step: StepResult(status="apply_failed", output="boom")
+        )
+        cycle = RemediationCycle(id="t", started_at="2026-01-01T00:00:00Z")
+        agent._execute_with_ratchet(cycle, object())
+        # Only the first (apply_failed) step ran; the second was never attempted.
+        assert [e["status"] for e in cycle.execution_log] == ["apply_failed"]
+        assert cycle.status == "failed"
+
     def test_execute_step_unknown_type(self, tmp_path: Path) -> None:
         agent = _make_agent(tmp_path, dry_run=False)
         step = _PlanStep(

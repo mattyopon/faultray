@@ -780,7 +780,11 @@ class AutonomousRemediationAgent:
                     "execution_type": step.execution_type,
                     "file_path": step.file_path,
                 })
-                if result.status == "failed":
+                # Stop the live plan on any non-clean apply: "failed" (plan/CLI
+                # error), "apply_failed" (apply errored after starting), and
+                # "timeout" (apply killed mid-run) all leave state uncertain, so
+                # do NOT keep applying later steps onto a partial/failed apply.
+                if result.status in ("failed", "apply_failed", "timeout"):
                     cycle.status = "failed"
                     break
             else:

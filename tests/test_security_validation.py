@@ -77,19 +77,25 @@ class TestInputSanitization:
             )
 
     def test_component_id_with_slashes_and_backslashes(self):
-        """IDs containing / and \\ must not cause filesystem side effects."""
+        """Forward-slash ids are stored safely (no filesystem side effects);
+        backslash ids are now rejected at the model boundary, since `id` is
+        JS-context strict (it flows into an inline onclick handler) and a
+        backslash is also a Windows-style path-traversal vector."""
         graph = InfraGraph()
-        for cid in ["foo/bar", "foo\\bar", "..\\..\\windows\\system32"]:
-            comp = Component(id=cid, name=cid, type=ComponentType.CUSTOM)
-            graph.add_component(comp)
+        for cid in ["foo/bar", "a/b/c"]:
+            graph.add_component(Component(id=cid, name=cid, type=ComponentType.CUSTOM))
+        assert len(graph.components) == 2
 
-        assert len(graph.components) == 3
+        # Backslash (Windows traversal) ids are rejected at ingestion.
+        for cid in ["foo\\bar", "..\\..\\windows\\system32"]:
+            with pytest.raises(ValidationError):
+                Component(id=cid, name="x", type=ComponentType.CUSTOM)
 
         with tempfile.TemporaryDirectory() as tmpdir:
             out_path = Path(tmpdir) / "model.json"
             graph.save(out_path)
             raw = json.loads(out_path.read_text())
-            assert len(raw["components"]) == 3
+            assert len(raw["components"]) == 2
 
     # --- XSS-like Content in Names ---
 

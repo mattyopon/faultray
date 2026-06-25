@@ -49,6 +49,24 @@ def test_component_accepts_legitimate_names(name: str) -> None:
     assert _component(name=name).name == name
 
 
+@pytest.mark.parametrize("payload", [
+    "x');alert(1)//", 'a"b', "back`tick", "back\\slash",
+])
+def test_component_id_rejects_js_string_breakers(payload: str) -> None:
+    # The id is interpolated into an inline JS string (onclick toggleDetails);
+    # quote/backtick/backslash would break out of the string -> stored XSS, so
+    # they must be rejected at the model boundary for `id` specifically.
+    with pytest.raises(ValidationError):
+        _component(id=payload)
+
+
+@pytest.mark.parametrize("field", ["name", "host", "owner"])
+def test_quotes_allowed_in_non_id_fields(field: str) -> None:
+    # Only `id` is JS-context strict; free-text fields legitimately carry quotes
+    # (e.g. "O'Brien's DB") and stay HTML-escaped at their sinks.
+    assert _component(**{field: "O'Brien \"the `boss`\" DB"})
+
+
 # ---------------------------------------------------------------------------
 # Integrity primitives must be keyed in sensitive files
 # ---------------------------------------------------------------------------
