@@ -467,6 +467,11 @@ class EvidenceGenerator:
         output_path = Path(output_path)
         output_path.parent.mkdir(parents=True, exist_ok=True)
 
+        # Defuse spreadsheet formula injection (CWE-1236): control descriptions
+        # / evidence detail are user/overlay-derived and could start with a
+        # formula trigger (=,+,-,@), so neutralize each data cell on open.
+        from faultray.reporter.csv_safe import neutralize_cells
+
         with open(output_path, "w", newline="", encoding="utf-8") as fh:
             writer = csv.writer(fh)
             writer.writerow([
@@ -480,7 +485,7 @@ class EvidenceGenerator:
                 "Simulation ID",
             ])
             for item in package.items:
-                writer.writerow([
+                writer.writerow(neutralize_cells([
                     item.framework,
                     item.control_id,
                     item.control_description,
@@ -489,7 +494,7 @@ class EvidenceGenerator:
                     item.result,
                     item.evidence_detail,
                     item.simulation_id or "",
-                ])
+                ]))
 
     def export_json(self, package: EvidencePackage) -> dict:
         """Export an evidence package to a JSON-serialisable dict."""

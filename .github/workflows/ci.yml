@@ -8,6 +8,11 @@ on:
     # Weekly mutation testing — Sunday 02:00 UTC
     - cron: "0 2 * * 0"
 
+# Least-privilege default: these jobs only checkout/install/test/build and
+# upload artifacts (Actions API), none of which need a write-scoped token.
+permissions:
+  contents: read
+
 # Cancel superseded runs on the same branch/PR to save CI minutes.
 concurrency:
   group: ci-${{ github.workflow }}-${{ github.ref }}
@@ -262,7 +267,10 @@ jobs:
           pip install pip-audit safety bandit
 
       - name: Dependency vulnerability scan (pip-audit)
-        run: pip-audit --strict --desc 2>&1 || true
+        # Surface failures visibly (non-blocking) instead of swallowing the exit
+        # code with `|| true`, which made this "Security Scan" gate inert.
+        continue-on-error: true
+        run: pip-audit --strict --desc
 
       - name: Secret detection
         run: |
@@ -281,7 +289,10 @@ jobs:
           fi
 
       - name: Bandit security linter
-        run: bandit -r src/faultray/ -ll --skip B101 -f json -o bandit-report.json || true
+        # Surface findings visibly (non-blocking) instead of swallowing the exit
+        # code; the report is still uploaded below via if: always().
+        continue-on-error: true
+        run: bandit -r src/faultray/ -ll --skip B101 -f json -o bandit-report.json
 
       - name: Upload security report
         if: always()

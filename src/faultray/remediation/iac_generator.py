@@ -11,6 +11,7 @@ recovery) and include cost estimates and expected resilience score impact.
 
 from __future__ import annotations
 
+import hashlib
 import re
 from dataclasses import dataclass, field
 from pathlib import Path
@@ -44,17 +45,49 @@ def _safe_identifier(value: str) -> str:
     return cleaned or "resource"
 
 
+def _collision_safe_ids(component_ids) -> dict[str, str]:
+    """Map each component id to a UNIQUE sanitized identifier.
+
+    ``_safe_identifier`` can collapse distinct ids (``api.prod``/``api/prod``)
+    to the same string, which would emit duplicate Terraform/K8s resource
+    addresses and confuse targeted rollback. Group ids by their sanitized form
+    and, only where two or more ids collide, append a short deterministic hash
+    of the FULL id so each component gets a distinct, stable identifier
+    (independent of iteration order). Non-colliding ids keep their bare
+    sanitized form.
+    """
+    ids_by_base: dict[str, list[str]] = {}
+    for comp_id in component_ids:
+        ids_by_base.setdefault(_safe_identifier(comp_id), []).append(comp_id)
+
+    safe_ids: dict[str, str] = {}
+    for base, ids in ids_by_base.items():
+        if len(ids) == 1:
+            safe_ids[ids[0]] = base
+        else:
+            for comp_id in ids:
+                digest = hashlib.sha256(comp_id.encode("utf-8")).hexdigest()[:8]
+                safe_ids[comp_id] = f"{base}_{digest}"
+    return safe_ids
+
+
 def _escape_hcl_value(value: str) -> str:
     """Escape *value* for a double-quoted HCL/YAML string literal.
 
     Neutralises quote/backslash break-outs and newlines so a crafted component
-    name cannot inject additional HCL attributes or YAML keys.
+    name cannot inject additional HCL attributes or YAML keys, AND escapes the
+    Terraform template introducers ``${`` and ``%{`` (doubling the leading
+    character per the HCL spec) so a name like ``${file("/etc/passwd")}`` or
+    ``%{ for ... }`` is rendered literally instead of being evaluated by
+    ``terraform plan/apply`` (template injection).
     """
     return (
         value.replace("\\", "\\\\")
         .replace('"', '\\"')
         .replace("\n", " ")
         .replace("\r", " ")
+        .replace("${", "$${")
+        .replace("%{", "%%{")
     )
 
 
@@ -73,6 +106,8 @@ class RemediationFile:
     impact_score_delta: float  # Expected resilience score improvement
     monthly_cost: float  # Estimated monthly cost in USD
     category: str  # "redundancy", "security", "dr", "monitoring"
+    component_id: str = ""  # the component this file remediates
+    rule_key: str = ""  # the REMEDIATION_RULES key that produced this file
 
 
 @dataclass
@@ -659,6 +694,16 @@ class IaCGenerator:
         all_files: list[RemediationFile] = []
         counters: dict[str, int] = {}  # per-rule counter for unique filenames
 
+        # Pre-compute a stable, collision-free safe identifier per component.
+        # _safe_identifier alone can map distinct ids (e.g. "api.prod" and
+        # "api/prod" both -> "api_prod") onto the same string, which would emit
+        # DUPLICATE Terraform/K8s resource addresses (e.g.
+        # aws_wafv2_web_acl.api_prod_waf), breaking apply and confusing the
+        # targeted rollback. Group ids by their sanitized form and disambiguate
+        # ONLY the colliding ones with a short, deterministic hash of the full
+        # id — independent of iteration order and stable across runs.
+        safe_id_map = _collision_safe_ids(self._graph.components.keys())
+
         for comp in self._graph.components.values():
             for rule in REMEDIATION_RULES:
                 if rule.condition(comp):
@@ -668,7 +713,8 @@ class IaCGenerator:
 
                     # Sanitise untrusted id/name before they reach generated
                     # HCL/YAML and the on-disk file path (injection + traversal).
-                    safe_id = _safe_identifier(comp.id)
+                    # safe_id is taken from the collision-free map above.
+                    safe_id = safe_id_map[comp.id]
                     safe_name = _escape_hcl_value(comp.name)
 
                     rendered = rule.template.format(
@@ -694,6 +740,8 @@ class IaCGenerator:
                             impact_score_delta=rule.impact,
                             monthly_cost=rule.cost,
                             category=rule.category,
+                            component_id=comp.id,
+                            rule_key=rule.key,
                         )
                     )
 

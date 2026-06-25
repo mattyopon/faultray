@@ -693,31 +693,31 @@ class TestInputValidation:
     # --- Special characters in IDs ---
 
     def test_special_chars_in_component_id(self):
-        """IDs with spaces, newlines, tabs, and special chars."""
-        special_ids = [
+        """Spaces/slashes/@/# are allowed in ids; quote/backtick/backslash and
+        control chars (newline/tab) are rejected — `id` flows into an inline JS
+        handler, so JS-string break-out chars are gated at the boundary."""
+        allowed_ids = [
             "has space",
-            "has\nnewline",
-            "has\ttab",
             "has/slash",
-            "has\\backslash",
-            'has"quote',
-            "has'apostrophe",
             "has@at",
             "has#hash",
         ]
         graph = InfraGraph()
-        for sid in special_ids:
+        for sid in allowed_ids:
             graph.add_component(_make_component(cid=sid, name=f"comp-{sid[:5]}"))
-        assert len(graph.components) == len(special_ids)
-        for sid in special_ids:
+        assert len(graph.components) == len(allowed_ids)
+        for sid in allowed_ids:
             assert graph.get_component(sid) is not None
+        # JS-string break-out chars and control chars are rejected for `id`.
+        for bad in ['has"quote', "has'apostrophe", "has\\backslash",
+                    "has`tick", "has\nnewline", "has\ttab"]:
+            with pytest.raises(ValidationError):
+                _make_component(cid=bad, name="x")
 
     def test_null_byte_in_component_id(self):
-        """Null byte in ID should be storable (Python strings allow it)."""
-        c = _make_component(cid="before\x00after", name="NullByte")
-        graph = InfraGraph()
-        graph.add_component(c)
-        assert graph.get_component("before\x00after") is not None
+        """Null byte in ID is rejected at the model boundary (control char)."""
+        with pytest.raises(ValidationError):
+            _make_component(cid="before\x00after", name="NullByte")
 
     # --- NaN/Infinity in numeric fields ---
 

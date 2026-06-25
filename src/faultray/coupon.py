@@ -15,8 +15,11 @@ Storage:
 
 from __future__ import annotations
 
+import hashlib
+import hmac
 import json
 import logging
+import os
 import secrets
 import string
 import warnings
@@ -105,6 +108,32 @@ _CODE_PREFIX = "FRAY"
 _VALID_TIERS = ("pro", "business", "enterprise")
 
 _ALPHABET = string.ascii_uppercase + string.digits
+
+# Same server-side signing secret used by ``faultray.licensing`` for license
+# keys. When configured, the redeemed-coupon record in ``license.json`` is
+# HMAC-signed so a user with local write access cannot forge a higher tier by
+# editing the file. Defined locally (not imported from licensing) to avoid a
+# circular import — ``licensing`` imports this module.
+_ENV_LICENSE_SECRET = "FAULTRAY_LICENSE_SECRET"  # noqa: S105 - env var name, not a secret
+
+
+def _license_secret() -> str | None:
+    """Return the configured signing secret, or ``None`` when unset/empty."""
+    return os.environ.get(_ENV_LICENSE_SECRET) or None
+
+
+def _canonical_payload(coupon_dict: dict) -> str:
+    """Deterministic serialization of a redeemed-coupon dict for signing."""
+    return json.dumps(
+        coupon_dict, sort_keys=True, separators=(",", ":"), ensure_ascii=False
+    )
+
+
+def _sign_coupon(coupon_dict: dict, secret: str) -> str:
+    """HMAC-SHA256 of the canonical redeemed-coupon payload."""
+    return hmac.new(
+        secret.encode(), _canonical_payload(coupon_dict).encode(), hashlib.sha256
+    ).hexdigest()
 
 
 # ---------------------------------------------------------------------------
@@ -292,10 +321,47 @@ def _load_license() -> RedeemedCoupon | None:
         coupon_data = raw.get("coupon")
         if not coupon_data:
             return None
+        if not _redeemed_signature_ok(coupon_data, raw.get("coupon_sig")):
+            return None
         return RedeemedCoupon.from_dict(coupon_data)
     except Exception:
         logger.warning("Failed to load license.json", exc_info=True)
         return None
+
+
+def _redeemed_signature_ok(coupon_data: dict, sig: str | None) -> bool:
+    """Validate the HMAC signature on a redeemed-coupon record (fail closed).
+
+    * Secret configured: the record MUST carry a ``coupon_sig`` that matches
+      ``HMAC(secret, coupon)``; otherwise it is rejected as forged/tampered or
+      unsigned (legacy) — re-redeem under the secret to sign it.
+    * Secret absent but a signature is present: we cannot verify it, so reject
+      (prevents a signed file from a real deployment being trusted elsewhere).
+    * Secret absent and no signature: legacy/local unsigned record — accepted,
+      since no secret-based trust boundary exists locally and server-side
+      billing enforcement is the authoritative gate.
+    """
+    secret = _license_secret()
+    if secret:
+        if not sig:
+            logger.warning(
+                "license.json is unsigned but %s is configured; ignoring it. "
+                "Re-redeem the coupon to sign it.",
+                _ENV_LICENSE_SECRET,
+            )
+            return False
+        expected = _sign_coupon(coupon_data, secret)
+        if not hmac.compare_digest(sig, expected):
+            logger.warning("license.json signature mismatch; ignoring forged/tampered license.")
+            return False
+        return True
+    if sig:
+        logger.warning(
+            "license.json is signed but no %s is configured to verify it; ignoring.",
+            _ENV_LICENSE_SECRET,
+        )
+        return False
+    return True
 
 
 def _save_license(redeemed: RedeemedCoupon) -> None:
@@ -309,6 +375,15 @@ def _save_license(redeemed: RedeemedCoupon) -> None:
         except Exception:
             pass
     existing["coupon"] = redeemed.to_dict()
+    secret = _license_secret()
+    if secret:
+        # Sign the redeemed-coupon record so it cannot be forged by editing the
+        # file. Verification on load uses the same secret + canonical payload.
+        existing["coupon_sig"] = _sign_coupon(existing["coupon"], secret)
+    else:
+        # No secret: cannot produce a trustworthy signature. Drop any stale one
+        # so the record is unambiguously unsigned rather than falsely "signed".
+        existing.pop("coupon_sig", None)
     _LICENSE_FILE.write_text(
         json.dumps(existing, indent=2, ensure_ascii=False),
         encoding="utf-8",
@@ -483,14 +558,14 @@ def get_active_coupon_tier() -> str | None:
 
     This is the integration point for :func:`faultray.licensing.get_active_tier`.
     """
-    # TODO(review/U4): ~/.faultray/license.json is plain, unsigned JSON, so a
-    # user with local filesystem write access can forge an enterprise tier by
-    # editing it directly (local-CLI threat model). A real fix is to HMAC-sign
-    # the redeemed-coupon record with FAULTRAY_LICENSE_SECRET and verify it
-    # here, mirroring licensing.verify_license_key. Deferred: requires a signing
-    # secret to be provisioned to the redemption path and breaks existing
-    # unsigned license.json files. Server-side enforcement (billing.check_limit,
-    # now fail-closed) is the authoritative gate.
+    # The redeemed-coupon record in ~/.faultray/license.json is HMAC-signed with
+    # FAULTRAY_LICENSE_SECRET on redemption and verified on load (see
+    # _redeemed_signature_ok), mirroring licensing.verify_license_key. When the
+    # secret is configured, a user with local filesystem write access can no
+    # longer forge an enterprise tier by editing the file: an unsigned or
+    # tampered record fails verification and is ignored (fail closed). Without a
+    # secret the local-only convenience behaviour is preserved; server-side
+    # enforcement (billing.check_limit, fail-closed) remains the authoritative gate.
     redeemed = _load_license()
     if redeemed is None:
         return None

@@ -243,3 +243,192 @@ class TestAuditChainExport:
         assert data["integrity_verified"] is True
         assert data["first_entry"] is None
         assert data["last_entry"] is None
+
+
+# ---------------------------------------------------------------------------
+# Keyed HMAC tamper-evidence (FAULTRAY_SIGNING_KEY)
+# ---------------------------------------------------------------------------
+
+class TestAuditChainSigning:
+    """The chain is only cryptographically tamper-evident when keyed."""
+
+    def test_unkeyed_chain_is_not_tamper_evident(
+        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        monkeypatch.delenv("FAULTRAY_SIGNING_KEY", raising=False)
+        chain = AuditChain(log_path=tmp_path / "a.jsonl")
+        entry = chain.append("simulation_run", "system", "ran")
+        assert entry.signed is False
+        assert chain.tamper_evident is False
+        valid, msg = chain.verify_integrity()
+        assert valid is True
+        assert "not cryptographically signed" in msg
+
+    def test_keyed_chain_is_hmac_verified(self, tmp_path: Path) -> None:
+        chain = AuditChain(log_path=tmp_path / "a.jsonl", signing_key="s3cret")
+        entry = chain.append("simulation_run", "system", "ran", data="payload")
+        assert entry.signed is True
+        assert chain.tamper_evident is True
+        valid, msg = chain.verify_integrity()
+        assert valid is True
+        assert "HMAC-verified" in msg
+
+    def test_signing_key_changes_the_link(self, tmp_path: Path) -> None:
+        a = AuditChain(log_path=tmp_path / "a.jsonl", signing_key="key-a")
+        b = AuditChain(log_path=tmp_path / "b.jsonl", signing_key="key-b")
+        ea = a.append("x", "system", "d", data="same")
+        eb = b.append("x", "system", "d", data="same")
+        # Same inputs, different keys -> different MACs (forgery needs the key).
+        assert ea.entry_hash != eb.entry_hash
+
+    def test_wrong_key_on_reload_fails_closed(self, tmp_path: Path) -> None:
+        log = tmp_path / "a.jsonl"
+        signer = AuditChain(log_path=log, signing_key="real-key")
+        signer.append("simulation_run", "system", "ran", data="payload")
+        # Attacker/operator without the real key cannot vouch for the chain.
+        forger = AuditChain(log_path=log, signing_key="wrong-key")
+        valid, msg = forger.verify_integrity()
+        assert valid is False
+        assert "tampered" in msg
+
+    def test_signed_entry_without_key_fails_closed(
+        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        log = tmp_path / "a.jsonl"
+        AuditChain(log_path=log, signing_key="real-key").append("a", "system", "d")
+        monkeypatch.delenv("FAULTRAY_SIGNING_KEY", raising=False)
+        unkeyed = AuditChain(log_path=log)
+        valid, msg = unkeyed.verify_integrity()
+        assert valid is False
+        assert "no signing key" in msg
+
+    def test_require_signing_raises_without_key(
+        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        monkeypatch.delenv("FAULTRAY_SIGNING_KEY", raising=False)
+        with pytest.raises(RuntimeError, match="signing is required"):
+            AuditChain(log_path=tmp_path / "a.jsonl", require_signing=True)
+
+    def test_export_reports_tamper_evidence(self, tmp_path: Path) -> None:
+        chain = AuditChain(log_path=tmp_path / "a.jsonl", signing_key="k")
+        chain.append("a", "system", "d")
+        out = tmp_path / "export.json"
+        chain.export_for_audit(out)
+        data = json.loads(out.read_text(encoding="utf-8"))
+        assert data["tamper_evident"] is True
+        assert data["signature_algorithm"] == "hmac-sha256"
+
+    def test_append_refuses_signed_onto_unsigned_legacy(
+        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        # Enabling signing on a chain that already has unsigned (legacy) entries
+        # must NOT silently produce a mixed [unsigned..., signed] chain that
+        # verify_integrity() would then reject at entry 0.
+        log = tmp_path / "a.jsonl"
+        monkeypatch.delenv("FAULTRAY_SIGNING_KEY", raising=False)
+        AuditChain(log_path=log).append("legacy", "system", "unsigned")
+        chain = AuditChain(log_path=log, signing_key="k")
+        with pytest.raises(RuntimeError, match="unsigned"):
+            chain.append("new", "system", "would be signed")
+        # Fail-closed: nothing was written; the log still has just the one entry.
+        assert log.read_text(encoding="utf-8").strip().count("\n") == 0
+        # A brand-new signed chain and an already-all-signed chain still append.
+        fresh = AuditChain(log_path=tmp_path / "b.jsonl", signing_key="k")
+        fresh.append("a", "system", "d")
+        fresh.append("b", "system", "d")  # all-signed prefix -> allowed
+        assert fresh.verify_integrity()[0] is True
+
+    def test_append_refuses_after_key_rotation(
+        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        # An all-signed chain under key A, reloaded under key B (rotation): the
+        # old entries no longer verify, so appending a new B-signed entry would
+        # leave a chain that NEITHER key can verify — refuse.
+        log = tmp_path / "a.jsonl"
+        monkeypatch.delenv("FAULTRAY_SIGNING_KEY", raising=False)
+        AuditChain(log_path=log, signing_key="key-A").append("a", "system", "d")
+        rotated = AuditChain(log_path=log, signing_key="key-B")
+        with pytest.raises(RuntimeError, match="rotated"):
+            rotated.append("b", "system", "d")
+        # Nothing written: the log still has just the one key-A entry.
+        assert log.read_text(encoding="utf-8").strip().count("\n") == 0
+
+    def test_append_refuses_signed_log_loaded_without_key(
+        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        # A HMAC-signed chain reloaded with NO key configured (misconfigured
+        # signed deployment): appending would write an UNSIGNED entry after the
+        # signed prefix, which verify_integrity() rejects the moment the correct
+        # key is restored — permanently breaking the chain after one keyless
+        # event. Detect the signed prefix even without a key and fail closed.
+        log = tmp_path / "a.jsonl"
+        monkeypatch.delenv("FAULTRAY_SIGNING_KEY", raising=False)
+        AuditChain(log_path=log, signing_key="k").append("a", "system", "d")
+        keyless = AuditChain(log_path=log)  # signed prefix loaded, no key
+        with pytest.raises(RuntimeError, match="no key is configured"):
+            keyless.append("b", "system", "would be unsigned")
+        # Fail-closed: nothing written; the log still has just the one entry.
+        assert log.read_text(encoding="utf-8").strip().count("\n") == 0
+
+
+class TestAuditDetailsAndExport:
+    def test_details_are_covered_by_the_mac(self, tmp_path: Path) -> None:
+        chain = AuditChain(log_path=tmp_path / "a.jsonl", signing_key="k")
+        chain.append("act", "system", "original details", data="d")
+        # Tampering the human-readable details must break verification.
+        chain._entries[0].details = "tampered details"
+        ok, _ = chain.verify_integrity()
+        assert ok is False
+
+    def test_unsigned_entries_not_exported_as_tamper_evident(
+        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        log = tmp_path / "a.jsonl"
+        monkeypatch.delenv("FAULTRAY_SIGNING_KEY", raising=False)
+        AuditChain(log_path=log).append("a", "system", "d")  # unsigned legacy
+        # Reload with a key now present — must NOT advertise tamper-evidence.
+        chain = AuditChain(log_path=log, signing_key="k")
+        out = tmp_path / "e.json"
+        chain.export_for_audit(out)
+        data = json.loads(out.read_text(encoding="utf-8"))
+        assert data["tamper_evident"] is False
+        assert data["signature_algorithm"] == "sha256-unkeyed"
+
+
+class TestAuditLegacyAndAppendGuards:
+    def test_legacy_unsigned_entry_without_details_still_verifies(
+        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        import hashlib
+        monkeypatch.delenv("FAULTRAY_SIGNING_KEY", raising=False)
+        chain = AuditChain(log_path=tmp_path / "a.jsonl")
+        seq, ts, action, actor, details = (
+            0, "2026-01-01T00:00:00+00:00", "act", "system", "legacy details"
+        )
+        data_hash = hashlib.sha256(b"").hexdigest()
+        prev = AuditChain.GENESIS_HASH
+        # Pre-upgrade payload omitted `details`.
+        legacy_payload = f"{seq}|{ts}|{action}|{actor}|{data_hash}|{prev}"
+        legacy_hash = hashlib.sha256(legacy_payload.encode()).hexdigest()
+        chain._entries = [AuditEntry(seq, ts, action, actor, details, data_hash, prev, legacy_hash)]
+        ok, _ = chain.verify_integrity()
+        assert ok is True
+
+    def test_unsigned_append_to_signed_chain_is_rejected(self, tmp_path: Path) -> None:
+        import hashlib
+        chain = AuditChain(log_path=tmp_path / "a.jsonl", signing_key="k")
+        chain.append("a", "system", "d")  # legitimate signed entry 0
+        e0 = chain._entries[0]
+        seq, ts, action, actor, details = (
+            1, "2026-01-01T00:00:00+00:00", "evil", "attacker", "forged"
+        )
+        data_hash = hashlib.sha256(b"").hexdigest()
+        prev = e0.entry_hash
+        payload = f"{seq}|{ts}|{action}|{actor}|{data_hash}|{prev}|{details}"
+        forged = hashlib.sha256(payload.encode()).hexdigest()  # attacker computes plain sha256
+        chain._entries.append(
+            AuditEntry(seq, ts, action, actor, details, data_hash, prev, forged, signed=False)
+        )
+        ok, msg = chain.verify_integrity()
+        assert ok is False
+        assert "unsigned" in msg

@@ -14,7 +14,24 @@ from __future__ import annotations
 
 import pytest
 
-from tests.conftest import production_reachable
+from tests.conftest import _setup_test_user, production_reachable
+
+
+@pytest.fixture(autouse=True)
+def _ensure_e2e_test_user():
+    """Ensure the Bearer TEST_API_KEY user exists for each e2e test.
+
+    Post-#184 the analysis APIs require auth, and the conftest httpx redirect
+    authenticates the local app with Bearer TEST_API_KEY. Other tests'
+    function-scoped auth_client fixture tears that user down, so by the time this
+    module runs in the full suite the user is gone and the redirected requests
+    401. Re-create it per test (idempotent) so e2e auth is order-independent.
+    """
+    try:
+        _setup_test_user()
+    except Exception:
+        pass
+    yield
 
 # Mark all tests in this file as E2E (network-required)
 pytestmark = [

@@ -7,17 +7,31 @@ on:
     types: [created]
 
 permissions:
-  issues: write
   pull-requests: write
+  # PR-Agent responds to "/review" issue_comment events by creating/updating
+  # comments via the issues API, so it needs issues:write in addition to
+  # pull-requests:write. The trusted-author guard on the job below keeps an
+  # arbitrary commenter from driving this secret-bearing run.
+  issues: write
   contents: read
+
+concurrency:
+  group: pr-agent-${{ github.event.pull_request.number || github.event.issue.number || github.ref }}
+  cancel-in-progress: true
 
 jobs:
   pr-agent:
+    # Only run on PRs, or on a "/review" comment FROM a trusted author
+    # (owner/member/collaborator) on a PR — never an arbitrary commenter, which
+    # would let anyone drive this secret-bearing (OPENAI_API_KEY) job.
     if: >
       github.event_name == 'pull_request' ||
       (github.event_name == 'issue_comment' &&
-       contains(github.event.comment.body, '/review'))
+       github.event.issue.pull_request != null &&
+       contains(github.event.comment.body, '/review') &&
+       contains(fromJSON('["OWNER","MEMBER","COLLABORATOR"]'), github.event.comment.author_association))
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     steps:
       - uses: Codium-ai/pr-agent@d82f7d3e696cd00822694aaa3096265d3889f3f1  # main
         env:

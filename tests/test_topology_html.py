@@ -484,19 +484,24 @@ def test_generate_topology_json_valid() -> None:
 
 class TestScriptInjectionSafety:
     def test_component_name_cannot_break_out_of_script_block(self) -> None:
-        g = InfraGraph()
-        g.add_component(
+        # A </script> breakout payload is rejected at the model boundary (it
+        # contains <>), so it can never reach the embedded topology JSON.
+        import pydantic
+        with pytest.raises(pydantic.ValidationError):
             Component(
                 id="evil",
                 name='</script><script>alert("xss")</script>',
                 type=ComponentType.APP_SERVER,
             )
+        # An allowed name with quotes/ampersand still round-trips safely as the
+        # JSON embedded in the <script> block.
+        g = InfraGraph()
+        safe_name = 'He said "hi" & bye'
+        g.add_component(
+            Component(id="ok", name=safe_name, type=ComponentType.APP_SERVER)
         )
         html = _generate_and_read(g)
-        # The literal closing tag from the name must not survive serialization
-        assert "</script><script>alert" not in html
-        # The data must still round-trip as valid JSON
         node_start = html.index("const NODES = ") + len("const NODES = ")
         node_end = html.index(";\n    const EDGES", node_start)
         nodes = json.loads(html[node_start:node_end])
-        assert nodes[0]["name"] == '</script><script>alert("xss")</script>'
+        assert nodes[0]["name"] == safe_name

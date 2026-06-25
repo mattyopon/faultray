@@ -10,6 +10,7 @@ import json
 import logging
 from pathlib import Path
 
+from faultray.reporter.csv_safe import neutralize, neutralize_rows
 from faultray.simulator.engine import SimulationReport
 
 logger = logging.getLogger(__name__)
@@ -85,7 +86,8 @@ def export_csv(report: SimulationReport, path: Path) -> Path:
     with open(path, "w", newline="", encoding="utf-8") as fh:
         writer = csv.DictWriter(fh, fieldnames=fieldnames)
         writer.writeheader()
-        writer.writerows(rows)
+        # Defuse spreadsheet formula injection in user-derived cells.
+        writer.writerows(neutralize_rows(rows))
 
     return path.resolve()
 
@@ -344,7 +346,15 @@ def export_excel(report: SimulationReport, path: Path) -> Path:
 
     for row_idx, row_data in enumerate(rows, 2):
         for col_idx, header in enumerate(headers, 1):
-            cell = ws_results.cell(row=row_idx, column=col_idx, value=row_data.get(header, ""))
+            # Defuse spreadsheet formula injection: openpyxl serializes a
+            # leading-'='/'+'/'-'/'@' string as a live formula, so a topology/
+            # scenario field like =HYPERLINK(...) would execute on open. neutralize
+            # only touches strings, so numeric cells (risk_score, counts) are
+            # unchanged. row_data stays intact for the is_critical/is_warning fills.
+            cell = ws_results.cell(
+                row=row_idx, column=col_idx,
+                value=neutralize(row_data.get(header, "")),
+            )
 
         # Conditional formatting by severity
         is_critical = row_data.get("is_critical", False)

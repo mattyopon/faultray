@@ -53,6 +53,61 @@ def _simple_graph(components: list[Component]) -> InfraGraph:
 
 
 # ---------------------------------------------------------------------------
+# Collision-safe sanitized identifiers
+# ---------------------------------------------------------------------------
+
+
+def test_escape_hcl_value_neutralizes_template_delimiters() -> None:
+    from faultray.remediation.iac_generator import _escape_hcl_value
+
+    # ${...} interpolation and %{...} directives must be made literal so a
+    # crafted component name can't make terraform evaluate functions/vars.
+    assert _escape_hcl_value('${file("/etc/passwd")}') == '$${file(\\"/etc/passwd\\")}'
+    assert _escape_hcl_value("%{ for x in y }") == "%%{ for x in y }"
+    # The escaped output contains no live template introducer.
+    out = _escape_hcl_value("${var.secret}")
+    assert "${" not in out.replace("$${", "")
+    # Existing quote/newline escaping still applies.
+    assert _escape_hcl_value('a"b') == 'a\\"b'
+
+
+def test_collision_safe_ids_disambiguates_and_is_stable() -> None:
+    from faultray.remediation.iac_generator import _collision_safe_ids
+
+    m = _collision_safe_ids(["api.prod", "api/prod", "db-1"])
+    assert m["db-1"] == "db-1"                    # non-colliding keeps bare form
+    assert m["api.prod"] != m["api/prod"]         # colliding ids disambiguated
+    assert m["api.prod"].startswith("api_prod_")
+    assert m["api/prod"].startswith("api_prod_")
+    # Deterministic: same input set -> same mapping (stable across runs).
+    assert _collision_safe_ids(["db-1", "api/prod", "api.prod"]) == m
+
+
+def test_generate_no_duplicate_resource_addresses_on_id_collision() -> None:
+    import re as _re
+
+    from faultray.remediation.iac_generator import IaCGenerator
+
+    # "db.1" and "db/1" both sanitize to "db_1"; without disambiguation both
+    # databases would emit the SAME terraform resource address.
+    g = _simple_graph([
+        _make_component("db.1", ComponentType.DATABASE, replicas=1),
+        _make_component("db/1", ComponentType.DATABASE, replicas=1),
+    ])
+    plan = IaCGenerator(g).generate()
+    addr_re = _re.compile(r'resource\s+"([^"]+)"\s+"([^"]+)"')
+    addresses = [
+        f"{m.group(1)}.{m.group(2)}"
+        for f in plan.files
+        if f.path.endswith(".tf")
+        for m in addr_re.finditer(f.content)
+    ]
+    assert addresses, "expected terraform resources to be generated"
+    # No duplicate addresses that `terraform apply`/targeted rollback collide on.
+    assert len(set(addresses)) == len(addresses), f"duplicate addresses: {sorted(addresses)}"
+
+
+# ---------------------------------------------------------------------------
 # Tests
 # ---------------------------------------------------------------------------
 

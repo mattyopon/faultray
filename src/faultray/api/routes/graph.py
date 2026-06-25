@@ -6,6 +6,7 @@
 from __future__ import annotations
 
 import logging
+import tempfile
 from pathlib import Path
 
 from fastapi import APIRouter, Depends, Request
@@ -20,6 +21,86 @@ from faultray.api.routes._shared import _require_permission
 logger = logging.getLogger(__name__)
 
 router = APIRouter()
+
+# Upload limits for the topology-diff endpoint: stream in bounded chunks and
+# refuse anything larger than the cap so a hostile/huge upload cannot exhaust
+# memory or disk.
+_MAX_UPLOAD_BYTES = 10 * 1024 * 1024  # 10 MB per file
+_UPLOAD_CHUNK_BYTES = 64 * 1024  # 64 KB
+# Pre-parse cap on the whole multipart body. ``await request.form()`` spools the
+# entire body to a SpooledTemporaryFile on disk BEFORE the per-file streaming
+# cap in ``_save_upload_to_temp`` runs, so a Content-Length guard here bounds
+# temp-disk use up front. The endpoint takes two files, so allow 2x the per-file
+# cap plus a margin for multipart boundaries/headers.
+_MAX_REQUEST_BYTES = 2 * _MAX_UPLOAD_BYTES + 1024 * 1024  # ~21 MB
+
+
+class _UploadTooLarge(Exception):
+    """Raised when an uploaded file exceeds ``_MAX_UPLOAD_BYTES``."""
+
+    def __init__(self, field: str) -> None:
+        super().__init__(field)
+        self.field = field
+
+
+class _RequestBodyTooLarge(OSError):
+    """Raised by the ASGI receive cap when the whole request body exceeds
+    ``_MAX_REQUEST_BYTES``. Subclasses ``OSError`` so Starlette's multipart
+    parser closes any spooled temp files (its ``except (MultiPartException,
+    OSError)`` cleanup) before the exception propagates."""
+
+
+async def _save_upload_to_temp(upload, *, field: str, max_bytes: int = _MAX_UPLOAD_BYTES) -> Path:
+    """Stream an uploaded file to a temp ``.yaml`` file in 64 KB chunks.
+
+    Enforces ``max_bytes`` while streaming (so the whole payload is never held
+    in memory) and raises :class:`_UploadTooLarge` past the cap. The partial
+    temp file is removed on any failure so malformed/oversized uploads never
+    leak files on disk.
+    """
+    tmp = tempfile.NamedTemporaryFile(suffix=".yaml", delete=False, mode="wb")
+    path = Path(tmp.name)
+    total = 0
+    try:
+        while True:
+            chunk = await upload.read(_UPLOAD_CHUNK_BYTES)
+            if not chunk:
+                break
+            total += len(chunk)
+            if total > max_bytes:
+                raise _UploadTooLarge(field)
+            tmp.write(chunk)
+    except BaseException:
+        tmp.close()
+        path.unlink(missing_ok=True)
+        raise
+    finally:
+        if not tmp.closed:
+            tmp.close()
+    return path
+
+
+def _cap_request_body(request: Request, max_bytes: int) -> None:
+    """Wrap the ASGI ``receive`` so the cumulative request-body size is capped
+    DURING parsing. ``await request.form()`` otherwise spools the whole
+    multipart body to a SpooledTemporaryFile before the per-file cap runs, and a
+    chunked / omitted-Content-Length upload slips past the header pre-check. The
+    wrapper raises :class:`_RequestBodyTooLarge` once the cap is exceeded, so the
+    parser aborts (and closes its spooled files) before the oversized body fully
+    lands on temp disk."""
+    received = 0
+    original_receive = request._receive
+
+    async def capped_receive():
+        nonlocal received
+        message = await original_receive()
+        if message.get("type") == "http.request":
+            received += len(message.get("body", b""))
+            if received > max_bytes:
+                raise _RequestBodyTooLarge()
+        return message
+
+    request._receive = capped_receive
 
 
 # ---------------------------------------------------------------------------
@@ -331,26 +412,51 @@ async def topology_diff_api(
     request: Request, user=Depends(_require_permission("view_results"))
 ):
     """Compare two uploaded YAML files and return diff results."""
-    import tempfile
-
-    form = await request.form()
+    # Bound the request body so a hostile upload can't exhaust temp disk while
+    # ``await request.form()`` spools the multipart payload. Two layers:
+    #   1. a fast Content-Length pre-check that 413s a declared oversize body
+    #      before any bytes are read, and
+    #   2. an ASGI receive cap (_cap_request_body) that enforces the same limit
+    #      DURING parsing, so a chunked / omitted-Content-Length upload — which
+    #      the header check can't see — is still rejected before the whole body
+    #      lands on temp disk.
+    # The per-file streaming cap in ``_save_upload_to_temp`` stays the precise
+    # per-file limit.
+    limit_mb = _MAX_REQUEST_BYTES // (1024 * 1024)
+    content_length = request.headers.get("content-length")
+    if content_length is not None:
+        try:
+            declared_bytes = int(content_length)
+        except (TypeError, ValueError):
+            return JSONResponse({"error": "Invalid Content-Length header"}, status_code=400)
+        if declared_bytes < 0:
+            return JSONResponse({"error": "Invalid Content-Length header"}, status_code=400)
+        if declared_bytes > _MAX_REQUEST_BYTES:
+            return JSONResponse(
+                {"error": f"Request body exceeds the {limit_mb} MB limit"},
+                status_code=413,
+            )
+    _cap_request_body(request, _MAX_REQUEST_BYTES)
+    try:
+        form = await request.form()
+    except _RequestBodyTooLarge:
+        return JSONResponse(
+            {"error": f"Request body exceeds the {limit_mb} MB limit"},
+            status_code=413,
+        )
     before_file = form.get("before_file")
     after_file = form.get("after_file")
 
     if not before_file or not after_file:
         return JSONResponse({"error": "Both before_file and after_file are required"}, status_code=400)
 
+    # Pre-declare so the finally block can always clean up, even if streaming or
+    # diffing raises before both paths exist.
+    before_path: Path | None = None
+    after_path: Path | None = None
     try:
-        before_content = await before_file.read()
-        after_content = await after_file.read()
-
-        with tempfile.NamedTemporaryFile(suffix=".yaml", delete=False, mode="wb") as bf:
-            bf.write(before_content)
-            before_path = Path(bf.name)
-
-        with tempfile.NamedTemporaryFile(suffix=".yaml", delete=False, mode="wb") as af:
-            af.write(after_content)
-            after_path = Path(af.name)
+        before_path = await _save_upload_to_temp(before_file, field="before_file")
+        after_path = await _save_upload_to_temp(after_file, field="after_file")
 
         from faultray.reporter.topology_diff import TopologyDiffer
 
@@ -358,16 +464,25 @@ async def topology_diff_api(
         result = differ.diff_files(before_path, after_path)
         mermaid_code = differ.to_mermaid(result)
 
-        before_path.unlink(missing_ok=True)
-        after_path.unlink(missing_ok=True)
-
         return JSONResponse({
             "diff": result.to_dict(),
             "mermaid": mermaid_code,
         })
+    except _UploadTooLarge as e:
+        limit_mb = _MAX_UPLOAD_BYTES // (1024 * 1024)
+        return JSONResponse(
+            {"error": f"{e.field} exceeds the {limit_mb} MB upload limit"},
+            status_code=413,
+        )
     except Exception as e:
         logger.exception("Topology diff failed")
         return JSONResponse({"error": str(e)}, status_code=400)
+    finally:
+        # Always remove temp files — including on malformed-upload / diff errors.
+        if before_path is not None:
+            before_path.unlink(missing_ok=True)
+        if after_path is not None:
+            after_path.unlink(missing_ok=True)
 
 
 # ---------------------------------------------------------------------------

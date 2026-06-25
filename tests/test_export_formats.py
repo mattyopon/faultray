@@ -273,6 +273,57 @@ class TestExcelExport:
         path = export_excel(sample_report, out)
         assert path.exists()
 
+    def test_excel_neutralizes_formula_injection(self, tmp_path: Path):
+        """A topology/scenario field beginning with =,+,-,@ must NOT be written
+        as a live spreadsheet formula in the XLSX. openpyxl serializes a
+        leading-'=' string as a formula (data_type 'f'), so an attacker-set
+        reason like =HYPERLINK(...) would execute on open (CSV injection,
+        CWE-1236). The Excel path must route cells through the same neutralizer
+        the CSV path uses."""
+        if not self._has_openpyxl():
+            pytest.skip("openpyxl not installed")
+
+        import openpyxl
+
+        evil = '=HYPERLINK("http://evil","click")'
+        scenario = Scenario(id="s1", name="x", description="d", faults=[])
+        cascade = CascadeChain(trigger="x", total_components=1)
+        cascade.effects.append(
+            CascadeEffect(
+                component_id="c1",
+                component_name="@SUM(1+1)",
+                health=HealthStatus.DOWN,
+                reason=evil,
+                estimated_time_seconds=1,
+            )
+        )
+        report = SimulationReport(
+            results=[
+                ScenarioResult(scenario=scenario, cascade=cascade, risk_score=9.0)
+            ],
+            resilience_score=10.0,
+            total_generated=1,
+        )
+        out = tmp_path / "evil.xlsx"
+        export_excel(report, out)
+
+        wb = openpyxl.load_workbook(str(out))
+        ws = wb["Results"]
+        # No data cell may be a live formula (openpyxl data_type 'f').
+        formula_cells = [
+            c.value
+            for row in ws.iter_rows(min_row=2)
+            for c in row
+            if c.data_type == "f"
+        ]
+        assert not formula_cells, f"formula cell(s) survived in XLSX: {formula_cells}"
+        # The malicious reason is stored as defused literal text (leading ').
+        headers = [c.value for c in next(ws.iter_rows(min_row=1, max_row=1))]
+        reason_cell = ws.cell(row=2, column=headers.index("reason") + 1)
+        assert reason_cell.value == "'" + evil
+        name_cell = ws.cell(row=2, column=headers.index("component_name") + 1)
+        assert name_cell.value == "'@SUM(1+1)"
+
 
 # ---------------------------------------------------------------------------
 # CSV export tests

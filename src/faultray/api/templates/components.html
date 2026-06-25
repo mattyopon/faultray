@@ -50,7 +50,7 @@
                             <span class="health-badge health-{{ comp.health }}">{{ comp.health }}</span>
                         </td>
                         <td>
-                            <button class="btn btn-xs btn-outline toggle-details" onclick="toggleDetails('{{ comp.id }}')" aria-label="Toggle details for {{ comp.name }}" aria-expanded="false">
+                            <button class="btn btn-xs btn-outline toggle-details" onclick="toggleDetails({{ comp.id | tojson }})" aria-label="Toggle details for {{ comp.name }}" aria-expanded="false">
                                 Expand
                             </button>
                         </td>

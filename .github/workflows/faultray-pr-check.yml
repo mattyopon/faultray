@@ -7,18 +7,25 @@ on:
       - '**/*.yml'
       - '**/terraform/**'
       - '**/*.tf'
-      - '**/faultray*.yaml'
-      - '**/faultray*.yaml'
 
 permissions:
   pull-requests: write
   contents: read
 
+concurrency:
+  group: faultray-check-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
 jobs:
   faultray-check:
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     steps:
       - uses: actions/checkout@v7
+        with:
+          # This job runs untrusted PR code (pip install -e .); do not leave the
+          # checkout token in .git/config where that code could read it.
+          persist-credentials: false
 
       - name: Set up Python
         uses: actions/setup-python@v6
@@ -32,27 +39,58 @@ jobs:
 
       - name: Find infrastructure YAML files
         id: find-yaml
+        shell: bash
         run: |
-          # Find FaultRay/FaultRay YAML files in the PR
-          FILES=$(find . -name 'faultray*.yaml' -o -name 'faultray*.yaml' -o -name 'faultray*.yml' -o -name 'faultray*.yml' -o -name 'infrastructure*.yaml' | head -5)
-          if [ -z "$FILES" ]; then
-            echo "No FaultRay YAML files found"
-            echo "found=false" >> $GITHUB_OUTPUT
+          set -euo pipefail
+          # Pick the first FaultRay infrastructure YAML file in the PR.
+          #
+          # Robustness:
+          #   * Read `find ... -print0` via a NUL-delimited loop, NOT
+          #     `find | head -n1`: head closes the pipe after one line, so on a
+          #     PR with many matches `find` is killed by SIGPIPE (exit 141);
+          #     under `pipefail` that becomes the step status and `set -e`
+          #     aborts the whole check. Process substitution keeps find off the
+          #     foreground pipeline, so its early-exit status never propagates.
+          #   * SKIP unsafe names instead of surrendering: take the first match
+          #     whose name has no whitespace/control chars, so a crafted
+          #     "faultray bad.yaml" cannot disable the simulation when a real
+          #     "faultray.yaml" is also present. Rejecting whitespace also keeps
+          #     the $GITHUB_OUTPUT write free of injected newlines.
+          #   * Exclude .github/ — its workflow files (e.g. THIS one,
+          #     faultray-pr-check.yml) match `faultray*.yml` but are CI config,
+          #     not FaultRay topologies, so simulating them is meaningless.
+          FIRST_FILE=""
+          while IFS= read -r -d '' f; do
+            case "$f" in
+              *[$' \t\n\r']*) echo "Skipping unsafe filename: $f" >&2; continue ;;
+            esac
+            FIRST_FILE="$f"
+            break
+          done < <(find . -not -path './.github/*' \( -name 'faultray*.yaml' -o -name 'faultray*.yml' -o -name 'infrastructure*.yaml' \) -print0)
+
+          if [ -z "$FIRST_FILE" ]; then
+            echo "No safe FaultRay YAML files found"
+            echo "found=false" >> "$GITHUB_OUTPUT"
           else
-            echo "found=true" >> $GITHUB_OUTPUT
-            echo "files=$FILES" >> $GITHUB_OUTPUT
-            echo "first_file=$(echo $FILES | head -1)" >> $GITHUB_OUTPUT
+            echo "found=true" >> "$GITHUB_OUTPUT"
+            echo "first_file=$FIRST_FILE" >> "$GITHUB_OUTPUT"
           fi
 
       - name: Run FaultRay simulation
         if: steps.find-yaml.outputs.found == 'true'
+        env:
+          # Pass the step output via env and reference it quoted; never
+          # interpolate ${{ steps.*.outputs.* }} into a run: shell block.
+          FILE: ${{ steps.find-yaml.outputs.first_file }}
         run: |
-          FILE="${{ steps.find-yaml.outputs.first_file }}"
+          set -euo pipefail
           echo "Running FaultRay on $FILE..."
 
-          # Run simulation with JSON output
+          # Run simulation with JSON output. NB: `--json` is a boolean flag
+          # (writes JSON to stdout); it takes no filename argument — capture it
+          # by redirecting stdout, not by passing a positional path.
           faultray load "$FILE"
-          faultray simulate --json faultray-results.json 2>&1 | tee faultray-output.txt
+          faultray simulate --json 2>&1 | tee faultray-output.txt
 
           # Run AI analysis
           faultray analyze "$FILE" --json 2>&1 | tee faultray-analysis.txt
