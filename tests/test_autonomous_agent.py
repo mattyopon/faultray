@@ -765,8 +765,10 @@ class TestExecuteStep:
         monkeypatch.setenv("FAULTRAY_ALLOW_AUTO_APPLY", "1")
         agent = _make_agent(tmp_path, dry_run=False, auto_approve=True)
         result = agent._execute_terraform(self._tf_step())
-        # terraform CLI is absent in the test env, so it actually attempts and fails.
-        assert result.status in ("failed", "timeout")
+        # terraform CLI is absent in the test env, so it actually attempts and
+        # fails; a CLI-present runner may instead apply-fail (cluster/init
+        # errors) -> "apply_failed". Never "dry_run" (it was fully opted in).
+        assert result.status in ("failed", "timeout", "apply_failed")
 
     def test_execute_kubernetes_attempts_with_full_optin(
         self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
@@ -774,7 +776,9 @@ class TestExecuteStep:
         monkeypatch.setenv("FAULTRAY_ALLOW_AUTO_APPLY", "1")
         agent = _make_agent(tmp_path, dry_run=False, auto_approve=True)
         result = agent._execute_kubernetes(self._k8s_step())
-        assert result.status in ("failed", "timeout")
+        # CLI-absent runner -> "failed" (FileNotFoundError); CLI-present runner
+        # reaches kubectl apply and errors against no cluster -> "apply_failed".
+        assert result.status in ("failed", "timeout", "apply_failed")
 
     def test_execute_step_unknown_type(self, tmp_path: Path) -> None:
         agent = _make_agent(tmp_path, dry_run=False)
