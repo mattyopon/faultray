@@ -74,6 +74,14 @@ class AuditChain:
                 f"Set {_ENV_SIGNING_KEY} or pass signing_key= to the AuditChain."
             )
         self._load()
+        # Whether new entries may be appended. When signing is active, the
+        # loaded prefix must already verify with the CURRENT key — otherwise a
+        # new (current-key) entry would yield a chain that no key can verify:
+        # an unsigned legacy prefix, OR one signed under a rotated/old key.
+        # Computed once at load (O(n)) rather than re-verifying on every append.
+        self._appendable = True
+        if (self._signing_key or self._require_signing) and self._entries:
+            self._appendable = self.verify_integrity()[0]
 
     @property
     def tamper_evident(self) -> bool:
@@ -105,24 +113,22 @@ class AuditChain:
         data: str = "",
     ) -> AuditEntry:
         """Append a new entry to the audit chain."""
-        # Refuse to sign a new entry on top of an unsigned (legacy) prefix.
-        # verify_integrity() rejects unsigned entries whenever a key is
-        # configured, so a mixed [unsigned..., signed] chain could never pass
-        # integrity/export — the first audited event after enabling signing
-        # would silently produce an unverifiable log. Fail closed and require an
+        # Fail closed when the loaded prefix does not verify with the current
+        # key (computed once in __init__): appending a new current-key entry
+        # onto an unsigned (legacy) prefix OR a prefix signed under a different/
+        # rotated key would yield a chain that NO key can verify. Require an
         # explicit migration (start a fresh signed chain, or load without a key
         # to keep appending unsigned). Brand-new and already-all-signed chains
         # are unaffected.
-        if (self._signing_key or self._require_signing) and any(
-            not e.signed for e in self._entries
-        ):
+        if not self._appendable:
             raise RuntimeError(
-                "Refusing to append a signed entry onto an audit chain that "
-                "contains unsigned (legacy) entries: the resulting mixed chain "
-                "would fail verify_integrity() because a configured signing key "
-                "requires every entry to be HMAC-signed. Start a new signed "
-                f"chain, or load this chain without {_ENV_SIGNING_KEY} set to "
-                "keep appending unsigned."
+                "Refusing to append to an audit chain whose existing entries do "
+                "not verify with the current signing key: the loaded prefix has "
+                "unsigned (legacy) entries, or was signed under a different / "
+                "rotated key, so a new current-key entry would make the whole "
+                f"chain unverifiable. Set the correct {_ENV_SIGNING_KEY}, start a "
+                "new signed chain, or load without a key to keep appending "
+                "unsigned."
             )
         sequence = len(self._entries)
         previous_hash = self._entries[-1].entry_hash if self._entries else self.GENESIS_HASH

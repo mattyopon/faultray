@@ -879,8 +879,12 @@ class AutonomousRemediationAgent:
                 ["terraform", "apply", "-auto-approve", "-no-color"], cwd=tf_dir
             )
             if apply_result.returncode != 0:
+                # apply ran and errored: Terraform records any resources it
+                # already created in state and does NOT auto-roll-back, so this
+                # is possibly-applied — put it in the rollback set, not the
+                # "nothing applied" path.
                 return StepResult(
-                    status="failed",
+                    status="apply_failed",
                     output=f"terraform apply failed: {apply_result.stderr}",
                 )
 
@@ -928,8 +932,11 @@ class AutonomousRemediationAgent:
                 ["kubectl", "apply", "-f", str(k8s_path)]
             )
             if result.returncode != 0:
+                # apply ran and errored: a multi-resource manifest may have
+                # partially applied, so this is possibly-applied — put it in the
+                # rollback set, not the "nothing applied" path.
                 return StepResult(
-                    status="failed",
+                    status="apply_failed",
                     output=f"kubectl apply failed: {result.stderr}",
                 )
             return StepResult(status="success", output=result.stdout[:500])
@@ -1009,14 +1016,16 @@ class AutonomousRemediationAgent:
     def _applied_infra_steps(self, cycle: RemediationCycle) -> list[dict[str, Any]]:
         """Steps that may have changed real infra (for rollback).
 
-        Includes "timeout" alongside "success": a live ``terraform``/``kubectl
-        apply`` that timed out may have partially applied before being killed,
-        so it must be in the rollback set — otherwise a regression after a
-        timeout is reported as "nothing applied" and rollback is skipped while
-        infrastructure remains modified. (A plan-phase timeout is recorded as
-        "failed", not "timeout", so it is correctly excluded here.)
+        Includes "timeout" and "apply_failed" alongside "success": a live
+        ``terraform``/``kubectl apply`` that timed out OR exited non-zero after
+        starting may have partially applied (Terraform records created
+        resources in state and does not auto-roll-back), so these must be in the
+        rollback set — otherwise a regression afterward is reported as "nothing
+        applied" and rollback is skipped while infrastructure remains modified.
+        (A plan-phase failure/timeout is recorded as "failed", not
+        "apply_failed"/"timeout", so it is correctly excluded here.)
         """
-        applied_statuses = {"success", "timeout"}
+        applied_statuses = {"success", "timeout", "apply_failed"}
         return [
             e for e in cycle.execution_log
             if e.get("status") in applied_statuses
@@ -1102,7 +1111,8 @@ class AutonomousRemediationAgent:
             1 for e in cycle.execution_log if e.get("status") == "blocked"
         )
         failed = sum(
-            1 for e in cycle.execution_log if e.get("status") == "failed"
+            1 for e in cycle.execution_log
+            if e.get("status") in ("failed", "apply_failed")
         )
 
         mode = "LIVE" if self._auto_apply_allowed() else "DRY-RUN"

@@ -75,13 +75,19 @@ def _escape_hcl_value(value: str) -> str:
     """Escape *value* for a double-quoted HCL/YAML string literal.
 
     Neutralises quote/backslash break-outs and newlines so a crafted component
-    name cannot inject additional HCL attributes or YAML keys.
+    name cannot inject additional HCL attributes or YAML keys, AND escapes the
+    Terraform template introducers ``${`` and ``%{`` (doubling the leading
+    character per the HCL spec) so a name like ``${file("/etc/passwd")}`` or
+    ``%{ for ... }`` is rendered literally instead of being evaluated by
+    ``terraform plan/apply`` (template injection).
     """
     return (
         value.replace("\\", "\\\\")
         .replace('"', '\\"')
         .replace("\n", " ")
         .replace("\r", " ")
+        .replace("${", "$${")
+        .replace("%{", "%%{")
     )
 
 

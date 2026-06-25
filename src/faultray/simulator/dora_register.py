@@ -734,10 +734,15 @@ class DORARegister:
                 "last_assessed": e.last_assessed,
             })
 
+        # Defuse spreadsheet formula injection (CWE-1236): provider names and
+        # other overlay-derived strings flow verbatim into cells, so an entry
+        # like a provider named "=HYPERLINK(...)" would execute on open.
+        from faultray.reporter.csv_safe import neutralize_rows
+
         with open(output_path, "w", newline="", encoding="utf-8") as f:
             writer = csv.DictWriter(f, fieldnames=fieldnames)
             writer.writeheader()
-            writer.writerows(rows)
+            writer.writerows(neutralize_rows(rows))
 
         logger.info("Register exported to CSV: %s (%d rows)", output_path, len(rows))
 

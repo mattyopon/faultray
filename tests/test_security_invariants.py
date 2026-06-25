@@ -76,10 +76,20 @@ def test_audit_chain_links_are_hmac_keyed() -> None:
 # CSV exporters must route through the formula-injection neutralizer
 # ---------------------------------------------------------------------------
 
-@pytest.mark.parametrize("rel", ["reporter/export.py", "cli/fmea_cmd.py"])
-def test_csv_exporters_use_neutralizer(rel: str) -> None:
-    text = (SRC / rel).read_text(encoding="utf-8")
-    assert "csv_safe" in text, f"{rel} writes CSV without the csv_safe neutralizer"
+def test_all_csv_writers_use_neutralizer() -> None:
+    """EVERY module that writes CSV (csv.writer / csv.DictWriter) must route its
+    cells through the csv_safe neutralizer — otherwise a user/overlay-derived
+    value starting with =,+,-,@ becomes a live spreadsheet formula on open
+    (CSV injection, CWE-1236). This enumerates all writers so a NEW unguarded
+    exporter is caught automatically, not just a hand-maintained list."""
+    offenders = []
+    for path in SRC.rglob("*.py"):
+        if path.name == "csv_safe.py":
+            continue
+        text = path.read_text(encoding="utf-8")
+        if ("csv.writer(" in text or "csv.DictWriter(" in text) and "csv_safe" not in text:
+            offenders.append(str(path.relative_to(SRC)))
+    assert not offenders, f"CSV writer(s) not routed through csv_safe: {offenders}"
 
 
 # ---------------------------------------------------------------------------

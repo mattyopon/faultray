@@ -8,6 +8,11 @@ on:
 
 permissions:
   pull-requests: write
+  # PR-Agent responds to "/review" issue_comment events by creating/updating
+  # comments via the issues API, so it needs issues:write in addition to
+  # pull-requests:write. The trusted-author guard on the job below keeps an
+  # arbitrary commenter from driving this secret-bearing run.
+  issues: write
   contents: read
 
 concurrency:

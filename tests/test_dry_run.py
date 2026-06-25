@@ -57,6 +57,20 @@ def _simple_graph(components: list[Component]) -> InfraGraph:
 # ---------------------------------------------------------------------------
 
 
+def test_escape_hcl_value_neutralizes_template_delimiters() -> None:
+    from faultray.remediation.iac_generator import _escape_hcl_value
+
+    # ${...} interpolation and %{...} directives must be made literal so a
+    # crafted component name can't make terraform evaluate functions/vars.
+    assert _escape_hcl_value('${file("/etc/passwd")}') == '$${file(\\"/etc/passwd\\")}'
+    assert _escape_hcl_value("%{ for x in y }") == "%%{ for x in y }"
+    # The escaped output contains no live template introducer.
+    out = _escape_hcl_value("${var.secret}")
+    assert "${" not in out.replace("$${", "")
+    # Existing quote/newline escaping still applies.
+    assert _escape_hcl_value('a"b') == 'a\\"b'
+
+
 def test_collision_safe_ids_disambiguates_and_is_stable() -> None:
     from faultray.remediation.iac_generator import _collision_safe_ids
 

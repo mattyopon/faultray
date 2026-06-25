@@ -172,6 +172,10 @@ class RegisterOfInformationFormatter:
         writer = csv.DictWriter(buffer, fieldnames=fieldnames, extrasaction="ignore")
         writer.writeheader()
 
+        # Defuse spreadsheet formula injection (CWE-1236) in the provider
+        # records' user-derived string fields (names, locations, …).
+        from faultray.reporter.csv_safe import neutralize_row
+
         for record in self._records:
             row = record.model_dump(mode="json")
             # Serialise complex fields as JSON strings
@@ -179,7 +183,7 @@ class RegisterOfInformationFormatter:
                         "data_storage_locations"):
                 if key in row and not isinstance(row[key], str):
                     row[key] = json.dumps(row[key], ensure_ascii=False)
-            writer.writerow(row)
+            writer.writerow(neutralize_row(row))
 
         return buffer.getvalue()
 

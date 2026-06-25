@@ -338,6 +338,21 @@ class TestAuditChainSigning:
         fresh.append("b", "system", "d")  # all-signed prefix -> allowed
         assert fresh.verify_integrity()[0] is True
 
+    def test_append_refuses_after_key_rotation(
+        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        # An all-signed chain under key A, reloaded under key B (rotation): the
+        # old entries no longer verify, so appending a new B-signed entry would
+        # leave a chain that NEITHER key can verify — refuse.
+        log = tmp_path / "a.jsonl"
+        monkeypatch.delenv("FAULTRAY_SIGNING_KEY", raising=False)
+        AuditChain(log_path=log, signing_key="key-A").append("a", "system", "d")
+        rotated = AuditChain(log_path=log, signing_key="key-B")
+        with pytest.raises(RuntimeError, match="rotated"):
+            rotated.append("b", "system", "d")
+        # Nothing written: the log still has just the one key-A entry.
+        assert log.read_text(encoding="utf-8").strip().count("\n") == 0
+
 
 class TestAuditDetailsAndExport:
     def test_details_are_covered_by_the_mac(self, tmp_path: Path) -> None:

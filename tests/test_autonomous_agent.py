@@ -995,6 +995,19 @@ class TestVerifyRollback:
         agent._verify(cycle, _unhealthy_graph())
         assert cycle.status == "rolled_back"
 
+    def test_apply_failed_regression_triggers_real_rollback(self, tmp_path: Path) -> None:
+        # An apply that exited non-zero after starting may have partially
+        # applied (Terraform records created resources, no auto-rollback), so a
+        # regression afterward must attempt rollback, not be dismissed.
+        agent = _make_agent(tmp_path)
+        agent._rollback_step = lambda et, fp: True  # type: ignore[method-assign]
+        cycle = self._regressing_cycle(execution_log=[
+            {"step": "tf", "status": "apply_failed",
+             "execution_type": "terraform", "file_path": "a.tf"},
+        ])
+        agent._verify(cycle, _unhealthy_graph())
+        assert cycle.status == "rolled_back"
+
     def test_failed_rollback_is_surfaced(self, tmp_path: Path) -> None:
         agent = _make_agent(tmp_path)
         agent._rollback_step = lambda et, fp: False  # type: ignore[method-assign]

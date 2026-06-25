@@ -590,11 +590,15 @@ class ResilienceTimeline:
             "event",
         ]
 
+        # Defuse spreadsheet formula injection (CWE-1236): the per-snapshot
+        # "event" label is user/scenario-derived, so neutralize each row.
+        from faultray.reporter.csv_safe import neutralize_row
+
         with open(path, "w", newline="", encoding="utf-8") as f:
             writer = csv.DictWriter(f, fieldnames=fieldnames)
             writer.writeheader()
             for snap in all_snapshots:
-                writer.writerow({
+                writer.writerow(neutralize_row({
                     "timestamp": snap.timestamp,
                     "resilience_score": snap.resilience_score,
                     "component_count": snap.component_count,
@@ -604,7 +608,7 @@ class ResilienceTimeline:
                     "genome_hash": snap.genome_hash or "",
                     "infrastructure_hash": snap.infrastructure_hash,
                     "event": snap.event or "",
-                })
+                }))
 
         return path
 
