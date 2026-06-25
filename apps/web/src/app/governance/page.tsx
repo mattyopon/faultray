@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { useState, useEffect } from "react";
 import { Scale } from "lucide-react";
 import { useLocale } from "@/lib/useLocale";
+import { authedFetch } from "@/lib/api";
 
 const T: Record<string, Record<string, string>> = {
   en: { title: "AI Governance Dashboard", subtitle: "METI / ISO 42001 / AI Act compliance", maturity: "Maturity Level", meti: "METI Score", iso: "ISO 42001 Score", frameworks: "Framework Status", gaps: "Top Gaps", policies: "Policy Templates" },
@@ -37,7 +38,7 @@ export default function GovernancePage() {
 
   useEffect(() => {
     const controller = new AbortController();
-    fetch("/api/governance?action=ai-governance", { signal: controller.signal })
+    authedFetch("/api/governance?action=ai-governance", { signal: controller.signal })
       .then((r) => {
         if (!r.ok) throw new Error(`HTTP ${r.status}`);
         return r.json();

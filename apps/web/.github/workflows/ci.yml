@@ -6,6 +6,15 @@ on:
   pull_request:
     branches: [main, develop]
 
+# Least-privilege default: lint/test/build jobs need no write-scoped token.
+permissions:
+  contents: read
+
+# Cancel superseded runs on the same branch/PR.
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
 # GHACT-01: Use set -euo pipefail to fail on any command error
 defaults:
   run:

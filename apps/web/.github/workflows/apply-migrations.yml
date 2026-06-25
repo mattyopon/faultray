@@ -34,6 +34,9 @@ on:
         required: true
         type: string
 
+permissions:
+  contents: read
+
 concurrency:
   group: apply-supabase-migrations
   cancel-in-progress: false
@@ -42,8 +45,7 @@ jobs:
   apply:
     name: Apply migrations to production
     runs-on: ubuntu-latest
-    env:
-      SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
+    timeout-minutes: 15
     steps:
       - uses: actions/checkout@v7
         with:
@@ -96,6 +98,10 @@ jobs:
 
       - name: Apply
         if: steps.resolve.outputs.files != ''
+        env:
+          # Scope the production DB password to ONLY the step that uses it,
+          # keeping it out of the environment of checkout and the root apt install.
+          SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
         run: |
           set -euo pipefail
           if [ -z "${SUPABASE_DB_URL:-}" ]; then

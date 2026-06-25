@@ -3,6 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { ArrowLeft, Send, CheckCircle } from "lucide-react";
+import { useLocale } from "@/lib/useLocale";
 
 const COMPANY_SIZE_OPTIONS = [
   { value: "1-10", label: "1–10 employees" },
@@ -29,6 +30,7 @@ const INITIAL_FORM: FormState = {
 };
 
 export default function ContactPage() {
+  const locale = useLocale();
   const [form, setForm] = useState<FormState>(INITIAL_FORM);
   const [submitting, setSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
@@ -98,20 +100,22 @@ export default function ContactPage() {
         </p>
       </div>
 
-      {/* JP-03: 稟議決裁サポートバナー */}
-      <div className="mb-6 p-4 rounded-xl border border-blue-500/20 bg-blue-500/[0.04] flex items-start gap-3">
-        <span className="text-blue-400 text-lg mt-0.5">🗂</span>
-        <div>
-          <p className="text-sm font-semibold text-blue-300 mb-1">日本企業向け：稟議書テンプレート提供中</p>
-          <p className="text-xs text-[var(--text-secondary)]">
-            社内承認プロセス（稟議決裁）に必要なコスト・ROI・セキュリティをまとめたテンプレートを無償提供しています。
-            導入検討段階でお気軽にご相談ください。
-          </p>
-          <Link href="/ringi" className="text-xs text-blue-400 hover:text-blue-300 transition-colors mt-1 inline-block">
-            稟議書テンプレートを見る →
-          </Link>
+      {/* JP-03: 稟議決裁サポートバナー — Japanese-only content; only show for the ja locale. */}
+      {locale === "ja" && (
+        <div className="mb-6 p-4 rounded-xl border border-blue-500/20 bg-blue-500/[0.04] flex items-start gap-3">
+          <span className="text-blue-400 text-lg mt-0.5">🗂</span>
+          <div>
+            <p className="text-sm font-semibold text-blue-300 mb-1">日本企業向け：稟議書テンプレート提供中</p>
+            <p className="text-xs text-[var(--text-secondary)]">
+              社内承認プロセス（稟議決裁）に必要なコスト・ROI・セキュリティをまとめたテンプレートを無償提供しています。
+              導入検討段階でお気軽にご相談ください。
+            </p>
+            <Link href="/ringi" className="text-xs text-blue-400 hover:text-blue-300 transition-colors mt-1 inline-block">
+              稟議書テンプレートを見る →
+            </Link>
+          </div>
         </div>
-      </div>
+      )}
 
       {/* COMP-04: Multiple demo formats */}
       <div className="mb-8 grid grid-cols-1 sm:grid-cols-3 gap-3">

@@ -98,6 +98,23 @@ async function _authToken(): Promise<string | undefined> {
   }
 }
 
+/**
+ * fetch() wrapper that attaches the Supabase access token (when available) to a
+ * validated relative path on the trusted API base. For call sites that need the
+ * raw Response (custom status handling / streaming) rather than apiFetch's
+ * parsed JSON — e.g. the governance/SLA/DORA pages. The token is only ever
+ * attached to the same-origin / trusted-base relative path (SEC U28).
+ */
+export async function authedFetch(path: string, init: RequestInit = {}): Promise<Response> {
+  if (!path.startsWith("/") || path.startsWith("//")) {
+    throw new Error("[API] path must be a relative path starting with '/'");
+  }
+  const token = await _authToken();
+  const headers = new Headers(init.headers);
+  if (token) headers.set("Authorization", `Bearer ${token}`);
+  return fetch(`${API_BASE}${path}`, { ...init, headers });
+}
+
 // SEC (U28): only retry idempotent methods. Retrying POST/PATCH/PUT/DELETE on
 // 429/5xx/network errors can duplicate side effects (double checkout, double
 // save, repeated destructive mutations).
@@ -113,9 +130,16 @@ async function apiFetch<T>(path: string, options: ApiOptions = {}): Promise<T> {
     throw new Error("[API] path must be a relative path starting with '/'");
   }
 
+  // Auto-resolve the Supabase access token when the caller didn't pass one, so
+  // tenant-scoped endpoints (reports / risk / finance / governance) authenticate
+  // the logged-in user instead of falling back to 401 / demo data. The token is
+  // only ever attached to the validated relative path on the trusted API_BASE
+  // (SEC U28), never to an arbitrary host.
+  const authToken = token ?? (await _authToken());
+
   // FETCHPAT-05: Serve from cache for GET requests with cacheTtl set
   if (method === "GET" && cacheTtl && cacheTtl > 0) {
-    const key = _cacheKey(path, token);
+    const key = _cacheKey(path, authToken);
     const entry = _apiCache.get(key);
     if (entry && entry.expiresAt > Date.now()) {
       return entry.data as T;
@@ -126,8 +150,8 @@ async function apiFetch<T>(path: string, options: ApiOptions = {}): Promise<T> {
     "Content-Type": "application/json",
   };
 
-  if (token) {
-    headers["Authorization"] = `Bearer ${token}`;
+  if (authToken) {
+    headers["Authorization"] = `Bearer ${authToken}`;
   }
 
   // FETCHPAT-01: Combine caller signal with internal timeout signal
@@ -202,7 +226,7 @@ async function apiFetch<T>(path: string, options: ApiOptions = {}): Promise<T> {
 
       // FETCHPAT-05: Store in cache for GET requests with cacheTtl
       if (method === "GET" && cacheTtl && cacheTtl > 0) {
-        _apiCache.set(_cacheKey(path, token), { data, expiresAt: Date.now() + cacheTtl });
+        _apiCache.set(_cacheKey(path, authToken), { data, expiresAt: Date.now() + cacheTtl });
         // Evict stale entries periodically to avoid unbounded growth
         if (_apiCache.size > 100) {
           const now = Date.now();

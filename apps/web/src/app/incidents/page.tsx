@@ -90,7 +90,7 @@ function IncidentCard({ incident }: { incident: Incident }) {
           <div className="text-right">
             <p className="font-mono text-sm">{incident.duration_minutes}min</p>
             <p className="text-xs text-[var(--text-muted)]">
-              {new Date(incident.start_time).toLocaleDateString()}
+              {new Date(incident.start_time).toLocaleDateString(locale)}
             </p>
           </div>
         </div>

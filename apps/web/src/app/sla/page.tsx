@@ -16,6 +16,7 @@ import {
 } from "lucide-react";
 import { useLocale } from "@/lib/useLocale";
 import { appDict } from "@/i18n/app-dict";
+import { authedFetch } from "@/lib/api";
 
 /* ============================================================
  * Types
@@ -270,7 +271,7 @@ export default function SlaPage() {
 
   useEffect(() => {
     const controller = new AbortController();
-    fetch("/api/governance?action=sla", { signal: controller.signal })
+    authedFetch("/api/governance?action=sla", { signal: controller.signal })
       .then((r) => {
         if (!r.ok) throw new Error(`HTTP ${r.status}`);
         return r.json();

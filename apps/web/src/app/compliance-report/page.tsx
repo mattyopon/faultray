@@ -10,6 +10,7 @@ import { isValidLocale } from "@/i18n/config";
 import { appDict } from "@/i18n/app-dict";
 import { useToast } from "@/lib/useToast";
 import { Toast } from "@/components/ui/toast";
+import { authedFetch } from "@/lib/api";
 
 type Framework = "SOC2" | "ISO27001" | "DORA" | "FISC";
 
@@ -131,54 +132,96 @@ export default function ComplianceReportPage() {
   const locale = useLocale();
   const t = appDict.complianceReport[locale] ?? appDict.complianceReport.en;
   const { showToast, toasts, dismiss } = useToast();
-  const generateTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const generateAbortRef = useRef<AbortController | null>(null);
+  const revokeTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  // Clear any pending generation timer on unmount so its callback cannot fire
-  // (open a tab / set state / show a toast) after the component is gone.
+  // On unmount, abort any in-flight report fetch and clear the pending
+  // blob-URL revoke timer so neither fires (set state / revoke) after the
+  // component is gone.
   useEffect(() => {
     return () => {
-      if (generateTimerRef.current) clearTimeout(generateTimerRef.current);
+      generateAbortRef.current?.abort();
+      if (revokeTimerRef.current) clearTimeout(revokeTimerRef.current);
     };
   }, []);
 
   const fw = FRAMEWORK_DATA[selected];
 
   const handleGenerate = () => {
+    // /api/reports is an authenticated endpoint, so the HTML report must be
+    // requested with the Supabase access token in an Authorization header. A
+    // bare `window.open('/api/reports?...')` navigation cannot carry that
+    // header and would 401 for logged-in users (and leak no token to a
+    // cross-origin redirect). Instead: open the viewer tab synchronously
+    // (inside the click gesture, so the popup blocker permits it), fetch the
+    // report with authedFetch, then point the tab at a blob URL of the
+    // returned HTML.
+    const win = window.open("about:blank", "_blank");
+    if (!win) {
+      showToast(t.popupBlocked, "error");
+      return;
+    }
+    // Sever the opener link so the report tab cannot reach back through
+    // window.opener (reverse tabnabbing); we keep our own `win` handle to
+    // load the report into it once the authenticated fetch returns.
+    win.opener = null;
+
+    // Supersede any in-flight generation (double-click / framework re-pick).
+    generateAbortRef.current?.abort();
+    const controller = new AbortController();
+    generateAbortRef.current = controller;
     setGenerating(true);
-    if (generateTimerRef.current) clearTimeout(generateTimerRef.current);
-    // Simulate generation and open report
-    generateTimerRef.current = setTimeout(() => {
-      setGenerating(false);
-      // Validate the locale against the known set before forwarding it to the
-      // HTML-report endpoint (defense-in-depth against a tampered locale being
-      // reflected into the generated HTML). `selected` is already constrained.
-      const safeLocale = isValidLocale(locale) ? locale : "en";
-      const params = new URLSearchParams({ framework: selected, locale: safeLocale });
-      // noopener,noreferrer prevents the opened report tab from accessing
-      // window.opener (reverse tabnabbing). A deferred window.open is also no
-      // longer a user gesture, so browsers may block it — check for null and
-      // surface that instead of a misleading success toast.
-      const win = window.open(
-        `/api/reports?action=report&format=html&${params.toString()}`,
-        "_blank",
-        "noopener,noreferrer"
-      );
-      if (!win) {
-        showToast(
-          locale === "ja"
-            ? "ポップアップがブロックされました。ポップアップを許可してください。"
-            : "Popup blocked. Please allow popups and try again.",
-          "error"
-        );
-        return;
+
+    void (async () => {
+      try {
+        // Validate the locale against the known set before forwarding it to the
+        // HTML-report endpoint (defense-in-depth against a tampered locale being
+        // reflected into the generated HTML). `selected` is already constrained.
+        const safeLocale = isValidLocale(locale) ? locale : "en";
+        const params = new URLSearchParams({
+          action: "report",
+          format: "html",
+          framework: selected,
+          locale: safeLocale,
+        });
+        const res = await authedFetch(`/api/reports?${params.toString()}`, {
+          signal: controller.signal,
+        });
+        if (res.status === 401) {
+          win.close();
+          showToast(t.signInRequired, "error");
+          return;
+        }
+        if (!res.ok) {
+          throw new Error(`Report request failed: ${res.status}`);
+        }
+        const reportHtml = await res.text();
+        const blob = new Blob([reportHtml], { type: "text/html;charset=utf-8" });
+        const blobUrl = URL.createObjectURL(blob);
+        // replace() so the tab's back-history doesn't retain about:blank.
+        win.location.replace(blobUrl);
+        // Revoke once the tab has had time to load the document; cleared on
+        // unmount so it can't fire against a torn-down component.
+        if (revokeTimerRef.current) clearTimeout(revokeTimerRef.current);
+        revokeTimerRef.current = setTimeout(() => URL.revokeObjectURL(blobUrl), 60_000);
+        showToast(t.reportGenerated.replace("{framework}", selected), "success");
+      } catch (err) {
+        // Unmount / supersede aborts land here — close the placeholder quietly.
+        if (err instanceof DOMException && err.name === "AbortError") {
+          win.close();
+          return;
+        }
+        win.close();
+        showToast(t.reportFailed, "error");
+      } finally {
+        // Only the latest generation clears the busy state, so an aborted
+        // older run can't flip it off under a newer one still in flight.
+        if (generateAbortRef.current === controller) {
+          generateAbortRef.current = null;
+          setGenerating(false);
+        }
       }
-      showToast(
-        locale === "ja"
-          ? `${selected} レポートを生成しました`
-          : `${selected} report generated`,
-        "success"
-      );
-    }, 1500);
+    })();
   };
 
   return (

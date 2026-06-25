@@ -284,7 +284,7 @@ export default function GameDayPage() {
                         <Badge variant={statusVariant(gd.status)}>{statusLabel(gd.status)}</Badge>
                       </div>
                       <div className="flex items-center gap-4 text-xs text-[var(--text-muted)]">
-                        <span className="flex items-center gap-1"><Calendar size={11} />{new Date(gd.scheduledAt).toLocaleDateString()}</span>
+                        <span className="flex items-center gap-1"><Calendar size={11} />{new Date(gd.scheduledAt).toLocaleDateString(locale)}</span>
                         <span className="flex items-center gap-1"><Clock size={11} />{gd.duration}</span>
                         <span className="flex items-center gap-1"><Users size={11} />{gd.participants.length} participants</span>
                       </div>

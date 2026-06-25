@@ -12,6 +12,13 @@ import logging
 import os
 from urllib.parse import urlparse, parse_qs
 
+try:  # shared serverless auth gate (parity with engine.py)
+    from _auth import authenticate
+except ImportError:  # direct-file load (tests / some runtimes): add api/ to path
+    import sys as _sys
+    _sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+    from _auth import authenticate
+
 _logger = logging.getLogger("faultray.compliance")
 
 # Cap the request body so a spoofed/oversized Content-Length cannot exhaust
@@ -110,6 +117,8 @@ def _dispatch_governance(action: str):
 class handler(BaseHTTPRequestHandler):
     def do_GET(self):
         """Handle governance GET requests (rewritten from /api/governance)."""
+        if not authenticate(self):
+            return
         try:
             parsed = urlparse(self.path)
             params = parse_qs(parsed.query)
@@ -128,6 +137,8 @@ class handler(BaseHTTPRequestHandler):
             self._send_error(500, "Internal server error")
 
     def do_POST(self):
+        if not authenticate(self):
+            return
         # Validate Content-Length and cap body size BEFORE reading into memory so
         # a spoofed/negative/oversized length cannot exhaust memory or block on a
         # read-until-EOF (negative length).

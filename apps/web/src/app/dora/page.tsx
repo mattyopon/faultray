@@ -5,6 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { useState, useEffect } from "react";
 import { ShieldAlert, Info, ExternalLink } from "lucide-react";
 import { useLocale } from "@/lib/useLocale";
+import { authedFetch } from "@/lib/api";
 
 const T: Record<string, {
   title: string;
@@ -134,7 +135,7 @@ export default function DoraPage() {
 
   useEffect(() => {
     const controller = new AbortController();
-    fetch("/api/governance?action=dora", { signal: controller.signal })
+    authedFetch("/api/governance?action=dora", { signal: controller.signal })
       .then((r) => {
         if (!r.ok) throw new Error(`HTTP ${r.status}`);
         return r.json();

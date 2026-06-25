@@ -97,7 +97,7 @@ export default function CalendarPage() {
   const daysInMonth = getDaysInMonth(viewYear, viewMonth);
   const firstDay = getFirstDayOfMonth(viewYear, viewMonth);
 
-  const monthLabel = new Date(viewYear, viewMonth, 1).toLocaleString("en", { month: "long", year: "numeric" });
+  const monthLabel = new Date(viewYear, viewMonth, 1).toLocaleString(locale, { month: "long", year: "numeric" });
 
   const eventsForDate = (dateStr: string) =>
     DEMO_EVENTS.filter((e) => e.date === dateStr);
