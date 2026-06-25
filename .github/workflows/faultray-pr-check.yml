@@ -56,6 +56,9 @@ jobs:
           #     "faultray bad.yaml" cannot disable the simulation when a real
           #     "faultray.yaml" is also present. Rejecting whitespace also keeps
           #     the $GITHUB_OUTPUT write free of injected newlines.
+          #   * Exclude .github/ — its workflow files (e.g. THIS one,
+          #     faultray-pr-check.yml) match `faultray*.yml` but are CI config,
+          #     not FaultRay topologies, so simulating them is meaningless.
           FIRST_FILE=""
           while IFS= read -r -d '' f; do
             case "$f" in
@@ -63,7 +66,7 @@ jobs:
             esac
             FIRST_FILE="$f"
             break
-          done < <(find . \( -name 'faultray*.yaml' -o -name 'faultray*.yml' -o -name 'infrastructure*.yaml' \) -print0)
+          done < <(find . -not -path './.github/*' \( -name 'faultray*.yaml' -o -name 'faultray*.yml' -o -name 'infrastructure*.yaml' \) -print0)
 
           if [ -z "$FIRST_FILE" ]; then
             echo "No safe FaultRay YAML files found"
@@ -83,9 +86,11 @@ jobs:
           set -euo pipefail
           echo "Running FaultRay on $FILE..."
 
-          # Run simulation with JSON output
+          # Run simulation with JSON output. NB: `--json` is a boolean flag
+          # (writes JSON to stdout); it takes no filename argument — capture it
+          # by redirecting stdout, not by passing a positional path.
           faultray load "$FILE"
-          faultray simulate --json faultray-results.json 2>&1 | tee faultray-output.txt
+          faultray simulate --json 2>&1 | tee faultray-output.txt
 
           # Run AI analysis
           faultray analyze "$FILE" --json 2>&1 | tee faultray-analysis.txt
