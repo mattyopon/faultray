@@ -12,6 +12,13 @@ from typing import Any
 
 from pydantic import BaseModel, Field
 
+# Upper bound on the number of items accepted in any single agent->collector
+# batch list (processes / connections / traces / custom_metrics). Bounds memory
+# use and DB write amplification from an oversized or malicious POST; mirrors
+# the collector's ``_MAX_LIMIT`` query-param cap. Pydantic rejects larger lists
+# with a 422 before the ingest handler runs.
+_MAX_BATCH_ITEMS = 10000
+
 
 # ---------------------------------------------------------------------------
 # Enums
@@ -163,10 +170,18 @@ class MetricsBatch(BaseModel):
 
     agent_id: str
     host_metrics: HostMetrics | None = None
-    processes: list[ProcessInfo] = Field(default_factory=list)
-    connections: list[ConnectionInfo] = Field(default_factory=list)
-    traces: list[TraceSpan] = Field(default_factory=list)
-    custom_metrics: list[MetricPoint] = Field(default_factory=list)
+    processes: list[ProcessInfo] = Field(
+        default_factory=list, max_length=_MAX_BATCH_ITEMS
+    )
+    connections: list[ConnectionInfo] = Field(
+        default_factory=list, max_length=_MAX_BATCH_ITEMS
+    )
+    traces: list[TraceSpan] = Field(
+        default_factory=list, max_length=_MAX_BATCH_ITEMS
+    )
+    custom_metrics: list[MetricPoint] = Field(
+        default_factory=list, max_length=_MAX_BATCH_ITEMS
+    )
     timestamp: _dt.datetime = Field(
         default_factory=lambda: _dt.datetime.now(_dt.timezone.utc),
     )
