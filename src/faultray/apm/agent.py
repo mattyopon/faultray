@@ -28,6 +28,7 @@ from pathlib import Path
 
 import httpx
 import psutil
+from pydantic import ValidationError
 
 from faultray.apm.models import (
     AgentConfig,
@@ -355,8 +356,19 @@ class APMAgent:
             batches = self._metrics_buffer[:]
             self._metrics_buffer.clear()
 
-        # Merge into a single batch for efficiency
-        merged = self._merge_batches(batches)
+        # Merge into a single batch for efficiency. The merge can exceed the
+        # collector's per-list / aggregate caps when many buffered batches are
+        # combined (e.g. after a collector outage); each buffered batch was valid
+        # when collected, so on a cap ValidationError fall back to sending them
+        # unmerged rather than dropping the already-cleared samples.
+        try:
+            to_send = [self._merge_batches(batches)]
+        except ValidationError:
+            logger.warning(
+                "Merged batch exceeds collector caps; sending %d batches unmerged",
+                len(batches),
+            )
+            to_send = batches
 
         try:
             async with httpx.AsyncClient(timeout=30.0) as client:
@@ -364,19 +376,20 @@ class APMAgent:
                 if self.config.api_key:
                     headers["Authorization"] = f"Bearer {self.config.api_key}"
 
-                resp = await client.post(
-                    f"{self.config.collector_url}/api/apm/metrics",
-                    content=merged.model_dump_json(),
-                    headers=headers,
-                )
-                if resp.status_code == 200:
-                    logger.debug("Sent metrics batch (status=200)")
-                else:
-                    logger.warning(
-                        "Collector responded with status %d: %s",
-                        resp.status_code,
-                        resp.text[:200],
+                for batch in to_send:
+                    resp = await client.post(
+                        f"{self.config.collector_url}/api/apm/metrics",
+                        content=batch.model_dump_json(),
+                        headers=headers,
                     )
+                    if resp.status_code == 200:
+                        logger.debug("Sent metrics batch (status=200)")
+                    else:
+                        logger.warning(
+                            "Collector responded with status %d: %s",
+                            resp.status_code,
+                            resp.text[:200],
+                        )
         except httpx.ConnectError:
             logger.warning(
                 "Cannot connect to collector at %s — buffering",

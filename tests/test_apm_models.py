@@ -147,6 +147,24 @@ class TestMetricsBatch:
         batch = MetricsBatch(agent_id="a1", processes=procs)
         assert sum(len(p.connections) for p in batch.processes) == 1000
 
+    def test_aggregate_cap_counts_processinfo_instances(self) -> None:
+        # In-process construction (the agent path) passes ProcessInfo instances,
+        # not raw dicts; the aggregate cap must count their nested connections
+        # too, else the budget is bypassed.
+        from faultray.apm.models import _MAX_TOTAL_CONNECTIONS
+
+        per_proc = 600
+        n_procs = (_MAX_TOTAL_CONNECTIONS // per_proc) + 5
+        procs = [
+            ProcessInfo(
+                pid=i,
+                connections=[ConnectionInfo(local_port=1) for _ in range(per_proc)],
+            )
+            for i in range(n_procs)
+        ]
+        with pytest.raises(ValidationError, match="too many connections"):
+            MetricsBatch(agent_id="a1", processes=procs)
+
 
 class TestAlertRule:
     def test_defaults(self) -> None:

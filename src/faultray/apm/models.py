@@ -211,15 +211,23 @@ class MetricsBatch(BaseModel):
         them in update_topology_from_batch().
         """
         if isinstance(data, dict):
+            # Each process may be a raw dict (request-parse path) OR a ProcessInfo
+            # instance (in-process construction, e.g. the agent's _collect_batch /
+            # any direct MetricsBatch(...) caller). Count both so the aggregate
+            # budget cannot be bypassed by passing model instances.
+            def _conn_count(item: Any) -> int:
+                if isinstance(item, dict):
+                    nested = item.get("connections")
+                else:
+                    nested = getattr(item, "connections", None)
+                return len(nested) if isinstance(nested, (list, tuple)) else 0
+
             top = data.get("connections")
-            total = len(top) if isinstance(top, list) else 0
+            total = len(top) if isinstance(top, (list, tuple)) else 0
             procs = data.get("processes")
-            if isinstance(procs, list):
+            if isinstance(procs, (list, tuple)):
                 for proc in procs:
-                    if isinstance(proc, dict):
-                        nested = proc.get("connections")
-                        if isinstance(nested, list):
-                            total += len(nested)
+                    total += _conn_count(proc)
             if total > _MAX_TOTAL_CONNECTIONS:
                 raise ValueError(
                     f"too many connections in batch: {total} exceeds the "

@@ -145,6 +145,30 @@ async def _team_visible_run_filter(session, user):
     )
 
 
+def _project_visible_filter(user):
+    """Return a WHERE condition restricting a ``ProjectRow`` query to projects
+    visible to *user*, or ``None`` for no restriction.
+
+    Mirrors :func:`_team_visible_run_filter` so the projects list cannot drift
+    out of sync with the runs path:
+    - no user (no-auth mode) or global admin -> ``None`` (unrestricted);
+    - an authenticated user with NO team -> only projects they own, so an
+      unscoped / misconfigured account can never enumerate another tenant's
+      projects;
+    - a team-scoped user -> their team's projects plus any they own.
+
+    NB: ProjectRow.team_id is the integer UserRow.team_id team system, distinct
+    from teams.py's string-keyed team_workspaces.
+    """
+    from faultray.api.database import ProjectRow
+
+    if user is None or _user_is_global_admin(user):
+        return None
+    if getattr(user, "team_id", None) is None:
+        return ProjectRow.owner_id == user.id
+    return (ProjectRow.team_id == user.team_id) | (ProjectRow.owner_id == user.id)
+
+
 @router.get("/api/runs/{run_id}", response_class=JSONResponse)
 async def get_run(run_id: int, user=Depends(_require_permission("view_results"))):
     """Get a specific simulation run by ID."""
@@ -290,11 +314,9 @@ async def list_projects(user=Depends(_require_permission("view_results"))):
         async with session_factory() as session:
             stmt = select(ProjectRow)
 
-            if user is not None and user.team_id is not None:
-                stmt = stmt.where(
-                    (ProjectRow.team_id == user.team_id)
-                    | (ProjectRow.owner_id == user.id)
-                )
+            proj_filter = _project_visible_filter(user)
+            if proj_filter is not None:
+                stmt = stmt.where(proj_filter)
 
             stmt = stmt.order_by(ProjectRow.created_at.desc())
             result = await session.execute(stmt)

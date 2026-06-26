@@ -71,6 +71,19 @@ def test_escape_hcl_value_neutralizes_template_delimiters() -> None:
     assert _escape_hcl_value('a"b') == 'a\\"b'
 
 
+def test_terraform_generator_hcl_escape_neutralizes_template_delimiters() -> None:
+    # The autopilot terraform generator's _hcl_escape feeds attacker-influenced
+    # values (e.g. the app name from a requirements doc heading) into HCL
+    # double-quoted literals, so it must neutralise ${ / %{ like its sibling.
+    from faultray.autopilot.terraform_generator import _hcl_escape
+
+    assert _hcl_escape('${file("/etc/passwd")}') == '$${file(\\"/etc/passwd\\")}'
+    assert _hcl_escape("%{ for x in y }") == "%%{ for x in y }"
+    out = _hcl_escape("${var.secret}")
+    assert "${" not in out.replace("$${", "")
+    assert _hcl_escape('a"b') == 'a\\"b'
+
+
 def test_collision_safe_ids_disambiguates_and_is_stable() -> None:
     from faultray.remediation.iac_generator import _collision_safe_ids
 

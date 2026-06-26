@@ -1107,6 +1107,36 @@ class TestMultiTenantProjects:
         finally:
             app.dependency_overrides.clear()
 
+    def test_list_projects_null_team_nonadmin_sees_only_owned(self, db_client):
+        """SEC (IDOR): a team-less non-admin must see only projects they own,
+        never another tenant's projects. Closes the null-team /api/projects
+        leak (sibling of the runs/score-history null-team fix)."""
+        from faultray.api.auth import hash_api_key
+
+        now = "2026-01-01T00:00:00"
+        tids = _seed_sync(db_client._db_path, "teams", [{"name": "team-y", "created_at": now}])
+        team_y = tids[0]
+        uids = _seed_sync(db_client._db_path, "users", [{
+            "email": "solo@example.com",
+            "name": "Solo",
+            "api_key_hash": hash_api_key("solo-key"),
+            "role": "viewer",
+            "created_at": now,  # team_id stays NULL
+        }])
+        solo_id = uids[0]
+        _seed_sync(db_client._db_path, "projects", [
+            {"name": "Team Y Secret", "team_id": team_y, "created_at": now, "updated_at": now},
+            {"name": "My Own Proj", "owner_id": solo_id, "created_at": now, "updated_at": now},
+        ])
+
+        resp = db_client.get(
+            "/api/projects", headers={"Authorization": "Bearer solo-key"}
+        )
+        assert resp.status_code == 200
+        names = [p["name"] for p in resp.json()["projects"]]
+        assert "My Own Proj" in names  # own project visible
+        assert "Team Y Secret" not in names  # other tenant's project must NOT leak
+
 
 # ===================================================================
 # 12b. Multi-tenant IDOR protection on individual run access

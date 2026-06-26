@@ -44,8 +44,23 @@ def _tf_name(s: str) -> str:
 
 
 def _hcl_escape(s: str) -> str:
-    """Escape a string for safe embedding in HCL double-quoted strings."""
-    return s.replace("\\", "\\\\").replace('"', '\\"')
+    """Escape a string for safe embedding in HCL double-quoted strings.
+
+    Neutralises quote/backslash break-outs and newlines, AND doubles the
+    Terraform template introducers ``${`` and ``%{`` (per the HCL spec) so a
+    crafted value like ``${file("/etc/passwd")}`` or ``%{ for ... }`` is rendered
+    literally instead of being evaluated by ``terraform plan/apply`` (template
+    injection). Mirrors remediation.iac_generator._escape_hcl_value — values
+    such as the app name flow here verbatim from the requirements document.
+    """
+    return (
+        s.replace("\\", "\\\\")
+        .replace('"', '\\"')
+        .replace("\n", " ")
+        .replace("\r", " ")
+        .replace("${", "$${")
+        .replace("%{", "%%{")
+    )
 
 
 def _indent(text: str, spaces: int = 2) -> str:
