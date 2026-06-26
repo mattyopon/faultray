@@ -72,15 +72,33 @@ async def list_runs(
         return JSONResponse({"runs": [], "count": 0, "note": "Database not available"})
 
 
+def _user_is_global_admin(user) -> bool:
+    """True if *user* holds the global admin (deployment superadmin) role.
+
+    This is the UserRow.role granted to the setup admin; OAuth-created users are
+    always editor/viewer, so it is never attacker-obtainable. A global admin is
+    entitled to see every tenant's data (support / ops), so tenant scoping does
+    not apply to them.
+    """
+    return str(getattr(user, "role", "") or "").strip().lower() == "admin"
+
+
 async def _run_visible_to_user(session, row, user) -> bool:
     """Return True if *user* is allowed to access simulation run *row*.
 
-    Enforces tenant isolation: a user scoped to a team may only access runs
-    whose project belongs to that team (or runs with no project). When no user
-    is resolved (backward-compatible no-auth mode) access is unrestricted.
+    Enforces tenant isolation:
+    - no resolved user (backward-compatible no-auth mode) -> unrestricted;
+    - global admin (superadmin) -> unrestricted;
+    - an authenticated user with NO team -> only unowned (project-less) runs, so
+      an unscoped / misconfigured account can never see another tenant's
+      project-assigned runs;
+    - a team-scoped user -> runs whose project belongs to that team (or runs
+      with no project).
     """
-    if user is None or getattr(user, "team_id", None) is None:
+    if user is None or _user_is_global_admin(user):
         return True
+    if getattr(user, "team_id", None) is None:
+        return row.project_id is None
     if row.project_id is None:
         return True
     from faultray.api.database import ProjectRow
@@ -98,19 +116,24 @@ async def _team_visible_run_filter(session, user):
     """Return a WHERE condition restricting a ``SimulationRunRow`` query to runs
     visible to *user*, or ``None`` for no restriction.
 
-    List/aggregate-query analogue of :func:`_run_visible_to_user`: a team-scoped
-    user may only see runs whose project belongs to their team (plus runs with
-    no project). Returns ``None`` in backward-compatible no-auth mode (no user)
-    or for a user without a team — meaning "apply no tenant restriction" — which
-    keeps single-tenant / unauthenticated deployments working unchanged.
+    List/aggregate-query analogue of :func:`_run_visible_to_user`:
+    - no user (no-auth mode) or global admin -> ``None`` (no restriction), which
+      keeps single-tenant / unauthenticated deployments working unchanged;
+    - an authenticated user with NO team -> only project-less runs, so an
+      unscoped / misconfigured account can never see another tenant's runs;
+    - a team-scoped user -> runs whose project belongs to their team, plus runs
+      with no project.
 
     Centralising this here means every cross-tenant run query (runs list, score
     history, …) shares one definition and cannot drift out of sync.
     """
-    if user is None or getattr(user, "team_id", None) is None:
+    if user is None or _user_is_global_admin(user):
         return None
     from faultray.api.database import ProjectRow, SimulationRunRow
     from sqlalchemy import select
+
+    if getattr(user, "team_id", None) is None:
+        return SimulationRunRow.project_id.is_(None)
 
     team_project_ids = (
         await session.execute(
