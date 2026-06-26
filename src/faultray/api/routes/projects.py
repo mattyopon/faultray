@@ -35,11 +35,7 @@ async def list_runs(
 ):
     """List past simulation runs (newest first)."""
     try:
-        from faultray.api.database import (
-            ProjectRow,
-            SimulationRunRow,
-            get_session_factory,
-        )
+        from faultray.api.database import SimulationRunRow, get_session_factory
         from sqlalchemy import select
 
         session_factory = get_session_factory()
@@ -49,17 +45,9 @@ async def list_runs(
             if project_id is not None:
                 stmt = stmt.where(SimulationRunRow.project_id == project_id)
 
-            if user is not None and user.team_id is not None:
-                team_project_ids_stmt = select(ProjectRow.id).where(
-                    ProjectRow.team_id == user.team_id
-                )
-                team_project_ids = (
-                    await session.execute(team_project_ids_stmt)
-                ).scalars().all()
-                stmt = stmt.where(
-                    (SimulationRunRow.project_id.is_(None))
-                    | (SimulationRunRow.project_id.in_(team_project_ids))
-                )
+            run_filter = await _team_visible_run_filter(session, user)
+            if run_filter is not None:
+                stmt = stmt.where(run_filter)
 
             stmt = (
                 stmt.order_by(SimulationRunRow.created_at.desc())
@@ -104,6 +92,34 @@ async def _run_visible_to_user(session, row, user) -> bool:
         )
     ).scalar_one_or_none()
     return owner_team == user.team_id
+
+
+async def _team_visible_run_filter(session, user):
+    """Return a WHERE condition restricting a ``SimulationRunRow`` query to runs
+    visible to *user*, or ``None`` for no restriction.
+
+    List/aggregate-query analogue of :func:`_run_visible_to_user`: a team-scoped
+    user may only see runs whose project belongs to their team (plus runs with
+    no project). Returns ``None`` in backward-compatible no-auth mode (no user)
+    or for a user without a team — meaning "apply no tenant restriction" — which
+    keeps single-tenant / unauthenticated deployments working unchanged.
+
+    Centralising this here means every cross-tenant run query (runs list, score
+    history, …) shares one definition and cannot drift out of sync.
+    """
+    if user is None or getattr(user, "team_id", None) is None:
+        return None
+    from faultray.api.database import ProjectRow, SimulationRunRow
+    from sqlalchemy import select
+
+    team_project_ids = (
+        await session.execute(
+            select(ProjectRow.id).where(ProjectRow.team_id == user.team_id)
+        )
+    ).scalars().all()
+    return (SimulationRunRow.project_id.is_(None)) | (
+        SimulationRunRow.project_id.in_(team_project_ids)
+    )
 
 
 @router.get("/api/runs/{run_id}", response_class=JSONResponse)

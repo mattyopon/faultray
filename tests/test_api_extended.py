@@ -969,6 +969,51 @@ class TestMultiTenantRuns:
         finally:
             app.dependency_overrides.clear()
 
+    def test_score_history_filtered_by_user_team(self, db_client):
+        """SEC (IDOR): /api/score-history must not leak other tenants' runs.
+
+        A team-scoped caller may see only their own team's runs (plus runs with
+        no project); another team's scored runs must never appear. Exercises the
+        real Bearer-auth + tenant-filter path end to end.
+        """
+        now = "2026-01-01T00:00:00"
+        tids = _seed_sync(db_client._db_path, "teams", [
+            {"name": "team-a", "created_at": now},
+            {"name": "team-b", "created_at": now},
+        ])
+        team_a, team_b = tids[0], tids[1]
+        pids = _seed_sync(db_client._db_path, "projects", [
+            {"name": "a-proj", "team_id": team_a, "created_at": now, "updated_at": now},
+            {"name": "b-proj", "team_id": team_b, "created_at": now, "updated_at": now},
+        ])
+        proj_a, proj_b = pids[0], pids[1]
+        _seed_sync(db_client._db_path, "simulation_runs", [
+            {"engine_type": "static", "risk_score": 11.0, "project_id": proj_a, "created_at": now},
+            {"engine_type": "static", "risk_score": 99.0, "project_id": proj_b, "created_at": now},
+            {"engine_type": "static", "risk_score": 33.0, "created_at": now},  # no project -> visible to all
+        ])
+
+        # A team-A user with their own API key (db_client's default header
+        # authenticates as a team-less admin, which would bypass the filter).
+        _seed_sync(db_client._db_path, "users", [{
+            "email": "a@team.local",
+            "name": "Team A User",
+            "api_key_hash": hash_api_key("team-a-key"),
+            "role": "viewer",
+            "team_id": team_a,
+            "created_at": now,
+        }])
+
+        resp = db_client.get(
+            "/api/score-history",
+            headers={"Authorization": "Bearer team-a-key"},
+        )
+        assert resp.status_code == 200
+        scores = {h["score"] for h in resp.json()["history"]}
+        assert 11.0 in scores  # own team's run
+        assert 33.0 in scores  # project-less run, visible to all
+        assert 99.0 not in scores  # other tenant's run must NOT leak
+
 
 # ===================================================================
 # 12. Multi-tenant: projects filtered by user (covers lines 722-726)
