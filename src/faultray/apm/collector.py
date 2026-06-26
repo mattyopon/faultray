@@ -114,7 +114,16 @@ class IngestResponse(BaseModel):
 
 @apm_router.post("/metrics", response_model=IngestResponse)
 async def ingest_metrics(batch: MetricsBatch) -> IngestResponse:
-    """Receive a batch of metrics from an agent."""
+    """Receive a batch of metrics from an agent.
+
+    DoS posture: MetricsBatch bounds the parsed structure (per-list max_length,
+    per-process connections, and an aggregate connections budget enforced before
+    nested models are built). The remaining vector — a multi-gigabyte raw JSON
+    body that exhausts memory at parse time, before any validator runs — is
+    bounded at the deployment layer (reverse-proxy ``client_max_body_size`` /
+    ASGI-server request-body limit), the appropriate place for a blanket
+    request-size cap, rather than in application middleware here.
+    """
     db = get_metrics_db()
 
     metrics_count = 0
