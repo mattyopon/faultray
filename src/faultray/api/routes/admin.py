@@ -781,9 +781,11 @@ async def slack_command_handler(request: Request):
 
         return JSONResponse(response.to_dict())
     except Exception as exc:
+        # Detail to logs only (full stack via exc_info); do not echo the raw
+        # exception into the Slack workspace response.
         logger.error("Slack command handler error: %s", exc, exc_info=True)
         return JSONResponse(
-            {"text": f"Internal error: {exc}", "response_type": "ephemeral"},
+            {"text": "Internal error. Please try again later.", "response_type": "ephemeral"},
             status_code=500,
         )
 
