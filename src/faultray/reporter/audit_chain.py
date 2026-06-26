@@ -114,6 +114,33 @@ class AuditChain:
             )
         return hashlib.sha256(payload.encode()).hexdigest(), False
 
+    @staticmethod
+    def _canonical_payload(
+        sequence: int,
+        timestamp: str,
+        action: str,
+        actor: str,
+        data_hash: str,
+        previous_hash: str,
+        details: str,
+    ) -> str:
+        """Unambiguous serialization of an entry's fields for MAC-ing.
+
+        Encoding the fields as a JSON array — rather than joining them with a
+        ``|`` delimiter — means a ``|`` (or any byte) inside a field cannot shift
+        a field boundary. ``action="deploy"`` / ``actor="alice|admin"`` and
+        ``action="deploy|alice"`` / ``actor="admin"`` produce DIFFERENT bytes
+        here, where the old pipe-joined form collided and let a signed entry's
+        fields be re-partitioned without breaking ``verify_integrity``.
+        json.dumps escapes embedded quotes/backslashes, so no value can forge the
+        structure.
+        """
+        return json.dumps(
+            [sequence, timestamp, action, actor, data_hash, previous_hash, details],
+            separators=(",", ":"),
+            ensure_ascii=False,
+        )
+
     def append(
         self,
         action: str,
@@ -150,9 +177,8 @@ class AuditChain:
         # previous hash AND the human-readable details (otherwise details could
         # be altered on a signed entry without detection). Keyed with HMAC when
         # a signing key is configured so the chain cannot be rewritten.
-        entry_payload = (
-            f"{sequence}|{timestamp}|{action}|{actor}|{data_hash}"
-            f"|{previous_hash}|{details}"
+        entry_payload = self._canonical_payload(
+            sequence, timestamp, action, actor, data_hash, previous_hash, details
         )
         entry_hash, signed = self._mac(entry_payload)
 
@@ -206,32 +232,36 @@ class AuditChain:
                 )
             all_signed = all_signed and entry.signed
 
-            entry_payload = (
-                f"{entry.sequence}|{entry.timestamp}|{entry.action}"
-                f"|{entry.actor}|{entry.data_hash}|{entry.previous_hash}"
-                f"|{entry.details}"
+            canonical_payload = self._canonical_payload(
+                entry.sequence, entry.timestamp, entry.action, entry.actor,
+                entry.data_hash, entry.previous_hash, entry.details,
             )
             if entry.signed:
                 expected_hash = hmac.new(
-                    self._signing_key.encode(), entry_payload.encode(), hashlib.sha256
+                    self._signing_key.encode(), canonical_payload.encode(), hashlib.sha256
                 ).hexdigest()
                 if not hmac.compare_digest(entry.entry_hash, expected_hash):
                     return False, f"Entry hash tampered at entry {i}"
             else:
-                # Unsigned (only reachable with no key configured). Accept either
-                # the current details-inclusive payload OR the pre-upgrade legacy
-                # payload (without details), so existing unsigned logs still
-                # verify. Unsigned entries carry no cryptographic guarantee
-                # either way, so the fallback loses no security.
+                # Unsigned (only reachable with no key configured). Accept the new
+                # canonical JSON payload OR the two pre-upgrade pipe-joined payloads
+                # (with and without details), so existing unsigned logs still
+                # verify. Unsigned entries carry no cryptographic guarantee, so the
+                # old delimiter ambiguity is irrelevant on this path.
+                pipe_payload = (
+                    f"{entry.sequence}|{entry.timestamp}|{entry.action}"
+                    f"|{entry.actor}|{entry.data_hash}|{entry.previous_hash}"
+                    f"|{entry.details}"
+                )
                 legacy_payload = (
                     f"{entry.sequence}|{entry.timestamp}|{entry.action}"
                     f"|{entry.actor}|{entry.data_hash}|{entry.previous_hash}"
                 )
-                expected_new = hashlib.sha256(entry_payload.encode()).hexdigest()
-                expected_old = hashlib.sha256(legacy_payload.encode()).hexdigest()
-                if not (
-                    hmac.compare_digest(entry.entry_hash, expected_new)
-                    or hmac.compare_digest(entry.entry_hash, expected_old)
+                if not any(
+                    hmac.compare_digest(
+                        entry.entry_hash, hashlib.sha256(p.encode()).hexdigest()
+                    )
+                    for p in (canonical_payload, pipe_payload, legacy_payload)
                 ):
                     return False, f"Entry hash tampered at entry {i}"
 

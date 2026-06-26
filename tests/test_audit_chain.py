@@ -291,6 +291,24 @@ class TestAuditChainSigning:
         assert valid is False
         assert "tampered" in msg
 
+    def test_field_boundary_shift_detected(self, tmp_path: Path) -> None:
+        # A `|` inside a field must not let an attacker re-partition the signed
+        # fields while keeping the MAC valid. Under the old pipe-joined payload,
+        # action="deploy"/actor="alice|admin" and action="deploy|alice"/
+        # actor="admin" hashed identically (same "deploy|alice|admin" bytes); the
+        # canonical JSON payload distinguishes them.
+        log = tmp_path / "a.jsonl"
+        chain = AuditChain(log_path=log, signing_key="real-key")
+        chain.append("deploy", "alice|admin", "prod deploy")
+        assert chain.verify_integrity()[0] is True
+        # Re-partition the fields across the former delimiter, leaving the
+        # concatenation between action and actor unchanged.
+        chain._entries[0].action = "deploy|alice"
+        chain._entries[0].actor = "admin"
+        valid, msg = chain.verify_integrity()
+        assert valid is False
+        assert "tampered" in msg
+
     def test_signed_entry_without_key_fails_closed(
         self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
     ) -> None:
