@@ -10,7 +10,7 @@ import uuid
 from enum import Enum
 from typing import Any
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, model_validator
 
 # Upper bound on the number of items accepted in any single agent->collector
 # batch list (processes / connections / traces / custom_metrics). Bounds memory
@@ -18,6 +18,13 @@ from pydantic import BaseModel, Field
 # the collector's ``_MAX_LIMIT`` query-param cap. Pydantic rejects larger lists
 # with a 422 before the ingest handler runs.
 _MAX_BATCH_ITEMS = 10000
+
+# Aggregate cap on connections across the WHOLE batch (top-level list plus every
+# process's nested list). The per-list max_length bounds each list individually
+# but not their PRODUCT: 10000 processes x 10000 connections each = 100M nested
+# ConnectionInfo objects would still validate and then flatten in
+# update_topology_from_batch(). Bound the sum so the intended batch budget holds.
+_MAX_TOTAL_CONNECTIONS = 100_000
 
 
 # ---------------------------------------------------------------------------
@@ -191,6 +198,34 @@ class MetricsBatch(BaseModel):
     timestamp: _dt.datetime = Field(
         default_factory=lambda: _dt.datetime.now(_dt.timezone.utc),
     )
+
+    @model_validator(mode="before")
+    @classmethod
+    def _bound_total_connections(cls, data: Any) -> Any:
+        """Reject an abusive processes x connections product up front.
+
+        Runs on the raw payload BEFORE the nested ConnectionInfo models are
+        built, so a batch whose aggregate connection count (top-level + every
+        process's nested list) exceeds the budget is rejected (422) without
+        constructing/validating tens of millions of nested objects or flattening
+        them in update_topology_from_batch().
+        """
+        if isinstance(data, dict):
+            top = data.get("connections")
+            total = len(top) if isinstance(top, list) else 0
+            procs = data.get("processes")
+            if isinstance(procs, list):
+                for proc in procs:
+                    if isinstance(proc, dict):
+                        nested = proc.get("connections")
+                        if isinstance(nested, list):
+                            total += len(nested)
+            if total > _MAX_TOTAL_CONNECTIONS:
+                raise ValueError(
+                    f"too many connections in batch: {total} exceeds the "
+                    f"{_MAX_TOTAL_CONNECTIONS} aggregate limit (top-level + nested)"
+                )
+        return data
 
 
 # ---------------------------------------------------------------------------

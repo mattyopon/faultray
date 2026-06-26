@@ -5,6 +5,7 @@ from __future__ import annotations
 import datetime as _dt
 
 import pytest
+from pydantic import ValidationError
 
 from faultray.apm.models import (
     AgentConfig,
@@ -121,6 +122,30 @@ class TestMetricsBatch:
         assert restored.agent_id == "a1"
         assert restored.host_metrics is not None
         assert restored.host_metrics.cpu_percent == 42.0
+
+    def test_aggregate_connections_cap_rejects_product(self) -> None:
+        # SEC (DoS): the per-list cap bounds each connections list but not the
+        # processes x connections PRODUCT. The aggregate budget must reject a
+        # batch whose total nested connections exceed _MAX_TOTAL_CONNECTIONS,
+        # before tens of millions of nested objects are constructed/flattened.
+        from faultray.apm.models import _MAX_TOTAL_CONNECTIONS
+
+        per_proc = 600
+        n_procs = (_MAX_TOTAL_CONNECTIONS // per_proc) + 5  # total > limit
+        procs = [
+            {"pid": i, "connections": [{"local_port": 1} for _ in range(per_proc)]}
+            for i in range(n_procs)
+        ]
+        with pytest.raises(ValidationError, match="too many connections"):
+            MetricsBatch(agent_id="a1", processes=procs)
+
+    def test_aggregate_connections_cap_allows_normal_batch(self) -> None:
+        procs = [
+            {"pid": i, "connections": [{"local_port": 1} for _ in range(20)]}
+            for i in range(50)
+        ]
+        batch = MetricsBatch(agent_id="a1", processes=procs)
+        assert sum(len(p.connections) for p in batch.processes) == 1000
 
 
 class TestAlertRule:
