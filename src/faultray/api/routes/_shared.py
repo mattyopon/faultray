@@ -196,8 +196,15 @@ def _decompress_json(value: str) -> dict:
         return json.loads(value)
 
 
-async def _save_run(report_dict: dict, engine_type: str = "static") -> int | None:
-    """Persist a simulation run to the database. Returns the row id or None."""
+async def _save_run(
+    report_dict: dict, engine_type: str = "static", user=None
+) -> int | None:
+    """Persist a simulation run to the database. Returns the row id or None.
+
+    Records tenant attribution (owner_id / team_id) from *user* when present so a
+    project-less run is scoped to its creator and team, and is not visible to
+    other tenants by ``/api/runs`` and ``/api/score-history``.
+    """
     try:
         import datetime as _dt
 
@@ -217,6 +224,8 @@ async def _save_run(report_dict: dict, engine_type: str = "static") -> int | Non
                 config_json=None,
                 results_json=_compress_json(report_dict),
                 risk_score=report_dict.get("resilience_score"),
+                owner_id=getattr(user, "id", None),
+                team_id=getattr(user, "team_id", None),
             )
             session.add(row)
             await session.commit()

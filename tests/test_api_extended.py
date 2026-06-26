@@ -787,6 +787,9 @@ class TestOAuthRoutes:
                 assert resp.status_code == 502
                 data = resp.json()
                 assert "OAuth exchange failed" in data["error"]
+                # SEC: the raw exception (which can embed the provider's token
+                # response / internal detail) must not be reflected to the client.
+                assert "token exchange failed" not in data["error"]
 
     def test_oauth_callback_success_new_user(self, db_client):
         """Cover lines 848-880: successful OAuth creates new user."""
@@ -969,6 +972,125 @@ class TestMultiTenantRuns:
         finally:
             app.dependency_overrides.clear()
 
+    def test_score_history_filtered_by_user_team(self, db_client):
+        """SEC (IDOR): /api/score-history must not leak other tenants' runs.
+
+        A team-scoped caller may see only their own team's runs (plus runs with
+        no project); another team's scored runs must never appear. Exercises the
+        real Bearer-auth + tenant-filter path end to end.
+        """
+        now = "2026-01-01T00:00:00"
+        tids = _seed_sync(db_client._db_path, "teams", [
+            {"name": "team-a", "created_at": now},
+            {"name": "team-b", "created_at": now},
+        ])
+        team_a, team_b = tids[0], tids[1]
+        pids = _seed_sync(db_client._db_path, "projects", [
+            {"name": "a-proj", "team_id": team_a, "created_at": now, "updated_at": now},
+            {"name": "b-proj", "team_id": team_b, "created_at": now, "updated_at": now},
+        ])
+        proj_a, proj_b = pids[0], pids[1]
+        _seed_sync(db_client._db_path, "simulation_runs", [
+            {"engine_type": "static", "risk_score": 11.0, "project_id": proj_a, "created_at": now},
+            {"engine_type": "static", "risk_score": 99.0, "project_id": proj_b, "created_at": now},
+            {"engine_type": "static", "risk_score": 33.0, "created_at": now},  # no project -> visible to all
+        ])
+
+        # A team-A user with their own API key (db_client's default header
+        # authenticates as a team-less admin, which would bypass the filter).
+        _seed_sync(db_client._db_path, "users", [{
+            "email": "a@team.local",
+            "name": "Team A User",
+            "api_key_hash": hash_api_key("team-a-key"),
+            "role": "viewer",
+            "team_id": team_a,
+            "created_at": now,
+        }])
+
+        resp = db_client.get(
+            "/api/score-history",
+            headers={"Authorization": "Bearer team-a-key"},
+        )
+        assert resp.status_code == 200
+        scores = {h["score"] for h in resp.json()["history"]}
+        assert 11.0 in scores  # own team's run
+        assert 33.0 not in scores  # unattributed project-less run hidden from tenants
+        assert 99.0 not in scores  # other tenant's run must NOT leak
+
+    def test_score_history_null_team_nonadmin_sees_only_unowned(self, db_client):
+        """SEC (IDOR): an authenticated user with NO team (and not a global
+        admin) sees project-less runs and runs of projects they own — never
+        another tenant's project-assigned runs. Closes the null-team_id bypass."""
+        now = "2026-01-01T00:00:00"
+        tids = _seed_sync(db_client._db_path, "teams", [{"name": "team-x", "created_at": now}])
+        team_x = tids[0]
+        # A team-less, NON-admin user (viewer). team_id stays NULL.
+        uids = _seed_sync(db_client._db_path, "users", [{
+            "email": "noteam@example.com",
+            "name": "No Team User",
+            "api_key_hash": hash_api_key("no-team-key"),
+            "role": "viewer",
+            "created_at": now,
+        }])
+        noteam_id = uids[0]
+        pids = _seed_sync(db_client._db_path, "projects", [
+            {"name": "x-proj", "team_id": team_x, "created_at": now, "updated_at": now},
+            {"name": "my-own", "owner_id": noteam_id, "created_at": now, "updated_at": now},
+        ])
+        proj_x, proj_own = pids[0], pids[1]
+        _seed_sync(db_client._db_path, "simulation_runs", [
+            {"engine_type": "static", "risk_score": 88.0, "project_id": proj_x, "created_at": now},
+            {"engine_type": "static", "risk_score": 66.0, "project_id": proj_own, "created_at": now},
+            {"engine_type": "static", "risk_score": 44.0, "created_at": now},  # no project
+        ])
+
+        resp = db_client.get(
+            "/api/score-history",
+            headers={"Authorization": "Bearer no-team-key"},
+        )
+        assert resp.status_code == 200
+        scores = {h["score"] for h in resp.json()["history"]}
+        assert 44.0 not in scores  # unattributed project-less run hidden from tenants
+        assert 66.0 in scores  # run of a project the user OWNS is visible
+        assert 88.0 not in scores  # another tenant's project run must NOT leak
+
+    def test_score_history_attributed_projectless_run_is_tenant_scoped(self, db_client):
+        """SEC (IDOR P1): a project-less run attributed (owner_id/team_id) to one
+        tenant must not be visible to another. Closes the unattributed-run leak —
+        runs from /api/simulate now carry the caller's owner/team."""
+        from faultray.api.auth import hash_api_key
+
+        now = "2026-01-01T00:00:00"
+        tids = _seed_sync(db_client._db_path, "teams", [
+            {"name": "ta", "created_at": now},
+            {"name": "tb", "created_at": now},
+        ])
+        ta, tb = tids[0], tids[1]
+        uids = _seed_sync(db_client._db_path, "users", [
+            {"email": "a@x.io", "name": "A", "api_key_hash": hash_api_key("a-key"),
+             "role": "editor", "team_id": ta, "created_at": now},
+            {"email": "b@x.io", "name": "B", "api_key_hash": hash_api_key("b-key"),
+             "role": "editor", "team_id": tb, "created_at": now},
+        ])
+        a_uid = uids[0]
+        # A PROJECT-LESS run attributed to team A's user (as _save_run now does).
+        _seed_sync(db_client._db_path, "simulation_runs", [
+            {"engine_type": "static", "risk_score": 77.0, "owner_id": a_uid,
+             "team_id": ta, "created_at": now},
+        ])
+
+        resp_b = db_client.get(
+            "/api/score-history", headers={"Authorization": "Bearer b-key"}
+        )
+        assert resp_b.status_code == 200
+        assert 77.0 not in {h["score"] for h in resp_b.json()["history"]}  # not leaked
+
+        resp_a = db_client.get(
+            "/api/score-history", headers={"Authorization": "Bearer a-key"}
+        )
+        assert resp_a.status_code == 200
+        assert 77.0 in {h["score"] for h in resp_a.json()["history"]}  # own run visible
+
 
 # ===================================================================
 # 12. Multi-tenant: projects filtered by user (covers lines 722-726)
@@ -1025,6 +1147,36 @@ class TestMultiTenantProjects:
             assert "Team Proj" in names
         finally:
             app.dependency_overrides.clear()
+
+    def test_list_projects_null_team_nonadmin_sees_only_owned(self, db_client):
+        """SEC (IDOR): a team-less non-admin must see only projects they own,
+        never another tenant's projects. Closes the null-team /api/projects
+        leak (sibling of the runs/score-history null-team fix)."""
+        from faultray.api.auth import hash_api_key
+
+        now = "2026-01-01T00:00:00"
+        tids = _seed_sync(db_client._db_path, "teams", [{"name": "team-y", "created_at": now}])
+        team_y = tids[0]
+        uids = _seed_sync(db_client._db_path, "users", [{
+            "email": "solo@example.com",
+            "name": "Solo",
+            "api_key_hash": hash_api_key("solo-key"),
+            "role": "viewer",
+            "created_at": now,  # team_id stays NULL
+        }])
+        solo_id = uids[0]
+        _seed_sync(db_client._db_path, "projects", [
+            {"name": "Team Y Secret", "team_id": team_y, "created_at": now, "updated_at": now},
+            {"name": "My Own Proj", "owner_id": solo_id, "created_at": now, "updated_at": now},
+        ])
+
+        resp = db_client.get(
+            "/api/projects", headers={"Authorization": "Bearer solo-key"}
+        )
+        assert resp.status_code == 200
+        names = [p["name"] for p in resp.json()["projects"]]
+        assert "My Own Proj" in names  # own project visible
+        assert "Team Y Secret" not in names  # other tenant's project must NOT leak
 
 
 # ===================================================================

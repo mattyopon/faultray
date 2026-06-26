@@ -35,11 +35,7 @@ async def list_runs(
 ):
     """List past simulation runs (newest first)."""
     try:
-        from faultray.api.database import (
-            ProjectRow,
-            SimulationRunRow,
-            get_session_factory,
-        )
+        from faultray.api.database import SimulationRunRow, get_session_factory
         from sqlalchemy import select
 
         session_factory = get_session_factory()
@@ -49,17 +45,9 @@ async def list_runs(
             if project_id is not None:
                 stmt = stmt.where(SimulationRunRow.project_id == project_id)
 
-            if user is not None and user.team_id is not None:
-                team_project_ids_stmt = select(ProjectRow.id).where(
-                    ProjectRow.team_id == user.team_id
-                )
-                team_project_ids = (
-                    await session.execute(team_project_ids_stmt)
-                ).scalars().all()
-                stmt = stmt.where(
-                    (SimulationRunRow.project_id.is_(None))
-                    | (SimulationRunRow.project_id.in_(team_project_ids))
-                )
+            run_filter = await _team_visible_run_filter(session, user)
+            if run_filter is not None:
+                stmt = stmt.where(run_filter)
 
             stmt = (
                 stmt.order_by(SimulationRunRow.created_at.desc())
@@ -84,26 +72,117 @@ async def list_runs(
         return JSONResponse({"runs": [], "count": 0, "note": "Database not available"})
 
 
+def _user_is_global_admin(user) -> bool:
+    """True if *user* holds the global admin (deployment superadmin) role.
+
+    This is the UserRow.role granted to the setup admin; OAuth-created users are
+    always editor/viewer, so it is never attacker-obtainable. A global admin is
+    entitled to see every tenant's data (support / ops), so tenant scoping does
+    not apply to them.
+    """
+    return str(getattr(user, "role", "") or "").strip().lower() == "admin"
+
+
 async def _run_visible_to_user(session, row, user) -> bool:
     """Return True if *user* is allowed to access simulation run *row*.
 
-    Enforces tenant isolation: a user scoped to a team may only access runs
-    whose project belongs to that team (or runs with no project). When no user
-    is resolved (backward-compatible no-auth mode) access is unrestricted.
+    Enforces tenant isolation. A run is visible to an authenticated non-admin
+    user when ANY of:
+    - it is attributed to the caller (``owner_id == user.id``) or their team
+      (``team_id == user.team_id``);
+    - its project belongs to the caller (owned, or on their team).
+    No resolved user (no-auth mode) or a global admin is unrestricted.
+    Unattributed legacy rows (owner_id/team_id/project_id all NULL) are NOT
+    shown to authenticated non-admin tenants — they remain visible only in
+    no-auth mode or to admins, so a multi-tenant upgrade does not expose another
+    tenant's historical runs (backfill ownership to restore per-user access).
     """
-    if user is None or getattr(user, "team_id", None) is None:
+    if user is None or _user_is_global_admin(user):
+        return True
+    user_team = getattr(user, "team_id", None)
+    if row.owner_id is not None and row.owner_id == user.id:
+        return True
+    if user_team is not None and row.team_id is not None and row.team_id == user_team:
         return True
     if row.project_id is None:
-        return True
+        return False  # unattributed (legacy) or other-tenant project-less run
     from faultray.api.database import ProjectRow
     from sqlalchemy import select
 
-    owner_team = (
+    proj = (
         await session.execute(
-            select(ProjectRow.team_id).where(ProjectRow.id == row.project_id)
+            select(ProjectRow.owner_id, ProjectRow.team_id).where(
+                ProjectRow.id == row.project_id
+            )
         )
-    ).scalar_one_or_none()
-    return owner_team == user.team_id
+    ).one_or_none()
+    if proj is None:
+        return False
+    p_owner, p_team = proj
+    if p_owner is not None and p_owner == user.id:
+        return True
+    return user_team is not None and p_team is not None and p_team == user_team
+
+
+async def _team_visible_run_filter(session, user):
+    """Return a WHERE condition restricting a ``SimulationRunRow`` query to runs
+    visible to *user*, or ``None`` for no restriction.
+
+    List/aggregate-query analogue of :func:`_run_visible_to_user`. A run is
+    visible when it is attributed to the caller (owner) or their team, OR its
+    project belongs to the caller. No user (no-auth mode) or a global admin
+    yields ``None`` (no restriction), keeping single-tenant / unauthenticated
+    deployments unchanged. Unattributed legacy rows are NOT exposed to
+    authenticated non-admin tenants (see _run_visible_to_user).
+
+    Centralising this here means every cross-tenant run query (runs list, score
+    history, …) shares one definition and cannot drift out of sync.
+    """
+    if user is None or _user_is_global_admin(user):
+        return None
+    from faultray.api.database import ProjectRow, SimulationRunRow
+    from sqlalchemy import or_, select
+
+    user_team = getattr(user, "team_id", None)
+
+    proj_cond = ProjectRow.owner_id == user.id
+    if user_team is not None:
+        proj_cond = proj_cond | (ProjectRow.team_id == user_team)
+    visible_project_ids = (
+        await session.execute(select(ProjectRow.id).where(proj_cond))
+    ).scalars().all()
+
+    conds = [
+        SimulationRunRow.owner_id == user.id,
+        SimulationRunRow.project_id.in_(visible_project_ids),
+    ]
+    if user_team is not None:
+        conds.append(SimulationRunRow.team_id == user_team)
+    return or_(*conds)
+
+
+def _project_visible_filter(user):
+    """Return a WHERE condition restricting a ``ProjectRow`` query to projects
+    visible to *user*, or ``None`` for no restriction.
+
+    Mirrors :func:`_team_visible_run_filter` so the projects list cannot drift
+    out of sync with the runs path:
+    - no user (no-auth mode) or global admin -> ``None`` (unrestricted);
+    - an authenticated user with NO team -> only projects they own, so an
+      unscoped / misconfigured account can never enumerate another tenant's
+      projects;
+    - a team-scoped user -> their team's projects plus any they own.
+
+    NB: ProjectRow.team_id is the integer UserRow.team_id team system, distinct
+    from teams.py's string-keyed team_workspaces.
+    """
+    from faultray.api.database import ProjectRow
+
+    if user is None or _user_is_global_admin(user):
+        return None
+    if getattr(user, "team_id", None) is None:
+        return ProjectRow.owner_id == user.id
+    return (ProjectRow.team_id == user.team_id) | (ProjectRow.owner_id == user.id)
 
 
 @router.get("/api/runs/{run_id}", response_class=JSONResponse)
@@ -251,11 +330,9 @@ async def list_projects(user=Depends(_require_permission("view_results"))):
         async with session_factory() as session:
             stmt = select(ProjectRow)
 
-            if user is not None and user.team_id is not None:
-                stmt = stmt.where(
-                    (ProjectRow.team_id == user.team_id)
-                    | (ProjectRow.owner_id == user.id)
-                )
+            proj_filter = _project_visible_filter(user)
+            if proj_filter is not None:
+                stmt = stmt.where(proj_filter)
 
             stmt = stmt.order_by(ProjectRow.created_at.desc())
             result = await session.execute(stmt)

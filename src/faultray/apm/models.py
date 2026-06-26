@@ -10,7 +10,21 @@ import uuid
 from enum import Enum
 from typing import Any
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, model_validator
+
+# Upper bound on the number of items accepted in any single agent->collector
+# batch list (processes / connections / traces / custom_metrics). Bounds memory
+# use and DB write amplification from an oversized or malicious POST; mirrors
+# the collector's ``_MAX_LIMIT`` query-param cap. Pydantic rejects larger lists
+# with a 422 before the ingest handler runs.
+_MAX_BATCH_ITEMS = 10000
+
+# Aggregate cap on connections across the WHOLE batch (top-level list plus every
+# process's nested list). The per-list max_length bounds each list individually
+# but not their PRODUCT: 10000 processes x 10000 connections each = 100M nested
+# ConnectionInfo objects would still validate and then flatten in
+# update_topology_from_batch(). Bound the sum so the intended batch budget holds.
+_MAX_TOTAL_CONNECTIONS = 100_000
 
 
 # ---------------------------------------------------------------------------
@@ -90,7 +104,13 @@ class ProcessInfo(BaseModel):
     status: str = ""
     create_time: float = 0.0
     num_threads: int = 0
-    connections: list[ConnectionInfo] = Field(default_factory=list)
+    # Cap nested connection lists too. update_topology_from_batch() flattens
+    # every process's connections, so an unbounded list here would let one
+    # process with a huge connections array bypass the per-batch list cap and
+    # still drive excessive validation / memory / topology work.
+    connections: list[ConnectionInfo] = Field(
+        default_factory=list, max_length=_MAX_BATCH_ITEMS
+    )
 
 
 class ConnectionInfo(BaseModel):
@@ -163,13 +183,67 @@ class MetricsBatch(BaseModel):
 
     agent_id: str
     host_metrics: HostMetrics | None = None
-    processes: list[ProcessInfo] = Field(default_factory=list)
-    connections: list[ConnectionInfo] = Field(default_factory=list)
-    traces: list[TraceSpan] = Field(default_factory=list)
-    custom_metrics: list[MetricPoint] = Field(default_factory=list)
+    processes: list[ProcessInfo] = Field(
+        default_factory=list, max_length=_MAX_BATCH_ITEMS
+    )
+    connections: list[ConnectionInfo] = Field(
+        default_factory=list, max_length=_MAX_BATCH_ITEMS
+    )
+    traces: list[TraceSpan] = Field(
+        default_factory=list, max_length=_MAX_BATCH_ITEMS
+    )
+    custom_metrics: list[MetricPoint] = Field(
+        default_factory=list, max_length=_MAX_BATCH_ITEMS
+    )
     timestamp: _dt.datetime = Field(
         default_factory=lambda: _dt.datetime.now(_dt.timezone.utc),
     )
+
+    @model_validator(mode="before")
+    @classmethod
+    def _bound_total_connections(cls, data: Any) -> Any:
+        """Reject an abusive processes x connections product up front.
+
+        Runs on the raw payload BEFORE the nested ConnectionInfo models are
+        built, so a batch whose aggregate connection count (top-level + every
+        process's nested list) exceeds the budget is rejected (422) without
+        constructing/validating tens of millions of nested objects or flattening
+        them in update_topology_from_batch().
+        """
+        if isinstance(data, dict):
+            # Each process may be a raw dict (request-parse path) OR a ProcessInfo
+            # instance (in-process construction, e.g. the agent's _collect_batch /
+            # any direct MetricsBatch(...) caller). Count both so the aggregate
+            # budget cannot be bypassed by passing model instances.
+            def _conn_count(item: Any) -> int:
+                if isinstance(item, dict):
+                    nested = item.get("connections")
+                else:
+                    nested = getattr(item, "connections", None)
+                return len(nested) if isinstance(nested, (list, tuple)) else 0
+
+            top = data.get("connections")
+            procs = data.get("processes")
+            # Cheap length pre-checks BEFORE walking the (possibly huge) process
+            # list, so an oversized POST is rejected without iterating it.
+            if isinstance(procs, (list, tuple)) and len(procs) > _MAX_BATCH_ITEMS:
+                raise ValueError(
+                    f"too many processes in batch: {len(procs)} exceeds {_MAX_BATCH_ITEMS}"
+                )
+            if isinstance(top, (list, tuple)) and len(top) > _MAX_BATCH_ITEMS:
+                raise ValueError(
+                    f"too many connections in batch: {len(top)} exceeds {_MAX_BATCH_ITEMS}"
+                )
+            total = len(top) if isinstance(top, (list, tuple)) else 0
+            if isinstance(procs, (list, tuple)):
+                for proc in procs:
+                    total += _conn_count(proc)
+            if total > _MAX_TOTAL_CONNECTIONS:
+                raise ValueError(
+                    f"too many connections in batch: {total} exceeds the "
+                    f"{_MAX_TOTAL_CONNECTIONS} aggregate limit (top-level + nested)"
+                )
+        return data
 
 
 # ---------------------------------------------------------------------------

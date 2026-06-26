@@ -221,13 +221,16 @@ async def setup_create_admin(request: Request):
             status_code=409,
         )
     except Exception as exc:
+        # Log the detail server-side; never echo the raw exception to the client
+        # — a DB error here embeds the failing SQL and its parameters (which
+        # include the new user's api_key_hash) and would leak schema internals.
         logger.warning("Setup failed: %s", exc)
         return templates.TemplateResponse(
             request,
             "setup.html",
             {
                 "success": False,
-                "error": f"Failed to create user: {exc}",
+                "error": "Failed to create user. Please check your details and try again.",
                 "form_name": name,
                 "form_email": email,
             },
@@ -319,8 +322,10 @@ async def oauth_callback(request: Request, code: str = "", state: str = "", prov
         access_token = await exchange_code_for_token(config, code)
         profile = await get_user_profile(config, access_token)
     except Exception as exc:
+        # Detail to logs only: exc here can embed the provider's raw token-
+        # endpoint response, which must not be reflected back to the caller.
         logger.warning("OAuth callback failed: %s", exc)
-        return JSONResponse({"error": f"OAuth exchange failed: {exc}"}, status_code=502)
+        return JSONResponse({"error": "OAuth exchange failed"}, status_code=502)
 
     try:
         from faultray.api.auth import generate_api_key, hash_api_key
@@ -412,8 +417,10 @@ async def oauth_callback(request: Request, code: str = "", state: str = "", prov
             response = _RedirectResponse(url="/", status_code=302)
             return response
     except Exception as exc:
+        # Detail to logs only: a DB error embeds the INSERT's SQL parameters
+        # (including the user's api_key_hash) — never echo it to the client.
         logger.warning("OAuth user creation failed: %s", exc)
-        return JSONResponse({"error": f"User creation failed: {exc}"}, status_code=500)
+        return JSONResponse({"error": "User creation failed"}, status_code=500)
 
 
 # ---------------------------------------------------------------------------
@@ -774,9 +781,11 @@ async def slack_command_handler(request: Request):
 
         return JSONResponse(response.to_dict())
     except Exception as exc:
+        # Detail to logs only (full stack via exc_info); do not echo the raw
+        # exception into the Slack workspace response.
         logger.error("Slack command handler error: %s", exc, exc_info=True)
         return JSONResponse(
-            {"text": f"Internal error: {exc}", "response_type": "ephemeral"},
+            {"text": "Internal error. Please try again later.", "response_type": "ephemeral"},
             status_code=500,
         )
 
