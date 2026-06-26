@@ -31,6 +31,7 @@ import psutil
 from pydantic import ValidationError
 
 from faultray.apm.models import (
+    _MAX_BATCH_ITEMS,
     AgentConfig,
     ConnectionInfo,
     HostMetrics,
@@ -180,6 +181,18 @@ class APMAgent:
                 if self.config.collect_connections:
                     try:
                         for c in proc.net_connections(kind="inet"):
+                            if len(proc_conns) >= _MAX_BATCH_ITEMS:
+                                # A single process with more sockets than the
+                                # collector accepts (e.g. a busy proxy): truncate
+                                # to the cap so ProcessInfo's max_length does not
+                                # raise and drop the whole collection cycle. The
+                                # collector keeps its own cap for untrusted POSTs.
+                                logger.debug(
+                                    "Truncating process %s connections at %d",
+                                    info.get("pid"),
+                                    _MAX_BATCH_ITEMS,
+                                )
+                                break
                             proc_conns.append(ConnectionInfo(
                                 local_addr=c.laddr.ip if c.laddr else "",
                                 local_port=c.laddr.port if c.laddr else 0,
@@ -361,6 +374,7 @@ class APMAgent:
         # combined (e.g. after a collector outage); each buffered batch was valid
         # when collected, so on a cap ValidationError fall back to sending them
         # unmerged rather than dropping the already-cleared samples.
+        merged_mode = True
         try:
             to_send = [self._merge_batches(batches)]
         except ValidationError:
@@ -369,7 +383,13 @@ class APMAgent:
                 len(batches),
             )
             to_send = batches
+            merged_mode = False
 
+        # Track how many were transmitted so a mid-flush failure re-buffers only
+        # the UNSENT batches and never duplicates an already-accepted one. In
+        # merged mode the single payload represents every batch, so re-buffer the
+        # whole set on failure; unmerged, re-buffer only the unsent suffix.
+        sent = 0
         try:
             async with httpx.AsyncClient(timeout=30.0) as client:
                 headers = {"Content-Type": "application/json"}
@@ -390,21 +410,24 @@ class APMAgent:
                             resp.status_code,
                             resp.text[:200],
                         )
+                    sent += 1
+            return
         except httpx.ConnectError:
             logger.warning(
                 "Cannot connect to collector at %s — buffering",
                 self.config.collector_url,
             )
-            # Re-add to buffer for retry
+            remaining = batches if merged_mode else batches[sent:]
             async with self._send_lock:
-                self._metrics_buffer.extend(batches)
+                self._metrics_buffer.extend(remaining)
         except Exception:
             logger.error("Failed to send metrics — re-buffering for retry", exc_info=True)
             # Any other send failure (timeout, read/write error, serialization,
             # transient DNS, etc.) must not silently discard already-cleared
-            # batches — re-buffer them so they are retried on the next flush.
+            # batches — re-buffer the unsent ones for the next flush.
+            remaining = batches if merged_mode else batches[sent:]
             async with self._send_lock:
-                self._metrics_buffer.extend(batches)
+                self._metrics_buffer.extend(remaining)
 
     def _collect_batch(self) -> MetricsBatch:
         """Collect a complete metrics batch."""

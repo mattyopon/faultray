@@ -1019,27 +1019,30 @@ class TestMultiTenantRuns:
 
     def test_score_history_null_team_nonadmin_sees_only_unowned(self, db_client):
         """SEC (IDOR): an authenticated user with NO team (and not a global
-        admin) must see only project-less runs — never another tenant's
-        project-assigned runs. Closes the null-team_id bypass."""
+        admin) sees project-less runs and runs of projects they own — never
+        another tenant's project-assigned runs. Closes the null-team_id bypass."""
         now = "2026-01-01T00:00:00"
         tids = _seed_sync(db_client._db_path, "teams", [{"name": "team-x", "created_at": now}])
         team_x = tids[0]
-        pids = _seed_sync(db_client._db_path, "projects", [
-            {"name": "x-proj", "team_id": team_x, "created_at": now, "updated_at": now},
-        ])
-        proj_x = pids[0]
-        _seed_sync(db_client._db_path, "simulation_runs", [
-            {"engine_type": "static", "risk_score": 88.0, "project_id": proj_x, "created_at": now},
-            {"engine_type": "static", "risk_score": 44.0, "created_at": now},  # no project
-        ])
         # A team-less, NON-admin user (viewer). team_id stays NULL.
-        _seed_sync(db_client._db_path, "users", [{
+        uids = _seed_sync(db_client._db_path, "users", [{
             "email": "noteam@example.com",
             "name": "No Team User",
             "api_key_hash": hash_api_key("no-team-key"),
             "role": "viewer",
             "created_at": now,
         }])
+        noteam_id = uids[0]
+        pids = _seed_sync(db_client._db_path, "projects", [
+            {"name": "x-proj", "team_id": team_x, "created_at": now, "updated_at": now},
+            {"name": "my-own", "owner_id": noteam_id, "created_at": now, "updated_at": now},
+        ])
+        proj_x, proj_own = pids[0], pids[1]
+        _seed_sync(db_client._db_path, "simulation_runs", [
+            {"engine_type": "static", "risk_score": 88.0, "project_id": proj_x, "created_at": now},
+            {"engine_type": "static", "risk_score": 66.0, "project_id": proj_own, "created_at": now},
+            {"engine_type": "static", "risk_score": 44.0, "created_at": now},  # no project
+        ])
 
         resp = db_client.get(
             "/api/score-history",
@@ -1048,6 +1051,7 @@ class TestMultiTenantRuns:
         assert resp.status_code == 200
         scores = {h["score"] for h in resp.json()["history"]}
         assert 44.0 in scores  # project-less run is visible
+        assert 66.0 in scores  # run of a project the user OWNS is visible
         assert 88.0 not in scores  # another tenant's project run must NOT leak
 
 

@@ -89,21 +89,28 @@ async def _run_visible_to_user(session, row, user) -> bool:
     Enforces tenant isolation:
     - no resolved user (backward-compatible no-auth mode) -> unrestricted;
     - global admin (superadmin) -> unrestricted;
-    - an authenticated user with NO team -> only unowned (project-less) runs, so
-      an unscoped / misconfigured account can never see another tenant's
-      project-assigned runs;
+    - an authenticated user with NO team -> project-less runs plus runs of
+      projects they own, so an unscoped account sees its own data but never
+      another tenant's project-assigned runs;
     - a team-scoped user -> runs whose project belongs to that team (or runs
       with no project).
     """
     if user is None or _user_is_global_admin(user):
         return True
-    if getattr(user, "team_id", None) is None:
-        return row.project_id is None
     if row.project_id is None:
         return True
     from faultray.api.database import ProjectRow
     from sqlalchemy import select
 
+    if getattr(user, "team_id", None) is None:
+        # Null-team non-admin: only runs whose project they own (project-less
+        # runs are already allowed above).
+        owner = (
+            await session.execute(
+                select(ProjectRow.owner_id).where(ProjectRow.id == row.project_id)
+            )
+        ).scalar_one_or_none()
+        return owner == user.id
     owner_team = (
         await session.execute(
             select(ProjectRow.team_id).where(ProjectRow.id == row.project_id)
@@ -119,8 +126,9 @@ async def _team_visible_run_filter(session, user):
     List/aggregate-query analogue of :func:`_run_visible_to_user`:
     - no user (no-auth mode) or global admin -> ``None`` (no restriction), which
       keeps single-tenant / unauthenticated deployments working unchanged;
-    - an authenticated user with NO team -> only project-less runs, so an
-      unscoped / misconfigured account can never see another tenant's runs;
+    - an authenticated user with NO team -> project-less runs plus runs of
+      projects they own, so an unscoped account sees its own data but never
+      another tenant's runs;
     - a team-scoped user -> runs whose project belongs to their team, plus runs
       with no project.
 
@@ -133,7 +141,14 @@ async def _team_visible_run_filter(session, user):
     from sqlalchemy import select
 
     if getattr(user, "team_id", None) is None:
-        return SimulationRunRow.project_id.is_(None)
+        owned_ids = (
+            await session.execute(
+                select(ProjectRow.id).where(ProjectRow.owner_id == user.id)
+            )
+        ).scalars().all()
+        return (SimulationRunRow.project_id.is_(None)) | (
+            SimulationRunRow.project_id.in_(owned_ids)
+        )
 
     team_project_ids = (
         await session.execute(
