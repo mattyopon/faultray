@@ -309,6 +309,26 @@ class TestAuditChainSigning:
         assert valid is False
         assert "tampered" in msg
 
+    def test_legacy_pipe_signed_entry_still_verifies(self, tmp_path: Path) -> None:
+        # A chain signed by the PREVIOUS release used a pipe-joined HMAC payload.
+        # After upgrading to the canonical-JSON payload, those entries must still
+        # verify with the correct key — otherwise loading an existing signed log
+        # reports "tampered" and the chain becomes non-appendable on upgrade.
+        import hashlib as _h
+        import hmac as _hm
+
+        log = tmp_path / "a.jsonl"
+        chain = AuditChain(log_path=log, signing_key="real-key")
+        e = chain.append("deploy", "alice", "prod deploy", data="d")
+        # Re-stamp the entry hash the OLD way (pipe-joined payload) in place.
+        pipe = (
+            f"{e.sequence}|{e.timestamp}|{e.action}|{e.actor}"
+            f"|{e.data_hash}|{e.previous_hash}|{e.details}"
+        )
+        e.entry_hash = _hm.new(b"real-key", pipe.encode(), _h.sha256).hexdigest()
+        valid, msg = chain.verify_integrity()
+        assert valid is True, msg
+
     def test_signed_entry_without_key_fails_closed(
         self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
     ) -> None:

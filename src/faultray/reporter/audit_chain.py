@@ -236,11 +236,29 @@ class AuditChain:
                 entry.sequence, entry.timestamp, entry.action, entry.actor,
                 entry.data_hash, entry.previous_hash, entry.details,
             )
+            # Pre-canonicalization payload (fields joined with "|"). Retained as an
+            # accepted form so a chain written by the previous release verifies
+            # unchanged after an upgrade. This does NOT re-open the delimiter
+            # ambiguity for entries written by THIS version: a new entry is MACed
+            # over the JSON form, so its entry_hash is JSON-based, and a
+            # pipe-joined string can never equal a JSON-array string — the pipe
+            # form can only ever match an entry that was genuinely pipe-MACed
+            # (i.e. a pre-upgrade one), whose ambiguity is an immutable property
+            # of the already-written bytes and cannot be retrofixed regardless.
+            pipe_payload = (
+                f"{entry.sequence}|{entry.timestamp}|{entry.action}"
+                f"|{entry.actor}|{entry.data_hash}|{entry.previous_hash}"
+                f"|{entry.details}"
+            )
             if entry.signed:
-                expected_hash = hmac.new(
-                    self._signing_key.encode(), canonical_payload.encode(), hashlib.sha256
-                ).hexdigest()
-                if not hmac.compare_digest(entry.entry_hash, expected_hash):
+                key = self._signing_key.encode()
+                if not any(
+                    hmac.compare_digest(
+                        entry.entry_hash,
+                        hmac.new(key, p.encode(), hashlib.sha256).hexdigest(),
+                    )
+                    for p in (canonical_payload, pipe_payload)
+                ):
                     return False, f"Entry hash tampered at entry {i}"
             else:
                 # Unsigned (only reachable with no key configured). Accept the new
@@ -248,11 +266,6 @@ class AuditChain:
                 # (with and without details), so existing unsigned logs still
                 # verify. Unsigned entries carry no cryptographic guarantee, so the
                 # old delimiter ambiguity is irrelevant on this path.
-                pipe_payload = (
-                    f"{entry.sequence}|{entry.timestamp}|{entry.action}"
-                    f"|{entry.actor}|{entry.data_hash}|{entry.previous_hash}"
-                    f"|{entry.details}"
-                )
                 legacy_payload = (
                     f"{entry.sequence}|{entry.timestamp}|{entry.action}"
                     f"|{entry.actor}|{entry.data_hash}|{entry.previous_hash}"

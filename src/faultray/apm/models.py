@@ -97,7 +97,13 @@ class ProcessInfo(BaseModel):
     status: str = ""
     create_time: float = 0.0
     num_threads: int = 0
-    connections: list[ConnectionInfo] = Field(default_factory=list)
+    # Cap nested connection lists too. update_topology_from_batch() flattens
+    # every process's connections, so an unbounded list here would let one
+    # process with a huge connections array bypass the per-batch list cap and
+    # still drive excessive validation / memory / topology work.
+    connections: list[ConnectionInfo] = Field(
+        default_factory=list, max_length=_MAX_BATCH_ITEMS
+    )
 
 
 class ConnectionInfo(BaseModel):
