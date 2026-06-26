@@ -90,11 +90,12 @@ async def _run_visible_to_user(session, row, user) -> bool:
     user when ANY of:
     - it is attributed to the caller (``owner_id == user.id``) or their team
       (``team_id == user.team_id``);
-    - its project belongs to the caller (owned, or on their team);
-    - it is a legacy / no-auth-created row with NO attribution at all
-      (owner_id, team_id and project_id all NULL) — kept visible for backward
-      compatibility, since pre-existing rows cannot be retroactively scoped.
+    - its project belongs to the caller (owned, or on their team).
     No resolved user (no-auth mode) or a global admin is unrestricted.
+    Unattributed legacy rows (owner_id/team_id/project_id all NULL) are NOT
+    shown to authenticated non-admin tenants — they remain visible only in
+    no-auth mode or to admins, so a multi-tenant upgrade does not expose another
+    tenant's historical runs (backfill ownership to restore per-user access).
     """
     if user is None or _user_is_global_admin(user):
         return True
@@ -103,10 +104,8 @@ async def _run_visible_to_user(session, row, user) -> bool:
         return True
     if user_team is not None and row.team_id is not None and row.team_id == user_team:
         return True
-    if row.owner_id is None and row.team_id is None and row.project_id is None:
-        return True  # legacy / no-auth unattributed run
     if row.project_id is None:
-        return False  # attributed to a different tenant
+        return False  # unattributed (legacy) or other-tenant project-less run
     from faultray.api.database import ProjectRow
     from sqlalchemy import select
 
@@ -131,10 +130,10 @@ async def _team_visible_run_filter(session, user):
 
     List/aggregate-query analogue of :func:`_run_visible_to_user`. A run is
     visible when it is attributed to the caller (owner) or their team, OR its
-    project belongs to the caller, OR it is a legacy / no-auth row with no
-    attribution at all (owner_id, team_id and project_id all NULL). No user
-    (no-auth mode) or a global admin yields ``None`` (no restriction), keeping
-    single-tenant / unauthenticated deployments unchanged.
+    project belongs to the caller. No user (no-auth mode) or a global admin
+    yields ``None`` (no restriction), keeping single-tenant / unauthenticated
+    deployments unchanged. Unattributed legacy rows are NOT exposed to
+    authenticated non-admin tenants (see _run_visible_to_user).
 
     Centralising this here means every cross-tenant run query (runs list, score
     history, …) shares one definition and cannot drift out of sync.
@@ -156,11 +155,6 @@ async def _team_visible_run_filter(session, user):
     conds = [
         SimulationRunRow.owner_id == user.id,
         SimulationRunRow.project_id.in_(visible_project_ids),
-        # Legacy / no-auth-created unattributed runs stay visible (backward
-        # compat — pre-existing rows cannot be retroactively scoped).
-        (SimulationRunRow.owner_id.is_(None))
-        & (SimulationRunRow.team_id.is_(None))
-        & (SimulationRunRow.project_id.is_(None)),
     ]
     if user_team is not None:
         conds.append(SimulationRunRow.team_id == user_team)

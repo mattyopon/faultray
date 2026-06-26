@@ -32,6 +32,7 @@ from pydantic import ValidationError
 
 from faultray.apm.models import (
     _MAX_BATCH_ITEMS,
+    _MAX_TOTAL_CONNECTIONS,
     AgentConfig,
     ConnectionInfo,
     HostMetrics,
@@ -438,11 +439,33 @@ class APMAgent:
             async with self._send_lock:
                 self._metrics_buffer.extend(remaining)
 
+    @staticmethod
+    def _bound_for_collector(
+        procs: list[ProcessInfo], conns: list[ConnectionInfo]
+    ) -> tuple[list[ProcessInfo], list[ConnectionInfo]]:
+        """Bound agent-collected lists to the collector's caps so a large host
+        never raises a ValidationError in _collect_batch (which _collect_loop
+        would treat as a failed cycle and drop entirely). Sends a bounded
+        SAMPLE; the collector keeps its own caps for untrusted payloads.
+
+        Covers the process count, the top-level connections list, and the
+        AGGREGATE (top-level + every process's nested) connections budget.
+        """
+        procs = procs[:_MAX_BATCH_ITEMS]
+        conns = conns[:_MAX_BATCH_ITEMS]
+        budget = max(0, _MAX_TOTAL_CONNECTIONS - len(conns))
+        for p in procs:
+            if len(p.connections) > budget:
+                p.connections = p.connections[:budget]
+            budget -= len(p.connections)
+        return procs, conns
+
     def _collect_batch(self) -> MetricsBatch:
         """Collect a complete metrics batch."""
         host = self.collect_host_metrics()
         procs = self.collect_processes() if self.config.collect_processes else []
         conns = self.collect_connections() if self.config.collect_connections else []
+        procs, conns = self._bound_for_collector(procs, conns)
 
         return MetricsBatch(
             agent_id=self.config.agent_id,

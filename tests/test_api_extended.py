@@ -1014,7 +1014,7 @@ class TestMultiTenantRuns:
         assert resp.status_code == 200
         scores = {h["score"] for h in resp.json()["history"]}
         assert 11.0 in scores  # own team's run
-        assert 33.0 in scores  # project-less run, visible to all
+        assert 33.0 not in scores  # unattributed project-less run hidden from tenants
         assert 99.0 not in scores  # other tenant's run must NOT leak
 
     def test_score_history_null_team_nonadmin_sees_only_unowned(self, db_client):
@@ -1050,7 +1050,7 @@ class TestMultiTenantRuns:
         )
         assert resp.status_code == 200
         scores = {h["score"] for h in resp.json()["history"]}
-        assert 44.0 in scores  # project-less run is visible
+        assert 44.0 not in scores  # unattributed project-less run hidden from tenants
         assert 66.0 in scores  # run of a project the user OWNS is visible
         assert 88.0 not in scores  # another tenant's project run must NOT leak
 

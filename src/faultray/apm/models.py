@@ -223,8 +223,18 @@ class MetricsBatch(BaseModel):
                 return len(nested) if isinstance(nested, (list, tuple)) else 0
 
             top = data.get("connections")
-            total = len(top) if isinstance(top, (list, tuple)) else 0
             procs = data.get("processes")
+            # Cheap length pre-checks BEFORE walking the (possibly huge) process
+            # list, so an oversized POST is rejected without iterating it.
+            if isinstance(procs, (list, tuple)) and len(procs) > _MAX_BATCH_ITEMS:
+                raise ValueError(
+                    f"too many processes in batch: {len(procs)} exceeds {_MAX_BATCH_ITEMS}"
+                )
+            if isinstance(top, (list, tuple)) and len(top) > _MAX_BATCH_ITEMS:
+                raise ValueError(
+                    f"too many connections in batch: {len(top)} exceeds {_MAX_BATCH_ITEMS}"
+                )
+            total = len(top) if isinstance(top, (list, tuple)) else 0
             if isinstance(procs, (list, tuple)):
                 for proc in procs:
                     total += _conn_count(proc)
