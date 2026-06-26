@@ -89,8 +89,8 @@ async def api_simulate(request: Request, user=Depends(_require_permission("run_s
     set_last_report(report)
     report_dict = _report_to_dict(report)
 
-    # Persist to database
-    run_id = await _save_run(report_dict, engine_type="static")
+    # Persist to database (attributed to the caller for tenant scoping)
+    run_id = await _save_run(report_dict, engine_type="static", user=user)
     if run_id is not None:
         report_dict["run_id"] = run_id
 

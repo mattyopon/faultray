@@ -226,6 +226,15 @@ class APMAgent:
         conns: list[ConnectionInfo] = []
         try:
             for c in psutil.net_connections(kind="inet"):
+                if len(conns) >= _MAX_BATCH_ITEMS:
+                    # A busy host with more system-wide sockets than the
+                    # collector accepts: truncate so MetricsBatch's cap does not
+                    # raise and drop the whole collection cycle. The collector
+                    # keeps its own cap for untrusted payloads.
+                    logger.debug(
+                        "Truncating system-wide connections at %d", _MAX_BATCH_ITEMS
+                    )
+                    break
                 conns.append(ConnectionInfo(
                     local_addr=c.laddr.ip if c.laddr else "",
                     local_port=c.laddr.port if c.laddr else 0,

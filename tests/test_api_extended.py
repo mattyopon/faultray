@@ -1054,6 +1054,43 @@ class TestMultiTenantRuns:
         assert 66.0 in scores  # run of a project the user OWNS is visible
         assert 88.0 not in scores  # another tenant's project run must NOT leak
 
+    def test_score_history_attributed_projectless_run_is_tenant_scoped(self, db_client):
+        """SEC (IDOR P1): a project-less run attributed (owner_id/team_id) to one
+        tenant must not be visible to another. Closes the unattributed-run leak —
+        runs from /api/simulate now carry the caller's owner/team."""
+        from faultray.api.auth import hash_api_key
+
+        now = "2026-01-01T00:00:00"
+        tids = _seed_sync(db_client._db_path, "teams", [
+            {"name": "ta", "created_at": now},
+            {"name": "tb", "created_at": now},
+        ])
+        ta, tb = tids[0], tids[1]
+        uids = _seed_sync(db_client._db_path, "users", [
+            {"email": "a@x.io", "name": "A", "api_key_hash": hash_api_key("a-key"),
+             "role": "editor", "team_id": ta, "created_at": now},
+            {"email": "b@x.io", "name": "B", "api_key_hash": hash_api_key("b-key"),
+             "role": "editor", "team_id": tb, "created_at": now},
+        ])
+        a_uid = uids[0]
+        # A PROJECT-LESS run attributed to team A's user (as _save_run now does).
+        _seed_sync(db_client._db_path, "simulation_runs", [
+            {"engine_type": "static", "risk_score": 77.0, "owner_id": a_uid,
+             "team_id": ta, "created_at": now},
+        ])
+
+        resp_b = db_client.get(
+            "/api/score-history", headers={"Authorization": "Bearer b-key"}
+        )
+        assert resp_b.status_code == 200
+        assert 77.0 not in {h["score"] for h in resp_b.json()["history"]}  # not leaked
+
+        resp_a = db_client.get(
+            "/api/score-history", headers={"Authorization": "Bearer a-key"}
+        )
+        assert resp_a.status_code == 200
+        assert 77.0 in {h["score"] for h in resp_a.json()["history"]}  # own run visible
+
 
 # ===================================================================
 # 12. Multi-tenant: projects filtered by user (covers lines 722-726)

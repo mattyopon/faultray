@@ -86,51 +86,55 @@ def _user_is_global_admin(user) -> bool:
 async def _run_visible_to_user(session, row, user) -> bool:
     """Return True if *user* is allowed to access simulation run *row*.
 
-    Enforces tenant isolation:
-    - no resolved user (backward-compatible no-auth mode) -> unrestricted;
-    - global admin (superadmin) -> unrestricted;
-    - an authenticated user with NO team -> project-less runs plus runs of
-      projects they own, so an unscoped account sees its own data but never
-      another tenant's project-assigned runs;
-    - a team-scoped user -> runs whose project belongs to that team (or runs
-      with no project).
+    Enforces tenant isolation. A run is visible to an authenticated non-admin
+    user when ANY of:
+    - it is attributed to the caller (``owner_id == user.id``) or their team
+      (``team_id == user.team_id``);
+    - its project belongs to the caller (owned, or on their team);
+    - it is a legacy / no-auth-created row with NO attribution at all
+      (owner_id, team_id and project_id all NULL) — kept visible for backward
+      compatibility, since pre-existing rows cannot be retroactively scoped.
+    No resolved user (no-auth mode) or a global admin is unrestricted.
     """
     if user is None or _user_is_global_admin(user):
         return True
-    if row.project_id is None:
+    user_team = getattr(user, "team_id", None)
+    if row.owner_id is not None and row.owner_id == user.id:
         return True
+    if user_team is not None and row.team_id is not None and row.team_id == user_team:
+        return True
+    if row.owner_id is None and row.team_id is None and row.project_id is None:
+        return True  # legacy / no-auth unattributed run
+    if row.project_id is None:
+        return False  # attributed to a different tenant
     from faultray.api.database import ProjectRow
     from sqlalchemy import select
 
-    if getattr(user, "team_id", None) is None:
-        # Null-team non-admin: only runs whose project they own (project-less
-        # runs are already allowed above).
-        owner = (
-            await session.execute(
-                select(ProjectRow.owner_id).where(ProjectRow.id == row.project_id)
-            )
-        ).scalar_one_or_none()
-        return owner == user.id
-    owner_team = (
+    proj = (
         await session.execute(
-            select(ProjectRow.team_id).where(ProjectRow.id == row.project_id)
+            select(ProjectRow.owner_id, ProjectRow.team_id).where(
+                ProjectRow.id == row.project_id
+            )
         )
-    ).scalar_one_or_none()
-    return owner_team == user.team_id
+    ).one_or_none()
+    if proj is None:
+        return False
+    p_owner, p_team = proj
+    if p_owner is not None and p_owner == user.id:
+        return True
+    return user_team is not None and p_team is not None and p_team == user_team
 
 
 async def _team_visible_run_filter(session, user):
     """Return a WHERE condition restricting a ``SimulationRunRow`` query to runs
     visible to *user*, or ``None`` for no restriction.
 
-    List/aggregate-query analogue of :func:`_run_visible_to_user`:
-    - no user (no-auth mode) or global admin -> ``None`` (no restriction), which
-      keeps single-tenant / unauthenticated deployments working unchanged;
-    - an authenticated user with NO team -> project-less runs plus runs of
-      projects they own, so an unscoped account sees its own data but never
-      another tenant's runs;
-    - a team-scoped user -> runs whose project belongs to their team, plus runs
-      with no project.
+    List/aggregate-query analogue of :func:`_run_visible_to_user`. A run is
+    visible when it is attributed to the caller (owner) or their team, OR its
+    project belongs to the caller, OR it is a legacy / no-auth row with no
+    attribution at all (owner_id, team_id and project_id all NULL). No user
+    (no-auth mode) or a global admin yields ``None`` (no restriction), keeping
+    single-tenant / unauthenticated deployments unchanged.
 
     Centralising this here means every cross-tenant run query (runs list, score
     history, …) shares one definition and cannot drift out of sync.
@@ -138,26 +142,29 @@ async def _team_visible_run_filter(session, user):
     if user is None or _user_is_global_admin(user):
         return None
     from faultray.api.database import ProjectRow, SimulationRunRow
-    from sqlalchemy import select
+    from sqlalchemy import or_, select
 
-    if getattr(user, "team_id", None) is None:
-        owned_ids = (
-            await session.execute(
-                select(ProjectRow.id).where(ProjectRow.owner_id == user.id)
-            )
-        ).scalars().all()
-        return (SimulationRunRow.project_id.is_(None)) | (
-            SimulationRunRow.project_id.in_(owned_ids)
-        )
+    user_team = getattr(user, "team_id", None)
 
-    team_project_ids = (
-        await session.execute(
-            select(ProjectRow.id).where(ProjectRow.team_id == user.team_id)
-        )
+    proj_cond = ProjectRow.owner_id == user.id
+    if user_team is not None:
+        proj_cond = proj_cond | (ProjectRow.team_id == user_team)
+    visible_project_ids = (
+        await session.execute(select(ProjectRow.id).where(proj_cond))
     ).scalars().all()
-    return (SimulationRunRow.project_id.is_(None)) | (
-        SimulationRunRow.project_id.in_(team_project_ids)
-    )
+
+    conds = [
+        SimulationRunRow.owner_id == user.id,
+        SimulationRunRow.project_id.in_(visible_project_ids),
+        # Legacy / no-auth-created unattributed runs stay visible (backward
+        # compat — pre-existing rows cannot be retroactively scoped).
+        (SimulationRunRow.owner_id.is_(None))
+        & (SimulationRunRow.team_id.is_(None))
+        & (SimulationRunRow.project_id.is_(None)),
+    ]
+    if user_team is not None:
+        conds.append(SimulationRunRow.team_id == user_team)
+    return or_(*conds)
 
 
 def _project_visible_filter(user):
