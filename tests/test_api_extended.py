@@ -787,6 +787,9 @@ class TestOAuthRoutes:
                 assert resp.status_code == 502
                 data = resp.json()
                 assert "OAuth exchange failed" in data["error"]
+                # SEC: the raw exception (which can embed the provider's token
+                # response / internal detail) must not be reflected to the client.
+                assert "token exchange failed" not in data["error"]
 
     def test_oauth_callback_success_new_user(self, db_client):
         """Cover lines 848-880: successful OAuth creates new user."""
