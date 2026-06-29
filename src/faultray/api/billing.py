@@ -18,6 +18,25 @@ except ImportError:  # pragma: no cover
 logger = logging.getLogger(__name__)
 
 
+def _saas_quota_enabled() -> bool:
+    """Whether hosted-SaaS usage quotas are actively ENFORCED on API requests.
+
+    Defaults to OFF. The Apache-2.0 CLI and any self-hosted deployment must
+    never be gated -- monetization applies only to the managed SaaS. The hosted
+    service opts in by setting ``FAULTRAY_ENFORCE_QUOTA=1`` once per-team
+    subscription tiers are synced into ``SubscriptionRow`` (otherwise every team
+    resolves to the FREE tier and would be throttled). Usage *accounting*
+    (``track_simulation``) is gated by the same flag so self-host runs never
+    write per-team usage rows.
+    """
+    return os.environ.get("FAULTRAY_ENFORCE_QUOTA", "").strip().lower() in (
+        "1",
+        "true",
+        "yes",
+        "on",
+    )
+
+
 class PricingTier(str, Enum):
     FREE = "free"
     PRO = "pro"

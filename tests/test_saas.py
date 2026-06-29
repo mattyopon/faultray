@@ -474,3 +474,93 @@ class TestBillingEnforcement:
         # (the duplicate delete did NOT downgrade).
         assert row is not None
         assert row.tier == "pro"
+
+    def test_saas_quota_flag_defaults_off_and_parses(self, monkeypatch):
+        """The hosted-SaaS quota gate is OFF unless explicitly enabled, so the
+        OSS CLI / self-host is never throttled."""
+        from faultray.api.billing import _saas_quota_enabled
+
+        monkeypatch.delenv("FAULTRAY_ENFORCE_QUOTA", raising=False)
+        assert _saas_quota_enabled() is False
+        for val in ("1", "true", "TRUE", "yes", "on"):
+            monkeypatch.setenv("FAULTRAY_ENFORCE_QUOTA", val)
+            assert _saas_quota_enabled() is True
+        for val in ("0", "false", "", "no", "off"):
+            monkeypatch.setenv("FAULTRAY_ENFORCE_QUOTA", val)
+            assert _saas_quota_enabled() is False
+
+    def test_free_tier_simulation_quota_enforced(self, tmp_path):
+        """A team with no paid subscription is held to the FREE monthly cap."""
+        from faultray.api.billing import UsageTracker
+        from faultray.api.database import UsageLogRow
+        from tests.conftest import _run_async
+
+        sf = self._temp_sf(tmp_path)
+        tracker = UsageTracker(sf)
+
+        async def _seed(n):
+            async with sf() as session:
+                for _ in range(n):
+                    session.add(
+                        UsageLogRow(
+                            team_id="team-free", resource="simulation", quantity=1
+                        )
+                    )
+                await session.commit()
+
+        # FREE tier = 5 simulations / month (no SubscriptionRow -> FREE default).
+        _run_async(_seed(4))
+        assert _run_async(tracker.check_limit("team-free", "simulation")) is True
+        _run_async(_seed(1))  # now AT the limit (5 used)
+        assert _run_async(tracker.check_limit("team-free", "simulation")) is False
+
+    def test_track_simulation_records_usage(self, tmp_path):
+        """Usage accounting writes one row per recorded simulation."""
+        from faultray.api.billing import UsageTracker
+        from faultray.api.database import UsageLogRow
+        from tests.conftest import _run_async
+        from sqlalchemy import select, func
+
+        sf = self._temp_sf(tmp_path)
+        tracker = UsageTracker(sf)
+
+        async def _run():
+            await tracker.track_simulation("team-track")
+            await tracker.track_simulation("team-track")
+            async with sf() as session:
+                return (
+                    await session.execute(
+                        select(func.count())
+                        .select_from(UsageLogRow)
+                        .where(
+                            UsageLogRow.team_id == "team-track",
+                            UsageLogRow.resource == "simulation",
+                        )
+                    )
+                ).scalar()
+
+        assert _run_async(_run()) == 2
+
+    def test_business_tier_simulations_unlimited(self, tmp_path):
+        """A paid Business subscription lifts the monthly simulation cap."""
+        from faultray.api.billing import UsageTracker
+        from faultray.api.database import SubscriptionRow, UsageLogRow
+        from tests.conftest import _run_async
+
+        sf = self._temp_sf(tmp_path)
+        tracker = UsageTracker(sf)
+
+        async def _seed():
+            async with sf() as session:
+                session.add(SubscriptionRow(team_id="team-biz", tier="business"))
+                for _ in range(50):
+                    session.add(
+                        UsageLogRow(
+                            team_id="team-biz", resource="simulation", quantity=1
+                        )
+                    )
+                await session.commit()
+
+        _run_async(_seed())
+        # Business tier has unlimited (-1) monthly simulations.
+        assert _run_async(tracker.check_limit("team-biz", "simulation")) is True
