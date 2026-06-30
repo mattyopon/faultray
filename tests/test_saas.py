@@ -564,3 +564,65 @@ class TestBillingEnforcement:
         _run_async(_seed())
         # Business tier has unlimited (-1) monthly simulations.
         assert _run_async(tracker.check_limit("team-biz", "simulation")) is True
+
+    def test_simulations_this_month_counts_per_key(self, tmp_path):
+        """Per-user usage keys are counted independently (no cross-key leak)."""
+        from faultray.api.billing import UsageTracker
+        from tests.conftest import _run_async
+
+        sf = self._temp_sf(tmp_path)
+        tracker = UsageTracker(sf)
+
+        async def _run():
+            await tracker.track_simulation("user:1")
+            await tracker.track_simulation("user:1")
+            await tracker.track_simulation("user:2")
+            return (
+                await tracker.simulations_this_month("user:1"),
+                await tracker.simulations_this_month("user:2"),
+                await tracker.simulations_this_month("user:3"),
+            )
+
+        assert _run_async(_run()) == (2, 1, 0)
+
+    def test_simulation_quota_exceeded_by_tier(self, tmp_path):
+        """The quota gate the /api/simulate route uses: FREE caps, paid unlocks.
+
+        This is the regression guard for the team-id vs billing-workspace-id
+        namespace bug -- a Business (paid) user is NEVER throttled regardless of
+        usage, while a FREE user is capped.
+        """
+        from faultray.api.billing import UsageTracker, PricingTier
+        from tests.conftest import _run_async
+
+        sf = self._temp_sf(tmp_path)
+        tracker = UsageTracker(sf)
+
+        async def _seed(key, n):
+            for _ in range(n):
+                await tracker.track_simulation(key)
+
+        # FREE = 5/month -> exceeded at 5.
+        _run_async(_seed("user:free", 5))
+        assert (
+            _run_async(
+                tracker.simulation_quota_exceeded("user:free", PricingTier.FREE)
+            )
+            is True
+        )
+        # PRO = 100/month -> 5 used is well under.
+        _run_async(_seed("user:pro", 5))
+        assert (
+            _run_async(
+                tracker.simulation_quota_exceeded("user:pro", PricingTier.PRO)
+            )
+            is False
+        )
+        # BUSINESS = unlimited -> never throttled, even past the FREE cap.
+        _run_async(_seed("user:biz", 50))
+        assert (
+            _run_async(
+                tracker.simulation_quota_exceeded("user:biz", PricingTier.BUSINESS)
+            )
+            is False
+        )

@@ -85,31 +85,41 @@ async def api_simulate(request: Request, user=Depends(_require_permission("run_s
             return JSONResponse({"error": "No infrastructure loaded. Visit /demo first."}, status_code=400)
 
     # Hosted-SaaS monetization gate. No-op for the Apache-2.0 CLI / self-host
-    # (FAULTRAY_ENFORCE_QUOTA off) and for callers with no team; when enabled it
-    # enforces the caller's plan simulation quota and records usage so that a
-    # paid subscription actually unlocks more capacity.
-    from faultray.api.billing import UsageTracker, _saas_quota_enabled
-
-    _saas_team_id = getattr(user, "team_id", None)
-    _saas_tracker = (
-        UsageTracker(db_session_factory=None)
-        if (_saas_quota_enabled() and _saas_team_id is not None)
-        else None
+    # (FAULTRAY_ENFORCE_QUOTA off) and for anonymous callers. Tier resolves via
+    # the SAME user.tier path as the compliance gate (_resolve_user_tier), and
+    # usage is keyed PER-USER so enforcement never depends on the team-id vs
+    # billing-workspace-id namespace -- a paid plan maps to an unlimited tier
+    # and is never throttled.
+    from faultray.api.billing import (
+        TIER_LIMITS,
+        PricingTier,
+        UsageTracker,
+        _saas_quota_enabled,
     )
-    if _saas_tracker is not None and not await _saas_tracker.check_limit(
-        str(_saas_team_id), "simulation"
-    ):
-        raise HTTPException(
-            status_code=402,
-            detail={
-                "error": "quota_exceeded",
-                "message": (
-                    "Monthly simulation limit reached for your plan. "
-                    "Upgrade for higher limits."
-                ),
-                "upgrade_url": "https://faultray.com/pricing",
-            },
-        )
+
+    _saas_tracker = None
+    _saas_usage_key = None
+    if _saas_quota_enabled() and user is not None:
+        from faultray.api.v1.saas_routes import _resolve_user_tier
+
+        _saas_usage_key = f"user:{getattr(user, 'id', 'anon')}"
+        _saas_tracker = UsageTracker(db_session_factory=None)
+        try:
+            _tier = PricingTier(_resolve_user_tier(user))
+        except ValueError:
+            _tier = PricingTier.FREE
+        if await _saas_tracker.simulation_quota_exceeded(_saas_usage_key, _tier):
+            raise HTTPException(
+                status_code=402,
+                detail={
+                    "error": "quota_exceeded",
+                    "message": (
+                        "Monthly simulation limit reached for your plan. "
+                        "Upgrade for higher limits."
+                    ),
+                    "upgrade_url": "https://faultray.com/pricing",
+                },
+            )
 
     engine = SimulationEngine(graph)
     report = engine.run_all_defaults()
@@ -122,8 +132,8 @@ async def api_simulate(request: Request, user=Depends(_require_permission("run_s
         report_dict["run_id"] = run_id
 
     # Record usage for monetization accounting (hosted SaaS only).
-    if _saas_tracker is not None:
-        await _saas_tracker.track_simulation(str(_saas_team_id))
+    if _saas_tracker is not None and _saas_usage_key is not None:
+        await _saas_tracker.track_simulation(_saas_usage_key)
 
     # Audit log
     try:

@@ -187,6 +187,53 @@ class UsageTracker:
             logger.warning("Could not check usage limit; denying.", exc_info=True)
             return False
 
+    async def simulations_this_month(self, usage_key: str) -> int:
+        """Count simulations recorded for *usage_key* in the current calendar
+        month.
+
+        On any error this returns 0 (fail OPEN) so a transient DB issue never
+        throttles a possibly-paying user -- for a monetization gate a wrong
+        ALLOW is far cheaper than wrongly blocking a paid customer.
+        """
+        try:
+            from faultray.api.database import UsageLogRow, get_session_factory
+            from sqlalchemy import select, func
+            import datetime
+
+            sf = self._session_factory or get_session_factory()
+            async with sf() as session:
+                now = datetime.datetime.now(datetime.timezone.utc)
+                month_start = now.replace(
+                    day=1, hour=0, minute=0, second=0, microsecond=0,
+                )
+                stmt = (
+                    select(func.count())
+                    .select_from(UsageLogRow)
+                    .where(
+                        UsageLogRow.team_id == usage_key,
+                        UsageLogRow.resource == "simulation",
+                        UsageLogRow.created_at >= month_start,
+                    )
+                )
+                return int((await session.execute(stmt)).scalar() or 0)
+        except Exception:
+            logger.debug("Could not count monthly simulations.", exc_info=True)
+            return 0
+
+    async def simulation_quota_exceeded(
+        self, usage_key: str, tier: PricingTier,
+    ) -> bool:
+        """Return True if *usage_key* has reached the monthly simulation cap for
+        *tier*.
+
+        Unlimited tiers (limit ``-1``) are never exceeded, so a paid plan
+        genuinely unlocks more capacity. Counting failures fail OPEN.
+        """
+        limit = TIER_LIMITS[tier].max_simulations_per_month
+        if limit == -1:
+            return False
+        return (await self.simulations_this_month(usage_key)) >= limit
+
     async def get_usage(self, team_id: str, period: str = "") -> dict:
         """Get current usage summary for a team."""
         try:

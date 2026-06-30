@@ -1714,3 +1714,68 @@ class TestDBErrorBranches:
             data = resp.json()
             assert data["count"] == 0
             assert "note" in data
+
+
+class TestSimulateQuotaGate:
+    """Route-level tests for the hosted-SaaS /api/simulate quota gate.
+
+    These exercise the REAL authenticated route (the team-id vs billing-
+    workspace-id namespace bug an in-isolation unit test could not catch):
+    the flag defaults OFF, a FREE user is capped when enabled, and a paid
+    (Business) user is NEVER throttled regardless of usage.
+    """
+
+    def _user_id(self, db_path) -> int:
+        import sqlite3
+
+        conn = sqlite3.connect(str(db_path))
+        try:
+            return conn.execute("SELECT id FROM users LIMIT 1").fetchone()[0]
+        finally:
+            conn.close()
+
+    def _set_tier(self, db_path, uid: int, tier: str) -> None:
+        import sqlite3
+
+        conn = sqlite3.connect(str(db_path))
+        try:
+            conn.execute("UPDATE users SET tier=? WHERE id=?", (tier, uid))
+            conn.commit()
+        finally:
+            conn.close()
+
+    def _seed_usage(self, db_path, uid: int, n: int) -> None:
+        _seed_sync(
+            db_path,
+            "usage_logs",
+            [
+                {"team_id": f"user:{uid}", "resource": "simulation", "quantity": 1}
+                for _ in range(n)
+            ],
+        )
+
+    def test_quota_off_by_default(self, db_client, monkeypatch):
+        monkeypatch.delenv("FAULTRAY_ENFORCE_QUOTA", raising=False)
+        uid = self._user_id(db_client._db_path)
+        self._seed_usage(db_client._db_path, uid, 20)  # well over FREE cap
+        resp = db_client.post("/api/simulate", json={"sample": True})
+        assert resp.status_code == 200
+
+    def test_free_tier_throttled_when_enabled(self, db_client, monkeypatch):
+        monkeypatch.setenv("FAULTRAY_ENFORCE_QUOTA", "1")
+        uid = self._user_id(db_client._db_path)
+        self._seed_usage(db_client._db_path, uid, 5)  # FREE cap = 5
+        resp = db_client.post("/api/simulate", json={"sample": True})
+        assert resp.status_code == 402
+        # The app's custom HTTPException handler nests the detail under
+        # error.message; assert on the serialized body to stay shape-robust.
+        assert "quota_exceeded" in resp.text
+
+    def test_paid_tier_not_throttled_when_enabled(self, db_client, monkeypatch):
+        # Regression guard: the namespace bug threw 402 at paying customers.
+        monkeypatch.setenv("FAULTRAY_ENFORCE_QUOTA", "1")
+        uid = self._user_id(db_client._db_path)
+        self._set_tier(db_client._db_path, uid, "business")
+        self._seed_usage(db_client._db_path, uid, 20)  # past FREE cap
+        resp = db_client.post("/api/simulate", json={"sample": True})
+        assert resp.status_code == 200
