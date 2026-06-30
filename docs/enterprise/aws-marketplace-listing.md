@@ -83,7 +83,7 @@ Available as a Python CLI tool (`pip install faultray`), Docker container, or Fa
 
 ### Tier 2: Pro
 
-- **Price**: $499/month (SaaS subscription via AWS Marketplace)
+- **Price**: $299/month (SaaS subscription via AWS Marketplace)
 - **Includes**:
   - Everything in Free
   - Unlimited components
@@ -98,9 +98,9 @@ Available as a Python CLI tool (`pip install faultray`), Docker container, or Fa
   - REST API & Python SDK access
   - Email support (48h SLA)
 
-### Tier 3: Enterprise
+### Tier 3: Business
 
-- **Price**: $2,499/month (SaaS subscription, or custom annual contract via Private Offer)
+- **Price**: $999/month (SaaS subscription, or custom annual contract via Private Offer)
 - **Includes**:
   - Everything in Pro
   - Multi-tenant dashboard with OAuth2 (GitHub/Google) + RBAC
@@ -112,6 +112,13 @@ Available as a Python CLI tool (`pip install faultray`), Docker container, or Fa
   - Dedicated support (24h SLA, dedicated Slack channel)
   - Custom SLA with uptime guarantee
   - Annual contract & volume discounts available via AWS Private Offers
+
+> **Pricing consistency (do before submitting):** these tiers MUST match the
+> public faultray.com/pricing grid — **Free $0 / Starter $99 / Pro $299 /
+> Business $999**. Add a **Starter ($99/mo)** tier here to mirror the site, and
+> keep feature gates identical so a buyer comparing the Marketplace listing to
+> the website sees one consistent offer. Submission to AWS Marketplace is a
+> manual step in the AWS Marketplace Management Portal (cannot be automated).
 
 ### Pricing Model Recommendation
 

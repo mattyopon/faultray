@@ -36,20 +36,19 @@ async def _enforce_simulation_quota(user) -> None:
     honored rather than throttled as FREE), raises 402 if the monthly cap is
     reached, and otherwise RESERVES the slot by recording usage up front -- so
     concurrent requests cannot all observe the same pre-run count and slip past
-    the cap before any of them is recorded. Usage is keyed PER-USER so
-    enforcement never depends on the team-id vs billing-workspace-id namespace.
+    the cap before any of them is recorded. Usage is keyed by the paying team
+    (members share one monthly quota) or per-user for free/solo callers.
     """
     from faultray.api.billing import (
         UsageTracker,
         _saas_quota_enabled,
-        resolve_effective_tier,
+        resolve_billing_context,
     )
 
     if not (_saas_quota_enabled() and user is not None):
         return
-    usage_key = f"user:{getattr(user, 'id', 'anon')}"
+    tier, usage_key = await resolve_billing_context(user)
     tracker = UsageTracker(db_session_factory=None)
-    tier = await resolve_effective_tier(user)
     if await tracker.simulation_quota_exceeded(usage_key, tier):
         raise HTTPException(
             status_code=402,
@@ -65,6 +64,45 @@ async def _enforce_simulation_quota(user) -> None:
     # Reserve the slot up front (before the expensive run) so the brief
     # check->record window cannot be exploited by concurrent requests.
     await tracker.track_simulation(usage_key)
+
+
+def _user_has_run_simulation(user) -> bool:
+    """Whether *user* may run a simulation.
+
+    Anonymous / no-auth callers (user is None) are allowed, matching the
+    ``require_permission`` convention (it returns None and permits when no users
+    are configured). Authenticated users must hold the ``run_simulation``
+    permission for their role.
+    """
+    if user is None:
+        return True
+    try:
+        from faultray.api.auth import ROLE_PERMISSIONS, Role
+
+        role = Role(getattr(user, "role", None) or "viewer")
+        allowed = ROLE_PERMISSIONS.get(role, set())
+        return "*" in allowed or "run_simulation" in allowed
+    except Exception:
+        # Fail closed: if the role cannot be resolved, do not grant run rights.
+        return False
+
+
+async def _enforce_run_simulation(user) -> None:
+    """Guard a cache-miss simulation triggered from a read-only (view_results)
+    endpoint: a pure viewer must NOT be able to trigger an expensive run (or
+    burn the quota of real simulators). Require ``run_simulation`` first (403
+    otherwise), then reserve quota -- so the permission and quota behaviour
+    matches the dedicated /api/simulate run endpoints.
+    """
+    if not _user_has_run_simulation(user):
+        raise HTTPException(
+            status_code=403,
+            detail=(
+                "Running a simulation requires the 'run_simulation' permission. "
+                "Ask an editor to run a simulation first, then reload."
+            ),
+        )
+    await _enforce_simulation_quota(user)
 
 
 # ---------------------------------------------------------------------------
@@ -181,6 +219,10 @@ async def simulate_failure(
     comp = graph.get_component(component_id)
     if comp is None:
         raise HTTPException(status_code=404, detail=f"Component '{component_id}' not found.")
+
+    # Same hosted-SaaS quota gate as the other simulation endpoints so a capped
+    # user cannot obtain cascade results here for free.
+    await _enforce_simulation_quota(user)
 
     # Run cascade simulation
     cascade_engine = CascadeEngine(graph)
@@ -303,6 +345,8 @@ async def replay_incident(
             detail="No infrastructure loaded. Visit /demo first or load a model.",
         )
 
+    # Validate the incident exists BEFORE reserving quota: a typo/stale id must
+    # 404 without consuming a monthly simulation slot.
     engine = IncidentReplayEngine()
     try:
         incident = engine.get_incident(incident_id)
@@ -312,6 +356,10 @@ async def replay_incident(
             status_code=404,
             detail=f"Unknown incident ID '{incident_id}'. Available: {available}",
         )
+
+    # Same hosted-SaaS quota gate as the other simulation endpoints. Only after
+    # the request is known to be a genuine, runnable replay.
+    await _enforce_simulation_quota(user)
 
     result = engine.replay(graph, incident)
 
@@ -580,6 +628,24 @@ async def api_chaos_monkey(
     )
 
     monkey = ChaosMonkey()
+
+    # Validate the experiment will actually run BEFORE reserving quota: an empty
+    # graph, an all-excluded component set, or rounds<=0 all yield a zero-round
+    # report and must not burn a monthly simulation slot.
+    eligible = monkey._get_eligible_components(graph, config)
+    if not eligible or config.rounds <= 0:
+        raise HTTPException(
+            status_code=400,
+            detail=(
+                "No eligible components to test or no rounds requested. "
+                "Load infrastructure, relax exclusions, and request rounds >= 1."
+            ),
+        )
+
+    # Same hosted-SaaS quota gate as the other simulation endpoints, charged
+    # only once the request is known to be a genuine, runnable experiment.
+    await _enforce_simulation_quota(user)
+
     report = monkey.run(graph, config)
 
     return JSONResponse({
@@ -865,7 +931,7 @@ async def api_optimize(
 
 @router.get("/analyze", response_class=HTMLResponse)
 async def analyze_page(
-    request: Request, _user=Depends(_require_permission("view_results"))
+    request: Request, user=Depends(_require_permission("view_results"))
 ):
     """Run AI analysis and render the analyze page."""
     graph = get_graph()
@@ -875,6 +941,10 @@ async def analyze_page(
     if has_data:
         _last_report = get_last_report()
         if _last_report is None:
+            # Cache miss runs a full simulation. This page is only view_results-
+            # gated, so require run_simulation (403 for pure viewers) before
+            # reserving quota -- a viewer must not trigger a run or burn quota.
+            await _enforce_run_simulation(user)
             engine = SimulationEngine(graph)
             _last_report = engine.run_all_defaults()
             set_last_report(_last_report)
@@ -904,6 +974,10 @@ async def api_analyze(user=Depends(_require_permission("view_results"))):
 
     _last_report = get_last_report()
     if _last_report is None:
+        # Cache miss runs a full simulation. This endpoint is view_results-gated,
+        # so require run_simulation (403 for pure viewers) before reserving quota
+        # -- a viewer must not be able to trigger a run or burn quota here.
+        await _enforce_run_simulation(user)
         engine = SimulationEngine(graph)
         _last_report = engine.run_all_defaults()
         set_last_report(_last_report)

@@ -102,27 +102,38 @@ _TIER_RANK: dict[PricingTier, int] = {
 }
 
 
-async def resolve_effective_tier(user, session_factory=None) -> PricingTier:
-    """Resolve the highest pricing tier available to *user*.
+async def resolve_billing_context(
+    user, session_factory=None,
+) -> tuple[PricingTier, str]:
+    """Resolve ``(effective_tier, usage_key)`` for *user*.
 
-    Takes the best of (a) the user's own ``UserRow.tier`` and (b) the tier of
-    any billing team (``team_workspaces``) they own or belong to. Paid plans are
-    stored in ``SubscriptionRow`` keyed by the billing-workspace id, and
-    ``UserRow.tier`` is never synced from that row -- so a Pro/Business team
-    member would otherwise be treated as FREE. Resolution failures (e.g. team
-    tables absent on a self-host) fall back to the user's own tier.
+    *effective_tier* is the best of the user's own ``UserRow.tier`` and the tier
+    of any billing team (``team_workspaces``) they own or belong to -- paid plans
+    live in ``SubscriptionRow`` keyed by the billing-workspace id and
+    ``UserRow.tier`` is never synced from it, so a Pro/Business team member would
+    otherwise be treated as FREE.
+
+    *usage_key* is the billing workspace id of the paying team ONLY when EXACTLY
+    ONE workspace's subscription strictly raises the caller above their personal
+    tier (so the team's monthly quota is SHARED across members); otherwise it is
+    ``"user:<id>"`` -- free / solo, a personal tier >= every team tier, or two-
+    or-more upgrade workspaces whether equal-tier (Pro+Pro) or mixed-tier
+    (Pro+Business). This sidesteps the team-id vs billing-workspace-id namespace
+    mismatch and never charges (or subsidizes from) an ambiguous team.
+
+    Resolution failures (e.g. team tables absent on a self-host) fall back to the
+    user's own tier and a per-user key.
     """
-    best = PricingTier.FREE
     own = getattr(user, "tier", None)
-    if own:
-        try:
-            best = PricingTier(own)
-        except ValueError:
-            best = PricingTier.FREE
+    try:
+        best = PricingTier(own) if own else PricingTier.FREE
+    except ValueError:
+        best = PricingTier.FREE
 
     uid = str(getattr(user, "id", "") or "")
+    usage_key = f"user:{uid or 'anon'}"
     if not uid:
-        return best
+        return best, usage_key
     try:
         from faultray.api.database import SubscriptionRow, get_session_factory
         from sqlalchemy import select, text
@@ -142,14 +153,103 @@ async def resolve_effective_tier(user, session_factory=None) -> PricingTier:
             ).fetchall()
             workspace_ids = [r[0] for r in rows]
             if workspace_ids:
-                tiers = (
+                subs = (
+                    await session.execute(
+                        select(
+                            SubscriptionRow.team_id, SubscriptionRow.tier
+                        ).where(SubscriptionRow.team_id.in_(workspace_ids))
+                    )
+                ).all()
+                own_rank = _TIER_RANK[best]  # the caller's personal tier rank
+                # Workspaces whose subscription STRICTLY raises the caller above
+                # their own tier -- i.e. the team membership is what would grant
+                # the paid tier. A team at or below the caller's own tier grants
+                # nothing and is ignored here.
+                upgrades: list[tuple[str, PricingTier]] = []
+                # The BEST tier the caller is ENTITLED to: the highest of their
+                # own tier and every workspace they belong to. Entitlement has no
+                # attribution ambiguity, so it is always the best available -- it
+                # is decoupled from which counter usage is charged to.
+                entitled = best
+                for ws_id, t in subs:
+                    try:
+                        cand = PricingTier(t)
+                    except ValueError:
+                        continue
+                    if _TIER_RANK[cand] > _TIER_RANK[entitled]:
+                        entitled = cand
+                    if _TIER_RANK[cand] > own_rank:
+                        upgrades.append((ws_id, cand))
+                # ONE converging rule for the USAGE KEY: charge the team ONLY
+                # when EXACTLY ONE workspace would upgrade the caller. In every
+                # other case -- no upgrade (own tier >= every team), or two-or-
+                # more upgrade workspaces whether equal-tier (Pro+Pro) or mixed
+                # (Pro+Business) -- fall back to per-user accounting so we never
+                # subsidize from or 402 an ambiguous team.
+                if len(upgrades) == 1:
+                    ws_id, ws_tier = upgrades[0]
+                    # Team-keyed: the paired tier is that team's tier and usage
+                    # is charged to the shared team counter.
+                    best = ws_tier
+                    usage_key = ws_id
+                else:
+                    # Per-user fallback: the key is the caller's OWN counter, so
+                    # provisioning it at the caller's BEST entitled tier is not a
+                    # cross-team subsidy -- it just avoids under-provisioning an
+                    # ambiguous-membership user on their own quota.
+                    best = entitled
+    except Exception:
+        logger.debug("Could not resolve billing context.", exc_info=True)
+    return best, usage_key
+
+
+async def resolve_effective_tier(user, session_factory=None) -> PricingTier:
+    """The caller's BEST ENTITLED pricing tier (feature-gating, not billing).
+
+    Entitlement is the highest rank over the user's own ``UserRow.tier`` and the
+    tier of EVERY workspace they own or belong to. Unlike
+    :func:`resolve_billing_context` (which decides *which counter* usage is
+    charged to and is deliberately conservative when membership is ambiguous),
+    entitlement has no attribution ambiguity: a member of two paid teams is
+    still entitled to the best plan they belong to, so feature gates such as the
+    full compliance report must not be redacted for them. Computed directly so
+    the quota-attribution rule can never downgrade entitlement.
+    """
+    own = getattr(user, "tier", None)
+    try:
+        best = PricingTier(own) if own else PricingTier.FREE
+    except ValueError:
+        best = PricingTier.FREE
+
+    uid = str(getattr(user, "id", "") or "")
+    if not uid:
+        return best
+    try:
+        from faultray.api.database import SubscriptionRow, get_session_factory
+        from sqlalchemy import select, text
+
+        sf = session_factory or get_session_factory()
+        async with sf() as session:
+            rows = (
+                await session.execute(
+                    text(
+                        "SELECT id FROM team_workspaces WHERE owner_id = :uid "
+                        "UNION "
+                        "SELECT team_id FROM team_members WHERE user_id = :uid"
+                    ),
+                    {"uid": uid},
+                )
+            ).fetchall()
+            workspace_ids = [r[0] for r in rows]
+            if workspace_ids:
+                subs = (
                     await session.execute(
                         select(SubscriptionRow.tier).where(
                             SubscriptionRow.team_id.in_(workspace_ids)
                         )
                     )
-                ).scalars().all()
-                for t in tiers:
+                ).all()
+                for (t,) in subs:
                     try:
                         cand = PricingTier(t)
                     except ValueError:
@@ -157,7 +257,7 @@ async def resolve_effective_tier(user, session_factory=None) -> PricingTier:
                     if _TIER_RANK[cand] > _TIER_RANK[best]:
                         best = cand
     except Exception:
-        logger.debug("Could not resolve team subscription tier.", exc_info=True)
+        logger.debug("Could not resolve effective tier.", exc_info=True)
     return best
 
 

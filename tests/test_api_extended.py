@@ -27,6 +27,7 @@ from faultray.api.database import (
 # Test API key used for authenticated requests
 _TEST_API_KEY = "test-extended-api-key"
 _TEST_API_KEY_HASH = hash_api_key(_TEST_API_KEY)
+from faultray.api.routes._shared import set_last_report
 from faultray.api.server import (
     RateLimiter,
     _report_to_dict,
@@ -1754,6 +1755,20 @@ class TestSimulateQuotaGate:
             ],
         )
 
+    def _usage_count(self, db_path, uid: int) -> int:
+        """Count recorded simulation usage rows for this user (reserved slots)."""
+        import sqlite3
+
+        conn = sqlite3.connect(str(db_path))
+        try:
+            return conn.execute(
+                "SELECT COUNT(*) FROM usage_logs "
+                "WHERE team_id=? AND resource='simulation'",
+                (f"user:{uid}",),
+            ).fetchone()[0]
+        finally:
+            conn.close()
+
     def test_quota_off_by_default(self, db_client, monkeypatch):
         monkeypatch.delenv("FAULTRAY_ENFORCE_QUOTA", raising=False)
         uid = self._user_id(db_client._db_path)
@@ -1779,3 +1794,157 @@ class TestSimulateQuotaGate:
         self._seed_usage(db_client._db_path, uid, 20)  # past FREE cap
         resp = db_client.post("/api/simulate", json={"sample": True})
         assert resp.status_code == 200
+
+    def test_unknown_replay_404_does_not_consume_quota(
+        self, demo_db_client, monkeypatch
+    ):
+        # A stale/typo incident id must 404 WITHOUT burning a monthly slot:
+        # existence is validated before the quota reservation.
+        monkeypatch.setenv("FAULTRAY_ENFORCE_QUOTA", "1")
+        uid = self._user_id(demo_db_client._db_path)
+        before = self._usage_count(demo_db_client._db_path, uid)
+        resp = demo_db_client.post("/api/replay/nonexistent-incident-xyz")
+        assert resp.status_code == 404
+        after = self._usage_count(demo_db_client._db_path, uid)
+        assert after == before, "404 replay must not reserve a simulation slot"
+
+    def test_noop_chaos_monkey_does_not_consume_quota(
+        self, demo_db_client, monkeypatch
+    ):
+        # An all-excluded component set yields a zero-round (no-op) experiment;
+        # it must be rejected before quota is charged.
+        monkeypatch.setenv("FAULTRAY_ENFORCE_QUOTA", "1")
+        uid = self._user_id(demo_db_client._db_path)
+        before = self._usage_count(demo_db_client._db_path, uid)
+        all_ids = ",".join(create_demo_graph().components.keys())
+        resp = demo_db_client.post(
+            "/api/chaos-monkey", data={"rounds": "10", "exclude": all_ids}
+        )
+        assert resp.status_code == 400
+        after = self._usage_count(demo_db_client._db_path, uid)
+        assert after == before, "no-op chaos request must not reserve a slot"
+
+    def test_genuine_chaos_monkey_consumes_quota(self, demo_db_client, monkeypatch):
+        # Sanity counterpart: a real runnable experiment DOES reserve a slot.
+        monkeypatch.setenv("FAULTRAY_ENFORCE_QUOTA", "1")
+        uid = self._user_id(demo_db_client._db_path)
+        before = self._usage_count(demo_db_client._db_path, uid)
+        resp = demo_db_client.post("/api/chaos-monkey", data={"rounds": "2"})
+        assert resp.status_code == 200
+        after = self._usage_count(demo_db_client._db_path, uid)
+        assert after == before + 1, "a genuine experiment must reserve one slot"
+
+    def test_reports_report_action_enforces_quota(self, demo_db_client, monkeypatch):
+        # /api/reports?action=report runs a real simulation -> must consume a
+        # slot under quota, so it is not a bypass of /api/simulate.
+        monkeypatch.setenv("FAULTRAY_ENFORCE_QUOTA", "1")
+        uid = self._user_id(demo_db_client._db_path)
+        before = self._usage_count(demo_db_client._db_path, uid)
+        resp = demo_db_client.get("/api/reports?action=report")
+        assert resp.status_code == 200
+        after = self._usage_count(demo_db_client._db_path, uid)
+        assert after == before + 1, "report action must reserve a simulation slot"
+
+    def test_reports_over_quota_returns_402(self, demo_db_client, monkeypatch):
+        # When already over the FREE cap, the report action is blocked, proving
+        # the gate is enforced (not merely recorded).
+        monkeypatch.setenv("FAULTRAY_ENFORCE_QUOTA", "1")
+        uid = self._user_id(demo_db_client._db_path)
+        self._seed_usage(demo_db_client._db_path, uid, 5)  # FREE cap = 5
+        resp = demo_db_client.get("/api/reports?action=report")
+        assert resp.status_code == 402
+        assert "quota_exceeded" in resp.text
+
+    def test_graphql_run_simulation_enforces_quota(self, demo_db_client, monkeypatch):
+        # The GraphQL runSimulation mutation runs a real simulation -> gated.
+        monkeypatch.setenv("FAULTRAY_ENFORCE_QUOTA", "1")
+        uid = self._user_id(demo_db_client._db_path)
+        before = self._usage_count(demo_db_client._db_path, uid)
+        resp = demo_db_client.post(
+            "/graphql",
+            json={"query": "mutation { runSimulation { resilienceScore } }"},
+        )
+        assert resp.status_code == 200
+        after = self._usage_count(demo_db_client._db_path, uid)
+        assert after == before + 1, "GraphQL runSimulation must reserve a slot"
+
+    def test_graphql_run_simulation_over_quota_returns_402(
+        self, demo_db_client, monkeypatch
+    ):
+        monkeypatch.setenv("FAULTRAY_ENFORCE_QUOTA", "1")
+        uid = self._user_id(demo_db_client._db_path)
+        self._seed_usage(demo_db_client._db_path, uid, 5)  # FREE cap = 5
+        resp = demo_db_client.post(
+            "/graphql",
+            json={"query": "mutation { runSimulation { resilienceScore } }"},
+        )
+        assert resp.status_code == 402
+
+    def test_graphql_empty_graph_does_not_consume_quota(
+        self, demo_db_client, monkeypatch
+    ):
+        # An empty graph is a no-op the resolver answers with zeros: it must not
+        # reserve a slot, matching the REST validate-before-reserve contract.
+        monkeypatch.setenv("FAULTRAY_ENFORCE_QUOTA", "1")
+        set_graph(None)  # clear the shared graph
+        try:
+            uid = self._user_id(demo_db_client._db_path)
+            before = self._usage_count(demo_db_client._db_path, uid)
+            resp = demo_db_client.post(
+                "/graphql",
+                json={"query": "mutation { runSimulation { resilienceScore } }"},
+            )
+            assert resp.status_code == 200
+            after = self._usage_count(demo_db_client._db_path, uid)
+            assert after == before, "empty-graph runSimulation must not charge"
+        finally:
+            set_graph(create_demo_graph())
+
+    def _viewer_client(self, db_path):
+        """A TestClient authenticated as a VIEWER (no run_simulation perm)."""
+        key = "viewer-quota-key"
+        _seed_sync(db_path, "users", [{
+            "email": "viewer-quota@example.com",
+            "name": "Viewer",
+            "api_key_hash": hash_api_key(key),
+            "role": "viewer",
+            "created_at": "2026-01-01T00:00:00",
+        }])
+        with patch("faultray.api.database.init_db", new_callable=AsyncMock):
+            tc = TestClient(app, raise_server_exceptions=False)
+            tc.headers["Authorization"] = f"Bearer {key}"
+            tc._db_path = db_path
+            return tc
+
+    def test_viewer_analyze_cache_miss_rejected_not_charged(
+        self, demo_db_client, monkeypatch
+    ):
+        # A pure viewer must not trigger a cache-miss simulation on /api/analyze
+        # nor burn quota: 403, with no usage recorded.
+        monkeypatch.setenv("FAULTRAY_ENFORCE_QUOTA", "1")
+        set_graph(create_demo_graph())
+        set_last_report(None)  # force the cache-miss compute path
+        viewer = self._viewer_client(demo_db_client._db_path)
+        before_admin = self._usage_count(demo_db_client._db_path,
+                                         self._user_id(demo_db_client._db_path))
+        resp = viewer.get("/api/analyze")
+        assert resp.status_code == 403
+        # No simulation slot recorded for anyone by the rejected request.
+        import sqlite3
+
+        conn = sqlite3.connect(str(demo_db_client._db_path))
+        try:
+            total = conn.execute(
+                "SELECT COUNT(*) FROM usage_logs WHERE resource='simulation'"
+            ).fetchone()[0]
+        finally:
+            conn.close()
+        assert total == before_admin, "viewer cache-miss must not reserve a slot"
+
+    def test_viewer_reports_report_action_rejected(self, demo_db_client, monkeypatch):
+        # The report action runs a real sim; a viewer must be rejected (403),
+        # not silently allowed to run/charge it.
+        monkeypatch.setenv("FAULTRAY_ENFORCE_QUOTA", "1")
+        viewer = self._viewer_client(demo_db_client._db_path)
+        resp = viewer.get("/api/reports?action=report")
+        assert resp.status_code == 403

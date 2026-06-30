@@ -21,7 +21,7 @@ from faultray.cli.main import (
 def report_command(
     report_type: str = typer.Argument(
         ...,
-        help="Report type: executive, compliance",
+        help="Report type: executive, compliance, dora",
     ),
     model: Path | None = typer.Argument(
         None,
@@ -31,13 +31,13 @@ def report_command(
         "Your Organization",
         "--company",
         "-c",
-        help="Company name for the report.",
+        help="Company / institution name for the report.",
     ),
     output: Path = typer.Option(
         None,
         "--output",
         "-o",
-        help="Output file path (HTML). Defaults to <type>-report.html.",
+        help="Output file path. Defaults to <type>-report.<ext>.",
     ),
     framework: str = typer.Option(
         None,
@@ -45,13 +45,34 @@ def report_command(
         "-f",
         help="Compliance framework (dora, soc2, iso27001, pci_dss, nist_csf, hipaa). For compliance report only.",
     ),
+    service: str = typer.Option(
+        None,
+        "--service",
+        "-s",
+        help="Critical service (component id or name) for the DORA evidence pack. Required for 'dora'.",
+    ),
+    rto: str = typer.Option(
+        "TBD",
+        "--rto",
+        help="Target Recovery Time Objective to record in the DORA evidence pack (e.g. '2h').",
+    ),
+    rpo: str = typer.Option(
+        "TBD",
+        "--rpo",
+        help="Target Recovery Point Objective to record in the DORA evidence pack (e.g. '15m').",
+    ),
+    pdf: bool = typer.Option(
+        False,
+        "--pdf",
+        help="Also write a print-ready HTML (open in browser → Ctrl+P) for the DORA evidence pack.",
+    ),
     json_output: bool = typer.Option(
         False,
         "--json",
         help="Output as JSON (compliance report only).",
     ),
 ) -> None:
-    """Generate reports (executive, compliance).
+    """Generate reports (executive, compliance, dora).
 
     Examples:
         # Generate executive report
@@ -62,6 +83,9 @@ def report_command(
 
         # Generate compliance report (specific framework)
         faultray report compliance model.yaml --framework dora --json
+
+        # Generate a DORA pre-audit resilience evidence pack for one service
+        faultray report dora --service payments-api --company "Acme Bank" --output payments-evidence-pack.md
     """
     resolved_model = model if model is not None else DEFAULT_MODEL_PATH
     graph = _load_graph_for_analysis(resolved_model, yaml_file=None)
@@ -74,9 +98,13 @@ def report_command(
         _generate_executive_report(graph, company, output)
     elif report_type == "compliance":
         _generate_compliance_report(graph, framework, output, json_output)
+    elif report_type == "dora":
+        _generate_dora_evidence_pack(
+            graph, service, company, output, rto, rpo, pdf
+        )
     else:
         console.print(f"[red]Unknown report type: {report_type}[/]")
-        console.print("[dim]Available types: executive, compliance[/]")
+        console.print("[dim]Available types: executive, compliance, dora[/]")
         raise typer.Exit(1)
 
 
@@ -110,6 +138,86 @@ def _generate_executive_report(graph, company_name: str, output: Path | None) ->
     console.print(f"  Critical Findings: [red]{len(sim_report.critical_findings)}[/]")
     console.print(f"  Recommendations: {len(ai_report.recommendations)}")
     console.print("\n[dim]Open in a browser and print to PDF (Ctrl+P) for a polished document.[/]")
+
+
+def _generate_dora_evidence_pack(
+    graph,
+    service: str | None,
+    company: str,
+    output: Path | None,
+    rto: str,
+    rpo: str,
+    pdf: bool,
+) -> None:
+    """Render a DORA pre-audit resilience evidence pack for ONE critical service.
+
+    Reuses the existing simulation engine and the shared evidence-pack template
+    (docs/sales/dora-evidence-pack-template.md). Produces Markdown and,
+    optionally, a print-ready HTML rendering.
+    """
+    from faultray.reporter.dora_evidence_pack import (
+        build_evidence_pack_markdown,
+        evidence_pack_to_print_html,
+    )
+    from faultray.simulator.engine import SimulationEngine
+
+    if not service:
+        console.print(
+            "[red]The 'dora' report requires --service <component id or name>.[/]"
+        )
+        console.print(
+            "[dim]Example: faultray report dora --service payments-api[/]"
+        )
+        raise typer.Exit(1)
+
+    console.print("[bold]Running simulation for the evidence pack...[/]")
+    engine = SimulationEngine(graph)
+    sim_report = engine.run_all_defaults()
+
+    console.print("[bold]Assembling DORA evidence pack...[/]")
+    try:
+        markdown = build_evidence_pack_markdown(
+            graph,
+            sim_report,
+            service,
+            institution=company,
+            rto_target=rto,
+            rpo_target=rpo,
+        )
+    except ValueError as exc:
+        console.print(f"[red]{exc}[/]")
+        raise typer.Exit(1)
+
+    md_path = output or Path("dora-evidence-pack.md")
+    md_path.parent.mkdir(parents=True, exist_ok=True)
+    md_path.write_text(markdown, encoding="utf-8")
+    console.print(f"\n[green]DORA evidence pack saved to {md_path}[/]")
+    console.print(f"  Service: [cyan]{service}[/]")
+    console.print(f"  Resilience Score: [bold]{sim_report.resilience_score:.1f}/100[/]")
+    console.print(f"  Critical Findings: [red]{len(sim_report.critical_findings)}[/]")
+
+    if pdf:
+        # The companion print-ready HTML must land on a path DISTINCT from the
+        # Markdown pack. If the user already requested an .html --output,
+        # with_suffix(".html") would collide and overwrite the Markdown we just
+        # wrote, so use a ".print.html" companion in that case.
+        if md_path.suffix.lower() == ".html":
+            html_path = md_path.with_suffix(".print.html")
+        else:
+            html_path = md_path.with_suffix(".html")
+        html_path.write_text(
+            evidence_pack_to_print_html(
+                markdown, title=f"DORA Evidence Pack — {service}"
+            ),
+            encoding="utf-8",
+        )
+        console.print(f"[green]Print-ready HTML saved to {html_path}[/]")
+        console.print("[dim]Open in a browser and press Ctrl+P to save as PDF.[/]")
+
+    console.print(
+        "\n[dim]Decision-support evidence only — not legal advice, not a DORA "
+        "certification, and not a replacement for TLPT or auditor sign-off.[/]"
+    )
 
 
 def _generate_compliance_report(graph, framework: str | None, output: Path | None, json_output: bool) -> None:

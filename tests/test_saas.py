@@ -634,7 +634,7 @@ class TestBillingEnforcement:
         the billing workspace), not UserRow.tier, so the gate must look through
         the team membership or it would 402 a paying Pro/Business member.
         """
-        from faultray.api.billing import resolve_effective_tier, PricingTier
+        from faultray.api.billing import resolve_billing_context, PricingTier
         from faultray.api.database import SubscriptionRow
         from tests.conftest import _run_async
         from sqlalchemy import text
@@ -663,13 +663,16 @@ class TestBillingEnforcement:
                 ))
                 session.add(SubscriptionRow(team_id="ws-hex", tier="business"))
                 await session.commit()
-            return await resolve_effective_tier(_U(), session_factory=sf)
+            return await resolve_billing_context(_U(), session_factory=sf)
 
-        assert _run_async(_seed_and_resolve()) == PricingTier.BUSINESS
+        tier, key = _run_async(_seed_and_resolve())
+        assert tier == PricingTier.BUSINESS
+        # Usage is charged to the paying team's workspace (shared quota).
+        assert key == "ws-hex"
 
-    def test_resolve_effective_tier_defaults_free(self, tmp_path):
-        """No paid team and tier='free' resolves to FREE (team tables absent)."""
-        from faultray.api.billing import resolve_effective_tier, PricingTier
+    def test_resolve_billing_context_defaults_free_per_user(self, tmp_path):
+        """No paid team and tier='free' -> FREE tier keyed per-user."""
+        from faultray.api.billing import resolve_billing_context, PricingTier
         from tests.conftest import _run_async
 
         sf = self._temp_sf(tmp_path)
@@ -678,7 +681,234 @@ class TestBillingEnforcement:
             id = 7
             tier = "free"
 
-        assert (
-            _run_async(resolve_effective_tier(_U(), session_factory=sf))
-            == PricingTier.FREE
+        tier, key = _run_async(resolve_billing_context(_U(), session_factory=sf))
+        assert tier == PricingTier.FREE
+        assert key == "user:7"
+
+    def test_resolve_billing_context_ambiguous_or_personal_stays_per_user(
+        self, tmp_path
+    ):
+        """Per-team keying only applies for a SINGLE team that STRICTLY raises the
+        tier. Multiple equal-tier teams, or a personal tier >= the team tier,
+        fall back to per-user so the wrong team is never charged (Codex P2s)."""
+        from faultray.api.billing import resolve_billing_context, PricingTier
+        from faultray.api.database import SubscriptionRow
+        from tests.conftest import _run_async
+        from sqlalchemy import text
+
+        sf = self._temp_sf(tmp_path)
+
+        async def _seed_two_pro_teams():
+            async with sf() as session:
+                await session.execute(text(
+                    "CREATE TABLE IF NOT EXISTS team_workspaces "
+                    "(id TEXT PRIMARY KEY, name TEXT, owner_id TEXT, created_at TEXT)"
+                ))
+                await session.execute(text(
+                    "CREATE TABLE IF NOT EXISTS team_members "
+                    "(team_id TEXT, user_id TEXT, role TEXT, joined_at TEXT)"
+                ))
+                for ws in ("ws-a", "ws-b"):
+                    await session.execute(
+                        text(
+                            "INSERT INTO team_members (team_id, user_id, role) "
+                            "VALUES (:ws, '50', 'editor')"
+                        ),
+                        {"ws": ws},
+                    )
+                    session.add(SubscriptionRow(team_id=ws, tier="pro"))
+                await session.commit()
+
+        _run_async(_seed_two_pro_teams())
+
+        # (a) Free user in TWO Pro teams: two upgrade workspaces -> ambiguous
+        # ATTRIBUTION, so usage is keyed per-user (not to either team). But the
+        # paired tier is the caller's BEST ENTITLED tier (PRO) -- on their OWN
+        # counter that is not a cross-team subsidy, just correct provisioning.
+        class _Free:
+            id = 50
+            tier = "free"
+
+        tier, key = _run_async(
+            resolve_billing_context(_Free(), session_factory=sf)
         )
+        assert tier == PricingTier.PRO
+        assert key == "user:50"
+
+        # (b) Personal tier already == team tier: the team did not raise the
+        # caller's tier, so charge per-user, not the team.
+        class _Pro:
+            id = 50
+            tier = "pro"
+
+        tier2, key2 = _run_async(
+            resolve_billing_context(_Pro(), session_factory=sf)
+        )
+        assert tier2 == PricingTier.PRO
+        assert key2 == "user:50"
+
+    def test_resolve_billing_context_single_converging_rule(self, tmp_path):
+        """The one converging rule: charge a team ONLY when EXACTLY ONE workspace
+        STRICTLY upgrades the caller; otherwise per-user at the caller's own tier.
+        Covers the multi-workspace attribution P2.
+        """
+        from faultray.api.billing import resolve_billing_context, PricingTier
+        from faultray.api.database import SubscriptionRow
+        from tests.conftest import _run_async
+        from sqlalchemy import text
+
+        sf = self._temp_sf(tmp_path)
+
+        async def _seed(memberships):
+            async with sf() as session:
+                await session.execute(text(
+                    "CREATE TABLE IF NOT EXISTS team_workspaces "
+                    "(id TEXT PRIMARY KEY, name TEXT, owner_id TEXT, created_at TEXT)"
+                ))
+                await session.execute(text(
+                    "CREATE TABLE IF NOT EXISTS team_members "
+                    "(team_id TEXT, user_id TEXT, role TEXT, joined_at TEXT)"
+                ))
+                for ws, tier, uid in memberships:
+                    await session.execute(
+                        text(
+                            "INSERT INTO team_members (team_id, user_id, role) "
+                            "VALUES (:ws, :uid, 'editor')"
+                        ),
+                        {"ws": ws, "uid": uid},
+                    )
+                    session.add(SubscriptionRow(team_id=ws, tier=tier))
+                await session.commit()
+
+        # Case 1: own=pro + one pro team -> team does NOT strictly upgrade ->
+        # per-user, pro tier.
+        _run_async(_seed([("ws-pro1", "pro", "1")]))
+
+        class _U1:
+            id = 1
+            tier = "pro"
+
+        t, k = _run_async(resolve_billing_context(_U1(), session_factory=sf))
+        assert t == PricingTier.PRO
+        assert k == "user:1"
+
+        # Case 2: free user in BOTH a Pro and a Business workspace -> two upgrade
+        # workspaces (mixed tier) -> per-user, FREE tier (no Business subsidy).
+        c2 = tmp_path / "c2"
+        c2.mkdir()
+        sf2 = self._temp_sf(c2)
+
+        async def _seed2():
+            async with sf2() as session:
+                await session.execute(text(
+                    "CREATE TABLE IF NOT EXISTS team_workspaces "
+                    "(id TEXT PRIMARY KEY, name TEXT, owner_id TEXT, created_at TEXT)"
+                ))
+                await session.execute(text(
+                    "CREATE TABLE IF NOT EXISTS team_members "
+                    "(team_id TEXT, user_id TEXT, role TEXT, joined_at TEXT)"
+                ))
+                for ws, tier in (("ws-pro", "pro"), ("ws-biz", "business")):
+                    await session.execute(
+                        text(
+                            "INSERT INTO team_members (team_id, user_id, role) "
+                            "VALUES (:ws, '2', 'editor')"
+                        ),
+                        {"ws": ws},
+                    )
+                    session.add(SubscriptionRow(team_id=ws, tier=tier))
+                await session.commit()
+
+        _run_async(_seed2())
+
+        class _U2:
+            id = 2
+            tier = "free"
+
+        # Attribution stays per-user (no single team to charge), but the paired
+        # tier is the BEST entitled tier (BUSINESS) on the user's OWN counter --
+        # that is not a cross-team subsidy.
+        t, k = _run_async(resolve_billing_context(_U2(), session_factory=sf2))
+        assert t == PricingTier.BUSINESS
+        assert k == "user:2"
+        # Entitlement (feature-gating) must always be the BEST plan the user
+        # belongs to, regardless of attribution ambiguity.
+        from faultray.api.billing import resolve_effective_tier
+
+        et = _run_async(resolve_effective_tier(_U2(), session_factory=sf2))
+        assert et == PricingTier.BUSINESS
+
+        # Case 4: free + EXACTLY one pro workspace -> intended team path works.
+        c4 = tmp_path / "c4"
+        c4.mkdir()
+        sf4 = self._temp_sf(c4)
+
+        async def _seed4():
+            async with sf4() as session:
+                await session.execute(text(
+                    "CREATE TABLE IF NOT EXISTS team_workspaces "
+                    "(id TEXT PRIMARY KEY, name TEXT, owner_id TEXT, created_at TEXT)"
+                ))
+                await session.execute(text(
+                    "CREATE TABLE IF NOT EXISTS team_members "
+                    "(team_id TEXT, user_id TEXT, role TEXT, joined_at TEXT)"
+                ))
+                await session.execute(text(
+                    "INSERT INTO team_members (team_id, user_id, role) "
+                    "VALUES ('ws-solo-pro', '4', 'editor')"
+                ))
+                session.add(SubscriptionRow(team_id="ws-solo-pro", tier="pro"))
+                await session.commit()
+
+        _run_async(_seed4())
+
+        class _U4:
+            id = 4
+            tier = "free"
+
+        t, k = _run_async(resolve_billing_context(_U4(), session_factory=sf4))
+        assert t == PricingTier.PRO
+        assert k == "ws-solo-pro"
+
+    def test_resolve_effective_tier_member_of_two_paid_teams(self, tmp_path):
+        """Feature-gating entitlement is the BEST plan the user belongs to even
+        when usage attribution is ambiguous (member of two paid teams). Guards the
+        regression where routing entitlement through the quota path downgraded a
+        multi-paid-team member to Free and redacted their full report.
+        """
+        from faultray.api.billing import resolve_effective_tier, PricingTier
+        from faultray.api.database import SubscriptionRow
+        from tests.conftest import _run_async
+        from sqlalchemy import text
+
+        sf = self._temp_sf(tmp_path)
+
+        async def _seed():
+            async with sf() as session:
+                await session.execute(text(
+                    "CREATE TABLE IF NOT EXISTS team_workspaces "
+                    "(id TEXT PRIMARY KEY, name TEXT, owner_id TEXT, created_at TEXT)"
+                ))
+                await session.execute(text(
+                    "CREATE TABLE IF NOT EXISTS team_members "
+                    "(team_id TEXT, user_id TEXT, role TEXT, joined_at TEXT)"
+                ))
+                for ws, tier in (("ws-pro", "pro"), ("ws-biz", "business")):
+                    await session.execute(
+                        text(
+                            "INSERT INTO team_members (team_id, user_id, role) "
+                            "VALUES (:ws, '77', 'editor')"
+                        ),
+                        {"ws": ws},
+                    )
+                    session.add(SubscriptionRow(team_id=ws, tier=tier))
+                await session.commit()
+
+        _run_async(_seed())
+
+        class _U:
+            id = 77
+            tier = "free"
+
+        et = _run_async(resolve_effective_tier(_U(), session_factory=sf))
+        assert et == PricingTier.BUSINESS, "must grant the best entitled tier"

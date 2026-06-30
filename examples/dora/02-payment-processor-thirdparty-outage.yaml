@@ -1,0 +1,225 @@
+# DORA Scenario 2: processor-concentration-outage
+# DORA articles evidenced: Art. 28, Art. 30
+# A required external card processor becomes unreachable on the authorization
+# path, exposing critical ICT third-party concentration risk. The simulation
+# tests controlled declines, timeout containment, customer messaging, and
+# contractual exit-plan assumptions.
+# Evidence: Evidence should capture third-party outage impact, concentration mapping, timeout behavior, and tested contingency actions.
+#
+# Sanitized, illustrative topology — no production data or PII.
+# Run:  faultray report dora examples/dora/02-payment-processor-thirdparty-outage.yaml --service <id>
+
+schema_version: "4.0"
+
+components:
+  - id: api-gw
+    name: "Customer Payment Gateway"
+    type: load_balancer
+    replicas: 2
+    region:
+      region: eu-west-1
+      availability_zone: eu-west-1a
+    # role: public payment ingress
+    tags:
+      - dora
+      - scenario-2
+
+  - id: mobile-api
+    name: "Mobile Banking API"
+    type: app_server
+    replicas: 3
+    region:
+      region: eu-west-1
+      availability_zone: eu-west-1a
+    # role: customer payment interface
+    tags:
+      - dora
+      - scenario-2
+
+  - id: payment-auth
+    name: "Payment Authorization Service"
+    type: app_server
+    replicas: 3
+    region:
+      region: eu-west-1
+      availability_zone: eu-west-1b
+    # role: card-auth decisioning
+    tags:
+      - dora
+      - scenario-2
+
+  - id: risk-engine
+    name: "Fraud Risk Engine"
+    type: app_server
+    replicas: 2
+    region:
+      region: eu-west-1
+      availability_zone: eu-west-1b
+    # role: transaction risk scoring
+    tags:
+      - dora
+      - scenario-2
+
+  - id: card-conn
+    name: "Card Processor Connector"
+    type: app_server
+    replicas: 2
+    region:
+      region: eu-west-1
+      availability_zone: eu-west-1b
+    # role: required processor integration
+    tags:
+      - dora
+      - scenario-2
+
+  - id: ledger-db
+    name: "Authorization Ledger DB"
+    type: database
+    replicas: 2
+    region:
+      region: eu-west-1
+      availability_zone: eu-west-1c
+    # role: auth holds and balances
+    tags:
+      - dora
+      - scenario-2
+
+  - id: auth-cache
+    name: "Authorization Cache"
+    type: cache
+    replicas: 2
+    region:
+      region: eu-west-1
+      availability_zone: eu-west-1c
+    # role: velocity/idempotency datastore
+    tags:
+      - dora
+      - scenario-2
+
+  - id: auth-events
+    name: "Authorization Event Bus"
+    type: queue
+    replicas: 3
+    region:
+      region: eu-west-1
+      availability_zone: eu-west-1c
+    # role: async auth event queue
+    tags:
+      - dora
+      - scenario-2
+
+  - id: processor-api
+    name: "Critical Card Processor API"
+    type: external_api
+    replicas: 1
+    region:
+      region: eu-west-1
+      availability_zone: eu-west-1a
+    external_sla:
+      provider_sla: 99.9
+    # role: EXTERNAL THIRD PARTY required SPOF/concentration
+    tags:
+      - dora
+      - scenario-2
+
+  - id: scheme-api
+    name: "Card Scheme Directory API"
+    type: external_api
+    replicas: 1
+    region:
+      region: eu-west-1
+      availability_zone: eu-west-1a
+    external_sla:
+      provider_sla: 99.9
+    # role: EXTERNAL THIRD PARTY scheme metadata
+    tags:
+      - dora
+      - scenario-2
+
+  - id: kyc-api
+    name: "KYC Identity Provider API"
+    type: external_api
+    replicas: 1
+    region:
+      region: eu-west-1
+      availability_zone: eu-west-1a
+    external_sla:
+      provider_sla: 99.9
+    # role: EXTERNAL THIRD PARTY identity checks
+    tags:
+      - dora
+      - scenario-2
+
+dependencies:
+  - source: api-gw
+    target: mobile-api
+    type: requires
+    protocol: https
+    weight: 0.9
+
+  - source: mobile-api
+    target: payment-auth
+    type: requires
+    protocol: grpc
+    weight: 0.9
+
+  - source: mobile-api
+    target: kyc-api
+    type: optional
+    protocol: https
+    weight: 0.3
+
+  - source: payment-auth
+    target: risk-engine
+    type: requires
+    protocol: grpc
+    weight: 0.7
+
+  - source: payment-auth
+    target: card-conn
+    type: requires
+    protocol: grpc
+    weight: 1.0
+
+  - source: payment-auth
+    target: ledger-db
+    type: requires
+    protocol: tcp
+    weight: 0.8
+
+  - source: payment-auth
+    target: auth-cache
+    type: requires
+    protocol: tcp
+    weight: 0.6
+
+  - source: payment-auth
+    target: auth-events
+    type: async
+    protocol: https
+    weight: 0.4
+
+  - source: risk-engine
+    target: auth-cache
+    type: requires
+    protocol: tcp
+    weight: 0.5
+
+  - source: card-conn
+    target: processor-api
+    type: requires
+    protocol: https
+    weight: 1.0
+
+  - source: card-conn
+    target: scheme-api
+    type: optional
+    protocol: https
+    weight: 0.4
+
+  - source: card-conn
+    target: auth-events
+    type: async
+    protocol: https
+    weight: 0.2
+
