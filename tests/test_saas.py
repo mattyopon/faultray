@@ -684,3 +684,63 @@ class TestBillingEnforcement:
         tier, key = _run_async(resolve_billing_context(_U(), session_factory=sf))
         assert tier == PricingTier.FREE
         assert key == "user:7"
+
+    def test_resolve_billing_context_ambiguous_or_personal_stays_per_user(
+        self, tmp_path
+    ):
+        """Per-team keying only applies for a SINGLE team that STRICTLY raises the
+        tier. Multiple equal-tier teams, or a personal tier >= the team tier,
+        fall back to per-user so the wrong team is never charged (Codex P2s)."""
+        from faultray.api.billing import resolve_billing_context, PricingTier
+        from faultray.api.database import SubscriptionRow
+        from tests.conftest import _run_async
+        from sqlalchemy import text
+
+        sf = self._temp_sf(tmp_path)
+
+        async def _seed_two_pro_teams():
+            async with sf() as session:
+                await session.execute(text(
+                    "CREATE TABLE IF NOT EXISTS team_workspaces "
+                    "(id TEXT PRIMARY KEY, name TEXT, owner_id TEXT, created_at TEXT)"
+                ))
+                await session.execute(text(
+                    "CREATE TABLE IF NOT EXISTS team_members "
+                    "(team_id TEXT, user_id TEXT, role TEXT, joined_at TEXT)"
+                ))
+                for ws in ("ws-a", "ws-b"):
+                    await session.execute(
+                        text(
+                            "INSERT INTO team_members (team_id, user_id, role) "
+                            "VALUES (:ws, '50', 'editor')"
+                        ),
+                        {"ws": ws},
+                    )
+                    session.add(SubscriptionRow(team_id=ws, tier="pro"))
+                await session.commit()
+
+        _run_async(_seed_two_pro_teams())
+
+        # (a) Free user in TWO Pro teams: tier raised to PRO, but ambiguous which
+        # team to charge -> per-user.
+        class _Free:
+            id = 50
+            tier = "free"
+
+        tier, key = _run_async(
+            resolve_billing_context(_Free(), session_factory=sf)
+        )
+        assert tier == PricingTier.PRO
+        assert key == "user:50"
+
+        # (b) Personal tier already == team tier: the team did not raise the
+        # caller's tier, so charge per-user, not the team.
+        class _Pro:
+            id = 50
+            tier = "pro"
+
+        tier2, key2 = _run_async(
+            resolve_billing_context(_Pro(), session_factory=sf)
+        )
+        assert tier2 == PricingTier.PRO
+        assert key2 == "user:50"

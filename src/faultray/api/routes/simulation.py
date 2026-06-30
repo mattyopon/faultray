@@ -306,6 +306,9 @@ async def replay_incident(
             detail="No infrastructure loaded. Visit /demo first or load a model.",
         )
 
+    # Same hosted-SaaS quota gate as the other simulation endpoints.
+    await _enforce_simulation_quota(user)
+
     engine = IncidentReplayEngine()
     try:
         incident = engine.get_incident(incident_id)
@@ -554,6 +557,9 @@ async def api_chaos_monkey(
     from faultray.simulator.chaos_monkey import ChaosLevel, ChaosMonkey, ChaosMonkeyConfig
 
     graph = get_graph()
+
+    # Same hosted-SaaS quota gate as the other simulation endpoints.
+    await _enforce_simulation_quota(user)
 
     try:
         form = await request.form()
