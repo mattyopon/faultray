@@ -103,12 +103,49 @@ def load_template() -> str:
 
 
 def _third_party_deps(graph: InfraGraph, component: Component) -> list[Component]:
-    """Direct dependencies of *component* that look like ICT third parties."""
-    deps = graph.get_dependencies(component.id)
-    return [d for d in deps if d.type in _THIRD_PARTY_TYPES]
+    """ICT third parties relevant to *component* for Art. 28 / 30 evidence.
+
+    Includes the selected component ITSELF when it is a third-party type (e.g.
+    an ``external_api`` such as a payment processor or external IdP), so a pack
+    scoped to an external service does not wrongly report "no third parties".
+    Plus its direct dependencies that are third-party types.
+    """
+    found: list[Component] = []
+    seen: set[str] = set()
+    if component.type in _THIRD_PARTY_TYPES:
+        found.append(component)
+        seen.add(component.id)
+    for d in graph.get_dependencies(component.id):
+        if d.type in _THIRD_PARTY_TYPES and d.id not in seen:
+            found.append(d)
+            seen.add(d.id)
+    return found
 
 
-def _spof_components(graph: InfraGraph) -> list[Component]:
+def _service_neighborhood(graph: InfraGraph, component: Component) -> set[str]:
+    """Component ids in the selected service's dependency neighborhood.
+
+    The selected service, everything it transitively DEPENDS ON (its supply
+    chain), and everything in its blast radius (transitive dependents). This is
+    the set whose single-points-of-failure are materially relevant to the
+    selected service; unrelated singletons elsewhere in the graph are excluded.
+    """
+    nbr: set[str] = {component.id}
+    nbr |= graph.get_all_affected(component.id)  # dependents (blast radius)
+    # Transitive dependencies (successors) reached via the dependency edges.
+    stack = [component.id]
+    while stack:
+        cur = stack.pop()
+        for dep in graph.get_dependencies(cur):
+            if dep.id not in nbr:
+                nbr.add(dep.id)
+                stack.append(dep.id)
+    return nbr
+
+
+def _spof_components(
+    graph: InfraGraph, neighborhood: set[str] | None = None
+) -> list[Component]:
     """Single-replica components that have dependents (concentration / SPOF risk).
 
     Mirrors the canonical SPOF rule used elsewhere in the app
@@ -116,9 +153,15 @@ def _spof_components(graph: InfraGraph) -> list[Component]:
     single point of failure when failover is NOT configured. A managed
     Multi-AZ datastore with ``failover.enabled`` is resilient despite
     ``replicas == 1`` and must not be counted, or SPOF_COUNT overstates risk.
+
+    When *neighborhood* is given, only components within it are considered, so a
+    per-service pack does not misattribute unrelated singletons elsewhere in the
+    graph to the selected service.
     """
     spofs: list[Component] = []
     for comp in graph.components.values():
+        if neighborhood is not None and comp.id not in neighborhood:
+            continue
         if comp.replicas > 1:
             continue
         if comp.failover.enabled:
@@ -178,7 +221,11 @@ def build_evidence_pack_markdown(
 
     blast_radius = graph.get_all_affected(component.id)
     third_parties = _third_party_deps(graph, component)
-    spofs = _spof_components(graph)
+    # SPOFs are scoped to THIS service's dependency neighborhood so unrelated
+    # singletons elsewhere in the graph are not attributed to the selected
+    # service (the same neighborhood the service-scoped findings live in).
+    neighborhood = _service_neighborhood(graph, component)
+    spofs = _spof_components(graph, neighborhood)
     service_criticals = _service_critical_findings(sim_report, component)
 
     score = getattr(sim_report, "resilience_score", 0.0)

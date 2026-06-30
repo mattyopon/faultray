@@ -474,7 +474,7 @@ async def reports_page(
 @router.get("/report/executive", response_class=HTMLResponse)
 async def executive_report(
     company_name: str = "Your Organization",
-    _user=Depends(_require_permission("view_results")),
+    user=Depends(_require_permission("view_results")),
 ):
     """Generate executive report (printable HTML).
 
@@ -492,6 +492,10 @@ async def executive_report(
 
     _last_report = get_last_report()
     if _last_report is None:
+        # Cache miss runs a full simulation -> gate on the hosted-SaaS quota.
+        from faultray.api.routes.simulation import _enforce_simulation_quota
+
+        await _enforce_simulation_quota(user)
         engine = SimulationEngine(graph)
         _last_report = engine.run_all_defaults()
         set_last_report(_last_report)

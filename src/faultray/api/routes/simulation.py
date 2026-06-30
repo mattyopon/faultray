@@ -892,7 +892,7 @@ async def api_optimize(
 
 @router.get("/analyze", response_class=HTMLResponse)
 async def analyze_page(
-    request: Request, _user=Depends(_require_permission("view_results"))
+    request: Request, user=Depends(_require_permission("view_results"))
 ):
     """Run AI analysis and render the analyze page."""
     graph = get_graph()
@@ -902,6 +902,8 @@ async def analyze_page(
     if has_data:
         _last_report = get_last_report()
         if _last_report is None:
+            # Cache miss runs a full simulation -> gate on the hosted-SaaS quota.
+            await _enforce_simulation_quota(user)
             engine = SimulationEngine(graph)
             _last_report = engine.run_all_defaults()
             set_last_report(_last_report)
@@ -931,6 +933,9 @@ async def api_analyze(user=Depends(_require_permission("view_results"))):
 
     _last_report = get_last_report()
     if _last_report is None:
+        # Cache miss runs a full simulation -> gate on the hosted-SaaS quota so
+        # this is not a bypass of /api/simulate.
+        await _enforce_simulation_quota(user)
         engine = SimulationEngine(graph)
         _last_report = engine.run_all_defaults()
         set_last_report(_last_report)

@@ -16,6 +16,7 @@ from fastapi import APIRouter, Depends, Request
 from fastapi.responses import JSONResponse
 
 from faultray.api.routes._shared import (
+    _optional_user,
     _require_permission,
     build_demo_graph,
     get_graph,
@@ -380,13 +381,18 @@ def _build_cost_response(graph, revenue_per_hour: float, industry: str):
 # ---------------------------------------------------------------------------
 
 @router.get("/api/reports", response_class=JSONResponse)
-async def api_reports_get(request: Request):
+async def api_reports_get(request: Request, user=Depends(_optional_user)):
     """Dispatch report GET requests based on ``action`` query param."""
     action = request.query_params.get("action", "")
     graph = _ensure_graph()
 
     if action == "report":
+        from faultray.api.routes.simulation import _enforce_simulation_quota
         from faultray.simulator.engine import SimulationEngine
+
+        # action=report runs a full simulation; gate it on the hosted-SaaS quota
+        # like the dedicated /api/simulate endpoint so it is not a bypass.
+        await _enforce_simulation_quota(user)
 
         engine = SimulationEngine(graph)
         report = engine.run_all_defaults()

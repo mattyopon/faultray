@@ -596,6 +596,26 @@ async def graphql_endpoint(request: Request):
 
     try:
         operation, selection = _parse_query(query_str)
+    except Exception as exc:
+        logger.error("GraphQL parse error: %s", exc, exc_info=True)
+        return JSONResponse(
+            {"errors": [{"message": "Query execution failed"}]},
+            status_code=500,
+        )
+
+    # The runSimulation mutation runs a full simulation on the shared graph, so
+    # gate it on the hosted-SaaS quota like the REST /api/simulate endpoint --
+    # otherwise GraphQL is a quota bypass. HTTPException (e.g. 402) propagates.
+    if operation == "mutation" and any(
+        _camel_to_snake(field) == "run_simulation" for field in selection
+    ):
+        from faultray.api.routes._shared import _optional_user
+        from faultray.api.routes.simulation import _enforce_simulation_quota
+
+        user = await _optional_user(request)
+        await _enforce_simulation_quota(user)
+
+    try:
         data = _execute(operation, selection)
         return JSONResponse({"data": data})
     except Exception as exc:

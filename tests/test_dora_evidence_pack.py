@@ -14,7 +14,9 @@ from faultray.model.demo import create_demo_graph
 from faultray.model.graph import Dependency, InfraGraph
 from faultray.reporter.dora_evidence_pack import (
     _service_critical_findings,
+    _service_neighborhood,
     _spof_components,
+    _third_party_deps,
     build_evidence_pack_markdown,
     evidence_pack_to_print_html,
     load_template,
@@ -216,3 +218,50 @@ def test_report_dora_pdf_with_html_output_keeps_both_files(tmp_path) -> None:
     # The --output file is the raw Markdown pack; the companion is wrapped HTML.
     assert md_text.lstrip().startswith("# DORA Pre-Audit Resilience Evidence Pack")
     assert "<!DOCTYPE html>" in html_text
+
+
+def _payment_graph() -> InfraGraph:
+    """A small payment topology: an external_api processor + a neighbor singleton
+    DB, plus an unrelated singleton DB in a separate branch."""
+    g = InfraGraph()
+    g.add_component(Component(id="payment", name="Payment", type=ComponentType.APP_SERVER, replicas=2))
+    g.add_component(Component(id="processor", name="Card Processor", type=ComponentType.EXTERNAL_API, replicas=1))
+    g.add_component(Component(id="ledger-db", name="Ledger DB", type=ComponentType.DATABASE, replicas=1))
+    g.add_component(Component(id="other-app", name="Other", type=ComponentType.APP_SERVER, replicas=2))
+    g.add_component(Component(id="unrelated-db", name="Unrelated DB", type=ComponentType.DATABASE, replicas=1))
+    g.add_dependency(Dependency(source_id="payment", target_id="processor", dependency_type="requires"))
+    g.add_dependency(Dependency(source_id="payment", target_id="ledger-db", dependency_type="requires"))
+    g.add_dependency(Dependency(source_id="other-app", target_id="unrelated-db", dependency_type="requires"))
+    return g
+
+
+def test_selected_external_api_service_listed_as_third_party() -> None:
+    """When the SELECTED service is itself a third-party type (external_api), it
+    must appear in the Art.28/30 third-party list (FIX B)."""
+    g = _payment_graph()
+    proc = g.get_component("processor")
+    ids = {c.id for c in _third_party_deps(g, proc)}
+    assert "processor" in ids, "selected external_api must be in the third-party list"
+
+    report = SimulationEngine(g).run_all_defaults()
+    markdown = build_evidence_pack_markdown(g, report, "processor")
+    # A.3 must NOT claim there are no third-party dependencies.
+    assert "Card Processor" in markdown
+    assert "No external/third-party dependencies were detected" not in markdown
+
+
+def test_spof_register_scoped_to_service_neighborhood() -> None:
+    """SPOFs in the pack are scoped to the selected service's neighborhood; an
+    unrelated singleton in a separate branch is excluded (FIX C)."""
+    g = _payment_graph()
+    payment = g.get_component("payment")
+    nbr = _service_neighborhood(g, payment)
+    assert "unrelated-db" not in nbr
+
+    scoped = {c.id for c in _spof_components(g, nbr)}
+    assert "ledger-db" in scoped, "in-neighborhood singleton must be a SPOF"
+    assert "unrelated-db" not in scoped, "unrelated singleton must NOT be attributed"
+
+    report = SimulationEngine(g).run_all_defaults()
+    markdown = build_evidence_pack_markdown(g, report, "payment")
+    assert "Unrelated DB" not in markdown

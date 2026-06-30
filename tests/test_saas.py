@@ -721,9 +721,10 @@ class TestBillingEnforcement:
 
         _run_async(_seed_two_pro_teams())
 
-        # (a) Free user in TWO Pro teams: two upgrade workspaces -> ambiguous,
-        # so per-user accounting at the caller's OWN (free) tier. We do NOT adopt
-        # the team tier when we cannot attribute usage to a single workspace.
+        # (a) Free user in TWO Pro teams: two upgrade workspaces -> ambiguous
+        # ATTRIBUTION, so usage is keyed per-user (not to either team). But the
+        # paired tier is the caller's BEST ENTITLED tier (PRO) -- on their OWN
+        # counter that is not a cross-team subsidy, just correct provisioning.
         class _Free:
             id = 50
             tier = "free"
@@ -731,7 +732,7 @@ class TestBillingEnforcement:
         tier, key = _run_async(
             resolve_billing_context(_Free(), session_factory=sf)
         )
-        assert tier == PricingTier.FREE
+        assert tier == PricingTier.PRO
         assert key == "user:50"
 
         # (b) Personal tier already == team tier: the team did not raise the
@@ -824,9 +825,18 @@ class TestBillingEnforcement:
             id = 2
             tier = "free"
 
+        # Attribution stays per-user (no single team to charge), but the paired
+        # tier is the BEST entitled tier (BUSINESS) on the user's OWN counter --
+        # that is not a cross-team subsidy.
         t, k = _run_async(resolve_billing_context(_U2(), session_factory=sf2))
-        assert t == PricingTier.FREE, "mixed-tier ambiguity must not adopt Business"
+        assert t == PricingTier.BUSINESS
         assert k == "user:2"
+        # Entitlement (feature-gating) must always be the BEST plan the user
+        # belongs to, regardless of attribution ambiguity.
+        from faultray.api.billing import resolve_effective_tier
+
+        et = _run_async(resolve_effective_tier(_U2(), session_factory=sf2))
+        assert et == PricingTier.BUSINESS
 
         # Case 4: free + EXACTLY one pro workspace -> intended team path works.
         c4 = tmp_path / "c4"
@@ -859,3 +869,46 @@ class TestBillingEnforcement:
         t, k = _run_async(resolve_billing_context(_U4(), session_factory=sf4))
         assert t == PricingTier.PRO
         assert k == "ws-solo-pro"
+
+    def test_resolve_effective_tier_member_of_two_paid_teams(self, tmp_path):
+        """Feature-gating entitlement is the BEST plan the user belongs to even
+        when usage attribution is ambiguous (member of two paid teams). Guards the
+        regression where routing entitlement through the quota path downgraded a
+        multi-paid-team member to Free and redacted their full report.
+        """
+        from faultray.api.billing import resolve_effective_tier, PricingTier
+        from faultray.api.database import SubscriptionRow
+        from tests.conftest import _run_async
+        from sqlalchemy import text
+
+        sf = self._temp_sf(tmp_path)
+
+        async def _seed():
+            async with sf() as session:
+                await session.execute(text(
+                    "CREATE TABLE IF NOT EXISTS team_workspaces "
+                    "(id TEXT PRIMARY KEY, name TEXT, owner_id TEXT, created_at TEXT)"
+                ))
+                await session.execute(text(
+                    "CREATE TABLE IF NOT EXISTS team_members "
+                    "(team_id TEXT, user_id TEXT, role TEXT, joined_at TEXT)"
+                ))
+                for ws, tier in (("ws-pro", "pro"), ("ws-biz", "business")):
+                    await session.execute(
+                        text(
+                            "INSERT INTO team_members (team_id, user_id, role) "
+                            "VALUES (:ws, '77', 'editor')"
+                        ),
+                        {"ws": ws},
+                    )
+                    session.add(SubscriptionRow(team_id=ws, tier=tier))
+                await session.commit()
+
+        _run_async(_seed())
+
+        class _U:
+            id = 77
+            tier = "free"
+
+        et = _run_async(resolve_effective_tier(_U(), session_factory=sf))
+        assert et == PricingTier.BUSINESS, "must grant the best entitled tier"

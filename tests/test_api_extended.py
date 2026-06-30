@@ -1832,3 +1832,49 @@ class TestSimulateQuotaGate:
         assert resp.status_code == 200
         after = self._usage_count(demo_db_client._db_path, uid)
         assert after == before + 1, "a genuine experiment must reserve one slot"
+
+    def test_reports_report_action_enforces_quota(self, demo_db_client, monkeypatch):
+        # /api/reports?action=report runs a real simulation -> must consume a
+        # slot under quota, so it is not a bypass of /api/simulate.
+        monkeypatch.setenv("FAULTRAY_ENFORCE_QUOTA", "1")
+        uid = self._user_id(demo_db_client._db_path)
+        before = self._usage_count(demo_db_client._db_path, uid)
+        resp = demo_db_client.get("/api/reports?action=report")
+        assert resp.status_code == 200
+        after = self._usage_count(demo_db_client._db_path, uid)
+        assert after == before + 1, "report action must reserve a simulation slot"
+
+    def test_reports_over_quota_returns_402(self, demo_db_client, monkeypatch):
+        # When already over the FREE cap, the report action is blocked, proving
+        # the gate is enforced (not merely recorded).
+        monkeypatch.setenv("FAULTRAY_ENFORCE_QUOTA", "1")
+        uid = self._user_id(demo_db_client._db_path)
+        self._seed_usage(demo_db_client._db_path, uid, 5)  # FREE cap = 5
+        resp = demo_db_client.get("/api/reports?action=report")
+        assert resp.status_code == 402
+        assert "quota_exceeded" in resp.text
+
+    def test_graphql_run_simulation_enforces_quota(self, demo_db_client, monkeypatch):
+        # The GraphQL runSimulation mutation runs a real simulation -> gated.
+        monkeypatch.setenv("FAULTRAY_ENFORCE_QUOTA", "1")
+        uid = self._user_id(demo_db_client._db_path)
+        before = self._usage_count(demo_db_client._db_path, uid)
+        resp = demo_db_client.post(
+            "/graphql",
+            json={"query": "mutation { runSimulation { resilienceScore } }"},
+        )
+        assert resp.status_code == 200
+        after = self._usage_count(demo_db_client._db_path, uid)
+        assert after == before + 1, "GraphQL runSimulation must reserve a slot"
+
+    def test_graphql_run_simulation_over_quota_returns_402(
+        self, demo_db_client, monkeypatch
+    ):
+        monkeypatch.setenv("FAULTRAY_ENFORCE_QUOTA", "1")
+        uid = self._user_id(demo_db_client._db_path)
+        self._seed_usage(demo_db_client._db_path, uid, 5)  # FREE cap = 5
+        resp = demo_db_client.post(
+            "/graphql",
+            json={"query": "mutation { runSimulation { resilienceScore } }"},
+        )
+        assert resp.status_code == 402
