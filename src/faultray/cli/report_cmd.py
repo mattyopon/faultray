@@ -197,7 +197,14 @@ def _generate_dora_evidence_pack(
     console.print(f"  Critical Findings: [red]{len(sim_report.critical_findings)}[/]")
 
     if pdf:
-        html_path = md_path.with_suffix(".html")
+        # The companion print-ready HTML must land on a path DISTINCT from the
+        # Markdown pack. If the user already requested an .html --output,
+        # with_suffix(".html") would collide and overwrite the Markdown we just
+        # wrote, so use a ".print.html" companion in that case.
+        if md_path.suffix.lower() == ".html":
+            html_path = md_path.with_suffix(".print.html")
+        else:
+            html_path = md_path.with_suffix(".html")
         html_path.write_text(
             evidence_pack_to_print_html(
                 markdown, title=f"DORA Evidence Pack — {service}"

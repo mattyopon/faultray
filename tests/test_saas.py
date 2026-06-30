@@ -721,8 +721,9 @@ class TestBillingEnforcement:
 
         _run_async(_seed_two_pro_teams())
 
-        # (a) Free user in TWO Pro teams: tier raised to PRO, but ambiguous which
-        # team to charge -> per-user.
+        # (a) Free user in TWO Pro teams: two upgrade workspaces -> ambiguous,
+        # so per-user accounting at the caller's OWN (free) tier. We do NOT adopt
+        # the team tier when we cannot attribute usage to a single workspace.
         class _Free:
             id = 50
             tier = "free"
@@ -730,7 +731,7 @@ class TestBillingEnforcement:
         tier, key = _run_async(
             resolve_billing_context(_Free(), session_factory=sf)
         )
-        assert tier == PricingTier.PRO
+        assert tier == PricingTier.FREE
         assert key == "user:50"
 
         # (b) Personal tier already == team tier: the team did not raise the
@@ -744,3 +745,117 @@ class TestBillingEnforcement:
         )
         assert tier2 == PricingTier.PRO
         assert key2 == "user:50"
+
+    def test_resolve_billing_context_single_converging_rule(self, tmp_path):
+        """The one converging rule: charge a team ONLY when EXACTLY ONE workspace
+        STRICTLY upgrades the caller; otherwise per-user at the caller's own tier.
+        Covers the multi-workspace attribution P2.
+        """
+        from faultray.api.billing import resolve_billing_context, PricingTier
+        from faultray.api.database import SubscriptionRow
+        from tests.conftest import _run_async
+        from sqlalchemy import text
+
+        sf = self._temp_sf(tmp_path)
+
+        async def _seed(memberships):
+            async with sf() as session:
+                await session.execute(text(
+                    "CREATE TABLE IF NOT EXISTS team_workspaces "
+                    "(id TEXT PRIMARY KEY, name TEXT, owner_id TEXT, created_at TEXT)"
+                ))
+                await session.execute(text(
+                    "CREATE TABLE IF NOT EXISTS team_members "
+                    "(team_id TEXT, user_id TEXT, role TEXT, joined_at TEXT)"
+                ))
+                for ws, tier, uid in memberships:
+                    await session.execute(
+                        text(
+                            "INSERT INTO team_members (team_id, user_id, role) "
+                            "VALUES (:ws, :uid, 'editor')"
+                        ),
+                        {"ws": ws, "uid": uid},
+                    )
+                    session.add(SubscriptionRow(team_id=ws, tier=tier))
+                await session.commit()
+
+        # Case 1: own=pro + one pro team -> team does NOT strictly upgrade ->
+        # per-user, pro tier.
+        _run_async(_seed([("ws-pro1", "pro", "1")]))
+
+        class _U1:
+            id = 1
+            tier = "pro"
+
+        t, k = _run_async(resolve_billing_context(_U1(), session_factory=sf))
+        assert t == PricingTier.PRO
+        assert k == "user:1"
+
+        # Case 2: free user in BOTH a Pro and a Business workspace -> two upgrade
+        # workspaces (mixed tier) -> per-user, FREE tier (no Business subsidy).
+        c2 = tmp_path / "c2"
+        c2.mkdir()
+        sf2 = self._temp_sf(c2)
+
+        async def _seed2():
+            async with sf2() as session:
+                await session.execute(text(
+                    "CREATE TABLE IF NOT EXISTS team_workspaces "
+                    "(id TEXT PRIMARY KEY, name TEXT, owner_id TEXT, created_at TEXT)"
+                ))
+                await session.execute(text(
+                    "CREATE TABLE IF NOT EXISTS team_members "
+                    "(team_id TEXT, user_id TEXT, role TEXT, joined_at TEXT)"
+                ))
+                for ws, tier in (("ws-pro", "pro"), ("ws-biz", "business")):
+                    await session.execute(
+                        text(
+                            "INSERT INTO team_members (team_id, user_id, role) "
+                            "VALUES (:ws, '2', 'editor')"
+                        ),
+                        {"ws": ws},
+                    )
+                    session.add(SubscriptionRow(team_id=ws, tier=tier))
+                await session.commit()
+
+        _run_async(_seed2())
+
+        class _U2:
+            id = 2
+            tier = "free"
+
+        t, k = _run_async(resolve_billing_context(_U2(), session_factory=sf2))
+        assert t == PricingTier.FREE, "mixed-tier ambiguity must not adopt Business"
+        assert k == "user:2"
+
+        # Case 4: free + EXACTLY one pro workspace -> intended team path works.
+        c4 = tmp_path / "c4"
+        c4.mkdir()
+        sf4 = self._temp_sf(c4)
+
+        async def _seed4():
+            async with sf4() as session:
+                await session.execute(text(
+                    "CREATE TABLE IF NOT EXISTS team_workspaces "
+                    "(id TEXT PRIMARY KEY, name TEXT, owner_id TEXT, created_at TEXT)"
+                ))
+                await session.execute(text(
+                    "CREATE TABLE IF NOT EXISTS team_members "
+                    "(team_id TEXT, user_id TEXT, role TEXT, joined_at TEXT)"
+                ))
+                await session.execute(text(
+                    "INSERT INTO team_members (team_id, user_id, role) "
+                    "VALUES ('ws-solo-pro', '4', 'editor')"
+                ))
+                session.add(SubscriptionRow(team_id="ws-solo-pro", tier="pro"))
+                await session.commit()
+
+        _run_async(_seed4())
+
+        class _U4:
+            id = 4
+            tier = "free"
+
+        t, k = _run_async(resolve_billing_context(_U4(), session_factory=sf4))
+        assert t == PricingTier.PRO
+        assert k == "ws-solo-pro"

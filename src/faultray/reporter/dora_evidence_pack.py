@@ -109,10 +109,21 @@ def _third_party_deps(graph: InfraGraph, component: Component) -> list[Component
 
 
 def _spof_components(graph: InfraGraph) -> list[Component]:
-    """Single-replica components that have dependents (concentration / SPOF risk)."""
+    """Single-replica components that have dependents (concentration / SPOF risk).
+
+    Mirrors the canonical SPOF rule used elsewhere in the app
+    (``FaultRayAnalyzer._detect_spofs``): a single-replica component is only a
+    single point of failure when failover is NOT configured. A managed
+    Multi-AZ datastore with ``failover.enabled`` is resilient despite
+    ``replicas == 1`` and must not be counted, or SPOF_COUNT overstates risk.
+    """
     spofs: list[Component] = []
     for comp in graph.components.values():
-        if comp.replicas <= 1 and graph.get_dependents(comp.id):
+        if comp.replicas > 1:
+            continue
+        if comp.failover.enabled:
+            continue
+        if graph.get_dependents(comp.id):
             spofs.append(comp)
     return spofs
 
@@ -180,7 +191,11 @@ def build_evidence_pack_markdown(
         "{PREPARED_BY}": _md_cell(prepared_by),
         "{ENGAGEMENT_ID}": _md_cell(engagement),
         "{RESILIENCE_SCORE}": f"{score:.1f}/100",
-        "{CRITICAL_FINDINGS_COUNT}": str(len(sim_report.critical_findings)),
+        # Per-service pack: the headline finding count must be SERVICE-SCOPED
+        # (faults targeting or cascading to this service), not the global
+        # simulation total, otherwise it attributes other services' findings to
+        # the selected one.
+        "{CRITICAL_FINDINGS_COUNT}": str(len(service_criticals)),
         "{SPOF_COUNT}": str(len(spofs)),
         "{RTO_TARGET}": _md_cell(rto_target),
         "{RPO_TARGET}": _md_cell(rpo_target),

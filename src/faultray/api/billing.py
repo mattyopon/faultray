@@ -113,12 +113,13 @@ async def resolve_billing_context(
     ``UserRow.tier`` is never synced from it, so a Pro/Business team member would
     otherwise be treated as FREE.
 
-    *usage_key* is the billing workspace id of the paying team ONLY when a single
-    team's subscription unambiguously raises the caller above their personal tier
-    (so the team's monthly quota is SHARED across members); otherwise it is
-    ``"user:<id>"`` (free / solo, a personal tier >= the team tier, or several
-    equal-tier teams), which also sidesteps the team-id vs billing-workspace-id
-    namespace mismatch and never charges an ambiguous team.
+    *usage_key* is the billing workspace id of the paying team ONLY when EXACTLY
+    ONE workspace's subscription strictly raises the caller above their personal
+    tier (so the team's monthly quota is SHARED across members); otherwise it is
+    ``"user:<id>"`` -- free / solo, a personal tier >= every team tier, or two-
+    or-more upgrade workspaces whether equal-tier (Pro+Pro) or mixed-tier
+    (Pro+Business). This sidesteps the team-id vs billing-workspace-id namespace
+    mismatch and never charges (or subsidizes from) an ambiguous team.
 
     Resolution failures (e.g. team tables absent on a self-host) fall back to the
     user's own tier and a per-user key.
@@ -159,33 +160,30 @@ async def resolve_billing_context(
                         ).where(SubscriptionRow.team_id.in_(workspace_ids))
                     )
                 ).all()
-                own_tier = best  # the caller's personal tier, before team raise
-                # Highest team-subscription tier, and the workspaces holding it.
-                team_tier = PricingTier.FREE
-                top_workspaces: list[str] = []
+                own_rank = _TIER_RANK[best]  # the caller's personal tier rank
+                # Workspaces whose subscription STRICTLY raises the caller above
+                # their own tier -- i.e. the team membership is what would grant
+                # the paid tier. A team at or below the caller's own tier grants
+                # nothing and is ignored here.
+                upgrades: list[tuple[str, PricingTier]] = []
                 for ws_id, t in subs:
                     try:
                         cand = PricingTier(t)
                     except ValueError:
                         continue
-                    if _TIER_RANK[cand] > _TIER_RANK[team_tier]:
-                        team_tier = cand
-                        top_workspaces = [ws_id]
-                    elif cand == team_tier:
-                        top_workspaces.append(ws_id)
-                if _TIER_RANK[team_tier] > _TIER_RANK[best]:
-                    best = team_tier
-                # Charge usage to the paying team ONLY when it is unambiguous:
-                # the team tier STRICTLY exceeds the caller's personal tier (so
-                # the team is what grants the paid tier) AND exactly one workspace
-                # holds that top tier. Otherwise -- a personal tier >= the team
-                # tier, or several equal-tier teams -- fall back to per-user
-                # accounting so we never charge (or 402) the wrong team.
-                if (
-                    _TIER_RANK[team_tier] > _TIER_RANK[own_tier]
-                    and len(top_workspaces) == 1
-                ):
-                    usage_key = top_workspaces[0]
+                    if _TIER_RANK[cand] > own_rank:
+                        upgrades.append((ws_id, cand))
+                # ONE converging rule: charge the team (and adopt its tier) ONLY
+                # when EXACTLY ONE workspace would upgrade the caller. In every
+                # other case -- no upgrade (own tier >= every team), or two-or-
+                # more upgrade workspaces whether equal-tier (Pro+Pro) or mixed
+                # (Pro+Business) -- fall back to per-user accounting at the
+                # caller's OWN tier, so we never subsidize from or 402 an
+                # ambiguous team.
+                if len(upgrades) == 1:
+                    ws_id, ws_tier = upgrades[0]
+                    best = ws_tier
+                    usage_key = ws_id
     except Exception:
         logger.debug("Could not resolve billing context.", exc_info=True)
     return best, usage_key

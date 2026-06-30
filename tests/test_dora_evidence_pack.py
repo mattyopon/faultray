@@ -4,14 +4,24 @@ from __future__ import annotations
 
 import pytest
 
+from faultray.model.components import (
+    Component,
+    ComponentType,
+    FailoverConfig,
+    HealthStatus,
+)
 from faultray.model.demo import create_demo_graph
+from faultray.model.graph import Dependency, InfraGraph
 from faultray.reporter.dora_evidence_pack import (
     _service_critical_findings,
+    _spof_components,
     build_evidence_pack_markdown,
     evidence_pack_to_print_html,
     load_template,
 )
-from faultray.simulator.engine import SimulationEngine
+from faultray.simulator.cascade import CascadeChain, CascadeEffect
+from faultray.simulator.engine import ScenarioResult, SimulationEngine, SimulationReport
+from faultray.simulator.scenarios import Fault, FaultType, Scenario
 
 
 def _build(service: str = "postgres", **kwargs) -> str:
@@ -106,3 +116,103 @@ def test_appendix_includes_findings_on_selected_service() -> None:
     markdown = build_evidence_pack_markdown(graph, report, "postgres")
     assert "Critical findings touching this service" in markdown
     assert f"touching this service: {len(matched)}." in markdown
+
+
+def _critical_targeting(name: str, target_id: str) -> ScenarioResult:
+    """Build a synthetic CRITICAL ScenarioResult whose fault targets *target_id*."""
+    chain = CascadeChain(trigger=target_id, total_components=1)
+    chain.effects.append(CascadeEffect(
+        component_id=target_id,
+        component_name=target_id,
+        health=HealthStatus.DOWN,
+        reason="down",
+    ))
+    fault = Fault(target_component_id=target_id, fault_type=FaultType.COMPONENT_DOWN)
+    scenario = Scenario(id=f"s-{name}", name=name, description=name, faults=[fault])
+    # risk_score >= 7.0 => is_critical
+    return ScenarioResult(scenario=scenario, cascade=chain, risk_score=9.0)
+
+
+def test_exec_summary_count_is_service_scoped_not_global() -> None:
+    """The headline CRITICAL_FINDINGS_COUNT must reflect ONLY findings touching
+    the selected service, not the global simulation total."""
+    graph = InfraGraph()
+    graph.add_component(Component(id="svc-target", name="Target", type=ComponentType.APP_SERVER))
+    graph.add_component(Component(id="svc-other", name="Other", type=ComponentType.APP_SERVER))
+
+    # 2 criticals on the target, 3 on an unrelated service => global 5, scoped 2.
+    results = (
+        [_critical_targeting(f"t{i}", "svc-target") for i in range(2)]
+        + [_critical_targeting(f"o{i}", "svc-other") for i in range(3)]
+    )
+    report = SimulationReport(results=results, resilience_score=50.0)
+
+    scoped = len(_service_critical_findings(report, graph.get_component("svc-target")))
+    assert scoped == 2
+    assert len(report.critical_findings) == 5  # global is strictly larger
+
+    markdown = build_evidence_pack_markdown(graph, report, "svc-target")
+    # The exec-summary metrics table row carries the service-scoped count, not 5.
+    assert "| Critical Findings Count | 2 |" in markdown
+    assert "| Critical Findings Count | 5 |" not in markdown
+
+
+def test_spof_register_excludes_failover_enabled_single_replica() -> None:
+    """A replicas==1 component with failover.enabled is NOT a SPOF (managed
+    Multi-AZ datastore); a replicas==1 component without failover IS."""
+    g = InfraGraph()
+    g.add_component(Component(
+        id="ha-db", name="HA DB", type=ComponentType.DATABASE,
+        replicas=1, failover=FailoverConfig(enabled=True),
+    ))
+    g.add_component(Component(
+        id="solo-db", name="Solo DB", type=ComponentType.DATABASE, replicas=1,
+    ))
+    g.add_component(Component(id="app", name="App", type=ComponentType.APP_SERVER, replicas=2))
+    g.add_dependency(Dependency(source_id="app", target_id="ha-db", dependency_type="requires"))
+    g.add_dependency(Dependency(source_id="app", target_id="solo-db", dependency_type="requires"))
+
+    spof_ids = {c.id for c in _spof_components(g)}
+    assert "ha-db" not in spof_ids, "failover-enabled single-replica must not be a SPOF"
+    assert "solo-db" in spof_ids, "single-replica without failover must be a SPOF"
+
+
+def test_report_dora_pdf_with_html_output_keeps_both_files(tmp_path) -> None:
+    """`report dora --output x.html --pdf` must not overwrite the Markdown pack
+    with the print-ready HTML: the companion HTML goes to a distinct path."""
+    from typer.testing import CliRunner
+
+    from faultray.cli import app
+
+    model = tmp_path / "model.yaml"
+    model.write_text(
+        "components:\n"
+        "  - id: svc\n"
+        "    name: Svc\n"
+        "    type: app_server\n"
+        "  - id: db\n"
+        "    name: DB\n"
+        "    type: database\n"
+        "dependencies:\n"
+        "  - source: svc\n"
+        "    target: db\n"
+        "    type: requires\n",
+        encoding="utf-8",
+    )
+    out = tmp_path / "pack.html"
+    runner = CliRunner()
+    result = runner.invoke(
+        app,
+        ["report", "dora", str(model), "--service", "svc", "--output", str(out), "--pdf"],
+    )
+    assert result.exit_code == 0, result.output
+
+    companion = tmp_path / "pack.print.html"
+    assert out.exists(), "the Markdown pack (--output path) must survive"
+    assert companion.exists(), "the print-ready HTML companion must be written"
+    md_text = out.read_text(encoding="utf-8")
+    html_text = companion.read_text(encoding="utf-8")
+    assert md_text != html_text
+    # The --output file is the raw Markdown pack; the companion is wrapped HTML.
+    assert md_text.lstrip().startswith("# DORA Pre-Audit Resilience Evidence Pack")
+    assert "<!DOCTYPE html>" in html_text
