@@ -1,0 +1,231 @@
+# DORA Scenario 4: API gateway / IdP saturation
+# DORA articles evidenced: Art. 24, Art. 11
+# Load is injected at the public API gateway while the external IdP
+# token-introspection path is rate-limited to simulate saturation. The test
+# observes whether auth retries cascade into payment and KYC flows or are
+# contained by caching, throttling, and graceful degradation.
+# Evidence: Capture latency, error rates, retry storms, throttle decisions, cache-hit ratios, and recovery timeline as resilience evidence.
+#
+# Sanitized, illustrative topology — no production data or PII.
+# Run:  faultray report dora examples/dora/04-api-gateway-idp-saturation.yaml --service <id>
+
+schema_version: "4.0"
+
+components:
+  - id: api-gateway
+    name: "Public API Gateway"
+    type: load_balancer
+    replicas: 3
+    region:
+      region: eu-west-1
+      availability_zone: eu-west-1a
+    # role: ingress auth throttling chokepoint
+    tags:
+      - dora
+      - scenario-4
+
+  - id: auth-adapter
+    name: "Auth Adapter"
+    type: app_server
+    replicas: 3
+    region:
+      region: eu-west-1
+      availability_zone: eu-west-1b
+    # role: token validation service
+    tags:
+      - dora
+      - scenario-4
+
+  - id: idp-cache
+    name: "IdP Token Cache"
+    type: cache
+    replicas: 2
+    region:
+      region: eu-west-1
+      availability_zone: eu-west-1a
+    # role: token cache sink
+    tags:
+      - dora
+      - scenario-4
+
+  - id: external-idp
+    name: "External Identity Provider"
+    type: external_api
+    replicas: 1
+    region:
+      region: eu-west-1
+      availability_zone: eu-west-1a
+    external_sla:
+      provider_sla: 99.9
+    # role: EXTERNAL THIRD PARTY IdP SPOF
+    tags:
+      - dora
+      - scenario-4
+
+  - id: payment-api
+    name: "Payment API"
+    type: app_server
+    replicas: 4
+    region:
+      region: eu-west-1
+      availability_zone: eu-west-1b
+    # role: card and SEPA entry service
+    tags:
+      - dora
+      - scenario-4
+
+  - id: kyc-api
+    name: "KYC API"
+    type: app_server
+    replicas: 3
+    region:
+      region: eu-west-1
+      availability_zone: eu-west-1c
+    # role: onboarding identity service
+    tags:
+      - dora
+      - scenario-4
+
+  - id: risk-engine
+    name: "Risk Engine"
+    type: app_server
+    replicas: 3
+    region:
+      region: eu-west-1
+      availability_zone: eu-west-1b
+    # role: fraud checks
+    tags:
+      - dora
+      - scenario-4
+
+  - id: payment-db
+    name: "Payment State DB"
+    type: database
+    replicas: 2
+    region:
+      region: eu-west-1
+      availability_zone: eu-west-1a
+    # role: payment state sink
+    tags:
+      - dora
+      - scenario-4
+
+  - id: kyc-provider
+    name: "KYC Provider"
+    type: external_api
+    replicas: 1
+    region:
+      region: eu-west-1
+      availability_zone: eu-west-1a
+    external_sla:
+      provider_sla: 99.9
+    # role: EXTERNAL THIRD PARTY KYC sink
+    tags:
+      - dora
+      - scenario-4
+
+  - id: card-processor
+    name: "Card Processor"
+    type: external_api
+    replicas: 1
+    region:
+      region: eu-west-1
+      availability_zone: eu-west-1a
+    external_sla:
+      provider_sla: 99.9
+    # role: EXTERNAL THIRD PARTY processor sink
+    tags:
+      - dora
+      - scenario-4
+
+  - id: audit-log
+    name: "Audit Log Store"
+    type: storage
+    replicas: 3
+    region:
+      region: eu-west-1
+      availability_zone: eu-west-1a
+    # role: immutable evidence sink
+    tags:
+      - dora
+      - scenario-4
+
+dependencies:
+  - source: api-gateway
+    target: auth-adapter
+    type: requires
+    protocol: https
+    weight: 1.0
+
+  - source: api-gateway
+    target: payment-api
+    type: requires
+    protocol: https
+    weight: 0.9
+
+  - source: api-gateway
+    target: kyc-api
+    type: optional
+    protocol: https
+    weight: 0.6
+
+  - source: auth-adapter
+    target: idp-cache
+    type: optional
+    protocol: tcp
+    weight: 0.4
+
+  - source: auth-adapter
+    target: external-idp
+    type: requires
+    protocol: https
+    weight: 1.0
+
+  - source: payment-api
+    target: risk-engine
+    type: requires
+    protocol: grpc
+    weight: 0.8
+
+  - source: payment-api
+    target: payment-db
+    type: requires
+    protocol: tcp
+    weight: 0.9
+
+  - source: payment-api
+    target: card-processor
+    type: requires
+    protocol: https
+    weight: 0.8
+
+  - source: payment-api
+    target: audit-log
+    type: async
+    protocol: tcp
+    weight: 0.3
+
+  - source: kyc-api
+    target: external-idp
+    type: requires
+    protocol: https
+    weight: 0.8
+
+  - source: kyc-api
+    target: kyc-provider
+    type: requires
+    protocol: https
+    weight: 0.7
+
+  - source: kyc-api
+    target: audit-log
+    type: async
+    protocol: tcp
+    weight: 0.2
+
+  - source: risk-engine
+    target: payment-db
+    type: requires
+    protocol: tcp
+    weight: 0.6
+

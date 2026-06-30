@@ -1,0 +1,241 @@
+# DORA Scenario 5: Payment-core / ledger partition
+# DORA articles evidenced: Art. 11, Art. 12, Art. 24
+# A network partition is injected between payment-core services and the ledger
+# API/data tier during card and SEPA/instant-payment traffic. The simulation
+# tests whether the platform rejects, queues, or fences writes to prevent
+# split-brain ledger balances while preserving recoverability.
+# Evidence: Capture partition timing, write-fencing behavior, queued/rejected transactions, reconciliation output, and restoration evidence.
+#
+# Sanitized, illustrative topology — no production data or PII.
+# Run:  faultray report dora examples/dora/05-payment-core-ledger-partition.yaml --service <id>
+
+schema_version: "4.0"
+
+components:
+  - id: api-gateway
+    name: "Internal Payment Gateway"
+    type: load_balancer
+    replicas: 3
+    region:
+      region: eu-west-1
+      availability_zone: eu-west-1a
+    # role: payment ingress
+    tags:
+      - dora
+      - scenario-5
+
+  - id: payment-core
+    name: "Payment Core"
+    type: app_server
+    replicas: 4
+    region:
+      region: eu-west-1
+      availability_zone: eu-west-1b
+    # role: payment orchestration
+    tags:
+      - dora
+      - scenario-5
+
+  - id: idempotency-cache
+    name: "Idempotency Cache"
+    type: cache
+    replicas: 2
+    region:
+      region: eu-west-1
+      availability_zone: eu-west-1a
+    # role: duplicate prevention sink
+    tags:
+      - dora
+      - scenario-5
+
+  - id: payment-events
+    name: "Payment Event Queue"
+    type: queue
+    replicas: 3
+    region:
+      region: eu-west-1
+      availability_zone: eu-west-1b
+    # role: async outbox sink
+    tags:
+      - dora
+      - scenario-5
+
+  - id: sepa-engine
+    name: "SEPA Instant Engine"
+    type: app_server
+    replicas: 3
+    region:
+      region: eu-west-1
+      availability_zone: eu-west-1b
+    # role: SEPA rail orchestration
+    tags:
+      - dora
+      - scenario-5
+
+  - id: card-engine
+    name: "Card Engine"
+    type: app_server
+    replicas: 3
+    region:
+      region: eu-west-1
+      availability_zone: eu-west-1c
+    # role: card rail orchestration
+    tags:
+      - dora
+      - scenario-5
+
+  - id: ledger-api
+    name: "Ledger Write API"
+    type: app_server
+    replicas: 3
+    region:
+      region: eu-west-1
+      availability_zone: eu-west-1c
+    # role: ledger partition boundary
+    tags:
+      - dora
+      - scenario-5
+
+  - id: ledger-primary
+    name: "Ledger Primary DB"
+    type: database
+    replicas: 1
+    region:
+      region: eu-west-1
+      availability_zone: eu-west-1a
+    # role: authoritative write sink SPOF risk
+    tags:
+      - dora
+      - scenario-5
+
+  - id: ledger-replica
+    name: "Ledger Replica DB"
+    type: database
+    replicas: 1
+    region:
+      region: eu-west-1
+      availability_zone: eu-west-1b
+    # role: split-brain promotion sink
+    tags:
+      - dora
+      - scenario-5
+
+  - id: recon-store
+    name: "Reconciliation Store"
+    type: storage
+    replicas: 3
+    region:
+      region: eu-west-1
+      availability_zone: eu-west-1a
+    # role: recovery evidence sink
+    tags:
+      - dora
+      - scenario-5
+
+  - id: sepa-processor
+    name: "SEPA Processor"
+    type: external_api
+    replicas: 1
+    region:
+      region: eu-west-1
+      availability_zone: eu-west-1a
+    external_sla:
+      provider_sla: 99.9
+    # role: EXTERNAL THIRD PARTY SEPA sink
+    tags:
+      - dora
+      - scenario-5
+
+  - id: card-scheme
+    name: "Card Scheme API"
+    type: external_api
+    replicas: 1
+    region:
+      region: eu-west-1
+      availability_zone: eu-west-1a
+    external_sla:
+      provider_sla: 99.9
+    # role: EXTERNAL THIRD PARTY card sink
+    tags:
+      - dora
+      - scenario-5
+
+dependencies:
+  - source: api-gateway
+    target: payment-core
+    type: requires
+    protocol: https
+    weight: 1.0
+
+  - source: payment-core
+    target: idempotency-cache
+    type: requires
+    protocol: tcp
+    weight: 0.8
+
+  - source: payment-core
+    target: ledger-api
+    type: requires
+    protocol: grpc
+    weight: 1.0
+
+  - source: payment-core
+    target: payment-events
+    type: async
+    protocol: tcp
+    weight: 0.5
+
+  - source: payment-core
+    target: sepa-engine
+    type: requires
+    protocol: grpc
+    weight: 0.7
+
+  - source: payment-core
+    target: card-engine
+    type: requires
+    protocol: grpc
+    weight: 0.7
+
+  - source: sepa-engine
+    target: ledger-api
+    type: requires
+    protocol: grpc
+    weight: 0.9
+
+  - source: sepa-engine
+    target: sepa-processor
+    type: requires
+    protocol: https
+    weight: 0.8
+
+  - source: card-engine
+    target: ledger-api
+    type: requires
+    protocol: grpc
+    weight: 0.9
+
+  - source: card-engine
+    target: card-scheme
+    type: requires
+    protocol: https
+    weight: 0.8
+
+  - source: ledger-api
+    target: ledger-primary
+    type: requires
+    protocol: tcp
+    weight: 1.0
+
+  - source: ledger-api
+    target: ledger-replica
+    type: optional
+    protocol: tcp
+    weight: 0.5
+
+  - source: ledger-api
+    target: recon-store
+    type: async
+    protocol: tcp
+    weight: 0.4
+

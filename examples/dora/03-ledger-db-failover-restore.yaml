@@ -1,0 +1,236 @@
+# DORA Scenario 3: ledger-db-failover-restore
+# DORA articles evidenced: Art. 12, Art. 11
+# Chaos kills the ledger Postgres primary while payments are posting through
+# the DB proxy. Backup and restore automation rebuilds a point-in-time copy
+# from immutable storage to measure RPO, RTO, and reconciliation gaps.
+# Evidence: Evidence should include failover logs, backup integrity proof, restore duration, measured RPO/RTO, and reconciliation results.
+#
+# Sanitized, illustrative topology — no production data or PII.
+# Run:  faultray report dora examples/dora/03-ledger-db-failover-restore.yaml --service <id>
+
+schema_version: "4.0"
+
+components:
+  - id: api-lb
+    name: "Payments API Load Balancer"
+    type: load_balancer
+    replicas: 2
+    region:
+      region: eu-west-1
+      availability_zone: eu-west-1a
+    # role: payment API ingress
+    tags:
+      - dora
+      - scenario-3
+
+  - id: payment-api
+    name: "Payments API"
+    type: app_server
+    replicas: 3
+    region:
+      region: eu-west-1
+      availability_zone: eu-west-1a
+    # role: payment initiation service
+    tags:
+      - dora
+      - scenario-3
+
+  - id: ledger-api
+    name: "Ledger Posting API"
+    type: app_server
+    replicas: 3
+    region:
+      region: eu-west-1
+      availability_zone: eu-west-1b
+    # role: ledger posting service
+    tags:
+      - dora
+      - scenario-3
+
+  - id: db-proxy
+    name: "Postgres Failover Proxy"
+    type: custom
+    replicas: 2
+    region:
+      region: eu-west-1
+      availability_zone: eu-west-1b
+    # role: failover routing control
+    tags:
+      - dora
+      - scenario-3
+
+  - id: ledger-primary
+    name: "Ledger Postgres Primary"
+    type: database
+    replicas: 1
+    region:
+      region: eu-west-1
+      availability_zone: eu-west-1a
+    # role: write master; SPOF until failover
+    tags:
+      - dora
+      - scenario-3
+
+  - id: ledger-replica
+    name: "Ledger Postgres Replica"
+    type: database
+    replicas: 1
+    region:
+      region: eu-west-1
+      availability_zone: eu-west-1b
+    # role: synchronous failover replica
+    tags:
+      - dora
+      - scenario-3
+
+  - id: backup-job
+    name: "Ledger Backup Job"
+    type: serverless
+    replicas: 1
+    region:
+      region: eu-west-1
+      availability_zone: eu-west-1c
+    # role: scheduled PITR backup
+    tags:
+      - dora
+      - scenario-3
+
+  - id: backup-vault
+    name: "Immutable Backup Vault"
+    type: storage
+    replicas: 3
+    region:
+      region: eu-west-1
+      availability_zone: eu-west-1c
+    # role: encrypted backup datastore
+    tags:
+      - dora
+      - scenario-3
+
+  - id: restore-runner
+    name: "Restore Automation Runner"
+    type: serverless
+    replicas: 1
+    region:
+      region: eu-west-1
+      availability_zone: eu-west-1c
+    # role: restore drill automation
+    tags:
+      - dora
+      - scenario-3
+
+  - id: restore-db
+    name: "Restored Ledger DB"
+    type: database
+    replicas: 1
+    region:
+      region: eu-west-1
+      availability_zone: eu-west-1c
+    # role: restored validation datastore
+    tags:
+      - dora
+      - scenario-3
+
+  - id: recon-worker
+    name: "Ledger Reconciliation Worker"
+    type: app_server
+    replicas: 2
+    region:
+      region: eu-west-1
+      availability_zone: eu-west-1c
+    # role: post-restore reconciliation
+    tags:
+      - dora
+      - scenario-3
+
+  - id: kms
+    name: "Ledger KMS"
+    type: custom
+    replicas: 2
+    region:
+      region: eu-west-1
+      availability_zone: eu-west-1c
+    # role: encryption key sink
+    tags:
+      - dora
+      - scenario-3
+
+dependencies:
+  - source: api-lb
+    target: payment-api
+    type: requires
+    protocol: https
+    weight: 1.0
+
+  - source: payment-api
+    target: ledger-api
+    type: requires
+    protocol: grpc
+    weight: 0.9
+
+  - source: ledger-api
+    target: db-proxy
+    type: requires
+    protocol: tcp
+    weight: 1.0
+
+  - source: db-proxy
+    target: ledger-primary
+    type: requires
+    protocol: tcp
+    weight: 1.0
+
+  - source: db-proxy
+    target: ledger-replica
+    type: optional
+    protocol: tcp
+    weight: 0.8
+
+  - source: backup-job
+    target: ledger-replica
+    type: requires
+    protocol: tcp
+    weight: 0.9
+
+  - source: backup-job
+    target: backup-vault
+    type: requires
+    protocol: https
+    weight: 0.9
+
+  - source: backup-job
+    target: kms
+    type: requires
+    protocol: https
+    weight: 0.7
+
+  - source: restore-runner
+    target: backup-vault
+    type: requires
+    protocol: https
+    weight: 0.9
+
+  - source: restore-runner
+    target: restore-db
+    type: requires
+    protocol: tcp
+    weight: 0.9
+
+  - source: restore-runner
+    target: kms
+    type: requires
+    protocol: https
+    weight: 0.7
+
+  - source: recon-worker
+    target: ledger-replica
+    type: requires
+    protocol: tcp
+    weight: 0.6
+
+  - source: recon-worker
+    target: restore-db
+    type: optional
+    protocol: tcp
+    weight: 0.4
+

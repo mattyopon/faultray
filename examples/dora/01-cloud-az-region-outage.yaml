@@ -1,0 +1,239 @@
+# DORA Scenario 1: primary-az-loss-dr
+# DORA articles evidenced: Art. 11, Art. 24
+# Chaos removes eu-west-1a load balancer targets, compute, and network routes
+# during live card and SEPA authorization traffic. The test validates that
+# eu-west-1b keeps processing and that eu-central-1 DR can accept controlled
+# cutover without ledger divergence.
+# Evidence: Evidence should show AZ failover timing, payment success/error rates, DR readiness, and ledger consistency checks.
+#
+# Sanitized, illustrative topology — no production data or PII.
+# Run:  faultray report dora examples/dora/01-cloud-az-region-outage.yaml --service <id>
+
+schema_version: "4.0"
+
+components:
+  - id: edge-a
+    name: "Primary AZ API Edge"
+    type: load_balancer
+    replicas: 1
+    region:
+      region: eu-west-1
+      availability_zone: eu-west-1a
+    # role: primary AZ ingress
+    tags:
+      - dora
+      - scenario-1
+
+  - id: edge-b
+    name: "Surviving AZ API Edge"
+    type: load_balancer
+    replicas: 1
+    region:
+      region: eu-west-1
+      availability_zone: eu-west-1b
+    # role: surviving AZ ingress
+    tags:
+      - dora
+      - scenario-1
+
+  - id: auth-a
+    name: "Payment Auth A"
+    type: app_server
+    replicas: 2
+    region:
+      region: eu-west-1
+      availability_zone: eu-west-1a
+    # role: card/SEPA auth in primary AZ
+    tags:
+      - dora
+      - scenario-1
+
+  - id: auth-b
+    name: "Payment Auth B"
+    type: app_server
+    replicas: 2
+    region:
+      region: eu-west-1
+      availability_zone: eu-west-1b
+    # role: card/SEPA auth in surviving AZ
+    tags:
+      - dora
+      - scenario-1
+
+  - id: ledger-api-a
+    name: "Ledger API A"
+    type: app_server
+    replicas: 2
+    region:
+      region: eu-west-1
+      availability_zone: eu-west-1a
+    # role: ledger writes in primary AZ
+    tags:
+      - dora
+      - scenario-1
+
+  - id: ledger-api-b
+    name: "Ledger API B"
+    type: app_server
+    replicas: 2
+    region:
+      region: eu-west-1
+      availability_zone: eu-west-1b
+    # role: ledger writes in surviving AZ
+    tags:
+      - dora
+      - scenario-1
+
+  - id: ledger-db
+    name: "Ledger Postgres Multi-AZ"
+    type: database
+    replicas: 2
+    region:
+      region: eu-west-1
+      availability_zone: eu-west-1b
+    # role: durable ledger datastore
+    tags:
+      - dora
+      - scenario-1
+
+  - id: id-cache
+    name: "Payment Idempotency Cache"
+    type: cache
+    replicas: 2
+    region:
+      region: eu-west-1
+      availability_zone: eu-west-1b
+    # role: idempotency datastore
+    tags:
+      - dora
+      - scenario-1
+
+  - id: dr-edge
+    name: "DR API Edge"
+    type: load_balancer
+    replicas: 1
+    region:
+      region: eu-central-1
+      availability_zone: eu-central-1a
+    # role: DR ingress warm standby
+    tags:
+      - dora
+      - scenario-1
+
+  - id: dr-auth
+    name: "DR Payment Auth"
+    type: app_server
+    replicas: 2
+    region:
+      region: eu-central-1
+      availability_zone: eu-central-1a
+    # role: DR authorization service
+    tags:
+      - dora
+      - scenario-1
+
+  - id: dr-ledger-db
+    name: "DR Ledger Replica"
+    type: database
+    replicas: 1
+    region:
+      region: eu-central-1
+      availability_zone: eu-central-1a
+    # role: cross-region ledger replica; SPOF in DR
+    tags:
+      - dora
+      - scenario-1
+
+  - id: processor-api
+    name: "Payment Processor API"
+    type: external_api
+    replicas: 1
+    region:
+      region: eu-west-1
+      availability_zone: eu-west-1a
+    external_sla:
+      provider_sla: 99.9
+    # role: EXTERNAL THIRD PARTY card/SEPA processor
+    tags:
+      - dora
+      - scenario-1
+
+dependencies:
+  - source: edge-a
+    target: auth-a
+    type: requires
+    protocol: https
+    weight: 0.8
+
+  - source: edge-b
+    target: auth-b
+    type: requires
+    protocol: https
+    weight: 0.8
+
+  - source: auth-a
+    target: ledger-api-a
+    type: requires
+    protocol: grpc
+    weight: 0.9
+
+  - source: auth-b
+    target: ledger-api-b
+    type: requires
+    protocol: grpc
+    weight: 0.9
+
+  - source: auth-a
+    target: id-cache
+    type: requires
+    protocol: tcp
+    weight: 0.6
+
+  - source: auth-b
+    target: id-cache
+    type: requires
+    protocol: tcp
+    weight: 0.6
+
+  - source: auth-a
+    target: processor-api
+    type: requires
+    protocol: https
+    weight: 0.7
+
+  - source: auth-b
+    target: processor-api
+    type: requires
+    protocol: https
+    weight: 0.7
+
+  - source: ledger-api-a
+    target: ledger-db
+    type: requires
+    protocol: tcp
+    weight: 1.0
+
+  - source: ledger-api-b
+    target: ledger-db
+    type: requires
+    protocol: tcp
+    weight: 1.0
+
+  - source: dr-edge
+    target: dr-auth
+    type: requires
+    protocol: https
+    weight: 0.9
+
+  - source: dr-auth
+    target: dr-ledger-db
+    type: requires
+    protocol: tcp
+    weight: 1.0
+
+  - source: dr-auth
+    target: processor-api
+    type: optional
+    protocol: https
+    weight: 0.5
+
