@@ -291,21 +291,21 @@ export default async function LangHomePage() {
             </div>
           </div>
 
-          {/* COPY-03: Primary CTA → シミュレーション実行アクション */}
-          <div className="flex gap-4 justify-center flex-wrap mb-14">
+          {/* COPY-03: Primary CTA → Evidence Sprint スコーピング通話の予約（買われる成果）。二次CTAでセルフサービスのシミュレーション／サインアップを提供 */}
+          <div className="flex gap-4 justify-center flex-wrap mb-10">
+            <Link
+              href="/contact"
+              className="inline-flex items-center gap-2 px-7 py-3 bg-[var(--gold)] text-white font-semibold rounded-xl shadow-md hover:bg-[#044a99] hover:shadow-lg hover:-translate-y-0.5 transition-all"
+            >
+              <ExternalLink size={16} />
+              {dict.hero.ctaPrimary}
+            </Link>
             <Link
               href="/simulate"
-              className="inline-flex items-center gap-2 px-7 py-3 bg-[var(--gold)] text-white font-semibold rounded-xl shadow-md hover:bg-[#044a99] hover:shadow-lg hover:-translate-y-0.5 transition-all"
+              className="inline-flex items-center gap-2 px-7 py-3 bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 font-semibold rounded-xl hover:bg-emerald-500/20 hover:border-emerald-500/50 hover:-translate-y-0.5 transition-all"
             >
               <Zap size={16} />
               無料でシミュレーション実行
-            </Link>
-            <Link
-              href="/contact"
-              className="inline-flex items-center gap-2 px-7 py-3 bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 font-semibold rounded-xl hover:bg-emerald-500/20 hover:border-emerald-500/50 hover:-translate-y-0.5 transition-all"
-            >
-              <ExternalLink size={16} />
-              デモを予約する
             </Link>
             <Link
               href="/login"
@@ -313,6 +313,28 @@ export default async function LangHomePage() {
             >
               {dict.hero.cta}
             </Link>
+          </div>
+
+          {/* Evidence-outcome value props — 買い手が得る成果（機能リストではない） */}
+          <div className="grid sm:grid-cols-3 gap-4 max-w-[960px] mx-auto mb-10 text-left">
+            {dict.hero.valueProps.map((vp: { title: string; desc: string }) => (
+              <div key={vp.title} className="p-5 rounded-xl border border-[var(--border-color)] bg-[var(--bg-card)]">
+                <div className="flex items-center gap-2 mb-2">
+                  <FileCheck size={16} className="text-[var(--gold)] shrink-0" />
+                  <h3 className="text-sm font-semibold text-[var(--text-primary)]">{vp.title}</h3>
+                </div>
+                <p className="text-[0.8125rem] text-[var(--text-secondary)] leading-relaxed">{vp.desc}</p>
+              </div>
+            ))}
+          </div>
+
+          {/* DORA Resilience Evidence Sprint — 固定スコープの入口オファー */}
+          <div className="max-w-[760px] mx-auto mb-14 p-6 rounded-2xl border border-[var(--gold)]/25 bg-[var(--gold)]/[0.04] text-left">
+            <div className="flex items-center gap-2 mb-2">
+              <Shield size={18} className="text-[var(--gold)] shrink-0" />
+              <h3 className="text-base font-bold text-[var(--text-primary)]">{dict.hero.evidenceSprint.title}</h3>
+            </div>
+            <p className="text-sm text-[var(--text-secondary)] leading-relaxed">{dict.hero.evidenceSprint.blurb}</p>
           </div>
 
           <HeroTerminal />

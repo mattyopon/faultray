@@ -187,6 +187,12 @@ export default function PricingPage() {
             <>A single hour of downtime costs{" "}<span className="text-[var(--text-primary)] font-semibold">$100,000+</span> for mid-size SaaS. FaultRay finds the weak points before they find you.</>
           )}
         </p>
+        {/* Evidence Sprint framed as the recommended entry point ahead of the self-serve tiers */}
+        <p className="mt-3 text-sm text-[var(--text-secondary)] max-w-[680px] mx-auto">
+          {isJa
+            ? "セルフサービス型の月額$99/$299/$999プランを選ぶ前に、まずは固定スコープのEvidence Sprintから始めることを推奨します。"
+            : "Start with the fixed-scope Evidence Sprint as the recommended entry point before choosing a self-serve $99/$299/$999 monthly tier."}
+        </p>
         <div className="mt-4 flex flex-wrap items-center justify-center gap-3">
           <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-[var(--gold)]/10 border border-[var(--gold)]/20">
             <span className="text-sm font-semibold text-[var(--gold)]">14-day free trial on Pro</span>

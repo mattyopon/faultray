@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { headers } from "next/headers";
+import { cookies, headers } from "next/headers";
 import { Inter, Noto_Sans_JP, Geist_Mono } from "next/font/google";
 import Script from "next/script";
 import { AuthProvider } from "@/components/auth-provider";
@@ -10,7 +10,7 @@ import { CookieConsent } from "@/components/cookie-consent";
 import { ResearchPrototypeBanner } from "@/components/research-prototype-banner";
 import { cspStrictEnabled } from "@/lib/csp";
 import { PUBLIC_PAGES } from "@/lib/public-routes";
-import { locales } from "@/i18n/config";
+import { locales, type Locale, defaultLocale } from "@/i18n/config";
 import "./globals.css";
 
 const inter = Inter({
@@ -194,15 +194,34 @@ export default async function RootLayout({
   const rawHotjarId = process.env.NEXT_PUBLIC_HOTJAR_ID;
   const hotjarId = rawHotjarId && /^\d+$/.test(rawHotjarId) ? rawHotjarId : undefined;
 
-  const nonce = STRICT_CSP
-    ? ((await headers()).get("x-faultray-nonce") ?? undefined)
-    : undefined;
+  // Request-scoped reads (CSP nonce + SSR locale seed) only happen on the strict
+  // path, which is already dynamically rendered. When strict CSP is rolled back
+  // (FAULTRAY_CSP_STRICT=0) the layout stays static / CDN-cacheable and the SSR
+  // locale falls back to the default (useLocale()'s client effect still corrects
+  // it after hydration).
+  let nonce: string | undefined;
+  let initialLocale: Locale = defaultLocale;
+  if (STRICT_CSP) {
+    const requestHeaders = await headers();
+    nonce = requestHeaders.get("x-faultray-nonce") ?? undefined;
+    // The proxy forwards the authoritative PATH locale (/en, /ja, ...). Prefer
+    // it over the NEXT_LOCALE cookie so an explicit localized URL is never
+    // overridden by a stale cookie; fall back to the cookie for locale-less
+    // pages (e.g. /features reached from /ja).
+    const headerLocale = requestHeaders.get("x-faultray-locale") || undefined;
+    const cookieLocale = (await cookies()).get("NEXT_LOCALE")?.value;
+    const resolved =
+      headerLocale && (locales as readonly string[]).includes(headerLocale)
+        ? headerLocale
+        : cookieLocale && (locales as readonly string[]).includes(cookieLocale)
+          ? cookieLocale
+          : null;
+    if (resolved) initialLocale = resolved as Locale;
+  }
 
-  // I18N-04: Detect locale from cookie/Accept-Language for html lang attribute
-  // Falls back to "en" for root layout; locale-specific layouts override via their own html element
   return (
     <html
-      lang="en"
+      lang={initialLocale}
       className={`${inter.variable} ${notoSansJP.variable} ${geistMono.variable} h-full antialiased`}
     >
       <head>
@@ -287,7 +306,7 @@ export default async function RootLayout({
           }}
         />
         <AuthProvider>
-          <LocaleProvider>
+          <LocaleProvider initialLocale={initialLocale}>
             <Navbar />
             <ResearchPrototypeBanner />
             <Breadcrumb />

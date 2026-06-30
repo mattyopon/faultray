@@ -151,6 +151,35 @@ export async function proxy(request: NextRequest) {
     (locale) => pathname.startsWith(`/${locale}/`) || pathname === `/${locale}`
   );
 
+  // Locale present in the path (e.g. the /ja marketing landing). Used two ways:
+  //  - forwarded to the server layout as the AUTHORITATIVE SSR locale (path >
+  //    cookie) so an explicit /en is never server-rendered in a stale cookie's
+  //    language; and
+  //  - persisted into NEXT_LOCALE on the document response so a clean visitor
+  //    (no cookie, JS disabled, or clicking a locale-less /features link before
+  //    the client cookie write) keeps their language. Complements useLocale().
+  const pathLocale =
+    locales.find(
+      (l) => pathname === `/${l}` || pathname.startsWith(`/${l}/`)
+    ) ?? null;
+  // Always set (empty string when none) so a client cannot spoof this trusted
+  // header on a locale-less request.
+  request.headers.set("x-faultray-locale", pathLocale ?? "");
+  const persistPathLocale = (res: NextResponse): NextResponse => {
+    // Only persist the cookie under strict CSP (the layout is already dynamic
+    // there). Under FAULTRAY_CSP_STRICT=0 the response must stay free of
+    // Set-Cookie so the CDN can cache localized landing pages (the documented
+    // static rollback); useLocale's client effect still persists locale
+    // post-hydration.
+    if (pathLocale && strictCsp) {
+      res.cookies.set("NEXT_LOCALE", pathLocale, {
+        path: "/",
+        maxAge: 31536000,
+      });
+    }
+    return res;
+  };
+
   // If no locale in path, redirect to preferred locale
   // Only for the root and LP-related paths
   if (!pathnameHasLocale) {
@@ -210,7 +239,7 @@ export async function proxy(request: NextRequest) {
 
   // If Supabase is not configured, pass through
   if (!supabaseUrl || !supabaseKey) {
-    return withCsp(NextResponse.next({ request }));
+    return persistPathLocale(withCsp(NextResponse.next({ request })));
   }
 
   let supabaseResponse = NextResponse.next({ request });
@@ -270,7 +299,7 @@ export async function proxy(request: NextRequest) {
     return NextResponse.redirect(url);
   }
 
-  return withCsp(supabaseResponse);
+  return persistPathLocale(withCsp(supabaseResponse));
 }
 
 export const config = {

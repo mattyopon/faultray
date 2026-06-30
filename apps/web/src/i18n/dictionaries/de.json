@@ -24,7 +24,26 @@
       "languages": "Sprachen"
     },
     "cta": "Kostenlos starten",
-    "demo": "Live-Demo"
+    "demo": "Live-Demo",
+    "ctaPrimary": "Einen 20-minütigen Scoping-Call zum Evidence Sprint buchen",
+    "evidenceSprint": {
+      "title": "DORA-Resilienz-Evidence-Sprint",
+      "blurb": "In 5 Werktagen arbeiten wir ausschließlich mit bereinigten Daten — kein Produktionszugriff, keine personenbezogenen Daten. Zum Festpreis von $2,500 mit 50% Vorauszahlung liefert der Evidence Sprint ein strukturiertes Resilienz-Nachweispaket für die Vorbereitung im Vorfeld eines DORA-Audits."
+    },
+    "valueProps": [
+      {
+        "title": "Auditbereites Nachweispaket",
+        "desc": "Ein strukturiertes Nachweispaket, das Risiko-, Resilienz-, Compliance- und CTO-Teams zur Vorbereitung auf DORA-Auditgespräche nutzen können."
+      },
+      {
+        "title": "Nachvollziehbares DORA-Mapping",
+        "desc": "Eine nachvollziehbare Sicht darauf, wie Nachweise zu kritischen Services relevanten DORA-Artikeln zugeordnet sind, wobei Annahmen zur Prüfung getrennt ausgewiesen werden."
+      },
+      {
+        "title": "Vorstandsgeeignetes Resilienz-Reporting",
+        "desc": "Management-Zusammenfassungen, die Nachweise, Annahmen und offene Entscheidungen für die Vorbereitung gegenüber Vorstand und Aufsichtsbehörden voneinander abgrenzen."
+      }
+    ]
   },
   "problem": {
     "title": "Das Problem",

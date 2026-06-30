@@ -24,7 +24,26 @@
       "languages": "支持语言"
     },
     "cta": "免费开始",
-    "demo": "在线演示"
+    "demo": "在线演示",
+    "ctaPrimary": "预约 20 分钟 Evidence Sprint 范围界定通话",
+    "evidenceSprint": {
+      "title": "DORA 韧性 Evidence Sprint",
+      "blurb": "在 5 个工作日内，我们仅使用脱敏数据 — 不访问生产环境，不含个人身份信息（PII）。固定价格为 $2,500，50% 预付，该 Evidence Sprint 将交付一套结构化韧性证据包，用于 DORA 审计前准备。"
+    },
+    "valueProps": [
+      {
+        "title": "审计就绪的证据包",
+        "desc": "一套结构化证据包，供风险、韧性、合规和 CTO 团队用于准备 DORA 审计沟通。"
+      },
+      {
+        "title": "可追溯的 DORA 映射",
+        "desc": "以可追溯视图展示关键服务证据如何对应相关 DORA 条款，并将假设分离出来以供审阅。"
+      },
+      {
+        "title": "适合董事会审阅的韧性报告",
+        "desc": "高管摘要会区分证据、假设和未决决策事项，用于面向董事会和监管机构的准备工作。"
+      }
+    ]
   },
   "problem": {
     "title": "现有问题",

@@ -12,8 +12,8 @@
   },
   "hero": {
     "badge": "Open Source · Apache License 2.0",
-    "subtitle": "Estimate Infrastructure Resilience — Without Production Fault Injection",
-    "description": "Explore your system's availability ceiling — research prototype, without touching production.",
+    "subtitle": "DORA pre-audit resilience evidence for critical financial services",
+    "description": "FaultRay helps EU financial institutions assemble audit-ready DORA resilience evidence for critical services from sanitized data. It is decision-support software, not legal advice, an audit, or certification; approval is not guaranteed.",
     "stats": {
       "scenarios": "Scenarios",
       "engines": "Engines",
@@ -24,7 +24,26 @@
       "languages": "Languages"
     },
     "cta": "Get Started Free",
-    "demo": "Live Demo"
+    "ctaPrimary": "Book a 20-min Evidence Sprint scoping call",
+    "demo": "Live Demo",
+    "evidenceSprint": {
+      "title": "DORA Resilience Evidence Sprint",
+      "blurb": "In 5 business days, we work only with sanitized data — no production access, no PII. Fixed at $2,500 with 50% upfront, the Sprint delivers a structured resilience evidence pack for DORA pre-audit preparation."
+    },
+    "valueProps": [
+      {
+        "title": "Audit-ready evidence pack",
+        "desc": "A structured evidence pack risk, resilience, compliance, and CTO teams can use to prepare for DORA audit conversations."
+      },
+      {
+        "title": "Traceable DORA mapping",
+        "desc": "A traceable view of how critical-service evidence aligns to relevant DORA articles, with assumptions separated for review."
+      },
+      {
+        "title": "Board-ready resilience reporting",
+        "desc": "Executive summaries that distinguish evidence, assumptions, and open decisions for board and regulator-facing preparation."
+      }
+    ]
   },
   "problem": {
     "title": "The Problem",

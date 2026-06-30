@@ -24,7 +24,26 @@
       "languages": "Langues"
     },
     "cta": "Commencer gratuitement",
-    "demo": "Démo en direct"
+    "demo": "Démo en direct",
+    "ctaPrimary": "Réserver un appel de cadrage de 20 min pour le Sprint d’éléments probants",
+    "evidenceSprint": {
+      "title": "Sprint d’éléments probants de résilience DORA",
+      "blurb": "En 5 jours ouvrés, nous travaillons uniquement avec des données expurgées — aucun accès à la production, aucune donnée à caractère personnel. À prix fixe de $2,500 avec 50% d’acompte, le Sprint d’éléments probants fournit un dossier structuré d’éléments probants de résilience pour la préparation en amont d’un audit DORA."
+    },
+    "valueProps": [
+      {
+        "title": "Dossier d’éléments probants prêt pour l’audit",
+        "desc": "Un dossier structuré d’éléments probants que les équipes risque, résilience, conformité et CTO peuvent utiliser pour préparer les échanges d’audit DORA."
+      },
+      {
+        "title": "Cartographie DORA traçable",
+        "desc": "Une vue traçable de la manière dont les éléments probants relatifs aux services critiques s’alignent sur les articles DORA pertinents, avec les hypothèses présentées séparément pour examen."
+      },
+      {
+        "title": "Reporting de résilience prêt pour le conseil d’administration",
+        "desc": "Des synthèses exécutives qui distinguent les éléments probants, les hypothèses et les décisions en suspens pour préparer les échanges avec le conseil d’administration et les régulateurs."
+      }
+    ]
   },
   "problem": {
     "title": "Le Problème",

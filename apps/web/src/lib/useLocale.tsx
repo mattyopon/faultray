@@ -13,8 +13,20 @@ const LocaleContext = createContext<LocaleContextType>({
   setLocale: () => {},
 });
 
-export function LocaleProvider({ children }: { children: ReactNode }) {
-  const [locale, setLocaleState] = useState<Locale>(defaultLocale);
+export function LocaleProvider({
+  children,
+  initialLocale,
+}: {
+  children: ReactNode;
+  initialLocale?: Locale;
+}) {
+  // Seed from the server-resolved locale (NEXT_LOCALE cookie, read in the root
+  // layout) so the first render — server HTML and client hydration — already
+  // matches the user's language, even with JS disabled. The effect below then
+  // refines from the URL path / cookie for client-side navigation.
+  const [locale, setLocaleState] = useState<Locale>(
+    initialLocale ?? defaultLocale,
+  );
 
   useEffect(() => {
     // I18N-05: パス先頭のロケール（/ja 等）は「いま表示している言語」なので
@@ -23,6 +35,12 @@ export function LocaleProvider({ children }: { children: ReactNode }) {
     // 起こしうるため、effect 内で window.location を読む（Next docs 準拠）。
     const seg = window.location.pathname.split("/")[1];
     if (locales.includes(seg as Locale)) {
+      // Persist the path locale into the fallback cookie so navigation to
+      // locale-less pages (e.g. the "/features" CTA from /ja) stays in this
+      // language instead of regressing to English. The cookie is the documented
+      // fallback for locale-less pages; a clean visitor landing on /ja must
+      // populate it, otherwise the first locale-less page they open is EN.
+      document.cookie = `NEXT_LOCALE=${encodeURIComponent(seg)};path=/;max-age=31536000`;
       // eslint-disable-next-line react-hooks/set-state-in-effect
       setLocaleState(seg as Locale);
       return;

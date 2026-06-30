@@ -24,7 +24,26 @@
       "languages": "Idiomas"
     },
     "cta": "Começar Grátis",
-    "demo": "Demo ao Vivo"
+    "demo": "Demo ao Vivo",
+    "ctaPrimary": "Agendar uma chamada de definição de âmbito de 20 min para o Sprint de Evidências",
+    "evidenceSprint": {
+      "title": "Sprint de Evidências de Resiliência DORA",
+      "blurb": "Em 5 dias úteis, trabalhamos apenas com dados sanitizados — sem acesso à produção, sem dados pessoais identificáveis (PII). Com preço fixo de $2,500 e 50% pagos antecipadamente, o Sprint de Evidências entrega um pacote estruturado de evidências de resiliência para a preparação prévia a uma auditoria DORA."
+    },
+    "valueProps": [
+      {
+        "title": "Pacote de evidências pronto para auditoria",
+        "desc": "Um pacote estruturado de evidências que as equipas de risco, resiliência, conformidade e CTO podem utilizar para preparar discussões de auditoria DORA."
+      },
+      {
+        "title": "Mapeamento DORA rastreável",
+        "desc": "Uma visão rastreável de como as evidências de serviços críticos se alinham com os artigos DORA relevantes, com os pressupostos separados para revisão."
+      },
+      {
+        "title": "Relatórios de resiliência prontos para o conselho de administração",
+        "desc": "Resumos executivos que distinguem evidências, pressupostos e decisões em aberto para a preparação junto do conselho de administração e dos reguladores."
+      }
+    ]
   },
   "problem": {
     "title": "O Problema",
