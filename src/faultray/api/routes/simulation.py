@@ -36,20 +36,19 @@ async def _enforce_simulation_quota(user) -> None:
     honored rather than throttled as FREE), raises 402 if the monthly cap is
     reached, and otherwise RESERVES the slot by recording usage up front -- so
     concurrent requests cannot all observe the same pre-run count and slip past
-    the cap before any of them is recorded. Usage is keyed PER-USER so
-    enforcement never depends on the team-id vs billing-workspace-id namespace.
+    the cap before any of them is recorded. Usage is keyed by the paying team
+    (members share one monthly quota) or per-user for free/solo callers.
     """
     from faultray.api.billing import (
         UsageTracker,
         _saas_quota_enabled,
-        resolve_effective_tier,
+        resolve_billing_context,
     )
 
     if not (_saas_quota_enabled() and user is not None):
         return
-    usage_key = f"user:{getattr(user, 'id', 'anon')}"
+    tier, usage_key = await resolve_billing_context(user)
     tracker = UsageTracker(db_session_factory=None)
-    tier = await resolve_effective_tier(user)
     if await tracker.simulation_quota_exceeded(usage_key, tier):
         raise HTTPException(
             status_code=402,
@@ -181,6 +180,10 @@ async def simulate_failure(
     comp = graph.get_component(component_id)
     if comp is None:
         raise HTTPException(status_code=404, detail=f"Component '{component_id}' not found.")
+
+    # Same hosted-SaaS quota gate as the other simulation endpoints so a capped
+    # user cannot obtain cascade results here for free.
+    await _enforce_simulation_quota(user)
 
     # Run cascade simulation
     cascade_engine = CascadeEngine(graph)

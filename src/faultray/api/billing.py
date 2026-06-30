@@ -102,27 +102,35 @@ _TIER_RANK: dict[PricingTier, int] = {
 }
 
 
-async def resolve_effective_tier(user, session_factory=None) -> PricingTier:
-    """Resolve the highest pricing tier available to *user*.
+async def resolve_billing_context(
+    user, session_factory=None,
+) -> tuple[PricingTier, str]:
+    """Resolve ``(effective_tier, usage_key)`` for *user*.
 
-    Takes the best of (a) the user's own ``UserRow.tier`` and (b) the tier of
-    any billing team (``team_workspaces``) they own or belong to. Paid plans are
-    stored in ``SubscriptionRow`` keyed by the billing-workspace id, and
-    ``UserRow.tier`` is never synced from that row -- so a Pro/Business team
-    member would otherwise be treated as FREE. Resolution failures (e.g. team
-    tables absent on a self-host) fall back to the user's own tier.
+    *effective_tier* is the best of the user's own ``UserRow.tier`` and the tier
+    of any billing team (``team_workspaces``) they own or belong to -- paid plans
+    live in ``SubscriptionRow`` keyed by the billing-workspace id and
+    ``UserRow.tier`` is never synced from it, so a Pro/Business team member would
+    otherwise be treated as FREE.
+
+    *usage_key* is the billing workspace id of the paying team when the effective
+    tier comes from a (paid) team subscription, so the team's monthly quota is
+    SHARED across all members; otherwise it is ``"user:<id>"`` (free / solo),
+    which also sidesteps the team-id vs billing-workspace-id namespace mismatch.
+
+    Resolution failures (e.g. team tables absent on a self-host) fall back to the
+    user's own tier and a per-user key.
     """
-    best = PricingTier.FREE
     own = getattr(user, "tier", None)
-    if own:
-        try:
-            best = PricingTier(own)
-        except ValueError:
-            best = PricingTier.FREE
+    try:
+        best = PricingTier(own) if own else PricingTier.FREE
+    except ValueError:
+        best = PricingTier.FREE
 
     uid = str(getattr(user, "id", "") or "")
+    usage_key = f"user:{uid or 'anon'}"
     if not uid:
-        return best
+        return best, usage_key
     try:
         from faultray.api.database import SubscriptionRow, get_session_factory
         from sqlalchemy import select, text
@@ -142,23 +150,43 @@ async def resolve_effective_tier(user, session_factory=None) -> PricingTier:
             ).fetchall()
             workspace_ids = [r[0] for r in rows]
             if workspace_ids:
-                tiers = (
+                subs = (
                     await session.execute(
-                        select(SubscriptionRow.tier).where(
-                            SubscriptionRow.team_id.in_(workspace_ids)
-                        )
+                        select(
+                            SubscriptionRow.team_id, SubscriptionRow.tier
+                        ).where(SubscriptionRow.team_id.in_(workspace_ids))
                     )
-                ).scalars().all()
-                for t in tiers:
+                ).all()
+                # Highest-tier team subscription = the team being charged.
+                team_tier = PricingTier.FREE
+                team_key = None
+                for ws_id, t in subs:
                     try:
                         cand = PricingTier(t)
                     except ValueError:
                         continue
-                    if _TIER_RANK[cand] > _TIER_RANK[best]:
-                        best = cand
+                    if _TIER_RANK[cand] > _TIER_RANK[team_tier]:
+                        team_tier = cand
+                        team_key = ws_id
+                if _TIER_RANK[team_tier] > _TIER_RANK[best]:
+                    best = team_tier
+                # Charge usage to the paying team when it supplies the effective
+                # (paid) tier, so its members share one monthly quota.
+                if (
+                    team_key is not None
+                    and _TIER_RANK[team_tier] > 0
+                    and _TIER_RANK[team_tier] >= _TIER_RANK[best]
+                ):
+                    usage_key = team_key
     except Exception:
-        logger.debug("Could not resolve team subscription tier.", exc_info=True)
-    return best
+        logger.debug("Could not resolve billing context.", exc_info=True)
+    return best, usage_key
+
+
+async def resolve_effective_tier(user, session_factory=None) -> PricingTier:
+    """Best pricing tier available to *user* (see :func:`resolve_billing_context`)."""
+    tier, _ = await resolve_billing_context(user, session_factory)
+    return tier
 
 
 class UsageTracker:

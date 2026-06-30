@@ -634,7 +634,7 @@ class TestBillingEnforcement:
         the billing workspace), not UserRow.tier, so the gate must look through
         the team membership or it would 402 a paying Pro/Business member.
         """
-        from faultray.api.billing import resolve_effective_tier, PricingTier
+        from faultray.api.billing import resolve_billing_context, PricingTier
         from faultray.api.database import SubscriptionRow
         from tests.conftest import _run_async
         from sqlalchemy import text
@@ -663,13 +663,16 @@ class TestBillingEnforcement:
                 ))
                 session.add(SubscriptionRow(team_id="ws-hex", tier="business"))
                 await session.commit()
-            return await resolve_effective_tier(_U(), session_factory=sf)
+            return await resolve_billing_context(_U(), session_factory=sf)
 
-        assert _run_async(_seed_and_resolve()) == PricingTier.BUSINESS
+        tier, key = _run_async(_seed_and_resolve())
+        assert tier == PricingTier.BUSINESS
+        # Usage is charged to the paying team's workspace (shared quota).
+        assert key == "ws-hex"
 
-    def test_resolve_effective_tier_defaults_free(self, tmp_path):
-        """No paid team and tier='free' resolves to FREE (team tables absent)."""
-        from faultray.api.billing import resolve_effective_tier, PricingTier
+    def test_resolve_billing_context_defaults_free_per_user(self, tmp_path):
+        """No paid team and tier='free' -> FREE tier keyed per-user."""
+        from faultray.api.billing import resolve_billing_context, PricingTier
         from tests.conftest import _run_async
 
         sf = self._temp_sf(tmp_path)
@@ -678,7 +681,6 @@ class TestBillingEnforcement:
             id = 7
             tier = "free"
 
-        assert (
-            _run_async(resolve_effective_tier(_U(), session_factory=sf))
-            == PricingTier.FREE
-        )
+        tier, key = _run_async(resolve_billing_context(_U(), session_factory=sf))
+        assert tier == PricingTier.FREE
+        assert key == "user:7"
