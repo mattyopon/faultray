@@ -24,7 +24,7 @@ from __future__ import annotations
 
 import html
 from datetime import datetime, timezone
-from pathlib import Path
+from importlib.resources import files
 
 from faultray.model.components import Component, ComponentType
 from faultray.model.graph import InfraGraph
@@ -40,10 +40,12 @@ _THIRD_PARTY_TYPES = frozenset(
     }
 )
 
-# Where the static template lives, relative to the repository root. Resolved at
-# runtime by walking up from this file so it works from an installed package or
-# a source checkout.
-_TEMPLATE_RELPATH = Path("docs") / "sales" / "dora-evidence-pack-template.md"
+# The canonical template is shipped as package data so it is available from an
+# installed wheel (wheels package only ``src/faultray`` — the repo ``docs/``
+# tree is NOT included). The copy under ``docs/sales/`` remains the human-facing
+# sales document, but the CLI loads from here via importlib.resources.
+_TEMPLATE_PACKAGE = "faultray.reporter.templates"
+_TEMPLATE_NAME = "dora_evidence_pack_template.md"
 
 
 def _md_cell(text: object) -> str:
@@ -83,14 +85,21 @@ def _find_service(graph: InfraGraph, service: str) -> Component | None:
     return None
 
 
-def _locate_template() -> Path | None:
-    """Find the evidence-pack template by walking up from this file."""
-    here = Path(__file__).resolve()
-    for parent in here.parents:
-        candidate = parent / _TEMPLATE_RELPATH
-        if candidate.is_file():
-            return candidate
-    return None
+def load_template() -> str:
+    """Return the evidence-pack template text shipped as package data.
+
+    Uses :func:`importlib.resources.files` so it resolves correctly from an
+    installed wheel regardless of the current working directory. Raises
+    ``ValueError`` if the packaged template is missing.
+    """
+    resource = files(_TEMPLATE_PACKAGE) / _TEMPLATE_NAME
+    try:
+        return resource.read_text(encoding="utf-8")
+    except (FileNotFoundError, ModuleNotFoundError) as exc:
+        raise ValueError(
+            f"Evidence-pack template not found as package data "
+            f"({_TEMPLATE_PACKAGE}/{_TEMPLATE_NAME})."
+        ) from exc
 
 
 def _third_party_deps(graph: InfraGraph, component: Component) -> list[Component]:
@@ -109,12 +118,23 @@ def _spof_components(graph: InfraGraph) -> list[Component]:
 
 
 def _service_critical_findings(report: SimulationReport, component: Component):
-    """Critical findings whose blast radius touches *component*."""
+    """Critical findings whose fault target or cascade touches *component*.
+
+    A :class:`~faultray.simulator.engine.ScenarioResult` does not carry a flat
+    ``component_id``: the injected faults live on ``result.scenario.faults`` and
+    the downstream impact lives on ``result.cascade.effects``. A finding is
+    counted when *component* is either the faulted/target component OR appears
+    among the cascade effects.
+    """
+    cid = component.id
     related = []
     for result in report.critical_findings:
-        target = getattr(result, "component_id", "") or getattr(result, "target_id", "")
-        affected = getattr(result, "affected_components", None) or []
-        if target == component.id or component.id in affected:
+        faults = getattr(result.scenario, "faults", None) or []
+        if any(getattr(f, "target_component_id", None) == cid for f in faults):
+            related.append(result)
+            continue
+        effects = getattr(result.cascade, "effects", None) or []
+        if any(getattr(e, "component_id", None) == cid for e in effects):
             related.append(result)
     return related
 
@@ -143,13 +163,7 @@ def build_evidence_pack_markdown(
             f"Service {service!r} not found in model. Known services: {known}"
         )
 
-    template_path = _locate_template()
-    if template_path is None:
-        raise ValueError(
-            "Evidence-pack template not found at docs/sales/"
-            "dora-evidence-pack-template.md"
-        )
-    template = template_path.read_text(encoding="utf-8")
+    template = load_template()
 
     blast_radius = graph.get_all_affected(component.id)
     third_parties = _third_party_deps(graph, component)

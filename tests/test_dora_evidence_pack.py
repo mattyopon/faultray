@@ -6,8 +6,10 @@ import pytest
 
 from faultray.model.demo import create_demo_graph
 from faultray.reporter.dora_evidence_pack import (
+    _service_critical_findings,
     build_evidence_pack_markdown,
     evidence_pack_to_print_html,
+    load_template,
 )
 from faultray.simulator.engine import SimulationEngine
 
@@ -72,3 +74,35 @@ def test_print_html_wraps_markdown_safely() -> None:
     # Raw markdown angle brackets must be escaped, not live HTML.
     assert "<script>" not in html
     assert "&lt;script&gt;" in html
+
+
+def test_template_ships_as_package_data() -> None:
+    """The template must load via importlib.resources (as from an installed wheel).
+
+    load_template() reads ``faultray.reporter.templates`` package data and does
+    NOT depend on the repo ``docs/`` tree or the current working directory, so
+    this regression cannot be masked by a source-tree-only path.
+    """
+    text = load_template()
+    assert text.lstrip().startswith("# DORA Pre-Audit Resilience Evidence Pack")
+    # Placeholder tokens the renderer substitutes must be present in the shipped
+    # template (proves we packaged the canonical version, not a stale stub).
+    for token in ("{SERVICE_NAME}", "{RESILIENCE_SCORE}", "{SPOF_COUNT}"):
+        assert token in text
+
+
+def test_appendix_includes_findings_on_selected_service() -> None:
+    """A critical finding on the chosen service is surfaced in Appendix A.5.
+
+    Guards the ScenarioResult field-path fix: findings are matched via
+    ``scenario.faults[*].target_component_id`` and ``cascade.effects[*].component_id``,
+    not non-existent flat attributes.
+    """
+    graph = create_demo_graph()
+    report = SimulationEngine(graph).run_all_defaults()
+    comp = graph.get_component("postgres")
+    matched = _service_critical_findings(report, comp)
+    assert matched, "expected demo postgres to have critical findings touching it"
+    markdown = build_evidence_pack_markdown(graph, report, "postgres")
+    assert "Critical findings touching this service" in markdown
+    assert f"touching this service: {len(matched)}." in markdown

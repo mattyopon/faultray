@@ -1754,6 +1754,20 @@ class TestSimulateQuotaGate:
             ],
         )
 
+    def _usage_count(self, db_path, uid: int) -> int:
+        """Count recorded simulation usage rows for this user (reserved slots)."""
+        import sqlite3
+
+        conn = sqlite3.connect(str(db_path))
+        try:
+            return conn.execute(
+                "SELECT COUNT(*) FROM usage_logs "
+                "WHERE team_id=? AND resource='simulation'",
+                (f"user:{uid}",),
+            ).fetchone()[0]
+        finally:
+            conn.close()
+
     def test_quota_off_by_default(self, db_client, monkeypatch):
         monkeypatch.delenv("FAULTRAY_ENFORCE_QUOTA", raising=False)
         uid = self._user_id(db_client._db_path)
@@ -1779,3 +1793,42 @@ class TestSimulateQuotaGate:
         self._seed_usage(db_client._db_path, uid, 20)  # past FREE cap
         resp = db_client.post("/api/simulate", json={"sample": True})
         assert resp.status_code == 200
+
+    def test_unknown_replay_404_does_not_consume_quota(
+        self, demo_db_client, monkeypatch
+    ):
+        # A stale/typo incident id must 404 WITHOUT burning a monthly slot:
+        # existence is validated before the quota reservation.
+        monkeypatch.setenv("FAULTRAY_ENFORCE_QUOTA", "1")
+        uid = self._user_id(demo_db_client._db_path)
+        before = self._usage_count(demo_db_client._db_path, uid)
+        resp = demo_db_client.post("/api/replay/nonexistent-incident-xyz")
+        assert resp.status_code == 404
+        after = self._usage_count(demo_db_client._db_path, uid)
+        assert after == before, "404 replay must not reserve a simulation slot"
+
+    def test_noop_chaos_monkey_does_not_consume_quota(
+        self, demo_db_client, monkeypatch
+    ):
+        # An all-excluded component set yields a zero-round (no-op) experiment;
+        # it must be rejected before quota is charged.
+        monkeypatch.setenv("FAULTRAY_ENFORCE_QUOTA", "1")
+        uid = self._user_id(demo_db_client._db_path)
+        before = self._usage_count(demo_db_client._db_path, uid)
+        all_ids = ",".join(create_demo_graph().components.keys())
+        resp = demo_db_client.post(
+            "/api/chaos-monkey", data={"rounds": "10", "exclude": all_ids}
+        )
+        assert resp.status_code == 400
+        after = self._usage_count(demo_db_client._db_path, uid)
+        assert after == before, "no-op chaos request must not reserve a slot"
+
+    def test_genuine_chaos_monkey_consumes_quota(self, demo_db_client, monkeypatch):
+        # Sanity counterpart: a real runnable experiment DOES reserve a slot.
+        monkeypatch.setenv("FAULTRAY_ENFORCE_QUOTA", "1")
+        uid = self._user_id(demo_db_client._db_path)
+        before = self._usage_count(demo_db_client._db_path, uid)
+        resp = demo_db_client.post("/api/chaos-monkey", data={"rounds": "2"})
+        assert resp.status_code == 200
+        after = self._usage_count(demo_db_client._db_path, uid)
+        assert after == before + 1, "a genuine experiment must reserve one slot"

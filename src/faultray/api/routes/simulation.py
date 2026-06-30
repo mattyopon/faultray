@@ -306,9 +306,8 @@ async def replay_incident(
             detail="No infrastructure loaded. Visit /demo first or load a model.",
         )
 
-    # Same hosted-SaaS quota gate as the other simulation endpoints.
-    await _enforce_simulation_quota(user)
-
+    # Validate the incident exists BEFORE reserving quota: a typo/stale id must
+    # 404 without consuming a monthly simulation slot.
     engine = IncidentReplayEngine()
     try:
         incident = engine.get_incident(incident_id)
@@ -318,6 +317,10 @@ async def replay_incident(
             status_code=404,
             detail=f"Unknown incident ID '{incident_id}'. Available: {available}",
         )
+
+    # Same hosted-SaaS quota gate as the other simulation endpoints. Only after
+    # the request is known to be a genuine, runnable replay.
+    await _enforce_simulation_quota(user)
 
     result = engine.replay(graph, incident)
 
@@ -558,9 +561,6 @@ async def api_chaos_monkey(
 
     graph = get_graph()
 
-    # Same hosted-SaaS quota gate as the other simulation endpoints.
-    await _enforce_simulation_quota(user)
-
     try:
         form = await request.form()
         level_str = form.get("level", "monkey")
@@ -589,6 +589,24 @@ async def api_chaos_monkey(
     )
 
     monkey = ChaosMonkey()
+
+    # Validate the experiment will actually run BEFORE reserving quota: an empty
+    # graph, an all-excluded component set, or rounds<=0 all yield a zero-round
+    # report and must not burn a monthly simulation slot.
+    eligible = monkey._get_eligible_components(graph, config)
+    if not eligible or config.rounds <= 0:
+        raise HTTPException(
+            status_code=400,
+            detail=(
+                "No eligible components to test or no rounds requested. "
+                "Load infrastructure, relax exclusions, and request rounds >= 1."
+            ),
+        )
+
+    # Same hosted-SaaS quota gate as the other simulation endpoints, charged
+    # only once the request is known to be a genuine, runnable experiment.
+    await _enforce_simulation_quota(user)
+
     report = monkey.run(graph, config)
 
     return JSONResponse({

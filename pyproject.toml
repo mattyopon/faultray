@@ -143,6 +143,13 @@ faultray-mcp = "faultray.mcp_server:main"
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/faultray"]
+# Ship non-Python package data (report templates, evidence-pack template, etc.)
+# inside the wheel. Without this, a `pip install faultray` would lack the
+# DORA evidence-pack template and `faultray report dora` would fail at runtime.
+artifacts = [
+    "src/faultray/**/templates/*.html",
+    "src/faultray/**/templates/*.md",
+]
 
 [tool.ruff]
 target-version = "py311"
