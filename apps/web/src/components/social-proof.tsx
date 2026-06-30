@@ -5,6 +5,7 @@ interface SocialProofDict {
   heading: string;
   githubStars: string;
   betaMessage: string;
+  betaSubtitle: string;
   betaCta: string;
   openSource: string;
 }
@@ -15,29 +16,30 @@ interface SocialProofProps {
   pypiDownloads?: number;
 }
 
-// Note: testimonials are aspirational research scenarios, NOT real customer
-// quotes. FaultRay is a research prototype with no validated production
-// customers. Quotes describe the kind of internal exploration FaultRay
-// supports, not certified outcomes.
+// Example findings on sample/demo topologies — product capability
+// demonstrations, NOT customer testimonials. FaultRay is open source and these
+// describe what the tool surfaces on representative inputs, so we present them
+// as honest "what you'll find" examples (product voice) rather than fabricated
+// customer quotes, which destroy rather than build trust.
 const TESTIMONIALS = [
   {
-    quote: "We ran FaultRay against our payment pipeline topology before a Black Friday push. It surfaced a single-point-of-failure in our auth service that our team had missed for 18 months.",
-    author: "Aspirational scenario",
-    company: "Series B FinTech (illustrative)",
+    quote: "On a sample payment-pipeline topology, FaultRay surfaced a single-point-of-failure in the auth service in under 30 seconds — before any production change.",
+    author: "Example finding",
+    company: "Sample topology · payments",
     metric: "SPOF surfaced in < 30s",
     metricColor: "text-[var(--gold)]",
   },
   {
-    quote: "FaultRay's research-prototype evidence drafts gave our team a starting point for internal resilience design review. We still engaged qualified auditors and independent legal review for actual compliance work.",
-    author: "Aspirational scenario",
-    company: "EU-based engineering team (illustrative)",
-    metric: "Research prototype, not audit tool",
+    quote: "A DORA-aligned evidence pack gives teams a structured starting point for internal resilience design review — work you bring to qualified auditors, not a replacement for them.",
+    author: "Example use case",
+    company: "Pre-audit preparation",
+    metric: "Structured evidence pack",
     metricColor: "text-emerald-400",
   },
   {
-    quote: "We use FaultRay's N-Layer model in architecture reviews. It gives us a shared language between engineers and the CTO for discussing reliability trade-offs.",
-    author: "Aspirational scenario",
-    company: "B2B SaaS team (illustrative)",
+    quote: "The N-Layer availability model gives engineers and leadership a shared language for reliability trade-offs in architecture reviews.",
+    author: "Example use case",
+    company: "Architecture review",
     metric: "Shared reliability language",
     metricColor: "text-blue-400",
   },
@@ -104,7 +106,7 @@ export function SocialProof({ dict, stars, pypiDownloads }: SocialProofProps) {
         <div className="grid md:grid-cols-3 gap-6 mb-16">
           {TESTIMONIALS.map((t) => (
             <div
-              key={t.author}
+              key={t.company}
               className="flex flex-col p-6 rounded-2xl border border-[var(--border-color)] bg-[var(--bg-card)]"
             >
               <Quote size={20} className="text-[var(--gold)]/40 mb-4 shrink-0" />
@@ -126,7 +128,7 @@ export function SocialProof({ dict, stars, pypiDownloads }: SocialProofProps) {
         <div className="max-w-[640px] mx-auto text-center p-8 rounded-2xl border border-[var(--gold)]/20 bg-gradient-to-br from-[var(--gold)]/[0.04] to-[var(--bg-card)]">
           <p className="text-lg font-semibold text-[var(--text-primary)] mb-2">{dict.betaMessage}</p>
           <p className="text-[var(--text-secondary)] mb-6 text-sm">
-            現在アーリーアクセス段階です。ご意見・ご要望をお寄せいただけると大変助かります。
+            {dict.betaSubtitle}
           </p>
           <Link
             href="/contact"

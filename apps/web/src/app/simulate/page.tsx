@@ -926,8 +926,9 @@ const _DEMO_RESULT: SimulationResult = {
 };
 
 export default function SimulatePage() {
+  const locale = useLocale();
   return (
-    <Suspense fallback={<div className="w-full px-6 py-10 text-[var(--text-muted)]">読み込み中...</div>}>
+    <Suspense fallback={<div className="w-full px-6 py-10 text-[var(--text-muted)]">{locale === "ja" ? "読み込み中..." : "Loading..."}</div>}>
       <SimulatePageInner />
     </Suspense>
   );

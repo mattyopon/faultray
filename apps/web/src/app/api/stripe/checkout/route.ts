@@ -5,7 +5,7 @@ import { requireAuth } from "@/lib/api-auth";
 
 export const dynamic = "force-dynamic";
 
-type Plan = "pro" | "business";
+type Plan = "starter" | "pro" | "business";
 type Interval = "month" | "year";
 
 interface CheckoutBody {
@@ -13,8 +13,13 @@ interface CheckoutBody {
   interval?: Interval;
 }
 
-// Price in cents (USD)
+// Price in cents (USD). Matches the public /pricing grid (annual = total billed
+// once per year, i.e. monthly * 12 * 0.8).
 const PRICES: Record<Plan, Record<Interval, number>> = {
+  starter: {
+    month: 9900,   // $99
+    year: 94900,   // $949
+  },
   pro: {
     month: 29900,  // $299
     year: 286900,  // $2,869
@@ -26,11 +31,13 @@ const PRICES: Record<Plan, Record<Interval, number>> = {
 };
 
 const PLAN_NAMES: Record<Plan, string> = {
+  starter: "FaultRay Starter",
   pro: "FaultRay Pro",
   business: "FaultRay Business",
 };
 
 const TRIAL_DAYS: Record<Plan, number | undefined> = {
+  starter: undefined,
   pro: 14,
   business: undefined,
 };
@@ -209,7 +216,7 @@ export async function POST(request: Request) {
               currency: "usd",
               product_data: {
                 name: PLAN_NAMES[plan],
-                description: `FaultRay ${plan === "pro" ? "Pro" : "Business"} Plan — billed ${interval === "month" ? "monthly" : "annually"}`,
+                description: `${PLAN_NAMES[plan]} Plan — billed ${interval === "month" ? "monthly" : "annually"}`,
               },
               recurring: {
                 interval: interval === "month" ? "month" : "year",

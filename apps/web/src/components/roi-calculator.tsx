@@ -92,7 +92,7 @@ export function RoiCalculator({ dict, lang }: RoiCalculatorProps) {
             <div>
               <div className="flex justify-between mb-2">
                 <label className="text-sm font-semibold text-[var(--text-primary)]">{dict.incidentCount}</label>
-                <span className="text-sm font-bold text-[var(--gold)]">{incidentCount}回</span>
+                <span className="text-sm font-bold text-[var(--gold)]">{incidentCount}{isJa ? "回" : ""}</span>
               </div>
               <input
                 type="range"
@@ -104,8 +104,8 @@ export function RoiCalculator({ dict, lang }: RoiCalculatorProps) {
                 className="w-full h-2 rounded-full appearance-none cursor-pointer accent-[#055ec1] bg-[var(--border-color)]"
               />
               <div className="flex justify-between text-xs text-[var(--text-muted)] mt-1">
-                <span>1回</span>
-                <span>50回</span>
+                <span>{isJa ? "1回" : "1"}</span>
+                <span>{isJa ? "50回" : "50"}</span>
               </div>
             </div>
 
@@ -113,7 +113,7 @@ export function RoiCalculator({ dict, lang }: RoiCalculatorProps) {
             <div>
               <div className="flex justify-between mb-2">
                 <label className="text-sm font-semibold text-[var(--text-primary)]">{dict.incidentHours}</label>
-                <span className="text-sm font-bold text-[var(--gold)]">{incidentHours}時間</span>
+                <span className="text-sm font-bold text-[var(--gold)]">{incidentHours}{isJa ? "時間" : "h"}</span>
               </div>
               <input
                 type="range"
@@ -125,8 +125,8 @@ export function RoiCalculator({ dict, lang }: RoiCalculatorProps) {
                 className="w-full h-2 rounded-full appearance-none cursor-pointer accent-[#055ec1] bg-[var(--border-color)]"
               />
               <div className="flex justify-between text-xs text-[var(--text-muted)] mt-1">
-                <span>0.5時間</span>
-                <span>24時間</span>
+                <span>{isJa ? "0.5時間" : "0.5h"}</span>
+                <span>{isJa ? "24時間" : "24h"}</span>
               </div>
             </div>
           </div>

@@ -408,7 +408,7 @@ export default function PeopleRiskDashboard() {
                   <div className="flex items-center justify-between text-xs mb-1">
                     <span className={item.textColor}>{item.label}</span>
                     <span className="text-[var(--text-secondary)]">
-                      {item.count}件 ({pct}%)
+                      {item.count}{locale === "ja" ? "件" : ""} ({pct}%)
                     </span>
                   </div>
                   <div className="h-2 bg-[var(--border-color)] rounded-full overflow-hidden">
@@ -437,20 +437,20 @@ export default function PeopleRiskDashboard() {
                 />
                 <div className="text-xs text-[var(--text-secondary)]">
                   <p>
-                    最新:{" "}
+                    {locale === "ja" ? "最新:" : "Latest:"}{" "}
                     <span className="text-white font-semibold">
                       {snapshots[snapshots.length - 1]?.avg_risk_score}
                     </span>
                   </p>
                   <p>
-                    {snapshots.length}週間で{" "}
+                    {locale === "ja" ? `${snapshots.length}週間で` : ""}{" "}
                     <span className="text-emerald-400">
                       {(
                         (snapshots[0]?.avg_risk_score ?? 0) -
                         (snapshots[snapshots.length - 1]?.avg_risk_score ?? 0)
                       ).toFixed(1)}
                     </span>{" "}
-                    改善
+                    {locale === "ja" ? "改善" : `improvement (${snapshots.length}w)`}
                   </p>
                 </div>
               </div>
@@ -458,10 +458,10 @@ export default function PeopleRiskDashboard() {
                 <table className="w-full text-xs">
                   <thead>
                     <tr className="text-[var(--text-muted)] border-b border-[var(--border-color)]">
-                      <th scope="col" className="text-left py-2 font-medium">週</th>
-                      <th scope="col" className="text-right py-2 font-medium">リスクスコア</th>
+                      <th scope="col" className="text-left py-2 font-medium">{locale === "ja" ? "週" : "Week"}</th>
+                      <th scope="col" className="text-right py-2 font-medium">{locale === "ja" ? "リスクスコア" : "Risk Score"}</th>
                       <th scope="col" className="text-right py-2 font-medium">BF=1</th>
-                      <th scope="col" className="text-right py-2 font-medium">システム数</th>
+                      <th scope="col" className="text-right py-2 font-medium">{locale === "ja" ? "システム数" : "Systems"}</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -492,7 +492,7 @@ export default function PeopleRiskDashboard() {
               </div>
             </div>
           ) : (
-            <p className="text-sm text-[var(--text-muted)]">データがありません</p>
+            <p className="text-sm text-[var(--text-muted)]">{locale === "ja" ? "データがありません" : "No data"}</p>
           )}
         </Card>
       </div>

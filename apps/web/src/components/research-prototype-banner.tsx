@@ -3,29 +3,31 @@
 import { useLocale } from "@/lib/useLocale";
 
 /**
- * LIABILITY-CAP: Site-wide research prototype disclaimer banner.
+ * LIABILITY-CAP: Site-wide decision-support disclosure banner.
  *
- * Why: FaultRay landing previously claimed "DORA Compliance Reports",
- * "audit-ready reports", and "Prove DORA / SOC 2 compliance" across
- * 8 locales. Those claims created regulatory overclaim / civil liability
- * exposure for any financial institution SRE who might mistake FaultRay
- * outputs as DORA audit evidence.
+ * Why: FaultRay assists with DORA resilience preparation, but its outputs are
+ * not certified audit evidence. We must keep a clear, site-wide disclosure that
+ * caps regulatory-overclaim / civil-liability exposure — WITHOUT the alarmist
+ * "do not rely on this" framing that drove away the compliance buyers who are
+ * the only audience with budget. The copy below preserves the legal substance
+ * (not legal advice / not an audit opinion / not certification; validate before
+ * submission) while positioning FaultRay as professional decision-support
+ * software rather than an unusable "research prototype".
  *
- * This banner is rendered site-wide inside the LocaleProvider so that
- * every page across every locale displays the disclaimer in the user's
- * own language. The translations are kept inline here (not in the main
- * i18n dict loader) so the banner renders even if dictionary loading
- * fails — liability cap must not depend on normal app happy-path.
+ * Rendered site-wide inside the LocaleProvider so every page shows the
+ * disclosure in the user's language. Translations are kept inline (not in the
+ * i18n dict loader) so the disclosure renders even if dictionary loading fails
+ * — the liability cap must not depend on the normal app happy-path.
  */
 const DISCLAIMERS: Record<string, string> = {
-  en: "⚠ Research prototype — outputs are NOT validated for DORA, FISC, or any regulatory audit. Do not rely on FaultRay evidence for compliance decisions without independent legal and technical review.",
-  ja: "⚠ 研究プロトタイプ — 出力はDORA・FISC等の規制監査に対して検証されていません。独立した法務・技術レビューなしにコンプライアンス判断にFaultRayのエビデンスを使用しないでください。",
-  de: "⚠ Forschungsprototyp — Ausgaben sind NICHT für DORA, FISC oder andere regulatorische Audits validiert. Verwenden Sie FaultRay-Evidenz nicht für Compliance-Entscheidungen ohne unabhängige juristische und technische Prüfung.",
-  fr: "⚠ Prototype de recherche — les sorties ne sont PAS validées pour DORA, FISC ou tout audit réglementaire. Ne vous fiez pas aux preuves FaultRay pour des décisions de conformité sans examen juridique et technique indépendant.",
-  es: "⚠ Prototipo de investigación — las salidas NO están validadas para DORA, FISC ni ninguna auditoría regulatoria. No confíe en la evidencia de FaultRay para decisiones de cumplimiento sin una revisión legal y técnica independiente.",
-  pt: "⚠ Protótipo de pesquisa — as saídas NÃO são validadas para DORA, FISC ou qualquer auditoria regulatória. Não confie nas evidências do FaultRay para decisões de conformidade sem revisão jurídica e técnica independente.",
-  ko: "⚠ 연구 프로토타입 — 출력은 DORA, FISC 또는 기타 규제 감사에 대해 검증되지 않았습니다. 독립적인 법률 및 기술 검토 없이 FaultRay 증거를 규정 준수 결정에 사용하지 마십시오.",
-  zh: "⚠ 研究原型 — 输出未针对 DORA、FISC 或任何监管审计进行验证。在没有独立法律和技术审查的情况下，请勿依赖 FaultRay 证据进行合规决策。",
+  en: "FaultRay is decision-support software for DORA resilience preparation — it helps generate resilience scenarios and evidence for internal review. It is not legal advice, an audit opinion, or regulatory certification; validate outputs with your engineering, risk, and compliance teams before audit submission.",
+  ja: "FaultRayはDORAレジリエンス準備のための意思決定支援ソフトウェアです。社内レビュー用のレジリエンスシナリオとエビデンス作成を支援します。法的助言・監査意見・規制認証ではありません。監査提出前に、自社のエンジニアリング・リスク・コンプライアンス部門で出力を検証してください。",
+  de: "FaultRay ist Entscheidungsunterstützungssoftware für die DORA-Resilienzvorbereitung — sie hilft, Resilienzszenarien und Nachweise für die interne Prüfung zu erstellen. Sie ist keine Rechtsberatung, kein Prüfungsurteil und keine regulatorische Zertifizierung; validieren Sie die Ergebnisse vor der Audit-Einreichung mit Ihren Engineering-, Risiko- und Compliance-Teams.",
+  fr: "FaultRay est un logiciel d'aide à la décision pour la préparation à la résilience DORA — il aide à générer des scénarios de résilience et des preuves pour une revue interne. Ce n'est pas un conseil juridique, un avis d'audit ni une certification réglementaire ; validez les résultats avec vos équipes d'ingénierie, de risque et de conformité avant toute soumission d'audit.",
+  es: "FaultRay es software de apoyo a la decisión para la preparación de resiliencia DORA — ayuda a generar escenarios de resiliencia y evidencia para revisión interna. No es asesoramiento legal, una opinión de auditoría ni una certificación regulatoria; valide los resultados con sus equipos de ingeniería, riesgo y cumplimiento antes de presentar la auditoría.",
+  pt: "O FaultRay é um software de apoio à decisão para a preparação de resiliência DORA — ajuda a gerar cenários de resiliência e evidências para revisão interna. Não é aconselhamento jurídico, parecer de auditoria nem certificação regulatória; valide os resultados com as suas equipas de engenharia, risco e conformidade antes da submissão da auditoria.",
+  ko: "FaultRay는 DORA 복원력 준비를 위한 의사결정 지원 소프트웨어로, 내부 검토용 복원력 시나리오와 증거 생성을 지원합니다. 법률 자문, 감사 의견 또는 규제 인증이 아니며, 감사 제출 전에 엔지니어링·리스크·컴플라이언스 팀과 함께 출력을 검증하십시오.",
+  zh: "FaultRay 是用于 DORA 韧性准备的决策支持软件——它帮助生成供内部审查的韧性场景与证据。它并非法律意见、审计意见或监管认证；在提交审计之前，请与您的工程、风险与合规团队一起验证输出。",
 };
 
 export function ResearchPrototypeBanner() {
@@ -34,9 +36,9 @@ export function ResearchPrototypeBanner() {
 
   return (
     <div
-      role="status"
-      aria-label="Research prototype notice"
-      className="fixed top-16 left-0 right-0 z-40 bg-amber-500 text-black text-center text-xs sm:text-sm font-medium px-4 py-2 border-b border-amber-700"
+      role="note"
+      aria-label="Product disclosure"
+      className="fixed top-16 left-0 right-0 z-40 bg-[var(--bg-secondary)] text-[var(--text-muted)] text-center text-xs sm:text-sm px-4 py-2 border-b border-[var(--border-color)]"
     >
       {text}
     </div>

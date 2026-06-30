@@ -9,6 +9,8 @@ import { LocaleProvider } from "@/lib/useLocale";
 import { CookieConsent } from "@/components/cookie-consent";
 import { ResearchPrototypeBanner } from "@/components/research-prototype-banner";
 import { cspStrictEnabled } from "@/lib/csp";
+import { PUBLIC_PAGES } from "@/lib/public-routes";
+import { locales } from "@/i18n/config";
 import "./globals.css";
 
 const inter = Inter({
@@ -161,6 +163,21 @@ const jsonLd = [
 // historical 'unsafe-inline' policy. See docs/csp-nonce-plan.md.
 const STRICT_CSP = cspStrictEnabled();
 
+// Public (light-theme) paths for the pre-hydration theme script in <body>.
+// Built from the SAME constants the proxy uses (src/lib/public-routes.ts +
+// i18n locales) so the two can never drift. The previous hand-kept copy omitted
+// the /zh /ko /es /pt locale roots and /service-level-agreement, which flipped
+// those public marketing pages to the dark "app" theme and caused a client/
+// server hydration mismatch. Anything NOT in this set is treated as an app page
+// (dark theme). Serialized once at module load — all entries are static,
+// app-controlled strings (no user input, no "</script>"), safe to inline.
+const THEME_LIGHT_PATHS = JSON.stringify([
+  "/",
+  "/login",
+  ...locales.map((l) => `/${l}`),
+  ...PUBLIC_PAGES,
+]);
+
 export default async function RootLayout({
   children,
 }: Readonly<{
@@ -260,9 +277,7 @@ export default async function RootLayout({
           dangerouslySetInnerHTML={{
             __html: `(function(){
               var p=window.location.pathname;
-              var pub=['/','/login','/pricing','/en','/ja','/de','/fr',
-                '/terms','/privacy','/dpa','/tokushoho','/contact','/demo','/help','/support',
-                '/status','/features','/case-studies','/ringi','/changelog'];
+              var pub=${THEME_LIGHT_PATHS};
               var isApp=!pub.some(function(s){return p===s||p.startsWith(s+'/');});
               if(isApp){
                 document.body.setAttribute('data-app-page','true');

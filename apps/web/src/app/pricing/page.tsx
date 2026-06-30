@@ -19,7 +19,7 @@ interface Plan {
   cta: string;
   ctaHref: string;
   popular: boolean;
-  stripePlan: "pro" | "business" | null;
+  stripePlan: "starter" | "pro" | "business" | null;
   sla: string | null;
 }
 
@@ -30,7 +30,7 @@ const plans: Plan[] = [
     annualMonthlyPrice: 799,   // 999 * 12 * 0.8 / 12 ≈ 799
     annualTotal: 9590,         // 999 * 12 * 0.8 rounded
     desc: "For enterprises needing unlimited access, SSO, and dedicated support.",
-    features: ["Unlimited simulations", "Unlimited components", "Everything in Pro", "Research-prototype evidence export", "Custom SSO / SAML", "Dedicated support (1h)", "Prometheus integration", "On-premise deployment"],
+    features: ["Unlimited simulations", "Unlimited components", "Everything in Pro", "DORA-aligned evidence pack", "Custom SSO / SAML", "Dedicated support (1h)", "Prometheus integration", "On-premise deployment"],
     disabledFeatures: [],
     cta: "Get a Quote",
     ctaHref: "/contact?plan=business",
@@ -43,8 +43,8 @@ const plans: Plan[] = [
     monthlyPrice: 299,
     annualMonthlyPrice: 239,   // 299 * 12 * 0.8 / 12 ≈ 239
     annualTotal: 2869,         // 299 * 12 * 0.8 rounded
-    desc: "For teams that need research-prototype evidence exports and higher limits.",
-    features: ["14-day free trial", "100 simulations / month", "Up to 50 components", "Everything in Free", "Research-prototype evidence export (PDF)", "AI-assisted analysis", "Email support (24h)"],
+    desc: "For teams that need DORA-aligned evidence exports and higher limits.",
+    features: ["14-day free trial", "100 simulations / month", "Up to 50 components", "Everything in Free", "DORA-aligned evidence pack (PDF)", "AI-assisted analysis", "Email support (24h)"],
     disabledFeatures: ["Insurance API", "Custom SSO"],
     cta: "Start Free Trial",
     ctaHref: "/login?plan=pro",
@@ -59,11 +59,11 @@ const plans: Plan[] = [
     annualTotal: 949,
     desc: "For small teams getting started with reliability testing. 30 simulations covers most ongoing monitoring needs.",
     features: ["30 simulations / month", "Up to 20 components", "Everything in Free", "Email support (48h)", "Basic remediation suggestions"],
-    disabledFeatures: ["Research-prototype evidence export", "AI-assisted analysis", "Custom SSO"],
+    disabledFeatures: ["DORA-aligned evidence pack", "AI-assisted analysis", "Custom SSO"],
     cta: "Start Starter",
     ctaHref: "/login?plan=starter",
     popular: false,
-    stripePlan: null,
+    stripePlan: "starter",
     sla: null,
   },
   {
@@ -73,7 +73,7 @@ const plans: Plan[] = [
     annualTotal: 0,
     desc: "Perfect for individual engineers exploring chaos engineering. 5 simulations covers most proof-of-concept evaluations.",
     features: ["5 simulations / month", "Up to 5 components", "Multiple simulation engines", "N-Layer Availability Model", "HTML reports", "Community support"],
-    disabledFeatures: ["Research-prototype evidence export", "Custom SSO"],
+    disabledFeatures: ["DORA-aligned evidence pack", "Custom SSO"],
     cta: "Get Started Free",
     ctaHref: "/login",
     popular: false,
@@ -87,7 +87,7 @@ const featureComparison = [
   { name: "Components", free: "5", starter: "20", pro: "50", business: "Unlimited" },
   { name: "Simulation engines", free: "100+", starter: "100+", pro: "100+", business: "100+" },
   { name: "N-Layer Model", free: true, starter: true, pro: true, business: true },
-  { name: "Research-prototype evidence export", free: false, starter: false, pro: "PDF", business: "PDF + API" },
+  { name: "DORA-aligned evidence pack", free: false, starter: false, pro: "PDF", business: "PDF + API" },
   { name: "Insurance API", free: false, starter: false, pro: false, business: true },
   { name: "AI-assisted analysis", free: false, starter: false, pro: true, business: true },
   { name: "Custom SSO / SAML", free: false, starter: false, pro: false, business: true },
@@ -119,12 +119,12 @@ function CellValue({ value }: { value: string | boolean }) {
 export default function PricingPage() {
   const [loadingPlan, setLoadingPlan] = useState<string | null>(null);
   const [billing, setBilling] = useState<BillingCycle>("monthly");
-  const [checkoutError, setCheckoutError] = useState<{ plan: "pro" | "business"; message: string } | null>(null);
+  const [checkoutError, setCheckoutError] = useState<{ plan: "starter" | "pro" | "business"; message: string } | null>(null);
   // COPY-NEW-06: ロケール検出して日本語UIに対応
   const locale = useLocale();
   const isJa = locale === "ja";
 
-  const handleCheckout = async (plan: "pro" | "business") => {
+  const handleCheckout = async (plan: "starter" | "pro" | "business") => {
     setLoadingPlan(plan);
     setCheckoutError(null);
     const errMsg = isJa
@@ -210,10 +210,13 @@ export default function PricingPage() {
           <span className="hidden sm:block">·</span>
           <span>Cancel anytime</span>
         </div>
-        {/* JP-05: 日本語サポートの保証を明示 */}
-        <div className="mt-4 inline-flex items-center gap-2 px-4 py-2 rounded-full bg-blue-500/10 border border-blue-500/20">
-          <span className="text-sm font-semibold text-blue-400">日本語サポート対応 — 日本語でのメール・稟議書サポートを提供</span>
-        </div>
+        {/* JP-05: 日本語サポートの保証を明示。ja ロケール限定 — 日本語固有の訴求
+            なので非日本語ユーザーには生の日本語を見せない（i18n acceptance fix）。 */}
+        {isJa && (
+          <div className="mt-4 inline-flex items-center gap-2 px-4 py-2 rounded-full bg-blue-500/10 border border-blue-500/20">
+            <span className="text-sm font-semibold text-blue-400">日本語サポート対応 — 日本語でのメール・稟議書サポートを提供</span>
+          </div>
+        )}
       </div>
 
       {/* Billing toggle */}
@@ -418,7 +421,7 @@ export default function PricingPage() {
             <h3 className="text-base font-bold text-[var(--text-primary)] mb-1">Already on Pro? Unlock more with Business.</h3>
             <p className="text-sm text-[var(--text-secondary)]">
               Unlimited simulations, custom SSO, dedicated Slack support, Insurance API, and on-premise deployment.
-              Teams exploring DORA-aligned research use Business for broader coverage. (Research prototype — not a certified compliance tool.)
+              Teams running DORA-aligned resilience preparation use Business for broader coverage across teams and environments.
             </p>
           </div>
           <Link
@@ -434,12 +437,22 @@ export default function PricingPage() {
       <div className="max-w-[900px] mx-auto mt-8 p-4 rounded-xl border border-[var(--border-color)] bg-[var(--bg-card)] flex items-start gap-3">
         <span className="text-lg shrink-0">🏦</span>
         <div>
-          <p className="text-sm text-[var(--text-secondary)]">
-            <span className="text-[var(--text-primary)] font-semibold">請求書払い・銀行振込に対応しています。</span>{" "}
-            年間契約をご希望の企業様は <a href="mailto:sales@faultray.com" className="text-[var(--gold)] hover:underline">sales@faultray.com</a> までお問い合わせください。
-            インボイス制度対応の適格請求書を発行いたします。
-          </p>
-          <p className="text-xs text-[var(--text-muted)] mt-1">Invoice payment (bank transfer) available for annual plans. Contact us for enterprise billing.</p>
+          {isJa ? (
+            <>
+              <p className="text-sm text-[var(--text-secondary)]">
+                <span className="text-[var(--text-primary)] font-semibold">請求書払い・銀行振込に対応しています。</span>{" "}
+                年間契約をご希望の企業様は <a href="mailto:sales@faultray.com" className="text-[var(--gold)] hover:underline">sales@faultray.com</a> までお問い合わせください。
+                インボイス制度対応の適格請求書を発行いたします。
+              </p>
+              <p className="text-xs text-[var(--text-muted)] mt-1">Invoice payment (bank transfer) available for annual plans. Contact us for enterprise billing.</p>
+            </>
+          ) : (
+            <p className="text-sm text-[var(--text-secondary)]">
+              <span className="text-[var(--text-primary)] font-semibold">Invoice payment (bank transfer) available.</span>{" "}
+              For annual or enterprise billing, contact{" "}
+              <a href="mailto:sales@faultray.com" className="text-[var(--gold)] hover:underline">sales@faultray.com</a>.
+            </p>
+          )}
         </div>
       </div>
 
@@ -447,7 +460,11 @@ export default function PricingPage() {
       <div className="max-w-[900px] mx-auto mt-8 pt-8 border-t border-[var(--border-color)] flex flex-wrap justify-center gap-6 text-sm text-[var(--text-muted)]">
         <Link href="/privacy" className="hover:text-[var(--text-primary)] transition-colors">Privacy Policy</Link>
         <Link href="/terms" className="hover:text-[var(--text-primary)] transition-colors">Terms of Service</Link>
-        <Link href="/tokushoho" className="hover:text-[var(--text-primary)] transition-colors">特定商取引法に基づく表記</Link>
+        {/* 特定商取引法に基づく表記 is a Japan-specific legal disclosure (tokushoho);
+            only surface it on the ja locale so non-JA users don't see raw Japanese. */}
+        {isJa && (
+          <Link href="/tokushoho" className="hover:text-[var(--text-primary)] transition-colors">特定商取引法に基づく表記</Link>
+        )}
         <a href="mailto:sales@faultray.com" className="hover:text-[var(--text-primary)] transition-colors">Contact Sales</a>
       </div>
     </div>

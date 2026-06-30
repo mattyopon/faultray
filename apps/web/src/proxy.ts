@@ -1,24 +1,19 @@
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 import { buildCsp, cspStrictEnabled } from "@/lib/csp";
+// Shared with src/app/layout.tsx (pre-hydration theme script) so the public-page
+// list can never drift between the two consumers. See src/lib/public-routes.ts.
+import { PUBLIC_PAGES } from "@/lib/public-routes";
 
 const locales = ["en", "ja", "de", "fr", "zh", "ko", "es", "pt"];
 const defaultLocale = "en";
 
-// Single source of truth for route classification. Every app route MUST be
-// listed here: a route missing from this list gets locale-prefixed by the
-// landing redirect below (e.g. /admin → /en/admin) and 404s, because only
-// the marketing landing pages exist under /{locale}.
-// Matching is prefix-based (startsWith), so "/security" also covers
-// "/security-checklist".
-const PUBLIC_PAGES = [
-  // Legal / public pages (no locale prefix)
-  "/tokushoho", "/dpa", "/privacy", "/terms", "/service-level-agreement",
-  "/contact", "/features", "/pricing", "/demo",
-  "/status", "/support", "/help", "/changelog", "/ringi", "/case-studies",
-];
-
-// Authenticated app routes — also the auth-protection list.
+// Authenticated app routes — also the auth-protection list. (Public marketing /
+// legal pages live in PUBLIC_PAGES, imported above.) Every app route MUST be
+// listed here: a route missing from both lists gets locale-prefixed by the
+// landing redirect below (e.g. /admin → /en/admin) and 404s, because only the
+// marketing landing pages exist under /{locale}. Matching is prefix-based
+// (startsWith), so "/security" also covers "/security-checklist".
 const APP_ROUTES = [
   "/admin", "/audit-log",
   "/dashboard", "/simulate", "/results", "/suggestions", "/settings",
@@ -182,16 +177,30 @@ export async function proxy(request: NextRequest) {
   if (pathnameHasLocale) {
     const appPaths = [...PUBLIC_PAGES, "/login", ...APP_ROUTES];
     let strippedPath = pathname;
+    let strippedLocale: string | null = null;
     for (const locale of locales) {
       if (pathname.startsWith(`/${locale}/`)) {
         strippedPath = pathname.slice(locale.length + 1);
+        strippedLocale = locale;
         break;
       }
     }
     if (appPaths.some((path) => strippedPath === path || strippedPath.startsWith(path + "/"))) {
       const url = request.nextUrl.clone();
       url.pathname = strippedPath;
-      return NextResponse.redirect(url);
+      const redirect = NextResponse.redirect(url);
+      // I18N: the locale prefix is stripped for non-prefixed app routes, so the
+      // page mounts at e.g. /features with no locale segment. Persist the locale
+      // the user explicitly navigated to into NEXT_LOCALE — the documented
+      // fallback useLocale() reads — otherwise a direct hit or new tab on
+      // /ja/features loses the locale and renders English.
+      if (strippedLocale) {
+        redirect.cookies.set("NEXT_LOCALE", strippedLocale, {
+          path: "/",
+          maxAge: 31536000,
+        });
+      }
+      return redirect;
     }
   }
 

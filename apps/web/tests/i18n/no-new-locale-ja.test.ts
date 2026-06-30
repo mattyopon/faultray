@@ -18,7 +18,12 @@ import path from "path";
 const APP_DIR = path.resolve(__dirname, "..", "..", "src", "app");
 
 // Current count — a ceiling, not a target. Lower it as you migrate.
-const BASELINE = 603;
+// Raised 603 -> 614 when the people-risk / ROI / simulate / pricing pages had
+// their *unconditional* Japanese (which leaked JA to all six other locales and
+// was invisible to this counter) converted to gated `locale === "ja" ? ja : en`
+// ternaries — a net improvement; the appDict migration that retires these is
+// still the goal.
+const BASELINE = 614;
 
 function walk(dir: string): string[] {
   const out: string[] = [];
