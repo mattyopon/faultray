@@ -91,7 +91,6 @@ async def api_simulate(request: Request, user=Depends(_require_permission("run_s
     # billing-workspace-id namespace -- a paid plan maps to an unlimited tier
     # and is never throttled.
     from faultray.api.billing import (
-        TIER_LIMITS,
         PricingTier,
         UsageTracker,
         _saas_quota_enabled,
