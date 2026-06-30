@@ -626,3 +626,59 @@ class TestBillingEnforcement:
             )
             is False
         )
+
+    def test_resolve_effective_tier_honors_team_subscription(self, tmp_path):
+        """A FREE user who belongs to a paid team resolves to the team's tier.
+
+        Regression for the Codex P1: paid plans live in SubscriptionRow (keyed by
+        the billing workspace), not UserRow.tier, so the gate must look through
+        the team membership or it would 402 a paying Pro/Business member.
+        """
+        from faultray.api.billing import resolve_effective_tier, PricingTier
+        from faultray.api.database import SubscriptionRow
+        from tests.conftest import _run_async
+        from sqlalchemy import text
+
+        sf = self._temp_sf(tmp_path)
+
+        class _U:
+            id = 42
+            tier = "free"
+
+        async def _seed_and_resolve():
+            async with sf() as session:
+                # team_workspaces / team_members are created at runtime by
+                # teams.py (raw SQL), not Base.metadata -- create them here.
+                await session.execute(text(
+                    "CREATE TABLE IF NOT EXISTS team_workspaces "
+                    "(id TEXT PRIMARY KEY, name TEXT, owner_id TEXT, created_at TEXT)"
+                ))
+                await session.execute(text(
+                    "CREATE TABLE IF NOT EXISTS team_members "
+                    "(team_id TEXT, user_id TEXT, role TEXT, joined_at TEXT)"
+                ))
+                await session.execute(text(
+                    "INSERT INTO team_members (team_id, user_id, role) "
+                    "VALUES ('ws-hex', '42', 'editor')"
+                ))
+                session.add(SubscriptionRow(team_id="ws-hex", tier="business"))
+                await session.commit()
+            return await resolve_effective_tier(_U(), session_factory=sf)
+
+        assert _run_async(_seed_and_resolve()) == PricingTier.BUSINESS
+
+    def test_resolve_effective_tier_defaults_free(self, tmp_path):
+        """No paid team and tier='free' resolves to FREE (team tables absent)."""
+        from faultray.api.billing import resolve_effective_tier, PricingTier
+        from tests.conftest import _run_async
+
+        sf = self._temp_sf(tmp_path)
+
+        class _U:
+            id = 7
+            tier = "free"
+
+        assert (
+            _run_async(resolve_effective_tier(_U(), session_factory=sf))
+            == PricingTier.FREE
+        )

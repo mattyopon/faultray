@@ -92,6 +92,75 @@ TIER_LIMITS: dict[PricingTier, UsageLimits] = {
 }
 
 
+# Ordering used to pick the BEST tier available to a caller (their own
+# UserRow.tier vs any paid team subscription).
+_TIER_RANK: dict[PricingTier, int] = {
+    PricingTier.FREE: 0,
+    PricingTier.PRO: 1,
+    PricingTier.BUSINESS: 2,
+    PricingTier.ENTERPRISE: 3,
+}
+
+
+async def resolve_effective_tier(user, session_factory=None) -> PricingTier:
+    """Resolve the highest pricing tier available to *user*.
+
+    Takes the best of (a) the user's own ``UserRow.tier`` and (b) the tier of
+    any billing team (``team_workspaces``) they own or belong to. Paid plans are
+    stored in ``SubscriptionRow`` keyed by the billing-workspace id, and
+    ``UserRow.tier`` is never synced from that row -- so a Pro/Business team
+    member would otherwise be treated as FREE. Resolution failures (e.g. team
+    tables absent on a self-host) fall back to the user's own tier.
+    """
+    best = PricingTier.FREE
+    own = getattr(user, "tier", None)
+    if own:
+        try:
+            best = PricingTier(own)
+        except ValueError:
+            best = PricingTier.FREE
+
+    uid = str(getattr(user, "id", "") or "")
+    if not uid:
+        return best
+    try:
+        from faultray.api.database import SubscriptionRow, get_session_factory
+        from sqlalchemy import select, text
+
+        sf = session_factory or get_session_factory()
+        async with sf() as session:
+            # Workspaces the user owns OR is a member of.
+            rows = (
+                await session.execute(
+                    text(
+                        "SELECT id FROM team_workspaces WHERE owner_id = :uid "
+                        "UNION "
+                        "SELECT team_id FROM team_members WHERE user_id = :uid"
+                    ),
+                    {"uid": uid},
+                )
+            ).fetchall()
+            workspace_ids = [r[0] for r in rows]
+            if workspace_ids:
+                tiers = (
+                    await session.execute(
+                        select(SubscriptionRow.tier).where(
+                            SubscriptionRow.team_id.in_(workspace_ids)
+                        )
+                    )
+                ).scalars().all()
+                for t in tiers:
+                    try:
+                        cand = PricingTier(t)
+                    except ValueError:
+                        continue
+                    if _TIER_RANK[cand] > _TIER_RANK[best]:
+                        best = cand
+    except Exception:
+        logger.debug("Could not resolve team subscription tier.", exc_info=True)
+    return best
+
+
 class UsageTracker:
     """Track and enforce per-team resource usage against tier limits."""
 

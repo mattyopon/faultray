@@ -468,7 +468,11 @@ async def compliance_report_gated(
     - Pro tier: full report + PDF/HTML export capability
     - Business tier: full report + custom branding + API auto-report
     """
-    from faultray.api.billing import PricingTier, TIER_LIMITS
+    from faultray.api.billing import (
+        PricingTier,
+        TIER_LIMITS,
+        resolve_effective_tier,
+    )
     from faultray.api.server import get_graph
 
     graph = get_graph()
@@ -478,9 +482,11 @@ async def compliance_report_gated(
             detail="No infrastructure loaded. Visit /demo first.",
         )
 
-    # Determine user's tier
-    user_tier = _resolve_user_tier(user)
-    tier_enum = PricingTier(user_tier) if user_tier in [t.value for t in PricingTier] else PricingTier.FREE
+    # Determine the caller's effective tier: the best of their own UserRow.tier
+    # and any paid team subscription (SubscriptionRow), so a Pro/Business team
+    # member sees the full report instead of the redacted FREE one.
+    tier_enum = await resolve_effective_tier(user)
+    user_tier = tier_enum.value
     limits = TIER_LIMITS[tier_enum]
 
     # Build the full compliance report
@@ -563,29 +569,3 @@ async def compliance_report_gated(
         response["api_auto_report"] = True
 
     return JSONResponse(response)
-
-
-def _resolve_user_tier(user: object | None) -> str:
-    """Resolve the pricing tier for a user.
-
-    Checks user.tier first, then falls back to the team subscription.
-    """
-    if user is None:
-        return "free"
-
-    # Check user's own tier attribute
-    user_tier = getattr(user, "tier", None)
-    if user_tier and user_tier != "free":
-        return user_tier
-
-    # Fall back to team subscription
-    team_id = getattr(user, "team_id", None)
-    if team_id:
-        try:
-            # Synchronous check - we can't await here easily,
-            # so we check the subscription in a simple way
-            return "free"  # Will be resolved via billing/usage endpoints
-        except Exception:
-            pass
-
-    return "free"
