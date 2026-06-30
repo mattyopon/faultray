@@ -310,12 +310,19 @@ async def api_score_history(
 
         session_factory = get_session_factory()
         async with session_factory() as session:
-            stmt = (
-                select(SimulationRunRow)
-                .where(SimulationRunRow.risk_score.isnot(None))
-                .order_by(SimulationRunRow.created_at.desc())
-                .limit(limit)
+            stmt = select(SimulationRunRow).where(
+                SimulationRunRow.risk_score.isnot(None)
             )
+            # SEC (IDOR): score history is per-tenant. Without this filter a
+            # team-scoped caller would see every other tenant's resilience
+            # scores, run ids and simulation cadence. Reuses the same visibility
+            # rule as the runs list / get_run so the scoping cannot drift.
+            from faultray.api.routes.projects import _team_visible_run_filter
+
+            run_filter = await _team_visible_run_filter(session, user)
+            if run_filter is not None:
+                stmt = stmt.where(run_filter)
+            stmt = stmt.order_by(SimulationRunRow.created_at.desc()).limit(limit)
             result = await session.execute(stmt)
             rows = result.scalars().all()
 

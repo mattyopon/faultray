@@ -1168,9 +1168,12 @@ class AutonomousRemediationAgent:
         blocked = sum(
             1 for e in cycle.execution_log if e.get("status") == "blocked"
         )
+        # "timeout" is a terminal failed apply (the loop breaks on it and
+        # _applied_infra_steps treats it as possibly-applied for rollback), so it
+        # must count here too — otherwise a timed-out cycle misreports "0 failed".
         failed = sum(
             1 for e in cycle.execution_log
-            if e.get("status") in ("failed", "apply_failed")
+            if e.get("status") in ("failed", "apply_failed", "timeout")
         )
 
         mode = "LIVE" if self._auto_apply_allowed() else "DRY-RUN"

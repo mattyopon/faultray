@@ -28,8 +28,11 @@ from pathlib import Path
 
 import httpx
 import psutil
+from pydantic import ValidationError
 
 from faultray.apm.models import (
+    _MAX_BATCH_ITEMS,
+    _MAX_TOTAL_CONNECTIONS,
     AgentConfig,
     ConnectionInfo,
     HostMetrics,
@@ -179,6 +182,18 @@ class APMAgent:
                 if self.config.collect_connections:
                     try:
                         for c in proc.net_connections(kind="inet"):
+                            if len(proc_conns) >= _MAX_BATCH_ITEMS:
+                                # A single process with more sockets than the
+                                # collector accepts (e.g. a busy proxy): truncate
+                                # to the cap so ProcessInfo's max_length does not
+                                # raise and drop the whole collection cycle. The
+                                # collector keeps its own cap for untrusted POSTs.
+                                logger.debug(
+                                    "Truncating process %s connections at %d",
+                                    info.get("pid"),
+                                    _MAX_BATCH_ITEMS,
+                                )
+                                break
                             proc_conns.append(ConnectionInfo(
                                 local_addr=c.laddr.ip if c.laddr else "",
                                 local_port=c.laddr.port if c.laddr else 0,
@@ -212,6 +227,15 @@ class APMAgent:
         conns: list[ConnectionInfo] = []
         try:
             for c in psutil.net_connections(kind="inet"):
+                if len(conns) >= _MAX_BATCH_ITEMS:
+                    # A busy host with more system-wide sockets than the
+                    # collector accepts: truncate so MetricsBatch's cap does not
+                    # raise and drop the whole collection cycle. The collector
+                    # keeps its own cap for untrusted payloads.
+                    logger.debug(
+                        "Truncating system-wide connections at %d", _MAX_BATCH_ITEMS
+                    )
+                    break
                 conns.append(ConnectionInfo(
                     local_addr=c.laddr.ip if c.laddr else "",
                     local_port=c.laddr.port if c.laddr else 0,
@@ -355,49 +379,93 @@ class APMAgent:
             batches = self._metrics_buffer[:]
             self._metrics_buffer.clear()
 
-        # Merge into a single batch for efficiency
-        merged = self._merge_batches(batches)
+        # Merge into a single batch for efficiency. The merge can exceed the
+        # collector's per-list / aggregate caps when many buffered batches are
+        # combined (e.g. after a collector outage); each buffered batch was valid
+        # when collected, so on a cap ValidationError fall back to sending them
+        # unmerged rather than dropping the already-cleared samples.
+        merged_mode = True
+        try:
+            to_send = [self._merge_batches(batches)]
+        except ValidationError:
+            logger.warning(
+                "Merged batch exceeds collector caps; sending %d batches unmerged",
+                len(batches),
+            )
+            to_send = batches
+            merged_mode = False
 
+        # Track how many were transmitted so a mid-flush failure re-buffers only
+        # the UNSENT batches and never duplicates an already-accepted one. In
+        # merged mode the single payload represents every batch, so re-buffer the
+        # whole set on failure; unmerged, re-buffer only the unsent suffix.
+        sent = 0
         try:
             async with httpx.AsyncClient(timeout=30.0) as client:
                 headers = {"Content-Type": "application/json"}
                 if self.config.api_key:
                     headers["Authorization"] = f"Bearer {self.config.api_key}"
 
-                resp = await client.post(
-                    f"{self.config.collector_url}/api/apm/metrics",
-                    content=merged.model_dump_json(),
-                    headers=headers,
-                )
-                if resp.status_code == 200:
-                    logger.debug("Sent metrics batch (status=200)")
-                else:
-                    logger.warning(
-                        "Collector responded with status %d: %s",
-                        resp.status_code,
-                        resp.text[:200],
+                for batch in to_send:
+                    resp = await client.post(
+                        f"{self.config.collector_url}/api/apm/metrics",
+                        content=batch.model_dump_json(),
+                        headers=headers,
                     )
+                    if resp.status_code == 200:
+                        logger.debug("Sent metrics batch (status=200)")
+                    else:
+                        logger.warning(
+                            "Collector responded with status %d: %s",
+                            resp.status_code,
+                            resp.text[:200],
+                        )
+                    sent += 1
+            return
         except httpx.ConnectError:
             logger.warning(
                 "Cannot connect to collector at %s — buffering",
                 self.config.collector_url,
             )
-            # Re-add to buffer for retry
+            remaining = batches if merged_mode else batches[sent:]
             async with self._send_lock:
-                self._metrics_buffer.extend(batches)
+                self._metrics_buffer.extend(remaining)
         except Exception:
             logger.error("Failed to send metrics — re-buffering for retry", exc_info=True)
             # Any other send failure (timeout, read/write error, serialization,
             # transient DNS, etc.) must not silently discard already-cleared
-            # batches — re-buffer them so they are retried on the next flush.
+            # batches — re-buffer the unsent ones for the next flush.
+            remaining = batches if merged_mode else batches[sent:]
             async with self._send_lock:
-                self._metrics_buffer.extend(batches)
+                self._metrics_buffer.extend(remaining)
+
+    @staticmethod
+    def _bound_for_collector(
+        procs: list[ProcessInfo], conns: list[ConnectionInfo]
+    ) -> tuple[list[ProcessInfo], list[ConnectionInfo]]:
+        """Bound agent-collected lists to the collector's caps so a large host
+        never raises a ValidationError in _collect_batch (which _collect_loop
+        would treat as a failed cycle and drop entirely). Sends a bounded
+        SAMPLE; the collector keeps its own caps for untrusted payloads.
+
+        Covers the process count, the top-level connections list, and the
+        AGGREGATE (top-level + every process's nested) connections budget.
+        """
+        procs = procs[:_MAX_BATCH_ITEMS]
+        conns = conns[:_MAX_BATCH_ITEMS]
+        budget = max(0, _MAX_TOTAL_CONNECTIONS - len(conns))
+        for p in procs:
+            if len(p.connections) > budget:
+                p.connections = p.connections[:budget]
+            budget -= len(p.connections)
+        return procs, conns
 
     def _collect_batch(self) -> MetricsBatch:
         """Collect a complete metrics batch."""
         host = self.collect_host_metrics()
         procs = self.collect_processes() if self.config.collect_processes else []
         conns = self.collect_connections() if self.config.collect_connections else []
+        procs, conns = self._bound_for_collector(procs, conns)
 
         return MetricsBatch(
             agent_id=self.config.agent_id,

@@ -27,6 +27,46 @@ logger = logging.getLogger(__name__)
 router = APIRouter()
 
 
+async def _enforce_simulation_quota(user) -> None:
+    """Hosted-SaaS simulation quota gate, shared by the run endpoints.
+
+    No-op for the Apache-2.0 CLI / self-host (FAULTRAY_ENFORCE_QUOTA off) and
+    anonymous callers. When enabled it resolves the caller's effective tier (the
+    best of UserRow.tier and any paid team subscription, so a paid team member is
+    honored rather than throttled as FREE), raises 402 if the monthly cap is
+    reached, and otherwise RESERVES the slot by recording usage up front -- so
+    concurrent requests cannot all observe the same pre-run count and slip past
+    the cap before any of them is recorded. Usage is keyed PER-USER so
+    enforcement never depends on the team-id vs billing-workspace-id namespace.
+    """
+    from faultray.api.billing import (
+        UsageTracker,
+        _saas_quota_enabled,
+        resolve_effective_tier,
+    )
+
+    if not (_saas_quota_enabled() and user is not None):
+        return
+    usage_key = f"user:{getattr(user, 'id', 'anon')}"
+    tracker = UsageTracker(db_session_factory=None)
+    tier = await resolve_effective_tier(user)
+    if await tracker.simulation_quota_exceeded(usage_key, tier):
+        raise HTTPException(
+            status_code=402,
+            detail={
+                "error": "quota_exceeded",
+                "message": (
+                    "Monthly simulation limit reached for your plan. "
+                    "Upgrade for higher limits."
+                ),
+                "upgrade_url": "https://faultray.com/pricing",
+            },
+        )
+    # Reserve the slot up front (before the expensive run) so the brief
+    # check->record window cannot be exploited by concurrent requests.
+    await tracker.track_simulation(usage_key)
+
+
 # ---------------------------------------------------------------------------
 # Simulation page (HTML)
 # ---------------------------------------------------------------------------
@@ -48,12 +88,16 @@ async def simulation_page(
 
 @router.get("/simulation/run")
 async def simulation_run_get(
-    _user=Depends(_require_permission("run_simulation")),
+    user=Depends(_require_permission("run_simulation")),
 ):
     """Run simulation and return JSON results (GET endpoint)."""
     graph = get_graph()
     if not graph.components:
         return JSONResponse({"error": "No infrastructure loaded. Visit /demo first."}, status_code=400)
+
+    # Same hosted-SaaS quota gate as POST /api/simulate so a capped user cannot
+    # bypass the monthly simulation limit via this endpoint.
+    await _enforce_simulation_quota(user)
 
     engine = SimulationEngine(graph)
     report = engine.run_all_defaults()
@@ -84,13 +128,18 @@ async def api_simulate(request: Request, user=Depends(_require_permission("run_s
         else:
             return JSONResponse({"error": "No infrastructure loaded. Visit /demo first."}, status_code=400)
 
+    # Hosted-SaaS monetization gate (shared helper): enforces the caller's plan
+    # simulation quota and reserves usage up front so a paid plan unlocks more
+    # capacity and concurrent requests cannot slip past the cap.
+    await _enforce_simulation_quota(user)
+
     engine = SimulationEngine(graph)
     report = engine.run_all_defaults()
     set_last_report(report)
     report_dict = _report_to_dict(report)
 
-    # Persist to database
-    run_id = await _save_run(report_dict, engine_type="static")
+    # Persist to database (attributed to the caller for tenant scoping)
+    run_id = await _save_run(report_dict, engine_type="static", user=user)
     if run_id is not None:
         report_dict["run_id"] = run_id
 

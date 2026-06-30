@@ -111,6 +111,12 @@ class SimulationRunRow(Base):
     config_json: Mapped[str | None] = mapped_column(Text, nullable=True)
     results_json: Mapped[str | None] = mapped_column(Text, nullable=True)
     risk_score: Mapped[float | None] = mapped_column(Float, nullable=True)
+    # Tenant attribution: set from the authenticated caller at save time so a
+    # project-less run is still scoped to its creator/team and is not visible
+    # cross-tenant. Nullable (no FK) so the columns can be ALTER-added to
+    # existing SQLite DBs and so legacy / no-auth-created rows stay valid.
+    owner_id: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    team_id: Mapped[int | None] = mapped_column(Integer, nullable=True)
     created_at: Mapped[_dt.datetime] = mapped_column(
         DateTime, server_default=func.now(), nullable=False,
     )
@@ -293,3 +299,24 @@ async def init_db(url: str | None = None) -> None:
     engine = _get_engine(url)
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
+        # Lightweight forward migration: create_all does NOT alter existing
+        # tables, so add the tenant-attribution columns to a pre-existing
+        # simulation_runs table. Idempotent — a duplicate-column error means the
+        # column is already present.
+        from sqlalchemy import text
+        from sqlalchemy.exc import OperationalError
+
+        for _col in ("owner_id", "team_id"):
+            try:
+                await conn.execute(
+                    text(f"ALTER TABLE simulation_runs ADD COLUMN {_col} INTEGER")
+                )
+            except OperationalError as _exc:
+                # Only an already-present column is expected & ignorable (fresh
+                # table created WITH the column, or a prior run added it). A real
+                # migration failure (locked / read-only DB) must surface rather
+                # than be silently treated as success -- otherwise later queries
+                # referencing owner_id/team_id fail with missing-column errors.
+                _msg = str(_exc).lower()
+                if "duplicate column" not in _msg and "already exists" not in _msg:
+                    raise
