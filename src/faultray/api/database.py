@@ -304,11 +304,19 @@ async def init_db(url: str | None = None) -> None:
         # simulation_runs table. Idempotent — a duplicate-column error means the
         # column is already present.
         from sqlalchemy import text
+        from sqlalchemy.exc import OperationalError
 
         for _col in ("owner_id", "team_id"):
             try:
                 await conn.execute(
                     text(f"ALTER TABLE simulation_runs ADD COLUMN {_col} INTEGER")
                 )
-            except Exception:
-                pass  # column already exists (or table just created with it)
+            except OperationalError as _exc:
+                # Only an already-present column is expected & ignorable (fresh
+                # table created WITH the column, or a prior run added it). A real
+                # migration failure (locked / read-only DB) must surface rather
+                # than be silently treated as success -- otherwise later queries
+                # referencing owner_id/team_id fail with missing-column errors.
+                _msg = str(_exc).lower()
+                if "duplicate column" not in _msg and "already exists" not in _msg:
+                    raise
