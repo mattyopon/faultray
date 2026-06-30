@@ -89,7 +89,7 @@ oci = [
     "oci>=2.175.0",
 ]
 onprem = [
-    "pynetbox>=7.0",
+    "pynetbox>=7.8.0",
 ]
 all-clouds = [
     "boto3>=1.43.34",
@@ -101,7 +101,7 @@ all-clouds = [
     "alibabacloud-rds20140815>=3.0",
     "alibabacloud-slb20140515>=3.3.31",
     "oci>=2.175.0",
-    "pynetbox>=7.0",
+    "pynetbox>=7.8.0",
 ]
 pdf = [
     "fpdf2>=2.8",
