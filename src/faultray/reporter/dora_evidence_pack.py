@@ -105,20 +105,32 @@ def load_template() -> str:
 def _third_party_deps(graph: InfraGraph, component: Component) -> list[Component]:
     """ICT third parties relevant to *component* for Art. 28 / 30 evidence.
 
-    Includes the selected component ITSELF when it is a third-party type (e.g.
-    an ``external_api`` such as a payment processor or external IdP), so a pack
-    scoped to an external service does not wrongly report "no third parties".
-    Plus its direct dependencies that are third-party types.
+    Walks the selected service's TRANSITIVE dependency chain and returns every
+    third-party-typed component reached (e.g. an ``external_api`` payment
+    processor or external IdP), plus the selected component ITSELF when it is a
+    third-party type. So ``--service api-gateway`` with
+    ``api-gateway -> auth-adapter -> external-idp`` surfaces ``external-idp``,
+    and a pack scoped to an external service never wrongly reports "no third
+    parties".
     """
     found: list[Component] = []
     seen: set[str] = set()
     if component.type in _THIRD_PARTY_TYPES:
         found.append(component)
-        seen.add(component.id)
-    for d in graph.get_dependencies(component.id):
-        if d.type in _THIRD_PARTY_TYPES and d.id not in seen:
-            found.append(d)
-            seen.add(d.id)
+    seen.add(component.id)
+    # Depth-first over transitive dependencies (successors).
+    stack = [component.id]
+    visited: set[str] = {component.id}
+    while stack:
+        cur = stack.pop()
+        for dep in graph.get_dependencies(cur):
+            if dep.id in visited:
+                continue
+            visited.add(dep.id)
+            stack.append(dep.id)
+            if dep.type in _THIRD_PARTY_TYPES and dep.id not in seen:
+                found.append(dep)
+                seen.add(dep.id)
     return found
 
 
@@ -146,51 +158,56 @@ def _service_neighborhood(graph: InfraGraph, component: Component) -> set[str]:
 def _spof_components(
     graph: InfraGraph, neighborhood: set[str] | None = None
 ) -> list[Component]:
-    """Single-replica components that have dependents (concentration / SPOF risk).
+    """Single points of failure relevant to the selected service.
 
-    Mirrors the canonical SPOF rule used elsewhere in the app
-    (``FaultRayAnalyzer._detect_spofs``): a single-replica component is only a
-    single point of failure when failover is NOT configured. A managed
-    Multi-AZ datastore with ``failover.enabled`` is resilient despite
-    ``replicas == 1`` and must not be counted, or SPOF_COUNT overstates risk.
+    REUSES the canonical detector (``FaultRayAnalyzer._detect_spofs``) so the
+    pack is consistent-by-construction with the rest of the app: a SPOF is a
+    single-replica component, with failover NOT enabled, that has at least one
+    ``requires`` dependent (optional/async-only singletons are excluded).
 
-    When *neighborhood* is given, only components within it are considered, so a
+    When *neighborhood* is given, the result is intersected with it so a
     per-service pack does not misattribute unrelated singletons elsewhere in the
     graph to the selected service.
     """
+    from faultray.ai.analyzer import FaultRayAnalyzer
+
+    recs = FaultRayAnalyzer()._detect_spofs(graph)
     spofs: list[Component] = []
-    for comp in graph.components.values():
-        if neighborhood is not None and comp.id not in neighborhood:
+    for rec in recs:
+        cid = rec.component_id
+        if neighborhood is not None and cid not in neighborhood:
             continue
-        if comp.replicas > 1:
-            continue
-        if comp.failover.enabled:
-            continue
-        if graph.get_dependents(comp.id):
+        comp = graph.get_component(cid)
+        if comp is not None:
             spofs.append(comp)
     return spofs
 
 
-def _service_critical_findings(report: SimulationReport, component: Component):
-    """Critical findings whose fault target or cascade touches *component*.
+def _result_touches(result, cid: str) -> bool:
+    """True when a scenario result's fault target or cascade touches *cid*.
 
-    A :class:`~faultray.simulator.engine.ScenarioResult` does not carry a flat
+    A :class:`~faultray.simulator.engine.ScenarioResult` carries no flat
     ``component_id``: the injected faults live on ``result.scenario.faults`` and
-    the downstream impact lives on ``result.cascade.effects``. A finding is
-    counted when *component* is either the faulted/target component OR appears
-    among the cascade effects.
+    the downstream impact on ``result.cascade.effects``. A result is relevant
+    when *cid* is the faulted/target component OR appears among the cascade
+    effects.
     """
+    faults = getattr(result.scenario, "faults", None) or []
+    if any(getattr(f, "target_component_id", None) == cid for f in faults):
+        return True
+    effects = getattr(result.cascade, "effects", None) or []
+    return any(getattr(e, "component_id", None) == cid for e in effects)
+
+
+def _service_scoped(results, component: Component) -> list:
+    """Filter *results* to those whose fault/cascade touches *component*."""
     cid = component.id
-    related = []
-    for result in report.critical_findings:
-        faults = getattr(result.scenario, "faults", None) or []
-        if any(getattr(f, "target_component_id", None) == cid for f in faults):
-            related.append(result)
-            continue
-        effects = getattr(result.cascade, "effects", None) or []
-        if any(getattr(e, "component_id", None) == cid for e in effects):
-            related.append(result)
-    return related
+    return [r for r in results if _result_touches(r, cid)]
+
+
+def _service_critical_findings(report: SimulationReport, component: Component):
+    """Critical findings whose fault target or cascade touches *component*."""
+    return _service_scoped(report.critical_findings, component)
 
 
 def build_evidence_pack_markdown(
@@ -340,14 +357,22 @@ def _evidence_appendix(
     else:
         lines.append("No single-replica components with dependents were identified.")
 
-    # Scenario testing results (Art. 24)
+    # Scenario testing results (Art. 24). The total scenarios run is a genuine
+    # whole-programme figure; the finding counts are SERVICE-SCOPED so other
+    # services' findings are not attributed to the selected service.
+    service_warnings = _service_scoped(sim_report.warnings, component)
     lines.append("\n### A.5 Fault-injection scenario results (Art. 24)\n")
     lines.append("| Metric | Value |")
     lines.append("| --- | --- |")
-    lines.append(f"| Scenarios tested | {_md_cell(len(sim_report.results))} |")
-    lines.append(f"| Critical findings | {_md_cell(len(sim_report.critical_findings))} |")
-    lines.append(f"| Warnings | {_md_cell(len(sim_report.warnings))} |")
-    lines.append(f"| Passed | {_md_cell(len(sim_report.passed))} |")
+    lines.append(
+        f"| Scenarios tested (whole programme) | {_md_cell(len(sim_report.results))} |"
+    )
+    lines.append(
+        f"| Critical findings touching this service | {_md_cell(len(service_criticals))} |"
+    )
+    lines.append(
+        f"| Warnings touching this service | {_md_cell(len(service_warnings))} |"
+    )
     if service_criticals:
         lines.append(
             f"\n**Critical findings touching this service: "

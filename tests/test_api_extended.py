@@ -27,6 +27,7 @@ from faultray.api.database import (
 # Test API key used for authenticated requests
 _TEST_API_KEY = "test-extended-api-key"
 _TEST_API_KEY_HASH = hash_api_key(_TEST_API_KEY)
+from faultray.api.routes._shared import set_last_report
 from faultray.api.server import (
     RateLimiter,
     _report_to_dict,
@@ -1878,3 +1879,72 @@ class TestSimulateQuotaGate:
             json={"query": "mutation { runSimulation { resilienceScore } }"},
         )
         assert resp.status_code == 402
+
+    def test_graphql_empty_graph_does_not_consume_quota(
+        self, demo_db_client, monkeypatch
+    ):
+        # An empty graph is a no-op the resolver answers with zeros: it must not
+        # reserve a slot, matching the REST validate-before-reserve contract.
+        monkeypatch.setenv("FAULTRAY_ENFORCE_QUOTA", "1")
+        set_graph(None)  # clear the shared graph
+        try:
+            uid = self._user_id(demo_db_client._db_path)
+            before = self._usage_count(demo_db_client._db_path, uid)
+            resp = demo_db_client.post(
+                "/graphql",
+                json={"query": "mutation { runSimulation { resilienceScore } }"},
+            )
+            assert resp.status_code == 200
+            after = self._usage_count(demo_db_client._db_path, uid)
+            assert after == before, "empty-graph runSimulation must not charge"
+        finally:
+            set_graph(create_demo_graph())
+
+    def _viewer_client(self, db_path):
+        """A TestClient authenticated as a VIEWER (no run_simulation perm)."""
+        key = "viewer-quota-key"
+        _seed_sync(db_path, "users", [{
+            "email": "viewer-quota@example.com",
+            "name": "Viewer",
+            "api_key_hash": hash_api_key(key),
+            "role": "viewer",
+            "created_at": "2026-01-01T00:00:00",
+        }])
+        with patch("faultray.api.database.init_db", new_callable=AsyncMock):
+            tc = TestClient(app, raise_server_exceptions=False)
+            tc.headers["Authorization"] = f"Bearer {key}"
+            tc._db_path = db_path
+            return tc
+
+    def test_viewer_analyze_cache_miss_rejected_not_charged(
+        self, demo_db_client, monkeypatch
+    ):
+        # A pure viewer must not trigger a cache-miss simulation on /api/analyze
+        # nor burn quota: 403, with no usage recorded.
+        monkeypatch.setenv("FAULTRAY_ENFORCE_QUOTA", "1")
+        set_graph(create_demo_graph())
+        set_last_report(None)  # force the cache-miss compute path
+        viewer = self._viewer_client(demo_db_client._db_path)
+        before_admin = self._usage_count(demo_db_client._db_path,
+                                         self._user_id(demo_db_client._db_path))
+        resp = viewer.get("/api/analyze")
+        assert resp.status_code == 403
+        # No simulation slot recorded for anyone by the rejected request.
+        import sqlite3
+
+        conn = sqlite3.connect(str(demo_db_client._db_path))
+        try:
+            total = conn.execute(
+                "SELECT COUNT(*) FROM usage_logs WHERE resource='simulation'"
+            ).fetchone()[0]
+        finally:
+            conn.close()
+        assert total == before_admin, "viewer cache-miss must not reserve a slot"
+
+    def test_viewer_reports_report_action_rejected(self, demo_db_client, monkeypatch):
+        # The report action runs a real sim; a viewer must be rejected (403),
+        # not silently allowed to run/charge it.
+        monkeypatch.setenv("FAULTRAY_ENFORCE_QUOTA", "1")
+        viewer = self._viewer_client(demo_db_client._db_path)
+        resp = viewer.get("/api/reports?action=report")
+        assert resp.status_code == 403

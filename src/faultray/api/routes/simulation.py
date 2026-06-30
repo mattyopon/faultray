@@ -66,6 +66,45 @@ async def _enforce_simulation_quota(user) -> None:
     await tracker.track_simulation(usage_key)
 
 
+def _user_has_run_simulation(user) -> bool:
+    """Whether *user* may run a simulation.
+
+    Anonymous / no-auth callers (user is None) are allowed, matching the
+    ``require_permission`` convention (it returns None and permits when no users
+    are configured). Authenticated users must hold the ``run_simulation``
+    permission for their role.
+    """
+    if user is None:
+        return True
+    try:
+        from faultray.api.auth import ROLE_PERMISSIONS, Role
+
+        role = Role(getattr(user, "role", None) or "viewer")
+        allowed = ROLE_PERMISSIONS.get(role, set())
+        return "*" in allowed or "run_simulation" in allowed
+    except Exception:
+        # Fail closed: if the role cannot be resolved, do not grant run rights.
+        return False
+
+
+async def _enforce_run_simulation(user) -> None:
+    """Guard a cache-miss simulation triggered from a read-only (view_results)
+    endpoint: a pure viewer must NOT be able to trigger an expensive run (or
+    burn the quota of real simulators). Require ``run_simulation`` first (403
+    otherwise), then reserve quota -- so the permission and quota behaviour
+    matches the dedicated /api/simulate run endpoints.
+    """
+    if not _user_has_run_simulation(user):
+        raise HTTPException(
+            status_code=403,
+            detail=(
+                "Running a simulation requires the 'run_simulation' permission. "
+                "Ask an editor to run a simulation first, then reload."
+            ),
+        )
+    await _enforce_simulation_quota(user)
+
+
 # ---------------------------------------------------------------------------
 # Simulation page (HTML)
 # ---------------------------------------------------------------------------
@@ -902,8 +941,10 @@ async def analyze_page(
     if has_data:
         _last_report = get_last_report()
         if _last_report is None:
-            # Cache miss runs a full simulation -> gate on the hosted-SaaS quota.
-            await _enforce_simulation_quota(user)
+            # Cache miss runs a full simulation. This page is only view_results-
+            # gated, so require run_simulation (403 for pure viewers) before
+            # reserving quota -- a viewer must not trigger a run or burn quota.
+            await _enforce_run_simulation(user)
             engine = SimulationEngine(graph)
             _last_report = engine.run_all_defaults()
             set_last_report(_last_report)
@@ -933,9 +974,10 @@ async def api_analyze(user=Depends(_require_permission("view_results"))):
 
     _last_report = get_last_report()
     if _last_report is None:
-        # Cache miss runs a full simulation -> gate on the hosted-SaaS quota so
-        # this is not a bypass of /api/simulate.
-        await _enforce_simulation_quota(user)
+        # Cache miss runs a full simulation. This endpoint is view_results-gated,
+        # so require run_simulation (403 for pure viewers) before reserving quota
+        # -- a viewer must not be able to trigger a run or burn quota here.
+        await _enforce_run_simulation(user)
         engine = SimulationEngine(graph)
         _last_report = engine.run_all_defaults()
         set_last_report(_last_report)

@@ -387,12 +387,14 @@ async def api_reports_get(request: Request, user=Depends(_optional_user)):
     graph = _ensure_graph()
 
     if action == "report":
-        from faultray.api.routes.simulation import _enforce_simulation_quota
+        from faultray.api.routes.simulation import _enforce_run_simulation
         from faultray.simulator.engine import SimulationEngine
 
-        # action=report runs a full simulation; gate it on the hosted-SaaS quota
-        # like the dedicated /api/simulate endpoint so it is not a bypass.
-        await _enforce_simulation_quota(user)
+        # action=report runs a full simulation, but this router is only
+        # view_results-gated -- require run_simulation (403 for pure viewers) and
+        # then reserve quota, matching the dedicated /api/simulate endpoint so it
+        # is neither a quota bypass nor a way for a viewer to burn quota.
+        await _enforce_run_simulation(user)
 
         engine = SimulationEngine(graph)
         report = engine.run_all_defaults()

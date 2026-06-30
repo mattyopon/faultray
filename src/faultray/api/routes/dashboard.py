@@ -492,10 +492,12 @@ async def executive_report(
 
     _last_report = get_last_report()
     if _last_report is None:
-        # Cache miss runs a full simulation -> gate on the hosted-SaaS quota.
-        from faultray.api.routes.simulation import _enforce_simulation_quota
+        # Cache miss runs a full simulation. This page is only view_results-
+        # gated, so require run_simulation (403 for pure viewers) before
+        # reserving quota -- a viewer must not trigger a run or burn quota.
+        from faultray.api.routes.simulation import _enforce_run_simulation
 
-        await _enforce_simulation_quota(user)
+        await _enforce_run_simulation(user)
         engine = SimulationEngine(graph)
         _last_report = engine.run_all_defaults()
         set_last_report(_last_report)

@@ -606,14 +606,23 @@ async def graphql_endpoint(request: Request):
     # The runSimulation mutation runs a full simulation on the shared graph, so
     # gate it on the hosted-SaaS quota like the REST /api/simulate endpoint --
     # otherwise GraphQL is a quota bypass. HTTPException (e.g. 402) propagates.
+    # Validate the run is non-empty (eligible) BEFORE reserving quota so an
+    # empty-graph no-op never charges a slot, matching the REST endpoints; the
+    # resolver itself returns the zero-scenario response in that case.
     if operation == "mutation" and any(
         _camel_to_snake(field) == "run_simulation" for field in selection
     ):
         from faultray.api.routes._shared import _optional_user
-        from faultray.api.routes.simulation import _enforce_simulation_quota
+        from faultray.api.routes.simulation import _enforce_run_simulation
+        from faultray.api.server import get_graph
 
-        user = await _optional_user(request)
-        await _enforce_simulation_quota(user)
+        # Only an actual (non-empty) run requires permission + quota. An empty
+        # graph is a no-op the resolver answers with zeros, so it must not 403 a
+        # viewer or charge a slot. The router is only view_results-gated, so a
+        # real run requires run_simulation (403 for viewers) before reserving.
+        if get_graph().components:
+            user = await _optional_user(request)
+            await _enforce_run_simulation(user)
 
     try:
         data = _execute(operation, selection)

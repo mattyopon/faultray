@@ -265,3 +265,70 @@ def test_spof_register_scoped_to_service_neighborhood() -> None:
     report = SimulationEngine(g).run_all_defaults()
     markdown = build_evidence_pack_markdown(g, report, "payment")
     assert "Unrelated DB" not in markdown
+
+
+def test_third_party_walked_transitively() -> None:
+    """A third party reached via a TRANSITIVE dependency chain
+    (api-gateway -> auth-adapter -> external-idp) must be surfaced for the
+    selected api-gateway service (round-4 item 1)."""
+    g = InfraGraph()
+    g.add_component(Component(id="api-gateway", name="Gateway", type=ComponentType.LOAD_BALANCER, replicas=2))
+    g.add_component(Component(id="auth-adapter", name="Auth Adapter", type=ComponentType.APP_SERVER, replicas=2))
+    g.add_component(Component(id="external-idp", name="External IdP", type=ComponentType.EXTERNAL_API, replicas=1))
+    g.add_dependency(Dependency(source_id="api-gateway", target_id="auth-adapter", dependency_type="requires"))
+    g.add_dependency(Dependency(source_id="auth-adapter", target_id="external-idp", dependency_type="requires"))
+
+    gw = g.get_component("api-gateway")
+    ids = {c.id for c in _third_party_deps(g, gw)}
+    assert "external-idp" in ids, "transitive external_api must be surfaced"
+
+    report = SimulationEngine(g).run_all_defaults()
+    md = build_evidence_pack_markdown(g, report, "api-gateway")
+    assert "External IdP" in md
+    assert "No external/third-party dependencies were detected" not in md
+
+
+def test_optional_only_singleton_not_a_spof() -> None:
+    """A single-replica component reached only via an optional/async edge is NOT
+    a SPOF (round-4 item 2), reusing the canonical analyzer predicate."""
+    g = InfraGraph()
+    g.add_component(Component(id="app", name="App", type=ComponentType.APP_SERVER, replicas=2))
+    g.add_component(Component(id="req-db", name="Req DB", type=ComponentType.DATABASE, replicas=1))
+    g.add_component(Component(id="opt-cache", name="Opt Cache", type=ComponentType.CACHE, replicas=1))
+    g.add_dependency(Dependency(source_id="app", target_id="req-db", dependency_type="requires"))
+    g.add_dependency(Dependency(source_id="app", target_id="opt-cache", dependency_type="optional"))
+
+    spof_ids = {c.id for c in _spof_components(g)}
+    assert "req-db" in spof_ids, "requires-singleton must be a SPOF"
+    assert "opt-cache" not in spof_ids, "optional-only singleton must NOT be a SPOF"
+
+
+def test_appendix_a5_counts_are_service_scoped() -> None:
+    """A.5 critical/warning counts must be service-scoped, not global
+    (round-4 item 3)."""
+    from faultray.reporter.dora_evidence_pack import _result_touches
+    from faultray.simulator.cascade import CascadeChain, CascadeEffect
+    from faultray.simulator.engine import ScenarioResult, SimulationReport
+    from faultray.simulator.scenarios import Fault, FaultType, Scenario
+
+    g = InfraGraph()
+    g.add_component(Component(id="svc-target", name="Target", type=ComponentType.APP_SERVER))
+    g.add_component(Component(id="svc-other", name="Other", type=ComponentType.APP_SERVER))
+
+    def crit(name, target):
+        chain = CascadeChain(trigger=target, total_components=1)
+        chain.effects.append(CascadeEffect(component_id=target, component_name=target,
+                                           health=HealthStatus.DOWN, reason="down"))
+        fault = Fault(target_component_id=target, fault_type=FaultType.COMPONENT_DOWN)
+        scen = Scenario(id=f"s-{name}", name=name, description=name, faults=[fault])
+        return ScenarioResult(scenario=scen, cascade=chain, risk_score=9.0)
+
+    results = [crit("t0", "svc-target")] + [crit(f"o{i}", "svc-other") for i in range(4)]
+    report = SimulationReport(results=results, resilience_score=50.0)
+    assert len(report.critical_findings) == 5
+    assert sum(_result_touches(r, "svc-target") for r in report.critical_findings) == 1
+
+    md = build_evidence_pack_markdown(g, report, "svc-target")
+    # A.5 row reports the SERVICE-SCOPED count (1), not the global 5.
+    assert "| Critical findings touching this service | 1 |" in md
+    assert "| Critical findings touching this service | 5 |" not in md
