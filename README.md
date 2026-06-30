@@ -21,6 +21,24 @@
 
 ---
 
+**DORA pre-audit resilience evidence for critical financial services.**
+
+FaultRay helps EU financial institutions walk into a DORA pre-audit prepared with a sanitized, no-production-access resilience evidence pack for one critical service. The pack is designed to make resilience assumptions, failure scenarios, observed gaps, and remediation priorities easier to review before formal audit or supervisory conversations. Under the hood, FaultRay is an open-source resilience and fault-injection simulator, used here as decision-support tooling for practical pre-audit preparation.
+
+### DORA Resilience Evidence Sprint
+
+The DORA Resilience Evidence Sprint is a fixed-scope engagement for one critical service, delivered in 5 business days using sanitized data only: no production access, no PII, and no customer data required. The output is a DORA-mapped resilience evidence pack that helps operational-resilience and ICT-risk teams organize service context, test assumptions, failure scenarios, findings, and next steps against relevant DORA articles. Price: $2,500, with 50% upfront.
+
+Book a 20-minute scoping call: https://faultray.com/evidence-sprint
+
+Prefer self-serve? You can generate an evidence pack yourself with `faultray report dora --service <name>` (see the [evidence-pack template](docs/sales/dora-evidence-pack-template.md)).
+
+Note: FaultRay is decision-support and pre-audit tooling; it is not legal advice, not a DORA certification, not a guarantee of compliance, and does not replace TLPT or auditor sign-off.
+
+---
+
+The rest of this README covers the open-source toolkit: install, usage, and features.
+
 FaultRay simulates **hundreds to thousands of failure scenarios** entirely in memory to estimate structural resilience limits from dependency models — before deployment. Built as a **research prototype** to support DORA-aligned pre-audit preparation for financial institutions, without touching production systems.
 
 > ⚠️ **Scope note:** FaultRay is a research prototype. Outputs are intended for internal pre-audit review, design-time analysis, and CI/CD gating. They are **not** validated substitutes for formal regulatory audit evidence or independent legal/technical review. Validation to date is retrospective; forward-looking predictive accuracy is still under evaluation.

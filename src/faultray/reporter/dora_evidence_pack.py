@@ -1,0 +1,311 @@
+# Copyright (c) 2025-2026 Yutaro Maeda. All rights reserved.
+# Licensed under the Apache License 2.0. See LICENSE file for details.
+
+"""DORA pre-audit resilience evidence pack (per critical service).
+
+This module renders a *decision-support* evidence pack for ONE critical
+service, built from sanitized model data and FaultRay simulation output. It is
+the outcome the "DORA Resilience Evidence Sprint" delivers: a single,
+audit-ready Markdown (and optionally print-ready HTML) document that maps
+FaultRay findings to the relevant DORA articles.
+
+It deliberately REUSES the existing reporter / compliance infrastructure
+(:class:`~faultray.simulator.engine.SimulationEngine`,
+:class:`~faultray.simulator.compliance_monitor.ComplianceMonitor`) rather than
+introducing a parallel reporting stack. The static prose lives in the template
+at ``docs/sales/dora-evidence-pack-template.md``; this code only fills it in.
+
+Honest scope: this is decision-support tooling, NOT legal advice, NOT a DORA
+certification, and NOT a replacement for threat-led penetration testing (TLPT)
+or an auditor's sign-off.
+"""
+
+from __future__ import annotations
+
+import html
+from datetime import datetime, timezone
+from pathlib import Path
+
+from faultray.model.components import Component, ComponentType
+from faultray.model.graph import InfraGraph
+from faultray.simulator.engine import SimulationReport
+
+# Component types that represent ICT third-party / external dependencies for
+# the purposes of DORA Article 28 (third-party risk) discussion.
+_THIRD_PARTY_TYPES = frozenset(
+    {
+        ComponentType.EXTERNAL_API,
+        ComponentType.LLM_ENDPOINT,
+        ComponentType.DNS,
+    }
+)
+
+# Where the static template lives, relative to the repository root. Resolved at
+# runtime by walking up from this file so it works from an installed package or
+# a source checkout.
+_TEMPLATE_RELPATH = Path("docs") / "sales" / "dora-evidence-pack-template.md"
+
+
+def _md_cell(text: object) -> str:
+    """Make a value safe to drop into a single Markdown table cell.
+
+    Pipes break table layout and angle brackets enable HTML injection in
+    Markdown renderers; neutralize both. Newlines are flattened to spaces.
+    """
+    s = str(text)
+    return (
+        s.replace("|", "\\|")
+        .replace("<", "&lt;")
+        .replace(">", "&gt;")
+        .replace("\r", " ")
+        .replace("\n", " ")
+        .strip()
+    )
+
+
+def _find_service(graph: InfraGraph, service: str) -> Component | None:
+    """Resolve *service* to a component by id (exact), then name (case-insensitive)."""
+    comp = graph.get_component(service)
+    if comp is not None:
+        return comp
+    lowered = service.strip().lower()
+    for candidate in graph.components.values():
+        if candidate.name.strip().lower() == lowered:
+            return candidate
+    # Last resort: unique substring match on name or id.
+    matches = [
+        c
+        for c in graph.components.values()
+        if lowered in c.name.lower() or lowered in c.id.lower()
+    ]
+    if len(matches) == 1:
+        return matches[0]
+    return None
+
+
+def _locate_template() -> Path | None:
+    """Find the evidence-pack template by walking up from this file."""
+    here = Path(__file__).resolve()
+    for parent in here.parents:
+        candidate = parent / _TEMPLATE_RELPATH
+        if candidate.is_file():
+            return candidate
+    return None
+
+
+def _third_party_deps(graph: InfraGraph, component: Component) -> list[Component]:
+    """Direct dependencies of *component* that look like ICT third parties."""
+    deps = graph.get_dependencies(component.id)
+    return [d for d in deps if d.type in _THIRD_PARTY_TYPES]
+
+
+def _spof_components(graph: InfraGraph) -> list[Component]:
+    """Single-replica components that have dependents (concentration / SPOF risk)."""
+    spofs: list[Component] = []
+    for comp in graph.components.values():
+        if comp.replicas <= 1 and graph.get_dependents(comp.id):
+            spofs.append(comp)
+    return spofs
+
+
+def _service_critical_findings(report: SimulationReport, component: Component):
+    """Critical findings whose blast radius touches *component*."""
+    related = []
+    for result in report.critical_findings:
+        target = getattr(result, "component_id", "") or getattr(result, "target_id", "")
+        affected = getattr(result, "affected_components", None) or []
+        if target == component.id or component.id in affected:
+            related.append(result)
+    return related
+
+
+def build_evidence_pack_markdown(
+    graph: InfraGraph,
+    sim_report: SimulationReport,
+    service: str,
+    *,
+    institution: str = "Your Organization",
+    prepared_by: str = "FaultRay",
+    engagement_id: str = "",
+    rto_target: str = "TBD",
+    rpo_target: str = "TBD",
+) -> str:
+    """Render the per-service DORA evidence pack as Markdown.
+
+    Loads the static template and substitutes the per-engagement placeholder
+    tokens with values derived from the model and the simulation report. Raises
+    ``ValueError`` if *service* cannot be resolved or the template is missing.
+    """
+    component = _find_service(graph, service)
+    if component is None:
+        known = ", ".join(sorted(c.name or c.id for c in graph.components.values())[:20])
+        raise ValueError(
+            f"Service {service!r} not found in model. Known services: {known}"
+        )
+
+    template_path = _locate_template()
+    if template_path is None:
+        raise ValueError(
+            "Evidence-pack template not found at docs/sales/"
+            "dora-evidence-pack-template.md"
+        )
+    template = template_path.read_text(encoding="utf-8")
+
+    blast_radius = graph.get_all_affected(component.id)
+    third_parties = _third_party_deps(graph, component)
+    spofs = _spof_components(graph)
+    service_criticals = _service_critical_findings(sim_report, component)
+
+    score = getattr(sim_report, "resilience_score", 0.0)
+    engagement = engagement_id or f"FR-{datetime.now(timezone.utc):%Y%m%d}"
+
+    substitutions = {
+        "{SERVICE_NAME}": _md_cell(component.name or component.id),
+        "{INSTITUTION_NAME}": _md_cell(institution),
+        "{REPORT_DATE}": datetime.now(timezone.utc).strftime("%Y-%m-%d"),
+        "{PREPARED_BY}": _md_cell(prepared_by),
+        "{ENGAGEMENT_ID}": _md_cell(engagement),
+        "{RESILIENCE_SCORE}": f"{score:.1f}/100",
+        "{CRITICAL_FINDINGS_COUNT}": str(len(sim_report.critical_findings)),
+        "{SPOF_COUNT}": str(len(spofs)),
+        "{RTO_TARGET}": _md_cell(rto_target),
+        "{RPO_TARGET}": _md_cell(rpo_target),
+    }
+
+    rendered = template
+    for token, value in substitutions.items():
+        rendered = rendered.replace(token, value)
+
+    # Append a machine-derived appendix from the actual model/simulation so the
+    # pack is grounded in this engagement's data, not just the static template.
+    rendered += _evidence_appendix(
+        component=component,
+        sim_report=sim_report,
+        blast_radius=blast_radius,
+        third_parties=third_parties,
+        spofs=spofs,
+        service_criticals=service_criticals,
+    )
+    return rendered
+
+
+def _evidence_appendix(
+    *,
+    component: Component,
+    sim_report: SimulationReport,
+    blast_radius: set[str],
+    third_parties: list[Component],
+    spofs: list[Component],
+    service_criticals: list,
+) -> str:
+    """Build the data-grounded appendix appended to the rendered template."""
+    lines: list[str] = []
+    lines.append("\n\n---\n")
+    lines.append("## Appendix A — Engagement evidence (from this model & simulation)\n")
+    lines.append(
+        "_Derived automatically from the sanitized infrastructure model and "
+        "FaultRay simulation output. No production access or PII was used._\n"
+    )
+
+    # Service profile
+    lines.append("\n### A.1 Critical service profile\n")
+    lines.append("| Attribute | Value |")
+    lines.append("| --- | --- |")
+    lines.append(f"| Service | {_md_cell(component.name or component.id)} |")
+    lines.append(f"| Component type | {_md_cell(component.type.value)} |")
+    lines.append(f"| Replicas | {_md_cell(component.replicas)} |")
+    lines.append(f"| Failover configured | {_md_cell(bool(getattr(component.failover, 'enabled', False)))} |")
+    lines.append(
+        f"| Downstream blast radius (components) | {_md_cell(len(blast_radius))} |"
+    )
+
+    # Blast radius / dependency map (Art. 11 / testing)
+    lines.append("\n### A.2 Blast-radius & dependency map\n")
+    if blast_radius:
+        lines.append(
+            f"A failure of **{_md_cell(component.name or component.id)}** "
+            f"propagates to {len(blast_radius)} downstream component(s):\n"
+        )
+        for cid in sorted(blast_radius)[:30]:
+            lines.append(f"- {_md_cell(cid)}")
+    else:
+        lines.append(
+            "No downstream dependents were identified for this service in the model."
+        )
+
+    # ICT third-party (Art. 28 / 30)
+    lines.append("\n### A.3 ICT third-party & concentration (Art. 28 / 30)\n")
+    if third_parties:
+        lines.append("| Third-party dependency | Type |")
+        lines.append("| --- | --- |")
+        for tp in third_parties:
+            lines.append(f"| {_md_cell(tp.name or tp.id)} | {_md_cell(tp.type.value)} |")
+        lines.append(
+            "\n_FaultRay surfaces these external dependencies to inform "
+            "Article 28 third-party risk review and Article 30 contractual "
+            "scoping. It does not assess legal contract text._"
+        )
+    else:
+        lines.append(
+            "No external/third-party dependencies were detected directly upstream "
+            "of this service in the model."
+        )
+
+    # SPOF / concentration register
+    lines.append("\n### A.4 Single-points-of-failure register\n")
+    if spofs:
+        lines.append("| Component | Type | Replicas |")
+        lines.append("| --- | --- | --- |")
+        for s in spofs[:30]:
+            lines.append(
+                f"| {_md_cell(s.name or s.id)} | {_md_cell(s.type.value)} | "
+                f"{_md_cell(s.replicas)} |"
+            )
+    else:
+        lines.append("No single-replica components with dependents were identified.")
+
+    # Scenario testing results (Art. 24)
+    lines.append("\n### A.5 Fault-injection scenario results (Art. 24)\n")
+    lines.append("| Metric | Value |")
+    lines.append("| --- | --- |")
+    lines.append(f"| Scenarios tested | {_md_cell(len(sim_report.results))} |")
+    lines.append(f"| Critical findings | {_md_cell(len(sim_report.critical_findings))} |")
+    lines.append(f"| Warnings | {_md_cell(len(sim_report.warnings))} |")
+    lines.append(f"| Passed | {_md_cell(len(sim_report.passed))} |")
+    if service_criticals:
+        lines.append(
+            f"\n**Critical findings touching this service: "
+            f"{len(service_criticals)}.** See the full simulation report for "
+            "scenario detail."
+        )
+
+    lines.append(
+        "\n\n_This appendix is decision-support evidence, not legal advice or a "
+        "DORA certification, and does not replace TLPT or auditor sign-off._\n"
+    )
+    return "\n".join(lines)
+
+
+def evidence_pack_to_print_html(markdown_text: str, *, title: str) -> str:
+    """Wrap the evidence-pack Markdown in a minimal print-ready HTML page.
+
+    Mirrors the repository convention used by the other reporters: the output
+    is meant to be opened in a browser and saved as PDF via Ctrl+P. The
+    Markdown is rendered verbatim inside a styled ``<pre>`` block so no extra
+    Markdown-parsing dependency is required.
+    """
+    safe_title = html.escape(title)
+    safe_body = html.escape(markdown_text)
+    return (
+        "<!DOCTYPE html>\n<html lang=\"en\"><head><meta charset=\"utf-8\">"
+        f"<title>{safe_title}</title>"
+        "<style>"
+        "body{font-family:-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;"
+        "max-width:880px;margin:2rem auto;padding:0 1.5rem;color:#1a1a1a;}"
+        "pre{white-space:pre-wrap;word-wrap:break-word;font-family:inherit;"
+        "font-size:0.95rem;line-height:1.5;}"
+        "@media print{body{margin:0;}}"
+        "</style></head><body><pre>"
+        f"{safe_body}"
+        "</pre></body></html>\n"
+    )

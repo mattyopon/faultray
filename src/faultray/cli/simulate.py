@@ -6,6 +6,7 @@
 from __future__ import annotations
 
 import json
+import os
 from pathlib import Path
 
 import typer
@@ -21,6 +22,45 @@ from faultray.cli.main import (
 )
 from faultray.reporter.report import print_simulation_report
 from faultray.simulator.engine import SimulationEngine
+
+
+def _print_evidence_sprint_hint(service: str | None = None) -> None:
+    """Print a single, tasteful next-step hook after a simulation run.
+
+    Points the user at turning the run into a DORA pre-audit evidence pack and
+    booking an Evidence Sprint scoping call. Non-spammy: one line, once.
+
+    Suppressed when ``FAULTRAY_NO_HINTS=1`` is set (so JSON/machine-output and
+    CI users never see it). The caller is responsible for not invoking this in
+    JSON/quiet modes.
+    """
+    if os.environ.get("FAULTRAY_NO_HINTS") == "1":
+        return
+    target = service or "<name>"
+    console.print(
+        f"\n[dim]→ Turn this into a DORA pre-audit evidence pack: "
+        f"[cyan]faultray report dora --service {target}[/cyan]  ·  "
+        f"Book a 20-min Evidence Sprint scoping call: "
+        f"https://faultray.com/evidence-sprint[/]"
+    )
+
+
+def _suggest_service_for_hint(report: object, graph: object) -> str | None:
+    """Pick a concrete service name for the next-step hint, if one is obvious.
+
+    Prefers the component behind the first critical finding; otherwise returns
+    None so the hint shows a generic ``<name>`` placeholder.
+    """
+    try:
+        criticals = getattr(report, "critical_findings", None) or []
+        for result in criticals:
+            cid = getattr(result, "component_id", "") or getattr(result, "target_id", "")
+            if cid:
+                comp = graph.get_component(cid) if graph is not None else None
+                return getattr(comp, "name", "") or cid
+    except Exception:
+        return None
+    return None
 
 
 def _dynamic_results_to_json(results: list) -> dict:
@@ -413,6 +453,11 @@ def simulate(
     if save_baseline is not None:
         _write_baseline(save_baseline, report)
         console.print(f"\n[green]Baseline saved to {save_baseline}[/]")
+
+    # Next-step buyer hook (suppressible via FAULTRAY_NO_HINTS=1; never shown in
+    # --json mode, which returns earlier). Suggest the most blast-affected
+    # service so the example command is directly actionable.
+    _print_evidence_sprint_hint(_suggest_service_for_hint(report, graph))
 
     # Compare against baseline
     if baseline is not None:
