@@ -155,6 +155,35 @@ def _service_neighborhood(graph: InfraGraph, component: Component) -> set[str]:
     return nbr
 
 
+def _required_dependency_closure(graph: InfraGraph, component: Component) -> set[str]:
+    """Ids the selected service transitively REQUIRES (only ``requires`` edges).
+
+    This is the SPOF-relevant neighborhood: a component counts as a single point
+    of failure for the selected service only if the service depends on it for
+    continuity, i.e. it is reachable following ``requires`` dependency edges. A
+    singleton reached only via an ``optional`` or ``async`` edge does not break
+    this service if it fails, so it must NOT be attributed as this service's
+    SPOF (even if some OTHER service requires it).
+
+    The selected service itself is included (its own single-replica/no-failover
+    state is a SPOF for itself).
+    """
+    reachable: set[str] = {component.id}
+    stack = [component.id]
+    while stack:
+        cur = stack.pop()
+        for dep in graph.get_dependencies(cur):
+            if dep.id in reachable:
+                continue
+            edge = graph.get_dependency_edge(cur, dep.id)
+            if edge is None or edge.dependency_type != "requires":
+                continue
+            reachable.add(dep.id)
+            stack.append(dep.id)
+    return reachable
+
+
+
 def _spof_components(
     graph: InfraGraph, neighborhood: set[str] | None = None
 ) -> list[Component]:
@@ -238,11 +267,12 @@ def build_evidence_pack_markdown(
 
     blast_radius = graph.get_all_affected(component.id)
     third_parties = _third_party_deps(graph, component)
-    # SPOFs are scoped to THIS service's dependency neighborhood so unrelated
-    # singletons elsewhere in the graph are not attributed to the selected
-    # service (the same neighborhood the service-scoped findings live in).
-    neighborhood = _service_neighborhood(graph, component)
-    spofs = _spof_components(graph, neighborhood)
+    # SPOFs are scoped to what THIS service transitively REQUIRES (only
+    # ``requires`` edges) so unrelated singletons -- and singletons reached only
+    # via optional/async edges that another service requires -- are not
+    # attributed to the selected service.
+    spof_neighborhood = _required_dependency_closure(graph, component)
+    spofs = _spof_components(graph, spof_neighborhood)
     service_criticals = _service_critical_findings(sim_report, component)
 
     score = getattr(sim_report, "resilience_score", 0.0)

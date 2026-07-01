@@ -13,6 +13,7 @@ from faultray.model.components import (
 from faultray.model.demo import create_demo_graph
 from faultray.model.graph import Dependency, InfraGraph
 from faultray.reporter.dora_evidence_pack import (
+    _required_dependency_closure,
     _service_critical_findings,
     _service_neighborhood,
     _spof_components,
@@ -332,3 +333,59 @@ def test_appendix_a5_counts_are_service_scoped() -> None:
     # A.5 row reports the SERVICE-SCOPED count (1), not the global 5.
     assert "| Critical findings touching this service | 1 |" in md
     assert "| Critical findings touching this service | 5 |" not in md
+
+
+def test_spof_neighborhood_only_follows_required_edges() -> None:
+    """A single-replica component reachable from the selected service ONLY via an
+    optional/async edge is NOT a SPOF for that service -- even when a DIFFERENT
+    service requires it. A required-path singleton still IS a SPOF.
+    """
+    g = InfraGraph()
+    g.add_component(Component(id="payment", name="Payment", type=ComponentType.APP_SERVER, replicas=2))
+    # Required-path singleton for payment -> must be a SPOF for payment.
+    g.add_component(Component(id="req-db", name="Req DB", type=ComponentType.DATABASE, replicas=1))
+    # Singleton reached from payment ONLY via an optional edge, but REQUIRED by
+    # another service (reporting). It must NOT be a SPOF for payment.
+    g.add_component(Component(id="shared-cache", name="Shared Cache", type=ComponentType.CACHE, replicas=1))
+    g.add_component(Component(id="reporting", name="Reporting", type=ComponentType.APP_SERVER, replicas=2))
+
+    g.add_dependency(Dependency(source_id="payment", target_id="req-db", dependency_type="requires"))
+    g.add_dependency(Dependency(source_id="payment", target_id="shared-cache", dependency_type="optional"))
+    g.add_dependency(Dependency(source_id="reporting", target_id="shared-cache", dependency_type="requires"))
+
+    payment = g.get_component("payment")
+
+    # shared-cache IS a global SPOF (reporting requires it) but is NOT in
+    # payment's required closure.
+    global_spof_ids = {c.id for c in _spof_components(g)}
+    assert "shared-cache" in global_spof_ids
+    assert "req-db" in global_spof_ids
+
+    closure = _required_dependency_closure(g, payment)
+    assert "req-db" in closure
+    assert "shared-cache" not in closure, "optional-only reachable node is not required"
+
+    scoped = {c.id for c in _spof_components(g, closure)}
+    assert "req-db" in scoped, "required-path singleton must remain a SPOF"
+    assert "shared-cache" not in scoped, "optional/async-only reachable singleton must NOT be this service's SPOF"
+
+    md = build_evidence_pack_markdown(g, SimulationEngine(g).run_all_defaults(), "payment")
+    assert "Req DB" in md
+    assert "Shared Cache" not in md
+
+
+def test_spof_neighborhood_excludes_async_only_reachable() -> None:
+    """Same rule for ``async`` edges: an async-only reachable singleton is not a
+    SPOF for the selected service."""
+    g = InfraGraph()
+    g.add_component(Component(id="core", name="Core", type=ComponentType.APP_SERVER, replicas=2))
+    g.add_component(Component(id="events-db", name="Events DB", type=ComponentType.DATABASE, replicas=1))
+    g.add_component(Component(id="worker", name="Worker", type=ComponentType.APP_SERVER, replicas=2))
+    # core -> events-db is async; worker -> events-db is requires.
+    g.add_dependency(Dependency(source_id="core", target_id="events-db", dependency_type="async"))
+    g.add_dependency(Dependency(source_id="worker", target_id="events-db", dependency_type="requires"))
+
+    closure = _required_dependency_closure(g, g.get_component("core"))
+    assert "events-db" not in closure
+    scoped = {c.id for c in _spof_components(g, closure)}
+    assert "events-db" not in scoped, "async-only reachable singleton must NOT be this service's SPOF"
