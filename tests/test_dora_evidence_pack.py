@@ -52,8 +52,16 @@ def test_evidence_pack_substitutes_all_tokens() -> None:
 
 def test_evidence_pack_covers_all_required_articles() -> None:
     markdown = _build("postgres")
-    for article in ("Article 11", "Article 12", "Article 24", "Article 25", "Article 28", "Article 30"):
+    for article in (
+        "Article 11", "Article 12", "Article 24", "Article 25",
+        "Article 28", "Article 29", "Article 30",
+    ):
         assert article in markdown, f"missing {article}"
+    # Concentration risk maps to Art. 29 (entity-level concentration), and the
+    # mapping is framed as indicative preparation, not a coverage/certification.
+    assert "Preliminary assessment of ICT concentration risk" in markdown
+    assert "Testing of ICT tools and systems" in markdown  # Art. 25 title
+    assert "Indicative DORA Preparation Mapping" in markdown
     # Honesty / scope language must be present.
     assert "not legal advice" in markdown.lower()
     assert "TLPT" in markdown

@@ -103,7 +103,7 @@ def load_template() -> str:
 
 
 def _third_party_deps(graph: InfraGraph, component: Component) -> list[Component]:
-    """ICT third parties relevant to *component* for Art. 28 / 30 evidence.
+    """ICT third parties relevant to *component* for Art. 28 / 29 / 30 evidence.
 
     Walks the selected service's TRANSITIVE dependency chain and returns every
     third-party-typed component reached (e.g. an ``external_api`` payment
@@ -356,8 +356,8 @@ def _evidence_appendix(
             "No downstream dependents were identified for this service in the model."
         )
 
-    # ICT third-party (Art. 28 / 30)
-    lines.append("\n### A.3 ICT third-party & concentration (Art. 28 / 30)\n")
+    # ICT third-party (Art. 28) & concentration (Art. 29) / contractual (Art. 30)
+    lines.append("\n### A.3 ICT third-party & concentration (Art. 28 / 29 / 30)\n")
     if third_parties:
         lines.append("| Third-party dependency | Type |")
         lines.append("| --- | --- |")
@@ -365,8 +365,9 @@ def _evidence_appendix(
             lines.append(f"| {_md_cell(tp.name or tp.id)} | {_md_cell(tp.type.value)} |")
         lines.append(
             "\n_FaultRay surfaces these external dependencies to inform "
-            "Article 28 third-party risk review and Article 30 contractual "
-            "scoping. It does not assess legal contract text._"
+            "Article 28 third-party risk review, Article 29 concentration-risk "
+            "assessment, and Article 30 contractual scoping. It does not assess "
+            "legal contract text._"
         )
     else:
         lines.append(
@@ -387,11 +388,12 @@ def _evidence_appendix(
     else:
         lines.append("No single-replica components with dependents were identified.")
 
-    # Scenario testing results (Art. 24). The total scenarios run is a genuine
-    # whole-programme figure; the finding counts are SERVICE-SCOPED so other
-    # services' findings are not attributed to the selected service.
+    # Scenario testing results (Art. 24 general testing / Art. 25 testing of ICT
+    # tools & systems). The total scenarios run is a genuine whole-programme
+    # figure; the finding counts are SERVICE-SCOPED so other services' findings
+    # are not attributed to the selected service.
     service_warnings = _service_scoped(sim_report.warnings, component)
-    lines.append("\n### A.5 Fault-injection scenario results (Art. 24)\n")
+    lines.append("\n### A.5 Fault-injection scenario results (Art. 24 / 25)\n")
     lines.append("| Metric | Value |")
     lines.append("| --- | --- |")
     lines.append(
