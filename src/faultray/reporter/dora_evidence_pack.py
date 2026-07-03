@@ -103,7 +103,7 @@ def load_template() -> str:
 
 
 def _third_party_deps(graph: InfraGraph, component: Component) -> list[Component]:
-    """ICT third parties relevant to *component* for Art. 28 / 30 evidence.
+    """ICT third parties relevant to *component* for Art. 28 / 29 / 30 evidence.
 
     Walks the selected service's TRANSITIVE dependency chain and returns every
     third-party-typed component reached (e.g. an ``external_api`` payment
@@ -153,6 +153,35 @@ def _service_neighborhood(graph: InfraGraph, component: Component) -> set[str]:
                 nbr.add(dep.id)
                 stack.append(dep.id)
     return nbr
+
+
+def _required_dependency_closure(graph: InfraGraph, component: Component) -> set[str]:
+    """Ids the selected service transitively REQUIRES (only ``requires`` edges).
+
+    This is the SPOF-relevant neighborhood: a component counts as a single point
+    of failure for the selected service only if the service depends on it for
+    continuity, i.e. it is reachable following ``requires`` dependency edges. A
+    singleton reached only via an ``optional`` or ``async`` edge does not break
+    this service if it fails, so it must NOT be attributed as this service's
+    SPOF (even if some OTHER service requires it).
+
+    The selected service itself is included (its own single-replica/no-failover
+    state is a SPOF for itself).
+    """
+    reachable: set[str] = {component.id}
+    stack = [component.id]
+    while stack:
+        cur = stack.pop()
+        for dep in graph.get_dependencies(cur):
+            if dep.id in reachable:
+                continue
+            edge = graph.get_dependency_edge(cur, dep.id)
+            if edge is None or edge.dependency_type != "requires":
+                continue
+            reachable.add(dep.id)
+            stack.append(dep.id)
+    return reachable
+
 
 
 def _spof_components(
@@ -238,11 +267,12 @@ def build_evidence_pack_markdown(
 
     blast_radius = graph.get_all_affected(component.id)
     third_parties = _third_party_deps(graph, component)
-    # SPOFs are scoped to THIS service's dependency neighborhood so unrelated
-    # singletons elsewhere in the graph are not attributed to the selected
-    # service (the same neighborhood the service-scoped findings live in).
-    neighborhood = _service_neighborhood(graph, component)
-    spofs = _spof_components(graph, neighborhood)
+    # SPOFs are scoped to what THIS service transitively REQUIRES (only
+    # ``requires`` edges) so unrelated singletons -- and singletons reached only
+    # via optional/async edges that another service requires -- are not
+    # attributed to the selected service.
+    spof_neighborhood = _required_dependency_closure(graph, component)
+    spofs = _spof_components(graph, spof_neighborhood)
     service_criticals = _service_critical_findings(sim_report, component)
 
     score = getattr(sim_report, "resilience_score", 0.0)
@@ -326,8 +356,8 @@ def _evidence_appendix(
             "No downstream dependents were identified for this service in the model."
         )
 
-    # ICT third-party (Art. 28 / 30)
-    lines.append("\n### A.3 ICT third-party & concentration (Art. 28 / 30)\n")
+    # ICT third-party (Art. 28) & concentration (Art. 29) / contractual (Art. 30)
+    lines.append("\n### A.3 ICT third-party & concentration (Art. 28 / 29 / 30)\n")
     if third_parties:
         lines.append("| Third-party dependency | Type |")
         lines.append("| --- | --- |")
@@ -335,8 +365,9 @@ def _evidence_appendix(
             lines.append(f"| {_md_cell(tp.name or tp.id)} | {_md_cell(tp.type.value)} |")
         lines.append(
             "\n_FaultRay surfaces these external dependencies to inform "
-            "Article 28 third-party risk review and Article 30 contractual "
-            "scoping. It does not assess legal contract text._"
+            "Article 28 third-party risk review, Article 29 concentration-risk "
+            "assessment, and Article 30 contractual scoping. It does not assess "
+            "legal contract text._"
         )
     else:
         lines.append(
@@ -357,11 +388,12 @@ def _evidence_appendix(
     else:
         lines.append("No single-replica components with dependents were identified.")
 
-    # Scenario testing results (Art. 24). The total scenarios run is a genuine
-    # whole-programme figure; the finding counts are SERVICE-SCOPED so other
-    # services' findings are not attributed to the selected service.
+    # Scenario testing results (Art. 24 general testing / Art. 25 testing of ICT
+    # tools & systems). The total scenarios run is a genuine whole-programme
+    # figure; the finding counts are SERVICE-SCOPED so other services' findings
+    # are not attributed to the selected service.
     service_warnings = _service_scoped(sim_report.warnings, component)
-    lines.append("\n### A.5 Fault-injection scenario results (Art. 24)\n")
+    lines.append("\n### A.5 Fault-injection scenario results (Art. 24 / 25)\n")
     lines.append("| Metric | Value |")
     lines.append("| --- | --- |")
     lines.append(

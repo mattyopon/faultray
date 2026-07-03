@@ -13,6 +13,7 @@ from faultray.model.components import (
 from faultray.model.demo import create_demo_graph
 from faultray.model.graph import Dependency, InfraGraph
 from faultray.reporter.dora_evidence_pack import (
+    _required_dependency_closure,
     _service_critical_findings,
     _service_neighborhood,
     _spof_components,
@@ -51,8 +52,16 @@ def test_evidence_pack_substitutes_all_tokens() -> None:
 
 def test_evidence_pack_covers_all_required_articles() -> None:
     markdown = _build("postgres")
-    for article in ("Article 11", "Article 12", "Article 24", "Article 25", "Article 28", "Article 30"):
+    for article in (
+        "Article 11", "Article 12", "Article 24", "Article 25",
+        "Article 28", "Article 29", "Article 30",
+    ):
         assert article in markdown, f"missing {article}"
+    # Concentration risk maps to Art. 29 (entity-level concentration), and the
+    # mapping is framed as indicative preparation, not a coverage/certification.
+    assert "Preliminary assessment of ICT concentration risk" in markdown
+    assert "Testing of ICT tools and systems" in markdown  # Art. 25 title
+    assert "Indicative DORA Preparation Mapping" in markdown
     # Honesty / scope language must be present.
     assert "not legal advice" in markdown.lower()
     assert "TLPT" in markdown
@@ -332,3 +341,139 @@ def test_appendix_a5_counts_are_service_scoped() -> None:
     # A.5 row reports the SERVICE-SCOPED count (1), not the global 5.
     assert "| Critical findings touching this service | 1 |" in md
     assert "| Critical findings touching this service | 5 |" not in md
+
+
+def test_spof_neighborhood_only_follows_required_edges() -> None:
+    """A single-replica component reachable from the selected service ONLY via an
+    optional/async edge is NOT a SPOF for that service -- even when a DIFFERENT
+    service requires it. A required-path singleton still IS a SPOF.
+    """
+    g = InfraGraph()
+    g.add_component(Component(id="payment", name="Payment", type=ComponentType.APP_SERVER, replicas=2))
+    # Required-path singleton for payment -> must be a SPOF for payment.
+    g.add_component(Component(id="req-db", name="Req DB", type=ComponentType.DATABASE, replicas=1))
+    # Singleton reached from payment ONLY via an optional edge, but REQUIRED by
+    # another service (reporting). It must NOT be a SPOF for payment.
+    g.add_component(Component(id="shared-cache", name="Shared Cache", type=ComponentType.CACHE, replicas=1))
+    g.add_component(Component(id="reporting", name="Reporting", type=ComponentType.APP_SERVER, replicas=2))
+
+    g.add_dependency(Dependency(source_id="payment", target_id="req-db", dependency_type="requires"))
+    g.add_dependency(Dependency(source_id="payment", target_id="shared-cache", dependency_type="optional"))
+    g.add_dependency(Dependency(source_id="reporting", target_id="shared-cache", dependency_type="requires"))
+
+    payment = g.get_component("payment")
+
+    # shared-cache IS a global SPOF (reporting requires it) but is NOT in
+    # payment's required closure.
+    global_spof_ids = {c.id for c in _spof_components(g)}
+    assert "shared-cache" in global_spof_ids
+    assert "req-db" in global_spof_ids
+
+    closure = _required_dependency_closure(g, payment)
+    assert "req-db" in closure
+    assert "shared-cache" not in closure, "optional-only reachable node is not required"
+
+    scoped = {c.id for c in _spof_components(g, closure)}
+    assert "req-db" in scoped, "required-path singleton must remain a SPOF"
+    assert "shared-cache" not in scoped, "optional/async-only reachable singleton must NOT be this service's SPOF"
+
+    md = build_evidence_pack_markdown(g, SimulationEngine(g).run_all_defaults(), "payment")
+    assert "Req DB" in md
+    assert "Shared Cache" not in md
+
+
+def test_spof_neighborhood_excludes_async_only_reachable() -> None:
+    """Same rule for ``async`` edges: an async-only reachable singleton is not a
+    SPOF for the selected service."""
+    g = InfraGraph()
+    g.add_component(Component(id="core", name="Core", type=ComponentType.APP_SERVER, replicas=2))
+    g.add_component(Component(id="events-db", name="Events DB", type=ComponentType.DATABASE, replicas=1))
+    g.add_component(Component(id="worker", name="Worker", type=ComponentType.APP_SERVER, replicas=2))
+    # core -> events-db is async; worker -> events-db is requires.
+    g.add_dependency(Dependency(source_id="core", target_id="events-db", dependency_type="async"))
+    g.add_dependency(Dependency(source_id="worker", target_id="events-db", dependency_type="requires"))
+
+    closure = _required_dependency_closure(g, g.get_component("core"))
+    assert "events-db" not in closure
+    scoped = {c.id for c in _spof_components(g, closure)}
+    assert "events-db" not in scoped, "async-only reachable singleton must NOT be this service's SPOF"
+
+
+def test_spof_closure_excludes_requires_chain_through_optional_and_async() -> None:
+    """A `requires` chain reached only THROUGH an optional/async edge stays
+    excluded: service -optional-> X -requires-> Y (and the async variant) must
+    put neither X nor Y in the SPOF closure/register. Catches a traversal that
+    pushes past the non-required edge but only gates the membership add.
+    """
+    g = InfraGraph()
+    g.add_component(Component(id="svc", name="Svc", type=ComponentType.APP_SERVER, replicas=2))
+    # optional branch: svc -optional-> opt-mid -requires-> opt-tail
+    g.add_component(Component(id="opt-mid", name="Opt Mid", type=ComponentType.APP_SERVER, replicas=1))
+    g.add_component(Component(id="opt-tail", name="Opt Tail", type=ComponentType.DATABASE, replicas=1))
+    # async branch: svc -async-> async-mid -requires-> async-tail
+    g.add_component(Component(id="async-mid", name="Async Mid", type=ComponentType.APP_SERVER, replicas=1))
+    g.add_component(Component(id="async-tail", name="Async Tail", type=ComponentType.DATABASE, replicas=1))
+    g.add_dependency(Dependency(source_id="svc", target_id="opt-mid", dependency_type="optional"))
+    g.add_dependency(Dependency(source_id="opt-mid", target_id="opt-tail", dependency_type="requires"))
+    g.add_dependency(Dependency(source_id="svc", target_id="async-mid", dependency_type="async"))
+    g.add_dependency(Dependency(source_id="async-mid", target_id="async-tail", dependency_type="requires"))
+
+    svc = g.get_component("svc")
+
+    # The tails ARE global SPOFs (their mids require them)...
+    global_ids = {c.id for c in _spof_components(g)}
+    assert {"opt-tail", "async-tail"} <= global_ids
+
+    # ...but nothing past the optional/async edges belongs to svc's closure.
+    closure = _required_dependency_closure(g, svc)
+    assert closure == {"svc"}, f"unexpected closure: {sorted(closure)}"
+
+    scoped = {c.id for c in _spof_components(g, closure)}
+    for cid in ("opt-mid", "opt-tail", "async-mid", "async-tail"):
+        assert cid not in scoped, f"{cid} must not be attributed to svc"
+
+    md = build_evidence_pack_markdown(g, SimulationEngine(g).run_all_defaults(), "svc")
+    assert "Opt Tail" not in md
+    assert "Async Tail" not in md
+
+
+def test_spof_closure_includes_multi_hop_requires() -> None:
+    """service -requires-> A -requires-> C: the transitive requires target C
+    (single replica, no failover, has a requires-dependent) IS in the closure
+    and the SPOF register. Catches a direct-deps-only regression.
+    """
+    g = InfraGraph()
+    g.add_component(Component(id="svc", name="Svc", type=ComponentType.APP_SERVER, replicas=2))
+    g.add_component(Component(id="mid-a", name="Mid A", type=ComponentType.APP_SERVER, replicas=2))
+    g.add_component(Component(id="deep-c", name="Deep C", type=ComponentType.DATABASE, replicas=1))
+    g.add_dependency(Dependency(source_id="svc", target_id="mid-a", dependency_type="requires"))
+    g.add_dependency(Dependency(source_id="mid-a", target_id="deep-c", dependency_type="requires"))
+
+    closure = _required_dependency_closure(g, g.get_component("svc"))
+    assert "deep-c" in closure, "multi-hop requires target must be in the closure"
+
+    scoped = {c.id for c in _spof_components(g, closure)}
+    assert "deep-c" in scoped, "multi-hop required singleton must be a SPOF"
+
+    md = build_evidence_pack_markdown(g, SimulationEngine(g).run_all_defaults(), "svc")
+    assert "Deep C" in md
+    # SPOF_COUNT substitution reflects exactly the one scoped SPOF.
+    assert "| Single Points of Failure Count | 1 |" in md
+
+
+def test_spof_closure_terminates_on_requires_cycle() -> None:
+    """A programmatic graph with a requires cycle (add_dependency bypasses the
+    loader's DAG check) must not hang; each cycle member appears exactly once.
+    """
+    g = InfraGraph()
+    g.add_component(Component(id="a", name="A", type=ComponentType.APP_SERVER, replicas=1))
+    g.add_component(Component(id="b", name="B", type=ComponentType.APP_SERVER, replicas=1))
+    g.add_component(Component(id="c", name="C", type=ComponentType.APP_SERVER, replicas=1))
+    g.add_dependency(Dependency(source_id="a", target_id="b", dependency_type="requires"))
+    g.add_dependency(Dependency(source_id="b", target_id="c", dependency_type="requires"))
+    g.add_dependency(Dependency(source_id="c", target_id="a", dependency_type="requires"))
+
+    closure = _required_dependency_closure(g, g.get_component("a"))
+    # Returned (no hang) with each cycle member exactly once (set semantics).
+    assert closure == {"a", "b", "c"}
+    assert sorted(closure) == ["a", "b", "c"]
