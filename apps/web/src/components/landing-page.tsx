@@ -325,10 +325,10 @@ export async function LandingPage({ lang }: { lang: Locale }) {
             </a>
           </div>
 
-          {/* COPY-03: Primary CTA → book the Evidence Sprint scoping call (the bought outcome); secondary → self-serve simulation / signup */}
+          {/* COPY-03: Primary CTA → the Evidence Sprint offer page (funnel: hero → /evidence-sprint → book → /contact); secondary → self-serve simulation / signup */}
           <div className="flex gap-4 justify-center flex-wrap mb-10">
             <Link
-              href="/contact"
+              href="/evidence-sprint"
               className="inline-flex items-center gap-2 px-7 py-3 bg-[var(--gold)] text-white font-semibold rounded-xl shadow-md hover:bg-[#044a99] hover:shadow-lg hover:-translate-y-0.5 transition-all"
             >
               <ExternalLink size={16} />

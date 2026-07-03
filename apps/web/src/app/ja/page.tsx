@@ -291,10 +291,10 @@ export default async function LangHomePage() {
             </div>
           </div>
 
-          {/* COPY-03: Primary CTA → Evidence Sprint スコーピング通話の予約（買われる成果）。二次CTAでセルフサービスのシミュレーション／サインアップを提供 */}
+          {/* COPY-03: Primary CTA → Evidence Sprint オファーページ（導線: ヒーロー → /evidence-sprint → 予約 → /contact）。二次CTAでセルフサービスのシミュレーション／サインアップを提供 */}
           <div className="flex gap-4 justify-center flex-wrap mb-10">
             <Link
-              href="/contact"
+              href="/evidence-sprint"
               className="inline-flex items-center gap-2 px-7 py-3 bg-[var(--gold)] text-white font-semibold rounded-xl shadow-md hover:bg-[#044a99] hover:shadow-lg hover:-translate-y-0.5 transition-all"
             >
               <ExternalLink size={16} />

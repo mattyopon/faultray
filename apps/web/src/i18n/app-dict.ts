@@ -8232,4 +8232,1166 @@ export const appDict = {
     es: { backToList: "Volver a la lista de miembros", notFound: "Miembro no encontrado", leftBadge: "Ex miembro", systems: "Sistemas", soleOwner: "Único admin", criticalLevel: "Nivel crítico", departureSimulation: "Simulación de salida", leftWarningTitle: "El ex miembro aún tiene propiedad del sistema", leftWarningDesc: "Confirme que todos los sistemas gestionados por este miembro han sido transferidos.", criticalWarningTitle: "Este miembro es el único admin de {count} sistema(s)", criticalWarningDesc: "Si se va, esos sistemas quedarán sin gestión. Se recomienda encarecidamente asignar un admin de respaldo.", systemsTableTitle: "Sistemas asignados", colSystemName: "Nombre del sistema", colType: "Tipo", colAccess: "Acceso", colSoleOwner: "Único admin", colStatus: "Estado", colRisk: "Riesgo", noSystems: "Sin sistemas asignados", notesTitle: "Notas y detalles de riesgo", statusOrphaned: "Huérfano", statusDormant: "Inactivo", statusActive: "Activo" },
     pt: { backToList: "Voltar à lista de membros", notFound: "Membro não encontrado", leftBadge: "Ex-membro", systems: "Sistemas", soleOwner: "Único admin", criticalLevel: "Nível crítico", departureSimulation: "Simulação de saída", leftWarningTitle: "Ex-membro ainda possui sistemas", leftWarningDesc: "Confirme que todos os sistemas gerenciados por este membro foram transferidos.", criticalWarningTitle: "Este membro é o único admin de {count} sistema(s)", criticalWarningDesc: "Se saírem, esses sistemas ficarão sem gerenciamento. Recomenda-se atribuir um admin de backup.", systemsTableTitle: "Sistemas atribuídos", colSystemName: "Nome do sistema", colType: "Tipo", colAccess: "Acesso", colSoleOwner: "Único admin", colStatus: "Status", colRisk: "Risco", noSystems: "Sem sistemas atribuídos", notesTitle: "Notas e detalhes de risco", statusOrphaned: "Órfão", statusDormant: "Inativo", statusActive: "Ativo" },
   },
+  evidenceSprint: {
+    en: {
+      nav: { pricing: "Pricing", contact: "Contact" },
+      hero: {
+        eyebrow: "DORA pre-audit resilience evidence",
+        headline: "Audit-ready DORA resilience evidence in 5 business days",
+        subhead:
+          "A fixed-scope Sprint using sanitized data only to produce a structured evidence pack for DORA pre-audit preparation. US$2,500 fixed; no production access, no PII. Decision-support only, not legal advice.",
+        ctaLabel: "Book a 20-min Evidence Sprint scoping call",
+        seeHow: "See how it works",
+        priceNote: "US$2,500 fixed · 50% upfront · delivered 5 business days after we receive your sanitized inputs",
+      },
+      offer: {
+        heading: "What you get",
+        subheading:
+          "A fixed-scope evidence pack that organizes resilience signals, gaps, and assumptions for DORA pre-audit preparation.",
+        deliverables: [
+          "Resilience evidence pack structured for DORA pre-audit preparation",
+          "Critical service dependency map from sanitized topology and service data",
+          "ICT asset and control traceability matrix for in-scope services",
+          "Failure mode and scenario catalogue for key infrastructure dependencies",
+          "Recovery and continuity evidence summary with RTO/RPO inputs captured",
+          "Backup, restoration, and recovery procedure evidence checklist",
+          "Digital operational resilience testing evidence matrix",
+          "Third-party ICT dependency and contract evidence gap log",
+          "Risk, gap, and remediation register prioritized for audit preparation",
+          "Executive readout with assumptions, limitations, and next-step actions",
+        ],
+      },
+      mappingTable: {
+        heading: "Indicative DORA preparation mapping",
+        note: "An indicative mapping for audit preparation — not a claim of completeness, compliance, or certification.",
+        colArticle: "DORA Article",
+        colTopic: "Topic",
+        colEvidence: "Evidence produced",
+        rows: [
+          {
+            article: "Art. 11",
+            topic: "Response and recovery",
+            evidence: "Continuity and recovery evidence summary for in-scope critical services",
+          },
+          {
+            article: "Art. 12",
+            topic: "Backup policies and procedures, restoration and recovery procedures",
+            evidence: "Backup, restore, and recovery procedure evidence checklist",
+          },
+          {
+            article: "Art. 24",
+            topic: "General requirements for the performance of digital operational resilience testing",
+            evidence: "Testing evidence matrix for ICT tools, systems, and resilience controls",
+          },
+          {
+            article: "Art. 25",
+            topic: "Testing of ICT tools and systems",
+            evidence: "Scenario catalogue and test-readiness notes for in-scope services",
+          },
+          {
+            article: "Art. 28",
+            topic: "General principles (ICT third-party risk management)",
+            evidence: "Third-party ICT dependency map and contract evidence gap log",
+          },
+          {
+            article: "Art. 29",
+            topic: "Preliminary assessment of ICT concentration risk at entity level",
+            evidence: "ICT concentration-risk evidence log for critical third-party dependencies",
+          },
+          {
+            article: "Art. 30",
+            topic: "Key contractual provisions",
+            evidence: "Contract evidence checklist for resilience, access, exit, and reporting terms",
+          },
+        ],
+      },
+      howItWorks: {
+        heading: "How it works",
+        steps: [
+          {
+            title: "Day 0 — Scoping call",
+            desc: "20-minute call to confirm in-scope critical services, sanitized inputs, owners, and handover timing.",
+          },
+          {
+            title: "Days 1-2 — Evidence intake and modeling",
+            desc: "Review sanitized topology, service dependencies, recovery inputs, and third-party links.",
+          },
+          {
+            title: "Days 3-4 — Mapping and gap analysis",
+            desc: "Map evidence to selected DORA articles, identify gaps, assumptions, and audit-prep risks.",
+          },
+          {
+            title: "Day 5 — Delivery",
+            desc: "Deliver the evidence pack, gap register, and executive readout for internal review.",
+          },
+        ],
+        dataNote:
+          "We work only on sanitized data: no production access, no PII, and no live-system credentials.",
+      },
+      needFromYou: {
+        heading: "What we need from you",
+        items: [
+          "Sanitized topology or architecture diagram for in-scope services",
+          "Inventory of critical services, systems, and key dependencies",
+          "Existing recovery, backup, testing, and continuity artifacts",
+          "Third-party ICT provider list and relevant contract extracts, sanitized",
+        ],
+      },
+      pricing: {
+        heading: "Pricing",
+        price: "US$2,500",
+        priceUnit: "fixed scope",
+        terms: [
+          "50% upfront, 50% on delivery",
+          "Delivered 5 business days after we receive your sanitized inputs",
+          "Sanitized data only — no production access, no PII",
+          "Decision-support material for DORA pre-audit preparation",
+        ],
+      },
+      faq: {
+        heading: "FAQ",
+        items: [
+          {
+            q: "Is this an audit or certification?",
+            a: "No. The Sprint produces decision-support material for DORA pre-audit preparation. It is not legal advice, an audit, or certification, and it does not guarantee regulatory approval.",
+          },
+          {
+            q: "Do you need production access or PII?",
+            a: "No. FaultRay works only with sanitized data and does not require production access, PII, live credentials, or direct connections to your systems.",
+          },
+          {
+            q: "What exactly do we receive?",
+            a: "A structured evidence pack: dependency map, article mapping, control and test evidence, recovery/backup checklists, third-party risk notes, gaps, and executive readout.",
+          },
+          {
+            q: "How fast, and what's the commitment?",
+            a: "Delivery is 5 business days after we receive your sanitized inputs. The Sprint is US$2,500 fixed scope, with 50% upfront and 50% on delivery.",
+          },
+        ],
+      },
+      closing: {
+        heading: "Get your DORA evidence pack scoped",
+        subhead:
+          "Book a 20-minute call to confirm scope, sanitized inputs, and whether the Sprint fits your pre-audit timeline.",
+        ctaLabel: "Book a 20-min Evidence Sprint scoping call",
+      },
+      disclaimer:
+        "FaultRay provides decision-support material for DORA pre-audit preparation only. The Sprint is not legal advice, an audit, or certification and does not guarantee approval. Independent legal and technical review is required.",
+    },
+    ja: {
+      nav: { pricing: "料金", contact: "お問い合わせ" },
+      hero: {
+        eyebrow: "DORA 事前監査レジリエンス証跡",
+        headline: "監査対応可能な DORA レジリエンス証跡を5営業日で",
+        subhead:
+          "サニタイズ済みデータのみを用いる固定スコープのスプリントで、DORA 事前監査準備のための構造化された証跡パックを作成します。固定価格 US$2,500・本番環境アクセスなし・PII なし。意思決定支援であり、法的助言ではありません。",
+        ctaLabel: "20分の Evidence Sprint スコーピング通話を予約する",
+        seeHow: "進め方を見る",
+        priceNote: "固定価格 US$2,500 ・ 50%前払い ・ サニタイズ済み入力の受領後5営業日で納品",
+      },
+      offer: {
+        heading: "提供内容",
+        subheading:
+          "DORA 事前監査準備に向けて、レジリエンスの根拠・ギャップ・前提条件を整理した固定スコープの証跡パックです。",
+        deliverables: [
+          "DORA 事前監査準備向けに構造化されたレジリエンス証跡パック",
+          "サニタイズ済みトポロジー・サービスデータから作成する重要サービス依存関係マップ",
+          "対象サービスの ICT 資産・統制トレーサビリティマトリクス",
+          "主要インフラ依存に対する障害モード・シナリオカタログ",
+          "RTO/RPO 入力値を記録した復旧・事業継続の証跡サマリー",
+          "バックアップ・リストア・復旧手順の証跡チェックリスト",
+          "デジタルオペレーショナルレジリエンステストの証跡マトリクス",
+          "サードパーティ ICT 依存・契約に関する証跡ギャップログ",
+          "監査準備向けに優先度付けしたリスク・ギャップ・是正登録簿",
+          "前提条件・限界・次のアクションを示す経営層向けサマリー",
+        ],
+      },
+      mappingTable: {
+        heading: "DORA 監査準備のための参考対応づけ",
+        note: "監査準備のための参考的な対応づけであり、網羅性・コンプライアンス・認証を主張するものではありません。",
+        colArticle: "DORA 条文",
+        colTopic: "テーマ",
+        colEvidence: "作成される証跡",
+        rows: [
+          {
+            article: "Art. 11",
+            topic: "対応・復旧",
+            evidence: "対象となる重要サービスの事業継続・復旧に関する証跡サマリー",
+          },
+          {
+            article: "Art. 12",
+            topic: "バックアップ方針・手順、復元および復旧手順",
+            evidence: "バックアップ・リストア・復旧手順の証跡チェックリスト",
+          },
+          {
+            article: "Art. 24",
+            topic: "デジタルオペレーショナルレジリエンステストの実施に関する一般要件",
+            evidence: "ICT ツール・システム・レジリエンス統制のテスト証跡マトリクス",
+          },
+          {
+            article: "Art. 25",
+            topic: "ICT ツールおよびシステムのテスト",
+            evidence: "対象サービスのシナリオカタログとテスト準備状況メモ",
+          },
+          {
+            article: "Art. 28",
+            topic: "一般原則（ICT サードパーティリスク管理）",
+            evidence: "サードパーティ ICT 依存マップと契約証跡ギャップログ",
+          },
+          {
+            article: "Art. 29",
+            topic: "事業体レベルでの ICT 集中リスクの予備評価",
+            evidence: "重要なサードパーティ依存に関する ICT 集中リスクの証跡ログ",
+          },
+          {
+            article: "Art. 30",
+            topic: "主要な契約条項",
+            evidence: "レジリエンス・アクセス・撤退・報告条項に関する契約証跡チェックリスト",
+          },
+        ],
+      },
+      howItWorks: {
+        heading: "進め方",
+        steps: [
+          {
+            title: "Day 0 — スコーピング通話",
+            desc: "対象となる重要サービス、サニタイズ済み入力、担当者、引き渡し時期を確認する20分の通話。",
+          },
+          {
+            title: "Day 1-2 — 証跡の受領とモデリング",
+            desc: "サニタイズ済みトポロジー、サービス依存関係、復旧入力、サードパーティ連携を確認します。",
+          },
+          {
+            title: "Day 3-4 — 対応づけとギャップ分析",
+            desc: "証跡を選定した DORA 条文に対応づけ、ギャップ・前提条件・監査準備上のリスクを特定します。",
+          },
+          {
+            title: "Day 5 — 納品",
+            desc: "証跡パック、ギャップ登録簿、経営層向けサマリーを社内レビュー用に納品します。",
+          },
+        ],
+        dataNote:
+          "サニタイズ済みデータのみで作業します。本番環境アクセス・PII・稼働システムの認証情報は不要です。",
+      },
+      needFromYou: {
+        heading: "ご用意いただくもの",
+        items: [
+          "対象サービスのサニタイズ済みトポロジーまたはアーキテクチャ図",
+          "重要サービス・システム・主要依存関係の一覧",
+          "既存の復旧・バックアップ・テスト・事業継続に関する資料",
+          "サードパーティ ICT プロバイダー一覧と関連契約の抵粋（サニタイズ済み）",
+        ],
+      },
+      pricing: {
+        heading: "料金",
+        price: "US$2,500",
+        priceUnit: "固定スコープ",
+        terms: [
+          "50%前払い、50%納品時",
+          "サニタイズ済み入力の受領後5営業日で納品",
+          "サニタイズ済みデータのみ — 本番環境アクセスなし、PII なし",
+          "DORA 事前監査準備のための意思決定支援資料",
+        ],
+      },
+      faq: {
+        heading: "よくあるご質問",
+        items: [
+          {
+            q: "これは監査や認証ですか？",
+            a: "いいえ。本スプリントは DORA 事前監査準備のための意思決定支援資料を作成します。法的助言・監査・認証ではなく、規制当局の承認を保証するものではありません。",
+          },
+          {
+            q: "本番環境へのアクセスや PII は必要ですか？",
+            a: "いいえ。FaultRay はサニタイズ済みデータのみで作業し、本番環境アクセス・PII・稼働認証情報・システムへの直接接続を必要としません。",
+          },
+          {
+            q: "具体的に何を受け取れますか？",
+            a: "構造化された証跡パックです。依存関係マップ、条文対応づけ、統制・テスト証跡、復旧／バックアップのチェックリスト、サードパーティリスクのメモ、ギャップ、経営層向けサマリーを含みます。",
+          },
+          {
+            q: "どのくらいの期間で、どのような条件ですか？",
+            a: "サニタイズ済み入力の受領後、5営業日で納品します。本スプリントは固定スコープ US$2,500、50%前払い・50%納品時のお支払いです。",
+          },
+        ],
+      },
+      closing: {
+        heading: "DORA 証跡パックのスコープを確認しましょう",
+        subhead:
+          "スコープ、サニタイズ済み入力、貴社の事前監査スケジュールへの適合性を確認する20分の通話をご予約ください。",
+        ctaLabel: "20分の Evidence Sprint スコーピング通話を予約する",
+      },
+      disclaimer:
+        "FaultRay は DORA 事前監査準備のための意思決定支援資料のみを提供します。本スプリントは法的助言・監査・認証ではなく、承認を保証しません。独立した法務・技術レビューが必要です。",
+    },
+    de: {
+      nav: { pricing: "Pricing", contact: "Contact" },
+      hero: {
+        eyebrow: "DORA pre-audit resilience evidence",
+        headline: "Audit-ready DORA resilience evidence in 5 business days",
+        subhead:
+          "A fixed-scope Sprint using sanitized data only to produce a structured evidence pack for DORA pre-audit preparation. US$2,500 fixed; no production access, no PII. Decision-support only, not legal advice.",
+        ctaLabel: "Book a 20-min Evidence Sprint scoping call",
+        seeHow: "See how it works",
+        priceNote: "US$2,500 fixed · 50% upfront · delivered 5 business days after we receive your sanitized inputs",
+      },
+      offer: {
+        heading: "What you get",
+        subheading:
+          "A fixed-scope evidence pack that organizes resilience signals, gaps, and assumptions for DORA pre-audit preparation.",
+        deliverables: [
+          "Resilience evidence pack structured for DORA pre-audit preparation",
+          "Critical service dependency map from sanitized topology and service data",
+          "ICT asset and control traceability matrix for in-scope services",
+          "Failure mode and scenario catalogue for key infrastructure dependencies",
+          "Recovery and continuity evidence summary with RTO/RPO inputs captured",
+          "Backup, restoration, and recovery procedure evidence checklist",
+          "Digital operational resilience testing evidence matrix",
+          "Third-party ICT dependency and contract evidence gap log",
+          "Risk, gap, and remediation register prioritized for audit preparation",
+          "Executive readout with assumptions, limitations, and next-step actions",
+        ],
+      },
+      mappingTable: {
+        heading: "Indicative DORA preparation mapping",
+        note: "An indicative mapping for audit preparation — not a claim of completeness, compliance, or certification.",
+        colArticle: "DORA Article",
+        colTopic: "Topic",
+        colEvidence: "Evidence produced",
+        rows: [
+          {
+            article: "Art. 11",
+            topic: "Response and recovery",
+            evidence: "Continuity and recovery evidence summary for in-scope critical services",
+          },
+          {
+            article: "Art. 12",
+            topic: "Backup policies and procedures, restoration and recovery procedures",
+            evidence: "Backup, restore, and recovery procedure evidence checklist",
+          },
+          {
+            article: "Art. 24",
+            topic: "General requirements for the performance of digital operational resilience testing",
+            evidence: "Testing evidence matrix for ICT tools, systems, and resilience controls",
+          },
+          {
+            article: "Art. 25",
+            topic: "Testing of ICT tools and systems",
+            evidence: "Scenario catalogue and test-readiness notes for in-scope services",
+          },
+          {
+            article: "Art. 28",
+            topic: "General principles (ICT third-party risk management)",
+            evidence: "Third-party ICT dependency map and contract evidence gap log",
+          },
+          {
+            article: "Art. 29",
+            topic: "Preliminary assessment of ICT concentration risk at entity level",
+            evidence: "ICT concentration-risk evidence log for critical third-party dependencies",
+          },
+          {
+            article: "Art. 30",
+            topic: "Key contractual provisions",
+            evidence: "Contract evidence checklist for resilience, access, exit, and reporting terms",
+          },
+        ],
+      },
+      howItWorks: {
+        heading: "How it works",
+        steps: [
+          {
+            title: "Day 0 — Scoping call",
+            desc: "20-minute call to confirm in-scope critical services, sanitized inputs, owners, and handover timing.",
+          },
+          {
+            title: "Days 1-2 — Evidence intake and modeling",
+            desc: "Review sanitized topology, service dependencies, recovery inputs, and third-party links.",
+          },
+          {
+            title: "Days 3-4 — Mapping and gap analysis",
+            desc: "Map evidence to selected DORA articles, identify gaps, assumptions, and audit-prep risks.",
+          },
+          {
+            title: "Day 5 — Delivery",
+            desc: "Deliver the evidence pack, gap register, and executive readout for internal review.",
+          },
+        ],
+        dataNote:
+          "We work only on sanitized data: no production access, no PII, and no live-system credentials.",
+      },
+      needFromYou: {
+        heading: "What we need from you",
+        items: [
+          "Sanitized topology or architecture diagram for in-scope services",
+          "Inventory of critical services, systems, and key dependencies",
+          "Existing recovery, backup, testing, and continuity artifacts",
+          "Third-party ICT provider list and relevant contract extracts, sanitized",
+        ],
+      },
+      pricing: {
+        heading: "Pricing",
+        price: "US$2,500",
+        priceUnit: "fixed scope",
+        terms: [
+          "50% upfront, 50% on delivery",
+          "Delivered 5 business days after we receive your sanitized inputs",
+          "Sanitized data only — no production access, no PII",
+          "Decision-support material for DORA pre-audit preparation",
+        ],
+      },
+      faq: {
+        heading: "FAQ",
+        items: [
+          {
+            q: "Is this an audit or certification?",
+            a: "No. The Sprint produces decision-support material for DORA pre-audit preparation. It is not legal advice, an audit, or certification, and it does not guarantee regulatory approval.",
+          },
+          {
+            q: "Do you need production access or PII?",
+            a: "No. FaultRay works only with sanitized data and does not require production access, PII, live credentials, or direct connections to your systems.",
+          },
+          {
+            q: "What exactly do we receive?",
+            a: "A structured evidence pack: dependency map, article mapping, control and test evidence, recovery/backup checklists, third-party risk notes, gaps, and executive readout.",
+          },
+          {
+            q: "How fast, and what's the commitment?",
+            a: "Delivery is 5 business days after we receive your sanitized inputs. The Sprint is US$2,500 fixed scope, with 50% upfront and 50% on delivery.",
+          },
+        ],
+      },
+      closing: {
+        heading: "Get your DORA evidence pack scoped",
+        subhead:
+          "Book a 20-minute call to confirm scope, sanitized inputs, and whether the Sprint fits your pre-audit timeline.",
+        ctaLabel: "Book a 20-min Evidence Sprint scoping call",
+      },
+      disclaimer:
+        "FaultRay provides decision-support material for DORA pre-audit preparation only. The Sprint is not legal advice, an audit, or certification and does not guarantee approval. Independent legal and technical review is required.",
+    },
+    fr: {
+      nav: { pricing: "Pricing", contact: "Contact" },
+      hero: {
+        eyebrow: "DORA pre-audit resilience evidence",
+        headline: "Audit-ready DORA resilience evidence in 5 business days",
+        subhead:
+          "A fixed-scope Sprint using sanitized data only to produce a structured evidence pack for DORA pre-audit preparation. US$2,500 fixed; no production access, no PII. Decision-support only, not legal advice.",
+        ctaLabel: "Book a 20-min Evidence Sprint scoping call",
+        seeHow: "See how it works",
+        priceNote: "US$2,500 fixed · 50% upfront · delivered 5 business days after we receive your sanitized inputs",
+      },
+      offer: {
+        heading: "What you get",
+        subheading:
+          "A fixed-scope evidence pack that organizes resilience signals, gaps, and assumptions for DORA pre-audit preparation.",
+        deliverables: [
+          "Resilience evidence pack structured for DORA pre-audit preparation",
+          "Critical service dependency map from sanitized topology and service data",
+          "ICT asset and control traceability matrix for in-scope services",
+          "Failure mode and scenario catalogue for key infrastructure dependencies",
+          "Recovery and continuity evidence summary with RTO/RPO inputs captured",
+          "Backup, restoration, and recovery procedure evidence checklist",
+          "Digital operational resilience testing evidence matrix",
+          "Third-party ICT dependency and contract evidence gap log",
+          "Risk, gap, and remediation register prioritized for audit preparation",
+          "Executive readout with assumptions, limitations, and next-step actions",
+        ],
+      },
+      mappingTable: {
+        heading: "Indicative DORA preparation mapping",
+        note: "An indicative mapping for audit preparation — not a claim of completeness, compliance, or certification.",
+        colArticle: "DORA Article",
+        colTopic: "Topic",
+        colEvidence: "Evidence produced",
+        rows: [
+          {
+            article: "Art. 11",
+            topic: "Response and recovery",
+            evidence: "Continuity and recovery evidence summary for in-scope critical services",
+          },
+          {
+            article: "Art. 12",
+            topic: "Backup policies and procedures, restoration and recovery procedures",
+            evidence: "Backup, restore, and recovery procedure evidence checklist",
+          },
+          {
+            article: "Art. 24",
+            topic: "General requirements for the performance of digital operational resilience testing",
+            evidence: "Testing evidence matrix for ICT tools, systems, and resilience controls",
+          },
+          {
+            article: "Art. 25",
+            topic: "Testing of ICT tools and systems",
+            evidence: "Scenario catalogue and test-readiness notes for in-scope services",
+          },
+          {
+            article: "Art. 28",
+            topic: "General principles (ICT third-party risk management)",
+            evidence: "Third-party ICT dependency map and contract evidence gap log",
+          },
+          {
+            article: "Art. 29",
+            topic: "Preliminary assessment of ICT concentration risk at entity level",
+            evidence: "ICT concentration-risk evidence log for critical third-party dependencies",
+          },
+          {
+            article: "Art. 30",
+            topic: "Key contractual provisions",
+            evidence: "Contract evidence checklist for resilience, access, exit, and reporting terms",
+          },
+        ],
+      },
+      howItWorks: {
+        heading: "How it works",
+        steps: [
+          {
+            title: "Day 0 — Scoping call",
+            desc: "20-minute call to confirm in-scope critical services, sanitized inputs, owners, and handover timing.",
+          },
+          {
+            title: "Days 1-2 — Evidence intake and modeling",
+            desc: "Review sanitized topology, service dependencies, recovery inputs, and third-party links.",
+          },
+          {
+            title: "Days 3-4 — Mapping and gap analysis",
+            desc: "Map evidence to selected DORA articles, identify gaps, assumptions, and audit-prep risks.",
+          },
+          {
+            title: "Day 5 — Delivery",
+            desc: "Deliver the evidence pack, gap register, and executive readout for internal review.",
+          },
+        ],
+        dataNote:
+          "We work only on sanitized data: no production access, no PII, and no live-system credentials.",
+      },
+      needFromYou: {
+        heading: "What we need from you",
+        items: [
+          "Sanitized topology or architecture diagram for in-scope services",
+          "Inventory of critical services, systems, and key dependencies",
+          "Existing recovery, backup, testing, and continuity artifacts",
+          "Third-party ICT provider list and relevant contract extracts, sanitized",
+        ],
+      },
+      pricing: {
+        heading: "Pricing",
+        price: "US$2,500",
+        priceUnit: "fixed scope",
+        terms: [
+          "50% upfront, 50% on delivery",
+          "Delivered 5 business days after we receive your sanitized inputs",
+          "Sanitized data only — no production access, no PII",
+          "Decision-support material for DORA pre-audit preparation",
+        ],
+      },
+      faq: {
+        heading: "FAQ",
+        items: [
+          {
+            q: "Is this an audit or certification?",
+            a: "No. The Sprint produces decision-support material for DORA pre-audit preparation. It is not legal advice, an audit, or certification, and it does not guarantee regulatory approval.",
+          },
+          {
+            q: "Do you need production access or PII?",
+            a: "No. FaultRay works only with sanitized data and does not require production access, PII, live credentials, or direct connections to your systems.",
+          },
+          {
+            q: "What exactly do we receive?",
+            a: "A structured evidence pack: dependency map, article mapping, control and test evidence, recovery/backup checklists, third-party risk notes, gaps, and executive readout.",
+          },
+          {
+            q: "How fast, and what's the commitment?",
+            a: "Delivery is 5 business days after we receive your sanitized inputs. The Sprint is US$2,500 fixed scope, with 50% upfront and 50% on delivery.",
+          },
+        ],
+      },
+      closing: {
+        heading: "Get your DORA evidence pack scoped",
+        subhead:
+          "Book a 20-minute call to confirm scope, sanitized inputs, and whether the Sprint fits your pre-audit timeline.",
+        ctaLabel: "Book a 20-min Evidence Sprint scoping call",
+      },
+      disclaimer:
+        "FaultRay provides decision-support material for DORA pre-audit preparation only. The Sprint is not legal advice, an audit, or certification and does not guarantee approval. Independent legal and technical review is required.",
+    },
+    zh: {
+      nav: { pricing: "Pricing", contact: "Contact" },
+      hero: {
+        eyebrow: "DORA pre-audit resilience evidence",
+        headline: "Audit-ready DORA resilience evidence in 5 business days",
+        subhead:
+          "A fixed-scope Sprint using sanitized data only to produce a structured evidence pack for DORA pre-audit preparation. US$2,500 fixed; no production access, no PII. Decision-support only, not legal advice.",
+        ctaLabel: "Book a 20-min Evidence Sprint scoping call",
+        seeHow: "See how it works",
+        priceNote: "US$2,500 fixed · 50% upfront · delivered 5 business days after we receive your sanitized inputs",
+      },
+      offer: {
+        heading: "What you get",
+        subheading:
+          "A fixed-scope evidence pack that organizes resilience signals, gaps, and assumptions for DORA pre-audit preparation.",
+        deliverables: [
+          "Resilience evidence pack structured for DORA pre-audit preparation",
+          "Critical service dependency map from sanitized topology and service data",
+          "ICT asset and control traceability matrix for in-scope services",
+          "Failure mode and scenario catalogue for key infrastructure dependencies",
+          "Recovery and continuity evidence summary with RTO/RPO inputs captured",
+          "Backup, restoration, and recovery procedure evidence checklist",
+          "Digital operational resilience testing evidence matrix",
+          "Third-party ICT dependency and contract evidence gap log",
+          "Risk, gap, and remediation register prioritized for audit preparation",
+          "Executive readout with assumptions, limitations, and next-step actions",
+        ],
+      },
+      mappingTable: {
+        heading: "Indicative DORA preparation mapping",
+        note: "An indicative mapping for audit preparation — not a claim of completeness, compliance, or certification.",
+        colArticle: "DORA Article",
+        colTopic: "Topic",
+        colEvidence: "Evidence produced",
+        rows: [
+          {
+            article: "Art. 11",
+            topic: "Response and recovery",
+            evidence: "Continuity and recovery evidence summary for in-scope critical services",
+          },
+          {
+            article: "Art. 12",
+            topic: "Backup policies and procedures, restoration and recovery procedures",
+            evidence: "Backup, restore, and recovery procedure evidence checklist",
+          },
+          {
+            article: "Art. 24",
+            topic: "General requirements for the performance of digital operational resilience testing",
+            evidence: "Testing evidence matrix for ICT tools, systems, and resilience controls",
+          },
+          {
+            article: "Art. 25",
+            topic: "Testing of ICT tools and systems",
+            evidence: "Scenario catalogue and test-readiness notes for in-scope services",
+          },
+          {
+            article: "Art. 28",
+            topic: "General principles (ICT third-party risk management)",
+            evidence: "Third-party ICT dependency map and contract evidence gap log",
+          },
+          {
+            article: "Art. 29",
+            topic: "Preliminary assessment of ICT concentration risk at entity level",
+            evidence: "ICT concentration-risk evidence log for critical third-party dependencies",
+          },
+          {
+            article: "Art. 30",
+            topic: "Key contractual provisions",
+            evidence: "Contract evidence checklist for resilience, access, exit, and reporting terms",
+          },
+        ],
+      },
+      howItWorks: {
+        heading: "How it works",
+        steps: [
+          {
+            title: "Day 0 — Scoping call",
+            desc: "20-minute call to confirm in-scope critical services, sanitized inputs, owners, and handover timing.",
+          },
+          {
+            title: "Days 1-2 — Evidence intake and modeling",
+            desc: "Review sanitized topology, service dependencies, recovery inputs, and third-party links.",
+          },
+          {
+            title: "Days 3-4 — Mapping and gap analysis",
+            desc: "Map evidence to selected DORA articles, identify gaps, assumptions, and audit-prep risks.",
+          },
+          {
+            title: "Day 5 — Delivery",
+            desc: "Deliver the evidence pack, gap register, and executive readout for internal review.",
+          },
+        ],
+        dataNote:
+          "We work only on sanitized data: no production access, no PII, and no live-system credentials.",
+      },
+      needFromYou: {
+        heading: "What we need from you",
+        items: [
+          "Sanitized topology or architecture diagram for in-scope services",
+          "Inventory of critical services, systems, and key dependencies",
+          "Existing recovery, backup, testing, and continuity artifacts",
+          "Third-party ICT provider list and relevant contract extracts, sanitized",
+        ],
+      },
+      pricing: {
+        heading: "Pricing",
+        price: "US$2,500",
+        priceUnit: "fixed scope",
+        terms: [
+          "50% upfront, 50% on delivery",
+          "Delivered 5 business days after we receive your sanitized inputs",
+          "Sanitized data only — no production access, no PII",
+          "Decision-support material for DORA pre-audit preparation",
+        ],
+      },
+      faq: {
+        heading: "FAQ",
+        items: [
+          {
+            q: "Is this an audit or certification?",
+            a: "No. The Sprint produces decision-support material for DORA pre-audit preparation. It is not legal advice, an audit, or certification, and it does not guarantee regulatory approval.",
+          },
+          {
+            q: "Do you need production access or PII?",
+            a: "No. FaultRay works only with sanitized data and does not require production access, PII, live credentials, or direct connections to your systems.",
+          },
+          {
+            q: "What exactly do we receive?",
+            a: "A structured evidence pack: dependency map, article mapping, control and test evidence, recovery/backup checklists, third-party risk notes, gaps, and executive readout.",
+          },
+          {
+            q: "How fast, and what's the commitment?",
+            a: "Delivery is 5 business days after we receive your sanitized inputs. The Sprint is US$2,500 fixed scope, with 50% upfront and 50% on delivery.",
+          },
+        ],
+      },
+      closing: {
+        heading: "Get your DORA evidence pack scoped",
+        subhead:
+          "Book a 20-minute call to confirm scope, sanitized inputs, and whether the Sprint fits your pre-audit timeline.",
+        ctaLabel: "Book a 20-min Evidence Sprint scoping call",
+      },
+      disclaimer:
+        "FaultRay provides decision-support material for DORA pre-audit preparation only. The Sprint is not legal advice, an audit, or certification and does not guarantee approval. Independent legal and technical review is required.",
+    },
+    ko: {
+      nav: { pricing: "Pricing", contact: "Contact" },
+      hero: {
+        eyebrow: "DORA pre-audit resilience evidence",
+        headline: "Audit-ready DORA resilience evidence in 5 business days",
+        subhead:
+          "A fixed-scope Sprint using sanitized data only to produce a structured evidence pack for DORA pre-audit preparation. US$2,500 fixed; no production access, no PII. Decision-support only, not legal advice.",
+        ctaLabel: "Book a 20-min Evidence Sprint scoping call",
+        seeHow: "See how it works",
+        priceNote: "US$2,500 fixed · 50% upfront · delivered 5 business days after we receive your sanitized inputs",
+      },
+      offer: {
+        heading: "What you get",
+        subheading:
+          "A fixed-scope evidence pack that organizes resilience signals, gaps, and assumptions for DORA pre-audit preparation.",
+        deliverables: [
+          "Resilience evidence pack structured for DORA pre-audit preparation",
+          "Critical service dependency map from sanitized topology and service data",
+          "ICT asset and control traceability matrix for in-scope services",
+          "Failure mode and scenario catalogue for key infrastructure dependencies",
+          "Recovery and continuity evidence summary with RTO/RPO inputs captured",
+          "Backup, restoration, and recovery procedure evidence checklist",
+          "Digital operational resilience testing evidence matrix",
+          "Third-party ICT dependency and contract evidence gap log",
+          "Risk, gap, and remediation register prioritized for audit preparation",
+          "Executive readout with assumptions, limitations, and next-step actions",
+        ],
+      },
+      mappingTable: {
+        heading: "Indicative DORA preparation mapping",
+        note: "An indicative mapping for audit preparation — not a claim of completeness, compliance, or certification.",
+        colArticle: "DORA Article",
+        colTopic: "Topic",
+        colEvidence: "Evidence produced",
+        rows: [
+          {
+            article: "Art. 11",
+            topic: "Response and recovery",
+            evidence: "Continuity and recovery evidence summary for in-scope critical services",
+          },
+          {
+            article: "Art. 12",
+            topic: "Backup policies and procedures, restoration and recovery procedures",
+            evidence: "Backup, restore, and recovery procedure evidence checklist",
+          },
+          {
+            article: "Art. 24",
+            topic: "General requirements for the performance of digital operational resilience testing",
+            evidence: "Testing evidence matrix for ICT tools, systems, and resilience controls",
+          },
+          {
+            article: "Art. 25",
+            topic: "Testing of ICT tools and systems",
+            evidence: "Scenario catalogue and test-readiness notes for in-scope services",
+          },
+          {
+            article: "Art. 28",
+            topic: "General principles (ICT third-party risk management)",
+            evidence: "Third-party ICT dependency map and contract evidence gap log",
+          },
+          {
+            article: "Art. 29",
+            topic: "Preliminary assessment of ICT concentration risk at entity level",
+            evidence: "ICT concentration-risk evidence log for critical third-party dependencies",
+          },
+          {
+            article: "Art. 30",
+            topic: "Key contractual provisions",
+            evidence: "Contract evidence checklist for resilience, access, exit, and reporting terms",
+          },
+        ],
+      },
+      howItWorks: {
+        heading: "How it works",
+        steps: [
+          {
+            title: "Day 0 — Scoping call",
+            desc: "20-minute call to confirm in-scope critical services, sanitized inputs, owners, and handover timing.",
+          },
+          {
+            title: "Days 1-2 — Evidence intake and modeling",
+            desc: "Review sanitized topology, service dependencies, recovery inputs, and third-party links.",
+          },
+          {
+            title: "Days 3-4 — Mapping and gap analysis",
+            desc: "Map evidence to selected DORA articles, identify gaps, assumptions, and audit-prep risks.",
+          },
+          {
+            title: "Day 5 — Delivery",
+            desc: "Deliver the evidence pack, gap register, and executive readout for internal review.",
+          },
+        ],
+        dataNote:
+          "We work only on sanitized data: no production access, no PII, and no live-system credentials.",
+      },
+      needFromYou: {
+        heading: "What we need from you",
+        items: [
+          "Sanitized topology or architecture diagram for in-scope services",
+          "Inventory of critical services, systems, and key dependencies",
+          "Existing recovery, backup, testing, and continuity artifacts",
+          "Third-party ICT provider list and relevant contract extracts, sanitized",
+        ],
+      },
+      pricing: {
+        heading: "Pricing",
+        price: "US$2,500",
+        priceUnit: "fixed scope",
+        terms: [
+          "50% upfront, 50% on delivery",
+          "Delivered 5 business days after we receive your sanitized inputs",
+          "Sanitized data only — no production access, no PII",
+          "Decision-support material for DORA pre-audit preparation",
+        ],
+      },
+      faq: {
+        heading: "FAQ",
+        items: [
+          {
+            q: "Is this an audit or certification?",
+            a: "No. The Sprint produces decision-support material for DORA pre-audit preparation. It is not legal advice, an audit, or certification, and it does not guarantee regulatory approval.",
+          },
+          {
+            q: "Do you need production access or PII?",
+            a: "No. FaultRay works only with sanitized data and does not require production access, PII, live credentials, or direct connections to your systems.",
+          },
+          {
+            q: "What exactly do we receive?",
+            a: "A structured evidence pack: dependency map, article mapping, control and test evidence, recovery/backup checklists, third-party risk notes, gaps, and executive readout.",
+          },
+          {
+            q: "How fast, and what's the commitment?",
+            a: "Delivery is 5 business days after we receive your sanitized inputs. The Sprint is US$2,500 fixed scope, with 50% upfront and 50% on delivery.",
+          },
+        ],
+      },
+      closing: {
+        heading: "Get your DORA evidence pack scoped",
+        subhead:
+          "Book a 20-minute call to confirm scope, sanitized inputs, and whether the Sprint fits your pre-audit timeline.",
+        ctaLabel: "Book a 20-min Evidence Sprint scoping call",
+      },
+      disclaimer:
+        "FaultRay provides decision-support material for DORA pre-audit preparation only. The Sprint is not legal advice, an audit, or certification and does not guarantee approval. Independent legal and technical review is required.",
+    },
+    es: {
+      nav: { pricing: "Pricing", contact: "Contact" },
+      hero: {
+        eyebrow: "DORA pre-audit resilience evidence",
+        headline: "Audit-ready DORA resilience evidence in 5 business days",
+        subhead:
+          "A fixed-scope Sprint using sanitized data only to produce a structured evidence pack for DORA pre-audit preparation. US$2,500 fixed; no production access, no PII. Decision-support only, not legal advice.",
+        ctaLabel: "Book a 20-min Evidence Sprint scoping call",
+        seeHow: "See how it works",
+        priceNote: "US$2,500 fixed · 50% upfront · delivered 5 business days after we receive your sanitized inputs",
+      },
+      offer: {
+        heading: "What you get",
+        subheading:
+          "A fixed-scope evidence pack that organizes resilience signals, gaps, and assumptions for DORA pre-audit preparation.",
+        deliverables: [
+          "Resilience evidence pack structured for DORA pre-audit preparation",
+          "Critical service dependency map from sanitized topology and service data",
+          "ICT asset and control traceability matrix for in-scope services",
+          "Failure mode and scenario catalogue for key infrastructure dependencies",
+          "Recovery and continuity evidence summary with RTO/RPO inputs captured",
+          "Backup, restoration, and recovery procedure evidence checklist",
+          "Digital operational resilience testing evidence matrix",
+          "Third-party ICT dependency and contract evidence gap log",
+          "Risk, gap, and remediation register prioritized for audit preparation",
+          "Executive readout with assumptions, limitations, and next-step actions",
+        ],
+      },
+      mappingTable: {
+        heading: "Indicative DORA preparation mapping",
+        note: "An indicative mapping for audit preparation — not a claim of completeness, compliance, or certification.",
+        colArticle: "DORA Article",
+        colTopic: "Topic",
+        colEvidence: "Evidence produced",
+        rows: [
+          {
+            article: "Art. 11",
+            topic: "Response and recovery",
+            evidence: "Continuity and recovery evidence summary for in-scope critical services",
+          },
+          {
+            article: "Art. 12",
+            topic: "Backup policies and procedures, restoration and recovery procedures",
+            evidence: "Backup, restore, and recovery procedure evidence checklist",
+          },
+          {
+            article: "Art. 24",
+            topic: "General requirements for the performance of digital operational resilience testing",
+            evidence: "Testing evidence matrix for ICT tools, systems, and resilience controls",
+          },
+          {
+            article: "Art. 25",
+            topic: "Testing of ICT tools and systems",
+            evidence: "Scenario catalogue and test-readiness notes for in-scope services",
+          },
+          {
+            article: "Art. 28",
+            topic: "General principles (ICT third-party risk management)",
+            evidence: "Third-party ICT dependency map and contract evidence gap log",
+          },
+          {
+            article: "Art. 29",
+            topic: "Preliminary assessment of ICT concentration risk at entity level",
+            evidence: "ICT concentration-risk evidence log for critical third-party dependencies",
+          },
+          {
+            article: "Art. 30",
+            topic: "Key contractual provisions",
+            evidence: "Contract evidence checklist for resilience, access, exit, and reporting terms",
+          },
+        ],
+      },
+      howItWorks: {
+        heading: "How it works",
+        steps: [
+          {
+            title: "Day 0 — Scoping call",
+            desc: "20-minute call to confirm in-scope critical services, sanitized inputs, owners, and handover timing.",
+          },
+          {
+            title: "Days 1-2 — Evidence intake and modeling",
+            desc: "Review sanitized topology, service dependencies, recovery inputs, and third-party links.",
+          },
+          {
+            title: "Days 3-4 — Mapping and gap analysis",
+            desc: "Map evidence to selected DORA articles, identify gaps, assumptions, and audit-prep risks.",
+          },
+          {
+            title: "Day 5 — Delivery",
+            desc: "Deliver the evidence pack, gap register, and executive readout for internal review.",
+          },
+        ],
+        dataNote:
+          "We work only on sanitized data: no production access, no PII, and no live-system credentials.",
+      },
+      needFromYou: {
+        heading: "What we need from you",
+        items: [
+          "Sanitized topology or architecture diagram for in-scope services",
+          "Inventory of critical services, systems, and key dependencies",
+          "Existing recovery, backup, testing, and continuity artifacts",
+          "Third-party ICT provider list and relevant contract extracts, sanitized",
+        ],
+      },
+      pricing: {
+        heading: "Pricing",
+        price: "US$2,500",
+        priceUnit: "fixed scope",
+        terms: [
+          "50% upfront, 50% on delivery",
+          "Delivered 5 business days after we receive your sanitized inputs",
+          "Sanitized data only — no production access, no PII",
+          "Decision-support material for DORA pre-audit preparation",
+        ],
+      },
+      faq: {
+        heading: "FAQ",
+        items: [
+          {
+            q: "Is this an audit or certification?",
+            a: "No. The Sprint produces decision-support material for DORA pre-audit preparation. It is not legal advice, an audit, or certification, and it does not guarantee regulatory approval.",
+          },
+          {
+            q: "Do you need production access or PII?",
+            a: "No. FaultRay works only with sanitized data and does not require production access, PII, live credentials, or direct connections to your systems.",
+          },
+          {
+            q: "What exactly do we receive?",
+            a: "A structured evidence pack: dependency map, article mapping, control and test evidence, recovery/backup checklists, third-party risk notes, gaps, and executive readout.",
+          },
+          {
+            q: "How fast, and what's the commitment?",
+            a: "Delivery is 5 business days after we receive your sanitized inputs. The Sprint is US$2,500 fixed scope, with 50% upfront and 50% on delivery.",
+          },
+        ],
+      },
+      closing: {
+        heading: "Get your DORA evidence pack scoped",
+        subhead:
+          "Book a 20-minute call to confirm scope, sanitized inputs, and whether the Sprint fits your pre-audit timeline.",
+        ctaLabel: "Book a 20-min Evidence Sprint scoping call",
+      },
+      disclaimer:
+        "FaultRay provides decision-support material for DORA pre-audit preparation only. The Sprint is not legal advice, an audit, or certification and does not guarantee approval. Independent legal and technical review is required.",
+    },
+    pt: {
+      nav: { pricing: "Pricing", contact: "Contact" },
+      hero: {
+        eyebrow: "DORA pre-audit resilience evidence",
+        headline: "Audit-ready DORA resilience evidence in 5 business days",
+        subhead:
+          "A fixed-scope Sprint using sanitized data only to produce a structured evidence pack for DORA pre-audit preparation. US$2,500 fixed; no production access, no PII. Decision-support only, not legal advice.",
+        ctaLabel: "Book a 20-min Evidence Sprint scoping call",
+        seeHow: "See how it works",
+        priceNote: "US$2,500 fixed · 50% upfront · delivered 5 business days after we receive your sanitized inputs",
+      },
+      offer: {
+        heading: "What you get",
+        subheading:
+          "A fixed-scope evidence pack that organizes resilience signals, gaps, and assumptions for DORA pre-audit preparation.",
+        deliverables: [
+          "Resilience evidence pack structured for DORA pre-audit preparation",
+          "Critical service dependency map from sanitized topology and service data",
+          "ICT asset and control traceability matrix for in-scope services",
+          "Failure mode and scenario catalogue for key infrastructure dependencies",
+          "Recovery and continuity evidence summary with RTO/RPO inputs captured",
+          "Backup, restoration, and recovery procedure evidence checklist",
+          "Digital operational resilience testing evidence matrix",
+          "Third-party ICT dependency and contract evidence gap log",
+          "Risk, gap, and remediation register prioritized for audit preparation",
+          "Executive readout with assumptions, limitations, and next-step actions",
+        ],
+      },
+      mappingTable: {
+        heading: "Indicative DORA preparation mapping",
+        note: "An indicative mapping for audit preparation — not a claim of completeness, compliance, or certification.",
+        colArticle: "DORA Article",
+        colTopic: "Topic",
+        colEvidence: "Evidence produced",
+        rows: [
+          {
+            article: "Art. 11",
+            topic: "Response and recovery",
+            evidence: "Continuity and recovery evidence summary for in-scope critical services",
+          },
+          {
+            article: "Art. 12",
+            topic: "Backup policies and procedures, restoration and recovery procedures",
+            evidence: "Backup, restore, and recovery procedure evidence checklist",
+          },
+          {
+            article: "Art. 24",
+            topic: "General requirements for the performance of digital operational resilience testing",
+            evidence: "Testing evidence matrix for ICT tools, systems, and resilience controls",
+          },
+          {
+            article: "Art. 25",
+            topic: "Testing of ICT tools and systems",
+            evidence: "Scenario catalogue and test-readiness notes for in-scope services",
+          },
+          {
+            article: "Art. 28",
+            topic: "General principles (ICT third-party risk management)",
+            evidence: "Third-party ICT dependency map and contract evidence gap log",
+          },
+          {
+            article: "Art. 29",
+            topic: "Preliminary assessment of ICT concentration risk at entity level",
+            evidence: "ICT concentration-risk evidence log for critical third-party dependencies",
+          },
+          {
+            article: "Art. 30",
+            topic: "Key contractual provisions",
+            evidence: "Contract evidence checklist for resilience, access, exit, and reporting terms",
+          },
+        ],
+      },
+      howItWorks: {
+        heading: "How it works",
+        steps: [
+          {
+            title: "Day 0 — Scoping call",
+            desc: "20-minute call to confirm in-scope critical services, sanitized inputs, owners, and handover timing.",
+          },
+          {
+            title: "Days 1-2 — Evidence intake and modeling",
+            desc: "Review sanitized topology, service dependencies, recovery inputs, and third-party links.",
+          },
+          {
+            title: "Days 3-4 — Mapping and gap analysis",
+            desc: "Map evidence to selected DORA articles, identify gaps, assumptions, and audit-prep risks.",
+          },
+          {
+            title: "Day 5 — Delivery",
+            desc: "Deliver the evidence pack, gap register, and executive readout for internal review.",
+          },
+        ],
+        dataNote:
+          "We work only on sanitized data: no production access, no PII, and no live-system credentials.",
+      },
+      needFromYou: {
+        heading: "What we need from you",
+        items: [
+          "Sanitized topology or architecture diagram for in-scope services",
+          "Inventory of critical services, systems, and key dependencies",
+          "Existing recovery, backup, testing, and continuity artifacts",
+          "Third-party ICT provider list and relevant contract extracts, sanitized",
+        ],
+      },
+      pricing: {
+        heading: "Pricing",
+        price: "US$2,500",
+        priceUnit: "fixed scope",
+        terms: [
+          "50% upfront, 50% on delivery",
+          "Delivered 5 business days after we receive your sanitized inputs",
+          "Sanitized data only — no production access, no PII",
+          "Decision-support material for DORA pre-audit preparation",
+        ],
+      },
+      faq: {
+        heading: "FAQ",
+        items: [
+          {
+            q: "Is this an audit or certification?",
+            a: "No. The Sprint produces decision-support material for DORA pre-audit preparation. It is not legal advice, an audit, or certification, and it does not guarantee regulatory approval.",
+          },
+          {
+            q: "Do you need production access or PII?",
+            a: "No. FaultRay works only with sanitized data and does not require production access, PII, live credentials, or direct connections to your systems.",
+          },
+          {
+            q: "What exactly do we receive?",
+            a: "A structured evidence pack: dependency map, article mapping, control and test evidence, recovery/backup checklists, third-party risk notes, gaps, and executive readout.",
+          },
+          {
+            q: "How fast, and what's the commitment?",
+            a: "Delivery is 5 business days after we receive your sanitized inputs. The Sprint is US$2,500 fixed scope, with 50% upfront and 50% on delivery.",
+          },
+        ],
+      },
+      closing: {
+        heading: "Get your DORA evidence pack scoped",
+        subhead:
+          "Book a 20-minute call to confirm scope, sanitized inputs, and whether the Sprint fits your pre-audit timeline.",
+        ctaLabel: "Book a 20-min Evidence Sprint scoping call",
+      },
+      disclaimer:
+        "FaultRay provides decision-support material for DORA pre-audit preparation only. The Sprint is not legal advice, an audit, or certification and does not guarantee approval. Independent legal and technical review is required.",
+    },
+  },
 } as const;
