@@ -62,10 +62,13 @@ export default function robots(): MetadataRoute.Robots {
     rules: [
       {
         userAgent: "*",
+        // "/evidence-sprint" must stay listed: robots Disallow matching is
+        // prefix-based, so the "/evidence" app-path entry would otherwise block
+        // it — the longer Allow rule wins under longest-match precedence.
         allow: ["/", "/en", "/ja", "/de", "/fr", "/zh", "/ko", "/es", "/pt",
                 "/pricing", "/features", "/case-studies", "/changelog",
                 "/contact", "/demo", "/privacy", "/terms", "/tokushoho", "/dpa",
-                "/help", "/support"],
+                "/help", "/support", "/evidence-sprint"],
         disallow: APP_PATHS,
       },
     ],

@@ -17,6 +17,7 @@ export default function sitemap(): MetadataRoute.Sitemap {
 
   // Core product pages (public only — auth-required pages excluded per robots.ts)
   const productPages = [
+    { path: "/evidence-sprint", priority: 0.9, changeFrequency: "monthly" as const },
     { path: "/pricing",       priority: 0.9, changeFrequency: "monthly" as const },
     { path: "/features",      priority: 0.8, changeFrequency: "monthly" as const },
     { path: "/demo",          priority: 0.8, changeFrequency: "weekly" as const },

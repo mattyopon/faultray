@@ -18,4 +18,14 @@ export const PUBLIC_PAGES = [
   "/tokushoho", "/dpa", "/privacy", "/terms", "/service-level-agreement",
   "/contact", "/features", "/pricing", "/demo",
   "/status", "/support", "/help", "/changelog", "/ringi", "/case-studies",
+  "/evidence-sprint",
 ] as const;
+
+// Segment-boundary check (exact path or a "/"-delimited child) used where a
+// public page must take precedence over the prefix-based APP_ROUTES protection
+// in src/proxy.ts: "/evidence-sprint" is public even though it shares the
+// "/evidence" prefix with a protected app route. Boundary matching keeps the
+// precedence narrow — "/evidence" itself and "/evidence/..." stay protected.
+export function isPublicPage(path: string): boolean {
+  return PUBLIC_PAGES.some((p) => path === p || path.startsWith(p + "/"));
+}

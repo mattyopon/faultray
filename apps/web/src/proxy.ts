@@ -3,7 +3,7 @@ import { NextResponse, type NextRequest } from "next/server";
 import { buildCsp, cspStrictEnabled } from "@/lib/csp";
 // Shared with src/app/layout.tsx (pre-hydration theme script) so the public-page
 // list can never drift between the two consumers. See src/lib/public-routes.ts.
-import { PUBLIC_PAGES } from "@/lib/public-routes";
+import { PUBLIC_PAGES, isPublicPage } from "@/lib/public-routes";
 
 const locales = ["en", "ja", "de", "fr", "zh", "ko", "es", "pt"];
 const defaultLocale = "en";
@@ -281,9 +281,14 @@ export async function proxy(request: NextRequest) {
     }
   }
 
-  const isProtected = APP_ROUTES.some((path) =>
-    pathForCheck.startsWith(path)
-  );
+  // Public pages take precedence over the prefix-based APP_ROUTES match:
+  // "/evidence-sprint" (public offer page) shares the "/evidence" prefix with a
+  // protected app route and must not bounce visitors to /login. isPublicPage is
+  // segment-boundary matched, so "/evidence" itself and "/evidence/..." remain
+  // protected, as does "/security-checklist" via the "/security" prefix.
+  const isProtected =
+    !isPublicPage(pathForCheck) &&
+    APP_ROUTES.some((path) => pathForCheck.startsWith(path));
 
   if (isProtected && !user) {
     const url = request.nextUrl.clone();
