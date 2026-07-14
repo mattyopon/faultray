@@ -38,7 +38,7 @@ dependencies = [
     "pydantic>=2.0",
     "networkx>=3.6.1",
     "psutil>=7.2.2",
-    "fastapi>=0.115",
+    "fastapi>=0.138.2",
     # Form parsing (/setup, simulation and graph upload routes) — without
     # this a clean install 500s on those endpoints. >=0.0.18: CVE-2024-53981.
     "python-multipart>=0.0.32",
