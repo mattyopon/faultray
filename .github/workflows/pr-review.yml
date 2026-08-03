@@ -33,7 +33,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
-      - uses: Codium-ai/pr-agent@d82f7d3e696cd00822694aaa3096265d3889f3f1  # main
+      - uses: Codium-ai/pr-agent@570f67ed5fc8db5be74c18df070bc20079b64b0d  # main
         env:
           OPENAI_KEY: ${{ secrets.OPENAI_API_KEY }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
