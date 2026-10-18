@@ -1,0 +1,60 @@
+# dependencies
+/node_modules
+/.pnp
+.pnp.*
+.yarn/*
+!.yarn/patches
+!.yarn/plugins
+!.yarn/releases
+!.yarn/versions
+
+# testing
+/coverage
+
+# next.js
+/.next/
+/out/
+
+# production
+/build
+
+# misc
+.DS_Store
+*.pem
+
+# python
+__pycache__/
+*.pyc
+
+# debug
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.pnpm-debug.log*
+
+# env files
+.env
+.env*.local
+!.env.local.example
+
+# vercel
+.vercel
+
+# typescript
+*.tsbuildinfo
+next-env.d.ts
+
+# CLAUDE
+CLAUDE.md
+AGENTS.md
+
+# Security: never commit actual env values
+.env.production
+.env.staging
+vercel-env-vars.txt
+api/__pycache__/
+__pycache__/
+tests/screenshots/
+tests/e2e_buttons.py
+playwright-report/
+supabase/.temp/

@@ -1,0 +1,326 @@
+{
+  "metadata": {
+    "title": "FaultRay — Simulación de Resiliencia Pre-Despliegue (Prototipo de Investigación)",
+    "description": "Estima el límite estructural de disponibilidad de tu sistema mediante simulación en memoria a partir de la topología declarada, sin tocar producción. Prototipo de investigación; complementa el chaos engineering en tiempo de ejecución."
+  },
+  "nav": {
+    "features": "Funciones",
+    "compare": "Comparar",
+    "pricing": "Precios",
+    "signIn": "Iniciar sesión",
+    "dashboard": "Panel"
+  },
+  "hero": {
+    "badge": "Código abierto · Licencia Apache 2.0",
+    "subtitle": "Simulación de Resiliencia Pre-Despliegue (Prototipo de Investigación)",
+    "description": "Estima el límite estructural de disponibilidad de tu sistema mediante simulación en memoria — prototipo de investigación, sin tocar producción.",
+    "stats": {
+      "scenarios": "Escenarios",
+      "engines": "Motores",
+      "layers": "Capas",
+      "tests": "Pruebas",
+      "doraControls": "Mapeos DORA (investigación)",
+      "dashboardPages": "Páginas del panel",
+      "languages": "Idiomas"
+    },
+    "cta": "Comenzar gratis",
+    "demo": "Demo en vivo",
+    "ctaPrimary": "Reservar una llamada de definición de alcance de 20 min para el Sprint de Evidencias",
+    "evidenceSprint": {
+      "title": "Sprint de Evidencias de Resiliencia DORA",
+      "blurb": "En 5 días hábiles, trabajamos únicamente con datos depurados — sin acceso a producción, sin datos personales identificables (PII). Con precio fijo de $2,500 y 50% por adelantado, el Sprint de Evidencias entrega un paquete estructurado de evidencias de resiliencia para la preparación previa a una auditoría DORA."
+    },
+    "valueProps": [
+      {
+        "title": "Paquete de evidencias listo para auditoría",
+        "desc": "Un paquete estructurado de evidencias que los equipos de riesgo, resiliencia, cumplimiento y CTO pueden usar para prepararse para conversaciones de auditoría DORA."
+      },
+      {
+        "title": "Mapeo DORA trazable",
+        "desc": "Una vista trazable de cómo las evidencias de servicios críticos se alinean con los artículos DORA relevantes, con los supuestos separados para su revisión."
+      },
+      {
+        "title": "Informes de resiliencia listos para el consejo de administración",
+        "desc": "Resúmenes ejecutivos que distinguen evidencias, supuestos y decisiones pendientes para la preparación de cara al consejo de administración y a los reguladores."
+      }
+    ]
+  },
+  "problem": {
+    "title": "El Problema",
+    "items": [
+      "Requiere entorno de producción o staging",
+      "Riesgo de interrupciones reales durante las pruebas",
+      "Costes de infraestructura elevados",
+      "Configuración y limpieza complejas",
+      "Sin prueba matemática de disponibilidad"
+    ],
+    "descriptionParts": {
+      "before": "Las herramientas de chaos existentes inyectan ",
+      "highlight": "fallos reales",
+      "after": " en tu infraestructura."
+    }
+  },
+  "solution": {
+    "title": "La Solución",
+    "items": [
+      "Cero riesgo — sin fallos reales inyectados",
+      "Cero coste — se ejecuta en un portátil",
+      "Resultados instantáneos en segundos",
+      "Funciona solo con la topología YAML",
+      "Estimación del límite de disponibilidad basada en modelo (depende de la fidelidad de la topología)"
+    ],
+    "descriptionParts": {
+      "before": "FaultRay utiliza ",
+      "highlight": "simulación puramente matemática",
+      "after": "."
+    }
+  },
+  "challenges": {
+    "heading": "Desafíos que Resolvemos",
+    "subheading": "FaultRay aborda las brechas operativas reales que mantienen despiertos a los equipos de ingeniería.",
+    "items": [
+      {
+        "problem": "Gestión de infraestructura manual y dependiente de personas",
+        "solution": "FaultRay automatiza el escaneo de topología y el análisis de resiliencia."
+      },
+      {
+        "problem": "IaC (Terraform) aún no adoptado",
+        "solution": "FaultRay escanea automáticamente su infraestructura AWS / GCP / Azure existente sin necesitar configuración IaC."
+      },
+      {
+        "problem": "Requisitos de disponibilidad y auditoría post-IPO",
+        "solution": "Explora la alineación DORA / SOC 2 con borradores de evidencia como prototipo de investigación. No certificado para auditoría — se requiere revisión legal independiente."
+      },
+      {
+        "problem": "Respuesta a incidentes ad hoc sin runbooks",
+        "solution": "FaultRay genera automáticamente runbooks y scripts de remediación desde los resultados de simulación."
+      },
+      {
+        "problem": "Preparación para la gobernanza de IA no iniciada",
+        "solution": "Mapeos de prototipo de investigación a los requisitos METI / ISO 42001. No certificado para auditoría."
+      }
+    ]
+  },
+  "features": {
+    "heading": "Todo lo que Necesitas",
+    "subheading": "Diez pilares de la simulación de resiliencia pre-despliegue (prototipo de investigación)",
+    "cards": [
+      {
+        "title": "Múltiples Motores de Simulación",
+        "desc": "Red, procesos, recursos, dependencias, latencia, radio de explosión, validación de contratos SLA y docenas más — impulsados por Monte Carlo, cadenas de Markov y teoría de colas."
+      },
+      {
+        "title": "Miles de Escenarios Auto-generados",
+        "desc": "Desde fallos de nodo único hasta interrupciones en cascada multi-región. Cada escenario se genera desde tu YAML de topología — más de 2,000 escenarios únicos para una topología típica de 10 componentes."
+      },
+      {
+        "title": "Modelo de Disponibilidad N-Layer (5 capas)",
+        "desc": "Descompone tu estimación del límite de disponibilidad en cinco capas independientes: Hardware, Software, Teórico, Operacional y SLA externo. Basado en modelo; la precisión depende de la fidelidad de la topología."
+      },
+      {
+        "title": "Análisis Asistido por IA",
+        "desc": "Análisis de causa raíz asistido por Claude y sugerencias de mejora ordenadas por impacto y coste estimados. Las salidas son sugerencias para revisión de ingeniería, no prescripciones finales."
+      },
+      {
+        "title": "Borradores de Evidencia DORA (Prototipo de Investigación)",
+        "desc": "Genera borradores de evidencia de la Ley de Resiliencia Operativa Digital como prototipo de investigación con cadenas de evidencia y evaluaciones de riesgo. NO validado para auditoría regulatoria — se requiere revisión legal y técnica independiente."
+      },
+      {
+        "title": "Integración de Feed de Seguridad",
+        "desc": "Incorpora automáticamente datos CVE y feeds NVD para simular fallos en cascada desencadenados por vulnerabilidades."
+      },
+      {
+        "title": "Monitoreo APM (tiempo real)",
+        "desc": "Métricas de rendimiento en vivo, correlación de trazas y detección de anomalías — integrado en tu panel de resiliencia con 35+ vistas."
+      },
+      {
+        "title": "Gobernanza de IA (METI / ISO 42001)",
+        "desc": "Comprobaciones automáticas de conformidad con las directrices METI y los requisitos ISO 42001. Demuestra un despliegue de IA responsable."
+      },
+      {
+        "title": "Remediación Autónoma",
+        "desc": "Genera automáticamente runbooks, scripts de remediación y parches Terraform. Reduce el tiempo medio de reparación de horas a minutos."
+      },
+      {
+        "title": "35+ Páginas de Panel",
+        "desc": "Panel web completo con editor de topología, explorador de escenarios, drill-down N-Layer, mapa de calor, borradores de investigación DORA y resúmenes ejecutivos."
+      }
+    ],
+    "viewAll": "Ver todas las funciones en detalle"
+  },
+  "agentResilience": {
+    "badge": "Novedad en v11.0",
+    "heading": "Simulación de Resiliencia de AI Agent",
+    "subheading": "Simula cómo los fallos de infraestructura se propagan en alucinaciones de agentes, antes de que ocurran en producción.",
+    "cards": [
+      {
+        "title": "Análisis entre Capas",
+        "desc": "Rastrea cómo los fallos de infraestructura (base de datos caída, fallo de caché) se propagan en alucinaciones de agentes. Expone la degradación silenciosa que parece saludable pero produce resultados incorrectos."
+      },
+      {
+        "title": "PREDICT · ADOPT · MANAGE",
+        "desc": "Tres pilares para la resiliencia de agentes: simula escenarios de caos, evalúa el riesgo de despliegue con análisis de radio de explosión y genera reglas de monitoreo automáticamente."
+      },
+      {
+        "title": "4 Nuevos Tipos de Componentes",
+        "desc": "Modela AI Agents, LLM Endpoints, Tool Services y Agent Orchestrators como nodos de primera clase en tu grafo de dependencias junto a la infraestructura tradicional."
+      },
+      {
+        "title": "10 Modos de Fallo de Agentes",
+        "desc": "Alucinación, desbordamiento de contexto, limitación de tasa de LLM, agotamiento de tokens, fallo de herramienta, bucles de agente, inyección de prompts, mala calibración de confianza, colapso de CoT y amplificación de salida."
+      }
+    ],
+    "taxonomyHeadingHighlight": "10 Modos",
+    "taxonomyHeadingSuffix": " Taxonomía de Fallos de AI Agent"
+  },
+  "comparison": {
+    "heading": "Cómo Nos Comparamos",
+    "subheading": "FaultRay adopta un enfoque fundamentalmente diferente",
+    "recommended": "Recomendado",
+    "labels": {
+      "approach": "Enfoque",
+      "productionRisk": "Riesgo en Producción",
+      "setupTime": "Tiempo de Configuración",
+      "scenarios": "Escenarios",
+      "availabilityProof": "Prueba de Disponibilidad",
+      "aiAgentModeling": "Modelado de AI Agent",
+      "startingCost": "Coste Inicial"
+    },
+    "faultray": {
+      "approach": "Simulación Matemática",
+      "productionRisk": "Cero",
+      "setupTime": "5 minutos",
+      "scenarios": "2,000+ auto-generados",
+      "availabilityProof": "N-Layer Matemático",
+      "aiAgentModeling": "Taxonomía de 10 modos",
+      "startingCost": "Gratis / OSS"
+    },
+    "gremlin": {
+      "approach": "Inyección de Fallos Reales",
+      "productionRisk": "Alto",
+      "setupTime": "Días",
+      "scenarios": "Configuración manual",
+      "startingCost": "$10,000+/año"
+    },
+    "steadybit": {
+      "approach": "Inyección de Fallos Reales",
+      "productionRisk": "Medio",
+      "setupTime": "Horas",
+      "scenarios": "Basado en plantillas",
+      "startingCost": "$5,000+/año"
+    },
+    "awsFis": {
+      "approach": "Inyección de Fallos Reales",
+      "productionRisk": "Alto",
+      "setupTime": "Horas",
+      "scenarios": "Solo servicios AWS",
+      "startingCost": "Pago por uso"
+    }
+  },
+  "nlayer": {
+    "heading": "Modelo de Límite de Disponibilidad N-Layer (5 capas)",
+    "subheading": "Descompone tu estimación del límite de disponibilidad en cinco capas de restricción independientes (basado en modelo; la precisión depende de la fidelidad de la topología)",
+    "layers": [
+      {
+        "label": "Capa 1: Límite de Hardware",
+        "desc": "Restringido por componentes físicos: MTBF de disco, equipos de red, sistemas de alimentación, tiempo de promoción de failover"
+      },
+      {
+        "label": "Capa 2: Límite de Software",
+        "desc": "Tu límite real: pipelines de despliegue, errores de configuración, fallos de dependencias, tasa de error humano"
+      },
+      {
+        "label": "Capa 3: Límite Teórico",
+        "desc": "Nivel de ruido físico irreducible: pérdida de paquetes de red, pausas de GC, jitter de planificación del kernel"
+      },
+      {
+        "label": "Capa 4: Límite Operacional",
+        "desc": "Tiempo de respuesta a incidentes, cobertura de guardia, completitud del runbook, nivel de automatización"
+      },
+      {
+        "label": "Capa 5: SLA Externo",
+        "desc": "Límite máximo impuesto por la disponibilidad de servicios de terceros (AWS, GCP, Stripe, etc.)"
+      }
+    ],
+    "whyTitle": "Por Qué Importa",
+    "whyP1": "La mayoría de los equipos persiguen nines de hardware mientras su capa de software limita la disponibilidad a 4 nines. FaultRay revela exactamente dónde vive tu cuello de botella para que inviertas en la capa correcta.",
+    "whyP2": "El modelo N-Layer es extensible: agrega capas de restricción geográficas, económicas o de dominio específico personalizado para adaptarse a los límites de disponibilidad únicos de tu organización.",
+    "bindingTitle": "Detección de Restricción de Enlace",
+    "bindingDesc": "Cuando una simulación predice una disponibilidad que supera el límite de cualquier capa, FaultRay la marca e identifica la capa de restricción de enlace como objetivo para la mejora de infraestructura."
+  },
+  "quickstart": {
+    "heading": "Inicio Rápido",
+    "subheading": "De cero a prueba de disponibilidad en 3 pasos",
+    "step1Title": "Instalar",
+    "step2Title": "Define tu Topología",
+    "step3Title": "Ejecutar Análisis"
+  },
+  "pricing": {
+    "heading": "Precios",
+    "subheading": "Empieza gratis. Escala a medida que creces.",
+    "perMonth": "/mes",
+    "mostPopular": "Más Popular",
+    "featureComparison": "Comparación de Funciones",
+    "currency": "$",
+    "prices": [
+      0,
+      299,
+      999
+    ],
+    "taxNote": "",
+    "japaneseSupportBadge": "Soporte en japonés incluido",
+    "plans": [
+      {
+        "name": "Gratis",
+        "desc": "Perfecto para ingenieros individuales que exploran el chaos engineering.",
+        "cta": "Comenzar Gratis"
+      },
+      {
+        "name": "Pro",
+        "desc": "Para equipos que necesitan borradores de evidencia DORA (prototipo de investigación) y límites más altos.",
+        "cta": "Empezar Pro"
+      },
+      {
+        "name": "Business",
+        "desc": "Para empresas que necesitan acceso ilimitado, SSO y soporte dedicado.",
+        "cta": "Contáctanos"
+      }
+    ]
+  },
+  "socialProof": {
+    "heading": "Con la confianza de la comunidad de desarrolladores",
+    "githubStars": "GitHub Stars",
+    "betaMessage": "Actualmente en beta. Nos encantaría conocer tu opinión.",
+    "betaSubtitle": "Estamos en acceso anticipado. Tus comentarios nos ayudan a mejorar.",
+    "betaCta": "Enviar comentarios",
+    "openSource": "Open Source"
+  },
+  "roi": {
+    "heading": "Calculadora ROI",
+    "subheading": "Estima tus ahorros anuales con FaultRay",
+    "monthlyRevenue": "Ingresos mensuales ($K)",
+    "incidentCount": "Incidentes por año",
+    "incidentHours": "Duración promedio del incidente (horas)",
+    "annualLoss": "Pérdida anual estimada",
+    "estimatedReduction": "Ahorros estimados con FaultRay",
+    "roi": "ROI",
+    "annualCost": "Costo anual (plan Pro)",
+    "disclaimer": "Fórmula: Pérdida anual = Ingreso mensual × (horas/720) × incidentes × 12. Efecto FaultRay = reducción del 70%.",
+    "unit": "K"
+  },
+  "footer": {
+    "tagline": "Simulación de resiliencia pre-despliegue. Estima tu límite de disponibilidad a partir de la topología declarada. Prototipo de investigación — complementa el chaos engineering en tiempo de ejecución.",
+    "madeIn": "Fabricado en Tokio",
+    "product": "Producto",
+    "resources": "Recursos",
+    "legal": "Legal",
+    "copyright": "© 2026 FaultRay. Código abierto bajo Apache License 2.0.",
+    "japaneseSupport": "Soporte en japonés disponible"
+  },
+  "languageSwitcher": {
+    "label": "Idioma"
+  },
+  "disclaimer": {
+    "researchPrototype": "⚠ Prototipo de investigación — las salidas NO están validadas para DORA, FISC ni ninguna auditoría regulatoria. No confíe en la evidencia de FaultRay para decisiones de cumplimiento sin una revisión legal y técnica independiente."
+  }
+}

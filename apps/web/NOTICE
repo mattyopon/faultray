@@ -1,0 +1,59 @@
+FaultRay SaaS (faultray-app)
+Copyright 2025-2026 Yutaro Maeda and FaultRay Contributors
+
+This product is licensed under the Apache License, Version 2.0 (see LICENSE).
+
+────────────────────────────────────────────────────────────────────────────
+Third-Party Notices (#40)
+────────────────────────────────────────────────────────────────────────────
+
+This product includes the following third-party open-source components.
+Each is used under its respective license. Full license texts are
+available from the linked repositories.
+
+Runtime dependencies
+────────────────────
+
+| Component                    | License   | Source                                                           |
+|------------------------------|-----------|------------------------------------------------------------------|
+| Next.js                      | MIT       | https://github.com/vercel/next.js                                |
+| React, React DOM             | MIT       | https://github.com/facebook/react                                |
+| Tailwind CSS                 | MIT       | https://github.com/tailwindlabs/tailwindcss                      |
+| @tailwindcss/postcss         | MIT       | https://github.com/tailwindlabs/tailwindcss                      |
+| @supabase/ssr                | MIT       | https://github.com/supabase/ssr                                  |
+| @supabase/supabase-js        | MIT       | https://github.com/supabase/supabase-js                          |
+| Stripe Node SDK              | MIT       | https://github.com/stripe/stripe-node                            |
+| lucide-react                 | ISC       | https://github.com/lucide-icons/lucide                           |
+| clsx                         | MIT       | https://github.com/lukeed/clsx                                   |
+| tailwind-merge               | MIT       | https://github.com/dcastil/tailwind-merge                        |
+| server-only                  | MIT       | https://github.com/vercel/next.js (internal pkg)                 |
+
+Development dependencies
+────────────────────────
+
+| Component                    | License   | Source                                                           |
+|------------------------------|-----------|------------------------------------------------------------------|
+| TypeScript                   | Apache-2.0| https://github.com/microsoft/TypeScript                          |
+| ESLint                       | MIT       | https://github.com/eslint/eslint                                 |
+| eslint-config-next           | MIT       | https://github.com/vercel/next.js                                |
+| Vite                         | MIT       | https://github.com/vitejs/vite                                   |
+| @vitejs/plugin-react         | MIT       | https://github.com/vitejs/vite-plugin-react                      |
+| Vitest                       | MIT       | https://github.com/vitest-dev/vitest                             |
+| @testing-library/react       | MIT       | https://github.com/testing-library/react-testing-library         |
+| @testing-library/jest-dom    | MIT       | https://github.com/testing-library/jest-dom                      |
+| jsdom                        | MIT       | https://github.com/jsdom/jsdom                                   |
+| Playwright                   | Apache-2.0| https://github.com/microsoft/playwright                          |
+| @rolldown/binding-linux-x64  | MIT       | https://github.com/rolldown-rs/rolldown                          |
+| @types/*                     | MIT       | https://github.com/DefinitelyTyped/DefinitelyTyped               |
+
+Regeneration
+────────────
+
+This NOTICE is generated from `package.json` dependencies. To refresh:
+
+  npx license-checker --production --json > /tmp/licenses.json
+  # review and update the table above with any added / removed packages
+
+See the license audit workflow (faultray/#97) for automated SPDX
+enforcement of the server-side Python stack. A parallel npm audit for
+this repo is tracked in a follow-up issue.

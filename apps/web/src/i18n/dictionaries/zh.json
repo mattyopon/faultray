@@ -1,0 +1,326 @@
+{
+  "metadata": {
+    "title": "FaultRay — 部署前韧性仿真（研究原型）",
+    "description": "通过内存仿真，基于声明的拓扑结构估算系统的结构性可用性上限——无需触碰生产环境。研究原型；与运行时 Chaos Engineering 互补。"
+  },
+  "nav": {
+    "features": "功能",
+    "compare": "对比",
+    "pricing": "定价",
+    "signIn": "登录",
+    "dashboard": "控制台"
+  },
+  "hero": {
+    "badge": "开源 · Apache 2.0 许可证",
+    "subtitle": "部署前韧性仿真（研究原型）",
+    "description": "通过内存仿真估算系统可用性上限——研究原型，无需触碰生产环境。",
+    "stats": {
+      "scenarios": "场景数",
+      "engines": "引擎数",
+      "layers": "层级数",
+      "tests": "测试数",
+      "doraControls": "DORA 映射（研究）",
+      "dashboardPages": "仪表盘页面",
+      "languages": "支持语言"
+    },
+    "cta": "免费开始",
+    "demo": "在线演示",
+    "ctaPrimary": "预约 20 分钟 Evidence Sprint 范围界定通话",
+    "evidenceSprint": {
+      "title": "DORA 韧性 Evidence Sprint",
+      "blurb": "在 5 个工作日内，我们仅使用脱敏数据 — 不访问生产环境，不含个人身份信息（PII）。固定价格为 $2,500，50% 预付，该 Evidence Sprint 将交付一套结构化韧性证据包，用于 DORA 审计前准备。"
+    },
+    "valueProps": [
+      {
+        "title": "审计就绪的证据包",
+        "desc": "一套结构化证据包，供风险、韧性、合规和 CTO 团队用于准备 DORA 审计沟通。"
+      },
+      {
+        "title": "可追溯的 DORA 映射",
+        "desc": "以可追溯视图展示关键服务证据如何对应相关 DORA 条款，并将假设分离出来以供审阅。"
+      },
+      {
+        "title": "适合董事会审阅的韧性报告",
+        "desc": "高管摘要会区分证据、假设和未决决策事项，用于面向董事会和监管机构的准备工作。"
+      }
+    ]
+  },
+  "problem": {
+    "title": "现有问题",
+    "items": [
+      "需要生产或预发布环境",
+      "测试期间存在真实故障风险",
+      "高昂的基础设施成本",
+      "复杂的环境搭建与清理",
+      "无法数学证明可用性"
+    ],
+    "descriptionParts": {
+      "before": "现有混沌工具会向基础设施注入",
+      "highlight": "真实故障",
+      "after": "。"
+    }
+  },
+  "solution": {
+    "title": "解决方案",
+    "items": [
+      "不向生产注入故障——内存中仿真",
+      "零成本——在笔记本上运行",
+      "秒级输出结果",
+      "仅需 YAML 拓扑文件即可运行",
+      "数学证明的可用性上限"
+    ],
+    "descriptionParts": {
+      "before": "FaultRay 采用",
+      "highlight": "纯数学模拟",
+      "after": "。"
+    }
+  },
+  "challenges": {
+    "heading": "我们解决的挑战",
+    "subheading": "FaultRay 解决让工程团队夜不能寐的真实运营缺口。",
+    "items": [
+      {
+        "problem": "手动、依赖个人的基础设施管理",
+        "solution": "FaultRay 自动化拓扑扫描和弹性分析——无需特定人员知识。"
+      },
+      {
+        "problem": "IaC（Terraform）尚未采用",
+        "solution": "FaultRay 自动扫描现有 AWS / GCP / Azure 基础设施，无需任何 IaC 设置。"
+      },
+      {
+        "problem": "IPO 后的可用性与审计要求",
+        "solution": "作为研究原型探索 DORA / SOC 2 对齐，生成证据草稿。未获审计认证 — 需要独立法律审查。"
+      },
+      {
+        "problem": "无运行手册的临时事故响应",
+        "solution": "FaultRay 从模拟结果自动生成运行手册和修复脚本。"
+      },
+      {
+        "problem": "AI 治理准备尚未启动",
+        "solution": "METI / ISO 42001 要求的研究原型映射（未获审计认证）。"
+      }
+    ]
+  },
+  "features": {
+    "heading": "一切所需",
+    "subheading": "部署前韧性仿真的十大支柱（研究原型）",
+    "cards": [
+      {
+        "title": "多种仿真引擎",
+        "desc": "网络、进程、资源、依赖、延迟、爆炸半径、SLA 合同验证等数十种引擎——由 Monte Carlo、Markov chains 和排队理论驱动。"
+      },
+      {
+        "title": "数千自动生成场景",
+        "desc": "从单节点故障到级联多区域中断，涵盖一切。每个场景均从拓扑 YAML 自动生成——典型的 10 组件拓扑可生成超过 2,000 个唯一场景。"
+      },
+      {
+        "title": "N-Layer（5 层）可用性模型",
+        "desc": "唯一能将可用性上限分解为五个独立层的工具：硬件层、软件层、理论层、运营层和外部 SLA 层。"
+      },
+      {
+        "title": "AI 智能分析",
+        "desc": "Claude 辅助的根因分析以及按估计影响和成本排序的改进建议。输出是工程审查的参考建议，而非最终规范。"
+      },
+      {
+        "title": "DORA 证据草稿（研究原型）",
+        "desc": "作为研究原型生成包含证据链和风险评估的数字运营韧性法案证据草稿。未针对监管审计验证 — 需要独立的法律和技术审查。"
+      },
+      {
+        "title": "安全情报集成",
+        "desc": "自动整合 CVE 数据和 NVD 情报，模拟漏洞触发的级联故障。"
+      },
+      {
+        "title": "APM 监控（实时）",
+        "desc": "实时性能指标、追踪关联和异常检测——集成到您的弹性仪表盘，提供 35+ 监控视图。"
+      },
+      {
+        "title": "AI 治理（METI / ISO 42001）",
+        "desc": "日本 METI AI 指南和 ISO 42001 要求的研究原型映射。未获审计认证 — 任何合规声明都需要独立法律审查。"
+      },
+      {
+        "title": "自主修复",
+        "desc": "从模拟结果自动生成运行手册、修复脚本和 Terraform 补丁，将平均修复时间从数小时缩短至数分钟。"
+      },
+      {
+        "title": "35+ 仪表盘页面",
+        "desc": "完整的 Web 仪表盘，包含拓扑编辑器、场景浏览器、N-Layer 钻取、热力图、DORA 研究草稿和高管摘要。"
+      }
+    ],
+    "viewAll": "查看全部功能详情"
+  },
+  "agentResilience": {
+    "badge": "v11.0 新功能",
+    "heading": "AI Agent 韧性仿真",
+    "subheading": "在生产环境中发生之前，模拟基础设施故障如何级联导致 Agent 幻觉。",
+    "cards": [
+      {
+        "title": "跨层分析",
+        "desc": "追踪基础设施故障（数据库宕机、缓存未命中）如何级联为 Agent 幻觉。暴露看似健康但实际产生错误结果的隐性退化。"
+      },
+      {
+        "title": "PREDICT · ADOPT · MANAGE",
+        "desc": "Agent 韧性的三大支柱：模拟混沌场景、通过爆炸半径分析评估部署风险，以及自动生成监控规则。"
+      },
+      {
+        "title": "4 种新组件类型",
+        "desc": "将 AI Agent、LLM Endpoint、Tool Service 和 Agent Orchestrator 作为依赖图中的一等节点，与传统基础设施并列建模。"
+      },
+      {
+        "title": "10 种 Agent 故障模式",
+        "desc": "幻觉、上下文溢出、LLM 限流、Token 耗尽、工具失败、Agent 循环、提示注入、置信度错误校准、CoT 崩溃和输出放大。"
+      }
+    ],
+    "taxonomyHeadingHighlight": "10 模式",
+    "taxonomyHeadingSuffix": " AI Agent 故障分类"
+  },
+  "comparison": {
+    "heading": "竞品对比",
+    "subheading": "FaultRay 采用本质上不同的方法",
+    "recommended": "推荐",
+    "labels": {
+      "approach": "方法",
+      "productionRisk": "生产风险",
+      "setupTime": "配置时间",
+      "scenarios": "场景数量",
+      "availabilityProof": "可用性证明",
+      "aiAgentModeling": "AI Agent 建模",
+      "startingCost": "起始费用"
+    },
+    "faultray": {
+      "approach": "数学仿真",
+      "productionRisk": "零",
+      "setupTime": "5 分钟",
+      "scenarios": "2,000+ 自动生成",
+      "availabilityProof": "N-Layer 数学证明",
+      "aiAgentModeling": "10 模式分类法",
+      "startingCost": "免费 / OSS"
+    },
+    "gremlin": {
+      "approach": "真实故障注入",
+      "productionRisk": "高",
+      "setupTime": "数天",
+      "scenarios": "手动配置",
+      "startingCost": "$10,000+/年"
+    },
+    "steadybit": {
+      "approach": "真实故障注入",
+      "productionRisk": "中",
+      "setupTime": "数小时",
+      "scenarios": "基于模板",
+      "startingCost": "$5,000+/年"
+    },
+    "awsFis": {
+      "approach": "真实故障注入",
+      "productionRisk": "高",
+      "setupTime": "数小时",
+      "scenarios": "仅 AWS 服务",
+      "startingCost": "按量付费"
+    }
+  },
+  "nlayer": {
+    "heading": "N-Layer（5 层）可用性极限模型",
+    "subheading": "唯一能将可用性上限分解为五个独立约束层的工具",
+    "layers": [
+      {
+        "label": "第 1 层：硬件极限",
+        "desc": "受物理组件约束：磁盘 MTBF、网络设备、电力系统、故障切换提升时间"
+      },
+      {
+        "label": "第 2 层：软件极限",
+        "desc": "实际上限：部署流水线、配置错误、依赖故障、人为失误率"
+      },
+      {
+        "label": "第 3 层：理论极限",
+        "desc": "不可消除的物理噪声基底：网络丢包、GC 暂停、内核调度抖动"
+      },
+      {
+        "label": "第 4 层：运营极限",
+        "desc": "事件响应时间、值班覆盖率、操作手册完整性、自动化水平"
+      },
+      {
+        "label": "第 5 层：外部 SLA",
+        "desc": "第三方服务可用性强制的硬上限（AWS、GCP、Stripe 等）"
+      }
+    ],
+    "whyTitle": "为何重要",
+    "whyP1": "大多数团队追求硬件层的高可用性，而软件层却将可用性限制在 4 个 9。FaultRay 精准揭示瓶颈所在，让您将投资集中在正确的层级。",
+    "whyP2": "N-Layer 模型具有可扩展性：可添加地理、经济或自定义领域特定约束层，以匹配组织独特的可用性边界。",
+    "bindingTitle": "约束瓶颈检测",
+    "bindingDesc": "当仿真预测的可用性超过任何层的上限时，FaultRay 会标记并识别瓶颈约束层，作为基础设施改进的目标。"
+  },
+  "quickstart": {
+    "heading": "快速开始",
+    "subheading": "三步完成可用性证明",
+    "step1Title": "安装",
+    "step2Title": "定义拓扑",
+    "step3Title": "运行分析"
+  },
+  "pricing": {
+    "heading": "定价",
+    "subheading": "免费起步，随业务增长扩展。",
+    "perMonth": "/月",
+    "mostPopular": "最受欢迎",
+    "featureComparison": "功能对比",
+    "currency": "$",
+    "prices": [
+      0,
+      299,
+      999
+    ],
+    "taxNote": "",
+    "japaneseSupportBadge": "含日语支持",
+    "plans": [
+      {
+        "name": "免费版",
+        "desc": "适合探索 Chaos Engineering 的个人工程师。",
+        "cta": "免费开始"
+      },
+      {
+        "name": "Pro 版",
+        "desc": "适合需要 DORA 证据草稿（研究原型）和更高配额的团队。",
+        "cta": "开始 Pro"
+      },
+      {
+        "name": "企业版",
+        "desc": "适合需要无限访问、SSO 和专属支持的企业。",
+        "cta": "联系我们"
+      }
+    ]
+  },
+  "socialProof": {
+    "heading": "深受开发者社区信赖",
+    "githubStars": "GitHub Stars",
+    "betaMessage": "目前处于测试阶段，期待您的反馈。",
+    "betaSubtitle": "我们正处于抢先体验阶段，您的反馈将帮助我们不断改进。",
+    "betaCta": "发送反馈",
+    "openSource": "Open Source"
+  },
+  "roi": {
+    "heading": "ROI计算器",
+    "subheading": "估算使用FaultRay的年度节省",
+    "monthlyRevenue": "月收入（千元）",
+    "incidentCount": "年度故障次数",
+    "incidentHours": "平均故障时间（小时）",
+    "annualLoss": "预计年度损失",
+    "estimatedReduction": "FaultRay预计节省",
+    "roi": "ROI",
+    "annualCost": "年度费用（Pro计划）",
+    "disclaimer": "公式: 年度损失 = 月收入 × (故障时间/720) × 次数 × 12。FaultRay效果 = 减少70%。",
+    "unit": "K"
+  },
+  "footer": {
+    "tagline": "部署前韧性仿真。基于声明的拓扑估算可用性上限。研究原型——与运行时 Chaos Engineering 互补。",
+    "madeIn": "日本东京制造",
+    "product": "产品",
+    "resources": "资源",
+    "legal": "法律",
+    "copyright": "© 2026 FaultRay. 基于 Apache 2.0（商业源代码许可证）开源。",
+    "japaneseSupport": "提供日语支持"
+  },
+  "languageSwitcher": {
+    "label": "语言"
+  },
+  "disclaimer": {
+    "researchPrototype": "⚠ 研究原型 — 输出未针对 DORA、FISC 或任何监管审计进行验证。在没有独立法律和技术审查的情况下，请勿依赖 FaultRay 证据进行合规决策。"
+  }
+}

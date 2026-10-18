@@ -1,0 +1,376 @@
+@import "tailwindcss";
+
+/* DESIGN-RENEW: Default is light theme (Findy-inspired) */
+:root {
+  color-scheme: light;
+  --bg-primary: #ffffff;
+  --bg-secondary: #f9fafb;
+  --bg-tertiary: #f2f3f5;
+  --bg-card: #ffffff;
+  --bg-card-hover: #f9fafb;
+  --border-color: #e5e7eb;
+  --text-primary: #1d1d1f;
+  --text-secondary: #6e6e73;
+  --text-muted: #aeaeb2;
+  --gold: #055ec1;
+  --green: #059669;
+  --red: #dc2626;
+  --blue: #055ec1;
+}
+
+/* Dark theme for dashboard pages */
+html[data-theme="dark"] {
+  color-scheme: dark;
+  --bg-primary: #0a0e1a;
+  --bg-secondary: #0f1424;
+  --bg-tertiary: #141a2e;
+  --bg-card: #111827;
+  --bg-card-hover: #1a2035;
+  --border-color: #1e293b;
+  --text-primary: #f1f5f9;
+  --text-secondary: #94a3b8;
+  --text-muted: #64748b;
+  --gold: #FFD700;
+  --green: #10B981;
+  --red: #ef4444;
+  --blue: #3b82f6;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  font-family: var(--font-inter), var(--font-noto-sans-jp), system-ui, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* --- Terminal animations --- */
+@keyframes terminalFadeIn {
+  from { opacity: 0; transform: translateY(4px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes cursorBlink {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0; }
+}
+
+@keyframes pulse-glow {
+  0%, 100% { box-shadow: 0 0 20px rgba(255, 215, 0, 0.1); }
+  50% { box-shadow: 0 0 40px rgba(255, 215, 0, 0.2); }
+}
+
+.terminal-line { opacity: 0; animation: terminalFadeIn 0.3s ease forwards; }
+.terminal-line-1 { animation-delay: 0.5s; }
+.terminal-line-2 { animation-delay: 1.5s; }
+.terminal-line-3 { animation-delay: 2.5s; }
+.terminal-line-4 { animation-delay: 3.5s; }
+.terminal-line-5 { animation-delay: 4.2s; }
+.terminal-line-6 { animation-delay: 4.6s; }
+.terminal-line-7 { animation-delay: 5.0s; }
+
+.cursor-blink {
+  animation: cursorBlink 1s step-end infinite;
+  animation-delay: 5.5s;
+  animation-fill-mode: forwards;
+  opacity: 0;
+}
+
+/* --- Scroll-triggered reveal animations (CSS only) --- */
+@keyframes fadeInUp {
+  from { opacity: 0; transform: translateY(32px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes fadeInScale {
+  from { opacity: 0; transform: scale(0.95); }
+  to { opacity: 1; transform: scale(1); }
+}
+
+@keyframes slideInLeft {
+  from { opacity: 0; transform: translateX(-24px); }
+  to { opacity: 1; transform: translateX(0); }
+}
+
+@keyframes slideInRight {
+  from { opacity: 0; transform: translateX(24px); }
+  to { opacity: 1; transform: translateX(0); }
+}
+
+/* Scroll animations: always visible, animate on scroll where supported */
+.animate-on-scroll {
+  opacity: 1;
+  transform: none;
+}
+
+.animate-on-scroll-scale {
+  opacity: 1;
+  transform: none;
+}
+
+.animate-slide-left {
+  opacity: 1;
+  transform: none;
+}
+
+.animate-slide-right {
+  opacity: 1;
+  transform: none;
+}
+
+/* Progressive enhancement: browsers that support scroll-driven animations */
+@supports (animation-timeline: view()) {
+  .animate-on-scroll {
+    animation: fadeInUp 0.7s ease both;
+    animation-timeline: view();
+    animation-range: entry 0% entry 30%;
+  }
+
+  .animate-on-scroll-scale {
+    animation: fadeInScale 0.6s ease both;
+    animation-timeline: view();
+    animation-range: entry 0% entry 30%;
+  }
+
+  .animate-slide-left {
+    animation: slideInLeft 0.7s ease both;
+    animation-timeline: view();
+    animation-range: entry 0% entry 30%;
+  }
+
+  .animate-slide-right {
+    animation: slideInRight 0.7s ease both;
+    animation-timeline: view();
+    animation-range: entry 0% entry 30%;
+  }
+}
+
+/* Staggered children animation */
+.stagger-children > *:nth-child(1) { animation-delay: 0ms; }
+.stagger-children > *:nth-child(2) { animation-delay: 80ms; }
+.stagger-children > *:nth-child(3) { animation-delay: 160ms; }
+.stagger-children > *:nth-child(4) { animation-delay: 240ms; }
+.stagger-children > *:nth-child(5) { animation-delay: 320ms; }
+.stagger-children > *:nth-child(6) { animation-delay: 400ms; }
+.stagger-children > *:nth-child(7) { animation-delay: 480ms; }
+.stagger-children > *:nth-child(8) { animation-delay: 560ms; }
+.stagger-children > *:nth-child(9) { animation-delay: 640ms; }
+.stagger-children > *:nth-child(10) { animation-delay: 720ms; }
+
+/* --- Gradient text utility (simplified for light theme) --- */
+.text-gradient-gold {
+  color: var(--gold);
+}
+
+/* --- Soft shadow effects (replaces glow) --- */
+.glow-gold {
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
+}
+
+.glow-gold-hover:hover {
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+}
+
+/* --- N-Layer stack connector --- */
+.layer-stack > div + div {
+  border-top: none !important;
+}
+
+/* --- Taxonomy grid card hover (simplified) --- */
+.taxonomy-card:hover {
+  border-color: var(--gold);
+  transition: border-color 0.2s ease;
+}
+
+/* --- Score fill animation --- */
+@keyframes score-fill {
+  from { stroke-dashoffset: 283; }
+}
+
+/* --- Scrollbar (light default) --- */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #d1d5db;
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #9ca3af;
+}
+
+html[data-theme="dark"] ::-webkit-scrollbar-thumb {
+  background: #1e293b;
+}
+html[data-theme="dark"] ::-webkit-scrollbar-thumb:hover {
+  background: #334155;
+}
+
+/* CSS-04: GPU加速 / will-change hints for animation performance */
+.terminal-line,
+.cursor-blink,
+.animate-on-scroll,
+.animate-on-scroll-scale,
+.animate-slide-left,
+.animate-slide-right {
+  will-change: opacity, transform;
+}
+
+.hero-radial-glow {
+  will-change: opacity;
+}
+
+/* CSS-05: z-index スケール（衝突管理） */
+:root {
+  --z-base:       0;
+  --z-dropdown:  10;
+  --z-sticky:    20;
+  --z-overlay:   30;
+  --z-modal:    100;
+  --z-toast:    200;
+  --z-tooltip:  300;
+}
+
+/* UICOMP-08: ホバー効果の統一ユーティリティ */
+.hover-card {
+  transition: border-color 0.2s, background-color 0.2s, transform 0.2s, box-shadow 0.2s;
+}
+.hover-card:hover {
+  border-color: var(--gold);
+  background-color: var(--bg-card-hover);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
+}
+.hover-lift:hover {
+  transform: translateY(-2px);
+}
+.hover-glow:hover {
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
+}
+
+/* KEYBOARD-04: focus-visible によるキーボードナビゲーション視認性改善 */
+/* マウス操作時はフォーカスリングを非表示、キーボード操作時のみ表示 */
+*:focus {
+  outline: none;
+}
+*:focus-visible {
+  outline: 2px solid #FFD700;
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+/* 暗色背景上での視認性を確保 */
+button:focus-visible,
+a:focus-visible,
+input:focus-visible,
+textarea:focus-visible,
+select:focus-visible,
+[tabindex]:focus-visible {
+  outline: 2px solid #FFD700;
+  outline-offset: 2px;
+  box-shadow: 0 0 0 4px rgba(255, 215, 0, 0.12);
+}
+
+/* CSS-06: @media print — 印刷スタイル */
+@media print {
+  /* サイドバー・ナビ・クッキーバナーを非表示 */
+  [data-sidebar],
+  nav,
+  .cookie-consent,
+  .upgrade-banner {
+    display: none !important;
+  }
+
+  body {
+    background: #ffffff !important;
+    color: #000000 !important;
+  }
+
+  main {
+    margin-left: 0 !important;
+  }
+
+  a {
+    text-decoration: underline;
+    color: #000000;
+  }
+
+  /* スコア・バッジ等の背景色を維持 */
+  * {
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+
+  /* REPORT-GEN-04: ページ境界でコンテンツが途切れないように — 適用範囲を拡大 */
+  .card,
+  [class*="rounded"],
+  tr,
+  thead,
+  h1, h2, h3, h4,
+  figure,
+  .section,
+  [class*="p-4"],
+  [class*="p-5"],
+  [class*="p-6"] {
+    page-break-inside: avoid;
+    break-inside: avoid;
+  }
+  /* 長いテーブルのヘッダーを各ページで繰り返す */
+  thead {
+    display: table-header-group;
+  }
+  /* 画像がページをまたがない */
+  img, svg {
+    page-break-inside: avoid;
+    break-inside: avoid;
+    max-width: 100%;
+  }
+}
+
+/* --- Hero background (subtle for light theme) --- */
+.hero-radial-glow {
+  background: radial-gradient(ellipse 600px 400px at 50% 40%, rgba(5, 94, 193, 0.04) 0%, transparent 70%);
+}
+
+html[data-theme="dark"] .hero-radial-glow {
+  background: radial-gradient(ellipse 600px 400px at 50% 40%, rgba(255, 215, 0, 0.06) 0%, transparent 70%);
+}
+
+/* --- Findy-style reveal animation (IntersectionObserver driven) --- */
+.reveal {
+  opacity: 0;
+  transform: translateY(24px);
+  transition: opacity 0.7s ease, transform 0.7s ease;
+}
+.reveal.visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+/* Sidebar layout — reserve space from first paint to prevent layout shift.
+   App pages (not /, /login, /pricing, /[lang]) get sidebar offset via
+   body[data-app-page] set by the Navbar component. */
+@media (min-width: 768px) {
+  body[data-app-page="true"] main {
+    margin-left: 14rem;
+    transition: margin-left 0.2s;
+  }
+  body[data-app-page="collapsed"] main {
+    margin-left: 4rem;
+    transition: margin-left 0.2s;
+  }
+  body[data-app-page] main > div,
+  body[data-app-page] main > div > div,
+  body[data-app-page] main > main > div {
+    max-width: 100% !important;
+  }
+}
