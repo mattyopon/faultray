@@ -8,6 +8,8 @@ name: License Audit
 on:
   push:
     branches: [main]
+    # Audits the Python package's deps; apps/ and archive/ changes can't affect it.
+    paths-ignore: ["apps/**", "archive/**"]
   pull_request:
     paths:
       - "pyproject.toml"

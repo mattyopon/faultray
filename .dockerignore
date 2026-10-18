@@ -25,3 +25,10 @@ docs/
 .venv/
 .mypy_cache/
 htmlcov/
+
+# Monorepo: the image is the Python package only (see the Dockerfile COPY
+# lines); keep the other projects and their build output out of the context.
+apps/
+archive/
+**/node_modules
+**/.next

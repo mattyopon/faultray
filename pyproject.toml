@@ -156,6 +156,16 @@ artifacts = [
     "src/faultray/**/templates/*.md",
 ]
 
+[tool.hatch.build.targets.sdist]
+# The PyPI sdist ships the Python package only. apps/ (the faultray.com
+# Next.js app) and archive/ are separate projects in this monorepo and must
+# never be published to PyPI (they would also drag node_modules/.next along).
+exclude = ["/apps", "/archive"]
+# Don't descend into excluded dirs at all: otherwise the root .gitignore's
+# negations (!pyproject.toml, !.env.example, ...) re-include matching files
+# under apps/ and archive/ despite the exclude.
+skip-excluded-dirs = true
+
 [tool.ruff]
 target-version = "py311"
 line-length = 100

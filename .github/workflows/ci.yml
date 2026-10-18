@@ -3,7 +3,10 @@ name: CI
 on:
   push:
     branches: [main]
+    # apps/web has its own workflow (web-ci.yml); archive/ is not built.
+    paths-ignore: ["apps/**", "archive/**", ".github/workflows/web-*.yml"]
   pull_request:
+    paths-ignore: ["apps/**", "archive/**", ".github/workflows/web-*.yml"]
   schedule:
     # Weekly mutation testing — Sunday 02:00 UTC
     - cron: "0 2 * * 0"

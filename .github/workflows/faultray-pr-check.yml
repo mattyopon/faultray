@@ -7,6 +7,9 @@ on:
       - '**/*.yml'
       - '**/terraform/**'
       - '**/*.tf'
+      # Monorepo: YAML under apps/ and archive/ is app config, not topology.
+      - '!apps/**'
+      - '!archive/**'
 
 permissions:
   pull-requests: write
