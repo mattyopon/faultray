@@ -1,0 +1,45 @@
+{
+  "manifest_version": 3,
+  "name": "FaultRay - Cloud Setup Assistant",
+  "version": "1.0.0",
+  "description": "Guided setup for connecting AWS/GCP/Azure to FaultRay",
+  "permissions": [
+    "storage",
+    "activeTab",
+    "tabs",
+    "alarms"
+  ],
+  "host_permissions": [
+    "https://console.aws.amazon.com/*",
+    "https://console.cloud.google.com/*",
+    "https://portal.azure.com/*",
+    "https://faultray.com/*"
+  ],
+  "action": {
+    "default_popup": "popup.html",
+    "default_icon": {
+      "16": "icon16.png",
+      "48": "icon48.png",
+      "128": "icon128.png"
+    }
+  },
+  "background": {
+    "service_worker": "service-worker.js",
+    "type": "module"
+  },
+  "content_scripts": [
+    {
+      "matches": ["https://console.aws.amazon.com/*"],
+      "js": ["aws-guide.js"],
+      "css": ["content.css"]
+    }
+  ],
+  "icons": {
+    "16": "icon16.png",
+    "48": "icon48.png",
+    "128": "icon128.png"
+  },
+  "content_security_policy": {
+    "extension_pages": "script-src 'self'; object-src 'self'"
+  }
+}
