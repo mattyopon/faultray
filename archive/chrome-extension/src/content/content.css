@@ -1,0 +1,22 @@
+/* FaultRay Chrome Extension — Content Script Styles
+   These styles are injected into AWS/GCP/Azure console pages.
+   Scoped under #faultray-guide-panel to avoid collisions. */
+
+#faultray-guide-panel * {
+  box-sizing: border-box;
+}
+
+#faultray-guide-panel input:focus,
+#faultray-guide-panel select:focus {
+  border-color: #FFD700 !important;
+  box-shadow: 0 0 0 2px rgba(255, 215, 0, 0.2) !important;
+}
+
+#faultray-guide-panel button:hover:not(:disabled) {
+  opacity: 0.9;
+}
+
+#faultray-guide-panel button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}

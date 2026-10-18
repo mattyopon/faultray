@@ -1,0 +1,326 @@
+{
+  "metadata": {
+    "title": "FaultRay — Pre-Deployment Resilience Simulation (Research Prototype)",
+    "description": "Estimate your system's structural availability ceiling through in-memory simulation from declared topology — without touching production. Research prototype; complements runtime chaos engineering."
+  },
+  "nav": {
+    "features": "Features",
+    "compare": "Compare",
+    "pricing": "Pricing",
+    "signIn": "Sign In",
+    "dashboard": "Dashboard"
+  },
+  "hero": {
+    "badge": "Open Source · Apache License 2.0",
+    "subtitle": "DORA pre-audit resilience evidence for critical financial services",
+    "description": "FaultRay helps EU financial institutions assemble audit-ready DORA resilience evidence for critical services from sanitized data. It is decision-support software, not legal advice, an audit, or certification; approval is not guaranteed.",
+    "stats": {
+      "scenarios": "Scenarios",
+      "engines": "Engines",
+      "layers": "Layers",
+      "tests": "Tests",
+      "doraControls": "DORA Mappings (research)",
+      "dashboardPages": "Dashboard Pages",
+      "languages": "Languages"
+    },
+    "cta": "Get Started Free",
+    "ctaPrimary": "Book a 20-min Evidence Sprint scoping call",
+    "demo": "Live Demo",
+    "evidenceSprint": {
+      "title": "DORA Resilience Evidence Sprint",
+      "blurb": "In 5 business days, we work only with sanitized data — no production access, no PII. Fixed at $2,500 with 50% upfront, the Sprint delivers a structured resilience evidence pack for DORA pre-audit preparation."
+    },
+    "valueProps": [
+      {
+        "title": "Audit-ready evidence pack",
+        "desc": "A structured evidence pack risk, resilience, compliance, and CTO teams can use to prepare for DORA audit conversations."
+      },
+      {
+        "title": "Traceable DORA mapping",
+        "desc": "A traceable view of how critical-service evidence aligns to relevant DORA articles, with assumptions separated for review."
+      },
+      {
+        "title": "Board-ready resilience reporting",
+        "desc": "Executive summaries that distinguish evidence, assumptions, and open decisions for board and regulator-facing preparation."
+      }
+    ]
+  },
+  "problem": {
+    "title": "The Problem",
+    "items": [
+      "Requires production or staging environment",
+      "Risk of real outages during testing",
+      "Expensive infrastructure costs",
+      "Complex setup and teardown",
+      "No mathematical availability proof"
+    ],
+    "descriptionParts": {
+      "before": "Existing chaos tools inject ",
+      "highlight": "real faults",
+      "after": " into your infrastructure."
+    }
+  },
+  "solution": {
+    "title": "The Solution",
+    "items": [
+      "No production fault injection — simulation in memory",
+      "Low cost — runs on a laptop",
+      "Results in seconds",
+      "Works from declared YAML topology alone",
+      "Model-based availability ceiling estimate (depends on topology fidelity)"
+    ],
+    "descriptionParts": {
+      "before": "FaultRay uses ",
+      "highlight": "model-based simulation",
+      "after": "."
+    }
+  },
+  "challenges": {
+    "heading": "Challenges We Solve",
+    "subheading": "FaultRay addresses the real operational gaps that keep engineering teams up at night.",
+    "items": [
+      {
+        "problem": "Manual, person-dependent infrastructure management",
+        "solution": "FaultRay automates topology scanning and resilience analysis — no tribal knowledge required."
+      },
+      {
+        "problem": "IaC (Terraform) not yet adopted",
+        "solution": "FaultRay auto-scans your existing AWS / GCP / Azure infrastructure without requiring any IaC setup."
+      },
+      {
+        "problem": "Post-IPO availability & audit requirements",
+        "solution": "Explore DORA / SOC 2 alignment with research-prototype evidence drafts. Not audit-certified — independent legal review required."
+      },
+      {
+        "problem": "Ad-hoc incident response with no runbooks",
+        "solution": "FaultRay auto-generates runbooks and remediation scripts from simulation findings."
+      },
+      {
+        "problem": "AI governance readiness not started",
+        "solution": "Research-prototype mappings to METI / ISO 42001 requirements. Not audit-certified."
+      }
+    ]
+  },
+  "features": {
+    "heading": "Estimate Resilience Early — Without Production Impact",
+    "subheading": "Every feature maps to a concrete business outcome — not a checklist.",
+    "cards": [
+      {
+        "title": "Multiple Simulation Engines",
+        "desc": "Five core engines (Cascade, Dynamic, Ops, What-If, Capacity) cover network, process, resource, dependency, latency, blast radius, and SLA contract scenarios — powered by Monte Carlo, Markov chains, and queuing theory."
+      },
+      {
+        "title": "Thousands of Auto-Generated Scenarios",
+        "desc": "From single-node failures to cascading multi-region outages. Scenarios are generated from your declared topology YAML; a typical 10-component topology yields roughly 2,000 unique scenarios (illustrative)."
+      },
+      {
+        "title": "N-Layer (5-Layer) Availability Model",
+        "desc": "Decomposes your availability ceiling estimate into five independent layers: Hardware, Software, Theoretical, Operational, and External SLA. Model-based; accuracy depends on topology fidelity."
+      },
+      {
+        "title": "AI-Assisted Analysis",
+        "desc": "Claude-assisted root cause analysis and improvement suggestions ranked by estimated impact and cost. Outputs are suggestions for engineering review, not final prescriptions."
+      },
+      {
+        "title": "DORA Evidence Drafts (Research Prototype)",
+        "desc": "Generate research-prototype Digital Operational Resilience Act evidence drafts. NOT validated for regulatory audit — independent legal and technical review required before any compliance use."
+      },
+      {
+        "title": "Security Feed Integration",
+        "desc": "Automatically incorporate CVE data and NVD feeds to simulate vulnerability-triggered cascading failures."
+      },
+      {
+        "title": "APM Monitoring (Real-Time)",
+        "desc": "Live performance metrics, trace correlation, and anomaly detection — integrated directly into your resilience dashboard with 35+ monitoring views."
+      },
+      {
+        "title": "AI Governance (METI / ISO 42001)",
+        "desc": "Research-prototype mappings to Japan's METI AI guidelines and ISO 42001 requirements. NOT audit-certified — independent legal review required for any compliance claim."
+      },
+      {
+        "title": "Autonomous Remediation",
+        "desc": "Auto-generate runbooks, remediation scripts, and Terraform patches from simulation findings. Reduce mean time to repair from hours to minutes."
+      },
+      {
+        "title": "35+ Dashboard Pages",
+        "desc": "Full-featured web dashboard with topology editor, scenario explorer, N-layer drill-down, heatmap, DORA research drafts, and executive summaries."
+      }
+    ],
+    "viewAll": "View Full Feature Details"
+  },
+  "agentResilience": {
+    "badge": "New in v11.0 — industry-first",
+    "heading": "AI Agent Resilience Simulation",
+    "subheading": "The only chaos engineering tool that models AI agents (LLM endpoints, tool services, orchestrators) as first-class failure nodes. Simulate how infrastructure outages cascade into hallucinations before they hit production.",
+    "cards": [
+      {
+        "title": "Cross-Layer Analysis",
+        "desc": "Trace how infrastructure failures (database down, cache miss) cascade into agent hallucinations. Expose silent degradation that looks healthy but produces wrong results."
+      },
+      {
+        "title": "PREDICT · ADOPT · MANAGE",
+        "desc": "Three pillars for agent resilience: simulate chaos scenarios, assess deployment risk with blast-radius analysis, and generate monitoring rules automatically."
+      },
+      {
+        "title": "4 New Component Types",
+        "desc": "Model AI Agents, LLM Endpoints, Tool Services, and Agent Orchestrators as first-class nodes in your dependency graph alongside traditional infrastructure."
+      },
+      {
+        "title": "10 Agent Failure Modes",
+        "desc": "Hallucination, context overflow, LLM rate limiting, token exhaustion, tool failure, agent loops, prompt injection, confidence miscalibration, CoT collapse, and output amplification."
+      }
+    ],
+    "taxonomyHeadingHighlight": "10-Mode",
+    "taxonomyHeadingSuffix": " AI Agent Failure Taxonomy"
+  },
+  "comparison": {
+    "heading": "How We Compare",
+    "subheading": "FaultRay takes a fundamentally different approach",
+    "recommended": "Recommended",
+    "labels": {
+      "approach": "Approach",
+      "productionRisk": "Production Risk",
+      "setupTime": "Setup Time",
+      "scenarios": "Scenarios",
+      "availabilityProof": "Availability Proof",
+      "aiAgentModeling": "AI Agent Modeling",
+      "startingCost": "Starting Cost"
+    },
+    "faultray": {
+      "approach": "Mathematical Simulation",
+      "productionRisk": "Zero",
+      "setupTime": "5 minutes",
+      "scenarios": "2,000+ auto-generated",
+      "availabilityProof": "N-Layer Mathematical",
+      "aiAgentModeling": "10-mode taxonomy",
+      "startingCost": "Free / OSS"
+    },
+    "gremlin": {
+      "approach": "Real Fault Injection",
+      "productionRisk": "High",
+      "setupTime": "Days",
+      "scenarios": "Manual configuration",
+      "startingCost": "$10,000+/yr"
+    },
+    "steadybit": {
+      "approach": "Real Fault Injection",
+      "productionRisk": "Medium",
+      "setupTime": "Hours",
+      "scenarios": "Template-based",
+      "startingCost": "$5,000+/yr"
+    },
+    "awsFis": {
+      "approach": "Real Fault Injection",
+      "productionRisk": "High",
+      "setupTime": "Hours",
+      "scenarios": "AWS services only",
+      "startingCost": "Pay per use"
+    }
+  },
+  "nlayer": {
+    "heading": "N-Layer (5-Layer) Availability Limit Model",
+    "subheading": "Decomposes your availability ceiling estimate into five independent constraint layers (model-based; accuracy depends on topology fidelity)",
+    "layers": [
+      {
+        "label": "Layer 1: Hardware Limit",
+        "desc": "Constrained by physical components: disk MTBF, network gear, power systems, failover promotion time"
+      },
+      {
+        "label": "Layer 2: Software Limit",
+        "desc": "Your actual ceiling: deploy pipelines, config errors, dependency failures, human error rate"
+      },
+      {
+        "label": "Layer 3: Theoretical Limit",
+        "desc": "Irreducible physical noise floor: network packet loss, GC pauses, kernel scheduling jitter"
+      },
+      {
+        "label": "Layer 4: Operational Limit",
+        "desc": "Incident response time, on-call coverage, runbook completeness, automation level"
+      },
+      {
+        "label": "Layer 5: External SLA",
+        "desc": "Hard ceiling imposed by third-party service availability (AWS, GCP, Stripe, etc.)"
+      }
+    ],
+    "whyTitle": "Why This Matters",
+    "whyP1": "Most teams chase hardware nines while their software layer caps availability at 4 nines. FaultRay reveals exactly where your bottleneck lives so you invest in the right layer.",
+    "whyP2": "The N-Layer model is extensible: add Geographic, Economic, or custom domain-specific constraint layers to match your organization's unique availability boundaries.",
+    "bindingTitle": "Binding Constraint Detection",
+    "bindingDesc": "When a simulation predicts availability exceeding any layer ceiling, FaultRay flags it and identifies the binding constraint layer as the target for infrastructure improvement."
+  },
+  "quickstart": {
+    "heading": "Quick Start",
+    "subheading": "From zero to availability proof in 3 steps",
+    "step1Title": "Install",
+    "step2Title": "Define Your Topology",
+    "step3Title": "Run Analysis"
+  },
+  "pricing": {
+    "heading": "Pricing",
+    "subheading": "Start free. Scale as you grow.",
+    "perMonth": "/month",
+    "mostPopular": "Most Popular",
+    "featureComparison": "Feature Comparison",
+    "currency": "$",
+    "prices": [
+      0,
+      299,
+      999
+    ],
+    "taxNote": "",
+    "japaneseSupportBadge": "Japanese support included",
+    "plans": [
+      {
+        "name": "Free",
+        "desc": "Perfect for individual engineers exploring chaos engineering.",
+        "cta": "Get Started Free"
+      },
+      {
+        "name": "Pro",
+        "desc": "For teams that need DORA evidence drafts (research prototype) and higher limits.",
+        "cta": "Start Pro"
+      },
+      {
+        "name": "Business",
+        "desc": "For enterprises needing unlimited access, SSO, and dedicated support.",
+        "cta": "Contact Us"
+      }
+    ]
+  },
+  "socialProof": {
+    "heading": "Trusted by the Developer Community",
+    "githubStars": "GitHub Stars",
+    "betaMessage": "Currently in beta. We'd love your feedback.",
+    "betaSubtitle": "We are in early access. Your feedback helps us improve.",
+    "betaCta": "Send Feedback",
+    "openSource": "Open Source"
+  },
+  "roi": {
+    "heading": "ROI Calculator",
+    "subheading": "Estimate your annual savings with FaultRay",
+    "monthlyRevenue": "Monthly Revenue ($K)",
+    "incidentCount": "Incidents per Year",
+    "incidentHours": "Avg. Incident Duration (hours)",
+    "annualLoss": "Estimated Annual Loss",
+    "estimatedReduction": "Estimated Savings with FaultRay",
+    "roi": "ROI",
+    "annualCost": "Annual Cost (Pro plan)",
+    "disclaimer": "Illustrative formula: Annual loss = Monthly revenue × (incident hours/720) × incidents × 12. The 70% FaultRay-effect reduction is an assumption for ROI modeling — actual impact depends on your deployment and is not guaranteed.",
+    "unit": "K"
+  },
+  "footer": {
+    "tagline": "Pre-deployment resilience simulation. Estimate your availability ceiling from declared topology. Research prototype — complements runtime chaos engineering.",
+    "madeIn": "Made in Tokyo",
+    "product": "Product",
+    "resources": "Resources",
+    "legal": "Legal",
+    "copyright": "© 2026 FaultRay. Open source under the Apache License 2.0.",
+    "japaneseSupport": "Japanese support available"
+  },
+  "languageSwitcher": {
+    "label": "Language"
+  },
+  "disclaimer": {
+    "researchPrototype": "⚠ Research prototype — outputs are NOT validated for DORA, FISC, or any regulatory audit. Do not rely on FaultRay evidence for compliance decisions without independent legal and technical review."
+  }
+}

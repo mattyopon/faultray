@@ -19,3 +19,9 @@ jobs:
       - uses: gitleaks/gitleaks-action@v3
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          # The action scans `<oldest listed commit>^..<newest>`. When a range
+          # contains a root commit (e.g. a history imported into the monorepo)
+          # that parent doesn't exist and the scan errors out, so anchor the
+          # range on the PR base / previous push instead. New branches anchor
+          # on the default branch.
+          BASE_REF: ${{ github.event_name == 'pull_request' && github.event.pull_request.base.sha || (github.event.created && format('origin/{0}', github.event.repository.default_branch)) || github.event.before }}

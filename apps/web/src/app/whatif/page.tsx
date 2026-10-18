@@ -1,0 +1,299 @@
+"use client";
+
+import { Card } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { useState } from "react";
+import { api, type WhatIfResult } from "@/lib/api";
+import { FlaskConical, Loader2, TrendingUp, TrendingDown, Minus } from "lucide-react";
+import { useLocale } from "@/lib/useLocale";
+import { appDict } from "@/i18n/app-dict";
+
+const COMPONENTS = [
+  { id: "api", name: "API Server" },
+  { id: "db_primary", name: "PostgreSQL Primary" },
+  { id: "cache", name: "Redis Cache" },
+  { id: "gateway", name: "API Gateway" },
+  { id: "worker", name: "Background Worker" },
+  { id: "auth", name: "Auth Service" },
+];
+
+const PARAMETERS = [
+  { id: "replicas", name: "Replicas", min: 1, max: 10, step: 1, default: 2 },
+  { id: "capacity", name: "Max Connections", min: 100, max: 50000, step: 100, default: 5000 },
+  { id: "failover_time", name: "Failover Time (s)", min: 1, max: 120, step: 1, default: 30 },
+  { id: "health_check_interval", name: "Health Check Interval (s)", min: 1, max: 60, step: 1, default: 10 },
+  { id: "retry_count", name: "Retry Count", min: 0, max: 10, step: 1, default: 3 },
+  { id: "timeout", name: "Timeout (s)", min: 1, max: 120, step: 1, default: 30 },
+];
+
+export default function WhatIfPage() {
+  const [component, setComponent] = useState("api");
+  const [parameter, setParameter] = useState("replicas");
+  const [value, setValue] = useState(2);
+  const [loading, setLoading] = useState(false);
+  const [result, setResult] = useState<WhatIfResult | null>(null);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+
+  const locale = useLocale();
+  const t = appDict.whatif[locale] ?? appDict.whatif.en;
+  const selectedParam = PARAMETERS.find((p) => p.id === parameter) ?? PARAMETERS[0];
+
+  const runAnalysis = async () => {
+    setLoading(true);
+    setErrorMessage(null);
+    // Clamp to the active parameter's range: a value left over from a previously
+    // selected parameter (value only resets on parameter change, not component change)
+    // could otherwise fall outside [min,max] and be sent to the backend.
+    const safeValue = Math.min(selectedParam.max, Math.max(selectedParam.min, value));
+    try {
+      const res = await api.whatIf(component, parameter, safeValue);
+      if (!res || !res.baseline || !res.modified || !res.delta
+        || typeof res.baseline.overall_score !== "number"
+        || typeof res.modified.overall_score !== "number"
+        || typeof res.delta.score !== "number") {
+        throw new Error("Malformed analysis response from backend.");
+      }
+      setResult(res);
+    } catch (err) {
+      // Surface the real failure rather than silently fabricating a score.
+      // Previously we returned a hardcoded `baseline: { overall_score: 85.2 }`
+      // here, which hid a misconfigured NEXT_PUBLIC_FAULTRAY_API_URL / missing
+      // backend from users (Phase 0 validation report, Task 6, 2026-04-17).
+      setResult(null);
+      setErrorMessage(
+        err instanceof Error && err.message
+          ? err.message
+          : "Analysis backend is unreachable. Check NEXT_PUBLIC_FAULTRAY_API_URL and the API service."
+      );
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <div className="w-full px-6 py-10">
+      <div className="mb-10">
+        <h1 className="text-2xl font-bold mb-1 flex items-center gap-3">
+          <FlaskConical size={24} className="text-[var(--gold)]" />
+          {t.title}
+        </h1>
+        <p className="text-[var(--text-secondary)] text-sm">
+          {t.subtitle}
+        </p>
+      </div>
+
+      <div className="grid lg:grid-cols-2 gap-6">
+        {/* Controls */}
+        <Card>
+          <h3 className="text-sm font-semibold text-[var(--text-secondary)] uppercase tracking-wider mb-6">
+            {t.parameters}
+          </h3>
+
+          <div className="space-y-6">
+            {/* Component Selection */}
+            <div>
+              <label className="text-xs font-medium text-[var(--text-secondary)] mb-2 block">{t.component}</label>
+              <div className="grid grid-cols-2 gap-2">
+                {COMPONENTS.map((c) => (
+                  <button
+                    key={c.id}
+                    onClick={() => setComponent(c.id)}
+                    className={`px-3 py-2 rounded-lg text-sm text-left transition-all ${
+                      component === c.id
+                        ? "bg-[var(--gold)]/10 text-[var(--gold)] border border-[var(--gold)]/30"
+                        : "text-[var(--text-secondary)] border border-[var(--border-color)] hover:border-[#64748b]"
+                    }`}
+                  >
+                    {c.name}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Parameter Selection */}
+            <div>
+              <label className="text-xs font-medium text-[var(--text-secondary)] mb-2 block">{t.parameter}</label>
+              <select
+                value={parameter}
+                onChange={(e) => {
+                  setParameter(e.target.value);
+                  const p = PARAMETERS.find((p) => p.id === e.target.value);
+                  if (p) setValue(p.default);
+                }}
+                aria-label={t.parameter}
+                className="w-full px-3 py-2.5 bg-[var(--bg-tertiary)] border border-[var(--border-color)] rounded-lg text-sm text-[#e2e8f0] focus:border-[var(--gold)]/50 focus:outline-none"
+              >
+                {PARAMETERS.map((p) => (
+                  <option key={p.id} value={p.id}>
+                    {p.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            {/* Slider */}
+            <div>
+              <div className="flex items-center justify-between mb-2">
+                <label className="text-xs font-medium text-[var(--text-secondary)]">{t.value}</label>
+                <span className="text-lg font-bold font-mono text-[var(--gold)]">{value}</span>
+              </div>
+              <input
+                type="range"
+                min={selectedParam.min}
+                max={selectedParam.max}
+                step={selectedParam.step}
+                value={value}
+                onChange={(e) => setValue(Number(e.target.value))}
+                aria-label={`${selectedParam.name} slider`}
+                className="w-full accent-[#FFD700]"
+              />
+              <div className="flex justify-between text-xs text-[var(--text-muted)] mt-1">
+                <span>{selectedParam.min}</span>
+                <span className="text-[var(--text-secondary)]">{t.default} {selectedParam.default}</span>
+                <span>{selectedParam.max}</span>
+              </div>
+            </div>
+
+            <Button onClick={runAnalysis} disabled={loading} className="w-full">
+              {loading ? (
+                <>
+                  <Loader2 size={16} className="animate-spin" />
+                  {t.analyzing}
+                </>
+              ) : (
+                <>
+                  <FlaskConical size={16} />
+                  {t.runAnalysis}
+                </>
+              )}
+            </Button>
+          </div>
+        </Card>
+
+        {/* Results */}
+        <div className="space-y-6">
+          {errorMessage && !result ? (
+            <Card>
+              <div className="p-4 rounded-lg bg-red-500/10 border border-red-500/40">
+                <h3 className="text-sm font-semibold text-red-400 uppercase tracking-wider mb-2">
+                  Backend unreachable
+                </h3>
+                <p className="text-sm text-[var(--text-secondary)] whitespace-pre-wrap">
+                  {errorMessage}
+                </p>
+                <p className="text-xs text-[var(--text-muted)] mt-3">
+                  Configure <code>NEXT_PUBLIC_FAULTRAY_API_URL</code> in
+                  <code>.env.local</code> (or deploy env) and ensure the
+                  FaultRay API service is running.
+                </p>
+              </div>
+            </Card>
+          ) : null}
+          {result ? (
+            <>
+              <Card>
+                <h3 className="text-sm font-semibold text-[var(--text-secondary)] uppercase tracking-wider mb-6">
+                  {t.impactAnalysis}
+                </h3>
+
+                <div className="grid grid-cols-2 gap-4 mb-6">
+                  <div className="p-4 rounded-xl bg-white/[0.02] border border-[var(--border-color)] text-center">
+                    <p className="text-xs text-[var(--text-muted)] uppercase tracking-wider mb-1">{t.before}</p>
+                    <p className="text-3xl font-extrabold font-mono text-[var(--text-secondary)]">
+                      {result.baseline.overall_score.toFixed(1)}
+                    </p>
+                  </div>
+                  <div className="p-4 rounded-xl bg-white/[0.02] border border-[var(--border-color)] text-center">
+                    <p className="text-xs text-[var(--text-muted)] uppercase tracking-wider mb-1">{t.after}</p>
+                    <p
+                      className="text-3xl font-extrabold font-mono"
+                      style={{
+                        color:
+                          result.delta.direction === "improvement"
+                            ? "#10b981"
+                            : result.delta.direction === "degradation"
+                              ? "#ef4444"
+                              : "#94a3b8",
+                      }}
+                    >
+                      {result.modified.overall_score.toFixed(1)}
+                    </p>
+                  </div>
+                </div>
+
+                <div className="p-4 rounded-xl border border-[var(--border-color)] flex items-center justify-center gap-3">
+                  {result.delta.direction === "improvement" ? (
+                    <TrendingUp size={24} className="text-emerald-400" />
+                  ) : result.delta.direction === "degradation" ? (
+                    <TrendingDown size={24} className="text-red-400" />
+                  ) : (
+                    <Minus size={24} className="text-[var(--text-muted)]" />
+                  )}
+                  <span
+                    className="text-2xl font-bold font-mono"
+                    style={{
+                      color:
+                        result.delta.direction === "improvement"
+                          ? "#10b981"
+                          : result.delta.direction === "degradation"
+                            ? "#ef4444"
+                            : "#94a3b8",
+                    }}
+                  >
+                    {result.delta.score > 0 ? "+" : ""}
+                    {result.delta.score.toFixed(1)}
+                  </span>
+                  <Badge
+                    variant={
+                      result.delta.direction === "improvement"
+                        ? "green"
+                        : result.delta.direction === "degradation"
+                          ? "red"
+                          : "default"
+                    }
+                  >
+                    {t[result.delta.direction as keyof typeof t] || result.delta.direction}
+                  </Badge>
+                </div>
+              </Card>
+
+              <Card>
+                <h3 className="text-sm font-semibold text-[var(--text-secondary)] uppercase tracking-wider mb-4">
+                  {t.changeSummary}
+                </h3>
+                <div className="space-y-3">
+                  <div className="flex justify-between text-sm">
+                    <span className="text-[var(--text-muted)]">{t.component}</span>
+                    <span className="font-medium">
+                      {COMPONENTS.find((c) => c.id === result.component_id)?.name}
+                    </span>
+                  </div>
+                  <div className="flex justify-between text-sm">
+                    <span className="text-[var(--text-muted)]">{t.parameter}</span>
+                    <span className="font-mono">{result.parameter}</span>
+                  </div>
+                  <div className="flex justify-between text-sm">
+                    <span className="text-[var(--text-muted)]">{t.original}</span>
+                    <span className="font-mono">{result.original_value}</span>
+                  </div>
+                  <div className="flex justify-between text-sm">
+                    <span className="text-[var(--text-muted)]">{t.newValue}</span>
+                    <span className="font-mono text-[var(--gold)]">{result.new_value}</span>
+                  </div>
+                </div>
+              </Card>
+            </>
+          ) : (
+            <Card className="flex flex-col items-center justify-center py-16">
+              <FlaskConical size={40} className="text-[#1e293b] mb-4" />
+              <p className="text-[var(--text-muted)] text-sm">
+                {t.adjustPrompt}
+              </p>
+            </Card>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}

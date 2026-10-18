@@ -1,14 +1,19 @@
 name: Release
 
+# Single trigger: a published GitHub Release. The former `push: tags: v*`
+# trigger fired a second run for the same version (scripts/release.sh pushes
+# the tag, then creates the Release) and also fired on non-release tags such
+# as the floating `v1` GitHub Action tag.
 on:
-  push:
-    tags:
-      - "v*"
   release:
     types: [published]
 
 permissions:
   contents: read
+
+concurrency:
+  group: release-${{ github.event.release.tag_name }}
+  cancel-in-progress: false
 
 jobs:
   test:
@@ -27,7 +32,9 @@ jobs:
     outputs:
       version: ${{ steps.get_version.outputs.version }}
     steps:
-      - name: Extract version from tag or release
+      - uses: actions/checkout@v7
+
+      - name: Extract version from release
         id: get_version
         env:
           # CWE-78: pass the attacker-influenceable release tag via env and
@@ -35,14 +42,16 @@ jobs:
           RELEASE_TAG: ${{ github.event.release.tag_name }}
         run: |
           set -euo pipefail
-          if [ "$GITHUB_EVENT_NAME" = "push" ]; then
-            VERSION="${GITHUB_REF#refs/tags/v}"
-          else
-            VERSION="${RELEASE_TAG#v}"
+          # Only vX.Y.Z releases publish; a Release cut from any other tag
+          # (e.g. the floating `v1` Action tag) must not reach PyPI/GHCR.
+          if ! printf '%s' "$RELEASE_TAG" | grep -Eq '^v[0-9]+\.[0-9]+\.[0-9]+$'; then
+            echo "Not a vX.Y.Z release tag: $RELEASE_TAG" >&2
+            exit 1
           fi
-          # Validate against a safe version charset before any downstream use.
-          if ! printf '%s' "$VERSION" | grep -Eq '^[0-9A-Za-z.+-]+$'; then
-            echo "Invalid/unsafe version: $VERSION" >&2
+          VERSION="${RELEASE_TAG#v}"
+          PKG_VERSION="$(python3 -c "import tomllib; print(tomllib.load(open('pyproject.toml','rb'))['project']['version'])")"
+          if [ "$VERSION" != "$PKG_VERSION" ]; then
+            echo "Tag $RELEASE_TAG does not match pyproject version $PKG_VERSION" >&2
             exit 1
           fi
           echo "version=${VERSION}" >> "$GITHUB_OUTPUT"
@@ -90,10 +99,12 @@ jobs:
 
       - name: Publish to PyPI via Trusted Publisher (OIDC)
         uses: pypa/gh-action-pypi-publish@release/v1
+        with:
+          # scripts/release.sh uploads with twine before creating the Release;
+          # don't fail the run (and skip the asset upload) on that duplicate.
+          skip-existing: true
 
       - name: Attach wheel + sdist + SBOM to GitHub Release
-        # Only runs when a Release event fires (not for raw tag push), so
-        # the softprops action receives the existing release to upload to.
         if: github.event_name == 'release'
         uses: softprops/action-gh-release@v3
         with:

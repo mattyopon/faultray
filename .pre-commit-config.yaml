@@ -1,11 +1,20 @@
+# `pre-commit install` installs both stages (the pre-push stage carries the
+# apps/web local-env secret scan below).
+default_install_hook_types: [pre-commit, pre-push]
+# ...but hooks run at commit time unless they opt into another stage.
+default_stages: [pre-commit]
 repos:
   - repo: https://github.com/astral-sh/ruff-pre-commit
     # Keep in sync with the ruff version pinned in pyproject.toml [dev]
     rev: v0.15.11
     hooks:
+      # Monorepo: these hooks are for the Python package; apps/ and archive/
+      # are separate projects with their own tooling.
       - id: ruff
         args: [--fix]
+        exclude: ^(apps|archive)/
       - id: ruff-format
+        exclude: ^(apps|archive)/
   - repo: https://github.com/pre-commit/mirrors-mypy
     rev: v1.15.0
     hooks:
@@ -15,6 +24,7 @@ repos:
           - types-PyYAML>=6.0
           - types-networkx>=3.0
         args: [--ignore-missing-imports]
+        exclude: ^(apps|archive)/
   # Block hardcoded secrets at commit time (defense-in-depth alongside the
   # gitleaks CI workflow), so tokens like the ones flagged in #136/#148 cannot
   # be reintroduced locally.
@@ -32,5 +42,17 @@ repos:
         name: forbid committing .env files
         entry: bash -c 'echo ".env / .env.* files must not be committed (#136). Move secrets to a vault and commit only .env.example."; exit 1'
         language: system
-        files: '^\.env(\.(?!example$)[^/]+)?$'
+        # Any directory (apps/web keeps its own .env.*.example templates).
+        files: '(^|/)\.env(\.[^/]+)?$'
+        exclude: '\.example$'
         pass_filenames: false
+      # apps/web #87: before every push, scan local (gitignored) .env files for
+      # live-looking secrets. Replaces faultray-app's `npm prepare` hook wiring
+      # (core.hooksPath), which in this repo would disable every hook here.
+      - id: web-env-secret-scan
+        name: scan local .env files for live secrets (apps/web #87)
+        entry: apps/web/.githooks/pre-push
+        language: script
+        stages: [pre-push]
+        pass_filenames: false
+        always_run: true

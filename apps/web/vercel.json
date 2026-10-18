@@ -1,0 +1,56 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "regions": ["hnd1"],
+  "ignoreCommand": "bash scripts/vercel-ignore.sh",
+  "git": {
+    "deploymentEnabled": {
+      "main": true,
+      "develop": true
+    }
+  },
+  "headers": [
+    {
+      "source": "/(.*)",
+      "headers": [
+        { "key": "X-Content-Type-Options", "value": "nosniff" },
+        { "key": "X-Frame-Options", "value": "DENY" },
+        { "key": "X-XSS-Protection", "value": "1; mode=block" },
+        { "key": "Referrer-Policy", "value": "strict-origin-when-cross-origin" },
+        { "key": "Cross-Origin-Opener-Policy", "value": "same-origin-allow-popups" },
+        { "key": "Permissions-Policy", "value": "camera=(), microphone=(), geolocation=()" }
+      ]
+    }
+  ],
+  "functions": {
+    "api/**/*.py": {
+      "maxDuration": 300,
+      "memory": 1024
+    },
+    "app/**/*.ts": {
+      "maxDuration": 30
+    }
+  },
+  "crons": [
+    {
+      "path": "/api/cron/trial-reminders",
+      "schedule": "0 9 * * *"
+    },
+    {
+      "path": "/api/cron/trial-expiry",
+      "schedule": "15 0 * * *"
+    }
+  ],
+  "rewrites": [
+    { "source": "/api/simulate", "destination": "/api/engine" },
+    { "source": "/api/analysis", "destination": "/api/engine" },
+    { "source": "/api/discovery", "destination": "/api/engine" },
+    { "source": "/api/finance", "destination": "/api/reports" },
+    { "source": "/api/risk", "destination": "/api/reports" },
+    { "source": "/api/apm/:path*", "destination": "/api/realtime" },
+    { "source": "/api/projects", "destination": "/api/realtime" },
+    { "source": "/api/chat", "destination": "/api/realtime" },
+    { "source": "/api/health", "destination": "/api/realtime" },
+    { "source": "/api/governance", "destination": "/api/compliance" },
+    { "source": "/apm", "destination": "/apm" }
+  ]
+}

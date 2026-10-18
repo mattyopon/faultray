@@ -1,0 +1,326 @@
+{
+  "metadata": {
+    "title": "FaultRay — 배포 전 인프라 복원력 시뮬레이션 (연구 프로토타입)",
+    "description": "선언된 토폴로지로부터 인메모리 시뮬레이션을 통해 시스템의 구조적 가용성 한계를 추정합니다 — 프로덕션을 건드리지 않고. 연구 프로토타입; 런타임 Chaos Engineering을 보완합니다."
+  },
+  "nav": {
+    "features": "기능",
+    "compare": "비교",
+    "pricing": "가격",
+    "signIn": "로그인",
+    "dashboard": "대시보드"
+  },
+  "hero": {
+    "badge": "오픈소스 · Apache 2.0 라이선스",
+    "subtitle": "배포 전 인프라 복원력 시뮬레이션 (연구 프로토타입)",
+    "description": "인메모리 시뮬레이션을 통해 시스템 가용성 한계를 추정합니다 — 연구 프로토타입, 프로덕션을 건드리지 않고.",
+    "stats": {
+      "scenarios": "시나리오",
+      "engines": "엔진",
+      "layers": "레이어",
+      "tests": "테스트",
+      "doraControls": "DORA 매핑 (연구)",
+      "dashboardPages": "대시보드 페이지",
+      "languages": "지원 언어"
+    },
+    "cta": "무료로 시작하기",
+    "demo": "라이브 데모",
+    "ctaPrimary": "20분 증빙 스프린트 범위 정의 상담 예약하기",
+    "evidenceSprint": {
+      "title": "DORA 복원력 증빙 스프린트",
+      "blurb": "영업일 기준 5일 안에 당사는 정제된 데이터로만 작업합니다 — 운영 환경 접근 없음, 개인식별정보(PII) 없음. $2,500 고정 가격에 50% 선금 조건으로, 증빙 스프린트는 DORA 사전 감사 준비를 위한 구조화된 복원력 증빙 패키지를 제공합니다."
+    },
+    "valueProps": [
+      {
+        "title": "감사 대응 준비가 된 증빙 패키지",
+        "desc": "리스크, 복원력, 컴플라이언스 및 CTO 팀이 DORA 감사 논의를 준비하는 데 사용할 수 있는 구조화된 증빙 패키지입니다."
+      },
+      {
+        "title": "추적 가능한 DORA 매핑",
+        "desc": "중요 서비스 증빙이 관련 DORA 조항에 어떻게 부합하는지 추적 가능한 보기로 제공하며, 검토를 위해 가정 사항을 별도로 분리합니다."
+      },
+      {
+        "title": "이사회 보고용 복원력 리포팅",
+        "desc": "이사회 및 규제 당국 대상 준비를 위해 증빙, 가정 사항, 미결 결정 사항을 구분하는 경영진 요약입니다."
+      }
+    ]
+  },
+  "problem": {
+    "title": "문제점",
+    "items": [
+      "프로덕션 또는 스테이징 환경 필요",
+      "테스트 중 실제 장애 발생 위험",
+      "높은 인프라 비용",
+      "복잡한 환경 구성 및 정리",
+      "가용성의 수학적 증명 불가"
+    ],
+    "descriptionParts": {
+      "before": "기존 카오스 도구는 인프라에 ",
+      "highlight": "실제 장애",
+      "after": "를 주입합니다."
+    }
+  },
+  "solution": {
+    "title": "해결책",
+    "items": [
+      "프로덕션 장애 주입 없음 — 인메모리 시뮬레이션",
+      "무비용 — 노트북에서 실행",
+      "초 단위 즉각적인 결과",
+      "YAML 토폴로지만으로 작동",
+      "모델 기반 가용성 한계 추정 (토폴로지 충실도에 따라 달라짐)"
+    ],
+    "descriptionParts": {
+      "before": "FaultRay는 ",
+      "highlight": "순수 수학적 시뮬레이션",
+      "after": "을 사용합니다."
+    }
+  },
+  "challenges": {
+    "heading": "우리가 해결하는 과제",
+    "subheading": "FaultRay는 엔지니어링 팀을 밤새 잠 못 들게 하는 실제 운영 격차를 해결합니다.",
+    "items": [
+      {
+        "problem": "수동적이고 사람에 의존하는 인프라 관리",
+        "solution": "FaultRay가 토폴로지 스캐닝과 복원력 분석을 자동화합니다."
+      },
+      {
+        "problem": "IaC(Terraform) 미도입",
+        "solution": "FaultRay가 기존 AWS / GCP / Azure 인프라를 자동 스캔합니다."
+      },
+      {
+        "problem": "IPO 이후 가용성 및 감사 요건",
+        "solution": "DORA / SOC 2 정렬을 연구 프로토타입 증거 초안으로 탐색합니다. 감사 인증되지 않음 — 독립적인 법률 검토 필요."
+      },
+      {
+        "problem": "런북 없는 임시 인시던트 대응",
+        "solution": "FaultRay가 시뮬레이션 결과로 런북과 수정 스크립트를 자동 생성합니다."
+      },
+      {
+        "problem": "AI 거버넌스 준비 미착수",
+        "solution": "METI / ISO 42001 자동 컴플라이언스 체크와 감사 준비 보고서를 즉시 제공합니다."
+      }
+    ]
+  },
+  "features": {
+    "heading": "필요한 모든 것",
+    "subheading": "사전 배포 복원력 시뮬레이션의 열 가지 기둥 (연구 프로토타입)",
+    "cards": [
+      {
+        "title": "다수의 시뮬레이션 엔진",
+        "desc": "네트워크, 프로세스, 리소스, 의존성, 레이턴시, 폭발 반경, SLA 계약 검증 등 수십 가지 — Monte Carlo, Markov chains, 큐잉 이론으로 구동됩니다."
+      },
+      {
+        "title": "수천 개의 자동 생성 시나리오",
+        "desc": "단일 노드 장애부터 다중 리전 연쇄 장애까지. 모든 시나리오는 토폴로지 YAML에서 자동 생성 — 일반적인 10개 컴포넌트 토폴로지에서 2,000개 이상의 고유 시나리오."
+      },
+      {
+        "title": "N-Layer(5-Layer) 가용성 모델",
+        "desc": "가용성 한계 추정치를 다섯 개의 독립적인 레이어로 분해합니다: 하드웨어, 소프트웨어, 이론적 한계, 운영, 외부 SLA. 모델 기반이므로 정확도는 토폴로지 충실도에 따라 달라집니다."
+      },
+      {
+        "title": "AI 기반 분석",
+        "desc": "Claude 기반의 근본 원인 분석과 영향도 및 비용 순으로 정렬된 실행 가능한 개선 권고안."
+      },
+      {
+        "title": "DORA 증거 초안 (연구 프로토타입)",
+        "desc": "증거 추적 및 위험 평가가 포함된 감사 준비 완료 디지털 운영 회복력법 보고서 생성."
+      },
+      {
+        "title": "보안 피드 통합",
+        "desc": "CVE 데이터와 NVD 피드를 자동으로 통합하여 취약점 트리거 연쇄 장애를 시뮬레이션합니다."
+      },
+      {
+        "title": "APM 모니터링 (실시간)",
+        "desc": "라이브 성능 지표, 트레이스 연관, 이상 감지 — 35+ 모니터링 뷰를 갖춘 복원력 대시보드에 통합됩니다."
+      },
+      {
+        "title": "AI 거버넌스 (METI / ISO 42001)",
+        "desc": "일본 METI AI 가이드라인 및 ISO 42001 요건에 대한 연구 프로토타입 매핑. 감사 인증되지 않음 — 규정 준수 주장에는 독립적인 법률 검토 필요."
+      },
+      {
+        "title": "자율 수정",
+        "desc": "시뮬레이션 결과에서 런북, 수정 스크립트, Terraform 패치를 자동 생성합니다."
+      },
+      {
+        "title": "35+ 대시보드 페이지",
+        "desc": "토폴로지 에디터, 시나리오 탐색기, N-Layer 드릴다운, 히트맵, DORA 연구 초안, 경영 요약을 갖춘 완전한 웹 대시보드."
+      }
+    ],
+    "viewAll": "전체 기능 자세히 보기"
+  },
+  "agentResilience": {
+    "badge": "v11.0 신기능",
+    "heading": "AI Agent 복원력 시뮬레이션",
+    "subheading": "프로덕션에서 발생하기 전에 인프라 장애가 Agent 환각으로 연쇄되는 방식을 시뮬레이션하세요.",
+    "cards": [
+      {
+        "title": "교차 레이어 분석",
+        "desc": "인프라 장애(데이터베이스 다운, 캐시 미스)가 Agent 환각으로 연쇄되는 방식을 추적하세요. 정상처럼 보이지만 잘못된 결과를 생성하는 무음 저하를 노출합니다."
+      },
+      {
+        "title": "PREDICT · ADOPT · MANAGE",
+        "desc": "Agent 복원력을 위한 세 가지 기둥: 카오스 시나리오 시뮬레이션, 폭발 반경 분석으로 배포 위험 평가, 모니터링 규칙 자동 생성."
+      },
+      {
+        "title": "4가지 새로운 컴포넌트 유형",
+        "desc": "AI Agent, LLM Endpoint, Tool Service, Agent Orchestrator를 기존 인프라와 함께 의존성 그래프의 일급 노드로 모델링하세요."
+      },
+      {
+        "title": "10가지 Agent 장애 모드",
+        "desc": "환각, 컨텍스트 오버플로우, LLM 속도 제한, 토큰 소진, 도구 실패, Agent 루프, 프롬프트 인젝션, 신뢰도 오보정, CoT 붕괴, 출력 증폭."
+      }
+    ],
+    "taxonomyHeadingHighlight": "10가지 모드",
+    "taxonomyHeadingSuffix": " AI Agent 장애 분류 체계"
+  },
+  "comparison": {
+    "heading": "비교",
+    "subheading": "FaultRay는 근본적으로 다른 접근 방식을 취합니다",
+    "recommended": "추천",
+    "labels": {
+      "approach": "접근 방식",
+      "productionRisk": "프로덕션 위험",
+      "setupTime": "설정 시간",
+      "scenarios": "시나리오",
+      "availabilityProof": "가용성 증명",
+      "aiAgentModeling": "AI Agent 모델링",
+      "startingCost": "시작 비용"
+    },
+    "faultray": {
+      "approach": "수학적 시뮬레이션",
+      "productionRisk": "제로",
+      "setupTime": "5분",
+      "scenarios": "2,000+ 자동 생성",
+      "availabilityProof": "N-Layer 수학적 증명",
+      "aiAgentModeling": "10가지 모드 분류 체계",
+      "startingCost": "무료 / OSS"
+    },
+    "gremlin": {
+      "approach": "실제 장애 주입",
+      "productionRisk": "높음",
+      "setupTime": "며칠",
+      "scenarios": "수동 구성",
+      "startingCost": "$10,000+/년"
+    },
+    "steadybit": {
+      "approach": "실제 장애 주입",
+      "productionRisk": "중간",
+      "setupTime": "몇 시간",
+      "scenarios": "템플릿 기반",
+      "startingCost": "$5,000+/년"
+    },
+    "awsFis": {
+      "approach": "실제 장애 주입",
+      "productionRisk": "높음",
+      "setupTime": "몇 시간",
+      "scenarios": "AWS 서비스만 가능",
+      "startingCost": "사용량 기반 과금"
+    }
+  },
+  "nlayer": {
+    "heading": "N-Layer(5-Layer) 가용성 한계 모델",
+    "subheading": "가용성 한계 추정치를 다섯 개의 독립적인 제약 레이어로 분해합니다 (모델 기반, 정확도는 토폴로지 충실도에 따라 달라짐)",
+    "layers": [
+      {
+        "label": "레이어 1: 하드웨어 한계",
+        "desc": "물리적 구성 요소에 의한 제약: 디스크 MTBF, 네트워크 장비, 전원 시스템, 페일오버 전환 시간"
+      },
+      {
+        "label": "레이어 2: 소프트웨어 한계",
+        "desc": "실제 한계: 배포 파이프라인, 설정 오류, 의존성 장애, 인적 오류율"
+      },
+      {
+        "label": "레이어 3: 이론적 한계",
+        "desc": "제거 불가능한 물리적 노이즈 바닥: 네트워크 패킷 손실, GC 일시 정지, 커널 스케줄링 지터"
+      },
+      {
+        "label": "레이어 4: 운영 한계",
+        "desc": "인시던트 대응 시간, 온콜 커버리지, 런북 완성도, 자동화 수준"
+      },
+      {
+        "label": "레이어 5: 외부 SLA",
+        "desc": "서드파티 서비스 가용성이 부과하는 하드 한계 (AWS, GCP, Stripe 등)"
+      }
+    ],
+    "whyTitle": "왜 중요한가",
+    "whyP1": "대부분의 팀은 하드웨어 나인을 추구하지만, 소프트웨어 레이어가 가용성을 4 나인으로 제한합니다. FaultRay는 병목 지점을 정확히 파악하여 올바른 레이어에 투자할 수 있게 합니다.",
+    "whyP2": "N-Layer 모델은 확장 가능합니다: 지리적, 경제적 또는 맞춤형 도메인별 제약 레이어를 추가하여 조직 고유의 가용성 경계에 맞출 수 있습니다.",
+    "bindingTitle": "결합 제약 감지",
+    "bindingDesc": "시뮬레이션이 레이어 한계를 초과하는 가용성을 예측할 때, FaultRay가 이를 플래그 처리하고 인프라 개선의 목표로 결합 제약 레이어를 식별합니다."
+  },
+  "quickstart": {
+    "heading": "빠른 시작",
+    "subheading": "3단계로 가용성 증명 완성",
+    "step1Title": "설치",
+    "step2Title": "토폴로지 정의",
+    "step3Title": "분석 실행"
+  },
+  "pricing": {
+    "heading": "가격",
+    "subheading": "무료로 시작하고, 성장에 따라 확장하세요.",
+    "perMonth": "/월",
+    "mostPopular": "가장 인기 있는",
+    "featureComparison": "기능 비교",
+    "currency": "$",
+    "prices": [
+      0,
+      299,
+      999
+    ],
+    "taxNote": "",
+    "japaneseSupportBadge": "일본어 지원 포함",
+    "plans": [
+      {
+        "name": "무료",
+        "desc": "Chaos Engineering을 탐색하는 개인 엔지니어에게 적합합니다.",
+        "cta": "무료로 시작하기"
+      },
+      {
+        "name": "Pro",
+        "desc": "DORA 증거 초안 (연구 프로토타입)와 더 높은 한도가 필요한 팀을 위한 플랜.",
+        "cta": "Pro 시작하기"
+      },
+      {
+        "name": "Business",
+        "desc": "무제한 액세스, SSO, 전담 지원이 필요한 기업을 위한 플랜.",
+        "cta": "문의하기"
+      }
+    ]
+  },
+  "socialProof": {
+    "heading": "개발자 커뮤니티가 신뢰하는 도구",
+    "githubStars": "GitHub Stars",
+    "betaMessage": "현재 베타 버전입니다. 피드백을 보내주세요.",
+    "betaSubtitle": "얼리 액세스 단계입니다. 보내주신 피드백이 개선에 큰 도움이 됩니다.",
+    "betaCta": "피드백 보내기",
+    "openSource": "Open Source"
+  },
+  "roi": {
+    "heading": "ROI 계산기",
+    "subheading": "FaultRay 도입으로 예상되는 연간 절감액 시뮬레이션",
+    "monthlyRevenue": "월 매출 ($K)",
+    "incidentCount": "연간 장애 횟수",
+    "incidentHours": "평균 장애 시간 (시간)",
+    "annualLoss": "예상 연간 손실액",
+    "estimatedReduction": "FaultRay 도입 후 예상 절감액",
+    "roi": "ROI",
+    "annualCost": "연간 비용 (Pro 플랜)",
+    "disclaimer": "계산식: 연간 손실 = 월 매출 × (장애시간/720) × 횟수 × 12. FaultRay 효과 = 70% 절감.",
+    "unit": "K"
+  },
+  "footer": {
+    "tagline": "배포 전 복원력 시뮬레이션. 선언된 토폴로지로부터 가용성 한계를 추정합니다. 연구 프로토타입 — 런타임 Chaos Engineering을 보완합니다.",
+    "madeIn": "도쿄에서 제작",
+    "product": "제품",
+    "resources": "리소스",
+    "legal": "법적 고지",
+    "copyright": "© 2026 FaultRay. Apache 2.0Apache 2.0 라이선스 하에 오픈소스.",
+    "japaneseSupport": "일본어 지원 제공"
+  },
+  "languageSwitcher": {
+    "label": "언어"
+  },
+  "disclaimer": {
+    "researchPrototype": "⚠ 연구 프로토타입 — 출력은 DORA, FISC 또는 기타 규제 감사에 대해 검증되지 않았습니다. 독립적인 법률 및 기술 검토 없이 FaultRay 증거를 규정 준수 결정에 사용하지 마십시오."
+  }
+}
