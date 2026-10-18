@@ -1,10 +1,15 @@
-name: CI
+name: Web CI (apps/web)
 
+# faultray.com (Next.js + Vercel Python functions), imported from
+# mattyopon/faultray-app. Scoped to apps/web so Python-package changes don't
+# run it and apps/web changes don't run the 31k-test core CI (ci.yml).
 on:
   push:
-    branches: [main, develop]
+    branches: [main]
+    paths: ["apps/web/**", ".github/workflows/web-ci.yml"]
   pull_request:
-    branches: [main, develop]
+    branches: [main]
+    paths: ["apps/web/**", ".github/workflows/web-ci.yml"]
 
 # Least-privilege default: lint/test/build jobs need no write-scoped token.
 permissions:
@@ -19,8 +24,33 @@ concurrency:
 defaults:
   run:
     shell: bash
+    working-directory: apps/web
 
 jobs:
+  # Temporary (remove when apply-migrations moves to this repo): production
+  # migrations are still applied from faultray-app until the Vercel cutover,
+  # and a migration merged here before then would never reach the database.
+  # main has no required checks, so this is a signal for reviewers, not a lock:
+  # don't merge apps/web PRs while it is red.
+  migration-freeze:
+    name: Supabase migration freeze
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Refuse migrations newer than 026
+        run: |
+          set -euo pipefail
+          bad=0
+          for f in supabase/migrations/*; do
+            n=$(basename "$f" | grep -oE '^[0-9]+' || true)
+            if [ -z "$n" ] || [ $((10#$n)) -gt 26 ]; then
+              echo "::error file=apps/web/$f::New migrations are frozen until the migration workflow moves to this repo"
+              bad=1
+            fi
+          done
+          exit "$bad"
+
   lint-and-typecheck:
     name: Lint & Type Check
     runs-on: ubuntu-latest
@@ -32,6 +62,7 @@ jobs:
         with:
           node-version: "20"
           cache: "npm"
+          cache-dependency-path: apps/web/package-lock.json
 
       - name: Install dependencies
         run: |
@@ -59,6 +90,7 @@ jobs:
         with:
           node-version: "20"
           cache: "npm"
+          cache-dependency-path: apps/web/package-lock.json
 
       - name: Install dependencies
         run: |
@@ -81,6 +113,7 @@ jobs:
         with:
           python-version: "3.11"
           cache: "pip"
+          cache-dependency-path: apps/web/requirements.txt
 
       - name: Install Python dependencies
         # GHACT-05: Cache pip dependencies via setup-python@v5 cache param above
@@ -243,6 +276,7 @@ jobs:
         with:
           node-version: "20"
           cache: "npm"
+          cache-dependency-path: apps/web/package-lock.json
 
       - name: Install dependencies
         run: npm ci

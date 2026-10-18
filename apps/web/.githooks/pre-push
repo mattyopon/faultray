@@ -15,7 +15,10 @@ if [ "${SKIP_ENV_SECRET_SCAN:-}" = "1" ]; then
 fi
 
 shopt -s nullglob
-candidates=(.env .env.* )
+# Run from the monorepo root (pre-commit's pre-push stage); scan the root's and
+# apps/web's local env files.
+cd "$(git rev-parse --show-toplevel)"
+candidates=(.env .env.* apps/web/.env apps/web/.env.*)
 findings=0
 
 for f in "${candidates[@]}"; do

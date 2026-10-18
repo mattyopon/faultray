@@ -1,0 +1,5 @@
+# Individual reviewed gitleaks findings (fingerprint = commit:file:rule:line).
+# apps/web/vercel-env-vars.txt (imported faultray-app history, removed since):
+# the public Supabase anon key, already shipped to browsers as
+# NEXT_PUBLIC_SUPABASE_ANON_KEY.
+5de84dc21b3ad095af8212462bcb38cbbe86f8c9:apps/web/vercel-env-vars.txt:jwt:5

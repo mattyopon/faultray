@@ -1,0 +1,19 @@
+# gitleaks configuration, read by the Gitleaks workflow and the pre-commit hook.
+# Only known non-secrets are allowed; everything else uses the default rules.
+[extend]
+useDefault = true
+
+[allowlist]
+description = "Known non-secrets (mostly history imported from faultray-app)"
+paths = [
+  # detect-secrets baseline: stores hashes of reviewed findings, not secrets.
+  '''(^|/)\.secrets\.baseline$''',
+]
+regexes = [
+  # Build-time placeholder for STRIPE_SECRET_KEY in apps/web.
+  '''sk_test_placeholder''',
+  # AWS's documented example access key ID, used as UI placeholder text.
+  '''AKIAIOSFODNN7EXAMPLE''',
+  # Dummy keys stubbed into apps/web unit/integration tests.
+  '''test-(anon-)?key-[a-z0-9-]+''',
+]

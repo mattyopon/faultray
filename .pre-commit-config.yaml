@@ -1,3 +1,8 @@
+# `pre-commit install` installs both stages (the pre-push stage carries the
+# apps/web local-env secret scan below).
+default_install_hook_types: [pre-commit, pre-push]
+# ...but hooks run at commit time unless they opt into another stage.
+default_stages: [pre-commit]
 repos:
   - repo: https://github.com/astral-sh/ruff-pre-commit
     # Keep in sync with the ruff version pinned in pyproject.toml [dev]
@@ -41,3 +46,13 @@ repos:
         files: '(^|/)\.env(\.[^/]+)?$'
         exclude: '\.example$'
         pass_filenames: false
+      # apps/web #87: before every push, scan local (gitignored) .env files for
+      # live-looking secrets. Replaces faultray-app's `npm prepare` hook wiring
+      # (core.hooksPath), which in this repo would disable every hook here.
+      - id: web-env-secret-scan
+        name: scan local .env files for live secrets (apps/web #87)
+        entry: apps/web/.githooks/pre-push
+        language: script
+        stages: [pre-push]
+        pass_filenames: false
+        always_run: true

@@ -58,3 +58,8 @@ tests/screenshots/
 tests/e2e_buttons.py
 playwright-report/
 supabase/.temp/
+
+# Monorepo: undo the repository root's blanket `*.json` / `.env.*` rules for
+# this app only (the root .gitignore also drives the Python sdist's file list).
+!*.json
+!.env.*.example
