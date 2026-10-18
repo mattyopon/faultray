@@ -22,8 +22,8 @@ The web application for [faultray.com](https://faultray.com) — pre-deployment 
 ## Development Setup
 
 ```bash
-git clone https://github.com/mattyopon/faultray-app.git
-cd faultray-app
+git clone https://github.com/mattyopon/faultray.git
+cd faultray/apps/web
 npm install
 cp .env.local.example .env.local  # fill in keys
 npm run dev

@@ -45,7 +45,7 @@ Supabase
 ## Step 2: Vercel Deployment
 
 1. Import the GitHub repo: https://vercel.com/import/git
-   - Select `mattyopon/faultray-app`
+   - Select `mattyopon/faultray` and set **Root Directory** to `apps/web`
 2. Set environment variables:
    ```
    NEXT_PUBLIC_SUPABASE_URL=https://your-project.supabase.co

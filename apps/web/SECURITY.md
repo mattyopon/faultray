@@ -39,7 +39,7 @@ Please report security issues via **private disclosure**:
 For vulnerabilities that qualify as CVEs:
 
 1. We will request a CVE ID via [MITRE](https://cveform.mitre.org/) or coordinate with the reporter
-2. A [GitHub Security Advisory](https://github.com/mattyopon/faultray-app/security/advisories) will be published
+2. A [GitHub Security Advisory](https://github.com/mattyopon/faultray/security/advisories) will be published
 3. A patch release will be tagged and pushed to PyPI/npm simultaneously
 4. Credit will be given to the reporter (unless they prefer anonymity)
 

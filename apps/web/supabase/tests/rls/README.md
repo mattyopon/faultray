@@ -38,7 +38,7 @@ psql -h 127.0.0.1 -p 54322 -U postgres -d postgres \
 
 ## CI 実行
 
-`.github/workflows/ci.yml` の `test-rls` job が自動で実行する。ubuntu-latest + postgres:16 サービスコンテナ + `postgresql-16-pgtap` で走る。
+リポジトリルートの `.github/workflows/web-ci.yml` の `test-rls` job が自動で実行する。ubuntu-latest + postgres:16 サービスコンテナ + `postgresql-16-pgtap` で走る。
 
 ## テストで使用する固定 UUID
 

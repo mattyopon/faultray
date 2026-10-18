@@ -5,15 +5,18 @@ Thank you for considering a contribution to FaultRay.
 ## Development Setup
 
 ```bash
-git clone https://github.com/mattyopon/faultray-app.git
-cd faultray-app
+git clone https://github.com/mattyopon/faultray.git
+cd faultray/apps/web
 npm install
 cp .env.local.example .env.local  # fill in Supabase + Stripe keys
 npm run dev
 ```
 
-`npm install` also wires the repo's git hooks (`git config core.hooksPath .githooks`).
-The pre-push hook scans local `.env*` files for live-looking secrets (#87):
+This app lives in `apps/web/` of the FaultRay monorepo (it moved from
+`mattyopon/faultray-app`). Git hooks are managed by pre-commit at the repository
+root: run `pip install pre-commit && pre-commit install` once from the root.
+That includes a pre-push hook (`.githooks/pre-push`) that scans local `.env*`
+files for live-looking secrets (#87):
 local env files must hold **placeholders only** — real values belong in Vercel
 env vars / GitHub Secrets. One-off bypass: `SKIP_ENV_SECRET_SCAN=1 git push`.
 
@@ -21,15 +24,14 @@ env vars / GitHub Secrets. One-off bypass: `SKIP_ENV_SECRET_SCAN=1 git push`.
 
 | Branch | Purpose |
 |--------|---------|
-| `main` | Production-ready releases only |
-| `develop` | Integration branch — all PRs target this |
+| `main` | Production — merges to `main` that touch `apps/web/` deploy faultray.com |
 | `feat/*` | New features |
 | `fix/*` | Bug fixes |
 | `chore/*` | Tooling, dependencies, config |
 
 ## Pull Request Guidelines
 
-- **Target branch**: `develop` (never `main` directly)
+- **Target branch**: `main`, via PR (never push to `main` directly)
 - **PR title**: `[type]: short description` — e.g. `feat: add changelog page`
 - **PR description**: Summarize what changed and why
 - **Review wait time**: Allow 2 business days for review response

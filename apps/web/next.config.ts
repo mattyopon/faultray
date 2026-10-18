@@ -1,3 +1,4 @@
+import path from "node:path";
 import type { NextConfig } from "next";
 
 // SEC-03 / #32 / #85: the Content-Security-Policy is now generated per request
@@ -12,6 +13,11 @@ const nextConfig: NextConfig = {
   // by default; setting this to false removes it.
   // ZAP 10037 "Server Leaks Information via X-Powered-By" — Refs mattyopon/faultray#172
   poweredByHeader: false,
+  // Monorepo (apps/web of mattyopon/faultray): pin the Turbopack and file
+  // tracing roots to this app. Next infers the root from the nearest lockfile,
+  // so a stray package-lock.json higher up would otherwise widen both.
+  outputFileTracingRoot: path.join(__dirname),
+  turbopack: { root: path.join(__dirname) },
   // #116: the Upstash rate-limit backend (@upstash/ratelimit + @upstash/redis)
   // are first-class dependencies. Keep them server-external so they are loaded
   // at runtime (only when UPSTASH_* env is configured, via the lazy dynamic

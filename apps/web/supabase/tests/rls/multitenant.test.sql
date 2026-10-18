@@ -31,7 +31,7 @@
 --        -f supabase/tests/rls/multitenant.test.sql
 -- (ローカル開発用 postgres のデフォルトパスワードは Supabase CLI が管理)
 --
--- CI: .github/workflows/ci.yml の test-rls job で自動実行される
+-- CI: (repo root) .github/workflows/web-ci.yml の test-rls job で自動実行される
 -- ============================================================
 
 begin;
