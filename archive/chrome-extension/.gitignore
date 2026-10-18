@@ -5,3 +5,6 @@ dist/
 .env
 .env.local
 tsconfig.tsbuildinfo
+
+# Monorepo: undo the repository root's blanket `*.json` rule (see apps/web/.gitignore).
+!*.json

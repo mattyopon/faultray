@@ -424,6 +424,22 @@ FaultRay's core algorithms are described in a peer-reviewable paper and protecte
 }
 ```
 
+## Repository layout
+
+The other FaultRay projects live in this repository too (consolidated from
+separate repositories in October 2026):
+
+| Path | What | Ships as |
+|------|------|----------|
+| `src/faultray/`, `tests/` | The Python package and CLI | PyPI package, `ghcr.io/mattyopon/faultray` image |
+| `action.yml` | GitHub Action | Step-level `uses: mattyopon/faultray@v1` |
+| `.github/workflows/terraform-guard.yml` | Reusable workflow | Job-level `uses: mattyopon/faultray/.github/workflows/terraform-guard.yml@<ref>` |
+| [`apps/web/`](https://github.com/mattyopon/faultray/tree/main/apps/web) | The FaultRay Cloud web app (Next.js + Python functions), formerly `mattyopon/faultray-app` | Vercel (Root Directory `apps/web`) |
+| [`archive/chrome-extension/`](https://github.com/mattyopon/faultray/tree/main/archive/chrome-extension) | Unmaintained Chrome extension, formerly `mattyopon/faultray-chrome-extension` | Not built |
+
+Each project keeps its own tooling and CI workflow; `apps/web` has its own
+[README](https://github.com/mattyopon/faultray/blob/main/apps/web/README.md).
+
 ## Development
 
 ```bash
